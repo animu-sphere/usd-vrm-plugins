@@ -240,12 +240,48 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
             }
             vj.parentJointIndex = parent;
 
-            // bind = world; rest = transform relative to the parent joint
-            // (robust even when intermediate non-joint nodes are skipped).
+            // rest = transform relative to the parent joint (robust even when
+            // intermediate non-joint nodes are skipped). bind defaults to the
+            // node world transform, then is overridden by the inverse bind
+            // matrix below when the skin supplies one.
             vj.bindTransform = world[j];
             vj.restTransform = (parent >= 0)
                 ? world[j] * world[parent].GetInverse()
                 : world[j];
+        }
+
+        // World-space bind transforms come from each skin's inverse bind
+        // matrices (bind = inverse(IBM)); the node world transform is only a
+        // fallback. A node shared by several skins should agree across them.
+        std::vector<bool> bindFromIbm(jointNodes.size(), false);
+        bool warnedIbmConflict = false;
+        for (cgltf_size s = 0; s < data->skins_count; ++s) {
+            const cgltf_skin& skin = data->skins[s];
+            if (!skin.inverse_bind_matrices) continue;
+            for (cgltf_size j = 0; j < skin.joints_count; ++j) {
+                auto it = nodeToJoint.find(skin.joints[j]);
+                if (it == nodeToJoint.end()) continue;
+                float ibm[16];
+                if (!cgltf_accessor_read_float(
+                        skin.inverse_bind_matrices, j, ibm, 16)) {
+                    continue;
+                }
+                GfMatrix4d bind = VrmConvertGltfMatrix(ibm).GetInverse();
+                const int u = it->second;
+                if (bindFromIbm[u]) {
+                    if (!warnedIbmConflict &&
+                        !GfIsClose(outDoc->joints[u].bindTransform, bind, 1e-4)) {
+                        outDoc->warnings.push_back(
+                            "joint '" + outDoc->joints[u].name +
+                            "' has conflicting inverse bind matrices across "
+                            "skins; keeping the first");
+                        warnedIbmConflict = true;
+                    }
+                    continue;
+                }
+                outDoc->joints[u].bindTransform = bind;
+                bindFromIbm[u] = true;
+            }
         }
     }
 
@@ -286,6 +322,7 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
             out.sourceNodeIndex = static_cast<int>(n);
             out.sourceNodeName = node.name ? node.name : "";
             out.materialIndex = _IndexOf(prim.material, data->materials);
+            out.nodeWorldTransform = nodeWorld;
 
             if (prim.type != cgltf_primitive_type_triangles) {
                 outDoc->warnings.push_back(
@@ -349,7 +386,12 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
             if (nodeSkinned && jointsAcc && weightsAcc) {
                 const cgltf_skin* skin = node.skin;
                 out.skinned = true;
-                out.geomBindTransform = nodeWorld;
+                // glTF skinned vertices already live in the common space the
+                // inverse bind matrices map from (the scene/skel root); the mesh
+                // node transform is ignored. So the geom bind is identity —
+                // setting it to the node world would double-apply a transform
+                // glTF discards and displace the mesh at bind pose.
+                out.geomBindTransform = GfMatrix4d(1.0);
                 const cgltf_size vc = out.points.size();
                 out.jointWeights.resize(vc);
                 out.jointIndices.resize(vc * 4);

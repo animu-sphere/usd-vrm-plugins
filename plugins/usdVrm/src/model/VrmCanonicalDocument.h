@@ -52,6 +52,13 @@ struct VrmMeshPrimitive {
 
     int materialIndex = -1;           // index into VrmCanonicalDocument::materials
 
+    // World transform of the instancing glTF node (USD convention). For a
+    // non-skinned mesh this is its placement and must be authored, or node-placed
+    // accessories collapse to the origin. For a skinned mesh the node transform
+    // is ignored by glTF skinning (verts already live in skel-root space, so the
+    // geom bind is identity).
+    GfMatrix4d nodeWorldTransform = GfMatrix4d(1.0);
+
     // Skinning (optional). When jointIndices is non-empty the mesh is bound to
     // the document's skeleton.
     bool skinned = false;

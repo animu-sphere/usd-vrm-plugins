@@ -52,15 +52,24 @@ tests/                          python smoke test + fixtures (minimal.vrm, inval
   all skin joints into a single `UsdSkelSkeleton` and remaps each mesh's
   `JOINTS_0` into that order. (Importing only the first skin yields a partial
   skeleton — one test avatar dropped from 128 joints / 51 humanoid bones to
-  23 / 1.)
+  23 / 1.) Bind transforms come from each skin's **inverse bind matrices**
+  (`bind = inverse(IBM)`), not the joint node world transforms.
+* **Mesh placement:** skinned mesh verts live in skeleton space (the glTF node
+  transform is ignored, per spec; `geomBindTransform` carries the bind
+  placement). A **non-skinned** mesh instead gets its glTF node world transform
+  authored as an `xformOp:transform`, so node-placed accessories don't collapse
+  to the origin.
 * **`/Asset` is a `SkelRoot`** when a skeleton exists (UsdSkel needs a SkelRoot
   ancestor enclosing the skinned meshes and skeleton), otherwise a plain
   `Xform`. It is always `kind=component` and the stage default prim — a
   deliberate, documented deviation from the plan's "always Xform".
-* **`rig/Humanoid` is control semantics, not a bone copy:** human bones are
-  authored as `vrm:humanBones:<bone>` relationships targeting the skeleton joint
-  paths, never a duplicated joint hierarchy.
-* **Lossless preservation:** VRM `meta`/`specVersion` and provenance
+* **`rig/Humanoid` is control semantics, not a bone copy:** it carries one
+  resolvable `vrm:skeleton` relationship to the Skeleton prim plus a
+  `vrm:humanBones:<bone>` **token attribute** per bone holding the joint path
+  (joints are `Skeleton.joints` tokens, not prims, so a relationship can't target
+  them directly). Never a duplicated joint hierarchy.
+* **Lossless preservation:** VRM `meta`/`specVersion`, the full raw
+  VRM/VRMC_vrm extension block (`vrm:rawExtension`), and provenance
   (`sourceNodeIndex`, …) are kept in `customData` under a `vrm` namespace.
 
 ## Status (Phase 1)

@@ -12,7 +12,7 @@ import os
 import pathlib
 import sys
 
-from pxr import Plug, Sdf, Usd, UsdGeom, UsdShade, UsdSkel
+from pxr import Gf, Plug, Sdf, Usd, UsdGeom, UsdShade, UsdSkel
 
 FIXTURE = pathlib.Path(__file__).parent / "fixtures" / "minimal.vrm"
 
@@ -40,6 +40,9 @@ def main() -> int:
     assert vrm.get("sourceFormat") == "VRM", vrm
     assert vrm.get("specVersion") == "1.0", vrm
     assert vrm.get("meta"), "VRM meta should be preserved on /Asset"
+    # Lossless preservation: the full VRM extension block is kept verbatim.
+    assert vrm.get("rawExtension"), "VRM rawExtension should be preserved"
+    assert "humanoid" in vrm["rawExtension"], "rawExtension should be the VRM block"
 
     # Geometry: one skinned mesh bound to the skeleton, with a material.
     body = stage.GetPrimAtPath("/Asset/geo/Body")
@@ -48,23 +51,49 @@ def main() -> int:
     targets = binding.GetSkeletonRel().GetTargets()
     assert targets == [Sdf.Path("/Asset/skel/Skeleton")], targets
     assert binding.GetJointWeightsPrimvar().Get(), "missing joint weights"
+    # Skinned verts live in skel-root space (glTF ignores the mesh node
+    # transform), so the geom bind transform must be identity.
+    gbt = binding.GetGeomBindTransformAttr().Get()
+    assert gbt == Gf.Matrix4d(1.0), f"geomBindTransform should be identity: {gbt}"
 
     mat_rel = UsdShade.MaterialBindingAPI(body).GetDirectBindingRel()
     assert mat_rel.GetTargets() == [Sdf.Path("/Asset/mtl/Body_Mat")], \
         mat_rel.GetTargets()
+
+    # P0.2: the non-skinned Accessory keeps its glTF node placement (x = 1.0).
+    acc = stage.GetPrimAtPath("/Asset/geo/Accessory")
+    assert acc and acc.IsA(UsdGeom.Mesh), "expected /Asset/geo/Accessory mesh"
+    assert not UsdSkel.BindingAPI(acc).GetSkeletonRel().GetTargets(), \
+        "Accessory must not be skinned"
+    xf = acc.GetAttribute("xformOp:transform").Get()
+    assert xf is not None, "Accessory should have an authored xformOp:transform"
+    assert abs(xf.ExtractTranslation()[0] - 1.0) < 1e-6, \
+        f"Accessory node transform lost: {xf.ExtractTranslation()}"
 
     # Skeleton: hips -> spine.
     skel = UsdSkel.Skeleton(stage.GetPrimAtPath("/Asset/skel/Skeleton"))
     assert skel, "expected /Asset/skel/Skeleton"
     joints = list(skel.GetJointsAttr().Get())
     assert joints == ["hips", "hips/spine"], joints
+    # P0.1: bind transforms come from the (identity) inverse bind matrices, not
+    # the joints' non-identity node world transforms. Proves IBMs are honored.
+    binds = skel.GetBindTransformsAttr().Get()
+    assert binds and all(b == Gf.Matrix4d(1.0) for b in binds), \
+        f"bindTransforms should equal inverse(identity IBM): {list(binds)}"
+    rests = skel.GetRestTransformsAttr().Get()
+    assert abs(rests[0].ExtractTranslation()[1] - 0.5) < 1e-6, \
+        f"hips rest transform should keep node-local TRS: {rests[0]}"
 
-    # Humanoid mapping as relationships to the skeleton joint paths.
+    # Humanoid: a resolvable rel to the Skeleton prim + per-bone joint tokens.
     humanoid = stage.GetPrimAtPath("/Asset/rig/Humanoid")
     assert humanoid and humanoid.IsValid(), "expected /Asset/rig/Humanoid"
-    hips = humanoid.GetRelationship("vrm:humanBones:hips")
-    assert hips and hips.GetTargets() == [Sdf.Path("/Asset/skel/Skeleton/hips")], \
-        hips.GetTargets() if hips else None
+    skel_rel = humanoid.GetRelationship("vrm:skeleton")
+    assert skel_rel.GetTargets() == [Sdf.Path("/Asset/skel/Skeleton")], \
+        skel_rel.GetTargets()
+    hips_attr = humanoid.GetAttribute("vrm:humanBones:hips")
+    assert hips_attr and hips_attr.Get() == "hips", \
+        hips_attr.Get() if hips_attr else None
+    assert humanoid.GetAttribute("vrm:humanBones:spine").Get() == "hips/spine"
 
     print("usdVrm smoke test: OK")
     return 0
