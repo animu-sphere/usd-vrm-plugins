@@ -9,15 +9,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // The tokens that identify this file format to USD's Sdf layer registry.
 #define USDVRM_FILE_FORMAT_TOKENS \
-    ((Id, "vrm"))         \
-    ((Version, "1.0"))              \
-    ((Target, "usd"))              \
+    ((Id, "vrm"))                 \
+    ((Version, "1.0"))            \
+    ((Target, "usd"))             \
     ((Extension, "vrm"))
 
 TF_DECLARE_PUBLIC_TOKENS(UsdVrmFileFormatTokens, USDVRM_FILE_FORMAT_TOKENS);
 
-/// A minimal SdfFileFormat that reads `.vrm` files and translates them
-/// into USD. Replace the body of `Read` with your format's parser.
+/// SdfFileFormat that imports `.vrm` (VRM 0.x / 1.0) avatars as a normalized
+/// USD stage. See README.md for the produced hierarchy and design rationale.
 class UsdVrmFileFormat : public SdfFileFormat {
 public:
     bool CanRead(const std::string& file) const override;

@@ -38,19 +38,19 @@ VRM provenance) is implemented and verified against real VRM 1.0 avatars.
 
 ### With OpenStrata (`ost`)
 
+Requires `ost` 0.3+.
+
 ```sh
 # One-time: adopt an OpenUSD install as the cy2026 runtime.
 ost runtime pull cy2026 --profile usd --from-usd /path/to/openusd-install
 
 # Build the bundle and run the L0-L6 verification pyramid.
-# NOTE: pass an ABSOLUTE bundle path (see docs/report/ost) — a relative path
-# makes USD anchor PXR_PLUGINPATH_NAME at its own lib dir and discovery fails.
-ost plugin build "$PWD/plugins/usdVrm"
-ost plugin test  "$PWD/plugins/usdVrm"
+ost plugin build plugins/usdVrm
+ost plugin test  plugins/usdVrm
 
 # Inspect a real avatar:
-ost plugin run  "$PWD/plugins/usdVrm" -- python plugins/usdVrm/tools/inspect_vrm.py avatar.vrm
-ost plugin view "$PWD/plugins/usdVrm" -- avatar.vrm     # usdview
+ost plugin run  plugins/usdVrm -- python plugins/usdVrm/tools/inspect_vrm.py avatar.vrm
+ost plugin view plugins/usdVrm -- avatar.vrm     # usdview
 ```
 
 ### With plain CMake (no OpenStrata)

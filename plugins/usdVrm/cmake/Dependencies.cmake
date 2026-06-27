@@ -4,7 +4,7 @@
 #
 # cgltf is the GLB/glTF container parser. It is header-only (single file) and is
 # NOT vendored into the repository: it is fetched at configure time, pinned to a
-# known tag, mirroring how the sibling usd-luma-plugins resolves nlohmann/json.
+# known tag.
 #
 # Override points (for offline / air-gapped builds):
 #   -DCGLTF_SOURCE_DIR=<dir containing cgltf.h>   use a local copy, skip fetch

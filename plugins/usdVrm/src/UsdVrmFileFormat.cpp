@@ -92,7 +92,7 @@ UsdVrmFileFormat::Read(
     // SdfLayer::Reload reads file formats under an outer SdfChangeBlock, and a
     // UsdStage authored on the calling thread can't observe newly authored prims
     // until that block closes. Author on a separate thread so the detached stage
-    // is outside the reload thread's change block (same approach as LumaGraph).
+    // is outside the reload thread's change block.
     std::string usda;
     std::vector<std::string> writerWarnings;
     UsdVrmAuthorer authorer;

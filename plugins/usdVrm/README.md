@@ -75,8 +75,10 @@ read into the canonical model but not yet authored.
 
 ## Build & verify
 
+Requires `ost` 0.3+ (from the repo root):
+
 ```sh
-ost plugin build "$PWD"          # or: ost plugin build <abs path to this bundle>
-ost plugin test  "$PWD"          # L0-L6 pyramid (pass an ABSOLUTE bundle path)
-python tools/generate_minimal_vrm.py   # regenerate the license-clean fixture
+ost plugin build plugins/usdVrm        # build libUsdVrmFileFormat into lib/
+ost plugin test  plugins/usdVrm        # L0-L6 verification pyramid
+python plugins/usdVrm/tools/generate_minimal_vrm.py   # regenerate the fixture
 ```
