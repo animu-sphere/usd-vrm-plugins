@@ -207,8 +207,8 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         }
 
         // Non-skinned meshes carry their glTF node placement; skinned meshes do
-        // not (glTF ignores the node transform for skinning — geomBindTransform
-        // holds the bind placement instead).
+        // not (glTF ignores the node transform for skinning — verts are in
+        // skel-root space and geomBindTransform is identity).
         if (!m.skinned &&
             !GfIsClose(m.nodeWorldTransform, GfMatrix4d(1.0), 1e-9)) {
             mesh.AddTransformOp().Set(m.nodeWorldTransform);

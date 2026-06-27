@@ -386,7 +386,12 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
             if (nodeSkinned && jointsAcc && weightsAcc) {
                 const cgltf_skin* skin = node.skin;
                 out.skinned = true;
-                out.geomBindTransform = nodeWorld;
+                // glTF skinned vertices already live in the common space the
+                // inverse bind matrices map from (the scene/skel root); the mesh
+                // node transform is ignored. So the geom bind is identity —
+                // setting it to the node world would double-apply a transform
+                // glTF discards and displace the mesh at bind pose.
+                out.geomBindTransform = GfMatrix4d(1.0);
                 const cgltf_size vc = out.points.size();
                 out.jointWeights.resize(vc);
                 out.jointIndices.resize(vc * 4);

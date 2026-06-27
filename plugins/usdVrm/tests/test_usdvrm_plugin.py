@@ -51,6 +51,10 @@ def main() -> int:
     targets = binding.GetSkeletonRel().GetTargets()
     assert targets == [Sdf.Path("/Asset/skel/Skeleton")], targets
     assert binding.GetJointWeightsPrimvar().Get(), "missing joint weights"
+    # Skinned verts live in skel-root space (glTF ignores the mesh node
+    # transform), so the geom bind transform must be identity.
+    gbt = binding.GetGeomBindTransformAttr().Get()
+    assert gbt == Gf.Matrix4d(1.0), f"geomBindTransform should be identity: {gbt}"
 
     mat_rel = UsdShade.MaterialBindingAPI(body).GetDirectBindingRel()
     assert mat_rel.GetTargets() == [Sdf.Path("/Asset/mtl/Body_Mat")], \
