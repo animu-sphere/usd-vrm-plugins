@@ -21,12 +21,14 @@ absorbed into a canonical model before any USD is authored — into:
 
 ```
 /Asset                     SkelRoot (or Xform when there is no skeleton), kind=component
-  customData.vrm.*         sourceFormat / sourceVersion / specVersion / meta (lossless)
+  customData.vrm.*         sourceFormat / sourceVersion / specVersion / meta / rawExtension
   geo/                     Scope of UsdGeomMesh (one per glTF primitive)
-    <Mesh>                 points/normals/st, material binding, skel binding when skinned
+    <Mesh>                 points/normals/st, material binding; skel binding when
+                           skinned, else the glTF node transform as xformOp
   mtl/                     Scope of UsdShadeMaterial (UsdPreviewSurface)
   skel/Skeleton            single UsdSkelSkeleton unified across all glTF skins
-  rig/Humanoid             vrm:humanBones:<bone> relationships -> skeleton joints
+                           (bind transforms from the inverse bind matrices)
+  rig/Humanoid             vrm:skeleton rel + vrm:humanBones:<bone> joint tokens
 ```
 
 See [plugins/usdVrm/README.md](plugins/usdVrm/README.md) for plugin specifics and

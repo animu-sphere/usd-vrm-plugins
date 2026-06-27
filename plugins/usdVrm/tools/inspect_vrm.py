@@ -50,9 +50,9 @@ def main() -> int:
 
     hum = stage.GetPrimAtPath("/Asset/rig/Humanoid")
     if hum and hum.IsValid():
-        rels = [r for r in hum.GetRelationships()
-                if r.GetName().startswith("vrm:humanBones:")]
-        print(f"humanoid bones    : {len(rels)}")
+        bones = [a for a in hum.GetAttributes()
+                 if a.GetName().startswith("vrm:humanBones:")]
+        print(f"humanoid bones    : {len(bones)}")
     return 0
 
 

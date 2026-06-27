@@ -118,6 +118,11 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         assetPrim.SetCustomDataByKey(TfToken("vrm:specVersion"), VtValue(doc.specVersion));
     if (!doc.metaJson.empty())
         assetPrim.SetCustomDataByKey(TfToken("vrm:meta"), VtValue(doc.metaJson));
+    // Lossless preservation: keep the full VRM/VRMC_vrm extension block verbatim
+    // so later phases (and external tools) can recover anything not yet mapped.
+    if (!doc.rawVrmExtensionJson.empty())
+        assetPrim.SetCustomDataByKey(TfToken("vrm:rawExtension"),
+                                     VtValue(doc.rawVrmExtensionJson));
 
     // -----------------------------------------------------------------------
     // Materials.
@@ -201,6 +206,14 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             binding.Bind(UsdShadeMaterial::Get(stage, materialPaths[m.materialIndex]));
         }
 
+        // Non-skinned meshes carry their glTF node placement; skinned meshes do
+        // not (glTF ignores the node transform for skinning — geomBindTransform
+        // holds the bind placement instead).
+        if (!m.skinned &&
+            !GfIsClose(m.nodeWorldTransform, GfMatrix4d(1.0), 1e-9)) {
+            mesh.AddTransformOp().Set(m.nodeWorldTransform);
+        }
+
         if (m.skinned && hasSkel) {
             UsdSkelBindingAPI binding = UsdSkelBindingAPI::Apply(mesh.GetPrim());
             binding.CreateSkeletonRel().SetTargets({skelPath});
@@ -257,16 +270,23 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     if (!doc.humanoidBones.empty() && hasSkel) {
         SdfPath humanoidPath = rigPath.AppendChild(TfToken("Humanoid"));
         UsdPrim humanoid = UsdGeomScope::Define(stage, humanoidPath).GetPrim();
+        // One resolvable relationship to the Skeleton prim; each human bone is a
+        // token attribute holding the joint path (a real entry in
+        // Skeleton.joints). Relationships can't target joint paths directly —
+        // joints are tokens, not prims. (A typed VrmHumanoidAPI may formalize
+        // this later.)
+        humanoid.CreateRelationship(TfToken("vrm:skeleton"), false)
+            .SetTargets({skelPath});
         for (const VrmHumanoidBone& b : doc.humanoidBones) {
             if (b.jointIndex < 0 ||
                 b.jointIndex >= static_cast<int>(jointPaths.size())) {
                 continue;
             }
-            // Relationship name vrm:humanBones:<semantic>; target the joint's
-            // path under the skeleton (encodes the semantic->joint mapping).
-            std::string relName = "vrm:humanBones:" + b.semanticName;
-            UsdRelationship rel = humanoid.CreateRelationship(TfToken(relName), false);
-            rel.SetTargets({skelPath.AppendPath(SdfPath(jointPaths[b.jointIndex]))});
+            UsdAttribute attr = humanoid.CreateAttribute(
+                TfToken("vrm:humanBones:" + b.semanticName),
+                SdfValueTypeNames->Token, /*custom=*/true,
+                SdfVariabilityUniform);
+            attr.Set(TfToken(jointPaths[b.jointIndex]));
         }
     } else if (!doc.humanoidBones.empty()) {
         warn("humanoid bones present but no skeleton was imported; mapping skipped");

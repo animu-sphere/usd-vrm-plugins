@@ -83,21 +83,35 @@ def main() -> int:
     gltf = {
         "asset": {"version": "2.0", "generator": "usdVrm minimal fixture"},
         "scene": 0,
-        "scenes": [{"nodes": [0]}],
-        # node 0 = mesh holder + skin; node 1 = hips; node 2 = spine (child of hips)
+        "scenes": [{"nodes": [0, 1, 3]}],
+        # node 0 = skinned mesh holder; 1 = hips; 2 = spine (child of hips);
+        # node 3 = a NON-skinned accessory placed by a node transform (guards
+        # that node TRS survives for non-skinned meshes).
         "nodes": [
             {"name": "Body", "mesh": 0, "skin": 0},
             {"name": "hips", "children": [2], "translation": [0.0, 0.5, 0.0]},
             {"name": "spine", "translation": [0.0, 0.3, 0.0]},
+            {"name": "Accessory", "mesh": 1, "translation": [1.0, 0.0, 0.0]},
         ],
-        "meshes": [{
-            "name": "Body",
-            "primitives": [{
-                "attributes": {"POSITION": 0, "JOINTS_0": 2, "WEIGHTS_0": 3},
-                "indices": 1,
-                "material": 0,
-            }],
-        }],
+        "meshes": [
+            {
+                "name": "Body",
+                "primitives": [{
+                    "attributes": {"POSITION": 0, "JOINTS_0": 2, "WEIGHTS_0": 3},
+                    "indices": 1,
+                    "material": 0,
+                }],
+            },
+            {
+                # Non-skinned; reuses the triangle accessors, placed by node 3.
+                "name": "Accessory",
+                "primitives": [{
+                    "attributes": {"POSITION": 0},
+                    "indices": 1,
+                    "material": 0,
+                }],
+            },
+        ],
         "skins": [{"joints": [1, 2], "inverseBindMatrices": 4, "skeleton": 1}],
         "materials": [{
             "name": "Body_Mat",
