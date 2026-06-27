@@ -1,0 +1,96 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# usdVrm — an OpenUSD SdfFileFormat plugin that imports .vrm avatars.
+#
+# Self-contained so `ost plugin build plugins/usdVrm` can configure it directly,
+# and also add_subdirectory()-able from the repo-root CMakeLists.txt for the
+# plain-CMake (non-OpenStrata) workflow.
+cmake_minimum_required(VERSION 3.22)
+
+project(UsdVrmPlugin
+    VERSION 0.1.0
+    DESCRIPTION "OpenUSD vrm file-format plugin"
+    LANGUAGES CXX)
+
+if(NOT CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 17)
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Default Release for single-config generators (Release-only USD installs).
+get_property(_isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(NOT _isMultiConfig AND NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
+# Resolved from the runtime OpenStrata activates, or from CMAKE_PREFIX_PATH in
+# the plain-CMake flow. Idempotent when the root project already found it.
+if(NOT pxr_FOUND)
+    find_package(pxr REQUIRED CONFIG)
+endif()
+
+# cgltf, fetched at configure time (see cmake/Dependencies.cmake). Defines the
+# cgltf::cgltf INTERFACE target.
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Dependencies.cmake")
+
+set(PLUGIN_NAME UsdVrmFileFormat)
+
+add_library(${PLUGIN_NAME} SHARED
+    src/UsdVrmFileFormat.cpp
+    src/io/cgltfImpl.cpp
+    src/io/CgltfVrmDocumentReader.cpp
+    src/usd/UsdVrmAuthorer.cpp
+    src/util/PathUtil.cpp
+    src/util/TransformUtil.cpp)
+
+target_compile_features(${PLUGIN_NAME} PRIVATE cxx_std_17)
+target_include_directories(${PLUGIN_NAME} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    ${PXR_INCLUDE_DIRS})
+target_link_libraries(${PLUGIN_NAME} PRIVATE cgltf::cgltf)
+
+if(MSVC)
+    target_compile_definitions(${PLUGIN_NAME} PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(${PLUGIN_NAME} PRIVATE /bigobj /utf-8)
+endif()
+
+# Link the USD monolith if present, else the discrete libraries this plugin uses.
+if(TARGET usd_ms)
+    target_link_libraries(${PLUGIN_NAME} PRIVATE usd_ms)
+else()
+    set(_pxr_targets)
+    foreach(_t IN ITEMS arch tf gf vt js plug sdf usd usdGeom usdSkel usdShade)
+        if(TARGET ${_t})
+            list(APPEND _pxr_targets ${_t})
+        elseif(TARGET pxr::${_t})
+            list(APPEND _pxr_targets pxr::${_t})
+        endif()
+    endforeach()
+    if(_pxr_targets)
+        target_link_libraries(${PLUGIN_NAME} PRIVATE ${_pxr_targets})
+    elseif(PXR_LIBRARIES)
+        target_link_libraries(${PLUGIN_NAME} PRIVATE ${PXR_LIBRARIES})
+    else()
+        message(FATAL_ERROR "Could not locate OpenUSD CMake targets or PXR_LIBRARIES.")
+    endif()
+endif()
+
+# Stage the shared library into the bundle's lib/ so both `ost plugin test` and
+# the committed plugInfo.json (LibraryPath = ../../../lib/<lib>) resolve it.
+# Use CURRENT_SOURCE_DIR so the location is correct whether this is the top
+# project (ost) or a subdirectory of the repo-root project (plain CMake).
+set_target_properties(${PLUGIN_NAME} PROPERTIES
+    PREFIX "lib"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib")
+foreach(_cfg DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+    set_target_properties(${PLUGIN_NAME} PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY_${_cfg} "${CMAKE_CURRENT_SOURCE_DIR}/lib"
+        RUNTIME_OUTPUT_DIRECTORY_${_cfg} "${CMAKE_CURRENT_SOURCE_DIR}/lib")
+endforeach()
+
+if(USDVRM_BUILD_TESTS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
+    enable_testing()
+    add_subdirectory(tests)
+endif()

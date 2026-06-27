@@ -1,0 +1,3 @@
+not-a-vrm-file
+this fixture is intentionally malformed; the negative test asserts the plugin
+rejects it cleanly rather than crashing.

@@ -1,0 +1,61 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 22,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_CXX_STANDARD": "17",
+                "USDVRM_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "windows-msvc",
+            "displayName": "Windows / Visual Studio 2022 (plain CMake)",
+            "description": "Set USD_INSTALL_ROOT to your OpenUSD install (e.g. C:/dev/build/usd2605).",
+            "inherits": "base",
+            "generator": "Visual Studio 17 2022",
+            "architecture": "x64",
+            "cacheVariables": {
+                "CMAKE_PREFIX_PATH": "$env{USD_INSTALL_ROOT}"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "linux-ninja",
+            "displayName": "Linux / Ninja (plain CMake)",
+            "inherits": "base",
+            "generator": "Ninja Multi-Config",
+            "cacheVariables": {
+                "CMAKE_PREFIX_PATH": "$env{USD_INSTALL_ROOT}"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "windows-release",
+            "configurePreset": "windows-msvc",
+            "configuration": "Release"
+        },
+        {
+            "name": "linux-release",
+            "configurePreset": "linux-ninja",
+            "configuration": "Release"
+        }
+    ]
+}

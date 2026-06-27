@@ -1,0 +1,34 @@
+# --- OpenStrata / build state (tool-owned, never committed) ---
+/build/
+**/build/
+/.strata/
+**/.strata/
+CMakeUserPresets.json
+strata.lock
+
+# Built plugin libraries are staged into each bundle's lib/ by `ost plugin build`.
+**/lib/
+
+# --- Local docs & reports (kept out of version control by request) ---
+# Everything under /docs is intentionally git-ignored. The ost dogfooding
+# reports live under docs/report/ost/ but must never be pushed.
+/docs/
+
+# --- CMake / MSVC generated ---
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.dll
+
+# --- Editor / OS noise ---
+.vs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,82 @@
+# usdVrm — OpenUSD `vrm` file-format plugin
+
+Imports `.vrm` (VRM 0.x / VRM 1.0) avatars as a normalized OpenUSD stage. The
+goal is not a throwaway "viewable USD" but a structure that keeps VRM semantics
+trackable and reconnectable to downstream runtimes.
+
+Scaffolded with `ost plugin new usd-fileformat usdVrm --extension vrm`, then
+extended with a real importer.
+
+## Layout
+
+```
+openstrata.plugin.yaml          bundle contract (identity, runtime range, provides, tests)
+CMakeLists.txt                  builds libUsdVrmFileFormat.{dll,so} into lib/
+cmake/Dependencies.cmake        fetches cgltf (pinned) at configure time
+src/
+  UsdVrmFileFormat.{h,cpp}      SdfFileFormat entry point (CanRead/Read/WriteToString)
+  io/                           VrmDocumentReader interface + cgltf implementation
+  model/VrmCanonicalDocument.h  parser-independent intermediate model (0.x/1.0 normalized)
+  usd/UsdVrmAuthorer.{h,cpp}    canonical model -> USD scene description
+  util/                         path sanitize/uniquify, glTF->USD transform conversion
+plugin/resources/usdVrm/plugInfo.json   USD plugin registration
+tools/                          generate_minimal_vrm.py, inspect_vrm.py
+tests/                          python smoke test + fixtures (minimal.vrm, invalid.vrm)
+```
+
+## Architecture
+
+```
+.vrm bytes ──▶ CgltfVrmDocumentReader ──▶ VrmCanonicalDocument ──▶ UsdVrmAuthorer ──▶ USDA ──▶ SdfLayer
+   (GLB)        (cgltf + pxr/base/js)        (no glTF/USD types          (UsdGeom/UsdSkel/
+                                              leak across this seam)       UsdShade)
+```
+
+* **Reader** owns all cgltf contact and VRM-extension JSON parsing (via USD's own
+  `pxr/base/js`, so there is no external JSON dependency). The plan's nominal
+  `VRM.h` dependency does not exist as a real library; its role — interpreting the
+  VRM/VRMC_vrm extension blocks — is fulfilled here, which also keeps the
+  third-party ABI surface to just cgltf (compiled into one TU, never exported).
+* **Canonical model** absorbs VRM 0.x vs 1.0 structural differences.
+* **Authorer** consumes only the canonical model and emits USDA on a worker
+  thread (USD's reload path runs `Read` under an outer `SdfChangeBlock`).
+
+## Key design decisions
+
+* **Coordinate system:** glTF and USD are both right-handed, Y-up, metric, so
+  geometry needs no axis flip. Only conversions: glTF column-major matrices →
+  USD row-vector `GfMatrix4d` (a transpose, done for free by reading the array
+  in order), and UV `V := 1 - V`. All of it lives in `util/TransformUtil`.
+* **One unified skeleton:** VRM avatars are commonly split across several glTF
+  skins referencing a shared joint hierarchy. The reader takes the **union** of
+  all skin joints into a single `UsdSkelSkeleton` and remaps each mesh's
+  `JOINTS_0` into that order. (Importing only the first skin yields a partial
+  skeleton — one test avatar dropped from 128 joints / 51 humanoid bones to
+  23 / 1.)
+* **`/Asset` is a `SkelRoot`** when a skeleton exists (UsdSkel needs a SkelRoot
+  ancestor enclosing the skinned meshes and skeleton), otherwise a plain
+  `Xform`. It is always `kind=component` and the stage default prim — a
+  deliberate, documented deviation from the plan's "always Xform".
+* **`rig/Humanoid` is control semantics, not a bone copy:** human bones are
+  authored as `vrm:humanBones:<bone>` relationships targeting the skeleton joint
+  paths, never a duplicated joint hierarchy.
+* **Lossless preservation:** VRM `meta`/`specVersion` and provenance
+  (`sourceNodeIndex`, …) are kept in `customData` under a `vrm` namespace.
+
+## Status (Phase 1)
+
+Implemented: GLB read, version detection, meshes (points/normals/UV/indices),
+basic `UsdPreviewSurface` materials, unified skeleton + skinning binding,
+humanoid mapping, VRM meta preservation, graceful warnings on unsupported data.
+
+Not yet (later phases): textures, MToon, blend shapes / expressions, animation,
+LookAt, SpringBone/colliders, node constraints. Morph-target *data* is already
+read into the canonical model but not yet authored.
+
+## Build & verify
+
+```sh
+ost plugin build "$PWD"          # or: ost plugin build <abs path to this bundle>
+ost plugin test  "$PWD"          # L0-L6 pyramid (pass an ABSOLUTE bundle path)
+python tools/generate_minimal_vrm.py   # regenerate the license-clean fixture
+```

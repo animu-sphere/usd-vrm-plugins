@@ -1,0 +1,281 @@
+// SPDX-License-Identifier: Apache-2.0
+#include "usd/UsdVrmAuthorer.h"
+
+#include "pxr/base/gf/range3f.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/usd/kind/registry.h"
+#include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/modelAPI.h"
+#include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/metrics.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
+#include "pxr/usd/usdGeom/scope.h"
+#include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdGeom/xform.h"
+#include "pxr/usd/usdShade/material.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
+#include "pxr/usd/usdShade/shader.h"
+#include "pxr/usd/usdSkel/bindingAPI.h"
+#include "pxr/usd/usdSkel/root.h"
+#include "pxr/usd/usdSkel/skeleton.h"
+
+#include <functional>
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+
+const TfToken _kAssetName("Asset");
+
+// Build the relative joint path (e.g. "Hips/Spine/Chest") for every joint, in
+// canonical (skin) order, resolving parents via memoized recursion so the input
+// order need not be parents-first.
+std::vector<std::string>
+_BuildJointPaths(const std::vector<VrmJoint>& joints)
+{
+    std::vector<std::string> paths(joints.size());
+    std::vector<bool> done(joints.size(), false);
+    std::function<const std::string&(int)> resolve = [&](int i) -> const std::string& {
+        if (!done[i]) {
+            const VrmJoint& j = joints[i];
+            if (j.parentJointIndex >= 0 &&
+                j.parentJointIndex < static_cast<int>(joints.size()) &&
+                j.parentJointIndex != i) {
+                paths[i] = resolve(j.parentJointIndex) + "/" + j.name;
+            } else {
+                paths[i] = j.name;
+            }
+            done[i] = true;
+        }
+        return paths[i];
+    };
+    for (size_t i = 0; i < joints.size(); ++i) resolve(static_cast<int>(i));
+    return paths;
+}
+
+void _SetSourceMetadata(const UsdPrim& prim, const VrmMeshPrimitive& m)
+{
+    if (m.sourceNodeIndex >= 0)
+        prim.SetCustomDataByKey(TfToken("vrm:sourceNodeIndex"), VtValue(m.sourceNodeIndex));
+    if (!m.sourceNodeName.empty())
+        prim.SetCustomDataByKey(TfToken("vrm:sourceNodeName"), VtValue(m.sourceNodeName));
+    if (m.sourceMeshIndex >= 0)
+        prim.SetCustomDataByKey(TfToken("vrm:sourceMeshIndex"), VtValue(m.sourceMeshIndex));
+    if (m.sourcePrimitiveIndex >= 0)
+        prim.SetCustomDataByKey(TfToken("vrm:sourcePrimitiveIndex"), VtValue(m.sourcePrimitiveIndex));
+}
+
+} // namespace
+
+bool
+UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
+                              std::string* outUsda,
+                              std::vector<std::string>* outWarnings) const
+{
+    auto warn = [&](const std::string& w) {
+        if (outWarnings) outWarnings->push_back(w);
+    };
+
+    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
+    UsdStageRefPtr stage = UsdStage::Open(layer);
+    if (!stage) {
+        return false;
+    }
+    UsdGeomSetStageUpAxis(stage, UsdGeomTokens->y);
+    UsdGeomSetStageMetersPerUnit(stage, 1.0);
+
+    const bool hasSkel = !doc.joints.empty();
+    const SdfPath assetPath("/Asset");
+    const SdfPath geoPath = assetPath.AppendChild(TfToken("geo"));
+    const SdfPath mtlPath = assetPath.AppendChild(TfToken("mtl"));
+    const SdfPath skelScopePath = assetPath.AppendChild(TfToken("skel"));
+    const SdfPath skelPath = skelScopePath.AppendChild(TfToken("Skeleton"));
+    const SdfPath rigPath = assetPath.AppendChild(TfToken("rig"));
+
+    // /Asset — a SkelRoot when there is a skeleton (UsdSkel needs a SkelRoot
+    // ancestor enclosing the skinned meshes and the skeleton), otherwise a plain
+    // Xform. Either way kind=component and the stage's default prim.
+    UsdPrim assetPrim;
+    if (hasSkel) {
+        assetPrim = UsdSkelRoot::Define(stage, assetPath).GetPrim();
+    } else {
+        assetPrim = UsdGeomXform::Define(stage, assetPath).GetPrim();
+    }
+    UsdModelAPI(assetPrim).SetKind(KindTokens->component);
+    stage->SetDefaultPrim(assetPrim);
+
+    // VRM provenance + lossless preservation on /Asset.customData.
+    const char* srcVer = doc.version == VrmVersion::Vrm1   ? "1.0"
+                         : doc.version == VrmVersion::Vrm0 ? "0.x"
+                                                          : "unknown";
+    assetPrim.SetCustomDataByKey(TfToken("vrm:sourceFormat"), VtValue(std::string("VRM")));
+    assetPrim.SetCustomDataByKey(TfToken("vrm:sourceVersion"), VtValue(std::string(srcVer)));
+    if (!doc.specVersion.empty())
+        assetPrim.SetCustomDataByKey(TfToken("vrm:specVersion"), VtValue(doc.specVersion));
+    if (!doc.metaJson.empty())
+        assetPrim.SetCustomDataByKey(TfToken("vrm:meta"), VtValue(doc.metaJson));
+
+    // -----------------------------------------------------------------------
+    // Materials.
+    // -----------------------------------------------------------------------
+    UsdGeomScope::Define(stage, mtlPath);
+    std::vector<SdfPath> materialPaths(doc.materials.size());
+    for (size_t i = 0; i < doc.materials.size(); ++i) {
+        const VrmMaterial& vm = doc.materials[i];
+        SdfPath matPath = mtlPath.AppendChild(TfToken(vm.name));
+        materialPaths[i] = matPath;
+
+        UsdShadeMaterial mat = UsdShadeMaterial::Define(stage, matPath);
+        UsdShadeShader shader =
+            UsdShadeShader::Define(stage, matPath.AppendChild(TfToken("Surface")));
+        shader.CreateIdAttr(VtValue(TfToken("UsdPreviewSurface")));
+        shader.CreateInput(TfToken("diffuseColor"), SdfValueTypeNames->Color3f)
+            .Set(vm.baseColor);
+        shader.CreateInput(TfToken("emissiveColor"), SdfValueTypeNames->Color3f)
+            .Set(vm.emissiveColor);
+        shader.CreateInput(TfToken("metallic"), SdfValueTypeNames->Float)
+            .Set(vm.metallic);
+        shader.CreateInput(TfToken("roughness"), SdfValueTypeNames->Float)
+            .Set(vm.roughness);
+        shader.CreateInput(TfToken("opacity"), SdfValueTypeNames->Float)
+            .Set(vm.opacity);
+        if (vm.alphaMode == "MASK") {
+            shader.CreateInput(TfToken("opacityThreshold"), SdfValueTypeNames->Float)
+                .Set(vm.alphaCutoff);
+        }
+        UsdShadeOutput surfaceOut =
+            shader.CreateOutput(TfToken("surface"), SdfValueTypeNames->Token);
+        mat.CreateSurfaceOutput().ConnectToSource(surfaceOut);
+
+        if (vm.sourceMaterialIndex >= 0)
+            mat.GetPrim().SetCustomDataByKey(TfToken("vrm:sourceMaterialIndex"),
+                                             VtValue(vm.sourceMaterialIndex));
+    }
+
+    // -----------------------------------------------------------------------
+    // Geometry.
+    // -----------------------------------------------------------------------
+    UsdGeomScope::Define(stage, geoPath);
+    for (const VrmMeshPrimitive& m : doc.meshes) {
+        SdfPath meshPath = geoPath.AppendChild(TfToken(m.name));
+        UsdGeomMesh mesh = UsdGeomMesh::Define(stage, meshPath);
+
+        VtVec3fArray points(m.points.begin(), m.points.end());
+        mesh.CreatePointsAttr(VtValue(points));
+        mesh.CreateFaceVertexIndicesAttr(
+            VtValue(VtIntArray(m.faceVertexIndices.begin(), m.faceVertexIndices.end())));
+        mesh.CreateFaceVertexCountsAttr(
+            VtValue(VtIntArray(m.faceVertexCounts.begin(), m.faceVertexCounts.end())));
+        mesh.CreateSubdivisionSchemeAttr(VtValue(UsdGeomTokens->none));
+
+        // Extent.
+        GfRange3f range;
+        for (const GfVec3f& p : m.points) range.UnionWith(p);
+        if (!range.IsEmpty()) {
+            VtVec3fArray extent(2);
+            extent[0] = range.GetMin();
+            extent[1] = range.GetMax();
+            mesh.CreateExtentAttr(VtValue(extent));
+        }
+
+        if (!m.normals.empty()) {
+            mesh.CreateNormalsAttr(
+                VtValue(VtVec3fArray(m.normals.begin(), m.normals.end())));
+            mesh.SetNormalsInterpolation(UsdGeomTokens->vertex);
+        }
+        if (!m.uvs.empty()) {
+            UsdGeomPrimvar st = UsdGeomPrimvarsAPI(mesh).CreatePrimvar(
+                TfToken("st"), SdfValueTypeNames->TexCoord2fArray,
+                UsdGeomTokens->vertex);
+            st.Set(VtVec2fArray(m.uvs.begin(), m.uvs.end()));
+        }
+
+        if (m.materialIndex >= 0 &&
+            m.materialIndex < static_cast<int>(materialPaths.size())) {
+            UsdShadeMaterialBindingAPI binding =
+                UsdShadeMaterialBindingAPI::Apply(mesh.GetPrim());
+            binding.Bind(UsdShadeMaterial::Get(stage, materialPaths[m.materialIndex]));
+        }
+
+        if (m.skinned && hasSkel) {
+            UsdSkelBindingAPI binding = UsdSkelBindingAPI::Apply(mesh.GetPrim());
+            binding.CreateSkeletonRel().SetTargets({skelPath});
+
+            VtIntArray jointIndices(m.jointIndices.begin(), m.jointIndices.end());
+            VtFloatArray jointWeights;
+            jointWeights.reserve(m.jointWeights.size() * 4);
+            for (const GfVec4f& w : m.jointWeights) {
+                jointWeights.push_back(w[0]);
+                jointWeights.push_back(w[1]);
+                jointWeights.push_back(w[2]);
+                jointWeights.push_back(w[3]);
+            }
+            UsdGeomPrimvar ji = binding.CreateJointIndicesPrimvar(false, 4);
+            ji.Set(jointIndices);
+            UsdGeomPrimvar jw = binding.CreateJointWeightsPrimvar(false, 4);
+            jw.Set(jointWeights);
+            binding.CreateGeomBindTransformAttr().Set(m.geomBindTransform);
+        }
+
+        _SetSourceMetadata(mesh.GetPrim(), m);
+    }
+
+    // -----------------------------------------------------------------------
+    // Skeleton.
+    // -----------------------------------------------------------------------
+    std::vector<std::string> jointPaths;
+    if (hasSkel) {
+        UsdGeomScope::Define(stage, skelScopePath);
+        UsdSkelSkeleton skel = UsdSkelSkeleton::Define(stage, skelPath);
+
+        jointPaths = _BuildJointPaths(doc.joints);
+        VtTokenArray jointTokens;
+        VtTokenArray jointNames;
+        VtMatrix4dArray bindXforms;
+        VtMatrix4dArray restXforms;
+        jointTokens.reserve(doc.joints.size());
+        for (size_t i = 0; i < doc.joints.size(); ++i) {
+            jointTokens.push_back(TfToken(jointPaths[i]));
+            jointNames.push_back(TfToken(doc.joints[i].name));
+            bindXforms.push_back(doc.joints[i].bindTransform);
+            restXforms.push_back(doc.joints[i].restTransform);
+        }
+        skel.CreateJointsAttr(VtValue(jointTokens));
+        skel.CreateJointNamesAttr(VtValue(jointNames));
+        skel.CreateBindTransformsAttr(VtValue(bindXforms));
+        skel.CreateRestTransformsAttr(VtValue(restXforms));
+    }
+
+    // -----------------------------------------------------------------------
+    // Rig / Humanoid (control semantics; not a bone hierarchy duplicate).
+    // -----------------------------------------------------------------------
+    UsdGeomScope::Define(stage, rigPath);
+    if (!doc.humanoidBones.empty() && hasSkel) {
+        SdfPath humanoidPath = rigPath.AppendChild(TfToken("Humanoid"));
+        UsdPrim humanoid = UsdGeomScope::Define(stage, humanoidPath).GetPrim();
+        for (const VrmHumanoidBone& b : doc.humanoidBones) {
+            if (b.jointIndex < 0 ||
+                b.jointIndex >= static_cast<int>(jointPaths.size())) {
+                continue;
+            }
+            // Relationship name vrm:humanBones:<semantic>; target the joint's
+            // path under the skeleton (encodes the semantic->joint mapping).
+            std::string relName = "vrm:humanBones:" + b.semanticName;
+            UsdRelationship rel = humanoid.CreateRelationship(TfToken(relName), false);
+            rel.SetTargets({skelPath.AppendPath(SdfPath(jointPaths[b.jointIndex]))});
+        }
+    } else if (!doc.humanoidBones.empty()) {
+        warn("humanoid bones present but no skeleton was imported; mapping skipped");
+    }
+
+    if (!stage->ExportToString(outUsda)) {
+        return false;
+    }
+    return true;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

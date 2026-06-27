@@ -1,0 +1,3 @@
+# VRM/GLB fixtures are binary — never apply text/EOL conversion.
+*.vrm binary
+*.glb binary
