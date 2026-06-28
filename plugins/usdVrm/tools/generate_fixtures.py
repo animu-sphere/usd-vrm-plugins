@@ -9,6 +9,7 @@ specific import behavior the smoke test then asserts:
   textures.vrm       embedded PNG base-color texture + an MToon material ext
   animation.vrm      a glTF rotation clip (spine 90 deg about Z over 1s)
   lookat.vrm         a bone-type lookAt with leftEye/rightEye humanoid bones
+  springbone.vrm     a VRM 1.0 SpringBone hair chain + a sphere collider group
   shared_accessor.vrm two primitives sharing one vertex accessor (compaction)
   vrm0_minimal.vrm   the VRM 0.x extension shape (extensions.VRM, humanBones[])
   vrm0_expressions.vrm VRM 0.x blendShapeMaster preset group (weight 0..100)
@@ -164,6 +165,53 @@ def build_names():
         "materials": [_basic_material("Mat"), _basic_material("Mat")],
         "extensionsUsed": ["VRMC_vrm"],
         "extensions": {"VRMC_vrm": vrm1_extension({})},
+    }
+    return b.build(gltf)
+
+
+def build_springbone():
+    """A VRM 1.0 SpringBone: a 2-joint hair chain + a sphere collider group."""
+    b = GlbBuilder()
+    skin_attrs = _tri_accessors(b, with_skin=True)
+    idx = _idx(b)
+    ibm = b.add(FLOAT, "MAT4", [tuple(IDENTITY16)] * 4)
+    spring = {
+        "specVersion": "1.0",
+        "colliders": [{"node": 2,
+                       "shape": {"sphere": {"offset": [0.0, 0.0, 0.0],
+                                            "radius": 0.1}}}],
+        "colliderGroups": [{"name": "Head", "colliders": [0]}],
+        "springs": [{
+            "name": "Hair", "center": 1, "colliderGroups": [0],
+            "joints": [
+                {"node": 3, "hitRadius": 0.02, "stiffness": 1.0,
+                 "gravityPower": 0.5, "gravityDir": [0.0, -1.0, 0.0],
+                 "dragForce": 0.4},
+                {"node": 4, "hitRadius": 0.02, "stiffness": 0.8,
+                 "gravityPower": 0.5, "gravityDir": [0.0, -1.0, 0.0],
+                 "dragForce": 0.4},
+            ]}],
+    }
+    gltf = {
+        "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
+        "scene": 0, "scenes": [{"nodes": [0, 1]}],
+        "nodes": [
+            {"name": "Body", "mesh": 0, "skin": 0},
+            {"name": "hips", "children": [2], "translation": [0.0, 0.5, 0.0]},
+            {"name": "spine", "children": [3], "translation": [0.0, 0.3, 0.0]},
+            {"name": "hair1", "children": [4], "translation": [0.0, 0.2, 0.0]},
+            {"name": "hair2", "translation": [0.0, 0.2, 0.0]},
+        ],
+        "meshes": [{"name": "Body", "primitives": [
+            {"attributes": skin_attrs, "indices": idx, "material": 0}]}],
+        "skins": [{"joints": [1, 2, 3, 4],
+                   "inverseBindMatrices": ibm, "skeleton": 1}],
+        "materials": [_basic_material("Body_Mat")],
+        "extensionsUsed": ["VRMC_vrm", "VRMC_springBone"],
+        "extensions": {
+            "VRMC_vrm": vrm1_extension({"hips": 1, "spine": 2}),
+            "VRMC_springBone": spring,
+        },
     }
     return b.build(gltf)
 
@@ -480,6 +528,7 @@ FIXTURES = {
     "textures.vrm": build_textures,
     "animation.vrm": build_animation,
     "lookat.vrm": build_lookat,
+    "springbone.vrm": build_springbone,
     "shared_accessor.vrm": build_shared_accessor,
     "vrm0_minimal.vrm": build_vrm0,
     "multiskin_ibm.vrm": build_multiskin_ibm,

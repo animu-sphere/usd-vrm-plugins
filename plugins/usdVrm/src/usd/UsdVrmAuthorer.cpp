@@ -675,6 +675,113 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         }
     }
 
+    // -----------------------------------------------------------------------
+    // Secondary motion (SpringBone) under /Asset/rig/SecondaryMotion. Data
+    // only (no simulation): spring chains with per-joint parameters + collider
+    // groups, joints referenced by token (skeleton joint path where resolvable).
+    // -----------------------------------------------------------------------
+    const VrmSecondaryMotion& sm = doc.secondaryMotion;
+    if (sm.present && (!sm.springs.empty() || !sm.colliders.empty())) {
+        SdfPath smPath = rigPath.AppendChild(TfToken("SecondaryMotion"));
+        UsdPrim smPrim = UsdGeomScope::Define(stage, smPath).GetPrim();
+        if (!sm.rawJson.empty())
+            smPrim.SetCustomDataByKey(TfToken("vrm:springBone:raw"),
+                                      VtValue(sm.rawJson));
+
+        auto jointTok = [&](int jointIndex, const std::string& srcName,
+                            int srcIdx) -> TfToken {
+            if (jointIndex >= 0 && jointIndex < static_cast<int>(jointPaths.size()))
+                return TfToken(jointPaths[jointIndex]);
+            if (!srcName.empty()) return TfToken(srcName);
+            return TfToken("node_" + std::to_string(srcIdx));
+        };
+
+        // Collider groups (with their colliders as child prims).
+        SdfPath colScopePath = smPath.AppendChild(TfToken("Colliders"));
+        UsdGeomScope::Define(stage, colScopePath);
+        std::vector<std::string> rawGrp;
+        rawGrp.reserve(sm.colliderGroups.size());
+        for (const VrmColliderGroup& g : sm.colliderGroups) rawGrp.push_back(g.name);
+        std::vector<std::string> grpNames =
+            VrmMakeUniqueNames(rawGrp, "ColliderGroup");
+        std::vector<SdfPath> grpPaths(sm.colliderGroups.size());
+        for (size_t gi = 0; gi < sm.colliderGroups.size(); ++gi) {
+            SdfPath gp = colScopePath.AppendChild(TfToken(grpNames[gi]));
+            UsdGeomScope::Define(stage, gp);
+            grpPaths[gi] = gp;
+            int ci = 0;
+            for (int idx : sm.colliderGroups[gi].colliderIndices) {
+                if (idx < 0 || idx >= static_cast<int>(sm.colliders.size())) continue;
+                const VrmCollider& c = sm.colliders[idx];
+                UsdPrim cp = UsdGeomScope::Define(
+                    stage, gp.AppendChild(
+                        TfToken("Collider_" + std::to_string(ci++)))).GetPrim();
+                cp.CreateAttribute(TfToken("vrm:shape"), SdfValueTypeNames->Token,
+                                   true, SdfVariabilityUniform)
+                    .Set(TfToken(c.shape.empty() ? "sphere" : c.shape));
+                cp.CreateAttribute(TfToken("vrm:node"), SdfValueTypeNames->Token,
+                                   true, SdfVariabilityUniform)
+                    .Set(jointTok(c.jointIndex, c.sourceNodeName, c.sourceNodeIndex));
+                cp.CreateAttribute(TfToken("vrm:offset"), SdfValueTypeNames->Float3,
+                                   true, SdfVariabilityUniform).Set(c.offset);
+                cp.CreateAttribute(TfToken("vrm:radius"), SdfValueTypeNames->Float,
+                                   true, SdfVariabilityUniform).Set(c.radius);
+                if (c.shape == "capsule")
+                    cp.CreateAttribute(TfToken("vrm:tail"), SdfValueTypeNames->Float3,
+                                       true, SdfVariabilityUniform).Set(c.tail);
+            }
+        }
+
+        // Spring chains.
+        SdfPath sbScopePath = smPath.AppendChild(TfToken("SpringBones"));
+        UsdGeomScope::Define(stage, sbScopePath);
+        std::vector<std::string> rawSp;
+        rawSp.reserve(sm.springs.size());
+        for (const VrmSpring& s : sm.springs) rawSp.push_back(s.name);
+        std::vector<std::string> spNames = VrmMakeUniqueNames(rawSp, "Spring");
+        for (size_t si = 0; si < sm.springs.size(); ++si) {
+            const VrmSpring& s = sm.springs[si];
+            UsdPrim sp = UsdGeomScope::Define(
+                stage, sbScopePath.AppendChild(TfToken(spNames[si]))).GetPrim();
+
+            VtTokenArray jtoks;
+            VtFloatArray stiff, gpow, drag, hit;
+            VtVec3fArray gdir;
+            for (const VrmSpringJoint& j : s.joints) {
+                jtoks.push_back(jointTok(j.jointIndex, j.sourceNodeName,
+                                         j.sourceNodeIndex));
+                stiff.push_back(j.stiffness);
+                gpow.push_back(j.gravityPower);
+                drag.push_back(j.dragForce);
+                hit.push_back(j.hitRadius);
+                gdir.push_back(j.gravityDir);
+            }
+            auto arr = [&](const char* n, const SdfValueTypeName& t,
+                           const VtValue& v) {
+                sp.CreateAttribute(TfToken(n), t, true, SdfVariabilityUniform).Set(v);
+            };
+            arr("vrm:joints", SdfValueTypeNames->TokenArray, VtValue(jtoks));
+            arr("vrm:stiffness", SdfValueTypeNames->FloatArray, VtValue(stiff));
+            arr("vrm:gravityPower", SdfValueTypeNames->FloatArray, VtValue(gpow));
+            arr("vrm:dragForce", SdfValueTypeNames->FloatArray, VtValue(drag));
+            arr("vrm:hitRadius", SdfValueTypeNames->FloatArray, VtValue(hit));
+            arr("vrm:gravityDir", SdfValueTypeNames->Float3Array, VtValue(gdir));
+            if (s.centerJoint >= 0 &&
+                s.centerJoint < static_cast<int>(jointPaths.size())) {
+                sp.CreateAttribute(TfToken("vrm:center"), SdfValueTypeNames->Token,
+                                   true, SdfVariabilityUniform)
+                    .Set(TfToken(jointPaths[s.centerJoint]));
+            }
+            SdfPathVector cgTargets;
+            for (int gi : s.colliderGroupIndices)
+                if (gi >= 0 && gi < static_cast<int>(grpPaths.size()))
+                    cgTargets.push_back(grpPaths[gi]);
+            if (!cgTargets.empty())
+                sp.CreateRelationship(TfToken("vrm:colliderGroups"), false)
+                    .SetTargets(cgTargets);
+        }
+    }
+
     if (!stage->ExportToString(outUsda)) {
         return false;
     }
