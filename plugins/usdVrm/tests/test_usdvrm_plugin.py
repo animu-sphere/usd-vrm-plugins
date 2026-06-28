@@ -206,6 +206,27 @@ def check_materials():
     assert thr is not None and abs(thr - 0.3) < 1e-6, f"MASK opacityThreshold: {thr}"
     glass = stage.GetPrimAtPath("/Asset/mtl/Glass/Surface")
     assert abs(glass.GetAttribute("inputs:opacity").Get() - 0.3) < 1e-6
+    # KHR_materials_unlit: base color via emissive, diffuse/lit response killed,
+    # so scene lights don't facet the low-poly surface.
+    flat = stage.GetPrimAtPath("/Asset/mtl/Unlit/Surface")
+    assert flat.IsValid(), "expected unlit material Unlit"
+    assert flat.GetAttribute("inputs:diffuseColor").Get() == Gf.Vec3f(0, 0, 0)
+    em = flat.GetAttribute("inputs:emissiveColor").Get()
+    assert abs(em[0] - 0.9) < 1e-6 and abs(em[2] - 0.1) < 1e-6, em
+    assert abs(flat.GetAttribute("inputs:metallic").Get()) < 1e-6
+
+
+def check_shared_accessor():
+    """Two primitives sharing one accessor are compacted to their used verts."""
+    stage = _open("shared_accessor.vrm")
+    for name in ("Quad_0", "Quad_1"):
+        m = UsdGeom.Mesh(stage.GetPrimAtPath(f"/Asset/geo/{name}"))
+        assert m, name
+        pts = m.GetPointsAttr().Get()
+        fvi = m.GetFaceVertexIndicesAttr().Get()
+        # Compacted: exactly the 3 referenced verts, topology covering them all.
+        assert len(pts) == 3, (name, len(pts))
+        assert max(fvi) == len(pts) - 1, (name, list(fvi), len(pts))
 
 
 def check_animation():
@@ -296,7 +317,8 @@ def main() -> int:
     for check in (check_minimal, check_vrm0, check_multiskin_ibm,
                   check_unordered_skel, check_expressions,
                   check_vrm0_expressions, check_textures, check_animation,
-                  check_lookat, check_names, check_materials, check_badext):
+                  check_lookat, check_names, check_materials,
+                  check_shared_accessor, check_badext):
         check()
         print(f"  {check.__name__}: OK")
     print("usdVrm smoke tests: OK")

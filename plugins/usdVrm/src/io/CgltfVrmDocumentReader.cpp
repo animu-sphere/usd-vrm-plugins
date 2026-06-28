@@ -328,6 +328,7 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
         }
         vm.emissiveColor = GfVec3f(
             m.emissive_factor[0], m.emissive_factor[1], m.emissive_factor[2]);
+        vm.unlit = m.unlit;  // KHR_materials_unlit
         vm.normalTex = makeTexRef(m.normal_texture);
         vm.occlusionTex = makeTexRef(m.occlusion_texture);
         vm.emissiveTex = makeTexRef(m.emissive_texture);
@@ -619,6 +620,73 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                         vt.normalDeltas = _ReadVec3(attr.data);
                 }
                 out.morphTargets.push_back(std::move(vt));
+            }
+
+            // Compact to the vertices this primitive actually references. glTF
+            // primitives within one mesh may share a single vertex accessor (each
+            // using a sub-range), so the full-accessor arrays read above can be
+            // larger than the topology uses — which Hydra rejects ("Vertex
+            // primvar has N elements, topology references only up to ...") and
+            // then drops the primvars (incl. normals -> flat shading).
+            {
+                std::unordered_map<int, int> remap;
+                std::vector<int> used;  // newIndex -> oldIndex
+                used.reserve(out.points.size());
+                for (int& idx : out.faceVertexIndices) {
+                    auto it = remap.find(idx);
+                    if (it != remap.end()) {
+                        idx = it->second;
+                    } else {
+                        int n = static_cast<int>(used.size());
+                        remap.emplace(idx, n);
+                        used.push_back(idx);
+                        idx = n;
+                    }
+                }
+                bool identity = used.size() == out.points.size();
+                for (size_t i = 0; identity && i < used.size(); ++i)
+                    identity = used[i] == static_cast<int>(i);
+                if (!identity) {
+                    auto gather3 = [&](std::vector<GfVec3f>& v) {
+                        if (v.empty()) return;
+                        std::vector<GfVec3f> r;
+                        r.reserve(used.size());
+                        for (int o : used)
+                            r.push_back(o < static_cast<int>(v.size()) ? v[o]
+                                                                       : GfVec3f(0));
+                        v.swap(r);
+                    };
+                    gather3(out.points);
+                    gather3(out.normals);
+                    if (!out.uvs.empty()) {
+                        std::vector<GfVec2f> r;
+                        r.reserve(used.size());
+                        for (int o : used)
+                            r.push_back(o < static_cast<int>(out.uvs.size())
+                                            ? out.uvs[o]
+                                            : GfVec2f(0));
+                        out.uvs.swap(r);
+                    }
+                    if (out.skinned) {
+                        const int wc = static_cast<int>(out.jointWeights.size());
+                        std::vector<GfVec4f> w;
+                        std::vector<int> ji;
+                        w.reserve(used.size());
+                        ji.reserve(used.size() * 4);
+                        for (int o : used) {
+                            const bool ok = o < wc;
+                            w.push_back(ok ? out.jointWeights[o] : GfVec4f(0));
+                            for (int k = 0; k < 4; ++k)
+                                ji.push_back(ok ? out.jointIndices[o * 4 + k] : 0);
+                        }
+                        out.jointWeights.swap(w);
+                        out.jointIndices.swap(ji);
+                    }
+                    for (auto& mt : out.morphTargets) {
+                        gather3(mt.positionDeltas);
+                        gather3(mt.normalDeltas);
+                    }
+                }
             }
 
             outDoc->meshes.push_back(std::move(out));

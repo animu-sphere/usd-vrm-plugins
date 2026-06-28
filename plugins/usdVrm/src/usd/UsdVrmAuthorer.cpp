@@ -164,14 +164,18 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         UsdShadeShader shader =
             UsdShadeShader::Define(stage, matPath.AppendChild(TfToken("Surface")));
         shader.CreateIdAttr(VtValue(TfToken("UsdPreviewSurface")));
+        // VRM materials are unlit (KHR_materials_unlit) / toon. Render unlit as
+        // base color through emissive with no lit response, so scene lights
+        // don't carve facets into the low-poly surface (the "polygonal" look).
+        const bool unlit = vm.unlit;
         shader.CreateInput(TfToken("diffuseColor"), SdfValueTypeNames->Color3f)
-            .Set(vm.baseColor);
+            .Set(unlit ? GfVec3f(0.0f) : vm.baseColor);
         shader.CreateInput(TfToken("emissiveColor"), SdfValueTypeNames->Color3f)
-            .Set(vm.emissiveColor);
+            .Set(unlit ? vm.baseColor : vm.emissiveColor);
         shader.CreateInput(TfToken("metallic"), SdfValueTypeNames->Float)
-            .Set(vm.metallic);
+            .Set(unlit ? 0.0f : vm.metallic);
         shader.CreateInput(TfToken("roughness"), SdfValueTypeNames->Float)
-            .Set(vm.roughness);
+            .Set(unlit ? 1.0f : vm.roughness);
         shader.CreateInput(TfToken("opacity"), SdfValueTypeNames->Float)
             .Set(vm.opacity);
         if (vm.alphaMode == "MASK") {
@@ -242,14 +246,19 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
 
         if (vm.baseColorTex.present) {
             UsdShadeShader t = makeTexture(vm.baseColorTex, "baseColorTexture", true);
-            shader.GetInput(TfToken("diffuseColor"))
+            // Unlit routes base color to emissive (flat); lit routes to diffuse.
+            shader.GetInput(TfToken(unlit ? "emissiveColor" : "diffuseColor"))
                 .ConnectToSource(t.GetOutput(TfToken("rgb")));
             if (vm.alphaMode != "OPAQUE") {
                 shader.GetInput(TfToken("opacity"))
                     .ConnectToSource(t.GetOutput(TfToken("a")));
             }
         }
-        if (vm.metallicRoughnessTex.present) {
+        // Lit-only slots (metallicRoughness / emissive / occlusion / normal) are
+        // ignored by KHR_materials_unlit, so skip them on an unlit surface. This
+        // also keeps the emissive texture from clobbering the base-color->emissive
+        // connection authored above (a single UsdShade input takes one source).
+        if (!unlit && vm.metallicRoughnessTex.present) {
             UsdShadeShader t =
                 makeTexture(vm.metallicRoughnessTex, "metallicRoughnessTexture", false);
             // glTF packs roughness in G, metalness in B.
@@ -258,12 +267,12 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             shader.GetInput(TfToken("metallic"))
                 .ConnectToSource(t.GetOutput(TfToken("b")));
         }
-        if (vm.emissiveTex.present) {
+        if (!unlit && vm.emissiveTex.present) {
             UsdShadeShader t = makeTexture(vm.emissiveTex, "emissiveTexture", true);
             shader.GetInput(TfToken("emissiveColor"))
                 .ConnectToSource(t.GetOutput(TfToken("rgb")));
         }
-        if (vm.occlusionTex.present) {
+        if (!unlit && vm.occlusionTex.present) {
             UsdShadeShader t = makeTexture(vm.occlusionTex, "occlusionTexture", false);
             // glTF occlusion strength: ao = 1 + strength * (sampled - 1), i.e.
             // out.r = sampled*strength + (1 - strength). Fold into the texture
@@ -276,7 +285,7 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             shader.CreateInput(TfToken("occlusion"), SdfValueTypeNames->Float)
                 .ConnectToSource(t.GetOutput(TfToken("r")));
         }
-        if (vm.normalTex.present) {
+        if (!unlit && vm.normalTex.present) {
             UsdShadeShader t = makeTexture(vm.normalTex, "normalTexture", false);
             // Decode tangent-space normals ([0,1] -> [-1,1]) and fold in glTF's
             // normalTexture.scale, which scales only the X/Y components:
@@ -335,9 +344,15 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         }
 
         if (!m.normals.empty()) {
-            mesh.CreateNormalsAttr(
-                VtValue(VtVec3fArray(m.normals.begin(), m.normals.end())));
-            mesh.SetNormalsInterpolation(UsdGeomTokens->vertex);
+            // Author normals as primvars:normals (not the plain `normals`
+            // attribute): UsdSkelImaging only skins normals expressed as a
+            // primvar, and Hydra otherwise recomputes them from the skinned
+            // points — which hardens shading at the source's split vertices
+            // (UV / material seams). The primvar keeps the authored smoothing.
+            UsdGeomPrimvar normals = UsdGeomPrimvarsAPI(mesh).CreatePrimvar(
+                TfToken("normals"), SdfValueTypeNames->Normal3fArray,
+                UsdGeomTokens->vertex);
+            normals.Set(VtVec3fArray(m.normals.begin(), m.normals.end()));
         }
         if (!m.uvs.empty()) {
             UsdGeomPrimvar st = UsdGeomPrimvarsAPI(mesh).CreatePrimvar(
