@@ -8,7 +8,8 @@ This repository currently ships one plugin:
 | --- | --- | --- |
 | `usdVrm` | [plugins/usdVrm](plugins/usdVrm) | `SdfFileFormat`: imports `.vrm` (VRM 0.x / 1.0) as a normalized USD stage |
 
-The repo is an OpenStrata project (`openstrata.toml`) holding one or more
+The repo is an [OpenStrata](https://github.com/animu-sphere/open-strata) project
+(`openstrata.toml`) holding one or more
 self-contained plugin **bundles** under `plugins/`. It is **dual-mode**: you can
 build and verify it with the `ost` CLI, or with plain CMake against any OpenUSD
 install.
@@ -74,5 +75,5 @@ Third-party components keep their own licenses; see
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). cgltf is **not** vendored — it
 is fetched at configure time.
 
-> Test VRM avatars under `C:\Users\...\Desktop\vrm_test_data` are **not** part of
-> this repository and are not redistributed here; mind their individual licenses.
+> Local test VRM avatars used during development are **not** part of this
+> repository and are not redistributed here; mind their individual licenses.
