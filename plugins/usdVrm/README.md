@@ -72,15 +72,17 @@ tests/                          python smoke tests + generated fixtures (minimal
   VRM/VRMC_vrm extension block (`vrm:rawExtension`), and provenance
   (`sourceNodeIndex`, …) are kept in `customData` under a `vrm` namespace.
 
-## Status (Phase 1)
+## Status
 
-Implemented: GLB read, version detection, meshes (points/normals/UV/indices),
-basic `UsdPreviewSurface` materials, unified skeleton + skinning binding,
-humanoid mapping, VRM meta preservation, graceful warnings on unsupported data.
+Phase 1 + part of Phase 2. Implemented: GLB read, version detection, meshes
+(points/normals/UV/indices), basic `UsdPreviewSurface` materials, unified
+skeleton (bind from inverse bind matrices, topologically ordered) + skinning
+binding, humanoid mapping, **blend shapes (`UsdSkelBlendShape`) and VRM
+expressions** (`/Asset/rig/Expressions`, morph-target bindings), VRM meta +
+raw-extension preservation, graceful warnings on unsupported data.
 
-Not yet (later phases): textures, MToon, blend shapes / expressions, animation,
-LookAt, SpringBone/colliders, node constraints. Morph-target *data* is already
-read into the canonical model but not yet authored.
+Not yet (later phases): textures, MToon, glTF skeletal animation, LookAt,
+SpringBone/colliders, node constraints.
 
 ## Build & verify
 
