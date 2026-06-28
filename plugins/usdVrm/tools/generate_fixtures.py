@@ -13,6 +13,7 @@ specific import behavior the smoke test then asserts:
   shared_accessor.vrm two primitives sharing one vertex accessor (compaction)
   vrm0_minimal.vrm   the VRM 0.x extension shape (extensions.VRM, humanBones[])
   vrm0_expressions.vrm VRM 0.x blendShapeMaster preset group (weight 0..100)
+  vrm0_frontbake.vrm VRM 0.x front-direction bake (geometry/skeleton/root clip)
   multiskin_ibm.vrm  two skins, overlapping joints, non-identity inverse binds
   unordered_skel.vrm skin joints listed child-before-parent (topology reorder)
   expressions.vrm    a morph target + a VRM 1.0 preset expression binding it
@@ -384,6 +385,69 @@ def build_expressions():
     return b.build(gltf)
 
 
+def build_vrm0_frontbake():
+    """VRM 0.x front-direction bake: a skinned mesh + a root (hips) animation.
+
+    The importer bakes a 180-deg Y rotation into geometry/skeleton/clip (rather
+    than a root xformOp), so this exercises every baked path: skinned points,
+    bind/root-rest transforms, and an embedded clip whose animated joint is the
+    skeleton root. Points use z != 0 so the rotation is visible on both x and z.
+
+    A spring bone with a non-vertical (model-space) gravityDir is included so the
+    bake of that direction is exercised too: (1,0,0) -> (-1,0,0).
+    """
+    b = GlbBuilder()
+    pts = [(-0.5, 0.0, 1.0), (0.5, 0.0, 1.0), (0.0, 1.0, 1.0)]
+    pos = b.add(FLOAT, "VEC3", pts, ARRAY_BUFFER, minmax=True)
+    j0 = b.add(U8, "VEC4", [J0, J0, J0])        # all verts -> local joint 0 (hips)
+    w4 = b.add(FLOAT, "VEC4", [W4, W4, W4])
+    idx = _idx(b)
+    # bind == world (IBM = inverse(world)): hips world (0,0.5,0), spine (0,0.8,0).
+    ibm = b.add(FLOAT, "MAT4",
+                [tuple(translate16(0, -0.5, 0)), tuple(translate16(0, -0.8, 0))])
+    # Animation on hips (node 1, the root): identity -> 90 deg about Y, and
+    # translation (0,0.5,0) -> (1,0.5,0), both LINEAR over one second.
+    t_in = b.add(FLOAT, "SCALAR", [0.0, 1.0])
+    s = 0.70710678  # sin/cos(45 deg)
+    r_out = b.add(FLOAT, "VEC4", [(0, 0, 0, 1), (0, s, 0, s)])  # (x,y,z,w), 90 Y
+    tr_out = b.add(FLOAT, "VEC3", [(0, 0.5, 0), (1, 0.5, 0)])
+    # A spring on spine (node 2) with a horizontal "wind" gravity. Model-space,
+    # so the front bake must rotate it: (1,0,0) -> (-1,0,0).
+    vrm0 = vrm0_extension({"hips": 1, "spine": 2})
+    vrm0["secondaryAnimation"] = {
+        "boneGroups": [{"comment": "Wind", "bones": [2],
+                        "gravityDir": [1.0, 0.0, 0.0], "gravityPower": 0.5,
+                        "stiffiness": 1.0, "dragForce": 0.4, "hitRadius": 0.0}],
+        "colliderGroups": [],
+    }
+    gltf = {
+        "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
+        "scene": 0, "scenes": [{"nodes": [0, 1]}],
+        "nodes": [
+            {"name": "Body", "mesh": 0, "skin": 0},
+            {"name": "hips", "children": [2], "translation": [0.0, 0.5, 0.0]},
+            {"name": "spine", "translation": [0.0, 0.3, 0.0]},
+        ],
+        "meshes": [{"name": "Body", "primitives": [
+            {"attributes": {"POSITION": pos, "JOINTS_0": j0, "WEIGHTS_0": w4},
+             "indices": idx, "material": 0}]}],
+        "skins": [{"joints": [1, 2], "inverseBindMatrices": ibm, "skeleton": 1}],
+        "animations": [{
+            "name": "move",
+            "samplers": [
+                {"input": t_in, "output": r_out, "interpolation": "LINEAR"},
+                {"input": t_in, "output": tr_out, "interpolation": "LINEAR"}],
+            "channels": [
+                {"sampler": 0, "target": {"node": 1, "path": "rotation"}},
+                {"sampler": 1, "target": {"node": 1, "path": "translation"}}],
+        }],
+        "materials": [_basic_material("Body_Mat")],
+        "extensionsUsed": ["VRM"],
+        "extensions": {"VRM": vrm0},
+    }
+    return b.build(gltf)
+
+
 def build_constraints():
     """A VRMC_node_constraint (roll) driving the head node from the spine."""
     b = GlbBuilder()
@@ -572,6 +636,7 @@ FIXTURES = {
     "unordered_skel.vrm": build_unordered_skel,
     "expressions.vrm": build_expressions,
     "vrm0_expressions.vrm": build_vrm0_expressions,
+    "vrm0_frontbake.vrm": build_vrm0_frontbake,
     "names.vrm": build_names,
     "materials.vrm": build_materials,
     "constraints.vrm": build_constraints,
