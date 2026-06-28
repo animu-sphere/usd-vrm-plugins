@@ -310,8 +310,16 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
                 const TfToken name(blendNames[cursor++]);
                 SdfPath bsPath = blendScopePath.AppendChild(name);
                 UsdSkelBlendShape bs = UsdSkelBlendShape::Define(stage, bsPath);
-                bs.CreateOffsetsAttr(VtValue(
-                    VtVec3fArray(mt.positionDeltas.begin(), mt.positionDeltas.end())));
+                VtVec3fArray offsets(mt.positionDeltas.begin(),
+                                     mt.positionDeltas.end());
+                // A POSITION-less morph target (normals only) would otherwise
+                // author empty offsets while normalOffsets is per-point; UsdSkel
+                // requires the two to be length-aligned, so pad offsets with
+                // zeros to match.
+                if (offsets.empty() && !mt.normalDeltas.empty()) {
+                    offsets.assign(mt.normalDeltas.size(), GfVec3f(0.0f));
+                }
+                bs.CreateOffsetsAttr(VtValue(offsets));
                 if (!mt.normalDeltas.empty()) {
                     bs.CreateNormalOffsetsAttr(VtValue(
                         VtVec3fArray(mt.normalDeltas.begin(), mt.normalDeltas.end())));
@@ -323,6 +331,13 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             UsdSkelBindingAPI binding = UsdSkelBindingAPI::Apply(mesh.GetPrim());
             binding.CreateBlendShapesAttr(VtValue(names));
             binding.CreateBlendShapeTargetsRel().SetTargets(targets);
+            // Blend-shape weights are driven through the bound skeleton's
+            // SkelAnimation, so a morph-only (non-skinned) mesh still needs a
+            // skel:skeleton relationship or the blend shapes can't be evaluated.
+            // Idempotent for skinned meshes that already set it.
+            if (!m.skinned) {
+                binding.CreateSkeletonRel().SetTargets({skelPath});
+            }
         }
     } else if (anyMorph) {
         warn("morph targets present but no skeleton/SkelRoot; blend shapes skipped");
