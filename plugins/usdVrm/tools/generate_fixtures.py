@@ -9,6 +9,7 @@ specific import behavior the smoke test then asserts:
   textures.vrm       embedded PNG base-color texture + an MToon material ext
   animation.vrm      a glTF rotation clip (spine 90 deg about Z over 1s)
   lookat.vrm         a bone-type lookAt with leftEye/rightEye humanoid bones
+  shared_accessor.vrm two primitives sharing one vertex accessor (compaction)
   vrm0_minimal.vrm   the VRM 0.x extension shape (extensions.VRM, humanBones[])
   vrm0_expressions.vrm VRM 0.x blendShapeMaster preset group (weight 0..100)
   multiskin_ibm.vrm  two skins, overlapping joints, non-identity inverse binds
@@ -167,6 +168,33 @@ def build_names():
     return b.build(gltf)
 
 
+def build_shared_accessor():
+    """One mesh, two primitives sharing a 4-vertex POSITION accessor.
+
+    Guards per-primitive vertex compaction: each primitive references only a
+    sub-range, so without compaction the full 4-vertex buffer would exceed the
+    topology Hydra accepts. After import each primitive must have exactly its
+    3 used vertices.
+    """
+    b = GlbBuilder()
+    quad = [(-0.5, 0.0, 0.0), (0.5, 0.0, 0.0), (0.5, 1.0, 0.0), (-0.5, 1.0, 0.0)]
+    pos = b.add(FLOAT, "VEC3", quad, ARRAY_BUFFER, minmax=True)
+    i0 = b.add(U16, "SCALAR", [0, 1, 2], ELEMENT_ARRAY_BUFFER)
+    i1 = b.add(U16, "SCALAR", [0, 2, 3], ELEMENT_ARRAY_BUFFER)
+    gltf = {
+        "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
+        "scene": 0, "scenes": [{"nodes": [0]}],
+        "nodes": [{"name": "Quad", "mesh": 0}],
+        "meshes": [{"name": "Quad", "primitives": [
+            {"attributes": {"POSITION": pos}, "indices": i0, "material": 0},
+            {"attributes": {"POSITION": pos}, "indices": i1, "material": 0}]}],
+        "materials": [_basic_material("Quad_Mat")],
+        "extensionsUsed": ["VRMC_vrm"],
+        "extensions": {"VRMC_vrm": vrm1_extension({})},
+    }
+    return b.build(gltf)
+
+
 def build_materials():
     b = GlbBuilder()
     pos = b.add(FLOAT, "VEC3", TRI_POSITIONS, ARRAY_BUFFER, minmax=True)
@@ -175,20 +203,25 @@ def build_materials():
     gltf = {
         "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
         "scene": 0, "scenes": [{"nodes": [0, 1]}],
-        "nodes": [{"name": "Blended", "mesh": 0}, {"name": "Masked", "mesh": 1}],
+        "nodes": [{"name": "Blended", "mesh": 0}, {"name": "Masked", "mesh": 1},
+                  {"name": "Flat", "mesh": 2}],
         "meshes": [
             {"name": "Blended", "primitives": [
                 {"attributes": attrs, "indices": idx, "material": 0}]},
             {"name": "Masked", "primitives": [
                 {"attributes": attrs, "indices": idx, "material": 1}]},
+            {"name": "Flat", "primitives": [
+                {"attributes": attrs, "indices": idx, "material": 2}]},
         ],
         "materials": [
             {"name": "Glass", "doubleSided": True, "alphaMode": "BLEND",
              "pbrMetallicRoughness": {"baseColorFactor": [0.2, 0.4, 0.9, 0.3]}},
             {"name": "Leaf", "alphaMode": "MASK", "alphaCutoff": 0.3,
              "pbrMetallicRoughness": {"baseColorFactor": [0.1, 0.8, 0.2, 1.0]}},
+            {"name": "Unlit", "extensions": {"KHR_materials_unlit": {}},
+             "pbrMetallicRoughness": {"baseColorFactor": [0.9, 0.1, 0.1, 1.0]}},
         ],
-        "extensionsUsed": ["VRMC_vrm"],
+        "extensionsUsed": ["VRMC_vrm", "KHR_materials_unlit"],
         "extensions": {"VRMC_vrm": vrm1_extension({})},
     }
     return b.build(gltf)
@@ -447,6 +480,7 @@ FIXTURES = {
     "textures.vrm": build_textures,
     "animation.vrm": build_animation,
     "lookat.vrm": build_lookat,
+    "shared_accessor.vrm": build_shared_accessor,
     "vrm0_minimal.vrm": build_vrm0,
     "multiskin_ibm.vrm": build_multiskin_ibm,
     "unordered_skel.vrm": build_unordered_skel,

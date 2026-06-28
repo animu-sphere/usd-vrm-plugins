@@ -95,6 +95,7 @@ struct VrmMaterial {
     float roughness = 1.0f;
     GfVec3f emissiveColor = GfVec3f(0.0f);
     bool doubleSided = false;
+    bool unlit = false;                // KHR_materials_unlit (VRM is unlit/toon)
     std::string alphaMode = "OPAQUE";  // OPAQUE | MASK | BLEND
     float alphaCutoff = 0.5f;
 

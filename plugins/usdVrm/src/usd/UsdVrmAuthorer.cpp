@@ -164,14 +164,18 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         UsdShadeShader shader =
             UsdShadeShader::Define(stage, matPath.AppendChild(TfToken("Surface")));
         shader.CreateIdAttr(VtValue(TfToken("UsdPreviewSurface")));
+        // VRM materials are unlit (KHR_materials_unlit) / toon. Render unlit as
+        // base color through emissive with no lit response, so scene lights
+        // don't carve facets into the low-poly surface (the "polygonal" look).
+        const bool unlit = vm.unlit;
         shader.CreateInput(TfToken("diffuseColor"), SdfValueTypeNames->Color3f)
-            .Set(vm.baseColor);
+            .Set(unlit ? GfVec3f(0.0f) : vm.baseColor);
         shader.CreateInput(TfToken("emissiveColor"), SdfValueTypeNames->Color3f)
-            .Set(vm.emissiveColor);
+            .Set(unlit ? vm.baseColor : vm.emissiveColor);
         shader.CreateInput(TfToken("metallic"), SdfValueTypeNames->Float)
-            .Set(vm.metallic);
+            .Set(unlit ? 0.0f : vm.metallic);
         shader.CreateInput(TfToken("roughness"), SdfValueTypeNames->Float)
-            .Set(vm.roughness);
+            .Set(unlit ? 1.0f : vm.roughness);
         shader.CreateInput(TfToken("opacity"), SdfValueTypeNames->Float)
             .Set(vm.opacity);
         if (vm.alphaMode == "MASK") {
@@ -242,14 +246,16 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
 
         if (vm.baseColorTex.present) {
             UsdShadeShader t = makeTexture(vm.baseColorTex, "baseColorTexture", true);
-            shader.GetInput(TfToken("diffuseColor"))
+            // Unlit routes base color to emissive (flat); lit routes to diffuse.
+            shader.GetInput(TfToken(unlit ? "emissiveColor" : "diffuseColor"))
                 .ConnectToSource(t.GetOutput(TfToken("rgb")));
             if (vm.alphaMode != "OPAQUE") {
                 shader.GetInput(TfToken("opacity"))
                     .ConnectToSource(t.GetOutput(TfToken("a")));
             }
         }
-        if (vm.metallicRoughnessTex.present) {
+        // The lit-only slots have no effect on an unlit surface — skip them.
+        if (!unlit && vm.metallicRoughnessTex.present) {
             UsdShadeShader t =
                 makeTexture(vm.metallicRoughnessTex, "metallicRoughnessTexture", false);
             // glTF packs roughness in G, metalness in B.
