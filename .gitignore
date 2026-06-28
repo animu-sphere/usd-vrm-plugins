@@ -26,6 +26,11 @@ CTestTestfile.cmake
 *.lib
 *.dll
 
+# --- Python cache ---
+__pycache__/
+*.pyc
+*.pyo
+
 # --- Editor / OS noise ---
 .vs/
 .vscode/
