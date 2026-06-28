@@ -12,7 +12,7 @@ components below are resolved at build time and keep their own licenses.
 ### JSON parsing
 
 VRM extension JSON is parsed with OpenUSD's own `pxr/base/js`, so there is **no**
-separate JSON library dependency (e.g. nlohmann/json is not used).
+separate JSON library dependency.
 
 ### Test assets
 

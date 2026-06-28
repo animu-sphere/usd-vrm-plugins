@@ -216,6 +216,32 @@ def check_materials():
     assert abs(flat.GetAttribute("inputs:metallic").Get()) < 1e-6
 
 
+def check_springbone():
+    """VRM SpringBone -> /Asset/rig/SecondaryMotion (chains + colliders, data)."""
+    stage = _open("springbone.vrm")
+    sm = stage.GetPrimAtPath("/Asset/rig/SecondaryMotion")
+    assert sm.IsValid(), "expected /Asset/rig/SecondaryMotion"
+    assert sm.GetCustomData().get("vrm", {}).get("springBone", {}).get("raw")
+
+    hair = stage.GetPrimAtPath("/Asset/rig/SecondaryMotion/SpringBones/Hair")
+    assert hair.IsValid(), "expected SpringBones/Hair"
+    assert list(hair.GetAttribute("vrm:joints").Get()) == \
+        ["hips/spine/hair1", "hips/spine/hair1/hair2"]
+    stiff = list(hair.GetAttribute("vrm:stiffness").Get())
+    assert abs(stiff[0] - 1.0) < 1e-6 and abs(stiff[1] - 0.8) < 1e-6, stiff
+    assert abs(hair.GetAttribute("vrm:gravityPower").Get()[0] - 0.5) < 1e-6
+    assert hair.GetAttribute("vrm:center").Get() == "springCenter"
+
+    head = stage.GetPrimAtPath("/Asset/rig/SecondaryMotion/Colliders/Head")
+    assert head.IsValid(), "expected Colliders/Head"
+    assert hair.GetRelationship("vrm:colliderGroups").GetTargets() == [head.GetPath()]
+    col = stage.GetPrimAtPath(
+        "/Asset/rig/SecondaryMotion/Colliders/Head/Collider_0")
+    assert col.GetAttribute("vrm:shape").Get() == "sphere"
+    assert abs(col.GetAttribute("vrm:radius").Get() - 0.1) < 1e-6
+    assert col.GetAttribute("vrm:node").Get() == "hips/spine"
+
+
 def check_shared_accessor():
     """Two primitives sharing one accessor are compacted to their used verts."""
     stage = _open("shared_accessor.vrm")
@@ -317,7 +343,7 @@ def main() -> int:
     for check in (check_minimal, check_vrm0, check_multiskin_ibm,
                   check_unordered_skel, check_expressions,
                   check_vrm0_expressions, check_textures, check_animation,
-                  check_lookat, check_names, check_materials,
+                  check_lookat, check_springbone, check_names, check_materials,
                   check_shared_accessor, check_badext):
         check()
         print(f"  {check.__name__}: OK")

@@ -176,12 +176,15 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
     // -----------------------------------------------------------------------
     // VRM version + raw extension JSON (cgltf hands us unparsed extension data).
     // -----------------------------------------------------------------------
-    std::string vrm1Json, vrm0Json;
+    std::string vrm1Json, vrm0Json, springBone1Json;
     for (cgltf_size i = 0; i < data->data_extensions_count; ++i) {
         const cgltf_extension& ext = data->data_extensions[i];
         if (!ext.name || !ext.data) continue;
         if (std::strcmp(ext.name, "VRMC_vrm") == 0) vrm1Json = ext.data;
         else if (std::strcmp(ext.name, "VRM") == 0) vrm0Json = ext.data;
+        // VRM 1.0 SpringBone is its own top-level extension (not under VRMC_vrm).
+        else if (std::strcmp(ext.name, "VRMC_springBone") == 0)
+            springBone1Json = ext.data;
     }
 
     if (!vrm1Json.empty()) {
@@ -1086,6 +1089,213 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                 }
             }
             outDoc->animations.push_back(std::move(clip));
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Secondary motion (SpringBone). VRM 1.0: top-level VRMC_springBone. VRM
+    // 0.x: VRM.secondaryAnimation. Imported as data only (no simulation). Node
+    // refs resolve to skeleton joints where possible; the source node index/name
+    // (and the raw block) are kept for whatever can't be resolved.
+    // -----------------------------------------------------------------------
+    {
+        VrmSecondaryMotion& sm = outDoc->secondaryMotion;
+        auto nodeJoint = [&](int ni) -> int {
+            if (ni < 0 || ni >= static_cast<int>(data->nodes_count)) return -1;
+            auto it = nodeToJoint.find(&data->nodes[ni]);
+            return it != nodeToJoint.end() ? it->second : -1;
+        };
+        auto nodeName = [&](int ni) -> std::string {
+            if (ni < 0 || ni >= static_cast<int>(data->nodes_count)) return {};
+            return data->nodes[ni].name ? data->nodes[ni].name : std::string();
+        };
+        auto fval = [&](const JsValue* v, float fb) -> float {
+            if (v && v->IsReal()) return static_cast<float>(v->GetReal());
+            if (v && v->IsInt()) return static_cast<float>(v->GetInt());
+            return fb;
+        };
+        auto vec3 = [&](const JsValue* v, GfVec3f fb) -> GfVec3f {
+            if (const JsArray* a = _AsArray(v)) {
+                if (a->size() >= 3)
+                    return GfVec3f(fval(&(*a)[0], fb[0]), fval(&(*a)[1], fb[1]),
+                                   fval(&(*a)[2], fb[2]));
+            }
+            if (const JsObject* o = _AsObject(v)) {  // VRM 0.x {x,y,z}
+                return GfVec3f(fval(_Find(*o, "x"), fb[0]),
+                               fval(_Find(*o, "y"), fb[1]),
+                               fval(_Find(*o, "z"), fb[2]));
+            }
+            return fb;
+        };
+
+        if (outDoc->version == VrmVersion::Vrm1 && !springBone1Json.empty()) {
+            JsParseError perr;
+            JsValue root = JsParseString(springBone1Json, &perr);
+            if (const JsObject* obj = _AsObject(&root)) {
+                sm.present = true;
+                sm.rawJson = springBone1Json;
+                if (const JsArray* cols = _AsArray(_Find(*obj, "colliders"))) {
+                    for (const JsValue& cv : *cols) {
+                        const JsObject* co = _AsObject(&cv);
+                        if (!co) continue;
+                        VrmCollider c;
+                        int ni = _AsInt(_Find(*co, "node"));
+                        c.sourceNodeIndex = ni;
+                        c.sourceNodeName = nodeName(ni);
+                        c.jointIndex = nodeJoint(ni);
+                        const JsObject* shape = _AsObject(_Find(*co, "shape"));
+                        const JsObject* sph =
+                            shape ? _AsObject(_Find(*shape, "sphere")) : nullptr;
+                        const JsObject* cap =
+                            shape ? _AsObject(_Find(*shape, "capsule")) : nullptr;
+                        if (sph) {
+                            c.shape = "sphere";
+                            c.offset = vec3(_Find(*sph, "offset"), GfVec3f(0));
+                            c.radius = fval(_Find(*sph, "radius"), 0);
+                        } else if (cap) {
+                            c.shape = "capsule";
+                            c.offset = vec3(_Find(*cap, "offset"), GfVec3f(0));
+                            c.radius = fval(_Find(*cap, "radius"), 0);
+                            c.tail = vec3(_Find(*cap, "tail"), GfVec3f(0));
+                        }
+                        sm.colliders.push_back(c);
+                    }
+                }
+                if (const JsArray* grps =
+                        _AsArray(_Find(*obj, "colliderGroups"))) {
+                    for (const JsValue& gv : *grps) {
+                        const JsObject* g = _AsObject(&gv);
+                        if (!g) continue;
+                        VrmColliderGroup grp;
+                        const JsValue* nm = _Find(*g, "name");
+                        grp.name = (nm && nm->IsString()) ? nm->GetString()
+                            : "ColliderGroup_" + std::to_string(sm.colliderGroups.size());
+                        if (const JsArray* ci = _AsArray(_Find(*g, "colliders")))
+                            for (const JsValue& iv : *ci)
+                                grp.colliderIndices.push_back(_AsInt(&iv));
+                        sm.colliderGroups.push_back(std::move(grp));
+                    }
+                }
+                if (const JsArray* springs = _AsArray(_Find(*obj, "springs"))) {
+                    for (const JsValue& sv : *springs) {
+                        const JsObject* s = _AsObject(&sv);
+                        if (!s) continue;
+                        VrmSpring spr;
+                        const JsValue* nm = _Find(*s, "name");
+                        spr.name = (nm && nm->IsString()) ? nm->GetString()
+                            : "Spring_" + std::to_string(sm.springs.size());
+                        int centerNode = _AsInt(_Find(*s, "center"));
+                        spr.centerSourceNodeIndex = centerNode;
+                        spr.centerSourceNodeName = nodeName(centerNode);
+                        spr.centerJoint = nodeJoint(centerNode);
+                        if (const JsArray* cg =
+                                _AsArray(_Find(*s, "colliderGroups")))
+                            for (const JsValue& iv : *cg)
+                                spr.colliderGroupIndices.push_back(_AsInt(&iv));
+                        if (const JsArray* joints = _AsArray(_Find(*s, "joints"))) {
+                            for (const JsValue& jv : *joints) {
+                                const JsObject* j = _AsObject(&jv);
+                                if (!j) continue;
+                                VrmSpringJoint sj;
+                                int ni = _AsInt(_Find(*j, "node"));
+                                sj.sourceNodeIndex = ni;
+                                sj.sourceNodeName = nodeName(ni);
+                                sj.jointIndex = nodeJoint(ni);
+                                sj.hitRadius = fval(_Find(*j, "hitRadius"), 0);
+                                sj.stiffness = fval(_Find(*j, "stiffness"), 1);
+                                sj.gravityPower = fval(_Find(*j, "gravityPower"), 0);
+                                sj.dragForce = fval(_Find(*j, "dragForce"), 0.4f);
+                                sj.gravityDir = vec3(_Find(*j, "gravityDir"),
+                                                     GfVec3f(0, -1, 0));
+                                spr.joints.push_back(sj);
+                            }
+                        }
+                        sm.springs.push_back(std::move(spr));
+                    }
+                }
+            }
+        } else if (outDoc->version == VrmVersion::Vrm0 &&
+                   !outDoc->rawVrmExtensionJson.empty()) {
+            JsParseError perr;
+            JsValue root = JsParseString(outDoc->rawVrmExtensionJson, &perr);
+            const JsObject* vrm = _AsObject(&root);
+            const JsObject* sa =
+                vrm ? _AsObject(_Find(*vrm, "secondaryAnimation")) : nullptr;
+            if (sa) {
+                sm.present = true;
+                sm.rawJson = JsWriteToString(JsValue(*sa));
+                // colliderGroups: [{ node, colliders: [{ offset, radius }] }].
+                if (const JsArray* grps =
+                        _AsArray(_Find(*sa, "colliderGroups"))) {
+                    for (const JsValue& gv : *grps) {
+                        const JsObject* g = _AsObject(&gv);
+                        if (!g) continue;
+                        int ni = _AsInt(_Find(*g, "node"));
+                        VrmColliderGroup grp;
+                        grp.name =
+                            "ColliderGroup_" + std::to_string(sm.colliderGroups.size());
+                        if (const JsArray* cs = _AsArray(_Find(*g, "colliders"))) {
+                            for (const JsValue& cv : *cs) {
+                                const JsObject* co = _AsObject(&cv);
+                                if (!co) continue;
+                                VrmCollider c;
+                                c.shape = "sphere";  // VRM 0.x is spheres only
+                                c.sourceNodeIndex = ni;
+                                c.sourceNodeName = nodeName(ni);
+                                c.jointIndex = nodeJoint(ni);
+                                c.offset = vec3(_Find(*co, "offset"), GfVec3f(0));
+                                c.radius = fval(_Find(*co, "radius"), 0);
+                                grp.colliderIndices.push_back(
+                                    static_cast<int>(sm.colliders.size()));
+                                sm.colliders.push_back(c);
+                            }
+                        }
+                        sm.colliderGroups.push_back(std::move(grp));
+                    }
+                }
+                // boneGroups: per-group params replicated onto each bone joint.
+                if (const JsArray* bgs = _AsArray(_Find(*sa, "boneGroups"))) {
+                    for (const JsValue& bv : *bgs) {
+                        const JsObject* bg = _AsObject(&bv);
+                        if (!bg) continue;
+                        VrmSpring spr;
+                        const JsValue* cm = _Find(*bg, "comment");
+                        spr.name = (cm && cm->IsString() && !cm->GetString().empty())
+                            ? cm->GetString()
+                            : "Spring_" + std::to_string(sm.springs.size());
+                        int centerNode = _AsInt(_Find(*bg, "center"));
+                        spr.centerSourceNodeIndex = centerNode;
+                        spr.centerSourceNodeName = nodeName(centerNode);
+                        spr.centerJoint = nodeJoint(centerNode);
+                        // VRM 0.x spells stiffness "stiffiness".
+                        float stiff = fval(_Find(*bg, "stiffiness"), 1);
+                        float gp = fval(_Find(*bg, "gravityPower"), 0);
+                        float df = fval(_Find(*bg, "dragForce"), 0.4f);
+                        float hr = fval(_Find(*bg, "hitRadius"), 0);
+                        GfVec3f gd = vec3(_Find(*bg, "gravityDir"), GfVec3f(0, -1, 0));
+                        if (const JsArray* cg =
+                                _AsArray(_Find(*bg, "colliderGroups")))
+                            for (const JsValue& iv : *cg)
+                                spr.colliderGroupIndices.push_back(_AsInt(&iv));
+                        if (const JsArray* bones = _AsArray(_Find(*bg, "bones"))) {
+                            for (const JsValue& nv : *bones) {
+                                int ni = _AsInt(&nv);
+                                VrmSpringJoint sj;
+                                sj.sourceNodeIndex = ni;
+                                sj.sourceNodeName = nodeName(ni);
+                                sj.jointIndex = nodeJoint(ni);
+                                sj.stiffness = stiff;
+                                sj.gravityPower = gp;
+                                sj.dragForce = df;
+                                sj.hitRadius = hr;
+                                sj.gravityDir = gd;
+                                spr.joints.push_back(sj);
+                            }
+                        }
+                        sm.springs.push_back(std::move(spr));
+                    }
+                }
+            }
         }
     }
 

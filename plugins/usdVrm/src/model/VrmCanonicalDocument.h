@@ -168,6 +168,54 @@ struct VrmLookAt {
     std::string rawJson;               // full lookAt / firstPerson block
 };
 
+// Secondary motion (VRM SpringBone): jiggle for hair / cloth. Imported as data
+// only — no simulation. Node references resolve to skeleton joints where they are
+// skin joints; otherwise the source node index/name is kept for a runtime to map.
+struct VrmCollider {
+    int jointIndex = -1;               // attachment node -> skeleton joint, or -1
+    int sourceNodeIndex = -1;
+    std::string sourceNodeName;
+    std::string shape;                 // "sphere" | "capsule"
+    GfVec3f offset = GfVec3f(0.0f);
+    float radius = 0.0f;
+    GfVec3f tail = GfVec3f(0.0f);      // capsule only
+};
+
+struct VrmColliderGroup {
+    std::string name;
+    std::vector<int> colliderIndices;  // into VrmSecondaryMotion::colliders
+};
+
+// One spring-chain joint with its physics parameters (VRM 1.0 stores these per
+// joint; VRM 0.x per group — the reader replicates the group values per joint).
+struct VrmSpringJoint {
+    int jointIndex = -1;
+    int sourceNodeIndex = -1;
+    std::string sourceNodeName;
+    float hitRadius = 0.0f;
+    float stiffness = 1.0f;
+    float gravityPower = 0.0f;
+    float dragForce = 0.4f;
+    GfVec3f gravityDir = GfVec3f(0.0f, -1.0f, 0.0f);
+};
+
+struct VrmSpring {
+    std::string name;
+    int centerJoint = -1;
+    int centerSourceNodeIndex = -1;
+    std::string centerSourceNodeName;
+    std::vector<VrmSpringJoint> joints;
+    std::vector<int> colliderGroupIndices;  // into VrmSecondaryMotion::colliderGroups
+};
+
+struct VrmSecondaryMotion {
+    bool present = false;
+    std::vector<VrmCollider> colliders;
+    std::vector<VrmColliderGroup> colliderGroups;
+    std::vector<VrmSpring> springs;
+    std::string rawJson;               // full springBone / secondaryAnimation block
+};
+
 struct VrmCanonicalDocument {
     VrmVersion version = VrmVersion::Unknown;
     std::string specVersion;           // e.g. "0.0", "1.0"
@@ -179,6 +227,7 @@ struct VrmCanonicalDocument {
     std::vector<VrmExpression> expressions;
     std::vector<VrmAnimation> animations;
     VrmLookAt lookAt;
+    VrmSecondaryMotion secondaryMotion;
 
     // Raw VRM blocks preserved as JSON on /Asset.customData (lossless preservation).
     std::string metaJson;              // meta / license / permissions

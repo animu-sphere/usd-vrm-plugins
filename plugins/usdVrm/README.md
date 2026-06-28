@@ -89,11 +89,13 @@ skinning binding, humanoid mapping, **blend shapes (`UsdSkelBlendShape`) and VRM
 expressions** (`/Asset/rig/Expressions`, morph-target bindings), **glTF skeletal
 animation** (`UsdSkelAnimation` joint TRS, bound + stage time range),
 **LookAt** (`/Asset/rig/LookAt`: type + eye joint tokens + preserved curves),
-VRM meta + raw-extension preservation, graceful warnings on unsupported data.
+**SpringBone** (`/Asset/rig/SecondaryMotion`: spring chains + collider groups,
+data only — no simulation), VRM meta + raw-extension preservation, graceful
+warnings on unsupported data.
 
-Not yet (later phases): morph-weight animation, full MToon shading (only
-approximated via UsdPreviewSurface + metadata today), KTX2/WebP image decode,
-SpringBone/colliders, node constraints.
+Not yet (later phases): node constraints, morph-weight animation, full MToon
+shading (only approximated via UsdPreviewSurface + metadata today), KTX2/WebP
+image decode.
 
 ### Textures
 
