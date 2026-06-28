@@ -244,16 +244,27 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         }
         if (vm.occlusionTex.present) {
             UsdShadeShader t = makeTexture(vm.occlusionTex, "occlusionTexture", false);
+            // glTF occlusion strength: ao = 1 + strength * (sampled - 1), i.e.
+            // out.r = sampled*strength + (1 - strength). Fold into the texture
+            // scale/bias so the strength is honored, not dropped.
+            const float os = vm.occlusionTex.scale;
+            t.CreateInput(TfToken("scale"), SdfValueTypeNames->Float4)
+                .Set(GfVec4f(os, os, os, os));
+            t.CreateInput(TfToken("bias"), SdfValueTypeNames->Float4)
+                .Set(GfVec4f(1.0f - os, 1.0f - os, 1.0f - os, 1.0f - os));
             shader.CreateInput(TfToken("occlusion"), SdfValueTypeNames->Float)
                 .ConnectToSource(t.GetOutput(TfToken("r")));
         }
         if (vm.normalTex.present) {
             UsdShadeShader t = makeTexture(vm.normalTex, "normalTexture", false);
-            // Decode tangent-space normals: [0,1] -> [-1,1].
+            // Decode tangent-space normals ([0,1] -> [-1,1]) and fold in glTF's
+            // normalTexture.scale, which scales only the X/Y components:
+            //   x,y = (2c - 1) * scale ;  z = 2c - 1
+            const float ns = vm.normalTex.scale;
             t.CreateInput(TfToken("scale"), SdfValueTypeNames->Float4)
-                .Set(GfVec4f(2.0f, 2.0f, 2.0f, 2.0f));
+                .Set(GfVec4f(2.0f * ns, 2.0f * ns, 2.0f, 2.0f));
             t.CreateInput(TfToken("bias"), SdfValueTypeNames->Float4)
-                .Set(GfVec4f(-1.0f, -1.0f, -1.0f, -1.0f));
+                .Set(GfVec4f(-ns, -ns, -1.0f, -1.0f));
             shader.CreateInput(TfToken("normal"), SdfValueTypeNames->Normal3f)
                 .ConnectToSource(t.GetOutput(TfToken("rgb")));
         }

@@ -15,6 +15,7 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <random>
 #include <unordered_map>
 #include <vector>
 
@@ -238,8 +239,20 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                               static_cast<unsigned long long>(h), ext);
                 const fs::path out = cacheDir / name;
                 if (!fs::exists(out, ec)) {
-                    std::ofstream f(out, std::ios::binary);
-                    if (f) f.write(reinterpret_cast<const char*>(base), bv->size);
+                    // Write to a process-unique temp then rename, so a
+                    // concurrent import (or a usdcat/usdview resolving the same
+                    // path) never observes a half-written image.
+                    static thread_local std::mt19937_64 rng(
+                        std::random_device{}());
+                    const fs::path tmp = cacheDir /
+                        (std::string(name) + ".tmp." + std::to_string(rng()));
+                    std::ofstream f(tmp, std::ios::binary);
+                    if (f) {
+                        f.write(reinterpret_cast<const char*>(base), bv->size);
+                        f.close();
+                        fs::rename(tmp, out, ec);
+                        if (ec) fs::remove(tmp, ec);  // lost the race; out is fine
+                    }
                 }
                 result = out.generic_string();
             }
@@ -263,6 +276,11 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
         r.filePath = path;
         r.uvSet = tv.texcoord;
         r.scale = tv.scale;
+        if (tv.texcoord != 0) {
+            outDoc->warnings.push_back(
+                "texture uses TEXCOORD_" + std::to_string(tv.texcoord) +
+                "; only UV set 0 is wired in Phase 2 (sampling may be wrong)");
+        }
         if (tv.texture->sampler) {
             r.wrapS = _WrapStr(tv.texture->sampler->wrap_s);
             r.wrapT = _WrapStr(tv.texture->sampler->wrap_t);
@@ -781,9 +799,11 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                         if (shader && shader->IsString() &&
                             shader->GetString().find("MToon") != std::string::npos) {
                             outDoc->materials[i].isMToon = true;
+                            // Only MToon blocks are surfaced (vrm:mtoon:raw); skip
+                            // the serialization for Unlit/standard properties.
+                            outDoc->materials[i].rawShaderJson =
+                                JsWriteToString(JsValue(*mp));
                         }
-                        outDoc->materials[i].rawShaderJson =
-                            JsWriteToString(JsValue(*mp));
                     }
                 }
             }
