@@ -335,9 +335,15 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         }
 
         if (!m.normals.empty()) {
-            mesh.CreateNormalsAttr(
-                VtValue(VtVec3fArray(m.normals.begin(), m.normals.end())));
-            mesh.SetNormalsInterpolation(UsdGeomTokens->vertex);
+            // Author normals as primvars:normals (not the plain `normals`
+            // attribute): UsdSkelImaging only skins normals expressed as a
+            // primvar, and Hydra otherwise recomputes them from the skinned
+            // points — which hardens shading at the source's split vertices
+            // (UV / material seams). The primvar keeps the authored smoothing.
+            UsdGeomPrimvar normals = UsdGeomPrimvarsAPI(mesh).CreatePrimvar(
+                TfToken("normals"), SdfValueTypeNames->Normal3fArray,
+                UsdGeomTokens->vertex);
+            normals.Set(VtVec3fArray(m.normals.begin(), m.normals.end()));
         }
         if (!m.uvs.empty()) {
             UsdGeomPrimvar st = UsdGeomPrimvarsAPI(mesh).CreatePrimvar(
