@@ -21,7 +21,7 @@ src/
   util/                         path sanitize/uniquify, glTF->USD transform conversion
 plugin/resources/usdVrm/plugInfo.json   USD plugin registration
 tools/                          generate_fixtures.py, vrm_fixture_lib.py, inspect_vrm.py
-tests/                          python smoke test + fixtures (minimal.vrm, invalid.vrm)
+tests/                          python smoke tests + generated fixtures (minimal, vrm0_minimal, multiskin_ibm, names, materials, badext) + invalid.vrm
 ```
 
 ## Architecture
