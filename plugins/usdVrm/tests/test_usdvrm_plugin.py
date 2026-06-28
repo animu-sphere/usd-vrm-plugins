@@ -39,6 +39,10 @@ def check_minimal():
     assert vrm.get("meta"), "VRM meta should be preserved on /Asset"
     assert vrm.get("rawExtension"), "VRM rawExtension should be preserved"
     assert "humanoid" in vrm["rawExtension"], "rawExtension should be the VRM block"
+    # VRM 1.0 already faces +Z: no front-normalization rotation.
+    assert vrm.get("sourceFrontAxis") == "+Z", vrm
+    assert vrm.get("frontAxisNormalized") is False, vrm
+    assert not dp.GetAttribute("xformOp:rotateY").IsValid(), "VRM 1.0 must not be rotated"
 
     body = stage.GetPrimAtPath("/Asset/geo/Body")
     assert body and body.IsA(UsdGeom.Mesh), "expected /Asset/geo/Body mesh"
@@ -79,9 +83,14 @@ def check_minimal():
 def check_vrm0():
     """The VRM 0.x extension shape (extensions.VRM, humanBones as an array)."""
     stage = _open("vrm0_minimal.vrm")
-    vrm = stage.GetDefaultPrim().GetCustomData().get("vrm", {})
+    dp = stage.GetDefaultPrim()
+    vrm = dp.GetCustomData().get("vrm", {})
     assert vrm.get("sourceVersion") == "0.x", vrm
     assert vrm.get("meta"), "VRM 0.x meta should be preserved"
+    # Front normalization: VRM 0.x (-Z front) rotated 180 deg to +Z at the root.
+    assert vrm.get("sourceFrontAxis") == "-Z", vrm
+    assert vrm.get("frontAxisNormalized") is True, vrm
+    assert abs(dp.GetAttribute("xformOp:rotateY").Get() - 180.0) < 1e-4
     skel = UsdSkel.Skeleton(stage.GetPrimAtPath("/Asset/skel/Skeleton"))
     assert list(skel.GetJointsAttr().Get()) == ["hips", "hips/spine"]
     humanoid = stage.GetPrimAtPath("/Asset/rig/Humanoid")

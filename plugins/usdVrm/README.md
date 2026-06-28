@@ -47,6 +47,12 @@ tests/                          python smoke tests + generated fixtures (minimal
   geometry needs no axis flip. Only conversions: glTF column-major matrices →
   USD row-vector `GfMatrix4d` (a transpose, done for free by reading the array
   in order), and UV `V := 1 - V`. All of it lives in `util/TransformUtil`.
+* **Front direction:** VRM 0.x avatars face **-Z**; VRM 1.0 standardized on
+  **+Z**. To keep every imported avatar consistent (and matching the current
+  standard), VRM 0.x is rotated 180° about the up axis at the **root** (`/Asset`)
+  — a single SkelRoot-level transform, so skinning, animation, blend shapes and
+  lookAt all keep working untouched. The source orientation is recorded in
+  `customData` (`vrm:sourceFrontAxis`, `vrm:frontAxisNormalized`).
 * **One unified skeleton:** VRM avatars are commonly split across several glTF
   skins referencing a shared joint hierarchy. The reader takes the **union** of
   all skin joints into a single `UsdSkelSkeleton` and remaps each mesh's
