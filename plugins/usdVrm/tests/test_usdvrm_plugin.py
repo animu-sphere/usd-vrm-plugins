@@ -377,6 +377,13 @@ def check_vrm0_frontbake():
     for i in range(len(pts)):
         assert _vclose(skinned[i], pts[i], 1e-4), (i, skinned[i], pts[i])
 
+    # Spring gravityDir is a model-space direction, so it's baked too:
+    # the "wind" (1,0,0) becomes (-1,0,0) for the now-+Z avatar.
+    spring = stage.GetPrimAtPath("/Asset/rig/SecondaryMotion/SpringBones/Wind")
+    assert spring.IsValid(), "expected baked spring at .../SpringBones/Wind"
+    gdir = spring.GetAttribute("vrm:gravityDir").Get()
+    assert gdir and _vclose(gdir[0], (-1.0, 0.0, 0.0)), list(gdir)
+
 
 def check_constraints():
     """VRMC_node_constraint -> /Asset/rig/Constraints (type/source/axis/weight)."""

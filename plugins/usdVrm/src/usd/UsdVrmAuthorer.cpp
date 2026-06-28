@@ -876,7 +876,12 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
                 gpow.push_back(j.gravityPower);
                 drag.push_back(j.dragForce);
                 hit.push_back(j.hitRadius);
-                gdir.push_back(j.gravityDir);
+                // gravityDir is a model-space direction, so it takes the front
+                // bake too (a non-vertical "wind" dir would otherwise point
+                // backwards relative to the now-+Z avatar; the default (0,-1,0)
+                // is Y-invariant and unaffected).
+                gdir.push_back(bakeFront ? _RotateDir(frontBake, j.gravityDir)
+                                         : j.gravityDir);
             }
             auto arr = [&](const char* n, const SdfValueTypeName& t,
                            const VtValue& v) {

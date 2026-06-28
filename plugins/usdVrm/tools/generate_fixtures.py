@@ -392,6 +392,9 @@ def build_vrm0_frontbake():
     than a root xformOp), so this exercises every baked path: skinned points,
     bind/root-rest transforms, and an embedded clip whose animated joint is the
     skeleton root. Points use z != 0 so the rotation is visible on both x and z.
+
+    A spring bone with a non-vertical (model-space) gravityDir is included so the
+    bake of that direction is exercised too: (1,0,0) -> (-1,0,0).
     """
     b = GlbBuilder()
     pts = [(-0.5, 0.0, 1.0), (0.5, 0.0, 1.0), (0.0, 1.0, 1.0)]
@@ -408,6 +411,15 @@ def build_vrm0_frontbake():
     s = 0.70710678  # sin/cos(45 deg)
     r_out = b.add(FLOAT, "VEC4", [(0, 0, 0, 1), (0, s, 0, s)])  # (x,y,z,w), 90 Y
     tr_out = b.add(FLOAT, "VEC3", [(0, 0.5, 0), (1, 0.5, 0)])
+    # A spring on spine (node 2) with a horizontal "wind" gravity. Model-space,
+    # so the front bake must rotate it: (1,0,0) -> (-1,0,0).
+    vrm0 = vrm0_extension({"hips": 1, "spine": 2})
+    vrm0["secondaryAnimation"] = {
+        "boneGroups": [{"comment": "Wind", "bones": [2],
+                        "gravityDir": [1.0, 0.0, 0.0], "gravityPower": 0.5,
+                        "stiffiness": 1.0, "dragForce": 0.4, "hitRadius": 0.0}],
+        "colliderGroups": [],
+    }
     gltf = {
         "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
         "scene": 0, "scenes": [{"nodes": [0, 1]}],
@@ -431,7 +443,7 @@ def build_vrm0_frontbake():
         }],
         "materials": [_basic_material("Body_Mat")],
         "extensionsUsed": ["VRM"],
-        "extensions": {"VRM": vrm0_extension({"hips": 1, "spine": 2})},
+        "extensions": {"VRM": vrm0},
     }
     return b.build(gltf)
 
