@@ -819,7 +819,11 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                         }
                     }
                 }
-                // firstPerson.lookAtTypeName ("Bone" | "BlendShape").
+                // firstPerson.lookAtTypeName ("Bone" | "BlendShape"). The 0.x
+                // lookAt config lives directly under firstPerson alongside
+                // unrelated first-person data (firstPersonBone, meshAnnotations),
+                // so preserve only the lookAt-related keys (matching the 1.0
+                // lookAt block) rather than the whole firstPerson object.
                 if (const JsObject* fp =
                         _AsObject(_Find(*rootObj, "firstPerson"))) {
                     outDoc->lookAt.present = true;
@@ -827,7 +831,15 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                     std::string t = (tn && tn->IsString()) ? tn->GetString() : "Bone";
                     outDoc->lookAt.type =
                         (t == "BlendShape") ? "expression" : "bone";
-                    outDoc->lookAt.rawJson = JsWriteToString(JsValue(*fp));
+                    JsObject lookAtRaw;
+                    for (const char* key :
+                         {"lookAtTypeName", "lookAtHorizontalInner",
+                          "lookAtHorizontalOuter", "lookAtVerticalDown",
+                          "lookAtVerticalUp"}) {
+                        if (const JsValue* v = _Find(*fp, key))
+                            lookAtRaw[key] = *v;
+                    }
+                    outDoc->lookAt.rawJson = JsWriteToString(JsValue(lookAtRaw));
                 }
             }
             // Resolve lookAt eyes from the humanoid leftEye/rightEye bones
