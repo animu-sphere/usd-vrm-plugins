@@ -4,6 +4,8 @@
 #include "util/PathUtil.h"
 #include "util/TransformUtil.h"
 
+#include "pxr/base/gf/quatd.h"
+#include "pxr/base/gf/transform.h"
 #include "pxr/base/js/json.h"
 #include "pxr/base/js/value.h"
 
@@ -15,7 +17,9 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <map>
 #include <random>
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -807,6 +811,168 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                     }
                 }
             }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Skeletal animation. VRM files rarely embed animation, but an imported
+    // .glb may. Each glTF clip's joint TRS channels are resampled onto the union
+    // of their key times so the result maps straight onto UsdSkelAnimation.
+    // (Morph-weight animation is a tracked follow-up.)
+    // -----------------------------------------------------------------------
+    if (data->animations_count > 0 && !outDoc->joints.empty()) {
+        // Read one key's `comp` floats, honoring the cubic-spline layout (which
+        // stores in-tangent / value / out-tangent — we take the value vertex).
+        auto readKey = [](const cgltf_animation_sampler* s, size_t key,
+                          int comp, float* out) {
+            size_t idx = (s->interpolation == cgltf_interpolation_type_cubic_spline)
+                ? key * 3 + 1 : key;
+            cgltf_accessor_read_float(s->output, idx, out, comp);
+        };
+        // Sample a comp-vector channel at time t (STEP / LINEAR; cubic spline is
+        // approximated as linear between value vertices). comp==4 => quaternion.
+        auto sample = [&](const cgltf_animation_sampler* s, float t, int comp,
+                          float* out) {
+            const cgltf_accessor* in = s->input;
+            const size_t n = in->count;
+            if (n == 0) return;
+            float t0;
+            cgltf_accessor_read_float(in, 0, &t0, 1);
+            if (t <= t0 || n == 1) { readKey(s, 0, comp, out); return; }
+            float tn;
+            cgltf_accessor_read_float(in, n - 1, &tn, 1);
+            if (t >= tn) { readKey(s, n - 1, comp, out); return; }
+            for (size_t i = 0; i + 1 < n; ++i) {
+                float a, b;
+                cgltf_accessor_read_float(in, i, &a, 1);
+                cgltf_accessor_read_float(in, i + 1, &b, 1);
+                if (t < a || t > b) continue;
+                if (s->interpolation == cgltf_interpolation_type_step) {
+                    readKey(s, i, comp, out);
+                    return;
+                }
+                const float f = (b > a) ? (t - a) / (b - a) : 0.0f;
+                float va[4], vb[4];
+                readKey(s, i, comp, va);
+                readKey(s, i + 1, comp, vb);
+                if (comp == 4) {  // quaternion (xyzw) -> slerp
+                    GfQuatd q = GfSlerp(f, GfQuatd(va[3], va[0], va[1], va[2]),
+                                           GfQuatd(vb[3], vb[0], vb[1], vb[2]));
+                    out[0] = static_cast<float>(q.GetImaginary()[0]);
+                    out[1] = static_cast<float>(q.GetImaginary()[1]);
+                    out[2] = static_cast<float>(q.GetImaginary()[2]);
+                    out[3] = static_cast<float>(q.GetReal());
+                } else {
+                    for (int c = 0; c < comp; ++c)
+                        out[c] = va[c] + (vb[c] - va[c]) * f;
+                }
+                return;
+            }
+            readKey(s, n - 1, comp, out);
+        };
+
+        std::vector<std::string> rawAnimNames(data->animations_count);
+        for (cgltf_size a = 0; a < data->animations_count; ++a) {
+            rawAnimNames[a] = data->animations[a].name ? data->animations[a].name : "";
+        }
+        std::vector<std::string> animNames =
+            VrmMakeUniqueNames(rawAnimNames, "Clip");
+
+        for (cgltf_size a = 0; a < data->animations_count; ++a) {
+            const cgltf_animation& ga = data->animations[a];
+            std::set<float> timeSet;
+            std::map<int, const cgltf_animation_sampler*> chT, chR, chS;
+            bool cubicWarned = false;
+
+            for (cgltf_size c = 0; c < ga.channels_count; ++c) {
+                const cgltf_animation_channel& ch = ga.channels[c];
+                if (!ch.target_node || !ch.sampler) continue;
+                auto jit = nodeToJoint.find(ch.target_node);
+                if (jit == nodeToJoint.end()) continue;  // non-joint channel
+                std::map<int, const cgltf_animation_sampler*>* dst = nullptr;
+                if (ch.target_path == cgltf_animation_path_type_translation) dst = &chT;
+                else if (ch.target_path == cgltf_animation_path_type_rotation) dst = &chR;
+                else if (ch.target_path == cgltf_animation_path_type_scale) dst = &chS;
+                else continue;
+                (*dst)[jit->second] = ch.sampler;
+                if (ch.sampler->interpolation ==
+                        cgltf_interpolation_type_cubic_spline && !cubicWarned) {
+                    outDoc->warnings.push_back("animation '" + animNames[a] +
+                        "' uses CUBICSPLINE; approximated as linear");
+                    cubicWarned = true;
+                }
+                const cgltf_accessor* in = ch.sampler->input;
+                for (cgltf_size i = 0; i < in->count; ++i) {
+                    float tv;
+                    cgltf_accessor_read_float(in, i, &tv, 1);
+                    timeSet.insert(tv);
+                }
+            }
+            if (timeSet.empty()) continue;
+
+            VrmAnimation clip;
+            clip.name = animNames[a];
+            clip.times.assign(timeSet.begin(), timeSet.end());
+
+            std::set<int> jointSet;
+            for (auto& kv : chT) jointSet.insert(kv.first);
+            for (auto& kv : chR) jointSet.insert(kv.first);
+            for (auto& kv : chS) jointSet.insert(kv.first);
+            clip.jointIndices.assign(jointSet.begin(), jointSet.end());
+
+            // Rest TRS fills components a joint doesn't animate.
+            const size_t nj = clip.jointIndices.size();
+            std::vector<GfVec3f> restT(nj), restS(nj);
+            std::vector<GfQuatf> restR(nj);
+            for (size_t k = 0; k < nj; ++k) {
+                GfTransform xf(outDoc->joints[clip.jointIndices[k]].restTransform);
+                GfVec3d tr = xf.GetTranslation();
+                restT[k] = GfVec3f(tr[0], tr[1], tr[2]);
+                GfQuaternion q = xf.GetRotation().GetQuaternion();
+                restR[k] = GfQuatf(static_cast<float>(q.GetReal()),
+                                   GfVec3f(q.GetImaginary()[0], q.GetImaginary()[1],
+                                           q.GetImaginary()[2]));
+                GfVec3d sc = xf.GetScale();
+                restS[k] = GfVec3f(sc[0], sc[1], sc[2]);
+            }
+
+            const size_t T = clip.times.size();
+            clip.translations.resize(T);
+            clip.rotations.resize(T);
+            clip.scales.resize(T);
+            for (size_t ti = 0; ti < T; ++ti) {
+                const float t = clip.times[ti];
+                clip.translations[ti].resize(nj);
+                clip.rotations[ti].resize(nj);
+                clip.scales[ti].resize(nj);
+                for (size_t k = 0; k < nj; ++k) {
+                    const int j = clip.jointIndices[k];
+                    float v[4] = {0, 0, 0, 0};
+                    auto itT = chT.find(j);
+                    if (itT != chT.end()) {
+                        sample(itT->second, t, 3, v);
+                        clip.translations[ti][k] = GfVec3f(v[0], v[1], v[2]);
+                    } else {
+                        clip.translations[ti][k] = restT[k];
+                    }
+                    auto itR = chR.find(j);
+                    if (itR != chR.end()) {
+                        sample(itR->second, t, 4, v);
+                        clip.rotations[ti][k] =
+                            GfQuatf(v[3], GfVec3f(v[0], v[1], v[2]));
+                    } else {
+                        clip.rotations[ti][k] = restR[k];
+                    }
+                    auto itS = chS.find(j);
+                    if (itS != chS.end()) {
+                        sample(itS->second, t, 3, v);
+                        clip.scales[ti][k] = GfVec3f(v[0], v[1], v[2]);
+                    } else {
+                        clip.scales[ti][k] = restS[k];
+                    }
+                }
+            }
+            outDoc->animations.push_back(std::move(clip));
         }
     }
 
