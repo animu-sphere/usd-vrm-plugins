@@ -134,6 +134,27 @@ struct VrmExpression {
     // Morph-target bindings expressed as (mesh primitive index, morph index, weight).
     struct MorphBind { int meshPrimitiveIndex; int morphTargetIndex; float weight; };
     std::vector<MorphBind> morphBinds;
+    // Material-color bindings: the expression drives a material color to a target
+    // value (VRM 1.0 materialColorBinds). `type` is the VRM color slot name
+    // ("color", "emissionColor", "shadeColor", ...); evaluation is out of scope.
+    struct MaterialColorBind { int materialIndex; std::string type; GfVec4f targetValue; };
+    std::vector<MaterialColorBind> materialColorBinds;
+};
+
+// VRMC_node_constraint: a node's local rotation is driven by a source node
+// (roll / aim / rotation). Imported as data only — no evaluation. VRM 0.x has no
+// node-constraint equivalent, so this is VRM 1.0 only.
+struct VrmConstraint {
+    std::string type;                  // "roll" | "aim" | "rotation"
+    int constrainedNodeIndex = -1;     // node carrying the constraint
+    std::string constrainedNodeName;
+    int constrainedJoint = -1;         // constrained node -> skeleton joint, or -1
+    int sourceNodeIndex = -1;          // the driving node
+    std::string sourceNodeName;
+    int sourceJoint = -1;              // source node -> skeleton joint, or -1
+    std::string axis;                  // rollAxis / aimAxis; empty for "rotation"
+    float weight = 1.0f;
+    std::string rawJson;               // the node's VRMC_node_constraint block
 };
 
 // A skeletal animation clip, resampled onto a single shared timeline so it maps
@@ -228,6 +249,7 @@ struct VrmCanonicalDocument {
     std::vector<VrmAnimation> animations;
     VrmLookAt lookAt;
     VrmSecondaryMotion secondaryMotion;
+    std::vector<VrmConstraint> constraints;
 
     // Raw VRM blocks preserved as JSON on /Asset.customData (lossless preservation).
     std::string metaJson;              // meta / license / permissions

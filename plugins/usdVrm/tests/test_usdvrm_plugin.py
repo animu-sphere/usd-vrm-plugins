@@ -158,6 +158,13 @@ def check_expressions():
     weights = happy.GetAttribute("vrm:morphTargetWeights").Get()
     assert weights and abs(weights[0] - 1.0) < 1e-6, list(weights)
 
+    # materialColorBinds: drives Face_Mat emission to red.
+    ct = happy.GetRelationship("vrm:materialColorTargets").GetTargets()
+    assert ct == [Sdf.Path("/Asset/mtl/Face_Mat")], ct
+    assert list(happy.GetAttribute("vrm:materialColorTypes").Get()) == ["emissionColor"]
+    cv = happy.GetAttribute("vrm:materialColorValues").Get()
+    assert cv and tuple(cv[0]) == (1.0, 0.0, 0.0, 1.0), list(cv)
+
 
 def check_vrm0_expressions():
     """VRM 0.x blendShapeMaster: preset detection + weight 0..100 -> 0..1."""
@@ -320,6 +327,20 @@ def check_textures():
     assert mat.GetCustomData().get("vrm", {}).get("mtoon", {}).get("raw")
 
 
+def check_constraints():
+    """VRMC_node_constraint -> /Asset/rig/Constraints (type/source/axis/weight)."""
+    stage = _open("constraints.vrm")
+    con = stage.GetPrimAtPath("/Asset/rig/Constraints/head_roll")
+    assert con.IsValid(), "expected /Asset/rig/Constraints/head_roll"
+    assert con.GetAttribute("vrm:type").Get() == "roll"
+    assert con.GetAttribute("vrm:constrained").Get() == "hips/spine/head"
+    assert con.GetAttribute("vrm:source").Get() == "hips/spine"
+    assert con.GetAttribute("vrm:axis").Get() == "X"
+    assert abs(con.GetAttribute("vrm:weight").Get() - 0.8) < 1e-6
+    raw = con.GetCustomData().get("vrm", {}).get("constraint", {}).get("raw")
+    assert raw and "rollAxis" in raw, "constraint raw block not preserved"
+
+
 def check_badext():
     """A semantically broken VRM humanoid must warn+skip, never crash."""
     stage = _open("badext.vrm")
@@ -331,6 +352,9 @@ def check_badext():
         "out-of-range humanoid bone should be skipped"
     # The raw block is still preserved even though parts were unusable.
     assert stage.GetDefaultPrim().GetCustomData().get("vrm", {}).get("rawExtension")
+    # Diagnostic report: the dropped out-of-range bone is surfaced on /Asset.
+    warnings = stage.GetDefaultPrim().GetCustomData().get("vrm", {}).get("warnings")
+    assert warnings and any("spine" in w and "skipped" in w for w in warnings), warnings
 
 
 def main() -> int:
@@ -344,7 +368,7 @@ def main() -> int:
                   check_unordered_skel, check_expressions,
                   check_vrm0_expressions, check_textures, check_animation,
                   check_lookat, check_springbone, check_names, check_materials,
-                  check_shared_accessor, check_badext):
+                  check_constraints, check_shared_accessor, check_badext):
         check()
         print(f"  {check.__name__}: OK")
     print("usdVrm smoke tests: OK")
