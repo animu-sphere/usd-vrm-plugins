@@ -202,6 +202,8 @@ struct VrmSpringJoint {
 struct VrmSpring {
     std::string name;
     int centerJoint = -1;
+    int centerSourceNodeIndex = -1;
+    std::string centerSourceNodeName;
     std::vector<VrmSpringJoint> joints;
     std::vector<int> colliderGroupIndices;  // into VrmSecondaryMotion::colliderGroups
 };

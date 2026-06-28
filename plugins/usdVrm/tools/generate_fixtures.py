@@ -182,7 +182,7 @@ def build_springbone():
                                             "radius": 0.1}}}],
         "colliderGroups": [{"name": "Head", "colliders": [0]}],
         "springs": [{
-            "name": "Hair", "center": 1, "colliderGroups": [0],
+            "name": "Hair", "center": 5, "colliderGroups": [0],
             "joints": [
                 {"node": 3, "hitRadius": 0.02, "stiffness": 1.0,
                  "gravityPower": 0.5, "gravityDir": [0.0, -1.0, 0.0],
@@ -194,13 +194,14 @@ def build_springbone():
     }
     gltf = {
         "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
-        "scene": 0, "scenes": [{"nodes": [0, 1]}],
+        "scene": 0, "scenes": [{"nodes": [0, 1, 5]}],
         "nodes": [
             {"name": "Body", "mesh": 0, "skin": 0},
             {"name": "hips", "children": [2], "translation": [0.0, 0.5, 0.0]},
             {"name": "spine", "children": [3], "translation": [0.0, 0.3, 0.0]},
             {"name": "hair1", "children": [4], "translation": [0.0, 0.2, 0.0]},
             {"name": "hair2", "translation": [0.0, 0.2, 0.0]},
+            {"name": "springCenter", "translation": [0.0, 0.5, 0.0]},
         ],
         "meshes": [{"name": "Body", "primitives": [
             {"attributes": skin_attrs, "indices": idx, "material": 0}]}],

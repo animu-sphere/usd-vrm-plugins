@@ -766,11 +766,14 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             arr("vrm:dragForce", SdfValueTypeNames->FloatArray, VtValue(drag));
             arr("vrm:hitRadius", SdfValueTypeNames->FloatArray, VtValue(hit));
             arr("vrm:gravityDir", SdfValueTypeNames->Float3Array, VtValue(gdir));
-            if (s.centerJoint >= 0 &&
-                s.centerJoint < static_cast<int>(jointPaths.size())) {
+            if ((s.centerJoint >= 0 &&
+                 s.centerJoint < static_cast<int>(jointPaths.size())) ||
+                s.centerSourceNodeIndex >= 0 ||
+                !s.centerSourceNodeName.empty()) {
                 sp.CreateAttribute(TfToken("vrm:center"), SdfValueTypeNames->Token,
                                    true, SdfVariabilityUniform)
-                    .Set(TfToken(jointPaths[s.centerJoint]));
+                    .Set(jointTok(s.centerJoint, s.centerSourceNodeName,
+                                  s.centerSourceNodeIndex));
             }
             SdfPathVector cgTargets;
             for (int gi : s.colliderGroupIndices)

@@ -230,7 +230,7 @@ def check_springbone():
     stiff = list(hair.GetAttribute("vrm:stiffness").Get())
     assert abs(stiff[0] - 1.0) < 1e-6 and abs(stiff[1] - 0.8) < 1e-6, stiff
     assert abs(hair.GetAttribute("vrm:gravityPower").Get()[0] - 0.5) < 1e-6
-    assert hair.GetAttribute("vrm:center").Get() == "hips"
+    assert hair.GetAttribute("vrm:center").Get() == "springCenter"
 
     head = stage.GetPrimAtPath("/Asset/rig/SecondaryMotion/Colliders/Head")
     assert head.IsValid(), "expected Colliders/Head"

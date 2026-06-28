@@ -1184,7 +1184,10 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                         const JsValue* nm = _Find(*s, "name");
                         spr.name = (nm && nm->IsString()) ? nm->GetString()
                             : "Spring_" + std::to_string(sm.springs.size());
-                        spr.centerJoint = nodeJoint(_AsInt(_Find(*s, "center")));
+                        int centerNode = _AsInt(_Find(*s, "center"));
+                        spr.centerSourceNodeIndex = centerNode;
+                        spr.centerSourceNodeName = nodeName(centerNode);
+                        spr.centerJoint = nodeJoint(centerNode);
                         if (const JsArray* cg =
                                 _AsArray(_Find(*s, "colliderGroups")))
                             for (const JsValue& iv : *cg)
@@ -1260,7 +1263,10 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                         spr.name = (cm && cm->IsString() && !cm->GetString().empty())
                             ? cm->GetString()
                             : "Spring_" + std::to_string(sm.springs.size());
-                        spr.centerJoint = nodeJoint(_AsInt(_Find(*bg, "center")));
+                        int centerNode = _AsInt(_Find(*bg, "center"));
+                        spr.centerSourceNodeIndex = centerNode;
+                        spr.centerSourceNodeName = nodeName(centerNode);
+                        spr.centerJoint = nodeJoint(centerNode);
                         // VRM 0.x spells stiffness "stiffiness".
                         float stiff = fval(_Find(*bg, "stiffiness"), 1);
                         float gp = fval(_Find(*bg, "gravityPower"), 0);
