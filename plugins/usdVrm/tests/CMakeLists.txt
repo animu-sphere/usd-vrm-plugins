@@ -8,18 +8,49 @@
 # (and site-packages) plus the bundle's lib/ and plugInfo root on the right env
 # vars — injected portably via ENVIRONMENT_MODIFICATION (CMake 3.22+).
 
-find_package(Python3 COMPONENTS Interpreter QUIET)
-if(NOT Python3_Interpreter_FOUND)
-    message(STATUS "usdVrm: Python3 interpreter not found; skipping smoke test")
-    return()
-endif()
-
-# Resolve the OpenUSD install root from the pxr CMake package location.
+# Resolve the OpenUSD install root from the pxr CMake package location (shared by
+# both the C++ unit test and the Python smoke test below).
 set(_usd_root "")
 if(pxr_DIR AND EXISTS "${pxr_DIR}/bin")
     set(_usd_root "${pxr_DIR}")
 elseif(pxr_DIR)
     get_filename_component(_usd_root "${pxr_DIR}/../../.." ABSOLUTE)
+endif()
+
+# -----------------------------------------------------------------------------
+# C++ unit test: pure-logic conversions in util/TransformUtil (no plugin/runtime
+# needed, just gf). Compiles the one TU directly so it's independent of the
+# shared plugin library.
+# -----------------------------------------------------------------------------
+add_executable(test_transform_util
+    test_transform_util.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/util/TransformUtil.cpp")
+target_include_directories(test_transform_util PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src"
+    ${PXR_INCLUDE_DIRS})
+if(TARGET gf)
+    target_link_libraries(test_transform_util PRIVATE gf)
+elseif(TARGET pxr::gf)
+    target_link_libraries(test_transform_util PRIVATE pxr::gf)
+elseif(TARGET usd_ms)
+    target_link_libraries(test_transform_util PRIVATE usd_ms)
+else()
+    target_link_libraries(test_transform_util PRIVATE ${PXR_LIBRARIES})
+endif()
+if(MSVC)
+    target_compile_definitions(test_transform_util PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(test_transform_util PRIVATE /utf-8)
+endif()
+add_test(NAME usdvrm_transform_util COMMAND test_transform_util)
+# gf's DLL (and its deps) live in the USD lib dir; put it on the loader path.
+set_tests_properties(usdvrm_transform_util PROPERTIES
+    ENVIRONMENT_MODIFICATION
+        "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib")
+
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(NOT Python3_Interpreter_FOUND)
+    message(STATUS "usdVrm: Python3 interpreter not found; skipping smoke test")
+    return()
 endif()
 
 set(_bundle_dir "${CMAKE_CURRENT_SOURCE_DIR}/..")
