@@ -1391,6 +1391,12 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                 con.constrainedNodeName = nodeName(static_cast<int>(ni));
                 con.constrainedJoint = nodeJoint(static_cast<int>(ni));
                 int src = _AsInt(_Find(*spec, "source"));
+                if (src < 0 || src >= static_cast<int>(data->nodes_count)) {
+                    outDoc->warnings.push_back("node constraint on '" +
+                        con.constrainedNodeName + "' (" + type +
+                        ") has no valid source node; skipped");
+                    continue;
+                }
                 con.sourceNodeIndex = src;
                 con.sourceNodeName = nodeName(src);
                 con.sourceJoint = nodeJoint(src);
