@@ -4,6 +4,7 @@
 #include "util/PathUtil.h"
 
 #include "pxr/base/gf/range3f.h"
+#include "pxr/base/gf/vec3h.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
@@ -23,6 +24,7 @@
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usdShade/shader.h"
+#include "pxr/usd/usdSkel/animation.h"
 #include "pxr/usd/usdSkel/bindingAPI.h"
 #include "pxr/usd/usdSkel/blendShape.h"
 #include "pxr/usd/usdSkel/root.h"
@@ -544,6 +546,68 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
                                   SdfVariabilityUniform)
                     .Set(weights);
             }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Skeletal animation. Each clip becomes a UsdSkelAnimation under
+    // /Asset/skel/Animations; the first is bound to the skeleton so it plays in
+    // usdview. Times are authored as timecodes at a fixed 30 fps.
+    // -----------------------------------------------------------------------
+    if (hasSkel && !doc.animations.empty()) {
+        const double fps = 30.0;
+        SdfPath animScopePath = skelScopePath.AppendChild(TfToken("Animations"));
+        UsdGeomScope::Define(stage, animScopePath);
+
+        double startTc = 0.0, endTc = 0.0;
+        bool haveRange = false;
+        SdfPath firstClip;
+        for (size_t i = 0; i < doc.animations.size(); ++i) {
+            const VrmAnimation& a = doc.animations[i];
+            if (a.jointIndices.empty() || a.times.empty()) continue;
+            // Clip names are already sanitized + uniquified by the reader.
+            SdfPath clipPath = animScopePath.AppendChild(TfToken(a.name));
+            UsdSkelAnimation anim = UsdSkelAnimation::Define(stage, clipPath);
+
+            VtTokenArray joints;
+            joints.reserve(a.jointIndices.size());
+            for (int j : a.jointIndices) joints.push_back(TfToken(jointPaths[j]));
+            anim.CreateJointsAttr(VtValue(joints));
+
+            UsdAttribute tAttr = anim.CreateTranslationsAttr();
+            UsdAttribute rAttr = anim.CreateRotationsAttr();
+            UsdAttribute sAttr = anim.CreateScalesAttr();
+            for (size_t ti = 0; ti < a.times.size(); ++ti) {
+                const double tc = a.times[ti] * fps;
+                tAttr.Set(VtVec3fArray(a.translations[ti].begin(),
+                                       a.translations[ti].end()), tc);
+                rAttr.Set(VtQuatfArray(a.rotations[ti].begin(),
+                                       a.rotations[ti].end()), tc);
+                VtVec3hArray scales(a.scales[ti].size());
+                for (size_t k = 0; k < a.scales[ti].size(); ++k)
+                    scales[k] = GfVec3h(a.scales[ti][k]);
+                sAttr.Set(scales, tc);
+            }
+            if (firstClip.IsEmpty()) {
+                firstClip = clipPath;
+                // Stage time range follows the bound (first) clip only; a.times
+                // is sorted ascending by the reader.
+                startTc = a.times.front() * fps;
+                endTc = a.times.back() * fps;
+                haveRange = true;
+            }
+        }
+
+        if (!firstClip.IsEmpty()) {
+            UsdSkelBindingAPI::Apply(stage->GetPrimAtPath(skelPath))
+                .CreateAnimationSourceRel()
+                .SetTargets({firstClip});
+        }
+        if (haveRange) {
+            stage->SetTimeCodesPerSecond(fps);
+            stage->SetFramesPerSecond(fps);
+            stage->SetStartTimeCode(startTc);
+            stage->SetEndTimeCode(endTc);
         }
     }
 

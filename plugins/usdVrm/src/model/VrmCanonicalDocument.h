@@ -135,6 +135,27 @@ struct VrmExpression {
     std::vector<MorphBind> morphBinds;
 };
 
+// A skeletal animation clip, resampled onto a single shared timeline so it maps
+// directly to UsdSkelAnimation (which stores parallel per-joint arrays). The
+// reader does the resampling; the authorer just writes time samples.
+struct VrmAnimation {
+    std::string name;
+    std::vector<float> times;          // shared sample times, seconds
+
+    // Animated joints (indices into VrmCanonicalDocument::joints) and their
+    // local TRS at each time: translations[t][j], rotations[t][j], scales[t][j].
+    std::vector<int> jointIndices;
+    std::vector<std::vector<GfVec3f>> translations;
+    std::vector<std::vector<GfQuatf>> rotations;
+    std::vector<std::vector<GfVec3f>> scales;
+
+    // Blend-shape weight tracks: track k animates morph (meshPrim[k], morph[k]);
+    // weights[t][k] is its weight at time t.
+    std::vector<int> blendMeshPrim;
+    std::vector<int> blendMorphIndex;
+    std::vector<std::vector<float>> blendWeights;
+};
+
 struct VrmCanonicalDocument {
     VrmVersion version = VrmVersion::Unknown;
     std::string specVersion;           // e.g. "0.0", "1.0"
@@ -144,6 +165,7 @@ struct VrmCanonicalDocument {
     std::vector<VrmJoint> joints;      // empty => no skeleton
     std::vector<VrmHumanoidBone> humanoidBones;
     std::vector<VrmExpression> expressions;
+    std::vector<VrmAnimation> animations;
 
     // Raw VRM blocks preserved as JSON on /Asset.customData (lossless preservation).
     std::string metaJson;              // meta / license / permissions

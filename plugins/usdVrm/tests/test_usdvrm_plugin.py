@@ -199,6 +199,30 @@ def check_materials():
     assert abs(glass.GetAttribute("inputs:opacity").Get() - 0.3) < 1e-6
 
 
+def check_animation():
+    """A glTF rotation clip -> UsdSkelAnimation bound to the skeleton."""
+    stage = _open("animation.vrm")
+    anim = UsdSkel.Animation(stage.GetPrimAtPath("/Asset/skel/Animations/wave"))
+    assert anim, "expected /Asset/skel/Animations/wave"
+    assert list(anim.GetJointsAttr().Get()) == ["hips/spine"]
+
+    rattr = anim.GetRotationsAttr()
+    ts = rattr.GetTimeSamples()
+    assert ts and abs(ts[0] - 0.0) < 1e-6 and abs(ts[-1] - 30.0) < 1e-6, ts
+    q0 = rattr.Get(0.0)[0]
+    assert abs(q0.GetReal() - 1.0) < 1e-4, q0          # identity at t=0
+    qn = rattr.Get(30.0)[0]
+    assert abs(qn.GetReal() - 0.7071) < 1e-3, qn       # 90 deg about Z at t=1s
+    assert abs(qn.GetImaginary()[2] - 0.7071) < 1e-3, qn
+
+    # Bound so it plays, with the stage time range set.
+    src = UsdSkel.BindingAPI(
+        stage.GetPrimAtPath("/Asset/skel/Skeleton")).GetAnimationSourceRel()
+    assert src.GetTargets() == [Sdf.Path("/Asset/skel/Animations/wave")], src.GetTargets()
+    assert abs(stage.GetStartTimeCode() - 0.0) < 1e-6
+    assert abs(stage.GetEndTimeCode() - 30.0) < 1e-6
+
+
 def check_textures():
     """Embedded base-color texture -> UsdUVTexture + st reader; MToon metadata."""
     stage = _open("textures.vrm")
@@ -248,8 +272,8 @@ def main() -> int:
 
     for check in (check_minimal, check_vrm0, check_multiskin_ibm,
                   check_unordered_skel, check_expressions,
-                  check_vrm0_expressions, check_textures, check_names,
-                  check_materials, check_badext):
+                  check_vrm0_expressions, check_textures, check_animation,
+                  check_names, check_materials, check_badext):
         check()
         print(f"  {check.__name__}: OK")
     print("usdVrm smoke tests: OK")

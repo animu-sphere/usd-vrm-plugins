@@ -80,12 +80,13 @@ Phase 1 + most of Phase 2. Implemented: GLB read, version detection, meshes
 `KHR_texture_transform`), **MToon metadata** (`vrm:shaderModel` + `vrm:mtoon:raw`),
 unified skeleton (bind from inverse bind matrices, topologically ordered) +
 skinning binding, humanoid mapping, **blend shapes (`UsdSkelBlendShape`) and VRM
-expressions** (`/Asset/rig/Expressions`, morph-target bindings), VRM meta +
+expressions** (`/Asset/rig/Expressions`, morph-target bindings), **glTF skeletal
+animation** (`UsdSkelAnimation` joint TRS, bound + stage time range), VRM meta +
 raw-extension preservation, graceful warnings on unsupported data.
 
-Not yet (later phases): full MToon shading (only approximated via
-UsdPreviewSurface + metadata today), KTX2/WebP image decode, glTF skeletal
-animation, LookAt, SpringBone/colliders, node constraints.
+Not yet (later phases): morph-weight animation, full MToon shading (only
+approximated via UsdPreviewSurface + metadata today), KTX2/WebP image decode,
+LookAt, SpringBone/colliders, node constraints.
 
 ### Textures
 
