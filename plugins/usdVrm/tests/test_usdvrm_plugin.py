@@ -41,6 +41,7 @@ def check_minimal():
     assert "humanoid" in vrm["rawExtension"], "rawExtension should be the VRM block"
     # VRM 1.0 already faces +Z: no front-normalization rotation.
     assert vrm.get("sourceFrontAxis") == "+Z", vrm
+    assert vrm.get("frontAxisNormalized") is False, vrm
     assert not dp.GetAttribute("xformOp:rotateY").IsValid(), "VRM 1.0 must not be rotated"
 
     body = stage.GetPrimAtPath("/Asset/geo/Body")

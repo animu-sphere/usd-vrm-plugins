@@ -137,14 +137,18 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     // root so every imported avatar faces +Z. Because it's a single
     // SkelRoot-level transform, skinning, animation, blend shapes and lookAt all
     // keep working — the whole local frame just rotates.
-    const char* frontAxis = (doc.version == VrmVersion::Vrm0) ? "-Z" : "+Z";
+    const char* frontAxis = doc.version == VrmVersion::Vrm0   ? "-Z"
+                            : doc.version == VrmVersion::Vrm1 ? "+Z"
+                                                             : "unknown";
     assetPrim.SetCustomDataByKey(TfToken("vrm:sourceFrontAxis"),
                                  VtValue(std::string(frontAxis)));
-    if (doc.version == VrmVersion::Vrm0) {
+    // Only VRM 0.x needs rotating; record the flag for every version so
+    // consumers never have to distinguish "not normalized" from "key absent".
+    const bool normalized = (doc.version == VrmVersion::Vrm0);
+    if (normalized)
         UsdGeomXformable(assetPrim).AddRotateYOp().Set(180.0f);
-        assetPrim.SetCustomDataByKey(TfToken("vrm:frontAxisNormalized"),
-                                     VtValue(true));
-    }
+    assetPrim.SetCustomDataByKey(TfToken("vrm:frontAxisNormalized"),
+                                 VtValue(normalized));
 
     // -----------------------------------------------------------------------
     // Materials.
