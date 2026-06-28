@@ -21,6 +21,7 @@
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/xform.h"
+#include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usdShade/shader.h"
@@ -130,6 +131,20 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     if (!doc.rawVrmExtensionJson.empty())
         assetPrim.SetCustomDataByKey(TfToken("vrm:rawExtension"),
                                      VtValue(doc.rawVrmExtensionJson));
+
+    // Front-direction normalization. VRM 0.x avatars face -Z; VRM 1.0
+    // standardized on +Z. Rotate VRM 0.x by 180 deg about the up axis at the
+    // root so every imported avatar faces +Z. Because it's a single
+    // SkelRoot-level transform, skinning, animation, blend shapes and lookAt all
+    // keep working — the whole local frame just rotates.
+    const char* frontAxis = (doc.version == VrmVersion::Vrm0) ? "-Z" : "+Z";
+    assetPrim.SetCustomDataByKey(TfToken("vrm:sourceFrontAxis"),
+                                 VtValue(std::string(frontAxis)));
+    if (doc.version == VrmVersion::Vrm0) {
+        UsdGeomXformable(assetPrim).AddRotateYOp().Set(180.0f);
+        assetPrim.SetCustomDataByKey(TfToken("vrm:frontAxisNormalized"),
+                                     VtValue(true));
+    }
 
     // -----------------------------------------------------------------------
     // Materials.
