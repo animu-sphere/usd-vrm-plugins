@@ -4,9 +4,11 @@
 #include "util/PathUtil.h"
 
 #include "pxr/base/gf/range3f.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/usd/kind/registry.h"
+#include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/modelAPI.h"
@@ -158,6 +160,116 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         UsdShadeOutput surfaceOut =
             shader.CreateOutput(TfToken("surface"), SdfValueTypeNames->Token);
         mat.CreateSurfaceOutput().ConnectToSource(surfaceOut);
+
+        // Textures. A single UsdPrimvarReader_float2 feeds every UsdUVTexture's
+        // st; each glTF texture slot becomes one UsdUVTexture wired into the
+        // matching UsdPreviewSurface input. (glTF's factor*texture multiply is
+        // approximated by the texture alone — a follow-up may insert multiplies.)
+        bool anyTex = vm.baseColorTex.present || vm.metallicRoughnessTex.present ||
+                      vm.normalTex.present || vm.emissiveTex.present ||
+                      vm.occlusionTex.present;
+        UsdShadeShader stReader;
+        if (anyTex) {
+            stReader = UsdShadeShader::Define(
+                stage, matPath.AppendChild(TfToken("stReader")));
+            stReader.CreateIdAttr(VtValue(TfToken("UsdPrimvarReader_float2")));
+            stReader.CreateInput(TfToken("varname"), SdfValueTypeNames->Token)
+                .Set(TfToken("st"));
+            stReader.CreateOutput(TfToken("result"), SdfValueTypeNames->Float2);
+        }
+
+        auto makeTexture = [&](const VrmTextureRef& ref, const char* nodeName,
+                               bool color) -> UsdShadeShader {
+            UsdShadeShader tex = UsdShadeShader::Define(
+                stage, matPath.AppendChild(TfToken(nodeName)));
+            tex.CreateIdAttr(VtValue(TfToken("UsdUVTexture")));
+            tex.CreateInput(TfToken("file"), SdfValueTypeNames->Asset)
+                .Set(SdfAssetPath(ref.filePath));
+            tex.CreateInput(TfToken("wrapS"), SdfValueTypeNames->Token)
+                .Set(TfToken(ref.wrapS));
+            tex.CreateInput(TfToken("wrapT"), SdfValueTypeNames->Token)
+                .Set(TfToken(ref.wrapT));
+            tex.CreateInput(TfToken("sourceColorSpace"), SdfValueTypeNames->Token)
+                .Set(TfToken(color ? "sRGB" : "raw"));
+            UsdShadeInput st =
+                tex.CreateInput(TfToken("st"), SdfValueTypeNames->Float2);
+            // KHR_texture_transform -> UsdTransform2d between the reader and st.
+            if (ref.hasTransform) {
+                UsdShadeShader xf = UsdShadeShader::Define(stage,
+                    matPath.AppendChild(TfToken(std::string(nodeName) + "_xf")));
+                xf.CreateIdAttr(VtValue(TfToken("UsdTransform2d")));
+                xf.CreateInput(TfToken("in"), SdfValueTypeNames->Float2)
+                    .ConnectToSource(stReader.GetOutput(TfToken("result")));
+                xf.CreateInput(TfToken("translation"), SdfValueTypeNames->Float2)
+                    .Set(ref.uvOffset);
+                xf.CreateInput(TfToken("scale"), SdfValueTypeNames->Float2)
+                    .Set(ref.uvScale);
+                xf.CreateInput(TfToken("rotation"), SdfValueTypeNames->Float)
+                    .Set(ref.uvRotation);
+                st.ConnectToSource(
+                    xf.CreateOutput(TfToken("result"), SdfValueTypeNames->Float2));
+            } else {
+                st.ConnectToSource(stReader.GetOutput(TfToken("result")));
+            }
+            tex.CreateOutput(TfToken("rgb"), SdfValueTypeNames->Float3);
+            tex.CreateOutput(TfToken("r"), SdfValueTypeNames->Float);
+            tex.CreateOutput(TfToken("g"), SdfValueTypeNames->Float);
+            tex.CreateOutput(TfToken("b"), SdfValueTypeNames->Float);
+            tex.CreateOutput(TfToken("a"), SdfValueTypeNames->Float);
+            return tex;
+        };
+
+        if (vm.baseColorTex.present) {
+            UsdShadeShader t = makeTexture(vm.baseColorTex, "baseColorTexture", true);
+            shader.GetInput(TfToken("diffuseColor"))
+                .ConnectToSource(t.GetOutput(TfToken("rgb")));
+            if (vm.alphaMode != "OPAQUE") {
+                shader.GetInput(TfToken("opacity"))
+                    .ConnectToSource(t.GetOutput(TfToken("a")));
+            }
+        }
+        if (vm.metallicRoughnessTex.present) {
+            UsdShadeShader t =
+                makeTexture(vm.metallicRoughnessTex, "metallicRoughnessTexture", false);
+            // glTF packs roughness in G, metalness in B.
+            shader.GetInput(TfToken("roughness"))
+                .ConnectToSource(t.GetOutput(TfToken("g")));
+            shader.GetInput(TfToken("metallic"))
+                .ConnectToSource(t.GetOutput(TfToken("b")));
+        }
+        if (vm.emissiveTex.present) {
+            UsdShadeShader t = makeTexture(vm.emissiveTex, "emissiveTexture", true);
+            shader.GetInput(TfToken("emissiveColor"))
+                .ConnectToSource(t.GetOutput(TfToken("rgb")));
+        }
+        if (vm.occlusionTex.present) {
+            UsdShadeShader t = makeTexture(vm.occlusionTex, "occlusionTexture", false);
+            shader.CreateInput(TfToken("occlusion"), SdfValueTypeNames->Float)
+                .ConnectToSource(t.GetOutput(TfToken("r")));
+        }
+        if (vm.normalTex.present) {
+            UsdShadeShader t = makeTexture(vm.normalTex, "normalTexture", false);
+            // Decode tangent-space normals: [0,1] -> [-1,1].
+            t.CreateInput(TfToken("scale"), SdfValueTypeNames->Float4)
+                .Set(GfVec4f(2.0f, 2.0f, 2.0f, 2.0f));
+            t.CreateInput(TfToken("bias"), SdfValueTypeNames->Float4)
+                .Set(GfVec4f(-1.0f, -1.0f, -1.0f, -1.0f));
+            shader.CreateInput(TfToken("normal"), SdfValueTypeNames->Normal3f)
+                .ConnectToSource(t.GetOutput(TfToken("rgb")));
+        }
+
+        // MToon: keep the glTF/UsdPreviewSurface approximation, tag the shader
+        // model, and preserve the raw extension block for a later MaterialX /
+        // dedicated shader-graph pass.
+        if (vm.isMToon) {
+            mat.GetPrim().CreateAttribute(TfToken("vrm:shaderModel"),
+                SdfValueTypeNames->Token, true, SdfVariabilityUniform)
+                .Set(TfToken("MToon"));
+            if (!vm.rawShaderJson.empty()) {
+                mat.GetPrim().SetCustomDataByKey(TfToken("vrm:mtoon:raw"),
+                                                 VtValue(vm.rawShaderJson));
+            }
+        }
 
         if (vm.sourceMaterialIndex >= 0)
             mat.GetPrim().SetCustomDataByKey(TfToken("vrm:sourceMaterialIndex"),

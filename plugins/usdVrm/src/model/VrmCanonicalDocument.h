@@ -69,6 +69,21 @@ struct VrmMeshPrimitive {
     std::vector<VrmMorphTarget> morphTargets;
 };
 
+// A reference to an extracted texture image plus its sampler/UV state.
+struct VrmTextureRef {
+    bool present = false;
+    std::string filePath;              // resolved (extracted) image path, USD asset
+    int uvSet = 0;                     // TEXCOORD_<n>; only 0 is wired in Phase 2
+    std::string wrapS = "repeat";      // repeat | clamp | mirror
+    std::string wrapT = "repeat";
+    float scale = 1.0f;                // normalTexture.scale / occlusion strength
+    // KHR_texture_transform (identity unless hasTransform).
+    bool hasTransform = false;
+    GfVec2f uvOffset = GfVec2f(0.0f, 0.0f);
+    GfVec2f uvScale = GfVec2f(1.0f, 1.0f);
+    float uvRotation = 0.0f;
+};
+
 // glTF PBR metallic-roughness, normalized to what UsdPreviewSurface needs.
 struct VrmMaterial {
     std::string name;
@@ -82,6 +97,12 @@ struct VrmMaterial {
     bool doubleSided = false;
     std::string alphaMode = "OPAQUE";  // OPAQUE | MASK | BLEND
     float alphaCutoff = 0.5f;
+
+    VrmTextureRef baseColorTex;
+    VrmTextureRef metallicRoughnessTex;
+    VrmTextureRef normalTex;
+    VrmTextureRef emissiveTex;
+    VrmTextureRef occlusionTex;
 
     // MToon / VRM shader metadata is preserved verbatim as JSON for later phases.
     bool isMToon = false;

@@ -199,6 +199,33 @@ def check_materials():
     assert abs(glass.GetAttribute("inputs:opacity").Get() - 0.3) < 1e-6
 
 
+def check_textures():
+    """Embedded base-color texture -> UsdUVTexture + st reader; MToon metadata."""
+    stage = _open("textures.vrm")
+    mat = stage.GetPrimAtPath("/Asset/mtl/Skin")
+    surf = stage.GetPrimAtPath("/Asset/mtl/Skin/Surface")
+    tex = stage.GetPrimAtPath("/Asset/mtl/Skin/baseColorTexture")
+    assert mat.IsValid() and surf.IsValid() and tex.IsValid()
+
+    assert tex.GetAttribute("info:id").Get() == "UsdUVTexture"
+    f = tex.GetAttribute("inputs:file").Get()
+    assert f and f.path.endswith(".png") and os.path.exists(f.path), f
+    assert tex.GetAttribute("inputs:sourceColorSpace").Get() == "sRGB"
+    assert tex.GetAttribute("inputs:wrapS").Get() == "repeat"
+    assert tex.GetAttribute("inputs:wrapT").Get() == "clamp"
+
+    # diffuseColor <- texture.rgb, and st <- stReader.result.
+    conn = surf.GetAttribute("inputs:diffuseColor").GetConnections()
+    assert conn == [Sdf.Path("/Asset/mtl/Skin/baseColorTexture.outputs:rgb")], conn
+    assert stage.GetPrimAtPath("/Asset/mtl/Skin/stReader").IsValid()
+    stc = tex.GetAttribute("inputs:st").GetConnections()
+    assert stc == [Sdf.Path("/Asset/mtl/Skin/stReader.outputs:result")], stc
+
+    # MToon preserved as metadata.
+    assert mat.GetAttribute("vrm:shaderModel").Get() == "MToon"
+    assert mat.GetCustomData().get("vrm", {}).get("mtoon", {}).get("raw")
+
+
 def check_badext():
     """A semantically broken VRM humanoid must warn+skip, never crash."""
     stage = _open("badext.vrm")
@@ -221,7 +248,7 @@ def main() -> int:
 
     for check in (check_minimal, check_vrm0, check_multiskin_ibm,
                   check_unordered_skel, check_expressions,
-                  check_vrm0_expressions, check_names,
+                  check_vrm0_expressions, check_textures, check_names,
                   check_materials, check_badext):
         check()
         print(f"  {check.__name__}: OK")

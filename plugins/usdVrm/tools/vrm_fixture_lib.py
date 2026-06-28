@@ -7,6 +7,7 @@ to look like avatars.
 """
 import json
 import struct
+import zlib
 
 FLOAT, U16, U8 = 5126, 5123, 5121
 ARRAY_BUFFER, ELEMENT_ARRAY_BUFFER = 34962, 34963
@@ -36,6 +37,17 @@ class GlbBuilder:
     def _align(self):
         while len(self._bin) % 4:
             self._bin.append(0)
+
+    def add_bytes(self, data, target=None):
+        """Append raw bytes (e.g. an embedded image) and return a bufferView."""
+        offset = len(self._bin)
+        self._bin += data
+        view = {"buffer": 0, "byteOffset": offset, "byteLength": len(data)}
+        if target:
+            view["target"] = target
+        self._align()
+        self._views.append(view)
+        return len(self._views) - 1
 
     def add(self, component_type, type_, rows, target=None, minmax=False):
         n = _TYPE_COUNT[type_]
@@ -75,6 +87,19 @@ class GlbBuilder:
 
         body = chunk(b"JSON", json_blob) + chunk(b"BIN\x00", bin_blob)
         return struct.pack("<4sII", b"glTF", 2, 12 + len(body)) + body
+
+
+def solid_png(r, g, b, a=255):
+    """A valid 1x1 RGBA PNG of a solid color (CRCs computed, no deps)."""
+    def chunk(typ, data):
+        body = typ + data
+        return (struct.pack(">I", len(data)) + body +
+                struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF))
+    sig = b"\x89PNG\r\n\x1a\n"
+    ihdr = struct.pack(">IIBBBBB", 1, 1, 8, 6, 0, 0, 0)  # 1x1, 8-bit RGBA
+    scanline = b"\x00" + bytes([r, g, b, a])             # filter byte + pixel
+    idat = zlib.compress(scanline)
+    return sig + chunk(b"IHDR", ihdr) + chunk(b"IDAT", idat) + chunk(b"IEND", b"")
 
 
 def vrm1_extension(human_bones, meta_name="usdVrm Fixture"):

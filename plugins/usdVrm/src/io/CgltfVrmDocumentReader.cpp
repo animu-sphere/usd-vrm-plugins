@@ -10,7 +10,10 @@
 #include "cgltf.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <functional>
 #include <unordered_map>
 #include <vector>
@@ -103,6 +106,35 @@ std::vector<GfVec2f> _ReadVec2(const cgltf_accessor* acc)
     return out;
 }
 
+const char* _WrapStr(cgltf_wrap_mode w)
+{
+    switch (w) {
+        case cgltf_wrap_mode_clamp_to_edge: return "clamp";
+        case cgltf_wrap_mode_mirrored_repeat: return "mirror";
+        default: return "repeat";
+    }
+}
+
+// Supported embedded image formats (USD's image plugins read png/jpg). KTX2 /
+// WebP / Basis are out of scope for Phase 2.
+const char* _ImageExt(const cgltf_image* img)
+{
+    if (img->mime_type) {
+        if (std::strcmp(img->mime_type, "image/png") == 0) return "png";
+        if (std::strcmp(img->mime_type, "image/jpeg") == 0) return "jpg";
+        return nullptr;
+    }
+    return nullptr;
+}
+
+std::uint64_t _HashBytes(const void* p, size_t n)
+{
+    std::uint64_t h = 1469598103934665603ull;
+    const unsigned char* b = static_cast<const unsigned char*>(p);
+    for (size_t i = 0; i < n; ++i) { h ^= b[i]; h *= 1099511628211ull; }
+    return h;
+}
+
 } // namespace
 
 bool
@@ -160,6 +192,91 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
     }
 
     // -----------------------------------------------------------------------
+    // Texture extraction. Embedded images are written once to a content-hashed
+    // file under a managed cache dir; the USD asset path points at the extracted
+    // file so usdview/usdcat resolve it. (A future Ar resolver could serve bytes
+    // straight from the .vrm; for now this is the documented, simple option.)
+    // -----------------------------------------------------------------------
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    const fs::path cacheDir = fs::temp_directory_path(ec) / "usdVrm_cache";
+    fs::create_directories(cacheDir, ec);
+    const fs::path sourceDir = fs::path(resolvedPath).parent_path();
+    std::unordered_map<const cgltf_image*, std::string> imageCache;
+
+    auto extractImage = [&](const cgltf_image* img) -> std::string {
+        if (!img) return {};
+        auto cached = imageCache.find(img);
+        if (cached != imageCache.end()) return cached->second;
+
+        std::string result;
+        if (img->buffer_view) {
+            const cgltf_buffer_view* bv = img->buffer_view;
+            const unsigned char* base = bv->data
+                ? static_cast<const unsigned char*>(bv->data)
+                : static_cast<const unsigned char*>(bv->buffer->data) + bv->offset;
+            // Sniff the magic bytes (more reliable than the declared mimeType,
+            // which some exporters/parsers drop); fall back to the mime hint.
+            const char* ext = nullptr;
+            if (bv->size >= 4 && base[0] == 0x89 && base[1] == 'P' &&
+                base[2] == 'N' && base[3] == 'G') {
+                ext = "png";
+            } else if (bv->size >= 3 && base[0] == 0xFF && base[1] == 0xD8 &&
+                       base[2] == 0xFF) {
+                ext = "jpg";
+            } else {
+                ext = _ImageExt(img);
+            }
+            if (!ext) {
+                outDoc->warnings.push_back(
+                    "unsupported embedded image format (not PNG/JPEG); "
+                    "texture skipped");
+            } else {
+                const std::uint64_t h = _HashBytes(base, bv->size);
+                char name[32];
+                std::snprintf(name, sizeof(name), "%016llx.%s",
+                              static_cast<unsigned long long>(h), ext);
+                const fs::path out = cacheDir / name;
+                if (!fs::exists(out, ec)) {
+                    std::ofstream f(out, std::ios::binary);
+                    if (f) f.write(reinterpret_cast<const char*>(base), bv->size);
+                }
+                result = out.generic_string();
+            }
+        } else if (img->uri && std::strncmp(img->uri, "data:", 5) != 0) {
+            // External file reference, resolved relative to the source.
+            result = (sourceDir / img->uri).generic_string();
+        } else {
+            outDoc->warnings.push_back(
+                "data-URI image not supported in Phase 2; texture skipped");
+        }
+        imageCache[img] = result;
+        return result;
+    };
+
+    auto makeTexRef = [&](const cgltf_texture_view& tv) -> VrmTextureRef {
+        VrmTextureRef r;
+        if (!tv.texture || !tv.texture->image) return r;
+        std::string path = extractImage(tv.texture->image);
+        if (path.empty()) return r;
+        r.present = true;
+        r.filePath = path;
+        r.uvSet = tv.texcoord;
+        r.scale = tv.scale;
+        if (tv.texture->sampler) {
+            r.wrapS = _WrapStr(tv.texture->sampler->wrap_s);
+            r.wrapT = _WrapStr(tv.texture->sampler->wrap_t);
+        }
+        if (tv.has_transform) {
+            r.hasTransform = true;
+            r.uvOffset = GfVec2f(tv.transform.offset[0], tv.transform.offset[1]);
+            r.uvScale = GfVec2f(tv.transform.scale[0], tv.transform.scale[1]);
+            r.uvRotation = tv.transform.rotation;
+        }
+        return r;
+    };
+
+    // -----------------------------------------------------------------------
     // Materials
     // -----------------------------------------------------------------------
     std::vector<std::string> rawMatNames;
@@ -184,14 +301,30 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
             vm.opacity = pbr.base_color_factor[3];
             vm.metallic = pbr.metallic_factor;
             vm.roughness = pbr.roughness_factor;
+            vm.baseColorTex = makeTexRef(pbr.base_color_texture);
+            vm.metallicRoughnessTex = makeTexRef(pbr.metallic_roughness_texture);
         }
         vm.emissiveColor = GfVec3f(
             m.emissive_factor[0], m.emissive_factor[1], m.emissive_factor[2]);
+        vm.normalTex = makeTexRef(m.normal_texture);
+        vm.occlusionTex = makeTexRef(m.occlusion_texture);
+        vm.emissiveTex = makeTexRef(m.emissive_texture);
         vm.doubleSided = m.double_sided;
         vm.alphaMode = (m.alpha_mode == cgltf_alpha_mode_mask)    ? "MASK"
                        : (m.alpha_mode == cgltf_alpha_mode_blend) ? "BLEND"
                                                                   : "OPAQUE";
         vm.alphaCutoff = m.alpha_cutoff;
+
+        // MToon (VRM 1.0): preserved as metadata; the glTF PBR factors/textures
+        // above already give a UsdPreviewSurface approximation. (VRM 0.x MToon
+        // lives in VRM.materialProperties and is handled in the extension pass.)
+        for (cgltf_size e = 0; e < m.extensions_count; ++e) {
+            if (m.extensions[e].name &&
+                std::strcmp(m.extensions[e].name, "VRMC_materials_mtoon") == 0) {
+                vm.isMToon = true;
+                if (m.extensions[e].data) vm.rawShaderJson = m.extensions[e].data;
+            }
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -633,6 +766,24 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                             }
                             outDoc->expressions.push_back(std::move(expr));
                         }
+                    }
+                }
+                // materialProperties[]: VRM 0.x MToon, aligned with glTF
+                // materials by index. Preserved as metadata (the glTF PBR gives
+                // the UsdPreviewSurface approximation).
+                if (const JsArray* mprops =
+                        _AsArray(_Find(*rootObj, "materialProperties"))) {
+                    for (size_t i = 0;
+                         i < mprops->size() && i < outDoc->materials.size(); ++i) {
+                        const JsObject* mp = _AsObject(&(*mprops)[i]);
+                        if (!mp) continue;
+                        const JsValue* shader = _Find(*mp, "shader");
+                        if (shader && shader->IsString() &&
+                            shader->GetString().find("MToon") != std::string::npos) {
+                            outDoc->materials[i].isMToon = true;
+                        }
+                        outDoc->materials[i].rawShaderJson =
+                            JsWriteToString(JsValue(*mp));
                     }
                 }
             }
