@@ -222,10 +222,41 @@ def build_badext():
     return b.build(gltf)
 
 
+def build_unordered_skel():
+    """A skin whose joint list puts a child *before* its parent.
+
+    glTF imposes no ordering on skin.joints, but UsdSkel requires parents before
+    children. This guards the topological reorder: skin.joints = [spine, hips]
+    with hips the parent of spine.
+    """
+    b = GlbBuilder()
+    skin_attrs = _tri_accessors(b, with_skin=True)
+    idx = _idx(b)
+    ibm = b.add(FLOAT, "MAT4", [tuple(IDENTITY16), tuple(IDENTITY16)])
+    gltf = {
+        "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
+        "scene": 0, "scenes": [{"nodes": [0, 1]}],
+        "nodes": [
+            {"name": "Body", "mesh": 0, "skin": 0},
+            {"name": "hips", "children": [2], "translation": [0.0, 0.5, 0.0]},
+            {"name": "spine", "translation": [0.0, 0.3, 0.0]},
+        ],
+        "meshes": [{"name": "Body", "primitives": [
+            {"attributes": skin_attrs, "indices": idx, "material": 0}]}],
+        # joints intentionally child-first: [spine(2), hips(1)].
+        "skins": [{"joints": [2, 1], "inverseBindMatrices": ibm, "skeleton": 1}],
+        "materials": [_basic_material("Body_Mat")],
+        "extensionsUsed": ["VRMC_vrm"],
+        "extensions": {"VRMC_vrm": vrm1_extension({"hips": 1, "spine": 2})},
+    }
+    return b.build(gltf)
+
+
 FIXTURES = {
     "minimal.vrm": build_minimal,
     "vrm0_minimal.vrm": build_vrm0,
     "multiskin_ibm.vrm": build_multiskin_ibm,
+    "unordered_skel.vrm": build_unordered_skel,
     "names.vrm": build_names,
     "materials.vrm": build_materials,
     "badext.vrm": build_badext,

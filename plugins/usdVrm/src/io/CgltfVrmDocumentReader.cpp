@@ -9,8 +9,11 @@
 
 #include "cgltf.h"
 
+#include <algorithm>
 #include <cstring>
+#include <functional>
 #include <unordered_map>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -283,6 +286,40 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                 bindFromIbm[u] = true;
             }
         }
+
+        // UsdSkel requires the joints array to be topologically ordered: every
+        // parent must precede its children. The skin encounter order does not
+        // guarantee that, so reorder by depth (a stable sort keeps sibling order
+        // and, since depth(parent) < depth(child), yields a valid topo order),
+        // then remap parent links, the node->joint map (used by the mesh and
+        // humanoid passes below), so all downstream joint indices stay correct.
+        const int nJoints = static_cast<int>(outDoc->joints.size());
+        std::vector<int> depth(nJoints, -1);
+        std::function<int(int)> getDepth = [&](int i) -> int {
+            if (depth[i] >= 0) return depth[i];
+            int p = outDoc->joints[i].parentJointIndex;
+            depth[i] = (p < 0) ? 0 : getDepth(p) + 1;
+            return depth[i];
+        };
+        for (int i = 0; i < nJoints; ++i) getDepth(i);
+
+        std::vector<int> order(nJoints);
+        for (int i = 0; i < nJoints; ++i) order[i] = i;
+        std::stable_sort(order.begin(), order.end(),
+            [&](int a, int b) { return depth[a] < depth[b]; });
+
+        std::vector<int> oldToNew(nJoints);
+        for (int newIdx = 0; newIdx < nJoints; ++newIdx)
+            oldToNew[order[newIdx]] = newIdx;
+
+        std::vector<VrmJoint> reordered(nJoints);
+        for (int newIdx = 0; newIdx < nJoints; ++newIdx) {
+            reordered[newIdx] = outDoc->joints[order[newIdx]];
+            int p = reordered[newIdx].parentJointIndex;
+            reordered[newIdx].parentJointIndex = (p < 0) ? -1 : oldToNew[p];
+        }
+        outDoc->joints = std::move(reordered);
+        for (auto& kv : nodeToJoint) kv.second = oldToNew[kv.second];
     }
 
     // -----------------------------------------------------------------------

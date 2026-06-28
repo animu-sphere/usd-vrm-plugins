@@ -108,6 +108,21 @@ def check_multiskin_ibm():
     assert jiB[0] == 1, f"BodyB joint index not remapped to unified order: {jiB[0]}"
 
 
+def check_unordered_skel():
+    """A child-before-parent skin must be reordered to a valid UsdSkel topology."""
+    stage = _open("unordered_skel.vrm")
+    skel = UsdSkel.Skeleton(stage.GetPrimAtPath("/Asset/skel/Skeleton"))
+    joints = list(skel.GetJointsAttr().Get())
+    assert joints == ["hips", "hips/spine"], joints
+    valid, reason = UsdSkel.Topology(joints).Validate()
+    assert valid, f"invalid skeleton topology: {reason}"
+    # Verts were weighted to the skin's local joint 0 (spine); after reorder +
+    # remap that must point at the unified spine index (1).
+    ji = UsdSkel.BindingAPI(
+        stage.GetPrimAtPath("/Asset/geo/Body")).GetJointIndicesPrimvar().Get()
+    assert ji[0] == 1, f"joint index not remapped after topo reorder: {ji[0]}"
+
+
 def check_names():
     """Duplicate / Japanese / empty names sanitize+uniquify without collisions."""
     stage = _open("names.vrm")
@@ -154,7 +169,7 @@ def main() -> int:
         "usdVrm SdfFileFormat is not registered"
 
     for check in (check_minimal, check_vrm0, check_multiskin_ibm,
-                  check_names, check_materials, check_badext):
+                  check_unordered_skel, check_names, check_materials, check_badext):
         check()
         print(f"  {check.__name__}: OK")
     print("usdVrm smoke tests: OK")
