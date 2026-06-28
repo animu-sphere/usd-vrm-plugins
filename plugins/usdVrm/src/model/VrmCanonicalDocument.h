@@ -156,6 +156,17 @@ struct VrmAnimation {
     std::vector<std::vector<float>> blendWeights;
 };
 
+// VRM lookAt configuration. Curve/range-map parameters differ between 0.x and
+// 1.0, so they're preserved verbatim as JSON; the normalized fields below carry
+// the semantics the authorer needs.
+struct VrmLookAt {
+    bool present = false;
+    std::string type;                  // "bone" | "expression"
+    int leftEyeJoint = -1;             // into joints (from the humanoid mapping)
+    int rightEyeJoint = -1;
+    std::string rawJson;               // full lookAt / firstPerson block
+};
+
 struct VrmCanonicalDocument {
     VrmVersion version = VrmVersion::Unknown;
     std::string specVersion;           // e.g. "0.0", "1.0"
@@ -166,6 +177,7 @@ struct VrmCanonicalDocument {
     std::vector<VrmHumanoidBone> humanoidBones;
     std::vector<VrmExpression> expressions;
     std::vector<VrmAnimation> animations;
+    VrmLookAt lookAt;
 
     // Raw VRM blocks preserved as JSON on /Asset.customData (lossless preservation).
     std::string metaJson;              // meta / license / permissions

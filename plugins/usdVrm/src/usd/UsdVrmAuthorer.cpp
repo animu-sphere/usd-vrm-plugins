@@ -550,6 +550,36 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     }
 
     // -----------------------------------------------------------------------
+    // LookAt (control semantics). Eyes reference the skeleton joints via token
+    // attributes (joints are tokens, not prims); curve/range-map parameters are
+    // preserved verbatim in customData for a downstream runtime.
+    // -----------------------------------------------------------------------
+    if (doc.lookAt.present) {
+        UsdPrim lookAt = UsdGeomScope::Define(
+            stage, rigPath.AppendChild(TfToken("LookAt"))).GetPrim();
+        lookAt.CreateAttribute(TfToken("vrm:type"), SdfValueTypeNames->Token,
+                               true, SdfVariabilityUniform)
+            .Set(TfToken(doc.lookAt.type));
+        if (hasSkel) {
+            lookAt.CreateRelationship(TfToken("vrm:skeleton"), false)
+                .SetTargets({skelPath});
+        }
+        auto authorEye = [&](const char* name, int joint) {
+            if (joint >= 0 && joint < static_cast<int>(jointPaths.size())) {
+                lookAt.CreateAttribute(TfToken(name), SdfValueTypeNames->Token,
+                                       true, SdfVariabilityUniform)
+                    .Set(TfToken(jointPaths[joint]));
+            }
+        };
+        authorEye("vrm:leftEye", doc.lookAt.leftEyeJoint);
+        authorEye("vrm:rightEye", doc.lookAt.rightEyeJoint);
+        if (!doc.lookAt.rawJson.empty()) {
+            lookAt.SetCustomDataByKey(TfToken("vrm:lookAt:raw"),
+                                      VtValue(doc.lookAt.rawJson));
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // Skeletal animation. Each clip becomes a UsdSkelAnimation under
     // /Asset/skel/Animations; the first is bound to the skeleton so it plays in
     // usdview. Times are authored as timecodes at a fixed 30 fps.

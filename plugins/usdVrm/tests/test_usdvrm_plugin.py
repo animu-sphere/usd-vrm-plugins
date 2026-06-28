@@ -223,6 +223,20 @@ def check_animation():
     assert abs(stage.GetEndTimeCode() - 30.0) < 1e-6
 
 
+def check_lookat():
+    """VRM lookAt -> /Asset/rig/LookAt with eye tokens + preserved curves."""
+    stage = _open("lookat.vrm")
+    la = stage.GetPrimAtPath("/Asset/rig/LookAt")
+    assert la.IsValid(), "expected /Asset/rig/LookAt"
+    assert la.GetAttribute("vrm:type").Get() == "bone"
+    assert la.GetAttribute("vrm:leftEye").Get() == "hips/spine/head/leftEye"
+    assert la.GetAttribute("vrm:rightEye").Get() == "hips/spine/head/rightEye"
+    assert la.GetRelationship("vrm:skeleton").GetTargets() == \
+        [Sdf.Path("/Asset/skel/Skeleton")]
+    raw = la.GetCustomData().get("vrm", {}).get("lookAt", {}).get("raw")
+    assert raw and "rangeMapHorizontalInner" in raw, "lookAt curves not preserved"
+
+
 def check_textures():
     """Embedded base-color texture -> UsdUVTexture + st reader; MToon metadata."""
     stage = _open("textures.vrm")
@@ -273,7 +287,7 @@ def main() -> int:
     for check in (check_minimal, check_vrm0, check_multiskin_ibm,
                   check_unordered_skel, check_expressions,
                   check_vrm0_expressions, check_textures, check_animation,
-                  check_names, check_materials, check_badext):
+                  check_lookat, check_names, check_materials, check_badext):
         check()
         print(f"  {check.__name__}: OK")
     print("usdVrm smoke tests: OK")

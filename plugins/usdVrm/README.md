@@ -81,12 +81,13 @@ Phase 1 + most of Phase 2. Implemented: GLB read, version detection, meshes
 unified skeleton (bind from inverse bind matrices, topologically ordered) +
 skinning binding, humanoid mapping, **blend shapes (`UsdSkelBlendShape`) and VRM
 expressions** (`/Asset/rig/Expressions`, morph-target bindings), **glTF skeletal
-animation** (`UsdSkelAnimation` joint TRS, bound + stage time range), VRM meta +
-raw-extension preservation, graceful warnings on unsupported data.
+animation** (`UsdSkelAnimation` joint TRS, bound + stage time range),
+**LookAt** (`/Asset/rig/LookAt`: type + eye joint tokens + preserved curves),
+VRM meta + raw-extension preservation, graceful warnings on unsupported data.
 
 Not yet (later phases): morph-weight animation, full MToon shading (only
 approximated via UsdPreviewSurface + metadata today), KTX2/WebP image decode,
-LookAt, SpringBone/colliders, node constraints.
+SpringBone/colliders, node constraints.
 
 ### Textures
 

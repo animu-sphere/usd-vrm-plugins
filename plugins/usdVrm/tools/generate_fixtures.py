@@ -8,6 +8,7 @@ specific import behavior the smoke test then asserts:
   minimal.vrm        skinned mesh + non-skinned node-placed accessory; humanoid
   textures.vrm       embedded PNG base-color texture + an MToon material ext
   animation.vrm      a glTF rotation clip (spine 90 deg about Z over 1s)
+  lookat.vrm         a bone-type lookAt with leftEye/rightEye humanoid bones
   vrm0_minimal.vrm   the VRM 0.x extension shape (extensions.VRM, humanBones[])
   vrm0_expressions.vrm VRM 0.x blendShapeMaster preset group (weight 0..100)
   multiskin_ibm.vrm  two skins, overlapping joints, non-identity inverse binds
@@ -405,10 +406,47 @@ def build_animation():
     return b.build(gltf)
 
 
+def build_lookat():
+    """A bone-type lookAt with leftEye/rightEye humanoid bones."""
+    b = GlbBuilder()
+    skin_attrs = _tri_accessors(b, with_skin=True)
+    idx = _idx(b)
+    ibm = b.add(FLOAT, "MAT4", [tuple(IDENTITY16)] * 5)
+    ext = vrm1_extension({"hips": 1, "spine": 2, "head": 3,
+                          "leftEye": 4, "rightEye": 5})
+    ext["lookAt"] = {
+        "type": "bone",
+        "offsetFromHeadBone": [0.0, 0.06, 0.0],
+        "rangeMapHorizontalInner": {"inputMaxValue": 90.0, "outputScale": 10.0},
+        "rangeMapHorizontalOuter": {"inputMaxValue": 90.0, "outputScale": 10.0},
+    }
+    gltf = {
+        "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
+        "scene": 0, "scenes": [{"nodes": [0, 1]}],
+        "nodes": [
+            {"name": "Body", "mesh": 0, "skin": 0},
+            {"name": "hips", "children": [2], "translation": [0.0, 0.5, 0.0]},
+            {"name": "spine", "children": [3], "translation": [0.0, 0.3, 0.0]},
+            {"name": "head", "children": [4, 5], "translation": [0.0, 0.3, 0.0]},
+            {"name": "leftEye", "translation": [0.03, 0.05, 0.05]},
+            {"name": "rightEye", "translation": [-0.03, 0.05, 0.05]},
+        ],
+        "meshes": [{"name": "Body", "primitives": [
+            {"attributes": skin_attrs, "indices": idx, "material": 0}]}],
+        "skins": [{"joints": [1, 2, 3, 4, 5],
+                   "inverseBindMatrices": ibm, "skeleton": 1}],
+        "materials": [_basic_material("Body_Mat")],
+        "extensionsUsed": ["VRMC_vrm"],
+        "extensions": {"VRMC_vrm": ext},
+    }
+    return b.build(gltf)
+
+
 FIXTURES = {
     "minimal.vrm": build_minimal,
     "textures.vrm": build_textures,
     "animation.vrm": build_animation,
+    "lookat.vrm": build_lookat,
     "vrm0_minimal.vrm": build_vrm0,
     "multiskin_ibm.vrm": build_multiskin_ibm,
     "unordered_skel.vrm": build_unordered_skel,
