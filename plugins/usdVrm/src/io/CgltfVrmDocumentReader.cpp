@@ -831,45 +831,47 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
         };
         // Sample a comp-vector channel at time t (STEP / LINEAR; cubic spline is
         // approximated as linear between value vertices). comp==4 => quaternion.
-        auto sample = [&](const cgltf_animation_sampler* s, float t, int comp,
+        // `keys` is the sampler's input times, pre-read once by the caller, so
+        // the interval is found by binary search instead of rescanning the
+        // accessor on every (time x joint x channel) sample.
+        auto sample = [&](const cgltf_animation_sampler* s,
+                          const std::vector<float>& keys, float t, int comp,
                           float* out) {
-            const cgltf_accessor* in = s->input;
-            const size_t n = in->count;
+            const size_t n = keys.size();
             if (n == 0) return;
-            float t0;
-            cgltf_accessor_read_float(in, 0, &t0, 1);
-            if (t <= t0 || n == 1) { readKey(s, 0, comp, out); return; }
-            float tn;
-            cgltf_accessor_read_float(in, n - 1, &tn, 1);
-            if (t >= tn) { readKey(s, n - 1, comp, out); return; }
-            for (size_t i = 0; i + 1 < n; ++i) {
-                float a, b;
-                cgltf_accessor_read_float(in, i, &a, 1);
-                cgltf_accessor_read_float(in, i + 1, &b, 1);
-                if (t < a || t > b) continue;
-                if (s->interpolation == cgltf_interpolation_type_step) {
-                    readKey(s, i, comp, out);
-                    return;
-                }
-                const float f = (b > a) ? (t - a) / (b - a) : 0.0f;
-                float va[4], vb[4];
-                readKey(s, i, comp, va);
-                readKey(s, i + 1, comp, vb);
-                if (comp == 4) {  // quaternion (xyzw) -> slerp
-                    GfQuatd q = GfSlerp(f, GfQuatd(va[3], va[0], va[1], va[2]),
-                                           GfQuatd(vb[3], vb[0], vb[1], vb[2]));
-                    out[0] = static_cast<float>(q.GetImaginary()[0]);
-                    out[1] = static_cast<float>(q.GetImaginary()[1]);
-                    out[2] = static_cast<float>(q.GetImaginary()[2]);
-                    out[3] = static_cast<float>(q.GetReal());
-                } else {
-                    for (int c = 0; c < comp; ++c)
-                        out[c] = va[c] + (vb[c] - va[c]) * f;
-                }
+            if (t <= keys.front() || n == 1) { readKey(s, 0, comp, out); return; }
+            if (t >= keys.back()) { readKey(s, n - 1, comp, out); return; }
+            // keys[i] <= t < keys[hi]; upper_bound is strict so an exact key time
+            // lands on that key (fixes STEP returning the previous key at t==key).
+            const size_t hi = static_cast<size_t>(
+                std::upper_bound(keys.begin(), keys.end(), t) - keys.begin());
+            const size_t i = hi - 1;
+            if (s->interpolation == cgltf_interpolation_type_step) {
+                readKey(s, i, comp, out);  // right-continuous hold on [keys[i], keys[hi])
                 return;
             }
-            readKey(s, n - 1, comp, out);
+            const float a = keys[i], b = keys[hi];
+            const float f = (b > a) ? (t - a) / (b - a) : 0.0f;
+            float va[4], vb[4];
+            readKey(s, i, comp, va);
+            readKey(s, hi, comp, vb);
+            if (comp == 4) {  // quaternion (xyzw) -> slerp
+                GfQuatd q = GfSlerp(f, GfQuatd(va[3], va[0], va[1], va[2]),
+                                       GfQuatd(vb[3], vb[0], vb[1], vb[2]));
+                out[0] = static_cast<float>(q.GetImaginary()[0]);
+                out[1] = static_cast<float>(q.GetImaginary()[1]);
+                out[2] = static_cast<float>(q.GetImaginary()[2]);
+                out[3] = static_cast<float>(q.GetReal());
+            } else {
+                for (int c = 0; c < comp; ++c)
+                    out[c] = va[c] + (vb[c] - va[c]) * f;
+            }
         };
+
+        // Each sampler's input times, read once and shared by the union-time
+        // collection and the resampling below.
+        std::unordered_map<const cgltf_animation_sampler*, std::vector<float>>
+            samplerKeys;
 
         std::vector<std::string> rawAnimNames(data->animations_count);
         for (cgltf_size a = 0; a < data->animations_count; ++a) {
@@ -901,12 +903,14 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                         "' uses CUBICSPLINE; approximated as linear");
                     cubicWarned = true;
                 }
-                const cgltf_accessor* in = ch.sampler->input;
-                for (cgltf_size i = 0; i < in->count; ++i) {
-                    float tv;
-                    cgltf_accessor_read_float(in, i, &tv, 1);
-                    timeSet.insert(tv);
+                std::vector<float>& keys = samplerKeys[ch.sampler];
+                if (keys.empty()) {  // read this sampler's input times once
+                    const cgltf_accessor* in = ch.sampler->input;
+                    keys.resize(in->count);
+                    for (cgltf_size i = 0; i < in->count; ++i)
+                        cgltf_accessor_read_float(in, i, &keys[i], 1);
                 }
+                timeSet.insert(keys.begin(), keys.end());
             }
             if (timeSet.empty()) continue;
 
@@ -950,14 +954,14 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                     float v[4] = {0, 0, 0, 0};
                     auto itT = chT.find(j);
                     if (itT != chT.end()) {
-                        sample(itT->second, t, 3, v);
+                        sample(itT->second, samplerKeys[itT->second], t, 3, v);
                         clip.translations[ti][k] = GfVec3f(v[0], v[1], v[2]);
                     } else {
                         clip.translations[ti][k] = restT[k];
                     }
                     auto itR = chR.find(j);
                     if (itR != chR.end()) {
-                        sample(itR->second, t, 4, v);
+                        sample(itR->second, samplerKeys[itR->second], t, 4, v);
                         clip.rotations[ti][k] =
                             GfQuatf(v[3], GfVec3f(v[0], v[1], v[2]));
                     } else {
@@ -965,7 +969,7 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                     }
                     auto itS = chS.find(j);
                     if (itS != chS.end()) {
-                        sample(itS->second, t, 3, v);
+                        sample(itS->second, samplerKeys[itS->second], t, 3, v);
                         clip.scales[ti][k] = GfVec3f(v[0], v[1], v[2]);
                     } else {
                         clip.scales[ti][k] = restS[k];

@@ -30,7 +30,6 @@
 #include "pxr/usd/usdSkel/root.h"
 #include "pxr/usd/usdSkel/skeleton.h"
 
-#include <algorithm>
 #include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -560,18 +559,14 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         SdfPath animScopePath = skelScopePath.AppendChild(TfToken("Animations"));
         UsdGeomScope::Define(stage, animScopePath);
 
-        std::vector<std::string> rawNames;
-        rawNames.reserve(doc.animations.size());
-        for (const VrmAnimation& a : doc.animations) rawNames.push_back(a.name);
-        std::vector<std::string> clipNames = VrmMakeUniqueNames(rawNames, "Clip");
-
         double startTc = 0.0, endTc = 0.0;
         bool haveRange = false;
         SdfPath firstClip;
         for (size_t i = 0; i < doc.animations.size(); ++i) {
             const VrmAnimation& a = doc.animations[i];
             if (a.jointIndices.empty() || a.times.empty()) continue;
-            SdfPath clipPath = animScopePath.AppendChild(TfToken(clipNames[i]));
+            // Clip names are already sanitized + uniquified by the reader.
+            SdfPath clipPath = animScopePath.AppendChild(TfToken(a.name));
             UsdSkelAnimation anim = UsdSkelAnimation::Define(stage, clipPath);
 
             VtTokenArray joints;
@@ -592,12 +587,15 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
                 for (size_t k = 0; k < a.scales[ti].size(); ++k)
                     scales[k] = GfVec3h(a.scales[ti][k]);
                 sAttr.Set(scales, tc);
-
-                startTc = haveRange ? std::min(startTc, tc) : tc;
-                endTc = haveRange ? std::max(endTc, tc) : tc;
+            }
+            if (firstClip.IsEmpty()) {
+                firstClip = clipPath;
+                // Stage time range follows the bound (first) clip only; a.times
+                // is sorted ascending by the reader.
+                startTc = a.times.front() * fps;
+                endTc = a.times.back() * fps;
                 haveRange = true;
             }
-            if (firstClip.IsEmpty()) firstClip = clipPath;
         }
 
         if (!firstClip.IsEmpty()) {
