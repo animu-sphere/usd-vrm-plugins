@@ -1,4 +1,4 @@
-# usd-vrm-plugins
+# USD VRM Plugins
 
 OpenUSD plugins for [VRM](https://vrm.dev/en/) avatars.
 
