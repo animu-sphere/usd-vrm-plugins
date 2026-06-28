@@ -43,6 +43,12 @@ endif()
 
 option(USDVRM_BUILD_TESTS "Build usdVrm plugin tests" ${VRM_IS_TOP_LEVEL})
 
+# Enable CTest at the top level so tests registered in bundle subdirectories are
+# discoverable by `ctest` from this build tree.
+if(USDVRM_BUILD_TESTS)
+    enable_testing()
+endif()
+
 # Resolve OpenUSD once for the whole project; bundles reuse the result.
 find_package(pxr REQUIRED CONFIG)
 

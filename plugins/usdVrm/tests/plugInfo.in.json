@@ -1,0 +1,23 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "UsdVrmFileFormat",
+            "Root": ".",
+            "LibraryPath": "@USDVRM_TEST_LIBRARYPATH@",
+            "ResourcePath": ".",
+            "Info": {
+                "Types": {
+                    "UsdVrmFileFormat": {
+                        "bases": ["SdfFileFormat"],
+                        "displayName": "UsdVrm File Format",
+                        "extensions": ["vrm"],
+                        "formatId": "vrm",
+                        "primary": true,
+                        "target": "usd"
+                    }
+                }
+            }
+        }
+    ]
+}

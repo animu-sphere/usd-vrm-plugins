@@ -20,7 +20,7 @@ src/
   usd/UsdVrmAuthorer.{h,cpp}    canonical model -> USD scene description
   util/                         path sanitize/uniquify, glTF->USD transform conversion
 plugin/resources/usdVrm/plugInfo.json   USD plugin registration
-tools/                          generate_minimal_vrm.py, inspect_vrm.py
+tools/                          generate_fixtures.py, vrm_fixture_lib.py, inspect_vrm.py
 tests/                          python smoke test + fixtures (minimal.vrm, invalid.vrm)
 ```
 
@@ -89,5 +89,5 @@ Requires `ost` 0.3+ (from the repo root):
 ```sh
 ost plugin build plugins/usdVrm        # build libUsdVrmFileFormat into lib/
 ost plugin test  plugins/usdVrm        # L0-L6 verification pyramid
-python plugins/usdVrm/tools/generate_minimal_vrm.py   # regenerate the fixture
+python plugins/usdVrm/tools/generate_fixtures.py      # regenerate the test fixtures
 ```

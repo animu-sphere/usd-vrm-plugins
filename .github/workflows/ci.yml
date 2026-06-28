@@ -1,0 +1,115 @@
+# SPDX-License-Identifier: Apache-2.0
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Every job is gated on the repository being public, so CI stays dormant while
+# the repo is private (no minutes burned) and activates automatically once it
+# goes public.
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Fast signal with no OpenUSD dependency: the fixtures are deterministic and
+  # the generators + plugin metadata are pure-Python / JSON, so this gates every
+  # push in well under a minute. This is the primary CI gate.
+  # ---------------------------------------------------------------------------
+  fixtures-and-lint:
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install lint deps
+        run: python -m pip install --quiet pyyaml
+
+      - name: Byte-compile all Python
+        run: python -m compileall -q plugins/usdVrm/tools plugins/usdVrm/tests
+
+      - name: Validate plugin metadata
+        run: |
+          python - <<'PY'
+          import json, pathlib, yaml
+          root = pathlib.Path("plugins/usdVrm")
+          json.loads((root / "plugin/resources/usdVrm/plugInfo.json").read_text())
+          y = yaml.safe_load((root / "openstrata.plugin.yaml").read_text())
+          assert y["plugin"]["name"] == "usdVrm", y
+          assert "usd-fileformat:vrm" in y["provides"], y
+          print("plugin metadata OK")
+          PY
+
+      - name: Fixtures are deterministic and well-formed (no drift)
+        run: |
+          python - <<'PY'
+          import pathlib, struct, subprocess, sys, tempfile
+          tools = pathlib.Path("plugins/usdVrm/tools")
+          committed = pathlib.Path("plugins/usdVrm/tests/fixtures")
+          with tempfile.TemporaryDirectory() as d:
+              subprocess.check_call([sys.executable, str(tools / "generate_fixtures.py"), d])
+              for gen in pathlib.Path(d).glob("*.vrm"):
+                  data = gen.read_bytes()
+                  assert data[:4] == b"glTF", f"{gen.name}: not a GLB"
+                  assert struct.unpack("<I", data[4:8])[0] == 2, f"{gen.name}: glTF version"
+                  ref = (committed / gen.name).read_bytes()
+                  assert ref == data, f"{gen.name} is stale — re-run tools/generate_fixtures.py"
+              print("fixtures deterministic + well-formed OK")
+          PY
+
+  # ---------------------------------------------------------------------------
+  # Build the plugin against a real OpenUSD and run the CTest smoke test
+  # (discovery + Usd.Stage.Open of every fixture).
+  #
+  # Building OpenUSD from source in CI is intentionally NOT done here (it takes
+  # ~30-60 min). Instead this job restores a *prebuilt* OpenUSD from cache and
+  # only proceeds when that cache exists. Seed the cache out-of-band (or from a
+  # self-hosted runner) under the key below to activate the build. Until then
+  # this job is a no-op note. (Windows CI is a tracked follow-up.)
+  # ---------------------------------------------------------------------------
+  build-linux:
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    env:
+      USD_TAG: v25.05
+      USD_INSTALL: ${{ github.workspace }}/usd-inst
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Restore prebuilt OpenUSD (read-only; never built here)
+        id: usd-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.USD_INSTALL }}
+          key: openusd-${{ runner.os }}-${{ env.USD_TAG }}-v1
+
+      - name: No prebuilt OpenUSD — skipping plugin build
+        if: steps.usd-cache.outputs.cache-hit != 'true'
+        run: echo "::notice::No prebuilt OpenUSD cache for key openusd-${{ runner.os }}-${{ env.USD_TAG }}-v1; skipping plugin build (OpenUSD-from-source is disabled in CI)."
+
+      - name: Install build deps
+        if: steps.usd-cache.outputs.cache-hit == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake ninja-build build-essential
+
+      - name: Configure & build the plugin
+        if: steps.usd-cache.outputs.cache-hit == 'true'
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$USD_INSTALL"
+          cmake --build build -j
+
+      - name: Run CTest (discovery + stage open smoke)
+        if: steps.usd-cache.outputs.cache-hit == 'true'
+        run: ctest --test-dir build --output-on-failure
