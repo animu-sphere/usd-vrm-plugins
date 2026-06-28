@@ -74,15 +74,26 @@ tests/                          python smoke tests + generated fixtures (minimal
 
 ## Status
 
-Phase 1 + part of Phase 2. Implemented: GLB read, version detection, meshes
-(points/normals/UV/indices), basic `UsdPreviewSurface` materials, unified
-skeleton (bind from inverse bind matrices, topologically ordered) + skinning
-binding, humanoid mapping, **blend shapes (`UsdSkelBlendShape`) and VRM
+Phase 1 + most of Phase 2. Implemented: GLB read, version detection, meshes
+(points/normals/UV/indices), `UsdPreviewSurface` materials with **textures**
+(base color, metallic-roughness, normal, emissive, occlusion; wrap modes,
+`KHR_texture_transform`), **MToon metadata** (`vrm:shaderModel` + `vrm:mtoon:raw`),
+unified skeleton (bind from inverse bind matrices, topologically ordered) +
+skinning binding, humanoid mapping, **blend shapes (`UsdSkelBlendShape`) and VRM
 expressions** (`/Asset/rig/Expressions`, morph-target bindings), VRM meta +
 raw-extension preservation, graceful warnings on unsupported data.
 
-Not yet (later phases): textures, MToon, glTF skeletal animation, LookAt,
-SpringBone/colliders, node constraints.
+Not yet (later phases): full MToon shading (only approximated via
+UsdPreviewSurface + metadata today), KTX2/WebP image decode, glTF skeletal
+animation, LookAt, SpringBone/colliders, node constraints.
+
+### Textures
+
+Embedded PNG/JPEG images are extracted once (content-hashed) to a managed cache
+under the OS temp dir (`usdVrm_cache/`) and referenced by absolute asset path, so
+`usdcat`/`usdview` resolve them. Image format is detected by sniffing the magic
+bytes (some VRM exporters drop the glTF `mimeType`). A future Ar resolver could
+serve image bytes straight from the `.vrm` instead of extracting.
 
 ## Build & verify
 

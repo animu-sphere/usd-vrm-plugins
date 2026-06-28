@@ -6,9 +6,12 @@ Each fixture is authored entirely here (no third-party art) and targets a
 specific import behavior the smoke test then asserts:
 
   minimal.vrm        skinned mesh + non-skinned node-placed accessory; humanoid
+  textures.vrm       embedded PNG base-color texture + an MToon material ext
   vrm0_minimal.vrm   the VRM 0.x extension shape (extensions.VRM, humanBones[])
   vrm0_expressions.vrm VRM 0.x blendShapeMaster preset group (weight 0..100)
   multiskin_ibm.vrm  two skins, overlapping joints, non-identity inverse binds
+  unordered_skel.vrm skin joints listed child-before-parent (topology reorder)
+  expressions.vrm    a morph target + a VRM 1.0 preset expression binding it
   names.vrm          duplicate / Japanese / empty mesh & material names
   materials.vrm      alpha BLEND + double-sided, and alpha MASK with a cutoff
   badext.vrm         semantically broken VRM humanoid (must warn, not crash)
@@ -21,7 +24,7 @@ import sys
 from vrm_fixture_lib import (
     GlbBuilder, ARRAY_BUFFER, ELEMENT_ARRAY_BUFFER, FLOAT, U8, U16,
     TRI_POSITIONS, TRI_INDICES, IDENTITY16, translate16,
-    vrm0_extension, vrm1_extension,
+    solid_png, vrm0_extension, vrm1_extension,
 )
 
 W4 = (1.0, 0.0, 0.0, 0.0)   # one fully-weighted influence
@@ -333,8 +336,44 @@ def build_vrm0_expressions():
     return b.build(gltf)
 
 
+def build_textures():
+    """A base-color texture (embedded PNG) + an MToon material extension."""
+    b = GlbBuilder()
+    pos = b.add(FLOAT, "VEC3", TRI_POSITIONS, ARRAY_BUFFER, minmax=True)
+    uv = b.add(FLOAT, "VEC2", [(0.0, 0.0), (1.0, 0.0), (0.5, 1.0)], ARRAY_BUFFER)
+    idx = _idx(b)
+    img_bv = b.add_bytes(solid_png(200, 40, 40))
+    gltf = {
+        "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
+        "scene": 0, "scenes": [{"nodes": [0]}],
+        "nodes": [{"name": "Body", "mesh": 0}],
+        "meshes": [{"name": "Body", "primitives": [{
+            "attributes": {"POSITION": pos, "TEXCOORD_0": uv},
+            "indices": idx, "material": 0}]}],
+        "images": [{"name": "red", "bufferView": img_bv, "mimeType": "image/png"}],
+        "samplers": [{"wrapS": 10497, "wrapT": 33071}],  # repeat / clamp
+        "textures": [{"source": 0, "sampler": 0}],
+        "materials": [{
+            "name": "Skin",
+            "alphaMode": "OPAQUE",
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [1.0, 1.0, 1.0, 1.0],
+                "baseColorTexture": {"index": 0},
+            },
+            "extensions": {"VRMC_materials_mtoon": {
+                "specVersion": "1.0",
+                "shadeColorFactor": [0.5, 0.2, 0.2],
+            }},
+        }],
+        "extensionsUsed": ["VRMC_vrm", "VRMC_materials_mtoon"],
+        "extensions": {"VRMC_vrm": vrm1_extension({})},
+    }
+    return b.build(gltf)
+
+
 FIXTURES = {
     "minimal.vrm": build_minimal,
+    "textures.vrm": build_textures,
     "vrm0_minimal.vrm": build_vrm0,
     "multiskin_ibm.vrm": build_multiskin_ibm,
     "unordered_skel.vrm": build_unordered_skel,
