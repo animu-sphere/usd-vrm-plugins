@@ -18,6 +18,7 @@ specific import behavior the smoke test then asserts:
   expressions.vrm    a morph target + a VRM 1.0 preset expression binding it
   names.vrm          duplicate / Japanese / empty mesh & material names
   materials.vrm      alpha BLEND + double-sided, and alpha MASK with a cutoff
+  constraints.vrm    a VRMC_node_constraint (roll) driving one node from another
   badext.vrm         semantically broken VRM humanoid (must warn, not crash)
 
 Usage: python generate_fixtures.py [out_dir]   (default: ../tests/fixtures)
@@ -373,8 +374,43 @@ def build_expressions():
             "expressions": {"preset": {"happy": {
                 "isBinary": False,
                 "morphTargetBinds": [{"node": 0, "index": 0, "weight": 1.0}],
+                # Also drive the material's emission to red (materialColorBinds).
+                "materialColorBinds": [
+                    {"material": 0, "type": "emissionColor",
+                     "targetValue": [1.0, 0.0, 0.0, 1.0]}],
             }}},
         }},
+    }
+    return b.build(gltf)
+
+
+def build_constraints():
+    """A VRMC_node_constraint (roll) driving the head node from the spine."""
+    b = GlbBuilder()
+    skin_attrs = _tri_accessors(b, with_skin=True)
+    idx = _idx(b)
+    ibm = b.add(FLOAT, "MAT4", [tuple(IDENTITY16)] * 3)
+    gltf = {
+        "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
+        "scene": 0, "scenes": [{"nodes": [0, 1]}],
+        "nodes": [
+            {"name": "Body", "mesh": 0, "skin": 0},
+            {"name": "hips", "children": [2], "translation": [0.0, 0.5, 0.0]},
+            {"name": "spine", "children": [3], "translation": [0.0, 0.3, 0.0]},
+            {"name": "head", "translation": [0.0, 0.3, 0.0],
+             "extensions": {"VRMC_node_constraint": {
+                 "specVersion": "1.0",
+                 "constraint": {"roll": {
+                     "source": 2, "rollAxis": "X", "weight": 0.8}}}}},
+        ],
+        "meshes": [{"name": "Body", "primitives": [
+            {"attributes": skin_attrs, "indices": idx, "material": 0}]}],
+        "skins": [{"joints": [1, 2, 3],
+                   "inverseBindMatrices": ibm, "skeleton": 1}],
+        "materials": [_basic_material("Body_Mat")],
+        "extensionsUsed": ["VRMC_vrm", "VRMC_node_constraint"],
+        "extensions": {"VRMC_vrm": vrm1_extension(
+            {"hips": 1, "spine": 2, "head": 3})},
     }
     return b.build(gltf)
 
@@ -538,6 +574,7 @@ FIXTURES = {
     "vrm0_expressions.vrm": build_vrm0_expressions,
     "names.vrm": build_names,
     "materials.vrm": build_materials,
+    "constraints.vrm": build_constraints,
     "badext.vrm": build_badext,
 }
 

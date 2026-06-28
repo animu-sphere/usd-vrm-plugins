@@ -84,8 +84,12 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
                               std::string* outUsda,
                               std::vector<std::string>* outWarnings) const
 {
+    // Diagnostics surfaced on the stage (vrm:warnings): seed with the reader's
+    // warnings, then collect any authoring-time ones via warn() below.
+    std::vector<std::string> diagnostics(doc.warnings.begin(), doc.warnings.end());
     auto warn = [&](const std::string& w) {
         if (outWarnings) outWarnings->push_back(w);
+        diagnostics.push_back(w);
     };
 
     SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
@@ -580,6 +584,33 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
                                   SdfVariabilityUniform)
                     .Set(weights);
             }
+
+            // Material-color binds: relationship to the target materials plus
+            // parallel slot-name / RGBA target arrays (evaluation is downstream).
+            SdfPathVector colorTargets;
+            VtTokenArray colorTypes;
+            VtVec4fArray colorValues;
+            for (const VrmExpression::MaterialColorBind& mb : e.materialColorBinds) {
+                if (mb.materialIndex < 0 ||
+                    mb.materialIndex >= static_cast<int>(materialPaths.size())) {
+                    continue;
+                }
+                colorTargets.push_back(materialPaths[mb.materialIndex]);
+                colorTypes.push_back(TfToken(mb.type));
+                colorValues.push_back(mb.targetValue);
+            }
+            if (!colorTargets.empty()) {
+                p.CreateRelationship(TfToken("vrm:materialColorTargets"), false)
+                    .SetTargets(colorTargets);
+                p.CreateAttribute(TfToken("vrm:materialColorTypes"),
+                                  SdfValueTypeNames->TokenArray, true,
+                                  SdfVariabilityUniform)
+                    .Set(colorTypes);
+                p.CreateAttribute(TfToken("vrm:materialColorValues"),
+                                  SdfValueTypeNames->Float4Array, true,
+                                  SdfVariabilityUniform)
+                    .Set(colorValues);
+            }
         }
     }
 
@@ -783,6 +814,61 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
                 sp.CreateRelationship(TfToken("vrm:colliderGroups"), false)
                     .SetTargets(cgTargets);
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Node constraints (VRMC_node_constraint) under /Asset/rig/Constraints. Data
+    // only: type/source/axis/weight, joints referenced by token (skeleton joint
+    // path where resolvable), full block preserved as raw JSON.
+    // -----------------------------------------------------------------------
+    if (!doc.constraints.empty()) {
+        SdfPath conScopePath = rigPath.AppendChild(TfToken("Constraints"));
+        UsdGeomScope::Define(stage, conScopePath);
+
+        std::vector<std::string> rawNames;
+        rawNames.reserve(doc.constraints.size());
+        for (const VrmConstraint& c : doc.constraints) {
+            rawNames.push_back(c.constrainedNodeName.empty()
+                ? c.type : c.constrainedNodeName + "_" + c.type);
+        }
+        std::vector<std::string> conNames =
+            VrmMakeUniqueNames(rawNames, "Constraint");
+
+        auto jointTok = [&](int joint, const std::string& name, int idx) -> TfToken {
+            if (joint >= 0 && joint < static_cast<int>(jointPaths.size()))
+                return TfToken(jointPaths[joint]);
+            if (!name.empty()) return TfToken(name);
+            return TfToken("node_" + std::to_string(idx));
+        };
+
+        for (size_t i = 0; i < doc.constraints.size(); ++i) {
+            const VrmConstraint& c = doc.constraints[i];
+            UsdPrim p = UsdGeomScope::Define(
+                stage, conScopePath.AppendChild(TfToken(conNames[i]))).GetPrim();
+            auto tokAttr = [&](const char* n, const TfToken& v) {
+                p.CreateAttribute(TfToken(n), SdfValueTypeNames->Token, true,
+                                  SdfVariabilityUniform).Set(v);
+            };
+            tokAttr("vrm:type", TfToken(c.type));
+            tokAttr("vrm:constrained",
+                    jointTok(c.constrainedJoint, c.constrainedNodeName,
+                             c.constrainedNodeIndex));
+            tokAttr("vrm:source",
+                    jointTok(c.sourceJoint, c.sourceNodeName, c.sourceNodeIndex));
+            if (!c.axis.empty()) tokAttr("vrm:axis", TfToken(c.axis));
+            p.CreateAttribute(TfToken("vrm:weight"), SdfValueTypeNames->Float,
+                              true, SdfVariabilityUniform).Set(c.weight);
+            if (!c.rawJson.empty())
+                p.SetCustomDataByKey(TfToken("vrm:constraint:raw"),
+                                     VtValue(c.rawJson));
+        }
+    }
+
+    // Diagnostic report: surface dropped/unsupported features (reader + authoring
+    // warnings) on the asset so downstream tools can audit what wasn't mapped.
+    if (!diagnostics.empty()) {
+        assetPrim.SetCustomDataByKey(TfToken("vrm:warnings"),
+            VtValue(VtStringArray(diagnostics.begin(), diagnostics.end())));
     }
 
     if (!stage->ExportToString(outUsda)) {

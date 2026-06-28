@@ -757,6 +757,11 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                             int joint = nodeIndexToJoint(nodeIndex);
                             if (joint >= 0) {
                                 outDoc->humanoidBones.push_back({kv.first, joint});
+                            } else {
+                                outDoc->warnings.push_back("humanoid bone '" +
+                                    kv.first + "' references node " +
+                                    std::to_string(nodeIndex) +
+                                    " with no skeleton joint; skipped");
                             }
                         }
                     }
@@ -789,6 +794,33 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                                     addBinds(expr,
                                         it != nodeToPrims.end() ? &it->second : nullptr,
                                         index, w);
+                                }
+                            }
+                            // materialColorBinds: drive a material color slot to a
+                            // target RGBA. material is a direct glTF material index.
+                            if (const JsArray* cbinds =
+                                    _AsArray(_Find(*e, "materialColorBinds"))) {
+                                for (const JsValue& bv : *cbinds) {
+                                    const JsObject* b = _AsObject(&bv);
+                                    if (!b) continue;
+                                    int mat = _AsInt(_Find(*b, "material"));
+                                    if (mat < 0 || mat >= static_cast<int>(
+                                            outDoc->materials.size())) {
+                                        continue;
+                                    }
+                                    VrmExpression::MaterialColorBind mb;
+                                    mb.materialIndex = mat;
+                                    const JsValue* tv = _Find(*b, "type");
+                                    mb.type = (tv && tv->IsString())
+                                        ? tv->GetString() : "color";
+                                    GfVec4f c(1.0f);
+                                    if (const JsArray* val =
+                                            _AsArray(_Find(*b, "targetValue"))) {
+                                        for (size_t k = 0; k < val->size() && k < 4; ++k)
+                                            c[k] = readWeight(&(*val)[k], c[k]);
+                                    }
+                                    mb.targetValue = c;
+                                    expr.materialColorBinds.push_back(std::move(mb));
                                 }
                             }
                             outDoc->expressions.push_back(std::move(expr));
@@ -824,6 +856,11 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                             if (boneName && boneName->IsString() && joint >= 0) {
                                 outDoc->humanoidBones.push_back(
                                     {boneName->GetString(), joint});
+                            } else if (boneName && boneName->IsString()) {
+                                outDoc->warnings.push_back("humanoid bone '" +
+                                    boneName->GetString() + "' references node " +
+                                    std::to_string(nodeIndex) +
+                                    " with no skeleton joint; skipped");
                             }
                         }
                     }
@@ -865,6 +902,13 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                                         it != meshToPrims.end() ? &it->second : nullptr,
                                         index, w);
                                 }
+                            }
+                            // VRM 0.x material-value binds (MToon _Color etc.) are
+                            // not mapped to USD; they remain in vrm:rawExtension.
+                            if (_AsArray(_Find(*g, "materialValues"))) {
+                                outDoc->warnings.push_back("expression '" + expr.name +
+                                    "' has VRM 0.x materialValues binds; preserved in "
+                                    "vrm:rawExtension only (not mapped to USD)");
                             }
                             outDoc->expressions.push_back(std::move(expr));
                         }
@@ -1295,6 +1339,70 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                         sm.springs.push_back(std::move(spr));
                     }
                 }
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Node constraints (VRMC_node_constraint, VRM 1.0 only). Each constrained
+    // node carries the extension and names a source node; imported as data only.
+    // -----------------------------------------------------------------------
+    if (outDoc->version == VrmVersion::Vrm1) {
+        auto nodeJoint = [&](int ni) -> int {
+            if (ni < 0 || ni >= static_cast<int>(data->nodes_count)) return -1;
+            auto it = nodeToJoint.find(&data->nodes[ni]);
+            return it != nodeToJoint.end() ? it->second : -1;
+        };
+        auto nodeName = [&](int ni) -> std::string {
+            if (ni < 0 || ni >= static_cast<int>(data->nodes_count)) return {};
+            return data->nodes[ni].name ? data->nodes[ni].name : std::string();
+        };
+        for (cgltf_size ni = 0; ni < data->nodes_count; ++ni) {
+            const cgltf_node& node = data->nodes[ni];
+            for (cgltf_size e = 0; e < node.extensions_count; ++e) {
+                if (!node.extensions[e].name || !node.extensions[e].data ||
+                    std::strcmp(node.extensions[e].name,
+                                "VRMC_node_constraint") != 0) {
+                    continue;
+                }
+                JsParseError perr;
+                JsValue root = JsParseString(node.extensions[e].data, &perr);
+                const JsObject* obj = _AsObject(&root);
+                const JsObject* c =
+                    obj ? _AsObject(_Find(*obj, "constraint")) : nullptr;
+                if (!c) continue;
+
+                const JsObject* spec = nullptr;
+                const char* axisKey = nullptr;
+                std::string type;
+                if ((spec = _AsObject(_Find(*c, "roll")))) {
+                    type = "roll"; axisKey = "rollAxis";
+                } else if ((spec = _AsObject(_Find(*c, "aim")))) {
+                    type = "aim"; axisKey = "aimAxis";
+                } else if ((spec = _AsObject(_Find(*c, "rotation")))) {
+                    type = "rotation";
+                }
+                if (!spec) continue;
+
+                VrmConstraint con;
+                con.type = type;
+                con.rawJson = node.extensions[e].data;
+                con.constrainedNodeIndex = static_cast<int>(ni);
+                con.constrainedNodeName = nodeName(static_cast<int>(ni));
+                con.constrainedJoint = nodeJoint(static_cast<int>(ni));
+                int src = _AsInt(_Find(*spec, "source"));
+                con.sourceNodeIndex = src;
+                con.sourceNodeName = nodeName(src);
+                con.sourceJoint = nodeJoint(src);
+                if (axisKey) {
+                    const JsValue* ax = _Find(*spec, axisKey);
+                    if (ax && ax->IsString()) con.axis = ax->GetString();
+                }
+                const JsValue* w = _Find(*spec, "weight");
+                con.weight = (w && w->IsReal()) ? static_cast<float>(w->GetReal())
+                           : (w && w->IsInt())  ? static_cast<float>(w->GetInt())
+                                                : 1.0f;
+                outDoc->constraints.push_back(std::move(con));
             }
         }
     }
