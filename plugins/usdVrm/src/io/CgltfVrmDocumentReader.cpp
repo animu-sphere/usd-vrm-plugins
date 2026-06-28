@@ -661,18 +661,23 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                     if (!out.uvs.empty()) {
                         std::vector<GfVec2f> r;
                         r.reserve(used.size());
-                        for (int o : used) r.push_back(out.uvs[o]);
+                        for (int o : used)
+                            r.push_back(o < static_cast<int>(out.uvs.size())
+                                            ? out.uvs[o]
+                                            : GfVec2f(0));
                         out.uvs.swap(r);
                     }
                     if (out.skinned) {
+                        const int wc = static_cast<int>(out.jointWeights.size());
                         std::vector<GfVec4f> w;
                         std::vector<int> ji;
                         w.reserve(used.size());
                         ji.reserve(used.size() * 4);
                         for (int o : used) {
-                            w.push_back(out.jointWeights[o]);
+                            const bool ok = o < wc;
+                            w.push_back(ok ? out.jointWeights[o] : GfVec4f(0));
                             for (int k = 0; k < 4; ++k)
-                                ji.push_back(out.jointIndices[o * 4 + k]);
+                                ji.push_back(ok ? out.jointIndices[o * 4 + k] : 0);
                         }
                         out.jointWeights.swap(w);
                         out.jointIndices.swap(ji);

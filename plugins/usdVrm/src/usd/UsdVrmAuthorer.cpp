@@ -254,7 +254,10 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
                     .ConnectToSource(t.GetOutput(TfToken("a")));
             }
         }
-        // The lit-only slots have no effect on an unlit surface — skip them.
+        // Lit-only slots (metallicRoughness / emissive / occlusion / normal) are
+        // ignored by KHR_materials_unlit, so skip them on an unlit surface. This
+        // also keeps the emissive texture from clobbering the base-color->emissive
+        // connection authored above (a single UsdShade input takes one source).
         if (!unlit && vm.metallicRoughnessTex.present) {
             UsdShadeShader t =
                 makeTexture(vm.metallicRoughnessTex, "metallicRoughnessTexture", false);
@@ -264,12 +267,12 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             shader.GetInput(TfToken("metallic"))
                 .ConnectToSource(t.GetOutput(TfToken("b")));
         }
-        if (vm.emissiveTex.present) {
+        if (!unlit && vm.emissiveTex.present) {
             UsdShadeShader t = makeTexture(vm.emissiveTex, "emissiveTexture", true);
             shader.GetInput(TfToken("emissiveColor"))
                 .ConnectToSource(t.GetOutput(TfToken("rgb")));
         }
-        if (vm.occlusionTex.present) {
+        if (!unlit && vm.occlusionTex.present) {
             UsdShadeShader t = makeTexture(vm.occlusionTex, "occlusionTexture", false);
             // glTF occlusion strength: ao = 1 + strength * (sampled - 1), i.e.
             // out.r = sampled*strength + (1 - strength). Fold into the texture
@@ -282,7 +285,7 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             shader.CreateInput(TfToken("occlusion"), SdfValueTypeNames->Float)
                 .ConnectToSource(t.GetOutput(TfToken("r")));
         }
-        if (vm.normalTex.present) {
+        if (!unlit && vm.normalTex.present) {
             UsdShadeShader t = makeTexture(vm.normalTex, "normalTexture", false);
             // Decode tangent-space normals ([0,1] -> [-1,1]) and fold in glTF's
             // normalTexture.scale, which scales only the X/Y components:
