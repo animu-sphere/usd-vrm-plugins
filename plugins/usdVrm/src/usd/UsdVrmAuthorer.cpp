@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "usd/UsdVrmAuthorer.h"
 
+#include "util/PathUtil.h"
+
 #include "pxr/base/gf/range3f.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
@@ -20,6 +22,7 @@
 #include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdSkel/bindingAPI.h"
+#include "pxr/usd/usdSkel/blendShape.h"
 #include "pxr/usd/usdSkel/root.h"
 #include "pxr/usd/usdSkel/skeleton.h"
 
@@ -264,6 +267,83 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     }
 
     // -----------------------------------------------------------------------
+    // Blend shapes. glTF morph targets become UsdSkelBlendShape prims under
+    // /Asset/skel/BlendShapes, bound on the owning mesh. blendPath[meshIdx][t]
+    // records each prim path so expressions can reference them below. (UsdSkel
+    // blend shapes need a SkelRoot ancestor — present only when there's a
+    // skeleton — so morph data without one is preserved in the model but not
+    // authored here.)
+    // -----------------------------------------------------------------------
+    std::vector<std::vector<SdfPath>> blendPath(doc.meshes.size());
+    bool anyMorph = false;
+    for (const VrmMeshPrimitive& m : doc.meshes) {
+        if (!m.morphTargets.empty()) { anyMorph = true; break; }
+    }
+    if (anyMorph && hasSkel) {
+        const SdfPath blendScopePath = skelScopePath.AppendChild(TfToken("BlendShapes"));
+        UsdGeomScope::Define(stage, blendScopePath);
+
+        // Uniquify blend-shape names across every (mesh, morph) pair.
+        std::vector<std::string> rawNames;
+        for (const VrmMeshPrimitive& m : doc.meshes) {
+            for (size_t t = 0; t < m.morphTargets.size(); ++t) {
+                const std::string& mn = m.morphTargets[t].name;
+                rawNames.push_back(m.name + "_" +
+                    (mn.empty() ? "morph" + std::to_string(t) : mn));
+            }
+        }
+        std::vector<std::string> blendNames =
+            VrmMakeUniqueNames(rawNames, "Morph");
+
+        size_t cursor = 0;
+        for (size_t mi = 0; mi < doc.meshes.size(); ++mi) {
+            const VrmMeshPrimitive& m = doc.meshes[mi];
+            if (m.morphTargets.empty()) continue;
+            UsdGeomMesh mesh =
+                UsdGeomMesh::Get(stage, geoPath.AppendChild(TfToken(m.name)));
+            if (!mesh) { cursor += m.morphTargets.size(); continue; }
+
+            VtTokenArray names;
+            SdfPathVector targets;
+            for (size_t t = 0; t < m.morphTargets.size(); ++t) {
+                const VrmMorphTarget& mt = m.morphTargets[t];
+                const TfToken name(blendNames[cursor++]);
+                SdfPath bsPath = blendScopePath.AppendChild(name);
+                UsdSkelBlendShape bs = UsdSkelBlendShape::Define(stage, bsPath);
+                VtVec3fArray offsets(mt.positionDeltas.begin(),
+                                     mt.positionDeltas.end());
+                // A POSITION-less morph target (normals only) would otherwise
+                // author empty offsets while normalOffsets is per-point; UsdSkel
+                // requires the two to be length-aligned, so pad offsets with
+                // zeros to match.
+                if (offsets.empty() && !mt.normalDeltas.empty()) {
+                    offsets.assign(mt.normalDeltas.size(), GfVec3f(0.0f));
+                }
+                bs.CreateOffsetsAttr(VtValue(offsets));
+                if (!mt.normalDeltas.empty()) {
+                    bs.CreateNormalOffsetsAttr(VtValue(
+                        VtVec3fArray(mt.normalDeltas.begin(), mt.normalDeltas.end())));
+                }
+                names.push_back(name);
+                targets.push_back(bsPath);
+                blendPath[mi].push_back(bsPath);
+            }
+            UsdSkelBindingAPI binding = UsdSkelBindingAPI::Apply(mesh.GetPrim());
+            binding.CreateBlendShapesAttr(VtValue(names));
+            binding.CreateBlendShapeTargetsRel().SetTargets(targets);
+            // Blend-shape weights are driven through the bound skeleton's
+            // SkelAnimation, so a morph-only (non-skinned) mesh still needs a
+            // skel:skeleton relationship or the blend shapes can't be evaluated.
+            // Idempotent for skinned meshes that already set it.
+            if (!m.skinned) {
+                binding.CreateSkeletonRel().SetTargets({skelPath});
+            }
+        }
+    } else if (anyMorph) {
+        warn("morph targets present but no skeleton/SkelRoot; blend shapes skipped");
+    }
+
+    // -----------------------------------------------------------------------
     // Rig / Humanoid (control semantics; not a bone hierarchy duplicate).
     // -----------------------------------------------------------------------
     UsdGeomScope::Define(stage, rigPath);
@@ -290,6 +370,58 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         }
     } else if (!doc.humanoidBones.empty()) {
         warn("humanoid bones present but no skeleton was imported; mapping skipped");
+    }
+
+    // -----------------------------------------------------------------------
+    // Expressions (VRM 1.0 expressions / VRM 0.x BlendShapeGroups). Phase 2
+    // authors the morph-target bindings as relationships to the blend-shape
+    // prims + weights; evaluation is left to a downstream runtime.
+    // -----------------------------------------------------------------------
+    if (!doc.expressions.empty()) {
+        SdfPath exprScopePath = rigPath.AppendChild(TfToken("Expressions"));
+        UsdGeomScope::Define(stage, exprScopePath);
+
+        std::vector<std::string> rawNames;
+        rawNames.reserve(doc.expressions.size());
+        for (const VrmExpression& e : doc.expressions) rawNames.push_back(e.name);
+        std::vector<std::string> exprNames =
+            VrmMakeUniqueNames(rawNames, "Expression");
+
+        for (size_t i = 0; i < doc.expressions.size(); ++i) {
+            const VrmExpression& e = doc.expressions[i];
+            UsdPrim p = UsdGeomScope::Define(
+                stage, exprScopePath.AppendChild(TfToken(exprNames[i]))).GetPrim();
+            p.CreateAttribute(TfToken("vrm:expressionType"),
+                              SdfValueTypeNames->Token, true, SdfVariabilityUniform)
+                .Set(TfToken(e.isPreset ? "preset" : "custom"));
+            p.CreateAttribute(TfToken("vrm:isBinary"),
+                              SdfValueTypeNames->Bool, true, SdfVariabilityUniform)
+                .Set(e.isBinary);
+
+            SdfPathVector targets;
+            VtFloatArray weights;
+            for (const VrmExpression::MorphBind& b : e.morphBinds) {
+                if (b.meshPrimitiveIndex < 0 ||
+                    b.meshPrimitiveIndex >= static_cast<int>(blendPath.size())) {
+                    continue;
+                }
+                const std::vector<SdfPath>& paths = blendPath[b.meshPrimitiveIndex];
+                if (b.morphTargetIndex < 0 ||
+                    b.morphTargetIndex >= static_cast<int>(paths.size())) {
+                    continue;
+                }
+                targets.push_back(paths[b.morphTargetIndex]);
+                weights.push_back(b.weight);
+            }
+            if (!targets.empty()) {
+                p.CreateRelationship(TfToken("vrm:morphTargets"), false)
+                    .SetTargets(targets);
+                p.CreateAttribute(TfToken("vrm:morphTargetWeights"),
+                                  SdfValueTypeNames->FloatArray, true,
+                                  SdfVariabilityUniform)
+                    .Set(weights);
+            }
+        }
     }
 
     if (!stage->ExportToString(outUsda)) {

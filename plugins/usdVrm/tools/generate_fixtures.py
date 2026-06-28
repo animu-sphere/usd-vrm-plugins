@@ -7,6 +7,7 @@ specific import behavior the smoke test then asserts:
 
   minimal.vrm        skinned mesh + non-skinned node-placed accessory; humanoid
   vrm0_minimal.vrm   the VRM 0.x extension shape (extensions.VRM, humanBones[])
+  vrm0_expressions.vrm VRM 0.x blendShapeMaster preset group (weight 0..100)
   multiskin_ibm.vrm  two skins, overlapping joints, non-identity inverse binds
   names.vrm          duplicate / Japanese / empty mesh & material names
   materials.vrm      alpha BLEND + double-sided, and alpha MASK with a cutoff
@@ -252,11 +253,93 @@ def build_unordered_skel():
     return b.build(gltf)
 
 
+def build_expressions():
+    """A morph target + a VRM 1.0 preset expression binding it (weight 1.0)."""
+    b = GlbBuilder()
+    skin_attrs = _tri_accessors(b, with_skin=True)
+    idx = _idx(b)
+    ibm = b.add(FLOAT, "MAT4", [tuple(IDENTITY16), tuple(IDENTITY16)])
+    # Morph target: lift the apex vertex by 0.5 in Y.
+    morph_pos = b.add(FLOAT, "VEC3",
+                      [(0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.5, 0.0)])
+    prim = {
+        "attributes": skin_attrs, "indices": idx, "material": 0,
+        "targets": [{"POSITION": morph_pos}],
+    }
+    gltf = {
+        "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
+        "scene": 0, "scenes": [{"nodes": [0, 1]}],
+        "nodes": [
+            {"name": "Face", "mesh": 0, "skin": 0},
+            {"name": "hips", "children": [2], "translation": [0.0, 0.5, 0.0]},
+            {"name": "spine", "translation": [0.0, 0.3, 0.0]},
+        ],
+        "meshes": [{
+            "name": "Face", "primitives": [prim],
+            "extras": {"targetNames": ["happy_shape"]},
+        }],
+        "skins": [{"joints": [1, 2], "inverseBindMatrices": ibm, "skeleton": 1}],
+        "materials": [_basic_material("Face_Mat")],
+        "extensionsUsed": ["VRMC_vrm"],
+        "extensions": {"VRMC_vrm": {
+            **vrm1_extension({"hips": 1, "spine": 2}),
+            "expressions": {"preset": {"happy": {
+                "isBinary": False,
+                "morphTargetBinds": [{"node": 0, "index": 0, "weight": 1.0}],
+            }}},
+        }},
+    }
+    return b.build(gltf)
+
+
+def build_vrm0_expressions():
+    """VRM 0.x blendShapeMaster: a preset group binding a morph (weight 0..100)."""
+    b = GlbBuilder()
+    skin_attrs = _tri_accessors(b, with_skin=True)
+    idx = _idx(b)
+    ibm = b.add(FLOAT, "MAT4", [tuple(IDENTITY16), tuple(IDENTITY16)])
+    # Same apex-lift morph as the VRM 1.0 fixture.
+    morph_pos = b.add(FLOAT, "VEC3",
+                      [(0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.5, 0.0)])
+    prim = {
+        "attributes": skin_attrs, "indices": idx, "material": 0,
+        "targets": [{"POSITION": morph_pos}],
+    }
+    gltf = {
+        "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
+        "scene": 0, "scenes": [{"nodes": [0, 1]}],
+        "nodes": [
+            {"name": "Face", "mesh": 0, "skin": 0},
+            {"name": "hips", "children": [2], "translation": [0.0, 0.5, 0.0]},
+            {"name": "spine", "translation": [0.0, 0.3, 0.0]},
+        ],
+        "meshes": [{
+            "name": "Face", "primitives": [prim],
+            "extras": {"targetNames": ["happy_shape"]},
+        }],
+        "skins": [{"joints": [1, 2], "inverseBindMatrices": ibm, "skeleton": 1}],
+        "materials": [_basic_material("Face_Mat")],
+        "extensionsUsed": ["VRM"],
+        "extensions": {"VRM": {
+            **vrm0_extension({"hips": 1, "spine": 2}),
+            # binds.mesh = glTF mesh index, weight 0..100 (-> 0..1 on import),
+            # presetName "joy" marks it a preset.
+            "blendShapeMaster": {"blendShapeGroups": [{
+                "name": "Joy", "presetName": "joy", "isBinary": False,
+                "binds": [{"mesh": 0, "index": 0, "weight": 100.0}],
+            }]},
+        }},
+    }
+    return b.build(gltf)
+
+
 FIXTURES = {
     "minimal.vrm": build_minimal,
     "vrm0_minimal.vrm": build_vrm0,
     "multiskin_ibm.vrm": build_multiskin_ibm,
     "unordered_skel.vrm": build_unordered_skel,
+    "expressions.vrm": build_expressions,
+    "vrm0_expressions.vrm": build_vrm0_expressions,
     "names.vrm": build_names,
     "materials.vrm": build_materials,
     "badext.vrm": build_badext,

@@ -489,6 +489,30 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                 return it != nodeToJoint.end() ? it->second : -1;
             };
 
+            // A glTF node / mesh may expand into several canonical primitives;
+            // expression binds reference a node (VRM 1.0) or mesh (VRM 0.x) plus
+            // a morph-target index, which we fan out to the matching primitives.
+            std::unordered_map<int, std::vector<int>> nodeToPrims, meshToPrims;
+            for (int mi = 0; mi < static_cast<int>(outDoc->meshes.size()); ++mi) {
+                nodeToPrims[outDoc->meshes[mi].sourceNodeIndex].push_back(mi);
+                meshToPrims[outDoc->meshes[mi].sourceMeshIndex].push_back(mi);
+            }
+            auto readWeight = [&](const JsValue* wv, float fallback) -> float {
+                if (wv && wv->IsReal()) return static_cast<float>(wv->GetReal());
+                if (wv && wv->IsInt()) return static_cast<float>(wv->GetInt());
+                return fallback;
+            };
+            auto addBinds = [&](VrmExpression& expr, const std::vector<int>* prims,
+                                int morphIndex, float weight) {
+                if (!prims) return;
+                for (int mi : *prims) {
+                    if (morphIndex >= 0 && morphIndex <
+                            static_cast<int>(outDoc->meshes[mi].morphTargets.size())) {
+                        expr.morphBinds.push_back({mi, morphIndex, weight});
+                    }
+                }
+            };
+
             if (outDoc->version == VrmVersion::Vrm1) {
                 outDoc->specVersion =
                     _Find(*rootObj, "specVersion")
@@ -508,6 +532,40 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                             if (joint >= 0) {
                                 outDoc->humanoidBones.push_back({kv.first, joint});
                             }
+                        }
+                    }
+                }
+                // expressions.preset.<name> and expressions.custom.<name>,
+                // each with morphTargetBinds: [{ node, index, weight(0..1) }].
+                if (const JsObject* exprs =
+                        _AsObject(_Find(*rootObj, "expressions"))) {
+                    for (const char* group : {"preset", "custom"}) {
+                        const JsObject* g = _AsObject(_Find(*exprs, group));
+                        if (!g) continue;
+                        const bool preset = std::strcmp(group, "preset") == 0;
+                        for (const auto& kv : *g) {
+                            const JsObject* e = _AsObject(&kv.second);
+                            if (!e) continue;
+                            VrmExpression expr;
+                            expr.name = kv.first;
+                            expr.isPreset = preset;
+                            const JsValue* ib = _Find(*e, "isBinary");
+                            expr.isBinary = ib && ib->IsBool() && ib->GetBool();
+                            if (const JsArray* binds =
+                                    _AsArray(_Find(*e, "morphTargetBinds"))) {
+                                for (const JsValue& bv : *binds) {
+                                    const JsObject* b = _AsObject(&bv);
+                                    if (!b) continue;
+                                    int node = _AsInt(_Find(*b, "node"));
+                                    int index = _AsInt(_Find(*b, "index"));
+                                    float w = readWeight(_Find(*b, "weight"), 1.0f);
+                                    auto it = nodeToPrims.find(node);
+                                    addBinds(expr,
+                                        it != nodeToPrims.end() ? &it->second : nullptr,
+                                        index, w);
+                                }
+                            }
+                            outDoc->expressions.push_back(std::move(expr));
                         }
                     }
                 }
@@ -532,6 +590,48 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                                 outDoc->humanoidBones.push_back(
                                     {boneName->GetString(), joint});
                             }
+                        }
+                    }
+                }
+                // blendShapeMaster.blendShapeGroups: [{ name, presetName,
+                // isBinary, binds: [{ mesh, index, weight(0..100) }] }].
+                if (const JsObject* bsm =
+                        _AsObject(_Find(*rootObj, "blendShapeMaster"))) {
+                    if (const JsArray* groups =
+                            _AsArray(_Find(*bsm, "blendShapeGroups"))) {
+                        for (const JsValue& gv : *groups) {
+                            const JsObject* g = _AsObject(&gv);
+                            if (!g) continue;
+                            const JsValue* nm = _Find(*g, "name");
+                            const JsValue* pn = _Find(*g, "presetName");
+                            std::string preset =
+                                (pn && pn->IsString()) ? pn->GetString() : "";
+                            const bool isPreset =
+                                !preset.empty() && preset != "unknown";
+                            VrmExpression expr;
+                            expr.name = isPreset ? preset
+                                        : (nm && nm->IsString() ? nm->GetString()
+                                                                : std::string());
+                            expr.isPreset = isPreset;
+                            const JsValue* ib = _Find(*g, "isBinary");
+                            expr.isBinary = ib && ib->IsBool() && ib->GetBool();
+                            if (const JsArray* binds =
+                                    _AsArray(_Find(*g, "binds"))) {
+                                for (const JsValue& bv : *binds) {
+                                    const JsObject* b = _AsObject(&bv);
+                                    if (!b) continue;
+                                    int meshIdx = _AsInt(_Find(*b, "mesh"));
+                                    int index = _AsInt(_Find(*b, "index"));
+                                    // VRM 0.x weights are 0..100.
+                                    float w = readWeight(_Find(*b, "weight"),
+                                                         100.0f) / 100.0f;
+                                    auto it = meshToPrims.find(meshIdx);
+                                    addBinds(expr,
+                                        it != meshToPrims.end() ? &it->second : nullptr,
+                                        index, w);
+                                }
+                            }
+                            outDoc->expressions.push_back(std::move(expr));
                         }
                     }
                 }

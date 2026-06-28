@@ -123,6 +123,57 @@ def check_unordered_skel():
     assert ji[0] == 1, f"joint index not remapped after topo reorder: {ji[0]}"
 
 
+def check_expressions():
+    """Morph target -> UsdSkelBlendShape, bound on the mesh + an expression."""
+    stage = _open("expressions.vrm")
+
+    # Blend shape authored under /Asset/skel/BlendShapes with the right offsets.
+    bs_scope = stage.GetPrimAtPath("/Asset/skel/BlendShapes")
+    assert bs_scope.IsValid(), "expected /Asset/skel/BlendShapes"
+    bs = [p for p in bs_scope.GetChildren() if p.IsA(UsdSkel.BlendShape)]
+    assert len(bs) == 1, bs
+    offsets = UsdSkel.BlendShape(bs[0]).GetOffsetsAttr().Get()
+    assert len(offsets) == 3 and abs(offsets[2][1] - 0.5) < 1e-6, list(offsets)
+
+    # Mesh binding references the blend shape.
+    face = UsdSkel.BindingAPI(stage.GetPrimAtPath("/Asset/geo/Face"))
+    assert face.GetBlendShapesAttr().Get(), "mesh missing skel:blendShapes"
+    assert face.GetBlendShapeTargetsRel().GetTargets() == [bs[0].GetPath()]
+
+    # Expression binds the morph target with weight 1.0.
+    happy = stage.GetPrimAtPath("/Asset/rig/Expressions/happy")
+    assert happy.IsValid(), "expected /Asset/rig/Expressions/happy"
+    assert happy.GetAttribute("vrm:expressionType").Get() == "preset"
+    targets = happy.GetRelationship("vrm:morphTargets").GetTargets()
+    assert targets == [bs[0].GetPath()], targets
+    weights = happy.GetAttribute("vrm:morphTargetWeights").Get()
+    assert weights and abs(weights[0] - 1.0) < 1e-6, list(weights)
+
+
+def check_vrm0_expressions():
+    """VRM 0.x blendShapeMaster: preset detection + weight 0..100 -> 0..1."""
+    stage = _open("vrm0_expressions.vrm")
+
+    bs_scope = stage.GetPrimAtPath("/Asset/skel/BlendShapes")
+    assert bs_scope.IsValid(), "expected /Asset/skel/BlendShapes"
+    bs = [p for p in bs_scope.GetChildren() if p.IsA(UsdSkel.BlendShape)]
+    assert len(bs) == 1, bs
+
+    # The morph mesh carries a skel:skeleton binding (needed to drive the blend
+    # shapes), plus the blend-shape binding.
+    face = UsdSkel.BindingAPI(stage.GetPrimAtPath("/Asset/geo/Face"))
+    assert face.GetSkeletonRel().GetTargets() == ["/Asset/skel/Skeleton"]
+    assert face.GetBlendShapeTargetsRel().GetTargets() == [bs[0].GetPath()]
+
+    # presetName "joy" -> preset; weight 100 normalizes to 1.0.
+    joy = stage.GetPrimAtPath("/Asset/rig/Expressions/joy")
+    assert joy.IsValid(), "expected /Asset/rig/Expressions/joy"
+    assert joy.GetAttribute("vrm:expressionType").Get() == "preset"
+    assert joy.GetRelationship("vrm:morphTargets").GetTargets() == [bs[0].GetPath()]
+    weights = joy.GetAttribute("vrm:morphTargetWeights").Get()
+    assert weights and abs(weights[0] - 1.0) < 1e-6, list(weights)
+
+
 def check_names():
     """Duplicate / Japanese / empty names sanitize+uniquify without collisions."""
     stage = _open("names.vrm")
@@ -169,7 +220,9 @@ def main() -> int:
         "usdVrm SdfFileFormat is not registered"
 
     for check in (check_minimal, check_vrm0, check_multiskin_ibm,
-                  check_unordered_skel, check_names, check_materials, check_badext):
+                  check_unordered_skel, check_expressions,
+                  check_vrm0_expressions, check_names,
+                  check_materials, check_badext):
         check()
         print(f"  {check.__name__}: OK")
     print("usdVrm smoke tests: OK")
