@@ -724,6 +724,15 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                         }
                     }
                 }
+                // lookAt: { type: "bone"|"expression", rangeMap*… }. Eyes come
+                // from the humanoid leftEye/rightEye bones (resolved below).
+                if (const JsObject* la = _AsObject(_Find(*rootObj, "lookAt"))) {
+                    outDoc->lookAt.present = true;
+                    const JsValue* ty = _Find(*la, "type");
+                    outDoc->lookAt.type =
+                        (ty && ty->IsString()) ? ty->GetString() : "bone";
+                    outDoc->lookAt.rawJson = JsWriteToString(JsValue(*la));
+                }
             } else if (outDoc->version == VrmVersion::Vrm0) {
                 outDoc->specVersion =
                     _Find(*rootObj, "specVersion")
@@ -809,6 +818,26 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                                 JsWriteToString(JsValue(*mp));
                         }
                     }
+                }
+                // firstPerson.lookAtTypeName ("Bone" | "BlendShape").
+                if (const JsObject* fp =
+                        _AsObject(_Find(*rootObj, "firstPerson"))) {
+                    outDoc->lookAt.present = true;
+                    const JsValue* tn = _Find(*fp, "lookAtTypeName");
+                    std::string t = (tn && tn->IsString()) ? tn->GetString() : "Bone";
+                    outDoc->lookAt.type =
+                        (t == "BlendShape") ? "expression" : "bone";
+                    outDoc->lookAt.rawJson = JsWriteToString(JsValue(*fp));
+                }
+            }
+            // Resolve lookAt eyes from the humanoid leftEye/rightEye bones
+            // (both VRM versions express the eyes via the humanoid, not lookAt).
+            if (outDoc->lookAt.present) {
+                for (const VrmHumanoidBone& hb : outDoc->humanoidBones) {
+                    if (hb.semanticName == "leftEye")
+                        outDoc->lookAt.leftEyeJoint = hb.jointIndex;
+                    else if (hb.semanticName == "rightEye")
+                        outDoc->lookAt.rightEyeJoint = hb.jointIndex;
                 }
             }
         }
