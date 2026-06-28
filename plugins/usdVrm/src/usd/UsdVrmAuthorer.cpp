@@ -3,7 +3,12 @@
 
 #include "util/PathUtil.h"
 
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/range3f.h"
+#include "pxr/base/gf/rotation.h"
+#include "pxr/base/gf/transform.h"
+#include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3h.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/token.h"
@@ -63,6 +68,33 @@ _BuildJointPaths(const std::vector<VrmJoint>& joints)
     };
     for (size_t i = 0; i < joints.size(); ++i) resolve(static_cast<int>(i));
     return paths;
+}
+
+// Rotate a position by `m` (front-bake is rotation-only, so translation is moot).
+GfVec3f _Rotate(const GfMatrix4d& m, const GfVec3f& p)
+{
+    GfVec3d r = m.Transform(GfVec3d(p[0], p[1], p[2]));
+    return GfVec3f(r[0], r[1], r[2]);
+}
+
+// Rotate a direction/delta by `m` (no translation).
+GfVec3f _RotateDir(const GfMatrix4d& m, const GfVec3f& d)
+{
+    GfVec3d r = m.TransformDir(GfVec3d(d[0], d[1], d[2]));
+    return GfVec3f(r[0], r[1], r[2]);
+}
+
+// Compose a joint-local matrix the way UsdSkel reads (t,r,s): S * R * T, so the
+// result round-trips through GfTransform back to the same (t,r,s).
+GfMatrix4d _MakeLocal(const GfVec3f& t, const GfQuatf& r, const GfVec3f& s)
+{
+    GfMatrix4d S(1.0), R(1.0), T(1.0);
+    S.SetScale(GfVec3d(s[0], s[1], s[2]));
+    R.SetRotate(GfQuatd(r.GetReal(), GfVec3d(r.GetImaginary()[0],
+                                             r.GetImaginary()[1],
+                                             r.GetImaginary()[2])));
+    T.SetTranslate(GfVec3d(t[0], t[1], t[2]));
+    return S * R * T;
 }
 
 void _SetSourceMetadata(const UsdPrim& prim, const VrmMeshPrimitive& m)
@@ -137,22 +169,27 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
                                      VtValue(doc.rawVrmExtensionJson));
 
     // Front-direction normalization. VRM 0.x avatars face -Z; VRM 1.0
-    // standardized on +Z. Rotate VRM 0.x by 180 deg about the up axis at the
-    // root so every imported avatar faces +Z. Because it's a single
-    // SkelRoot-level transform, skinning, animation, blend shapes and lookAt all
-    // keep working — the whole local frame just rotates.
+    // standardized on +Z. Rather than a single root xformOp (which faces the mesh
+    // +Z but leaves the *skeleton-local* rest convention at -Z, so a shared +Z
+    // animation clip double-counts and ends up backwards), bake a 180-deg Y
+    // rotation into the data: skinned mesh points/normals + blend-shape deltas,
+    // skeleton bind (world) and root-joint rest (local) transforms, non-skinned
+    // node placements, and embedded clips' root-joint tracks. Every avatar then
+    // shares one canonical +Z rest convention so a single animation library
+    // drives all of them.
+    const bool bakeFront = (doc.version == VrmVersion::Vrm0);
+    GfMatrix4d frontBake(1.0);
+    frontBake.SetRotate(GfRotation(GfVec3d(0, 1, 0), 180.0));
     const char* frontAxis = doc.version == VrmVersion::Vrm0   ? "-Z"
                             : doc.version == VrmVersion::Vrm1 ? "+Z"
                                                              : "unknown";
     assetPrim.SetCustomDataByKey(TfToken("vrm:sourceFrontAxis"),
                                  VtValue(std::string(frontAxis)));
-    // Only VRM 0.x needs rotating; record the flag for every version so
-    // consumers never have to distinguish "not normalized" from "key absent".
-    const bool normalized = (doc.version == VrmVersion::Vrm0);
-    if (normalized)
-        UsdGeomXformable(assetPrim).AddRotateYOp().Set(180.0f);
+    // VRM 0.x is normalized to +Z by baking the rotation into the data (no root
+    // transform). Record the flag for every version so consumers never have to
+    // distinguish "not normalized" from "key absent".
     assetPrim.SetCustomDataByKey(TfToken("vrm:frontAxisNormalized"),
-                                 VtValue(normalized));
+                                 VtValue(bakeFront));
 
     // -----------------------------------------------------------------------
     // Materials.
@@ -329,7 +366,13 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         SdfPath meshPath = geoPath.AppendChild(TfToken(m.name));
         UsdGeomMesh mesh = UsdGeomMesh::Define(stage, meshPath);
 
-        VtVec3fArray points(m.points.begin(), m.points.end());
+        // Skinned-mesh points/normals live in skel-root space, so the front bake
+        // rotates them here. (Non-skinned meshes are placed by their node
+        // transform instead, which is baked below.)
+        const bool bakeMesh = bakeFront && m.skinned;
+        VtVec3fArray points(m.points.size());
+        for (size_t pi = 0; pi < m.points.size(); ++pi)
+            points[pi] = bakeMesh ? _Rotate(frontBake, m.points[pi]) : m.points[pi];
         mesh.CreatePointsAttr(VtValue(points));
         mesh.CreateFaceVertexIndicesAttr(
             VtValue(VtIntArray(m.faceVertexIndices.begin(), m.faceVertexIndices.end())));
@@ -337,9 +380,9 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             VtValue(VtIntArray(m.faceVertexCounts.begin(), m.faceVertexCounts.end())));
         mesh.CreateSubdivisionSchemeAttr(VtValue(UsdGeomTokens->none));
 
-        // Extent.
+        // Extent (from the possibly-rotated points).
         GfRange3f range;
-        for (const GfVec3f& p : m.points) range.UnionWith(p);
+        for (const GfVec3f& p : points) range.UnionWith(p);
         if (!range.IsEmpty()) {
             VtVec3fArray extent(2);
             extent[0] = range.GetMin();
@@ -356,7 +399,11 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             UsdGeomPrimvar normals = UsdGeomPrimvarsAPI(mesh).CreatePrimvar(
                 TfToken("normals"), SdfValueTypeNames->Normal3fArray,
                 UsdGeomTokens->vertex);
-            normals.Set(VtVec3fArray(m.normals.begin(), m.normals.end()));
+            VtVec3fArray nrm(m.normals.size());
+            for (size_t ni = 0; ni < m.normals.size(); ++ni)
+                nrm[ni] = bakeMesh ? _RotateDir(frontBake, m.normals[ni])
+                                   : m.normals[ni];
+            normals.Set(nrm);
         }
         if (!m.uvs.empty()) {
             UsdGeomPrimvar st = UsdGeomPrimvarsAPI(mesh).CreatePrimvar(
@@ -374,10 +421,13 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
 
         // Non-skinned meshes carry their glTF node placement; skinned meshes do
         // not (glTF ignores the node transform for skinning — verts are in
-        // skel-root space and geomBindTransform is identity).
-        if (!m.skinned &&
-            !GfIsClose(m.nodeWorldTransform, GfMatrix4d(1.0), 1e-9)) {
-            mesh.AddTransformOp().Set(m.nodeWorldTransform);
+        // skel-root space and geomBindTransform is identity). The front bake is
+        // applied to the placement so the accessory rotates with the avatar.
+        if (!m.skinned) {
+            GfMatrix4d nodeXf = bakeFront ? m.nodeWorldTransform * frontBake
+                                          : m.nodeWorldTransform;
+            if (!GfIsClose(nodeXf, GfMatrix4d(1.0), 1e-9))
+                mesh.AddTransformOp().Set(nodeXf);
         }
 
         if (m.skinned && hasSkel) {
@@ -418,10 +468,18 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         VtMatrix4dArray restXforms;
         jointTokens.reserve(doc.joints.size());
         for (size_t i = 0; i < doc.joints.size(); ++i) {
+            const VrmJoint& j = doc.joints[i];
             jointTokens.push_back(TfToken(jointPaths[i]));
-            jointNames.push_back(TfToken(doc.joints[i].name));
-            bindXforms.push_back(doc.joints[i].bindTransform);
-            restXforms.push_back(doc.joints[i].restTransform);
+            jointNames.push_back(TfToken(j.name));
+            // Front bake: bind is world-space (all joints rotate); rest is
+            // local-to-parent, so only root joints (relative to skel space) take
+            // the rotation — descendants are already correct via their parents.
+            const bool isRoot = j.parentJointIndex < 0;
+            bindXforms.push_back(bakeFront ? j.bindTransform * frontBake
+                                           : j.bindTransform);
+            restXforms.push_back((bakeFront && isRoot)
+                                     ? j.restTransform * frontBake
+                                     : j.restTransform);
         }
         skel.CreateJointsAttr(VtValue(jointTokens));
         skel.CreateJointNamesAttr(VtValue(jointNames));
@@ -468,13 +526,18 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
 
             VtTokenArray names;
             SdfPathVector targets;
+            // Morph deltas live in the same space as the mesh points, so they
+            // take the front bake too when the owning mesh is skinned+baked.
+            const bool bakeMorph = bakeFront && m.skinned;
             for (size_t t = 0; t < m.morphTargets.size(); ++t) {
                 const VrmMorphTarget& mt = m.morphTargets[t];
                 const TfToken name(blendNames[cursor++]);
                 SdfPath bsPath = blendScopePath.AppendChild(name);
                 UsdSkelBlendShape bs = UsdSkelBlendShape::Define(stage, bsPath);
-                VtVec3fArray offsets(mt.positionDeltas.begin(),
-                                     mt.positionDeltas.end());
+                VtVec3fArray offsets(mt.positionDeltas.size());
+                for (size_t pi = 0; pi < mt.positionDeltas.size(); ++pi)
+                    offsets[pi] = bakeMorph ? _RotateDir(frontBake, mt.positionDeltas[pi])
+                                            : mt.positionDeltas[pi];
                 // A POSITION-less morph target (normals only) would otherwise
                 // author empty offsets while normalOffsets is per-point; UsdSkel
                 // requires the two to be length-aligned, so pad offsets with
@@ -484,8 +547,11 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
                 }
                 bs.CreateOffsetsAttr(VtValue(offsets));
                 if (!mt.normalDeltas.empty()) {
-                    bs.CreateNormalOffsetsAttr(VtValue(
-                        VtVec3fArray(mt.normalDeltas.begin(), mt.normalDeltas.end())));
+                    VtVec3fArray nrm(mt.normalDeltas.size());
+                    for (size_t pi = 0; pi < mt.normalDeltas.size(); ++pi)
+                        nrm[pi] = bakeMorph ? _RotateDir(frontBake, mt.normalDeltas[pi])
+                                            : mt.normalDeltas[pi];
+                    bs.CreateNormalOffsetsAttr(VtValue(nrm));
                 }
                 names.push_back(name);
                 targets.push_back(bsPath);
@@ -669,18 +735,43 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             for (int j : a.jointIndices) joints.push_back(TfToken(jointPaths[j]));
             anim.CreateJointsAttr(VtValue(joints));
 
+            // Front bake applies to a clip's *root* joints: their local transform
+            // is relative to skel space, so it must carry the 180-deg rotation
+            // (descendants are parent-relative and stay as authored).
+            std::vector<bool> rootJoint(a.jointIndices.size(), false);
+            if (bakeFront)
+                for (size_t k = 0; k < a.jointIndices.size(); ++k)
+                    rootJoint[k] = doc.joints[a.jointIndices[k]].parentJointIndex < 0;
+
             UsdAttribute tAttr = anim.CreateTranslationsAttr();
             UsdAttribute rAttr = anim.CreateRotationsAttr();
             UsdAttribute sAttr = anim.CreateScalesAttr();
             for (size_t ti = 0; ti < a.times.size(); ++ti) {
                 const double tc = a.times[ti] * fps;
-                tAttr.Set(VtVec3fArray(a.translations[ti].begin(),
-                                       a.translations[ti].end()), tc);
-                rAttr.Set(VtQuatfArray(a.rotations[ti].begin(),
-                                       a.rotations[ti].end()), tc);
+                VtVec3fArray trans(a.translations[ti].begin(),
+                                   a.translations[ti].end());
+                VtQuatfArray rots(a.rotations[ti].begin(), a.rotations[ti].end());
                 VtVec3hArray scales(a.scales[ti].size());
                 for (size_t k = 0; k < a.scales[ti].size(); ++k)
                     scales[k] = GfVec3h(a.scales[ti][k]);
+                if (bakeFront) {
+                    for (size_t k = 0; k < trans.size(); ++k) {
+                        if (!rootJoint[k]) continue;
+                        // local' = (S*R*T) * frontBake, re-decomposed. Scale is
+                        // unchanged by appending a pure rotation.
+                        GfTransform xf(_MakeLocal(trans[k], rots[k],
+                            GfVec3f(scales[k][0], scales[k][1], scales[k][2]))
+                            * frontBake);
+                        GfVec3d t = xf.GetTranslation();
+                        trans[k] = GfVec3f(t[0], t[1], t[2]);
+                        GfQuaternion q = xf.GetRotation().GetQuaternion();
+                        rots[k] = GfQuatf(q.GetReal(),
+                            GfVec3f(q.GetImaginary()[0], q.GetImaginary()[1],
+                                    q.GetImaginary()[2]));
+                    }
+                }
+                tAttr.Set(trans, tc);
+                rAttr.Set(rots, tc);
                 sAttr.Set(scales, tc);
             }
             if (firstClip.IsEmpty()) {

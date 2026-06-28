@@ -12,7 +12,7 @@ import os
 import pathlib
 import sys
 
-from pxr import Gf, Plug, Sdf, Usd, UsdGeom, UsdShade, UsdSkel
+from pxr import Gf, Plug, Sdf, Usd, UsdGeom, UsdShade, UsdSkel, Vt
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 
@@ -21,6 +21,10 @@ def _open(name):
     stage = Usd.Stage.Open(str(FIXTURES / name))
     assert stage, f"failed to open {name}"
     return stage
+
+
+def _vclose(a, b, eps=1e-5):
+    return all(abs(a[i] - b[i]) < eps for i in range(len(a)))
 
 
 def check_minimal():
@@ -87,10 +91,12 @@ def check_vrm0():
     vrm = dp.GetCustomData().get("vrm", {})
     assert vrm.get("sourceVersion") == "0.x", vrm
     assert vrm.get("meta"), "VRM 0.x meta should be preserved"
-    # Front normalization: VRM 0.x (-Z front) rotated 180 deg to +Z at the root.
+    # Front normalization is baked into the data (no root xformOp). The detailed
+    # bake assertions live in check_vrm0_frontbake; here just confirm the policy.
     assert vrm.get("sourceFrontAxis") == "-Z", vrm
     assert vrm.get("frontAxisNormalized") is True, vrm
-    assert abs(dp.GetAttribute("xformOp:rotateY").Get() - 180.0) < 1e-4
+    assert not dp.GetAttribute("xformOp:rotateY").IsValid(), \
+        "VRM 0.x must bake the front rotation, not rotate the root"
     skel = UsdSkel.Skeleton(stage.GetPrimAtPath("/Asset/skel/Skeleton"))
     assert list(skel.GetJointsAttr().Get()) == ["hips", "hips/spine"]
     humanoid = stage.GetPrimAtPath("/Asset/rig/Humanoid")
@@ -327,6 +333,51 @@ def check_textures():
     assert mat.GetCustomData().get("vrm", {}).get("mtoon", {}).get("raw")
 
 
+def check_vrm0_frontbake():
+    """VRM 0.x front bake: 180-about-Y baked into data, not a root xformOp."""
+    stage = _open("vrm0_frontbake.vrm")
+    dp = stage.GetDefaultPrim()
+    assert not dp.GetAttribute("xformOp:rotateY").IsValid(), "must bake, not rotate root"
+    assert dp.GetCustomData().get("vrm", {}).get("frontAxisNormalized") is True
+
+    # Skinned mesh points rotated 180 about Y: (x,y,z) -> (-x,y,-z).
+    body = UsdGeom.Mesh(stage.GetPrimAtPath("/Asset/geo/Body"))
+    pts = body.GetPointsAttr().Get()
+    assert _vclose(pts[0], (0.5, 0.0, -1.0)), list(pts)
+    assert _vclose(pts[2], (0.0, 1.0, -1.0)), list(pts)
+
+    # Root (hips) rest carries the rotation (+ keeps its translation); bind too.
+    skel = UsdSkel.Skeleton(stage.GetPrimAtPath("/Asset/skel/Skeleton"))
+    rest0 = skel.GetRestTransformsAttr().Get()[0]
+    assert _vclose(rest0.TransformDir(Gf.Vec3d(1, 0, 0)), (-1, 0, 0)), rest0
+    assert _vclose(rest0.ExtractTranslation(), (0, 0.5, 0)), rest0
+    bind0 = skel.GetBindTransformsAttr().Get()[0]
+    assert _vclose(bind0.TransformDir(Gf.Vec3d(0, 0, 1)), (0, 0, -1)), bind0
+
+    # Embedded clip's root (hips) track is baked: rotation 90 -> 90+180 = 270 deg
+    # about Y, translation (1,0.5,0) -> (-1,0.5,0).
+    anim = UsdSkel.Animation(stage.GetPrimAtPath("/Asset/skel/Animations/move"))
+    assert list(anim.GetJointsAttr().Get()) == ["hips"]
+    t1 = anim.GetTranslationsAttr().Get(30.0)[0]
+    assert _vclose(t1, (-1.0, 0.5, 0.0)), t1
+    q = anim.GetRotationsAttr().Get(30.0)[0]
+    qm = Gf.Matrix3d(Gf.Quatd(q.GetReal(), Gf.Vec3d(*q.GetImaginary())))
+    exp = Gf.Matrix3d(Gf.Rotation(Gf.Vec3d(0, 1, 0), 270.0))
+    assert _vclose(Gf.Vec3d(1, 0, 0) * qm, Gf.Vec3d(1, 0, 0) * exp), q
+
+    # Skinning still reproduces the (rotated) source at the rest pose (t=0): the
+    # bake is internally consistent across points + bind + rest + the bound clip.
+    cache = UsdSkel.Cache()
+    cache.Populate(UsdSkel.Root(dp), Usd.PrimDefaultPredicate)
+    skelQ = cache.GetSkelQuery(skel)
+    skinQ = cache.GetSkinningQuery(body.GetPrim())
+    xforms = skelQ.ComputeSkinningTransforms(Usd.TimeCode(0.0))
+    skinned = Vt.Vec3fArray(list(pts))
+    assert skinQ.ComputeSkinnedPoints(xforms, skinned, Usd.TimeCode(0.0))
+    for i in range(len(pts)):
+        assert _vclose(skinned[i], pts[i], 1e-4), (i, skinned[i], pts[i])
+
+
 def check_constraints():
     """VRMC_node_constraint -> /Asset/rig/Constraints (type/source/axis/weight)."""
     stage = _open("constraints.vrm")
@@ -366,7 +417,8 @@ def main() -> int:
 
     for check in (check_minimal, check_vrm0, check_multiskin_ibm,
                   check_unordered_skel, check_expressions,
-                  check_vrm0_expressions, check_textures, check_animation,
+                  check_vrm0_expressions, check_vrm0_frontbake,
+                  check_textures, check_animation,
                   check_lookat, check_springbone, check_names, check_materials,
                   check_constraints, check_shared_accessor, check_badext):
         check()
