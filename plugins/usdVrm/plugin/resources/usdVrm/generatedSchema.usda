@@ -291,3 +291,156 @@ class "VrmHumanoidAPI" (
     )
 }
 
+class "VrmExpressionAPI" (
+    customData = {
+        string userDocBrief = "A VRM expression (VRM 1.0 Expression / VRM 0.x BlendShapeGroup)."
+    }
+)
+{
+    uniform token vrm:expressionType (
+        customData = {
+            string userDocBrief = "'preset' for a standard VRM expression, 'custom' otherwise."
+        }
+    )
+    uniform bool vrm:isBinary (
+        customData = {
+            string userDocBrief = "Whether the expression value is clamped to 0/1 (binary)."
+        }
+    )
+    rel vrm:materialColorTargets (
+        customData = {
+            string userDocBrief = "The materials whose colors this expression overrides."
+        }
+    )
+    uniform token[] vrm:materialColorTypes (
+        customData = {
+            string userDocBrief = "Color slot per target (e.g."
+        }
+    )
+    uniform float4[] vrm:materialColorValues (
+        customData = {
+            string userDocBrief = "Target RGBA per material color bind, parallel to vrm:materialColorTargets."
+        }
+    )
+    rel vrm:morphTargets (
+        customData = {
+            string userDocBrief = "The UsdSkelBlendShape prims this expression drives."
+        }
+    )
+    uniform float[] vrm:morphTargetWeights (
+        customData = {
+            string userDocBrief = "Per-target weights, parallel to vrm:morphTargets."
+        }
+    )
+}
+
+class "VrmLookAtAPI" (
+    customData = {
+        string userDocBrief = "VRM lookAt configuration."
+    }
+)
+{
+    uniform token vrm:leftEye (
+        customData = {
+            string userDocBrief = "Joint path token (within Skeleton.joints) of the left eye."
+        }
+    )
+    uniform token vrm:rightEye (
+        customData = {
+            string userDocBrief = "Joint path token (within Skeleton.joints) of the right eye."
+        }
+    )
+    rel vrm:skeleton (
+        customData = {
+            string userDocBrief = "The UsdSkelSkeleton the eye joint tokens belong to."
+        }
+    )
+    uniform token vrm:type (
+        customData = {
+            string userDocBrief = "'bone' (eyes driven by joints) or 'expression'."
+        }
+    )
+}
+
+class "VrmSpringBoneAPI" (
+    customData = {
+        string userDocBrief = """A VRM SpringBone chain (secondary motion, data only - no simulation).\r
+    Apply to each /Asset/rig/SecondaryMotion/SpringBones/<name> prim."""
+    }
+)
+{
+    uniform token vrm:center (
+        customData = {
+            string userDocBrief = "Optional center joint token for inertial reference."
+        }
+    )
+    rel vrm:colliderGroups (
+        customData = {
+            string userDocBrief = "The collider-group prims this chain collides against."
+        }
+    )
+    uniform float[] vrm:dragForce (
+        customData = {
+            string userDocBrief = "Per-joint drag force, parallel to vrm:joints."
+        }
+    )
+    uniform float3[] vrm:gravityDir (
+        customData = {
+            string userDocBrief = "Per-joint gravity direction (model space), parallel to vrm:joints."
+        }
+    )
+    uniform float[] vrm:gravityPower (
+        customData = {
+            string userDocBrief = "Per-joint gravity power, parallel to vrm:joints."
+        }
+    )
+    uniform float[] vrm:hitRadius (
+        customData = {
+            string userDocBrief = "Per-joint hit radius, parallel to vrm:joints."
+        }
+    )
+    uniform token[] vrm:joints (
+        customData = {
+            string userDocBrief = "Ordered joint path tokens forming the spring chain."
+        }
+    )
+    uniform float[] vrm:stiffness (
+        customData = {
+            string userDocBrief = "Per-joint stiffness, parallel to vrm:joints."
+        }
+    )
+}
+
+class "VrmColliderAPI" (
+    customData = {
+        string userDocBrief = "A single VRM SpringBone collider (data only)."
+    }
+)
+{
+    uniform token vrm:node (
+        customData = {
+            string userDocBrief = "Joint path token the collider is attached to."
+        }
+    )
+    uniform float3 vrm:offset (
+        customData = {
+            string userDocBrief = "Collider center offset from its node."
+        }
+    )
+    uniform float vrm:radius (
+        customData = {
+            string userDocBrief = "Collider radius."
+        }
+    )
+    uniform token vrm:shape (
+        customData = {
+            string userDocBrief = "'sphere' or 'capsule'."
+        }
+    )
+    uniform float3 vrm:tail (
+        customData = {
+            string userDocBrief = "Capsule tail position (capsule shape only)."
+        }
+    )
+}
+

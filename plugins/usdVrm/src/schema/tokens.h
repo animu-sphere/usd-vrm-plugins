@@ -41,10 +41,38 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Use UsdVrmTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(UsdVrmTokens->vrmHumanBonesChest);
+///     gprim.GetMyTokenValuedAttr().Set(UsdVrmTokens->vrmCenter);
 /// \endcode
 struct UsdVrmTokensType {
     USDVRM_API UsdVrmTokensType();
+    /// \brief "vrm:center"
+    /// 
+    /// UsdVrmSpringBoneAPI
+    const TfToken vrmCenter;
+    /// \brief "vrm:colliderGroups"
+    /// 
+    /// UsdVrmSpringBoneAPI
+    const TfToken vrmColliderGroups;
+    /// \brief "vrm:dragForce"
+    /// 
+    /// UsdVrmSpringBoneAPI
+    const TfToken vrmDragForce;
+    /// \brief "vrm:expressionType"
+    /// 
+    /// UsdVrmExpressionAPI
+    const TfToken vrmExpressionType;
+    /// \brief "vrm:gravityDir"
+    /// 
+    /// UsdVrmSpringBoneAPI
+    const TfToken vrmGravityDir;
+    /// \brief "vrm:gravityPower"
+    /// 
+    /// UsdVrmSpringBoneAPI
+    const TfToken vrmGravityPower;
+    /// \brief "vrm:hitRadius"
+    /// 
+    /// UsdVrmSpringBoneAPI
+    const TfToken vrmHitRadius;
     /// \brief "vrm:humanBones:chest"
     /// 
     /// UsdVrmHumanoidAPI
@@ -265,14 +293,94 @@ struct UsdVrmTokensType {
     /// 
     /// UsdVrmHumanoidAPI
     const TfToken vrmHumanBonesUpperChest;
+    /// \brief "vrm:isBinary"
+    /// 
+    /// UsdVrmExpressionAPI
+    const TfToken vrmIsBinary;
+    /// \brief "vrm:joints"
+    /// 
+    /// UsdVrmSpringBoneAPI
+    const TfToken vrmJoints;
+    /// \brief "vrm:leftEye"
+    /// 
+    /// UsdVrmLookAtAPI
+    const TfToken vrmLeftEye;
+    /// \brief "vrm:materialColorTargets"
+    /// 
+    /// UsdVrmExpressionAPI
+    const TfToken vrmMaterialColorTargets;
+    /// \brief "vrm:materialColorTypes"
+    /// 
+    /// UsdVrmExpressionAPI
+    const TfToken vrmMaterialColorTypes;
+    /// \brief "vrm:materialColorValues"
+    /// 
+    /// UsdVrmExpressionAPI
+    const TfToken vrmMaterialColorValues;
+    /// \brief "vrm:morphTargets"
+    /// 
+    /// UsdVrmExpressionAPI
+    const TfToken vrmMorphTargets;
+    /// \brief "vrm:morphTargetWeights"
+    /// 
+    /// UsdVrmExpressionAPI
+    const TfToken vrmMorphTargetWeights;
+    /// \brief "vrm:node"
+    /// 
+    /// UsdVrmColliderAPI
+    const TfToken vrmNode;
+    /// \brief "vrm:offset"
+    /// 
+    /// UsdVrmColliderAPI
+    const TfToken vrmOffset;
+    /// \brief "vrm:radius"
+    /// 
+    /// UsdVrmColliderAPI
+    const TfToken vrmRadius;
+    /// \brief "vrm:rightEye"
+    /// 
+    /// UsdVrmLookAtAPI
+    const TfToken vrmRightEye;
+    /// \brief "vrm:shape"
+    /// 
+    /// UsdVrmColliderAPI
+    const TfToken vrmShape;
     /// \brief "vrm:skeleton"
     /// 
-    /// UsdVrmHumanoidAPI
+    /// UsdVrmHumanoidAPI, UsdVrmLookAtAPI
     const TfToken vrmSkeleton;
+    /// \brief "vrm:stiffness"
+    /// 
+    /// UsdVrmSpringBoneAPI
+    const TfToken vrmStiffness;
+    /// \brief "vrm:tail"
+    /// 
+    /// UsdVrmColliderAPI
+    const TfToken vrmTail;
+    /// \brief "vrm:type"
+    /// 
+    /// UsdVrmLookAtAPI
+    const TfToken vrmType;
+    /// \brief "VrmColliderAPI"
+    /// 
+    /// Schema identifer and family for UsdVrmColliderAPI
+    const TfToken VrmColliderAPI;
+    /// \brief "VrmExpressionAPI"
+    /// 
+    /// Schema identifer and family for UsdVrmExpressionAPI
+    const TfToken VrmExpressionAPI;
     /// \brief "VrmHumanoidAPI"
     /// 
     /// Schema identifer and family for UsdVrmHumanoidAPI
     const TfToken VrmHumanoidAPI;
+    /// \brief "VrmLookAtAPI"
+    /// 
+    /// Schema identifer and family for UsdVrmLookAtAPI
+    const TfToken VrmLookAtAPI;
+    /// \brief "VrmSpringBoneAPI"
+    /// 
+    /// Schema identifer and family for UsdVrmSpringBoneAPI
+    const TfToken VrmSpringBoneAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

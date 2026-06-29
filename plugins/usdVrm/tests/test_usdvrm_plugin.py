@@ -167,7 +167,9 @@ def check_expressions():
     # Expression binds the morph target with weight 1.0.
     happy = stage.GetPrimAtPath("/Asset/rig/Expressions/happy")
     assert happy.IsValid(), "expected /Asset/rig/Expressions/happy"
+    assert "VrmExpressionAPI" in happy.GetAppliedSchemas(), happy.GetAppliedSchemas()
     assert happy.GetAttribute("vrm:expressionType").Get() == "preset"
+    assert happy.GetAttribute("vrm:expressionType").IsCustom() is False
     targets = happy.GetRelationship("vrm:morphTargets").GetTargets()
     assert targets == [bs[0].GetPath()], targets
     weights = happy.GetAttribute("vrm:morphTargetWeights").Get()
@@ -247,6 +249,7 @@ def check_springbone():
 
     hair = stage.GetPrimAtPath("/Asset/rig/SecondaryMotion/SpringBones/Hair")
     assert hair.IsValid(), "expected SpringBones/Hair"
+    assert "VrmSpringBoneAPI" in hair.GetAppliedSchemas(), hair.GetAppliedSchemas()
     assert list(hair.GetAttribute("vrm:joints").Get()) == \
         ["hips/spine/hair1", "hips/spine/hair1/hair2"]
     stiff = list(hair.GetAttribute("vrm:stiffness").Get())
@@ -259,6 +262,7 @@ def check_springbone():
     assert hair.GetRelationship("vrm:colliderGroups").GetTargets() == [head.GetPath()]
     col = stage.GetPrimAtPath(
         "/Asset/rig/SecondaryMotion/Colliders/Head/Collider_0")
+    assert "VrmColliderAPI" in col.GetAppliedSchemas(), col.GetAppliedSchemas()
     assert col.GetAttribute("vrm:shape").Get() == "sphere"
     assert abs(col.GetAttribute("vrm:radius").Get() - 0.1) < 1e-6
     assert col.GetAttribute("vrm:node").Get() == "hips/spine"
@@ -306,6 +310,7 @@ def check_lookat():
     stage = _open("lookat.vrm")
     la = stage.GetPrimAtPath("/Asset/rig/LookAt")
     assert la.IsValid(), "expected /Asset/rig/LookAt"
+    assert "VrmLookAtAPI" in la.GetAppliedSchemas(), la.GetAppliedSchemas()
     assert la.GetAttribute("vrm:type").Get() == "bone"
     assert la.GetAttribute("vrm:leftEye").Get() == "hips/spine/head/leftEye"
     assert la.GetAttribute("vrm:rightEye").Get() == "hips/spine/head/rightEye"

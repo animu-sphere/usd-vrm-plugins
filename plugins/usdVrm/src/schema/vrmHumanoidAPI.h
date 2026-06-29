@@ -35,10 +35,10 @@ class SdfAssetPath;
 
 /// \class UsdVrmHumanoidAPI
 ///
-/// Maps VRM humanoid bones to USD skeleton joints. Apply to the
-/// /Asset/rig/Humanoid prim. `vrm:skeleton` resolves to the UsdSkelSkeleton; each
-/// `vrm:humanBones:<bone>` token holds the joint's path token within
-/// Skeleton.joints. Bones absent from the source VRM are simply not authored;
+/// Maps VRM humanoid bones to USD skeleton joints. Apply to the
+/// /Asset/rig/Humanoid prim. `vrm:skeleton` resolves to the UsdSkelSkeleton; each
+/// `vrm:humanBones:<bone>` token holds the joint's path token within
+/// Skeleton.joints. Bones absent from the source VRM are simply not authored;
 /// non-standard bones outside this set are preserved as custom attributes.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below

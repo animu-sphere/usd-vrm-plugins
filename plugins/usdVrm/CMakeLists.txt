@@ -48,7 +48,11 @@ add_library(${PLUGIN_NAME} SHARED
     # one plugInfo.json carries both the SdfFileFormat and the schema Types. The
     # generated sources are committed; regenerate with tools/generate_schema.py.
     src/schema/tokens.cpp
-    src/schema/vrmHumanoidAPI.cpp)
+    src/schema/vrmHumanoidAPI.cpp
+    src/schema/vrmExpressionAPI.cpp
+    src/schema/vrmLookAtAPI.cpp
+    src/schema/vrmSpringBoneAPI.cpp
+    src/schema/vrmColliderAPI.cpp)
 
 target_compile_features(${PLUGIN_NAME} PRIVATE cxx_std_17)
 target_include_directories(${PLUGIN_NAME} PRIVATE

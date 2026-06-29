@@ -76,11 +76,15 @@ tests/                          python smoke tests + generated fixtures (minimal
   resolvable `vrm:skeleton` relationship to the Skeleton prim plus a
   `vrm:humanBones:<bone>` **token attribute** per bone holding the joint path
   (joints are `Skeleton.joints` tokens, not prims, so a relationship can't target
-  them directly). Never a duplicated joint hierarchy. As of the **Phase 4 pilot**
-  these are formalized by a typed, compiled **`VrmHumanoidAPI`** applied schema
-  (see `schema/schema.usda`), co-located in this same plugin: standard VRM bones
-  are schema builtins, non-standard / VRM-0.x-only bones fall back to custom
-  attributes (still lossless).
+  them directly). Never a duplicated joint hierarchy. As of **Phase 4** these are
+  formalized by a typed, compiled **`VrmHumanoidAPI`** applied schema (see
+  `schema/schema.usda`), co-located in this same plugin: standard VRM bones are
+  schema builtins, non-standard / VRM-0.x-only bones fall back to custom attributes
+  (still lossless).
+* **Typed schemas across the rig (Phase 4):** the other control prims carry
+  compiled applied schemas too — `VrmExpressionAPI` (Expressions), `VrmLookAtAPI`
+  (LookAt), and `VrmSpringBoneAPI` + `VrmColliderAPI` (SecondaryMotion). All are
+  generated from `schema/schema.usda` and registered by the one plugin `plugInfo`.
 * **Lossless preservation:** VRM `meta`/`specVersion`, the full raw
   VRM/VRMC_vrm extension block (`vrm:rawExtension`), and provenance
   (`sourceNodeIndex`, …) are kept in `customData` under a `vrm` namespace.

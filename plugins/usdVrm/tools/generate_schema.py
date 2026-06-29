@@ -44,10 +44,20 @@ CPP_DEST = PLUGIN_DIR / "src" / "schema"
 RESOURCES = PLUGIN_DIR / "plugin" / "resources" / "usdVrm"
 PLUGINFO = RESOURCES / "plugInfo.json"
 
-# Generated files we keep (compiled into the lib). wrap*.cpp / module.cpp /
+# Generated files we always keep (compiled into the lib). Per-class
+# vrm*API.{h,cpp} are discovered dynamically (one set per schema class), so adding
+# a class to schema.usda needs no edit here. wrap*.cpp / module.cpp /
 # generatedSchema.module.h / generatedSchema.classes.txt are Python-module build
 # helpers we deliberately don't ship.
-CPP_FILES = ["api.h", "tokens.h", "tokens.cpp", "vrmHumanoidAPI.h", "vrmHumanoidAPI.cpp"]
+SHARED_CPP_FILES = ["api.h", "tokens.h", "tokens.cpp"]
+
+
+def _cpp_files(gen: Path) -> list[str]:
+    names = list(SHARED_CPP_FILES)
+    for p in sorted(gen.glob("vrm*API.*")):
+        if p.suffix in (".h", ".cpp") and not p.name.startswith("wrap"):
+            names.append(p.name)
+    return names
 
 
 def main() -> int:
@@ -81,7 +91,7 @@ def main() -> int:
         gen = Path(tmp)
 
         CPP_DEST.mkdir(parents=True, exist_ok=True)
-        for name in CPP_FILES:
+        for name in _cpp_files(gen):
             shutil.copy2(gen / name, CPP_DEST / name)
             print(f"  src/schema/{name}")
         shutil.copy2(gen / "generatedSchema.usda", RESOURCES / "generatedSchema.usda")
