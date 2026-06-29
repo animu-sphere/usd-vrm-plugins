@@ -52,7 +52,23 @@ endif()
 # Resolve OpenUSD once for the whole project; bundles reuse the result.
 find_package(pxr REQUIRED CONFIG)
 
-add_subdirectory(plugins/usdVrm)
+# Discover every plugin bundle under plugins/ rather than naming them one by one:
+# an immediate plugins/<name>/ that carries both an openstrata.plugin.yaml (the
+# bundle contract) and a CMakeLists.txt (so `ost plugin build` can target it
+# standalone) is add_subdirectory()'d here. CONFIGURE_DEPENDS re-globs on the next
+# build when a bundle is added/removed, so a second `ost plugin new plugins/<name>`
+# is picked up without editing this file.
+file(GLOB _bundles LIST_DIRECTORIES true CONFIGURE_DEPENDS RELATIVE
+     "${CMAKE_CURRENT_SOURCE_DIR}/plugins" "${CMAKE_CURRENT_SOURCE_DIR}/plugins/*")
+foreach(_bundle ${_bundles})
+    set(_bundleDir "${CMAKE_CURRENT_SOURCE_DIR}/plugins/${_bundle}")
+    if(IS_DIRECTORY "${_bundleDir}"
+       AND EXISTS "${_bundleDir}/openstrata.plugin.yaml"
+       AND EXISTS "${_bundleDir}/CMakeLists.txt")
+        message(STATUS "OpenStrata: adding plugin bundle 'plugins/${_bundle}'")
+        add_subdirectory("plugins/${_bundle}")
+    endif()
+endforeach()
 
 install(FILES
     LICENSE

@@ -83,6 +83,15 @@ def check_minimal():
     assert humanoid.GetAttribute("vrm:humanBones:hips").Get() == "hips"
     assert humanoid.GetAttribute("vrm:humanBones:spine").Get() == "hips/spine"
 
+    # Phase 4: the typed VrmHumanoidAPI (compiled into this plugin) is registered
+    # and applied, and the standard bones are schema builtins, not custom attrs.
+    assert Usd.SchemaRegistry().IsAppliedAPISchema("VrmHumanoidAPI"), \
+        "VrmHumanoidAPI not registered — check plugInfo Types + generatedSchema.usda"
+    assert "VrmHumanoidAPI" in humanoid.GetAppliedSchemas(), \
+        humanoid.GetAppliedSchemas()
+    assert humanoid.GetAttribute("vrm:humanBones:hips").IsCustom() is False, \
+        "a standard VRM bone should be a schema builtin, not a custom attribute"
+
 
 def check_vrm0():
     """The VRM 0.x extension shape (extensions.VRM, humanBones as an array)."""
@@ -158,7 +167,9 @@ def check_expressions():
     # Expression binds the morph target with weight 1.0.
     happy = stage.GetPrimAtPath("/Asset/rig/Expressions/happy")
     assert happy.IsValid(), "expected /Asset/rig/Expressions/happy"
+    assert "VrmExpressionAPI" in happy.GetAppliedSchemas(), happy.GetAppliedSchemas()
     assert happy.GetAttribute("vrm:expressionType").Get() == "preset"
+    assert happy.GetAttribute("vrm:expressionType").IsCustom() is False
     targets = happy.GetRelationship("vrm:morphTargets").GetTargets()
     assert targets == [bs[0].GetPath()], targets
     weights = happy.GetAttribute("vrm:morphTargetWeights").Get()
@@ -238,6 +249,7 @@ def check_springbone():
 
     hair = stage.GetPrimAtPath("/Asset/rig/SecondaryMotion/SpringBones/Hair")
     assert hair.IsValid(), "expected SpringBones/Hair"
+    assert "VrmSpringBoneAPI" in hair.GetAppliedSchemas(), hair.GetAppliedSchemas()
     assert list(hair.GetAttribute("vrm:joints").Get()) == \
         ["hips/spine/hair1", "hips/spine/hair1/hair2"]
     stiff = list(hair.GetAttribute("vrm:stiffness").Get())
@@ -250,6 +262,7 @@ def check_springbone():
     assert hair.GetRelationship("vrm:colliderGroups").GetTargets() == [head.GetPath()]
     col = stage.GetPrimAtPath(
         "/Asset/rig/SecondaryMotion/Colliders/Head/Collider_0")
+    assert "VrmColliderAPI" in col.GetAppliedSchemas(), col.GetAppliedSchemas()
     assert col.GetAttribute("vrm:shape").Get() == "sphere"
     assert abs(col.GetAttribute("vrm:radius").Get() - 0.1) < 1e-6
     assert col.GetAttribute("vrm:node").Get() == "hips/spine"
@@ -297,6 +310,7 @@ def check_lookat():
     stage = _open("lookat.vrm")
     la = stage.GetPrimAtPath("/Asset/rig/LookAt")
     assert la.IsValid(), "expected /Asset/rig/LookAt"
+    assert "VrmLookAtAPI" in la.GetAppliedSchemas(), la.GetAppliedSchemas()
     assert la.GetAttribute("vrm:type").Get() == "bone"
     assert la.GetAttribute("vrm:leftEye").Get() == "hips/spine/head/leftEye"
     assert la.GetAttribute("vrm:rightEye").Get() == "hips/spine/head/rightEye"
@@ -404,10 +418,12 @@ def check_badext():
     stage = _open("badext.vrm")
     assert stage.GetPrimAtPath("/Asset").IsValid()
     humanoid = stage.GetPrimAtPath("/Asset/rig/Humanoid")
-    # The valid bone maps; the out-of-range one is dropped.
+    # The valid bone maps; the out-of-range one is dropped. spine is a builtin of
+    # the applied VrmHumanoidAPI, so the attribute always exists — "dropped" now
+    # means it carries no authored value rather than being an invalid attribute.
     assert humanoid.GetAttribute("vrm:humanBones:hips").Get() == "hips"
-    assert not humanoid.GetAttribute("vrm:humanBones:spine").IsValid(), \
-        "out-of-range humanoid bone should be skipped"
+    assert not humanoid.GetAttribute("vrm:humanBones:spine").HasAuthoredValue(), \
+        "out-of-range humanoid bone should be skipped (no authored value)"
     # The raw block is still preserved even though parts were unusable.
     assert stage.GetDefaultPrim().GetCustomData().get("vrm", {}).get("rawExtension")
     # Diagnostic report: the dropped out-of-range bone is surfaced on /Asset.

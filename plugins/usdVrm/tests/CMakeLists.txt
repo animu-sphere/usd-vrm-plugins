@@ -69,6 +69,12 @@ configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/plugInfo.in.json"
     "${_plug_resources}/plugInfo.json"
     @ONLY)
+# The typed VrmHumanoidAPI schema (registered by the plugInfo above) needs its
+# generatedSchema.usda next to that plugInfo for the schema registry to find it.
+configure_file(
+    "${_bundle_dir}/plugin/resources/usdVrm/generatedSchema.usda"
+    "${_plug_resources}/generatedSchema.usda"
+    COPYONLY)
 
 add_test(
     NAME usdvrm_python_smoke
