@@ -83,6 +83,15 @@ def check_minimal():
     assert humanoid.GetAttribute("vrm:humanBones:hips").Get() == "hips"
     assert humanoid.GetAttribute("vrm:humanBones:spine").Get() == "hips/spine"
 
+    # Phase 4: the typed VrmHumanoidAPI (compiled into this plugin) is registered
+    # and applied, and the standard bones are schema builtins, not custom attrs.
+    assert Usd.SchemaRegistry().IsAppliedAPISchema("VrmHumanoidAPI"), \
+        "VrmHumanoidAPI not registered — check plugInfo Types + generatedSchema.usda"
+    assert "VrmHumanoidAPI" in humanoid.GetAppliedSchemas(), \
+        humanoid.GetAppliedSchemas()
+    assert humanoid.GetAttribute("vrm:humanBones:hips").IsCustom() is False, \
+        "a standard VRM bone should be a schema builtin, not a custom attribute"
+
 
 def check_vrm0():
     """The VRM 0.x extension shape (extensions.VRM, humanBones as an array)."""
@@ -404,10 +413,12 @@ def check_badext():
     stage = _open("badext.vrm")
     assert stage.GetPrimAtPath("/Asset").IsValid()
     humanoid = stage.GetPrimAtPath("/Asset/rig/Humanoid")
-    # The valid bone maps; the out-of-range one is dropped.
+    # The valid bone maps; the out-of-range one is dropped. spine is a builtin of
+    # the applied VrmHumanoidAPI, so the attribute always exists — "dropped" now
+    # means it carries no authored value rather than being an invalid attribute.
     assert humanoid.GetAttribute("vrm:humanBones:hips").Get() == "hips"
-    assert not humanoid.GetAttribute("vrm:humanBones:spine").IsValid(), \
-        "out-of-range humanoid bone should be skipped"
+    assert not humanoid.GetAttribute("vrm:humanBones:spine").HasAuthoredValue(), \
+        "out-of-range humanoid bone should be skipped (no authored value)"
     # The raw block is still preserved even though parts were unusable.
     assert stage.GetDefaultPrim().GetCustomData().get("vrm", {}).get("rawExtension")
     # Diagnostic report: the dropped out-of-range bone is surfaced on /Asset.

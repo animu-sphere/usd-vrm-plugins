@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "usd/UsdVrmAuthorer.h"
 
+#include "schema/vrmHumanoidAPI.h"
 #include "util/PathUtil.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -11,6 +12,7 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3h.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/usd/kind/registry.h"
@@ -19,6 +21,8 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/primDefinition.h"
+#include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/metrics.h"
@@ -37,10 +41,33 @@
 #include "pxr/usd/usdSkel/skeleton.h"
 
 #include <functional>
+#include <set>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
+
+// The vrm:humanBones:* attributes the VrmHumanoidAPI schema defines, looked up
+// once from the schema registry (no hard-coded duplicate of schema/schema.usda).
+// Used to author standard bones as schema builtins and let non-standard bones
+// fall back to custom attributes.
+const std::set<TfToken>& _VrmHumanoidSchemaBones()
+{
+    static const std::set<TfToken> bones = [] {
+        std::set<TfToken> result;
+        if (const UsdPrimDefinition* def =
+                UsdSchemaRegistry::GetInstance().FindAppliedAPIPrimDefinition(
+                    TfToken("VrmHumanoidAPI"))) {
+            for (const TfToken& name : def->GetPropertyNames()) {
+                if (TfStringStartsWith(name.GetString(), "vrm:humanBones:")) {
+                    result.insert(name);
+                }
+            }
+        }
+        return result;
+    }();
+    return bones;
+}
 
 const TfToken _kAssetName("Asset");
 
@@ -579,21 +606,28 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     if (!doc.humanoidBones.empty() && hasSkel) {
         SdfPath humanoidPath = rigPath.AppendChild(TfToken("Humanoid"));
         UsdPrim humanoid = UsdGeomScope::Define(stage, humanoidPath).GetPrim();
-        // One resolvable relationship to the Skeleton prim; each human bone is a
-        // token attribute holding the joint path (a real entry in
-        // Skeleton.joints). Relationships can't target joint paths directly —
-        // joints are tokens, not prims. (A typed VrmHumanoidAPI may formalize
-        // this later.)
-        humanoid.CreateRelationship(TfToken("vrm:skeleton"), false)
-            .SetTargets({skelPath});
+        // Apply the typed VrmHumanoidAPI (Phase 4): it formalizes the skeleton
+        // relationship + per-bone joint tokens as a real applied API schema. A
+        // relationship still can't target a joint path (joints are
+        // Skeleton.joints tokens, not prims), so each bone remains a uniform
+        // token attribute naming its joint.
+        UsdVrmHumanoidAPI humanoidAPI = UsdVrmHumanoidAPI::Apply(humanoid);
+        humanoidAPI.CreateVrmSkeletonRel().SetTargets({skelPath});
+
+        // The standard VRM bones the schema defines (so we can author them as
+        // builtins, custom=false); any source bone outside this set — e.g. a
+        // VRM-0.x-only or non-standard bone — falls back to a custom attribute,
+        // keeping the mapping lossless.
+        const std::set<TfToken>& schemaBones = _VrmHumanoidSchemaBones();
         for (const VrmHumanoidBone& b : doc.humanoidBones) {
             if (b.jointIndex < 0 ||
                 b.jointIndex >= static_cast<int>(jointPaths.size())) {
                 continue;
             }
+            const TfToken boneAttr("vrm:humanBones:" + b.semanticName);
             UsdAttribute attr = humanoid.CreateAttribute(
-                TfToken("vrm:humanBones:" + b.semanticName),
-                SdfValueTypeNames->Token, /*custom=*/true,
+                boneAttr, SdfValueTypeNames->Token,
+                /*custom=*/schemaBones.count(boneAttr) == 0,
                 SdfVariabilityUniform);
             attr.Set(TfToken(jointPaths[b.jointIndex]));
         }

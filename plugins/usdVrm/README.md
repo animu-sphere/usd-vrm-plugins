@@ -18,9 +18,12 @@ src/
   io/                           VrmDocumentReader interface + cgltf implementation
   model/VrmCanonicalDocument.h  parser-independent intermediate model (0.x/1.0 normalized)
   usd/UsdVrmAuthorer.{h,cpp}    canonical model -> USD scene description
+  schema/                       usdGenSchema output for VrmHumanoidAPI (committed, compiled in)
   util/                         path sanitize/uniquify, glTF->USD transform conversion
-plugin/resources/usdVrm/plugInfo.json   USD plugin registration
-tools/                          generate_fixtures.py, vrm_fixture_lib.py, inspect_vrm.py
+schema/schema.usda              typed schema source (VrmHumanoidAPI); regenerate with tools/generate_schema.py
+plugin/resources/usdVrm/plugInfo.json        USD plugin registration (SdfFileFormat + schema Types)
+plugin/resources/usdVrm/generatedSchema.usda usdGenSchema schematics for the typed schema
+tools/                          generate_fixtures.py, vrm_fixture_lib.py, inspect_vrm.py, generate_schema.py
 tests/                          python smoke tests + generated fixtures (minimal, vrm0_minimal, multiskin_ibm, names, materials, badext) + invalid.vrm
 ```
 
@@ -73,7 +76,11 @@ tests/                          python smoke tests + generated fixtures (minimal
   resolvable `vrm:skeleton` relationship to the Skeleton prim plus a
   `vrm:humanBones:<bone>` **token attribute** per bone holding the joint path
   (joints are `Skeleton.joints` tokens, not prims, so a relationship can't target
-  them directly). Never a duplicated joint hierarchy.
+  them directly). Never a duplicated joint hierarchy. As of the **Phase 4 pilot**
+  these are formalized by a typed, compiled **`VrmHumanoidAPI`** applied schema
+  (see `schema/schema.usda`), co-located in this same plugin: standard VRM bones
+  are schema builtins, non-standard / VRM-0.x-only bones fall back to custom
+  attributes (still lossless).
 * **Lossless preservation:** VRM `meta`/`specVersion`, the full raw
   VRM/VRMC_vrm extension block (`vrm:rawExtension`), and provenance
   (`sourceNodeIndex`, …) are kept in `customData` under a `vrm` namespace.
@@ -114,3 +121,26 @@ ost plugin build plugins/usdVrm        # build libUsdVrmFileFormat into lib/
 ost plugin test  plugins/usdVrm        # L0-L6 verification pyramid
 python plugins/usdVrm/tools/generate_fixtures.py      # regenerate the test fixtures
 ```
+
+### Regenerating the typed schema
+
+The typed `VrmHumanoidAPI` is generated from `schema/schema.usda` by OpenUSD's
+**`usdGenSchema`**, which is a **Python** tool — regenerating it needs a Python
+interpreter **and** an OpenUSD install (its `bin/usdGenSchema` and
+`lib/usd/usd/resources/codegenTemplates`). The generated C++ (`src/schema/`) and
+`generatedSchema.usda` are **committed**, so a normal build needs none of this;
+you only re-run the generator when `schema/schema.usda` changes:
+
+```sh
+# Needs Python + an OpenUSD install (usdGenSchema lives there).
+python plugins/usdVrm/tools/generate_schema.py --usd-root /path/to/openusd-install
+```
+
+The script runs `usdGenSchema`, copies the C++ into `src/schema/` and
+`generatedSchema.usda` into the plugin resources, and merges the schema `Types`
+into `plugInfo.json` beside the `SdfFileFormat` entry. It sets
+`PXR_AR_DEFAULT_SEARCH_PATH` (so the `@usd/schema.usda@` sublayer that defines
+`APISchemaBase` resolves) and passes `-t` the install's codegen templates, so it
+works even when the interpreter's importable `pxr` is a different OpenUSD build.
+This "schema compiled into an existing file-format plugin" step is one `ost`
+doesn't own yet (see `docs/report/ost`); `generate_schema.py` is the stand-in.
