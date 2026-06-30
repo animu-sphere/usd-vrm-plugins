@@ -8,10 +8,11 @@
 
     Phase 4 formalizes what the authorer writes under /Asset/rig/* today as raw
     `vrm:*` tokens: VrmHumanoidAPI, VrmExpressionAPI, VrmLookAtAPI,
-    VrmSpringBoneAPI, and VrmColliderAPI. Each pairs a resolvable relationship to
-    the UsdSkelSkeleton with joint-name tokens (a joint token is a real entry in
+    VrmSpringBoneAPI, VrmColliderAPI, and VrmConstraintAPI. Skeleton-relative
+    classes name joints by token (a joint token is a real entry in
     Skeleton.joints, which is not a prim, so a relationship cannot target it
-    directly) plus the per-class control parameters defined below.
+    directly), some carrying a resolvable relationship to the UsdSkelSkeleton,
+    plus the per-class control parameters defined below.
     """
     subLayers = [
         @usd/schema.usda@
