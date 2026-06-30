@@ -404,6 +404,7 @@ def check_constraints():
     stage = _open("constraints.vrm")
     con = stage.GetPrimAtPath("/Asset/rig/Constraints/head_roll")
     assert con.IsValid(), "expected /Asset/rig/Constraints/head_roll"
+    assert "VrmConstraintAPI" in con.GetAppliedSchemas(), con.GetAppliedSchemas()
     assert con.GetAttribute("vrm:type").Get() == "roll"
     assert con.GetAttribute("vrm:constrained").Get() == "hips/spine/head"
     assert con.GetAttribute("vrm:source").Get() == "hips/spine"

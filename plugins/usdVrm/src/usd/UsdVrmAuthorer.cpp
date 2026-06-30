@@ -2,6 +2,7 @@
 #include "usd/UsdVrmAuthorer.h"
 
 #include "schema/vrmColliderAPI.h"
+#include "schema/vrmConstraintAPI.h"
 #include "schema/vrmExpressionAPI.h"
 #include "schema/vrmHumanoidAPI.h"
 #include "schema/vrmLookAtAPI.h"
@@ -983,8 +984,9 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             const VrmConstraint& c = doc.constraints[i];
             UsdPrim p = UsdGeomScope::Define(
                 stage, conScopePath.AppendChild(TfToken(conNames[i]))).GetPrim();
+            UsdVrmConstraintAPI::Apply(p);  // typed schema; attrs below are builtins
             auto tokAttr = [&](const char* n, const TfToken& v) {
-                p.CreateAttribute(TfToken(n), SdfValueTypeNames->Token, true,
+                p.CreateAttribute(TfToken(n), SdfValueTypeNames->Token, false,
                                   SdfVariabilityUniform).Set(v);
             };
             tokAttr("vrm:type", TfToken(c.type));
@@ -995,7 +997,7 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
                     jointTok(c.sourceJoint, c.sourceNodeName, c.sourceNodeIndex));
             if (!c.axis.empty()) tokAttr("vrm:axis", TfToken(c.axis));
             p.CreateAttribute(TfToken("vrm:weight"), SdfValueTypeNames->Float,
-                              true, SdfVariabilityUniform).Set(c.weight);
+                              false, SdfVariabilityUniform).Set(c.weight);
             if (!c.rawJson.empty())
                 p.SetCustomDataByKey(TfToken("vrm:constraint:raw"),
                                      VtValue(c.rawJson));

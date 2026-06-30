@@ -41,10 +41,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Use UsdVrmTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(UsdVrmTokens->vrmCenter);
+///     gprim.GetMyTokenValuedAttr().Set(UsdVrmTokens->vrmAxis);
 /// \endcode
 struct UsdVrmTokensType {
     USDVRM_API UsdVrmTokensType();
+    /// \brief "vrm:axis"
+    /// 
+    /// UsdVrmConstraintAPI
+    const TfToken vrmAxis;
     /// \brief "vrm:center"
     /// 
     /// UsdVrmSpringBoneAPI
@@ -53,6 +57,10 @@ struct UsdVrmTokensType {
     /// 
     /// UsdVrmSpringBoneAPI
     const TfToken vrmColliderGroups;
+    /// \brief "vrm:constrained"
+    /// 
+    /// UsdVrmConstraintAPI
+    const TfToken vrmConstrained;
     /// \brief "vrm:dragForce"
     /// 
     /// UsdVrmSpringBoneAPI
@@ -349,6 +357,10 @@ struct UsdVrmTokensType {
     /// 
     /// UsdVrmHumanoidAPI, UsdVrmLookAtAPI
     const TfToken vrmSkeleton;
+    /// \brief "vrm:source"
+    /// 
+    /// UsdVrmConstraintAPI
+    const TfToken vrmSource;
     /// \brief "vrm:stiffness"
     /// 
     /// UsdVrmSpringBoneAPI
@@ -359,12 +371,20 @@ struct UsdVrmTokensType {
     const TfToken vrmTail;
     /// \brief "vrm:type"
     /// 
-    /// UsdVrmLookAtAPI
+    /// UsdVrmLookAtAPI, UsdVrmConstraintAPI
     const TfToken vrmType;
+    /// \brief "vrm:weight"
+    /// 
+    /// UsdVrmConstraintAPI
+    const TfToken vrmWeight;
     /// \brief "VrmColliderAPI"
     /// 
     /// Schema identifer and family for UsdVrmColliderAPI
     const TfToken VrmColliderAPI;
+    /// \brief "VrmConstraintAPI"
+    /// 
+    /// Schema identifer and family for UsdVrmConstraintAPI
+    const TfToken VrmConstraintAPI;
     /// \brief "VrmExpressionAPI"
     /// 
     /// Schema identifer and family for UsdVrmExpressionAPI

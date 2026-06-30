@@ -6,11 +6,13 @@
     file-format plugin (co-located: one bundle, one plugInfo carrying both the
     SdfFileFormat and these schema Types).
 
-    Phase 4 pilot: VrmHumanoidAPI only. It formalizes what the authorer writes on
-    /Asset/rig/Humanoid today as raw `vrm:humanBones:*` tokens - a resolvable
-    relationship to the UsdSkelSkeleton plus one joint-name token per standard VRM
-    human bone (the joint token is a real entry in Skeleton.joints, which is not a
-    prim, so a relationship cannot target it directly).
+    Phase 4 formalizes what the authorer writes under /Asset/rig/* today as raw
+    `vrm:*` tokens: VrmHumanoidAPI, VrmExpressionAPI, VrmLookAtAPI,
+    VrmSpringBoneAPI, VrmColliderAPI, and VrmConstraintAPI. Skeleton-relative
+    classes name joints by token (a joint token is a real entry in
+    Skeleton.joints, which is not a prim, so a relationship cannot target it
+    directly), some carrying a resolvable relationship to the UsdSkelSkeleton,
+    plus the per-class control parameters defined below.
     """
     subLayers = [
         @usd/schema.usda@
@@ -217,4 +219,33 @@ class "VrmColliderAPI" (
     uniform float3 vrm:offset (doc = "Collider center offset from its node.")
     uniform float vrm:radius (doc = "Collider radius.")
     uniform float3 vrm:tail (doc = "Capsule tail position (capsule shape only).")
+}
+
+class "VrmConstraintAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+    }
+    doc = """A VRM node constraint (VRMC_node_constraint, data only - the constraint
+    is not baked). Apply to each /Asset/rig/Constraints/<name> prim. The constrained
+    and source nodes are named by joint path token (joints are Skeleton.joints tokens,
+    not prims); the full constraint block is preserved as customData
+    (vrm:constraint:raw). VRM 1.0 only; VRM 0.x has no node-constraint equivalent."""
+)
+{
+    uniform token vrm:type (
+        doc = "Constraint type: 'roll', 'aim', or 'rotation'."
+    )
+    uniform token vrm:constrained (
+        doc = "Joint path token of the constrained (driven) node."
+    )
+    uniform token vrm:source (
+        doc = "Joint path token of the source (driving) node."
+    )
+    uniform token vrm:axis (
+        doc = "Constraint axis ('X'/'Y'/'Z'); absent for rotation constraints."
+    )
+    uniform float vrm:weight (
+        doc = "Constraint weight in [0,1]."
+    )
 }

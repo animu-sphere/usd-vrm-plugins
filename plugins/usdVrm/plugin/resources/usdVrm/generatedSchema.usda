@@ -444,3 +444,37 @@ class "VrmColliderAPI" (
     )
 }
 
+class "VrmConstraintAPI" (
+    customData = {
+        string userDocBrief = """A VRM node constraint (VRMC_node_constraint, data only - the constraint\r
+    is not baked)."""
+    }
+)
+{
+    uniform token vrm:axis (
+        customData = {
+            string userDocBrief = "Constraint axis ('X'/'Y'/'Z'); absent for rotation constraints."
+        }
+    )
+    uniform token vrm:constrained (
+        customData = {
+            string userDocBrief = "Joint path token of the constrained (driven) node."
+        }
+    )
+    uniform token vrm:source (
+        customData = {
+            string userDocBrief = "Joint path token of the source (driving) node."
+        }
+    )
+    uniform token vrm:type (
+        customData = {
+            string userDocBrief = "Constraint type: 'roll', 'aim', or 'rotation'."
+        }
+    )
+    uniform float vrm:weight (
+        customData = {
+            string userDocBrief = "Constraint weight in [0,1]."
+        }
+    )
+}
+
