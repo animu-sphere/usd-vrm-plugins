@@ -81,10 +81,11 @@ tests/                          python smoke tests + generated fixtures (minimal
   `schema/schema.usda`), co-located in this same plugin: standard VRM bones are
   schema builtins, non-standard / VRM-0.x-only bones fall back to custom attributes
   (still lossless).
-* **Typed schemas across the rig (Phase 4):** the other control prims carry
-  compiled applied schemas too — `VrmExpressionAPI` (Expressions), `VrmLookAtAPI`
-  (LookAt), and `VrmSpringBoneAPI` + `VrmColliderAPI` (SecondaryMotion). All are
-  generated from `schema/schema.usda` and registered by the one plugin `plugInfo`.
+* **Typed schemas across the rig (Phase 4):** every control prim carries a compiled
+  applied schema — `VrmExpressionAPI` (Expressions), `VrmLookAtAPI` (LookAt),
+  `VrmSpringBoneAPI` + `VrmColliderAPI` (SecondaryMotion), and `VrmConstraintAPI`
+  (Constraints). All are generated from `schema/schema.usda` and registered by the one
+  plugin `plugInfo`.
 * **Lossless preservation:** VRM `meta`/`specVersion`, the full raw
   VRM/VRMC_vrm extension block (`vrm:rawExtension`), and provenance
   (`sourceNodeIndex`, …) are kept in `customData` under a `vrm` namespace.

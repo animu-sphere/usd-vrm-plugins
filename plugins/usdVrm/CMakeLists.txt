@@ -52,7 +52,8 @@ add_library(${PLUGIN_NAME} SHARED
     src/schema/vrmExpressionAPI.cpp
     src/schema/vrmLookAtAPI.cpp
     src/schema/vrmSpringBoneAPI.cpp
-    src/schema/vrmColliderAPI.cpp)
+    src/schema/vrmColliderAPI.cpp
+    src/schema/vrmConstraintAPI.cpp)
 
 target_compile_features(${PLUGIN_NAME} PRIVATE cxx_std_17)
 target_include_directories(${PLUGIN_NAME} PRIVATE
