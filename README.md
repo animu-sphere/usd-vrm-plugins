@@ -8,8 +8,8 @@ This repository currently ships one plugin:
 | --- | --- | --- |
 | `usdVrm` | [plugins/usdVrm](plugins/usdVrm) | `SdfFileFormat`: imports `.vrm` (VRM 0.x / 1.0) as a normalized USD stage |
 
-The repo is an [OpenStrata](https://github.com/animu-sphere/open-strata) project
-(`openstrata.toml`) holding one or more
+The repo is an [OpenStrata](https://github.com/animu-sphere/open-strata)
+`usd-plugin-workspace`-style project (`openstrata.toml`) holding one or more
 self-contained plugin **bundles** under `plugins/`. It is **dual-mode**: you can
 build and verify it with the `ost` CLI, or with plain CMake against any OpenUSD
 install.
@@ -41,7 +41,7 @@ VRM provenance) is implemented and verified against real VRM 1.0 avatars.
 
 ### With OpenStrata (`ost`)
 
-Requires `ost` 0.5+.
+Requires `ost` 0.6+.
 
 ```sh
 # One-time: adopt an OpenUSD install as the cy2026 runtime.
@@ -67,6 +67,13 @@ ctest --test-dir build -C Release
 The built `libUsdVrmFileFormat.{dll,so,dylib}` lands in `plugins/usdVrm/lib/`;
 add `plugins/usdVrm/plugin/resources/usdVrm` to `PXR_PLUGINPATH_NAME` and the
 `lib/` dir to your dynamic-loader path to use it.
+
+### CI
+
+The source CI workflow in `.github/workflows/ost-source-ci.yml` expects a
+self-hosted Windows runner with `ost` on `PATH` and a validated `cy2026` / `usd`
+runtime in the local OpenStrata store. It builds `plugins/usdVrm` from source and
+runs `ost plugin test --up-to 5`.
 
 ## License
 

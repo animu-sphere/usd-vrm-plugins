@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-"""Regenerate the typed VRM schema from schema/schema.usda.
+"""Regenerate the committed typed VRM schema fallback from schema/schema.usda.
 
-This is the reproducible form of the Phase 4 "compiled, co-located schema" build
-step that `ost` does not yet own (the schema-into-an-existing-bundle ask; see
-docs/report/ost). It runs OpenUSD's `usdGenSchema`, then folds the result into the
-usdVrm file-format plugin:
+`ost plugin build` 0.6+ generates the co-located schema C++ in `.strata/` for the
+resolved runtime. This script refreshes the committed fallback used by plain
+CMake and the checked-in USD registration resources. It runs OpenUSD's
+`usdGenSchema`, then folds the result into the usdVrm file-format plugin:
 
   * C++ (api.h, tokens.{h,cpp}, vrmHumanoidAPI.{h,cpp}) -> src/schema/  (committed,
     compiled into libUsdVrmFileFormat; the Python bindings wrap*.cpp and module.cpp
