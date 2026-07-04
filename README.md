@@ -41,7 +41,7 @@ VRM provenance) is implemented and verified against real VRM 1.0 avatars.
 
 ### With OpenStrata (`ost`)
 
-Requires `ost` 0.3+.
+Requires `ost` 0.5+.
 
 ```sh
 # One-time: adopt an OpenUSD install as the cy2026 runtime.
@@ -53,7 +53,7 @@ ost plugin test  plugins/usdVrm
 
 # Inspect a real avatar:
 ost plugin run  plugins/usdVrm -- python plugins/usdVrm/tools/inspect_vrm.py avatar.vrm
-ost plugin view plugins/usdVrm -- avatar.vrm     # usdview
+ost plugin view plugins/usdVrm avatar.vrm        # usdview
 ```
 
 ### With plain CMake (no OpenStrata)
