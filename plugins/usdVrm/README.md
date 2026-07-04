@@ -18,9 +18,9 @@ src/
   io/                           VrmDocumentReader interface + cgltf implementation
   model/VrmCanonicalDocument.h  parser-independent intermediate model (0.x/1.0 normalized)
   usd/UsdVrmAuthorer.{h,cpp}    canonical model -> USD scene description
-  schema/                       usdGenSchema output for VrmHumanoidAPI (committed, compiled in)
+  schema/                       usdGenSchema output for Vrm*API schemas (committed, compiled in)
   util/                         path sanitize/uniquify, glTF->USD transform conversion
-schema/schema.usda              typed schema source (VrmHumanoidAPI); regenerate with tools/generate_schema.py
+schema/schema.usda              typed schema source (Vrm*API); regenerate with tools/generate_schema.py
 plugin/resources/usdVrm/plugInfo.json        USD plugin registration (SdfFileFormat + schema Types)
 plugin/resources/usdVrm/generatedSchema.usda usdGenSchema schematics for the typed schema
 tools/                          generate_fixtures.py, vrm_fixture_lib.py, inspect_vrm.py, generate_schema.py
@@ -119,7 +119,7 @@ serve image bytes straight from the `.vrm` instead of extracting.
 
 ## Build & verify
 
-Requires `ost` 0.3+ (from the repo root):
+Requires `ost` 0.5+ (from the repo root):
 
 ```sh
 ost plugin build plugins/usdVrm        # build libUsdVrmFileFormat into lib/

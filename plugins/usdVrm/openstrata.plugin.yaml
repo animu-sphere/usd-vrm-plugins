@@ -9,10 +9,10 @@ runtime:
   # The OpenUSD version range this plugin tolerates. The runtime supplies the
   # certified point within it. Authored against 25.05; verified against 26.08.
   openusd: ">=25.05,<27.0"
-  # C++ ABI the plugin is built against. Must match the runtime's. The Windows
-  # MSVC runtime reports 'msvc143' (VS 2022 toolset). On a libstdc++ Linux
-  # runtime this would be 'libstdcxx'.
-  cxx_abi: msvc143
+  # Source bundles inherit the resolved runtime ABI. This keeps the manifest
+  # portable across Windows (msvc143), macOS (libcxx), and Linux (libstdcxx)
+  # while still letting `ost plugin doctor` enforce the concrete target ABI.
+  cxx_abi: inherit
 provides:
   - usd-fileformat:vrm
 requires:
