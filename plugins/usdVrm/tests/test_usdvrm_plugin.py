@@ -19,7 +19,7 @@ FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 TOOLS = pathlib.Path(__file__).parents[1] / "tools"
 sys.path.insert(0, str(TOOLS))
 
-from package_vrm import package_stage
+from package_vrm import _package_member_path, package_stage
 
 
 def _open(name):
@@ -358,6 +358,16 @@ def check_textures():
 
 def check_portable_package():
     """Package command copies temp-cache textures and rewrites paths relative."""
+    assert _package_member_path(r"textures\base", "textures_dir") == "textures/base"
+    for bad in ("/escape.usda", r"\escape.usda", r"C:escape.usda",
+                r"C:\escape.usda", "../escape.usda", r"..\escape.usda"):
+        try:
+            _package_member_path(bad, "stage_name")
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"accepted escaping package path: {bad!r}")
+
     with tempfile.TemporaryDirectory() as tmp:
         package_dir = pathlib.Path(tmp) / "textures_package"
         report = package_stage(FIXTURES / "textures.vrm", package_dir)

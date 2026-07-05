@@ -18,6 +18,7 @@
 #include "pxr/usd/ar/packageResolver.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/threadLocalScopedCache.h"
 
 #include <cgltf.h>
 
@@ -26,6 +27,8 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -105,19 +108,39 @@ bool _ReadPackageBytes(const std::string& packagePath,
     return true;
 }
 
-bool _FindEmbeddedImage(const std::string& packagePath,
-                        const std::string& packagedPath,
-                        std::shared_ptr<const char>* outImage,
-                        size_t* outImageSize)
+struct _EmbeddedImage
 {
-    if (packagedPath.rfind("images/", 0) != 0) {
-        return false;
-    }
+    std::shared_ptr<const char> bytes;
+    size_t size = 0;
+};
 
+struct _PackageIndex
+{
+    std::unordered_map<std::string, _EmbeddedImage> images;
+};
+
+struct _ResolverCache
+{
+    std::unordered_map<std::string, std::shared_ptr<_PackageIndex>> packages;
+};
+
+std::shared_ptr<const char> _CopyImageBytes(const unsigned char* bytes,
+                                            size_t size)
+{
+    std::shared_ptr<char> image(new char[size], std::default_delete<char[]>());
+    if (size > 0) {
+        std::memcpy(image.get(), bytes, size);
+    }
+    return image;
+}
+
+std::shared_ptr<_PackageIndex> _BuildPackageIndex(const std::string& packagePath)
+{
+    auto index = std::make_shared<_PackageIndex>();
     std::shared_ptr<const char> packageBuffer;
     size_t packageSize = 0;
     if (!_ReadPackageBytes(packagePath, &packageBuffer, &packageSize)) {
-        return false;
+        return index;
     }
 
     cgltf_options options = {};
@@ -125,10 +148,9 @@ bool _FindEmbeddedImage(const std::string& packagePath,
     cgltf_result res =
         cgltf_parse(&options, packageBuffer.get(), packageSize, &data);
     if (res != cgltf_result_success || !data) {
-        return false;
+        return index;
     }
 
-    bool found = false;
     if (cgltf_load_buffers(&options, data, packagePath.c_str()) ==
         cgltf_result_success) {
         for (cgltf_size i = 0; i < data->images_count; ++i) {
@@ -138,6 +160,9 @@ bool _FindEmbeddedImage(const std::string& packagePath,
             }
 
             const cgltf_buffer_view* bv = img->buffer_view;
+            if (!bv->data && (!bv->buffer || !bv->buffer->data)) {
+                continue;
+            }
             const unsigned char* base = bv->data
                 ? static_cast<const unsigned char*>(bv->data)
                 : static_cast<const unsigned char*>(bv->buffer->data) + bv->offset;
@@ -146,26 +171,26 @@ bool _FindEmbeddedImage(const std::string& packagePath,
                 continue;
             }
 
-            if (_ImagePathForBytes(base, bv->size, ext) != packagedPath) {
-                continue;
-            }
-
-            if (outImage && outImageSize) {
-                std::shared_ptr<char> image(
-                    new char[bv->size], std::default_delete<char[]>());
-                if (bv->size > 0) {
-                    std::memcpy(image.get(), base, bv->size);
-                }
-                *outImage = std::move(image);
-                *outImageSize = bv->size;
-            }
-            found = true;
-            break;
+            _EmbeddedImage image;
+            image.bytes = _CopyImageBytes(base, bv->size);
+            image.size = bv->size;
+            index->images[_ImagePathForBytes(base, bv->size, ext)] =
+                std::move(image);
         }
     }
 
     cgltf_free(data);
-    return found;
+    return index;
+}
+
+const _EmbeddedImage* _FindEmbeddedImage(const _PackageIndex& index,
+                                         const std::string& packagedPath)
+{
+    if (packagedPath.rfind("images/", 0) != 0) {
+        return nullptr;
+    }
+    const auto it = index.images.find(packagedPath);
+    return it == index.images.end() ? nullptr : &it->second;
 }
 
 } // namespace
@@ -177,7 +202,9 @@ public:
     std::string Resolve(const std::string& resolvedPackagePath,
                         const std::string& packagedPath) override
     {
-        if (_FindEmbeddedImage(resolvedPackagePath, packagedPath, nullptr, nullptr)) {
+        std::shared_ptr<const _PackageIndex> index =
+            _FindOrBuildPackageIndex(resolvedPackagePath);
+        if (index && _FindEmbeddedImage(*index, packagedPath)) {
             return packagedPath;
         }
         return std::string();
@@ -187,24 +214,49 @@ public:
         const std::string& resolvedPackagePath,
         const std::string& resolvedPackagedPath) override
     {
-        std::shared_ptr<const char> image;
-        size_t imageSize = 0;
-        if (!_FindEmbeddedImage(resolvedPackagePath, resolvedPackagedPath,
-                                &image, &imageSize)) {
+        std::shared_ptr<const _PackageIndex> index =
+            _FindOrBuildPackageIndex(resolvedPackagePath);
+        const _EmbeddedImage* image = index
+            ? _FindEmbeddedImage(*index, resolvedPackagedPath)
+            : nullptr;
+        if (!image) {
             return nullptr;
         }
-        return ArInMemoryAsset::FromBuffer(std::move(image), imageSize);
+        return ArInMemoryAsset::FromBuffer(image->bytes, image->size);
     }
 
     void BeginCacheScope(VtValue* cacheScopeData) override
     {
-        (void)cacheScopeData;
+        _caches.BeginCacheScope(cacheScopeData);
     }
 
     void EndCacheScope(VtValue* cacheScopeData) override
     {
-        (void)cacheScopeData;
+        _caches.EndCacheScope(cacheScopeData);
     }
+
+private:
+    std::shared_ptr<_PackageIndex> _FindOrBuildPackageIndex(
+        const std::string& resolvedPackagePath)
+    {
+        _ScopedCaches::CachePtr cache = _caches.GetCurrentCache();
+        if (!cache) {
+            return _BuildPackageIndex(resolvedPackagePath);
+        }
+
+        auto it = cache->packages.find(resolvedPackagePath);
+        if (it != cache->packages.end()) {
+            return it->second;
+        }
+
+        std::shared_ptr<_PackageIndex> index =
+            _BuildPackageIndex(resolvedPackagePath);
+        cache->packages[resolvedPackagePath] = index;
+        return index;
+    }
+
+    using _ScopedCaches = ArThreadLocalScopedCache<_ResolverCache>;
+    _ScopedCaches _caches;
 };
 
 AR_DEFINE_PACKAGE_RESOLVER(UsdVrmPackageResolver, ArPackageResolver);

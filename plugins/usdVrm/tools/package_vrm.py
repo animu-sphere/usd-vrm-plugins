@@ -31,12 +31,10 @@ REPORT_SCHEMA_VERSION = 1
 
 
 def _package_member_path(value: str, label: str) -> str:
-    if (
-        pathlib.PureWindowsPath(value).is_absolute()
-        or pathlib.PurePosixPath(value).is_absolute()
-    ):
-        raise ValueError(f"{label} must be relative to the package directory")
+    windows_path = pathlib.PureWindowsPath(value)
     normalized = pathlib.PurePosixPath(value.replace("\\", "/"))
+    if windows_path.drive or windows_path.root or normalized.is_absolute():
+        raise ValueError(f"{label} must be relative to the package directory")
     parts = [part for part in normalized.parts if part not in ("", ".")]
     if not parts or ".." in parts:
         raise ValueError(f"{label} must stay inside the package directory")
