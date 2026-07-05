@@ -69,10 +69,10 @@ struct VrmMeshPrimitive {
     std::vector<VrmMorphTarget> morphTargets;
 };
 
-// A reference to an extracted texture image plus its sampler/UV state.
+// A reference to a texture image asset plus its sampler/UV state.
 struct VrmTextureRef {
     bool present = false;
-    std::string filePath;              // resolved (extracted) image path, USD asset
+    std::string filePath;              // USD asset path (external or .vrm package path)
     int uvSet = 0;                     // TEXCOORD_<n>; only 0 is wired in Phase 2
     std::string wrapS = "repeat";      // repeat | clamp | mirror
     std::string wrapT = "repeat";

@@ -18,12 +18,14 @@ src/
   io/                           VrmDocumentReader interface + cgltf implementation
   model/VrmCanonicalDocument.h  parser-independent intermediate model (0.x/1.0 normalized)
   usd/UsdVrmAuthorer.{h,cpp}    canonical model -> USD scene description
+  resolver/                     ArPackageResolver for .vrm-embedded texture assets
   schema/                       committed usdGenSchema fallback for Vrm*API schemas
   util/                         path sanitize/uniquify, glTF->USD transform conversion
 schema/schema.usda              typed schema source (Vrm*API); ost 0.6+ regenerates it at build time
 plugin/resources/usdVrm/plugInfo.json        USD plugin registration (SdfFileFormat + schema Types)
 plugin/resources/usdVrm/generatedSchema.usda usdGenSchema schematics for the typed schema
-tools/                          generate_fixtures.py, vrm_fixture_lib.py, inspect_vrm.py, generate_schema.py
+tools/                          generate_fixtures.py, vrm_fixture_lib.py, inspect_vrm.py,
+                                generate_schema.py, package_vrm.py
 tests/                          python smoke tests + generated fixtures (minimal, vrm0_minimal, multiskin_ibm, names, materials, badext) + invalid.vrm
 ```
 
@@ -111,11 +113,21 @@ image decode.
 
 ### Textures
 
-Embedded PNG/JPEG images are extracted once (content-hashed) to a managed cache
-under the OS temp dir (`usdVrm_cache/`) and referenced by absolute asset path, so
-`usdcat`/`usdview` resolve them. Image format is detected by sniffing the magic
-bytes (some VRM exporters drop the glTF `mimeType`). A future Ar resolver could
-serve image bytes straight from the `.vrm` instead of extracting.
+Embedded PNG/JPEG images are referenced as package-relative assets inside the
+source `.vrm`, e.g. `avatar.vrm[images/<hash>.png]`. The co-located
+`UsdVrmPackageResolver` serves those bytes directly to OpenUSD/Hio, so normal
+imports do not depend on an OS temp extraction cache. Image format is detected by
+sniffing the magic bytes (some VRM exporters drop the glTF `mimeType`).
+
+For portable handoff, run the package tool inside a usdVrm-enabled OpenUSD
+environment. It opens the source stage, copies texture files into a package-local
+`textures/` directory, rewrites `UsdUVTexture.inputs:file` to relative asset
+paths, exports `asset.usda`, and writes `package_report.json` as the asset
+inventory:
+
+```sh
+ost plugin run plugins/usdVrm -- python plugins/usdVrm/tools/package_vrm.py avatar.vrm out/avatar
+```
 
 ## Build & verify
 

@@ -64,6 +64,14 @@
                         "schemaIdentifier": "VrmHumanoidAPI",
                         "schemaKind": "singleApplyAPI"
                     },
+                    "UsdVrmPackageResolver": {
+                        "bases": [
+                            "ArPackageResolver"
+                        ],
+                        "extensions": [
+                            "vrm"
+                        ]
+                    },
                     "UsdVrmLookAtAPI": {
                         "alias": {
                             "UsdSchemaBase": "VrmLookAtAPI"

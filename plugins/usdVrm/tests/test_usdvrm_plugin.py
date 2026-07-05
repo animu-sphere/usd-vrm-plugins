@@ -11,10 +11,15 @@ when run by hand, do it inside `ost plugin run plugins/usdVrm -- python ...`.
 import os
 import pathlib
 import sys
+import tempfile
 
-from pxr import Gf, Plug, Sdf, Usd, UsdGeom, UsdShade, UsdSkel, Vt
+from pxr import Ar, Gf, Plug, Sdf, Usd, UsdGeom, UsdShade, UsdSkel, Vt
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
+TOOLS = pathlib.Path(__file__).parents[1] / "tools"
+sys.path.insert(0, str(TOOLS))
+
+from package_vrm import _package_member_path, package_stage
 
 
 def _open(name):
@@ -330,7 +335,11 @@ def check_textures():
 
     assert tex.GetAttribute("info:id").Get() == "UsdUVTexture"
     f = tex.GetAttribute("inputs:file").Get()
-    assert f and f.path.endswith(".png") and os.path.exists(f.path), f
+    assert f and ".vrm[" in f.path and f.path.endswith(".png]"), f
+    resolved = Ar.GetResolver().Resolve(f.path)
+    assert resolved, f
+    asset = Ar.GetResolver().OpenAsset(resolvedPath=resolved)
+    assert asset and asset.GetSize() > 0, f
     assert tex.GetAttribute("inputs:sourceColorSpace").Get() == "sRGB"
     assert tex.GetAttribute("inputs:wrapS").Get() == "repeat"
     assert tex.GetAttribute("inputs:wrapT").Get() == "clamp"
@@ -345,6 +354,45 @@ def check_textures():
     # MToon preserved as metadata.
     assert mat.GetAttribute("vrm:shaderModel").Get() == "MToon"
     assert mat.GetCustomData().get("vrm", {}).get("mtoon", {}).get("raw")
+
+
+def check_portable_package():
+    """Package command copies temp-cache textures and rewrites paths relative."""
+    assert _package_member_path(r"textures\base", "textures_dir") == "textures/base"
+    for bad in ("/escape.usda", r"\escape.usda", r"C:escape.usda",
+                r"C:\escape.usda", "../escape.usda", r"..\escape.usda"):
+        try:
+            _package_member_path(bad, "stage_name")
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"accepted escaping package path: {bad!r}")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        package_dir = pathlib.Path(tmp) / "textures_package"
+        report = package_stage(FIXTURES / "textures.vrm", package_dir)
+
+        assert report["summary"]["texturesPackaged"] == 1, report
+        assert report["summary"]["missingAssets"] == 0, report
+        assert report["pathPolicy"]["textureAssetPaths"] == "relative-to-package-root"
+
+        stage_path = package_dir / report["stage"]
+        report_path = package_dir / "package_report.json"
+        assert stage_path.exists(), stage_path
+        assert report_path.exists(), report_path
+
+        packaged_stage = Usd.Stage.Open(str(stage_path))
+        assert packaged_stage, f"failed to open packaged stage: {stage_path}"
+        tex = packaged_stage.GetPrimAtPath("/Asset/mtl/Skin/baseColorTexture")
+        asset = tex.GetAttribute("inputs:file").Get()
+        assert asset.path.startswith("textures/"), asset
+        assert not pathlib.Path(asset.path).is_absolute(), asset
+        assert (package_dir / asset.path).exists(), asset
+
+        entry = report["assets"][0]
+        assert entry["status"] == "packaged", entry
+        assert entry["portablePath"] == asset.path, entry
+        assert len(entry["sha256"]) == 64, entry
 
 
 def check_vrm0_frontbake():
@@ -442,7 +490,7 @@ def main() -> int:
     for check in (check_minimal, check_vrm0, check_multiskin_ibm,
                   check_unordered_skel, check_expressions,
                   check_vrm0_expressions, check_vrm0_frontbake,
-                  check_textures, check_animation,
+                  check_textures, check_portable_package, check_animation,
                   check_lookat, check_springbone, check_names, check_materials,
                   check_constraints, check_shared_accessor, check_badext):
         check()
