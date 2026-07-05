@@ -1,6 +1,7 @@
 # --- OpenStrata / build state (tool-owned, never committed) ---
 /build/
 **/build/
+**/dist/
 /.strata/
 **/.strata/
 CMakeUserPresets.json
@@ -13,6 +14,9 @@ strata.lock
 # Everything under /docs is intentionally git-ignored. The ost dogfooding
 # reports live under docs/report/ost/ but must never be pushed.
 /docs/
+
+# Local samples and experiments.
+/scratch/
 
 # --- CMake / MSVC generated ---
 CMakeCache.txt

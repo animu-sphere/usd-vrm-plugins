@@ -18,9 +18,9 @@ src/
   io/                           VrmDocumentReader interface + cgltf implementation
   model/VrmCanonicalDocument.h  parser-independent intermediate model (0.x/1.0 normalized)
   usd/UsdVrmAuthorer.{h,cpp}    canonical model -> USD scene description
-  schema/                       usdGenSchema output for Vrm*API schemas (committed, compiled in)
+  schema/                       committed usdGenSchema fallback for Vrm*API schemas
   util/                         path sanitize/uniquify, glTF->USD transform conversion
-schema/schema.usda              typed schema source (Vrm*API); regenerate with tools/generate_schema.py
+schema/schema.usda              typed schema source (Vrm*API); ost 0.6+ regenerates it at build time
 plugin/resources/usdVrm/plugInfo.json        USD plugin registration (SdfFileFormat + schema Types)
 plugin/resources/usdVrm/generatedSchema.usda usdGenSchema schematics for the typed schema
 tools/                          generate_fixtures.py, vrm_fixture_lib.py, inspect_vrm.py, generate_schema.py
@@ -119,7 +119,7 @@ serve image bytes straight from the `.vrm` instead of extracting.
 
 ## Build & verify
 
-Requires `ost` 0.5+ (from the repo root):
+Requires `ost` 0.6+ (from the repo root):
 
 ```sh
 ost plugin build plugins/usdVrm        # build libUsdVrmFileFormat into lib/
@@ -129,12 +129,15 @@ python plugins/usdVrm/tools/generate_fixtures.py      # regenerate the test fixt
 
 ### Regenerating the typed schema
 
-The typed `VrmHumanoidAPI` is generated from `schema/schema.usda` by OpenUSD's
-**`usdGenSchema`**, which is a **Python** tool — regenerating it needs a Python
-interpreter **and** an OpenUSD install (its `bin/usdGenSchema` and
-`lib/usd/usd/resources/codegenTemplates`). The generated C++ (`src/schema/`) and
-`generatedSchema.usda` are **committed**, so a normal build needs none of this;
-you only re-run the generator when `schema/schema.usda` changes:
+The typed `Vrm*API` classes are generated from `schema/schema.usda` by OpenUSD's
+**`usdGenSchema`**, which is a **Python** tool. With `ost` 0.6+, `ost plugin
+build` regenerates the schema sources inside `.strata/` for the resolved runtime
+and compiles them into `libUsdVrmFileFormat`.
+
+The generated C++ (`src/schema/`) and `generatedSchema.usda` are still
+**committed** as the plain-CMake fallback and as the source of the runtime
+registration resources. Re-run the fallback generator when `schema/schema.usda`
+changes and you need to refresh those committed files:
 
 ```sh
 # Needs Python + an OpenUSD install (usdGenSchema lives there).
@@ -147,5 +150,3 @@ into `plugInfo.json` beside the `SdfFileFormat` entry. It sets
 `PXR_AR_DEFAULT_SEARCH_PATH` (so the `@usd/schema.usda@` sublayer that defines
 `APISchemaBase` resolves) and passes `-t` the install's codegen templates, so it
 works even when the interpreter's importable `pxr` is a different OpenUSD build.
-This "schema compiled into an existing file-format plugin" step is one `ost`
-doesn't own yet (see `docs/report/ost`); `generate_schema.py` is the stand-in.

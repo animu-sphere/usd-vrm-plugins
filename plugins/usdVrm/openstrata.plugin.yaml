@@ -5,6 +5,7 @@ plugin:
   name: usdVrm
   version: 0.1.0
   kind: usd-fileformat
+license: Apache-2.0
 runtime:
   # The OpenUSD version range this plugin tolerates. The runtime supplies the
   # certified point within it. Authored against 25.05; verified against 26.08.
@@ -15,12 +16,38 @@ runtime:
   cxx_abi: inherit
 provides:
   - usd-fileformat:vrm
+  - usd-schema:VrmColliderAPI
+  - usd-schema:VrmConstraintAPI
+  - usd-schema:VrmExpressionAPI
+  - usd-schema:VrmHumanoidAPI
+  - usd-schema:VrmLookAtAPI
+  - usd-schema:VrmSpringBoneAPI
 requires:
   capabilities: [usd-stage-read]
 usd:
   # Where this bundle's plugInfo.json lives, relative to the bundle root.
   plug_info: plugin/resources/usdVrm/plugInfo.json
 tests:
-  smoke: [tests/fixtures/minimal.vrm]
-  roundtrip: [tests/fixtures/minimal.vrm]
-  negative: [tests/fixtures/invalid.vrm]
+  smoke:
+    - tests/fixtures/minimal.vrm
+    - tests/fixtures/vrm0_minimal.vrm
+    - tests/fixtures/materials.vrm
+    - tests/fixtures/textures.vrm
+    - tests/fixtures/multiskin_ibm.vrm
+    - tests/fixtures/names.vrm
+    - tests/fixtures/expressions.vrm
+    - tests/fixtures/vrm0_expressions.vrm
+    - tests/fixtures/lookat.vrm
+    - tests/fixtures/springbone.vrm
+    - tests/fixtures/constraints.vrm
+    - tests/fixtures/animation.vrm
+    - tests/fixtures/badext.vrm
+    - tests/fixtures/shared_accessor.vrm
+    - tests/fixtures/unordered_skel.vrm
+    - tests/fixtures/vrm0_frontbake.vrm
+  roundtrip:
+    - tests/fixtures/minimal.vrm
+  negative:
+    - tests/fixtures/invalid.vrm
+schema:
+  source: schema/schema.usda

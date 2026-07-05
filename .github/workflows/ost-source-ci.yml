@@ -1,0 +1,44 @@
+name: ost source ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  usdvrm:
+    name: usdVrm plugin
+    runs-on: [self-hosted, Windows, X64]
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      - name: Show OpenStrata version
+        run: ost --version
+
+      - name: Validate runtime
+        run: ost runtime validate cy2026 --profile usd
+
+      - name: Build plugin bundle
+        run: ost plugin build plugins/usdVrm
+
+      - name: Inspect plugin bundle
+        run: ost plugin inspect plugins/usdVrm
+
+      - name: Run plugin verification
+        run: ost plugin test plugins/usdVrm --up-to 5 --json
+
+      - name: Upload OpenStrata reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ost-usdvrm-reports
+          path: plugins/usdVrm/.strata/reports/
