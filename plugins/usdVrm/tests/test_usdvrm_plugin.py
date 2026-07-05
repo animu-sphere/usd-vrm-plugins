@@ -13,7 +13,7 @@ import pathlib
 import sys
 import tempfile
 
-from pxr import Gf, Plug, Sdf, Usd, UsdGeom, UsdShade, UsdSkel, Vt
+from pxr import Ar, Gf, Plug, Sdf, Usd, UsdGeom, UsdShade, UsdSkel, Vt
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 TOOLS = pathlib.Path(__file__).parents[1] / "tools"
@@ -335,7 +335,11 @@ def check_textures():
 
     assert tex.GetAttribute("info:id").Get() == "UsdUVTexture"
     f = tex.GetAttribute("inputs:file").Get()
-    assert f and f.path.endswith(".png") and os.path.exists(f.path), f
+    assert f and ".vrm[" in f.path and f.path.endswith(".png]"), f
+    resolved = Ar.GetResolver().Resolve(f.path)
+    assert resolved, f
+    asset = Ar.GetResolver().OpenAsset(resolvedPath=resolved)
+    assert asset and asset.GetSize() > 0, f
     assert tex.GetAttribute("inputs:sourceColorSpace").Get() == "sRGB"
     assert tex.GetAttribute("inputs:wrapS").Get() == "repeat"
     assert tex.GetAttribute("inputs:wrapT").Get() == "clamp"

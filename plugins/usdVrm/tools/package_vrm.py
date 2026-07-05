@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 """Create a portable USD package from a VRM import.
 
-The usdVrm importer currently extracts embedded images into an OS temp cache and
-authors absolute asset paths so usdview/usdcat can resolve them immediately. This
-tool is the portable handoff step: it opens the VRM through usdVrm, copies local
-texture assets into a package directory, rewrites their USD asset paths to
-package-relative paths, exports a USDA layer, and writes a JSON inventory report.
+The usdVrm importer may author texture paths that resolve through Ar, including
+package-relative paths inside the source .vrm. This tool is the portable handoff
+step: it opens the VRM through usdVrm, copies resolved texture bytes into a
+package directory, rewrites their USD asset paths to package-relative paths,
+exports a USDA layer, and writes a JSON inventory report.
 
 Run inside an environment where the usdVrm plugin is discoverable, for example:
 
@@ -21,11 +21,10 @@ import hashlib
 import json
 import pathlib
 import re
-import shutil
 import sys
 from typing import Any
 
-from pxr import Sdf, Usd
+from pxr import Ar, Sdf, Usd
 
 
 REPORT_SCHEMA_VERSION = 1
@@ -112,30 +111,74 @@ def _source_path_for(
     return None
 
 
-def _hash_file(path: pathlib.Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
+def _asset_path_candidates(entry: dict[str, Any]) -> list[str]:
+    candidates: list[str] = []
+    for key in ("resolvedPath", "authoredPath"):
+        raw = entry.get(key) or ""
+        if raw and raw not in candidates:
+            candidates.append(raw)
+    return candidates
 
 
-def _package_asset(
-    source: pathlib.Path,
+def _read_source_bytes(
+    entry: dict[str, Any], source_dir: pathlib.Path
+) -> tuple[bytes, str] | None:
+    local_path = _source_path_for(entry, source_dir)
+    if local_path is not None:
+        return local_path.read_bytes(), str(local_path)
+
+    resolver = Ar.GetResolver()
+    for raw in _asset_path_candidates(entry):
+        resolved = resolver.Resolve(raw)
+        if not resolved:
+            resolved = Ar.ResolvedPath(raw)
+        asset = resolver.OpenAsset(resolvedPath=resolved)
+        if not asset:
+            continue
+        with asset:
+            return asset.Read(asset.GetSize(), 0), str(resolved)
+    return None
+
+
+def _hash_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _asset_extension(entry: dict[str, Any], fallback: str = ".bin") -> str:
+    resolver = Ar.GetResolver()
+    for raw in _asset_path_candidates(entry):
+        ext = resolver.GetExtension(raw)
+        if ext:
+            return f".{ext.lower()}"
+    return fallback
+
+
+def _asset_stem(entry: dict[str, Any]) -> str:
+    raw = (entry.get("authoredPath") or entry.get("resolvedPath") or "asset").replace(
+        "\\", "/"
+    )
+    if "[" in raw and raw.endswith("]"):
+        raw = raw.rsplit("[", 1)[1][:-1]
+    return pathlib.PurePosixPath(raw).stem
+
+
+def _package_asset_bytes(
+    data: bytes,
+    stem_hint: str,
+    suffix: str,
     asset_dir: pathlib.Path,
     asset_dir_name: str,
     digest_to_name: dict[str, str],
 ) -> tuple[str, str]:
-    digest = _hash_file(source)
+    digest = _hash_bytes(data)
     if digest in digest_to_name:
         return digest, digest_to_name[digest]
 
-    suffix = source.suffix.lower() or ".bin"
-    stem = _sanitize_stem(source.stem)
+    stem = _sanitize_stem(stem_hint)
     name = f"{stem}-{digest[:16]}{suffix}"
     target = asset_dir / name
     asset_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source, target)
+    target.write_bytes(data)
 
     portable_path = pathlib.PurePosixPath(asset_dir_name, name).as_posix()
     digest_to_name[digest] = portable_path
@@ -185,19 +228,25 @@ def package_stage(
             skipped += 1
             continue
 
-        source_asset = _source_path_for(entry, source_layer_dir)
+        source_asset = _read_source_bytes(entry, source_layer_dir)
         if source_asset is None:
             entry["status"] = "missing"
-            entry["reason"] = "asset path did not resolve to a local file"
+            entry["reason"] = "asset path did not resolve to readable bytes"
             missing += 1
             continue
 
-        digest, portable_path = _package_asset(
-            source_asset, asset_dir, textures_dir, digest_to_name
+        source_bytes, source_description = source_asset
+        digest, portable_path = _package_asset_bytes(
+            source_bytes,
+            _asset_stem(entry),
+            _asset_extension(entry),
+            asset_dir,
+            textures_dir,
+            digest_to_name,
         )
         attr.Set(Sdf.AssetPath(portable_path))
         entry["status"] = "packaged"
-        entry["sourceFile"] = str(source_asset)
+        entry["sourceFile"] = source_description
         entry["sha256"] = digest
         entry["portablePath"] = portable_path
         packaged += 1

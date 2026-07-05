@@ -56,6 +56,7 @@ add_library(${PLUGIN_NAME} SHARED
     src/UsdVrmFileFormat.cpp
     src/io/cgltfImpl.cpp
     src/io/CgltfVrmDocumentReader.cpp
+    src/resolver/VrmPackageResolver.cpp
     src/usd/UsdVrmAuthorer.cpp
     src/util/PathUtil.cpp
     src/util/TransformUtil.cpp)
@@ -91,7 +92,7 @@ if(TARGET usd_ms)
     target_link_libraries(${PLUGIN_NAME} PRIVATE usd_ms)
 else()
     set(_pxr_targets)
-    foreach(_t IN ITEMS arch tf gf vt js plug sdf usd usdGeom usdSkel usdShade)
+    foreach(_t IN ITEMS arch tf gf vt js ar plug sdf usd usdGeom usdSkel usdShade)
         if(TARGET ${_t})
             list(APPEND _pxr_targets ${_t})
         elseif(TARGET pxr::${_t})

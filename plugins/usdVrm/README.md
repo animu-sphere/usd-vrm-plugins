@@ -18,6 +18,7 @@ src/
   io/                           VrmDocumentReader interface + cgltf implementation
   model/VrmCanonicalDocument.h  parser-independent intermediate model (0.x/1.0 normalized)
   usd/UsdVrmAuthorer.{h,cpp}    canonical model -> USD scene description
+  resolver/                     ArPackageResolver for .vrm-embedded texture assets
   schema/                       committed usdGenSchema fallback for Vrm*API schemas
   util/                         path sanitize/uniquify, glTF->USD transform conversion
 schema/schema.usda              typed schema source (Vrm*API); ost 0.6+ regenerates it at build time
@@ -112,11 +113,11 @@ image decode.
 
 ### Textures
 
-Embedded PNG/JPEG images are extracted once (content-hashed) to a managed cache
-under the OS temp dir (`usdVrm_cache/`) and referenced by absolute asset path, so
-`usdcat`/`usdview` resolve them. Image format is detected by sniffing the magic
-bytes (some VRM exporters drop the glTF `mimeType`). A future Ar resolver could
-serve image bytes straight from the `.vrm` instead of extracting.
+Embedded PNG/JPEG images are referenced as package-relative assets inside the
+source `.vrm`, e.g. `avatar.vrm[images/<hash>.png]`. The co-located
+`UsdVrmPackageResolver` serves those bytes directly to OpenUSD/Hio, so normal
+imports do not depend on an OS temp extraction cache. Image format is detected by
+sniffing the magic bytes (some VRM exporters drop the glTF `mimeType`).
 
 For portable handoff, run the package tool inside a usdVrm-enabled OpenUSD
 environment. It opens the source stage, copies texture files into a package-local

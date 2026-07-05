@@ -8,6 +8,7 @@
 #include "pxr/base/gf/transform.h"
 #include "pxr/base/js/json.h"
 #include "pxr/base/js/value.h"
+#include "pxr/usd/ar/packageUtils.h"
 
 #include "cgltf.h"
 
@@ -15,10 +16,8 @@
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
-#include <fstream>
 #include <functional>
 #include <map>
-#include <random>
 #include <set>
 #include <unordered_map>
 #include <vector>
@@ -200,16 +199,13 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
     }
 
     // -----------------------------------------------------------------------
-    // Texture extraction. Embedded images are written once to a content-hashed
-    // file under a managed cache dir; the USD asset path points at the extracted
-    // file so usdview/usdcat resolve it. (A future Ar resolver could serve bytes
-    // straight from the .vrm; for now this is the documented, simple option.)
+    // Texture paths. Embedded images are addressed as package-relative assets
+    // inside the .vrm container; UsdVrmPackageResolver serves those bytes to Hio
+    // without a temp-dir extraction dependency.
     // -----------------------------------------------------------------------
     namespace fs = std::filesystem;
-    std::error_code ec;
-    const fs::path cacheDir = fs::temp_directory_path(ec) / "usdVrm_cache";
-    fs::create_directories(cacheDir, ec);
     const fs::path sourceDir = fs::path(resolvedPath).parent_path();
+    const std::string packagePath = fs::path(resolvedPath).generic_string();
     std::unordered_map<const cgltf_image*, std::string> imageCache;
 
     auto extractImage = [&](const cgltf_image* img) -> std::string {
@@ -240,28 +236,12 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                     "unsupported embedded image format (not PNG/JPEG); "
                     "texture skipped");
             } else {
-                const std::uint64_t h = _HashBytes(base, bv->size);
-                char name[32];
-                std::snprintf(name, sizeof(name), "%016llx.%s",
-                              static_cast<unsigned long long>(h), ext);
-                const fs::path out = cacheDir / name;
-                if (!fs::exists(out, ec)) {
-                    // Write to a process-unique temp then rename, so a
-                    // concurrent import (or a usdcat/usdview resolving the same
-                    // path) never observes a half-written image.
-                    static thread_local std::mt19937_64 rng(
-                        std::random_device{}());
-                    const fs::path tmp = cacheDir /
-                        (std::string(name) + ".tmp." + std::to_string(rng()));
-                    std::ofstream f(tmp, std::ios::binary);
-                    if (f) {
-                        f.write(reinterpret_cast<const char*>(base), bv->size);
-                        f.close();
-                        fs::rename(tmp, out, ec);
-                        if (ec) fs::remove(tmp, ec);  // lost the race; out is fine
-                    }
-                }
-                result = out.generic_string();
+                char name[48];
+                std::snprintf(name, sizeof(name), "images/%016llx.%s",
+                              static_cast<unsigned long long>(
+                                  _HashBytes(base, bv->size)),
+                              ext);
+                result = ArJoinPackageRelativePath(packagePath, name);
             }
         } else if (img->uri && std::strncmp(img->uri, "data:", 5) != 0) {
             // External file reference, resolved relative to the source.
