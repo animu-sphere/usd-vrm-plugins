@@ -18,7 +18,8 @@
 #            oras push ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd:26.05-windows-x86_64 \
 #              <archive>.tar.zst manifest.json SHA256SUMS \
 #              --artifact-type application/vnd.openstrata.runtime.v1
-#            OST artifact digest sha256:ac249bd7… / OCI digest sha256:59488b57…
+#            OST artifact digest sha256:8c51aa15… / OCI digest sha256:b5b2d322…
+#            (lib/python carries jinja2 so bundled usdGenSchema runs in CI)
 #   plugin:  ost plugin publish plugins/usdVrm  (usdVrm 0.1.0)
 schema: 1
 
@@ -41,10 +42,10 @@ cells:
   - name: usdvrm-pr-windows
     lane: pull_request
     runner: windows-hosted
-    runtime_artifact: sha256:ac249bd764511edc00ea5c18692ddab74db36e82c373815edcfb1368ba353597
+    runtime_artifact: sha256:8c51aa1569e1ea9b13a14f6c216bb5314eab0bb7ec979d20ca5d7284419531a0
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:59488b57faff1c907947ea5f4ad63caa5ce7913cbf712f3b1de2154a49f5618c
-      expected_oci_digest: sha256:59488b57faff1c907947ea5f4ad63caa5ce7913cbf712f3b1de2154a49f5618c
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:b5b2d322d832faa0599de5cb575220e035d962b5f6787cc85a7e1b7be12d58da
+      expected_oci_digest: sha256:b5b2d322d832faa0599de5cb575220e035d962b5f6787cc85a7e1b7be12d58da
     bundle: plugins/usdVrm
     platform: cy2026
     profile: usd
@@ -53,7 +54,7 @@ cells:
   - name: usdvrm-support-windows-cy2026
     lane: scheduled
     runner: usd-windows-real
-    runtime_artifact: sha256:ac249bd764511edc00ea5c18692ddab74db36e82c373815edcfb1368ba353597
+    runtime_artifact: sha256:8c51aa1569e1ea9b13a14f6c216bb5314eab0bb7ec979d20ca5d7284419531a0
     plugin_artifact: sha256:848816f7d8f04031590cde745340c8536ad03ce3977278c685abe7640cdf9039
     platform: cy2026
     profile: usd

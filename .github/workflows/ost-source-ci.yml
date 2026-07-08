@@ -37,7 +37,7 @@ jobs:
         include:
           - name: usdvrm-pr-windows
             lane: pull_request
-            runtime_artifact: sha256:ac249bd764511edc00ea5c18692ddab74db36e82c373815edcfb1368ba353597
+            runtime_artifact: sha256:8c51aa1569e1ea9b13a14f6c216bb5314eab0bb7ec979d20ca5d7284419531a0
             platform: cy2026
             profile: usd
             up_to: 5
@@ -45,7 +45,7 @@ jobs:
             hosted: true
             runner_profile: windows-hosted
             bundle: plugins/usdVrm
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:59488b57faff1c907947ea5f4ad63caa5ce7913cbf712f3b1de2154a49f5618c"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:b5b2d322d832faa0599de5cb575220e035d962b5f6787cc85a7e1b7be12d58da"
     steps:
       - name: Check out the repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
