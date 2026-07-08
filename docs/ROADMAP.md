@@ -48,10 +48,16 @@ The ordering is deliberate (policy §18): prove compatibility → stabilize the 
 Make "it works" continuously provable. *Goal: CI proves multiple OS × OpenUSD
 versions; every corpus asset has a known status; stage validation emits a JSON report.*
 
-- [ ] **Real-world VRM compatibility corpus** — a few redistributable avatars across
-      the policy axes (VRM 0.x, 1.0, VRoid, MToon-heavy, multi-skin, animated,
-      non-ASCII names, texture compression, spring/collider complexity). Today only
-      synthetic fixtures + private local avatars exist.
+- [~] **Real-world VRM compatibility corpus** — redistributable avatars across the
+      policy axes (VRM 0.x, 1.0, VRoid, MToon-heavy, multi-skin, animated, non-ASCII
+      names, texture compression, spring/collider complexity). **Started:** selection
+      policy + provenance manifest in `plugins/usdVrm/tests/corpus/CORPUS.md`
+      (hybrid storage: vendor only assets whose VRM `meta` explicitly allows
+      redistribution; fetch/opt-in otherwise). Vendored so far: **Seed-san**
+      (VirtualCast) and **VRM1 Constraint Twist** (pixiv) — both VRM 1.0, VRM PL 1.0
+      with `allowRedistribution: true`, covering MToon / SpringBone / constraints /
+      expressions / LookAt. Remaining axes: VRM 0.x (Alicia — fetch/opt-in, original
+      redistribution unclear), VRoid, animation clips, KTX2, multi-skin.
 - [ ] **CI matrix** (`.github/workflows/`; note `/docs` is git-ignored, `.github/` is
       not): configure/build + ctest + plugin discovery on **Linux + Windows (+ macOS)**,
       against **min and latest** supported OpenUSD; optionally `ost plugin test`.
