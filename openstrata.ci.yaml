@@ -18,8 +18,10 @@
 #            oras push ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd:26.05-windows-x86_64 \
 #              <archive>.tar.zst manifest.json SHA256SUMS \
 #              --artifact-type application/vnd.openstrata.runtime.v1
-#            OST artifact digest sha256:8c51aa15… / OCI digest sha256:b5b2d322…
-#            (lib/python carries jinja2 so bundled usdGenSchema runs in CI)
+#            Full export (not --slim): the SDK's top-level resources/ dir is
+#            required by MaterialXConfig.cmake (find_package(pxr)->MaterialX), and
+#            lib/python carries jinja2 so the bundled usdGenSchema runs in CI.
+#            OST artifact digest sha256:28c2c00e… / OCI digest sha256:eda1b94d…
 #   plugin:  ost plugin publish plugins/usdVrm  (usdVrm 0.1.0)
 schema: 1
 
@@ -42,10 +44,10 @@ cells:
   - name: usdvrm-pr-windows
     lane: pull_request
     runner: windows-hosted
-    runtime_artifact: sha256:8c51aa1569e1ea9b13a14f6c216bb5314eab0bb7ec979d20ca5d7284419531a0
+    runtime_artifact: sha256:28c2c00e1b8296a92613780691e5ea2111431baef27add67d9107b4993be3094
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:b5b2d322d832faa0599de5cb575220e035d962b5f6787cc85a7e1b7be12d58da
-      expected_oci_digest: sha256:b5b2d322d832faa0599de5cb575220e035d962b5f6787cc85a7e1b7be12d58da
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:eda1b94df198bd32ee4e90b461daf9b38fea41d95be5abc18e3dec27429da2fe
+      expected_oci_digest: sha256:eda1b94df198bd32ee4e90b461daf9b38fea41d95be5abc18e3dec27429da2fe
     bundle: plugins/usdVrm
     platform: cy2026
     profile: usd
@@ -54,7 +56,7 @@ cells:
   - name: usdvrm-support-windows-cy2026
     lane: scheduled
     runner: usd-windows-real
-    runtime_artifact: sha256:8c51aa1569e1ea9b13a14f6c216bb5314eab0bb7ec979d20ca5d7284419531a0
+    runtime_artifact: sha256:28c2c00e1b8296a92613780691e5ea2111431baef27add67d9107b4993be3094
     plugin_artifact: sha256:848816f7d8f04031590cde745340c8536ad03ce3977278c685abe7640cdf9039
     platform: cy2026
     profile: usd
