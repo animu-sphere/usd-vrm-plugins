@@ -76,11 +76,23 @@ configure_file(
     "${_plug_resources}/generatedSchema.usda"
     COPYONLY)
 
+set(_smoke_env
+    "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib;PATH=path_list_prepend:${_lib_dir};PYTHONPATH=path_list_prepend:${_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources}")
+
 add_test(
     NAME usdvrm_python_smoke
     COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/test_usdvrm_plugin.py")
 
 set_tests_properties(usdvrm_python_smoke PROPERTIES
-    ENVIRONMENT_MODIFICATION
-        "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib;PATH=path_list_prepend:${_lib_dir};PYTHONPATH=path_list_prepend:${_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources}")
+    ENVIRONMENT_MODIFICATION "${_smoke_env}")
+
+# Real-world VRM compatibility corpus (redistributable avatars under corpus/;
+# see corpus/CORPUS.md). Same runtime + plugin env as the fixture smoke test.
+add_test(
+    NAME usdvrm_corpus_smoke
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/test_usdvrm_corpus.py")
+
+set_tests_properties(usdvrm_corpus_smoke PROPERTIES
+    ENVIRONMENT_MODIFICATION "${_smoke_env}")
