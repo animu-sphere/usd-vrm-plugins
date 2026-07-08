@@ -1,0 +1,60 @@
+# OpenStrata CI support matrix for usd-vrm-plugins.
+#
+# Policy: this file is the CI contract; .github/workflows/ost-*.yml are
+# renderer output from `ost ci generate github`. Do not hand-edit CI
+# semantics in the generated workflow YAML.
+#
+# Lanes:
+#   - pull_request  -> GitHub-hosted source build from checkout. The runner
+#                      bootstraps a pinned `ost` and pulls the runtime SDK from
+#                      its OCI reference (runtime_remote) below.
+#   - scheduled     -> self-hosted real compatibility validation from pinned
+#                      runtime + plugin artifacts (air-gapped local import).
+#
+# Digest provenance (ost 0.9.0):
+#   runtime: OpenUSD 26.05 built from source (build_scripts/build_usd.py,
+#            Python 3.13) then exported slim: `ost runtime export cy2026
+#            --profile usd --slim`. Published to GHCR (public) with oras:
+#            oras push ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd:26.05-windows-x86_64 \
+#              <archive>.tar.zst manifest.json SHA256SUMS \
+#              --artifact-type application/vnd.openstrata.runtime.v1
+#            OST artifact digest sha256:ac249bd7… / OCI digest sha256:59488b57…
+#   plugin:  ost plugin publish plugins/usdVrm  (usdVrm 0.1.0)
+schema: 1
+
+bootstrap:
+  ost:
+    version: "0.9.0"
+    repository: animu-sphere/open-strata
+
+runners:
+  windows-hosted:
+    kind: github-hosted
+    image: windows-2022
+    billing:
+      acknowledgement: required
+  usd-windows-real:
+    kind: self-hosted
+    labels: [self-hosted, windows, x64, usd-26]
+
+cells:
+  - name: usdvrm-pr-windows
+    lane: pull_request
+    runner: windows-hosted
+    runtime_artifact: sha256:ac249bd764511edc00ea5c18692ddab74db36e82c373815edcfb1368ba353597
+    runtime_remote:
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:59488b57faff1c907947ea5f4ad63caa5ce7913cbf712f3b1de2154a49f5618c
+      expected_oci_digest: sha256:59488b57faff1c907947ea5f4ad63caa5ce7913cbf712f3b1de2154a49f5618c
+    bundle: plugins/usdVrm
+    platform: cy2026
+    profile: usd
+    up_to: 5
+
+  - name: usdvrm-support-windows-cy2026
+    lane: scheduled
+    runner: usd-windows-real
+    runtime_artifact: sha256:ac249bd764511edc00ea5c18692ddab74db36e82c373815edcfb1368ba353597
+    plugin_artifact: sha256:848816f7d8f04031590cde745340c8536ad03ce3977278c685abe7640cdf9039
+    platform: cy2026
+    profile: usd
+    up_to: 5

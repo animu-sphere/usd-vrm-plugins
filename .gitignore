@@ -41,3 +41,6 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# --- Agent / assistant tooling (local, not shared) ---
+/.claude/
