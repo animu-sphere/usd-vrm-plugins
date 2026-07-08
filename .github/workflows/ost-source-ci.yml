@@ -142,6 +142,16 @@ jobs:
       - name: Run the verification pyramid
         shell: bash
         run: ost plugin test ${{ matrix.bundle }} --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to ${{ matrix.up_to }} --json
+      - name: Run corpus CTest smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          build_dir="$(find "${{ matrix.bundle }}/build" -mindepth 1 -maxdepth 1 -type d -name "${{ matrix.platform }}-*-${{ matrix.profile }}" | head -n 1)"
+          if [ -z "$build_dir" ]; then
+            echo "::error title=CTest::no build directory found under ${{ matrix.bundle }}/build"
+            exit 1
+          fi
+          ctest --test-dir "$build_dir" -C Release -R usdvrm_corpus_smoke --output-on-failure
       - name: Package the plugin (never published from this workflow)
         shell: bash
         run: ost plugin package ${{ matrix.bundle }} --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
