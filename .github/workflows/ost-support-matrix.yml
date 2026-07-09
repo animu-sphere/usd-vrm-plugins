@@ -36,14 +36,14 @@ jobs:
         include:
           - name: usdvrm-support-windows-cy2026
             lane: scheduled
-            runtime_artifact: sha256:28c2c00e1b8296a92613780691e5ea2111431baef27add67d9107b4993be3094
+            runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
             platform: cy2026
             profile: usd
             up_to: 5
             runs_on: ["self-hosted", "windows", "x64", "usd-26"]
             hosted: false
             runner_profile: usd-windows-real
-            plugin_artifact: sha256:848816f7d8f04031590cde745340c8536ad03ce3977278c685abe7640cdf9039
+            plugin_artifact: sha256:1518387ae2cc51d3a0c1a9aee5f362c5cd8d5b2c6e7148523d23fd7b3fefa371
     steps:
       - name: Hosted runner billing notice
         if: ${{ matrix.hosted }}

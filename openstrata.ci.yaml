@@ -11,23 +11,19 @@
 #   - scheduled     -> self-hosted real compatibility validation from pinned
 #                      runtime + plugin artifacts (air-gapped local import).
 #
-# Digest provenance (ost 0.9.0):
-#   runtime: OpenUSD 26.05 built from source (build_scripts/build_usd.py,
-#            Python 3.13) then exported slim: `ost runtime export cy2026
-#            --profile usd --slim`. Published to GHCR (public) with oras:
-#            oras push ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd:26.05-windows-x86_64 \
-#              <archive>.tar.zst manifest.json SHA256SUMS \
-#              --artifact-type application/vnd.openstrata.runtime.v1
-#            Full export (not --slim): the SDK's top-level resources/ dir is
-#            required by MaterialXConfig.cmake (find_package(pxr)->MaterialX), and
-#            lib/python carries jinja2 so the bundled usdGenSchema runs in CI.
-#            OST artifact digest sha256:28c2c00e… / OCI digest sha256:eda1b94d…
+# Digest provenance (ost 0.10.0):
+#   Windows runtime: OpenUSD 26.05 built from source with Python 3.13, validated,
+#            exported slim with top-level resources/ and lib/python schema-gen deps.
+#            OST artifact sha256:c1c54f1e... / OCI sha256:64fd1f44...
+#   Linux runtime: OpenUSD 26.05 built from source in WSL with Python 3.13.14,
+#            validated, exported slim from a symlink-dereferenced SDK re-adopt.
+#            OST artifact sha256:be894c1b... / OCI sha256:7efc6e02...
 #   plugin:  ost plugin publish plugins/usdVrm  (usdVrm 0.1.0)
 schema: 1
 
 bootstrap:
   ost:
-    version: "0.9.0"
+    version: "0.10.0"
     repository: animu-sphere/open-strata
 
 runners:
@@ -39,15 +35,32 @@ runners:
   usd-windows-real:
     kind: self-hosted
     labels: [self-hosted, windows, x64, usd-26]
+  linux-hosted:
+    kind: github-hosted
+    image: ubuntu-24.04
+    billing:
+      acknowledgement: required
 
 cells:
   - name: usdvrm-pr-windows
     lane: pull_request
     runner: windows-hosted
-    runtime_artifact: sha256:28c2c00e1b8296a92613780691e5ea2111431baef27add67d9107b4993be3094
+    runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:eda1b94df198bd32ee4e90b461daf9b38fea41d95be5abc18e3dec27429da2fe
-      expected_oci_digest: sha256:eda1b94df198bd32ee4e90b461daf9b38fea41d95be5abc18e3dec27429da2fe
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e
+      expected_oci_digest: sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e
+    bundle: plugins/usdVrm
+    platform: cy2026
+    profile: usd
+    up_to: 5
+
+  - name: usdvrm-pr-linux
+    lane: pull_request
+    runner: linux-hosted
+    runtime_artifact: sha256:be894c1b21844941f269a983e44a347132f4cbfb1cf851b27e01af846107c1a3
+    runtime_remote:
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:7efc6e020b0a2ae169c7609aba7d4c04b18edb44f78d9f631fd90c3f0ca07d81
+      expected_oci_digest: sha256:7efc6e020b0a2ae169c7609aba7d4c04b18edb44f78d9f631fd90c3f0ca07d81
     bundle: plugins/usdVrm
     platform: cy2026
     profile: usd
@@ -56,8 +69,8 @@ cells:
   - name: usdvrm-support-windows-cy2026
     lane: scheduled
     runner: usd-windows-real
-    runtime_artifact: sha256:28c2c00e1b8296a92613780691e5ea2111431baef27add67d9107b4993be3094
-    plugin_artifact: sha256:848816f7d8f04031590cde745340c8536ad03ce3977278c685abe7640cdf9039
+    runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
+    plugin_artifact: sha256:1518387ae2cc51d3a0c1a9aee5f362c5cd8d5b2c6e7148523d23fd7b3fefa371
     platform: cy2026
     profile: usd
     up_to: 5
