@@ -15,10 +15,12 @@
 #   Windows runtime: OpenUSD 26.05 built from source with Python 3.13, validated,
 #            exported slim with top-level resources/ and lib/python schema-gen deps.
 #            OST artifact sha256:c1c54f1e... / OCI sha256:64fd1f44...
-#   Linux runtime: OpenUSD 26.05 built from source in WSL with Python 3.13.14,
-#            validated, exported slim from a symlink-dereferenced SDK re-adopt.
-#            OST artifact sha256:be894c1b... / OCI sha256:7efc6e02...
 #   plugin:  ost plugin publish plugins/usdVrm  (usdVrm 0.1.0)
+#
+# A hosted Linux PR lane is intentionally deferred: the WSL/Ubuntu-26.04 Linux
+# runtime was labeled glibc228 but its binaries require GLIBC_2.43, so it fails
+# to load on the github-hosted ubuntu-24.04 runner (glibc 2.39). Re-add once the
+# Linux runtime is rebuilt against an old glibc base. See v0.11.0 ask #7.
 schema: 1
 
 bootstrap:
@@ -35,11 +37,6 @@ runners:
   usd-windows-real:
     kind: self-hosted
     labels: [self-hosted, windows, x64, usd-26]
-  linux-hosted:
-    kind: github-hosted
-    image: ubuntu-24.04
-    billing:
-      acknowledgement: required
 
 cells:
   - name: usdvrm-pr-windows
@@ -49,18 +46,6 @@ cells:
     runtime_remote:
       uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e
       expected_oci_digest: sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e
-    bundle: plugins/usdVrm
-    platform: cy2026
-    profile: usd
-    up_to: 5
-
-  - name: usdvrm-pr-linux
-    lane: pull_request
-    runner: linux-hosted
-    runtime_artifact: sha256:be894c1b21844941f269a983e44a347132f4cbfb1cf851b27e01af846107c1a3
-    runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:7efc6e020b0a2ae169c7609aba7d4c04b18edb44f78d9f631fd90c3f0ca07d81
-      expected_oci_digest: sha256:7efc6e020b0a2ae169c7609aba7d4c04b18edb44f78d9f631fd90c3f0ca07d81
     bundle: plugins/usdVrm
     platform: cy2026
     profile: usd
