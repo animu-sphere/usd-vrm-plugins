@@ -109,11 +109,12 @@ else()
 endif()
 
 # Stage the shared library into the bundle's lib/ so both `ost plugin test` and
-# the committed plugInfo.json (LibraryPath = ../../../lib/<lib>) resolve it.
+# plugInfo.json (LibraryPath = ../../../lib/<lib>) resolve it.
 # Use CURRENT_SOURCE_DIR so the location is correct whether this is the top
 # project (ost) or a subdirectory of the repo-root project (plain CMake).
+set(OPENSTRATA_PLUGIN_LIBRARY_PREFIX "lib")
 set_target_properties(${PLUGIN_NAME} PROPERTIES
-    PREFIX "lib"
+    PREFIX "${OPENSTRATA_PLUGIN_LIBRARY_PREFIX}"
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib")
@@ -123,6 +124,15 @@ foreach(_cfg DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
         LIBRARY_OUTPUT_DIRECTORY_${_cfg} "${CMAKE_CURRENT_SOURCE_DIR}/lib"
         RUNTIME_OUTPUT_DIRECTORY_${_cfg} "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 endforeach()
+
+# Generate the USD registration file for the target platform. The source bundle
+# keeps a concrete plugInfo.json for static inspection, then CMake refreshes it
+# during `ost plugin build` so macOS gets .dylib, Windows gets .dll, and Linux
+# gets .so.
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/plugin/resources/usdVrm/plugInfo.json.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/plugin/resources/usdVrm/plugInfo.json"
+    @ONLY)
 
 if(USDVRM_BUILD_TESTS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
     enable_testing()
