@@ -47,28 +47,6 @@ runners:
     kind: self-hosted
     labels: [self-hosted, windows, x64, usd-26]
 
-source_checks:
-  # Temporary guard for the first macOS GHCR runtime artifact: its bin/ tools
-  # materialize without executable bits. Keep the real L5 check here so the PR
-  # still proves usdcat/golden behavior until the runtime is republished.
-  - name: Repair macOS runtime tool modes and run L5 verification
-    run: |
-      set -euo pipefail
-      if [ "${RUNNER_OS:-}" != "macOS" ]; then
-        echo "not a macOS runner; skipping macOS runtime mode repair"
-        exit 0
-      fi
-
-      eval "$(ost env ${{ matrix.platform }} --profile ${{ matrix.profile }})"
-      runtime_bin="${PATH%%:*}"
-      if [ ! -f "$runtime_bin/usdcat" ]; then
-        echo "::error title=macOS runtime repair::usdcat not found under $runtime_bin"
-        exit 1
-      fi
-
-      chmod +x "$runtime_bin"/*
-      ost plugin test ${{ matrix.bundle }} --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
-
 cells:
   - name: usdvrm-pr-windows
     lane: pull_request
@@ -92,7 +70,10 @@ cells:
     bundle: plugins/usdVrm
     platform: cy2026
     profile: usd
-    up_to: 2
+    # The generated workflow currently carries temporary macOS pre-build steps
+    # to add host Python 3.13 and repair runtime bin/ modes until the runtime
+    # artifact is republished with executable bits preserved.
+    up_to: 5
 
   - name: usdvrm-support-windows-cy2026
     lane: scheduled

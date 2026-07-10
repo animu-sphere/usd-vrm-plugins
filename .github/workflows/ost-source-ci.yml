@@ -51,7 +51,7 @@ jobs:
             runtime_artifact: sha256:64365b2597bab3c87e81501845b1cfe3c647758ace26336e34a17897c5aa573b
             platform: cy2026
             profile: usd
-            up_to: 2
+            up_to: 5
             runs_on: ["macos-15"]
             hosted: true
             runner_profile: macos-arm64-hosted
@@ -64,6 +64,17 @@ jobs:
         if: ${{ matrix.hosted }}
         shell: bash
         run: echo "::notice title=OpenStrata hosted-runner usage::This job uses GitHub-hosted infrastructure. Private repositories may incur GitHub Actions usage charges. Review repository billing and Actions usage settings."
+      # Temporary macOS runtime dogfooding guard:
+      # - the 26.05 macOS runtime artifact does not bundle a Python interpreter,
+      #   so schema generation needs host Python 3.13 on PATH;
+      # - the first published artifact materializes bin/ tools without execute
+      #   bits, so repair them before `ost plugin build` runs usdGenSchema.
+      # Remove these macOS-only steps once the runtime artifact is republished.
+      - name: Set up Python 3.13 for macOS schema generation
+        if: ${{ runner.os == 'macOS' }}
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
       - name: Bootstrap ost 0.11.0 (pinned release asset, checksum-verified)
         if: ${{ matrix.hosted }}
         shell: bash
@@ -147,30 +158,24 @@ jobs:
           printf '{"schema":1,"runtime_artifact":"%s","source":"%s"}\n' "${{ matrix.runtime_artifact }}" "${{ matrix.runtime_remote != '' && 'remote-pull' || 'local-registry' }}" > .ost-ci/runtime-source.json
           ost artifact verify ${{ matrix.runtime_artifact }}
           ost runtime pull ${{ matrix.platform }} --profile ${{ matrix.profile }} --from-artifact ${{ matrix.runtime_artifact }} --force
-      - name: Build the plugin from source
-        shell: bash
-        run: ost plugin build ${{ matrix.bundle }} --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
-      - name: Run the verification pyramid
-        shell: bash
-        run: ost plugin test ${{ matrix.bundle }} --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to ${{ matrix.up_to }} --json
-      - name: "Repair macOS runtime tool modes and run L5 verification"
+      - name: Repair macOS runtime tool executable bits
+        if: ${{ runner.os == 'macOS' }}
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${RUNNER_OS:-}" != "macOS" ]; then
-            echo "not a macOS runner; skipping macOS runtime mode repair"
-            exit 0
-          fi
-
           eval "$(ost env ${{ matrix.platform }} --profile ${{ matrix.profile }})"
           runtime_bin="${PATH%%:*}"
           if [ ! -f "$runtime_bin/usdcat" ]; then
             echo "::error title=macOS runtime repair::usdcat not found under $runtime_bin"
             exit 1
           fi
-
           chmod +x "$runtime_bin"/*
-          ost plugin test ${{ matrix.bundle }} --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
+      - name: Build the plugin from source
+        shell: bash
+        run: ost plugin build ${{ matrix.bundle }} --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+      - name: Run the verification pyramid
+        shell: bash
+        run: ost plugin test ${{ matrix.bundle }} --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to ${{ matrix.up_to }} --json
       - name: Package the plugin (never published from this workflow)
         shell: bash
         run: ost plugin package ${{ matrix.bundle }} --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
