@@ -46,6 +46,17 @@ jobs:
             runner_profile: windows-hosted
             bundle: plugins/usdVrm
             runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e"
+          - name: usdvrm-pr-macos-arm64
+            lane: pull_request
+            runtime_artifact: sha256:64365b2597bab3c87e81501845b1cfe3c647758ace26336e34a17897c5aa573b
+            platform: cy2026
+            profile: usd
+            up_to: 2
+            runs_on: ["macos-15"]
+            hosted: true
+            runner_profile: macos-arm64-hosted
+            bundle: plugins/usdVrm
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:ee9d0774ab4ace4e5a1e76d16730ab0b2f203c8c4fdea4b8089fcb6e29d9f8f6"
     steps:
       - name: Check out the repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -53,7 +64,7 @@ jobs:
         if: ${{ matrix.hosted }}
         shell: bash
         run: echo "::notice title=OpenStrata hosted-runner usage::This job uses GitHub-hosted infrastructure. Private repositories may incur GitHub Actions usage charges. Review repository billing and Actions usage settings."
-      - name: Bootstrap ost 0.10.0 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.11.0 (pinned release asset, checksum-verified)
         if: ${{ matrix.hosted }}
         shell: bash
         run: |
@@ -71,7 +82,7 @@ jobs:
             *) : ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.10.0"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.11.0"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$( (command -v sha256sum > /dev/null && sha256sum "$asset" || shasum -a 256 "$asset") | cut -d' ' -f1 )"
@@ -92,7 +103,7 @@ jobs:
           if [ -z "$bin" ]; then echo "::error title=ost bootstrap::no ost binary inside $asset" ; exit 1 ; fi
           chmod +x "$bin" 2> /dev/null || true
           echo "$(cd "$(dirname "$bin")" && pwd)" >> "$GITHUB_PATH"
-          printf '{"schema":1,"pinned_version":"%s","asset":"%s","sha256":"%s"}\n' "0.10.0" "$asset" "$actual" > .ost-ci/bootstrap.json
+          printf '{"schema":1,"pinned_version":"%s","asset":"%s","sha256":"%s"}\n' "0.11.0" "$asset" "$actual" > .ost-ci/bootstrap.json
       - name: Check ost is available and record its version
         shell: bash
         run: |
@@ -100,8 +111,8 @@ jobs:
           mkdir -p .ost-ci
           version="$(ost --version)"
           echo "$version"
-          if [ "${{ matrix.hosted }}" = "true" ] && [ "$version" != "ost 0.10.0" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.10.0', got '$version'" ; exit 1
+          if [ "${{ matrix.hosted }}" = "true" ] && [ "$version" != "ost 0.11.0" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.11.0', got '$version'" ; exit 1
           fi
           printf '{"schema":1,"ost_version":"%s"}\n' "$version" > .ost-ci/ost-version.json
       - name: Validate the CI manifest
@@ -112,7 +123,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ost-ci-home/artifacts
-          key: ost-registry-0.10.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.name }}-${{ matrix.runtime_artifact }}
+          key: ost-registry-0.11.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.name }}-${{ matrix.runtime_artifact }}
       - name: Pull the pinned runtime SDK from its remote reference
         if: ${{ matrix.runtime_remote != '' }}
         shell: bash
@@ -142,6 +153,24 @@ jobs:
       - name: Run the verification pyramid
         shell: bash
         run: ost plugin test ${{ matrix.bundle }} --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to ${{ matrix.up_to }} --json
+      - name: "Repair macOS runtime tool modes and run L5 verification"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${RUNNER_OS:-}" != "macOS" ]; then
+            echo "not a macOS runner; skipping macOS runtime mode repair"
+            exit 0
+          fi
+
+          eval "$(ost env ${{ matrix.platform }} --profile ${{ matrix.profile }})"
+          runtime_bin="${PATH%%:*}"
+          if [ ! -f "$runtime_bin/usdcat" ]; then
+            echo "::error title=macOS runtime repair::usdcat not found under $runtime_bin"
+            exit 1
+          fi
+
+          chmod +x "$runtime_bin"/*
+          ost plugin test ${{ matrix.bundle }} --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
       - name: Package the plugin (never published from this workflow)
         shell: bash
         run: ost plugin package ${{ matrix.bundle }} --target ${{ matrix.platform }} --profile ${{ matrix.profile }}

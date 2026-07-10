@@ -11,10 +11,14 @@
 #   - scheduled     -> self-hosted real compatibility validation from pinned
 #                      runtime + plugin artifacts (air-gapped local import).
 #
-# Digest provenance (ost 0.10.0):
+# Digest provenance:
 #   Windows runtime: OpenUSD 26.05 built from source with Python 3.13, validated,
 #            exported slim with top-level resources/ and lib/python schema-gen deps.
 #            OST artifact sha256:c1c54f1e... / OCI sha256:64fd1f44...
+#   macOS arm64 runtime: OpenUSD 26.05 built from source with Python 3.13,
+#            validated, exported slim, and published publicly to GHCR.
+#            OST artifact sha256:64365b25... / OCI sha256:ee9d0774...
+#            Requires ost 0.11.0+ for symlink-safe macOS archive import.
 #   plugin:  ost plugin publish plugins/usdVrm  (usdVrm 0.1.0)
 #
 # A hosted Linux PR lane is intentionally deferred: the WSL/Ubuntu-26.04 Linux
@@ -25,7 +29,7 @@ schema: 1
 
 bootstrap:
   ost:
-    version: "0.10.0"
+    version: "0.11.0"
     repository: animu-sphere/open-strata
 
 runners:
@@ -34,9 +38,36 @@ runners:
     image: windows-2022
     billing:
       acknowledgement: required
+  macos-arm64-hosted:
+    kind: github-hosted
+    image: macos-15
+    billing:
+      acknowledgement: required
   usd-windows-real:
     kind: self-hosted
     labels: [self-hosted, windows, x64, usd-26]
+
+source_checks:
+  # Temporary guard for the first macOS GHCR runtime artifact: its bin/ tools
+  # materialize without executable bits. Keep the real L5 check here so the PR
+  # still proves usdcat/golden behavior until the runtime is republished.
+  - name: Repair macOS runtime tool modes and run L5 verification
+    run: |
+      set -euo pipefail
+      if [ "${RUNNER_OS:-}" != "macOS" ]; then
+        echo "not a macOS runner; skipping macOS runtime mode repair"
+        exit 0
+      fi
+
+      eval "$(ost env ${{ matrix.platform }} --profile ${{ matrix.profile }})"
+      runtime_bin="${PATH%%:*}"
+      if [ ! -f "$runtime_bin/usdcat" ]; then
+        echo "::error title=macOS runtime repair::usdcat not found under $runtime_bin"
+        exit 1
+      fi
+
+      chmod +x "$runtime_bin"/*
+      ost plugin test ${{ matrix.bundle }} --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
 
 cells:
   - name: usdvrm-pr-windows
@@ -50,6 +81,18 @@ cells:
     platform: cy2026
     profile: usd
     up_to: 5
+
+  - name: usdvrm-pr-macos-arm64
+    lane: pull_request
+    runner: macos-arm64-hosted
+    runtime_artifact: sha256:64365b2597bab3c87e81501845b1cfe3c647758ace26336e34a17897c5aa573b
+    runtime_remote:
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:ee9d0774ab4ace4e5a1e76d16730ab0b2f203c8c4fdea4b8089fcb6e29d9f8f6
+      expected_oci_digest: sha256:ee9d0774ab4ace4e5a1e76d16730ab0b2f203c8c4fdea4b8089fcb6e29d9f8f6
+    bundle: plugins/usdVrm
+    platform: cy2026
+    profile: usd
+    up_to: 2
 
   - name: usdvrm-support-windows-cy2026
     lane: scheduled

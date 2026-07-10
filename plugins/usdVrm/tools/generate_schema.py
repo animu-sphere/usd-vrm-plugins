@@ -13,7 +13,8 @@ CMake and the checked-in USD registration resources. It runs OpenUSD's
   * generatedSchema.usda -> plugin/resources/usdVrm/  (committed; USD's schema
     registry reads it next to plugInfo.json).
   * the generated schema `Types` block -> merged into the committed
-    plugin/resources/usdVrm/plugInfo.json beside the SdfFileFormat entry.
+    plugin/resources/usdVrm/plugInfo.json and plugInfo.json.in beside the
+    SdfFileFormat entry.
 
 Dependencies (usdGenSchema is a Python tool):
   * A Python interpreter with the OpenUSD `pxr` modules importable, OR — as here —
@@ -43,6 +44,7 @@ SCHEMA_SRC = PLUGIN_DIR / "schema" / "schema.usda"
 CPP_DEST = PLUGIN_DIR / "src" / "schema"
 RESOURCES = PLUGIN_DIR / "plugin" / "resources" / "usdVrm"
 PLUGINFO = RESOURCES / "plugInfo.json"
+PLUGINFO_TEMPLATE = RESOURCES / "plugInfo.json.in"
 # The ctest harness loads the plugin through its own configured plugInfo (a
 # configure_file template), so it carries a second copy of the schema Types. Keep
 # it in lockstep here rather than relying on a hand-edit that silently drifts.
@@ -102,7 +104,7 @@ def main() -> int:
         print("  plugin/resources/usdVrm/generatedSchema.usda")
 
         gen_types = _read_schema_types(gen / "plugInfo.json")
-        for target in (PLUGINFO, TEST_PLUGINFO):
+        for target in (PLUGINFO, PLUGINFO_TEMPLATE, TEST_PLUGINFO):
             _merge_plug_info(target, gen_types)
 
     print("done. Review the diff and rebuild.")

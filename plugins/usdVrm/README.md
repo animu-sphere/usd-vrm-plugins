@@ -11,7 +11,7 @@ extended with a real importer.
 
 ```
 openstrata.plugin.yaml          bundle contract (identity, runtime range, provides, tests)
-CMakeLists.txt                  builds libUsdVrmFileFormat.{dll,so} into lib/
+CMakeLists.txt                  builds libUsdVrmFileFormat.{dll,dylib,so} into lib/
 cmake/Dependencies.cmake        fetches cgltf (pinned) at configure time
 src/
   UsdVrmFileFormat.{h,cpp}      SdfFileFormat entry point (CanRead/Read/WriteToString)
@@ -22,7 +22,8 @@ src/
   schema/                       committed usdGenSchema fallback for Vrm*API schemas
   util/                         path sanitize/uniquify, glTF->USD transform conversion
 schema/schema.usda              typed schema source (Vrm*API); ost 0.6+ regenerates it at build time
-plugin/resources/usdVrm/plugInfo.json        USD plugin registration (SdfFileFormat + schema Types)
+plugin/resources/usdVrm/plugInfo.json.in     target-suffix template for USD plugin registration
+plugin/resources/usdVrm/plugInfo.json        generated/inspectable USD plugin registration
 plugin/resources/usdVrm/generatedSchema.usda usdGenSchema schematics for the typed schema
 tools/                          generate_fixtures.py, vrm_fixture_lib.py, inspect_vrm.py,
                                 generate_schema.py, package_vrm.py
@@ -158,7 +159,7 @@ python plugins/usdVrm/tools/generate_schema.py --usd-root /path/to/openusd-insta
 
 The script runs `usdGenSchema`, copies the C++ into `src/schema/` and
 `generatedSchema.usda` into the plugin resources, and merges the schema `Types`
-into `plugInfo.json` beside the `SdfFileFormat` entry. It sets
+into `plugInfo.json` / `plugInfo.json.in` beside the `SdfFileFormat` entry. It sets
 `PXR_AR_DEFAULT_SEARCH_PATH` (so the `@usd/schema.usda@` sublayer that defines
 `APISchemaBase` resolves) and passes `-t` the install's codegen templates, so it
 works even when the interpreter's importable `pxr` is a different OpenUSD build.
