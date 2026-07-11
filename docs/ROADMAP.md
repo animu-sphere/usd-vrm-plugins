@@ -58,18 +58,30 @@ versions; every corpus asset has a known status; stage validation emits a JSON r
       with `allowRedistribution: true`, covering MToon / SpringBone / constraints /
       expressions / LookAt. Remaining axes: VRM 0.x (Alicia — fetch/opt-in, original
       redistribution unclear), VRoid, animation clips, KTX2, multi-skin.
-- [ ] **CI matrix** (`.github/workflows/`; note `/docs` is git-ignored, `.github/` is
+- [~] **CI matrix** (`.github/workflows/`; note `/docs` is git-ignored, `.github/` is
       not): configure/build + ctest + plugin discovery on **Linux + Windows (+ macOS)**,
       against **min and latest** supported OpenUSD; optionally `ost plugin test`.
-      *(was P1.4, deferred — now the lead item.)*
-- [ ] **Standalone stage validator** — a validation contract over the imported stage
-      (default prim, `/Asset`, skinned-mesh→skeleton binding, parent-before-child joint
-      order, `JOINTS_0` range, material/texture/humanoid/expression/spring targets,
-      raw↔typed source mapping). Separate from the importer (policy §10).
-- [ ] **Error/warning code taxonomy** (Fatal/Error/Warning/Info) replacing free-text
-      warnings.
-- [ ] **Compatibility report** (human-readable + machine JSON: summary / diagnostics /
-      asset-inventory / compatibility).
+      *(was P1.4, deferred — now the lead item.)* **OS axis done:** `ost-source-ci.yml`
+      PR lane runs all three cells (`windows-2022`, `macos-15`, `ubuntu-24.04`), each
+      build → `ost plugin test` → package on hosted runners with digest-pinned cy2026
+      runtimes. **Remaining:** second OpenUSD version cell (min vs latest) — currently
+      cy2026 only.
+- [x] **Standalone stage validator** — `tools/validate_vrm.py`: a validation contract
+      over the imported stage (default prim, `/Asset`, skinned-mesh→skeleton binding,
+      parent-before-child joint order, `JOINTS_0` range, material/texture/humanoid/
+      expression/spring targets, raw↔typed source mapping). Runs over an already-imported
+      stage, never re-reads the `.vrm` — separate from the importer (policy §10). Emits
+      typed diagnostics; non-zero exit on ERROR/FATAL. Tested in `test_usdvrm_validate.py`
+      (valid fixtures pass; in-session mutations flag the right code).
+- [x] **Error/warning code taxonomy** (Fatal/Error/Warning/Info) replacing free-text
+      warnings. Stable `VRMxxx` codes: `src/model/VrmDiagnostics.h` (C++ importer prefixes
+      each message `[VRMxxx] …`), canonical severity catalog in `tools/vrm_diagnostics.py`,
+      reference table in `docs/DIAGNOSTICS.md`. Legacy un-coded text still degrades cleanly.
+- [x] **Compatibility report** (`tools/vrm_report.py`, human-readable + machine JSON:
+      summary / diagnostics / asset-inventory / compatibility). Merges coded import-time
+      diagnostics (off `vrm:warnings`) with the validator's findings, an asset inventory
+      with resolvability, and a feature-presence matrix. Verified on both corpus avatars
+      (Seed-san COMPATIBLE/clean; Constraint-Twist COMPATIBLE with 1 coded warning).
 
 ### Phase B — Asset portability  ✅
 *Goal: hand an import to another machine and textures still resolve; no temp-dir
@@ -127,7 +139,8 @@ Tracked here so "done" is unambiguous:
    ✅ (typed schemas + stage-contract tests)
 3. Textures exportable as a portable package. ✅
 4. MToon fallback vs fidelity responsibilities clear. *(Phase D)*
-5. Import warnings / fidelity loss retrievable as a report. *(Phase A — taxonomy+report)*
+5. Import warnings / fidelity loss retrievable as a report. ✅ (coded taxonomy +
+   `validate_vrm.py` + `vrm_report.py`)
 6. Schema contract documented + versioned. *(Phase C)*
 7. External pipelines (OpenExec) can run the importer as a structured task. *(Phase E)*
 

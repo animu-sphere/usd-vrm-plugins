@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "usd/UsdVrmAuthorer.h"
 
+#include "model/VrmDiagnostics.h"
 #include "schema/vrmColliderAPI.h"
 #include "schema/vrmConstraintAPI.h"
 #include "schema/vrmExpressionAPI.h"
@@ -601,7 +602,8 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             }
         }
     } else if (anyMorph) {
-        warn("morph targets present but no skeleton/SkelRoot; blend shapes skipped");
+        warn(VrmDiagMsg(VrmDiag::MorphNoSkeleton,
+            "morph targets present but no skeleton/SkelRoot; blend shapes skipped"));
     }
 
     // -----------------------------------------------------------------------
@@ -637,7 +639,8 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             attr.Set(TfToken(jointPaths[b.jointIndex]));
         }
     } else if (!doc.humanoidBones.empty()) {
-        warn("humanoid bones present but no skeleton was imported; mapping skipped");
+        warn(VrmDiagMsg(VrmDiag::HumanoidNoSkeleton,
+            "humanoid bones present but no skeleton was imported; mapping skipped"));
     }
 
     // -----------------------------------------------------------------------

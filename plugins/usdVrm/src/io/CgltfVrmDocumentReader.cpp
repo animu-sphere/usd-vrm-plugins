@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "io/CgltfVrmDocumentReader.h"
 
+#include "model/VrmDiagnostics.h"
 #include "util/PathUtil.h"
 #include "util/TransformUtil.h"
 
@@ -194,8 +195,8 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
         outDoc->rawVrmExtensionJson = vrm0Json;
     } else {
         outDoc->version = VrmVersion::Unknown;
-        outDoc->warnings.push_back(
-            "no VRM or VRMC_vrm extension found; importing as plain glTF");
+        outDoc->warnings.push_back(VrmDiagMsg(VrmDiag::NoVrmExtension,
+            "no VRM or VRMC_vrm extension found; importing as plain glTF"));
     }
 
     // -----------------------------------------------------------------------
@@ -232,9 +233,10 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                 ext = _ImageExt(img);
             }
             if (!ext) {
-                outDoc->warnings.push_back(
+                outDoc->warnings.push_back(VrmDiagMsg(
+                    VrmDiag::TextureFormatUnsupported,
                     "unsupported embedded image format (not PNG/JPEG); "
-                    "texture skipped");
+                    "texture skipped"));
             } else {
                 char name[48];
                 std::snprintf(name, sizeof(name), "images/%016llx.%s",
@@ -247,8 +249,9 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
             // External file reference, resolved relative to the source.
             result = (sourceDir / img->uri).generic_string();
         } else {
-            outDoc->warnings.push_back(
-                "data-URI image not supported in Phase 2; texture skipped");
+            outDoc->warnings.push_back(VrmDiagMsg(
+                VrmDiag::TextureDataUriUnsupported,
+                "data-URI image not supported in Phase 2; texture skipped"));
         }
         imageCache[img] = result;
         return result;
@@ -264,9 +267,10 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
         r.uvSet = tv.texcoord;
         r.scale = tv.scale;
         if (tv.texcoord != 0) {
-            outDoc->warnings.push_back(
+            outDoc->warnings.push_back(VrmDiagMsg(
+                VrmDiag::TextureTexcoordUnsupported,
                 "texture uses TEXCOORD_" + std::to_string(tv.texcoord) +
-                "; only UV set 0 is wired in Phase 2 (sampling may be wrong)");
+                "; only UV set 0 is wired in Phase 2 (sampling may be wrong)"));
         }
         if (tv.texture->sampler) {
             r.wrapS = _WrapStr(tv.texture->sampler->wrap_s);
@@ -413,10 +417,11 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                 if (bindFromIbm[u]) {
                     if (!warnedIbmConflict &&
                         !GfIsClose(outDoc->joints[u].bindTransform, bind, 1e-4)) {
-                        outDoc->warnings.push_back(
+                        outDoc->warnings.push_back(VrmDiagMsg(
+                            VrmDiag::SkinIbmConflict,
                             "joint '" + outDoc->joints[u].name +
                             "' has conflicting inverse bind matrices across "
-                            "skins; keeping the first");
+                            "skins; keeping the first"));
                         warnedIbmConflict = true;
                     }
                     continue;
@@ -501,9 +506,10 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
             out.nodeWorldTransform = nodeWorld;
 
             if (prim.type != cgltf_primitive_type_triangles) {
-                outDoc->warnings.push_back(
+                outDoc->warnings.push_back(VrmDiagMsg(
+                    VrmDiag::PrimitiveNotTriangles,
                     "primitive '" + out.name +
-                    "' is not a triangle list; skipped");
+                    "' is not a triangle list; skipped"));
                 continue;
             }
 
@@ -536,8 +542,9 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
             }
 
             if (out.points.empty()) {
-                outDoc->warnings.push_back(
-                    "primitive '" + out.name + "' has no POSITION; skipped");
+                outDoc->warnings.push_back(VrmDiagMsg(
+                    VrmDiag::PrimitiveNoPosition,
+                    "primitive '" + out.name + "' has no POSITION; skipped"));
                 continue;
             }
 
@@ -684,7 +691,8 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
         JsValue root = JsParseString(outDoc->rawVrmExtensionJson, &perr);
         const JsObject* rootObj = _AsObject(&root);
         if (!rootObj) {
-            outDoc->warnings.push_back("VRM extension JSON could not be parsed");
+            outDoc->warnings.push_back(VrmDiagMsg(VrmDiag::VrmJsonParseFailed,
+                "VRM extension JSON could not be parsed"));
         } else {
             auto nodeIndexToJoint = [&](int nodeIndex) -> int {
                 if (nodeIndex < 0 ||
@@ -738,10 +746,12 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                             if (joint >= 0) {
                                 outDoc->humanoidBones.push_back({kv.first, joint});
                             } else {
-                                outDoc->warnings.push_back("humanoid bone '" +
+                                outDoc->warnings.push_back(VrmDiagMsg(
+                                    VrmDiag::HumanoidBoneUnmapped,
+                                    "humanoid bone '" +
                                     kv.first + "' references node " +
                                     std::to_string(nodeIndex) +
-                                    " with no skeleton joint; skipped");
+                                    " with no skeleton joint; skipped"));
                             }
                         }
                     }
@@ -837,10 +847,12 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                                 outDoc->humanoidBones.push_back(
                                     {boneName->GetString(), joint});
                             } else if (boneName && boneName->IsString()) {
-                                outDoc->warnings.push_back("humanoid bone '" +
+                                outDoc->warnings.push_back(VrmDiagMsg(
+                                    VrmDiag::HumanoidBoneUnmapped,
+                                    "humanoid bone '" +
                                     boneName->GetString() + "' references node " +
                                     std::to_string(nodeIndex) +
-                                    " with no skeleton joint; skipped");
+                                    " with no skeleton joint; skipped"));
                             }
                         }
                     }
@@ -886,9 +898,11 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                             // VRM 0.x material-value binds (MToon _Color etc.) are
                             // not mapped to USD; they remain in vrm:rawExtension.
                             if (_AsArray(_Find(*g, "materialValues"))) {
-                                outDoc->warnings.push_back("expression '" + expr.name +
+                                outDoc->warnings.push_back(VrmDiagMsg(
+                                    VrmDiag::ExpressionVrm0MaterialValues,
+                                    "expression '" + expr.name +
                                     "' has VRM 0.x materialValues binds; preserved in "
-                                    "vrm:rawExtension only (not mapped to USD)");
+                                    "vrm:rawExtension only (not mapped to USD)"));
                             }
                             outDoc->expressions.push_back(std::move(expr));
                         }
@@ -1035,8 +1049,10 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                 (*dst)[jit->second] = ch.sampler;
                 if (ch.sampler->interpolation ==
                         cgltf_interpolation_type_cubic_spline && !cubicWarned) {
-                    outDoc->warnings.push_back("animation '" + animNames[a] +
-                        "' uses CUBICSPLINE; approximated as linear");
+                    outDoc->warnings.push_back(VrmDiagMsg(
+                        VrmDiag::AnimationCubicSpline,
+                        "animation '" + animNames[a] +
+                        "' uses CUBICSPLINE; approximated as linear"));
                     cubicWarned = true;
                 }
                 std::vector<float>& keys = samplerKeys[ch.sampler];
@@ -1372,9 +1388,11 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                 con.constrainedJoint = nodeJoint(static_cast<int>(ni));
                 int src = _AsInt(_Find(*spec, "source"));
                 if (src < 0 || src >= static_cast<int>(data->nodes_count)) {
-                    outDoc->warnings.push_back("node constraint on '" +
+                    outDoc->warnings.push_back(VrmDiagMsg(
+                        VrmDiag::ConstraintNoSource,
+                        "node constraint on '" +
                         con.constrainedNodeName + "' (" + type +
-                        ") has no valid source node; skipped");
+                        ") has no valid source node; skipped"));
                     continue;
                 }
                 con.sourceNodeIndex = src;
