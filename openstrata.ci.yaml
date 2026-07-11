@@ -21,12 +21,14 @@
 #            OST artifact sha256:cddd365d... / OCI sha256:6117559a...
 #            Requires ost 0.12.0+ for executable-bit preserving macOS
 #            archive export/import.
+#   Linux x86_64 runtime: OpenUSD 26.05 built from source with Python 3.13 inside
+#            a ubuntu:24.04 (glibc 2.39) container so the runtime's real glibc
+#            floor is 2.38 -- loadable on the github-hosted ubuntu-24.04 runner.
+#            ost 0.12.0 measures the floor and stamps the honest target
+#            linux-x86_64-glibc238-py313 (no longer a fabricated glibc228 label).
+#            OST artifact sha256:f6a2047c... / OCI sha256:d202c6d7...
+#            Published publicly to GHCR.
 #   plugin:  ost plugin publish plugins/usdVrm  (usdVrm 0.1.0)
-#
-# A hosted Linux PR lane is intentionally deferred: the WSL/Ubuntu-26.04 Linux
-# runtime was labeled glibc228 but its binaries require GLIBC_2.43, so it fails
-# to load on the github-hosted ubuntu-24.04 runner (glibc 2.39). Re-add once the
-# Linux runtime is rebuilt against an old glibc base. See v0.11.0 ask #7.
 schema: 1
 
 bootstrap:
@@ -43,6 +45,11 @@ runners:
   macos-arm64-hosted:
     kind: github-hosted
     image: macos-15
+    billing:
+      acknowledgement: required
+  linux-hosted:
+    kind: github-hosted
+    image: ubuntu-24.04
     billing:
       acknowledgement: required
   usd-windows-real:
@@ -69,6 +76,19 @@ cells:
     runtime_remote:
       uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876
       expected_oci_digest: sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876
+    bundle: plugins/usdVrm
+    platform: cy2026
+    profile: usd
+    host_python: "3.13"
+    up_to: 5
+
+  - name: usdvrm-pr-linux
+    lane: pull_request
+    runner: linux-hosted
+    runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
+    runtime_remote:
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d202c6d7534afa4960850419b58d3b06631d85031f93243cd5de6c4cf511a734
+      expected_oci_digest: sha256:d202c6d7534afa4960850419b58d3b06631d85031f93243cd5de6c4cf511a734
     bundle: plugins/usdVrm
     platform: cy2026
     profile: usd
