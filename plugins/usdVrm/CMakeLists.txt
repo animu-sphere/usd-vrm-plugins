@@ -7,8 +7,18 @@
 # plain-CMake (non-OpenStrata) workflow.
 cmake_minimum_required(VERSION 3.22)
 
+# Version comes from the repo-root VERSION file (single source of truth). When
+# this bundle is built standalone from an export that does not carry the repo
+# root, fall back to the bundle-manifest version so the configure still works.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
+    file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION" _vrm_plugin_version LIMIT_COUNT 1)
+    string(STRIP "${_vrm_plugin_version}" _vrm_plugin_version)
+else()
+    set(_vrm_plugin_version "0.1.0")  # mirrors openstrata.plugin.yaml
+endif()
+
 project(UsdVrmPlugin
-    VERSION 0.1.0
+    VERSION ${_vrm_plugin_version}
     DESCRIPTION "OpenUSD vrm file-format plugin"
     LANGUAGES CXX)
 
