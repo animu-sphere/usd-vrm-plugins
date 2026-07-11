@@ -16,9 +16,11 @@
 #            exported slim with top-level resources/ and lib/python schema-gen deps.
 #            OST artifact sha256:c1c54f1e... / OCI sha256:64fd1f44...
 #   macOS arm64 runtime: OpenUSD 26.05 built from source with Python 3.13,
-#            validated, exported slim, and published publicly to GHCR.
-#            OST artifact sha256:64365b25... / OCI sha256:ee9d0774...
-#            Requires ost 0.11.0+ for symlink-safe macOS archive import.
+#            validated, exported slim with executable tool modes preserved,
+#            and published publicly to GHCR.
+#            OST artifact sha256:cddd365d... / OCI sha256:6117559a...
+#            Requires ost 0.12.0+ for executable-bit preserving macOS
+#            archive export/import.
 #   plugin:  ost plugin publish plugins/usdVrm  (usdVrm 0.1.0)
 #
 # A hosted Linux PR lane is intentionally deferred: the WSL/Ubuntu-26.04 Linux
@@ -29,7 +31,7 @@ schema: 1
 
 bootstrap:
   ost:
-    version: "0.11.0"
+    version: "0.12.0"
     repository: animu-sphere/open-strata
 
 runners:
@@ -63,16 +65,14 @@ cells:
   - name: usdvrm-pr-macos-arm64
     lane: pull_request
     runner: macos-arm64-hosted
-    runtime_artifact: sha256:64365b2597bab3c87e81501845b1cfe3c647758ace26336e34a17897c5aa573b
+    runtime_artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:ee9d0774ab4ace4e5a1e76d16730ab0b2f203c8c4fdea4b8089fcb6e29d9f8f6
-      expected_oci_digest: sha256:ee9d0774ab4ace4e5a1e76d16730ab0b2f203c8c4fdea4b8089fcb6e29d9f8f6
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876
+      expected_oci_digest: sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876
     bundle: plugins/usdVrm
     platform: cy2026
     profile: usd
-    # The generated workflow currently carries temporary macOS pre-build steps
-    # to add host Python 3.13 and repair runtime bin/ modes until the runtime
-    # artifact is republished with executable bits preserved.
+    host_python: "3.13"
     up_to: 5
 
   - name: usdvrm-support-windows-cy2026
