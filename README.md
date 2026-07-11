@@ -94,6 +94,23 @@ self-hosted Windows runner with `ost` on `PATH` and a validated `cy2026` / `usd`
 runtime in the local OpenStrata store. It builds `plugins/usdVrm` from source and
 runs `ost plugin test --up-to 5`.
 
+### Clean-install smoke
+
+To verify the *packaged* plugin has no build-tree dependency, run:
+
+```sh
+python scripts/clean_install_smoke.py            # build + package + extract + smoke
+python scripts/clean_install_smoke.py --skip-build   # reuse the current build
+```
+
+It packages the bundle with `ost`, extracts the artifact into a fresh directory
+**outside** the repo, and runs the assertions in
+`plugins/usdVrm/tests/clean_install_smoke.py` inside that extracted bundle's
+runtime session: `.vrm` discovery served from the package, a textured fixture and
+a corpus avatar open and validate, and an embedded texture resolves straight from
+the `.vrm` container (no temp extraction). Needs `ost` + a validated `cy2026`
+runtime.
+
 ## License
 
 Original source and documentation: Apache-2.0 (see [LICENSE](LICENSE)).
