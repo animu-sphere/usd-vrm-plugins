@@ -17,6 +17,15 @@ Current schema contract version: **1**.
 - Release contract: repo-root `VERSION` single source of truth (consumed by
   CMake), this `CHANGELOG.md`, [`docs/CAPABILITY_MATRIX.md`](docs/CAPABILITY_MATRIX.md),
   and [`docs/SUPPORTED_CONFIGURATIONS.md`](docs/SUPPORTED_CONFIGURATIONS.md).
+- **Corpus foundation** — reorganized `tests/corpus/` into `spec-samples/`
+  (vendored, license-clear), `vroid/` (fetched, git-ignored), `conformance/`, and
+  `generated/`; added a machine-readable `tests/corpus/manifest.json` (provenance,
+  SHA-256, roles, feature tags, expected diagnostics + max severity), a
+  `tests/corpus/README.md`, and a licenses index. `test_usdvrm_corpus.py` is now
+  **manifest-driven** and asserts the diagnostic-code contract. New
+  `scripts/verify_corpus.py` (SHA-256) and `scripts/fetch_corpus.py` (pinned,
+  license-gated fetch for the VRoid + Alicia candidates). No third-party binaries
+  are committed.
 - **Clean-install / plugin-discovery smoke** — `scripts/clean_install_smoke.py`
   packages the bundle, extracts the artifact into a fresh directory outside the
   repo, and runs `plugins/usdVrm/tests/clean_install_smoke.py` inside that

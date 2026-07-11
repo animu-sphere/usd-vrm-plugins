@@ -211,10 +211,17 @@ only), DCC-specific UI.
 
 - **Corpus expansion:** redistributable avatars across the policy axes (VRM 0.x, 1.0,
   VRoid, MToon-heavy, multi-skin, animated, non-ASCII names, texture compression,
-  spring/collider complexity). Selection policy + provenance manifest in
-  `../plugins/usdVrm/tests/corpus/CORPUS.md`. Vendored: **Seed-san** (VirtualCast) and
-  **VRM1 Constraint Twist** (pixiv), both VRM 1.0 with `allowRedistribution: true`.
-  Remaining axes: VRM 0.x, VRoid, animation clips, KTX2, multi-skin.
+  spring/collider complexity). **Foundation landed:** `tests/corpus/` reorganized into
+  `spec-samples/` (vendored) · `vroid/` (fetched, git-ignored) · `conformance/` ·
+  `generated/`; machine-readable `manifest.json` (provenance + SHA-256 + roles +
+  feature tags + expected diagnostics) drives a manifest-based `test_usdvrm_corpus.py`;
+  `scripts/verify_corpus.py` (SHA-256) + `scripts/fetch_corpus.py` (pinned,
+  license-gated). Selection policy in `../plugins/usdVrm/tests/corpus/CORPUS.md`.
+  Vendored: **Seed-san** (VirtualCast) and **VRM1 Constraint Twist** (pixiv), both VRM
+  1.0 with `allowRedistribution: true`. Declared fetch/opt-in candidates: VRoid
+  (Vita, Victoria_Rubin, Sendagaya_Shino, AvatarSample_A/B) + Alicia — pending
+  per-model license verification. Remaining axes: VRM 0.x, VRoid, animation clips,
+  KTX2, multi-skin.
 - **`ost` dogfooding** continues in `docs/report/ost` (see the numbered reports; `/docs`
   is git-ignored except this roadmap, so those reports stay local). Carried `ost` asks
   live in the latest report's forward-note.

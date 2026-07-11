@@ -1,0 +1,10 @@
+# Fetched third-party corpus binaries are NEVER committed — they are pulled by
+# scripts/fetch_corpus.py (pinned SHA-256, license-gated) into vroid/ per the
+# manifest's `candidates`. Only license-verified, redistribution-clear assets are
+# vendored, and those live under spec-samples/ (tracked, not matched here).
+vroid/**/*.vrm
+vroid/**/*.glb
+vroid/**/*.vrm.part
+
+# Local scratch imports produced while inspecting corpus assets.
+**/*.usda.local
