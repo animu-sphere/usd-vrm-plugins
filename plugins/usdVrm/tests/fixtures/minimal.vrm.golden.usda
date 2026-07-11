@@ -22,6 +22,7 @@ def SkelRoot "Asset" (
     "version": "1.0"
 }'''
             string rawExtension = '{"specVersion":"1.0","meta":{"name":"usdVrm Minimal Fixture","version":"1.0","authors":["usd-vrm-plugins"],"licenseUrl":"https://www.apache.org/licenses/LICENSE-2.0","avatarPermission":"everyone"},"humanoid":{"humanBones":{"hips":{"node":1},"spine":{"node":2}}}}'
+            int schemaContractVersion = 1
             string sourceFormat = "VRM"
             string sourceFrontAxis = "+Z"
             string sourceVersion = "1.0"

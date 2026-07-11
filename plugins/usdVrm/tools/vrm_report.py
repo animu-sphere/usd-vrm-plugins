@@ -82,6 +82,7 @@ def _compatibility(stage: Usd.Stage, dp: Usd.Prim) -> dict[str, Any]:
         "sourceFormat": vrm.get("sourceFormat", ""),
         "sourceVersion": vrm.get("sourceVersion", ""),
         "specVersion": vrm.get("specVersion", ""),
+        "schemaContractVersion": vrm.get("schemaContractVersion"),
         "frontAxisNormalized": vrm.get("frontAxisNormalized"),
         "features": {
             "meshes": len(meshes),
@@ -156,6 +157,8 @@ def render_text(report: dict[str, Any]) -> str:
         lines.append(
             f"  source : {comp.get('sourceFormat', '')} "
             f"{comp.get('sourceVersion', '')} (spec {comp.get('specVersion', '')})")
+        lines.append(
+            f"  contract: usdVrm schema v{comp.get('schemaContractVersion', '?')}")
         feats = comp.get("features", {})
         present = [k for k, v in feats.items() if v]
         lines.append(f"  features: {', '.join(present) if present else '(none)'}")

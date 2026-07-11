@@ -101,18 +101,22 @@ bundle with local texture files and relative USD asset paths.
 alone; raw metadata is fallback-only.* The schemas exist (shipped above); this phase
 **documents and freezes the contract** and **reconciles it with the design policy**.
 
-- [ ] `Vrm*API` **schema specification** doc + **versioning** policy.
-- [ ] Raw-extension ↔ typed-API **correspondence table**; schema-compatibility tests;
+- [x] `Vrm*API` **schema specification** doc + **versioning** policy
+      (`plugins/usdVrm/docs/SCHEMA_CONTRACT.md`; stages/report carry
+      `schemaContractVersion = 1`).
+- [x] Raw-extension ↔ typed-API **correspondence table**; schema-compatibility tests;
       public validator-rule docs.
-- [ ] **Reconcile two design-policy divergences** (decide: converge or document why
+- [x] **Reconcile two design-policy divergences** (decide: converge or document why
       not):
   - **Stage layout:** policy §4 places spring bones under `/Asset/physics/{SpringBones,
-    Colliders}`; the importer currently authors `/Asset/rig/SecondaryMotion/*`. Pick one.
+    Colliders}`; the importer authors `/Asset/rig/SecondaryMotion/*`. Contract v1
+    freezes the shipped `/Asset/rig/SecondaryMotion/*` layout.
   - **Humanoid representation:** policy §4.4 sketches `token[] vrm:humanBoneNames` +
-    a `vrm:humanBoneTargets` relationship; we ship per-bone `vrm:humanBones:<bone>`
-    token attributes on `VrmHumanoidAPI`. Decide the public contract before freezing.
+    a `vrm:humanBoneTargets` relationship; contract v1 freezes per-bone
+    `vrm:humanBones:<bone>` token attributes on `VrmHumanoidAPI`.
 - [ ] Optional schema gaps the policy notes: a `VrmColliderGroupAPI`, expression
-      texture-transform binds, human-bone axis / canonical-rest metadata.
+      texture-transform binds, human-bone axis / canonical-rest metadata. Contract v1
+      documents these as deferred, raw-preserved gaps.
 
 ### Phase D — MToon fidelity  (medium)
 *Goal: generic viewers get a fallback; capable renderers reproduce MToon's main

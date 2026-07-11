@@ -62,14 +62,29 @@ Most severe to least. Tools fail (non-zero exit) on any `ERROR` or `FATAL`.
 | VRM220 | INFO | validate | Mesh has no material binding |
 | VRM221 | ERROR | validate | Material binding target does not exist |
 | VRM222 | ERROR | validate | Texture asset does not resolve |
-| VRM230 | WARNING | validate | Humanoid prim does not apply VrmHumanoidAPI |
+| VRM230 | ERROR | validate | Humanoid prim does not apply VrmHumanoidAPI |
 | VRM231 | ERROR | validate | Humanoid vrm:skeleton relationship is missing/broken |
 | VRM232 | ERROR | validate | Humanoid bone value is not a joint on the skeleton |
 | VRM240 | ERROR | validate | Expression morph-target relationship is broken |
 | VRM241 | ERROR | validate | Expression material-color target does not exist |
+| VRM242 | ERROR | validate | Expression prim does not apply VrmExpressionAPI |
+| VRM243 | ERROR | validate | Expression morph-target arrays are not parallel |
+| VRM244 | ERROR | validate | Expression material-color arrays are not parallel |
+| VRM245 | ERROR | validate | LookAt prim does not apply VrmLookAtAPI |
+| VRM246 | ERROR | validate | LookAt skeleton relationship is missing/broken |
+| VRM247 | ERROR | validate | LookAt eye joint value is not a skeleton joint |
 | VRM250 | ERROR | validate | Spring-bone joint path is not on the skeleton |
 | VRM251 | ERROR | validate | Spring-bone collider-group target does not exist |
+| VRM252 | ERROR | validate | Spring-bone prim does not apply VrmSpringBoneAPI |
+| VRM253 | ERROR | validate | Spring-bone parameter arrays are not parallel |
+| VRM254 | ERROR | validate | Collider prim does not apply VrmColliderAPI |
+| VRM255 | ERROR | validate | Collider shape token is invalid |
 | VRM260 | INFO | validate | Lossless raw VRM extension block is absent |
+| VRM262 | ERROR | validate | Constraint prim does not apply VrmConstraintAPI |
+| VRM263 | ERROR | validate | Constraint type token is invalid |
+| VRM264 | ERROR | validate | Constraint joint value is not a skeleton joint |
+| VRM270 | WARNING | validate | Schema contract version is absent |
+| VRM271 | ERROR | validate | Schema contract version is unsupported |
 
 ## Tools
 
