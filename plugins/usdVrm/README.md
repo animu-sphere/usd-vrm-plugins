@@ -79,16 +79,16 @@ tests/                          python smoke tests + generated fixtures (minimal
   resolvable `vrm:skeleton` relationship to the Skeleton prim plus a
   `vrm:humanBones:<bone>` **token attribute** per bone holding the joint path
   (joints are `Skeleton.joints` tokens, not prims, so a relationship can't target
-  them directly). Never a duplicated joint hierarchy. As of **Phase 4** these are
-  formalized by a typed, compiled **`VrmHumanoidAPI`** applied schema (see
+  them directly). Never a duplicated joint hierarchy. These are formalized by a
+  typed, compiled **`VrmHumanoidAPI`** applied schema (see
   `schema/schema.usda`), co-located in this same plugin: standard VRM bones are
   schema builtins, non-standard / VRM-0.x-only bones fall back to custom attributes
   (still lossless).
-* **Typed schemas across the rig (Phase 4):** every control prim carries a compiled
+* **Typed schemas across the rig:** every control prim carries a compiled
   applied schema — `VrmExpressionAPI` (Expressions), `VrmLookAtAPI` (LookAt),
   `VrmSpringBoneAPI` + `VrmColliderAPI` (SecondaryMotion), and `VrmConstraintAPI`
   (Constraints). All are generated from `schema/schema.usda` and registered by the one
-  plugin `plugInfo`. The public Phase C contract, versioning policy, raw-to-typed
+  plugin `plugInfo`. The public **schema contract v1**, versioning policy, raw-to-typed
   correspondence table, and validator rules are in `docs/SCHEMA_CONTRACT.md`.
 * **Lossless preservation:** VRM `meta`/`specVersion`, the full raw
   VRM/VRMC_vrm extension block (`vrm:rawExtension`), and provenance
@@ -96,7 +96,12 @@ tests/                          python smoke tests + generated fixtures (minimal
 
 ## Status
 
-Phase 1 + most of Phase 2. Implemented: GLB read, version detection, meshes
+The importer build-out is complete; the forward work is doc/impl sync, a `v0.1.0`
+release, Windows runtime CI, and the OpenExec runtime layer. See the project
+[design & development policy](../../docs/DESIGN_POLICY.md) and the per-phase
+[roadmap](../../docs/ROADMAP.md) (**P0–P6**) for live status.
+
+Implemented: GLB read, version detection, meshes
 (points/normals/UV/indices), `UsdPreviewSurface` materials with **textures**
 (base color, metallic-roughness, normal, emissive, occlusion; wrap modes,
 `KHR_texture_transform`), **MToon metadata** (`vrm:shaderModel` + `vrm:mtoon:raw`),
@@ -109,8 +114,11 @@ animation** (`UsdSkelAnimation` joint TRS, bound + stage time range),
 data only — no simulation), VRM meta + raw-extension preservation, graceful
 warnings on unsupported data.
 
-Not yet (later phases): node constraints, morph-weight animation, full MToon
-shading (only approximated via UsdPreviewSurface + metadata today), KTX2/WebP
+VRM constraints, LookAt, and SpringBone are authored as typed schema **data** only —
+their **evaluation/simulation** is a separate runtime layer (`execVrm`, roadmap P4),
+never run by this file-format plugin. Not yet: morph-weight (blend-shape) animation
+(only joint TRS clips are authored today), full MToon **shading** (roadmap P5; only
+approximated via `UsdPreviewSurface` + `vrm:mtoon:raw` metadata today), and KTX2/WebP
 image decode.
 
 ### Textures

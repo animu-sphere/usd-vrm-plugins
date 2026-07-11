@@ -46,8 +46,8 @@ The v1 contract keeps all VRM control semantics under `/Asset/rig`:
 | Spring-bone colliders | `/Asset/rig/SecondaryMotion/Colliders/<group>/Collider_<n>` |
 | Constraints | `/Asset/rig/Constraints/<name>` |
 
-Phase C resolves the design-policy divergence in favor of the shipped
-`/Asset/rig/SecondaryMotion/*` layout, not `/Asset/physics/*`. SpringBone data in
+The v1 contract freezes the shipped `/Asset/rig/SecondaryMotion/*` layout; an
+earlier design draft had sketched `/Asset/physics/*` instead. SpringBone data in
 usdVrm is control metadata, not a physics simulation graph, and these paths are
 already covered by fixtures, reports, and downstream-facing docs. A future
 physics-oriented adapter may publish `/Asset/physics/*` as an additive view, but
@@ -62,8 +62,8 @@ The v1 contract uses one token attribute per human bone:
 | `rel vrm:skeleton` | The `UsdSkelSkeleton` whose `joints` tokens are referenced. |
 | `uniform token vrm:humanBones:<bone>` | A joint path token from `Skeleton.joints`. |
 
-This resolves the design-policy sketch of `token[] vrm:humanBoneNames` plus
-`rel vrm:humanBoneTargets` in favor of the shipped per-bone attributes.
+This freezes the shipped per-bone attributes; an earlier design draft had sketched
+`token[] vrm:humanBoneNames` plus `rel vrm:humanBoneTargets` instead.
 `UsdSkel` joints are tokens inside `Skeleton.joints`, not prims, so a USD
 relationship cannot directly target an individual joint. Standard VRM bones are
 schema builtins; non-standard or VRM-0.x-only names remain custom

@@ -33,9 +33,16 @@ absorbed into a canonical model before any USD is authored — into:
 ```
 
 See [plugins/usdVrm/README.md](plugins/usdVrm/README.md) for plugin specifics and
-the design rationale, and the original implementation plan for the full Phase
-roadmap. Phase 1 (geometry, materials, skeleton + skinning, humanoid mapping,
-VRM provenance) is implemented and verified against real VRM 1.0 avatars.
+the design rationale. The importer build-out (geometry, materials, skeleton +
+skinning, humanoid mapping, animation, front-direction bake, and typed `Vrm*API`
+schemas across the whole rig) is implemented and verified against real VRM 1.0
+avatars, plus reliability tooling: a standalone stage validator, a coded diagnostic
+taxonomy, a compatibility report, and portable texture packaging.
+
+The forward direction — **doc/impl sync, a `v0.1.0` release, Windows runtime CI, and
+a separate OpenExec runtime layer** — is set by the project
+[design & development policy](docs/DESIGN_POLICY.md) and tracked, with live per-phase
+status (**P0–P6**), in the [roadmap](docs/ROADMAP.md).
 
 ## Build & test
 
