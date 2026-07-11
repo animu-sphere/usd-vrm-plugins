@@ -72,7 +72,7 @@ def check_open(pkg_root: str) -> list[str]:
     opened: list[str] = []
     candidates = [
         f"{pkg_root}/tests/fixtures/textures.vrm",
-        f"{pkg_root}/tests/corpus/seed-san/Seed-san.vrm",
+        f"{pkg_root}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm",
     ]
     for path in candidates:
         if not os.path.exists(path):

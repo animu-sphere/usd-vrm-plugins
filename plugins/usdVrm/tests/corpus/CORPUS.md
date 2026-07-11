@@ -1,10 +1,24 @@
 # Real-world VRM compatibility corpus
 
 Redistributable, real-world `.vrm` avatars used to prove `usdVrm` against assets
-that synthetic fixtures don't exercise (ROADMAP Phase A). This file is the
-**selection policy + provenance manifest**; every asset here is licensed
-independently of `usdVrm` (which is Apache-2.0) and is used **read-only as a test
-fixture**.
+that synthetic fixtures don't exercise. This file is the **selection policy**;
+[`manifest.json`](manifest.json) is the machine-readable provenance data and
+[`README.md`](README.md) is the operator's guide (verify / fetch / run / add).
+Every asset here is licensed independently of `usdVrm` (which is Apache-2.0) and
+is used **read-only as a test fixture**.
+
+## Directory layout
+
+```
+spec-samples/<ver>/<name>/   vendored vrm-c spec samples (license-clear), + LICENSE.md
+vroid/{vrm0,vrm1}/           VRoid-produced models — fetched by pinned SHA-256, git-ignored
+conformance/vrm1/<feature>/  single-feature spec models (per subsystem)
+generated/{minimal,malformed,edge-cases}/  synthetic, repo-produced
+licenses/                    index of the co-located per-asset LICENSE.md files
+```
+
+Vendored assets (committed) live only under `spec-samples/`; third-party fetched
+models live under `vroid/` and are never committed.
 
 ## Selection policy
 
@@ -36,8 +50,8 @@ fixture**.
 
 | asset | dir | VRM | author | license | redistribution | modification | credit |
 |---|---|---|---|---|---|---|---|
-| Seed-san | `seed-san/` | 1.0 | VirtualCast, Inc. | VRM PL 1.0 | `allowRedistribution: true` | `allowModificationRedistribution` | **required** |
-| VRM1 Constraint Twist | `vrm1-constraint-twist/` | 1.0 | pixiv Inc. (2022) | VRM PL 1.0 | `allowRedistribution: true` | `allowModificationRedistribution` | unnecessary |
+| Seed-san | `spec-samples/vrm1/seed-san/` | 1.0 | VirtualCast, Inc. | VRM PL 1.0 | `allowRedistribution: true` | `allowModificationRedistribution` | **required** |
+| VRM1 Constraint Twist | `spec-samples/vrm1/constraint-twist/` | 1.0 | pixiv Inc. (2022) | VRM PL 1.0 | `allowRedistribution: true` | `allowModificationRedistribution` | unnecessary |
 
 Flags were read directly from each file's `VRMC_vrm.meta` (see the per-asset
 `LICENSE.md` for the SHA-256 and the full flag set).

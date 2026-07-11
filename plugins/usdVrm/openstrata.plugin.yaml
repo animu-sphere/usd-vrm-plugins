@@ -45,9 +45,10 @@ tests:
     - tests/fixtures/shared_accessor.vrm
     - tests/fixtures/unordered_skel.vrm
     - tests/fixtures/vrm0_frontbake.vrm
-    # Redistributable real-world corpus assets (see tests/corpus/CORPUS.md).
-    - tests/corpus/seed-san/Seed-san.vrm
-    - tests/corpus/vrm1-constraint-twist/VRM1_Constraint_Twist_Sample.vrm
+    # Redistributable real-world corpus assets (see tests/corpus/CORPUS.md +
+    # tests/corpus/manifest.json). Vendored VRM 1.0 spec samples.
+    - tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm
+    - tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm
   roundtrip:
     - tests/fixtures/minimal.vrm
   negative:
