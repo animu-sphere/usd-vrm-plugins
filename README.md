@@ -56,6 +56,13 @@ a separate OpenExec runtime layer** — is set by the project
 [design & development policy](docs/DESIGN_POLICY.md) and tracked, with live per-phase
 status (**P0–P6**), in the [roadmap](docs/ROADMAP.md).
 
+## Install
+
+Binary bundles (per-target `tar.zst` + SHA-256 checksums + split debug
+symbols) ship with each GitHub release; see
+[docs/INSTALL.md](docs/INSTALL.md) for release-artifact, OpenStrata, and
+from-source installation, verification, and troubleshooting.
+
 ## Build & test
 
 ### With OpenStrata (`ost`)
@@ -89,10 +96,27 @@ add `plugins/usdVrm/plugin/resources/usdVrm` to `PXR_PLUGINPATH_NAME` and the
 
 ### CI
 
-The source CI workflow in `.github/workflows/ost-source-ci.yml` expects a
-self-hosted Windows runner with `ost` on `PATH` and a validated `cy2026` / `usd`
-runtime in the local OpenStrata store. It builds `plugins/usdVrm` from source and
-runs `ost plugin test --up-to 5`.
+CI is generated from the support matrix in `openstrata.ci.yaml`
+(`ost ci generate github`). The PR lane
+(`.github/workflows/ost-source-ci.yml`) builds from source on hosted
+Windows / macOS arm64 / Linux runners against digest-pinned cy2026 runtimes
+and runs `ost plugin test --up-to 5`; a weekly scheduled lane
+(`ost-support-matrix.yml`) re-validates pinned runtime × plugin artifact
+cells on a self-hosted real runtime. The hand-authored release workflow
+(`release.yml`) is described below.
+
+### Releasing
+
+Pushing a tag `vX.Y.Z` (matching the repo `VERSION` file, with that
+version's `CHANGELOG.md` section finalized) runs
+`.github/workflows/release.yml`: it builds on all three OS cells, proves the
+*packaged* artifact (packaged-artifact verification, clean-install smoke,
+digest-reproducible packaging), and assembles a **draft** GitHub release —
+per-target lean + debug bundles, a source archive, `SHA256SUMS`, and notes
+rendered from `CHANGELOG.md` via `docs/RELEASE_NOTES_TEMPLATE.md`
+(`scripts/make_release_notes.py`). Publishing the draft is a human decision.
+Run the workflow manually (`workflow_dispatch`) for a dry run that creates
+no release.
 
 ### Clean-install smoke
 

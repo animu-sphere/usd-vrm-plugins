@@ -1,0 +1,286 @@
+# Release workflow (hand-authored). The ost-*.yml workflows are generated from
+# openstrata.ci.yaml; this one is not — but its runtime/bootstrap pins MIRROR
+# openstrata.ci.yaml, so update both together.
+#
+# Pushing a tag `vX.Y.Z` (which must equal the repo VERSION file and have a
+# finalized CHANGELOG section) builds the plugin on the same three OS cells and
+# digest-pinned runtimes as the PR lane, proves the *packaged* artifact
+# (packaged-artifact verification + clean-install smoke + digest
+# reproducibility), then assembles a DRAFT GitHub release: per-target lean +
+# debug bundles, a source archive, SHA256SUMS, and notes rendered from
+# CHANGELOG.md via docs/RELEASE_NOTES_TEMPLATE.md. Publishing the draft is a
+# human decision.
+#
+# `workflow_dispatch` is a dry run: the same build/verify/package lanes, with
+# everything uploaded as workflow artifacts and no release object created.
+#
+# Fork-PR safety: runs only on tag push / manual dispatch, never on
+# pull_request; the token stays read-only except for the release job.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: preflight (tag = VERSION, changelog finalized)
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_release: ${{ steps.version.outputs.is_release }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Resolve the release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          file_version="$(tr -d '[:space:]' < VERSION)"
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            tag_version="${GITHUB_REF_NAME#v}"
+            if [ "$tag_version" != "$file_version" ]; then
+              echo "::error title=release preflight::tag ${GITHUB_REF_NAME} does not match VERSION file ($file_version)" ; exit 1
+            fi
+            echo "version=$tag_version" >> "$GITHUB_OUTPUT"
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$file_version" >> "$GITHUB_OUTPUT"
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Check the changelog section renders (finalized on a real release)
+        shell: bash
+        run: |
+          set -euo pipefail
+          extra=""
+          if [ "${{ steps.version.outputs.is_release }}" != "true" ]; then
+            extra="--allow-unreleased"
+          fi
+          python3 scripts/make_release_notes.py --version "${{ steps.version.outputs.version }}" $extra > /dev/null
+
+  build:
+    name: ${{ matrix.name }}
+    needs: preflight
+    runs-on: ${{ matrix.runs_on }}
+    env:
+      OST_HOME: ${{ format('{0}/.ost-ci-home', github.workspace) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: release-windows
+            cache_cell: usdvrm-pr-windows
+            runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e"
+            platform: cy2026
+            profile: usd
+            runs_on: ["windows-2022"]
+            host_python: ""
+          - name: release-macos-arm64
+            cache_cell: usdvrm-pr-macos-arm64
+            runtime_artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876"
+            platform: cy2026
+            profile: usd
+            runs_on: ["macos-15"]
+            host_python: "3.13"
+          - name: release-linux
+            cache_cell: usdvrm-pr-linux
+            runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d202c6d7534afa4960850419b58d3b06631d85031f93243cd5de6c4cf511a734"
+            platform: cy2026
+            profile: usd
+            runs_on: ["ubuntu-24.04"]
+            host_python: "3.13"
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Bootstrap ost 0.13.0 (pinned release asset, checksum-verified)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .ost-ci
+          case "${RUNNER_OS}-${RUNNER_ARCH}" in
+            Linux-X64)   triple=x86_64-unknown-linux-musl ; ext=tar.xz ;;
+            macOS-ARM64) triple=aarch64-apple-darwin ; ext=tar.xz ;;
+            macOS-X64)   triple=x86_64-apple-darwin ; ext=tar.xz ;;
+            Windows-X64) triple=x86_64-pc-windows-msvc ; ext=zip ;;
+            *) echo "::error title=ost bootstrap::no ost release asset for ${RUNNER_OS}-${RUNNER_ARCH}" ; exit 1 ;;
+          esac
+          asset="ost-cli-${triple}.${ext}"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.13.0"
+          curl -fsSLo "$asset" "$base/$asset"
+          curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
+          actual="$( (command -v sha256sum > /dev/null && sha256sum "$asset" || shasum -a 256 "$asset") | cut -d' ' -f1 )"
+          published="$(cut -d' ' -f1 "$asset.sha256")"
+          if [ "$actual" != "$published" ]; then
+            echo "::error title=ost bootstrap::$asset hashes to $actual but the release publishes $published" ; exit 1
+          fi
+          mkdir -p .ost-ci/bootstrap-bin
+          if [ "$ext" = "zip" ]; then
+            powershell -NoProfile -Command "Expand-Archive -LiteralPath '$asset' -DestinationPath '.ost-ci/bootstrap-bin' -Force"
+          else
+            tar -xf "$asset" -C .ost-ci/bootstrap-bin
+          fi
+          bin="$(find .ost-ci/bootstrap-bin -type f \( -name ost -o -name ost.exe \) | head -n 1)"
+          if [ -z "$bin" ]; then echo "::error title=ost bootstrap::no ost binary inside $asset" ; exit 1 ; fi
+          chmod +x "$bin" 2> /dev/null || true
+          echo "$(cd "$(dirname "$bin")" && pwd)" >> "$GITHUB_PATH"
+      - name: Check ost is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(ost --version)"
+          echo "$version"
+          if [ "$version" != "ost 0.13.0" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.13.0', got '$version'" ; exit 1
+          fi
+      - name: Restore the artifact registry cache (speed only, never correctness)
+        if: ${{ vars.OST_CI_DISABLE_CACHE != 'true' }}
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ost-ci-home/artifacts
+          key: ost-registry-0.13.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
+      - name: Pull the pinned runtime SDK from its remote reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ost artifact show "${{ matrix.runtime_artifact }}" --json > /dev/null 2>&1 \
+             && ost artifact verify "${{ matrix.runtime_artifact }}" --json > /dev/null; then
+            echo "pinned runtime already present and verified (cache hit) -- skipping the remote pull"
+          else
+            rm -rf "${OST_HOME}/artifacts"
+            ost artifact pull "${{ matrix.runtime_remote }}" --expect-artifact "${{ matrix.runtime_artifact }}" --require-kind runtime --json
+          fi
+      - name: Verify and materialize the pinned runtime SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          ost artifact verify ${{ matrix.runtime_artifact }}
+          ost runtime pull ${{ matrix.platform }} --profile ${{ matrix.profile }} --from-artifact ${{ matrix.runtime_artifact }} --force
+          ost runtime validate ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > /dev/null
+      - name: Set up host Python for schema tooling
+        if: ${{ matrix.host_python != '' }}
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: ${{ matrix.host_python }}
+      - name: Build the plugin from source
+        shell: bash
+        run: ost plugin build plugins/usdVrm --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+      - name: Run the verification pyramid against the build tree
+        shell: bash
+        run: ost plugin test plugins/usdVrm --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
+      - name: Package the plugin (lean bundle + split debug symbols)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .ost-ci
+          ost plugin package plugins/usdVrm --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json | tee .ost-ci/package.json
+      - name: Prove packaging is digest-reproducible
+        shell: bash
+        run: |
+          set -euo pipefail
+          first="$(jq -r .data.archive_digest .ost-ci/package.json)"
+          second="$(ost plugin package plugins/usdVrm --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json | jq -r .data.archive_digest)"
+          echo "first:  $first"
+          echo "second: $second"
+          if [ "$first" != "$second" ]; then
+            echo "::error title=release packaging::two packaging runs of the same build disagree ($first vs $second) -- release checksums would be unstable" ; exit 1
+          fi
+      - name: Verify the packaged artifact (discovery from the package, not the build tree)
+        shell: bash
+        run: ost plugin test plugins/usdVrm --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --from-package --json
+      - name: Run the clean-install smoke against the packaged artifact
+        shell: bash
+        run: python scripts/clean_install_smoke.py --skip-build
+      - name: Stage the release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ needs.preflight.outputs.version }}"
+          archive="$(jq -r .data.archive .ost-ci/package.json)"
+          if command -v cygpath > /dev/null; then archive="$(cygpath -u "$archive")"; fi
+          dist_dir="$(dirname "$archive")"
+          debug_name="$(jq -r '.data.debug.archive // empty' .ost-ci/package.json)"
+          target="$(jq -r .data.target .ost-ci/package.json)"
+          mkdir -p release-stage
+          cp "$archive" release-stage/
+          if [ -n "$debug_name" ]; then cp "$dist_dir/$debug_name" release-stage/; fi
+          cp "$dist_dir/manifest.json" "release-stage/usdVrm-${version}-${target}.manifest.json"
+          ls -l release-stage/
+      - name: Upload the staged artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-${{ matrix.name }}
+          path: release-stage/
+          if-no-files-found: error
+
+  release:
+    name: assemble release (draft)
+    needs: [preflight, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Download the per-target artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          pattern: release-*
+          path: dist-release
+          merge-multiple: true
+      - name: Add the source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ needs.preflight.outputs.version }}"
+          git archive --format=tar.gz --prefix="usd-vrm-plugins-${version}/" \
+            -o "dist-release/usd-vrm-plugins-${version}-src.tar.gz" HEAD
+      - name: Write SHA256SUMS over every release file
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist-release
+          rm -f SHA256SUMS
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+      - name: Render the release notes from the changelog
+        shell: bash
+        run: |
+          set -euo pipefail
+          extra=""
+          if [ "${{ needs.preflight.outputs.is_release }}" != "true" ]; then
+            extra="--allow-unreleased"
+          fi
+          python3 scripts/make_release_notes.py \
+            --version "${{ needs.preflight.outputs.version }}" \
+            --checksums dist-release/SHA256SUMS \
+            --out release-notes.md $extra
+          cat release-notes.md
+      - name: Create the draft GitHub release
+        if: ${{ needs.preflight.outputs.is_release == 'true' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="v${{ needs.preflight.outputs.version }}"
+          gh release create "$tag" \
+            --draft \
+            --title "usd-vrm-plugins $tag" \
+            --notes-file release-notes.md \
+            dist-release/*
+      - name: Upload the dry-run bundle (workflow_dispatch only)
+        if: ${{ needs.preflight.outputs.is_release != 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-dry-run
+          path: |
+            dist-release/
+            release-notes.md

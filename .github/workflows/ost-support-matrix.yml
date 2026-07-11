@@ -43,7 +43,7 @@ jobs:
             runs_on: ["self-hosted", "windows", "x64", "usd-26"]
             hosted: false
             runner_profile: usd-windows-real
-            plugin_artifact: sha256:1518387ae2cc51d3a0c1a9aee5f362c5cd8d5b2c6e7148523d23fd7b3fefa371
+            plugin_artifact: sha256:87ee36e45f4b62693f7fe060c2236de938bcc63997cd3007e07d090af2c58b8d
     steps:
       - name: Hosted runner billing notice
         if: ${{ matrix.hosted }}

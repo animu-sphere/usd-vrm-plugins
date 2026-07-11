@@ -23,10 +23,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import pathlib
 import sys
 from typing import Any
 
-from pxr import Ar, Tf, Usd, UsdGeom, UsdSkel
+from pxr import Ar, Plug, Tf, Usd, UsdGeom, UsdSkel
 
 import validate_vrm
 import vrm_diagnostics as diag
@@ -102,6 +103,25 @@ def _compatibility(stage: Usd.Stage, dp: Usd.Prim) -> dict[str, Any]:
     }
 
 
+def _build_info() -> dict[str, Any] | None:
+    """The build-metadata stamp of the discovered usdVrm plugin, if it has one.
+
+    CMake configures ``buildInfo.json`` next to ``plugInfo.json`` (commit /
+    toolchain / OpenUSD / build type), so the report can state exactly which
+    binary produced its findings. ``None`` when the discovered plugin predates
+    the stamp or the file is unreadable.
+    """
+
+    plugin = Plug.Registry().GetPluginWithName("UsdVrmFileFormat")
+    if not plugin:
+        return None
+    stamp = pathlib.Path(plugin.resourcePath) / "buildInfo.json"
+    try:
+        return json.loads(stamp.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
 def build_report(path: str) -> dict[str, Any]:
     """Open `path` and produce the full compatibility report dict."""
 
@@ -119,6 +139,7 @@ def build_report(path: str) -> dict[str, Any]:
             "diagnostics": [d.to_dict() for d in diagnostics],
             "assetInventory": {"assets": [], "resolved": 0, "missing": 0},
             "compatibility": {},
+            "build": _build_info(),
         }
 
     dp = stage.GetDefaultPrim()
@@ -142,6 +163,7 @@ def build_report(path: str) -> dict[str, Any]:
             "missing": missing,
         },
         "compatibility": _compatibility(stage, dp),
+        "build": _build_info(),
     }
 
 
@@ -162,6 +184,14 @@ def render_text(report: dict[str, Any]) -> str:
         feats = comp.get("features", {})
         present = [k for k, v in feats.items() if v]
         lines.append(f"  features: {', '.join(present) if present else '(none)'}")
+    build = report.get("build")
+    if build:
+        lines.append(
+            f"  build  : usdVrm {build.get('pluginVersion', '?')} "
+            f"@ {str(build.get('gitCommit', '?'))[:12]} | "
+            f"OpenUSD {build.get('openusdVersion', '?')} | "
+            f"{build.get('compiler', '?')} {build.get('buildType', '')} "
+            f"on {build.get('buildOs', '?')}")
     inv = report["assetInventory"]
     lines.append(
         f"  assets : {inv['resolved']} resolved, {inv['missing']} unresolved")

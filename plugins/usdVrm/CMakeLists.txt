@@ -144,6 +144,59 @@ configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/plugin/resources/usdVrm/plugInfo.json"
     @ONLY)
 
+# Release-artifact build metadata (roadmap P1): stamp what produced this binary
+# into the bundle resources, so a shipped package can answer "which commit /
+# toolchain / OpenUSD built you" without the build tree. Retrieved by
+# tools/vrm_report.py ("build" section) or read directly from the package.
+# Deliberately carries no timestamp: for an unchanged build the stamp must not
+# break `ost plugin package` digest reproducibility.
+set(_vrm_git_commit "unknown")
+find_package(Git QUIET)
+if(GIT_FOUND)
+    execute_process(
+        COMMAND "${GIT_EXECUTABLE}" -C "${CMAKE_CURRENT_SOURCE_DIR}" rev-parse HEAD
+        OUTPUT_VARIABLE _vrm_git_head
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+        RESULT_VARIABLE _vrm_git_rc)
+    if(_vrm_git_rc EQUAL 0)
+        set(_vrm_git_commit "${_vrm_git_head}")
+    endif()
+endif()
+
+# Single source: the contract version the authorer stamps on every stage.
+set(_vrm_schema_contract_version 0)
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/src/usd/UsdVrmAuthorer.cpp"
+     _vrm_contract_line REGEX "_kSchemaContractVersion = [0-9]+")
+if(_vrm_contract_line)
+    string(REGEX MATCH "[0-9]+" _vrm_schema_contract_version "${_vrm_contract_line}")
+endif()
+
+if(_isMultiConfig)
+    set(_vrm_build_type "multi-config")
+else()
+    set(_vrm_build_type "${CMAKE_BUILD_TYPE}")
+endif()
+
+# pxrConfig.cmake publishes PXR_MAJOR/MINOR/PATCH_VERSION plus the numeric
+# PXR_VERSION (e.g. 2605 for OpenUSD 26.05).
+if(DEFINED PXR_MAJOR_VERSION)
+    set(_vrm_openusd_version
+        "${PXR_MAJOR_VERSION}.${PXR_MINOR_VERSION}.${PXR_PATCH_VERSION}")
+else()
+    set(_vrm_openusd_version "unknown")
+endif()
+if(DEFINED PXR_VERSION)
+    set(_vrm_pxr_version "${PXR_VERSION}")
+else()
+    set(_vrm_pxr_version "unknown")
+endif()
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/plugin/resources/usdVrm/buildInfo.json.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/plugin/resources/usdVrm/buildInfo.json"
+    @ONLY)
+
 if(USDVRM_BUILD_TESTS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
     enable_testing()
     add_subdirectory(tests)

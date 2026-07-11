@@ -14,6 +14,24 @@ Current schema contract version: **1**.
 ## [Unreleased]
 
 ### Added
+- **Release workflow** ([`.github/workflows/release.yml`](.github/workflows/release.yml)) —
+  pushing a tag `vX.Y.Z` (must match `VERSION`, with this changelog's section
+  finalized) builds Windows / macOS arm64 / Linux bundles against the digest-pinned
+  cy2026 runtimes, gates on **digest-reproducible packaging**, packaged-artifact
+  verification (`ost plugin test --from-package`) and the clean-install smoke on
+  all three OS, then assembles a **draft** GitHub release: per-target lean +
+  debug-symbol bundles, a source archive, `SHA256SUMS`, and notes rendered from
+  this changelog via [`docs/RELEASE_NOTES_TEMPLATE.md`](docs/RELEASE_NOTES_TEMPLATE.md)
+  (`scripts/make_release_notes.py`). `workflow_dispatch` runs the same lanes as a
+  dry run without creating a release.
+- **Build-metadata stamp** — CMake configures `buildInfo.json` next to
+  `plugInfo.json` (git commit, build OS, compiler, build type, OpenUSD version,
+  plugin version, schema contract version), shipped inside every packaged bundle;
+  `tools/vrm_report.py` surfaces it as the report's `build` section. The stamp
+  carries no timestamp so packaging stays digest-reproducible.
+- **Install guide** ([`docs/INSTALL.md`](docs/INSTALL.md)) — release-artifact,
+  OpenStrata, and from-source installation with verification and troubleshooting.
+
 - Release contract: repo-root `VERSION` single source of truth (consumed by
   CMake), this `CHANGELOG.md`, [`docs/CAPABILITY_MATRIX.md`](docs/CAPABILITY_MATRIX.md),
   and [`docs/SUPPORTED_CONFIGURATIONS.md`](docs/SUPPORTED_CONFIGURATIONS.md).
@@ -33,6 +51,12 @@ Current schema contract version: **1**.
   opens a textured fixture + a corpus avatar, validates them, and resolves an
   embedded texture straight from the `.vrm` container — proving no build-tree
   dependency.
+
+### Changed
+- CI bootstrap pinned to **ost 0.13.0** (was 0.12.0). Packages are now **lean by
+  default** (debug symbols split into a sibling `*-debug.tar.zst`) and
+  **digest-reproducible** for an unchanged build; the scheduled-lane plugin
+  artifact pin was refreshed to the reproducible lean package.
 
 ## [0.1.0] — unreleased
 

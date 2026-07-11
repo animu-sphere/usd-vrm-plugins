@@ -28,12 +28,13 @@
 #            linux-x86_64-glibc238-py313 (no longer a fabricated glibc228 label).
 #            OST artifact sha256:f6a2047c... / OCI sha256:d202c6d7...
 #            Published publicly to GHCR.
-#   plugin:  ost plugin publish plugins/usdVrm  (usdVrm 0.1.0)
+#   plugin:  ost plugin publish plugins/usdVrm  (usdVrm 0.1.0, ost 0.13.0 lean
+#            package — reproducible digest, debug symbols split into *-debug)
 schema: 1
 
 bootstrap:
   ost:
-    version: "0.12.0"
+    version: "0.13.0"
     repository: animu-sphere/open-strata
 
 runners:
@@ -99,7 +100,7 @@ cells:
     lane: scheduled
     runner: usd-windows-real
     runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
-    plugin_artifact: sha256:1518387ae2cc51d3a0c1a9aee5f362c5cd8d5b2c6e7148523d23fd7b3fefa371
+    plugin_artifact: sha256:87ee36e45f4b62693f7fe060c2236de938bcc63997cd3007e07d090af2c58b8d
     platform: cy2026
     profile: usd
     up_to: 5

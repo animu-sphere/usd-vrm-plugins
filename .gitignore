@@ -22,6 +22,8 @@ strata.lock
 !/docs/ROADMAP.md
 !/docs/CAPABILITY_MATRIX.md
 !/docs/SUPPORTED_CONFIGURATIONS.md
+!/docs/RELEASE_NOTES_TEMPLATE.md
+!/docs/INSTALL.md
 
 # Local samples and experiments.
 /scratch/
