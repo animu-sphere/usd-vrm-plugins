@@ -94,6 +94,17 @@ add_test(
 set_tests_properties(usdvrm_corpus_smoke PROPERTIES
     ENVIRONMENT_MODIFICATION "${_smoke_env}")
 
+# Negative corpus: deliberately malformed avatars (corpus/generated/malformed/)
+# that pin the importer's diagnostic contract — each provokes exactly one VRMxxx
+# code. Manifest-driven by corpus/generated/negative-manifest.json. Same env.
+add_test(
+    NAME usdvrm_negative
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/test_usdvrm_negative.py")
+
+set_tests_properties(usdvrm_negative PROPERTIES
+    ENVIRONMENT_MODIFICATION "${_smoke_env}")
+
 # Stage validator + diagnostic taxonomy + compatibility report (tools/). Drives
 # the freshly built importer, then runs the pure-Python validator/report tools
 # over the imported stages. Same runtime + plugin env as the smoke test.

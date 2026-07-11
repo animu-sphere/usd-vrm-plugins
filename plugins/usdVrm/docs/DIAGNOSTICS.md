@@ -36,18 +36,23 @@ Most severe to least. Tools fail (non-zero exit) on any `ERROR` or `FATAL`.
 | --- | --- | --- | --- |
 | VRM001 | WARNING | import | No VRM extension; imported as plain glTF |
 | VRM002 | ERROR | import | VRM extension JSON could not be parsed |
+| VRM003 | FATAL | import | Container could not be read; stage fails to open |
 | VRM101 | WARNING | import | Embedded image format unsupported; texture skipped |
 | VRM102 | WARNING | import | Data-URI image unsupported; texture skipped |
 | VRM103 | WARNING | import | Texture uses a UV set other than TEXCOORD_0 |
 | VRM110 | WARNING | import | Conflicting inverse bind matrices across skins |
+| VRM111 | WARNING | import | Skin joint index out of range; clamped to root |
 | VRM120 | WARNING | import | Primitive is not a triangle list; skipped |
 | VRM121 | WARNING | import | Primitive has no POSITION; skipped |
 | VRM140 | WARNING | import | Humanoid bone could not be mapped to a joint |
+| VRM141 | WARNING | import | Duplicate humanoid bone; first mapping kept |
 | VRM150 | INFO | import | VRM 0.x materialValues expression preserved raw only |
+| VRM151 | WARNING | import | Expression morph target index out of range; bind skipped |
 | VRM160 | WARNING | import | CUBICSPLINE animation approximated as linear |
 | VRM170 | WARNING | import | Node constraint has no valid source; skipped |
 | VRM180 | WARNING | import | Morph targets present but no skeleton; blend shapes skipped |
 | VRM181 | WARNING | import | Humanoid bones present but no skeleton imported |
+| VRM190 | WARNING | import | Spring collider-group index out of range; dropped |
 | VRM200 | FATAL | validate | Stage has no default prim |
 | VRM201 | ERROR | validate | Default prim is not /Asset |
 | VRM202 | WARNING | validate | /Asset kind is not 'component' |

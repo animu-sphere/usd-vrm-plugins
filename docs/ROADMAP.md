@@ -233,8 +233,15 @@ only), DCC-specific UI.
   Vendored: **Seed-san** (VirtualCast) and **VRM1 Constraint Twist** (pixiv), both VRM
   1.0 with `allowRedistribution: true`. Declared fetch/opt-in candidates: VRoid
   (Vita, Victoria_Rubin, Sendagaya_Shino, AvatarSample_A/B) + Alicia — pending
-  per-model license verification. Remaining axes: VRM 0.x, VRoid, animation clips,
-  KTX2, multi-skin.
+  per-model license verification. **Negative corpus landed** (P3 / implementation
+  plan PR6): `generated/malformed/` holds nine deliberately-broken, license-clean
+  `.vrm` (authored by `tools/generate_negative.py`), each pinning one importer
+  diagnostic via `negative-manifest.json` + `test_usdvrm_negative.py`. Added coded
+  diagnostics `VRM003` (container unreadable, FATAL), `VRM111` (skin joint index
+  out of range), `VRM141` (duplicate humanoid bone), `VRM151` (expression morph
+  index out of range), `VRM190` (spring collider-group index out of range) so the
+  importer's prior silent sanitizations now emit a stable code. Remaining axes: VRM
+  0.x, VRoid, animation clips, KTX2, multi-skin.
 - **`ost` dogfooding** continues in `docs/report/ost` (see the numbered reports; `/docs`
   is git-ignored except this roadmap, so those reports stay local). Carried `ost` asks
   live in the latest report's forward-note.
