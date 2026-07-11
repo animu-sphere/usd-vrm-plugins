@@ -88,7 +88,8 @@ tests/                          python smoke tests + generated fixtures (minimal
   applied schema — `VrmExpressionAPI` (Expressions), `VrmLookAtAPI` (LookAt),
   `VrmSpringBoneAPI` + `VrmColliderAPI` (SecondaryMotion), and `VrmConstraintAPI`
   (Constraints). All are generated from `schema/schema.usda` and registered by the one
-  plugin `plugInfo`.
+  plugin `plugInfo`. The public Phase C contract, versioning policy, raw-to-typed
+  correspondence table, and validator rules are in `docs/SCHEMA_CONTRACT.md`.
 * **Lossless preservation:** VRM `meta`/`specVersion`, the full raw
   VRM/VRMC_vrm extension block (`vrm:rawExtension`), and provenance
   (`sourceNodeIndex`, …) are kept in `customData` under a `vrm` namespace.

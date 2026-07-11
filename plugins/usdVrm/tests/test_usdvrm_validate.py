@@ -81,6 +81,51 @@ def check_valid_fixtures():
         assert not errors, f"{name}: unexpected errors: {[e.to_dict() for e in errors]}"
 
 
+def check_schema_contract_version_and_apis():
+    """Imported stages carry schema contract v1 and the registered Vrm* APIs."""
+    stage = _open("minimal.vrm")
+    vrm = stage.GetDefaultPrim().GetCustomData().get("vrm", {})
+    assert vrm.get("schemaContractVersion") == validate_vrm.SCHEMA_CONTRACT_VERSION
+
+    for api in ("VrmHumanoidAPI", "VrmExpressionAPI", "VrmLookAtAPI",
+                "VrmSpringBoneAPI", "VrmColliderAPI", "VrmConstraintAPI"):
+        assert Usd.SchemaRegistry().IsAppliedAPISchema(api), api
+
+    typed_prims = {
+        "expressions.vrm": {
+            "/Asset/rig/Expressions/happy": "VrmExpressionAPI",
+        },
+        "lookat.vrm": {
+            "/Asset/rig/LookAt": "VrmLookAtAPI",
+        },
+        "springbone.vrm": {
+            "/Asset/rig/SecondaryMotion/SpringBones/Hair": "VrmSpringBoneAPI",
+            "/Asset/rig/SecondaryMotion/Colliders/Head/Collider_0": "VrmColliderAPI",
+        },
+        "constraints.vrm": {
+            "/Asset/rig/Constraints/head_roll": "VrmConstraintAPI",
+        },
+    }
+    for fixture, paths in typed_prims.items():
+        s = _open(fixture)
+        for path, api in paths.items():
+            prim = s.GetPrimAtPath(path)
+            assert prim.IsValid(), path
+            assert api in prim.GetAppliedSchemas(), (fixture, path, prim.GetAppliedSchemas())
+
+    report = vrm_report.build_report(str(FIXTURES / "minimal.vrm"))
+    assert report["compatibility"]["schemaContractVersion"] == \
+        validate_vrm.SCHEMA_CONTRACT_VERSION
+
+
+def check_unsupported_schema_contract_version():
+    """A future/unknown schema contract version is flagged VRM271."""
+    stage = _open("minimal.vrm")
+    stage.GetDefaultPrim().SetCustomDataByKey("vrm:schemaContractVersion", 99)
+    codes = _codes(validate_vrm.validate_stage(stage))
+    assert "VRM271" in codes, codes
+
+
 def check_out_of_range_joint_index():
     """A JOINTS_0 index past the skeleton's joint count is flagged VRM212."""
     stage = _open("minimal.vrm")
@@ -132,6 +177,32 @@ def check_springbone_end_node_vs_broken_path():
     attr.Set(Vt.TokenArray(joints + ["bogus/missing/joint"]))
     assert "VRM250" in _codes(validate_vrm.validate_stage(stage)), \
         "broken joint path should be flagged VRM250"
+
+
+def check_schema_parallel_array_rules():
+    """Typed-schema parallel arrays must stay aligned with their relationships."""
+    stage = _open("expressions.vrm")
+    happy = stage.GetPrimAtPath("/Asset/rig/Expressions/happy")
+    happy.GetAttribute("vrm:morphTargetWeights").Set(Vt.FloatArray([]))
+    assert "VRM243" in _codes(validate_vrm.validate_stage(stage))
+
+    stage = _open("springbone.vrm")
+    hair = stage.GetPrimAtPath("/Asset/rig/SecondaryMotion/SpringBones/Hair")
+    hair.GetAttribute("vrm:stiffness").Set(Vt.FloatArray([1.0]))
+    assert "VRM253" in _codes(validate_vrm.validate_stage(stage))
+
+
+def check_schema_token_rules():
+    """LookAt/constraint token values are checked against the skeleton contract."""
+    stage = _open("lookat.vrm")
+    la = stage.GetPrimAtPath("/Asset/rig/LookAt")
+    la.GetAttribute("vrm:leftEye").Set("missing/joint")
+    assert "VRM247" in _codes(validate_vrm.validate_stage(stage))
+
+    stage = _open("constraints.vrm")
+    con = stage.GetPrimAtPath("/Asset/rig/Constraints/head_roll")
+    con.GetAttribute("vrm:type").Set("twist")
+    assert "VRM263" in _codes(validate_vrm.validate_stage(stage))
 
 
 def check_missing_default_prim():
@@ -210,9 +281,13 @@ def main() -> int:
         "usdVrm SdfFileFormat is not registered"
 
     for check in (check_taxonomy, check_valid_fixtures,
+                  check_schema_contract_version_and_apis,
+                  check_unsupported_schema_contract_version,
                   check_out_of_range_joint_index, check_broken_skeleton_target,
                   check_broken_humanoid_bone,
                   check_springbone_end_node_vs_broken_path,
+                  check_schema_parallel_array_rules,
+                  check_schema_token_rules,
                   check_missing_default_prim,
                   check_report_sections_and_coded_import_warnings,
                   check_report_valid_avatar,

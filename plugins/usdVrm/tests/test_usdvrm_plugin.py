@@ -44,6 +44,7 @@ def check_minimal():
 
     vrm = dp.GetCustomData().get("vrm", {})
     assert vrm.get("sourceFormat") == "VRM", vrm
+    assert vrm.get("schemaContractVersion") == 1, vrm
     assert vrm.get("specVersion") == "1.0", vrm
     assert vrm.get("meta"), "VRM meta should be preserved on /Asset"
     assert vrm.get("rawExtension"), "VRM rawExtension should be preserved"
@@ -92,6 +93,10 @@ def check_minimal():
     # and applied, and the standard bones are schema builtins, not custom attrs.
     assert Usd.SchemaRegistry().IsAppliedAPISchema("VrmHumanoidAPI"), \
         "VrmHumanoidAPI not registered — check plugInfo Types + generatedSchema.usda"
+    for api in ("VrmExpressionAPI", "VrmLookAtAPI", "VrmSpringBoneAPI",
+                "VrmColliderAPI", "VrmConstraintAPI"):
+        assert Usd.SchemaRegistry().IsAppliedAPISchema(api), \
+            f"{api} not registered — check plugInfo Types + generatedSchema.usda"
     assert "VrmHumanoidAPI" in humanoid.GetAppliedSchemas(), \
         humanoid.GetAppliedSchemas()
     assert humanoid.GetAttribute("vrm:humanBones:hips").IsCustom() is False, \

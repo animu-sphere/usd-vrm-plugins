@@ -76,6 +76,7 @@ const std::set<TfToken>& _VrmHumanoidSchemaBones()
 }
 
 const TfToken _kAssetName("Asset");
+constexpr int _kSchemaContractVersion = 1;
 
 // Build the relative joint path (e.g. "Hips/Spine/Chest") for every joint, in
 // canonical (skin) order, resolving parents via memoized recursion so the input
@@ -190,6 +191,8 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
                          : doc.version == VrmVersion::Vrm0 ? "0.x"
                                                           : "unknown";
     assetPrim.SetCustomDataByKey(TfToken("vrm:sourceFormat"), VtValue(std::string("VRM")));
+    assetPrim.SetCustomDataByKey(TfToken("vrm:schemaContractVersion"),
+                                 VtValue(_kSchemaContractVersion));
     assetPrim.SetCustomDataByKey(TfToken("vrm:sourceVersion"), VtValue(std::string(srcVer)));
     if (!doc.specVersion.empty())
         assetPrim.SetCustomDataByKey(TfToken("vrm:specVersion"), VtValue(doc.specVersion));

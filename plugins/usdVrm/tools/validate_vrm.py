@@ -35,7 +35,11 @@ from vrm_diagnostics import Diagnostic, Severity
 
 HUMANOID_PATH = "/Asset/rig/Humanoid"
 EXPRESSIONS_PATH = "/Asset/rig/Expressions"
+LOOKAT_PATH = "/Asset/rig/LookAt"
 SPRINGBONES_PATH = "/Asset/rig/SecondaryMotion/SpringBones"
+COLLIDERS_PATH = "/Asset/rig/SecondaryMotion/Colliders"
+CONSTRAINTS_PATH = "/Asset/rig/Constraints"
+SCHEMA_CONTRACT_VERSION = 1
 
 
 def _skeletons(stage: Usd.Stage) -> list[Usd.Prim]:
@@ -72,6 +76,15 @@ def _is_skinned(mesh: Usd.Prim) -> bool:
 def _joint_paths(skel: Usd.Prim) -> list[str]:
     joints = UsdSkel.Skeleton(skel).GetJointsAttr().Get()
     return list(joints) if joints else []
+
+
+def _has_api(prim: Usd.Prim, api_name: str) -> bool:
+    return api_name in prim.GetAppliedSchemas()
+
+
+def _array_len(attr: Usd.Attribute | None) -> int:
+    value = attr.Get() if attr and attr.IsValid() else None
+    return len(value) if value else 0
 
 
 def _stage_relative_asset_exists(stage: Usd.Stage, authored: str) -> bool:
@@ -145,6 +158,23 @@ def _check_stage_root(stage: Usd.Stage, out: list[Diagnostic]) -> Usd.Prim | Non
             "/Asset is a SkelRoot but the stage has no Skeleton",
             dp.GetPath().pathString))
     return dp
+
+
+def _check_schema_contract_metadata(dp: Usd.Prim, out: list[Diagnostic]) -> None:
+    vrm = dp.GetCustomData().get("vrm", {})
+    version = vrm.get("schemaContractVersion")
+    if version is None:
+        out.append(diag.make(
+            "VRM270",
+            "no usdVrm schema contract version on /Asset",
+            dp.GetPath().pathString))
+        return
+    if not isinstance(version, int) or version != SCHEMA_CONTRACT_VERSION:
+        out.append(diag.make(
+            "VRM271",
+            f"usdVrm schema contract version is {version!r}, "
+            f"expected {SCHEMA_CONTRACT_VERSION}",
+            dp.GetPath().pathString))
 
 
 def _check_skinning(stage: Usd.Stage, out: list[Diagnostic]) -> None:
@@ -228,7 +258,7 @@ def _check_humanoid(stage: Usd.Stage, out: list[Diagnostic]) -> None:
     prim = stage.GetPrimAtPath(HUMANOID_PATH)
     if not prim or not prim.IsValid():
         return
-    if "VrmHumanoidAPI" not in prim.GetAppliedSchemas():
+    if not _has_api(prim, "VrmHumanoidAPI"):
         out.append(diag.make(
             "VRM230", "humanoid prim does not apply VrmHumanoidAPI", HUMANOID_PATH))
 
@@ -260,18 +290,72 @@ def _check_expressions(stage: Usd.Stage, out: list[Diagnostic]) -> None:
         return
     for expr in scope.GetChildren():
         path = expr.GetPath().pathString
+        if not _has_api(expr, "VrmExpressionAPI"):
+            out.append(diag.make(
+                "VRM242", "expression prim does not apply VrmExpressionAPI", path))
+
         morph_rel = expr.GetRelationship("vrm:morphTargets")
-        for target in (morph_rel.GetTargets() if morph_rel else []):
+        morph_targets = morph_rel.GetTargets() if morph_rel else []
+        for target in morph_targets:
             tp = stage.GetPrimAtPath(target)
             if not tp or not tp.IsValid() or not tp.IsA(UsdSkel.BlendShape):
                 out.append(diag.make(
                     "VRM240", f"morph target {target} is not a BlendShape", path))
+        if morph_targets and \
+                _array_len(expr.GetAttribute("vrm:morphTargetWeights")) != \
+                len(morph_targets):
+            out.append(diag.make(
+                "VRM243",
+                "expression morph target weights are not parallel to vrm:morphTargets",
+                path))
+
         color_rel = expr.GetRelationship("vrm:materialColorTargets")
-        for target in (color_rel.GetTargets() if color_rel else []):
+        color_targets = color_rel.GetTargets() if color_rel else []
+        for target in color_targets:
             tp = stage.GetPrimAtPath(target)
             if not tp or not tp.IsValid():
                 out.append(diag.make(
                     "VRM241", f"material-color target {target} does not exist", path))
+        if color_targets:
+            type_count = _array_len(expr.GetAttribute("vrm:materialColorTypes"))
+            value_count = _array_len(expr.GetAttribute("vrm:materialColorValues"))
+            if type_count != len(color_targets) or value_count != len(color_targets):
+                out.append(diag.make(
+                    "VRM244",
+                    "expression material-color arrays are not parallel to "
+                    "vrm:materialColorTargets",
+                    path))
+
+
+def _check_lookat(stage: Usd.Stage, out: list[Diagnostic]) -> None:
+    prim = stage.GetPrimAtPath(LOOKAT_PATH)
+    if not prim or not prim.IsValid():
+        return
+    if not _has_api(prim, "VrmLookAtAPI"):
+        out.append(diag.make(
+            "VRM245", "lookAt prim does not apply VrmLookAtAPI", LOOKAT_PATH))
+
+    skel_rel = prim.GetRelationship("vrm:skeleton")
+    targets = skel_rel.GetTargets() if skel_rel else []
+    if not targets:
+        return
+    skel = stage.GetPrimAtPath(targets[0])
+    if not skel or not skel.IsValid() or not skel.IsA(UsdSkel.Skeleton):
+        out.append(diag.make(
+            "VRM246", "lookAt vrm:skeleton does not resolve to a Skeleton",
+            LOOKAT_PATH))
+        return
+
+    joints = set(_joint_paths(skel))
+    for attr_name in ("vrm:leftEye", "vrm:rightEye"):
+        attr = prim.GetAttribute(attr_name)
+        value = attr.Get() if attr and attr.IsValid() and attr.HasAuthoredValue() else ""
+        if value and str(value) not in joints:
+            out.append(diag.make(
+                "VRM247",
+                f"{attr_name} -> {value!r} is not a joint on "
+                f"{skel.GetPath().pathString}",
+                LOOKAT_PATH))
 
 
 def _check_springbones(stage: Usd.Stage, out: list[Diagnostic]) -> None:
@@ -282,8 +366,14 @@ def _check_springbones(stage: Usd.Stage, out: list[Diagnostic]) -> None:
     joints = set(_joint_paths(skels[0])) if skels else set()
     for spring in scope.GetChildren():
         path = spring.GetPath().pathString
+        if not _has_api(spring, "VrmSpringBoneAPI"):
+            out.append(diag.make(
+                "VRM252", "spring-bone prim does not apply VrmSpringBoneAPI", path))
+
         joints_attr = spring.GetAttribute("vrm:joints")
-        for value in (joints_attr.Get() if joints_attr and joints_attr.Get() else []):
+        joint_values = joints_attr.Get() if joints_attr and joints_attr.IsValid() else []
+        joint_values = joint_values or []
+        for value in joint_values:
             v = str(value)
             if not joints or v in joints:
                 continue
@@ -294,12 +384,69 @@ def _check_springbones(stage: Usd.Stage, out: list[Diagnostic]) -> None:
             if "/" in v:
                 out.append(diag.make(
                     "VRM250", f"spring joint path {v!r} is not on the skeleton", path))
+
+        joint_count = len(joint_values)
+        for attr_name in ("vrm:stiffness", "vrm:gravityPower", "vrm:dragForce",
+                          "vrm:hitRadius", "vrm:gravityDir"):
+            if joint_count and _array_len(spring.GetAttribute(attr_name)) != joint_count:
+                out.append(diag.make(
+                    "VRM253",
+                    f"{attr_name} is not parallel to vrm:joints",
+                    path))
+
         cg_rel = spring.GetRelationship("vrm:colliderGroups")
         for target in (cg_rel.GetTargets() if cg_rel else []):
             tp = stage.GetPrimAtPath(target)
             if not tp or not tp.IsValid():
                 out.append(diag.make(
                     "VRM251", f"collider group {target} does not exist", path))
+
+    collider_scope = stage.GetPrimAtPath(COLLIDERS_PATH)
+    if not collider_scope or not collider_scope.IsValid():
+        return
+    for group in collider_scope.GetChildren():
+        for collider in group.GetChildren():
+            path = collider.GetPath().pathString
+            if not _has_api(collider, "VrmColliderAPI"):
+                out.append(diag.make(
+                    "VRM254", "collider prim does not apply VrmColliderAPI", path))
+            shape = collider.GetAttribute("vrm:shape")
+            shape_value = shape.Get() if shape and shape.IsValid() else ""
+            if shape_value and str(shape_value) not in ("sphere", "capsule"):
+                out.append(diag.make(
+                    "VRM255",
+                    f"collider shape {shape_value!r} is not 'sphere' or 'capsule'",
+                    path))
+
+
+def _check_constraints(stage: Usd.Stage, out: list[Diagnostic]) -> None:
+    scope = stage.GetPrimAtPath(CONSTRAINTS_PATH)
+    if not scope or not scope.IsValid():
+        return
+    skels = _skeletons(stage)
+    joints = set(_joint_paths(skels[0])) if skels else set()
+    for constraint in scope.GetChildren():
+        path = constraint.GetPath().pathString
+        if not _has_api(constraint, "VrmConstraintAPI"):
+            out.append(diag.make(
+                "VRM262", "constraint prim does not apply VrmConstraintAPI", path))
+
+        ctype_attr = constraint.GetAttribute("vrm:type")
+        ctype = ctype_attr.Get() if ctype_attr and ctype_attr.IsValid() else ""
+        if ctype and str(ctype) not in ("roll", "aim", "rotation"):
+            out.append(diag.make(
+                "VRM263",
+                f"constraint type {ctype!r} is not 'roll', 'aim', or 'rotation'",
+                path))
+
+        for attr_name in ("vrm:constrained", "vrm:source"):
+            attr = constraint.GetAttribute(attr_name)
+            value = attr.Get() if attr and attr.IsValid() and attr.HasAuthoredValue() else ""
+            if value and "/" in str(value) and joints and str(value) not in joints:
+                out.append(diag.make(
+                    "VRM264",
+                    f"{attr_name} -> {value!r} is not a joint on the skeleton",
+                    path))
 
 
 def _check_raw_preservation(dp: Usd.Prim, out: list[Diagnostic]) -> None:
@@ -317,12 +464,15 @@ def validate_stage(stage: Usd.Stage) -> list[Diagnostic]:
     dp = _check_stage_root(stage, out)
     if dp is None:
         return out  # no default prim: nothing else is well-defined.
+    _check_schema_contract_metadata(dp, out)
     _check_skinning(stage, out)
     _check_skeleton_topology(stage, out)
     _check_materials(stage, out)
     _check_humanoid(stage, out)
     _check_expressions(stage, out)
+    _check_lookat(stage, out)
     _check_springbones(stage, out)
+    _check_constraints(stage, out)
     _check_raw_preservation(dp, out)
     return out
 

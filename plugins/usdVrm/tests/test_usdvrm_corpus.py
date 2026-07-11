@@ -84,6 +84,7 @@ def check_avatar(rel, spec):
 
     vrm = dp.GetCustomData().get("vrm", {})
     assert vrm.get("sourceFormat") == "VRM", vrm.get("sourceFormat")
+    assert vrm.get("schemaContractVersion") == 1, vrm
     assert vrm.get("specVersion") == "1.0", vrm.get("specVersion")
     assert vrm.get("rawExtension"), "raw VRM block should be preserved as fallback"
 
