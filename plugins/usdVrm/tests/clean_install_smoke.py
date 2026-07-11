@@ -31,6 +31,18 @@ def _norm(p: str | None) -> str:
     return (p or "").replace("\\", "/")
 
 
+def _pkg_roots(pkg_root: str) -> tuple[str, ...]:
+    """Acceptable lowercase prefixes for "inside the package".
+
+    The extract dir and the paths USD reports may differ by symlink resolution
+    (macOS: /var/folders/... vs /private/var/folders/...), so accept the root
+    both as given and fully resolved.
+    """
+
+    real = _norm(os.path.realpath(pkg_root)).rstrip("/")
+    return tuple({pkg_root.lower(), real.lower()})
+
+
 def _fail(msg: str) -> None:
     print(f"FAIL: {msg}")
     sys.exit(1)
@@ -53,7 +65,11 @@ def check_discovery(pkg_root: str) -> None:
     ]
     if not vrm_plugins:
         _fail("usdVrm plugin absent from the USD plugin registry")
-    served = [p for p in vrm_plugins if _norm(p.path).lower().startswith(pkg_root.lower())]
+    roots = _pkg_roots(pkg_root)
+    served = [
+        p for p in vrm_plugins
+        if _norm(os.path.realpath(p.path)).lower().startswith(roots)
+    ]
     if not served:
         leaked = ", ".join(_norm(p.path) for p in vrm_plugins)
         _fail(f"vrm plugin not served from the extracted package (build-tree/source leak?): {leaked}")
@@ -145,7 +161,7 @@ def check_texture_resolution(pkg_root: str) -> None:
             # Importer authors embedded textures as <avatar>.vrm[images/<hash>.<ext>].
             if ".vrm[" not in path:
                 continue
-            if not path.lower().startswith(pkg_root.lower()):
+            if not path.lower().startswith(_pkg_roots(pkg_root)):
                 _fail(f"texture path escapes the package (temp-dir dependency?): {path}")
             with Ar.ResolverContextBinder(ctx):
                 resolved = resolver.Resolve(path)
