@@ -401,6 +401,8 @@ def _check_springbones(stage: Usd.Stage, out: list[Diagnostic]) -> None:
                 out.append(diag.make(
                     "VRM251", f"collider group {target} does not exist", path))
 
+
+def _check_colliders(stage: Usd.Stage, out: list[Diagnostic]) -> None:
     collider_scope = stage.GetPrimAtPath(COLLIDERS_PATH)
     if not collider_scope or not collider_scope.IsValid():
         return
@@ -472,6 +474,7 @@ def validate_stage(stage: Usd.Stage) -> list[Diagnostic]:
     _check_expressions(stage, out)
     _check_lookat(stage, out)
     _check_springbones(stage, out)
+    _check_colliders(stage, out)
     _check_constraints(stage, out)
     _check_raw_preservation(dp, out)
     return out

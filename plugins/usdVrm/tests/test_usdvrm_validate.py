@@ -205,6 +205,16 @@ def check_schema_token_rules():
     assert "VRM263" in _codes(validate_vrm.validate_stage(stage))
 
 
+def check_collider_rules_without_spring_scope():
+    """Collider validation must not depend on a SpringBones scope being present."""
+    stage = _open("springbone.vrm")
+    stage.RemovePrim(Sdf.Path("/Asset/rig/SecondaryMotion/SpringBones"))
+    collider = stage.GetPrimAtPath(
+        "/Asset/rig/SecondaryMotion/Colliders/Head/Collider_0")
+    collider.GetAttribute("vrm:shape").Set("badshape")
+    assert "VRM255" in _codes(validate_vrm.validate_stage(stage))
+
+
 def check_missing_default_prim():
     """No default prim is a fatal VRM200 and short-circuits the rest."""
     stage = _open("minimal.vrm")
@@ -288,6 +298,7 @@ def main() -> int:
                   check_springbone_end_node_vs_broken_path,
                   check_schema_parallel_array_rules,
                   check_schema_token_rules,
+                  check_collider_rules_without_spring_scope,
                   check_missing_default_prim,
                   check_report_sections_and_coded_import_warnings,
                   check_report_valid_avatar,
