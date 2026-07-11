@@ -93,3 +93,14 @@ add_test(
 
 set_tests_properties(usdvrm_corpus_smoke PROPERTIES
     ENVIRONMENT_MODIFICATION "${_smoke_env}")
+
+# Stage validator + diagnostic taxonomy + compatibility report (tools/). Drives
+# the freshly built importer, then runs the pure-Python validator/report tools
+# over the imported stages. Same runtime + plugin env as the smoke test.
+add_test(
+    NAME usdvrm_validate
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/test_usdvrm_validate.py")
+
+set_tests_properties(usdvrm_validate PROPERTIES
+    ENVIRONMENT_MODIFICATION "${_smoke_env}")
