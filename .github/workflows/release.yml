@@ -80,7 +80,11 @@ jobs:
             platform: cy2026
             profile: usd
             runs_on: ["windows-2022"]
-            host_python: ""
+            # The Windows runtime does not bundle python.exe: `ost plugin run
+            # -- python` resolves the host PATH python, which must match the
+            # runtime's py313 ABI for the clean-install smoke (`from pxr
+            # import ...`). The runner's default python is 3.12 -> pin 3.13.
+            host_python: "3.13"
           - name: release-macos-arm64
             cache_cell: usdvrm-pr-macos-arm64
             runtime_artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
