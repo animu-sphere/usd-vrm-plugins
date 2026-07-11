@@ -578,6 +578,7 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                 const cgltf_size vc = out.points.size();
                 out.jointWeights.resize(vc);
                 out.jointIndices.resize(vc * 4);
+                bool jointIndexOutOfRange = false;
                 for (cgltf_size i = 0; i < vc; ++i) {
                     cgltf_uint ji[4] = {0, 0, 0, 0};
                     float jw[4] = {0, 0, 0, 0};
@@ -588,10 +589,19 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                         if (ji[k] < skin->joints_count) {
                             auto it = nodeToJoint.find(skin->joints[ji[k]]);
                             if (it != nodeToJoint.end()) unified = it->second;
+                        } else {
+                            jointIndexOutOfRange = true;
                         }
                         out.jointIndices[i * 4 + k] = unified;
                     }
                     out.jointWeights[i] = GfVec4f(jw[0], jw[1], jw[2], jw[3]);
+                }
+                if (jointIndexOutOfRange) {
+                    outDoc->warnings.push_back(VrmDiagMsg(
+                        VrmDiag::SkinJointIndexOutOfRange,
+                        "mesh '" + out.name + "': JOINTS_0 references a skin joint "
+                        "outside [0," + std::to_string(skin->joints_count) +
+                        "); clamped to the skeleton root"));
                 }
             }
 
@@ -719,11 +729,23 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
             auto addBinds = [&](VrmExpression& expr, const std::vector<int>* prims,
                                 int morphIndex, float weight) {
                 if (!prims) return;
+                bool sawPrim = false, bound = false;
                 for (int mi : *prims) {
+                    sawPrim = true;
                     if (morphIndex >= 0 && morphIndex <
                             static_cast<int>(outDoc->meshes[mi].morphTargets.size())) {
                         expr.morphBinds.push_back({mi, morphIndex, weight});
+                        bound = true;
                     }
+                }
+                // A bind that resolved to a mesh but names a morph index the mesh
+                // doesn't have is a lossy drop, not a silent no-op.
+                if (sawPrim && !bound && morphIndex >= 0) {
+                    outDoc->warnings.push_back(VrmDiagMsg(
+                        VrmDiag::ExpressionMorphIndexOutOfRange,
+                        "expression '" + expr.name + "': morph target index " +
+                        std::to_string(morphIndex) +
+                        " is out of range for its mesh; bind skipped"));
                 }
             };
 
@@ -837,12 +859,22 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                 // humanoid.humanBones: [ { "bone": "hips", "node": N }, ... ]
                 if (const JsObject* hum = _AsObject(_Find(*rootObj, "humanoid"))) {
                     if (const JsArray* bones = _AsArray(_Find(*hum, "humanBones"))) {
+                        std::set<std::string> seenBones;
                         for (const JsValue& e : *bones) {
                             const JsObject* b = _AsObject(&e);
                             if (!b) continue;
                             const JsValue* boneName = _Find(*b, "bone");
                             int nodeIndex = _AsInt(_Find(*b, "node"));
                             int joint = nodeIndexToJoint(nodeIndex);
+                            if (boneName && boneName->IsString() &&
+                                    !seenBones.insert(boneName->GetString()).second) {
+                                outDoc->warnings.push_back(VrmDiagMsg(
+                                    VrmDiag::HumanoidBoneDuplicate,
+                                    "duplicate humanoid bone '" +
+                                    boneName->GetString() +
+                                    "'; keeping the first mapping and ignoring the rest"));
+                                continue;
+                            }
                             if (boneName && boneName->IsString() && joint >= 0) {
                                 outDoc->humanoidBones.push_back(
                                     {boneName->GetString(), joint});
@@ -1230,8 +1262,20 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                         spr.centerJoint = nodeJoint(centerNode);
                         if (const JsArray* cg =
                                 _AsArray(_Find(*s, "colliderGroups")))
-                            for (const JsValue& iv : *cg)
-                                spr.colliderGroupIndices.push_back(_AsInt(&iv));
+                            for (const JsValue& iv : *cg) {
+                                int gi = _AsInt(&iv);
+                                if (gi < 0 || gi >= static_cast<int>(
+                                        sm.colliderGroups.size())) {
+                                    outDoc->warnings.push_back(VrmDiagMsg(
+                                        VrmDiag::SpringColliderGroupOutOfRange,
+                                        "spring '" + spr.name +
+                                        "': collider-group index " +
+                                        std::to_string(gi) +
+                                        " is out of range; dropped"));
+                                    continue;
+                                }
+                                spr.colliderGroupIndices.push_back(gi);
+                            }
                         if (const JsArray* joints = _AsArray(_Find(*s, "joints"))) {
                             for (const JsValue& jv : *joints) {
                                 const JsObject* j = _AsObject(&jv);
@@ -1315,8 +1359,20 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                         GfVec3f gd = vec3(_Find(*bg, "gravityDir"), GfVec3f(0, -1, 0));
                         if (const JsArray* cg =
                                 _AsArray(_Find(*bg, "colliderGroups")))
-                            for (const JsValue& iv : *cg)
-                                spr.colliderGroupIndices.push_back(_AsInt(&iv));
+                            for (const JsValue& iv : *cg) {
+                                int gi = _AsInt(&iv);
+                                if (gi < 0 || gi >= static_cast<int>(
+                                        sm.colliderGroups.size())) {
+                                    outDoc->warnings.push_back(VrmDiagMsg(
+                                        VrmDiag::SpringColliderGroupOutOfRange,
+                                        "spring '" + spr.name +
+                                        "': collider-group index " +
+                                        std::to_string(gi) +
+                                        " is out of range; dropped"));
+                                    continue;
+                                }
+                                spr.colliderGroupIndices.push_back(gi);
+                            }
                         if (const JsArray* bones = _AsArray(_Find(*bg, "bones"))) {
                             for (const JsValue& nv : *bones) {
                                 int ni = _AsInt(&nv);

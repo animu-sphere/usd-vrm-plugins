@@ -3,6 +3,7 @@
 
 #include "io/CgltfVrmDocumentReader.h"
 #include "model/VrmCanonicalDocument.h"
+#include "model/VrmDiagnostics.h"
 #include "usd/UsdVrmAuthorer.h"
 
 #include "pxr/base/tf/diagnostic.h"
@@ -81,8 +82,8 @@ UsdVrmFileFormat::Read(
     std::string error;
     CgltfVrmDocumentReader reader;
     if (!reader.Read(resolvedPath, bytes, &document, &error)) {
-        TF_RUNTIME_ERROR("usdVrm: failed to read '%s': %s",
-            resolvedPath.c_str(), error.c_str());
+        TF_RUNTIME_ERROR("usdVrm: %s", VrmDiagMsg(VrmDiag::ContainerUnreadable,
+            "failed to read '" + resolvedPath + "': " + error).c_str());
         return false;
     }
     for (const std::string& w : document.warnings) {

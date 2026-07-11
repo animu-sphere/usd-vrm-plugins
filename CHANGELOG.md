@@ -13,7 +13,22 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+- **Negative test corpus** (`plugins/usdVrm/tests/corpus/generated/malformed/`):
+  nine deliberately-broken, license-clean `.vrm` fixtures (authored by
+  `tools/generate_negative.py`) that pin the importer's diagnostic contract —
+  each provokes exactly one code, driven by `negative-manifest.json` +
+  `tests/test_usdvrm_negative.py` (registered as the `usdvrm_negative` CTest and
+  in the bundle's `tests.smoke` / `tests.negative` lists).
+
+### Changed
+- **Importer diagnostics**: malformed inputs the importer previously sanitized or
+  rejected silently now emit stable codes. New codes: `VRM003` (container
+  unreadable — FATAL, stage fails to open), `VRM111` (skin `JOINTS_0` index out of
+  range; clamped to root), `VRM141` (duplicate humanoid bone; first mapping kept),
+  `VRM151` (expression morph-target index out of range; bind skipped), `VRM190`
+  (spring collider-group index out of range; dropped). See
+  `plugins/usdVrm/docs/DIAGNOSTICS.md`.
 
 ## [0.1.0] — 2026-07-12
 

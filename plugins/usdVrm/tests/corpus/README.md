@@ -76,6 +76,18 @@ The test is **manifest-driven**: it iterates the vendored models and asserts the
 import invariants, `expected` structure floors, license-meta round-trip, and the
 diagnostic-code contract. Adding a vendored model is a manifest edit.
 
+## Run the negative corpus tests
+
+The `generated/malformed/` tree holds deliberately-broken avatars that pin the
+importer's diagnostic contract (one `VRMxxx` code each); see
+[`generated/README.md`](generated/README.md).
+
+```sh
+python plugins/usdVrm/tools/generate_negative.py          # (re)author the fixtures
+ost plugin run plugins/usdVrm -- \
+    python plugins/usdVrm/tests/test_usdvrm_negative.py   # assert the pinned codes
+```
+
 ## Add a model
 
 1. Verify the license: read the model's embedded `VRMC_vrm.meta` (1.0) /

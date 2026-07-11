@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "description": "Diagnostic contract for the generated negative corpus. Each fixture is a deliberately malformed, license-clean .vrm authored by tools/generate_negative.py that provokes exactly one importer diagnostic. tests/test_usdvrm_negative.py drives the freshly built importer over each and pins the code + mechanism. Regenerate the binaries with `python plugins/usdVrm/tools/generate_negative.py`.",
+  "mechanisms": {
+    "read-fatal": "The container is unreadable, so Usd.Stage.Open fails and the importer surfaces the code in the raised Tf error (never on a stage).",
+    "import-warning": "The stage opens; the importer records the coded warning on /Asset.customData.vrm:warnings, and it is the only diagnostic the fixture emits."
+  },
+  "fixtures": [
+    {
+      "id": "malformed-glb-json",
+      "file": "malformed/malformed_glb_json.vrm",
+      "generator": "build_malformed_glb_json",
+      "mechanism": "read-fatal",
+      "code": "VRM003",
+      "note": "GLB JSON chunk's opening brace is corrupted; cgltf rejects the container."
+    },
+    {
+      "id": "dangling-texture-index",
+      "file": "malformed/dangling_texture_index.vrm",
+      "generator": "build_dangling_texture_index",
+      "mechanism": "read-fatal",
+      "code": "VRM003",
+      "note": "material.baseColorTexture.index points past a non-existent textures array; cgltf index validation rejects it."
+    },
+    {
+      "id": "nonfinite-transform",
+      "file": "malformed/nonfinite_transform.vrm",
+      "generator": "build_nonfinite_transform",
+      "mechanism": "read-fatal",
+      "code": "VRM003",
+      "note": "A node translation serializes NaN/Infinity tokens, which cgltf's JSON parser rejects."
+    },
+    {
+      "id": "nonobject-vrm-extension",
+      "file": "malformed/nonobject_vrm_extension.vrm",
+      "generator": "build_nonobject_vrm_extension",
+      "mechanism": "read-fatal",
+      "code": "VRM003",
+      "note": "VRMC_vrm value is a JSON array, not an object; cgltf requires object-valued extensions and rejects the container. (This is why the ERROR-level VRM002 is unreachable through a cgltf-validated file.)"
+    },
+    {
+      "id": "out-of-range-joints",
+      "file": "malformed/out_of_range_joints.vrm",
+      "generator": "build_out_of_range_joints",
+      "mechanism": "import-warning",
+      "code": "VRM111",
+      "note": "JOINTS_0 references local joint 5 in a 2-joint skin; the influence is clamped to the skeleton root."
+    },
+    {
+      "id": "unmapped-humanoid-node",
+      "file": "malformed/unmapped_humanoid_node.vrm",
+      "generator": "build_unmapped_humanoid_node",
+      "mechanism": "import-warning",
+      "code": "VRM140",
+      "note": "Humanoid bone 'spine' references node 999, which does not exist; the bone is skipped."
+    },
+    {
+      "id": "duplicate-humanoid-bone",
+      "file": "malformed/duplicate_humanoid_bone.vrm",
+      "generator": "build_duplicate_humanoid_bone",
+      "mechanism": "import-warning",
+      "code": "VRM141",
+      "note": "A VRM 0.x humanBones array maps 'hips' twice; the first mapping is kept and the rest ignored."
+    },
+    {
+      "id": "oob-expression-morph",
+      "file": "malformed/oob_expression_morph.vrm",
+      "generator": "build_oob_expression_morph",
+      "mechanism": "import-warning",
+      "code": "VRM151",
+      "note": "An expression morphTargetBind names index 7 on a mesh with one morph target; the bind is skipped."
+    },
+    {
+      "id": "missing-spring-collider-group",
+      "file": "malformed/missing_spring_collider_group.vrm",
+      "generator": "build_missing_spring_collider_group",
+      "mechanism": "import-warning",
+      "code": "VRM190",
+      "note": "A SpringBone spring references collider-group index 5 when only one group exists; the reference is dropped."
+    }
+  ]
+}

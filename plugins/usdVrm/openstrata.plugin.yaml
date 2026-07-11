@@ -49,9 +49,22 @@ tests:
     # tests/corpus/manifest.json). Vendored VRM 1.0 spec samples.
     - tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm
     - tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm
+    # Malformed-but-recoverable negatives: each imports with exactly one coded
+    # warning (see tests/corpus/generated/negative-manifest.json). The codes are
+    # asserted by tests/test_usdvrm_negative.py.
+    - tests/corpus/generated/malformed/out_of_range_joints.vrm          # VRM111
+    - tests/corpus/generated/malformed/unmapped_humanoid_node.vrm       # VRM140
+    - tests/corpus/generated/malformed/duplicate_humanoid_bone.vrm      # VRM141
+    - tests/corpus/generated/malformed/oob_expression_morph.vrm         # VRM151
+    - tests/corpus/generated/malformed/missing_spring_collider_group.vrm # VRM190
   roundtrip:
     - tests/fixtures/minimal.vrm
   negative:
     - tests/fixtures/invalid.vrm
+    # Unreadable containers: Usd.Stage.Open must fail (importer surfaces VRM003).
+    - tests/corpus/generated/malformed/malformed_glb_json.vrm
+    - tests/corpus/generated/malformed/dangling_texture_index.vrm
+    - tests/corpus/generated/malformed/nonfinite_transform.vrm
+    - tests/corpus/generated/malformed/nonobject_vrm_extension.vrm
 schema:
   source: schema/schema.usda
