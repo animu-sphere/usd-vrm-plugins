@@ -115,23 +115,36 @@ structure and constraints; every major VRM feature's support status is listed.*
 *Goal: installable from a clean environment; opens a sample VRM; schema plugin
 discovered; validator passes; release artifacts reproducible.* (policy §16, §17-P1)
 
-- [~] **Versioning** + **CHANGELOG** + release note template (supported OpenUSD /
+- [x] **Versioning** + **CHANGELOG** + release note template (supported OpenUSD /
       platforms / implemented features / approximations / known limitations / schema
-      contract version). **Landed:** repo-root [`VERSION`](../VERSION) single source
-      (CMake reads it), [`CHANGELOG.md`](../CHANGELOG.md),
-      [`SUPPORTED_CONFIGURATIONS.md`](SUPPORTED_CONFIGURATIONS.md). Remaining: a
-      release-note template tied to the release workflow.
-- [ ] **Release workflow** producing platform artifacts (source archive, Linux/macOS/
-      Windows binaries, schema + resolver resources, sample VRM + generated USD,
-      compatibility report, checksums).
-- [ ] **Compatibility matrix** — a second OpenUSD version cell (min vs latest); today the
-      CI runs cy2026 only. **Partly there:** OS axis already runs three cells (see P3).
-- [~] **Install guide** + clean-environment install test. **Landed:** clean-install /
-      plugin-discovery smoke (`scripts/clean_install_smoke.py` +
-      `tests/clean_install_smoke.py`) — packages, extracts to a fresh dir outside the
-      repo, and asserts discovery/open/validate/texture-resolution against the packaged
-      artifact (no build-tree reference). Remaining: an install guide and CI wiring
-      (with the release workflow).
+      contract version). Repo-root [`VERSION`](../VERSION) single source (CMake reads
+      it), [`CHANGELOG.md`](../CHANGELOG.md),
+      [`SUPPORTED_CONFIGURATIONS.md`](SUPPORTED_CONFIGURATIONS.md), and the
+      release-note template [`RELEASE_NOTES_TEMPLATE.md`](RELEASE_NOTES_TEMPLATE.md)
+      rendered by `scripts/make_release_notes.py` from the tagged version's
+      changelog section (fails if the section is not finalized).
+- [x] **Release workflow** (`.github/workflows/release.yml`, hand-authored; ost
+      runtime pins mirror `openstrata.ci.yaml`): tag `vX.Y.Z` → three OS bundles
+      (lean + split debug symbols) from digest-pinned runtimes, source archive,
+      `SHA256SUMS`, draft GitHub release with rendered notes. Gates on tag ==
+      `VERSION`, digest-reproducible packaging (ost 0.13.0), packaged-artifact
+      verification (`ost plugin test --from-package`), and the clean-install smoke
+      on all three OS. `workflow_dispatch` = dry run. **Remaining: actually tag
+      `v0.1.0` and publish the draft.** Each bundle carries a `buildInfo.json`
+      stamp (commit / toolchain / OpenUSD / build type / schema contract version),
+      surfaced by `vrm_report.py`.
+- [ ] **Compatibility matrix** — a second OpenUSD version cell (min vs latest); today
+      the CI runs cy2026 / OpenUSD 26.05 only. **Blocked externally:** GHCR has no
+      published min-version (e.g. OpenUSD 25.05 / cy2025) runtime artifact yet —
+      needs an open-strata runtime build + publish per OS, then a fourth cell in
+      `openstrata.ci.yaml`. OS axis already runs three cells (see P3).
+- [x] **Install guide** + clean-environment install test.
+      [`INSTALL.md`](INSTALL.md) (release-artifact / OpenStrata / source installs +
+      troubleshooting); clean-install / plugin-discovery smoke
+      (`scripts/clean_install_smoke.py` + `tests/clean_install_smoke.py`) packages,
+      extracts to a fresh dir outside the repo, and asserts
+      discovery/open/validate/texture-resolution against the packaged artifact —
+      wired into the release lane on all three OS.
 
 ### P2 — Fix the canonical-model contract  (medium)
 *Goal: importer and authorer depend only on the canonical contract; parser/USD types
