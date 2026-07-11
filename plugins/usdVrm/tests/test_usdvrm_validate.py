@@ -177,6 +177,31 @@ def check_report_valid_avatar():
     assert feats["skeleton"] is True and feats["humanoid"] is True, feats
 
 
+def check_stage_relative_texture_resolution():
+    """Layer-relative exported texture paths resolve independent of cwd."""
+    stage = _open("relative_texture.usda")
+    diagnostics = validate_vrm.validate_stage(stage)
+    assert "VRM222" not in _codes(diagnostics), \
+        [d.to_dict() for d in diagnostics]
+
+    report = vrm_report.build_report(str(FIXTURES / "relative_texture.usda"))
+    inv = report["assetInventory"]
+    assert inv["resolved"] == 1 and inv["missing"] == 0, inv
+
+
+def check_report_failed_open_counts():
+    """A failed-open report counts its own fatal VRM200 diagnostic."""
+    missing = str(FIXTURES / "does-not-exist.usda")
+    diagnostics, opened = validate_vrm.validate_path(missing)
+    assert opened is False, diagnostics
+    assert diagnostics[0].code == "VRM200", diagnostics
+
+    report = vrm_report.build_report(missing)
+    counts = report["summary"]["counts"]
+    assert counts["FATAL"] == 1, report
+    assert report["diagnostics"][0]["code"] == "VRM200", report
+
+
 def main() -> int:
     plugin_path = os.environ.get("PXR_PLUGINPATH_NAME")
     if plugin_path:
@@ -190,7 +215,9 @@ def main() -> int:
                   check_springbone_end_node_vs_broken_path,
                   check_missing_default_prim,
                   check_report_sections_and_coded_import_warnings,
-                  check_report_valid_avatar):
+                  check_report_valid_avatar,
+                  check_stage_relative_texture_resolution,
+                  check_report_failed_open_counts):
         check()
         print(f"  {check.__name__}: OK")
     print("usdVrm validate/report tests: OK")

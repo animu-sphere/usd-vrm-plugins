@@ -23,10 +23,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import pathlib
 import sys
 from typing import Any
 
-from pxr import Ar, Sdf, Usd, UsdGeom, UsdShade, UsdSkel
+from pxr import Ar, Sdf, Tf, Usd, UsdGeom, UsdShade, UsdSkel
 
 import vrm_diagnostics as diag
 from vrm_diagnostics import Diagnostic, Severity
@@ -71,6 +72,35 @@ def _is_skinned(mesh: Usd.Prim) -> bool:
 def _joint_paths(skel: Usd.Prim) -> list[str]:
     joints = UsdSkel.Skeleton(skel).GetJointsAttr().Get()
     return list(joints) if joints else []
+
+
+def _stage_relative_asset_exists(stage: Usd.Stage, authored: str) -> bool:
+    if not authored or "://" in authored or "[" in authored:
+        return False
+    if pathlib.PureWindowsPath(authored).is_absolute() or \
+            pathlib.PurePosixPath(authored.replace("\\", "/")).is_absolute():
+        return pathlib.Path(authored).exists()
+
+    layer = stage.GetRootLayer()
+    layer_path = getattr(layer, "realPath", "") or layer.identifier
+    if not layer_path or layer.anonymous:
+        return False
+
+    relative = pathlib.PurePosixPath(authored.replace("\\", "/"))
+    return (pathlib.Path(layer_path).parent / pathlib.Path(*relative.parts)).exists()
+
+
+def asset_path_resolves(
+        stage: Usd.Stage, value: Sdf.AssetPath | None, resolver: Ar.Resolver
+) -> bool:
+    authored = getattr(value, "path", "") if value else ""
+    if not authored:
+        return False
+    if getattr(value, "resolvedPath", ""):
+        return True
+    if resolver.Resolve(authored):
+        return True
+    return _stage_relative_asset_exists(stage, authored)
 
 
 # --- Individual contract checks ---------------------------------------------
@@ -188,7 +218,7 @@ def _check_materials(stage: Usd.Stage, out: list[Diagnostic]) -> None:
             attr = prim.GetAttribute("inputs:file")
             value = attr.Get() if attr else None
             authored = getattr(value, "path", "") if value else ""
-            if authored and not resolver.Resolve(authored):
+            if authored and not asset_path_resolves(stage, value, resolver):
                 out.append(diag.make(
                     "VRM222", f"texture asset {authored!r} does not resolve",
                     prim.GetPath().pathString))
@@ -300,7 +330,10 @@ def validate_stage(stage: Usd.Stage) -> list[Diagnostic]:
 def validate_path(path: str) -> tuple[list[Diagnostic], bool]:
     """Open `path` as a stage and validate it. Returns (diagnostics, opened)."""
 
-    stage = Usd.Stage.Open(str(path))
+    try:
+        stage = Usd.Stage.Open(str(path))
+    except Tf.ErrorException:
+        stage = None
     if not stage:
         return ([diag.make("VRM200", f"failed to open stage: {path}")], False)
     return validate_stage(stage), True

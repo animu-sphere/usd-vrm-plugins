@@ -26,7 +26,7 @@ import json
 import sys
 from typing import Any
 
-from pxr import Ar, Usd, UsdGeom, UsdSkel
+from pxr import Ar, Tf, Usd, UsdGeom, UsdSkel
 
 import validate_vrm
 import vrm_diagnostics as diag
@@ -52,9 +52,9 @@ def _asset_inventory(stage: Usd.Stage) -> tuple[list[dict[str, Any]], int, int]:
     resolved = 0
     missing = 0
     for entry in entries:
-        entry.pop("_attr", None)
-        authored = entry.get("authoredPath") or ""
-        is_ok = bool(authored) and bool(resolver.Resolve(authored))
+        attr = entry.pop("_attr", None)
+        value = attr.Get() if attr else None
+        is_ok = validate_vrm.asset_path_resolves(stage, value, resolver)
         entry["resolves"] = is_ok
         if is_ok:
             resolved += 1
@@ -104,15 +104,18 @@ def _compatibility(stage: Usd.Stage, dp: Usd.Prim) -> dict[str, Any]:
 def build_report(path: str) -> dict[str, Any]:
     """Open `path` and produce the full compatibility report dict."""
 
-    stage = Usd.Stage.Open(str(path))
+    try:
+        stage = Usd.Stage.Open(str(path))
+    except Tf.ErrorException:
+        stage = None
     if not stage:
+        diagnostics = [diag.make("VRM200", f"failed to open stage: {path}")]
         return {
             "schemaVersion": REPORT_SCHEMA_VERSION,
             "source": str(path),
             "summary": {"opened": False, "valid": False,
-                        "counts": diag.severity_counts([])},
-            "diagnostics": [diag.make("VRM200",
-                                      f"failed to open stage: {path}").to_dict()],
+                        "counts": diag.severity_counts(diagnostics)},
+            "diagnostics": [d.to_dict() for d in diagnostics],
             "assetInventory": {"assets": [], "resolved": 0, "missing": 0},
             "compatibility": {},
         }
