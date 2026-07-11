@@ -46,9 +46,10 @@ jobs:
             runner_profile: windows-hosted
             bundle: plugins/usdVrm
             runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e"
+            host_python: ""
           - name: usdvrm-pr-macos-arm64
             lane: pull_request
-            runtime_artifact: sha256:64365b2597bab3c87e81501845b1cfe3c647758ace26336e34a17897c5aa573b
+            runtime_artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
             platform: cy2026
             profile: usd
             up_to: 5
@@ -56,7 +57,8 @@ jobs:
             hosted: true
             runner_profile: macos-arm64-hosted
             bundle: plugins/usdVrm
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:ee9d0774ab4ace4e5a1e76d16730ab0b2f203c8c4fdea4b8089fcb6e29d9f8f6"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876"
+            host_python: "3.13"
     steps:
       - name: Check out the repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -64,18 +66,7 @@ jobs:
         if: ${{ matrix.hosted }}
         shell: bash
         run: echo "::notice title=OpenStrata hosted-runner usage::This job uses GitHub-hosted infrastructure. Private repositories may incur GitHub Actions usage charges. Review repository billing and Actions usage settings."
-      # Temporary macOS runtime dogfooding guard:
-      # - the 26.05 macOS runtime artifact does not bundle a Python interpreter,
-      #   so schema generation needs host Python 3.13 on PATH;
-      # - the first published artifact materializes bin/ tools without execute
-      #   bits, so repair them before `ost plugin build` runs usdGenSchema.
-      # Remove these macOS-only steps once the runtime artifact is republished.
-      - name: Set up Python 3.13 for macOS schema generation
-        if: ${{ runner.os == 'macOS' }}
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: "3.13"
-      - name: Bootstrap ost 0.11.0 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.12.0 (pinned release asset, checksum-verified)
         if: ${{ matrix.hosted }}
         shell: bash
         run: |
@@ -93,7 +84,7 @@ jobs:
             *) : ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.11.0"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.12.0"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$( (command -v sha256sum > /dev/null && sha256sum "$asset" || shasum -a 256 "$asset") | cut -d' ' -f1 )"
@@ -114,7 +105,7 @@ jobs:
           if [ -z "$bin" ]; then echo "::error title=ost bootstrap::no ost binary inside $asset" ; exit 1 ; fi
           chmod +x "$bin" 2> /dev/null || true
           echo "$(cd "$(dirname "$bin")" && pwd)" >> "$GITHUB_PATH"
-          printf '{"schema":1,"pinned_version":"%s","asset":"%s","sha256":"%s"}\n' "0.11.0" "$asset" "$actual" > .ost-ci/bootstrap.json
+          printf '{"schema":1,"pinned_version":"%s","asset":"%s","sha256":"%s"}\n' "0.12.0" "$asset" "$actual" > .ost-ci/bootstrap.json
       - name: Check ost is available and record its version
         shell: bash
         run: |
@@ -122,8 +113,8 @@ jobs:
           mkdir -p .ost-ci
           version="$(ost --version)"
           echo "$version"
-          if [ "${{ matrix.hosted }}" = "true" ] && [ "$version" != "ost 0.11.0" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.11.0', got '$version'" ; exit 1
+          if [ "${{ matrix.hosted }}" = "true" ] && [ "$version" != "ost 0.12.0" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.12.0', got '$version'" ; exit 1
           fi
           printf '{"schema":1,"ost_version":"%s"}\n' "$version" > .ost-ci/ost-version.json
       - name: Validate the CI manifest
@@ -134,7 +125,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ost-ci-home/artifacts
-          key: ost-registry-0.11.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.name }}-${{ matrix.runtime_artifact }}
+          key: ost-registry-0.12.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.name }}-${{ matrix.runtime_artifact }}
       - name: Pull the pinned runtime SDK from its remote reference
         if: ${{ matrix.runtime_remote != '' }}
         shell: bash
@@ -158,18 +149,30 @@ jobs:
           printf '{"schema":1,"runtime_artifact":"%s","source":"%s"}\n' "${{ matrix.runtime_artifact }}" "${{ matrix.runtime_remote != '' && 'remote-pull' || 'local-registry' }}" > .ost-ci/runtime-source.json
           ost artifact verify ${{ matrix.runtime_artifact }}
           ost runtime pull ${{ matrix.platform }} --profile ${{ matrix.profile }} --from-artifact ${{ matrix.runtime_artifact }} --force
-      - name: Repair macOS runtime tool executable bits
-        if: ${{ runner.os == 'macOS' }}
+      - name: Validate the materialized runtime (runnable tools)
         shell: bash
         run: |
           set -euo pipefail
-          eval "$(ost env ${{ matrix.platform }} --profile ${{ matrix.profile }})"
-          runtime_bin="${PATH%%:*}"
-          if [ ! -f "$runtime_bin/usdcat" ]; then
-            echo "::error title=macOS runtime repair::usdcat not found under $runtime_bin"
-            exit 1
+          mkdir -p .ost-ci
+          ost runtime validate ${{ matrix.platform }} --profile ${{ matrix.profile }} --json | tee .ost-ci/runtime-validate.json
+      - name: Set up host Python for schema tooling
+        if: ${{ matrix.hosted && matrix.host_python != '' }}
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: ${{ matrix.host_python }}
+      - name: Record the schema-tooling Python contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .ost-ci
+          if [ "${{ matrix.hosted }}" = "true" ] && [ -n "${{ matrix.host_python }}" ]; then
+            source=host-setup-python
+          elif [ -n "${{ matrix.host_python }}" ]; then
+            source=operator-provisioned
+          else
+            source=runtime-bundled
           fi
-          chmod +x "$runtime_bin"/*
+          printf '{"schema":1,"host_python":"%s","source":"%s"}\n' "${{ matrix.host_python }}" "$source" > .ost-ci/python-setup.json
       - name: Build the plugin from source
         shell: bash
         run: ost plugin build ${{ matrix.bundle }} --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
