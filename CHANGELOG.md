@@ -13,57 +13,13 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
-### Added
-- **Release workflow** ([`.github/workflows/release.yml`](.github/workflows/release.yml)) —
-  pushing a tag `vX.Y.Z` (must match `VERSION`, with this changelog's section
-  finalized) builds Windows / macOS arm64 / Linux bundles against the digest-pinned
-  cy2026 runtimes, gates on **digest-reproducible packaging**, packaged-artifact
-  verification (`ost plugin test --from-package`) and the clean-install smoke on
-  all three OS, then assembles a **draft** GitHub release: per-target lean +
-  debug-symbol bundles, a source archive, `SHA256SUMS`, and notes rendered from
-  this changelog via [`docs/RELEASE_NOTES_TEMPLATE.md`](docs/RELEASE_NOTES_TEMPLATE.md)
-  (`scripts/make_release_notes.py`). `workflow_dispatch` runs the same lanes as a
-  dry run without creating a release.
-- **Build-metadata stamp** — CMake configures `buildInfo.json` next to
-  `plugInfo.json` (git commit, build OS, compiler, build type, OpenUSD version,
-  plugin version, schema contract version), shipped inside every packaged bundle;
-  `tools/vrm_report.py` surfaces it as the report's `build` section. The stamp
-  carries no timestamp so packaging stays digest-reproducible.
-- **Install guide** ([`docs/INSTALL.md`](docs/INSTALL.md)) — release-artifact,
-  OpenStrata, and from-source installation with verification and troubleshooting.
+_Nothing yet._
 
-- Release contract: repo-root `VERSION` single source of truth (consumed by
-  CMake), this `CHANGELOG.md`, [`docs/CAPABILITY_MATRIX.md`](docs/CAPABILITY_MATRIX.md),
-  and [`docs/SUPPORTED_CONFIGURATIONS.md`](docs/SUPPORTED_CONFIGURATIONS.md).
-- **Corpus foundation** — reorganized `tests/corpus/` into `spec-samples/`
-  (vendored, license-clear), `vroid/` (fetched, git-ignored), `conformance/`, and
-  `generated/`; added a machine-readable `tests/corpus/manifest.json` (provenance,
-  SHA-256, roles, feature tags, expected diagnostics + max severity), a
-  `tests/corpus/README.md`, and a licenses index. `test_usdvrm_corpus.py` is now
-  **manifest-driven** and asserts the diagnostic-code contract. New
-  `scripts/verify_corpus.py` (SHA-256) and `scripts/fetch_corpus.py` (pinned,
-  license-gated fetch for the VRoid + Alicia candidates). No third-party binaries
-  are committed.
-- **Clean-install / plugin-discovery smoke** — `scripts/clean_install_smoke.py`
-  packages the bundle, extracts the artifact into a fresh directory outside the
-  repo, and runs `plugins/usdVrm/tests/clean_install_smoke.py` inside that
-  extracted bundle's session: verifies `.vrm` discovery served from the package,
-  opens a textured fixture + a corpus avatar, validates them, and resolves an
-  embedded texture straight from the `.vrm` container — proving no build-tree
-  dependency.
-
-### Changed
-- CI bootstrap pinned to **ost 0.13.0** (was 0.12.0). Packages are now **lean by
-  default** (debug symbols split into a sibling `*-debug.tar.zst`) and
-  **digest-reproducible** for an unchanged build; the scheduled-lane plugin
-  artifact pin was refreshed to the reproducible lean package.
-
-## [0.1.0] — unreleased
+## [0.1.0] — 2026-07-12
 
 First tagged release of the `usdVrm` OpenUSD file-format plugin: a `.vrm`
 (VRM 0.x / 1.0) importer that normalizes into a canonical model and authors a
-typed USD stage, plus the reliability tooling around it. This entry will be
-finalized when `v0.1.0` is tagged.
+typed USD stage, plus the reliability tooling around it.
 
 ### Added
 - **Importer** (`SdfFileFormat` for `vrm`): GLB read via cgltf, VRM 0.x/1.0
@@ -94,6 +50,43 @@ finalized when `v0.1.0` is tagged.
   `schemaContractVersion = 1`.
 - **Redistributable corpus** seed: Seed-san (VirtualCast) and VRM1 Constraint
   Twist (pixiv), both VRM 1.0 with `allowRedistribution: true`.
+- **Corpus foundation** — `tests/corpus/` organized into `spec-samples/`
+  (vendored, license-clear), `vroid/` (fetched, git-ignored), `conformance/`, and
+  `generated/`; a machine-readable `tests/corpus/manifest.json` (provenance,
+  SHA-256, roles, feature tags, expected diagnostics + max severity) drives
+  `test_usdvrm_corpus.py` and asserts the diagnostic-code contract.
+  `scripts/verify_corpus.py` (SHA-256) and `scripts/fetch_corpus.py` (pinned,
+  license-gated fetch for the VRoid + Alicia candidates). No third-party binaries
+  are committed.
+- **Release contract**: repo-root `VERSION` single source of truth (consumed by
+  CMake), this `CHANGELOG.md`, [`docs/CAPABILITY_MATRIX.md`](docs/CAPABILITY_MATRIX.md),
+  and [`docs/SUPPORTED_CONFIGURATIONS.md`](docs/SUPPORTED_CONFIGURATIONS.md).
+- **Clean-install / plugin-discovery smoke** — `scripts/clean_install_smoke.py`
+  packages the bundle, extracts the artifact into a fresh directory outside the
+  repo, and runs `plugins/usdVrm/tests/clean_install_smoke.py` inside that
+  extracted bundle's session: `.vrm` discovery served from the package, a
+  textured fixture + a corpus avatar open and validate, and an embedded texture
+  resolves straight from the `.vrm` container — proving no build-tree dependency.
+- **Release workflow** ([`.github/workflows/release.yml`](.github/workflows/release.yml)) —
+  a tag `vX.Y.Z` (must match `VERSION`, with this changelog's section finalized)
+  builds Windows / macOS arm64 / Linux bundles against digest-pinned cy2026
+  runtimes, gates on **digest-reproducible packaging**, packaged-artifact
+  verification (`ost plugin test --from-package`) and the clean-install smoke on
+  all three OS, then assembles a **draft** GitHub release: per-target lean +
+  debug-symbol bundles, a source archive, `SHA256SUMS`, and notes rendered from
+  this changelog via [`docs/RELEASE_NOTES_TEMPLATE.md`](docs/RELEASE_NOTES_TEMPLATE.md)
+  (`scripts/make_release_notes.py`). `workflow_dispatch` = dry run.
+- **Build-metadata stamp** — CMake configures `buildInfo.json` next to
+  `plugInfo.json` (git commit, build OS, compiler, build type, OpenUSD version,
+  plugin version, schema contract version), shipped inside every packaged bundle;
+  `tools/vrm_report.py` surfaces it as the report's `build` section. The stamp
+  carries no timestamp so packaging stays digest-reproducible.
+- **Install guide** ([`docs/INSTALL.md`](docs/INSTALL.md)) — release-artifact,
+  OpenStrata, and from-source installation with verification and troubleshooting.
+- **CI & packaging**: generated 3-OS source lanes (`ost ci generate github`)
+  bootstrap-pinned to **ost 0.13.0**; packages are **lean by default** (debug
+  symbols split into a sibling `*-debug.tar.zst`) and digest-reproducible for an
+  unchanged build.
 
 ### Known limitations
 - MToon is a `UsdPreviewSurface` fallback plus preserved raw data — **not** a
