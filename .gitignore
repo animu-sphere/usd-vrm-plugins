@@ -11,9 +11,17 @@ strata.lock
 **/lib/
 
 # --- Local docs & reports (kept out of version control by request) ---
-# Everything under /docs is intentionally git-ignored. The ost dogfooding
-# reports live under docs/report/ost/ but must never be pushed.
-/docs/
+# /docs is local-by-default: the ost dogfooding reports under docs/report/ost/
+# must never be pushed. Committed docs are explicitly un-ignored below so a plain
+# `git add docs/<file>` works (no `git add -f`); everything else under /docs stays
+# local.
+# Note: match /docs/* (contents), not /docs/ (the dir) — git cannot re-include a
+# child of an excluded directory, so the negations below only work this way.
+/docs/*
+!/docs/DESIGN_POLICY.md
+!/docs/ROADMAP.md
+!/docs/CAPABILITY_MATRIX.md
+!/docs/SUPPORTED_CONFIGURATIONS.md
 
 # Local samples and experiments.
 /scratch/

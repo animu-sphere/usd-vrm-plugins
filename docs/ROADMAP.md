@@ -104,18 +104,23 @@ structure and constraints; every major VRM feature's support status is listed.*
 - [x] **Package resolver vs temp extraction** relationship explained (root README +
       plugin README "Textures").
 - [x] **Schema contract v1** documented (`SCHEMA_CONTRACT.md`).
-- [ ] Add a **capability-status table** (`supported` / `approximated` / `preserved` /
+- [x] Add a **capability-status table** (`supported` / `approximated` / `preserved` /
       `unsupported` / `invalid` / `repaired`, policy §11) mapping each major VRM feature.
-- [ ] State the **import / evaluation / simulation** boundary in the README (importer
-      authors data; simulation is the future `execVrm` layer, policy §10).
+      → [`CAPABILITY_MATRIX.md`](CAPABILITY_MATRIX.md).
+- [x] State the **import / evaluation / simulation** boundary (importer authors data;
+      simulation is the future `execVrm` layer, policy §10) — in the README and
+      [`CAPABILITY_MATRIX.md`](CAPABILITY_MATRIX.md).
 
 ### P1 — v0.1.0 release  (high)
 *Goal: installable from a clean environment; opens a sample VRM; schema plugin
 discovered; validator passes; release artifacts reproducible.* (policy §16, §17-P1)
 
-- [ ] **Versioning** + **CHANGELOG** + release note template (supported OpenUSD /
+- [~] **Versioning** + **CHANGELOG** + release note template (supported OpenUSD /
       platforms / implemented features / approximations / known limitations / schema
-      contract version).
+      contract version). **Landed:** repo-root [`VERSION`](../VERSION) single source
+      (CMake reads it), [`CHANGELOG.md`](../CHANGELOG.md),
+      [`SUPPORTED_CONFIGURATIONS.md`](SUPPORTED_CONFIGURATIONS.md). Remaining: a
+      release-note template tied to the release workflow.
 - [ ] **Release workflow** producing platform artifacts (source archive, Linux/macOS/
       Windows binaries, schema + resolver resources, sample VRM + generated USD,
       compatibility report, checksums).

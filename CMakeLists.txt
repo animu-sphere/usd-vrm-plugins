@@ -16,8 +16,14 @@
 # from here.
 cmake_minimum_required(VERSION 3.22)
 
+# Single source of truth for the release version: the repo-root VERSION file.
+# Every other version string (CHANGELOG, release tag, ost bundle manifest) mirrors
+# it; nothing hand-duplicates the number here. See docs/SUPPORTED_CONFIGURATIONS.md.
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" _vrm_project_version LIMIT_COUNT 1)
+string(STRIP "${_vrm_project_version}" _vrm_project_version)
+
 project(UsdVrmPlugins
-    VERSION 0.1.0
+    VERSION ${_vrm_project_version}
     DESCRIPTION "OpenUSD plugins for VRM avatars"
     LANGUAGES CXX)
 

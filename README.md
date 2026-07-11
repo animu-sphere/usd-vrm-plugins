@@ -39,6 +39,18 @@ schemas across the whole rig) is implemented and verified against real VRM 1.0
 avatars, plus reliability tooling: a standalone stage validator, a coded diagnostic
 taxonomy, a compatibility report, and portable texture packaging.
 
+**Import vs. evaluation vs. simulation.** The `usdVrm` plugin *authors data only*.
+LookAt, node constraints, and spring bones are written as typed schema data; their
+runtime **evaluation/simulation** is a separate layer (`execVrm`, roadmap P4) and is
+never run by this importer. This keeps the import step pure and deterministic so the
+runtime can be swapped without touching it.
+
+Per-feature support status is in [docs/CAPABILITY_MATRIX.md](docs/CAPABILITY_MATRIX.md);
+supported platforms, OpenUSD versions, and build requirements are in
+[docs/SUPPORTED_CONFIGURATIONS.md](docs/SUPPORTED_CONFIGURATIONS.md). Release history
+is in the [CHANGELOG](CHANGELOG.md) (the release version lives in the single-source
+[VERSION](VERSION) file).
+
 The forward direction — **doc/impl sync, a `v0.1.0` release, Windows runtime CI, and
 a separate OpenExec runtime layer** — is set by the project
 [design & development policy](docs/DESIGN_POLICY.md) and tracked, with live per-phase
