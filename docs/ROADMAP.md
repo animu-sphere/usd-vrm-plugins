@@ -126,7 +126,12 @@ discovered; validator passes; release artifacts reproducible.* (policy §16, §1
       compatibility report, checksums).
 - [ ] **Compatibility matrix** — a second OpenUSD version cell (min vs latest); today the
       CI runs cy2026 only. **Partly there:** OS axis already runs three cells (see P3).
-- [ ] **Install guide** + clean-environment install test.
+- [~] **Install guide** + clean-environment install test. **Landed:** clean-install /
+      plugin-discovery smoke (`scripts/clean_install_smoke.py` +
+      `tests/clean_install_smoke.py`) — packages, extracts to a fresh dir outside the
+      repo, and asserts discovery/open/validate/texture-resolution against the packaged
+      artifact (no build-tree reference). Remaining: an install guide and CI wiring
+      (with the release workflow).
 
 ### P2 — Fix the canonical-model contract  (medium)
 *Goal: importer and authorer depend only on the canonical contract; parser/USD types

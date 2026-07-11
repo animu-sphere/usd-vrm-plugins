@@ -17,6 +17,13 @@ Current schema contract version: **1**.
 - Release contract: repo-root `VERSION` single source of truth (consumed by
   CMake), this `CHANGELOG.md`, [`docs/CAPABILITY_MATRIX.md`](docs/CAPABILITY_MATRIX.md),
   and [`docs/SUPPORTED_CONFIGURATIONS.md`](docs/SUPPORTED_CONFIGURATIONS.md).
+- **Clean-install / plugin-discovery smoke** — `scripts/clean_install_smoke.py`
+  packages the bundle, extracts the artifact into a fresh directory outside the
+  repo, and runs `plugins/usdVrm/tests/clean_install_smoke.py` inside that
+  extracted bundle's session: verifies `.vrm` discovery served from the package,
+  opens a textured fixture + a corpus avatar, validates them, and resolves an
+  embedded texture straight from the `.vrm` container — proving no build-tree
+  dependency.
 
 ## [0.1.0] — unreleased
 
