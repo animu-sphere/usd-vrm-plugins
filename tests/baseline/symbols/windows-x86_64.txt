@@ -1,4 +1,4 @@
-# Exported symbols of libUsdVrmFileFormat.dll (windows-x86_64); frozen by tools/baseline_freeze.py
+# Exported native symbols across workspace bundle libraries (windows-x86_64); frozen by tools/baseline_freeze.py
 ??0UsdVrmTokensType@pxrInternal_v0_26_5__pxrReserved__@@QEAA@XZ
 ??1UsdVrmColliderAPI@pxrInternal_v0_26_5__pxrReserved__@@UEAA@XZ
 ??1UsdVrmConstraintAPI@pxrInternal_v0_26_5__pxrReserved__@@UEAA@XZ

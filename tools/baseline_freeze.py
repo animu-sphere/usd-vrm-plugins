@@ -11,9 +11,16 @@ code moves. This tool owns that evidence, under tests/baseline/:
                       prim topology, applied schemas, material/skeleton
                       bindings, animation samples, asset resolution, diagnostics
   schema_contract.json  schema types/properties/tokens (generatedSchema.usda)
-  discovery.json      plugin registry metadata + file-format probe
+  discovery.json      registered USD types + file-format probe
   diagnostics.json    VRMxxx code catalog + corpus/negative expected codes
-  symbols/            exported native symbols of the built plugin library
+  symbols/            exported native symbols across all bundle libraries
+
+The frozen views are deliberately bundle-set invariant: discovery freezes the
+*union* of registered types across every workspace bundle (no per-plugin
+attribution) and symbols freeze the union of exported names across every
+bundle library. A migration PR that moves a registration or a symbol between
+bundles therefore keeps these artifacts byte-identical; per-bundle attribution
+is owned by each bundle's own discovery tests (WORKSPACE.md §6 invariant 5).
 
 Modes:
   --check   (default) regenerate everything in memory and compare against the
@@ -21,7 +28,9 @@ Modes:
   --update  rewrite the committed baseline from current behavior. Only valid
             when behavior is *supposed* to change (never in a structural PR).
 
-Run inside the plugin's runtime session so the plugin is discoverable:
+Run inside a runtime session in which every workspace bundle is discoverable
+(add `--with plugins/<bundle>` for each additional bundle once the split
+begins):
 
     ost plugin run plugins/usdVrm -- python tools/baseline_freeze.py --check
     ost plugin run plugins/usdVrm -- python tools/baseline_freeze.py --update
@@ -45,7 +54,8 @@ import subprocess
 import sys
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
-BUNDLE = REPO / "plugins" / "usdVrm"
+PLUGINS = REPO / "plugins"
+BUNDLE = PLUGINS / "usdVrm"
 FIXTURES = BUNDLE / "tests" / "fixtures"
 CORPUS = BUNDLE / "tests" / "corpus"
 BASELINE = REPO / "tests" / "baseline"
@@ -164,6 +174,54 @@ def _jsonable(value):
     return {"len": n, "sha256": _hash_float_array(items)
             if items and not isinstance(items[0], str)
             else _array_hash(items, str)}
+
+
+# ---------------------------------------------------------------------------
+# Workspace bundle enumeration
+# ---------------------------------------------------------------------------
+
+_PLUG_INFO_RE = re.compile(r"^\s*plug_info:\s*(\S+)\s*$", re.M)
+
+
+def _bundle_plug_infos() -> list[pathlib.Path]:
+    """plugInfo.json path for every workspace bundle manifest that declares a
+    USD registration, in bundle-name order. The manifests are the source of
+    truth for the bundle set (WORKSPACE.md §2), so the frozen views stay
+    correct as bundles are added by the split."""
+    out = []
+    for manifest in sorted(PLUGINS.glob("*/openstrata.plugin.yaml")):
+        m = _PLUG_INFO_RE.search(manifest.read_text("utf-8"))
+        if not m:
+            continue
+        out.append(manifest.parent / m.group(1))
+    if not out:
+        raise RuntimeError(f"no bundle manifests under {PLUGINS}")
+    return out
+
+
+def _registry_plugin_names() -> list[str]:
+    """USD Plug registry names declared by the workspace bundles' plugInfo
+    files (a registry name is independent of the bundle id)."""
+    names = []
+    for plug_info in _bundle_plug_infos():
+        if not plug_info.exists():
+            raise RuntimeError(f"manifest-declared plugInfo missing: {plug_info}")
+        data = json.loads(plug_info.read_text("utf-8"))
+        for entry in data.get("Plugins", []):
+            names.append(entry["Name"])
+    return names
+
+
+def _generated_schema_path() -> pathlib.Path:
+    """The single generatedSchema.usda shipped by the workspace (schema
+    ownership moves between bundles during the split; content must not)."""
+    found = sorted(PLUGINS.glob("*/plugin/resources/*/generatedSchema.usda"))
+    if len(found) != 1:
+        raise RuntimeError(
+            "expected exactly one committed generatedSchema.usda under "
+            f"plugins/*/plugin/resources/, found {len(found)}: "
+            f"{[str(p) for p in found]}")
+    return found[0]
 
 
 # ---------------------------------------------------------------------------
@@ -377,7 +435,7 @@ def gen_digests() -> dict[str, str]:
 def gen_schema() -> dict[str, str]:
     from pxr import Sdf, Usd
 
-    gen_path = BUNDLE / "plugin" / "resources" / "usdVrm" / "generatedSchema.usda"
+    gen_path = _generated_schema_path()
     layer = Sdf.Layer.OpenAsAnonymous(str(gen_path))
     schemas = {}
     for prim in layer.rootPrims:
@@ -420,18 +478,8 @@ def gen_schema() -> dict[str, str]:
     return {"schema_contract.json": _dump_json(contract)}
 
 
-# Registry name declared in plugInfo.json (differs from the bundle id).
-PLUGIN_REGISTRY_NAME = "UsdVrmFileFormat"
-
-
 def gen_discovery() -> dict[str, str]:
     from pxr import Plug, Sdf
-
-    plugin = Plug.Registry().GetPluginWithName(PLUGIN_REGISTRY_NAME)
-    if not plugin:
-        raise RuntimeError(
-            f"plugin '{PLUGIN_REGISTRY_NAME}' not discoverable — run under "
-            "`ost plugin run plugins/usdVrm -- python ...`")
 
     def scrub_meta(v):
         if isinstance(v, dict):
@@ -442,14 +490,30 @@ def gen_discovery() -> dict[str, str]:
             return _scrub(v.replace("\\", "/"))
         return v
 
+    # Union of registered USD types across every workspace bundle. Which
+    # bundle registers which type is deliberately NOT frozen (it changes as
+    # registrations move during the split); each bundle's own discovery tests
+    # own that attribution. What must never change is the set of types and
+    # their registration metadata.
+    registered_types: dict = {}
+    for name in _registry_plugin_names():
+        plugin = Plug.Registry().GetPluginWithName(name)
+        if not plugin:
+            raise RuntimeError(
+                f"plugin '{name}' not discoverable — run under "
+                "`ost plugin run plugins/usdVrm -- python ...` with every "
+                "workspace bundle in the session (--with plugins/<bundle>)")
+        for type_name, meta in dict(plugin.metadata).get("Types", {}).items():
+            if type_name in registered_types:
+                raise RuntimeError(
+                    f"type '{type_name}' registered by more than one "
+                    "workspace bundle")
+            registered_types[type_name] = scrub_meta(dict(meta))
+
     fmt = Sdf.FileFormat.FindByExtension("vrm")
     disco = {
         "baselineSchemaVersion": BASELINE_SCHEMA_VERSION,
-        "plugin": {
-            "name": plugin.name,
-            "isResource": plugin.isResource,
-            "metadata": scrub_meta(dict(plugin.metadata)),
-        },
+        "registeredTypes": registered_types,
         "fileFormat": {
             "found": fmt is not None,
             "formatId": fmt.formatId if fmt else None,
@@ -457,9 +521,9 @@ def gen_discovery() -> dict[str, str]:
             "extensions": list(fmt.GetFileExtensions()) if fmt else [],
         },
         "pythonSurface": {
-            # The bundle ships no Python module of its own; its Python-visible
-            # surface is exactly the registry state frozen here plus the
-            # schema contract (schema_contract.json).
+            # The bundles ship no Python module of their own; the
+            # Python-visible surface is exactly the registry state frozen
+            # here plus the schema contract (schema_contract.json).
             "pythonModule": None,
             "schemaApis": SCHEMA_APIS,
         },
@@ -565,17 +629,23 @@ def _exported_symbols(lib: pathlib.Path) -> list[str] | None:
 
 
 def gen_symbols() -> dict[str, str]:
-    libs = sorted(BUNDLE.glob("lib/*.dll")) + sorted(BUNDLE.glob("lib/*.so")) \
-        + sorted(BUNDLE.glob("lib/*.dylib"))
+    libs = sorted(PLUGINS.glob("*/lib/*.dll")) + sorted(PLUGINS.glob("*/lib/*.so")) \
+        + sorted(PLUGINS.glob("*/lib/*.dylib"))
     if not libs:
-        raise RuntimeError("no built plugin library under plugins/usdVrm/lib "
-                           "— run `ost plugin build plugins/usdVrm` first")
-    syms = _exported_symbols(libs[0])
-    if syms is None:
-        return {}  # dump tool unavailable: caller reports a skip
-    header = (f"# Exported symbols of {libs[0].name} "
+        raise RuntimeError("no built plugin library under plugins/*/lib "
+                           "— run `ost plugin build` on each bundle first")
+    # Union across every bundle library: a symbol moving between bundles
+    # during the split keeps this artifact byte-identical; a symbol appearing
+    # or vanishing does not.
+    merged: set[str] = set()
+    for lib in libs:
+        syms = _exported_symbols(lib)
+        if syms is None:
+            return {}  # dump tool unavailable: caller reports a skip
+        merged.update(syms)
+    header = (f"# Exported native symbols across workspace bundle libraries "
               f"({_platform_tag()}); frozen by tools/baseline_freeze.py\n")
-    return {f"symbols/{_platform_tag()}.txt": header + "\n".join(syms) + "\n"}
+    return {f"symbols/{_platform_tag()}.txt": header + "\n".join(sorted(merged)) + "\n"}
 
 
 GENERATORS = {
