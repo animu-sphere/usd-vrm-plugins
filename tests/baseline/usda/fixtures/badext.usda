@@ -1,0 +1,104 @@
+#usda 1.0
+(
+    defaultPrim = "Asset"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def SkelRoot "Asset" (
+    customData = {
+        dictionary vrm = {
+            bool frontAxisNormalized = 0
+            string rawExtension = '{"specVersion":"1.0","meta":"this should be an object","humanoid":{"humanBones":{"hips":{"node":1},"spine":{"node":999}}}}'
+            int schemaContractVersion = 1
+            string sourceFormat = "VRM"
+            string sourceFrontAxis = "+Z"
+            string sourceVersion = "1.0"
+            string specVersion = "1.0"
+            string[] warnings = ["[VRM140] humanoid bone 'spine' references node 999 with no skeleton joint; skipped"]
+        }
+    }
+    kind = "component"
+)
+{
+    def Scope "mtl"
+    {
+        def Material "Body_Mat" (
+            customData = {
+                dictionary vrm = {
+                    int sourceMaterialIndex = 0
+                }
+            }
+        )
+        {
+            token outputs:surface.connect = </Asset/mtl/Body_Mat/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.8, 0.6, 0.5)
+                color3f inputs:emissiveColor = (0, 0, 0)
+                float inputs:metallic = 0
+                float inputs:opacity = 1
+                float inputs:roughness = 0.7
+                token outputs:surface
+            }
+        }
+    }
+
+    def Scope "geo"
+    {
+        def Mesh "Body" (
+            apiSchemas = ["MaterialBindingAPI", "SkelBindingAPI"]
+            customData = {
+                dictionary vrm = {
+                    int sourceMeshIndex = 0
+                    int sourceNodeIndex = 0
+                    string sourceNodeName = "Body"
+                    int sourcePrimitiveIndex = 0
+                }
+            }
+        )
+        {
+            float3[] extent = [(-0.5, 0, 0), (0.5, 1, 0)]
+            int[] faceVertexCounts = [3]
+            int[] faceVertexIndices = [0, 1, 2]
+            rel material:binding = </Asset/mtl/Body_Mat>
+            point3f[] points = [(-0.5, 0, 0), (0.5, 0, 0), (0, 1, 0)]
+            matrix4d primvars:skel:geomBindTransform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            int[] primvars:skel:jointIndices = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] (
+                elementSize = 4
+                interpolation = "vertex"
+            )
+            float[] primvars:skel:jointWeights = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0] (
+                elementSize = 4
+                interpolation = "vertex"
+            )
+            rel skel:skeleton = </Asset/skel/Skeleton>
+            uniform token subdivisionScheme = "none"
+        }
+    }
+
+    def Scope "skel"
+    {
+        def Skeleton "Skeleton"
+        {
+            uniform matrix4d[] bindTransforms = [( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )]
+            uniform token[] jointNames = ["hips", "spine"]
+            uniform token[] joints = ["hips", "hips/spine"]
+            uniform matrix4d[] restTransforms = [( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.5, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.30000001192092896, 0, 1) )]
+        }
+    }
+
+    def Scope "rig"
+    {
+        def Scope "Humanoid" (
+            apiSchemas = ["VrmHumanoidAPI"]
+        )
+        {
+            uniform token vrm:humanBones:hips = "hips"
+            rel vrm:skeleton = </Asset/skel/Skeleton>
+        }
+    }
+}
+

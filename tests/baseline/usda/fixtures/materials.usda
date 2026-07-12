@@ -1,0 +1,167 @@
+#usda 1.0
+(
+    defaultPrim = "Asset"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "Asset" (
+    customData = {
+        dictionary vrm = {
+            bool frontAxisNormalized = 0
+            string meta = '''{
+    "authors": ["usd-vrm-plugins"],
+    "avatarPermission": "everyone",
+    "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0",
+    "name": "usdVrm Fixture",
+    "version": "1.0"
+}'''
+            string rawExtension = '{"specVersion":"1.0","meta":{"name":"usdVrm Fixture","version":"1.0","authors":["usd-vrm-plugins"],"licenseUrl":"https://www.apache.org/licenses/LICENSE-2.0","avatarPermission":"everyone"},"humanoid":{"humanBones":{}}}'
+            int schemaContractVersion = 1
+            string sourceFormat = "VRM"
+            string sourceFrontAxis = "+Z"
+            string sourceVersion = "1.0"
+            string specVersion = "1.0"
+        }
+    }
+    kind = "component"
+)
+{
+    def Scope "mtl"
+    {
+        def Material "Glass" (
+            customData = {
+                dictionary vrm = {
+                    int sourceMaterialIndex = 0
+                }
+            }
+        )
+        {
+            token outputs:surface.connect = </Asset/mtl/Glass/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.2, 0.4, 0.9)
+                color3f inputs:emissiveColor = (0, 0, 0)
+                float inputs:metallic = 1
+                float inputs:opacity = 0.3
+                float inputs:roughness = 1
+                token outputs:surface
+            }
+        }
+
+        def Material "Leaf" (
+            customData = {
+                dictionary vrm = {
+                    int sourceMaterialIndex = 1
+                }
+            }
+        )
+        {
+            token outputs:surface.connect = </Asset/mtl/Leaf/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.1, 0.8, 0.2)
+                color3f inputs:emissiveColor = (0, 0, 0)
+                float inputs:metallic = 1
+                float inputs:opacity = 1
+                float inputs:opacityThreshold = 0.3
+                float inputs:roughness = 1
+                token outputs:surface
+            }
+        }
+
+        def Material "Unlit" (
+            customData = {
+                dictionary vrm = {
+                    int sourceMaterialIndex = 2
+                }
+            }
+        )
+        {
+            token outputs:surface.connect = </Asset/mtl/Unlit/Surface.outputs:surface>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 0, 0)
+                color3f inputs:emissiveColor = (0.9, 0.1, 0.1)
+                float inputs:metallic = 0
+                float inputs:opacity = 1
+                float inputs:roughness = 1
+                token outputs:surface
+            }
+        }
+    }
+
+    def Scope "geo"
+    {
+        def Mesh "Blended" (
+            apiSchemas = ["MaterialBindingAPI"]
+            customData = {
+                dictionary vrm = {
+                    int sourceMeshIndex = 0
+                    int sourceNodeIndex = 0
+                    string sourceNodeName = "Blended"
+                    int sourcePrimitiveIndex = 0
+                }
+            }
+        )
+        {
+            float3[] extent = [(-0.5, 0, 0), (0.5, 1, 0)]
+            int[] faceVertexCounts = [3]
+            int[] faceVertexIndices = [0, 1, 2]
+            rel material:binding = </Asset/mtl/Glass>
+            point3f[] points = [(-0.5, 0, 0), (0.5, 0, 0), (0, 1, 0)]
+            uniform token subdivisionScheme = "none"
+        }
+
+        def Mesh "Masked" (
+            apiSchemas = ["MaterialBindingAPI"]
+            customData = {
+                dictionary vrm = {
+                    int sourceMeshIndex = 1
+                    int sourceNodeIndex = 1
+                    string sourceNodeName = "Masked"
+                    int sourcePrimitiveIndex = 0
+                }
+            }
+        )
+        {
+            float3[] extent = [(-0.5, 0, 0), (0.5, 1, 0)]
+            int[] faceVertexCounts = [3]
+            int[] faceVertexIndices = [0, 1, 2]
+            rel material:binding = </Asset/mtl/Leaf>
+            point3f[] points = [(-0.5, 0, 0), (0.5, 0, 0), (0, 1, 0)]
+            uniform token subdivisionScheme = "none"
+        }
+
+        def Mesh "Flat" (
+            apiSchemas = ["MaterialBindingAPI"]
+            customData = {
+                dictionary vrm = {
+                    int sourceMeshIndex = 2
+                    int sourceNodeIndex = 2
+                    string sourceNodeName = "Flat"
+                    int sourcePrimitiveIndex = 0
+                }
+            }
+        )
+        {
+            float3[] extent = [(-0.5, 0, 0), (0.5, 1, 0)]
+            int[] faceVertexCounts = [3]
+            int[] faceVertexIndices = [0, 1, 2]
+            rel material:binding = </Asset/mtl/Unlit>
+            point3f[] points = [(-0.5, 0, 0), (0.5, 0, 0), (0, 1, 0)]
+            uniform token subdivisionScheme = "none"
+        }
+    }
+
+    def Scope "rig"
+    {
+    }
+}
+

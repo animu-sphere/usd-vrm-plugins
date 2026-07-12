@@ -1,0 +1,380 @@
+{
+  "baselineSchemaVersion": 1,
+  "generatedSchemaSha256": "2f68033060e1108d2cde3825fdb4f006c148d0b0584db57d5de4d10cfc21b799",
+  "registryVisible": {
+    "VrmColliderAPI": true,
+    "VrmConstraintAPI": true,
+    "VrmExpressionAPI": true,
+    "VrmHumanoidAPI": true,
+    "VrmLookAtAPI": true,
+    "VrmSpringBoneAPI": true
+  },
+  "schemaContractVersion": 1,
+  "schemas": {
+    "VrmColliderAPI": {
+      "apiSchemaType": null,
+      "properties": {
+        "vrm:node": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:offset": {
+          "typeName": "GfVec3f",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:radius": {
+          "typeName": "float",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:shape": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:tail": {
+          "typeName": "GfVec3f",
+          "variability": "Sdf.VariabilityUniform"
+        }
+      }
+    },
+    "VrmConstraintAPI": {
+      "apiSchemaType": null,
+      "properties": {
+        "vrm:axis": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:constrained": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:source": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:type": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:weight": {
+          "typeName": "float",
+          "variability": "Sdf.VariabilityUniform"
+        }
+      }
+    },
+    "VrmExpressionAPI": {
+      "apiSchemaType": null,
+      "properties": {
+        "vrm:expressionType": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:isBinary": {
+          "typeName": "bool",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:materialColorTargets": {
+          "kind": "relationship"
+        },
+        "vrm:materialColorTypes": {
+          "typeName": "VtArray<TfToken>",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:materialColorValues": {
+          "typeName": "VtArray<GfVec4f>",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:morphTargetWeights": {
+          "typeName": "VtArray<float>",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:morphTargets": {
+          "kind": "relationship"
+        }
+      }
+    },
+    "VrmHumanoidAPI": {
+      "apiSchemaType": null,
+      "properties": {
+        "vrm:humanBones:chest": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:head": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:hips": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:jaw": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftEye": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftFoot": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftHand": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftIndexDistal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftIndexIntermediate": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftIndexProximal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftLittleDistal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftLittleIntermediate": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftLittleProximal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftLowerArm": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftLowerLeg": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftMiddleDistal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftMiddleIntermediate": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftMiddleProximal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftRingDistal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftRingIntermediate": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftRingProximal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftShoulder": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftThumbDistal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftThumbMetacarpal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftThumbProximal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftToes": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftUpperArm": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:leftUpperLeg": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:neck": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightEye": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightFoot": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightHand": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightIndexDistal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightIndexIntermediate": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightIndexProximal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightLittleDistal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightLittleIntermediate": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightLittleProximal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightLowerArm": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightLowerLeg": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightMiddleDistal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightMiddleIntermediate": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightMiddleProximal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightRingDistal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightRingIntermediate": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightRingProximal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightShoulder": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightThumbDistal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightThumbMetacarpal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightThumbProximal": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightToes": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightUpperArm": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:rightUpperLeg": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:spine": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:humanBones:upperChest": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:skeleton": {
+          "kind": "relationship"
+        }
+      }
+    },
+    "VrmLookAtAPI": {
+      "apiSchemaType": null,
+      "properties": {
+        "vrm:leftEye": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:rightEye": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:skeleton": {
+          "kind": "relationship"
+        },
+        "vrm:type": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        }
+      }
+    },
+    "VrmSpringBoneAPI": {
+      "apiSchemaType": null,
+      "properties": {
+        "vrm:center": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:colliderGroups": {
+          "kind": "relationship"
+        },
+        "vrm:dragForce": {
+          "typeName": "VtArray<float>",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:gravityDir": {
+          "typeName": "VtArray<GfVec3f>",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:gravityPower": {
+          "typeName": "VtArray<float>",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:hitRadius": {
+          "typeName": "VtArray<float>",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:joints": {
+          "typeName": "VtArray<TfToken>",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:stiffness": {
+          "typeName": "VtArray<float>",
+          "variability": "Sdf.VariabilityUniform"
+        }
+      }
+    }
+  }
+}

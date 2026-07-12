@@ -1,0 +1,188 @@
+{
+  "assets": [],
+  "baselineSchemaVersion": 1,
+  "defaultPrim": "/Asset",
+  "framesPerSecond": 30.0,
+  "materials": {
+    "/Asset/mtl/Body_Mat": {
+      "shaders": {
+        "/Asset/mtl/Body_Mat/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.800000012,
+              0.600000024,
+              0.5
+            ],
+            "emissiveColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 0.699999988
+          }
+        }
+      }
+    }
+  },
+  "meshes": {
+    "/Asset/geo/Body": {
+      "faceCount": 1,
+      "material": [
+        "/Asset/mtl/Body_Mat"
+      ],
+      "pointCount": 3,
+      "pointsSha256": "dc401fc518e5b39d2a3876245fcc2fac9c8ed4709000bf3813f492626a41da8f",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    }
+  },
+  "metersPerUnit": 1.0,
+  "open": true,
+  "prims": [
+    {
+      "kind": "component",
+      "path": "/Asset",
+      "type": "SkelRoot"
+    },
+    {
+      "path": "/Asset/mtl",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/mtl/Body_Mat",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Body_Mat/Surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/geo",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Body",
+      "type": "Mesh"
+    },
+    {
+      "path": "/Asset/skel",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/skel/Skeleton",
+      "type": "Skeleton"
+    },
+    {
+      "path": "/Asset/skel/Animations",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/skel/Animations/move",
+      "type": "SkelAnimation"
+    },
+    {
+      "path": "/Asset/rig",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmHumanoidAPI"
+      ],
+      "path": "/Asset/rig/Humanoid",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/SpringBones",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/Wind",
+      "type": "Scope"
+    }
+  ],
+  "skeletons": {
+    "/Asset/skel/Skeleton": {
+      "bindTransformsSha256": "b6b24dbd5284b23ce20feab4383395c40a6cb081fa1f8b020755c30cb29910f7",
+      "joints": [
+        "hips",
+        "hips/spine"
+      ],
+      "restTransformsSha256": "dfb47d7899cf6ba2609a037b2b77bc978f620eb56ae4368766d3a240c98733d6"
+    }
+  },
+  "source": "${REPO}/plugins/usdVrm/tests/fixtures/vrm0_frontbake.vrm",
+  "timeCodeRange": [
+    0.0,
+    30.0
+  ],
+  "timeSampledAttrs": {
+    "/Asset/skel/Animations/move.rotations": {
+      "numTimeSamples": 2,
+      "timeRange": [
+        0.0,
+        30.0
+      ]
+    },
+    "/Asset/skel/Animations/move.scales": {
+      "numTimeSamples": 2,
+      "timeRange": [
+        0.0,
+        30.0
+      ]
+    },
+    "/Asset/skel/Animations/move.translations": {
+      "numTimeSamples": 2,
+      "timeRange": [
+        0.0,
+        30.0
+      ]
+    }
+  },
+  "upAxis": "Y",
+  "vrm": {
+    "frontAxisNormalized": true,
+    "metaName": null,
+    "metaSha256": "e9b524f3093a365c3e9f0c6d158818491af0de76e46e4ba443abdc64711916ba",
+    "rawExtensionSha256": "96f5de4e25711fe4bc6c76215fc39d0ecfc604369d45f0475a46577ea0e9461b",
+    "schemaContractVersion": 1,
+    "sourceFormat": "VRM",
+    "sourceFrontAxis": "-Z",
+    "sourceVersion": "0.x",
+    "specVersion": "0.0",
+    "warningCodes": [],
+    "warningCount": 0
+  }
+}

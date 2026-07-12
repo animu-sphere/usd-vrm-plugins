@@ -115,3 +115,17 @@ add_test(
 
 set_tests_properties(usdvrm_validate PROPERTIES
     ENVIRONMENT_MODIFICATION "${_smoke_env}")
+
+# Phase 0 workspace-split regression gate: current behavior must match the
+# committed baseline evidence under <repo>/tests/baseline (stage snapshots,
+# structural digests, schema contract, discovery, diagnostics, symbols). Any
+# diff in a structural/migration PR is a regression by definition — see
+# docs/architecture/WORKSPACE.md §7 and tests/baseline/README.md.
+get_filename_component(_repo_root "${_bundle_dir}/../.." ABSOLUTE)
+add_test(
+    NAME usdvrm_baseline
+    COMMAND ${Python3_EXECUTABLE}
+            "${_repo_root}/tools/baseline_freeze.py" --check)
+
+set_tests_properties(usdvrm_baseline PROPERTIES
+    ENVIRONMENT_MODIFICATION "${_smoke_env}")

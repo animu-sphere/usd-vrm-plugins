@@ -1,0 +1,8 @@
+{
+  "baselineSchemaVersion": 1,
+  "errorCodes": [
+    "VRM003"
+  ],
+  "open": false,
+  "source": "${REPO}/plugins/usdVrm/tests/corpus/generated/malformed/dangling_texture_index.vrm"
+}

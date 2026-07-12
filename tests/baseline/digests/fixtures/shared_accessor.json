@@ -1,0 +1,121 @@
+{
+  "assets": [],
+  "baselineSchemaVersion": 1,
+  "defaultPrim": "/Asset",
+  "framesPerSecond": 24.0,
+  "materials": {
+    "/Asset/mtl/Quad_Mat": {
+      "shaders": {
+        "/Asset/mtl/Quad_Mat/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.800000012,
+              0.600000024,
+              0.5
+            ],
+            "emissiveColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 0.699999988
+          }
+        }
+      }
+    }
+  },
+  "meshes": {
+    "/Asset/geo/Quad_0": {
+      "faceCount": 1,
+      "material": [
+        "/Asset/mtl/Quad_Mat"
+      ],
+      "pointCount": 3,
+      "pointsSha256": "a08fa0561c3b8b28fc6eb080dcf07048f3e7a33a1aef67026c47c257709a37a7",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity"
+      ],
+      "skeleton": []
+    },
+    "/Asset/geo/Quad_1": {
+      "faceCount": 1,
+      "material": [
+        "/Asset/mtl/Quad_Mat"
+      ],
+      "pointCount": 3,
+      "pointsSha256": "7f3f9a90f09458e4f5742194f267d011dae0e04dbb2ca32cf418f440a42db868",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity"
+      ],
+      "skeleton": []
+    }
+  },
+  "metersPerUnit": 1.0,
+  "open": true,
+  "prims": [
+    {
+      "kind": "component",
+      "path": "/Asset",
+      "type": "Xform"
+    },
+    {
+      "path": "/Asset/mtl",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/mtl/Quad_Mat",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Quad_Mat/Surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/geo",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI"
+      ],
+      "path": "/Asset/geo/Quad_0",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI"
+      ],
+      "path": "/Asset/geo/Quad_1",
+      "type": "Mesh"
+    },
+    {
+      "path": "/Asset/rig",
+      "type": "Scope"
+    }
+  ],
+  "skeletons": {},
+  "source": "${REPO}/plugins/usdVrm/tests/fixtures/shared_accessor.vrm",
+  "timeSampledAttrs": {},
+  "upAxis": "Y",
+  "vrm": {
+    "frontAxisNormalized": false,
+    "metaName": "usdVrm Fixture",
+    "metaSha256": "2ce7865d03f1b8a92a49a5418d9bec76ee6e8a0f3c748565fee3ead1f9a17cdf",
+    "rawExtensionSha256": "914d217985b21303df2dc775cfe0f5765de8659ae1c02ac2be8c988f5e9f5acf",
+    "schemaContractVersion": 1,
+    "sourceFormat": "VRM",
+    "sourceFrontAxis": "+Z",
+    "sourceVersion": "1.0",
+    "specVersion": "1.0",
+    "warningCodes": [],
+    "warningCount": 0
+  }
+}

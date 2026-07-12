@@ -1,0 +1,194 @@
+{
+  "assets": [],
+  "baselineSchemaVersion": 1,
+  "defaultPrim": "/Asset",
+  "framesPerSecond": 24.0,
+  "materials": {
+    "/Asset/mtl/Mat": {
+      "shaders": {
+        "/Asset/mtl/Mat/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.800000012,
+              0.600000024,
+              0.5
+            ],
+            "emissiveColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 0.699999988
+          }
+        }
+      }
+    },
+    "/Asset/mtl/Mat_2": {
+      "shaders": {
+        "/Asset/mtl/Mat_2/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.800000012,
+              0.600000024,
+              0.5
+            ],
+            "emissiveColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 0.699999988
+          }
+        }
+      }
+    }
+  },
+  "meshes": {
+    "/Asset/geo/Body": {
+      "faceCount": 1,
+      "material": [
+        "/Asset/mtl/Mat"
+      ],
+      "pointCount": 3,
+      "pointsSha256": "20a2f6d94b4d070a75e4ef476db3d8bbb40d00e31da741906b0fa943fd01d947",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity"
+      ],
+      "skeleton": []
+    },
+    "/Asset/geo/Body_2": {
+      "faceCount": 1,
+      "material": [
+        "/Asset/mtl/Mat_2"
+      ],
+      "pointCount": 3,
+      "pointsSha256": "20a2f6d94b4d070a75e4ef476db3d8bbb40d00e31da741906b0fa943fd01d947",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity"
+      ],
+      "skeleton": []
+    },
+    "/Asset/geo/Mesh_739d0383": {
+      "faceCount": 1,
+      "material": [
+        "/Asset/mtl/Mat_2"
+      ],
+      "pointCount": 3,
+      "pointsSha256": "20a2f6d94b4d070a75e4ef476db3d8bbb40d00e31da741906b0fa943fd01d947",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity"
+      ],
+      "skeleton": []
+    },
+    "/Asset/geo/_u9854": {
+      "faceCount": 1,
+      "material": [
+        "/Asset/mtl/Mat"
+      ],
+      "pointCount": 3,
+      "pointsSha256": "20a2f6d94b4d070a75e4ef476db3d8bbb40d00e31da741906b0fa943fd01d947",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity"
+      ],
+      "skeleton": []
+    }
+  },
+  "metersPerUnit": 1.0,
+  "open": true,
+  "prims": [
+    {
+      "kind": "component",
+      "path": "/Asset",
+      "type": "Xform"
+    },
+    {
+      "path": "/Asset/mtl",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/mtl/Mat",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Mat/Surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Mat_2",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Mat_2/Surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/geo",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI"
+      ],
+      "path": "/Asset/geo/Body",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI"
+      ],
+      "path": "/Asset/geo/Body_2",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI"
+      ],
+      "path": "/Asset/geo/_u9854",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI"
+      ],
+      "path": "/Asset/geo/Mesh_739d0383",
+      "type": "Mesh"
+    },
+    {
+      "path": "/Asset/rig",
+      "type": "Scope"
+    }
+  ],
+  "skeletons": {},
+  "source": "${REPO}/plugins/usdVrm/tests/fixtures/names.vrm",
+  "timeSampledAttrs": {},
+  "upAxis": "Y",
+  "vrm": {
+    "frontAxisNormalized": false,
+    "metaName": "usdVrm Fixture",
+    "metaSha256": "2ce7865d03f1b8a92a49a5418d9bec76ee6e8a0f3c748565fee3ead1f9a17cdf",
+    "rawExtensionSha256": "914d217985b21303df2dc775cfe0f5765de8659ae1c02ac2be8c988f5e9f5acf",
+    "schemaContractVersion": 1,
+    "sourceFormat": "VRM",
+    "sourceFrontAxis": "+Z",
+    "sourceVersion": "1.0",
+    "specVersion": "1.0",
+    "warningCodes": [],
+    "warningCount": 0
+  }
+}

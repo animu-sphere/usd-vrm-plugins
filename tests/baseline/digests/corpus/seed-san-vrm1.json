@@ -1,0 +1,3595 @@
+{
+  "assets": [
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
+      "attr": "/Asset/mtl/hair/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "attr": "/Asset/mtl/huku_bake/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+      "attr": "/Asset/mtl/body_bake/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+      "attr": "/Asset/mtl/eye/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+      "attr": "/Asset/mtl/eye_trans/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+      "attr": "/Asset/mtl/arm_mat/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+      "attr": "/Asset/mtl/arm_plastic/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "attr": "/Asset/mtl/green_emit/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+      "attr": "/Asset/mtl/body_nm/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "attr": "/Asset/mtl/wear_metal/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "attr": "/Asset/mtl/armgear_plastic/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
+      "attr": "/Asset/mtl/robo_face/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "attr": "/Asset/mtl/backpack_metal/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+      "attr": "/Asset/mtl/backpack_metal/normalTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "attr": "/Asset/mtl/backpack_nm/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+      "attr": "/Asset/mtl/backpack_nm/normalTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "attr": "/Asset/mtl/backpack_plastic/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+      "attr": "/Asset/mtl/backpack_plastic/normalTexture.inputs:file",
+      "resolved": true
+    }
+  ],
+  "baselineSchemaVersion": 1,
+  "defaultPrim": "/Asset",
+  "framesPerSecond": 24.0,
+  "materials": {
+    "/Asset/mtl/anim_logo": {
+      "shaders": {
+        "/Asset/mtl/anim_logo/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0189311951,
+              0.171282873,
+              0.278900445
+            ],
+            "emissiveColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        }
+      }
+    },
+    "/Asset/mtl/arm_mat": {
+      "shaders": {
+        "/Asset/mtl/arm_mat/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/arm_mat/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/arm_mat/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/arm_mat/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/arm_mat/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/arm_mat/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/arm_mat/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/arm_plastic": {
+      "shaders": {
+        "/Asset/mtl/arm_plastic/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/arm_plastic/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/arm_plastic/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/arm_plastic/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/arm_plastic/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/arm_plastic/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/arm_plastic/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/armgear_plastic": {
+      "shaders": {
+        "/Asset/mtl/armgear_plastic/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/armgear_plastic/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/armgear_plastic/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/armgear_plastic/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/backpack_metal": {
+      "shaders": {
+        "/Asset/mtl/backpack_metal/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": {
+              "connectedTo": "/Asset/mtl/backpack_metal/baseColorTexture.rgb"
+            },
+            "emissiveColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "metallic": 1.0,
+            "normal": {
+              "connectedTo": "/Asset/mtl/backpack_metal/normalTexture.rgb"
+            },
+            "opacity": 1.0,
+            "roughness": 0.524999976
+          }
+        },
+        "/Asset/mtl/backpack_metal/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/backpack_metal/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/backpack_metal/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/backpack_metal/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/backpack_metal/normalTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "bias": [
+              -1.0,
+              -1.0,
+              -1.0,
+              -1.0
+            ],
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+              "resolved": true
+            },
+            "scale": [
+              2.0,
+              2.0,
+              2.0,
+              2.0
+            ],
+            "sourceColorSpace": "raw",
+            "st": {
+              "connectedTo": "/Asset/mtl/backpack_metal/normalTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/backpack_metal/normalTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/backpack_metal/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/backpack_metal/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/backpack_nm": {
+      "shaders": {
+        "/Asset/mtl/backpack_nm/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": {
+              "connectedTo": "/Asset/mtl/backpack_nm/baseColorTexture.rgb"
+            },
+            "emissiveColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "metallic": 0.0,
+            "normal": {
+              "connectedTo": "/Asset/mtl/backpack_nm/normalTexture.rgb"
+            },
+            "opacity": 1.0,
+            "roughness": 0.657000005
+          }
+        },
+        "/Asset/mtl/backpack_nm/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/backpack_nm/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/backpack_nm/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/backpack_nm/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/backpack_nm/normalTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "bias": [
+              -1.0,
+              -1.0,
+              -1.0,
+              -1.0
+            ],
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+              "resolved": true
+            },
+            "scale": [
+              2.0,
+              2.0,
+              2.0,
+              2.0
+            ],
+            "sourceColorSpace": "raw",
+            "st": {
+              "connectedTo": "/Asset/mtl/backpack_nm/normalTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/backpack_nm/normalTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/backpack_nm/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/backpack_nm/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/backpack_plastic": {
+      "shaders": {
+        "/Asset/mtl/backpack_plastic/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/baseColorTexture.rgb"
+            },
+            "emissiveColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "metallic": 0.0,
+            "normal": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/normalTexture.rgb"
+            },
+            "opacity": 1.0,
+            "roughness": 0.544999957
+          }
+        },
+        "/Asset/mtl/backpack_plastic/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/backpack_plastic/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/backpack_plastic/normalTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "bias": [
+              -1.0,
+              -1.0,
+              -1.0,
+              -1.0
+            ],
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+              "resolved": true
+            },
+            "scale": [
+              2.0,
+              2.0,
+              2.0,
+              2.0
+            ],
+            "sourceColorSpace": "raw",
+            "st": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/normalTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/backpack_plastic/normalTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/backpack_plastic/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/backpack_plastic/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/body_bake": {
+      "shaders": {
+        "/Asset/mtl/body_bake/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/body_bake/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/body_bake/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/body_bake/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/body_bake/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/body_bake/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/body_bake/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/body_nm": {
+      "shaders": {
+        "/Asset/mtl/body_nm/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/body_nm/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/body_nm/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/body_nm/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/body_nm/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/body_nm/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/body_nm/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/eye": {
+      "shaders": {
+        "/Asset/mtl/eye/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/eye/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/eye/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/eye/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/eye/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/eye/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/eye/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/eye_trans": {
+      "shaders": {
+        "/Asset/mtl/eye_trans/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/eye_trans/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": {
+              "connectedTo": "/Asset/mtl/eye_trans/baseColorTexture.a"
+            },
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/eye_trans/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/eye_trans/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/eye_trans/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/eye_trans/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/eye_trans/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/glass": {
+      "shaders": {
+        "/Asset/mtl/glass/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0355051458,
+              0.0355051458,
+              0.0355051458
+            ],
+            "emissiveColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "metallic": 0.0,
+            "opacity": 0.552941203,
+            "roughness": 0.0
+          }
+        }
+      }
+    },
+    "/Asset/mtl/green_emit": {
+      "shaders": {
+        "/Asset/mtl/green_emit/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": {
+              "connectedTo": "/Asset/mtl/green_emit/baseColorTexture.rgb"
+            },
+            "emissiveColor": [
+              0.178010464,
+              1.0,
+              0.188481659
+            ],
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/green_emit/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/green_emit/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/green_emit/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/green_emit/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/green_emit/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/hair": {
+      "shaders": {
+        "/Asset/mtl/hair/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/hair/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/hair/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/hair/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/hair/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/hair/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/hair/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/huku_bake": {
+      "shaders": {
+        "/Asset/mtl/huku_bake/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/huku_bake/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/huku_bake/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/huku_bake/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/huku_bake/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/huku_bake/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/huku_bake/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/robo_face": {
+      "shaders": {
+        "/Asset/mtl/robo_face/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/robo_face/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/robo_face/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/robo_face/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/robo_face/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/robo_face/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/robo_face/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/wear_metal": {
+      "shaders": {
+        "/Asset/mtl/wear_metal/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": {
+              "connectedTo": "/Asset/mtl/wear_metal/baseColorTexture.rgb"
+            },
+            "emissiveColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "metallic": 1.0,
+            "opacity": 1.0,
+            "roughness": 0.638999999
+          }
+        },
+        "/Asset/mtl/wear_metal/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/wear_metal/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/wear_metal/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/wear_metal/stReader.result"
+            },
+            "rotation": 0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "translation": [
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "/Asset/mtl/wear_metal/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    }
+  },
+  "meshes": {
+    "/Asset/geo/hair_0": {
+      "faceCount": 7820,
+      "material": [
+        "/Asset/mtl/hair"
+      ],
+      "pointCount": 5145,
+      "pointsSha256": "70e4a8e47a1e3a20ec4b81feb7ee2d73d78f4674e2fee8716098ac9fc01dc3e7",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/hair_1": {
+      "faceCount": 60,
+      "material": [
+        "/Asset/mtl/huku_bake"
+      ],
+      "pointCount": 40,
+      "pointsSha256": "eee0aead22b68fca768a8e3cd7e7032bc4f88d0ac751dd61c5173aae8dc58eaa",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/hair_tail": {
+      "faceCount": 238,
+      "material": [
+        "/Asset/mtl/hair"
+      ],
+      "pointCount": 156,
+      "pointsSha256": "abd4ed06e838b53428ba18f7c2721e45fd94d7fa0b19e3b1abdadc850ccf648e",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/head_0": {
+      "blendShapes": [
+        "head_0_eye_close",
+        "head_0_blink_L",
+        "head_0_blink_R",
+        "head_0_eye_open",
+        "head_0_eye_smile",
+        "head_0_eye_brow_up",
+        "head_0_eye_brow_up_L",
+        "head_0_eye_brow_up_R",
+        "head_0_eye_brow_down",
+        "head_0_eye_brow_down_L",
+        "head_0_eye_brow_down_R",
+        "head_0_eye_small",
+        "head_0_eye_no_hilight",
+        "head_0_eye_black_big",
+        "head_0_eye_black_small",
+        "head_0_eye_star",
+        "head_0_eye_V",
+        "head_0_eye_zitome",
+        "head_0_shock_plane",
+        "head_0_eye_angry",
+        "head_0_cheek",
+        "head_0_cheek_pop",
+        "head_0_mouse_open",
+        "head_0_mouth_wide",
+        "head_0_mouth_short",
+        "head_0_lip_a",
+        "head_0_lip_i",
+        "head_0_lip_u",
+        "head_0_lip_e",
+        "head_0_lip_o",
+        "head_0_lip_w",
+        "head_0_lip_up",
+        "head_0_lip_down",
+        "head_0_face_happy",
+        "head_0_face_angry",
+        "head_0_face_sad",
+        "head_0_face_relax",
+        "head_0_face_relax2",
+        "head_0_face_surprise",
+        "head_0_look_up",
+        "head_0_look_down",
+        "head_0_look_left",
+        "head_0_look_right"
+      ],
+      "faceCount": 8010,
+      "material": [
+        "/Asset/mtl/body_bake"
+      ],
+      "pointCount": 4332,
+      "pointsSha256": "ba457d1febcec8e45342d878ce616b739fe67aa7f7a1ca76fadf49496a6005de",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/head_1": {
+      "blendShapes": [
+        "head_1_eye_close",
+        "head_1_blink_L",
+        "head_1_blink_R",
+        "head_1_eye_open",
+        "head_1_eye_smile",
+        "head_1_eye_brow_up",
+        "head_1_eye_brow_up_L",
+        "head_1_eye_brow_up_R",
+        "head_1_eye_brow_down",
+        "head_1_eye_brow_down_L",
+        "head_1_eye_brow_down_R",
+        "head_1_eye_small",
+        "head_1_eye_no_hilight",
+        "head_1_eye_black_big",
+        "head_1_eye_black_small",
+        "head_1_eye_star",
+        "head_1_eye_V",
+        "head_1_eye_zitome",
+        "head_1_shock_plane",
+        "head_1_eye_angry",
+        "head_1_cheek",
+        "head_1_cheek_pop",
+        "head_1_mouse_open",
+        "head_1_mouth_wide",
+        "head_1_mouth_short",
+        "head_1_lip_a",
+        "head_1_lip_i",
+        "head_1_lip_u",
+        "head_1_lip_e",
+        "head_1_lip_o",
+        "head_1_lip_w",
+        "head_1_lip_up",
+        "head_1_lip_down",
+        "head_1_face_happy",
+        "head_1_face_angry",
+        "head_1_face_sad",
+        "head_1_face_relax",
+        "head_1_face_relax2",
+        "head_1_face_surprise",
+        "head_1_look_up",
+        "head_1_look_down",
+        "head_1_look_left",
+        "head_1_look_right"
+      ],
+      "faceCount": 1330,
+      "material": [
+        "/Asset/mtl/eye"
+      ],
+      "pointCount": 1114,
+      "pointsSha256": "560570e154eb7657087652dd537ac267991f0d640bec1ad1f1350b21569d99d6",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/head_2": {
+      "blendShapes": [
+        "head_2_eye_close",
+        "head_2_blink_L",
+        "head_2_blink_R",
+        "head_2_eye_open",
+        "head_2_eye_smile",
+        "head_2_eye_brow_up",
+        "head_2_eye_brow_up_L",
+        "head_2_eye_brow_up_R",
+        "head_2_eye_brow_down",
+        "head_2_eye_brow_down_L",
+        "head_2_eye_brow_down_R",
+        "head_2_eye_small",
+        "head_2_eye_no_hilight",
+        "head_2_eye_black_big",
+        "head_2_eye_black_small",
+        "head_2_eye_star",
+        "head_2_eye_V",
+        "head_2_eye_zitome",
+        "head_2_shock_plane",
+        "head_2_eye_angry",
+        "head_2_cheek",
+        "head_2_cheek_pop",
+        "head_2_mouse_open",
+        "head_2_mouth_wide",
+        "head_2_mouth_short",
+        "head_2_lip_a",
+        "head_2_lip_i",
+        "head_2_lip_u",
+        "head_2_lip_e",
+        "head_2_lip_o",
+        "head_2_lip_w",
+        "head_2_lip_up",
+        "head_2_lip_down",
+        "head_2_face_happy",
+        "head_2_face_angry",
+        "head_2_face_sad",
+        "head_2_face_relax",
+        "head_2_face_relax2",
+        "head_2_face_surprise",
+        "head_2_look_up",
+        "head_2_look_down",
+        "head_2_look_left",
+        "head_2_look_right"
+      ],
+      "faceCount": 1210,
+      "material": [
+        "/Asset/mtl/eye_trans"
+      ],
+      "pointCount": 696,
+      "pointsSha256": "f3a0458dba65347dc5371ff28fd1f0cb1b5046b45c44c2294112ce6a63a6075b",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/robo_arm_0": {
+      "faceCount": 2024,
+      "material": [
+        "/Asset/mtl/arm_mat"
+      ],
+      "pointCount": 2363,
+      "pointsSha256": "2cab4eec0f30fb03336c57f0f305a431a0328598cf8634f7b81f9cb54a3a0f57",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/robo_arm_1": {
+      "faceCount": 986,
+      "material": [
+        "/Asset/mtl/arm_plastic"
+      ],
+      "pointCount": 1422,
+      "pointsSha256": "f7720173c86f6343d2837bb556996c225a66c75c2f53765b3db19f05952e20dc",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/robo_arm_2": {
+      "faceCount": 6,
+      "material": [
+        "/Asset/mtl/green_emit"
+      ],
+      "pointCount": 10,
+      "pointsSha256": "b399d1b667dab71f478f53411715d37c84048e24d496bb380b32c63d7bedf97f",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/wear_0": {
+      "faceCount": 8042,
+      "material": [
+        "/Asset/mtl/body_bake"
+      ],
+      "pointCount": 5260,
+      "pointsSha256": "15bb739ec2c5133d572955d2eef520a76a7f0514a959896163e0e974b4227417",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/wear_1": {
+      "faceCount": 2208,
+      "material": [
+        "/Asset/mtl/body_nm"
+      ],
+      "pointCount": 1404,
+      "pointsSha256": "e08a050e42d046800b6c6aae5e97c7ac13f31b2078021b6d675eb30358b7b83c",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/wear_10": {
+      "faceCount": 1346,
+      "material": [
+        "/Asset/mtl/backpack_plastic"
+      ],
+      "pointCount": 1571,
+      "pointsSha256": "3a6d67d7addb82c3832c344351ac912a5cdb1d763347b50dd9d37b0a26ec5f82",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/wear_11": {
+      "faceCount": 36,
+      "material": [
+        "/Asset/mtl/anim_logo"
+      ],
+      "pointCount": 41,
+      "pointsSha256": "a2c0e0730a6a20d36f5e3b55b9c33316913fc522c3fe01adbd6c8b72d5905eb8",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/wear_2": {
+      "faceCount": 308,
+      "material": [
+        "/Asset/mtl/wear_metal"
+      ],
+      "pointCount": 242,
+      "pointsSha256": "3dd4f91153b6f9f61353630b7f4631f613cc3a69092936f29cb665a76f6025ea",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/wear_3": {
+      "faceCount": 5806,
+      "material": [
+        "/Asset/mtl/huku_bake"
+      ],
+      "pointCount": 4424,
+      "pointsSha256": "eb48792f81739912edd572499f3153fa36aceaf24fb27f79a6a0b89b63f63db8",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/wear_4": {
+      "faceCount": 984,
+      "material": [
+        "/Asset/mtl/armgear_plastic"
+      ],
+      "pointCount": 1161,
+      "pointsSha256": "4c810d835509e9ca81aed14971fec553113e20628250e733ea0c7f6515978acd",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/wear_5": {
+      "faceCount": 56,
+      "material": [
+        "/Asset/mtl/robo_face"
+      ],
+      "pointCount": 45,
+      "pointsSha256": "6b35ad9808cfe3ae23e534be369eb446c79ebdb2469655fcfe346b104750eeab",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/wear_6": {
+      "faceCount": 56,
+      "material": [
+        "/Asset/mtl/glass"
+      ],
+      "pointCount": 45,
+      "pointsSha256": "201b9df3c648e7fae838f7576ca40fb907642387e7b0f53d007017e10d245c9a",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/wear_7": {
+      "faceCount": 594,
+      "material": [
+        "/Asset/mtl/backpack_metal"
+      ],
+      "pointCount": 736,
+      "pointsSha256": "6d74335494367ed48d4b1ebdfb86e2bf464b3b7c263ee7c71cb5fb19093ac42b",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/wear_8": {
+      "faceCount": 16,
+      "material": [
+        "/Asset/mtl/green_emit"
+      ],
+      "pointCount": 32,
+      "pointsSha256": "6bf9ea55118cc3f978df51accf77d2a33a9350ee20ebaf907e3dc977d56397ef",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/wear_9": {
+      "faceCount": 3922,
+      "material": [
+        "/Asset/mtl/backpack_nm"
+      ],
+      "pointCount": 3820,
+      "pointsSha256": "150ebedfe661fce617b9c64c8607527ef4ca118b680833c1fcd94f6db80f2c2b",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    }
+  },
+  "metersPerUnit": 1.0,
+  "open": true,
+  "prims": [
+    {
+      "kind": "component",
+      "path": "/Asset",
+      "type": "SkelRoot"
+    },
+    {
+      "path": "/Asset/mtl",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/mtl/hair",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/huku_bake",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/body_bake",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/eye",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/eye_trans",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/arm_mat",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/arm_plastic",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/green_emit",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/green_emit/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/green_emit/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/green_emit/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/green_emit/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/body_nm",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/wear_metal",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/wear_metal/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/wear_metal/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/wear_metal/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/wear_metal/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/armgear_plastic",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/robo_face",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/glass",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/glass/Surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/backpack_metal",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/normalTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_metal/normalTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/backpack_nm",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/normalTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_nm/normalTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/backpack_plastic",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/normalTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/backpack_plastic/normalTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/anim_logo",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/anim_logo/Surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/geo",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/hair_0",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/hair_1",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/hair_tail",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/head_0",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/head_1",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/head_2",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/robo_arm_0",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/robo_arm_1",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/robo_arm_2",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/wear_0",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/wear_1",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/wear_2",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/wear_3",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/wear_4",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/wear_5",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/wear_6",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/wear_7",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/wear_8",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/wear_9",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/wear_10",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/wear_11",
+      "type": "Mesh"
+    },
+    {
+      "path": "/Asset/skel",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/skel/Skeleton",
+      "type": "Skeleton"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_blink_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_blink_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_open",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_smile",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_brow_up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_brow_up_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_brow_up_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_brow_down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_brow_down_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_brow_down_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_small",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_no_hilight",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_black_big",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_black_small",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_star",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_V",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_zitome",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_shock_plane",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_eye_angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_cheek",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_cheek_pop",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_mouse_open",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_mouth_wide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_mouth_short",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_lip_a",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_lip_i",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_lip_u",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_lip_e",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_lip_o",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_lip_w",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_lip_up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_lip_down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_face_happy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_face_angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_face_sad",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_face_relax",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_face_relax2",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_face_surprise",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_look_up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_look_down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_look_left",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_0_look_right",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_blink_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_blink_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_open",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_smile",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_brow_up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_brow_up_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_brow_up_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_brow_down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_brow_down_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_brow_down_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_small",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_no_hilight",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_black_big",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_black_small",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_star",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_V",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_zitome",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_shock_plane",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_eye_angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_cheek",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_cheek_pop",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_mouse_open",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_mouth_wide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_mouth_short",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_lip_a",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_lip_i",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_lip_u",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_lip_e",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_lip_o",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_lip_w",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_lip_up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_lip_down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_face_happy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_face_angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_face_sad",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_face_relax",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_face_relax2",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_face_surprise",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_look_up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_look_down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_look_left",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_1_look_right",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_blink_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_blink_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_open",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_smile",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_brow_up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_brow_up_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_brow_up_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_brow_down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_brow_down_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_brow_down_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_small",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_no_hilight",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_black_big",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_black_small",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_star",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_V",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_zitome",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_shock_plane",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_eye_angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_cheek",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_cheek_pop",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_mouse_open",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_mouth_wide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_mouth_short",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_lip_a",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_lip_i",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_lip_u",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_lip_e",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_lip_o",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_lip_w",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_lip_up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_lip_down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_face_happy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_face_angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_face_sad",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_face_relax",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_face_relax2",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_face_surprise",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_look_up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_look_down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_look_left",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/head_2_look_right",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/rig",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmHumanoidAPI"
+      ],
+      "path": "/Asset/rig/Humanoid",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/Expressions",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/aa",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/angry",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/blink",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/blinkLeft",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/blinkRight",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/ee",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/happy",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/ih",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/lookDown",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/lookLeft",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/lookRight",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/lookUp",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/neutral",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/oh",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/ou",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/relaxed",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/sad",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/surprised",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmLookAtAPI"
+      ],
+      "path": "/Asset/rig/LookAt",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders/ColliderGroup_0",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/ColliderGroup_0/Collider_0",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/ColliderGroup_0/Collider_1",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/ColliderGroup_0/Collider_2",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/ColliderGroup_0/Collider_3",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders/ColliderGroup_1",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/ColliderGroup_1/Collider_0",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/ColliderGroup_1/Collider_1",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/ColliderGroup_1/Collider_2",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/ColliderGroup_1/Collider_3",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/SpringBones",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/TailHair",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/FrontHairA",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/FrontHairB",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/FrontHairC",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/FrontHairD",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/FrontHairE",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/FrontHairF",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/FrontHairG",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/RoboWire",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/Constraints",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_shoulder_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_upper_arm_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_forearm_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_hand_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_palm_01_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_f_index_01_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_f_index_02_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_f_index_03_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_thumb_01_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_thumb_02_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_thumb_03_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_palm_02_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_f_middle_01_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_f_middle_02_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_f_middle_03_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_palm_03_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_f_ring_01_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_f_ring_02_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_f_ring_03_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_palm_04_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_f_pinky_01_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_f_pinky_02_L_rotation",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/robo_f_pinky_03_L_rotation",
+      "type": "Scope"
+    }
+  ],
+  "skeletons": {
+    "/Asset/skel/Skeleton": {
+      "bindTransformsSha256": "5f3638342a13f3d98d69bc6d137b5d31b834b709191bf3298c43d4243b57c80c",
+      "joints": [
+        "hips",
+        "hips/spine",
+        "hips/thigh_L",
+        "hips/thigh_R",
+        "hips/thigh_L/shin_L",
+        "hips/thigh_R/shin_R",
+        "hips/spine/chest",
+        "hips/spine/chest/bagpack",
+        "hips/spine/chest/bag_rope_L",
+        "hips/spine/chest/bag_rope_R",
+        "hips/thigh_L/shin_L/foot_L",
+        "hips/thigh_L/shin_L/foot_rope_L",
+        "hips/thigh_R/shin_R/foot_R",
+        "hips/thigh_R/shin_R/foot_rope_R",
+        "hips/spine/chest/neck",
+        "hips/spine/chest/shoulder_L",
+        "hips/spine/chest/shoulder_R",
+        "hips/spine/chest/neck/head_1",
+        "hips/spine/chest/bagpack/robo_root_pole",
+        "hips/spine/chest/bagpack/robo_wire",
+        "hips/spine/chest/bag_rope_L/bag_rope_L_001",
+        "hips/spine/chest/bag_rope_R/bag_rope_R_001",
+        "hips/thigh_L/shin_L/foot_L/toe_L",
+        "hips/thigh_L/shin_L/foot_L/heel_L",
+        "hips/thigh_L/shin_L/foot_rope_L/foot_rope_L_001",
+        "hips/thigh_R/shin_R/foot_R/toe_R",
+        "hips/thigh_R/shin_R/foot_R/heel_R",
+        "hips/thigh_R/shin_R/foot_rope_R/foot_rope_R_001",
+        "hips/spine/chest/shoulder_L/upper_arm_L",
+        "hips/spine/chest/shoulder_R/upper_arm_R",
+        "hips/spine/chest/neck/head_1/hair_D",
+        "hips/spine/chest/neck/head_1/hair_E",
+        "hips/spine/chest/neck/head_1/hair_F",
+        "hips/spine/chest/neck/head_1/hair_G",
+        "hips/spine/chest/neck/head_1/hair_subA",
+        "hips/spine/chest/neck/head_1/hair_subB",
+        "hips/spine/chest/neck/head_1/hair_subC",
+        "hips/spine/chest/neck/head_1/hair_subD",
+        "hips/spine/chest/neck/head_1/hair_A",
+        "hips/spine/chest/neck/head_1/hair_B",
+        "hips/spine/chest/neck/head_1/hair_C",
+        "hips/spine/chest/neck/head_1/hair_tail_1",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L",
+        "hips/spine/chest/bagpack/robo_wire/robo_wire_001",
+        "hips/spine/chest/bag_rope_L/bag_rope_L_001/bag_rope_L_002",
+        "hips/spine/chest/bag_rope_R/bag_rope_R_001/bag_rope_R_002",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R",
+        "hips/spine/chest/neck/head_1/hair_C/hair_C_001",
+        "hips/spine/chest/neck/head_1/hair_D/hair_D_001",
+        "hips/spine/chest/neck/head_1/hair_E/hair_E_001",
+        "hips/spine/chest/neck/head_1/hair_F/hair_F_001",
+        "hips/spine/chest/neck/head_1/hair_G/hair_G_001",
+        "hips/spine/chest/neck/head_1/hair_subA/hair_subA_001",
+        "hips/spine/chest/neck/head_1/hair_subB/hair_subB_001",
+        "hips/spine/chest/neck/head_1/hair_subC/hair_subC_001",
+        "hips/spine/chest/neck/head_1/hair_subD/hair_subD_001",
+        "hips/spine/chest/neck/head_1/hair_A/hair_A_001",
+        "hips/spine/chest/neck/head_1/hair_B/hair_B_001",
+        "hips/spine/chest/neck/head_1/hair_tail_1/hair_tail_2",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L",
+        "hips/spine/chest/bagpack/robo_wire/robo_wire_001/robo_wire_002",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R",
+        "hips/spine/chest/neck/head_1/hair_tail_1/hair_tail_2/hair_tail_3",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L",
+        "hips/spine/chest/bagpack/robo_wire/robo_wire_001/robo_wire_002/robo_wire_003",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R",
+        "hips/spine/chest/neck/head_1/hair_tail_1/hair_tail_2/hair_tail_3/hair_tail_4",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L",
+        "hips/spine/chest/bagpack/robo_wire/robo_wire_001/robo_wire_002/robo_wire_003/robo_wire_004",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_01_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_02_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_03_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_04_L",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_01_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_02_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_03_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_04_R",
+        "hips/spine/chest/neck/head_1/hair_tail_1/hair_tail_2/hair_tail_3/hair_tail_4/hair_tail_5",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_f_pinky_01_L",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_f_index_01_L",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_thumb_01_L",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_f_middle_01_L",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_f_ring_01_L",
+        "hips/spine/chest/bagpack/robo_wire/robo_wire_001/robo_wire_002/robo_wire_003/robo_wire_004/robo_wire_005",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_01_L/f_index_01_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_01_L/thumb_01_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_02_L/f_middle_01_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_03_L/f_ring_01_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_04_L/f_pinky_01_L",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_01_R/f_index_01_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_01_R/thumb_01_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_02_R/f_middle_01_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_03_R/f_ring_01_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_04_R/f_pinky_01_R",
+        "hips/spine/chest/neck/head_1/hair_tail_1/hair_tail_2/hair_tail_3/hair_tail_4/hair_tail_5/hair_tail_6",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_f_ring_01_L/robo_f_ring_02_L",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_f_pinky_01_L/robo_f_pinky_02_L",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_f_index_01_L/robo_f_index_02_L",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_thumb_01_L/robo_thumb_02_L",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_f_middle_01_L/robo_f_middle_02_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_01_L/f_index_01_L/f_index_02_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_01_L/thumb_01_L/thumb_02_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_02_L/f_middle_01_L/f_middle_02_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_03_L/f_ring_01_L/f_ring_02_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_04_L/f_pinky_01_L/f_pinky_02_L",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_01_R/f_index_01_R/f_index_02_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_01_R/thumb_01_R/thumb_02_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_02_R/f_middle_01_R/f_middle_02_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_03_R/f_ring_01_R/f_ring_02_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_04_R/f_pinky_01_R/f_pinky_02_R",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_f_ring_01_L/robo_f_ring_02_L/robo_f_ring_03_L",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_f_pinky_01_L/robo_f_pinky_02_L/robo_f_pinky_03_L",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_f_index_01_L/robo_f_index_02_L/robo_f_index_03_L",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_thumb_01_L/robo_thumb_02_L/robo_thumb_03_L",
+        "hips/spine/chest/bagpack/robo_root_pole/robo_shoulder_L/robo_upper_arm_L/robo_forearm_L/robo_hand_L/robo_f_middle_01_L/robo_f_middle_02_L/robo_f_middle_03_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_01_L/f_index_01_L/f_index_02_L/f_index_03_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_01_L/thumb_01_L/thumb_02_L/thumb_03_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_02_L/f_middle_01_L/f_middle_02_L/f_middle_03_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_03_L/f_ring_01_L/f_ring_02_L/f_ring_03_L",
+        "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L/forearm_twist_L/hand_L/palm_04_L/f_pinky_01_L/f_pinky_02_L/f_pinky_03_L",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_01_R/f_index_01_R/f_index_02_R/f_index_03_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_01_R/thumb_01_R/thumb_02_R/thumb_03_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_02_R/f_middle_01_R/f_middle_02_R/f_middle_03_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_03_R/f_ring_01_R/f_ring_02_R/f_ring_03_R",
+        "hips/spine/chest/shoulder_R/upper_arm_R/forearm_R/forearm_twist_R/hand_R/palm_04_R/f_pinky_01_R/f_pinky_02_R/f_pinky_03_R"
+      ],
+      "restTransformsSha256": "050dc60165e924b30f75687cdb75bd8067968960a8186ec508c76cd92824a526"
+    }
+  },
+  "source": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm",
+  "timeSampledAttrs": {},
+  "upAxis": "Y",
+  "vrm": {
+    "frontAxisNormalized": false,
+    "metaName": "Seed-san",
+    "metaSha256": "a117f90fdb7110c9f64c5ca32063aca487263cf1e3b40c55ca1ac1b1fa4e4596",
+    "rawExtensionSha256": "9c25a8f3d18e56b02721bf6360f4003156da91f9078605ebaa428a27da57b421",
+    "schemaContractVersion": 1,
+    "sourceFormat": "VRM",
+    "sourceFrontAxis": "+Z",
+    "sourceVersion": "1.0",
+    "specVersion": "1.0",
+    "warningCodes": [],
+    "warningCount": 0
+  }
+}
