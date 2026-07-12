@@ -1,0 +1,152 @@
+{
+  "assets": [],
+  "baselineSchemaVersion": 1,
+  "defaultPrim": "/Asset",
+  "framesPerSecond": 24.0,
+  "materials": {
+    "/Asset/mtl/Body_Mat": {
+      "shaders": {
+        "/Asset/mtl/Body_Mat/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.800000012,
+              0.600000024,
+              0.5
+            ],
+            "emissiveColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 0.699999988
+          }
+        }
+      }
+    }
+  },
+  "meshes": {
+    "/Asset/geo/Accessory": {
+      "faceCount": 1,
+      "material": [
+        "/Asset/mtl/Body_Mat"
+      ],
+      "pointCount": 3,
+      "pointsSha256": "20a2f6d94b4d070a75e4ef476db3d8bbb40d00e31da741906b0fa943fd01d947",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity"
+      ],
+      "skeleton": []
+    },
+    "/Asset/geo/Body": {
+      "faceCount": 1,
+      "material": [
+        "/Asset/mtl/Body_Mat"
+      ],
+      "pointCount": 3,
+      "pointsSha256": "20a2f6d94b4d070a75e4ef476db3d8bbb40d00e31da741906b0fa943fd01d947",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    }
+  },
+  "metersPerUnit": 1.0,
+  "open": true,
+  "prims": [
+    {
+      "kind": "component",
+      "path": "/Asset",
+      "type": "SkelRoot"
+    },
+    {
+      "path": "/Asset/mtl",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/mtl/Body_Mat",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Body_Mat/Surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/geo",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Body",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI"
+      ],
+      "path": "/Asset/geo/Accessory",
+      "type": "Mesh"
+    },
+    {
+      "path": "/Asset/skel",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/skel/Skeleton",
+      "type": "Skeleton"
+    },
+    {
+      "path": "/Asset/rig",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmHumanoidAPI"
+      ],
+      "path": "/Asset/rig/Humanoid",
+      "type": "Scope"
+    }
+  ],
+  "skeletons": {
+    "/Asset/skel/Skeleton": {
+      "bindTransformsSha256": "d397146b13c5decca772e0709a97adddae601b161c5875ac9e63bc1076a6cc68",
+      "joints": [
+        "hips",
+        "hips/spine"
+      ],
+      "restTransformsSha256": "5d8f8ab0d9d6f8f6f36d2409f5f7273ba0b12cec6d0146ec3cecc0b0473fa5b4"
+    }
+  },
+  "source": "${REPO}/plugins/usdVrm/tests/fixtures/minimal.vrm",
+  "timeSampledAttrs": {},
+  "upAxis": "Y",
+  "vrm": {
+    "frontAxisNormalized": false,
+    "metaName": "usdVrm Minimal Fixture",
+    "metaSha256": "6f7bf81ac4a9b32dd20e45d6cc0c0b529a785b94c55a43a8958e4eb0d09b3228",
+    "rawExtensionSha256": "b361e29b3c7f87ce96b872f603e2939a25a6267176fffca88cfbee9ad56799d0",
+    "schemaContractVersion": 1,
+    "sourceFormat": "VRM",
+    "sourceFrontAxis": "+Z",
+    "sourceVersion": "1.0",
+    "specVersion": "1.0",
+    "warningCodes": [],
+    "warningCount": 0
+  }
+}

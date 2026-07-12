@@ -1,0 +1,134 @@
+{
+  "assets": [],
+  "baselineSchemaVersion": 1,
+  "defaultPrim": "/Asset",
+  "framesPerSecond": 24.0,
+  "materials": {
+    "/Asset/mtl/Body_Mat": {
+      "shaders": {
+        "/Asset/mtl/Body_Mat/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.800000012,
+              0.600000024,
+              0.5
+            ],
+            "emissiveColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "metallic": 1.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        }
+      }
+    }
+  },
+  "meshes": {
+    "/Asset/geo/Body": {
+      "faceCount": 1,
+      "material": [
+        "/Asset/mtl/Body_Mat"
+      ],
+      "pointCount": 3,
+      "pointsSha256": "aa3ac00c40a3f254f5a18843295eea8e55466cb0fd47118435e3b54c51ab260b",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    }
+  },
+  "metersPerUnit": 1.0,
+  "open": true,
+  "prims": [
+    {
+      "kind": "component",
+      "path": "/Asset",
+      "type": "SkelRoot"
+    },
+    {
+      "path": "/Asset/mtl",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/mtl/Body_Mat",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Body_Mat/Surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/geo",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Body",
+      "type": "Mesh"
+    },
+    {
+      "path": "/Asset/skel",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/skel/Skeleton",
+      "type": "Skeleton"
+    },
+    {
+      "path": "/Asset/rig",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmHumanoidAPI"
+      ],
+      "path": "/Asset/rig/Humanoid",
+      "type": "Scope"
+    }
+  ],
+  "skeletons": {
+    "/Asset/skel/Skeleton": {
+      "bindTransformsSha256": "06a9245bd684f1203c41eb84cd6e909707fb23020af745100e3a02569546743c",
+      "joints": [
+        "hips",
+        "hips/spine"
+      ],
+      "restTransformsSha256": "dfb47d7899cf6ba2609a037b2b77bc978f620eb56ae4368766d3a240c98733d6"
+    }
+  },
+  "source": "${REPO}/plugins/usdVrm/tests/corpus/generated/malformed/duplicate_humanoid_bone.vrm",
+  "timeSampledAttrs": {},
+  "upAxis": "Y",
+  "vrm": {
+    "frontAxisNormalized": true,
+    "metaName": null,
+    "metaSha256": "e75dffb0a3ffeb330f245109e63cd946559035a08bc575c55dace8ed9e847f9d",
+    "rawExtensionSha256": "31d49fe90146f9b70b73b5f913315897684031674281f233b1b3b431977c149b",
+    "schemaContractVersion": 1,
+    "sourceFormat": "VRM",
+    "sourceFrontAxis": "-Z",
+    "sourceVersion": "0.x",
+    "specVersion": "0.0",
+    "warningCodes": [
+      "VRM141"
+    ],
+    "warningCount": 1
+  }
+}

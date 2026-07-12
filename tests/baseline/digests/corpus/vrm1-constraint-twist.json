@@ -1,0 +1,4084 @@
+{
+  "assets": [
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/f97432cbb6e6aad6.png]",
+      "attr": "/Asset/mtl/Body_00_SKIN/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/19dc728dbbc9e62f.png]",
+      "attr": "/Asset/mtl/Bottoms_01_CLOTH/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/b5d68c995fdd9391.png]",
+      "attr": "/Asset/mtl/Shoes_01_CLOTH/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/06518c61692d4ba4.png]",
+      "attr": "/Asset/mtl/Tops_01_CLOTH/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/293a6685ff331da6.png]",
+      "attr": "/Asset/mtl/HairBack_00_HAIR/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/be267f504a0c306c.png]",
+      "attr": "/Asset/mtl/FaceMouth_00_FACE/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/5d47600f8dca5484.png]",
+      "attr": "/Asset/mtl/EyeIris_00_EYE/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/71cf5f96608d7a4a.png]",
+      "attr": "/Asset/mtl/Face_00_SKIN/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/79cf633bf833ca7c.png]",
+      "attr": "/Asset/mtl/EyeWhite_00_EYE/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/1973a3a5dc0212ba.png]",
+      "attr": "/Asset/mtl/FaceEyeline_00_FACE/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/c2d207c1a3dd8ac7.png]",
+      "attr": "/Asset/mtl/FaceBrow_00_FACE/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/d3832b613ce27fb7.png]",
+      "attr": "/Asset/mtl/EyeHighlight_00_EYE/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/22cd608c6a94e609.png]",
+      "attr": "/Asset/mtl/Hair_00_HAIR/baseColorTexture.inputs:file",
+      "resolved": true
+    }
+  ],
+  "baselineSchemaVersion": 1,
+  "defaultPrim": "/Asset",
+  "framesPerSecond": 24.0,
+  "materials": {
+    "/Asset/mtl/Body_00_SKIN": {
+      "shaders": {
+        "/Asset/mtl/Body_00_SKIN/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/Body_00_SKIN/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/f97432cbb6e6aad6.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/Body_00_SKIN/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/Body_00_SKIN/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/Bottoms_01_CLOTH": {
+      "shaders": {
+        "/Asset/mtl/Bottoms_01_CLOTH/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/Bottoms_01_CLOTH/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/19dc728dbbc9e62f.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/Bottoms_01_CLOTH/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/EyeHighlight_00_EYE": {
+      "shaders": {
+        "/Asset/mtl/EyeHighlight_00_EYE/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/EyeHighlight_00_EYE/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/d3832b613ce27fb7.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/EyeHighlight_00_EYE/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/EyeIris_00_EYE": {
+      "shaders": {
+        "/Asset/mtl/EyeIris_00_EYE/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/EyeIris_00_EYE/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/5d47600f8dca5484.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/EyeIris_00_EYE/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/EyeIris_00_EYE/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/EyeWhite_00_EYE": {
+      "shaders": {
+        "/Asset/mtl/EyeWhite_00_EYE/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/EyeWhite_00_EYE/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/79cf633bf833ca7c.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/EyeWhite_00_EYE/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/FaceBrow_00_FACE": {
+      "shaders": {
+        "/Asset/mtl/FaceBrow_00_FACE/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/FaceBrow_00_FACE/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/c2d207c1a3dd8ac7.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/FaceBrow_00_FACE/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/FaceEyeline_00_FACE": {
+      "shaders": {
+        "/Asset/mtl/FaceEyeline_00_FACE/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/FaceEyeline_00_FACE/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/1973a3a5dc0212ba.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/FaceEyeline_00_FACE/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/FaceMouth_00_FACE": {
+      "shaders": {
+        "/Asset/mtl/FaceMouth_00_FACE/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/FaceMouth_00_FACE/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/be267f504a0c306c.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/FaceMouth_00_FACE/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/Face_00_SKIN": {
+      "shaders": {
+        "/Asset/mtl/Face_00_SKIN/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/Face_00_SKIN/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/71cf5f96608d7a4a.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/Face_00_SKIN/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/Face_00_SKIN/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/HairBack_00_HAIR": {
+      "shaders": {
+        "/Asset/mtl/HairBack_00_HAIR/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/HairBack_00_HAIR/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/293a6685ff331da6.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/HairBack_00_HAIR/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/HairBack_00_HAIR/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/Hair_00_HAIR": {
+      "shaders": {
+        "/Asset/mtl/Hair_00_HAIR/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/Hair_00_HAIR/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/22cd608c6a94e609.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/Hair_00_HAIR/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/Hair_00_HAIR/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/Shoes_01_CLOTH": {
+      "shaders": {
+        "/Asset/mtl/Shoes_01_CLOTH/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/Shoes_01_CLOTH/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/b5d68c995fdd9391.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/Shoes_01_CLOTH/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    },
+    "/Asset/mtl/Tops_01_CLOTH": {
+      "shaders": {
+        "/Asset/mtl/Tops_01_CLOTH/Surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        },
+        "/Asset/mtl/Tops_01_CLOTH/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/06518c61692d4ba4.png]",
+              "resolved": true
+            },
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/Tops_01_CLOTH/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "repeat"
+          }
+        },
+        "/Asset/mtl/Tops_01_CLOTH/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        }
+      }
+    }
+  },
+  "meshes": {
+    "/Asset/geo/Body_0": {
+      "faceCount": 8864,
+      "material": [
+        "/Asset/mtl/Body_00_SKIN"
+      ],
+      "pointCount": 5307,
+      "pointsSha256": "ae4f2d27601b2e9bf5bf43228dfcceafbab21c8192668521ed383b7e7980fffb",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/Body_1": {
+      "faceCount": 608,
+      "material": [
+        "/Asset/mtl/Bottoms_01_CLOTH"
+      ],
+      "pointCount": 470,
+      "pointsSha256": "5b541cfb2fa9d63e43dce5d82252bf3b13e2fb029553c8afb0ef5eb608daac12",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/Body_2": {
+      "faceCount": 712,
+      "material": [
+        "/Asset/mtl/Shoes_01_CLOTH"
+      ],
+      "pointCount": 600,
+      "pointsSha256": "a73f37f891a588c7945fcf9c72c46211b92252a02855624f790741cfa43f189f",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/Body_3": {
+      "faceCount": 1210,
+      "material": [
+        "/Asset/mtl/Tops_01_CLOTH"
+      ],
+      "pointCount": 717,
+      "pointsSha256": "7cfee24084c21779d0002abdd487308e634362af9a90658972c24e590fab96d0",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/Body_4": {
+      "faceCount": 1420,
+      "material": [
+        "/Asset/mtl/HairBack_00_HAIR"
+      ],
+      "pointCount": 883,
+      "pointsSha256": "bd88b38ddc4b74d77edb7ff546bc65e1951400e9da8565f95bb7f8612995b65d",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/Face_0": {
+      "blendShapes": [
+        "Face_0_Face_Blendshape_Fcl_ALL_Neutral",
+        "Face_0_Face_Blendshape_Fcl_ALL_Angry",
+        "Face_0_Face_Blendshape_Fcl_ALL_Fun",
+        "Face_0_Face_Blendshape_Fcl_ALL_Joy",
+        "Face_0_Face_Blendshape_Fcl_ALL_Sorrow",
+        "Face_0_Face_Blendshape_Fcl_ALL_Surprised",
+        "Face_0_Face_Blendshape_Fcl_BRW_Angry",
+        "Face_0_Face_Blendshape_Fcl_BRW_Fun",
+        "Face_0_Face_Blendshape_Fcl_BRW_Joy",
+        "Face_0_Face_Blendshape_Fcl_BRW_Sorrow",
+        "Face_0_Face_Blendshape_Fcl_BRW_Surprised",
+        "Face_0_Face_Blendshape_Fcl_EYE_Natural",
+        "Face_0_Face_Blendshape_Fcl_EYE_Close",
+        "Face_0_Face_Blendshape_Fcl_EYE_Close_L",
+        "Face_0_Face_Blendshape_Fcl_EYE_Close_R",
+        "Face_0_Face_Blendshape_Fcl_EYE_Angry",
+        "Face_0_Face_Blendshape_Fcl_EYE_Fun",
+        "Face_0_Face_Blendshape_Fcl_EYE_Joy",
+        "Face_0_Face_Blendshape_Fcl_EYE_Joy_L",
+        "Face_0_Face_Blendshape_Fcl_EYE_Joy_R",
+        "Face_0_Face_Blendshape_Fcl_EYE_Sorrow",
+        "Face_0_Face_Blendshape_Fcl_EYE_Surprised",
+        "Face_0_Face_Blendshape_Fcl_EYE_HighlightHide",
+        "Face_0_Face_Blendshape_Fcl_EYE_IrisHide",
+        "Face_0_Face_Blendshape_Fcl_EYE_Spread",
+        "Face_0_Face_Blendshape_Fcl_MTH_Neutral",
+        "Face_0_Face_Blendshape_Fcl_MTH_Close",
+        "Face_0_Face_Blendshape_Fcl_MTH_Angry",
+        "Face_0_Face_Blendshape_Fcl_MTH_Fun",
+        "Face_0_Face_Blendshape_Fcl_MTH_Joy",
+        "Face_0_Face_Blendshape_Fcl_MTH_Sorrow",
+        "Face_0_Face_Blendshape_Fcl_MTH_Surprised",
+        "Face_0_Face_Blendshape_Fcl_MTH_Up",
+        "Face_0_Face_Blendshape_Fcl_MTH_Down",
+        "Face_0_Face_Blendshape_Fcl_MTH_Small",
+        "Face_0_Face_Blendshape_Fcl_MTH_Large",
+        "Face_0_Face_Blendshape_Fcl_MTH_A",
+        "Face_0_Face_Blendshape_Fcl_MTH_I",
+        "Face_0_Face_Blendshape_Fcl_MTH_U",
+        "Face_0_Face_Blendshape_Fcl_MTH_E",
+        "Face_0_Face_Blendshape_Fcl_MTH_O",
+        "Face_0_Face_Blendshape_Fcl_MTH_SkinFung",
+        "Face_0_Face_Blendshape_Fcl_MTH_SkinFung_L",
+        "Face_0_Face_Blendshape_Fcl_MTH_SkinFung_R",
+        "Face_0_Face_Blendshape_Fcl_HA_Fung1",
+        "Face_0_Face_Blendshape_Fcl_HA_Fung1_Low",
+        "Face_0_Face_Blendshape_Fcl_HA_Fung1_Up",
+        "Face_0_Face_Blendshape_Fcl_HA_Fung2",
+        "Face_0_Face_Blendshape_Fcl_HA_Fung2_Low",
+        "Face_0_Face_Blendshape_Fcl_HA_Fung2_Up",
+        "Face_0_Face_Blendshape_Fcl_HA_Fung3",
+        "Face_0_Face_Blendshape_Fcl_HA_Fung3_Low",
+        "Face_0_Face_Blendshape_Fcl_HA_Fung3_Up",
+        "Face_0_Face_Blendshape_Fcl_HA_Hide",
+        "Face_0_Face_Blendshape_Fcl_HA_Short",
+        "Face_0_Face_Blendshape_Fcl_HA_ShortLow",
+        "Face_0_Face_Blendshape_Fcl_HA_ShortUp"
+      ],
+      "faceCount": 1696,
+      "material": [
+        "/Asset/mtl/FaceMouth_00_FACE"
+      ],
+      "pointCount": 1074,
+      "pointsSha256": "79bd1a7506ffb0be87d4b83114114117897aeb337036f11bb1272d465fe00286",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/Face_1": {
+      "blendShapes": [
+        "Face_1_Face_Blendshape_Fcl_ALL_Neutral",
+        "Face_1_Face_Blendshape_Fcl_ALL_Angry",
+        "Face_1_Face_Blendshape_Fcl_ALL_Fun",
+        "Face_1_Face_Blendshape_Fcl_ALL_Joy",
+        "Face_1_Face_Blendshape_Fcl_ALL_Sorrow",
+        "Face_1_Face_Blendshape_Fcl_ALL_Surprised",
+        "Face_1_Face_Blendshape_Fcl_BRW_Angry",
+        "Face_1_Face_Blendshape_Fcl_BRW_Fun",
+        "Face_1_Face_Blendshape_Fcl_BRW_Joy",
+        "Face_1_Face_Blendshape_Fcl_BRW_Sorrow",
+        "Face_1_Face_Blendshape_Fcl_BRW_Surprised",
+        "Face_1_Face_Blendshape_Fcl_EYE_Natural",
+        "Face_1_Face_Blendshape_Fcl_EYE_Close",
+        "Face_1_Face_Blendshape_Fcl_EYE_Close_L",
+        "Face_1_Face_Blendshape_Fcl_EYE_Close_R",
+        "Face_1_Face_Blendshape_Fcl_EYE_Angry",
+        "Face_1_Face_Blendshape_Fcl_EYE_Fun",
+        "Face_1_Face_Blendshape_Fcl_EYE_Joy",
+        "Face_1_Face_Blendshape_Fcl_EYE_Joy_L",
+        "Face_1_Face_Blendshape_Fcl_EYE_Joy_R",
+        "Face_1_Face_Blendshape_Fcl_EYE_Sorrow",
+        "Face_1_Face_Blendshape_Fcl_EYE_Surprised",
+        "Face_1_Face_Blendshape_Fcl_EYE_HighlightHide",
+        "Face_1_Face_Blendshape_Fcl_EYE_IrisHide",
+        "Face_1_Face_Blendshape_Fcl_EYE_Spread",
+        "Face_1_Face_Blendshape_Fcl_MTH_Neutral",
+        "Face_1_Face_Blendshape_Fcl_MTH_Close",
+        "Face_1_Face_Blendshape_Fcl_MTH_Angry",
+        "Face_1_Face_Blendshape_Fcl_MTH_Fun",
+        "Face_1_Face_Blendshape_Fcl_MTH_Joy",
+        "Face_1_Face_Blendshape_Fcl_MTH_Sorrow",
+        "Face_1_Face_Blendshape_Fcl_MTH_Surprised",
+        "Face_1_Face_Blendshape_Fcl_MTH_Up",
+        "Face_1_Face_Blendshape_Fcl_MTH_Down",
+        "Face_1_Face_Blendshape_Fcl_MTH_Small",
+        "Face_1_Face_Blendshape_Fcl_MTH_Large",
+        "Face_1_Face_Blendshape_Fcl_MTH_A",
+        "Face_1_Face_Blendshape_Fcl_MTH_I",
+        "Face_1_Face_Blendshape_Fcl_MTH_U",
+        "Face_1_Face_Blendshape_Fcl_MTH_E",
+        "Face_1_Face_Blendshape_Fcl_MTH_O",
+        "Face_1_Face_Blendshape_Fcl_MTH_SkinFung",
+        "Face_1_Face_Blendshape_Fcl_MTH_SkinFung_L",
+        "Face_1_Face_Blendshape_Fcl_MTH_SkinFung_R",
+        "Face_1_Face_Blendshape_Fcl_HA_Fung1",
+        "Face_1_Face_Blendshape_Fcl_HA_Fung1_Low",
+        "Face_1_Face_Blendshape_Fcl_HA_Fung1_Up",
+        "Face_1_Face_Blendshape_Fcl_HA_Fung2",
+        "Face_1_Face_Blendshape_Fcl_HA_Fung2_Low",
+        "Face_1_Face_Blendshape_Fcl_HA_Fung2_Up",
+        "Face_1_Face_Blendshape_Fcl_HA_Fung3",
+        "Face_1_Face_Blendshape_Fcl_HA_Fung3_Low",
+        "Face_1_Face_Blendshape_Fcl_HA_Fung3_Up",
+        "Face_1_Face_Blendshape_Fcl_HA_Hide",
+        "Face_1_Face_Blendshape_Fcl_HA_Short",
+        "Face_1_Face_Blendshape_Fcl_HA_ShortLow",
+        "Face_1_Face_Blendshape_Fcl_HA_ShortUp"
+      ],
+      "faceCount": 336,
+      "material": [
+        "/Asset/mtl/EyeIris_00_EYE"
+      ],
+      "pointCount": 194,
+      "pointsSha256": "ace1bd0426632b3c76a79c592ed1e0af0198384f9fcfed01f0984ca0d59a28b8",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/Face_2": {
+      "blendShapes": [
+        "Face_2_Face_Blendshape_Fcl_ALL_Neutral",
+        "Face_2_Face_Blendshape_Fcl_ALL_Angry",
+        "Face_2_Face_Blendshape_Fcl_ALL_Fun",
+        "Face_2_Face_Blendshape_Fcl_ALL_Joy",
+        "Face_2_Face_Blendshape_Fcl_ALL_Sorrow",
+        "Face_2_Face_Blendshape_Fcl_ALL_Surprised",
+        "Face_2_Face_Blendshape_Fcl_BRW_Angry",
+        "Face_2_Face_Blendshape_Fcl_BRW_Fun",
+        "Face_2_Face_Blendshape_Fcl_BRW_Joy",
+        "Face_2_Face_Blendshape_Fcl_BRW_Sorrow",
+        "Face_2_Face_Blendshape_Fcl_BRW_Surprised",
+        "Face_2_Face_Blendshape_Fcl_EYE_Natural",
+        "Face_2_Face_Blendshape_Fcl_EYE_Close",
+        "Face_2_Face_Blendshape_Fcl_EYE_Close_L",
+        "Face_2_Face_Blendshape_Fcl_EYE_Close_R",
+        "Face_2_Face_Blendshape_Fcl_EYE_Angry",
+        "Face_2_Face_Blendshape_Fcl_EYE_Fun",
+        "Face_2_Face_Blendshape_Fcl_EYE_Joy",
+        "Face_2_Face_Blendshape_Fcl_EYE_Joy_L",
+        "Face_2_Face_Blendshape_Fcl_EYE_Joy_R",
+        "Face_2_Face_Blendshape_Fcl_EYE_Sorrow",
+        "Face_2_Face_Blendshape_Fcl_EYE_Surprised",
+        "Face_2_Face_Blendshape_Fcl_EYE_HighlightHide",
+        "Face_2_Face_Blendshape_Fcl_EYE_IrisHide",
+        "Face_2_Face_Blendshape_Fcl_EYE_Spread",
+        "Face_2_Face_Blendshape_Fcl_MTH_Neutral",
+        "Face_2_Face_Blendshape_Fcl_MTH_Close",
+        "Face_2_Face_Blendshape_Fcl_MTH_Angry",
+        "Face_2_Face_Blendshape_Fcl_MTH_Fun",
+        "Face_2_Face_Blendshape_Fcl_MTH_Joy",
+        "Face_2_Face_Blendshape_Fcl_MTH_Sorrow",
+        "Face_2_Face_Blendshape_Fcl_MTH_Surprised",
+        "Face_2_Face_Blendshape_Fcl_MTH_Up",
+        "Face_2_Face_Blendshape_Fcl_MTH_Down",
+        "Face_2_Face_Blendshape_Fcl_MTH_Small",
+        "Face_2_Face_Blendshape_Fcl_MTH_Large",
+        "Face_2_Face_Blendshape_Fcl_MTH_A",
+        "Face_2_Face_Blendshape_Fcl_MTH_I",
+        "Face_2_Face_Blendshape_Fcl_MTH_U",
+        "Face_2_Face_Blendshape_Fcl_MTH_E",
+        "Face_2_Face_Blendshape_Fcl_MTH_O",
+        "Face_2_Face_Blendshape_Fcl_MTH_SkinFung",
+        "Face_2_Face_Blendshape_Fcl_MTH_SkinFung_L",
+        "Face_2_Face_Blendshape_Fcl_MTH_SkinFung_R",
+        "Face_2_Face_Blendshape_Fcl_HA_Fung1",
+        "Face_2_Face_Blendshape_Fcl_HA_Fung1_Low",
+        "Face_2_Face_Blendshape_Fcl_HA_Fung1_Up",
+        "Face_2_Face_Blendshape_Fcl_HA_Fung2",
+        "Face_2_Face_Blendshape_Fcl_HA_Fung2_Low",
+        "Face_2_Face_Blendshape_Fcl_HA_Fung2_Up",
+        "Face_2_Face_Blendshape_Fcl_HA_Fung3",
+        "Face_2_Face_Blendshape_Fcl_HA_Fung3_Low",
+        "Face_2_Face_Blendshape_Fcl_HA_Fung3_Up",
+        "Face_2_Face_Blendshape_Fcl_HA_Hide",
+        "Face_2_Face_Blendshape_Fcl_HA_Short",
+        "Face_2_Face_Blendshape_Fcl_HA_ShortLow",
+        "Face_2_Face_Blendshape_Fcl_HA_ShortUp"
+      ],
+      "faceCount": 4232,
+      "material": [
+        "/Asset/mtl/Face_00_SKIN"
+      ],
+      "pointCount": 2286,
+      "pointsSha256": "3913bec1b412cf0d25e51694f76d5311f9fc3c00c382791d43a7c9b8f63ebd88",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/Face_3": {
+      "blendShapes": [
+        "Face_3_Face_Blendshape_Fcl_ALL_Neutral",
+        "Face_3_Face_Blendshape_Fcl_ALL_Angry",
+        "Face_3_Face_Blendshape_Fcl_ALL_Fun",
+        "Face_3_Face_Blendshape_Fcl_ALL_Joy",
+        "Face_3_Face_Blendshape_Fcl_ALL_Sorrow",
+        "Face_3_Face_Blendshape_Fcl_ALL_Surprised",
+        "Face_3_Face_Blendshape_Fcl_BRW_Angry",
+        "Face_3_Face_Blendshape_Fcl_BRW_Fun",
+        "Face_3_Face_Blendshape_Fcl_BRW_Joy",
+        "Face_3_Face_Blendshape_Fcl_BRW_Sorrow",
+        "Face_3_Face_Blendshape_Fcl_BRW_Surprised",
+        "Face_3_Face_Blendshape_Fcl_EYE_Natural",
+        "Face_3_Face_Blendshape_Fcl_EYE_Close",
+        "Face_3_Face_Blendshape_Fcl_EYE_Close_L",
+        "Face_3_Face_Blendshape_Fcl_EYE_Close_R",
+        "Face_3_Face_Blendshape_Fcl_EYE_Angry",
+        "Face_3_Face_Blendshape_Fcl_EYE_Fun",
+        "Face_3_Face_Blendshape_Fcl_EYE_Joy",
+        "Face_3_Face_Blendshape_Fcl_EYE_Joy_L",
+        "Face_3_Face_Blendshape_Fcl_EYE_Joy_R",
+        "Face_3_Face_Blendshape_Fcl_EYE_Sorrow",
+        "Face_3_Face_Blendshape_Fcl_EYE_Surprised",
+        "Face_3_Face_Blendshape_Fcl_EYE_HighlightHide",
+        "Face_3_Face_Blendshape_Fcl_EYE_IrisHide",
+        "Face_3_Face_Blendshape_Fcl_EYE_Spread",
+        "Face_3_Face_Blendshape_Fcl_MTH_Neutral",
+        "Face_3_Face_Blendshape_Fcl_MTH_Close",
+        "Face_3_Face_Blendshape_Fcl_MTH_Angry",
+        "Face_3_Face_Blendshape_Fcl_MTH_Fun",
+        "Face_3_Face_Blendshape_Fcl_MTH_Joy",
+        "Face_3_Face_Blendshape_Fcl_MTH_Sorrow",
+        "Face_3_Face_Blendshape_Fcl_MTH_Surprised",
+        "Face_3_Face_Blendshape_Fcl_MTH_Up",
+        "Face_3_Face_Blendshape_Fcl_MTH_Down",
+        "Face_3_Face_Blendshape_Fcl_MTH_Small",
+        "Face_3_Face_Blendshape_Fcl_MTH_Large",
+        "Face_3_Face_Blendshape_Fcl_MTH_A",
+        "Face_3_Face_Blendshape_Fcl_MTH_I",
+        "Face_3_Face_Blendshape_Fcl_MTH_U",
+        "Face_3_Face_Blendshape_Fcl_MTH_E",
+        "Face_3_Face_Blendshape_Fcl_MTH_O",
+        "Face_3_Face_Blendshape_Fcl_MTH_SkinFung",
+        "Face_3_Face_Blendshape_Fcl_MTH_SkinFung_L",
+        "Face_3_Face_Blendshape_Fcl_MTH_SkinFung_R",
+        "Face_3_Face_Blendshape_Fcl_HA_Fung1",
+        "Face_3_Face_Blendshape_Fcl_HA_Fung1_Low",
+        "Face_3_Face_Blendshape_Fcl_HA_Fung1_Up",
+        "Face_3_Face_Blendshape_Fcl_HA_Fung2",
+        "Face_3_Face_Blendshape_Fcl_HA_Fung2_Low",
+        "Face_3_Face_Blendshape_Fcl_HA_Fung2_Up",
+        "Face_3_Face_Blendshape_Fcl_HA_Fung3",
+        "Face_3_Face_Blendshape_Fcl_HA_Fung3_Low",
+        "Face_3_Face_Blendshape_Fcl_HA_Fung3_Up",
+        "Face_3_Face_Blendshape_Fcl_HA_Hide",
+        "Face_3_Face_Blendshape_Fcl_HA_Short",
+        "Face_3_Face_Blendshape_Fcl_HA_ShortLow",
+        "Face_3_Face_Blendshape_Fcl_HA_ShortUp"
+      ],
+      "faceCount": 528,
+      "material": [
+        "/Asset/mtl/EyeWhite_00_EYE"
+      ],
+      "pointCount": 290,
+      "pointsSha256": "8ea7e1ea6c7c013babc5ae7e53f98767cb9ee4d46873c3016ef5ab0aad42f631",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/Face_4": {
+      "blendShapes": [
+        "Face_4_Face_Blendshape_Fcl_ALL_Neutral",
+        "Face_4_Face_Blendshape_Fcl_ALL_Angry",
+        "Face_4_Face_Blendshape_Fcl_ALL_Fun",
+        "Face_4_Face_Blendshape_Fcl_ALL_Joy",
+        "Face_4_Face_Blendshape_Fcl_ALL_Sorrow",
+        "Face_4_Face_Blendshape_Fcl_ALL_Surprised",
+        "Face_4_Face_Blendshape_Fcl_BRW_Angry",
+        "Face_4_Face_Blendshape_Fcl_BRW_Fun",
+        "Face_4_Face_Blendshape_Fcl_BRW_Joy",
+        "Face_4_Face_Blendshape_Fcl_BRW_Sorrow",
+        "Face_4_Face_Blendshape_Fcl_BRW_Surprised",
+        "Face_4_Face_Blendshape_Fcl_EYE_Natural",
+        "Face_4_Face_Blendshape_Fcl_EYE_Close",
+        "Face_4_Face_Blendshape_Fcl_EYE_Close_L",
+        "Face_4_Face_Blendshape_Fcl_EYE_Close_R",
+        "Face_4_Face_Blendshape_Fcl_EYE_Angry",
+        "Face_4_Face_Blendshape_Fcl_EYE_Fun",
+        "Face_4_Face_Blendshape_Fcl_EYE_Joy",
+        "Face_4_Face_Blendshape_Fcl_EYE_Joy_L",
+        "Face_4_Face_Blendshape_Fcl_EYE_Joy_R",
+        "Face_4_Face_Blendshape_Fcl_EYE_Sorrow",
+        "Face_4_Face_Blendshape_Fcl_EYE_Surprised",
+        "Face_4_Face_Blendshape_Fcl_EYE_HighlightHide",
+        "Face_4_Face_Blendshape_Fcl_EYE_IrisHide",
+        "Face_4_Face_Blendshape_Fcl_EYE_Spread",
+        "Face_4_Face_Blendshape_Fcl_MTH_Neutral",
+        "Face_4_Face_Blendshape_Fcl_MTH_Close",
+        "Face_4_Face_Blendshape_Fcl_MTH_Angry",
+        "Face_4_Face_Blendshape_Fcl_MTH_Fun",
+        "Face_4_Face_Blendshape_Fcl_MTH_Joy",
+        "Face_4_Face_Blendshape_Fcl_MTH_Sorrow",
+        "Face_4_Face_Blendshape_Fcl_MTH_Surprised",
+        "Face_4_Face_Blendshape_Fcl_MTH_Up",
+        "Face_4_Face_Blendshape_Fcl_MTH_Down",
+        "Face_4_Face_Blendshape_Fcl_MTH_Small",
+        "Face_4_Face_Blendshape_Fcl_MTH_Large",
+        "Face_4_Face_Blendshape_Fcl_MTH_A",
+        "Face_4_Face_Blendshape_Fcl_MTH_I",
+        "Face_4_Face_Blendshape_Fcl_MTH_U",
+        "Face_4_Face_Blendshape_Fcl_MTH_E",
+        "Face_4_Face_Blendshape_Fcl_MTH_O",
+        "Face_4_Face_Blendshape_Fcl_MTH_SkinFung",
+        "Face_4_Face_Blendshape_Fcl_MTH_SkinFung_L",
+        "Face_4_Face_Blendshape_Fcl_MTH_SkinFung_R",
+        "Face_4_Face_Blendshape_Fcl_HA_Fung1",
+        "Face_4_Face_Blendshape_Fcl_HA_Fung1_Low",
+        "Face_4_Face_Blendshape_Fcl_HA_Fung1_Up",
+        "Face_4_Face_Blendshape_Fcl_HA_Fung2",
+        "Face_4_Face_Blendshape_Fcl_HA_Fung2_Low",
+        "Face_4_Face_Blendshape_Fcl_HA_Fung2_Up",
+        "Face_4_Face_Blendshape_Fcl_HA_Fung3",
+        "Face_4_Face_Blendshape_Fcl_HA_Fung3_Low",
+        "Face_4_Face_Blendshape_Fcl_HA_Fung3_Up",
+        "Face_4_Face_Blendshape_Fcl_HA_Hide",
+        "Face_4_Face_Blendshape_Fcl_HA_Short",
+        "Face_4_Face_Blendshape_Fcl_HA_ShortLow",
+        "Face_4_Face_Blendshape_Fcl_HA_ShortUp"
+      ],
+      "faceCount": 128,
+      "material": [
+        "/Asset/mtl/FaceEyeline_00_FACE"
+      ],
+      "pointCount": 116,
+      "pointsSha256": "11fbae6bd195a6e7f9a02200cae6c5e1c0ef5c4cb6a1edac5169234a10edddc5",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/Face_5": {
+      "blendShapes": [
+        "Face_5_Face_Blendshape_Fcl_ALL_Neutral",
+        "Face_5_Face_Blendshape_Fcl_ALL_Angry",
+        "Face_5_Face_Blendshape_Fcl_ALL_Fun",
+        "Face_5_Face_Blendshape_Fcl_ALL_Joy",
+        "Face_5_Face_Blendshape_Fcl_ALL_Sorrow",
+        "Face_5_Face_Blendshape_Fcl_ALL_Surprised",
+        "Face_5_Face_Blendshape_Fcl_BRW_Angry",
+        "Face_5_Face_Blendshape_Fcl_BRW_Fun",
+        "Face_5_Face_Blendshape_Fcl_BRW_Joy",
+        "Face_5_Face_Blendshape_Fcl_BRW_Sorrow",
+        "Face_5_Face_Blendshape_Fcl_BRW_Surprised",
+        "Face_5_Face_Blendshape_Fcl_EYE_Natural",
+        "Face_5_Face_Blendshape_Fcl_EYE_Close",
+        "Face_5_Face_Blendshape_Fcl_EYE_Close_L",
+        "Face_5_Face_Blendshape_Fcl_EYE_Close_R",
+        "Face_5_Face_Blendshape_Fcl_EYE_Angry",
+        "Face_5_Face_Blendshape_Fcl_EYE_Fun",
+        "Face_5_Face_Blendshape_Fcl_EYE_Joy",
+        "Face_5_Face_Blendshape_Fcl_EYE_Joy_L",
+        "Face_5_Face_Blendshape_Fcl_EYE_Joy_R",
+        "Face_5_Face_Blendshape_Fcl_EYE_Sorrow",
+        "Face_5_Face_Blendshape_Fcl_EYE_Surprised",
+        "Face_5_Face_Blendshape_Fcl_EYE_HighlightHide",
+        "Face_5_Face_Blendshape_Fcl_EYE_IrisHide",
+        "Face_5_Face_Blendshape_Fcl_EYE_Spread",
+        "Face_5_Face_Blendshape_Fcl_MTH_Neutral",
+        "Face_5_Face_Blendshape_Fcl_MTH_Close",
+        "Face_5_Face_Blendshape_Fcl_MTH_Angry",
+        "Face_5_Face_Blendshape_Fcl_MTH_Fun",
+        "Face_5_Face_Blendshape_Fcl_MTH_Joy",
+        "Face_5_Face_Blendshape_Fcl_MTH_Sorrow",
+        "Face_5_Face_Blendshape_Fcl_MTH_Surprised",
+        "Face_5_Face_Blendshape_Fcl_MTH_Up",
+        "Face_5_Face_Blendshape_Fcl_MTH_Down",
+        "Face_5_Face_Blendshape_Fcl_MTH_Small",
+        "Face_5_Face_Blendshape_Fcl_MTH_Large",
+        "Face_5_Face_Blendshape_Fcl_MTH_A",
+        "Face_5_Face_Blendshape_Fcl_MTH_I",
+        "Face_5_Face_Blendshape_Fcl_MTH_U",
+        "Face_5_Face_Blendshape_Fcl_MTH_E",
+        "Face_5_Face_Blendshape_Fcl_MTH_O",
+        "Face_5_Face_Blendshape_Fcl_MTH_SkinFung",
+        "Face_5_Face_Blendshape_Fcl_MTH_SkinFung_L",
+        "Face_5_Face_Blendshape_Fcl_MTH_SkinFung_R",
+        "Face_5_Face_Blendshape_Fcl_HA_Fung1",
+        "Face_5_Face_Blendshape_Fcl_HA_Fung1_Low",
+        "Face_5_Face_Blendshape_Fcl_HA_Fung1_Up",
+        "Face_5_Face_Blendshape_Fcl_HA_Fung2",
+        "Face_5_Face_Blendshape_Fcl_HA_Fung2_Low",
+        "Face_5_Face_Blendshape_Fcl_HA_Fung2_Up",
+        "Face_5_Face_Blendshape_Fcl_HA_Fung3",
+        "Face_5_Face_Blendshape_Fcl_HA_Fung3_Low",
+        "Face_5_Face_Blendshape_Fcl_HA_Fung3_Up",
+        "Face_5_Face_Blendshape_Fcl_HA_Hide",
+        "Face_5_Face_Blendshape_Fcl_HA_Short",
+        "Face_5_Face_Blendshape_Fcl_HA_ShortLow",
+        "Face_5_Face_Blendshape_Fcl_HA_ShortUp"
+      ],
+      "faceCount": 40,
+      "material": [
+        "/Asset/mtl/FaceBrow_00_FACE"
+      ],
+      "pointCount": 44,
+      "pointsSha256": "0d3cd8f2f157b4591e5e7e2991698c1a640d378a1030406bf391e9a42db4b13b",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/Face_6": {
+      "blendShapes": [
+        "Face_6_Face_Blendshape_Fcl_ALL_Neutral",
+        "Face_6_Face_Blendshape_Fcl_ALL_Angry",
+        "Face_6_Face_Blendshape_Fcl_ALL_Fun",
+        "Face_6_Face_Blendshape_Fcl_ALL_Joy",
+        "Face_6_Face_Blendshape_Fcl_ALL_Sorrow",
+        "Face_6_Face_Blendshape_Fcl_ALL_Surprised",
+        "Face_6_Face_Blendshape_Fcl_BRW_Angry",
+        "Face_6_Face_Blendshape_Fcl_BRW_Fun",
+        "Face_6_Face_Blendshape_Fcl_BRW_Joy",
+        "Face_6_Face_Blendshape_Fcl_BRW_Sorrow",
+        "Face_6_Face_Blendshape_Fcl_BRW_Surprised",
+        "Face_6_Face_Blendshape_Fcl_EYE_Natural",
+        "Face_6_Face_Blendshape_Fcl_EYE_Close",
+        "Face_6_Face_Blendshape_Fcl_EYE_Close_L",
+        "Face_6_Face_Blendshape_Fcl_EYE_Close_R",
+        "Face_6_Face_Blendshape_Fcl_EYE_Angry",
+        "Face_6_Face_Blendshape_Fcl_EYE_Fun",
+        "Face_6_Face_Blendshape_Fcl_EYE_Joy",
+        "Face_6_Face_Blendshape_Fcl_EYE_Joy_L",
+        "Face_6_Face_Blendshape_Fcl_EYE_Joy_R",
+        "Face_6_Face_Blendshape_Fcl_EYE_Sorrow",
+        "Face_6_Face_Blendshape_Fcl_EYE_Surprised",
+        "Face_6_Face_Blendshape_Fcl_EYE_HighlightHide",
+        "Face_6_Face_Blendshape_Fcl_EYE_IrisHide",
+        "Face_6_Face_Blendshape_Fcl_EYE_Spread",
+        "Face_6_Face_Blendshape_Fcl_MTH_Neutral",
+        "Face_6_Face_Blendshape_Fcl_MTH_Close",
+        "Face_6_Face_Blendshape_Fcl_MTH_Angry",
+        "Face_6_Face_Blendshape_Fcl_MTH_Fun",
+        "Face_6_Face_Blendshape_Fcl_MTH_Joy",
+        "Face_6_Face_Blendshape_Fcl_MTH_Sorrow",
+        "Face_6_Face_Blendshape_Fcl_MTH_Surprised",
+        "Face_6_Face_Blendshape_Fcl_MTH_Up",
+        "Face_6_Face_Blendshape_Fcl_MTH_Down",
+        "Face_6_Face_Blendshape_Fcl_MTH_Small",
+        "Face_6_Face_Blendshape_Fcl_MTH_Large",
+        "Face_6_Face_Blendshape_Fcl_MTH_A",
+        "Face_6_Face_Blendshape_Fcl_MTH_I",
+        "Face_6_Face_Blendshape_Fcl_MTH_U",
+        "Face_6_Face_Blendshape_Fcl_MTH_E",
+        "Face_6_Face_Blendshape_Fcl_MTH_O",
+        "Face_6_Face_Blendshape_Fcl_MTH_SkinFung",
+        "Face_6_Face_Blendshape_Fcl_MTH_SkinFung_L",
+        "Face_6_Face_Blendshape_Fcl_MTH_SkinFung_R",
+        "Face_6_Face_Blendshape_Fcl_HA_Fung1",
+        "Face_6_Face_Blendshape_Fcl_HA_Fung1_Low",
+        "Face_6_Face_Blendshape_Fcl_HA_Fung1_Up",
+        "Face_6_Face_Blendshape_Fcl_HA_Fung2",
+        "Face_6_Face_Blendshape_Fcl_HA_Fung2_Low",
+        "Face_6_Face_Blendshape_Fcl_HA_Fung2_Up",
+        "Face_6_Face_Blendshape_Fcl_HA_Fung3",
+        "Face_6_Face_Blendshape_Fcl_HA_Fung3_Low",
+        "Face_6_Face_Blendshape_Fcl_HA_Fung3_Up",
+        "Face_6_Face_Blendshape_Fcl_HA_Hide",
+        "Face_6_Face_Blendshape_Fcl_HA_Short",
+        "Face_6_Face_Blendshape_Fcl_HA_ShortLow",
+        "Face_6_Face_Blendshape_Fcl_HA_ShortUp"
+      ],
+      "faceCount": 96,
+      "material": [
+        "/Asset/mtl/EyeHighlight_00_EYE"
+      ],
+      "pointCount": 102,
+      "pointsSha256": "b1de7d01b4d26c1e685ebc15159f8a98eeb5ea531f589755845834a8ebd4f8bf",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    },
+    "/Asset/geo/Hair": {
+      "faceCount": 16600,
+      "material": [
+        "/Asset/mtl/Hair_00_HAIR"
+      ],
+      "pointCount": 12868,
+      "pointsSha256": "059a5be93766cc6572dfd66ba28082a0a94e2cb4c592ad44725991fdeeb11801",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:normals",
+        "primvars:skel:geomBindTransform",
+        "primvars:skel:jointIndices",
+        "primvars:skel:jointWeights",
+        "primvars:skel:skinningMethod",
+        "primvars:st"
+      ],
+      "skeleton": [
+        "/Asset/skel/Skeleton"
+      ]
+    }
+  },
+  "metersPerUnit": 1.0,
+  "open": true,
+  "prims": [
+    {
+      "kind": "component",
+      "path": "/Asset",
+      "type": "SkelRoot"
+    },
+    {
+      "path": "/Asset/mtl",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/mtl/Body_00_SKIN",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Body_00_SKIN/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Body_00_SKIN/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Body_00_SKIN/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Bottoms_01_CLOTH",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Bottoms_01_CLOTH/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Bottoms_01_CLOTH/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Bottoms_01_CLOTH/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Shoes_01_CLOTH",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Shoes_01_CLOTH/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Shoes_01_CLOTH/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Shoes_01_CLOTH/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Tops_01_CLOTH",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Tops_01_CLOTH/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Tops_01_CLOTH/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Tops_01_CLOTH/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/HairBack_00_HAIR",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/HairBack_00_HAIR/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/HairBack_00_HAIR/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/HairBack_00_HAIR/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/FaceMouth_00_FACE",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceMouth_00_FACE/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceMouth_00_FACE/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceMouth_00_FACE/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/EyeIris_00_EYE",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeIris_00_EYE/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeIris_00_EYE/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeIris_00_EYE/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Face_00_SKIN",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face_00_SKIN/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face_00_SKIN/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Face_00_SKIN/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/EyeWhite_00_EYE",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeWhite_00_EYE/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeWhite_00_EYE/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeWhite_00_EYE/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/FaceEyeline_00_FACE",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceEyeline_00_FACE/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceEyeline_00_FACE/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceEyeline_00_FACE/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/FaceBrow_00_FACE",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceBrow_00_FACE/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceBrow_00_FACE/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/FaceBrow_00_FACE/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/EyeHighlight_00_EYE",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeHighlight_00_EYE/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeHighlight_00_EYE/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/EyeHighlight_00_EYE/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Hair_00_HAIR",
+      "type": "Material"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair_00_HAIR/Surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair_00_HAIR/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Hair_00_HAIR/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/geo",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Body_0",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Body_1",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Body_2",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Body_3",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Body_4",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Face_0",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Face_1",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Face_2",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Face_3",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Face_4",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Face_5",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Face_6",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI",
+        "SkelBindingAPI"
+      ],
+      "path": "/Asset/geo/Hair",
+      "type": "Mesh"
+    },
+    {
+      "path": "/Asset/skel",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/skel/Skeleton",
+      "type": "Skeleton"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_ALL_Neutral",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_ALL_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_ALL_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_ALL_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_ALL_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_ALL_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_BRW_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_BRW_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_BRW_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_BRW_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_BRW_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_EYE_Natural",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_EYE_Close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_EYE_Close_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_EYE_Close_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_EYE_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_EYE_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_EYE_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_EYE_Joy_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_EYE_Joy_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_EYE_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_EYE_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_EYE_HighlightHide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_EYE_IrisHide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_EYE_Spread",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_Neutral",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_Close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_Down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_Small",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_Large",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_A",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_I",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_U",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_E",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_O",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_SkinFung",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_SkinFung_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_MTH_SkinFung_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_HA_Fung1",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_HA_Fung1_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_HA_Fung1_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_HA_Fung2",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_HA_Fung2_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_HA_Fung2_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_HA_Fung3",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_HA_Fung3_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_HA_Fung3_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_HA_Hide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_HA_Short",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_HA_ShortLow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_0_Face_Blendshape_Fcl_HA_ShortUp",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_ALL_Neutral",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_ALL_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_ALL_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_ALL_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_ALL_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_ALL_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_BRW_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_BRW_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_BRW_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_BRW_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_BRW_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_EYE_Natural",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_EYE_Close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_EYE_Close_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_EYE_Close_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_EYE_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_EYE_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_EYE_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_EYE_Joy_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_EYE_Joy_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_EYE_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_EYE_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_EYE_HighlightHide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_EYE_IrisHide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_EYE_Spread",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_Neutral",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_Close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_Down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_Small",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_Large",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_A",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_I",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_U",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_E",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_O",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_SkinFung",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_SkinFung_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_MTH_SkinFung_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_HA_Fung1",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_HA_Fung1_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_HA_Fung1_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_HA_Fung2",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_HA_Fung2_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_HA_Fung2_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_HA_Fung3",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_HA_Fung3_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_HA_Fung3_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_HA_Hide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_HA_Short",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_HA_ShortLow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_1_Face_Blendshape_Fcl_HA_ShortUp",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_ALL_Neutral",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_ALL_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_ALL_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_ALL_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_ALL_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_ALL_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_BRW_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_BRW_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_BRW_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_BRW_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_BRW_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_EYE_Natural",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_EYE_Close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_EYE_Close_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_EYE_Close_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_EYE_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_EYE_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_EYE_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_EYE_Joy_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_EYE_Joy_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_EYE_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_EYE_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_EYE_HighlightHide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_EYE_IrisHide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_EYE_Spread",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_Neutral",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_Close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_Down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_Small",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_Large",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_A",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_I",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_U",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_E",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_O",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_SkinFung",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_SkinFung_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_MTH_SkinFung_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_HA_Fung1",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_HA_Fung1_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_HA_Fung1_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_HA_Fung2",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_HA_Fung2_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_HA_Fung2_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_HA_Fung3",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_HA_Fung3_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_HA_Fung3_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_HA_Hide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_HA_Short",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_HA_ShortLow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_2_Face_Blendshape_Fcl_HA_ShortUp",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_ALL_Neutral",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_ALL_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_ALL_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_ALL_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_ALL_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_ALL_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_BRW_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_BRW_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_BRW_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_BRW_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_BRW_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_EYE_Natural",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_EYE_Close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_EYE_Close_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_EYE_Close_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_EYE_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_EYE_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_EYE_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_EYE_Joy_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_EYE_Joy_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_EYE_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_EYE_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_EYE_HighlightHide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_EYE_IrisHide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_EYE_Spread",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_Neutral",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_Close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_Down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_Small",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_Large",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_A",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_I",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_U",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_E",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_O",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_SkinFung",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_SkinFung_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_MTH_SkinFung_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_HA_Fung1",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_HA_Fung1_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_HA_Fung1_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_HA_Fung2",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_HA_Fung2_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_HA_Fung2_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_HA_Fung3",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_HA_Fung3_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_HA_Fung3_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_HA_Hide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_HA_Short",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_HA_ShortLow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_3_Face_Blendshape_Fcl_HA_ShortUp",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_ALL_Neutral",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_ALL_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_ALL_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_ALL_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_ALL_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_ALL_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_BRW_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_BRW_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_BRW_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_BRW_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_BRW_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_EYE_Natural",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_EYE_Close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_EYE_Close_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_EYE_Close_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_EYE_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_EYE_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_EYE_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_EYE_Joy_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_EYE_Joy_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_EYE_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_EYE_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_EYE_HighlightHide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_EYE_IrisHide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_EYE_Spread",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_Neutral",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_Close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_Down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_Small",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_Large",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_A",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_I",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_U",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_E",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_O",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_SkinFung",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_SkinFung_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_MTH_SkinFung_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_HA_Fung1",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_HA_Fung1_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_HA_Fung1_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_HA_Fung2",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_HA_Fung2_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_HA_Fung2_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_HA_Fung3",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_HA_Fung3_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_HA_Fung3_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_HA_Hide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_HA_Short",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_HA_ShortLow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_4_Face_Blendshape_Fcl_HA_ShortUp",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_ALL_Neutral",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_ALL_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_ALL_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_ALL_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_ALL_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_ALL_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_BRW_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_BRW_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_BRW_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_BRW_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_BRW_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_EYE_Natural",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_EYE_Close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_EYE_Close_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_EYE_Close_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_EYE_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_EYE_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_EYE_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_EYE_Joy_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_EYE_Joy_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_EYE_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_EYE_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_EYE_HighlightHide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_EYE_IrisHide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_EYE_Spread",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_Neutral",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_Close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_Down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_Small",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_Large",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_A",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_I",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_U",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_E",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_O",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_SkinFung",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_SkinFung_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_MTH_SkinFung_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_HA_Fung1",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_HA_Fung1_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_HA_Fung1_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_HA_Fung2",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_HA_Fung2_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_HA_Fung2_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_HA_Fung3",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_HA_Fung3_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_HA_Fung3_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_HA_Hide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_HA_Short",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_HA_ShortLow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_5_Face_Blendshape_Fcl_HA_ShortUp",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_ALL_Neutral",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_ALL_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_ALL_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_ALL_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_ALL_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_ALL_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_BRW_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_BRW_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_BRW_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_BRW_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_BRW_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_EYE_Natural",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_EYE_Close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_EYE_Close_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_EYE_Close_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_EYE_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_EYE_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_EYE_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_EYE_Joy_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_EYE_Joy_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_EYE_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_EYE_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_EYE_HighlightHide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_EYE_IrisHide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_EYE_Spread",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_Neutral",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_Close",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_Angry",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_Fun",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_Joy",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_Sorrow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_Surprised",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_Down",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_Small",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_Large",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_A",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_I",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_U",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_E",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_O",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_SkinFung",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_SkinFung_L",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_MTH_SkinFung_R",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_HA_Fung1",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_HA_Fung1_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_HA_Fung1_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_HA_Fung2",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_HA_Fung2_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_HA_Fung2_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_HA_Fung3",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_HA_Fung3_Low",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_HA_Fung3_Up",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_HA_Hide",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_HA_Short",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_HA_ShortLow",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/skel/BlendShapes/Face_6_Face_Blendshape_Fcl_HA_ShortUp",
+      "type": "BlendShape"
+    },
+    {
+      "path": "/Asset/rig",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmHumanoidAPI"
+      ],
+      "path": "/Asset/rig/Humanoid",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/Expressions",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/aa",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/angry",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/blink",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/blinkLeft",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/blinkRight",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/ee",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/happy",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/ih",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/lookDown",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/lookLeft",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/lookRight",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/lookUp",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/neutral",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/oh",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/ou",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/relaxed",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/sad",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/surprised",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmLookAtAPI"
+      ],
+      "path": "/Asset/rig/LookAt",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders/Spine",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/Spine/Collider_0",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders/UpperChest",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/UpperChest/Collider_0",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/UpperChest/Collider_1",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders/Neck",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/Neck/Collider_0",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders/Head",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/Head/Collider_0",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders/LeftUpperArm",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/LeftUpperArm/Collider_0",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders/leftLowerArm",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/leftLowerArm/Collider_0",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders/LeftHand",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/LeftHand/Collider_0",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders/RightUpperArm",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/RightUpperArm/Collider_0",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders/RightLowerArm",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/RightLowerArm/Collider_0",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders/RightHand",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/RightHand/Collider_0",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders/LeftUpperLeg",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/LeftUpperLeg/Collider_0",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/Colliders/RightUpperLeg",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmColliderAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/Colliders/RightUpperLeg/Collider_0",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/SecondaryMotion/SpringBones",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/TopsUpperLeg",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/TopsUpperLeg_2",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/TopsUpperLeg_3",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/TopsUpperLeg_4",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/TopsUpperLeg_5",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/TopsUpperLeg_6",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/TopsUpperArm",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/TopsUpperArm_2",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/TopsUpperArm_3",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/TopsUpperArm_4",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/Hair",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/Hair_2",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/Hair_3",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/Hair_4",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/Hair_5",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/Hair_6",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/Hair_7",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/Hair_8",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/Hair_9",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/Hair_10",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/Hair_11",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmSpringBoneAPI"
+      ],
+      "path": "/Asset/rig/SecondaryMotion/SpringBones/Hair_12",
+      "type": "Scope"
+    },
+    {
+      "path": "/Asset/rig/Constraints",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/J_Aim_L_UpperLeg_aim",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/J_Aim_R_UpperLeg_aim",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/J_Aim_L_Shoulder_aim",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/J_Roll_L_UpperArm_roll",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/J_Aim_L_TopsUpperArm_aim",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/J_Roll_L_Hand_roll",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/J_Roll_L_LowerArm_roll",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/J_Roll_L_Elbow_roll",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/J_Aim_R_Shoulder_aim",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/J_Roll_R_UpperArm_roll",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/J_Aim_R_TopsUpperArm_aim",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/J_Roll_R_Hand_roll",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/J_Roll_R_LowerArm_roll",
+      "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmConstraintAPI"
+      ],
+      "path": "/Asset/rig/Constraints/J_Roll_R_Elbow_roll",
+      "type": "Scope"
+    }
+  ],
+  "skeletons": {
+    "/Asset/skel/Skeleton": {
+      "bindTransformsSha256": "02fcbdb8a9e4b1c5c493dfd06631c34d3011f8f03673312bf8cf0010b1a53af2",
+      "joints": [
+        "J_Bip_C_Hips",
+        "J_Bip_C_Hips/J_Aim_R_UpperLeg",
+        "J_Bip_C_Hips/J_Bip_R_UpperLeg",
+        "J_Bip_C_Hips/J_Aim_L_UpperLeg",
+        "J_Bip_C_Hips/J_Bip_L_UpperLeg",
+        "J_Bip_C_Hips/J_Bip_C_Spine",
+        "J_Bip_C_Hips/J_Aim_R_UpperLeg/J_Roll_R_UpperLeg",
+        "J_Bip_C_Hips/J_Bip_R_UpperLeg/J_Bip_R_LowerLeg",
+        "J_Bip_C_Hips/J_Aim_L_UpperLeg/J_Roll_L_UpperLeg",
+        "J_Bip_C_Hips/J_Bip_L_UpperLeg/J_Bip_L_LowerLeg",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest",
+        "J_Bip_C_Hips/J_Aim_R_UpperLeg/J_Roll_R_UpperLeg/J_Sec_R_TopsUpperLegSide",
+        "J_Bip_C_Hips/J_Aim_R_UpperLeg/J_Roll_R_UpperLeg/J_Sec_R_TopsUpperLegFront",
+        "J_Bip_C_Hips/J_Aim_R_UpperLeg/J_Roll_R_UpperLeg/J_Sec_R_TopsUpperLegBack",
+        "J_Bip_C_Hips/J_Bip_R_UpperLeg/J_Bip_R_LowerLeg/J_Bip_R_Foot",
+        "J_Bip_C_Hips/J_Aim_L_UpperLeg/J_Roll_L_UpperLeg/J_Sec_L_TopsUpperLegSide",
+        "J_Bip_C_Hips/J_Aim_L_UpperLeg/J_Roll_L_UpperLeg/J_Sec_L_TopsUpperLegFront",
+        "J_Bip_C_Hips/J_Aim_L_UpperLeg/J_Roll_L_UpperLeg/J_Sec_L_TopsUpperLegBack",
+        "J_Bip_C_Hips/J_Bip_L_UpperLeg/J_Bip_L_LowerLeg/J_Bip_L_Foot",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest",
+        "J_Bip_C_Hips/J_Bip_R_UpperLeg/J_Bip_R_LowerLeg/J_Bip_R_Foot/J_Bip_R_ToeBase",
+        "J_Bip_C_Hips/J_Bip_L_UpperLeg/J_Bip_L_LowerLeg/J_Bip_L_Foot/J_Bip_L_ToeBase",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Sec_R_Bust1",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Sec_L_Bust1",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck",
+        "J_Bip_C_Hips/J_Aim_L_UpperLeg/J_Roll_L_UpperLeg/J_Sec_L_TopsUpperLegBack/J_Sec_L_TopsUpperLegBack_end",
+        "J_Bip_C_Hips/J_Aim_L_UpperLeg/J_Roll_L_UpperLeg/J_Sec_L_TopsUpperLegFront/J_Sec_L_TopsUpperLegFront_end",
+        "J_Bip_C_Hips/J_Aim_L_UpperLeg/J_Roll_L_UpperLeg/J_Sec_L_TopsUpperLegSide/J_Sec_L_TopsUpperLegSide_end",
+        "J_Bip_C_Hips/J_Aim_R_UpperLeg/J_Roll_R_UpperLeg/J_Sec_R_TopsUpperLegBack/J_Sec_R_TopsUpperLegBack_end",
+        "J_Bip_C_Hips/J_Aim_R_UpperLeg/J_Roll_R_UpperLeg/J_Sec_R_TopsUpperLegFront/J_Sec_R_TopsUpperLegFront_end",
+        "J_Bip_C_Hips/J_Aim_R_UpperLeg/J_Roll_R_UpperLeg/J_Sec_R_TopsUpperLegSide/J_Sec_R_TopsUpperLegSide_end",
+        "J_Bip_C_Hips/J_Bip_L_UpperLeg/J_Bip_L_LowerLeg/J_Bip_L_Foot/J_Bip_L_ToeBase/J_Bip_L_ToeBase_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Aim_R_Shoulder",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Aim_R_TopsUpperArm",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Aim_L_Shoulder",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Aim_L_TopsUpperArm",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Sec_R_Bust1/J_Sec_R_Bust2",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Sec_L_Bust1/J_Sec_L_Bust2",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Aim_R_TopsUpperArm/J_Sec_R_TopsUpperArmInside",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Aim_R_TopsUpperArm/J_Sec_R_TopsUpperArmOutside",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Aim_L_TopsUpperArm/J_Sec_L_TopsUpperArmInside",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Aim_L_TopsUpperArm/J_Sec_L_TopsUpperArmOutside",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Aim_L_Shoulder/J_Roll_L_UpperArm",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Aim_R_Shoulder/J_Roll_R_UpperArm",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Roll_L_Elbow",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Roll_R_Elbow",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Adj_L_FaceEye",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Adj_R_FaceEye",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_01",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_02",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_03",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_04",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_05",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_06",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_07",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_08",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_09",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_10",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_11",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_12",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Roll_R_Hand",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Roll_R_LowerArm",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Roll_L_Hand",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Roll_L_LowerArm",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_01/J_Sec_Hair2_01",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_02/J_Sec_Hair2_02",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_03/J_Sec_Hair2_03",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_04/J_Sec_Hair2_04",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_05/J_Sec_Hair2_05",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_06/J_Sec_Hair2_06",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_07/J_Sec_Hair2_07",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_08/J_Sec_Hair2_08",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_09/J_Sec_Hair2_09",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_10/J_Sec_Hair2_10",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_11/J_Sec_Hair2_11",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_12/J_Sec_Hair2_12",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Aim_L_TopsUpperArm/J_Sec_L_TopsUpperArmInside/J_Sec_L_TopsUpperArmInside_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Aim_L_TopsUpperArm/J_Sec_L_TopsUpperArmOutside/J_Sec_L_TopsUpperArmOutside_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Aim_R_TopsUpperArm/J_Sec_R_TopsUpperArmInside/J_Sec_R_TopsUpperArmInside_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Aim_R_TopsUpperArm/J_Sec_R_TopsUpperArmOutside/J_Sec_R_TopsUpperArmOutside_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Thumb1",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Ring1",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Middle1",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Little1",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Index1",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Thumb1",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Ring1",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Middle1",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Index1",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Little1",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_01/J_Sec_Hair2_01/J_Sec_Hair2_01_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_02/J_Sec_Hair2_02/J_Sec_Hair2_02_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_03/J_Sec_Hair2_03/J_Sec_Hair2_03_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_04/J_Sec_Hair2_04/J_Sec_Hair2_04_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_05/J_Sec_Hair2_05/J_Sec_Hair3_05",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_06/J_Sec_Hair2_06/J_Sec_Hair3_06",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_07/J_Sec_Hair2_07/J_Sec_Hair3_07",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_08/J_Sec_Hair2_08/J_Sec_Hair3_08",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_09/J_Sec_Hair2_09/J_Sec_Hair3_09",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_10/J_Sec_Hair2_10/J_Sec_Hair3_10",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_11/J_Sec_Hair2_11/J_Sec_Hair3_11",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_12/J_Sec_Hair2_12/J_Sec_Hair3_12",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Thumb1/J_Bip_R_Thumb2",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Ring1/J_Bip_R_Ring2",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Middle1/J_Bip_R_Middle2",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Little1/J_Bip_R_Little2",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Index1/J_Bip_R_Index2",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Thumb1/J_Bip_L_Thumb2",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Ring1/J_Bip_L_Ring2",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Middle1/J_Bip_L_Middle2",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Little1/J_Bip_L_Little2",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Index1/J_Bip_L_Index2",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_05/J_Sec_Hair2_05/J_Sec_Hair3_05/J_Sec_Hair4_05",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_06/J_Sec_Hair2_06/J_Sec_Hair3_06/J_Sec_Hair4_06",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_07/J_Sec_Hair2_07/J_Sec_Hair3_07/J_Sec_Hair4_07",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_08/J_Sec_Hair2_08/J_Sec_Hair3_08/J_Sec_Hair4_08",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_09/J_Sec_Hair2_09/J_Sec_Hair3_09/J_Sec_Hair4_09",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_10/J_Sec_Hair2_10/J_Sec_Hair3_10/J_Sec_Hair4_10",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_11/J_Sec_Hair2_11/J_Sec_Hair3_11/J_Sec_Hair4_11",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_12/J_Sec_Hair2_12/J_Sec_Hair3_12/J_Sec_Hair4_12",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Thumb1/J_Bip_R_Thumb2/J_Bip_R_Thumb3",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Ring1/J_Bip_R_Ring2/J_Bip_R_Ring3",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Middle1/J_Bip_R_Middle2/J_Bip_R_Middle3",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Little1/J_Bip_R_Little2/J_Bip_R_Little3",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_R_Shoulder/J_Bip_R_UpperArm/J_Bip_R_LowerArm/J_Bip_R_Hand/J_Bip_R_Index1/J_Bip_R_Index2/J_Bip_R_Index3",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Thumb1/J_Bip_L_Thumb2/J_Bip_L_Thumb3",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Ring1/J_Bip_L_Ring2/J_Bip_L_Ring3",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Middle1/J_Bip_L_Middle2/J_Bip_L_Middle3",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Little1/J_Bip_L_Little2/J_Bip_L_Little3",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_L_Shoulder/J_Bip_L_UpperArm/J_Bip_L_LowerArm/J_Bip_L_Hand/J_Bip_L_Index1/J_Bip_L_Index2/J_Bip_L_Index3",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_05/J_Sec_Hair2_05/J_Sec_Hair3_05/J_Sec_Hair4_05/J_Sec_Hair5_05",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_06/J_Sec_Hair2_06/J_Sec_Hair3_06/J_Sec_Hair4_06/J_Sec_Hair5_06",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_07/J_Sec_Hair2_07/J_Sec_Hair3_07/J_Sec_Hair4_07/J_Sec_Hair5_07",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_08/J_Sec_Hair2_08/J_Sec_Hair3_08/J_Sec_Hair4_08/J_Sec_Hair5_08",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_09/J_Sec_Hair2_09/J_Sec_Hair3_09/J_Sec_Hair4_09/J_Sec_Hair5_09",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_10/J_Sec_Hair2_10/J_Sec_Hair3_10/J_Sec_Hair4_10/J_Sec_Hair5_10",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_11/J_Sec_Hair2_11/J_Sec_Hair3_11/J_Sec_Hair4_11/J_Sec_Hair4_11_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_12/J_Sec_Hair2_12/J_Sec_Hair3_12/J_Sec_Hair4_12/J_Sec_Hair4_12_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_05/J_Sec_Hair2_05/J_Sec_Hair3_05/J_Sec_Hair4_05/J_Sec_Hair5_05/J_Sec_Hair6_05",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_06/J_Sec_Hair2_06/J_Sec_Hair3_06/J_Sec_Hair4_06/J_Sec_Hair5_06/J_Sec_Hair5_06_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_07/J_Sec_Hair2_07/J_Sec_Hair3_07/J_Sec_Hair4_07/J_Sec_Hair5_07/J_Sec_Hair5_07_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_08/J_Sec_Hair2_08/J_Sec_Hair3_08/J_Sec_Hair4_08/J_Sec_Hair5_08/J_Sec_Hair5_08_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_09/J_Sec_Hair2_09/J_Sec_Hair3_09/J_Sec_Hair4_09/J_Sec_Hair5_09/J_Sec_Hair5_09_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_10/J_Sec_Hair2_10/J_Sec_Hair3_10/J_Sec_Hair4_10/J_Sec_Hair5_10/J_Sec_Hair5_10_end",
+        "J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_UpperChest/J_Bip_C_Neck/J_Bip_C_Head/J_Sec_Hair1_05/J_Sec_Hair2_05/J_Sec_Hair3_05/J_Sec_Hair4_05/J_Sec_Hair5_05/J_Sec_Hair6_05/J_Sec_Hair6_05_end"
+      ],
+      "restTransformsSha256": "f397af097c6138e0e190f29bf212d23be5bcd076122f76120134263dc4dfcf85"
+    }
+  },
+  "source": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm",
+  "timeSampledAttrs": {},
+  "upAxis": "Y",
+  "vrm": {
+    "frontAxisNormalized": false,
+    "metaName": "VRM1_Constraint_Twist_Sample",
+    "metaSha256": "130d250560210412143cbf4035ba7b542ab974e8ed0fd588ee1d36c4de9cd5a0",
+    "rawExtensionSha256": "4a6baa530e661294ab44c7ead646ada3d431c8a55d8dba712d6a81190f1c8d10",
+    "schemaContractVersion": 1,
+    "sourceFormat": "VRM",
+    "sourceFrontAxis": "+Z",
+    "sourceVersion": "1.0",
+    "specVersion": "1.0",
+    "warningCodes": [
+      "VRM110"
+    ],
+    "warningCount": 1
+  }
+}

@@ -1,0 +1,344 @@
+{
+  "baselineSchemaVersion": 1,
+  "catalog": {
+    "VRM001": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "No VRM extension; imported as plain glTF"
+    },
+    "VRM002": {
+      "severity": "ERROR",
+      "source": "import",
+      "title": "VRM extension JSON could not be parsed"
+    },
+    "VRM003": {
+      "severity": "FATAL",
+      "source": "import",
+      "title": "Container could not be read; stage fails to open"
+    },
+    "VRM101": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Embedded image format unsupported; texture skipped"
+    },
+    "VRM102": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Data-URI image unsupported; texture skipped"
+    },
+    "VRM103": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Texture uses a UV set other than TEXCOORD_0"
+    },
+    "VRM110": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Conflicting inverse bind matrices across skins"
+    },
+    "VRM111": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Skin joint index out of range; clamped to root"
+    },
+    "VRM120": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Primitive is not a triangle list; skipped"
+    },
+    "VRM121": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Primitive has no POSITION; skipped"
+    },
+    "VRM140": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Humanoid bone could not be mapped to a joint"
+    },
+    "VRM141": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Duplicate humanoid bone; first mapping kept"
+    },
+    "VRM150": {
+      "severity": "INFO",
+      "source": "import",
+      "title": "VRM 0.x materialValues expression preserved raw only"
+    },
+    "VRM151": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Expression morph target index out of range; bind skipped"
+    },
+    "VRM160": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "CUBICSPLINE animation approximated as linear"
+    },
+    "VRM170": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Node constraint has no valid source; skipped"
+    },
+    "VRM180": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Morph targets present but no skeleton; blend shapes skipped"
+    },
+    "VRM181": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Humanoid bones present but no skeleton imported"
+    },
+    "VRM190": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Spring collider-group index out of range; dropped"
+    },
+    "VRM200": {
+      "severity": "FATAL",
+      "source": "validate",
+      "title": "Stage has no default prim"
+    },
+    "VRM201": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Default prim is not /Asset"
+    },
+    "VRM202": {
+      "severity": "WARNING",
+      "source": "validate",
+      "title": "/Asset kind is not 'component'"
+    },
+    "VRM203": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Stage up-axis is not Y"
+    },
+    "VRM204": {
+      "severity": "WARNING",
+      "source": "validate",
+      "title": "Stage metersPerUnit is not 1.0"
+    },
+    "VRM205": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "SkelRoot/skeleton presence mismatch on /Asset"
+    },
+    "VRM210": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Skinned mesh has no skeleton binding"
+    },
+    "VRM211": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "skel:skeleton target does not resolve to a Skeleton"
+    },
+    "VRM212": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Joint index out of range for the bound skeleton"
+    },
+    "VRM213": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Skinned mesh is missing joint indices/weights"
+    },
+    "VRM214": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Skeleton topology is not parent-before-child"
+    },
+    "VRM220": {
+      "severity": "INFO",
+      "source": "validate",
+      "title": "Mesh has no material binding"
+    },
+    "VRM221": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Material binding target does not exist"
+    },
+    "VRM222": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Texture asset does not resolve"
+    },
+    "VRM230": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Humanoid prim does not apply VrmHumanoidAPI"
+    },
+    "VRM231": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Humanoid vrm:skeleton relationship is missing/broken"
+    },
+    "VRM232": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Humanoid bone value is not a joint on the skeleton"
+    },
+    "VRM240": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Expression morph-target relationship is broken"
+    },
+    "VRM241": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Expression material-color target does not exist"
+    },
+    "VRM242": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Expression prim does not apply VrmExpressionAPI"
+    },
+    "VRM243": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Expression morph-target arrays are not parallel"
+    },
+    "VRM244": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Expression material-color arrays are not parallel"
+    },
+    "VRM245": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "LookAt prim does not apply VrmLookAtAPI"
+    },
+    "VRM246": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "LookAt skeleton relationship is missing/broken"
+    },
+    "VRM247": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "LookAt eye joint value is not a skeleton joint"
+    },
+    "VRM250": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Spring-bone joint path is not on the skeleton"
+    },
+    "VRM251": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Spring-bone collider-group target does not exist"
+    },
+    "VRM252": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Spring-bone prim does not apply VrmSpringBoneAPI"
+    },
+    "VRM253": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Spring-bone parameter arrays are not parallel"
+    },
+    "VRM254": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Collider prim does not apply VrmColliderAPI"
+    },
+    "VRM255": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Collider shape token is invalid"
+    },
+    "VRM260": {
+      "severity": "INFO",
+      "source": "validate",
+      "title": "Lossless raw VRM extension block is absent"
+    },
+    "VRM262": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Constraint prim does not apply VrmConstraintAPI"
+    },
+    "VRM263": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Constraint type token is invalid"
+    },
+    "VRM264": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Constraint joint value is not a skeleton joint"
+    },
+    "VRM270": {
+      "severity": "WARNING",
+      "source": "validate",
+      "title": "Schema contract version is absent"
+    },
+    "VRM271": {
+      "severity": "ERROR",
+      "source": "validate",
+      "title": "Schema contract version is unsupported"
+    }
+  },
+  "corpusExpectations": {
+    "seed-san-vrm1": {
+      "expectedDiagnostics": [],
+      "expectedMaxSeverity": "NONE"
+    },
+    "vrm1-constraint-twist": {
+      "expectedDiagnostics": [
+        "VRM110"
+      ],
+      "expectedMaxSeverity": "WARNING"
+    }
+  },
+  "negativeContract": {
+    "dangling-texture-index": {
+      "code": "VRM003",
+      "file": "malformed/dangling_texture_index.vrm",
+      "mechanism": "read-fatal"
+    },
+    "duplicate-humanoid-bone": {
+      "code": "VRM141",
+      "file": "malformed/duplicate_humanoid_bone.vrm",
+      "mechanism": "import-warning"
+    },
+    "malformed-glb-json": {
+      "code": "VRM003",
+      "file": "malformed/malformed_glb_json.vrm",
+      "mechanism": "read-fatal"
+    },
+    "missing-spring-collider-group": {
+      "code": "VRM190",
+      "file": "malformed/missing_spring_collider_group.vrm",
+      "mechanism": "import-warning"
+    },
+    "nonfinite-transform": {
+      "code": "VRM003",
+      "file": "malformed/nonfinite_transform.vrm",
+      "mechanism": "read-fatal"
+    },
+    "nonobject-vrm-extension": {
+      "code": "VRM003",
+      "file": "malformed/nonobject_vrm_extension.vrm",
+      "mechanism": "read-fatal"
+    },
+    "oob-expression-morph": {
+      "code": "VRM151",
+      "file": "malformed/oob_expression_morph.vrm",
+      "mechanism": "import-warning"
+    },
+    "out-of-range-joints": {
+      "code": "VRM111",
+      "file": "malformed/out_of_range_joints.vrm",
+      "mechanism": "import-warning"
+    },
+    "unmapped-humanoid-node": {
+      "code": "VRM140",
+      "file": "malformed/unmapped_humanoid_node.vrm",
+      "mechanism": "import-warning"
+    }
+  }
+}
