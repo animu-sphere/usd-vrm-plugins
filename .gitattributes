@@ -1,3 +1,10 @@
 # VRM/GLB fixtures are binary — never apply text/EOL conversion.
 *.vrm binary
 *.glb binary
+
+# USDA fixtures, goldens, and baseline snapshots must check out with LF
+# everywhere: a CRLF smudge changes the *content* of multi-line (triple-quoted)
+# strings — the \r becomes part of the parsed string value — so a Windows
+# checkout would flatten to different bytes than the committed golden
+# (vrmschema-pr-windows L5 failure, PR #42).
+*.usda text eol=lf
