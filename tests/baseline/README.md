@@ -13,7 +13,9 @@ All artifacts are generated and verified by
 ## Commands
 
 ```sh
-# Verify current behavior against the committed baseline (the phase gate):
+# Verify current behavior against the committed baseline (the phase gate).
+# Once the split begins, add `--with plugins/<bundle>` for every additional
+# workspace bundle so the whole registry is in the session:
 ost plugin run plugins/usdVrm -- python tools/baseline_freeze.py --check
 
 # Rewrite the baseline (ONLY in a dedicated behavior-change PR, never in a
@@ -32,9 +34,9 @@ build (`ctest --test-dir build/plain -R usdvrm_baseline`).
 | `usda/malformed/*.usda` | stage output of the 5 recoverable malformed fixtures (warning paths) | USDA snapshot, diagnostics-adjacent authoring |
 | `digests/{fixtures,malformed,corpus}/*.json` | structural digest per input, incl. the vendored corpus models too large for text snapshots: prim topology + applied schemas, mesh/material/skeleton bindings, points/rest/bind hashes, time-sample tables, asset inventory with **resolved** flags, VRM custom data, warning codes; for read-fatal inputs the open failure + its codes | stage topology, embedded texture resolution, diagnostics code, animation output |
 | `schema_contract.json` | schema types, properties, fallbacks, allowed tokens (from `generatedSchema.usda`, sha256-pinned) + registry visibility of the six `Vrm*API` schemas | schema contract |
-| `discovery.json` | Plug registry metadata (all registered types: file format, package resolver, schema APIs) + `SdfFileFormat.FindByExtension("vrm")` probe | plugin discovery, public Python surface |
+| `discovery.json` | the **union** of registered USD types across every workspace bundle (file format, package resolver, schema APIs) + `SdfFileFormat.FindByExtension("vrm")` probe. Which bundle registers which type is deliberately not frozen — that attribution moves during the split and is owned by per-bundle discovery tests (WORKSPACE.md §6 invariant 5) | plugin discovery, public Python surface |
 | `diagnostics.json` | full `VRMxxx` catalog (code → severity/source/title) + corpus expected-diagnostics table + negative-corpus contract | diagnostics code |
-| `symbols/<platform>.txt` | exported native symbols of the built plugin library | public C++ symbols |
+| `symbols/<platform>.txt` | the **union** of exported native symbols across every built bundle library under `plugins/*/lib` (a symbol moving between bundles stays invisible; one appearing or vanishing does not) | public C++ symbols |
 
 Notes on the remaining plan §9 items:
 
