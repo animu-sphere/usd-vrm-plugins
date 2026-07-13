@@ -20,11 +20,15 @@ provides:
   - usd-fileformat:vrm
 requires:
   capabilities: [usd-stage-read]
-  # vrmContainer is a plain shared CMake library, staged here for source and
-  # package sessions. `requires.libraries` is reserved/fail-closed in ost 0.15;
-  # this field describes only the dynamic-loader directory.
-  runtime_libs:
-    - runtime/lib
+  # Executable in ost 0.16.0: the workspace graph validates this edge against
+  # libs/vrmContainer/openstrata.library.yaml; build/test/run compose the
+  # library into the workspace prefix + session, and `plugin package` stages
+  # its runtime under runtime/libraries/ with a dependencies.json record (the
+  # repo-owned runtime/lib copy + requires.runtime_libs adapter from the
+  # ost 0.15 era is gone).
+  libraries:
+    - id: vrmContainer
+      version: ">=0.1,<0.2"
   # The typed Vrm*API schemas moved to the vrmSchema bundle (workspace Phase 1,
   # docs/architecture/WORKSPACE.md §1). The contract pin selects the
   # authored-data contract, independent of the implementation version (§3).

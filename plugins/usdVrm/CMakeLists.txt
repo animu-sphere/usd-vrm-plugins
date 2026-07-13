@@ -58,62 +58,15 @@ if(NOT TARGET vrmSchema::vrmSchema)
     find_package(vrmSchema CONFIG REQUIRED)
 endif()
 
-# vrmContainer is deliberately a plain library, not a plugin bundle. ost 0.15.0
-# reserves and rejects requires.libraries until that contract is portable, so a
-# source-checkout standalone build bootstraps the sibling as an installed CMake
-# package. This preserves the WORKSPACE.md §4 rule: consumers never reach into
-# a sibling with add_subdirectory().
+# vrmContainer is deliberately a plain library, not a plugin bundle. ost 0.16.0
+# executes the manifest's requires.libraries closure: it builds/installs the
+# library (located through libs/vrmContainer/openstrata.library.yaml) into the
+# workspace prefix before configuring this consumer. A plain workspace build
+# already has the in-tree alias; any other standalone caller supplies an
+# installed package via CMAKE_PREFIX_PATH (WORKSPACE.md §4: consumers never
+# reach into a sibling with add_subdirectory()).
 if(NOT TARGET vrmContainer::vrmContainer)
-    set(_vrm_container_src "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/vrmContainer")
-    if(EXISTS "${_vrm_container_src}/CMakeLists.txt")
-        # Always refresh the private installed package in a source checkout.
-        # Otherwise CMake's cached <Package>_DIR can silently keep an older
-        # library after its sources change.
-        set(_vrm_container_prefix "${CMAKE_BINARY_DIR}/vrmContainer-pkg")
-        if(_isMultiConfig)
-            set(_vrm_container_config "Release")
-        else()
-            set(_vrm_container_config "${CMAKE_BUILD_TYPE}")
-        endif()
-        set(_vrm_container_cmake_args
-            "-DCMAKE_INSTALL_PREFIX=${_vrm_container_prefix}"
-            "-DVRMCONTAINER_BUILD_TESTS=${USDVRM_BUILD_TESTS}")
-        foreach(_v CMAKE_BUILD_TYPE CMAKE_TOOLCHAIN_FILE CMAKE_MAKE_PROGRAM
-                   CMAKE_C_COMPILER CMAKE_CXX_COMPILER)
-            if(DEFINED ${_v} AND NOT "${${_v}}" STREQUAL "")
-                list(APPEND _vrm_container_cmake_args "-D${_v}=${${_v}}")
-            endif()
-        endforeach()
-        message(STATUS
-            "usdVrm: bootstrapping sibling vrmContainer as an installed "
-            "package into ${_vrm_container_prefix}")
-        execute_process(
-            COMMAND "${CMAKE_COMMAND}"
-                -S "${_vrm_container_src}" -B "${_vrm_container_prefix}-build"
-                -G "${CMAKE_GENERATOR}" ${_vrm_container_cmake_args}
-            RESULT_VARIABLE _vrm_container_rc)
-        if(NOT _vrm_container_rc EQUAL 0)
-            message(FATAL_ERROR "vrmContainer bootstrap configure failed")
-        endif()
-        execute_process(
-            COMMAND "${CMAKE_COMMAND}" --build "${_vrm_container_prefix}-build"
-                --config "${_vrm_container_config}"
-            RESULT_VARIABLE _vrm_container_rc)
-        if(NOT _vrm_container_rc EQUAL 0)
-            message(FATAL_ERROR "vrmContainer bootstrap build failed")
-        endif()
-        execute_process(
-            COMMAND "${CMAKE_COMMAND}" --install "${_vrm_container_prefix}-build"
-                --config "${_vrm_container_config}"
-            RESULT_VARIABLE _vrm_container_rc)
-        if(NOT _vrm_container_rc EQUAL 0)
-            message(FATAL_ERROR "vrmContainer bootstrap install failed")
-        endif()
-        find_package(vrmContainer CONFIG REQUIRED
-            PATHS "${_vrm_container_prefix}" NO_DEFAULT_PATH)
-    else()
-        find_package(vrmContainer CONFIG REQUIRED)
-    endif()
+    find_package(vrmContainer CONFIG REQUIRED)
 endif()
 
 set(PLUGIN_NAME UsdVrmFileFormat)
@@ -181,18 +134,6 @@ foreach(_cfg DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
         LIBRARY_OUTPUT_DIRECTORY_${_cfg} "${CMAKE_CURRENT_SOURCE_DIR}/lib"
         RUNTIME_OUTPUT_DIRECTORY_${_cfg} "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 endforeach()
-
-# The plugin artifact is not yet a product-level dependency closure (Phase 5),
-# so stage the shared plain-library runtime in a manifest-declared loader dir.
-# Keeping it out of the plugin lib/ directory also keeps Phase 0's plugin-symbol
-# union scoped to actual plugin registration libraries.
-set(_vrm_runtime_lib_dir "${CMAKE_CURRENT_SOURCE_DIR}/runtime/lib")
-add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${_vrm_runtime_lib_dir}"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-        "$<TARGET_FILE:vrmContainer::vrmContainer>"
-        "${_vrm_runtime_lib_dir}/$<TARGET_FILE_NAME:vrmContainer::vrmContainer>"
-    VERBATIM)
 
 # Generate the USD registration file for the target platform. The source bundle
 # keeps a concrete plugInfo.json for static inspection, then CMake refreshes it
