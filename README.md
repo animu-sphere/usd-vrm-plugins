@@ -67,7 +67,8 @@ from-source installation, verification, and troubleshooting.
 
 ### With OpenStrata (`ost`)
 
-Requires `ost` 0.6+.
+Requires `ost` 0.15+ so workspace dependencies declared by
+`requires.bundles` are built and composed automatically.
 
 ```sh
 # One-time: adopt an OpenUSD install as the cy2026 runtime.

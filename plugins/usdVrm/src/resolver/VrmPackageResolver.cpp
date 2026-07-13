@@ -20,10 +20,10 @@
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/threadLocalScopedCache.h"
 
+#include <vrmContainer/GlbContainer.h>
+
 #include <cgltf.h>
 
-#include <cstdint>
-#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -45,39 +45,33 @@ const char* _ImageExt(const cgltf_image* img)
     return nullptr;
 }
 
-std::uint64_t _HashBytes(const void* p, size_t n)
+bool _BufferViewBytes(const cgltf_buffer_view* view,
+                      vrmContainer::ByteView* out)
 {
-    std::uint64_t h = 1469598103934665603ull;
-    const unsigned char* b = static_cast<const unsigned char*>(p);
-    for (size_t i = 0; i < n; ++i) {
-        h ^= b[i];
-        h *= 1099511628211ull;
+    if (!view || !out) return false;
+    if (view->data) {
+        *out = {static_cast<const std::byte*>(view->data), view->size};
+        return true;
     }
-    return h;
+    if (!view->buffer || !view->buffer->data) return false;
+    const vrmContainer::ByteView buffer(
+        static_cast<const std::byte*>(view->buffer->data), view->buffer->size);
+    return vrmContainer::MakeBufferView(buffer, view->offset, view->size, out);
 }
 
-const char* _SniffImageExt(const unsigned char* bytes, size_t size,
+const char* _SniffImageExt(vrmContainer::ByteView bytes,
                            const cgltf_image* img)
 {
-    if (size >= 4 && bytes[0] == 0x89 && bytes[1] == 'P' &&
-        bytes[2] == 'N' && bytes[3] == 'G') {
+    const auto* data = reinterpret_cast<const unsigned char*>(bytes.data());
+    if (bytes.size() >= 4 && data[0] == 0x89 && data[1] == 'P' &&
+        data[2] == 'N' && data[3] == 'G') {
         return "png";
     }
-    if (size >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 &&
-        bytes[2] == 0xFF) {
+    if (bytes.size() >= 3 && data[0] == 0xFF && data[1] == 0xD8 &&
+        data[2] == 0xFF) {
         return "jpg";
     }
     return _ImageExt(img);
-}
-
-std::string _ImagePathForBytes(const unsigned char* bytes, size_t size,
-                               const char* ext)
-{
-    const std::uint64_t h = _HashBytes(bytes, size);
-    char name[48];
-    std::snprintf(name, sizeof(name), "images/%016llx.%s",
-                  static_cast<unsigned long long>(h), ext);
-    return name;
 }
 
 bool _ReadPackageBytes(const std::string& packagePath,
@@ -124,12 +118,12 @@ struct _ResolverCache
     std::unordered_map<std::string, std::shared_ptr<_PackageIndex>> packages;
 };
 
-std::shared_ptr<const char> _CopyImageBytes(const unsigned char* bytes,
-                                            size_t size)
+std::shared_ptr<const char> _CopyImageBytes(vrmContainer::ByteView bytes)
 {
-    std::shared_ptr<char> image(new char[size], std::default_delete<char[]>());
-    if (size > 0) {
-        std::memcpy(image.get(), bytes, size);
+    std::shared_ptr<char> image(
+        new char[bytes.size()], std::default_delete<char[]>());
+    if (!bytes.empty()) {
+        std::memcpy(image.get(), bytes.data(), bytes.size());
     }
     return image;
 }
@@ -140,6 +134,13 @@ std::shared_ptr<_PackageIndex> _BuildPackageIndex(const std::string& packagePath
     std::shared_ptr<const char> packageBuffer;
     size_t packageSize = 0;
     if (!_ReadPackageBytes(packagePath, &packageBuffer, &packageSize)) {
+        return index;
+    }
+
+    const vrmContainer::ByteView packageBytes(
+        reinterpret_cast<const std::byte*>(packageBuffer.get()), packageSize);
+    vrmContainer::GlbView glb;
+    if (!vrmContainer::ParseGlb(packageBytes, &glb)) {
         return index;
     }
 
@@ -160,21 +161,20 @@ std::shared_ptr<_PackageIndex> _BuildPackageIndex(const std::string& packagePath
             }
 
             const cgltf_buffer_view* bv = img->buffer_view;
-            if (!bv->data && (!bv->buffer || !bv->buffer->data)) {
+            vrmContainer::ByteView imageBytes;
+            if (!_BufferViewBytes(bv, &imageBytes)) {
                 continue;
             }
-            const unsigned char* base = bv->data
-                ? static_cast<const unsigned char*>(bv->data)
-                : static_cast<const unsigned char*>(bv->buffer->data) + bv->offset;
-            const char* ext = _SniffImageExt(base, bv->size, img);
+            const char* ext = _SniffImageExt(imageBytes, img);
             if (!ext) {
                 continue;
             }
 
             _EmbeddedImage image;
-            image.bytes = _CopyImageBytes(base, bv->size);
-            image.size = bv->size;
-            index->images[_ImagePathForBytes(base, bv->size, ext)] =
+            image.bytes = _CopyImageBytes(imageBytes);
+            image.size = imageBytes.size();
+            index->images[
+                vrmContainer::MakeEmbeddedResourcePath(imageBytes, ext)] =
                 std::move(image);
         }
     }

@@ -13,6 +13,7 @@ extended with a real importer.
 openstrata.plugin.yaml          bundle contract (identity, runtime range, provides, tests)
 CMakeLists.txt                  builds libUsdVrmFileFormat.{dll,dylib,so} into lib/
 cmake/Dependencies.cmake        fetches cgltf (pinned) at configure time
+../../libs/vrmContainer/        GLB header/chunk + immutable byte-view library
 src/
   UsdVrmFileFormat.{h,cpp}      SdfFileFormat entry point (CanRead/Read/WriteToString)
   io/                           VrmDocumentReader interface + cgltf implementation
@@ -30,11 +31,15 @@ tests/                          python smoke tests + generated fixtures (minimal
 ## Architecture
 
 ```
-.vrm bytes ──▶ CgltfVrmDocumentReader ──▶ VrmCanonicalDocument ──▶ UsdVrmAuthorer ──▶ USDA ──▶ SdfLayer
-   (GLB)        (cgltf + pxr/base/js)        (no glTF/USD types          (UsdGeom/UsdSkel/
-                                              leak across this seam)       UsdShade)
+.vrm bytes ─▶ vrmContainer ─▶ CgltfVrmDocumentReader ─▶ VrmCanonicalDocument ─▶ UsdVrmAuthorer ─▶ USDA
+               (GLB + byte     (cgltf + pxr/base/js)       (no glTF/USD types       (UsdGeom/
+                ranges; no USD)                              across this seam)         UsdSkel)
 ```
 
+* **vrmContainer** validates untrusted GLB headers/chunks and buffer-view ranges,
+  exposes immutable non-owning byte views, and owns the stable content-addressed
+  embedded-resource naming shared with the package resolver. Its public API has
+  no OpenUSD types or plugin registration.
 * **Reader** owns all cgltf contact and VRM-extension JSON parsing (via USD's own
   `pxr/base/js`, so there is no external JSON dependency). The plan's nominal
   `VRM.h` dependency does not exist as a real library; its role — interpreting the
@@ -140,7 +145,7 @@ ost plugin run plugins/usdVrm -- python plugins/usdVrm/tools/package_vrm.py avat
 
 ## Build & verify
 
-Requires `ost` 0.6+ (from the repo root):
+Requires `ost` 0.15+ (from the repo root):
 
 ```sh
 ost plugin build plugins/usdVrm        # build libUsdVrmFileFormat into lib/
@@ -154,8 +159,7 @@ The typed `Vrm*API` classes moved to the sibling
 [`plugins/vrmSchema`](../vrmSchema/) bundle in the workspace Phase 1 split
 (see [`docs/architecture/WORKSPACE.md`](../../docs/architecture/WORKSPACE.md)).
 This importer consumes them strictly as an installed package
-(`find_package(vrmSchema CONFIG REQUIRED)` + `vrmSchema::vrmSchema`); in
-single-bundle flows without a pre-installed vrmSchema, the CMake configure
-bootstraps the sibling bundle into a private prefix inside the build tree and
-imports it from there. Schema regeneration lives with the schema:
+(`find_package(vrmSchema CONFIG REQUIRED)` + `vrmSchema::vrmSchema`); ost 0.15
+builds/installs the manifest dependency closure before configuring this bundle.
+Schema regeneration lives with the schema:
 `plugins/vrmSchema/tools/generate_schema.py`.

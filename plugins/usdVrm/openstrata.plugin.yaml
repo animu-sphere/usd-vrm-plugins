@@ -20,6 +20,11 @@ provides:
   - usd-fileformat:vrm
 requires:
   capabilities: [usd-stage-read]
+  # vrmContainer is a plain shared CMake library, staged here for source and
+  # package sessions. `requires.libraries` is reserved/fail-closed in ost 0.15;
+  # this field describes only the dynamic-loader directory.
+  runtime_libs:
+    - runtime/lib
   # The typed Vrm*API schemas moved to the vrmSchema bundle (workspace Phase 1,
   # docs/architecture/WORKSPACE.md §1). The contract pin selects the
   # authored-data contract, independent of the implementation version (§3).
