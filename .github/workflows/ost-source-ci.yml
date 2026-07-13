@@ -40,7 +40,7 @@ jobs:
             runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
             platform: cy2026
             profile: usd
-            up_to: 5
+            up_to: 1
             runs_on: ["windows-2022"]
             hosted: true
             runner_profile: windows-hosted
@@ -52,7 +52,7 @@ jobs:
             runtime_artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
             platform: cy2026
             profile: usd
-            up_to: 5
+            up_to: 1
             runs_on: ["macos-15"]
             hosted: true
             runner_profile: macos-arm64-hosted
@@ -64,11 +64,47 @@ jobs:
             runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
             platform: cy2026
             profile: usd
-            up_to: 5
+            up_to: 1
             runs_on: ["ubuntu-24.04"]
             hosted: true
             runner_profile: linux-hosted
             bundle: plugins/usdVrm
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d202c6d7534afa4960850419b58d3b06631d85031f93243cd5de6c4cf511a734"
+            host_python: "3.13"
+          - name: vrmschema-pr-windows
+            lane: pull_request
+            runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
+            platform: cy2026
+            profile: usd
+            up_to: 5
+            runs_on: ["windows-2022"]
+            hosted: true
+            runner_profile: windows-hosted
+            bundle: plugins/vrmSchema
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e"
+            host_python: ""
+          - name: vrmschema-pr-macos-arm64
+            lane: pull_request
+            runtime_artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
+            platform: cy2026
+            profile: usd
+            up_to: 5
+            runs_on: ["macos-15"]
+            hosted: true
+            runner_profile: macos-arm64-hosted
+            bundle: plugins/vrmSchema
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876"
+            host_python: "3.13"
+          - name: vrmschema-pr-linux
+            lane: pull_request
+            runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
+            platform: cy2026
+            profile: usd
+            up_to: 5
+            runs_on: ["ubuntu-24.04"]
+            hosted: true
+            runner_profile: linux-hosted
+            bundle: plugins/vrmSchema
             runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d202c6d7534afa4960850419b58d3b06631d85031f93243cd5de6c4cf511a734"
             host_python: "3.13"
     steps:

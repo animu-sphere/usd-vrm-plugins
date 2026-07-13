@@ -66,15 +66,16 @@ configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/plugInfo.in.json"
     "${_plug_resources}/plugInfo.json"
     @ONLY)
-# The typed VrmHumanoidAPI schema (registered by the plugInfo above) needs its
-# generatedSchema.usda next to that plugInfo for the schema registry to find it.
-configure_file(
-    "${_bundle_dir}/plugin/resources/usdVrm/generatedSchema.usda"
-    "${_plug_resources}/generatedSchema.usda"
-    COPYONLY)
+
+# The typed Vrm*API schemas the importer applies live in the sibling vrmSchema
+# bundle since the Phase 1 split: its plugInfo/generatedSchema must be on the
+# registry path and its lib/ on the loader path (libUsdVrmFileFormat links
+# libvrmSchema).
+set(_vrm_schema_bundle "${_bundle_dir}/../vrmSchema")
+set(_vrm_schema_resources "${_vrm_schema_bundle}/plugin/resources/vrmSchema")
 
 set(_smoke_env
-    "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib;PATH=path_list_prepend:${_lib_dir};PYTHONPATH=path_list_prepend:${_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources}")
+    "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib;PATH=path_list_prepend:${_lib_dir};PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PYTHONPATH=path_list_prepend:${_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources}")
 
 add_test(
     NAME usdvrm_python_smoke

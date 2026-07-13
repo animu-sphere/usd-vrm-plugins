@@ -1,0 +1,12 @@
+@PACKAGE_INIT@
+
+# pxrConfig.cmake is not idempotent (it unconditionally re-creates imported
+# targets such as TBB::tbb), so only pull it in when the consumer has not
+# already resolved OpenUSD — the same guard every bundle CMakeLists uses.
+if(NOT pxr_FOUND)
+    include(CMakeFindDependencyMacro)
+    find_dependency(pxr CONFIG)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/vrmSchemaTargets.cmake")
+check_required_components(vrmSchema)

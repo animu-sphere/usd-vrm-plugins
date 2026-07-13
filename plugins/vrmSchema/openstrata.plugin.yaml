@@ -1,0 +1,40 @@
+# OpenStrata plugin bundle manifest.
+# A plugin is a self-describing bundle, not a bare shared library: this file is
+# the contract `ost plugin inspect|build|doctor|test` resolve against.
+manifest:
+  schema: openstrata.plugin/v1alpha1
+plugin:
+  name: vrmSchema
+  version: 0.1.0
+  kind: usd-schema
+license: Apache-2.0
+runtime:
+  # The OpenUSD version range this plugin tolerates. The runtime supplies the
+  # certified point within it. Mirrors the usdVrm bundle it was split from.
+  openusd: ">=25.05,<27.0"
+  # Source bundles inherit the resolved runtime ABI (see plugins/usdVrm).
+  cxx_abi: inherit
+schema:
+  codeless: false
+  source: schema/schema.usda
+  # Authored-data contract version, independent from plugin.version
+  # (docs/architecture/WORKSPACE.md §3). Bumps only on breaking
+  # type/property/token changes, with authored-data migration notes.
+  contract: 1
+provides:
+  - usd-schema:VrmColliderAPI
+  - usd-schema:VrmConstraintAPI
+  - usd-schema:VrmExpressionAPI
+  - usd-schema:VrmHumanoidAPI
+  - usd-schema:VrmLookAtAPI
+  - usd-schema:VrmSpringBoneAPI
+requires:
+  capabilities: [usd-stage-read]
+usd:
+  # Where this bundle's plugInfo.json lives, relative to the bundle root.
+  plug_info: plugin/resources/vrmSchema/plugInfo.json
+tests:
+  smoke:
+    - tests/fixtures/basic.usda
+  roundtrip:
+    - tests/fixtures/basic.usda

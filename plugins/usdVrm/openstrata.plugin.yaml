@@ -1,6 +1,8 @@
 # OpenStrata plugin bundle manifest.
 # A plugin is a self-describing bundle, not a bare shared library: this file is
 # the contract `ost plugin inspect|build|doctor|test` resolve against.
+manifest:
+  schema: openstrata.plugin/v1alpha1
 plugin:
   name: usdVrm
   version: 0.1.0
@@ -16,14 +18,15 @@ runtime:
   cxx_abi: inherit
 provides:
   - usd-fileformat:vrm
-  - usd-schema:VrmColliderAPI
-  - usd-schema:VrmConstraintAPI
-  - usd-schema:VrmExpressionAPI
-  - usd-schema:VrmHumanoidAPI
-  - usd-schema:VrmLookAtAPI
-  - usd-schema:VrmSpringBoneAPI
 requires:
   capabilities: [usd-stage-read]
+  # The typed Vrm*API schemas moved to the vrmSchema bundle (workspace Phase 1,
+  # docs/architecture/WORKSPACE.md §1). The contract pin selects the
+  # authored-data contract, independent of the implementation version (§3).
+  bundles:
+    - id: vrmSchema
+      version: ">=0.1,<0.2"
+      contract: 1
 usd:
   # Where this bundle's plugInfo.json lives, relative to the bundle root.
   plug_info: plugin/resources/usdVrm/plugInfo.json
@@ -66,5 +69,3 @@ tests:
     - tests/corpus/generated/malformed/dangling_texture_index.vrm
     - tests/corpus/generated/malformed/nonfinite_transform.vrm
     - tests/corpus/generated/malformed/nonobject_vrm_extension.vrm
-schema:
-  source: schema/schema.usda

@@ -1,0 +1,84 @@
+#usda 1.0
+(
+    """Schema-only smoke fixture: applies every Vrm*API schema and authors a
+    few builtins, with no .vrm importer involved. Exercised by the bundle's
+    tests.smoke/tests.roundtrip entries and tests/test_vrmschema_plugin.py."""
+    defaultPrim = "Asset"
+    doc = """Generated from Composed Stage of root layer C:\\dev\\usd-vrm-plugins\\plugins\\vrmSchema\\tests\\fixtures\\basic.usda
+"""
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "Asset"
+{
+    def Scope "rig"
+    {
+        def Scope "Humanoid" (
+            apiSchemas = ["VrmHumanoidAPI"]
+        )
+        {
+            uniform token vrm:humanBones:head = "J_Bip_C_Head"
+            uniform token vrm:humanBones:hips = "J_Bip_C_Hips"
+            uniform token vrm:humanBones:spine = "J_Bip_C_Spine"
+        }
+
+        def Scope "Expressions"
+        {
+            def Scope "happy" (
+                apiSchemas = ["VrmExpressionAPI"]
+            )
+            {
+                uniform token vrm:expressionType = "preset"
+                uniform bool vrm:isBinary = 0
+                uniform float[] vrm:morphTargetWeights = [1]
+            }
+        }
+
+        def Scope "LookAt" (
+            apiSchemas = ["VrmLookAtAPI"]
+        )
+        {
+            uniform token vrm:leftEye = "J_Adj_L_FaceEye"
+            uniform token vrm:rightEye = "J_Adj_R_FaceEye"
+            uniform token vrm:type = "bone"
+        }
+
+        def Scope "SecondaryMotion"
+        {
+            def Scope "spring_Hair" (
+                apiSchemas = ["VrmSpringBoneAPI"]
+            )
+            {
+                uniform float[] vrm:dragForce = [0.4]
+                uniform token[] vrm:joints = ["J_Sec_Hair1"]
+                uniform float[] vrm:stiffness = [1]
+            }
+
+            def Scope "collider_Head" (
+                apiSchemas = ["VrmColliderAPI"]
+            )
+            {
+                uniform token vrm:node = "J_Bip_C_Head"
+                uniform float3 vrm:offset = (0, 0.1, 0)
+                uniform float vrm:radius = 0.08
+                uniform token vrm:shape = "sphere"
+            }
+        }
+
+        def Scope "Constraints"
+        {
+            def Scope "constraint_Roll" (
+                apiSchemas = ["VrmConstraintAPI"]
+            )
+            {
+                uniform token vrm:axis = "X"
+                uniform token vrm:constrained = "J_Bip_L_LowerArm"
+                uniform token vrm:source = "J_Bip_L_Hand"
+                uniform token vrm:type = "roll"
+                uniform float vrm:weight = 0.5
+            }
+        }
+    }
+}
+

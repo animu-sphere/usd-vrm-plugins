@@ -6,8 +6,8 @@ directions, artifact naming, and the invariants every migration PR must
 preserve. Structural changes that contradict this document require changing
 this document first, in its own PR.
 
-Status: contract adopted; Phase 0 baseline frozen; code moves not started
-(see §8).
+Status: contract adopted; Phase 0 baseline frozen; Phase 1 `vrmSchema` split
+landed (see §8).
 
 ## 1. Bundles and libraries
 
@@ -157,7 +157,7 @@ as the gate in every migration PR.
 | Phase | Deliverable | Status |
 | --- | --- | --- |
 | 0 | baseline snapshots + regression criteria | done (`tests/baseline/`) |
-| 1 | `vrmSchema` bundle split | not started |
+| 1 | `vrmSchema` bundle split | done (`plugins/vrmSchema`) |
 | 2 | `vrmContainer` extraction | not started |
 | 3 | `usdVrmPackageResolver` bundle split | not started |
 | 4 | `usdVrmFileFormat` purification/rename | not started |

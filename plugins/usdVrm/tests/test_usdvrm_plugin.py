@@ -89,14 +89,15 @@ def check_minimal():
     assert humanoid.GetAttribute("vrm:humanBones:hips").Get() == "hips"
     assert humanoid.GetAttribute("vrm:humanBones:spine").Get() == "hips/spine"
 
-    # Phase 4: the typed VrmHumanoidAPI (compiled into this plugin) is registered
-    # and applied, and the standard bones are schema builtins, not custom attrs.
+    # The typed VrmHumanoidAPI (owned by the sibling vrmSchema bundle since the
+    # Phase 1 split) is registered and applied, and the standard bones are
+    # schema builtins, not custom attrs.
     assert Usd.SchemaRegistry().IsAppliedAPISchema("VrmHumanoidAPI"), \
-        "VrmHumanoidAPI not registered — check plugInfo Types + generatedSchema.usda"
+        "VrmHumanoidAPI not registered — is the vrmSchema bundle in the session?"
     for api in ("VrmExpressionAPI", "VrmLookAtAPI", "VrmSpringBoneAPI",
                 "VrmColliderAPI", "VrmConstraintAPI"):
         assert Usd.SchemaRegistry().IsAppliedAPISchema(api), \
-            f"{api} not registered — check plugInfo Types + generatedSchema.usda"
+            f"{api} not registered — is the vrmSchema bundle in the session?"
     assert "VrmHumanoidAPI" in humanoid.GetAppliedSchemas(), \
         humanoid.GetAppliedSchemas()
     assert humanoid.GetAttribute("vrm:humanBones:hips").IsCustom() is False, \
