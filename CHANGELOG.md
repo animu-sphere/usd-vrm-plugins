@@ -8,7 +8,7 @@ is the single value in the repo-root [`VERSION`](VERSION) file; the git tag
 
 The **schema contract version** is tracked separately from the package version
 (it changes only when the typed `Vrm*API` interpretation contract changes — see
-[`plugins/usdVrm/docs/SCHEMA_CONTRACT.md`](plugins/usdVrm/docs/SCHEMA_CONTRACT.md)).
+[`plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)).
 Current schema contract version: **1**.
 
 ## [Unreleased]
@@ -22,6 +22,16 @@ Current schema contract version: **1**.
   in the bundle's `tests.smoke` / `tests.negative` lists).
 
 ### Changed
+- **Workspace Phase 1 — `vrmSchema` bundle split**: the six typed `Vrm*API`
+  schemas (sources, generated C++, `generatedSchema.usda`, USD registration,
+  `tools/generate_schema.py`, `docs/SCHEMA_CONTRACT.md`) moved from the
+  `usdVrm` bundle into the new standalone `plugins/vrmSchema` bundle
+  (`kind: usd-schema`, `schema.contract: 1`, CMake package export +
+  installed-package consumer smoke). `usdVrm` now consumes it via
+  `find_package(vrmSchema)` / `requires.bundles` per
+  `docs/architecture/WORKSPACE.md` §2. Authored stages, the schema contract,
+  the registered-type set, and the exported C++ surface are unchanged
+  (Phase 0 baseline verified byte-identical).
 - **Importer diagnostics**: malformed inputs the importer previously sanitized or
   rejected silently now emit stable codes. New codes: `VRM003` (container
   unreadable — FATAL, stage fails to open), `VRM111` (skin `JOINTS_0` index out of

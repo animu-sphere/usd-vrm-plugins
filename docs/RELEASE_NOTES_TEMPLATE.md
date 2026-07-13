@@ -4,7 +4,7 @@
 avatars as typed USD stages, plus the validation / reporting tooling around it.
 
 - **Schema contract version:** {schema_contract}
-  ([SCHEMA_CONTRACT.md](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/plugins/usdVrm/docs/SCHEMA_CONTRACT.md))
+  ([SCHEMA_CONTRACT.md](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/plugins/vrmSchema/docs/SCHEMA_CONTRACT.md))
 - **Supported configurations:** [SUPPORTED_CONFIGURATIONS.md](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/docs/SUPPORTED_CONFIGURATIONS.md)
 - **Capability matrix:** [CAPABILITY_MATRIX.md](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/docs/CAPABILITY_MATRIX.md)
 - **Install guide:** [INSTALL.md](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/docs/INSTALL.md)

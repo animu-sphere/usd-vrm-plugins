@@ -77,7 +77,7 @@ The pieces below are landed and continuously tested; they satisfy large parts of
 ### Semantic-contract stabilization (schema contract v1)
 
 - `Vrm*API` **schema specification** doc + **versioning** policy
-  ([`../plugins/usdVrm/docs/SCHEMA_CONTRACT.md`](../plugins/usdVrm/docs/SCHEMA_CONTRACT.md);
+  ([`../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md);
   stages/report carry `schemaContractVersion = 1`).
 - Raw-extension ↔ typed-API **correspondence table**; schema-compatibility tests;
   public validator-rule docs.

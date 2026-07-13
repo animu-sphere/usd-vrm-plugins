@@ -64,16 +64,31 @@ find_package(pxr REQUIRED CONFIG)
 # standalone) is add_subdirectory()'d here. CONFIGURE_DEPENDS re-globs on the next
 # build when a bundle is added/removed, so a second `ost plugin new plugins/<name>`
 # is picked up without editing this file.
+#
+# Order: schema bundles first — they sit at the bottom of the workspace
+# dependency graph (WORKSPACE.md §2: nothing may depend *from* a schema bundle,
+# consumers link it via its in-tree alias target in this composed build), then
+# everything else alphabetically.
 file(GLOB _bundles LIST_DIRECTORIES true CONFIGURE_DEPENDS RELATIVE
      "${CMAKE_CURRENT_SOURCE_DIR}/plugins" "${CMAKE_CURRENT_SOURCE_DIR}/plugins/*")
+set(_schema_bundles)
+set(_other_bundles)
 foreach(_bundle ${_bundles})
     set(_bundleDir "${CMAKE_CURRENT_SOURCE_DIR}/plugins/${_bundle}")
     if(IS_DIRECTORY "${_bundleDir}"
        AND EXISTS "${_bundleDir}/openstrata.plugin.yaml"
        AND EXISTS "${_bundleDir}/CMakeLists.txt")
-        message(STATUS "OpenStrata: adding plugin bundle 'plugins/${_bundle}'")
-        add_subdirectory("plugins/${_bundle}")
+        file(READ "${_bundleDir}/openstrata.plugin.yaml" _manifest)
+        if(_manifest MATCHES "kind:[ \t]*usd-schema")
+            list(APPEND _schema_bundles "${_bundle}")
+        else()
+            list(APPEND _other_bundles "${_bundle}")
+        endif()
     endif()
+endforeach()
+foreach(_bundle ${_schema_bundles} ${_other_bundles})
+    message(STATUS "OpenStrata: adding plugin bundle 'plugins/${_bundle}'")
+    add_subdirectory("plugins/${_bundle}")
 endforeach()
 
 install(FILES

@@ -59,7 +59,7 @@ directory to the dynamic-loader path.
   [`CHANGELOG`](../CHANGELOG.md), and the `ost` bundle manifest mirror it.
 - The **schema contract version** is independent (currently `1`) and changes only
   under the policy in
-  [`../plugins/usdVrm/docs/SCHEMA_CONTRACT.md`](../plugins/usdVrm/docs/SCHEMA_CONTRACT.md).
+  [`../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md).
 
 ## Non-goals for v0.1.0
 

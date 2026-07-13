@@ -63,5 +63,5 @@ data-authoring step so downstream runtimes can be swapped without changing it.
 
 - [`ROADMAP.md`](ROADMAP.md) — phased status (P0–P6).
 - [`SUPPORTED_CONFIGURATIONS.md`](SUPPORTED_CONFIGURATIONS.md) — platforms, OpenUSD, build.
-- [`../plugins/usdVrm/docs/SCHEMA_CONTRACT.md`](../plugins/usdVrm/docs/SCHEMA_CONTRACT.md) — schema contract v1.
+- [`../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) — schema contract v1.
 - [`../plugins/usdVrm/docs/DIAGNOSTICS.md`](../plugins/usdVrm/docs/DIAGNOSTICS.md) — diagnostic codes.

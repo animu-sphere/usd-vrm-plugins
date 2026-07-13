@@ -2,13 +2,16 @@
 #include "usd/UsdVrmAuthorer.h"
 
 #include "model/VrmDiagnostics.h"
-#include "schema/vrmColliderAPI.h"
-#include "schema/vrmConstraintAPI.h"
-#include "schema/vrmExpressionAPI.h"
-#include "schema/vrmHumanoidAPI.h"
-#include "schema/vrmLookAtAPI.h"
-#include "schema/vrmSpringBoneAPI.h"
 #include "util/PathUtil.h"
+
+// Typed VRM API schemas, consumed from the installed vrmSchema bundle
+// (WORKSPACE.md §2: usdVrmFileFormat -> vrmSchema).
+#include <vrmSchema/vrmColliderAPI.h>
+#include <vrmSchema/vrmConstraintAPI.h>
+#include <vrmSchema/vrmExpressionAPI.h>
+#include <vrmSchema/vrmHumanoidAPI.h>
+#include <vrmSchema/vrmLookAtAPI.h>
+#include <vrmSchema/vrmSpringBoneAPI.h>
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/quatd.h"

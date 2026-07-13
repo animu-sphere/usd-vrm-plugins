@@ -19,14 +19,11 @@ src/
   model/VrmCanonicalDocument.h  parser-independent intermediate model (0.x/1.0 normalized)
   usd/UsdVrmAuthorer.{h,cpp}    canonical model -> USD scene description
   resolver/                     ArPackageResolver for .vrm-embedded texture assets
-  schema/                       committed usdGenSchema fallback for Vrm*API schemas
   util/                         path sanitize/uniquify, glTF->USD transform conversion
-schema/schema.usda              typed schema source (Vrm*API); ost 0.6+ regenerates it at build time
 plugin/resources/usdVrm/plugInfo.json.in     target-suffix template for USD plugin registration
 plugin/resources/usdVrm/plugInfo.json        generated/inspectable USD plugin registration
-plugin/resources/usdVrm/generatedSchema.usda usdGenSchema schematics for the typed schema
 tools/                          generate_fixtures.py, vrm_fixture_lib.py, inspect_vrm.py,
-                                generate_schema.py, package_vrm.py
+                                package_vrm.py
 tests/                          python smoke tests + generated fixtures (minimal, vrm0_minimal, multiskin_ibm, names, materials, badext) + invalid.vrm
 ```
 
@@ -80,16 +77,18 @@ tests/                          python smoke tests + generated fixtures (minimal
   `vrm:humanBones:<bone>` **token attribute** per bone holding the joint path
   (joints are `Skeleton.joints` tokens, not prims, so a relationship can't target
   them directly). Never a duplicated joint hierarchy. These are formalized by a
-  typed, compiled **`VrmHumanoidAPI`** applied schema (see
-  `schema/schema.usda`), co-located in this same plugin: standard VRM bones are
-  schema builtins, non-standard / VRM-0.x-only bones fall back to custom attributes
-  (still lossless).
+  typed, compiled **`VrmHumanoidAPI`** applied schema owned by the sibling
+  [`vrmSchema` bundle](../vrmSchema/): standard VRM bones are schema builtins,
+  non-standard / VRM-0.x-only bones fall back to custom attributes (still
+  lossless).
 * **Typed schemas across the rig:** every control prim carries a compiled
   applied schema — `VrmExpressionAPI` (Expressions), `VrmLookAtAPI` (LookAt),
   `VrmSpringBoneAPI` + `VrmColliderAPI` (SecondaryMotion), and `VrmConstraintAPI`
-  (Constraints). All are generated from `schema/schema.usda` and registered by the one
-  plugin `plugInfo`. The public **schema contract v1**, versioning policy, raw-to-typed
-  correspondence table, and validator rules are in `docs/SCHEMA_CONTRACT.md`.
+  (Constraints). All are owned, generated, and registered by the `vrmSchema`
+  bundle (workspace Phase 1 split); this importer links its typed API via
+  `find_package(vrmSchema)`. The public **schema contract v1**, versioning
+  policy, raw-to-typed correspondence table, and validator rules are in
+  [`../vrmSchema/docs/SCHEMA_CONTRACT.md`](../vrmSchema/docs/SCHEMA_CONTRACT.md).
 * **Lossless preservation:** VRM `meta`/`specVersion`, the full raw
   VRM/VRMC_vrm extension block (`vrm:rawExtension`), and provenance
   (`sourceNodeIndex`, …) are kept in `customData` under a `vrm` namespace.
@@ -149,26 +148,14 @@ ost plugin test  plugins/usdVrm        # L0-L6 verification pyramid
 python plugins/usdVrm/tools/generate_fixtures.py      # regenerate the test fixtures
 ```
 
-### Regenerating the typed schema
+### The typed schema
 
-The typed `Vrm*API` classes are generated from `schema/schema.usda` by OpenUSD's
-**`usdGenSchema`**, which is a **Python** tool. With `ost` 0.6+, `ost plugin
-build` regenerates the schema sources inside `.strata/` for the resolved runtime
-and compiles them into `libUsdVrmFileFormat`.
-
-The generated C++ (`src/schema/`) and `generatedSchema.usda` are still
-**committed** as the plain-CMake fallback and as the source of the runtime
-registration resources. Re-run the fallback generator when `schema/schema.usda`
-changes and you need to refresh those committed files:
-
-```sh
-# Needs Python + an OpenUSD install (usdGenSchema lives there).
-python plugins/usdVrm/tools/generate_schema.py --usd-root /path/to/openusd-install
-```
-
-The script runs `usdGenSchema`, copies the C++ into `src/schema/` and
-`generatedSchema.usda` into the plugin resources, and merges the schema `Types`
-into `plugInfo.json` / `plugInfo.json.in` beside the `SdfFileFormat` entry. It sets
-`PXR_AR_DEFAULT_SEARCH_PATH` (so the `@usd/schema.usda@` sublayer that defines
-`APISchemaBase` resolves) and passes `-t` the install's codegen templates, so it
-works even when the interpreter's importable `pxr` is a different OpenUSD build.
+The typed `Vrm*API` classes moved to the sibling
+[`plugins/vrmSchema`](../vrmSchema/) bundle in the workspace Phase 1 split
+(see [`docs/architecture/WORKSPACE.md`](../../docs/architecture/WORKSPACE.md)).
+This importer consumes them strictly as an installed package
+(`find_package(vrmSchema CONFIG REQUIRED)` + `vrmSchema::vrmSchema`); in
+single-bundle flows without a pre-installed vrmSchema, the CMake configure
+bootstraps the sibling bundle into a private prefix inside the build tree and
+imports it from there. Schema regeneration lives with the schema:
+`plugins/vrmSchema/tools/generate_schema.py`.
