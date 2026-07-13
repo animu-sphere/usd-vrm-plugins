@@ -40,7 +40,7 @@ jobs:
             runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
             platform: cy2026
             profile: usd
-            up_to: 5
+            up_to: 4
             runs_on: ["windows-2022"]
             hosted: true
             runner_profile: windows-hosted

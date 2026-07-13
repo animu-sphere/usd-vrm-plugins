@@ -60,7 +60,7 @@ runners:
 # ost 0.15.0 consumes the `requires.bundles` closure for source build, test,
 # run, and generated CI. The importer cells therefore exercise L0-L5 with
 # vrmSchema built/installed and present in the session automatically. The
-# Windows schema cell is temporarily capped at L4: v0.15.0's flatten capture inserts
+# Windows PR cells are temporarily capped at L4: v0.15.0's flatten capture inserts
 # semantic CR into multiline USDA strings (including generated `doc`) even from
 # an LF-pinned fixture/golden; see the Phase 2 dogfood report. The plain
 # vrmContainer edge remains CMake/repo enforced because requires.libraries is
@@ -76,7 +76,7 @@ cells:
     bundle: plugins/usdVrm
     platform: cy2026
     profile: usd
-    up_to: 5
+    up_to: 4
 
   - name: usdvrm-pr-macos-arm64
     lane: pull_request
