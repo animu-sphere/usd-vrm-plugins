@@ -6,6 +6,8 @@
 #include "model/VrmDiagnostics.h"
 #include "usd/UsdVrmAuthorer.h"
 
+#include <vrmContainer/GlbContainer.h>
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
@@ -49,10 +51,10 @@ UsdVrmFileFormat::CanRead(const std::string& file) const
     if (!in) {
         return false;
     }
-    char magic[4] = {};
-    in.read(magic, sizeof(magic));
+    std::byte magic[4] = {};
+    in.read(reinterpret_cast<char*>(magic), sizeof(magic));
     return in.gcount() == sizeof(magic) &&
-        magic[0] == 'g' && magic[1] == 'l' && magic[2] == 'T' && magic[3] == 'F';
+        vrmContainer::HasGlbMagic({magic, sizeof(magic)});
 }
 
 bool

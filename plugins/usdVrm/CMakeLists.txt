@@ -51,71 +51,68 @@ endif()
 # cgltf::cgltf INTERFACE target.
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Dependencies.cmake")
 
-# vrmSchema: the typed VRM API schemas this importer applies (WORKSPACE.md §2
-# allows the link edge usdVrmFileFormat -> vrmSchema). Resolution order:
-#   1. Workspace build: the root added plugins/vrmSchema first, so the in-tree
-#      alias target already exists.
-#   2. Standalone: resolve the installed package (CMAKE_PREFIX_PATH), per the
-#      WORKSPACE.md §4 standalone-consumption contract.
-#   3. Single-bundle flows with no pre-installed vrmSchema (`ost plugin build
-#      plugins/usdVrm`, CI PR lanes — ost 0.14.0 does not chain
-#      requires.bundles at build time): configure/build/install the sibling
-#      bundle into a private prefix inside this build tree and import it from
-#      there. Still consumed strictly as an installed package — never
-#      add_subdirectory (forbidden by WORKSPACE.md §4).
+# vrmSchema: ost >= 0.15.0 builds and installs the requires.bundles closure
+# before configuring this consumer. A plain workspace build already has the
+# in-tree alias; any other standalone caller supplies an installed package.
 if(NOT TARGET vrmSchema::vrmSchema)
-    find_package(vrmSchema CONFIG QUIET)
-    if(NOT vrmSchema_FOUND)
-        set(_vrm_schema_src "${CMAKE_CURRENT_SOURCE_DIR}/../vrmSchema")
-        if(NOT EXISTS "${_vrm_schema_src}/CMakeLists.txt")
-            message(FATAL_ERROR
-                "vrmSchema not found: pass CMAKE_PREFIX_PATH to an installed "
-                "vrmSchema package, or build from a workspace checkout with "
-                "the sibling plugins/vrmSchema present.")
-        endif()
-        set(_vrm_schema_prefix "${CMAKE_BINARY_DIR}/vrmSchema-pkg")
+    find_package(vrmSchema CONFIG REQUIRED)
+endif()
+
+# vrmContainer is deliberately a plain library, not a plugin bundle. ost 0.15.0
+# reserves and rejects requires.libraries until that contract is portable, so a
+# source-checkout standalone build bootstraps the sibling as an installed CMake
+# package. This preserves the WORKSPACE.md §4 rule: consumers never reach into
+# a sibling with add_subdirectory().
+if(NOT TARGET vrmContainer::vrmContainer)
+    set(_vrm_container_src "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/vrmContainer")
+    if(EXISTS "${_vrm_container_src}/CMakeLists.txt")
+        # Always refresh the private installed package in a source checkout.
+        # Otherwise CMake's cached <Package>_DIR can silently keep an older
+        # library after its sources change.
+        set(_vrm_container_prefix "${CMAKE_BINARY_DIR}/vrmContainer-pkg")
         if(_isMultiConfig)
-            set(_vrm_schema_config "Release")
+            set(_vrm_container_config "Release")
         else()
-            set(_vrm_schema_config "${CMAKE_BUILD_TYPE}")
+            set(_vrm_container_config "${CMAKE_BUILD_TYPE}")
         endif()
-        set(_vrm_schema_cmake_args
-            "-DCMAKE_INSTALL_PREFIX=${_vrm_schema_prefix}"
-            "-DUSDVRM_BUILD_TESTS=OFF"
-            "-Dpxr_DIR=${pxr_DIR}")
+        set(_vrm_container_cmake_args
+            "-DCMAKE_INSTALL_PREFIX=${_vrm_container_prefix}"
+            "-DVRMCONTAINER_BUILD_TESTS=${USDVRM_BUILD_TESTS}")
         foreach(_v CMAKE_BUILD_TYPE CMAKE_TOOLCHAIN_FILE CMAKE_MAKE_PROGRAM
                    CMAKE_C_COMPILER CMAKE_CXX_COMPILER)
-            if(${_v})
-                list(APPEND _vrm_schema_cmake_args "-D${_v}=${${_v}}")
+            if(DEFINED ${_v} AND NOT "${${_v}}" STREQUAL "")
+                list(APPEND _vrm_container_cmake_args "-D${_v}=${${_v}}")
             endif()
         endforeach()
         message(STATUS
-            "usdVrm: bootstrapping sibling vrmSchema as an installed package "
-            "into ${_vrm_schema_prefix}")
+            "usdVrm: bootstrapping sibling vrmContainer as an installed "
+            "package into ${_vrm_container_prefix}")
         execute_process(
             COMMAND "${CMAKE_COMMAND}"
-                -S "${_vrm_schema_src}" -B "${_vrm_schema_prefix}-build"
-                -G "${CMAKE_GENERATOR}" ${_vrm_schema_cmake_args}
-            RESULT_VARIABLE _vrm_schema_rc)
-        if(NOT _vrm_schema_rc EQUAL 0)
-            message(FATAL_ERROR "vrmSchema bootstrap configure failed")
+                -S "${_vrm_container_src}" -B "${_vrm_container_prefix}-build"
+                -G "${CMAKE_GENERATOR}" ${_vrm_container_cmake_args}
+            RESULT_VARIABLE _vrm_container_rc)
+        if(NOT _vrm_container_rc EQUAL 0)
+            message(FATAL_ERROR "vrmContainer bootstrap configure failed")
         endif()
         execute_process(
-            COMMAND "${CMAKE_COMMAND}" --build "${_vrm_schema_prefix}-build"
-                --config "${_vrm_schema_config}"
-            RESULT_VARIABLE _vrm_schema_rc)
-        if(NOT _vrm_schema_rc EQUAL 0)
-            message(FATAL_ERROR "vrmSchema bootstrap build failed")
+            COMMAND "${CMAKE_COMMAND}" --build "${_vrm_container_prefix}-build"
+                --config "${_vrm_container_config}"
+            RESULT_VARIABLE _vrm_container_rc)
+        if(NOT _vrm_container_rc EQUAL 0)
+            message(FATAL_ERROR "vrmContainer bootstrap build failed")
         endif()
         execute_process(
-            COMMAND "${CMAKE_COMMAND}" --install "${_vrm_schema_prefix}-build"
-                --config "${_vrm_schema_config}"
-            RESULT_VARIABLE _vrm_schema_rc)
-        if(NOT _vrm_schema_rc EQUAL 0)
-            message(FATAL_ERROR "vrmSchema bootstrap install failed")
+            COMMAND "${CMAKE_COMMAND}" --install "${_vrm_container_prefix}-build"
+                --config "${_vrm_container_config}"
+            RESULT_VARIABLE _vrm_container_rc)
+        if(NOT _vrm_container_rc EQUAL 0)
+            message(FATAL_ERROR "vrmContainer bootstrap install failed")
         endif()
-        find_package(vrmSchema CONFIG REQUIRED
-            PATHS "${_vrm_schema_prefix}" NO_DEFAULT_PATH)
+        find_package(vrmContainer CONFIG REQUIRED
+            PATHS "${_vrm_container_prefix}" NO_DEFAULT_PATH)
+    else()
+        find_package(vrmContainer CONFIG REQUIRED)
     endif()
 endif()
 
@@ -137,7 +134,10 @@ target_include_directories(${PLUGIN_NAME} PRIVATE
 # vrmSchema's USDVRM_API macro resolves to ARCH_IMPORT here (USDVRM_EXPORTS is
 # only defined when building libvrmSchema itself), so the authorer imports the
 # typed API across the DLL boundary.
-target_link_libraries(${PLUGIN_NAME} PRIVATE cgltf::cgltf vrmSchema::vrmSchema)
+target_link_libraries(${PLUGIN_NAME} PRIVATE
+    cgltf::cgltf
+    vrmContainer::vrmContainer
+    vrmSchema::vrmSchema)
 
 if(MSVC)
     target_compile_definitions(${PLUGIN_NAME} PRIVATE NOMINMAX _USE_MATH_DEFINES)
@@ -181,6 +181,18 @@ foreach(_cfg DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
         LIBRARY_OUTPUT_DIRECTORY_${_cfg} "${CMAKE_CURRENT_SOURCE_DIR}/lib"
         RUNTIME_OUTPUT_DIRECTORY_${_cfg} "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 endforeach()
+
+# The plugin artifact is not yet a product-level dependency closure (Phase 5),
+# so stage the shared plain-library runtime in a manifest-declared loader dir.
+# Keeping it out of the plugin lib/ directory also keeps Phase 0's plugin-symbol
+# union scoped to actual plugin registration libraries.
+set(_vrm_runtime_lib_dir "${CMAKE_CURRENT_SOURCE_DIR}/runtime/lib")
+add_custom_command(TARGET ${PLUGIN_NAME} POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${_vrm_runtime_lib_dir}"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "$<TARGET_FILE:vrmContainer::vrmContainer>"
+        "${_vrm_runtime_lib_dir}/$<TARGET_FILE_NAME:vrmContainer::vrmContainer>"
+    VERBATIM)
 
 # Generate the USD registration file for the target platform. The source bundle
 # keeps a concrete plugInfo.json for static inspection, then CMake refreshes it

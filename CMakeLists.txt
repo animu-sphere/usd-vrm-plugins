@@ -55,6 +55,11 @@ if(USDVRM_BUILD_TESTS)
     enable_testing()
 endif()
 
+# Plain libraries sit below every plugin bundle in the workspace graph. Add
+# them first so composed builds consume the in-tree target; standalone bundle
+# builds consume the same API through its installed CMake package.
+add_subdirectory("libs/vrmContainer")
+
 # Resolve OpenUSD once for the whole project; bundles reuse the result.
 find_package(pxr REQUIRED CONFIG)
 

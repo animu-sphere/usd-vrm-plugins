@@ -5,6 +5,8 @@
 #include "util/PathUtil.h"
 #include "util/TransformUtil.h"
 
+#include <vrmContainer/GlbContainer.h>
+
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/transform.h"
 #include "pxr/base/js/json.h"
@@ -132,12 +134,18 @@ const char* _ImageExt(const cgltf_image* img)
     return nullptr;
 }
 
-std::uint64_t _HashBytes(const void* p, size_t n)
+bool _BufferViewBytes(const cgltf_buffer_view* view,
+                      vrmContainer::ByteView* out)
 {
-    std::uint64_t h = 1469598103934665603ull;
-    const unsigned char* b = static_cast<const unsigned char*>(p);
-    for (size_t i = 0; i < n; ++i) { h ^= b[i]; h *= 1099511628211ull; }
-    return h;
+    if (!view || !out) return false;
+    if (view->data) {
+        *out = {static_cast<const std::byte*>(view->data), view->size};
+        return true;
+    }
+    if (!view->buffer || !view->buffer->data) return false;
+    const vrmContainer::ByteView buffer(
+        static_cast<const std::byte*>(view->buffer->data), view->buffer->size);
+    return vrmContainer::MakeBufferView(buffer, view->offset, view->size, out);
 }
 
 } // namespace
@@ -155,6 +163,15 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
 
     if (bytes.empty()) {
         return fail("empty file");
+    }
+
+    vrmContainer::GlbView glb;
+    vrmContainer::Error containerError;
+    const vrmContainer::ByteView containerBytes(bytes.data(), bytes.size());
+    if (!vrmContainer::ParseGlb(containerBytes, &glb, &containerError)) {
+        return fail(std::string("vrmContainer: ") +
+                    vrmContainer::ErrorMessage(containerError.code) +
+                    " at byte " + std::to_string(containerError.offset));
     }
 
     cgltf_options options = {};
@@ -217,16 +234,23 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
         std::string result;
         if (img->buffer_view) {
             const cgltf_buffer_view* bv = img->buffer_view;
-            const unsigned char* base = bv->data
-                ? static_cast<const unsigned char*>(bv->data)
-                : static_cast<const unsigned char*>(bv->buffer->data) + bv->offset;
+            vrmContainer::ByteView imageBytes;
+            if (!_BufferViewBytes(bv, &imageBytes)) {
+                outDoc->warnings.push_back(VrmDiagMsg(
+                    VrmDiag::TextureFormatUnsupported,
+                    "embedded image buffer view is out of range; texture skipped"));
+                imageCache[img] = result;
+                return result;
+            }
+            const auto* base = reinterpret_cast<const unsigned char*>(
+                imageBytes.data());
             // Sniff the magic bytes (more reliable than the declared mimeType,
             // which some exporters/parsers drop); fall back to the mime hint.
             const char* ext = nullptr;
-            if (bv->size >= 4 && base[0] == 0x89 && base[1] == 'P' &&
+            if (imageBytes.size() >= 4 && base[0] == 0x89 && base[1] == 'P' &&
                 base[2] == 'N' && base[3] == 'G') {
                 ext = "png";
-            } else if (bv->size >= 3 && base[0] == 0xFF && base[1] == 0xD8 &&
+            } else if (imageBytes.size() >= 3 && base[0] == 0xFF && base[1] == 0xD8 &&
                        base[2] == 0xFF) {
                 ext = "jpg";
             } else {
@@ -238,12 +262,9 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                     "unsupported embedded image format (not PNG/JPEG); "
                     "texture skipped"));
             } else {
-                char name[48];
-                std::snprintf(name, sizeof(name), "images/%016llx.%s",
-                              static_cast<unsigned long long>(
-                                  _HashBytes(base, bv->size)),
-                              ext);
-                result = ArJoinPackageRelativePath(packagePath, name);
+                result = ArJoinPackageRelativePath(
+                    packagePath,
+                    vrmContainer::MakeEmbeddedResourcePath(imageBytes, ext));
             }
         } else if (img->uri && std::strncmp(img->uri, "data:", 5) != 0) {
             // External file reference, resolved relative to the source.

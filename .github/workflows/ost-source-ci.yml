@@ -40,7 +40,7 @@ jobs:
             runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
             platform: cy2026
             profile: usd
-            up_to: 1
+            up_to: 4
             runs_on: ["windows-2022"]
             hosted: true
             runner_profile: windows-hosted
@@ -52,7 +52,7 @@ jobs:
             runtime_artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
             platform: cy2026
             profile: usd
-            up_to: 1
+            up_to: 5
             runs_on: ["macos-15"]
             hosted: true
             runner_profile: macos-arm64-hosted
@@ -64,7 +64,7 @@ jobs:
             runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
             platform: cy2026
             profile: usd
-            up_to: 1
+            up_to: 5
             runs_on: ["ubuntu-24.04"]
             hosted: true
             runner_profile: linux-hosted
@@ -76,7 +76,7 @@ jobs:
             runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
             platform: cy2026
             profile: usd
-            up_to: 5
+            up_to: 4
             runs_on: ["windows-2022"]
             hosted: true
             runner_profile: windows-hosted
@@ -114,7 +114,7 @@ jobs:
         if: ${{ matrix.hosted }}
         shell: bash
         run: echo "::notice title=OpenStrata hosted-runner usage::This job uses GitHub-hosted infrastructure. Private repositories may incur GitHub Actions usage charges. Review repository billing and Actions usage settings."
-      - name: Bootstrap ost 0.14.0 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.15.0 (pinned release asset, checksum-verified)
         if: ${{ matrix.hosted }}
         shell: bash
         run: |
@@ -132,7 +132,7 @@ jobs:
             *) : ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.14.0"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.15.0"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$( (command -v sha256sum > /dev/null && sha256sum "$asset" || shasum -a 256 "$asset") | cut -d' ' -f1 )"
@@ -166,7 +166,7 @@ jobs:
           echo "$exported_path" >> "$GITHUB_PATH"
           json_executable="$(printf '%s' "$executable" | sed 's/\\/\\\\/g; s/"/\\"/g')"
           json_exported_path="$(printf '%s' "$exported_path" | sed 's/\\/\\\\/g; s/"/\\"/g')"
-          printf '{"schema":1,"pinned_version":"%s","asset":"%s","sha256":"%s","executable":"%s","exported_path":"%s"}\n' "0.14.0" "$asset" "$actual" "$json_executable" "$json_exported_path" > .ost-ci/bootstrap.json
+          printf '{"schema":1,"pinned_version":"%s","asset":"%s","sha256":"%s","executable":"%s","exported_path":"%s"}\n' "0.15.0" "$asset" "$actual" "$json_executable" "$json_exported_path" > .ost-ci/bootstrap.json
       - name: Check ost is available and record its version
         shell: bash
         run: |
@@ -179,8 +179,8 @@ jobs:
           fi
 
           echo "$version"
-          if [ "${{ matrix.hosted }}" = "true" ] && [ "$version" != "ost 0.14.0" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.14.0', got '$version'" ; exit 1
+          if [ "${{ matrix.hosted }}" = "true" ] && [ "$version" != "ost 0.15.0" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.15.0', got '$version'" ; exit 1
           fi
           printf '{"schema":1,"ost_version":"%s"}\n' "$version" > .ost-ci/ost-version.json
       - name: Validate the CI manifest
@@ -191,7 +191,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ost-ci-home/artifacts
-          key: ost-registry-0.14.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.name }}-${{ matrix.runtime_artifact }}
+          key: ost-registry-0.15.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.name }}-${{ matrix.runtime_artifact }}
       - name: Pull the pinned runtime SDK from its remote reference
         if: ${{ matrix.runtime_remote != '' }}
         shell: bash

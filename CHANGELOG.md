@@ -14,6 +14,12 @@ Current schema contract version: **1**.
 ## [Unreleased]
 
 ### Added
+- **Workspace Phase 2 — `vrmContainer` extraction**: a standalone plain shared
+  CMake library (`libs/vrmContainer`) now validates GLB 2 headers/chunks and
+  byte ranges, exposes immutable non-owning views, and owns stable embedded
+  resource hashing. It exports an installed `find_package(vrmContainer)`
+  package, carries OpenUSD/plugin boundary checks, and is consumed by both the
+  importer reader and the co-located resolver without changing Phase 0 output.
 - **Negative test corpus** (`plugins/usdVrm/tests/corpus/generated/malformed/`):
   nine deliberately-broken, license-clean `.vrm` fixtures (authored by
   `tools/generate_negative.py`) that pin the importer's diagnostic contract —
@@ -22,6 +28,11 @@ Current schema contract version: **1**.
   in the bundle's `tests.smoke` / `tests.negative` lists).
 
 ### Changed
+- **OpenStrata 0.15 workspace composition**: CI and source builds now consume
+  the `requires.bundles` closure directly, removing the repo-owned vrmSchema
+  bootstrap and restoring the importer PR lanes from L1 to the full L5 gate.
+  `vrmContainer` is staged through `requires.runtime_libs`; portable
+  `requires.libraries` remains reserved/fail-closed in ost 0.15.
 - **Workspace Phase 1 — `vrmSchema` bundle split**: the six typed `Vrm*API`
   schemas (sources, generated C++, `generatedSchema.usda`, USD registration,
   `tools/generate_schema.py`, `docs/SCHEMA_CONTRACT.md`) moved from the

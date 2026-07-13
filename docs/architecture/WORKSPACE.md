@@ -7,7 +7,7 @@ preserve. Structural changes that contradict this document require changing
 this document first, in its own PR.
 
 Status: contract adopted; Phase 0 baseline frozen; Phase 1 `vrmSchema` split
-landed (see §8).
+and Phase 2 `vrmContainer` extraction landed (see §8).
 
 ## 1. Bundles and libraries
 
@@ -46,17 +46,19 @@ execVrm               -> usdVrmFileFormat private API, importer canonical model
 any cycle, including self-cycles
 ```
 
-Enforcement: `ost plugin test --workspace` (ost >= 0.14.0) validates the
+Enforcement: `ost plugin test --workspace` (ost >= 0.15.0) validates the
 bundle graph declared via `requires.bundles` before running any bundle's
 verification, with stable `WORKSPACE_*` issue codes (dependency missing,
 version mismatch, contract mismatch, direction forbidden, cycle) and exit 5
 on violation. Bundle manifests are the source of truth for these edges.
 
-Known enforcement gap: ost 0.14.0 does not validate plain-library
-dependencies (`requires.libraries` is ignored), so `vrmContainer`'s edges are
-enforced by repo CI instead: a structural check that `vrmContainer` contains
-no plugin registration and links no `pxr` plugin targets, and link checks
-(`dumpbin`/`nm`) that the resolver does not import file-format symbols.
+Known enforcement gap: ost 0.15.0 reserves and fail-closed rejects
+`requires.libraries` until plain-library identity/discovery has a portable
+contract. `vrmContainer`'s edges are therefore enforced by CMake package
+consumption and repo CI instead: a structural/source-and-binary check that
+`vrmContainer` contains no plugin registration and imports no OpenUSD library;
+the resolver split will add link checks (`dumpbin`/`nm`) proving it does not
+import file-format symbols.
 
 ## 3. Schema contract versioning
 
@@ -158,7 +160,7 @@ as the gate in every migration PR.
 | --- | --- | --- |
 | 0 | baseline snapshots + regression criteria | done (`tests/baseline/`) |
 | 1 | `vrmSchema` bundle split | done (`plugins/vrmSchema`) |
-| 2 | `vrmContainer` extraction | not started |
+| 2 | `vrmContainer` extraction | done (`libs/vrmContainer`) |
 | 3 | `usdVrmPackageResolver` bundle split | not started |
 | 4 | `usdVrmFileFormat` purification/rename | not started |
 | 5 | workspace packaging (per-bundle + aggregate) | not started |

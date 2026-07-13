@@ -14,8 +14,7 @@ All artifacts are generated and verified by
 
 ```sh
 # Verify current behavior against the committed baseline (the phase gate).
-# Once the split begins, add `--with plugins/<bundle>` for every additional
-# workspace bundle so the whole registry is in the session:
+# ost 0.15+ resolves the manifest dependency closure into the session:
 ost plugin run plugins/usdVrm -- python tools/baseline_freeze.py --check
 
 # Rewrite the baseline (ONLY in a dedicated behavior-change PR, never in a
@@ -72,7 +71,7 @@ Notes on the remaining plan §9 items:
   Every migration PR description must include the check result.
 - CI (`ost plugin test`, all three PR lanes): L2 discovery, L2 schema
   registration, L4 stage open, and the L5 golden for `minimal.vrm` overlap
-  with parts of this baseline. Note: ost 0.14.0's L5 golden only compares the
+  with parts of this baseline. Note: L5 golden currently compares the
   **first** `tests.roundtrip` entry (verified empirically 2026-07-13), so the
   per-fixture snapshots here are intentionally *not* modeled as ost goldens;
-  multi-fixture golden support is an ost v0.15.0 ask.
+  multi-fixture snapshots remain intentionally owned by this gate.
