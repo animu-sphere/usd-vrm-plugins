@@ -1,0 +1,23 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "UsdVrmPackageResolver",
+            "Root": ".",
+            "LibraryPath": "../../../lib/@OPENSTRATA_PLUGIN_LIBRARY_PREFIX@UsdVrmPackageResolver@CMAKE_SHARED_LIBRARY_SUFFIX@",
+            "ResourcePath": ".",
+            "Info": {
+                "Types": {
+                    "UsdVrmPackageResolver": {
+                        "bases": [
+                            "ArPackageResolver"
+                        ],
+                        "extensions": [
+                            "vrm"
+                        ]
+                    }
+                }
+            }
+        }
+    ]
+}

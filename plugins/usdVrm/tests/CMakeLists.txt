@@ -78,8 +78,16 @@ configure_file(
 set(_vrm_schema_bundle "${_bundle_dir}/../vrmSchema")
 set(_vrm_schema_resources "${_vrm_schema_bundle}/plugin/resources/vrmSchema")
 
+# Embedded avatar.vrm[images/...] texture paths resolve through the sibling
+# usdVrmPackageResolver bundle since the Phase 3 split: its plugInfo must be
+# on the registry path for the texture-resolution assertions below (a runtime
+# bundle dependency — the importer never links it, WORKSPACE.md §2).
+set(_vrm_resolver_bundle "${_bundle_dir}/../usdVrmPackageResolver")
+set(_vrm_resolver_resources
+    "${_vrm_resolver_bundle}/plugin/resources/usdVrmPackageResolver")
+
 set(_smoke_env
-    "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib;PATH=path_list_prepend:${_lib_dir};PATH=path_list_prepend:${_vrm_container_dir};PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PYTHONPATH=path_list_prepend:${_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources}")
+    "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib;PATH=path_list_prepend:${_lib_dir};PATH=path_list_prepend:${_vrm_container_dir};PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PYTHONPATH=path_list_prepend:${_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_resolver_resources}")
 
 add_test(
     NAME usdvrm_python_smoke

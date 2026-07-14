@@ -1,0 +1,23 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "UsdVrmPackageResolver",
+            "Root": ".",
+            "LibraryPath": "@USDVRM_RESOLVER_TEST_LIBRARYPATH@",
+            "ResourcePath": ".",
+            "Info": {
+                "Types": {
+                    "UsdVrmPackageResolver": {
+                        "bases": [
+                            "ArPackageResolver"
+                        ],
+                        "extensions": [
+                            "vrm"
+                        ]
+                    }
+                }
+            }
+        }
+    ]
+}

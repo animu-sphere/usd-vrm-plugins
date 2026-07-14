@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    """Roundtrip (L5 golden) fixture for the resolver-only session: plain
+    authored content with no asset paths, so the flattened output is
+    machine-independent. Package-path resolution itself is exercised by
+    tests/fixtures/embedded_texture.usda (smoke) and tests/test_resolver.py."""
+    defaultPrim = "Root"
+)
+
+def Xform "Root"
+{
+    def Scope "Resolved"
+    {
+        custom string vrm:test:note = "usdVrmPackageResolver roundtrip fixture"
+    }
+}

@@ -128,10 +128,14 @@ image decode.
 ### Textures
 
 Embedded PNG/JPEG images are referenced as package-relative assets inside the
-source `.vrm`, e.g. `avatar.vrm[images/<hash>.png]`. The co-located
-`UsdVrmPackageResolver` serves those bytes directly to OpenUSD/Hio, so normal
-imports do not depend on an OS temp extraction cache. Image format is detected by
-sniffing the magic bytes (some VRM exporters drop the glTF `mimeType`).
+source `.vrm`, e.g. `avatar.vrm[images/<hash>.png]`. The sibling
+[`usdVrmPackageResolver`](../usdVrmPackageResolver/) bundle serves those bytes
+directly to OpenUSD/Hio, so normal imports do not depend on an OS temp
+extraction cache. It is a **runtime** dependency: this file-format plugin
+authors the package paths but does not link the resolver (WORKSPACE.md §2), so a
+session must also load `usdVrmPackageResolver` for embedded textures to resolve.
+Image format is detected by sniffing the magic bytes (some VRM exporters drop
+the glTF `mimeType`).
 
 For portable handoff, run the package tool inside a usdVrm-enabled OpenUSD
 environment. It opens the source stage, copies texture files into a package-local

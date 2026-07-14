@@ -75,7 +75,6 @@ add_library(${PLUGIN_NAME} SHARED
     src/UsdVrmFileFormat.cpp
     src/io/cgltfImpl.cpp
     src/io/CgltfVrmDocumentReader.cpp
-    src/resolver/VrmPackageResolver.cpp
     src/usd/UsdVrmAuthorer.cpp
     src/util/PathUtil.cpp
     src/util/TransformUtil.cpp)
