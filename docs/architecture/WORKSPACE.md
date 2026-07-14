@@ -6,8 +6,9 @@ directions, artifact naming, and the invariants every migration PR must
 preserve. Structural changes that contradict this document require changing
 this document first, in its own PR.
 
-Status: contract adopted; Phase 0 baseline frozen; Phase 1 `vrmSchema` split
-and Phase 2 `vrmContainer` extraction landed (see §8).
+Status: contract adopted; Phase 0 baseline frozen; Phase 1 `vrmSchema` split,
+Phase 2 `vrmContainer` extraction, and Phase 3 `usdVrmPackageResolver` split
+landed (see §8).
 
 ## 1. Bundles and libraries
 
@@ -52,13 +53,19 @@ verification, with stable `WORKSPACE_*` issue codes (dependency missing,
 version mismatch, contract mismatch, direction forbidden, cycle) and exit 5
 on violation. Bundle manifests are the source of truth for these edges.
 
-Known enforcement gap: ost 0.15.0 reserves and fail-closed rejects
-`requires.libraries` until plain-library identity/discovery has a portable
-contract. `vrmContainer`'s edges are therefore enforced by CMake package
-consumption and repo CI instead: a structural/source-and-binary check that
-`vrmContainer` contains no plugin registration and imports no OpenUSD library;
-the resolver split will add link checks (`dumpbin`/`nm`) proving it does not
-import file-format symbols.
+Plain-library edges (`requires.libraries`) became executable in ost 0.16.0: a
+plain library carries an `openstrata.library.yaml` descriptor
+(`libs/vrmContainer/`) giving it a workspace identity and CMake package/target,
+and the workspace graph validates the `bundle -> library` edges (missing,
+duplicate, version-incompatible, cyclic) alongside the bundle edges. `ost plugin
+build/test/run` build and install the library into the workspace prefix before
+its consumers and materialize its loader directory into the session; `ost plugin
+package` stages the closure under `runtime/libraries/` with a
+`dependencies.json` record. `vrmContainer`'s no-registration / no-OpenUSD
+boundary is still enforced by its own repo check, and each consumer adds a
+binary link check (`dumpbin`/`nm`) proving it imports `vrmContainer` and does not
+import the other bundles' libraries (`usdVrmPackageResolver` proves it links
+neither `usdVrmFileFormat` nor `vrmSchema`).
 
 ## 3. Schema contract versioning
 
@@ -161,7 +168,7 @@ as the gate in every migration PR.
 | 0 | baseline snapshots + regression criteria | done (`tests/baseline/`) |
 | 1 | `vrmSchema` bundle split | done (`plugins/vrmSchema`) |
 | 2 | `vrmContainer` extraction | done (`libs/vrmContainer`) |
-| 3 | `usdVrmPackageResolver` bundle split | not started |
+| 3 | `usdVrmPackageResolver` bundle split | done (`plugins/usdVrmPackageResolver`) |
 | 4 | `usdVrmFileFormat` purification/rename | not started |
 | 5 | workspace packaging (per-bundle + aggregate) | not started |
 | 6 | `execVrm` (LookAt first) | not started |
