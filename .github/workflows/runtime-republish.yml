@@ -59,6 +59,10 @@ jobs:
   republish:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runs_on }}
+    env:
+      # Scope the registry to the workspace: the eviction step below deletes it
+      # outright, and that must never reach a shared ~/.ost.
+      OST_HOME: ${{ github.workspace }}/.ost-ci-home
     strategy:
       # One broken platform must not hide the state of the others.
       fail-fast: false
@@ -179,6 +183,37 @@ jobs:
           ost runtime validate "${{ matrix.platform }}" --profile "${{ matrix.profile }}" --json > /dev/null
           ost runtime show "${{ matrix.platform }}" --profile "${{ matrix.profile }}"
 
+      - name: Evict the evidence-less record before re-exporting
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Without this, the whole workflow is a no-op on any platform whose
+          # export is byte-reproducible (Linux and Windows; macOS differs only
+          # because ost 0.12 changed macOS archive packing to preserve exec
+          # bits, so a 0.17 re-export of a 0.10-era artifact lands on a new
+          # digest there).
+          #
+          # ArtifactStore::import short-circuits when the archive digest is
+          # already in the registry, and it only attaches the incoming evidence
+          # sidecars if the producer manifest is byte-identical to the stored
+          # one. A re-export by a newer ost always changes that manifest (the
+          # `producer` string, plus the `build` metadata generate_evidence adds
+          # under Actions), so the guard never matches: the freshly generated
+          # SBOM and provenance are dropped, the evidence-less record is
+          # returned as `already_present: true`, and the command still reports
+          # success. Observed on run 29514114428, where the Linux/Windows
+          # "new" digests came back identical to the pins they were meant to
+          # replace and verification still failed ARTIFACT_SBOM_REQUIRED.
+          #
+          # The runtime store is a sibling of the artifact store, so dropping
+          # the registry keeps the runtime materialized above intact and forces
+          # the export's import onto the fresh path, which does write evidence.
+          # The archive bytes are unchanged, so the artifact digest is
+          # unchanged too: this attaches evidence to the exact digest CI
+          # already pins, rather than minting a different runtime.
+          rm -rf "$OST_HOME/artifacts"
+          ost artifact list || true
+
       - name: Re-export through ost 0.17.0 (regenerates SBOM + provenance)
         shell: bash
         run: |
@@ -193,10 +228,24 @@ jobs:
           digest="$(jq -r '.data.digest' export.json)"
           layout="$(jq -r '.data.layout_profile' export.json)"
           files="$(jq -r '.data.files' export.json)"
-          echo "new artifact digest: $digest (layout=$layout, files=$files)"
+          already="$(jq -r '.data.already_present' export.json)"
+          echo "new artifact digest: $digest (layout=$layout, files=$files, already_present=$already)"
           if [ "$layout" != "full" ]; then
             echo "::error title=republish::exported layout_profile is '$layout', expected 'full'" ; exit 1
           fi
+          # The eviction above exists precisely so this is false. If the record
+          # was still present, import took the short-circuit and silently
+          # discarded the evidence we just generated; the verify below would
+          # fail anyway, but fail here where the cause is legible.
+          if [ "$already" != "false" ]; then
+            echo "::error title=republish::already_present=$already after eviction; the evidence sidecars were dropped" ; exit 1
+          fi
+          # Sanity: the sidecars must actually exist on disk.
+          for f in sbom.spdx.json provenance.intoto.jsonl; do
+            if [ ! -s "dist/$f" ]; then
+              echo "::error title=republish::dist/$f is missing or empty" ; exit 1
+            fi
+          done
           echo "NEW_ARTIFACT=$digest" >> "$GITHUB_ENV"
           echo "NEW_FILES=$files" >> "$GITHUB_ENV"
           ls -la dist
