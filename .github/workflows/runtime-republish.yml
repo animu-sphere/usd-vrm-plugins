@@ -2,10 +2,12 @@
 #
 # WHY THIS EXISTS
 # ---------------
-# The cy2026/usd runtimes pinned by openstrata.ci.yaml were produced by
-# `ost 0.10.0`, which predates OpenStrata's evidence mechanism entirely. They
-# carry no SPDX SBOM and no SLSA/in-toto provenance. Since ost 0.16/0.17,
-# `ost ci generate` unconditionally emits
+# The cy2026/usd runtime images pinned by openstrata.ci.yaml carry no SPDX SBOM
+# and no SLSA/in-toto provenance: they were published before ost could generate
+# either. (Do not try to date them from an artifact record's `producer` field —
+# ArtifactStore::import stamps that with the version of ost doing the *import*,
+# not the one that produced the archive, so it differs per machine.) Since ost
+# 0.16/0.17, `ost ci generate` unconditionally emits
 #
 #     ost artifact verify <digest> --minimum-trust <t> --require-sbom --require-provenance
 #
