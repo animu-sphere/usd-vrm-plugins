@@ -76,7 +76,7 @@ jobs:
           - name: release-windows
             cache_cell: usdvrm-pr-windows
             runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a"
             platform: cy2026
             profile: usd
             runs_on: ["windows-2022"]
@@ -87,8 +87,8 @@ jobs:
             host_python: "3.13"
           - name: release-macos-arm64
             cache_cell: usdvrm-pr-macos-arm64
-            runtime_artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876"
+            runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97"
             platform: cy2026
             profile: usd
             runs_on: ["macos-15"]
@@ -96,7 +96,7 @@ jobs:
           - name: release-linux
             cache_cell: usdvrm-pr-linux
             runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d202c6d7534afa4960850419b58d3b06631d85031f93243cd5de6c4cf511a734"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580"
             platform: cy2026
             profile: usd
             runs_on: ["ubuntu-24.04"]
@@ -159,8 +159,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # The cache-hit test must use the SAME predicate as the gate below.
+          # A cached record that verifies without evidence but fails the gate
+          # would skip the pull and wedge the lane on every subsequent run,
+          # because `ost artifact pull` cannot add evidence to a digest already
+          # in the registry (import short-circuits on already_present and drops
+          # the sidecars, printing "skipped sbom"). Failing this test instead
+          # drops through to the eviction + fresh pull, which does attach it.
           if ost artifact show "${{ matrix.runtime_artifact }}" --json > /dev/null 2>&1 \
-             && ost artifact verify "${{ matrix.runtime_artifact }}" --json > /dev/null; then
+             && ost artifact verify "${{ matrix.runtime_artifact }}" --minimum-trust local \
+                  --require-sbom --require-provenance --json > /dev/null; then
             echo "pinned runtime already present and verified (cache hit) -- skipping the remote pull"
           else
             rm -rf "${OST_HOME}/artifacts"
@@ -170,7 +178,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ost artifact verify ${{ matrix.runtime_artifact }}
+          # Mirrors the gate `ost ci generate` renders into the PR lanes: the
+          # release lane must not verify the runtime more weakly than the lane
+          # that gates the PRs feeding it.
+          ost artifact verify ${{ matrix.runtime_artifact }} --minimum-trust local --require-sbom --require-provenance
           ost runtime pull ${{ matrix.platform }} --profile ${{ matrix.profile }} --from-artifact ${{ matrix.runtime_artifact }} --force
           ost runtime validate ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > /dev/null
       - name: Set up host Python for schema tooling
