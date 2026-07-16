@@ -34,7 +34,16 @@
 # AFTER A GREEN RUN
 # -----------------
 # Copy the emitted (artifact digest, OCI digest) pairs into openstrata.ci.yaml,
-# then regenerate the workflows with `ost ci generate github --force`.
+# then regenerate the workflows with `ost ci generate github --force`. Cells
+# carrying `expected_oci` assert they landed on the digest already pinned, so a
+# re-push to move a tag needs no re-pin — it fails instead of diverging.
+#
+# WHY THE SOURCE PINS LOOK STALE
+# ------------------------------
+# `artifact`/`oci` below still name the pre-evidence images. That is deliberate:
+# they are the *source* this job re-exports from, not what the repo consumes.
+# They are also the only copy that predates evidence, so they must keep
+# resolving until this workflow no longer needs a source.
 #
 # NOTE ON THE ost PIN
 # -------------------
@@ -82,7 +91,8 @@ jobs:
             # Contents guard: the re-export must carry exactly this many files
             # (observed on the published artifact at authoring time).
             file_count: 4045
-            tag: 26.05-windows-x86_64-attested
+            tag: 26.05-windows-x86_64
+            expected_oci: sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a
           - name: runtime-republish-macos-arm64
             runs_on: macos-15
             platform: cy2026
@@ -90,7 +100,8 @@ jobs:
             artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
             oci: sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876
             file_count: 0  # measured from the pulled artifact; see the guard step
-            tag: 26.05-macos-arm64-attested
+            tag: 26.05-macos-arm64
+            expected_oci: sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97
           - name: runtime-republish-linux
             runs_on: ubuntu-24.04
             platform: cy2026
@@ -98,7 +109,8 @@ jobs:
             artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
             oci: sha256:d202c6d7534afa4960850419b58d3b06631d85031f93243cd5de6c4cf511a734
             file_count: 0
-            tag: 26.05-linux-x86_64-attested
+            tag: 26.05-linux-x86_64
+            expected_oci: sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580
     steps:
       - name: Check out the repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -289,9 +301,12 @@ jobs:
           OST_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -uo pipefail
-          # A new tag: never repoint the tag the current pins were published
-          # under. Digests are immutable, so the existing runtime stays pullable
-          # for any lane not yet migrated.
+          # The canonical tag. During the migration this pushed to a parallel
+          # `…-attested` tag so the tags the then-current pins were published
+          # under kept resolving. That is over: PR #44 is merged, so main pins
+          # the evidence-carrying digests and the pre-evidence images are
+          # referenced by nothing. The canonical names should therefore name
+          # the images the project actually uses.
           #
           # Do not let `--json > file` swallow the diagnosis: on failure ost's
           # report is the only thing that says *why*, and redirecting stdout
@@ -314,6 +329,15 @@ jobs:
           pushed_artifact="$(jq -r '.data.artifact_digest' push.json)"
           if [ "$pushed_artifact" != "$NEW_ARTIFACT" ]; then
             echo "::error title=republish::pushed $pushed_artifact but exported $NEW_ARTIFACT" ; exit 1
+          fi
+          # The canonical tag must land on the manifest openstrata.ci.yaml
+          # already pins. The OCI manifest is built from the layers and config
+          # only -- the tag is a registry pointer, not manifest content -- so a
+          # re-push of identical bytes is expected to reproduce this digest
+          # exactly. If it does not, the pins and the tag have diverged and the
+          # tag must not be moved.
+          if [ -n "${{ matrix.expected_oci }}" ] && [ "$oci" != "${{ matrix.expected_oci }}" ]; then
+            echo "::error title=republish::pushed OCI $oci but openstrata.ci.yaml pins ${{ matrix.expected_oci }}" ; exit 1
           fi
           echo "NEW_OCI=$oci" >> "$GITHUB_ENV"
 
