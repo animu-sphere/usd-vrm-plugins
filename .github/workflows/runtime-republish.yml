@@ -34,9 +34,13 @@
 # AFTER A GREEN RUN
 # -----------------
 # Copy the emitted (artifact digest, OCI digest) pairs into openstrata.ci.yaml,
-# then regenerate the workflows with `ost ci generate github --force`. Cells
-# carrying `expected_oci` assert they landed on the digest already pinned, so a
-# re-push to move a tag needs no re-pin — it fails instead of diverging.
+# then regenerate the workflows with `ost ci generate github --force`.
+#
+# The `runtime_remote` OCI digest must be re-pinned after EVERY republish, even
+# one that changes nothing about the payload. The manifest covers the evidence
+# layers, and provenance embeds the producing commit, so a republish from a
+# different main always mints a new manifest digest. Only `runtime_artifact` is
+# stable across a byte-reproducible re-export.
 #
 # WHY THE SOURCE PINS LOOK STALE
 # ------------------------------
@@ -92,7 +96,6 @@ jobs:
             # (observed on the published artifact at authoring time).
             file_count: 4045
             tag: 26.05-windows-x86_64
-            expected_oci: sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a
           - name: runtime-republish-macos-arm64
             runs_on: macos-15
             platform: cy2026
@@ -101,7 +104,6 @@ jobs:
             oci: sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876
             file_count: 0  # measured from the pulled artifact; see the guard step
             tag: 26.05-macos-arm64
-            expected_oci: sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97
           - name: runtime-republish-linux
             runs_on: ubuntu-24.04
             platform: cy2026
@@ -110,7 +112,6 @@ jobs:
             oci: sha256:d202c6d7534afa4960850419b58d3b06631d85031f93243cd5de6c4cf511a734
             file_count: 0
             tag: 26.05-linux-x86_64
-            expected_oci: sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580
     steps:
       - name: Check out the repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -330,15 +331,16 @@ jobs:
           if [ "$pushed_artifact" != "$NEW_ARTIFACT" ]; then
             echo "::error title=republish::pushed $pushed_artifact but exported $NEW_ARTIFACT" ; exit 1
           fi
-          # The canonical tag must land on the manifest openstrata.ci.yaml
-          # already pins. The OCI manifest is built from the layers and config
-          # only -- the tag is a registry pointer, not manifest content -- so a
-          # re-push of identical bytes is expected to reproduce this digest
-          # exactly. If it does not, the pins and the tag have diverged and the
-          # tag must not be moved.
-          if [ -n "${{ matrix.expected_oci }}" ] && [ "$oci" != "${{ matrix.expected_oci }}" ]; then
-            echo "::error title=republish::pushed OCI $oci but openstrata.ci.yaml pins ${{ matrix.expected_oci }}" ; exit 1
-          fi
+          # The OCI digest is NOT stable across runs, so there is nothing to
+          # assert it against. The manifest covers the evidence layers, and
+          # provenance embeds the producing commit (GITHUB_SHA et al), so every
+          # republish from a different main necessarily mints a new manifest
+          # digest even when the archive bytes -- and therefore the artifact
+          # digest asserted above -- are identical. Run 29517954310 learned this
+          # the expensive way. The artifact digest is the CI contract
+          # (`--expect-artifact`); the OCI digest is only its address, and
+          # openstrata.ci.yaml's `runtime_remote` must be re-pinned to whatever
+          # this step reports after every republish.
           echo "NEW_OCI=$oci" >> "$GITHUB_ENV"
 
       - name: Emit the new pins

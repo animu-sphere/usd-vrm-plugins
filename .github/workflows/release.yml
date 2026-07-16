@@ -76,7 +76,7 @@ jobs:
           - name: release-windows
             cache_cell: usdvrm-pr-windows
             runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:bf24d8b6af28d3b3be0fc780803da0ae1181fca8f336ee0c79c1b1607073f724"
             platform: cy2026
             profile: usd
             runs_on: ["windows-2022"]
@@ -88,7 +88,7 @@ jobs:
           - name: release-macos-arm64
             cache_cell: usdvrm-pr-macos-arm64
             runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:459ec9a3930dede19b5c8f2ccf2fcdf9b8645fb9c95773e37b25f35ca30ee873"
             platform: cy2026
             profile: usd
             runs_on: ["macos-15"]
@@ -96,7 +96,7 @@ jobs:
           - name: release-linux
             cache_cell: usdvrm-pr-linux
             runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:3f785e3088e8701f653b2470c33ef384bcd79dff3781dd69aa861984225a7fa8"
             platform: cy2026
             profile: usd
             runs_on: ["ubuntu-24.04"]
