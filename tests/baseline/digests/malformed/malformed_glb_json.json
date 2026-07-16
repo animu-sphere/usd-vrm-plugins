@@ -4,5 +4,5 @@
     "VRM003"
   ],
   "open": false,
-  "source": "${REPO}/plugins/usdVrm/tests/corpus/generated/malformed/malformed_glb_json.vrm"
+  "source": "${BUNDLE}/tests/corpus/generated/malformed/malformed_glb_json.vrm"
 }

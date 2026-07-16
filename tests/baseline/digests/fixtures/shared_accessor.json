@@ -102,7 +102,7 @@
     }
   ],
   "skeletons": {},
-  "source": "${REPO}/plugins/usdVrm/tests/fixtures/shared_accessor.vrm",
+  "source": "${BUNDLE}/tests/fixtures/shared_accessor.vrm",
   "timeSampledAttrs": {},
   "upAxis": "Y",
   "vrm": {

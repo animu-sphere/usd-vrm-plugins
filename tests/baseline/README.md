@@ -53,14 +53,17 @@ Notes on the remaining plan §9 items:
 1. `--check` exits non-zero → the PR changed frozen behavior. In a
    structural/migration PR this is a regression to fix, never a baseline to
    update.
-2. Moving files (`git mv`, bundle splits) must not change baseline *content*.
-   The generators locate inputs through the manifests, so path-only moves stay
-   invisible by construction; if a move forces a generator edit, the artifacts
-   it emits must still be byte-identical.
+2. Moving files (`git mv`, bundle splits, bundle directory renames) must not
+   change baseline *content*. The generators locate inputs through the
+   manifests — the file-format bundle by its `kind`, never by directory name —
+   and fixture/corpus paths inside it are frozen as `${BUNDLE}`-relative, so
+   path-only moves stay invisible by construction; if a move forces a generator
+   edit, the artifacts it emits must still be byte-identical.
 3. An intended behavior change regenerates the baseline with `--update` in its
    own non-structural PR, with the diff reviewed as the behavior change.
-4. Baseline artifacts are machine-independent (absolute repo paths are
-   rewritten to `${REPO}`, flatten doc headers stripped). Byte-exactness is
+4. Baseline artifacts are machine-independent (absolute paths under the
+   file-format bundle are rewritten to `${BUNDLE}`, remaining absolute repo
+   paths to `${REPO}`, flatten doc headers stripped). Byte-exactness is
    asserted on the platform that generated them (Windows / cy2026 usd
    runtime); symbol lists are per-platform and the check skips platforms
    without a committed list instead of failing.

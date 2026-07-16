@@ -189,7 +189,7 @@
     }
   ],
   "skeletons": {},
-  "source": "${REPO}/plugins/usdVrm/tests/fixtures/materials.vrm",
+  "source": "${BUNDLE}/tests/fixtures/materials.vrm",
   "timeSampledAttrs": {},
   "upAxis": "Y",
   "vrm": {

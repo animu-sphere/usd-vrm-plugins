@@ -4,5 +4,5 @@
     "VRM003"
   ],
   "open": false,
-  "source": "${REPO}/plugins/usdVrm/tests/corpus/generated/malformed/nonfinite_transform.vrm"
+  "source": "${BUNDLE}/tests/corpus/generated/malformed/nonfinite_transform.vrm"
 }

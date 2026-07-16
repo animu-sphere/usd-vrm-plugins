@@ -35,10 +35,15 @@ begins):
     ost plugin run plugins/usdVrm -- python tools/baseline_freeze.py --check
     ost plugin run plugins/usdVrm -- python tools/baseline_freeze.py --update
 
-The USDA/digest artifacts are machine-independent: absolute repo paths are
-rewritten to ${REPO} and the flatten doc header is stripped. Symbol baselines
-are per-platform; --check only compares the file for the current platform and
-skips (does not fail) when the platform has no committed baseline.
+The USDA/digest artifacts are machine-independent: absolute paths under the
+file-format bundle are rewritten to ${BUNDLE}, the remaining absolute repo
+paths to ${REPO}, and the flatten doc header is stripped. ${BUNDLE} also makes
+them bundle-*path* invariant: fixtures and corpus models live inside the
+bundle, so without it a bundle directory rename would rewrite every asset path
+and be indistinguishable from a behavior regression. The bundle is located by
+manifest kind, never by directory name. Symbol baselines are per-platform;
+--check only compares the file for the current platform and skips (does not
+fail) when the platform has no committed baseline.
 """
 
 from __future__ import annotations
@@ -55,10 +60,26 @@ import sys
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 PLUGINS = REPO / "plugins"
-BUNDLE = PLUGINS / "usdVrm"
+BASELINE = REPO / "tests" / "baseline"
+
+_KIND_RE = re.compile(r"^\s*kind:\s*(\S+)\s*$", re.M)
+
+
+def _bundle_by_kind(kind: str) -> pathlib.Path:
+    """Bundle root of the one manifest declaring `kind`. Looked up rather than
+    named so a bundle directory rename moves no baseline bytes."""
+    hits = [m.parent for m in sorted(PLUGINS.glob("*/openstrata.plugin.yaml"))
+            if (k := _KIND_RE.search(m.read_text("utf-8")))
+            and k.group(1) == kind]
+    if len(hits) != 1:
+        raise RuntimeError(f"expected exactly one {kind} bundle under "
+                           f"{PLUGINS}, found {[str(h) for h in hits]}")
+    return hits[0]
+
+
+BUNDLE = _bundle_by_kind("usd-fileformat")
 FIXTURES = BUNDLE / "tests" / "fixtures"
 CORPUS = BUNDLE / "tests" / "corpus"
-BASELINE = REPO / "tests" / "baseline"
 TOOLS = BUNDLE / "tools"
 
 BASELINE_SCHEMA_VERSION = 1
@@ -82,10 +103,10 @@ _CODE_RE = re.compile(r"VRM\d{3}")
 # Normalization helpers
 # ---------------------------------------------------------------------------
 
-def _repo_variants() -> list[str]:
-    """Spellings of the repo root that can leak into generated text."""
-    fwd = REPO.as_posix()
-    variants = [fwd, str(REPO), str(REPO).replace("\\", "\\\\")]
+def _path_variants(root: pathlib.Path) -> list[str]:
+    """Spellings of an absolute path that can leak into generated text."""
+    fwd = root.as_posix()
+    variants = [fwd, str(root), str(root).replace("\\", "\\\\")]
     # Windows drive letters show up in either case depending on the producer.
     if len(fwd) > 1 and fwd[1] == ":":
         variants += [v[0].swapcase() + v[1:] for v in list(variants)]
@@ -94,7 +115,12 @@ def _repo_variants() -> list[str]:
 
 
 def _scrub(text: str) -> str:
-    for v in _repo_variants():
+    # Bundle root before repo root: every bundle spelling starts with a repo
+    # spelling, so scrubbing ${REPO} first would strand the bundle directory
+    # name in the artifact and re-bake it on the next rename.
+    for v in _path_variants(BUNDLE):
+        text = text.replace(v, "${BUNDLE}")
+    for v in _path_variants(REPO):
         text = text.replace(v, "${REPO}")
     return text
 

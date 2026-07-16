@@ -65,7 +65,7 @@ def Xform "Asset" (
             def Shader "baseColorTexture"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @${REPO}/plugins/usdVrm/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]@
+                asset inputs:file = @${BUNDLE}/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]@
                 token inputs:sourceColorSpace = "sRGB"
                 float2 inputs:st.connect = </Asset/mtl/Skin/stReader.outputs:result>
                 token inputs:wrapS = "repeat"

@@ -1,92 +1,92 @@
 {
   "assets": [
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
       "attr": "/Asset/mtl/hair/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
       "attr": "/Asset/mtl/huku_bake/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
       "attr": "/Asset/mtl/body_bake/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
       "attr": "/Asset/mtl/eye/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
       "attr": "/Asset/mtl/eye_trans/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
       "attr": "/Asset/mtl/arm_mat/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
       "attr": "/Asset/mtl/arm_plastic/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
       "attr": "/Asset/mtl/green_emit/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
       "attr": "/Asset/mtl/body_nm/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
       "attr": "/Asset/mtl/wear_metal/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
       "attr": "/Asset/mtl/armgear_plastic/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
       "attr": "/Asset/mtl/robo_face/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
       "attr": "/Asset/mtl/backpack_metal/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
       "attr": "/Asset/mtl/backpack_metal/normalTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
       "attr": "/Asset/mtl/backpack_nm/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
       "attr": "/Asset/mtl/backpack_nm/normalTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
       "attr": "/Asset/mtl/backpack_plastic/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
       "attr": "/Asset/mtl/backpack_plastic/normalTexture.inputs:file",
       "resolved": true
     }
@@ -139,7 +139,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -197,7 +197,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -255,7 +255,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -316,7 +316,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -354,7 +354,7 @@
               -1.0
             ],
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
               "resolved": true
             },
             "scale": [
@@ -421,7 +421,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -459,7 +459,7 @@
               -1.0
             ],
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
               "resolved": true
             },
             "scale": [
@@ -526,7 +526,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -564,7 +564,7 @@
               -1.0
             ],
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/1375eb34e440f138.png]",
               "resolved": true
             },
             "scale": [
@@ -628,7 +628,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -686,7 +686,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -744,7 +744,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -804,7 +804,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -884,7 +884,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -942,7 +942,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -1000,7 +1000,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -1058,7 +1058,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -1116,7 +1116,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -3576,7 +3576,7 @@
       "restTransformsSha256": "050dc60165e924b30f75687cdb75bd8067968960a8186ec508c76cd92824a526"
     }
   },
-  "source": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm",
+  "source": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm",
   "timeSampledAttrs": {},
   "upAxis": "Y",
   "vrm": {

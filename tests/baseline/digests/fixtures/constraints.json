@@ -125,7 +125,7 @@
       "restTransformsSha256": "99364afc9a1b61ada2ef3797cd3a82bfb70d2cf3f8974781451d5c528849a882"
     }
   },
-  "source": "${REPO}/plugins/usdVrm/tests/fixtures/constraints.vrm",
+  "source": "${BUNDLE}/tests/fixtures/constraints.vrm",
   "timeSampledAttrs": {},
   "upAxis": "Y",
   "vrm": {

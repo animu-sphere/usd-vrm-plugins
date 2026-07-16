@@ -145,7 +145,7 @@
       "restTransformsSha256": "829ec0b33f35b278ccc0ba281528ead113c1c87431d1d8e21e80ca8085677a07"
     }
   },
-  "source": "${REPO}/plugins/usdVrm/tests/fixtures/springbone.vrm",
+  "source": "${BUNDLE}/tests/fixtures/springbone.vrm",
   "timeSampledAttrs": {},
   "upAxis": "Y",
   "vrm": {
