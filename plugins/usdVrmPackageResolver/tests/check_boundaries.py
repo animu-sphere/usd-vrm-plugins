@@ -61,6 +61,21 @@ def _binary_dependencies(library: pathlib.Path) -> str:
         stdout=subprocess.PIPE).stdout
 
 
+_SOURCE_SUFFIXES = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".inl"}
+
+
+def _strip_comments(text: str) -> str:
+    """Drop // and /* */ comments so the boundary regex reads code, not prose.
+
+    The source check matches bare identifiers like UsdStage, so without this a
+    comment explaining that the resolver must never author a UsdStage would
+    fail the very check it describes. String literals are stripped too when
+    they contain a comment opener; that can only cost a false negative on a
+    literal, never a false positive, and no boundary violation lives in one.
+    """
+    return re.sub(r"//[^\n]*|/\*.*?\*/", " ", text, flags=re.DOTALL)
+
+
 def main() -> int:
     source = pathlib.Path(sys.argv[1]).resolve()
     library = pathlib.Path(sys.argv[2]).resolve()
@@ -74,11 +89,16 @@ def main() -> int:
         r"#\s*include\s*[<\"]pxr/usd/sdf/fileFormat|"
         r"#\s*include\s*[<\"]vrmSchema/|"
         r"\bUsdStage\b|\bUsdPrim\b|SDF_DEFINE_FILE_FORMAT)")
-    for path in (source / "src").rglob("*"):
-        if path.is_file():
+    for path in sorted((source / "src").rglob("*")):
+        if not path.is_file() or path.suffix.lower() not in _SOURCE_SUFFIXES:
+            continue
+        try:
             text = path.read_text(encoding="utf-8")
-            if forbidden_source.search(text):
-                errors.append(f"stage-authoring/file-format API is forbidden: {path}")
+        except (OSError, UnicodeDecodeError) as exc:
+            errors.append(f"could not read {path}: {exc}")
+            continue
+        if forbidden_source.search(_strip_comments(text)):
+            errors.append(f"stage-authoring/file-format API is forbidden: {path}")
 
     # --- binary boundary -----------------------------------------------------
     try:
@@ -94,10 +114,14 @@ def main() -> int:
             "(usdVrmFileFormat / vrmSchema)")
     if dependencies and not re.search(r"vrmContainer", dependencies, re.IGNORECASE):
         errors.append(
-            "resolver binary does not import vrmContainer — the declared "
+            "resolver binary does not import vrmContainer: the declared "
             "requires.libraries edge is not real")
 
     if errors:
+        # Degrade unencodable characters rather than raising UnicodeEncodeError
+        # on a non-UTF-8 console (cp932 Windows) and masking the finding.
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(errors="replace")
         print("\n".join(errors), file=sys.stderr)
         return 1
     print("usdVrmPackageResolver boundary check passed")

@@ -9,11 +9,13 @@ discoverable and serves embedded bytes through the plain Ar surface
 
   discovery      the ArPackageResolver registration moved here intact
   byte access    Resolve + OpenAsset return the exact embedded image bytes
+  fixture pin    embedded_texture.usda names a real entry of textures.vrm
   path safety    malformed / escaping / unknown packaged paths are rejected
-  container      truncated GLBs and out-of-range buffer views are rejected
+  container      truncated GLBs and out-of-range buffer views fail closed
 
-The expected content-addressed entry name (`images/<fnv1a>.png`) is recomputed
-here from the GLB bytes, so the test cannot drift from the committed fixture.
+Every expected content-addressed entry name (`images/<fnv1a>.png`) is recomputed
+here from the GLB bytes — never hardcoded — so the checks cannot silently drift
+from the committed fixture if the container is ever regenerated.
 
 Run standalone:
     ost plugin run plugins/usdVrmPackageResolver -- python tests/test_resolver.py
@@ -30,6 +32,15 @@ from pxr import Ar, Plug
 
 FIXTURES = pathlib.Path(__file__).resolve().parent / "fixtures"
 PACKAGE = FIXTURES / "textures.vrm"
+
+# A finding must survive being printed. On a non-UTF-8 console (cp932 on a
+# Japanese Windows) any non-ASCII byte in a diagnostic — an em dash, or a
+# fixture path with Japanese characters — makes print() raise
+# UnicodeEncodeError, and the crash masks the very failure being reported.
+# Degrade unencodable characters instead of losing the message.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(errors="replace")
 
 _FAILED = []
 
@@ -137,18 +148,54 @@ def check_embedded_image_open():
         assert got.startswith(magic), f"wrong image magic for {name}"
 
 
+def check_fixture_matches_container():
+    """embedded_texture.usda must name an entry textures.vrm actually has.
+
+    The fixture hardcodes `textures.vrm[images/<hash>.png]`, and the hash is
+    content-addressed: regenerating the GLB silently invalidates it. Nothing
+    else catches that — the stage still *opens* (an unresolvable asset path is
+    not an open error, which is exactly what the smoke fixture is for), so the
+    L3/L4 pyramid stays green while the path quietly points at nothing. Pin the
+    committed fixture to the committed container here.
+    """
+    from pxr import Sdf
+    layer = Sdf.Layer.FindOrOpen(str(FIXTURES / "embedded_texture.usda"))
+    assert layer, "could not open embedded_texture.usda"
+    attr = layer.GetAttributeAtPath("/Root.vrm:test:embeddedTexture")
+    assert attr, "embedded_texture.usda has no vrm:test:embeddedTexture attribute"
+    authored = attr.default.path
+    assert "[" in authored and authored.endswith("]"), \
+        f"authored path is not a package path: {authored!r}"
+    package, _, entry = authored.partition("[")
+    entry = entry[:-1]
+    assert pathlib.Path(package).name == PACKAGE.name, \
+        f"fixture points at {package!r}, not {PACKAGE.name}"
+    names = [name for name, _ in _embedded_image_entries(PACKAGE)]
+    assert entry in names, (
+        f"embedded_texture.usda names {entry!r}, but {PACKAGE.name} contains "
+        f"{names}: regenerate the fixture's asset path")
+    # And it must genuinely resolve in this session, not just match by string.
+    resolved = Ar.GetResolver().Resolve(f"{PACKAGE.as_posix()}[{entry}]")
+    assert resolved, f"the fixture's own authored entry did not resolve: {entry}"
+
+
 def check_invalid_package_path():
     """Escaping, non-image, and unknown entry paths must not resolve."""
     resolver = Ar.GetResolver()
+    # Derive the hash-bearing cases from the real entry so they keep testing
+    # what they claim (wrong directory / suffix abuse) instead of decaying into
+    # "unknown hash" if the container is regenerated.
+    real = _embedded_image_entries(PACKAGE)[0][0]     # images/<hash>.png
+    real_hash = real.split("/", 1)[1].rsplit(".", 1)[0]
     bad_entries = [
         "images/../../../etc/passwd",
         "../escape.png",
         "/absolute.png",
         "C:/absolute.png",
         "images\\backslash.png",
-        "notimages/0198c0f73fbeb889.png",
+        f"notimages/{real_hash}.png",      # right hash, wrong directory
         "images/ffffffffffffffff.png",     # well-formed but unknown hash
-        "images/0198c0f73fbeb889.png.exe", # suffix abuse
+        f"{real}.exe",                     # suffix abuse on a real entry
     ]
     for entry in bad_entries:
         path = f"{PACKAGE.as_posix()}[{entry}]"
@@ -177,12 +224,36 @@ def check_truncated_glb():
 
 
 def check_out_of_range_buffer_view():
-    """An image whose buffer view exceeds the BIN chunk must be rejected."""
+    """An image whose buffer view exceeds the BIN chunk must fail closed.
+
+    Note what this can and cannot prove. Entry names are content-addressed, so
+    a resolver that read out of bounds would hash the garbage it read, produce
+    a different name, and fail the lookup anyway — "did not resolve" alone does
+    not distinguish a checked rejection from a name mismatch. What it does
+    prove is that the mutation fails closed and does not crash the process.
+
+    The positive control is what makes even that much meaningful: the same
+    read → write round trip *without* the mutation must still resolve. Without
+    it, a subtly broken _write_glb would make the negative case below pass for
+    entirely the wrong reason.
+    """
     doc, binary = _read_glb_chunks(PACKAGE.read_bytes())
     resolver = Ar.GetResolver()
     with tempfile.TemporaryDirectory() as tmp:
+        control = pathlib.Path(tmp) / "control.vrm"
+        control.write_bytes(_write_glb(doc, binary))
+        entries = _embedded_image_entries(control)
+        assert entries, "control container has no embedded images"
+        for name, _ in entries:
+            if not resolver.Resolve(f"{control.as_posix()}[{name}]"):
+                _fail(f"positive control failed: rewritten GLB did not resolve "
+                      f"{name}; the negative case below would be vacuous")
+                return
+
         # Point every image's view beyond the real binary payload, keeping the
-        # container well-formed at the GLB layer.
+        # container well-formed at the GLB layer. The BIN chunk still holds the
+        # real image bytes, so the control's entry names stay the ones an honest
+        # reading would produce.
         evil = json.loads(json.dumps(doc))
         for image in evil.get("images", []):
             view = evil["bufferViews"][image["bufferView"]]
@@ -192,16 +263,15 @@ def check_out_of_range_buffer_view():
             buf["byteLength"] = len(binary)
         pkg = pathlib.Path(tmp) / "oob.vrm"
         pkg.write_bytes(_write_glb(evil, binary))
-        for name, data in _embedded_image_entries(PACKAGE):
-            path = f"{pkg.as_posix()}[{name}]"
-            if resolver.Resolve(path):
+        for name, _ in entries:
+            if resolver.Resolve(f"{pkg.as_posix()}[{name}]"):
                 _fail(f"out-of-range buffer view resolved {name}")
 
 
 def main() -> int:
     checks = [check_discovery, check_embedded_image_open,
-              check_invalid_package_path, check_truncated_glb,
-              check_out_of_range_buffer_view]
+              check_fixture_matches_container, check_invalid_package_path,
+              check_truncated_glb, check_out_of_range_buffer_view]
     for check in checks:
         name = check.__name__
         try:

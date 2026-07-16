@@ -35,9 +35,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/OpenStrataPlugin.cmake")
 openstrata_default_build_type()
 
-# The repo root defines this option for the plain-CMake multi-bundle build.
+# The repo root defines this option for the plain-CMake multi-bundle build; it
+# only reaches the option() below in a standalone bundle configure.
 if(NOT DEFINED USDVRM_BUILD_TESTS)
-    option(USDVRM_BUILD_TESTS "Build usdVrm plugin tests" ${PROJECT_IS_TOP_LEVEL})
+    option(USDVRM_BUILD_TESTS "Build usdVrmPackageResolver plugin tests"
+        ${PROJECT_IS_TOP_LEVEL})
 endif()
 
 # Resolved from the runtime OpenStrata activates, or from CMAKE_PREFIX_PATH in

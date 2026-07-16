@@ -42,6 +42,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import NoReturn
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 
@@ -63,13 +64,20 @@ def ost_json(cmd: list[str]) -> dict:
     return json.loads(proc.stdout)
 
 
+def fail_setup(msg: str) -> NoReturn:
+    """Exit 2 — the harness itself is misconfigured. Distinct from exit 1,
+    which means the smoke ran and its assertions failed."""
+    print(msg)
+    raise SystemExit(2)
+
+
 def package_and_extract(ost: str, bundle_rel: str, dest: pathlib.Path,
                         *, skip_build: bool) -> pathlib.Path:
     """Build (optional), package, import, and extract one bundle. Returns the
     extracted package root (holds openstrata.plugin.yaml, plugin/, lib/)."""
     bundle = (REPO_ROOT / bundle_rel).resolve()
     if not (bundle / "openstrata.plugin.yaml").exists():
-        raise SystemExit(f"FAIL: not a bundle (no openstrata.plugin.yaml): {bundle}")
+        fail_setup(f"FAIL: not a bundle (no openstrata.plugin.yaml): {bundle}")
     if not skip_build:
         run([ost, "plugin", "build", str(bundle)])
 
@@ -82,7 +90,7 @@ def package_and_extract(ost: str, bundle_rel: str, dest: pathlib.Path,
     pkg_root = dest / bundle.name
     run([ost, "artifact", "extract", digest, str(pkg_root)])
     if REPO_ROOT in pkg_root.resolve().parents:
-        raise SystemExit(f"FAIL: extract dir is inside the repo tree: {pkg_root}")
+        fail_setup(f"FAIL: extract dir is inside the repo tree: {pkg_root}")
     return pkg_root
 
 
