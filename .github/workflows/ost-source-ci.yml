@@ -47,7 +47,7 @@ jobs:
             runs_on: ["windows-2022"]
             hosted: true
             runner_profile: windows-hosted
-            bundle: plugins/usdVrm
+            bundle: plugins/usdVrmFileFormat
             runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:bf24d8b6af28d3b3be0fc780803da0ae1181fca8f336ee0c79c1b1607073f724"
             host_python: ""
           - name: usdvrm-pr-macos-arm64
@@ -61,7 +61,7 @@ jobs:
             runs_on: ["macos-15"]
             hosted: true
             runner_profile: macos-arm64-hosted
-            bundle: plugins/usdVrm
+            bundle: plugins/usdVrmFileFormat
             runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:459ec9a3930dede19b5c8f2ccf2fcdf9b8645fb9c95773e37b25f35ca30ee873"
             host_python: "3.13"
           - name: usdvrm-pr-linux
@@ -75,7 +75,7 @@ jobs:
             runs_on: ["ubuntu-24.04"]
             hosted: true
             runner_profile: linux-hosted
-            bundle: plugins/usdVrm
+            bundle: plugins/usdVrmFileFormat
             runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:3f785e3088e8701f653b2470c33ef384bcd79dff3781dd69aa861984225a7fa8"
             host_python: "3.13"
           - name: vrmschema-pr-windows

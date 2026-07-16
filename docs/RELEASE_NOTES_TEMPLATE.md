@@ -15,8 +15,8 @@ avatars as typed USD stages, plus the validation / reporting tooling around it.
 
 | artifact | contents |
 | --- | --- |
-| `usdVrm-{version}-<target>.tar.zst` | relocated plugin bundle for `<target>` (lean, no debug symbols) — see the install guide |
-| `usdVrm-{version}-<target>-debug.tar.zst` | split debug symbols matching the lean bundle |
+| `usdVrmFileFormat-{version}-<target>.tar.zst` | relocated plugin bundle for `<target>` (lean, no debug symbols) — see the install guide |
+| `usdVrmFileFormat-{version}-<target>-debug.tar.zst` | split debug symbols matching the lean bundle |
 | `usd-vrm-plugins-{version}-src.tar.gz` | source archive at this tag |
 | `SHA256SUMS` | SHA-256 checksums of every file above |
 

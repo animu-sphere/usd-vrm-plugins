@@ -191,22 +191,22 @@ jobs:
           python-version: ${{ matrix.host_python }}
       - name: Build the plugin from source
         shell: bash
-        run: ost plugin build plugins/usdVrm --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+        run: ost plugin build plugins/usdVrmFileFormat --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
       - name: Run the verification pyramid against the build tree
         shell: bash
-        run: ost plugin test plugins/usdVrm --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
+        run: ost plugin test plugins/usdVrmFileFormat --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
       - name: Package the plugin (lean bundle + split debug symbols)
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p .ost-ci
-          ost plugin package plugins/usdVrm --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json | tee .ost-ci/package.json
+          ost plugin package plugins/usdVrmFileFormat --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json | tee .ost-ci/package.json
       - name: Prove packaging is digest-reproducible
         shell: bash
         run: |
           set -euo pipefail
           first="$(jq -r .data.archive_digest .ost-ci/package.json)"
-          second="$(ost plugin package plugins/usdVrm --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json | jq -r .data.archive_digest)"
+          second="$(ost plugin package plugins/usdVrmFileFormat --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json | jq -r .data.archive_digest)"
           echo "first:  $first"
           echo "second: $second"
           if [ "$first" != "$second" ]; then
@@ -214,7 +214,7 @@ jobs:
           fi
       - name: Verify the packaged artifact (discovery from the package, not the build tree)
         shell: bash
-        run: ost plugin test plugins/usdVrm --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --from-package --json
+        run: ost plugin test plugins/usdVrmFileFormat --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --from-package --json
       - name: Run the clean-install smoke against the packaged artifact
         shell: bash
         run: python scripts/clean_install_smoke.py --skip-build
@@ -231,7 +231,7 @@ jobs:
           mkdir -p release-stage
           cp "$archive" release-stage/
           if [ -n "$debug_name" ]; then cp "$dist_dir/$debug_name" release-stage/; fi
-          cp "$dist_dir/manifest.json" "release-stage/usdVrm-${version}-${target}.manifest.json"
+          cp "$dist_dir/manifest.json" "release-stage/usdVrmFileFormat-${version}-${target}.manifest.json"
           ls -l release-stage/
       - name: Upload the staged artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

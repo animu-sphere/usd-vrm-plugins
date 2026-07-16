@@ -7,7 +7,7 @@ outside this list may work but is not part of the `v0.1.0` support contract.
 
 | | |
 | --- | --- |
-| Tolerated range | `>=25.05, <27.0` (declared in `plugins/usdVrm/openstrata.plugin.yaml`) |
+| Tolerated range | `>=25.05, <27.0` (declared in `plugins/usdVrmFileFormat/openstrata.plugin.yaml`) |
 | Authored against | 25.05 |
 | Verified against | 26.08 (the certified point in the `cy2026` runtime) |
 
@@ -49,7 +49,7 @@ part of the verified matrix for `v0.1.0`.
 The plugin is a **shared** library (`libUsdVrmFileFormat.{dll,so,dylib}`) — USD
 file-format plugins are loaded dynamically. There is no supported static-plugin
 build. Discovery follows OpenUSD's standard mechanism: add the plugin's
-`plugin/resources/usdVrm` directory to `PXR_PLUGINPATH_NAME` and the `lib/`
+`plugin/resources/usdVrmFileFormat` directory to `PXR_PLUGINPATH_NAME` and the `lib/`
 directory to the dynamic-loader path.
 
 ## Versioning relationship

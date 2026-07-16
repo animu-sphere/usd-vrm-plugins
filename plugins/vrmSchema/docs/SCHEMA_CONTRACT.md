@@ -6,7 +6,7 @@ the typed `Vrm*API` data first. Raw VRM JSON is preserved as a lossless fallback
 not as the primary runtime interface.
 
 The schema source is `schema/schema.usda`; generated C++ and
-`plugin/resources/usdVrm/generatedSchema.usda` are build artifacts derived from
+`plugin/resources/vrmSchema/generatedSchema.usda` are build artifacts derived from
 that source.
 
 ## Contract version

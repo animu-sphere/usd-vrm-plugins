@@ -3,4 +3,4 @@
 /lib/
 .strata/
 # Configure-time build-metadata stamp (varies per commit/toolchain).
-/plugin/resources/usdVrm/buildInfo.json
+/plugin/resources/usdVrmFileFormat/buildInfo.json

@@ -3,7 +3,7 @@
 # Plain-CMake (non-OpenStrata) test wiring for the schema bundle. The
 # authoritative verification path is `ost plugin test plugins/vrmSchema`; this
 # CTest target exists so users building with bare CMake still get a schema
-# discovery/contract smoke test. Mirrors plugins/usdVrm/tests/CMakeLists.txt.
+# discovery/contract smoke test. Mirrors plugins/usdVrmFileFormat/tests/CMakeLists.txt.
 
 # Resolve the OpenUSD install root from the pxr CMake package location.
 set(_usd_root "")

@@ -32,8 +32,8 @@ Run inside a runtime session in which every workspace bundle is discoverable
 (add `--with plugins/<bundle>` for each additional bundle once the split
 begins):
 
-    ost plugin run plugins/usdVrm -- python tools/baseline_freeze.py --check
-    ost plugin run plugins/usdVrm -- python tools/baseline_freeze.py --update
+    ost plugin run plugins/usdVrmFileFormat -- python tools/baseline_freeze.py --check
+    ost plugin run plugins/usdVrmFileFormat -- python tools/baseline_freeze.py --update
 
 The USDA/digest artifacts are machine-independent: absolute paths under the
 file-format bundle are rewritten to ${BUNDLE}, the remaining absolute repo
@@ -527,7 +527,7 @@ def gen_discovery() -> dict[str, str]:
         if not plugin:
             raise RuntimeError(
                 f"plugin '{name}' not discoverable — run under "
-                "`ost plugin run plugins/usdVrm -- python ...` with every "
+                "`ost plugin run plugins/usdVrmFileFormat -- python ...` with every "
                 "workspace bundle in the session (--with plugins/<bundle>)")
         for type_name, meta in dict(plugin.metadata).get("Types", {}).items():
             if type_name in registered_types:
@@ -795,7 +795,7 @@ def main() -> int:
         import pxr  # noqa: F401
     except ImportError:
         print("error: OpenUSD Python bindings not importable. Run inside the "
-              "plugin session:\n  ost plugin run plugins/usdVrm -- python "
+              "plugin session:\n  ost plugin run plugins/usdVrmFileFormat -- python "
               "tools/baseline_freeze.py", file=sys.stderr)
         return 2
 

@@ -51,7 +51,7 @@
 #            OST artifact sha256:f6a2047c... / OCI sha256:3f785e30...
 #            (artifact digest unchanged by the republish)
 #            Published publicly to GHCR.
-#   plugin:  ost plugin publish plugins/usdVrm  (usdVrm 0.1.0, ost 0.13.0 lean
+#   plugin:  ost plugin publish plugins/usdVrmFileFormat  (usdVrmFileFormat 0.1.0, ost 0.13.0 lean
 #            package — reproducible digest, debug symbols split into *-debug)
 schema: 1
 
@@ -104,7 +104,7 @@ cells:
     runtime_remote:
       uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:bf24d8b6af28d3b3be0fc780803da0ae1181fca8f336ee0c79c1b1607073f724
       expected_oci_digest: sha256:bf24d8b6af28d3b3be0fc780803da0ae1181fca8f336ee0c79c1b1607073f724
-    bundle: plugins/usdVrm
+    bundle: plugins/usdVrmFileFormat
     platform: cy2026
     profile: usd
     up_to: 4
@@ -116,7 +116,7 @@ cells:
     runtime_remote:
       uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:459ec9a3930dede19b5c8f2ccf2fcdf9b8645fb9c95773e37b25f35ca30ee873
       expected_oci_digest: sha256:459ec9a3930dede19b5c8f2ccf2fcdf9b8645fb9c95773e37b25f35ca30ee873
-    bundle: plugins/usdVrm
+    bundle: plugins/usdVrmFileFormat
     platform: cy2026
     profile: usd
     host_python: "3.13"
@@ -129,7 +129,7 @@ cells:
     runtime_remote:
       uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:3f785e3088e8701f653b2470c33ef384bcd79dff3781dd69aa861984225a7fa8
       expected_oci_digest: sha256:3f785e3088e8701f653b2470c33ef384bcd79dff3781dd69aa861984225a7fa8
-    bundle: plugins/usdVrm
+    bundle: plugins/usdVrmFileFormat
     platform: cy2026
     profile: usd
     host_python: "3.13"

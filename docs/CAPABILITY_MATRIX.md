@@ -1,6 +1,6 @@
 # Capability matrix
 
-Per-feature support status for the `usdVrm` importer, as of the current tree.
+Per-feature support status for the `usdVrmFileFormat` importer, as of the current tree.
 This table describes **what is implemented today**, not aspirations — it is kept
 in sync with the code and the [roadmap](ROADMAP.md). Simulation/evaluation of
 runtime features is explicitly out of the importer (see the
@@ -47,7 +47,7 @@ Aligned with the design policy's §11 fidelity vocabulary:
 
 ## Import / evaluation / simulation boundary
 
-The `usdVrm` file-format plugin **authors data only**. It never evaluates or
+The `usdVrmFileFormat` file-format plugin **authors data only**. It never evaluates or
 simulates:
 
 - **LookAt**, **node constraints**, and **spring bones** are authored as typed
@@ -64,4 +64,4 @@ data-authoring step so downstream runtimes can be swapped without changing it.
 - [`ROADMAP.md`](ROADMAP.md) — phased status (P0–P6).
 - [`SUPPORTED_CONFIGURATIONS.md`](SUPPORTED_CONFIGURATIONS.md) — platforms, OpenUSD, build.
 - [`../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) — schema contract v1.
-- [`../plugins/usdVrm/docs/DIAGNOSTICS.md`](../plugins/usdVrm/docs/DIAGNOSTICS.md) — diagnostic codes.
+- [`../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md`](../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md) — diagnostic codes.

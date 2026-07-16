@@ -1,4 +1,4 @@
-# usdVrm — OpenUSD `vrm` file-format plugin
+# usdVrmFileFormat — OpenUSD `vrm` file-format plugin
 
 Imports `.vrm` (VRM 0.x / VRM 1.0) avatars as a normalized OpenUSD stage. The
 goal is not a throwaway "viewable USD" but a structure that keeps VRM semantics
@@ -21,8 +21,8 @@ src/
   usd/UsdVrmAuthorer.{h,cpp}    canonical model -> USD scene description
   resolver/                     ArPackageResolver for .vrm-embedded texture assets
   util/                         path sanitize/uniquify, glTF->USD transform conversion
-plugin/resources/usdVrm/plugInfo.json.in     target-suffix template for USD plugin registration
-plugin/resources/usdVrm/plugInfo.json        generated/inspectable USD plugin registration
+plugin/resources/usdVrmFileFormat/plugInfo.json.in     target-suffix template for USD plugin registration
+plugin/resources/usdVrmFileFormat/plugInfo.json        generated/inspectable USD plugin registration
 tools/                          generate_fixtures.py, vrm_fixture_lib.py, inspect_vrm.py,
                                 package_vrm.py
 tests/                          python smoke tests + generated fixtures (minimal, vrm0_minimal, multiskin_ibm, names, materials, badext) + invalid.vrm

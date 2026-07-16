@@ -57,7 +57,7 @@ The pieces below are landed and continuously tested; they satisfy large parts of
 - **Error/warning code taxonomy** (Fatal/Error/Warning/Info) replacing free-text
   warnings. Stable `VRMxxx` codes: `src/model/VrmDiagnostics.h`, canonical severity
   catalog in `tools/vrm_diagnostics.py`, reference table in
-  [`../plugins/usdVrm/docs/DIAGNOSTICS.md`](../plugins/usdVrm/docs/DIAGNOSTICS.md).
+  [`../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md`](../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md).
 - **Compatibility report** (`tools/vrm_report.py`, human-readable + machine JSON:
   summary / diagnostics / asset-inventory / compatibility). Merges coded import-time
   diagnostics with the validator's findings, plus a feature-presence matrix. Verified on
@@ -229,7 +229,7 @@ only), DCC-specific UI.
   `generated/`; machine-readable `manifest.json` (provenance + SHA-256 + roles +
   feature tags + expected diagnostics) drives a manifest-based `test_usdvrm_corpus.py`;
   `scripts/verify_corpus.py` (SHA-256) + `scripts/fetch_corpus.py` (pinned,
-  license-gated). Selection policy in `../plugins/usdVrm/tests/corpus/CORPUS.md`.
+  license-gated). Selection policy in `../plugins/usdVrmFileFormat/tests/corpus/CORPUS.md`.
   Vendored: **Seed-san** (VirtualCast) and **VRM1 Constraint Twist** (pixiv), both VRM
   1.0 with `allowRedistribution: true`. Declared fetch/opt-in candidates: VRoid
   (Vita, Victoria_Rubin, Sendagaya_Shino, AvatarSample_A/B) + Alicia — pending

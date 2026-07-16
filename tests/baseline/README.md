@@ -15,11 +15,11 @@ All artifacts are generated and verified by
 ```sh
 # Verify current behavior against the committed baseline (the phase gate).
 # ost 0.15+ resolves the manifest dependency closure into the session:
-ost plugin run plugins/usdVrm -- python tools/baseline_freeze.py --check
+ost plugin run plugins/usdVrmFileFormat -- python tools/baseline_freeze.py --check
 
 # Rewrite the baseline (ONLY in a dedicated behavior-change PR, never in a
 # structural/migration PR):
-ost plugin run plugins/usdVrm -- python tools/baseline_freeze.py --update
+ost plugin run plugins/usdVrmFileFormat -- python tools/baseline_freeze.py --update
 ```
 
 The check also runs as the `usdvrm_baseline` CTest test in the plain-CMake

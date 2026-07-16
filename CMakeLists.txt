@@ -3,7 +3,7 @@
 # Top-level project for usd-vrm-plugins.
 #
 # This repo is dual-mode by design:
-#   * OpenStrata-native: `ost plugin build|test plugins/usdVrm` drives the bundle
+#   * OpenStrata-native: `ost plugin build|test plugins/usdVrmFileFormat` drives the bundle
 #     CMakeLists.txt directly against the activated runtime's toolchain.
 #   * Plain CMake: anyone without OpenStrata can configure THIS file, point
 #     CMAKE_PREFIX_PATH at an OpenUSD install, and build every bundle. Use the

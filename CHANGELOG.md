@@ -20,7 +20,7 @@ Current schema contract version: **1**.
   resource hashing. It exports an installed `find_package(vrmContainer)`
   package, carries OpenUSD/plugin boundary checks, and is consumed by both the
   importer reader and the co-located resolver without changing Phase 0 output.
-- **Negative test corpus** (`plugins/usdVrm/tests/corpus/generated/malformed/`):
+- **Negative test corpus** (`plugins/usdVrmFileFormat/tests/corpus/generated/malformed/`):
   nine deliberately-broken, license-clean `.vrm` fixtures (authored by
   `tools/generate_negative.py`) that pin the importer's diagnostic contract —
   each provokes exactly one code, driven by `negative-manifest.json` +
@@ -28,6 +28,20 @@ Current schema contract version: **1**.
   in the bundle's `tests.smoke` / `tests.negative` lists).
 
 ### Changed
+- **Workspace Phase 4 — `usdVrm` → `usdVrmFileFormat` rename**: the file-format
+  bundle now carries the identity the workspace contract assigns it
+  (`docs/architecture/WORKSPACE.md` §1). The bundle directory
+  (`plugins/usdVrm` → `plugins/usdVrmFileFormat`), the manifest `plugin.name`,
+  and the USD resource directory (`plugin/resources/usdVrm` →
+  `plugin/resources/usdVrmFileFormat`) all move together. `usdVrm` is retired as
+  a bundle id and now names only the aggregate product.
+  **Release-artifact rename:** the per-bundle artifacts and manifest sidecar
+  ship as `usdVrmFileFormat-<version>-<target>.tar.zst` (§5) — anyone consuming
+  the v0.1.0 `usdVrm-*` asset names must update. No functional change: the USD
+  registry name (`UsdVrmFileFormat`), the registered `.vrm` file format, the
+  library name (`libUsdVrmFileFormat`), authored stage output, and the
+  diagnostic codes are all untouched, and the Phase 0 baseline verifies
+  byte-identical (53/53).
 - **OpenStrata 0.15 workspace composition**: CI and source builds now consume
   the `requires.bundles` closure directly, removing the repo-owned vrmSchema
   bootstrap and restoring the importer PR lanes from L1 to the full L5 gate.
@@ -49,7 +63,7 @@ Current schema contract version: **1**.
   range; clamped to root), `VRM141` (duplicate humanoid bone; first mapping kept),
   `VRM151` (expression morph-target index out of range; bind skipped), `VRM190`
   (spring collider-group index out of range; dropped). See
-  `plugins/usdVrm/docs/DIAGNOSTICS.md`.
+  `plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md`.
 
 ## [0.1.0] — 2026-07-12
 

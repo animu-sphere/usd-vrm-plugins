@@ -7,8 +7,9 @@ preserve. Structural changes that contradict this document require changing
 this document first, in its own PR.
 
 Status: contract adopted; Phase 0 baseline frozen; Phase 1 `vrmSchema` split,
-Phase 2 `vrmContainer` extraction, and Phase 3 `usdVrmPackageResolver` split
-landed (see §8).
+Phase 2 `vrmContainer` extraction, Phase 3 `usdVrmPackageResolver` split, and
+Phase 4 `usdVrm` → `usdVrmFileFormat` rename landed (see §8). `usdVrm` is no
+longer a bundle id; it names the aggregate product only (§1).
 
 ## 1. Bundles and libraries
 
@@ -158,7 +159,7 @@ definition, regardless of tests passing.
 The frozen evidence lives in `tests/baseline/` (see its README for the
 artifact inventory and regression criteria) and is generated and verified by
 `tools/baseline_freeze.py`; run
-`ost plugin run plugins/usdVrm -- python tools/baseline_freeze.py --check`
+`ost plugin run plugins/usdVrmFileFormat -- python tools/baseline_freeze.py --check`
 as the gate in every migration PR.
 
 ## 8. Phase status
@@ -169,7 +170,7 @@ as the gate in every migration PR.
 | 1 | `vrmSchema` bundle split | done (`plugins/vrmSchema`) |
 | 2 | `vrmContainer` extraction | done (`libs/vrmContainer`) |
 | 3 | `usdVrmPackageResolver` bundle split | done (`plugins/usdVrmPackageResolver`) |
-| 4 | `usdVrmFileFormat` purification/rename | not started |
+| 4 | `usdVrmFileFormat` purification/rename | done (`plugins/usdVrmFileFormat`) |
 | 5 | workspace packaging (per-bundle + aggregate) | not started |
 | 6 | `execVrm` (LookAt first) | not started |
 
