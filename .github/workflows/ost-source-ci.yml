@@ -48,11 +48,11 @@ jobs:
             hosted: true
             runner_profile: windows-hosted
             bundle: plugins/usdVrm
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a"
             host_python: ""
           - name: usdvrm-pr-macos-arm64
             lane: pull_request
-            runtime_artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
+            runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
             target_trust: local
             minimum_trust: local
             platform: cy2026
@@ -62,7 +62,7 @@ jobs:
             hosted: true
             runner_profile: macos-arm64-hosted
             bundle: plugins/usdVrm
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97"
             host_python: "3.13"
           - name: usdvrm-pr-linux
             lane: pull_request
@@ -76,7 +76,7 @@ jobs:
             hosted: true
             runner_profile: linux-hosted
             bundle: plugins/usdVrm
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d202c6d7534afa4960850419b58d3b06631d85031f93243cd5de6c4cf511a734"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580"
             host_python: "3.13"
           - name: vrmschema-pr-windows
             lane: pull_request
@@ -90,11 +90,11 @@ jobs:
             hosted: true
             runner_profile: windows-hosted
             bundle: plugins/vrmSchema
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a"
             host_python: ""
           - name: vrmschema-pr-macos-arm64
             lane: pull_request
-            runtime_artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
+            runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
             target_trust: local
             minimum_trust: local
             platform: cy2026
@@ -104,7 +104,7 @@ jobs:
             hosted: true
             runner_profile: macos-arm64-hosted
             bundle: plugins/vrmSchema
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97"
             host_python: "3.13"
           - name: vrmschema-pr-linux
             lane: pull_request
@@ -118,7 +118,7 @@ jobs:
             hosted: true
             runner_profile: linux-hosted
             bundle: plugins/vrmSchema
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d202c6d7534afa4960850419b58d3b06631d85031f93243cd5de6c4cf511a734"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580"
             host_python: "3.13"
           - name: usdvrmresolver-pr-windows
             lane: pull_request
@@ -132,11 +132,11 @@ jobs:
             hosted: true
             runner_profile: windows-hosted
             bundle: plugins/usdVrmPackageResolver
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a"
             host_python: ""
           - name: usdvrmresolver-pr-macos-arm64
             lane: pull_request
-            runtime_artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
+            runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
             target_trust: local
             minimum_trust: local
             platform: cy2026
@@ -146,7 +146,7 @@ jobs:
             hosted: true
             runner_profile: macos-arm64-hosted
             bundle: plugins/usdVrmPackageResolver
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97"
             host_python: "3.13"
           - name: usdvrmresolver-pr-linux
             lane: pull_request
@@ -160,7 +160,7 @@ jobs:
             hosted: true
             runner_profile: linux-hosted
             bundle: plugins/usdVrmPackageResolver
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d202c6d7534afa4960850419b58d3b06631d85031f93243cd5de6c4cf511a734"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580"
             host_python: "3.13"
     steps:
       - name: Check out the repository
