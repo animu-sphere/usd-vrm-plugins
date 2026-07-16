@@ -288,14 +288,28 @@ jobs:
           OST_REGISTRY_USER: ${{ github.actor }}
           OST_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
           # A new tag: never repoint the tag the current pins were published
           # under. Digests are immutable, so the existing runtime stays pullable
           # for any lane not yet migrated.
+          #
+          # Do not let `--json > file` swallow the diagnosis: on failure ost's
+          # report is the only thing that says *why*, and redirecting stdout
+          # under `set -e` threw it away along with the exit code (run
+          # 29515268807 failed here with a bare "exit code 4" and no message).
+          set +e
           ost artifact push "$NEW_ARTIFACT" \
             "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd:${{ matrix.tag }}" \
-            --json > push.json
-          cat push.json
+            --json > push.json 2> push.err
+          rc=$?
+          set -e
+          echo "--- stdout ---" ; cat push.json 2> /dev/null || true
+          echo "--- stderr ---" ; cat push.err  2> /dev/null || true
+          if [ "$rc" -ne 0 ]; then
+            code="$(jq -r '.error.code // .code // "unknown"' push.json 2> /dev/null || echo unknown)"
+            echo "::error title=republish::ost artifact push exited $rc (code=$code); see stdout/stderr above"
+            exit "$rc"
+          fi
           oci="$(jq -r '.data.oci_digest' push.json)"
           pushed_artifact="$(jq -r '.data.artifact_digest' push.json)"
           if [ "$pushed_artifact" != "$NEW_ARTIFACT" ]; then
@@ -337,4 +351,6 @@ jobs:
             dist/provenance.intoto.jsonl
             export.json
             before.json
+            push.json
+            push.err
           if-no-files-found: warn
