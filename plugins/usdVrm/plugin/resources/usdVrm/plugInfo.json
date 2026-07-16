@@ -19,14 +19,6 @@
                         "formatId": "vrm",
                         "primary": true,
                         "target": "usd"
-                    },
-                    "UsdVrmPackageResolver": {
-                        "bases": [
-                            "ArPackageResolver"
-                        ],
-                        "extensions": [
-                            "vrm"
-                        ]
                     }
                 }
             }

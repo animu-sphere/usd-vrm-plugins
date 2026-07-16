@@ -1,0 +1,18 @@
+# OpenStrata plain-library descriptor (ost 0.16.0+).
+#
+# vrmContainer is a plain shared CMake library, deliberately NOT a plugin
+# bundle: no plugInfo.json, no registration, no OpenUSD dependency
+# (docs/architecture/WORKSPACE.md §1). This descriptor gives it a workspace
+# identity so consumer bundles can declare the edge as
+# `requires.libraries: [{id: vrmContainer, ...}]` and ost can build/install it
+# into the workspace prefix before configuring consumers.
+schema: openstrata.library/v1alpha1
+library:
+  id: vrmContainer
+  # Mirrors the repo-root VERSION file (all workspace identities release in
+  # lockstep, WORKSPACE.md §5).
+  version: 0.1.0
+cmake:
+  # find_package() name and the imported target consumers link against.
+  package: vrmContainer
+  target: vrmContainer::vrmContainer

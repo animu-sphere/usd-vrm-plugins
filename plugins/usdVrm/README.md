@@ -128,10 +128,14 @@ image decode.
 ### Textures
 
 Embedded PNG/JPEG images are referenced as package-relative assets inside the
-source `.vrm`, e.g. `avatar.vrm[images/<hash>.png]`. The co-located
-`UsdVrmPackageResolver` serves those bytes directly to OpenUSD/Hio, so normal
-imports do not depend on an OS temp extraction cache. Image format is detected by
-sniffing the magic bytes (some VRM exporters drop the glTF `mimeType`).
+source `.vrm`, e.g. `avatar.vrm[images/<hash>.png]`. The sibling
+[`usdVrmPackageResolver`](../usdVrmPackageResolver/) bundle serves those bytes
+directly to OpenUSD/Hio, so normal imports do not depend on an OS temp
+extraction cache. It is a **runtime** dependency: this file-format plugin
+authors the package paths but does not link the resolver (WORKSPACE.md §2), so a
+session must also load `usdVrmPackageResolver` for embedded textures to resolve.
+Image format is detected by sniffing the magic bytes (some VRM exporters drop
+the glTF `mimeType`).
 
 For portable handoff, run the package tool inside a usdVrm-enabled OpenUSD
 environment. It opens the source stage, copies texture files into a package-local
@@ -145,13 +149,33 @@ ost plugin run plugins/usdVrm -- python plugins/usdVrm/tools/package_vrm.py avat
 
 ## Build & verify
 
-Requires `ost` 0.15+ (from the repo root):
+Requires `ost` 0.16+ (from the repo root):
 
 ```sh
 ost plugin build plugins/usdVrm        # build libUsdVrmFileFormat into lib/
 ost plugin test  plugins/usdVrm        # L0-L6 verification pyramid
 python plugins/usdVrm/tools/generate_fixtures.py      # regenerate the test fixtures
 ```
+
+### Viewing a `.vrm` in usdview
+
+Opening an avatar in usdview needs the importer's **runtime** siblings on the
+session plugin path — the typed schemas it applies (`vrmSchema`) and, for
+embedded textures, the package resolver (`usdVrmPackageResolver`). Compose them
+with `--with`:
+
+```sh
+ost plugin view plugins/usdVrm /path/to/Avatar.vrm \
+    --with plugins/vrmSchema --with plugins/usdVrmPackageResolver
+```
+
+`ost plugin view` / `test-view` load only the bundles named with `--with` — unlike
+`build` / `test` / `run`, they do **not** auto-compose the manifest's
+`requires.bundles` closure, so a bare `ost plugin view plugins/usdVrm <avatar>`
+opens without `vrmSchema` and the importer's schema apply fails inside
+`Sdf.Layer.FindOrOpen` (on a non-UTF-8 locale usdview then masks it with a
+secondary `UnicodeDecodeError`). Note also there is no `--` before the fixture:
+the syntax is `ost plugin view <bundle> <fixture>`, not `run`'s `-- <cmd>`.
 
 ### The typed schema
 

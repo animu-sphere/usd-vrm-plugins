@@ -30,6 +30,7 @@ jobs:
       OST_CI_RUNNER_PROFILE: ${{ matrix.runner_profile }}
       OST_CI_RUNS_ON: ${{ join(matrix.runs_on, ',') }}
       OST_CI_RUNTIME_ARTIFACT: ${{ matrix.runtime_artifact }}
+      OST_CI_MINIMUM_TRUST: ${{ matrix.minimum_trust }}
       OST_HOME: ${{ matrix.hosted && format('{0}/.ost-ci-home', github.workspace) || '' }}
     strategy:
       fail-fast: false
@@ -38,6 +39,8 @@ jobs:
           - name: usdvrm-pr-windows
             lane: pull_request
             runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
+            target_trust: local
+            minimum_trust: local
             platform: cy2026
             profile: usd
             up_to: 4
@@ -45,11 +48,13 @@ jobs:
             hosted: true
             runner_profile: windows-hosted
             bundle: plugins/usdVrm
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a"
             host_python: ""
           - name: usdvrm-pr-macos-arm64
             lane: pull_request
-            runtime_artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
+            runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
+            target_trust: local
+            minimum_trust: local
             platform: cy2026
             profile: usd
             up_to: 5
@@ -57,11 +62,13 @@ jobs:
             hosted: true
             runner_profile: macos-arm64-hosted
             bundle: plugins/usdVrm
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97"
             host_python: "3.13"
           - name: usdvrm-pr-linux
             lane: pull_request
             runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
+            target_trust: local
+            minimum_trust: local
             platform: cy2026
             profile: usd
             up_to: 5
@@ -69,11 +76,13 @@ jobs:
             hosted: true
             runner_profile: linux-hosted
             bundle: plugins/usdVrm
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d202c6d7534afa4960850419b58d3b06631d85031f93243cd5de6c4cf511a734"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580"
             host_python: "3.13"
           - name: vrmschema-pr-windows
             lane: pull_request
             runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
+            target_trust: local
+            minimum_trust: local
             platform: cy2026
             profile: usd
             up_to: 4
@@ -81,11 +90,13 @@ jobs:
             hosted: true
             runner_profile: windows-hosted
             bundle: plugins/vrmSchema
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a"
             host_python: ""
           - name: vrmschema-pr-macos-arm64
             lane: pull_request
-            runtime_artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
+            runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
+            target_trust: local
+            minimum_trust: local
             platform: cy2026
             profile: usd
             up_to: 5
@@ -93,11 +104,13 @@ jobs:
             hosted: true
             runner_profile: macos-arm64-hosted
             bundle: plugins/vrmSchema
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97"
             host_python: "3.13"
           - name: vrmschema-pr-linux
             lane: pull_request
             runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
+            target_trust: local
+            minimum_trust: local
             platform: cy2026
             profile: usd
             up_to: 5
@@ -105,7 +118,49 @@ jobs:
             hosted: true
             runner_profile: linux-hosted
             bundle: plugins/vrmSchema
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d202c6d7534afa4960850419b58d3b06631d85031f93243cd5de6c4cf511a734"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580"
+            host_python: "3.13"
+          - name: usdvrmresolver-pr-windows
+            lane: pull_request
+            runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
+            target_trust: local
+            minimum_trust: local
+            platform: cy2026
+            profile: usd
+            up_to: 4
+            runs_on: ["windows-2022"]
+            hosted: true
+            runner_profile: windows-hosted
+            bundle: plugins/usdVrmPackageResolver
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a"
+            host_python: ""
+          - name: usdvrmresolver-pr-macos-arm64
+            lane: pull_request
+            runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
+            target_trust: local
+            minimum_trust: local
+            platform: cy2026
+            profile: usd
+            up_to: 5
+            runs_on: ["macos-15"]
+            hosted: true
+            runner_profile: macos-arm64-hosted
+            bundle: plugins/usdVrmPackageResolver
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97"
+            host_python: "3.13"
+          - name: usdvrmresolver-pr-linux
+            lane: pull_request
+            runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
+            target_trust: local
+            minimum_trust: local
+            platform: cy2026
+            profile: usd
+            up_to: 5
+            runs_on: ["ubuntu-24.04"]
+            hosted: true
+            runner_profile: linux-hosted
+            bundle: plugins/usdVrmPackageResolver
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580"
             host_python: "3.13"
     steps:
       - name: Check out the repository
@@ -114,7 +169,7 @@ jobs:
         if: ${{ matrix.hosted }}
         shell: bash
         run: echo "::notice title=OpenStrata hosted-runner usage::This job uses GitHub-hosted infrastructure. Private repositories may incur GitHub Actions usage charges. Review repository billing and Actions usage settings."
-      - name: Bootstrap ost 0.15.0 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.17.0 (pinned release asset, checksum-verified)
         if: ${{ matrix.hosted }}
         shell: bash
         run: |
@@ -132,7 +187,7 @@ jobs:
             *) : ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.15.0"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.17.0"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$( (command -v sha256sum > /dev/null && sha256sum "$asset" || shasum -a 256 "$asset") | cut -d' ' -f1 )"
@@ -166,7 +221,7 @@ jobs:
           echo "$exported_path" >> "$GITHUB_PATH"
           json_executable="$(printf '%s' "$executable" | sed 's/\\/\\\\/g; s/"/\\"/g')"
           json_exported_path="$(printf '%s' "$exported_path" | sed 's/\\/\\\\/g; s/"/\\"/g')"
-          printf '{"schema":1,"pinned_version":"%s","asset":"%s","sha256":"%s","executable":"%s","exported_path":"%s"}\n' "0.15.0" "$asset" "$actual" "$json_executable" "$json_exported_path" > .ost-ci/bootstrap.json
+          printf '{"schema":1,"pinned_version":"%s","asset":"%s","sha256":"%s","executable":"%s","exported_path":"%s"}\n' "0.17.0" "$asset" "$actual" "$json_executable" "$json_exported_path" > .ost-ci/bootstrap.json
       - name: Check ost is available and record its version
         shell: bash
         run: |
@@ -179,8 +234,8 @@ jobs:
           fi
 
           echo "$version"
-          if [ "${{ matrix.hosted }}" = "true" ] && [ "$version" != "ost 0.15.0" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.15.0', got '$version'" ; exit 1
+          if [ "${{ matrix.hosted }}" = "true" ] && [ "$version" != "ost 0.17.0" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.17.0', got '$version'" ; exit 1
           fi
           printf '{"schema":1,"ost_version":"%s"}\n' "$version" > .ost-ci/ost-version.json
       - name: Validate the CI manifest
@@ -191,7 +246,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ost-ci-home/artifacts
-          key: ost-registry-0.15.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.name }}-${{ matrix.runtime_artifact }}
+          key: ost-registry-0.17.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.name }}-${{ matrix.runtime_artifact }}
       - name: Pull the pinned runtime SDK from its remote reference
         if: ${{ matrix.runtime_remote != '' }}
         shell: bash
@@ -213,7 +268,7 @@ jobs:
           set -euo pipefail
           mkdir -p .ost-ci
           printf '{"schema":1,"runtime_artifact":"%s","source":"%s"}\n' "${{ matrix.runtime_artifact }}" "${{ matrix.runtime_remote != '' && 'remote-pull' || 'local-registry' }}" > .ost-ci/runtime-source.json
-          ost artifact verify ${{ matrix.runtime_artifact }}
+          ost artifact verify ${{ matrix.runtime_artifact }} --minimum-trust ${{ matrix.minimum_trust }} --require-sbom --require-provenance
           ost runtime pull ${{ matrix.platform }} --profile ${{ matrix.profile }} --from-artifact ${{ matrix.runtime_artifact }} --force
       - name: Validate the materialized runtime (runnable tools)
         shell: bash

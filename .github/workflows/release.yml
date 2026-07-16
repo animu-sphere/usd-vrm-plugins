@@ -76,7 +76,7 @@ jobs:
           - name: release-windows
             cache_cell: usdvrm-pr-windows
             runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:64fd1f4404ef9a939d1cace1412d6998741ebf1774153250f97f9839617f784e"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a"
             platform: cy2026
             profile: usd
             runs_on: ["windows-2022"]
@@ -87,8 +87,8 @@ jobs:
             host_python: "3.13"
           - name: release-macos-arm64
             cache_cell: usdvrm-pr-macos-arm64
-            runtime_artifact: sha256:cddd365d6e984c32250d6c5ae395fcc7cf870d07c9d432d756d99893ac971c52
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:6117559aa852eb7eb8eb20b86a1f48f894497be6d095e474f9a11a3a802cf876"
+            runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97"
             platform: cy2026
             profile: usd
             runs_on: ["macos-15"]
@@ -96,7 +96,7 @@ jobs:
           - name: release-linux
             cache_cell: usdvrm-pr-linux
             runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d202c6d7534afa4960850419b58d3b06631d85031f93243cd5de6c4cf511a734"
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580"
             platform: cy2026
             profile: usd
             runs_on: ["ubuntu-24.04"]
@@ -104,7 +104,7 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - name: Bootstrap ost 0.15.0 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.17.0 (pinned release asset, checksum-verified)
         shell: bash
         run: |
           set -euo pipefail
@@ -117,7 +117,7 @@ jobs:
             *) echo "::error title=ost bootstrap::no ost release asset for ${RUNNER_OS}-${RUNNER_ARCH}" ; exit 1 ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.15.0"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.17.0"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$( (command -v sha256sum > /dev/null && sha256sum "$asset" || shasum -a 256 "$asset") | cut -d' ' -f1 )"
@@ -146,21 +146,29 @@ jobs:
           set -euo pipefail
           version="$(ost --version)"
           echo "$version"
-          if [ "$version" != "ost 0.15.0" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.15.0', got '$version'" ; exit 1
+          if [ "$version" != "ost 0.17.0" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.17.0', got '$version'" ; exit 1
           fi
       - name: Restore the artifact registry cache (speed only, never correctness)
         if: ${{ vars.OST_CI_DISABLE_CACHE != 'true' }}
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ost-ci-home/artifacts
-          key: ost-registry-0.15.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
+          key: ost-registry-0.17.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
       - name: Pull the pinned runtime SDK from its remote reference
         shell: bash
         run: |
           set -euo pipefail
+          # The cache-hit test must use the SAME predicate as the gate below.
+          # A cached record that verifies without evidence but fails the gate
+          # would skip the pull and wedge the lane on every subsequent run,
+          # because `ost artifact pull` cannot add evidence to a digest already
+          # in the registry (import short-circuits on already_present and drops
+          # the sidecars, printing "skipped sbom"). Failing this test instead
+          # drops through to the eviction + fresh pull, which does attach it.
           if ost artifact show "${{ matrix.runtime_artifact }}" --json > /dev/null 2>&1 \
-             && ost artifact verify "${{ matrix.runtime_artifact }}" --json > /dev/null; then
+             && ost artifact verify "${{ matrix.runtime_artifact }}" --minimum-trust local \
+                  --require-sbom --require-provenance --json > /dev/null; then
             echo "pinned runtime already present and verified (cache hit) -- skipping the remote pull"
           else
             rm -rf "${OST_HOME}/artifacts"
@@ -170,7 +178,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ost artifact verify ${{ matrix.runtime_artifact }}
+          # Mirrors the gate `ost ci generate` renders into the PR lanes: the
+          # release lane must not verify the runtime more weakly than the lane
+          # that gates the PRs feeding it.
+          ost artifact verify ${{ matrix.runtime_artifact }} --minimum-trust local --require-sbom --require-provenance
           ost runtime pull ${{ matrix.platform }} --profile ${{ matrix.profile }} --from-artifact ${{ matrix.runtime_artifact }} --force
           ost runtime validate ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > /dev/null
       - name: Set up host Python for schema tooling

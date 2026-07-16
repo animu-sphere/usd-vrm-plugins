@@ -28,6 +28,7 @@ jobs:
       OST_CI_RUNNER_PROFILE: ${{ matrix.runner_profile }}
       OST_CI_RUNS_ON: ${{ join(matrix.runs_on, ',') }}
       OST_CI_RUNTIME_ARTIFACT: ${{ matrix.runtime_artifact }}
+      OST_CI_MINIMUM_TRUST: ${{ matrix.minimum_trust }}
       OST_CI_PLUGIN_ARTIFACT: ${{ matrix.plugin_artifact }}
     strategy:
       # One broken support line must not hide the state of the others.
@@ -37,6 +38,8 @@ jobs:
           - name: usdvrm-support-windows-cy2026
             lane: scheduled
             runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
+            target_trust: local
+            minimum_trust: local
             platform: cy2026
             profile: usd
             up_to: 5
@@ -55,8 +58,8 @@ jobs:
           ost artifact show ${{ matrix.plugin_artifact }}
       - name: Verify artifact integrity
         run: |
-          ost artifact verify ${{ matrix.runtime_artifact }}
-          ost artifact verify ${{ matrix.plugin_artifact }}
+          ost artifact verify ${{ matrix.runtime_artifact }} --minimum-trust ${{ matrix.minimum_trust }} --require-sbom --require-provenance
+          ost artifact verify ${{ matrix.plugin_artifact }} --minimum-trust ${{ matrix.minimum_trust }} --require-sbom --require-provenance
       - name: Materialize the runtime from the registry
         run: ost runtime pull ${{ matrix.platform }} --profile ${{ matrix.profile }} --from-artifact ${{ matrix.runtime_artifact }} --force
       - name: Extract the plugin bundle under test

@@ -1,0 +1,10 @@
+#usda 1.0
+(
+    defaultPrim = "Root"
+    doc = "Smoke fixture for usdVrmPackageResolver: opens without the .vrm file format; the asset path below points at the embedded PNG of the sibling textures.vrm GLB. The hash segment is the content-addressed name produced by vrmContainer::MakeEmbeddedResourcePath (FNV-1a of the image bytes), asserted by tests/test_resolver.py."
+)
+
+def Xform "Root"
+{
+    custom asset vrm:test:embeddedTexture = @./textures.vrm[images/0198c0f73fbeb889.png]@
+}

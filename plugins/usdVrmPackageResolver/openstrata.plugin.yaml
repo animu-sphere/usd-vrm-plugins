@@ -1,0 +1,48 @@
+# OpenStrata plugin bundle manifest.
+# A plugin is a self-describing bundle, not a bare shared library: this file is
+# the contract `ost plugin inspect|build|doctor|test` resolve against.
+manifest:
+  schema: openstrata.plugin/v1alpha1
+plugin:
+  name: usdVrmPackageResolver
+  version: 0.1.0
+  kind: usd-package-resolver
+license: Apache-2.0
+runtime:
+  # The OpenUSD version range this plugin tolerates. Mirrors the usdVrm bundle
+  # the resolver was split from (workspace Phase 3, WORKSPACE.md §1).
+  openusd: ">=25.05,<27.0"
+  # Source bundles inherit the resolved runtime ABI (see plugins/usdVrm).
+  cxx_abi: inherit
+provides:
+  - usd-package-resolver:vrm
+requires:
+  capabilities: [usd-stage-read]
+  # The only allowed dependency besides OpenUSD Ar (WORKSPACE.md §2):
+  # usdVrmPackageResolver -> vrmContainer. Never usdVrmFileFormat, never
+  # vrmSchema. ost builds the library into the workspace prefix, composes its
+  # loader dir into sessions, and stages it under the package's
+  # runtime/libraries/.
+  libraries:
+    - id: vrmContainer
+      version: ">=0.1,<0.2"
+usd:
+  # Where this bundle's plugInfo.json lives, relative to the bundle root.
+  plug_info: plugin/resources/usdVrmPackageResolver/plugInfo.json
+tests:
+  # basic.usda is first on purpose: ost's L3/L4/L5 use the first smoke fixture,
+  # and only basic.usda flattens to a machine-independent golden (ost's
+  # normalize() strips the root-layer path from the `doc` header but NOT asset
+  # paths in the body — see embedded_texture.usda below).
+  #
+  # embedded_texture.usda opens without the .vrm file format: it carries an
+  # asset attribute pointing into the sibling textures.vrm GLB
+  # (`textures.vrm[images/<hash>.png]`). It ships as a declared fixture and
+  # proves such a stage opens in a resolver-only session; the actual
+  # resolution + byte access + security is asserted by tests/test_resolver.py,
+  # which needs no usdVrmFileFormat.
+  smoke:
+    - tests/fixtures/basic.usda
+    - tests/fixtures/embedded_texture.usda
+  roundtrip:
+    - tests/fixtures/basic.usda
