@@ -12,17 +12,27 @@
 #                      runtime + plugin artifacts (air-gapped local import).
 #
 # Digest provenance:
-#   All three runtimes were republished 2026-07-17 by .github/workflows/
-#   runtime-republish.yml so they carry an SPDX SBOM and SLSA/in-toto
-#   provenance: ost 0.16+ makes `ost ci generate` render `--require-sbom
-#   --require-provenance` into every verify, and the originals predate evidence
-#   generation. The republish re-exported the *already published* runtimes; it
-#   did not rebuild OpenUSD. Windows/Linux exports are byte-reproducible, so
-#   their artifact digests are unchanged and only the OCI reference moved (the
-#   new manifest carries the evidence layers). macOS necessarily moved to a new
-#   artifact digest because ost 0.12 changed macOS packing to preserve exec
-#   bits. `file_count` was asserted equal to the source on all three, so the
-#   payloads are the ones CI has always tested against.
+#   All three runtimes were republished 2026-07-17 so they carry an SPDX SBOM
+#   and SLSA/in-toto provenance: ost 0.16+ makes `ost ci generate` render
+#   `--require-sbom --require-provenance` into every verify, and the originals
+#   predate evidence generation. The republish re-exported the *already
+#   published* runtimes; it did not rebuild OpenUSD. Windows/Linux exports are
+#   byte-reproducible, so their artifact digests are unchanged and only the OCI
+#   reference moved (the new manifest carries the evidence layers). macOS
+#   necessarily moved to a new artifact digest because ost 0.12 changed macOS
+#   packing to preserve exec bits. `file_count` was asserted equal to the source
+#   on all three, so the payloads are the ones CI has always tested against.
+#
+#   The one-shot workflow that did it (.github/workflows/runtime-republish.yml)
+#   was removed once the migration landed; recover it from PRs #45-#49 if a
+#   republish is ever needed again. Two things to know before re-running it:
+#   `ost artifact pull`/`import` silently drop evidence when the digest is
+#   already in the registry, so the artifact store must be evicted between
+#   materializing and exporting; and the OCI manifest digest is NOT stable
+#   across republishes (provenance embeds the producing commit), so
+#   `expected_oci_digest` below must be re-pinned from the push output every
+#   time, while `runtime_artifact` stays put. Full writeup in
+#   docs/report/ost/2026-07-17-v0.17.0-evidence-gate-v0.18.0-asks.md.
 #   Windows runtime: OpenUSD 26.05 built from source with Python 3.13, validated,
 #            with top-level resources/ and lib/python schema-gen deps.
 #            OST artifact sha256:c1c54f1e... / OCI sha256:bf24d8b6...
