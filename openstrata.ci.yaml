@@ -25,12 +25,12 @@
 #   payloads are the ones CI has always tested against.
 #   Windows runtime: OpenUSD 26.05 built from source with Python 3.13, validated,
 #            with top-level resources/ and lib/python schema-gen deps.
-#            OST artifact sha256:c1c54f1e... / OCI sha256:e5e38405...
+#            OST artifact sha256:c1c54f1e... / OCI sha256:bf24d8b6...
 #            (artifact digest unchanged by the republish)
 #   macOS arm64 runtime: OpenUSD 26.05 built from source with Python 3.13,
 #            validated, with executable tool modes preserved,
 #            and published publicly to GHCR.
-#            OST artifact sha256:5630132e... / OCI sha256:00007f4b...
+#            OST artifact sha256:5630132e... / OCI sha256:459ec9a3...
 #            Requires ost 0.12.0+ for executable-bit preserving macOS
 #            archive export/import.
 #   Linux x86_64 runtime: OpenUSD 26.05 built from source with Python 3.13 inside
@@ -38,7 +38,7 @@
 #            floor is 2.38 -- loadable on the github-hosted ubuntu-24.04 runner.
 #            ost 0.12.0 measures the floor and stamps the honest target
 #            linux-x86_64-glibc238-py313 (no longer a fabricated glibc228 label).
-#            OST artifact sha256:f6a2047c... / OCI sha256:73a7d359...
+#            OST artifact sha256:f6a2047c... / OCI sha256:3f785e30...
 #            (artifact digest unchanged by the republish)
 #            Published publicly to GHCR.
 #   plugin:  ost plugin publish plugins/usdVrm  (usdVrm 0.1.0, ost 0.13.0 lean
@@ -92,8 +92,8 @@ cells:
     runner: windows-hosted
     runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a
-      expected_oci_digest: sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:bf24d8b6af28d3b3be0fc780803da0ae1181fca8f336ee0c79c1b1607073f724
+      expected_oci_digest: sha256:bf24d8b6af28d3b3be0fc780803da0ae1181fca8f336ee0c79c1b1607073f724
     bundle: plugins/usdVrm
     platform: cy2026
     profile: usd
@@ -104,8 +104,8 @@ cells:
     runner: macos-arm64-hosted
     runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97
-      expected_oci_digest: sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:459ec9a3930dede19b5c8f2ccf2fcdf9b8645fb9c95773e37b25f35ca30ee873
+      expected_oci_digest: sha256:459ec9a3930dede19b5c8f2ccf2fcdf9b8645fb9c95773e37b25f35ca30ee873
     bundle: plugins/usdVrm
     platform: cy2026
     profile: usd
@@ -117,8 +117,8 @@ cells:
     runner: linux-hosted
     runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580
-      expected_oci_digest: sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:3f785e3088e8701f653b2470c33ef384bcd79dff3781dd69aa861984225a7fa8
+      expected_oci_digest: sha256:3f785e3088e8701f653b2470c33ef384bcd79dff3781dd69aa861984225a7fa8
     bundle: plugins/usdVrm
     platform: cy2026
     profile: usd
@@ -130,8 +130,8 @@ cells:
     runner: windows-hosted
     runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a
-      expected_oci_digest: sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:bf24d8b6af28d3b3be0fc780803da0ae1181fca8f336ee0c79c1b1607073f724
+      expected_oci_digest: sha256:bf24d8b6af28d3b3be0fc780803da0ae1181fca8f336ee0c79c1b1607073f724
     bundle: plugins/vrmSchema
     platform: cy2026
     profile: usd
@@ -142,8 +142,8 @@ cells:
     runner: macos-arm64-hosted
     runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97
-      expected_oci_digest: sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:459ec9a3930dede19b5c8f2ccf2fcdf9b8645fb9c95773e37b25f35ca30ee873
+      expected_oci_digest: sha256:459ec9a3930dede19b5c8f2ccf2fcdf9b8645fb9c95773e37b25f35ca30ee873
     bundle: plugins/vrmSchema
     platform: cy2026
     profile: usd
@@ -155,8 +155,8 @@ cells:
     runner: linux-hosted
     runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580
-      expected_oci_digest: sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:3f785e3088e8701f653b2470c33ef384bcd79dff3781dd69aa861984225a7fa8
+      expected_oci_digest: sha256:3f785e3088e8701f653b2470c33ef384bcd79dff3781dd69aa861984225a7fa8
     bundle: plugins/vrmSchema
     platform: cy2026
     profile: usd
@@ -168,8 +168,8 @@ cells:
     runner: windows-hosted
     runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a
-      expected_oci_digest: sha256:e5e384053f6bed764d607eff401f3b240d3166fb968d791e8f82f307a6db4f4a
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:bf24d8b6af28d3b3be0fc780803da0ae1181fca8f336ee0c79c1b1607073f724
+      expected_oci_digest: sha256:bf24d8b6af28d3b3be0fc780803da0ae1181fca8f336ee0c79c1b1607073f724
     bundle: plugins/usdVrmPackageResolver
     platform: cy2026
     profile: usd
@@ -180,8 +180,8 @@ cells:
     runner: macos-arm64-hosted
     runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97
-      expected_oci_digest: sha256:00007f4bbf70dbca2a8d67431181df1a56fd45406bf695727e4b6ef57bc57c97
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:459ec9a3930dede19b5c8f2ccf2fcdf9b8645fb9c95773e37b25f35ca30ee873
+      expected_oci_digest: sha256:459ec9a3930dede19b5c8f2ccf2fcdf9b8645fb9c95773e37b25f35ca30ee873
     bundle: plugins/usdVrmPackageResolver
     platform: cy2026
     profile: usd
@@ -193,8 +193,8 @@ cells:
     runner: linux-hosted
     runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580
-      expected_oci_digest: sha256:73a7d359376edad03faed3f91aabed7b1902b8f5633a1b098391b3ee847e8580
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:3f785e3088e8701f653b2470c33ef384bcd79dff3781dd69aa861984225a7fa8
+      expected_oci_digest: sha256:3f785e3088e8701f653b2470c33ef384bcd79dff3781dd69aa861984225a7fa8
     bundle: plugins/usdVrmPackageResolver
     platform: cy2026
     profile: usd
