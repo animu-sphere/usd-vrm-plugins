@@ -133,7 +133,7 @@
       "restTransformsSha256": "5d8f8ab0d9d6f8f6f36d2409f5f7273ba0b12cec6d0146ec3cecc0b0473fa5b4"
     }
   },
-  "source": "${REPO}/plugins/usdVrm/tests/fixtures/minimal.vrm",
+  "source": "${BUNDLE}/tests/fixtures/minimal.vrm",
   "timeSampledAttrs": {},
   "upAxis": "Y",
   "vrm": {

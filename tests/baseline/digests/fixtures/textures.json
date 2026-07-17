@@ -1,7 +1,7 @@
 {
   "assets": [
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]",
+      "assetPath": "${BUNDLE}/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]",
       "attr": "/Asset/mtl/Skin/baseColorTexture.inputs:file",
       "resolved": true
     }
@@ -32,7 +32,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]",
+              "asset": "${BUNDLE}/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -122,7 +122,7 @@
     }
   ],
   "skeletons": {},
-  "source": "${REPO}/plugins/usdVrm/tests/fixtures/textures.vrm",
+  "source": "${BUNDLE}/tests/fixtures/textures.vrm",
   "timeSampledAttrs": {},
   "upAxis": "Y",
   "vrm": {

@@ -4,5 +4,5 @@
     "VRM003"
   ],
   "open": false,
-  "source": "${REPO}/plugins/usdVrm/tests/corpus/generated/malformed/nonobject_vrm_extension.vrm"
+  "source": "${BUNDLE}/tests/corpus/generated/malformed/nonobject_vrm_extension.vrm"
 }

@@ -4,5 +4,5 @@
     "VRM003"
   ],
   "open": false,
-  "source": "${REPO}/plugins/usdVrm/tests/corpus/generated/malformed/dangling_texture_index.vrm"
+  "source": "${BUNDLE}/tests/corpus/generated/malformed/dangling_texture_index.vrm"
 }

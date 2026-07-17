@@ -175,7 +175,7 @@
     }
   ],
   "skeletons": {},
-  "source": "${REPO}/plugins/usdVrm/tests/fixtures/names.vrm",
+  "source": "${BUNDLE}/tests/fixtures/names.vrm",
   "timeSampledAttrs": {},
   "upAxis": "Y",
   "vrm": {

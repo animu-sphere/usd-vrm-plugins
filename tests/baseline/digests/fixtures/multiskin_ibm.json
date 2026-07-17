@@ -141,7 +141,7 @@
       "restTransformsSha256": "0f78a06383fe4f2e8a7fadd16a40114fa98039b9b3f01845c154a7846ec76c1d"
     }
   },
-  "source": "${REPO}/plugins/usdVrm/tests/fixtures/multiskin_ibm.vrm",
+  "source": "${BUNDLE}/tests/fixtures/multiskin_ibm.vrm",
   "timeSampledAttrs": {},
   "upAxis": "Y",
   "vrm": {

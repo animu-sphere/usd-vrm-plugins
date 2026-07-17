@@ -1,67 +1,67 @@
 {
   "assets": [
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/f97432cbb6e6aad6.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/f97432cbb6e6aad6.png]",
       "attr": "/Asset/mtl/Body_00_SKIN/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/19dc728dbbc9e62f.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/19dc728dbbc9e62f.png]",
       "attr": "/Asset/mtl/Bottoms_01_CLOTH/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/b5d68c995fdd9391.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/b5d68c995fdd9391.png]",
       "attr": "/Asset/mtl/Shoes_01_CLOTH/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/06518c61692d4ba4.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/06518c61692d4ba4.png]",
       "attr": "/Asset/mtl/Tops_01_CLOTH/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/293a6685ff331da6.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/293a6685ff331da6.png]",
       "attr": "/Asset/mtl/HairBack_00_HAIR/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/be267f504a0c306c.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/be267f504a0c306c.png]",
       "attr": "/Asset/mtl/FaceMouth_00_FACE/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/5d47600f8dca5484.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/5d47600f8dca5484.png]",
       "attr": "/Asset/mtl/EyeIris_00_EYE/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/71cf5f96608d7a4a.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/71cf5f96608d7a4a.png]",
       "attr": "/Asset/mtl/Face_00_SKIN/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/79cf633bf833ca7c.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/79cf633bf833ca7c.png]",
       "attr": "/Asset/mtl/EyeWhite_00_EYE/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/1973a3a5dc0212ba.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/1973a3a5dc0212ba.png]",
       "attr": "/Asset/mtl/FaceEyeline_00_FACE/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/c2d207c1a3dd8ac7.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/c2d207c1a3dd8ac7.png]",
       "attr": "/Asset/mtl/FaceBrow_00_FACE/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/d3832b613ce27fb7.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/d3832b613ce27fb7.png]",
       "attr": "/Asset/mtl/EyeHighlight_00_EYE/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/22cd608c6a94e609.png]",
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/22cd608c6a94e609.png]",
       "attr": "/Asset/mtl/Hair_00_HAIR/baseColorTexture.inputs:file",
       "resolved": true
     }
@@ -92,7 +92,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/f97432cbb6e6aad6.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/f97432cbb6e6aad6.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -133,7 +133,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/19dc728dbbc9e62f.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/19dc728dbbc9e62f.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -174,7 +174,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/d3832b613ce27fb7.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/d3832b613ce27fb7.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -215,7 +215,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/5d47600f8dca5484.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/5d47600f8dca5484.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -256,7 +256,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/79cf633bf833ca7c.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/79cf633bf833ca7c.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -297,7 +297,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/c2d207c1a3dd8ac7.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/c2d207c1a3dd8ac7.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -338,7 +338,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/1973a3a5dc0212ba.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/1973a3a5dc0212ba.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -379,7 +379,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/be267f504a0c306c.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/be267f504a0c306c.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -420,7 +420,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/71cf5f96608d7a4a.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/71cf5f96608d7a4a.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -461,7 +461,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/293a6685ff331da6.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/293a6685ff331da6.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -502,7 +502,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/22cd608c6a94e609.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/22cd608c6a94e609.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -543,7 +543,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/b5d68c995fdd9391.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/b5d68c995fdd9391.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -584,7 +584,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/06518c61692d4ba4.png]",
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/06518c61692d4ba4.png]",
               "resolved": true
             },
             "sourceColorSpace": "sRGB",
@@ -4063,7 +4063,7 @@
       "restTransformsSha256": "f397af097c6138e0e190f29bf212d23be5bcd076122f76120134263dc4dfcf85"
     }
   },
-  "source": "${REPO}/plugins/usdVrm/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm",
+  "source": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm",
   "timeSampledAttrs": {},
   "upAxis": "Y",
   "vrm": {

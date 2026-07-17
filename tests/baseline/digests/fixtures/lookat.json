@@ -123,7 +123,7 @@
       "restTransformsSha256": "8902a9a928b6e0bb609770242f08d6985a125130b1ac7ad1a4c39a778b1c0b55"
     }
   },
-  "source": "${REPO}/plugins/usdVrm/tests/fixtures/lookat.vrm",
+  "source": "${BUNDLE}/tests/fixtures/lookat.vrm",
   "timeSampledAttrs": {},
   "upAxis": "Y",
   "vrm": {
