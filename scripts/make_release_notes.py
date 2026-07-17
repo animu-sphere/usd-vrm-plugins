@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Render GitHub release notes for one version from the changelog + template.
 
-Fills ``docs/RELEASE_NOTES_TEMPLATE.md`` with:
+Fills ``docs/contributing/RELEASE_NOTES_TEMPLATE.md`` with:
 
 * ``{version}`` / ``{tag}``      — the release version (default: repo ``VERSION``).
 * ``{changelog}``                — that version's ``## [X.Y.Z]`` section of
@@ -63,7 +63,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="release version X.Y.Z (default: repo VERSION file)")
     parser.add_argument("--changelog", default=str(REPO_ROOT / "CHANGELOG.md"))
     parser.add_argument("--template",
-                        default=str(REPO_ROOT / "docs" / "RELEASE_NOTES_TEMPLATE.md"))
+                        default=str(REPO_ROOT / "docs" / "contributing" /
+                                    "RELEASE_NOTES_TEMPLATE.md"))
     parser.add_argument("--checksums",
                         help="SHA256SUMS file to inline into the notes")
     parser.add_argument("--allow-unreleased", action="store_true",

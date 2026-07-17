@@ -55,13 +55,13 @@ directory to the dynamic-loader path.
 ## Versioning relationship
 
 - The **package version** is the single value in the repo-root
-  [`VERSION`](../VERSION) file. CMake reads it; the git tag (`vX.Y.Z`), the
-  [`CHANGELOG`](../CHANGELOG.md), and the `ost` bundle manifest mirror it.
+  [`VERSION`](../../VERSION) file. CMake reads it; the git tag (`vX.Y.Z`), the
+  [`CHANGELOG`](../../CHANGELOG.md), and the `ost` bundle manifest mirror it.
 - The **schema contract version** is independent (currently `1`) and changes only
   under the policy in
-  [`../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md).
+  [`../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md).
 
 ## Non-goals for v0.1.0
 
-See the [`CHANGELOG`](../CHANGELOG.md#non-goals-for-v010) and the
-[roadmap non-goals](ROADMAP.md#non-goals-policy-15-19).
+See the [`CHANGELOG`](../../CHANGELOG.md#non-goals-for-v010) and the
+[roadmap non-goals](../roadmap/backlog.md#non-goals).

@@ -1,7 +1,7 @@
 # usd-vrm-plugins — design & development policy
 
 > English translation of the project's forward design/development policy. This is
-> the canonical policy document referenced by [ROADMAP.md](ROADMAP.md); the roadmap
+> the canonical policy document referenced by [the roadmap](../roadmap/); the roadmap
 > tracks live status against it. Section numbers are stable so the roadmap and the
 > plugin docs can cite them (e.g. "policy §10").
 
@@ -777,7 +777,7 @@ Provide, as far as feasible:
 
 ## 17. Roadmap
 
-> Live status against this roadmap is tracked in [ROADMAP.md](ROADMAP.md).
+> Live status against this roadmap is tracked in [the roadmap](../roadmap/).
 
 ### P0: Documentation & implementation sync
 
@@ -911,6 +911,16 @@ Provide, as far as feasible:
 ---
 
 ## 18. Recommended repository layout
+
+> **Superseded for structure.** The layout sketched below was the pre-split
+> proposal, where `usdVrm` was a single bundle with co-located schemas and
+> resolver. The binding structural contract is now
+> [architecture/WORKSPACE.md](../architecture/WORKSPACE.md), which splits these
+> responsibilities into `vrmSchema`, `usdVrmFileFormat`,
+> `usdVrmPackageResolver`, and the `vrmContainer` library, and retires `usdVrm`
+> as a bundle id. The *responsibility boundaries* below still hold; only their
+> packaging changed. Kept for rationale, and because §-numbers are cited
+> elsewhere.
 
 ```text
 usd-vrm-plugins/

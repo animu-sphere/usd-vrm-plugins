@@ -8,7 +8,7 @@
 # (packaged-artifact verification + clean-install smoke + digest
 # reproducibility), then assembles a DRAFT GitHub release: per-target lean +
 # debug bundles, a source archive, SHA256SUMS, and notes rendered from
-# CHANGELOG.md via docs/RELEASE_NOTES_TEMPLATE.md. Publishing the draft is a
+# CHANGELOG.md via docs/contributing/RELEASE_NOTES_TEMPLATE.md. Publishing the draft is a
 # human decision.
 #
 # `workflow_dispatch` is a dry run: the same build/verify/package lanes, with

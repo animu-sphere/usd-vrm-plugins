@@ -32,7 +32,7 @@
 #   across republishes (provenance embeds the producing commit), so
 #   `expected_oci_digest` below must be re-pinned from the push output every
 #   time, while `runtime_artifact` stays put. Full writeup in
-#   docs/report/ost/2026-07-17-v0.17.0-evidence-gate-v0.18.0-asks.md.
+#   docs/reports/ost/22-2026-07-17-v0.17.0-evidence-gate-v0.18.0-asks.md.
 #   Windows runtime: OpenUSD 26.05 built from source with Python 3.13, validated,
 #            with top-level resources/ and lib/python schema-gen deps.
 #            OST artifact sha256:c1c54f1e... / OCI sha256:bf24d8b6...

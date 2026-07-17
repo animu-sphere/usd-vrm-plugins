@@ -176,5 +176,12 @@ as the gate in every migration PR.
 
 Scaffolds for new bundles start from the ost template catalog
 (`ost plugin new usd-schema --template usd-schema-cpp`,
-`ost plugin new usd-package-resolver`) rather than hand-rolled skeletons, and
-`ost plugin test --workspace` becomes a required PR-lane gate from Phase 1 on.
+`ost plugin new usd-package-resolver`) rather than hand-rolled skeletons.
+
+> **Gate status.** This document called for `ost plugin test --workspace` to be
+> a required PR-lane gate from Phase 1 on. That has not happened: the generated
+> PR lane runs `ost plugin test <bundle>` per cell (nine cells: three bundles ×
+> three OS) and no lane runs the workspace graph validation. The dependency
+> directions in §2 are enforced today by the per-bundle binary link checks and
+> by `vrmContainer`'s boundary check — not by the graph gate. Wiring it in is
+> tracked in the [roadmap](../roadmap/current.md).

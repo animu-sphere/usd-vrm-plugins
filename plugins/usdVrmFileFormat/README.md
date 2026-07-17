@@ -102,8 +102,8 @@ tests/                          python smoke tests + generated fixtures (minimal
 
 The importer build-out is complete; the forward work is doc/impl sync, a `v0.1.0`
 release, Windows runtime CI, and the OpenExec runtime layer. See the project
-[design & development policy](../../docs/DESIGN_POLICY.md) and the per-phase
-[roadmap](../../docs/ROADMAP.md) (**P0–P6**) for live status.
+[design & development policy](../../docs/design/DESIGN_POLICY.md) and the per-phase
+[roadmap](../../docs/roadmap/) (**P0–P6**) for live status.
 
 Implemented: GLB read, version detection, meshes
 (points/normals/UV/indices), `UsdPreviewSurface` materials with **textures**
