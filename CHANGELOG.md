@@ -109,8 +109,8 @@ typed USD stage, plus the reliability tooling around it.
   license-gated fetch for the VRoid + Alicia candidates). No third-party binaries
   are committed.
 - **Release contract**: repo-root `VERSION` single source of truth (consumed by
-  CMake), this `CHANGELOG.md`, [`docs/CAPABILITY_MATRIX.md`](docs/CAPABILITY_MATRIX.md),
-  and [`docs/SUPPORTED_CONFIGURATIONS.md`](docs/SUPPORTED_CONFIGURATIONS.md).
+  CMake), this `CHANGELOG.md`, [`docs/reference/CAPABILITY_MATRIX.md`](docs/reference/CAPABILITY_MATRIX.md),
+  and [`docs/reference/SUPPORTED_CONFIGURATIONS.md`](docs/reference/SUPPORTED_CONFIGURATIONS.md).
 - **Clean-install / plugin-discovery smoke** — `scripts/clean_install_smoke.py`
   packages the bundle, extracts the artifact into a fresh directory outside the
   repo, and runs `plugins/usdVrm/tests/clean_install_smoke.py` inside that
@@ -124,14 +124,14 @@ typed USD stage, plus the reliability tooling around it.
   verification (`ost plugin test --from-package`) and the clean-install smoke on
   all three OS, then assembles a **draft** GitHub release: per-target lean +
   debug-symbol bundles, a source archive, `SHA256SUMS`, and notes rendered from
-  this changelog via [`docs/RELEASE_NOTES_TEMPLATE.md`](docs/RELEASE_NOTES_TEMPLATE.md)
+  this changelog via [`docs/contributing/RELEASE_NOTES_TEMPLATE.md`](docs/contributing/RELEASE_NOTES_TEMPLATE.md)
   (`scripts/make_release_notes.py`). `workflow_dispatch` = dry run.
 - **Build-metadata stamp** — CMake configures `buildInfo.json` next to
   `plugInfo.json` (git commit, build OS, compiler, build type, OpenUSD version,
   plugin version, schema contract version), shipped inside every packaged bundle;
   `tools/vrm_report.py` surfaces it as the report's `build` section. The stamp
   carries no timestamp so packaging stays digest-reproducible.
-- **Install guide** ([`docs/INSTALL.md`](docs/INSTALL.md)) — release-artifact,
+- **Install guide** ([`docs/guides/INSTALL.md`](docs/guides/INSTALL.md)) — release-artifact,
   OpenStrata, and from-source installation with verification and troubleshooting.
 - **CI & packaging**: generated 3-OS source lanes (`ost ci generate github`)
   bootstrap-pinned to **ost 0.13.0**; packages are **lean by default** (debug
@@ -151,14 +151,14 @@ typed USD stage, plus the reliability tooling around it.
 
 ### Non-goals for v0.1.0
 Explicitly out of scope for this release (tracked in the
-[roadmap](docs/ROADMAP.md) non-goals and design policy §15/§19):
+[roadmap](docs/roadmap/) non-goals and design policy §15/§19):
 - Full/pixel-perfect MToon shading reproduction across renderers.
 - A VRM exporter.
 - SpringBone / physics runtime simulation.
 - Mocopi or other live input streaming.
 - Coverage of every glTF extension.
 - ABI stability guarantees across all OpenUSD versions (see
-  [`docs/SUPPORTED_CONFIGURATIONS.md`](docs/SUPPORTED_CONFIGURATIONS.md)).
+  [`docs/reference/SUPPORTED_CONFIGURATIONS.md`](docs/reference/SUPPORTED_CONFIGURATIONS.md)).
 
 [Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/animu-sphere/usd-vrm-plugins/releases/tag/v0.1.0

@@ -2,17 +2,61 @@
 
 OpenUSD plugins for [VRM](https://vrm.dev/en/) avatars.
 
-This repository currently ships one plugin:
+This repository is an OpenUSD plugin **workspace**: it separates schema
+definitions, file-format import, package resolution, and shared GLB container
+parsing into independently buildable, independently testable components. It
+currently ships three plugin bundles and one shared library.
 
-| Plugin | Path | Role |
-| --- | --- | --- |
-| `usdVrmFileFormat` | [plugins/usdVrmFileFormat](plugins/usdVrmFileFormat) | `SdfFileFormat`: imports `.vrm` (VRM 0.x / 1.0) as a normalized USD stage |
+The importer reads VRM 0.x and 1.0, normalizes the differences away, and authors
+a static USD stage. It **never evaluates or simulates** — that boundary is the
+project's central design decision, and it is described below.
 
-The repo is an [OpenStrata](https://github.com/animu-sphere/open-strata)
-`usd-plugin-workspace`-style project (`openstrata.toml`) holding one or more
-self-contained plugin **bundles** under `plugins/`. It is **dual-mode**: you can
-build and verify it with the `ost` CLI, or with plain CMake against any OpenUSD
-install.
+> **Built with [OpenStrata](https://github.com/animu-sphere/open-strata).**
+> `usd-vrm-plugins` is OpenStrata's first external adopter, and the `ost` CLI is
+> how this workspace is built, tested, packaged, and released. The record of
+> adopting it — every version from pre-0.3 to 0.17.0, including what broke — is
+> published in [docs/reports/ost/](docs/reports/ost/). The repo is
+> **dual-mode**: everything also builds with plain CMake against any OpenUSD
+> install, with no `ost` involved.
+
+## Workspace components
+
+| Component | Type | Role | Status |
+| --- | --- | --- | --- |
+| [`vrmSchema`](plugins/vrmSchema) | USD schema bundle (`usd-schema`) | VRM typed API schemas + the schema contract | Shipped |
+| [`usdVrmFileFormat`](plugins/usdVrmFileFormat) | `SdfFileFormat` bundle (`usd-fileformat`) | `.vrm` parsing, canonicalization, USD authoring | Shipped |
+| [`usdVrmPackageResolver`](plugins/usdVrmPackageResolver) | `ArPackageResolver` bundle (`usd-package-resolver`) | Embedded resource resolution from `.vrm` | Shipped |
+| [`vrmContainer`](libs/vrmContainer) | Plain CMake library | GLB parsing + byte-range validation | Shipped |
+| `execVrm` | OpenExec bundle | LookAt, constraints, expressions, spring runtime | Planned |
+| `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Packaging planned |
+
+`usdVrm` is not a bundle id — it names the product as a whole. It *was* the
+file-format bundle's name until the workspace split; documentation and artifacts
+that predate that rename use it in the old sense.
+
+### Dependencies
+
+```text
+usdVrmFileFormat ───────> vrmSchema
+        │
+        └───────────────> vrmContainer
+
+usdVrmPackageResolver ──> vrmContainer
+
+execVrm ────────────────> vrmSchema
+```
+
+Three rules keep those edges honest:
+
+- `vrmSchema` depends on no other bundle or library.
+- `usdVrmPackageResolver` never links the file-format bundle; the importer's
+  dependency on the resolver is runtime-only, never link-time.
+- `execVrm` reads the schema contract from the stage — never the importer's
+  private API or canonical model.
+
+The bundle graph is validated by `ost plugin test --workspace`, and each
+consumer adds a binary link check proving what it does and does not import. Full
+contract: [docs/architecture/WORKSPACE.md](docs/architecture/WORKSPACE.md).
 
 ## What the importer produces
 
@@ -29,61 +73,95 @@ absorbed into a canonical model before any USD is authored — into:
   mtl/                     Scope of UsdShadeMaterial (UsdPreviewSurface)
   skel/Skeleton            single UsdSkelSkeleton unified across all glTF skins
                            (bind transforms from the inverse bind matrices)
-  rig/Humanoid             vrm:skeleton rel + vrm:humanBones:<bone> joint tokens
+  rig/Humanoid             vrm:humanBones:<bone> joint tokens, typed VrmHumanoidAPI
 ```
 
-See [plugins/usdVrmFileFormat/README.md](plugins/usdVrmFileFormat/README.md) for plugin specifics and
-the design rationale. The importer build-out (geometry, materials, skeleton +
-skinning, humanoid mapping, animation, front-direction bake, and typed `Vrm*API`
-schemas across the whole rig) is implemented and verified against real VRM 1.0
-avatars, plus reliability tooling: a standalone stage validator, a coded diagnostic
-taxonomy, a compatibility report, and portable texture packaging.
+Every `/Asset/rig/*` control prim carries typed schema data. The **schema types
+themselves are provided by the `vrmSchema` bundle**; `usdVrmFileFormat` depends
+on schema contract version 1 and authors against it. Raw VRM blocks stay in
+`customData` as the lossless fallback.
 
-**Import vs. evaluation vs. simulation.** The `usdVrmFileFormat` plugin *authors data only*.
-LookAt, node constraints, and spring bones are written as typed schema data; their
-runtime **evaluation/simulation** is a separate layer (`execVrm`, roadmap P4) and is
-never run by this importer. This keeps the import step pure and deterministic so the
-runtime can be swapped without touching it.
+## Runtime boundary
 
-Per-feature support status is in [docs/CAPABILITY_MATRIX.md](docs/CAPABILITY_MATRIX.md);
-supported platforms, OpenUSD versions, and build requirements are in
-[docs/SUPPORTED_CONFIGURATIONS.md](docs/SUPPORTED_CONFIGURATIONS.md). Release history
-is in the [CHANGELOG](CHANGELOG.md) (the release version lives in the single-source
-[VERSION](VERSION) file).
+```text
+Import:   VRM bytes ──> canonical model ──> USD stage
+Runtime:  USD stage + vrmSchema ──> OpenExec / DCC / renderer runtime
+```
 
-The forward direction — **doc/impl sync, a `v0.1.0` release, Windows runtime CI, and
-a separate OpenExec runtime layer** — is set by the project
-[design & development policy](docs/DESIGN_POLICY.md) and tracked, with live per-phase
-status (**P0–P6**), in the [roadmap](docs/ROADMAP.md).
+The importer **authors data only**:
+
+- Import is deterministic. The same bytes produce the same stage.
+- LookAt, node constraints, and spring bones are *written as typed schema data*,
+  never executed.
+- Evaluation and simulation belong to `execVrm` (planned) or an external
+  runtime.
+- No physics runs at import time.
+
+This keeps import pure, so a runtime can be swapped without touching the
+importer.
+
+## Feature support
+
+VRM 0.x / 1.0 detection and canonicalization, geometry, `UsdPreviewSurface`
+materials with the full texture set, MToon source preservation
+(`vrm:mtoon:raw`; renderer-specific realization is not implemented), unified
+skeleton + skinning from inverse bind matrices, skeletal animation, humanoid
+mapping, front-direction normalization, and a coded diagnostic taxonomy.
+
+Per-feature status is in
+[docs/reference/CAPABILITY_MATRIX.md](docs/reference/CAPABILITY_MATRIX.md).
+Supported platforms, OpenUSD versions, and build requirements are in
+[docs/reference/SUPPORTED_CONFIGURATIONS.md](docs/reference/SUPPORTED_CONFIGURATIONS.md).
+The schema contract is in
+[plugins/vrmSchema/docs/SCHEMA_CONTRACT.md](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md).
 
 ## Install
 
-Binary bundles (per-target `tar.zst` + SHA-256 checksums + split debug
-symbols) ship with each GitHub release; see
-[docs/INSTALL.md](docs/INSTALL.md) for release-artifact, OpenStrata, and
-from-source installation, verification, and troubleshooting.
+See [docs/guides/INSTALL.md](docs/guides/INSTALL.md) for release-artifact,
+OpenStrata, and from-source installation, verification, and troubleshooting.
 
-## Build & test
+> **Building from source is currently the only way to install the complete
+> workspace.** GitHub releases publish the `usdVrmFileFormat` bundle only;
+> `vrmSchema` and `usdVrmPackageResolver` are not yet published as artifacts, so
+> a release bundle on its own cannot apply typed schemas or resolve embedded
+> textures. The aggregate product artifact is Workspace Phase 5 — see the
+> [roadmap](docs/roadmap/current.md).
 
-### With OpenStrata (`ost`)
+## Build and test
 
-Requires `ost` 0.15+ so workspace dependencies declared by
-`requires.bundles` are built and composed automatically.
+### Whole workspace, with OpenStrata (`ost`)
+
+Requires `ost` 0.16+, so `requires.bundles` and `requires.libraries` are
+composed automatically.
 
 ```sh
 # One-time: adopt an OpenUSD install as the cy2026 runtime.
 ost runtime pull cy2026 --profile usd --from-usd /path/to/openusd-install
 
-# Build the bundle and run the L0-L6 verification pyramid.
-ost plugin build plugins/usdVrmFileFormat
-ost plugin test  plugins/usdVrmFileFormat
+# Validate the bundle graph, then test every bundle in dependency order.
+ost plugin test --workspace
+```
 
-# Inspect a real avatar:
-ost plugin run  plugins/usdVrmFileFormat -- python plugins/usdVrmFileFormat/tools/inspect_vrm.py avatar.vrm
-ost plugin view plugins/usdVrmFileFormat avatar.vrm        # usdview
+### A single bundle
+
+```sh
+ost plugin build plugins/usdVrmFileFormat
+ost plugin test  plugins/usdVrmFileFormat            # L0-L5 verification pyramid
+
+# Inspect a real avatar. build/test/run/package compose the manifest's
+# requires.bundles closure automatically:
+ost plugin run plugins/usdVrmFileFormat \
+    -- python plugins/usdVrmFileFormat/tools/inspect_vrm.py avatar.vrm
+
+# `view` / `test-view` are the exception: they load only what --with names, so
+# the runtime siblings must be spelled out or the schema apply fails.
+ost plugin view plugins/usdVrmFileFormat avatar.vrm \
+    --with plugins/vrmSchema --with plugins/usdVrmPackageResolver
 ```
 
 ### With plain CMake (no OpenStrata)
+
+The workspace root composes every bundle:
 
 ```sh
 cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/openusd-install
@@ -91,50 +169,73 @@ cmake --build build --config Release
 ctest --test-dir build -C Release
 ```
 
-The built `libUsdVrmFileFormat.{dll,so,dylib}` lands in `plugins/usdVrmFileFormat/lib/`;
-add `plugins/usdVrmFileFormat/plugin/resources/usdVrmFileFormat` to `PXR_PLUGINPATH_NAME` and the
-`lib/` dir to your dynamic-loader path to use it.
+Each bundle also builds standalone against *installed* sibling packages
+(`find_package(vrmSchema CONFIG REQUIRED)`), which is what CI proves; a bundle
+never reaches sideways into a sibling's source tree.
+
+The built `libUsdVrmFileFormat.{dll,so,dylib}` lands in
+`plugins/usdVrmFileFormat/lib/`; add
+`plugins/usdVrmFileFormat/plugin/resources/usdVrmFileFormat` to
+`PXR_PLUGINPATH_NAME` and the `lib/` dir to your dynamic-loader path to use it.
+
+### Clean-install smoke
+
+Verifies the *packaged* bundles have no build-tree dependency:
+
+```sh
+python scripts/clean_install_smoke.py               # build + package + extract + smoke
+python scripts/clean_install_smoke.py --skip-build   # reuse the current build
+```
+
+It packages all three bundles with `ost`, extracts them into a fresh directory
+**outside** the repo, and runs the assertions in
+`plugins/usdVrmFileFormat/tests/clean_install_smoke.py` against that extracted
+tree: `.vrm` discovery served from the package, a textured fixture and a corpus
+avatar open and validate, and an embedded texture resolves straight from the
+`.vrm` container. Needs `ost` + a validated `cy2026` runtime.
 
 ### CI
 
 CI is generated from the support matrix in `openstrata.ci.yaml`
-(`ost ci generate github`). The PR lane
-(`.github/workflows/ost-source-ci.yml`) builds from source on hosted
-Windows / macOS arm64 / Linux runners against digest-pinned cy2026 runtimes
-and runs `ost plugin test --up-to 5`; a weekly scheduled lane
-(`ost-support-matrix.yml`) re-validates pinned runtime × plugin artifact
-cells on a self-hosted real runtime. The hand-authored release workflow
-(`release.yml`) is described below.
+(`ost ci generate github`). The PR lane (`.github/workflows/ost-source-ci.yml`)
+runs **nine cells** — each of the three bundles on hosted Windows / macOS arm64 /
+Linux against digest-pinned cy2026 runtimes — building, testing
+(`--up-to 5`; Windows is capped at 4), and packaging each. A weekly scheduled
+lane (`ost-support-matrix.yml`) re-validates pinned runtime × plugin artifact
+cells on a self-hosted real runtime.
 
-### Releasing
+## Release artifacts
 
-Pushing a tag `vX.Y.Z` (matching the repo `VERSION` file, with that
-version's `CHANGELOG.md` section finalized) runs
-`.github/workflows/release.yml`: it builds on all three OS cells, proves the
-*packaged* artifact (packaged-artifact verification, clean-install smoke,
-digest-reproducible packaging), and assembles a **draft** GitHub release —
-per-target lean + debug bundles, a source archive, `SHA256SUMS`, and notes
-rendered from `CHANGELOG.md` via `docs/RELEASE_NOTES_TEMPLATE.md`
-(`scripts/make_release_notes.py`). Publishing the draft is a human decision.
-Run the workflow manually (`workflow_dispatch`) for a dry run that creates
-no release.
+Pushing a tag `vX.Y.Z` (matching [`VERSION`](VERSION), with that version's
+`CHANGELOG.md` section finalized) runs `.github/workflows/release.yml`: it builds
+on all three OS cells, proves the *packaged* artifact (packaged-artifact
+verification, clean-install smoke, digest-reproducible packaging), and assembles
+a **draft** GitHub release — per-target lean + debug bundles, a source archive,
+`SHA256SUMS`, and notes rendered from `CHANGELOG.md` via
+[docs/contributing/RELEASE_NOTES_TEMPLATE.md](docs/contributing/RELEASE_NOTES_TEMPLATE.md).
+Publishing the draft is a human decision. Run the workflow manually
+(`workflow_dispatch`) for a dry run that creates no release.
 
-### Clean-install smoke
+Each bundle carries a `buildInfo.json` stamp (commit / toolchain / OpenUSD /
+build type / schema contract version), surfaced by `tools/vrm_report.py`.
 
-To verify the *packaged* plugin has no build-tree dependency, run:
+## Documentation
 
-```sh
-python scripts/clean_install_smoke.py            # build + package + extract + smoke
-python scripts/clean_install_smoke.py --skip-build   # reuse the current build
-```
+[docs/](docs/) is organized by responsibility — the same layout `open-strata`
+and `hydra-merlin` use:
 
-It packages the bundle with `ost`, extracts the artifact into a fresh directory
-**outside** the repo, and runs the assertions in
-`plugins/usdVrmFileFormat/tests/clean_install_smoke.py` inside that extracted bundle's
-runtime session: `.vrm` discovery served from the package, a textured fixture and
-a corpus avatar open and validate, and an embedded texture resolves straight from
-the `.vrm` container (no temp extraction). Needs `ost` + a validated `cy2026`
-runtime.
+| | |
+| --- | --- |
+| [docs/architecture/](docs/architecture/) | The binding workspace contract: identities, dependency directions, artifact naming |
+| [docs/guides/](docs/guides/) | How to install |
+| [docs/reference/](docs/reference/) | What is supported, on what |
+| [docs/roadmap/](docs/roadmap/) | What is planned next (incomplete work only) |
+| [docs/releases/](docs/releases/) | Per-version release records |
+| [docs/design/](docs/design/) | Why the significant decisions were made |
+| [docs/reports/](docs/reports/) | Evidence from real runs: the `ost` dogfooding series + the delivery log |
+
+Release history is in the [CHANGELOG](CHANGELOG.md); the release version lives
+in the single-source [VERSION](VERSION) file.
 
 ## License
 

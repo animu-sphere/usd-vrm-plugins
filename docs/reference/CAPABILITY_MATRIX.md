@@ -2,7 +2,7 @@
 
 Per-feature support status for the `usdVrmFileFormat` importer, as of the current tree.
 This table describes **what is implemented today**, not aspirations — it is kept
-in sync with the code and the [roadmap](ROADMAP.md). Simulation/evaluation of
+in sync with the code and the [roadmap](../roadmap/). Simulation/evaluation of
 runtime features is explicitly out of the importer (see the
 import/evaluation/simulation boundary below).
 
@@ -61,7 +61,7 @@ data-authoring step so downstream runtimes can be swapped without changing it.
 
 ## See also
 
-- [`ROADMAP.md`](ROADMAP.md) — phased status (P0–P6).
+- [`ROADMAP.md`](../roadmap/) — phased status (P0–P6).
 - [`SUPPORTED_CONFIGURATIONS.md`](SUPPORTED_CONFIGURATIONS.md) — platforms, OpenUSD, build.
-- [`../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) — schema contract v1.
-- [`../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md`](../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md) — diagnostic codes.
+- [`../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) — schema contract v1.
+- [`../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md`](../../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md) — diagnostic codes.
