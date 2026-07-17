@@ -5,13 +5,13 @@
 This proves the near-term plan's §7.2 clean-install contract without any
 build-tree reference: it packages the importer with `ost` **and its runtime
 bundle dependencies**, extracts every artifact into fresh directories
-**outside** the repo, then runs `plugins/usdVrm/tests/clean_install_smoke.py`
+**outside** the repo, then runs `plugins/usdVrmFileFormat/tests/clean_install_smoke.py`
 in a runtime session whose plugin discovery comes only from those extracted
 packages — so USD sees the plugins solely from the shipped layout.
 
 Since the workspace split, opening a textured avatar and resolving its embedded
-textures spans three bundles (WORKSPACE.md §1): the importer `usdVrm`, the typed
-schemas `vrmSchema` it applies, and the `usdVrmPackageResolver` that serves
+textures spans three bundles (WORKSPACE.md §1): the importer `usdVrmFileFormat`,
+the typed schemas `vrmSchema` it applies, and the `usdVrmPackageResolver` that serves
 `avatar.vrm[images/...]` bytes. The aggregate clean-install therefore composes
 all three shipped packages with `ost plugin run --no-inject --plugin-path`
 (there is no single-package product closure yet — Phase 5). Pass
@@ -28,7 +28,7 @@ Pipeline (all via `ost`, so it is target-portable):
 
 Usage:
     python scripts/clean_install_smoke.py
-        [--bundle plugins/usdVrm]
+        [--bundle plugins/usdVrmFileFormat]
         [--with-bundle plugins/vrmSchema --with-bundle plugins/usdVrmPackageResolver]
         [--skip-build] [--keep]
 """
@@ -96,7 +96,7 @@ def package_and_extract(ost: str, bundle_rel: str, dest: pathlib.Path,
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--bundle", default="plugins/usdVrm",
+    parser.add_argument("--bundle", default="plugins/usdVrmFileFormat",
                         help="primary bundle path (runs the smoke assertions)")
     parser.add_argument("--with-bundle", action="append", default=None,
                         dest="with_bundles",

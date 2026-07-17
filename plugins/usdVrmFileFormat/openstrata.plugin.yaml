@@ -4,7 +4,7 @@
 manifest:
   schema: openstrata.plugin/v1alpha1
 plugin:
-  name: usdVrm
+  name: usdVrmFileFormat
   version: 0.1.0
   kind: usd-fileformat
 license: Apache-2.0
@@ -38,7 +38,7 @@ requires:
       contract: 1
 usd:
   # Where this bundle's plugInfo.json lives, relative to the bundle root.
-  plug_info: plugin/resources/usdVrm/plugInfo.json
+  plug_info: plugin/resources/usdVrmFileFormat/plugInfo.json
 tests:
   smoke:
     - tests/fixtures/minimal.vrm

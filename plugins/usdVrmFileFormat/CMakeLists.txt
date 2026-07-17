@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# usdVrm — an OpenUSD SdfFileFormat plugin that imports .vrm avatars.
+# usdVrmFileFormat — an OpenUSD SdfFileFormat plugin that imports .vrm avatars.
 #
-# Self-contained so `ost plugin build plugins/usdVrm` can configure it directly,
+# Self-contained so `ost plugin build plugins/usdVrmFileFormat` can configure it directly,
 # and also add_subdirectory()-able from the repo-root CMakeLists.txt for the
 # plain-CMake (non-OpenStrata) workflow.
 cmake_minimum_required(VERSION 3.22)
@@ -139,8 +139,8 @@ endforeach()
 # during `ost plugin build` so macOS gets .dylib, Windows gets .dll, and Linux
 # gets .so.
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/plugin/resources/usdVrm/plugInfo.json.in"
-    "${CMAKE_CURRENT_SOURCE_DIR}/plugin/resources/usdVrm/plugInfo.json"
+    "${CMAKE_CURRENT_SOURCE_DIR}/plugin/resources/usdVrmFileFormat/plugInfo.json.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/plugin/resources/usdVrmFileFormat/plugInfo.json"
     @ONLY)
 
 # Release-artifact build metadata (roadmap P1): stamp what produced this binary
@@ -192,8 +192,8 @@ else()
 endif()
 
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/plugin/resources/usdVrm/buildInfo.json.in"
-    "${CMAKE_CURRENT_SOURCE_DIR}/plugin/resources/usdVrm/buildInfo.json"
+    "${CMAKE_CURRENT_SOURCE_DIR}/plugin/resources/usdVrmFileFormat/buildInfo.json.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/plugin/resources/usdVrmFileFormat/buildInfo.json"
     @ONLY)
 
 if(USDVRM_BUILD_TESTS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")

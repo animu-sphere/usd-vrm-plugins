@@ -6,7 +6,7 @@ This repository currently ships one plugin:
 
 | Plugin | Path | Role |
 | --- | --- | --- |
-| `usdVrm` | [plugins/usdVrm](plugins/usdVrm) | `SdfFileFormat`: imports `.vrm` (VRM 0.x / 1.0) as a normalized USD stage |
+| `usdVrmFileFormat` | [plugins/usdVrmFileFormat](plugins/usdVrmFileFormat) | `SdfFileFormat`: imports `.vrm` (VRM 0.x / 1.0) as a normalized USD stage |
 
 The repo is an [OpenStrata](https://github.com/animu-sphere/open-strata)
 `usd-plugin-workspace`-style project (`openstrata.toml`) holding one or more
@@ -32,14 +32,14 @@ absorbed into a canonical model before any USD is authored — into:
   rig/Humanoid             vrm:skeleton rel + vrm:humanBones:<bone> joint tokens
 ```
 
-See [plugins/usdVrm/README.md](plugins/usdVrm/README.md) for plugin specifics and
+See [plugins/usdVrmFileFormat/README.md](plugins/usdVrmFileFormat/README.md) for plugin specifics and
 the design rationale. The importer build-out (geometry, materials, skeleton +
 skinning, humanoid mapping, animation, front-direction bake, and typed `Vrm*API`
 schemas across the whole rig) is implemented and verified against real VRM 1.0
 avatars, plus reliability tooling: a standalone stage validator, a coded diagnostic
 taxonomy, a compatibility report, and portable texture packaging.
 
-**Import vs. evaluation vs. simulation.** The `usdVrm` plugin *authors data only*.
+**Import vs. evaluation vs. simulation.** The `usdVrmFileFormat` plugin *authors data only*.
 LookAt, node constraints, and spring bones are written as typed schema data; their
 runtime **evaluation/simulation** is a separate layer (`execVrm`, roadmap P4) and is
 never run by this importer. This keeps the import step pure and deterministic so the
@@ -75,12 +75,12 @@ Requires `ost` 0.15+ so workspace dependencies declared by
 ost runtime pull cy2026 --profile usd --from-usd /path/to/openusd-install
 
 # Build the bundle and run the L0-L6 verification pyramid.
-ost plugin build plugins/usdVrm
-ost plugin test  plugins/usdVrm
+ost plugin build plugins/usdVrmFileFormat
+ost plugin test  plugins/usdVrmFileFormat
 
 # Inspect a real avatar:
-ost plugin run  plugins/usdVrm -- python plugins/usdVrm/tools/inspect_vrm.py avatar.vrm
-ost plugin view plugins/usdVrm avatar.vrm        # usdview
+ost plugin run  plugins/usdVrmFileFormat -- python plugins/usdVrmFileFormat/tools/inspect_vrm.py avatar.vrm
+ost plugin view plugins/usdVrmFileFormat avatar.vrm        # usdview
 ```
 
 ### With plain CMake (no OpenStrata)
@@ -91,8 +91,8 @@ cmake --build build --config Release
 ctest --test-dir build -C Release
 ```
 
-The built `libUsdVrmFileFormat.{dll,so,dylib}` lands in `plugins/usdVrm/lib/`;
-add `plugins/usdVrm/plugin/resources/usdVrm` to `PXR_PLUGINPATH_NAME` and the
+The built `libUsdVrmFileFormat.{dll,so,dylib}` lands in `plugins/usdVrmFileFormat/lib/`;
+add `plugins/usdVrmFileFormat/plugin/resources/usdVrmFileFormat` to `PXR_PLUGINPATH_NAME` and the
 `lib/` dir to your dynamic-loader path to use it.
 
 ### CI
@@ -130,7 +130,7 @@ python scripts/clean_install_smoke.py --skip-build   # reuse the current build
 
 It packages the bundle with `ost`, extracts the artifact into a fresh directory
 **outside** the repo, and runs the assertions in
-`plugins/usdVrm/tests/clean_install_smoke.py` inside that extracted bundle's
+`plugins/usdVrmFileFormat/tests/clean_install_smoke.py` inside that extracted bundle's
 runtime session: `.vrm` discovery served from the package, a textured fixture and
 a corpus avatar open and validate, and an embedded texture resolves straight from
 the `.vrm` container (no temp extraction). Needs `ost` + a validated `cy2026`

@@ -4,7 +4,7 @@
 
 Run it inside the plugin's OpenStrata session so the plugin is discovered:
 
-    ost plugin run plugins/usdVrm -- python plugins/usdVrm/tools/inspect_vrm.py <file.vrm>
+    ost plugin run plugins/usdVrmFileFormat -- python plugins/usdVrmFileFormat/tools/inspect_vrm.py <file.vrm>
 
 (Or run with any environment where PXR_PLUGINPATH_NAME already includes the
 bundle's plugInfo root and the built library is on PATH/LD_LIBRARY_PATH.)

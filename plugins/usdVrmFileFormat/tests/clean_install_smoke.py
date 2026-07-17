@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-"""Clean-install smoke assertions for a *packaged* usdVrm bundle.
+"""Clean-install smoke assertions for a *packaged* usdVrmFileFormat bundle.
 
 This runs inside a runtime session whose plugin path points **only** at an
 extracted `ost plugin package` artifact — never the build tree or the source
@@ -14,7 +14,7 @@ bundle. It verifies the plan's clean-install contract (near-term plan §7.2):
 
 Env:
   VRM_PKG_ROOT   (required) extracted package root (holds plugin/, lib/, tests/)
-  VRM_REPO_TOOLS (optional) path to plugins/usdVrm/tools for the validator;
+  VRM_REPO_TOOLS (optional) path to plugins/usdVrmFileFormat/tools for the validator;
                  when unset, step 3 falls back to inline structural checks.
 
 Exit code is non-zero on the first failed assertion.
@@ -64,7 +64,7 @@ def check_discovery(pkg_root: str) -> None:
         if "vrmfileformat" in _norm(p.path).lower()
     ]
     if not vrm_plugins:
-        _fail("usdVrm plugin absent from the USD plugin registry")
+        _fail("usdVrmFileFormat plugin absent from the USD plugin registry")
     roots = _pkg_roots(pkg_root)
     served = [
         p for p in vrm_plugins

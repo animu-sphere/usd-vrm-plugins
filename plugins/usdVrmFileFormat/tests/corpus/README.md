@@ -33,7 +33,7 @@ license bar.
 Read the current set from the manifest:
 
 ```sh
-python -c "import json;m=json.load(open('plugins/usdVrm/tests/corpus/manifest.json',encoding='utf-8'));\
+python -c "import json;m=json.load(open('plugins/usdVrmFileFormat/tests/corpus/manifest.json',encoding='utf-8'));\
 print('\n'.join(f\"{x['id']:28} {x['vrmVersion']:4} {x.get('storage','?'):9} {x['file']}\" for x in m['models']))"
 ```
 
@@ -69,7 +69,7 @@ manual-acquisition instructions. Fetched files land under `vroid/` (git-ignored)
 Inside the runtime + plugin session (drives the freshly built importer):
 
 ```sh
-ost plugin run plugins/usdVrm -- python plugins/usdVrm/tests/test_usdvrm_corpus.py
+ost plugin run plugins/usdVrmFileFormat -- python plugins/usdVrmFileFormat/tests/test_usdvrm_corpus.py
 ```
 
 The test is **manifest-driven**: it iterates the vendored models and asserts the
@@ -83,9 +83,9 @@ importer's diagnostic contract (one `VRMxxx` code each); see
 [`generated/README.md`](generated/README.md).
 
 ```sh
-python plugins/usdVrm/tools/generate_negative.py          # (re)author the fixtures
-ost plugin run plugins/usdVrm -- \
-    python plugins/usdVrm/tests/test_usdvrm_negative.py   # assert the pinned codes
+python plugins/usdVrmFileFormat/tools/generate_negative.py          # (re)author the fixtures
+ost plugin run plugins/usdVrmFileFormat -- \
+    python plugins/usdVrmFileFormat/tests/test_usdvrm_negative.py   # assert the pinned codes
 ```
 
 ## Add a model

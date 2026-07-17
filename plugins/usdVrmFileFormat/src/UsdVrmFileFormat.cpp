@@ -69,14 +69,14 @@ UsdVrmFileFormat::Read(
     // keeps the embedded bin chunk alive for the duration of Read().
     std::ifstream in(resolvedPath, std::ios::binary | std::ios::ate);
     if (!in) {
-        TF_RUNTIME_ERROR("usdVrm: could not open '%s'", resolvedPath.c_str());
+        TF_RUNTIME_ERROR("usdVrmFileFormat: could not open '%s'", resolvedPath.c_str());
         return false;
     }
     const std::streamsize size = in.tellg();
     in.seekg(0, std::ios::beg);
     std::vector<std::byte> bytes(size > 0 ? static_cast<size_t>(size) : 0);
     if (size > 0 && !in.read(reinterpret_cast<char*>(bytes.data()), size)) {
-        TF_RUNTIME_ERROR("usdVrm: could not read '%s'", resolvedPath.c_str());
+        TF_RUNTIME_ERROR("usdVrmFileFormat: could not read '%s'", resolvedPath.c_str());
         return false;
     }
 
@@ -84,12 +84,12 @@ UsdVrmFileFormat::Read(
     std::string error;
     CgltfVrmDocumentReader reader;
     if (!reader.Read(resolvedPath, bytes, &document, &error)) {
-        TF_RUNTIME_ERROR("usdVrm: %s", VrmDiagMsg(VrmDiag::ContainerUnreadable,
+        TF_RUNTIME_ERROR("usdVrmFileFormat: %s", VrmDiagMsg(VrmDiag::ContainerUnreadable,
             "failed to read '" + resolvedPath + "': " + error).c_str());
         return false;
     }
     for (const std::string& w : document.warnings) {
-        TF_WARN("usdVrm: %s", w.c_str());
+        TF_WARN("usdVrmFileFormat: %s", w.c_str());
     }
 
     // SdfLayer::Reload reads file formats under an outer SdfChangeBlock, and a
@@ -104,24 +104,24 @@ UsdVrmFileFormat::Read(
             return authorer.WriteToString(document, &usda, &writerWarnings);
         });
     if (!task.get()) {
-        TF_RUNTIME_ERROR("usdVrm: failed to author USD for '%s'",
+        TF_RUNTIME_ERROR("usdVrmFileFormat: failed to author USD for '%s'",
             resolvedPath.c_str());
         return false;
     }
     for (const std::string& w : writerWarnings) {
-        TF_WARN("usdVrm: %s", w.c_str());
+        TF_WARN("usdVrmFileFormat: %s", w.c_str());
     }
 
     SdfFileFormatConstPtr usdaFormat = SdfFileFormat::FindByExtension("usda");
     SdfLayerRefPtr generated = SdfLayer::CreateAnonymous(
-        "usdVrm.generated.usda",
+        "usdVrmFileFormat.generated.usda",
         usdaFormat ? usdaFormat : SdfFileFormatConstPtr());
     if (!generated || !generated->ImportFromString(usda)) {
         if (const char* dumpPath = std::getenv("USDVRM_DUMP_GENERATED_USDA")) {
             std::ofstream dump(dumpPath, std::ios::binary);
             dump << usda;
         }
-        TF_RUNTIME_ERROR("usdVrm: generated USD for '%s' could not be parsed",
+        TF_RUNTIME_ERROR("usdVrmFileFormat: generated USD for '%s' could not be parsed",
             resolvedPath.c_str());
         return false;
     }

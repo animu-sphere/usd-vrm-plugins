@@ -51,7 +51,7 @@
 #            OST artifact sha256:f6a2047c... / OCI sha256:3f785e30...
 #            (artifact digest unchanged by the republish)
 #            Published publicly to GHCR.
-#   plugin:  ost plugin publish plugins/usdVrm  (usdVrm 0.1.0, ost 0.13.0 lean
+#   plugin:  ost plugin publish plugins/usdVrmFileFormat  (usdVrmFileFormat 0.1.0, ost 0.13.0 lean
 #            package — reproducible digest, debug symbols split into *-debug)
 schema: 1
 
@@ -97,39 +97,39 @@ runners:
 # so its own L5 golden is host-independent, but its Windows cell is capped for
 # consistency until the hosted-Windows capture is confirmed fixed.
 cells:
-  - name: usdvrm-pr-windows
+  - name: usdvrmfileformat-pr-windows
     lane: pull_request
     runner: windows-hosted
     runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
     runtime_remote:
       uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:bf24d8b6af28d3b3be0fc780803da0ae1181fca8f336ee0c79c1b1607073f724
       expected_oci_digest: sha256:bf24d8b6af28d3b3be0fc780803da0ae1181fca8f336ee0c79c1b1607073f724
-    bundle: plugins/usdVrm
+    bundle: plugins/usdVrmFileFormat
     platform: cy2026
     profile: usd
     up_to: 4
 
-  - name: usdvrm-pr-macos-arm64
+  - name: usdvrmfileformat-pr-macos-arm64
     lane: pull_request
     runner: macos-arm64-hosted
     runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
     runtime_remote:
       uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:459ec9a3930dede19b5c8f2ccf2fcdf9b8645fb9c95773e37b25f35ca30ee873
       expected_oci_digest: sha256:459ec9a3930dede19b5c8f2ccf2fcdf9b8645fb9c95773e37b25f35ca30ee873
-    bundle: plugins/usdVrm
+    bundle: plugins/usdVrmFileFormat
     platform: cy2026
     profile: usd
     host_python: "3.13"
     up_to: 5
 
-  - name: usdvrm-pr-linux
+  - name: usdvrmfileformat-pr-linux
     lane: pull_request
     runner: linux-hosted
     runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
     runtime_remote:
       uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:3f785e3088e8701f653b2470c33ef384bcd79dff3781dd69aa861984225a7fa8
       expected_oci_digest: sha256:3f785e3088e8701f653b2470c33ef384bcd79dff3781dd69aa861984225a7fa8
-    bundle: plugins/usdVrm
+    bundle: plugins/usdVrmFileFormat
     platform: cy2026
     profile: usd
     host_python: "3.13"
@@ -211,7 +211,7 @@ cells:
     host_python: "3.13"
     up_to: 5
 
-  - name: usdvrm-support-windows-cy2026
+  - name: usdvrmfileformat-support-windows-cy2026
     lane: scheduled
     runner: usd-windows-real
     runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227

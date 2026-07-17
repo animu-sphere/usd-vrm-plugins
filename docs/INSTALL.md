@@ -13,7 +13,7 @@ version, Python ABI — the bundle's `<target>` name spells all three out, e.g.
 Each release ships one lean bundle per target plus split debug symbols, a
 source archive, and a `SHA256SUMS` file.
 
-1. **Download** `usdVrm-<version>-<target>.tar.zst` for your target and verify
+1. **Download** `usdVrmFileFormat-<version>-<target>.tar.zst` for your target and verify
    it:
 
    ```sh
@@ -23,13 +23,13 @@ source archive, and a `SHA256SUMS` file.
 2. **Extract** it anywhere (the bundle is relocatable):
 
    ```sh
-   tar --zstd -xf usdVrm-<version>-<target>.tar.zst -C /opt/usdVrm
+   tar --zstd -xf usdVrmFileFormat-<version>-<target>.tar.zst -C /opt/usdVrm
    ```
 
 3. **Register** the plugin with your OpenUSD environment:
 
    - `PXR_PLUGINPATH_NAME` → the directory holding `plugInfo.json`:
-     `<extract-dir>/plugin/resources/usdVrm`
+     `<extract-dir>/plugin/resources/usdVrmFileFormat`
    - **Windows only:** also add `<extract-dir>/lib` to `PATH` so dependent
      DLLs resolve. (On Linux/macOS the plugin library is found through
      `plugInfo.json`'s relative `LibraryPath`; your OpenUSD libraries must
@@ -44,7 +44,7 @@ source archive, and a `SHA256SUMS` file.
 
    Provenance of the binary (git commit / compiler / OpenUSD / build type /
    schema contract version) is stamped in
-   `<extract-dir>/plugin/resources/usdVrm/buildInfo.json`, and
+   `<extract-dir>/plugin/resources/usdVrmFileFormat/buildInfo.json`, and
    `tools/vrm_report.py` prints it in its report's `build` section.
 
 ## With OpenStrata (`ost`)
@@ -62,7 +62,7 @@ ost plugin view /opt/usdVrm avatar.vrm            # usdview
 ## From source
 
 See the repo [README](../README.md#build--test): `ost plugin build
-plugins/usdVrm` (OpenStrata) or plain CMake with `CMAKE_PREFIX_PATH` pointing
+plugins/usdVrmFileFormat` (OpenStrata) or plain CMake with `CMAKE_PREFIX_PATH` pointing
 at an OpenUSD install. The clean-install smoke
 (`python scripts/clean_install_smoke.py`) proves a packaged build works with no
 build-tree reference.

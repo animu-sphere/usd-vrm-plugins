@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Plain-CMake (non-OpenStrata) test wiring. The authoritative verification path
-# is `ost plugin test plugins/usdVrm` (the L0-L6 pyramid); this CTest target
+# is `ost plugin test plugins/usdVrmFileFormat` (the L0-L6 pyramid); this CTest target
 # exists so users building with bare CMake still get an end-to-end smoke test.
 #
 # It drives the freshly built plugin from Python, so it needs OpenUSD's bin/lib
@@ -49,7 +49,7 @@ set_tests_properties(usdvrm_transform_util PROPERTIES
 
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(NOT Python3_Interpreter_FOUND)
-    message(STATUS "usdVrm: Python3 interpreter not found; skipping smoke test")
+    message(STATUS "usdVrmFileFormat: Python3 interpreter not found; skipping smoke test")
     return()
 endif()
 
@@ -65,7 +65,7 @@ set(_vrm_container_dir "$<TARGET_FILE_DIR:vrmContainer::vrmContainer>")
 # CMake paths use forward slashes on every platform, so the JSON stays valid.
 set(USDVRM_TEST_LIBRARYPATH
     "${_lib_dir}/lib${PLUGIN_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
-set(_plug_resources "${CMAKE_CURRENT_BINARY_DIR}/resources/usdVrm")
+set(_plug_resources "${CMAKE_CURRENT_BINARY_DIR}/resources/usdVrmFileFormat")
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/plugInfo.in.json"
     "${_plug_resources}/plugInfo.json"

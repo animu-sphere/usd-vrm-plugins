@@ -12,7 +12,7 @@ runtime:
   # The OpenUSD version range this plugin tolerates. Mirrors the usdVrm bundle
   # the resolver was split from (workspace Phase 3, WORKSPACE.md §1).
   openusd: ">=25.05,<27.0"
-  # Source bundles inherit the resolved runtime ABI (see plugins/usdVrm).
+  # Source bundles inherit the resolved runtime ABI (see plugins/usdVrmFileFormat).
   cxx_abi: inherit
 provides:
   - usd-package-resolver:vrm

@@ -1,4 +1,4 @@
-# usdVrm diagnostic taxonomy
+# usdVrmFileFormat diagnostic taxonomy
 
 Every diagnostic the toolchain reports carries a stable code (`VRMxxx`) with a
 fixed severity. This replaces the importer's old free-text warnings: the code is
@@ -95,11 +95,11 @@ Most severe to least. Tools fail (non-zero exit) on any `ERROR` or `FATAL`.
 
 ```sh
 # Validate an imported stage against the contract (exit 1 on error/fatal).
-ost plugin run plugins/usdVrm -- \
-    python plugins/usdVrm/tools/validate_vrm.py avatar.vrm --json
+ost plugin run plugins/usdVrmFileFormat -- \
+    python plugins/usdVrmFileFormat/tools/validate_vrm.py avatar.vrm --json
 
 # Full compatibility report: import + validation diagnostics, asset inventory,
 # feature compatibility (human-readable, or --json / --out report.json).
-ost plugin run plugins/usdVrm -- \
-    python plugins/usdVrm/tools/vrm_report.py avatar.vrm --json
+ost plugin run plugins/usdVrmFileFormat -- \
+    python plugins/usdVrmFileFormat/tools/vrm_report.py avatar.vrm --json
 ```

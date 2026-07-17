@@ -1,4 +1,4 @@
-# usdVrm — OpenUSD `vrm` file-format plugin
+# usdVrmFileFormat — OpenUSD `vrm` file-format plugin
 
 Imports `.vrm` (VRM 0.x / VRM 1.0) avatars as a normalized OpenUSD stage. The
 goal is not a throwaway "viewable USD" but a structure that keeps VRM semantics
@@ -21,8 +21,8 @@ src/
   usd/UsdVrmAuthorer.{h,cpp}    canonical model -> USD scene description
   resolver/                     ArPackageResolver for .vrm-embedded texture assets
   util/                         path sanitize/uniquify, glTF->USD transform conversion
-plugin/resources/usdVrm/plugInfo.json.in     target-suffix template for USD plugin registration
-plugin/resources/usdVrm/plugInfo.json        generated/inspectable USD plugin registration
+plugin/resources/usdVrmFileFormat/plugInfo.json.in     target-suffix template for USD plugin registration
+plugin/resources/usdVrmFileFormat/plugInfo.json        generated/inspectable USD plugin registration
 tools/                          generate_fixtures.py, vrm_fixture_lib.py, inspect_vrm.py,
                                 package_vrm.py
 tests/                          python smoke tests + generated fixtures (minimal, vrm0_minimal, multiskin_ibm, names, materials, badext) + invalid.vrm
@@ -144,7 +144,7 @@ paths, exports `asset.usda`, and writes `package_report.json` as the asset
 inventory:
 
 ```sh
-ost plugin run plugins/usdVrm -- python plugins/usdVrm/tools/package_vrm.py avatar.vrm out/avatar
+ost plugin run plugins/usdVrmFileFormat -- python plugins/usdVrmFileFormat/tools/package_vrm.py avatar.vrm out/avatar
 ```
 
 ## Build & verify
@@ -152,9 +152,9 @@ ost plugin run plugins/usdVrm -- python plugins/usdVrm/tools/package_vrm.py avat
 Requires `ost` 0.16+ (from the repo root):
 
 ```sh
-ost plugin build plugins/usdVrm        # build libUsdVrmFileFormat into lib/
-ost plugin test  plugins/usdVrm        # L0-L6 verification pyramid
-python plugins/usdVrm/tools/generate_fixtures.py      # regenerate the test fixtures
+ost plugin build plugins/usdVrmFileFormat        # build libUsdVrmFileFormat into lib/
+ost plugin test  plugins/usdVrmFileFormat        # L0-L6 verification pyramid
+python plugins/usdVrmFileFormat/tools/generate_fixtures.py      # regenerate the test fixtures
 ```
 
 ### Viewing a `.vrm` in usdview
@@ -165,13 +165,13 @@ embedded textures, the package resolver (`usdVrmPackageResolver`). Compose them
 with `--with`:
 
 ```sh
-ost plugin view plugins/usdVrm /path/to/Avatar.vrm \
+ost plugin view plugins/usdVrmFileFormat /path/to/Avatar.vrm \
     --with plugins/vrmSchema --with plugins/usdVrmPackageResolver
 ```
 
 `ost plugin view` / `test-view` load only the bundles named with `--with` — unlike
 `build` / `test` / `run`, they do **not** auto-compose the manifest's
-`requires.bundles` closure, so a bare `ost plugin view plugins/usdVrm <avatar>`
+`requires.bundles` closure, so a bare `ost plugin view plugins/usdVrmFileFormat <avatar>`
 opens without `vrmSchema` and the importer's schema apply fails inside
 `Sdf.Layer.FindOrOpen` (on a non-UTF-8 locale usdview then masks it with a
 secondary `UnicodeDecodeError`). Note also there is no `--` before the fixture:

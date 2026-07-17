@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "description": "Diagnostic contract for the generated negative corpus. Each fixture is a deliberately malformed, license-clean .vrm authored by tools/generate_negative.py that provokes exactly one importer diagnostic. tests/test_usdvrm_negative.py drives the freshly built importer over each and pins the code + mechanism. Regenerate the binaries with `python plugins/usdVrm/tools/generate_negative.py`.",
+  "description": "Diagnostic contract for the generated negative corpus. Each fixture is a deliberately malformed, license-clean .vrm authored by tools/generate_negative.py that provokes exactly one importer diagnostic. tests/test_usdvrm_negative.py drives the freshly built importer over each and pins the code + mechanism. Regenerate the binaries with `python plugins/usdVrmFileFormat/tools/generate_negative.py`.",
   "mechanisms": {
     "read-fatal": "The container is unreadable, so Usd.Stage.Open fails and the importer surfaces the code in the raised Tf error (never on a stage).",
     "import-warning": "The stage opens; the importer records the coded warning on /Asset.customData.vrm:warnings, and it is the only diagnostic the fixture emits."

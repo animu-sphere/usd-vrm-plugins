@@ -17,7 +17,7 @@ a manifest edit, not a code change. For each model it asserts:
   `expectedMaxSeverity` (we test codes/severity, not message text).
 
 Run by hand inside the runtime + plugin env:
-    ost plugin run plugins/usdVrm -- python tests/test_usdvrm_corpus.py
+    ost plugin run plugins/usdVrmFileFormat -- python tests/test_usdvrm_corpus.py
 """
 import json
 import os

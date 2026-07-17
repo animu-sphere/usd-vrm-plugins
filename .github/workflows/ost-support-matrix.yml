@@ -35,7 +35,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: usdvrm-support-windows-cy2026
+          - name: usdvrmfileformat-support-windows-cy2026
             lane: scheduled
             runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
             target_trust: local
