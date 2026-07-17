@@ -16,7 +16,7 @@ Two mechanisms (see the manifest's `mechanisms` block):
                        `/Asset.customData.vrm:warnings`.
 
 Run by hand inside the runtime + plugin env:
-    ost plugin run plugins/usdVrm -- python tests/test_usdvrm_negative.py
+    ost plugin run plugins/usdVrmFileFormat -- python tests/test_usdvrm_negative.py
 """
 import json
 import os

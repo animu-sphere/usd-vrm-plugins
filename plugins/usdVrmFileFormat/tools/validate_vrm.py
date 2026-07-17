@@ -15,8 +15,8 @@ Findings are reported as typed diagnostics from the shared taxonomy
 
 Run inside an environment where the usdVrm plugin is discoverable, e.g.:
 
-    ost plugin run plugins/usdVrm -- \
-        python plugins/usdVrm/tools/validate_vrm.py avatar.vrm
+    ost plugin run plugins/usdVrmFileFormat -- \
+        python plugins/usdVrmFileFormat/tools/validate_vrm.py avatar.vrm
 """
 
 from __future__ import annotations

@@ -6,7 +6,7 @@
 # boundary check the pyramid does not own.
 
 # Resolve the OpenUSD install root from the pxr CMake package location (same
-# approach as plugins/usdVrm/tests).
+# approach as plugins/usdVrmFileFormat/tests).
 set(_usd_root "")
 if(pxr_DIR AND EXISTS "${pxr_DIR}/bin")
     set(_usd_root "${pxr_DIR}")

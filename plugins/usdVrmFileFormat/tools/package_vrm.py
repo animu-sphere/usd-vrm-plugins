@@ -10,7 +10,7 @@ exports a USDA layer, and writes a JSON inventory report.
 
 Run inside an environment where the usdVrm plugin is discoverable, for example:
 
-    ost plugin run plugins/usdVrm -- python plugins/usdVrm/tools/package_vrm.py \
+    ost plugin run plugins/usdVrmFileFormat -- python plugins/usdVrmFileFormat/tools/package_vrm.py \
         avatar.vrm packaged/avatar
 """
 

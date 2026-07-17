@@ -34,8 +34,8 @@ Two mechanisms:
 Regenerate the binaries (deterministic) and run the contract test:
 
 ```sh
-python plugins/usdVrm/tools/generate_negative.py
-ost plugin run plugins/usdVrm -- python plugins/usdVrm/tests/test_usdvrm_negative.py
+python plugins/usdVrmFileFormat/tools/generate_negative.py
+ost plugin run plugins/usdVrmFileFormat -- python plugins/usdVrmFileFormat/tests/test_usdvrm_negative.py
 ```
 
 Adding a case is a manifest edit: add a `build_*` to `generate_negative.py`, a

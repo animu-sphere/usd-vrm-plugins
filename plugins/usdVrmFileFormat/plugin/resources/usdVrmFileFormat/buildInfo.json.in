@@ -1,6 +1,6 @@
 {
     "buildInfoSchema": 1,
-    "plugin": "usdVrm",
+    "plugin": "usdVrmFileFormat",
     "pluginVersion": "@_vrm_plugin_version@",
     "schemaContractVersion": @_vrm_schema_contract_version@,
     "gitCommit": "@_vrm_git_commit@",

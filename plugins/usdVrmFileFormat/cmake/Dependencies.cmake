@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# Third-party dependency resolution for the usdVrm plugin.
+# Third-party dependency resolution for the usdVrmFileFormat plugin.
 #
 # cgltf is the GLB/glTF container parser. It is header-only (single file) and is
 # NOT vendored into the repository: it is fetched at configure time, pinned to a
@@ -20,9 +20,9 @@ if(CGLTF_SOURCE_DIR)
         message(FATAL_ERROR "CGLTF_SOURCE_DIR='${CGLTF_SOURCE_DIR}' has no cgltf.h")
     endif()
     set(_cgltf_include "${CGLTF_SOURCE_DIR}")
-    message(STATUS "usdVrm: using local cgltf at ${_cgltf_include}")
+    message(STATUS "usdVrmFileFormat: using local cgltf at ${_cgltf_include}")
 else()
-    message(STATUS "usdVrm: fetching cgltf ${CGLTF_GIT_TAG} via FetchContent")
+    message(STATUS "usdVrmFileFormat: fetching cgltf ${CGLTF_GIT_TAG} via FetchContent")
     FetchContent_Declare(cgltf
         GIT_REPOSITORY https://github.com/jkuhlmann/cgltf.git
         GIT_TAG ${CGLTF_GIT_TAG}

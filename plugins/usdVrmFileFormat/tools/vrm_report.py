@@ -15,8 +15,8 @@ report, in both a human-readable form and machine JSON:
 
 Run inside an environment where the usdVrm plugin is discoverable, e.g.:
 
-    ost plugin run plugins/usdVrm -- \
-        python plugins/usdVrm/tools/vrm_report.py avatar.vrm --json
+    ost plugin run plugins/usdVrmFileFormat -- \
+        python plugins/usdVrmFileFormat/tools/vrm_report.py avatar.vrm --json
 """
 
 from __future__ import annotations
