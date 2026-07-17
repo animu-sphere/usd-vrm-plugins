@@ -97,7 +97,7 @@ runners:
 # so its own L5 golden is host-independent, but its Windows cell is capped for
 # consistency until the hosted-Windows capture is confirmed fixed.
 cells:
-  - name: usdvrm-pr-windows
+  - name: usdvrmfileformat-pr-windows
     lane: pull_request
     runner: windows-hosted
     runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
@@ -109,7 +109,7 @@ cells:
     profile: usd
     up_to: 4
 
-  - name: usdvrm-pr-macos-arm64
+  - name: usdvrmfileformat-pr-macos-arm64
     lane: pull_request
     runner: macos-arm64-hosted
     runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
@@ -122,7 +122,7 @@ cells:
     host_python: "3.13"
     up_to: 5
 
-  - name: usdvrm-pr-linux
+  - name: usdvrmfileformat-pr-linux
     lane: pull_request
     runner: linux-hosted
     runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
@@ -211,7 +211,7 @@ cells:
     host_python: "3.13"
     up_to: 5
 
-  - name: usdvrm-support-windows-cy2026
+  - name: usdvrmfileformat-support-windows-cy2026
     lane: scheduled
     runner: usd-windows-real
     runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227

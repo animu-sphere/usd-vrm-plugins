@@ -74,7 +74,7 @@ jobs:
       matrix:
         include:
           - name: release-windows
-            cache_cell: usdvrm-pr-windows
+            cache_cell: usdvrmfileformat-pr-windows
             runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
             runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:bf24d8b6af28d3b3be0fc780803da0ae1181fca8f336ee0c79c1b1607073f724"
             platform: cy2026
@@ -86,7 +86,7 @@ jobs:
             # import ...`). The runner's default python is 3.12 -> pin 3.13.
             host_python: "3.13"
           - name: release-macos-arm64
-            cache_cell: usdvrm-pr-macos-arm64
+            cache_cell: usdvrmfileformat-pr-macos-arm64
             runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
             runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:459ec9a3930dede19b5c8f2ccf2fcdf9b8645fb9c95773e37b25f35ca30ee873"
             platform: cy2026
@@ -94,7 +94,7 @@ jobs:
             runs_on: ["macos-15"]
             host_python: "3.13"
           - name: release-linux
-            cache_cell: usdvrm-pr-linux
+            cache_cell: usdvrmfileformat-pr-linux
             runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
             runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:3f785e3088e8701f653b2470c33ef384bcd79dff3781dd69aa861984225a7fa8"
             platform: cy2026
