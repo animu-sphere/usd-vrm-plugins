@@ -1,7 +1,7 @@
 # Supported configurations
 
 The configurations `usd-vrm-plugins` targets and continuously verifies. Anything
-outside this list may work but is not part of the `v0.1.0` support contract.
+outside this list may work but is not part of the `v0.2.0` support contract.
 
 ## OpenUSD
 
@@ -42,7 +42,7 @@ These match the per-PR CI matrix in `.github/workflows/ost-source-ci.yml`
 | Linux | `ubuntu-24.04` | x86_64 | libstdc++ (glibc ≥ 2.38 floor) |
 
 Other host OS versions / architectures (e.g. Linux arm64, x86_64 macOS) are not
-part of the verified matrix for `v0.1.0`.
+part of the verified matrix for `v0.2.0`.
 
 ## Build outputs
 
@@ -61,7 +61,7 @@ directory to the dynamic-loader path.
   under the policy in
   [`../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md).
 
-## Non-goals for v0.1.0
+## Non-goals
 
 See the [`CHANGELOG`](../../CHANGELOG.md#non-goals-for-v010) and the
 [roadmap non-goals](../roadmap/backlog.md#non-goals).

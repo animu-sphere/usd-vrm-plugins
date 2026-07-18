@@ -8,21 +8,16 @@ rewritten; new work goes to a new record. Active, incomplete work lives in the
 
 | Version | Record | Theme |
 | --- | --- | --- |
+| v0.2.0 | [v0.2.0.md](v0.2.0.md) | The multi-bundle workspace: `vrmSchema` / `usdVrmFileFormat` / `usdVrmPackageResolver` ship separately (artifact-breaking) |
 | v0.1.0 | [v0.1.0.md](v0.1.0.md) | First public release: VRM 0.x / 1.0 import, typed schemas, schema contract v1 |
-
-The workspace split (`vrmSchema`, `vrmContainer`, `usdVrmPackageResolver`, and
-the `usdVrm` → `usdVrmFileFormat` rename) landed **after** v0.1.0 and is
-unreleased. The next release is the first to ship the multi-bundle workspace;
-its scope is the `[Unreleased]` section of the
-[changelog](../../CHANGELOG.md) and its open questions are in the
-[roadmap](../roadmap/current.md).
 
 ## How a release is cut
 
 `.github/workflows/release.yml` fires on a `vX.Y.Z` tag that **matches the repo
 [`VERSION`](../../VERSION) file**, with that version's changelog section
-finalized. It builds all three OS cells, proves the packaged artifact
-(reproducible packaging, packaged-artifact verification, clean-install smoke),
+finalized. It builds every bundle on all three OS cells, proves the packaged
+artifacts (reproducible packaging + the composed clean-install smoke — see
+[v0.2.0](v0.2.0.md) for why a per-bundle `--from-package` gate cannot stand in),
 and assembles a **draft** release with notes rendered via
 [contributing/RELEASE_NOTES_TEMPLATE.md](../contributing/RELEASE_NOTES_TEMPLATE.md).
 Publishing the draft is a human decision. `workflow_dispatch` runs a dry run

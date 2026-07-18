@@ -13,19 +13,17 @@ Workspace Phase 4 (shipped) and the release workflow (shipped).
 [v0.1.0](../releases/v0.1.0.md) is **released** — tagged and published
 2026-07-11 — and shipped the pre-split single `usdVrm` bundle. Everything since
 (the `vrmSchema` split, `vrmContainer` extraction, the resolver split, and the
-`usdVrm` → `usdVrmFileFormat` rename) is unreleased: 43 commits sit between the
-tag and `main`.
+`usdVrm` → `usdVrmFileFormat` rename) is unreleased.
 
-The next release is therefore the first to ship the multi-bundle workspace, and
-it is **artifact-breaking**: consumers of the `usdVrm-0.1.0-*` asset names must
-move to `usdVrmFileFormat-<version>-<target>`.
+[v0.2.0](../releases/v0.2.0.md) is therefore the first to ship the multi-bundle
+workspace, and it is **artifact-breaking**: consumers of the `usdVrm-0.1.0-*`
+asset names must move to `usdVrmFileFormat-0.2.0-<target>` **and** additionally
+install `vrmSchema` and `usdVrmPackageResolver`.
 
-- ⬜ **Bump `VERSION`.** It still reads `0.1.0`, which is already tagged and
-  published. The release workflow gates on tag == `VERSION`, so the next release
-  cannot be cut until this moves. The artifact rename argues for `0.2.0` rather
-  than a patch.
-- ⬜ **Retitle the changelog's `[Unreleased]` section** to the chosen version
-  with a date; `make_release_notes.py` refuses to render an unfinalized section.
+- ✅ **`VERSION` bumped to `0.2.0`**, with all four manifests and their
+  `requires` ranges (`>=0.1,<0.2` → `>=0.2,<0.3`) moved together.
+- ✅ **Changelog `[0.2.0]` finalized** and verified to render.
+- ⬜ **Dry run → tag → publish the draft.**
 
 ### Product P0 — documentation & implementation sync 🚧
 
@@ -51,17 +49,20 @@ guards all of it in CI.
 
 ### Product P1 — release stabilization ⬜
 
-- ⬜ **Decide what the release's binary artifacts contain.** `release.yml`
-  builds, tests, and packages `plugins/usdVrmFileFormat` **only** — it does not
-  mention `vrmSchema` or `usdVrmPackageResolver`. That was correct at v0.1.0,
-  when the importer was one bundle with co-located schemas; since Workspace
-  Phase 1 and 3 it means a published bundle cannot apply its own typed schemas
-  or resolve embedded textures. Options: extend the release matrix to package
-  all three bundles (independent of the aggregate artifact, which is blocked
-  below), or state the limitation in the notes and make the source archive the
-  supported path. The release-notes template currently states the limitation.
-- ⬜ **Dry-run, tag, and publish** once the two items above are settled: dry run
-  (`workflow_dispatch`) → tag → publish the draft.
+- ✅ **Decided: the release ships all three bundles.** `release.yml` now builds,
+  tests, packages (`ost plugin package --workspace`), and publishes `vrmSchema`,
+  `usdVrmFileFormat`, and `usdVrmPackageResolver` per target. This was forced,
+  not preferred: an `usdVrmFileFormat` package alone registers the `.vrm` format
+  and then **fails to open a stage** (L3/L4, `Used null prim`), because ost
+  0.18.0 stages a dependency bundle's link half without its USD registration
+  half. Measured in [report 23 §2.1](../reports/ost/23-2026-07-18-v0.18.0-workspace-packaging-v0.19.0-asks.md).
+- ✅ **Replaced the packaged-artifact gate.** `ost plugin test --from-package`
+  takes a single bundle and is incompatible with `--workspace`, so it can only
+  test the configuration that fails. The lane now gates on the composed
+  `scripts/clean_install_smoke.py`, which opens and validates real models from
+  the packaged artifacts.
+- ⬜ **Dry-run, tag, and publish:** dry run (`workflow_dispatch`) → tag →
+  publish the draft.
 - ⛔ **A second OpenUSD version cell** (min vs latest) in the compatibility
   matrix. Today CI runs cy2026 / OpenUSD 26.05 only. **Blocked externally:**
   GHCR has no published min-version (e.g. OpenUSD 25.05 / cy2025) runtime
@@ -94,25 +95,26 @@ The OS axis is shipped. Remaining:
 **Status:** ⛔ blocked on `ost` · **Contract:**
 [WORKSPACE.md](../architecture/WORKSPACE.md) §5
 
-Per-bundle packaging works today (`ost plugin package <bundle>`) and the release
-lane ships it. The aggregate product artifact
-(`usdVrmPlugins-<version>-<target>.tar.zst`) does not exist, and cannot be built
-cleanly with `ost` 0.17.0:
+`ost` 0.18.0 moved this forward but did not unblock it. What landed:
+`ost plugin package --workspace` (adopted by the release lane), and a `bundles`
+key in `dependencies.json`. What did not:
 
-- `--workspace` exists only on `ost plugin test`, not on `package`.
-- A bundle package resolves `requires.libraries` (`vrmContainer` is staged under
-  `runtime/libraries/` with a `dependencies.json` record) but **omits
-  `requires.bundles` entirely** — an extracted `usdVrmFileFormat` package has no
-  trace of the `vrmSchema` it needs.
-- `--from-package` is incompatible with `--workspace`, so a composed workspace
-  cannot be verified from its packaged artifacts.
+- **A dependency bundle's USD registration half is never staged.** 0.18.0 stages
+  `libvrmSchema` + its CMake package into `runtime/libraries/`, but not
+  `plugInfo.json` or `generatedSchema.usda` — so the packaged importer links
+  against the schemas it can no longer register, and `--from-package` fails at
+  L3/L4. This is now the **P0 upstream ask**; it is also why the release must
+  ship all three bundles.
+- **No aggregate product artifact.** `--workspace` emits three archives, not
+  `usdVrmPlugins-<version>-<target>.tar.zst`.
+- **`--from-package` still incompatible with `--workspace`**, so no ost verb can
+  verify the configuration we ship.
 
-Until then `scripts/clean_install_smoke.py` hand-rolls the closure with three
-package/extract cycles and `ost plugin run --no-inject --plugin-path`. The asks
-are filed upstream in
-[report 22 §11](../reports/ost/22-2026-07-17-v0.17.0-evidence-gate-v0.18.0-asks.md)
-against `ost` v0.18.0.
+`scripts/clean_install_smoke.py` therefore still hand-rolls the closure and is
+now the release lane's packaged-artifact gate. The asks are re-filed in
+[report 23 §6](../reports/ost/23-2026-07-18-v0.18.0-workspace-packaging-v0.19.0-asks.md)
+against `ost` v0.19.0.
 
-- ⬜ Adopt `ost plugin package --workspace` once it exists.
+- ✅ Adopt `ost plugin package --workspace`.
 - ⬜ Emit the aggregate artifact and gate it with `--from-package --workspace`.
 - ⬜ Retire the hand-rolled closure in `clean_install_smoke.py`.

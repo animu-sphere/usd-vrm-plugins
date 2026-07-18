@@ -18,17 +18,25 @@ the validation / reporting tooling around them.
 
 | artifact | contents |
 | --- | --- |
-| `usdVrmFileFormat-{version}-<target>.tar.zst` | relocated `usdVrmFileFormat` bundle for `<target>` (lean, no debug symbols) — see the install guide |
-| `usdVrmFileFormat-{version}-<target>-debug.tar.zst` | split debug symbols matching the lean bundle |
+| `vrmSchema-{version}-<target>.tar.zst` | typed `Vrm*API` schema bundle for `<target>` (lean) |
+| `usdVrmFileFormat-{version}-<target>.tar.zst` | `.vrm` importer bundle for `<target>` (lean) |
+| `usdVrmPackageResolver-{version}-<target>.tar.zst` | embedded-texture package resolver for `<target>` (lean) |
+| `<bundle>-{version}-<target>.manifest.json` | OpenStrata manifest sidecar per bundle |
 | `usd-vrm-plugins-{version}-src.tar.gz` | source archive at this tag |
 | `SHA256SUMS` | SHA-256 checksums of every file above |
 
-> **Binary artifacts ship the importer bundle only.** `vrmSchema` and
-> `usdVrmPackageResolver` are not yet published as release artifacts, so the
-> binary bundle above cannot apply its typed schemas or resolve embedded
-> textures on its own. Build from source (or from the source archive) for a
-> complete workspace until the aggregate product artifact lands — see
-> [WORKSPACE.md §5](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/docs/architecture/WORKSPACE.md)
+> **Install all three bundles together.** They are separate artifacts but one
+> product: `usdVrmFileFormat` alone registers the `.vrm` file format and then
+> **fails to open a stage**, because the typed `Vrm*API` schemas it applies live
+> in `vrmSchema` and are not staged into its package (OpenStrata stages a
+> dependency bundle's link-time half without its USD registration half).
+> Embedded-texture resolution likewise needs `usdVrmPackageResolver`. Put all
+> three on the plugin path — see the
+> [install guide](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/docs/guides/INSTALL.md).
+>
+> A single aggregate artifact
+> (`usdVrmPlugins-{version}-<target>.tar.zst`) is still pending upstream work —
+> see [WORKSPACE.md §5](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/docs/architecture/WORKSPACE.md)
 > and the [roadmap](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/docs/roadmap/current.md).
 
 Each binary bundle carries a `buildInfo.json` stamp in its resources

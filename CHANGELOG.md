@@ -13,6 +13,15 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-07-18
+
+First release of the multi-bundle workspace. **Artifact-breaking:** consumers of
+the v0.1.0 `usdVrm-0.1.0-*` asset names must move to
+`usdVrmFileFormat-0.2.0-<target>`, and the typed schemas now ship as their own
+`vrmSchema-0.2.0-<target>` asset that must be installed alongside it — see
+[the release notes](https://github.com/animu-sphere/usd-vrm-plugins/blob/v0.2.0/docs/releases/v0.2.0.md)
+for the install order.
+
 ### Added
 - **Workspace Phase 2 — `vrmContainer` extraction**: a standalone plain shared
   CMake library (`libs/vrmContainer`) now validates GLB 2 headers/chunks and
@@ -28,6 +37,17 @@ Current schema contract version: **1**.
   in the bundle's `tests.smoke` / `tests.negative` lists).
 
 ### Changed
+- **Release artifacts now ship the whole workspace.** The release lane packages
+  and publishes all three bundles — `vrmSchema`, `usdVrmFileFormat`, and
+  `usdVrmPackageResolver` — via `ost plugin package --workspace`, instead of the
+  importer bundle alone. This is required, not cosmetic: since the Workspace
+  Phase 1 schema split, an `usdVrmFileFormat` package on its own registers the
+  `.vrm` file format but **cannot open a stage**, because OpenStrata stages a
+  dependency bundle's link-time half (`libvrmSchema` + its CMake package) without
+  its USD registration half (`plugInfo.json`, `generatedSchema.usda`), so the
+  typed `Vrm*API` schemas are never discovered. Installing all three bundles on
+  the plugin path is therefore the supported configuration. Upstream asks are
+  filed in [ost report 23](https://github.com/animu-sphere/usd-vrm-plugins/blob/v0.2.0/docs/reports/ost/23-2026-07-18-v0.18.0-workspace-packaging-v0.19.0-asks.md).
 - **Workspace Phase 4 — `usdVrm` → `usdVrmFileFormat` rename**: the file-format
   bundle now carries the identity the workspace contract assigns it
   (`docs/architecture/WORKSPACE.md` §1). The bundle directory
@@ -160,5 +180,6 @@ Explicitly out of scope for this release (tracked in the
 - ABI stability guarantees across all OpenUSD versions (see
   [`docs/reference/SUPPORTED_CONFIGURATIONS.md`](docs/reference/SUPPORTED_CONFIGURATIONS.md)).
 
-[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/animu-sphere/usd-vrm-plugins/releases/tag/v0.1.0

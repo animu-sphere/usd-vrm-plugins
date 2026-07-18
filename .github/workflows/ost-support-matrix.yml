@@ -40,6 +40,8 @@ jobs:
             runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
             target_trust: local
             minimum_trust: local
+            require_evidence: all
+            evidence_flags: "--require-sbom --require-provenance"
             platform: cy2026
             profile: usd
             up_to: 5
@@ -58,8 +60,8 @@ jobs:
           ost artifact show ${{ matrix.plugin_artifact }}
       - name: Verify artifact integrity
         run: |
-          ost artifact verify ${{ matrix.runtime_artifact }} --minimum-trust ${{ matrix.minimum_trust }} --require-sbom --require-provenance
-          ost artifact verify ${{ matrix.plugin_artifact }} --minimum-trust ${{ matrix.minimum_trust }} --require-sbom --require-provenance
+          ost artifact verify ${{ matrix.runtime_artifact }} --minimum-trust ${{ matrix.minimum_trust }} ${{ matrix.evidence_flags }}
+          ost artifact verify ${{ matrix.plugin_artifact }} --minimum-trust ${{ matrix.minimum_trust }} ${{ matrix.evidence_flags }}
       - name: Materialize the runtime from the registry
         run: ost runtime pull ${{ matrix.platform }} --profile ${{ matrix.profile }} --from-artifact ${{ matrix.runtime_artifact }} --force
       - name: Extract the plugin bundle under test
