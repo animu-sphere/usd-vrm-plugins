@@ -52,16 +52,29 @@ simulates:
 
 - **LookAt**, **node constraints**, and **spring bones** are authored as typed
   schema data on the stage. Their runtime evaluation/simulation is a **separate
-  layer** (`execVrm`, roadmap P4), never run by this importer.
+  layer** (`execVrm`, Product P4), never run by this importer.
 - MToon **shading** realization (beyond the PreviewSurface approximation) is
-  roadmap P5.
+  Product P5.
 
 This separation is deliberate: the importer stays a pure, deterministic
 data-authoring step so downstream runtimes can be swapped without changing it.
 
+## Not covered by this matrix
+
+This table covers the `.vrm` importer only. **`.vrma` motion clips are not
+supported** — there is no `.vrma` file-format plugin, no retargeting, and no
+motion runtime in the tree today. That layer is planned as a separate bundle
+(`usdVrmaFileFormat`) plus the motion libraries; see
+[MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md) and the
+Motion Phase ladder in the [backlog](../roadmap/backlog.md).
+
+Skeletal animation *embedded in a `.vrm`* is supported and listed above; that is
+a different thing from a standalone reusable `.vrma` clip.
+
 ## See also
 
-- [`ROADMAP.md`](../roadmap/) — phased status (P0–P6).
+- [`ROADMAP.md`](../roadmap/) — phased status (Product P0–P6, Workspace Phase
+  0–8, Motion Phase A–H).
 - [`SUPPORTED_CONFIGURATIONS.md`](SUPPORTED_CONFIGURATIONS.md) — platforms, OpenUSD, build.
 - [`../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) — schema contract v1.
 - [`../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md`](../../plugins/usdVrmFileFormat/docs/DIAGNOSTICS.md) — diagnostic codes.

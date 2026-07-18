@@ -27,12 +27,33 @@ project's central design decision, and it is described below.
 | [`usdVrmFileFormat`](plugins/usdVrmFileFormat) | `SdfFileFormat` bundle (`usd-fileformat`) | `.vrm` parsing, canonicalization, USD authoring | Shipped |
 | [`usdVrmPackageResolver`](plugins/usdVrmPackageResolver) | `ArPackageResolver` bundle (`usd-package-resolver`) | Embedded resource resolution from `.vrm` | Shipped |
 | [`vrmContainer`](libs/vrmContainer) | Plain CMake library | GLB parsing + byte-range validation | Shipped |
-| `execVrm` | OpenExec bundle | LookAt, constraints, expressions, spring runtime | Planned |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Packaging planned |
 
 `usdVrm` is not a bundle id — it names the product as a whole. It *was* the
 file-format bundle's name until the workspace split; documentation and artifacts
 that predate that rename use it in the old sense.
+
+### The motion layer (planned, not built)
+
+Nothing below exists in the tree yet. The identities and dependency edges are
+reserved in the workspace contract so the boundaries are fixed before any code
+lands. Rationale:
+[docs/design/MOTION_ARCHITECTURE_POLICY.md](docs/design/MOTION_ARCHITECTURE_POLICY.md).
+
+| Component | Type | Role |
+| --- | --- | --- |
+| `usdVrmaFileFormat` | `SdfFileFormat` bundle | `.vrma` motion clips → `UsdSkelAnimation` on a *canonical semantic* humanoid skeleton |
+| `motionCore` | Plain CMake library | Vendor-neutral pose / animation / root-motion / constraint types |
+| `motionRuntime` | Plain CMake library | Timestamped pose buffer, resample, filter, blend |
+| `vrmRetarget` | Plain CMake library | Humanoid mapping, rest-pose correction, root-motion policy |
+| `execMotion` | OpenExec bundle | Vendor-neutral motion nodes |
+| `execVrm` | OpenExec bundle | VRM semantics: retarget, root motion, expression, look-at, avatar apply |
+| `adapters/` | Optional bundles | The **only** place product names are permitted (e.g. Mocopi, ARDY) |
+
+`.vrm` and `.vrma` are deliberately **separate** file-format plugins with
+symmetric structure, and they compose by **reference**, not `subLayer` — a
+subLayer stack cannot express which skeleton a clip applies to. A third
+binding/assembly layer relates them.
 
 ### Dependencies
 
@@ -43,16 +64,26 @@ usdVrmFileFormat ───────> vrmSchema
 
 usdVrmPackageResolver ──> vrmContainer
 
-execVrm ────────────────> vrmSchema
+                          (planned)
+usdVrmaFileFormat ──────> vrmContainer, motionCore
+motionRuntime ──────────> motionCore
+vrmRetarget ────────────> motionCore, motionRuntime
+execMotion ─────────────> motionCore, motionRuntime
+execVrm ────────────────> vrmSchema, vrmRetarget
+adapters/* ─────────────> motionCore, motionRuntime
 ```
 
-Three rules keep those edges honest:
+Five rules keep those edges honest:
 
 - `vrmSchema` depends on no other bundle or library.
 - `usdVrmPackageResolver` never links the file-format bundle; the importer's
   dependency on the resolver is runtime-only, never link-time.
 - `execVrm` reads the schema contract from the stage — never the importer's
   private API or canonical model.
+- `vrmRetarget` does not depend on OpenExec. The retarget core is finished and
+  testable before any OpenExec node exists; the nodes are thin wrappers.
+- Adapters depend on the core. The core never depends on an adapter, and
+  `motionCore` never sees a vendor SDK, a network protocol, or a product name.
 
 The bundle graph is validated by `ost plugin test --workspace`, and each
 consumer adds a binary link check proving what it does and does not import. Full

@@ -1,17 +1,28 @@
 # Backlog
 
-Ordered but unscheduled work. The next milestone (`v0.1.0`) and active
-carry-overs are in [current.md](current.md); shipped detail is in the
+Ordered but unscheduled work. The next milestone and active carry-overs are in
+[current.md](current.md); shipped detail is in the
 [delivery history](../reports/delivery-history.md).
 
 Legend: ⬜ not started
 
 ## Milestone ladder (beyond next)
 
-- ⬜ **Workspace Phase 6 — `execVrm` bootstrap.** Establishes the bundle
-  boundary, manifest, and packaging for the runtime layer. Product P4 then
-  implements behavior inside that boundary; the two are not the same milestone.
-- ⬜ **Product P4 — the first `execVrm` vertical slice** (see below).
+- ⬜ **Motion Phase A — freeze the motion contract.** A design artifact, not an
+  implementation: the hand-authored target USDA plus the `motion::` type
+  definitions. Everything below depends on it, and it needs no new bundle, so it
+  is the cheapest next step in the motion layer.
+- ⬜ **Workspace Phase 6 — motion library bootstrap** (`motionCore`,
+  `motionRuntime`, `vrmRetarget`).
+- ⬜ **Workspace Phase 7 — `usdVrmaFileFormat` bootstrap**, then **Motion Phase
+  B** inside it.
+- ⬜ **Motion Phase C — offline retarget.** The first end-to-end evaluation
+  point of the whole motion layer (motion policy §16-C).
+- ⬜ **Workspace Phase 8 — `execMotion` + `execVrm` bootstrap**, then **Motion
+  Phase E** inside it.
+
+Workspace phases establish boundaries; Motion phases fill them. They are never
+the same milestone.
 
 ## Product P2 — fix the canonical-model contract
 
@@ -31,28 +42,86 @@ The canonical model stays **private to the importer**. `vrmCore` is not created
 until a second consumer outside the importer actually exists
 ([WORKSPACE.md](../architecture/WORKSPACE.md) §1).
 
-## Product P4 — OpenExec runtime bundle (`execVrm`)
+## Product P4 — the motion & runtime layer
 
-*Goal: build a runtime graph from a static USD stage; drive the humanoid from
-Mocopi or animation input; evaluate look-at / expression / spring bone as
-independent nodes; swap the runtime without touching the importer.*
-(design policy §10, §17-P4)
+*Goal: drive a VRM avatar from a clip, a live capture, or a generator — through
+one shared humanoid pipeline — without changing the importer.*
+(motion policy; design policy §10, §17-P4)
 
-The first vertical slice is **LookAt only**. Spring bones and expressions are
-explicitly not in the first PR.
+**Restructured 2026-07-18.** P4 previously read "OpenExec runtime bundle
+(`execVrm`)" and enumerated a LookAt-first vertical slice ending in a Mocopi
+adapter. [MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md)
+supersedes that plan in three ways:
 
-1. ⬜ `vrmSchema` discovery from a stage
-2. ⬜ `VrmLookAtAPI` reader
-3. ⬜ Target input
-4. ⬜ Head / eye output
-5. ⬜ Deterministic evaluator test
-6. ⬜ Verification that it uses no importer private API
-7. ⬜ OpenExec graph integration
-8. ⬜ Mocopi adapter prototype
+| Was | Now | Why |
+| --- | --- | --- |
+| One `execVrm` bundle | `execMotion` (vendor-neutral) + `execVrm` (VRM semantics) | Motion runtime is reusable beyond VRM (motion policy §11) |
+| OpenExec first, LookAt slice | `vrmRetarget` first, OpenExec last | The retarget core must be complete and testable before OpenExec (motion policy §18.12) |
+| Mocopi as a P4 work item | Mocopi as an optional leaf adapter | Product names never appear in core (motion policy §8.1) |
 
-**Boundary:** `execVrm` reads the schema contract from the stage only — never
-importer internals, never the canonical model
-([WORKSPACE.md](../architecture/WORKSPACE.md) §2, §3).
+P4 is now an umbrella. Its detail lives in the Motion Phase ladder below;
+**LookAt-first is retired** — the first end-to-end target is offline retarget of
+a `.vrma` clip onto a real avatar (Motion Phase C).
+
+**Boundaries** ([WORKSPACE.md](../architecture/WORKSPACE.md) §2):
+`execVrm` reads the schema contract from the stage only — never importer
+internals, never the canonical model. `motionCore` never sees a vendor SDK, a
+network protocol, or a product name. `vrmRetarget` never depends on OpenExec.
+
+**Done when** (motion policy §17): a `.vrma` clip retargets onto a target
+skeleton and plays back in a stock USD environment; a live capture feeds the
+same retarget core with jitter absorbed and missing bones tolerated; and
+swapping the generator changes nothing downstream.
+
+## Motion Phase ladder (Product P4 detail)
+
+Source of truth:
+[MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md) §16.
+Always written "Motion Phase X", never a bare "Phase X".
+
+- ⬜ **Motion Phase A — freeze the contract.** Hand-author the ideal VRMA→USDA
+  conversion; define `motion::HumanoidPose`, `HumanoidAnimation`, an independent
+  `RootMotion`, and `MotionConstraintSet`; write down the source/target
+  coordinate spaces. *No new bundle required — do this first.*
+- ⬜ **Motion Phase B — minimal `usdVrmaFileFormat`.** GLB/glTF animation read,
+  humanoid rotation, hips translation, canonical `HumanoidSkeleton`,
+  `UsdSkelAnimation`, time range, provenance. Not expression, not look-at, not
+  retarget, not live.
+- ⬜ **Motion Phase C — offline retarget.** `vrmRetarget` + a `motion_retarget`
+  CLI: humanoid mapping from the target VRM, rest-pose correction, expansion to
+  target joint order, `UsdSkelAnimation` output, `skel:animationSource` binding.
+  **The first end-to-end evaluation point.**
+- ⬜ **Motion Phase D — live-capture prototype.** Generic `LiveCaptureSource`,
+  timestamped `PoseBuffer`, reproducible tests from recorded samples, missing
+  bones / confidence / root-motion evaluation. Product-specific support is an
+  optional adapter.
+- ⬜ **Motion Phase E — `execMotion` / `execVrm`.** ClipSample, PoseBuffer,
+  HumanoidRetarget, RootMotionResolve, AvatarApply. Nodes are thin wrappers over
+  `motionRuntime` and `vrmRetarget`.
+- ⬜ **Motion Phase F — generation adapter.** `IMotionGenerator`,
+  `MotionGenerationRequest`, text intent, root waypoints, sparse joint
+  constraints, pose history, clip-ification.
+- ⬜ **Motion Phase G — expression / look-at / recording.** VRMA expression and
+  look-at animation, `ExpressionResolve`, `LookAtEvaluate`, live recording,
+  bake, VRMA export investigation.
+- ⬜ **Motion Phase H — advanced.** Blending, IK / foot locking, contact
+  handling, latency compensation, multi-performer sync, simulation bridge,
+  generated-motion cache, publish pipeline.
+
+### Motion-layer open questions
+
+- ⬜ **Do the VRMA animation schemas belong in `vrmSchema`?** Motion policy §4.1
+  names `VrmAnimationExpressionAPI` and `VrmAnimationLookAtAPI` as
+  "equivalents" without fixing an owner. Adding them to `vrmSchema` is a schema
+  contract change ([WORKSPACE.md](../architecture/WORKSPACE.md) §3); a separate
+  `vrmaSchema` bundle avoids that but splits the contract. **Decide before
+  Motion Phase B.**
+- ⬜ **Is the `motion:` USD namespace (motion policy §13) a typed schema or
+  namespaced attributes?** Motion Plans are the one place the policy authors USD
+  outside a file-format plugin.
+- ⬜ **Where does the binding/assembly layer (motion policy §3.3) get authored
+  from?** It is neither importer output nor retarget output; today nothing owns
+  it.
 
 ## Product P5 — MToon realization
 
@@ -88,22 +157,33 @@ not a commitment to ship one.
   0.x, VRoid, animation clips, KTX2, multi-skin. VRoid (Vita, Victoria_Rubin,
   Sendagaya_Shino, AvatarSample_A/B) and Alicia are declared fetch/opt-in
   candidates **pending per-model license verification**.
-- ⬜ **Multi-plugin session dogfooding.** The `execVrm` bundle will exercise
+- ⬜ **Multi-plugin session dogfooding.** `usdVrmaFileFormat` will exercise
   `ost plugin run/view --with` and the workspace closure. The repo root already
   globs `plugins/*`, so a second bundle drops in without edits.
 - ⬜ **Morph-weight animation** authoring (glTF morph targets → USD), currently
-  the one documented importer animation gap.
+  the one documented importer animation gap. Motion Phase G covers the VRMA
+  side; this is the `.vrm` side and the two should land compatibly.
+- ⬜ **A motion corpus.** `.vrma` clips with known-good expected output, plus
+  recorded live-capture samples for the reproducible tests Motion Phase D needs.
+  Licensing is the same gate the VRM corpus hit.
 
 ## Non-goals
 
 Out of scope for these plugins — handle via schema, adapter, an OpenExec task,
-or another plugin (design policy §15, §19):
+or another plugin (design policy §15, §19; motion policy §8, §18):
 
 - Full VRM runtime physics execution → `execVrm`
 - Pixel-perfect MToon across all renderers
 - Auto-repair of arbitrary broken glTF
 - A full VRM exporter (P6 is research only)
 - DCC-specific UI
+- **Product-specific motion support in core.** Mocopi, ARDY, and any other
+  named system are optional leaf adapters, never a core dependency or a branch
+  condition.
+- **Per-frame USD stage authoring for live playback.** Live evaluation produces
+  transient poses; USD animation is authored only on bake / record / publish
+  (motion policy §12.1).
+- **Model latent representations in a shared USD schema** (motion policy §13).
 
 ## Acceptance criteria for a production-oriented importer
 
