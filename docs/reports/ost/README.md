@@ -2,7 +2,7 @@
 
 This repository is built end to end with [OpenStrata](https://github.com/animu-sphere/open-strata)
 (`ost`), and these are the dated records of what that was actually like — every
-`ost` version from the pre-0.3 builds through 0.17.0, on Windows, macOS arm64,
+`ost` version from the pre-0.3 builds through 0.18.0, on Windows, macOS arm64,
 and Linux. They are upstream feedback first and our own status trail second.
 
 **They are append-only historical evidence.** A report is never rewritten to
@@ -17,8 +17,9 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 24 carries
-the live v0.19.0 asks (it re-files report 23's three and adds four).
+The current `ost` ask list is always in the **newest** report. Report 25 carries
+the live v0.19.0 asks — it withdraws one of report 24's as already delivered and
+carries the rest.
 
 Numbering is the series' own: reports 1–8 call themselves "report #N" in their
 bodies, so the filenames preserve those numbers rather than renumbering history.
@@ -27,7 +28,8 @@ that was never given a series number.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
-| 24 | 2026-07-18 | [First workspace release](24-2026-07-18-v0.18.0-first-workspace-release-v0.19.0-asks.md) | 0.18.0 | v0.2.0 shipped off `package --workspace`; staged `runtime_libs` have no activation contract outside `ost`. **Live v0.19.0 asks** |
+| 25 | 2026-07-18 | [`--from-package` already composed `--workspace`](25-2026-07-18-v0.18.0-from-package-workspace-correction.md) | 0.18.0 | Correction: an ask we re-filed twice had already shipped; we read the (stale) help text instead of running it. Registration-half P0 strengthened. **Live v0.19.0 asks** |
+| 24 | 2026-07-18 | [First workspace release](24-2026-07-18-v0.18.0-first-workspace-release-v0.19.0-asks.md) | 0.18.0 | v0.2.0 shipped off `package --workspace`; staged `runtime_libs` have no activation contract outside `ost`. Ask (2) withdrawn by 25 |
 | 23 | 2026-07-18 | [Workspace packaging half-lands](23-2026-07-18-v0.18.0-workspace-packaging-v0.19.0-asks.md) | 0.18.0 | `package --workspace` + `bundles` land, but a schema bundle's registration half is never staged, so the packaged product cannot open a file. Asks carried into 24 |
 | 22 | 2026-07-17 | [The evidence gate](22-2026-07-17-v0.17.0-evidence-gate-v0.18.0-asks.md) | 0.17.0 | `ci generate` emits a gate no producer can satisfy; `import` silently drops evidence. Superseded by 23 |
 | 21 | 2026-07-15 | [Phase 3 resolver split](21-2026-07-15-v0.17.0-phase3-resolver-split-dogfooding.md) | 0.16/0.17 | `requires.libraries` lands; `plugin view` does not compose `requires.bundles` |
@@ -59,4 +61,4 @@ The series is the reason several `ost` features exist in the shape they do:
 `requires.bundles` (reports 17–18), `requires.libraries` and the
 `openstrata.library.yaml` descriptor (reports 19–21), the reproducible packaging
 the release lane depends on (report 16), and the Linux glibc floor measurement
-(report 14). The still-open asks are in report 22.
+(report 14). The still-open asks are in report 25.

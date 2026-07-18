@@ -58,11 +58,14 @@ guards all of it in CI.
   and then **fails to open a stage** (L3/L4, `Used null prim`), because ost
   0.18.0 stages a dependency bundle's link half without its USD registration
   half. Measured in [report 23 §2.1](../reports/ost/23-2026-07-18-v0.18.0-workspace-packaging-v0.19.0-asks.md).
-- ✅ **Replaced the packaged-artifact gate.** `ost plugin test --from-package`
-  takes a single bundle and is incompatible with `--workspace`, so it can only
-  test the configuration that fails. The lane now gates on the composed
+- ✅ **Replaced the packaged-artifact gate.** A bare per-bundle
+  `ost plugin test --from-package` tests the one configuration that provably
+  fails (L3/L4 above). The lane gates on the composed
   `scripts/clean_install_smoke.py`, which opens and validates real models from
-  the packaged artifacts.
+  the packaged artifacts. `--from-package --workspace` *does* compose and is
+  green (see [report 25](../reports/ost/25-2026-07-18-v0.18.0-from-package-workspace-correction.md));
+  it covers `minimal.vrm` per bundle, so it joins the smoke script rather than
+  replacing it.
 - ⬜ **Dry-run, tag, and publish:** dry run (`workflow_dispatch`) → tag →
   publish the draft.
 - ⛔ **A second OpenUSD version cell** (min vs latest) in the compatibility
@@ -109,14 +112,20 @@ key in `dependencies.json`. What did not:
   ship all three bundles.
 - **No aggregate product artifact.** `--workspace` emits three archives, not
   `usdVrmPlugins-<version>-<target>.tar.zst`.
-- **`--from-package` still incompatible with `--workspace`**, so no ost verb can
-  verify the configuration we ship.
+`--from-package` **does** compose with `--workspace` in 0.18.0 — the shipped
+help text saying otherwise was stale, and this roadmap repeated it. That verb
+verifies the composed configuration and is green; it does not close the P0,
+because it works by putting the dependency's *separate package* on the path
+rather than by making any one package self-closed.
+[Report 25](../reports/ost/25-2026-07-18-v0.18.0-from-package-workspace-correction.md)
+measures both, and §5 there is the live v0.19.0 ask list.
 
-`scripts/clean_install_smoke.py` therefore still hand-rolls the closure and is
-now the release lane's packaged-artifact gate. The asks are re-filed in
-[report 23 §6](../reports/ost/23-2026-07-18-v0.18.0-workspace-packaging-v0.19.0-asks.md)
-against `ost` v0.19.0.
+`scripts/clean_install_smoke.py` remains the release lane's packaged-artifact
+gate: it extracts outside the repo and drives textured avatars end to end, where
+the ost verb covers `minimal.vrm` per bundle.
 
 - ✅ Adopt `ost plugin package --workspace`.
-- ⬜ Emit the aggregate artifact and gate it with `--from-package --workspace`.
-- ⬜ Retire the hand-rolled closure in `clean_install_smoke.py`.
+- ✅ Gate the composed packaged configuration with `--from-package --workspace`.
+- ⬜ Emit the aggregate artifact.
+- ⬜ Retire the hand-rolled closure in `clean_install_smoke.py` (needs the P0
+  above; the composed verb narrows but does not remove the need).
