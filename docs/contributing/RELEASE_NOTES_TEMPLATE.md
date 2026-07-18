@@ -21,7 +21,6 @@ the validation / reporting tooling around them.
 | `vrmSchema-{version}-<target>.tar.zst` | typed `Vrm*API` schema bundle for `<target>` (lean) |
 | `usdVrmFileFormat-{version}-<target>.tar.zst` | `.vrm` importer bundle for `<target>` (lean) |
 | `usdVrmPackageResolver-{version}-<target>.tar.zst` | embedded-texture package resolver for `<target>` (lean) |
-| `<bundle>-{version}-<target>-debug.tar.zst` | split debug symbols matching each lean bundle |
 | `<bundle>-{version}-<target>.manifest.json` | OpenStrata manifest sidecar per bundle |
 | `usd-vrm-plugins-{version}-src.tar.gz` | source archive at this tag |
 | `SHA256SUMS` | SHA-256 checksums of every file above |

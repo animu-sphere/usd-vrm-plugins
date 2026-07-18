@@ -7,8 +7,8 @@
 # usdVrmFileFormat, usdVrmPackageResolver -- on the same three OS cells and
 # digest-pinned runtimes as the PR lane, proves the *packaged* artifacts
 # (composed clean-install smoke + digest reproducibility), then assembles a
-# DRAFT GitHub release: per-target lean + debug bundles for all three, a source
-# archive, SHA256SUMS, and notes rendered from CHANGELOG.md via
+# DRAFT GitHub release: per-target lean bundles + manifest sidecars for all
+# three, a source archive, SHA256SUMS, and notes rendered from CHANGELOG.md via
 # docs/contributing/RELEASE_NOTES_TEMPLATE.md. Publishing the draft is a human
 # decision.
 #
