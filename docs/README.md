@@ -23,14 +23,19 @@ contract wins — structural changes go there first, in their own PR.
 ## Canonical documents
 
 - [design/DESIGN_POLICY.md](design/DESIGN_POLICY.md) is the long-form design &
-  development policy — the source of truth for **Product P0–P6** and for the
-  import / evaluation / simulation boundary.
+  development policy for the **importer** — the source of truth for **Product
+  P0–P6** and for the import / evaluation / simulation boundary.
+- [design/MOTION_ARCHITECTURE_POLICY.md](design/MOTION_ARCHITECTURE_POLICY.md)
+  is the policy for everything **below** the importer — `.vrma` import, the
+  vendor-neutral motion core, retargeting, and the OpenExec runtime. Source of
+  truth for **Motion Phase A–H**. It extends DESIGN_POLICY §10 and restructures
+  §17-P4; where the two overlap, the motion policy wins.
 - [architecture/WORKSPACE.md](architecture/WORKSPACE.md) is the binding workspace
   contract — the source of truth for bundle identities, dependency directions,
-  artifact naming, and **Workspace Phase 0–6**.
+  artifact naming, and **Workspace Phase 0–8**.
 
-The two phase systems are separate and always qualified; see
-[roadmap/README.md](roadmap/README.md#two-phase-systems-deliberately-separate).
+The three phase systems are separate and always qualified; see
+[roadmap/README.md](roadmap/README.md#three-sequences-deliberately-separate).
 
 ## Per-bundle documentation
 

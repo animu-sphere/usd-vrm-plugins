@@ -4,6 +4,14 @@
 > the canonical policy document referenced by [the roadmap](../roadmap/); the roadmap
 > tracks live status against it. Section numbers are stable so the roadmap and the
 > plugin docs can cite them (e.g. "policy §10").
+>
+> **Scope:** this document is canonical for the **importer** — the `.vrm` read
+> path, the canonical model, the schema contract, diagnostics, CI, release, and
+> Product P0–P6. Everything **below** the importer — `.vrma` import, the
+> vendor-neutral motion core, retargeting, and the OpenExec runtime — is
+> canonical in
+> [MOTION_ARCHITECTURE_POLICY.md](MOTION_ARCHITECTURE_POLICY.md), which extends
+> §10 and restructures §17-P4. Where the two overlap, the motion policy wins.
 
 ## 1. Purpose
 
@@ -396,6 +404,21 @@ file-format plugin.
 
 ## 10. Runtime semantics & OpenExec
 
+> **Extended and partly superseded** by
+> [MOTION_ARCHITECTURE_POLICY.md](MOTION_ARCHITECTURE_POLICY.md) (2026-07-18).
+> The import/runtime boundary below still holds and is the foundation the motion
+> policy builds on. Three specifics changed:
+>
+> - `execVrm` is split into **`execMotion`** (vendor-neutral motion runtime) and
+>   **`execVrm`** (VRM semantics + rig application) — motion policy §11.
+> - An **OpenExec-independent `vrmRetarget` library is completed first**;
+>   OpenExec nodes are thin wrappers over it — motion policy §10, §18.12.
+> - The "Mocopi integration" flow below is generalized: Mocopi becomes one
+>   optional adapter behind a generic `LiveCaptureSource`, and product names are
+>   forbidden in core — motion policy §8.
+>
+> Where the two documents disagree, the motion policy wins.
+
 Separate the file-format plugin from the runtime evaluator.
 
 ```text
@@ -450,6 +473,12 @@ Build this as a graph according to the actual dependencies; do not make it a fix
 monolithic update function.
 
 ### Mocopi integration
+
+> **Superseded** by motion policy §8.2. The flow below is correct in shape but
+> is now expressed generically: a motion-capture system decodes into a
+> `LiveCaptureSource` producing `motion::HumanoidPose`, and Mocopi is one
+> concrete adapter under `adapters/liveCapture/mocopi/`. No core code, shared
+> schema, retarget API, or shared OpenExec node names it.
 
 The recommended flow for Mocopi input:
 
@@ -851,9 +880,16 @@ Provide, as far as feasible:
 - Real models with textures resolve
 - Schema registration succeeds
 
-### P4: OpenExec runtime plugin
+### P4: The motion & runtime layer
 
-**Work**
+> **Restructured 2026-07-18.** P4 is now an umbrella whose detail lives in
+> [MOTION_ARCHITECTURE_POLICY.md](MOTION_ARCHITECTURE_POLICY.md) §16 as **Motion
+> Phase A–H**. The work list below is the pre-motion-policy plan, kept for
+> rationale; it is no longer the plan of record. In particular the LookAt-first
+> ordering is retired (the retarget core comes first) and "Mocopi adapter
+> prototype" is no longer a P4 work item — it is an optional leaf adapter.
+
+**Work** *(superseded — see Motion Phase A–H)*
 
 - `execVrm` module
 - Schema-discovery node
@@ -865,10 +901,12 @@ Provide, as far as feasible:
 - Graph ordering
 - Mocopi adapter prototype
 
-**Done when**
+**Done when** *(restated by motion policy §17)*
 
 - A runtime graph can be built from a static USD stage
-- The humanoid can be driven from Mocopi or animation input
+- The humanoid can be driven from a clip, a live capture, **or a generator** —
+  through one shared pipeline, with the generator swappable without downstream
+  change
 - Look-at, expression, and spring bone can each be evaluated as independent nodes
 - The runtime can be swapped without changing the importer
 
@@ -1005,6 +1043,11 @@ Recommended units of work.
 - Golden semantic diff
 
 ### Sprint 4
+
+> **Superseded** by the Motion Phase ladder
+> ([MOTION_ARCHITECTURE_POLICY.md](MOTION_ARCHITECTURE_POLICY.md) §16). The
+> sequence below starts at `execVrm`; the motion policy starts at the contract
+> freeze and the retarget core, and reaches OpenExec only at Motion Phase E.
 
 - `execVrm` skeleton
 - Schema discovery

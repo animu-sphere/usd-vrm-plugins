@@ -39,7 +39,8 @@ schemas. Since Workspace Phase 4 that is wrong in every particular.
 - 🚧 Describe `vrmSchema`, `usdVrmFileFormat`, and `usdVrmPackageResolver` as
   separate bundles, `vrmContainer` as a plain library, and `usdVrm` as the
   aggregate product name only.
-- 🚧 Unify phase notation to **Product P0–P6** vs **Workspace Phase 0–6**.
+- 🚧 Unify phase notation to **Product P0–P6**, **Workspace Phase 0–8**, and
+  **Motion Phase A–H** — three sequences, never a bare "Phase N".
 - 🚧 Align build / test / install examples with what CI actually runs.
 - 🚧 Adopt the house documentation taxonomy shared with `open-strata` and
   `hydra-merlin`.
