@@ -53,10 +53,29 @@ each of the three bundles, a manifest sidecar each, a source archive, and a
      /opt/usdVrm/usdVrmPackageResolver/plugin/resources/usdVrmPackageResolver
      ```
 
-   - **Windows only:** also add each `<extract-dir>/lib` to `PATH` so dependent
-     DLLs resolve. (On Linux/macOS the plugin libraries are found through
-     `plugInfo.json`'s relative `LibraryPath`; your OpenUSD libraries must
-     already be loadable as usual.)
+   - **Dependency libraries live outside `lib/`.** `libUsdVrmFileFormat` links
+     against `libvrmSchema` and `vrmContainer`, and the package stages those
+     under `runtime/libraries/`, not next to the plugin:
+
+     ```text
+     /opt/usdVrm/usdVrmFileFormat/lib                      # the plugin itself
+     /opt/usdVrm/usdVrmFileFormat/runtime/libraries/lib    # libvrmSchema
+     /opt/usdVrm/usdVrmFileFormat/runtime/libraries/bin    # vrmContainer
+     ```
+
+     Your dynamic loader must be able to resolve all three — `PATH` on Windows,
+     `LD_LIBRARY_PATH` / `DYLD_LIBRARY_PATH` on Linux/macOS. If it cannot, the
+     plugin fails to load with "the specified module could not be found" and the
+     `.vrm` format then appears unregistered even though `plugInfo.json` was
+     found.
+
+     > On Windows this is fiddlier than a `PATH` entry: Python 3.8+ dropped
+     > `PATH` from the search used for dynamically loaded DLLs, so a Python host
+     > may additionally need `os.add_dll_directory()` for each directory above.
+     > **The configuration we verify in CI is the `ost` path below**, which
+     > reads `requires.runtime_libs` from the package manifest and sets this up
+     > for you. If you are composing the bundles by hand on Windows and hit the
+     > error above, prefer `ost plugin run` while we tighten this guidance.
 
 4. **Verify** — any `.vrm` now opens as a USD stage (the bundle ships license-
    clear fixtures under `<extract-dir>/tests/`):
