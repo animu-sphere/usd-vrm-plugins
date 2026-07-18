@@ -5,7 +5,7 @@ manifest:
   schema: openstrata.plugin/v1alpha1
 plugin:
   name: usdVrmFileFormat
-  version: 0.1.0
+  version: 0.2.0
   kind: usd-fileformat
 license: Apache-2.0
 runtime:
@@ -28,13 +28,13 @@ requires:
   # ost 0.15 era is gone).
   libraries:
     - id: vrmContainer
-      version: ">=0.1,<0.2"
+      version: ">=0.2,<0.3"
   # The typed Vrm*API schemas moved to the vrmSchema bundle (workspace Phase 1,
   # docs/architecture/WORKSPACE.md §1). The contract pin selects the
   # authored-data contract, independent of the implementation version (§3).
   bundles:
     - id: vrmSchema
-      version: ">=0.1,<0.2"
+      version: ">=0.2,<0.3"
       contract: 1
 usd:
   # Where this bundle's plugInfo.json lives, relative to the bundle root.

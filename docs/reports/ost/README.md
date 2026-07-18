@@ -17,8 +17,8 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 22 carries
-the live v0.18.0 asks.
+The current `ost` ask list is always in the **newest** report. Report 23 carries
+the live v0.19.0 asks.
 
 Numbering is the series' own: reports 1–8 call themselves "report #N" in their
 bodies, so the filenames preserve those numbers rather than renumbering history.
@@ -27,7 +27,8 @@ that was never given a series number.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
-| 22 | 2026-07-17 | [The evidence gate](22-2026-07-17-v0.17.0-evidence-gate-v0.18.0-asks.md) | 0.17.0 | `ci generate` emits a gate no producer can satisfy; `import` silently drops evidence. **Live v0.18.0 asks**, incl. workspace packaging closure |
+| 23 | 2026-07-18 | [Workspace packaging half-lands](23-2026-07-18-v0.18.0-workspace-packaging-v0.19.0-asks.md) | 0.18.0 | `package --workspace` + `bundles` land, but a schema bundle's registration half is never staged, so the packaged product cannot open a file. **Live v0.19.0 asks** |
+| 22 | 2026-07-17 | [The evidence gate](22-2026-07-17-v0.17.0-evidence-gate-v0.18.0-asks.md) | 0.17.0 | `ci generate` emits a gate no producer can satisfy; `import` silently drops evidence. Superseded by 23 |
 | 21 | 2026-07-15 | [Phase 3 resolver split](21-2026-07-15-v0.17.0-phase3-resolver-split-dogfooding.md) | 0.16/0.17 | `requires.libraries` lands; `plugin view` does not compose `requires.bundles` |
 | 20 | 2026-07-13 | [Phase 2 handoff + v0.16.0 criteria](20-2026-07-13-v0.15.0-vrmcontainer-v0.16.0-asks.md) | 0.15.0 | Plain-library boundary: acceptance criteria for `requires.libraries` |
 | 19 | 2026-07-13 | [Phase 2 `vrmContainer` extraction](19-2026-07-13-v0.15.0-phase2-vrmcontainer-dogfooding.md) | 0.15.0 | Composition lands; plain libraries remain the seam |

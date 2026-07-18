@@ -10,39 +10,51 @@ version, Python ABI — the bundle's `<target>` name spells all three out, e.g.
 
 ## From a GitHub release (binary bundle)
 
-> **Which assets exist today.** The only published release is
-> [v0.1.0](../releases/v0.1.0.md), which predates the workspace split: it ships
-> `usdVrm-0.1.0-<target>.tar.zst`, a **single self-contained bundle** with the
-> typed schemas and the package resolver compiled in. The commands below use
-> those names. The next release renames the importer bundle to
-> `usdVrmFileFormat-<version>-<target>.tar.zst` and splits the schemas and
-> resolver into their own bundles — at which point the importer bundle alone is
-> no longer sufficient, and [building from source](#from-source) is the
-> supported way to get the complete workspace until the aggregate product
-> artifact lands (see the [roadmap](../roadmap/current.md)).
+> **Install all three bundles.** Since [v0.2.0](../releases/v0.2.0.md) the
+> workspace ships as three separate artifacts, and they are not optional
+> extras: `usdVrmFileFormat` alone registers the `.vrm` file format and then
+> **fails to open a stage**, because the typed `Vrm*API` schemas it applies live
+> in `vrmSchema`. Embedded textures additionally need `usdVrmPackageResolver`.
+> A single aggregate artifact is still pending upstream work (see the
+> [roadmap](../roadmap/current.md)).
+>
+> Installing [v0.1.0](../releases/v0.1.0.md) instead? That release predates the
+> split and ships one self-contained `usdVrm-0.1.0-<target>.tar.zst`; its asset
+> names do not match the commands below.
 
-Each release ships one lean bundle per target plus split debug symbols, a
-source archive, and a `SHA256SUMS` file.
+Each release ships, per target, one lean bundle plus split debug symbols for
+each of the three bundles, a manifest sidecar each, a source archive, and a
+`SHA256SUMS` file.
 
-1. **Download** `usdVrm-<version>-<target>.tar.zst` for your target and verify
-   it:
+1. **Download** all three bundles for your target and verify them:
 
    ```sh
    sha256sum --check --ignore-missing SHA256SUMS
    ```
 
-2. **Extract** it anywhere (the bundle is relocatable):
+2. **Extract** them anywhere (the bundles are relocatable):
 
    ```sh
-   tar --zstd -xf usdVrm-<version>-<target>.tar.zst -C /opt/usdVrm
+   for b in vrmSchema usdVrmFileFormat usdVrmPackageResolver; do
+     mkdir -p /opt/usdVrm/$b
+     tar --zstd -xf $b-<version>-<target>.tar.zst -C /opt/usdVrm/$b
+   done
    ```
 
-3. **Register** the plugin with your OpenUSD environment:
+3. **Register** all three with your OpenUSD environment:
 
-   - `PXR_PLUGINPATH_NAME` → the directory holding `plugInfo.json`:
-     `<extract-dir>/plugin/resources/usdVrm`
-   - **Windows only:** also add `<extract-dir>/lib` to `PATH` so dependent
-     DLLs resolve. (On Linux/macOS the plugin library is found through
+   - `PXR_PLUGINPATH_NAME` → the three directories holding `plugInfo.json`,
+     separated by your platform's path separator (`:` on Linux/macOS, `;` on
+     Windows):
+
+     ```text
+     /opt/usdVrm/vrmSchema/plugin/resources/vrmSchema
+     /opt/usdVrm/usdVrmFileFormat/plugin/resources/usdVrmFileFormat
+     /opt/usdVrm/usdVrmPackageResolver/plugin/resources/usdVrmPackageResolver
+     ```
+
+   - **Windows only:** also add each `<extract-dir>/lib` to `PATH` so dependent
+     DLLs resolve. (On Linux/macOS the plugin libraries are found through
      `plugInfo.json`'s relative `LibraryPath`; your OpenUSD libraries must
      already be loadable as usual.)
 
@@ -50,8 +62,12 @@ source archive, and a `SHA256SUMS` file.
    clear fixtures under `<extract-dir>/tests/`):
 
    ```sh
-   python -c "from pxr import Usd; s = Usd.Stage.Open('<extract-dir>/tests/fixtures/textures.vrm'); print(s.GetDefaultPrim().GetPath())"
+   python -c "from pxr import Usd; s = Usd.Stage.Open('/opt/usdVrm/usdVrmFileFormat/tests/fixtures/textures.vrm'); print(s.GetDefaultPrim().GetPath())"
    ```
+
+   If this fails to open the layer while the format itself is recognized,
+   `vrmSchema` is missing from `PXR_PLUGINPATH_NAME` — see
+   [Troubleshooting](#troubleshooting).
 
    Provenance of the binary (git commit / compiler / OpenUSD / build type /
    schema contract version) is stamped in
@@ -85,6 +101,11 @@ no build-tree reference.
   does not point at the directory that contains `plugInfo.json` (step 3), or
   the bundle target does not match your OpenUSD build. Compare
   `buildInfo.json` (`openusdVersion`, `buildOs`) against your environment.
+- **Format is recognized but the stage fails to open** (`Failed to open layer`,
+  often `Used null prim`) — `vrmSchema` is not on `PXR_PLUGINPATH_NAME`. The
+  importer authors prims with typed `Vrm*API` schemas; without the schema
+  bundle registered, USD resolves the `.vrm` format and then cannot build the
+  layer. Register all three directories from step 3.
 - **Plugin found but the library fails to load** (Windows: silent, or
   `Plug` load errors) — `<extract-dir>/lib` is missing from `PATH`
   (Windows), or your OpenUSD came from a different compiler/Python than the
@@ -93,5 +114,5 @@ no build-tree reference.
   `.vrm` container by an `ArPackageResolver`; if a stage authored on another
   machine references `avatar.vrm[images/...]`, the original `.vrm` must sit at
   the referenced path. In v0.1.0 that resolver is compiled into the single
-  bundle; from the next release it is the separate `usdVrmPackageResolver`
-  bundle, which must be registered too.
+  bundle; from v0.2.0 it is the separate `usdVrmPackageResolver` bundle, which
+  must be registered too.

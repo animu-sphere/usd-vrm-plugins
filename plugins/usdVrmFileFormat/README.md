@@ -100,8 +100,9 @@ tests/                          python smoke tests + generated fixtures (minimal
 
 ## Status
 
-The importer build-out is complete; the forward work is doc/impl sync, a `v0.1.0`
-release, Windows runtime CI, and the OpenExec runtime layer. See the project
+The importer build-out is complete and released; the forward work is doc/impl
+sync, runtime verification coverage, and the OpenExec runtime layer. See the
+project
 [design & development policy](../../docs/design/DESIGN_POLICY.md) and the per-phase
 [roadmap](../../docs/roadmap/) (**P0–P6**) for live status.
 

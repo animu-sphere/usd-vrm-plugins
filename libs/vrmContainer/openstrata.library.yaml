@@ -11,7 +11,7 @@ library:
   id: vrmContainer
   # Mirrors the repo-root VERSION file (all workspace identities release in
   # lockstep, WORKSPACE.md §5).
-  version: 0.1.0
+  version: 0.2.0
 cmake:
   # find_package() name and the imported target consumers link against.
   package: vrmContainer

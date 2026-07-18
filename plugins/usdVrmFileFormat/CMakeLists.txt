@@ -14,7 +14,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
     file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION" _vrm_plugin_version LIMIT_COUNT 1)
     string(STRIP "${_vrm_plugin_version}" _vrm_plugin_version)
 else()
-    set(_vrm_plugin_version "0.1.0")  # mirrors openstrata.plugin.yaml
+    set(_vrm_plugin_version "0.2.0")  # mirrors openstrata.plugin.yaml
 endif()
 
 project(UsdVrmPlugin
