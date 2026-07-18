@@ -5,25 +5,27 @@ The next milestone and active carry-over work. Shipped detail is in the
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
-## Next milestone: the first workspace release
+## Shipped: the first workspace release
 
-**Status:** 🚧 in progress · **Depends on:** the workspace split through
-Workspace Phase 4 (shipped) and the release workflow (shipped).
+[v0.2.0](../releases/v0.2.0.md) is **released** — tagged and published
+2026-07-18 (`1f5f71d`) — and is the first to ship the multi-bundle workspace.
+It is **artifact-breaking**: consumers of the `usdVrm-0.1.0-*` asset names must
+move to `usdVrmFileFormat-0.2.0-<target>` **and** additionally install
+`vrmSchema` and `usdVrmPackageResolver`, which is now required rather than
+optional (see the release record for why).
 
-[v0.1.0](../releases/v0.1.0.md) is **released** — tagged and published
-2026-07-11 — and shipped the pre-split single `usdVrm` bundle. Everything since
-(the `vrmSchema` split, `vrmContainer` extraction, the resolver split, and the
-`usdVrm` → `usdVrmFileFormat` rename) is unreleased.
+Carried out of that release as open work:
 
-[v0.2.0](../releases/v0.2.0.md) is therefore the first to ship the multi-bundle
-workspace, and it is **artifact-breaking**: consumers of the `usdVrm-0.1.0-*`
-asset names must move to `usdVrmFileFormat-0.2.0-<target>` **and** additionally
-install `vrmSchema` and `usdVrmPackageResolver`.
-
-- ✅ **`VERSION` bumped to `0.2.0`**, with all four manifests and their
-  `requires` ranges (`>=0.1,<0.2` → `>=0.2,<0.3`) moved together.
-- ✅ **Changelog `[0.2.0]` finalized** and verified to render.
-- ⬜ **Dry run → tag → publish the draft.**
+- ⬜ **Verify the non-`ost` install path on Windows.** The published bundles are
+  only exercised through `ost`; a user composing them by hand against a plain
+  OpenUSD environment is uncovered. `libUsdVrmFileFormat` links against
+  `libvrmSchema` and `vrmContainer`, which are staged under
+  `runtime/libraries/{lib,bin}` rather than beside the plugin — and Python 3.8+
+  dropped `PATH` from the DLL search for dynamically loaded modules, so the
+  correct mechanism (`PATH` / `os.add_dll_directory` / co-location) is
+  **unestablished**. [INSTALL.md](../guides/INSTALL.md) names the directories
+  and the failure signature but deliberately prescribes no recipe. Closing this
+  needs a non-`ost` install lane, not a docs edit.
 
 ### Product P0 — documentation & implementation sync 🚧
 
