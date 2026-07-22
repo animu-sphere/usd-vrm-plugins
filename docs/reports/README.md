@@ -9,7 +9,7 @@ record of adopting it in public is worth as much as the plugins.
 
 | Document | Contents |
 | --- | --- |
-| [ost/](ost/) | The `ost` dogfooding series (22 reports, every version from pre-0.3 to 0.17.0). Append-only; the newest report carries the live upstream ask list. |
+| [ost/](ost/) | The `ost` dogfooding series (26 reports, every version from pre-0.3 to 0.19.0). Append-only; the newest report carries the live upstream ask list. |
 | [delivery-history.md](delivery-history.md) | The granular pre-`v0.1.0` delivery log: what shipped, retained from the original roadmap. |
 
 ## What belongs where

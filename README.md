@@ -14,7 +14,7 @@ project's central design decision, and it is described below.
 > **Built with [OpenStrata](https://github.com/animu-sphere/open-strata).**
 > `usd-vrm-plugins` is OpenStrata's first external adopter, and the `ost` CLI is
 > how this workspace is built, tested, packaged, and released. The record of
-> adopting it — every version from pre-0.3 to 0.17.0, including what broke — is
+> adopting it — every version from pre-0.3 to 0.19.0, including what broke — is
 > published in [docs/reports/ost/](docs/reports/ost/). The repo is
 > **dual-mode**: everything also builds with plain CMake against any OpenUSD
 > install, with no `ost` involved.
@@ -151,18 +151,17 @@ The schema contract is in
 See [docs/guides/INSTALL.md](docs/guides/INSTALL.md) for release-artifact,
 OpenStrata, and from-source installation, verification, and troubleshooting.
 
-> **Building from source is currently the only way to install the complete
-> workspace.** GitHub releases publish the `usdVrmFileFormat` bundle only;
-> `vrmSchema` and `usdVrmPackageResolver` are not yet published as artifacts, so
-> a release bundle on its own cannot apply typed schemas or resolve embedded
-> textures. The aggregate product artifact is Workspace Phase 5 — see the
-> [roadmap](docs/roadmap/current.md).
+> **Install the complete product from the release artifacts.** Each release
+> publishes the three member bundles and one aggregate product archive. The
+> member bundles are separately addressable, while the aggregate archive keeps
+> the exact workspace closure together. See the
+> [install guide](docs/guides/INSTALL.md) for extraction and verification.
 
 ## Build and test
 
 ### Whole workspace, with OpenStrata (`ost`)
 
-Requires `ost` 0.16+, so `requires.bundles` and `requires.libraries` are
+Requires `ost` 0.19+, so `requires.bundles` and `requires.libraries` are
 composed automatically.
 
 ```sh

@@ -14,8 +14,10 @@ longer a bundle id; it names the aggregate product only (§1).
 The motion layer (`.vrma` import, retargeting, the OpenExec runtime) was added
 to this contract on 2026-07-18 from
 [design/MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md).
-Its identities and edges are **reserved, not built** — nothing below Phase 5
-exists in the tree yet. Reserving them here first is what the header requires:
+Its identities and edges are **reserved, not built** — nothing in Workspace
+Phases 6–8 exists in the tree yet. Workspace Phase 5 now emits the aggregate
+product archive, but its standalone packaging-closure P0 remains open.
+Reserving the motion identities here first is what the header requires:
 structure lands in this document before it lands in code.
 
 ## 1. Bundles and libraries
@@ -175,7 +177,7 @@ usdVrmPackageResolver-<version>-<target>.tar.zst
 usdVrmaFileFormat-<version>-<target>.tar.zst   (when it exists)
 execMotion-<version>-<target>.tar.zst          (when it exists)
 execVrm-<version>-<target>.tar.zst             (when it exists)
-usdVrmPlugins-<version>-<target>.tar.zst       (aggregate)
+usd-vrm-plugins-<version>-<target>-plugin-product.tar.zst (aggregate)
 ```
 
 Adapter bundles, if they are ever published, are named

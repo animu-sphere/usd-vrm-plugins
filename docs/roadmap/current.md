@@ -56,7 +56,7 @@ guards all of it in CI.
   `usdVrmFileFormat`, and `usdVrmPackageResolver` per target. This was forced,
   not preferred: an `usdVrmFileFormat` package alone registers the `.vrm` format
   and then **fails to open a stage** (L3/L4, `Used null prim`), because ost
-  0.18.0 stages a dependency bundle's link half without its USD registration
+  0.19.0 stages a dependency bundle's link half without its USD registration
   half. Measured in [report 23 §2.1](../reports/ost/23-2026-07-18-v0.18.0-workspace-packaging-v0.19.0-asks.md).
 - ✅ **Replaced the packaged-artifact gate.** A bare per-bundle
   `ost plugin test --from-package` tests the one configuration that provably
@@ -104,7 +104,7 @@ The OS axis is shipped. Remaining:
 `ost plugin package --workspace` (adopted by the release lane), and a `bundles`
 key in `dependencies.json`. What did not:
 
-- **A dependency bundle's USD registration half is never staged.** 0.18.0 stages
+- **A dependency bundle's USD registration half is never staged.** 0.19.0 stages
   `libvrmSchema` + its CMake package into `runtime/libraries/`, but not
   `plugInfo.json` or `generatedSchema.usda` — so the packaged importer links
   against the schemas it can no longer register, and `--from-package` fails at
@@ -113,7 +113,7 @@ key in `dependencies.json`. What did not:
 The aggregate product artifact is now emitted by `--workspace --product` and is
 adopted by the release lane. The remaining packaging blocker is the standalone
 dependency registration half described above.
-`--from-package` **does** compose with `--workspace` in 0.18.0 — the shipped
+`--from-package` **does** compose with `--workspace` in 0.19.0 — the shipped
 help text saying otherwise was stale, and this roadmap repeated it. That verb
 verifies the composed configuration and is green; it does not close the P0,
 because it works by putting the dependency's *separate package* on the path
