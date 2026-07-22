@@ -17,8 +17,8 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 26 carries
-the live v0.20.0 asks, based on v0.19.0 adoption.
+The current `ost` ask list is always in the **newest** report. Report 27 carries
+the live v0.20.0 asks, based on the v0.3.0 release-lane failure.
 
 Numbering is the series' own: reports 1–8 call themselves "report #N" in their
 bodies, so the filenames preserve those numbers rather than renumbering history.
@@ -27,6 +27,7 @@ that was never given a series number.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
+| 27 | 2026-07-23 | [v0.3.0 aggregate product reproducibility](27-2026-07-23-v0.19.0-aggregate-product-reproducibility.md) | 0.19.0 | v0.3.0 release blocked: member archives stable, aggregate product digest unstable. **Live v0.20.0 ask** |
 | 26 | 2026-07-23 | [v0.20.0 asks after v0.19.0 adoption](26-2026-07-23-v0.19.0-v0.20.0-asks.md) | 0.19.0 | Workspace composition and aggregate product verified; standalone dependency registration P0 remains reproducible. **Live v0.20.0 asks** |
 | 25 | 2026-07-18 | [`--from-package` already composed `--workspace`](25-2026-07-18-v0.18.0-from-package-workspace-correction.md) | 0.18.0 | Correction: an ask we re-filed twice had already shipped; we read the (stale) help text instead of running it. Registration-half P0 strengthened. **Live v0.19.0 asks** |
 | 24 | 2026-07-18 | [First workspace release](24-2026-07-18-v0.18.0-first-workspace-release-v0.19.0-asks.md) | 0.18.0 | v0.2.0 shipped off `package --workspace`; staged `runtime_libs` have no activation contract outside `ost`. Ask (2) withdrawn by 25 |
