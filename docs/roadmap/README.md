@@ -46,8 +46,8 @@ A–H is unrelated to that retired A–E** and always carries the "Motion" quali
 
 - The importer feature build-out and the workspace split through **Workspace
   Phase 4** are complete.
-- Current priorities: cut `v0.1.0`, land **Workspace Phase 5** packaging, and
-  widen runtime verification.
+- Current priorities: stabilize the v0.2.0 workspace release, close the
+  remaining **Workspace Phase 5** packaging P0, and widen runtime verification.
 - The motion layer is **entirely unstarted** — no `.vrma` bundle, no motion
   library, no OpenExec node exists in the tree. Its first deliverable is
   **Motion Phase A**, which is a design artifact (a hand-authored USDA and a set

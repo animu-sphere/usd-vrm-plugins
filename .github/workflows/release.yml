@@ -109,7 +109,7 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - name: Bootstrap ost 0.18.0 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.19.0 (pinned release asset, checksum-verified)
         shell: bash
         run: |
           set -euo pipefail
@@ -122,7 +122,7 @@ jobs:
             *) echo "::error title=ost bootstrap::no ost release asset for ${RUNNER_OS}-${RUNNER_ARCH}" ; exit 1 ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.18.0"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.19.0"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$( (command -v sha256sum > /dev/null && sha256sum "$asset" || shasum -a 256 "$asset") | cut -d' ' -f1 )"
@@ -151,15 +151,15 @@ jobs:
           set -euo pipefail
           version="$(ost --version)"
           echo "$version"
-          if [ "$version" != "ost 0.18.0" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.18.0', got '$version'" ; exit 1
+          if [ "$version" != "ost 0.19.0" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.19.0', got '$version'" ; exit 1
           fi
       - name: Restore the artifact registry cache (speed only, never correctness)
         if: ${{ vars.OST_CI_DISABLE_CACHE != 'true' }}
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ost-ci-home/artifacts
-          key: ost-registry-0.18.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
+          key: ost-registry-0.19.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
       - name: Pull the pinned runtime SDK from its remote reference
         shell: bash
         run: |
@@ -211,31 +211,33 @@ jobs:
       - name: Run the verification pyramid against the build tree (whole workspace)
         shell: bash
         run: ost plugin test --workspace --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
-      - name: Package the workspace (lean bundles + split debug symbols)
+      - name: Package the workspace (lean bundles + aggregate product + split debug symbols)
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p .ost-ci
-          ost plugin package --workspace --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json | tee .ost-ci/package.json
+          ost plugin package --workspace --product --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json | tee .ost-ci/package.json
       - name: Prove packaging is digest-reproducible
         shell: bash
         run: |
           set -euo pipefail
-          digests() { jq -r '.data.packages[] | "\(.name) \(.archive_digest)"' "$1" | sort; }
+          digests() {
+            jq -r '(.data.packages[] | "\(.name) \(.archive_digest)"),
+              ("product:\(.data.product.name) \(.data.product.archive_digest)")' "$1" | sort
+          }
           digests .ost-ci/package.json > .ost-ci/digests-first.txt
-          ost plugin package --workspace --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > .ost-ci/package-second.json
+          ost plugin package --workspace --product --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > .ost-ci/package-second.json
           digests .ost-ci/package-second.json > .ost-ci/digests-second.txt
           if ! diff -u .ost-ci/digests-first.txt .ost-ci/digests-second.txt; then
             echo "::error title=release packaging::two packaging runs of the same build disagree -- release checksums would be unstable" ; exit 1
           fi
           cat .ost-ci/digests-first.txt
-      # NOT `ost plugin test --from-package`: that verb takes a single bundle and
-      # is documented incompatible with `--workspace`, so it would test the
-      # importer package in isolation -- the one configuration that provably
-      # fails (L3/L4, "Used null prim") because vrmSchema's plugInfo.json and
-      # generatedSchema.usda are not staged into it. The clean-install smoke is
-      # the stronger gate anyway: it composes all three *packaged* artifacts and
-      # opens, validates, and texture-resolves real models. See ost report 23.
+      # The workspace form composes all three packaged artifacts. The bare
+      # importer package remains intentionally useful as a regression probe:
+      # it still fails L3/L4 until ost stages a dependency bundle's USD
+      # registration half into the consumer package. The clean-install smoke
+      # opens, validates, and texture-resolves real models across the composed
+      # product. See ost reports 23 and 26.
       - name: Verify the packaged artifacts, composed (clean-install smoke)
         shell: bash
         run: python scripts/clean_install_smoke.py --skip-build
@@ -264,6 +266,12 @@ jobs:
             fi
             cp "$dist_dir/manifest.json" "release-stage/${name}-${version}-${target}.manifest.json"
           done
+          product_archive="$(jq -r '.data.product.archive // empty' .ost-ci/package.json)"
+          if command -v cygpath > /dev/null; then product_archive="$(cygpath -u "$product_archive")"; fi
+          if [ -z "$product_archive" ] || [ ! -f "$product_archive" ]; then
+            echo "::error title=release packaging::workspace product archive is missing" ; exit 1
+          fi
+          cp "$product_archive" release-stage/
           ls -l release-stage/
       - name: Upload the staged artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

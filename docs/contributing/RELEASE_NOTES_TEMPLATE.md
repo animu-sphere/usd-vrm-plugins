@@ -21,6 +21,7 @@ the validation / reporting tooling around them.
 | `vrmSchema-{version}-<target>.tar.zst` | typed `Vrm*API` schema bundle for `<target>` (lean) |
 | `usdVrmFileFormat-{version}-<target>.tar.zst` | `.vrm` importer bundle for `<target>` (lean) |
 | `usdVrmPackageResolver-{version}-<target>.tar.zst` | embedded-texture package resolver for `<target>` (lean) |
+| `usd-vrm-plugins-{version}-<target>-plugin-product.tar.zst` | aggregate product archive containing the exact three member bundles |
 | `<bundle>-{version}-<target>.manifest.json` | OpenStrata manifest sidecar per bundle |
 | `usd-vrm-plugins-{version}-src.tar.gz` | source archive at this tag |
 | `SHA256SUMS` | SHA-256 checksums of every file above |
@@ -34,10 +35,10 @@ the validation / reporting tooling around them.
 > three on the plugin path — see the
 > [install guide](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/docs/guides/INSTALL.md).
 >
-> A single aggregate artifact
-> (`usdVrmPlugins-{version}-<target>.tar.zst`) is still pending upstream work —
-> see [WORKSPACE.md §5](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/docs/architecture/WORKSPACE.md)
-> and the [roadmap](https://github.com/animu-sphere/usd-vrm-plugins/blob/{tag}/docs/roadmap/current.md).
+> The aggregate product artifact contains the exact three member bundles,
+> manifests, checksums, and evidence in dependency order. It is produced by
+> `ost plugin package --workspace --product` and is the recommended install
+> starting point.
 
 Each binary bundle carries a `buildInfo.json` stamp in its resources
 (git commit / build OS / compiler / build type / OpenUSD version / schema
