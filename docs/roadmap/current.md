@@ -100,7 +100,7 @@ The OS axis is shipped. Remaining:
 **Status:** ⛔ blocked on `ost` · **Contract:**
 [WORKSPACE.md](../architecture/WORKSPACE.md) §5
 
-`ost` 0.18.0 moved this forward but did not unblock it. What landed:
+`ost` 0.19.0 moved this forward but did not unblock it. What landed:
 `ost plugin package --workspace` (adopted by the release lane), and a `bundles`
 key in `dependencies.json`. What did not:
 
@@ -110,8 +110,9 @@ key in `dependencies.json`. What did not:
   against the schemas it can no longer register, and `--from-package` fails at
   L3/L4. This is now the **P0 upstream ask**; it is also why the release must
   ship all three bundles.
-- **No aggregate product artifact.** `--workspace` emits three archives, not
-  `usdVrmPlugins-<version>-<target>.tar.zst`.
+The aggregate product artifact is now emitted by `--workspace --product` and is
+adopted by the release lane. The remaining packaging blocker is the standalone
+dependency registration half described above.
 `--from-package` **does** compose with `--workspace` in 0.18.0 — the shipped
 help text saying otherwise was stale, and this roadmap repeated it. That verb
 verifies the composed configuration and is green; it does not close the P0,
@@ -126,6 +127,8 @@ the ost verb covers `minimal.vrm` per bundle.
 
 - ✅ Adopt `ost plugin package --workspace`.
 - ✅ Gate the composed packaged configuration with `--from-package --workspace`.
-- ⬜ Emit the aggregate artifact.
+- ✅ Emit the aggregate artifact. `ost plugin package --workspace --product`
+  is adopted by the release lane and ships one product archive containing the
+  exact member archives, manifests, checksums, and evidence.
 - ⬜ Retire the hand-rolled closure in `clean_install_smoke.py` (needs the P0
   above; the composed verb narrows but does not remove the need).
