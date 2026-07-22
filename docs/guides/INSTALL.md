@@ -10,20 +10,20 @@ version, Python ABI — the bundle's `<target>` name spells all three out, e.g.
 
 ## From a GitHub release (binary bundle)
 
-> **Install all three bundles.** Since [v0.2.0](../releases/v0.2.0.md) the
+> **Install all three VRM bundles.** Since [v0.2.0](../releases/v0.2.0.md) the
 > workspace ships as three separate artifacts, and they are not optional
 > extras: `usdVrmFileFormat` alone registers the `.vrm` file format and then
 > **fails to open a stage**, because the typed `Vrm*API` schemas it applies live
 > in `vrmSchema`. Embedded textures additionally need `usdVrmPackageResolver`.
-> A single aggregate artifact is still pending upstream work (see the
-> [roadmap](../roadmap/current.md)).
+> v0.3.0 additionally publishes `usdVrmaFileFormat`, which is independently
+> installable for `.vrma` animation clips, and an aggregate product archive.
 >
 > Installing [v0.1.0](../releases/v0.1.0.md) instead? That release predates the
 > split and ships one self-contained `usdVrm-0.1.0-<target>.tar.zst`; its asset
 > names do not match the commands below.
 
 Each release ships, per target, one lean bundle plus split debug symbols for
-each of the three bundles, a manifest sidecar each, a source archive, and a
+each of the four bundles, a manifest sidecar each, a source archive, and a
 `SHA256SUMS` file.
 
 1. **Download** all three bundles for your target and verify them:
@@ -39,6 +39,10 @@ each of the three bundles, a manifest sidecar each, a source archive, and a
      mkdir -p /opt/usdVrm/$b
      tar --zstd -xf $b-<version>-<target>.tar.zst -C /opt/usdVrm/$b
    done
+
+   # Optional unless you need .vrma animation clips:
+   mkdir -p /opt/usdVrm/usdVrmaFileFormat
+   tar --zstd -xf usdVrmaFileFormat-<version>-<target>.tar.zst -C /opt/usdVrm/usdVrmaFileFormat
    ```
 
 3. **Register** all three with your OpenUSD environment:
@@ -51,6 +55,7 @@ each of the three bundles, a manifest sidecar each, a source archive, and a
      /opt/usdVrm/vrmSchema/plugin/resources/vrmSchema
      /opt/usdVrm/usdVrmFileFormat/plugin/resources/usdVrmFileFormat
      /opt/usdVrm/usdVrmPackageResolver/plugin/resources/usdVrmPackageResolver
+     /opt/usdVrm/usdVrmaFileFormat/plugin/resources/usdVrmaFileFormat  # if installed
      ```
 
    - **Dependency libraries live outside `lib/`.** `libUsdVrmFileFormat` links
@@ -107,8 +112,8 @@ ost plugin view /opt/usdVrm avatar.vrm            # usdview
 
 ## From source
 
-This is the supported way to get the **complete** workspace (importer + schemas
-+ resolver). See the repo [README](../../README.md#build-and-test): `ost plugin
+This is the supported way to get the **complete** workspace (VRM importer +
+schemas + resolver + VRMA reader). See the repo [README](../../README.md#build-and-test): `ost plugin
 test --workspace` (OpenStrata) or plain CMake with `CMAKE_PREFIX_PATH` pointing
 at an OpenUSD install. The clean-install smoke
 (`python scripts/clean_install_smoke.py`) proves the packaged bundles work with
@@ -120,6 +125,10 @@ no build-tree reference.
   does not point at the directory that contains `plugInfo.json` (step 3), or
   the bundle target does not match your OpenUSD build. Compare
   `buildInfo.json` (`openusdVersion`, `buildOs`) against your environment.
+- **`.vrma` does not open / format not recognized** — register
+  `usdVrmaFileFormat/plugin/resources/usdVrmaFileFormat` and add its `lib/`
+  directory to the dynamic-loader path. Unlike `.vrm`, it does not require the
+  schema or package-resolver plugin bundles.
 - **Format is recognized but the stage fails to open** (`Failed to open layer`,
   often `Used null prim`) — `vrmSchema` is not on `PXR_PLUGINPATH_NAME`. The
   importer authors prims with typed `Vrm*API` schemas; without the schema

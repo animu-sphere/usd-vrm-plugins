@@ -4,8 +4,8 @@ OpenUSD plugins for [VRM](https://vrm.dev/en/) avatars.
 
 This repository is an OpenUSD plugin **workspace**: it separates schema
 definitions, file-format import, package resolution, and shared GLB container
-parsing into independently buildable, independently testable components. It
-currently ships three plugin bundles and one shared library.
+parsing into independently buildable, independently testable components. The
+v0.3.0 release ships four plugin bundles and two shared libraries.
 
 The importer reads VRM 0.x and 1.0, normalizes the differences away, and authors
 a static USD stage. It **never evaluates or simulates** — that boundary is the
@@ -27,23 +27,25 @@ project's central design decision, and it is described below.
 | [`usdVrmFileFormat`](plugins/usdVrmFileFormat) | `SdfFileFormat` bundle (`usd-fileformat`) | `.vrm` parsing, canonicalization, USD authoring | Shipped |
 | [`usdVrmPackageResolver`](plugins/usdVrmPackageResolver) | `ArPackageResolver` bundle (`usd-package-resolver`) | Embedded resource resolution from `.vrm` | Shipped |
 | [`vrmContainer`](libs/vrmContainer) | Plain CMake library | GLB parsing + byte-range validation | Shipped |
+| [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle (`usd-fileformat`) | `.vrma` motion clips → canonical `UsdSkelAnimation` | v0.3.0 |
+| [`motionCore`](libs/motionCore) | Plain static CMake library | Vendor-neutral humanoid pose / animation / root-motion / constraint types | v0.3.0 |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
 
 `usdVrm` is not a bundle id — it names the product as a whole. It *was* the
 file-format bundle's name until the workspace split; documentation and artifacts
 that predate that rename use it in the old sense.
 
-### The motion layer (planned, not built)
+### The motion layer
 
-Nothing below exists in the tree yet. The identities and dependency edges are
-reserved in the workspace contract so the boundaries are fixed before any code
-lands. Rationale:
-[docs/design/MOTION_ARCHITECTURE_POLICY.md](docs/design/MOTION_ARCHITECTURE_POLICY.md).
+`motionCore` and `usdVrmaFileFormat` are the v0.3.0 motion foundation. Their
+fixed contract is [docs/design/MOTION_CONTRACT.md](docs/design/MOTION_CONTRACT.md).
+The remaining identities are reserved in the workspace contract; retargeting
+and runtime evaluation are not part of this release.
 
 | Component | Type | Role |
 | --- | --- | --- |
-| `usdVrmaFileFormat` | `SdfFileFormat` bundle | `.vrma` motion clips → `UsdSkelAnimation` on a *canonical semantic* humanoid skeleton |
-| `motionCore` | Plain CMake library | Vendor-neutral pose / animation / root-motion / constraint types |
+| [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle | `.vrma` motion clips → `UsdSkelAnimation` on a *canonical semantic* humanoid skeleton |
+| [`motionCore`](libs/motionCore) | Plain static CMake library | Vendor-neutral pose / animation / root-motion / constraint types |
 | `motionRuntime` | Plain CMake library | Timestamped pose buffer, resample, filter, blend |
 | `vrmRetarget` | Plain CMake library | Humanoid mapping, rest-pose correction, root-motion policy |
 | `execMotion` | OpenExec bundle | Vendor-neutral motion nodes |
@@ -64,8 +66,9 @@ usdVrmFileFormat ───────> vrmSchema
 
 usdVrmPackageResolver ──> vrmContainer
 
-                          (planned)
 usdVrmaFileFormat ──────> vrmContainer, motionCore
+
+                          (planned)
 motionRuntime ──────────> motionCore
 vrmRetarget ────────────> motionCore, motionRuntime
 execMotion ─────────────> motionCore, motionRuntime
@@ -91,8 +94,8 @@ contract: [docs/architecture/WORKSPACE.md](docs/architecture/WORKSPACE.md).
 
 ## What the importer produces
 
-`.vrm` is read as a GLB container (via [cgltf](https://github.com/jkuhlmann/cgltf),
-fetched at configure time) and normalized — VRM 0.x and 1.0 differences are
+`.vrm` is read as a GLB container (via vendored
+[cgltf](https://github.com/jkuhlmann/cgltf) v1.15) and normalized — VRM 0.x and 1.0 differences are
 absorbed into a canonical model before any USD is authored — into:
 
 ```
@@ -151,8 +154,10 @@ The schema contract is in
 See [docs/guides/INSTALL.md](docs/guides/INSTALL.md) for release-artifact,
 OpenStrata, and from-source installation, verification, and troubleshooting.
 
-> **Install the complete product from the release artifacts.** Each release
-> publishes the three member bundles and one aggregate product archive. The
+> **Install the components you use from the release artifacts.** Each release
+> publishes four member bundles and one aggregate product archive. The three
+> VRM bundles are installed together; `usdVrmaFileFormat` is independently
+> installable because it has no plugin-bundle dependency. The
 > member bundles are separately addressable, while the aggregate archive keeps
 > the exact workspace closure together. See the
 > [install guide](docs/guides/INSTALL.md) for extraction and verification.
@@ -177,6 +182,9 @@ ost plugin test --workspace
 ```sh
 ost plugin build plugins/usdVrmFileFormat
 ost plugin test  plugins/usdVrmFileFormat            # L0-L5 verification pyramid
+
+ost plugin build plugins/usdVrmaFileFormat
+ost plugin test  plugins/usdVrmaFileFormat           # L0-L5 + VRMA golden
 
 # Inspect a real avatar. build/test/run/package compose the manifest's
 # requires.bundles closure automatically:
@@ -217,7 +225,7 @@ python scripts/clean_install_smoke.py               # build + package + extract 
 python scripts/clean_install_smoke.py --skip-build   # reuse the current build
 ```
 
-It packages all three bundles with `ost`, extracts them into a fresh directory
+It packages the three VRM bundles with `ost`, extracts them into a fresh directory
 **outside** the repo, and runs the assertions in
 `plugins/usdVrmFileFormat/tests/clean_install_smoke.py` against that extracted
 tree: `.vrm` discovery served from the package, a textured fixture and a corpus
@@ -228,7 +236,7 @@ avatar open and validate, and an embedded texture resolves straight from the
 
 CI is generated from the support matrix in `openstrata.ci.yaml`
 (`ost ci generate github`). The PR lane (`.github/workflows/ost-source-ci.yml`)
-runs **nine cells** — each of the three bundles on hosted Windows / macOS arm64 /
+runs **twelve cells** — each of the four bundles on hosted Windows / macOS arm64 /
 Linux against digest-pinned cy2026 runtimes — building, testing
 (`--up-to 5`; Windows is capped at 4), and packaging each. A weekly scheduled
 lane (`ost-support-matrix.yml`) re-validates pinned runtime × plugin artifact
@@ -271,8 +279,8 @@ in the single-source [VERSION](VERSION) file.
 
 Original source and documentation: Apache-2.0 (see [LICENSE](LICENSE)).
 Third-party components keep their own licenses; see
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). cgltf is **not** vendored — it
-is fetched at configure time.
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). cgltf v1.15 is vendored under
+[`third_party/cgltf`](third_party/cgltf) with its MIT license.
 
 > Local test VRM avatars used during development are **not** part of this
 > repository and are not redistributed here; mind their individual licenses.

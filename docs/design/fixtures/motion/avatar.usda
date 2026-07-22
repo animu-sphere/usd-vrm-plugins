@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    defaultPrim = "Avatar"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Scope "Avatar"
+{
+    # Deliberately different names/order from the canonical clip. Motion Phase C
+    # maps semantic bones to this target skeleton; the VRMA importer never does.
+    def Skeleton "TargetSkeleton" (
+        apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        uniform token[] joints = ["Root", "Pelvis", "SpineA", "ChestA"]
+        uniform matrix4d[] restTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.5, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.5, 0, 1))]
+    }
+}

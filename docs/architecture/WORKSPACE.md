@@ -14,15 +14,15 @@ longer a bundle id; it names the aggregate product only (§1).
 The motion layer (`.vrma` import, retargeting, the OpenExec runtime) was added
 to this contract on 2026-07-18 from
 [design/MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md).
-Its identities and edges are **reserved, not built** — nothing in Workspace
-Phases 6–8 exists in the tree yet. Workspace Phase 5 now emits the aggregate
-product archive, but its standalone packaging-closure P0 remains open.
-Reserving the motion identities here first is what the header requires:
-structure lands in this document before it lands in code.
+Workspace Phase 6a (`motionCore`) and Phase 7 (`usdVrmaFileFormat`) land in
+v0.3.0; the remaining motion identities are reserved. Workspace Phase 5 emits
+the aggregate product archive, but its standalone packaging-closure P0 remains
+open. The implementation contract for the shipped motion foundation is
+[MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md).
 
 ## 1. Bundles and libraries
 
-Shipped and next (Workspace Phase 0–5):
+Shipped through Workspace Phase 7:
 
 | Identity | Kind | Role |
 | --- | --- | --- |
@@ -33,14 +33,14 @@ Shipped and next (Workspace Phase 0–5):
 | `vrmCore` | plain CMake library (deferred) | canonical model, only if a second consumer beyond the importer appears |
 | `usdVrm` | aggregate product name | retired as a bundle id; names the aggregate package composed of the bundles above |
 
-Reserved for the motion layer (Workspace Phase 6–8; motion policy §2, §14):
+Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 
 | Identity | Kind | Role |
 | --- | --- | --- |
-| `usdVrmaFileFormat` | plugin bundle (`usd-fileformat`, reserved) | `.vrma` `SdfFileFormat`, glTF/GLB animation parsing, canonical semantic `HumanoidSkeleton`, `UsdSkelAnimation` + provenance. Avatar-independent: it never resolves, binds to, or retargets onto a target VRM. |
+| `usdVrmaFileFormat` | plugin bundle (`usd-fileformat`, v0.3.0) | `.vrma` `SdfFileFormat`, glTF/GLB animation parsing, canonical semantic `HumanoidSkeleton`, `UsdSkelAnimation` + provenance. Avatar-independent: it never resolves, binds to, or retargets onto a target VRM. |
 | `execMotion` | plugin bundle (reserved) | Vendor-neutral OpenExec motion nodes: clip sample, pose buffer, resample, filter, blend, apply-constraints, generate, record |
 | `execVrm` | plugin bundle (reserved) | VRM semantics applied to a target rig: humanoid retarget, root-motion resolve, expression, look-at, avatar apply — driven by the schema contract only |
-| `motionCore` | plain CMake library (reserved) | `motion::HumanoidPose`, `HumanoidAnimation`, `RootMotion`, `MotionConstraintSet`, source metadata. No USD stage authoring, no vendor SDK, no network. |
+| `motionCore` | plain static CMake library (v0.3.0) | `motion::HumanoidPose`, `HumanoidAnimation`, `RootMotion`, `MotionConstraintSet`, source metadata. No USD stage authoring, no vendor SDK, no network. |
 | `motionRuntime` | plain CMake library (reserved) | Timestamped pose buffer, interpolation/extrapolation, resample, filter, blend — the OpenExec-independent runtime |
 | `vrmRetarget` | plain CMake library (reserved) | Humanoid map, rest pose, pose retargeter, root-motion policy, expression resolver. **Completed before OpenExec** (motion policy §18.12). |
 | adapters | optional bundles (reserved, `adapters/`) | The only place product names are permitted: `adapters/liveCapture/mocopi/`, `adapters/generators/ardy/` |
@@ -174,7 +174,7 @@ Per-bundle artifacts plus one aggregate:
 vrmSchema-<version>-<target>.tar.zst
 usdVrmFileFormat-<version>-<target>.tar.zst
 usdVrmPackageResolver-<version>-<target>.tar.zst
-usdVrmaFileFormat-<version>-<target>.tar.zst   (when it exists)
+usdVrmaFileFormat-<version>-<target>.tar.zst
 execMotion-<version>-<target>.tar.zst          (when it exists)
 execVrm-<version>-<target>.tar.zst             (when it exists)
 usd-vrm-plugins-<version>-<target>-plugin-product.tar.zst (aggregate)
@@ -238,9 +238,10 @@ as the gate in every migration PR.
 | 2 | `vrmContainer` extraction | done (`libs/vrmContainer`) |
 | 3 | `usdVrmPackageResolver` bundle split | done (`plugins/usdVrmPackageResolver`) |
 | 4 | `usdVrmFileFormat` purification/rename | done (`plugins/usdVrmFileFormat`) |
-| 5 | workspace packaging (per-bundle + aggregate) | not started |
-| 6 | motion library bootstrap (`motionCore`, `motionRuntime`, `vrmRetarget`) | not started |
-| 7 | `usdVrmaFileFormat` bundle bootstrap | not started |
+| 5 | workspace packaging (per-bundle + aggregate) | aggregate product done; standalone registration P0 remains open upstream |
+| 6a | `motionCore` bootstrap | done (`libs/motionCore`) |
+| 6b | `motionRuntime` + `vrmRetarget` bootstrap | not started |
+| 7 | `usdVrmaFileFormat` bundle bootstrap | done (`plugins/usdVrmaFileFormat`) |
 | 8 | `execMotion` + `execVrm` bundle bootstrap | not started |
 
 > **Phase 6 was renumbered on 2026-07-18.** It previously read "`execVrm`
@@ -251,17 +252,18 @@ as the gate in every migration PR.
 > `execVrm`" predate this.
 
 Each of Phases 6–8 establishes a boundary only: manifest, CMake package export,
-standalone build, discovery test, packaging. Behavior lands inside those
-boundaries as **Motion Phase A–H** — the two sequences are not the same
-milestone, exactly as Workspace Phase 6 and Product P4 were not.
+standalone build, discovery test, packaging. Motion Phases A+B fill the shipped
+6a/7 boundaries; later behavior belongs to Motion Phases C–H. The two
+sequences are not the same milestone, exactly as Workspace Phase 6 and Product
+P4 are not.
 
 Scaffolds for new bundles start from the ost template catalog
 (`ost plugin new usd-schema --template usd-schema-cpp`,
 `ost plugin new usd-package-resolver`) rather than hand-rolled skeletons.
 
-> **Gate status.** This document called for `ost plugin test --workspace` to be
+> **Gate status.** This document calls for `ost plugin test --workspace` to be
 > a required PR-lane gate from Phase 1 on. That has not happened: the generated
-> PR lane runs `ost plugin test <bundle>` per cell (nine cells: three bundles ×
+> PR lane runs `ost plugin test <bundle>` per cell (twelve cells: four bundles ×
 > three OS) and no lane runs the workspace graph validation. The dependency
 > directions in §2 are enforced today by the per-bundle binary link checks and
 > by `vrmContainer`'s boundary check — not by the graph gate. Wiring it in is

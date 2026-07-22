@@ -1,0 +1,23 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "UsdVrmaFileFormat",
+            "Root": ".",
+            "LibraryPath": "../../../lib/libUsdVrmaFileFormat.dll",
+            "ResourcePath": ".",
+            "Info": {
+                "Types": {
+                    "UsdVrmaFileFormat": {
+                        "bases": ["SdfFileFormat"],
+                        "displayName": "UsdVrma File Format",
+                        "extensions": ["vrma"],
+                        "formatId": "vrma",
+                        "primary": true,
+                        "target": "usd"
+                    }
+                }
+            }
+        }
+    ]
+}

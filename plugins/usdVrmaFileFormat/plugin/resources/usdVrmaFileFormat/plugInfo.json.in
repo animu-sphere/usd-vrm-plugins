@@ -1,0 +1,23 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "UsdVrmaFileFormat",
+            "Root": ".",
+            "LibraryPath": "../../../lib/@OPENSTRATA_PLUGIN_LIBRARY_PREFIX@UsdVrmaFileFormat@CMAKE_SHARED_LIBRARY_SUFFIX@",
+            "ResourcePath": ".",
+            "Info": {
+                "Types": {
+                    "UsdVrmaFileFormat": {
+                        "bases": ["SdfFileFormat"],
+                        "displayName": "UsdVrma File Format",
+                        "extensions": ["vrma"],
+                        "formatId": "vrma",
+                        "primary": true,
+                        "target": "usd"
+                    }
+                }
+            }
+        }
+    ]
+}

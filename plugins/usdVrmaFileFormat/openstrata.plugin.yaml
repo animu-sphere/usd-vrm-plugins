@@ -1,0 +1,27 @@
+# OpenStrata plugin bundle manifest.
+manifest:
+  schema: openstrata.plugin/v1alpha1
+plugin:
+  name: usdVrmaFileFormat
+  version: 0.3.0
+  kind: usd-fileformat
+license: Apache-2.0
+runtime:
+  openusd: ">=25.05,<27.0"
+  cxx_abi: inherit
+provides:
+  - usd-fileformat:vrma
+requires:
+  capabilities: [usd-stage-read]
+  libraries:
+    - id: vrmContainer
+      version: ">=0.3,<0.4"
+    - id: motionCore
+      version: ">=0.3,<0.4"
+usd:
+  plug_info: plugin/resources/usdVrmaFileFormat/plugInfo.json
+tests:
+  smoke:
+    - tests/fixtures/canonical_walk.vrma
+  roundtrip:
+    - tests/fixtures/canonical_walk.vrma

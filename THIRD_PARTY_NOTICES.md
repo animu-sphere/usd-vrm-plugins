@@ -1,13 +1,13 @@
 # Third-party notices
 
 This repository's own source and documentation are licensed under Apache-2.0
-(see [LICENSE](LICENSE)). It does **not** vendor third-party source code. The
-components below are resolved at build time and keep their own licenses.
+(see [LICENSE](LICENSE)). Vendored third-party source retains its own license;
+runtime-provided components retain the licenses of their distributions.
 
 | Component | How it is obtained | License |
 | --- | --- | --- |
 | [OpenUSD](https://github.com/PixarAnimationStudios/OpenUSD) | provided by the runtime / `CMAKE_PREFIX_PATH`; linked at build time | Use the LICENSE / NOTICE from the OpenUSD distribution you build or redistribute with (modified Apache-2.0 "Tomorrow" license). |
-| [cgltf](https://github.com/jkuhlmann/cgltf) | fetched at configure time via CMake `FetchContent`, pinned to a tag (default `v1.15`); compiled into a single translation unit | MIT License. |
+| [cgltf](https://github.com/jkuhlmann/cgltf) | vendored at [`third_party/cgltf`](third_party/cgltf), upstream `v1.15` (`360db1a95480fe102ae9c69b27c5d101167ff5ba`); compiled into a single translation unit | MIT License; see [`third_party/cgltf/LICENSE`](third_party/cgltf/LICENSE). |
 
 ### JSON parsing
 

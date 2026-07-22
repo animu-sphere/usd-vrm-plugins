@@ -4,15 +4,16 @@
 #
 # Pushing a tag `vX.Y.Z` (which must equal the repo VERSION file and have a
 # finalized CHANGELOG section) builds the whole workspace -- vrmSchema,
-# usdVrmFileFormat, usdVrmPackageResolver -- on the same three OS cells and
+# usdVrmFileFormat, usdVrmPackageResolver, usdVrmaFileFormat -- on the same
+# three OS cells and
 # digest-pinned runtimes as the PR lane, proves the *packaged* artifacts
 # (composed clean-install smoke + digest reproducibility), then assembles a
 # DRAFT GitHub release: per-target lean bundles + manifest sidecars for all
-# three, a source archive, SHA256SUMS, and notes rendered from CHANGELOG.md via
+# four, a source archive, SHA256SUMS, and notes rendered from CHANGELOG.md via
 # docs/contributing/RELEASE_NOTES_TEMPLATE.md. Publishing the draft is a human
 # decision.
 #
-# All three bundles ship together because they must: an usdVrmFileFormat package
+# The three VRM bundles ship together because they must: an usdVrmFileFormat package
 # on its own registers the `.vrm` format but cannot open a stage (see the
 # comment on the clean-install smoke step, and ost report 23).
 #
@@ -203,7 +204,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for bundle in plugins/vrmSchema plugins/usdVrmFileFormat plugins/usdVrmPackageResolver; do
+          for bundle in plugins/vrmSchema plugins/usdVrmFileFormat plugins/usdVrmPackageResolver plugins/usdVrmaFileFormat; do
             echo "::group::build $bundle"
             ost plugin build "$bundle" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
             echo "::endgroup::"
@@ -232,7 +233,7 @@ jobs:
             echo "::error title=release packaging::two packaging runs of the same build disagree -- release checksums would be unstable" ; exit 1
           fi
           cat .ost-ci/digests-first.txt
-      # The workspace form composes all three packaged artifacts. The bare
+      # The workspace form composes the three interdependent VRM artifacts. The bare
       # importer package remains intentionally useful as a regression probe:
       # it still fails L3/L4 until ost stages a dependency bundle's USD
       # registration half into the consumer package. The clean-install smoke
@@ -241,6 +242,9 @@ jobs:
       - name: Verify the packaged artifacts, composed (clean-install smoke)
         shell: bash
         run: python scripts/clean_install_smoke.py --skip-build
+      - name: Verify the packaged VRMA reader independently
+        shell: bash
+        run: ost plugin test plugins/usdVrmaFileFormat --from-package --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
       - name: Stage the release artifacts
         shell: bash
         run: |
@@ -248,8 +252,8 @@ jobs:
           version="${{ needs.preflight.outputs.version }}"
           mkdir -p release-stage
           count="$(jq -r '.data.packages | length' .ost-ci/package.json)"
-          if [ "$count" -ne 3 ]; then
-            echo "::error title=release packaging::expected 3 workspace packages, got $count" ; exit 1
+          if [ "$count" -ne 4 ]; then
+            echo "::error title=release packaging::expected 4 workspace packages, got $count" ; exit 1
           fi
           for i in $(seq 0 $((count - 1))); do
             archive="$(jq -r ".data.packages[$i].archive" .ost-ci/package.json)"

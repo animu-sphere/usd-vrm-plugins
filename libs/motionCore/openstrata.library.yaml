@@ -1,0 +1,10 @@
+# OpenStrata plain-library descriptor. motionCore is a stable value-type
+# contract shared by the VRMA reader, future retargeter, and runtime layers.
+schema: openstrata.library/v1alpha1
+library:
+  id: motionCore
+  # Mirrors VERSION; the v0.3.0 release preparation updates this in lockstep.
+  version: 0.3.0
+cmake:
+  package: motionCore
+  target: motionCore::motionCore

@@ -1,0 +1,11 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+# OpenUSD's pxrConfig.cmake defines imported targets unconditionally. Consumers
+# such as file-format plugins normally resolve it before this package, so do not
+# invoke it a second time once the required Gf target already exists.
+if(NOT TARGET gf AND NOT TARGET pxr::gf)
+    find_dependency(pxr CONFIG REQUIRED)
+endif()
+include("${CMAKE_CURRENT_LIST_DIR}/motionCoreTargets.cmake")
+check_required_components(motionCore)
