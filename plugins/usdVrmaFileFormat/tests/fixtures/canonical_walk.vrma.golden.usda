@@ -1,0 +1,47 @@
+#usda 1.0
+(
+    defaultPrim = "Animation"
+    doc = """Generated from Composed Stage of root layer C:\\dev\\usd-vrm-plugins\\plugins\\usdVrmaFileFormat\\tests\\fixtures\\canonical_walk.vrma
+"""
+    endTimeCode = 30
+    framesPerSecond = 30
+    metersPerUnit = 1
+    startTimeCode = 0
+    timeCodesPerSecond = 30
+    upAxis = "Y"
+)
+
+def Scope "Animation" (
+    customData = {
+        dictionary vrma = {
+            string rawExtension = '{"specVersion":"1.0","humanoid":{"humanBones":{"hips":{"node":0},"spine":{"node":1},"chest":{"node":2}}}}'
+            string rootMotionSource = "hipsTranslation"
+            string sourceFormat = "VRMA"
+            string specVersion = "1.0"
+        }
+    }
+)
+{
+    def Skeleton "HumanoidSkeleton" (
+        apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        uniform token[] joints = ["hips", "hips/spine", "hips/spine/chest"]
+        uniform matrix4d[] restTransforms = [( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.5, 0, 1) ), ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.5, 0, 1) )]
+        rel skel:animationSource = </Animation/BodyAnimation>
+    }
+
+    def SkelAnimation "BodyAnimation"
+    {
+        uniform token[] joints = ["hips", "hips/spine", "hips/spine/chest"]
+        quatf[] rotations.timeSamples = {
+            0: [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0)],
+            30: [(0.70710677, 0, 0.70710677, 0), (1, 0, 0, 0), (0.70710677, 0.70710677, 0, 0)],
+        }
+        float3[] translations.timeSamples = {
+            0: [(0, 1, 0), (0, 0.5, 0), (0, 0.5, 0)],
+            30: [(0, 1, 0.5), (0, 0.5, 0), (0, 0.5, 0)],
+        }
+    }
+}
+

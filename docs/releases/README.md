@@ -8,6 +8,7 @@ rewritten; new work goes to a new record. Active, incomplete work lives in the
 
 | Version | Record | Theme |
 | --- | --- | --- |
+| v0.3.0 | [v0.3.0.md](v0.3.0.md) | Motion foundation: `motionCore` + `usdVrmaFileFormat`; canonical `.vrma` animation import (no retarget yet) |
 | v0.2.0 | [v0.2.0.md](v0.2.0.md) | The multi-bundle workspace: `vrmSchema` / `usdVrmFileFormat` / `usdVrmPackageResolver` ship separately (artifact-breaking) |
 | v0.1.0 | [v0.1.0.md](v0.1.0.md) | First public release: VRM 0.x / 1.0 import, typed schemas, schema contract v1 |
 

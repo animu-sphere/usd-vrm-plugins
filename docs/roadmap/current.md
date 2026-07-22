@@ -5,6 +5,32 @@ The next milestone and active carry-over work. Shipped detail is in the
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
+## v0.3.0 — VRMA motion-foundation release 🚧
+
+**Release boundary:** Motion Phase A + B, Workspace Phase 6a + 7. The branch
+ends at `usdVrmaFileFormat`; it does **not** begin retargeting or OpenExec.
+
+- ✅ **Motion Phase A — contract frozen.**
+  [`MOTION_CONTRACT.md`](../design/MOTION_CONTRACT.md) defines the semantic
+  skeleton, source/target coordinates, time mapping, root motion, provenance,
+  and the Phase C hand-off triplet. `motionCore` exports the matching value
+  types as a plain static CMake library with a stage/plugin boundary test.
+- ✅ **Workspace Phase 6a — `motionCore`.** The library is packageable through
+  `openstrata.library.yaml`, has no stage or plugin dependency, and is consumed
+  as an installed package by the VRMA reader.
+- ✅ **Workspace Phase 7 + Motion Phase B — `usdVrmaFileFormat`.** The new
+  `.vrma` `SdfFileFormat` reads VRMC VRM Animation 1.0 GLB clips, maps humanoid
+  rotations plus hips translation to an avatar-independent semantic skeleton,
+  authors `UsdSkelAnimation` and provenance, and is covered by L0–L5 plus
+  value-level CTest assertions.
+- ✅ **Reproducible dependency closure.** `cgltf` v1.15 is vendored under
+  `third_party/` with its MIT license; no CMake configure-time network fetch is
+  needed.
+
+Explicitly deferred: expressions, look-at, multi-clip selection, full cubic
+interpolation, retargeting, live capture, generation, constraints solving, and
+OpenExec (Motion Phases C–H).
+
 ## Shipped: the first workspace release
 
 [v0.2.0](../releases/v0.2.0.md) is **released** — tagged and published
@@ -36,9 +62,9 @@ the workspace layout, the output structure, and the import/runtime boundary.*
 The importer-era docs described a single `usdVrm` bundle with co-located
 schemas. Since Workspace Phase 4 that is wrong in every particular.
 
-- 🚧 Describe `vrmSchema`, `usdVrmFileFormat`, and `usdVrmPackageResolver` as
-  separate bundles, `vrmContainer` as a plain library, and `usdVrm` as the
-  aggregate product name only.
+- 🚧 Describe `vrmSchema`, `usdVrmFileFormat`, `usdVrmPackageResolver`, and
+  `usdVrmaFileFormat` as separate bundles; `vrmContainer` and `motionCore` as
+  plain libraries; and `usdVrm` as the aggregate product name only.
 - 🚧 Unify phase notation to **Product P0–P6**, **Workspace Phase 0–8**, and
   **Motion Phase A–H** — three sequences, never a bare "Phase N".
 - 🚧 Align build / test / install examples with what CI actually runs.
@@ -49,11 +75,13 @@ Done when: the component table matches the manifests, no document describes
 `usdVrm` as a bundle id, every local link resolves, and a consistency check
 guards all of it in CI.
 
-### Product P1 — release stabilization ⬜
+### Product P1 — release stabilization 🚧
 
-- ✅ **Decided: the release ships all three bundles.** `release.yml` now builds,
+- ✅ **Decided: the release ships all four bundles.** `release.yml` now builds,
   tests, packages (`ost plugin package --workspace`), and publishes `vrmSchema`,
-  `usdVrmFileFormat`, and `usdVrmPackageResolver` per target. This was forced,
+  `usdVrmFileFormat`, `usdVrmPackageResolver`, and `usdVrmaFileFormat` per
+  target. The three VRM bundles ship together because that was forced, not
+  preferred:
   not preferred: an `usdVrmFileFormat` package alone registers the `.vrm` format
   and then **fails to open a stage** (L3/L4, `Used null prim`), because ost
   0.19.0 stages a dependency bundle's link half without its USD registration
@@ -86,7 +114,7 @@ The OS axis is shipped. Remaining:
   `ost plugin test --workspace` as the enforcement for the dependency
   directions, and §8 called for it to be a required PR-lane gate from Workspace
   Phase 1 on — but **no lane runs it**. The generated PR lane runs
-  `ost plugin test <bundle>` per cell (nine cells: three bundles × three OS).
+  `ost plugin test <bundle>` per cell (twelve cells: four bundles × three OS).
   The directions are currently enforced only by the per-bundle binary link
   checks and `vrmContainer`'s boundary check, which catch a bad *link* but not
   a bad *manifest edge*. The command works locally today.
@@ -95,9 +123,10 @@ The OS axis is shipped. Remaining:
 - ⬜ **Real VRM smoke test** (open + texture resolve) exercised in CI, not just
   fixtures.
 
-## Workspace Phase 5 — per-bundle + aggregate packaging ⛔
+## Workspace Phase 5 — per-bundle + aggregate packaging 🚧
 
-**Status:** ⛔ blocked on `ost` · **Contract:**
+**Status:** aggregate product shipped; standalone dependency-registration P0 is
+blocked on `ost` · **Contract:**
 [WORKSPACE.md](../architecture/WORKSPACE.md) §5
 
 `ost` 0.19.0 moved this forward but did not unblock it. What landed:

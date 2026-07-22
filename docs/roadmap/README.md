@@ -44,14 +44,12 @@ A–H is unrelated to that retired A–E** and always carries the "Motion" quali
 
 ## Status at a glance
 
-- The importer feature build-out and the workspace split through **Workspace
-  Phase 4** are complete.
-- Current priorities: stabilize the v0.2.0 workspace release, close the
-  remaining **Workspace Phase 5** packaging P0, and widen runtime verification.
-- The motion layer is **entirely unstarted** — no `.vrma` bundle, no motion
-  library, no OpenExec node exists in the tree. Its first deliverable is
-  **Motion Phase A**, which is a design artifact (a hand-authored USDA and a set
-  of C++ type definitions), not an implementation.
+- The workspace now reaches **Workspace Phase 7**: `motionCore` and
+  `usdVrmaFileFormat` implement Motion Phases A+B for the v0.3.0 release.
+- Current priorities: cut v0.3.0, close the remaining **Workspace Phase 5**
+  packaging P0, and widen runtime verification.
+- The next motion deliverable is **Motion Phase C** (`vrmRetarget` and offline
+  retarget), before any live-capture or OpenExec work.
 
 ## Quality bar (applies to every phase)
 

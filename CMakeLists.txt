@@ -55,13 +55,17 @@ if(USDVRM_BUILD_TESTS)
     enable_testing()
 endif()
 
-# Plain libraries sit below every plugin bundle in the workspace graph. Add
-# them first so composed builds consume the in-tree target; standalone bundle
-# builds consume the same API through its installed CMake package.
+# vrmContainer has no OpenUSD dependency, so it can be added before the single
+# workspace-wide OpenUSD resolution below.
 add_subdirectory("libs/vrmContainer")
 
 # Resolve OpenUSD once for the whole project; bundles reuse the result.
 find_package(pxr REQUIRED CONFIG)
+
+# motionCore has only Gf value-type dependencies. Add it after pxr so the
+# composed plain-CMake build never asks pxrConfig.cmake to define its imported
+# targets a second time; standalone builds still resolve pxr themselves.
+add_subdirectory("libs/motionCore")
 
 # Discover every plugin bundle under plugins/ rather than naming them one by one:
 # an immediate plugins/<name>/ that carries both an openstrata.plugin.yaml (the

@@ -1,7 +1,7 @@
 # Supported configurations
 
 The configurations `usd-vrm-plugins` targets and continuously verifies. Anything
-outside this list may work but is not part of the `v0.2.0` support contract.
+outside this list may work but is not part of the `v0.3.0` support contract.
 
 ## OpenUSD
 
@@ -9,7 +9,7 @@ outside this list may work but is not part of the `v0.2.0` support contract.
 | --- | --- |
 | Tolerated range | `>=25.05, <27.0` (declared in `plugins/usdVrmFileFormat/openstrata.plugin.yaml`) |
 | Authored against | 25.05 |
-| Verified against | 26.08 (the certified point in the `cy2026` runtime) |
+| Verified against | 26.05 (the certified point in the `cy2026` runtime) |
 
 The importer builds against a single OpenUSD version per runtime; the runtime
 supplies the certified point within the tolerated range. **No ABI stability is
@@ -42,15 +42,17 @@ These match the per-PR CI matrix in `.github/workflows/ost-source-ci.yml`
 | Linux | `ubuntu-24.04` | x86_64 | libstdc++ (glibc ≥ 2.38 floor) |
 
 Other host OS versions / architectures (e.g. Linux arm64, x86_64 macOS) are not
-part of the verified matrix for `v0.2.0`.
+part of the verified matrix for `v0.3.0`.
 
 ## Build outputs
 
-The plugin is a **shared** library (`libUsdVrmFileFormat.{dll,so,dylib}`) — USD
-file-format plugins are loaded dynamically. There is no supported static-plugin
-build. Discovery follows OpenUSD's standard mechanism: add the plugin's
-`plugin/resources/usdVrmFileFormat` directory to `PXR_PLUGINPATH_NAME` and the `lib/`
-directory to the dynamic-loader path.
+The file-format plugins are **shared** libraries
+(`libUsdVrmFileFormat.{dll,so,dylib}` and
+`libUsdVrmaFileFormat.{dll,so,dylib}`) — USD loads them dynamically. There is
+no supported static-plugin build. `motionCore` is intentionally static and is
+linked into its consumer. Discovery follows OpenUSD's standard mechanism: add
+the required bundle's `plugin/resources/<bundle>` directory to
+`PXR_PLUGINPATH_NAME` and its `lib/` directory to the dynamic-loader path.
 
 ## Versioning relationship
 

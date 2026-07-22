@@ -13,6 +13,45 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-07-23
+
+### Added
+
+- **Motion Phase A contract:** `motion::`'s vendor-neutral vocabulary, semantic
+  joint paths, coordinate/time conventions, root-motion policy, provenance, and
+  the hand-authored Phase C retarget hand-off triplet are frozen in
+  [`docs/design/MOTION_CONTRACT.md`](docs/design/MOTION_CONTRACT.md).
+- **Workspace Phase 6a — `motionCore`:** a plain static CMake package exporting
+  `HumanBone`, `HumanoidPose`, `HumanoidAnimation`, `RootMotion`, source
+  metadata, contact samples, and declarative motion constraints. Its public
+  contract permits only OpenUSD `Gf` values — never a stage, plugin, network,
+  SDK, or product name.
+- **Workspace Phase 7 / Motion Phase B — `usdVrmaFileFormat`:** a `.vrma`
+  `SdfFileFormat` for VRMC VRM Animation 1.0 GLB clips. It imports the first
+  animation's humanoid rotations and hips translation into an
+  avatar-independent semantic `UsdSkelSkeleton` / `UsdSkelAnimation`, with
+  30-fps time mapping and `vrma` provenance metadata.
+- **VRMA verification:** a deterministic, license-free GLB fixture, L0–L5
+  plugin pyramid and flattened golden, plus Python checks for semantic joints,
+  rest transforms, rotations, root motion, time range, and animation binding.
+- **Hermetic glTF parser source:** cgltf v1.15 is vendored under
+  [`third_party/cgltf`](third_party/cgltf) with its MIT license; CMake no longer
+  downloads a dependency while configuring a bundle.
+
+### Changed
+
+- The release workspace now contains four plugin bundles. Every target publishes
+  `usdVrmaFileFormat-0.3.0-<target>.tar.zst` alongside the three VRM bundles;
+  its package is independently validated through L5 before staging a release.
+
+### Known limitations
+
+- VRMA expressions, look-at, multiple clips, retargeting, live capture,
+  generation, constraint solving, and OpenExec evaluation are deferred to
+  Motion Phases C–H.
+- `CUBICSPLINE` input currently uses value vertices as a linear approximation
+  and reports a warning; scale channels and non-hips translations are ignored.
+
 ## [0.2.0] — 2026-07-18
 
 First release of the multi-bundle workspace. **Artifact-breaking:** consumers of
@@ -180,6 +219,7 @@ Explicitly out of scope for this release (tracked in the
 - ABI stability guarantees across all OpenUSD versions (see
   [`docs/reference/SUPPORTED_CONFIGURATIONS.md`](docs/reference/SUPPORTED_CONFIGURATIONS.md)).
 
-[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/animu-sphere/usd-vrm-plugins/releases/tag/v0.1.0

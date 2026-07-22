@@ -8,16 +8,9 @@ Legend: ⬜ not started
 
 ## Milestone ladder (beyond next)
 
-- ⬜ **Motion Phase A — freeze the motion contract.** A design artifact, not an
-  implementation: the hand-authored target USDA plus the `motion::` type
-  definitions. Everything below depends on it, and it needs no new bundle, so it
-  is the cheapest next step in the motion layer.
-- ⬜ **Workspace Phase 6 — motion library bootstrap** (`motionCore`,
-  `motionRuntime`, `vrmRetarget`).
-- ⬜ **Workspace Phase 7 — `usdVrmaFileFormat` bootstrap**, then **Motion Phase
-  B** inside it.
 - ⬜ **Motion Phase C — offline retarget.** The first end-to-end evaluation
   point of the whole motion layer (motion policy §16-C).
+- ⬜ **Workspace Phase 6b — `motionRuntime` + `vrmRetarget` bootstrap.**
 - ⬜ **Workspace Phase 8 — `execMotion` + `execVrm` bootstrap**, then **Motion
   Phase E** inside it.
 
@@ -79,11 +72,10 @@ Source of truth:
 [MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md) §16.
 Always written "Motion Phase X", never a bare "Phase X".
 
-- ⬜ **Motion Phase A — freeze the contract.** Hand-author the ideal VRMA→USDA
-  conversion; define `motion::HumanoidPose`, `HumanoidAnimation`, an independent
-  `RootMotion`, and `MotionConstraintSet`; write down the source/target
-  coordinate spaces. *No new bundle required — do this first.*
-- ⬜ **Motion Phase B — minimal `usdVrmaFileFormat`.** GLB/glTF animation read,
+- ✅ **Motion Phase A — frozen in v0.3.0.** The hand-authored contract and
+  `motionCore` type surface are in
+  [`MOTION_CONTRACT.md`](../design/MOTION_CONTRACT.md).
+- ✅ **Motion Phase B — shipped in v0.3.0.** GLB/glTF animation read,
   humanoid rotation, hips translation, canonical `HumanoidSkeleton`,
   `UsdSkelAnimation`, time range, provenance. Not expression, not look-at, not
   retarget, not live.

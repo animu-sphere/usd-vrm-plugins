@@ -5,7 +5,7 @@ manifest:
   schema: openstrata.plugin/v1alpha1
 plugin:
   name: usdVrmPackageResolver
-  version: 0.2.0
+  version: 0.3.0
   kind: usd-package-resolver
 license: Apache-2.0
 runtime:
@@ -25,7 +25,7 @@ requires:
   # runtime/libraries/.
   libraries:
     - id: vrmContainer
-      version: ">=0.2,<0.3"
+      version: ">=0.3,<0.4"
 usd:
   # Where this bundle's plugInfo.json lives, relative to the bundle root.
   plug_info: plugin/resources/usdVrmPackageResolver/plugInfo.json

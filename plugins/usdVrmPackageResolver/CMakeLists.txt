@@ -18,7 +18,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
     file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION" _vrm_resolver_version LIMIT_COUNT 1)
     string(STRIP "${_vrm_resolver_version}" _vrm_resolver_version)
 else()
-    set(_vrm_resolver_version "0.2.0")  # mirrors openstrata.plugin.yaml
+    set(_vrm_resolver_version "0.3.0")  # mirrors openstrata.plugin.yaml
 endif()
 
 project(UsdVrmPackageResolverPlugin
@@ -48,8 +48,8 @@ if(NOT pxr_FOUND)
     find_package(pxr REQUIRED CONFIG)
 endif()
 
-# cgltf, fetched at configure time (see cmake/Dependencies.cmake). Defines the
-# cgltf::cgltf INTERFACE target. Used only to enumerate the glTF image table;
+# Vendored cgltf (see cmake/Dependencies.cmake). Defines the cgltf::cgltf
+# INTERFACE target. Used only to enumerate the glTF image table;
 # all byte access goes through vrmContainer's checked views.
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Dependencies.cmake")
 
