@@ -13,6 +13,10 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+- **OpenStrata CI updated to `ost 0.20.0`**, including the release lane's
+  aggregate-product reproducibility gate that blocked the v0.3.0 release under
+  `ost 0.19.0`.
+
 ## [0.3.0] — 2026-07-23
 
 ### Added
