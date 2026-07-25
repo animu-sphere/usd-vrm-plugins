@@ -41,5 +41,9 @@ def Scope "Animation" (
             0: [(0, 1, 0), (0, 0.5, 0), (0, 0.5, 0)],
             30: [(0, 1, 0.5), (0, 0.5, 0), (0, 0.5, 0)],
         }
+        # Constant identity. Scale is not animated, but UsdSkel fetches
+        # translations, rotations and scales as a unit and `scales` has no
+        # schema fallback, so a clip that omits it resolves to the rest pose.
+        half3[] scales = [(1, 1, 1), (1, 1, 1), (1, 1, 1)]
     }
 }

@@ -11,7 +11,7 @@ The **schema contract version** is tracked separately from the package version
 [`plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)).
 Current schema contract version: **1**.
 
-## [Unreleased]
+## [0.4.0] — 2026-07-26
 
 ### Added
 
@@ -67,6 +67,19 @@ Current schema contract version: **1**.
   resolves translations, rotations and scales as a unit and `scales` has no
   schema fallback, so the baked clip previously bound to the avatar and then
   resolved no joint transforms at all. Scale is still never animated.
+- **`usdVrmaFileFormat` authors the same identity `scales` array**
+  ([#64](https://github.com/animu-sphere/usd-vrm-plugins/issues/64)) — the other
+  half of the defect above. An imported `.vrma` bound its `BodyAnimation`
+  cleanly, satisfied every authored-value check, and then resolved every joint
+  to the skeleton's **rest pose**: opened in usdview, the clip did not move.
+  Measured on the seven VRM Animation MotionPack clips, which now resolve an
+  animated skeleton at every sampled time. `test_usdvrma_plugin.py` gained a
+  `UsdSkelSkeletonQuery` check that compares resolved transforms against the
+  animation, since an existence check passes either way.
+- `tests/baseline/discovery.json` is re-frozen to include `usdVrmaFileFormat`'s
+  registration, closing the `usdvrm_baseline` failure carried since v0.3.0. The
+  gate's CTest wiring now stages every workspace bundle, not just this bundle's
+  dependency closure — the missing session was what made the check abort.
 - **The rest-pose correction accumulates each parent chain.** It read the
   parent's own *local* rest rotation as the world-delta invariant's `Sp`/`Tp`,
   which agrees only where that parent is itself a root — every bone below the
@@ -89,8 +102,11 @@ Current schema contract version: **1**.
   `motion_retarget` are covered only by the plain-CMake root build. Recorded as
   an ask in
   [report 28](docs/reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md).
-- `usdvrm_baseline` remains red pending a deliberate re-freeze of
-  `tests/baseline/discovery.json`, which predates `usdVrmaFileFormat`.
+- **`motion_retarget` is not in the published artifacts.** It is an executable,
+  not a bundle, and the aggregate product has no member shape for one; build it
+  from source. Same report, P1 ask.
+- Scale is authored but never **animated**, in either the importer or the bake:
+  both write a constant identity array so the clip evaluates.
 - Live capture, generation, expression, look-at, OpenExec evaluation, blending
   beyond the primitive, IK, and foot locking remain Motion Phases D–H.
 
@@ -300,7 +316,8 @@ Explicitly out of scope for this release (tracked in the
 - ABI stability guarantees across all OpenUSD versions (see
   [`docs/reference/SUPPORTED_CONFIGURATIONS.md`](docs/reference/SUPPORTED_CONFIGURATIONS.md)).
 
-[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/animu-sphere/usd-vrm-plugins/releases/tag/v0.1.0

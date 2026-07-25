@@ -5,7 +5,7 @@ OpenUSD plugins for [VRM](https://vrm.dev/en/) avatars.
 This repository is an OpenUSD plugin **workspace**: it separates schema
 definitions, file-format import, package resolution, and shared GLB container
 parsing into independently buildable, independently testable components. The
-v0.3.0 release ships four plugin bundles and two shared libraries.
+v0.4.0 release ships four plugin bundles, four shared libraries, and one CLI.
 
 The importer reads VRM 0.x and 1.0, normalizes the differences away, and authors
 a static USD stage. It **never evaluates or simulates** — that boundary is the

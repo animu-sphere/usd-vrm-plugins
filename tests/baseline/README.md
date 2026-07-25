@@ -12,14 +12,22 @@ All artifacts are generated and verified by
 
 ## Commands
 
+`discovery.json` freezes the union across *every* workspace bundle, so the
+session must stage every bundle — not just this one's dependency closure. Bundles
+that register a type without being a dependency (`usdVrmaFileFormat`) need an
+explicit `--with`; the generator aborts naming the missing plugin rather than
+silently freezing a short union.
+
 ```sh
 # Verify current behavior against the committed baseline (the phase gate).
-# ost 0.15+ resolves the manifest dependency closure into the session:
-ost plugin run plugins/usdVrmFileFormat -- python tools/baseline_freeze.py --check
+ost plugin run plugins/usdVrmFileFormat \
+    --with plugins/usdVrmaFileFormat \
+    --with plugins/usdVrmPackageResolver \
+    --with plugins/vrmSchema \
+    -- python tools/baseline_freeze.py --check
 
 # Rewrite the baseline (ONLY in a dedicated behavior-change PR, never in a
-# structural/migration PR):
-ost plugin run plugins/usdVrmFileFormat -- python tools/baseline_freeze.py --update
+# structural/migration PR): same session, --update.
 ```
 
 The check also runs as the `usdvrm_baseline` CTest test in the plain-CMake

@@ -105,6 +105,18 @@
       ],
       "schemaIdentifier": "VrmSpringBoneAPI",
       "schemaKind": "singleApplyAPI"
+    },
+    "UsdVrmaFileFormat": {
+      "bases": [
+        "SdfFileFormat"
+      ],
+      "displayName": "UsdVrma File Format",
+      "extensions": [
+        "vrma"
+      ],
+      "formatId": "vrma",
+      "primary": true,
+      "target": "usd"
     }
   }
 }
