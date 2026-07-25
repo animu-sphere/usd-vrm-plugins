@@ -67,6 +67,19 @@ Current schema contract version: **1**.
   resolves translations, rotations and scales as a unit and `scales` has no
   schema fallback, so the baked clip previously bound to the avatar and then
   resolved no joint transforms at all. Scale is still never animated.
+- **`usdVrmaFileFormat` authors the same identity `scales` array**
+  ([#64](https://github.com/animu-sphere/usd-vrm-plugins/issues/64)) — the other
+  half of the defect above. An imported `.vrma` bound its `BodyAnimation`
+  cleanly, satisfied every authored-value check, and then resolved every joint
+  to the skeleton's **rest pose**: opened in usdview, the clip did not move.
+  Measured on the seven VRM Animation MotionPack clips, which now resolve an
+  animated skeleton at every sampled time. `test_usdvrma_plugin.py` gained a
+  `UsdSkelSkeletonQuery` check that compares resolved transforms against the
+  animation, since an existence check passes either way.
+- `tests/baseline/discovery.json` is re-frozen to include `usdVrmaFileFormat`'s
+  registration, closing the `usdvrm_baseline` failure carried since v0.3.0. The
+  gate's CTest wiring now stages every workspace bundle, not just this bundle's
+  dependency closure — the missing session was what made the check abort.
 - **The rest-pose correction accumulates each parent chain.** It read the
   parent's own *local* rest rotation as the world-delta invariant's `Sp`/`Tp`,
   which agrees only where that parent is itself a root — every bone below the

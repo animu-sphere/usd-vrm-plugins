@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "usd/UsdVrmaAuthorer.h"
 
+#include "pxr/base/gf/vec3h.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
@@ -62,6 +63,13 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document,
     body.CreateJointsAttr(VtValue(joints));
     UsdAttribute translations = body.CreateTranslationsAttr();
     UsdAttribute rotations = body.CreateRotationsAttr();
+    // UsdSkel fetches translations, rotations and scales as a unit, and
+    // `scales` has no schema fallback: omitting it does not mean "this clip
+    // animates no scale", it silently drops the whole animation and leaves the
+    // skeleton at its rest pose. Scale stays un-animated -- this constant
+    // identity array exists only so the clip evaluates.
+    const VtVec3hArray identityScales(document.joints.size(), GfVec3h(1.0f));
+    body.CreateScalesAttr(VtValue(identityScales));
     for (const motion::HumanoidPose& pose : document.animation.samples) {
         VtVec3fArray valuesT;
         VtQuatfArray valuesR;
