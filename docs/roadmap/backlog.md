@@ -8,15 +8,23 @@ Legend: ⬜ not started
 
 ## Milestone ladder (beyond next)
 
+| Release | Theme | Sequences | Plan |
+| --- | --- | --- | --- |
+| v0.5.0 | live-capture prototype | Motion Phase D | [current.md](current.md) |
+| v0.6.0 | OpenUSD 26.08 exact pin + OpenExec VRM runtime foundation | Workspace Phase 8, Motion Phase E | [openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md) §6 |
+| v0.7.0 | `ExecIr` invertible VRM humanoid rig | Motion Phase E cont. | [openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md) §7 |
+
 - ⬜ **Motion Phase D — live-capture prototype.** The next motion deliverable
-  after v0.4.0's offline retarget.
+  after v0.4.0's offline retarget; scheduled as **v0.5.0**.
 - ⬜ **Workspace Phase 8 — `execMotion` + `execVrm` bootstrap**, then **Motion
-  Phase E** inside it.
+  Phase E** inside it; scheduled as **v0.6.0**, together with the OpenUSD 26.08
+  exact pin.
 
 Workspace phases establish boundaries; Motion phases fill them. They are never
 the same milestone. Workspace Phase 6b and Motion Phase C both landed in v0.4.0
 — the boundary and the behaviour together, because the retarget core is only
-meaningful once something drives it end to end.
+meaningful once something drives it end to end. Workspace Phase 8 and Motion
+Phase E land together in v0.6.0 for the same reason.
 
 ## Product P2 — fix the canonical-model contract
 
@@ -85,13 +93,17 @@ Always written "Motion Phase X", never a bare "Phase X".
   correction, expansion to target joint order, `UsdSkelAnimation` output,
   `skel:animationSource` binding. **The first end-to-end evaluation point** —
   the Motion Phase A design triplet is now reproduced by a test.
-- ⬜ **Motion Phase D — live-capture prototype.** Generic `LiveCaptureSource`,
-  timestamped `PoseBuffer`, reproducible tests from recorded samples, missing
-  bones / confidence / root-motion evaluation. Product-specific support is an
-  optional adapter.
-- ⬜ **Motion Phase E — `execMotion` / `execVrm`.** ClipSample, PoseBuffer,
-  HumanoidRetarget, RootMotionResolve, AvatarApply. Nodes are thin wrappers over
-  `motionRuntime` and `vrmRetarget`.
+- ⬜ **Motion Phase D — live-capture prototype** (**v0.5.0**). Generic
+  `LiveCaptureSource`, timestamped `PoseBuffer`, reproducible tests from recorded
+  samples, missing bones / confidence / root-motion evaluation.
+  Product-specific support is an optional adapter.
+- ⬜ **Motion Phase E — `execMotion` / `execVrm`** (**v0.6.0**, continuing into
+  v0.7.0). ClipSample, PoseBuffer, HumanoidRetarget, RootMotionResolve,
+  AvatarApply. Nodes are thin wrappers over `motionRuntime` and `vrmRetarget`.
+  The [OpenExec plan](openexec-v0.6.0-v0.7.0.md) adds a `usdExecImaging` vertical
+  slice and the `ExecIr` rig track on top of this description; §9 there records
+  that Phase E's scope needs to widen — or the ladder needs another phase — in
+  the motion policy itself.
 - ⬜ **Motion Phase F — generation adapter.** `IMotionGenerator`,
   `MotionGenerationRequest`, text intent, root waypoints, sparse joint
   constraints, pose history, clip-ification.

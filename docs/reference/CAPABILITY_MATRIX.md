@@ -52,7 +52,9 @@ simulates:
 
 - **LookAt**, **node constraints**, and **spring bones** are authored as typed
   schema data on the stage. Their runtime evaluation/simulation is a **separate
-  layer** (`execVrm`, Product P4), never run by this importer.
+  layer** (`execVrm`, Product P4), never run by this importer. `execVrm` does not
+  exist yet; it is planned for v0.6.0
+  ([the OpenExec plan](../roadmap/openexec-v0.6.0-v0.7.0.md)).
 - MToon **shading** realization (beyond the PreviewSurface approximation) is
   Product P5.
 
@@ -61,15 +63,25 @@ data-authoring step so downstream runtimes can be swapped without changing it.
 
 ## Not covered by this matrix
 
-This table covers the `.vrm` importer only. **`.vrma` motion clips are not
-supported** — there is no `.vrma` file-format plugin, no retargeting, and no
-motion runtime in the tree today. That layer is planned as a separate bundle
-(`usdVrmaFileFormat`) plus the motion libraries; see
+This table covers the `.vrm` importer only. Skeletal animation *embedded in a
+`.vrm`* is listed above; a standalone reusable `.vrma` clip is a different thing
+and is handled by a different bundle.
+
+**The `.vrma` motion layer ships as of v0.4.0** and has its own status:
+
+| Component | Since | Status |
+| --- | --- | --- |
+| `usdVrmaFileFormat` | v0.3.0 | GLB/glTF animation read, humanoid rotation, hips translation, canonical `HumanoidSkeleton`, `UsdSkelAnimation`, time range, provenance (Motion Phase B) |
+| `motionCore` | v0.3.0 | Vendor-neutral pose/animation types (Motion Phase A contract) |
+| `motionRuntime` | v0.4.0 | `PoseBuffer`, interpolation/extrapolation, resample, filter, blend |
+| `vrmRetarget` | v0.4.0 | Humanoid map, rest-pose correction, pose retargeter, root-motion policy |
+| `motion_retarget` | v0.4.0 | CLI: retargets a clip onto an avatar and binds `skel:animationSource` (Motion Phase C) |
+
+Not yet in that layer: expression and look-at animation, live capture,
+generation, OpenExec evaluation, blending beyond the primitive, IK, and foot
+locking. See
 [MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md) and the
 Motion Phase ladder in the [backlog](../roadmap/backlog.md).
-
-Skeletal animation *embedded in a `.vrm`* is supported and listed above; that is
-a different thing from a standalone reusable `.vrma` clip.
 
 ## See also
 

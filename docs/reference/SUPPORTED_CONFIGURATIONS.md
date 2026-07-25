@@ -1,7 +1,7 @@
 # Supported configurations
 
 The configurations `usd-vrm-plugins` targets and continuously verifies. Anything
-outside this list may work but is not part of the `v0.3.0` support contract.
+outside this list may work but is not part of the `v0.4.0` support contract.
 
 ## OpenUSD
 
@@ -9,13 +9,22 @@ outside this list may work but is not part of the `v0.3.0` support contract.
 | --- | --- |
 | Tolerated range | `>=25.05, <27.0` (declared in `plugins/usdVrmFileFormat/openstrata.plugin.yaml`) |
 | Authored against | 25.05 |
-| Verified against | 26.05 (the certified point in the `cy2026` runtime) |
+| Verified against | 26.05 (the certified point in the `cy2026` runtime, on all three OS) |
 
 The importer builds against a single OpenUSD version per runtime; the runtime
 supplies the certified point within the tolerated range. **No ABI stability is
 guaranteed across OpenUSD versions** — rebuild the plugin against your target
 OpenUSD. A second OpenUSD version cell (min vs latest) is a roadmap P1 item; CI
-currently exercises `cy2026` (26.08) only.
+currently exercises `cy2026` / OpenUSD 26.05 only.
+
+**This range is scheduled to be retired.** v0.6.0 pins OpenUSD to **26.08
+exactly** and rejects anything else at configure time
+([the OpenExec plan §4.1](../roadmap/openexec-v0.6.0-v0.7.0.md)). Two of the
+three 26.08 runtimes exist already — `26.08-windows-x86_64` and
+`26.08-linux-x86_64` were published on 2026-07-26
+([report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md))
+— but macOS arm64 is still 26.05 and no CI lane consumes 26.08 yet, so the
+contract above is what this release actually verifies.
 
 ## Toolchain
 
@@ -42,15 +51,25 @@ These match the per-PR CI matrix in `.github/workflows/ost-source-ci.yml`
 | Linux | `ubuntu-24.04` | x86_64 | libstdc++ (glibc ≥ 2.38 floor) |
 
 Other host OS versions / architectures (e.g. Linux arm64, x86_64 macOS) are not
-part of the verified matrix for `v0.3.0`.
+part of the verified matrix for `v0.4.0`.
+
+These cells cover the four plugin bundles only. `motionCore`, `motionRuntime`,
+`vrmRetarget`, and the `motion_retarget` CLI are **not built by any lane** —
+`ost ci generate` emits one job per bundle cell and has no cell shape for a plain
+library or an executable
+([report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md),
+ask 1). They are compiled and tested in the plain-CMake root build, which runs
+locally and in no workflow.
 
 ## Build outputs
 
 The file-format plugins are **shared** libraries
 (`libUsdVrmFileFormat.{dll,so,dylib}` and
 `libUsdVrmaFileFormat.{dll,so,dylib}`) — USD loads them dynamically. There is
-no supported static-plugin build. `motionCore` is intentionally static and is
-linked into its consumer. Discovery follows OpenUSD's standard mechanism: add
+no supported static-plugin build. `motionCore`, `motionRuntime`, and
+`vrmRetarget` are intentionally static and are linked into their consumers;
+`motion_retarget` is an ordinary executable and registers nothing with OpenUSD.
+Discovery follows OpenUSD's standard mechanism: add
 the required bundle's `plugin/resources/<bundle>` directory to
 `PXR_PLUGINPATH_NAME` and its `lib/` directory to the dynamic-loader path.
 

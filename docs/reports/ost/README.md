@@ -2,7 +2,7 @@
 
 This repository is built end to end with [OpenStrata](https://github.com/animu-sphere/open-strata)
 (`ost`), and these are the dated records of what that was actually like — every
-`ost` version from the pre-0.3 builds through 0.19.0, on Windows, macOS arm64,
+`ost` version from the pre-0.3 builds through 0.20.0, on Windows, macOS arm64,
 and Linux. They are upstream feedback first and our own status trail second.
 
 **They are append-only historical evidence.** A report is never rewritten to
@@ -17,8 +17,8 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 27 carries
-the live v0.20.0 asks, based on the v0.3.0 release-lane failure.
+The current `ost` ask list is always in the **newest** report. Report 29 carries
+the consolidated live v0.21.0 asks, including the two report 28 raised.
 
 Numbering is the series' own: reports 1–8 call themselves "report #N" in their
 bodies, so the filenames preserve those numbers rather than renumbering history.
@@ -27,7 +27,8 @@ that was never given a series number.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
-| 28 | 2026-07-26 | [Plain libraries and CLI tools have no CI cell](28-2026-07-26-v0.20.0-motion-layer-ci-gap.md) | 0.20.0 | `--workspace` *does* validate library edges (caught a real version mismatch), but `ci generate` emits bundle cells only, so Workspace Phase 6b's libraries and the Motion Phase C tool are untested in CI. **Live v0.21.0 asks** |
+| 29 | 2026-07-26 | [Publishing the OpenUSD 26.08 runtimes](29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md) | 0.20.0 | Windows + Linux 26.08 runtimes published and attested off-CI (`--build-metadata` works), but `runtime pull --build` forces `--no-examples` and `--build-arg` cannot override it. **Live v0.21.0 asks (consolidated)** |
+| 28 | 2026-07-26 | [Plain libraries and CLI tools have no CI cell](28-2026-07-26-v0.20.0-motion-layer-ci-gap.md) | 0.20.0 | `--workspace` *does* validate library edges (caught a real version mismatch), but `ci generate` emits bundle cells only, so Workspace Phase 6b's libraries and the Motion Phase C tool are untested in CI. Asks restated in 29 |
 | 27 | 2026-07-23 | [v0.3.0 aggregate product reproducibility](27-2026-07-23-v0.19.0-aggregate-product-reproducibility.md) | 0.19.0 | v0.3.0 release blocked: member archives stable, aggregate product digest unstable. **Live v0.20.0 ask** |
 | 26 | 2026-07-23 | [v0.20.0 asks after v0.19.0 adoption](26-2026-07-23-v0.19.0-v0.20.0-asks.md) | 0.19.0 | Workspace composition and aggregate product verified; standalone dependency registration P0 remains reproducible. **Live v0.20.0 asks** |
 | 25 | 2026-07-18 | [`--from-package` already composed `--workspace`](25-2026-07-18-v0.18.0-from-package-workspace-correction.md) | 0.18.0 | Correction: an ask we re-filed twice had already shipped; we read the (stale) help text instead of running it. Registration-half P0 strengthened. **Live v0.19.0 asks** |

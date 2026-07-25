@@ -5,6 +5,48 @@ The next milestone and active carry-over work. Shipped detail is in the
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
+## Next: v0.5.0 — live capture (Motion Phase D) ⬜
+
+**Release boundary:** a generic `LiveCaptureSource` feeding the same retarget
+core v0.4.0 shipped. It does **not** begin OpenExec — that is v0.6.0.
+
+- ⬜ Generic `LiveCaptureSource`, timestamped `PoseBuffer` intake, reproducible
+  tests driven from recorded samples, and evaluation of missing bones,
+  confidence, and root motion. Product-specific support stays an optional leaf
+  adapter, never a core dependency
+  ([motion policy §8.1](../design/MOTION_ARCHITECTURE_POLICY.md)).
+- ⬜ **A motion corpus.** Recorded live-capture samples are what make the tests
+  reproducible; licensing is the same gate the VRM corpus hit
+  ([backlog](backlog.md#cross-cutting)).
+
+`motionRuntime`'s `PoseBuffer` was built for this: bounded, strictly ordered
+history with bracketed sampling and capped position-only extrapolation, and a
+missing sample is held rather than faded toward identity. Phase D consumes that
+surface rather than extending it.
+
+## After that: the OpenUSD 26.08 / OpenExec direction
+
+v0.6.0 pins OpenUSD to **26.08 exactly** and makes OpenExec the execution layer;
+v0.7.0 connects VRM humanoids to `ExecIr`. Both are planned in
+[openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md). Two pieces of it are
+already partly done and are tracked here because they are live:
+
+- ✅ **26.08 runtimes for Windows and Linux are published** (2026-07-26) to
+  `ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd` as `26.08-windows-x86_64`
+  and `26.08-linux-x86_64`. Both carry OpenExec (`exec`, `execGeom`, `execIr`,
+  `execUsd`, `usdExecImaging`, `vdf`) and were built with `--examples`, so the
+  26.08 `ExecIr` samples ship inside the runtime. Both verify `trust: attested`
+  with SBOM and provenance. Digests and evidence:
+  [report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md).
+- ⛔ **macOS arm64 is still on 26.05.** The 26.08 runtime for it is unbuilt, so
+  "one OpenUSD version across three OS" — the v0.6.0 P0-1 gate — cannot be met
+  yet. It needs an Apple-silicon host; see
+  [report 6a](../reports/ost/06a-2026-06-30-v0.4.0-macos-openusd-build.md) for the
+  build recipe.
+- ⬜ **CI still pins 26.05.** `openstrata.ci.yaml` was deliberately left alone
+  when the 26.08 runtimes were published, so nothing about the current lanes
+  moved. Re-pinning happens with the exact-pin work, not before.
+
 ## Shipped: v0.4.0 — offline retarget
 
 [v0.4.0](../releases/v0.4.0.md) is **released** — tagged 2026-07-26.

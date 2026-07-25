@@ -11,6 +11,7 @@ Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 | --- | --- |
 | [current.md](current.md) | The next milestone and active carry-over work. |
 | [backlog.md](backlog.md) | Ordered but unscheduled work: the milestone ladder beyond next, the motion layer, future phases, and cross-cutting open items. |
+| [openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md) | The OpenExec direction: the OpenUSD 26.08 exact pin, the `execMotion` / `execVrm` foundation, and the `ExecIr` invertible rig. Two milestones out; kept separate because it is a plan, not a status list. |
 
 ## Three sequences, deliberately separate
 
@@ -47,12 +48,19 @@ A–H is unrelated to that retired A–E** and always carries the "Motion" quali
 - The workspace covers **Workspace Phase 6b and 7**: `motionCore`,
   `motionRuntime`, `vrmRetarget`, and `usdVrmaFileFormat` implement Motion
   Phases A–C. Only Phase 8 (`execMotion` / `execVrm`) is unbuilt.
-- v0.3.0 is released; **v0.4.0** (Workspace Phase 6b + Motion Phase C, offline
-  retarget) is in progress.
+- **v0.4.0 is released** (Workspace Phase 6b + Motion Phase C, offline retarget).
 - Current priorities: get the motion layer under a CI lane, close the remaining
   **Workspace Phase 5** packaging P0, and widen runtime verification.
-- The next motion deliverable is **Motion Phase D** (live-capture prototype),
-  before any OpenExec work.
+- The milestone ladder is **v0.5.0 → v0.6.0 → v0.7.0**:
+
+  | Release | Theme | Sequences |
+  | --- | --- | --- |
+  | v0.5.0 | live-capture prototype | Motion Phase D |
+  | v0.6.0 | OpenUSD 26.08 exact pin + OpenExec VRM runtime foundation | Workspace Phase 8, Motion Phase E, Product P4 |
+  | v0.7.0 | `ExecIr` invertible VRM humanoid rig | Motion Phase E cont., Product P4 |
+
+  v0.6.0 and v0.7.0 are planned in
+  [openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md).
 
 ## Quality bar (applies to every phase)
 
