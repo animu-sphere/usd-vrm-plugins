@@ -136,19 +136,31 @@ set_tests_properties(usdvrm_validate PROPERTIES
 # docs/architecture/WORKSPACE.md §7 and tests/baseline/README.md.
 get_filename_component(_repo_root "${_bundle_dir}/../.." ABSOLUTE)
 
-# discovery.json freezes the union of registered types across *every* workspace
-# bundle, so the baseline gate needs a session wider than the smoke tests': the
-# VRMA importer registers a type but is not a dependency of this bundle, and its
-# absence makes the generator abort rather than silently freeze a short union.
-set(_vrma_bundle "${_bundle_dir}/../usdVrmaFileFormat")
-set(_vrma_resources "${_vrma_bundle}/plugin/resources/usdVrmaFileFormat")
-set(_baseline_env
-    "${_smoke_env};PATH=path_list_prepend:${_vrma_bundle}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:motionCore::motionCore>;PXR_PLUGINPATH_NAME=path_list_prepend:${_vrma_resources}")
+# This gate is whole-workspace, unlike every test above it: discovery.json
+# freezes the union of registered types across *every* bundle, so the session
+# needs the VRMA importer too — it registers a type without being a dependency
+# of this bundle, and its absence makes the generator abort rather than silently
+# freeze a short union.
+#
+# So it is registered only from the root workspace build. A standalone bundle
+# configure (`ost plugin build plugins/usdVrmFileFormat`) has neither that
+# bundle nor motionCore in scope, and a test that cannot pass there is worse
+# than no test.
+if(TARGET motionCore::motionCore)
+    set(_vrma_bundle "${_bundle_dir}/../usdVrmaFileFormat")
+    set(_vrma_resources "${_vrma_bundle}/plugin/resources/usdVrmaFileFormat")
+    set(_baseline_env
+        "${_smoke_env};PATH=path_list_prepend:${_vrma_bundle}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:motionCore::motionCore>;PXR_PLUGINPATH_NAME=path_list_prepend:${_vrma_resources}")
 
-add_test(
-    NAME usdvrm_baseline
-    COMMAND ${Python3_EXECUTABLE}
-            "${_repo_root}/tools/baseline_freeze.py" --check)
+    add_test(
+        NAME usdvrm_baseline
+        COMMAND ${Python3_EXECUTABLE}
+                "${_repo_root}/tools/baseline_freeze.py" --check)
 
-set_tests_properties(usdvrm_baseline PROPERTIES
-    ENVIRONMENT_MODIFICATION "${_baseline_env}")
+    set_tests_properties(usdvrm_baseline PROPERTIES
+        ENVIRONMENT_MODIFICATION "${_baseline_env}")
+else()
+    message(STATUS
+        "usdVrmFileFormat: standalone configure; skipping the usdvrm_baseline "
+        "gate (it needs the whole workspace — build from the repo root)")
+endif()
