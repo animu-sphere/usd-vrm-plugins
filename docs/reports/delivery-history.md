@@ -6,9 +6,11 @@ reliability/release tooling. It is **historical evidence**, reorganized out of
 the original `ROADMAP.md` so the [roadmap](../roadmap/) holds only incomplete
 work.
 
-It spans two release states. [v0.1.0](../releases/v0.1.0.md) shipped §A, §B, §C,
-and §F as a single `usdVrm` bundle. The workspace split (§D, §E) and the negative
-corpus (§G) landed **after** that tag and are unreleased.
+[v0.1.0](../releases/v0.1.0.md) shipped §A, §B, §C, and §F as a single `usdVrm`
+bundle. The workspace split (§D, §E) landed in
+[v0.2.0](../releases/v0.2.0.md) and the negative corpus (§G) in
+[v0.3.0](../releases/v0.3.0.md); everything logged here is released as of
+[v0.4.0](../releases/v0.4.0.md).
 
 This is not a description of current behavior — see [architecture/](../architecture/)
 and [reference/](../reference/) for that — nor of planned work, which is in the

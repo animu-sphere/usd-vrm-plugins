@@ -11,7 +11,7 @@ The **schema contract version** is tracked separately from the package version
 [`plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)).
 Current schema contract version: **1**.
 
-## [Unreleased]
+## [0.4.0] — 2026-07-26
 
 ### Added
 
@@ -102,8 +102,11 @@ Current schema contract version: **1**.
   `motion_retarget` are covered only by the plain-CMake root build. Recorded as
   an ask in
   [report 28](docs/reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md).
-- `usdvrm_baseline` remains red pending a deliberate re-freeze of
-  `tests/baseline/discovery.json`, which predates `usdVrmaFileFormat`.
+- **`motion_retarget` is not in the published artifacts.** It is an executable,
+  not a bundle, and the aggregate product has no member shape for one; build it
+  from source. Same report, P1 ask.
+- Scale is authored but never **animated**, in either the importer or the bake:
+  both write a constant identity array so the clip evaluates.
 - Live capture, generation, expression, look-at, OpenExec evaluation, blending
   beyond the primitive, IK, and foot locking remain Motion Phases D–H.
 
@@ -313,7 +316,8 @@ Explicitly out of scope for this release (tracked in the
 - ABI stability guarantees across all OpenUSD versions (see
   [`docs/reference/SUPPORTED_CONFIGURATIONS.md`](docs/reference/SUPPORTED_CONFIGURATIONS.md)).
 
-[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/animu-sphere/usd-vrm-plugins/releases/tag/v0.1.0

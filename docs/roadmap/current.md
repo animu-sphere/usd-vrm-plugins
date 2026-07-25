@@ -5,11 +5,13 @@ The next milestone and active carry-over work. Shipped detail is in the
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
-## v0.4.0 — offline retarget 🚧
+## Shipped: v0.4.0 — offline retarget
 
-**Release boundary:** Workspace Phase 6b + Motion Phase C. The branch ends at a
-`.vrma` clip playing back on a real avatar; it does **not** begin live capture
-or OpenExec.
+[v0.4.0](../releases/v0.4.0.md) is **released** — tagged 2026-07-26.
+
+**Release boundary:** Workspace Phase 6b + Motion Phase C. It ends at a `.vrma`
+clip playing back on a real avatar; it does **not** begin live capture or
+OpenExec.
 
 This is the motion layer's **first end-to-end evaluation point** (motion policy
 §16-C). Everything before it authored data that nothing consumed; from here a
@@ -55,7 +57,15 @@ Explicitly deferred: live capture, generation, expression, look-at, OpenExec
 evaluation, blending beyond the primitive, IK, and foot locking (Motion Phases
 D–H).
 
-### Open for this release
+Shipped with the tag, after the retarget work: the `.vrma` importer and the bake
+both authored a `UsdSkelAnimation` without `scales`, which UsdSkel resolves as a
+unit with translations and rotations. Both bound cleanly and then held every
+joint at its rest pose — the clip did not move
+([#64](https://github.com/animu-sphere/usd-vrm-plugins/issues/64)). Both halves
+now author a constant identity array, and the tests drive a
+`UsdSkelSkeletonQuery` rather than comparing authored values.
+
+### Carried out of v0.4.0
 
 - ⬜ **No CI lane covers the motion layer.** `ost ci generate` emits one job per
   *bundle* cell, and `ost plugin test --workspace` tests bundles — so
@@ -65,16 +75,12 @@ D–H).
   libraries; see [WORKSPACE.md §8](../architecture/WORKSPACE.md)). Filed as the
   P0 ask in
   [report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md).
-- ⬜ **`usdvrm_baseline` is red — a v0.3.0 carry-over, not a v0.4.0 change.**
-  `tools/baseline_freeze.py` looked its bundle up by `kind: usd-fileformat`,
-  which stopped being unique when `usdVrmaFileFormat` shipped; v0.4.0 changes
-  the lookup to key on `provides: usd-fileformat:vrm`, which fixes the crash and
-  exposes the real problem underneath: `tests/baseline/discovery.json` was
-  frozen before `usdVrmaFileFormat` existed, so the registered-type union no
-  longer matches. Closing it means **re-freezing the baseline** under a full
-  workspace session — a deliberate, reviewable change that does not belong in a
-  feature branch.
-- ⬜ **Dry-run, tag, and publish** once the two items above are settled.
+- ⬜ **The baseline gate needs an explicit full-workspace session.**
+  `discovery.json` freezes the union across every bundle, but a bundle that
+  registers a type without being a dependency (`usdVrmaFileFormat`) has to be
+  named with `--with`. v0.4.0 wired that into the CTest env; the same gap will
+  recur for the next bundle that is nobody's dependency. A generator that
+  derives the session from the workspace graph would close it for good.
 
 ## Shipped: v0.3.0 — the VRMA motion foundation
 
