@@ -29,6 +29,9 @@ project's central design decision, and it is described below.
 | [`vrmContainer`](libs/vrmContainer) | Plain CMake library | GLB parsing + byte-range validation | Shipped |
 | [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle (`usd-fileformat`) | `.vrma` motion clips → canonical `UsdSkelAnimation` | v0.3.0 |
 | [`motionCore`](libs/motionCore) | Plain static CMake library | Vendor-neutral humanoid pose / animation / root-motion / constraint types | v0.3.0 |
+| [`motionRuntime`](libs/motionRuntime) | Plain static CMake library | Timestamped pose buffer, interpolation, resample, filter, blend | v0.4.0 |
+| [`vrmRetarget`](libs/vrmRetarget) | Plain static CMake library | Humanoid mapping, rest-pose correction, root-motion policy, pose retargeter | v0.4.0 |
+| [`motion_retarget`](tools/motionRetarget) | CLI executable | Bakes a semantic clip onto a target rig as `UsdSkelAnimation` | v0.4.0 |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
 
 `usdVrm` is not a bundle id — it names the product as a whole. It *was* the
@@ -37,17 +40,19 @@ that predate that rename use it in the old sense.
 
 ### The motion layer
 
-`motionCore` and `usdVrmaFileFormat` are the v0.3.0 motion foundation. Their
-fixed contract is [docs/design/MOTION_CONTRACT.md](docs/design/MOTION_CONTRACT.md).
-The remaining identities are reserved in the workspace contract; retargeting
-and runtime evaluation are not part of this release.
+`motionCore` and `usdVrmaFileFormat` were the v0.3.0 foundation; v0.4.0 adds
+`motionRuntime`, `vrmRetarget`, and the `motion_retarget` CLI, which together
+make a `.vrma` clip play back on a real avatar. The fixed contract is
+[docs/design/MOTION_CONTRACT.md](docs/design/MOTION_CONTRACT.md). The `exec*`
+identities remain reserved; runtime evaluation is not part of this release.
 
 | Component | Type | Role |
 | --- | --- | --- |
 | [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle | `.vrma` motion clips → `UsdSkelAnimation` on a *canonical semantic* humanoid skeleton |
 | [`motionCore`](libs/motionCore) | Plain static CMake library | Vendor-neutral pose / animation / root-motion / constraint types |
-| `motionRuntime` | Plain CMake library | Timestamped pose buffer, resample, filter, blend |
-| `vrmRetarget` | Plain CMake library | Humanoid mapping, rest-pose correction, root-motion policy |
+| [`motionRuntime`](libs/motionRuntime) | Plain static CMake library | Timestamped pose buffer, interpolation, resample, filter, blend |
+| [`vrmRetarget`](libs/vrmRetarget) | Plain static CMake library | Humanoid mapping, rest-pose correction, root-motion policy, pose retargeter |
+| [`motion_retarget`](tools/motionRetarget) | CLI executable | The stage half: reads the rig and the clip, bakes the retargeted `UsdSkelAnimation`, binds `skel:animationSource` |
 | `execMotion` | OpenExec bundle | Vendor-neutral motion nodes |
 | `execVrm` | OpenExec bundle | VRM semantics: retarget, root motion, expression, look-at, avatar apply |
 | `adapters/` | Optional bundles | The **only** place product names are permitted (e.g. Mocopi, ARDY) |
@@ -68,9 +73,11 @@ usdVrmPackageResolver ──> vrmContainer
 
 usdVrmaFileFormat ──────> vrmContainer, motionCore
 
-                          (planned)
 motionRuntime ──────────> motionCore
 vrmRetarget ────────────> motionCore, motionRuntime
+motion_retarget (CLI) ──> vrmRetarget + OpenUSD stage APIs
+
+                          (planned)
 execMotion ─────────────> motionCore, motionRuntime
 execVrm ────────────────> vrmSchema, vrmRetarget
 adapters/* ─────────────> motionCore, motionRuntime

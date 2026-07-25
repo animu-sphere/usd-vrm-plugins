@@ -1,0 +1,79 @@
+# SPDX-License-Identifier: Apache-2.0
+
+cmake_minimum_required(VERSION 3.22)
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
+    file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION"
+         _motion_retarget_version LIMIT_COUNT 1)
+    string(STRIP "${_motion_retarget_version}" _motion_retarget_version)
+else()
+    set(_motion_retarget_version "0.4.0")
+endif()
+
+project(motionRetargetTool
+    VERSION ${_motion_retarget_version}
+    DESCRIPTION "Offline VRM motion retargeting CLI"
+    LANGUAGES CXX)
+
+if(NOT CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 17)
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+if(NOT DEFINED MOTIONRETARGET_BUILD_TESTS)
+    if(DEFINED USDVRM_BUILD_TESTS)
+        set(_motion_retarget_tests_default "${USDVRM_BUILD_TESTS}")
+    else()
+        set(_motion_retarget_tests_default "${PROJECT_IS_TOP_LEVEL}")
+    endif()
+    option(MOTIONRETARGET_BUILD_TESTS "Build motion_retarget tests"
+           ${_motion_retarget_tests_default})
+endif()
+
+# This is the one place in the motion layer that opens a stage. The libraries
+# below it stay value-only (WORKSPACE.md §2); the tool reads the rig and the
+# clip off stages, hands plain values to vrmRetarget, and authors the result.
+# It reads the humanoid mapping as `vrm:humanBones:*` attributes rather than
+# through VrmHumanoidAPI, so it needs no link against the vrmSchema bundle.
+if(NOT pxr_FOUND)
+    find_package(pxr REQUIRED CONFIG)
+endif()
+if(NOT TARGET vrmRetarget::vrmRetarget)
+    find_package(vrmRetarget REQUIRED CONFIG)
+endif()
+
+add_executable(motion_retarget
+    src/Options.cpp
+    src/StageIo.cpp
+    src/main.cpp)
+
+target_compile_features(motion_retarget PRIVATE cxx_std_17)
+target_link_libraries(motion_retarget PRIVATE vrmRetarget::vrmRetarget)
+
+foreach(_usd_lib usd usdGeom usdSkel sdf tf gf vt js arch)
+    if(TARGET ${_usd_lib})
+        target_link_libraries(motion_retarget PRIVATE ${_usd_lib})
+    elseif(TARGET pxr::${_usd_lib})
+        target_link_libraries(motion_retarget PRIVATE pxr::${_usd_lib})
+    else()
+        message(FATAL_ERROR
+                "motion_retarget requires the OpenUSD '${_usd_lib}' target.")
+    endif()
+endforeach()
+
+if(MSVC)
+    target_compile_options(motion_retarget PRIVATE /utf-8)
+    # Same pair the plugin bundles set: without NOMINMAX, windows.h's min/max
+    # macros break OpenUSD's own numeric_limits<>::max() uses in tf's robin map.
+    target_compile_definitions(motion_retarget PRIVATE NOMINMAX _USE_MATH_DEFINES)
+endif()
+
+include(GNUInstallDirs)
+install(TARGETS motion_retarget RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+if(MOTIONRETARGET_BUILD_TESTS)
+    enable_testing()
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    add_subdirectory(tests)
+endif()

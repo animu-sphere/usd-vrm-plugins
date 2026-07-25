@@ -65,7 +65,11 @@ find_package(pxr REQUIRED CONFIG)
 # motionCore has only Gf value-type dependencies. Add it after pxr so the
 # composed plain-CMake build never asks pxrConfig.cmake to define its imported
 # targets a second time; standalone builds still resolve pxr themselves.
+# motionRuntime and vrmRetarget stack on top of it in dependency order
+# (WORKSPACE.md §2): motionRuntime -> motionCore, vrmRetarget -> both.
 add_subdirectory("libs/motionCore")
+add_subdirectory("libs/motionRuntime")
+add_subdirectory("libs/vrmRetarget")
 
 # Discover every plugin bundle under plugins/ rather than naming them one by one:
 # an immediate plugins/<name>/ that carries both an openstrata.plugin.yaml (the
@@ -99,6 +103,12 @@ foreach(_bundle ${_schema_bundles} ${_other_bundles})
     message(STATUS "OpenStrata: adding plugin bundle 'plugins/${_bundle}'")
     add_subdirectory("plugins/${_bundle}")
 endforeach()
+
+# The Motion Phase C bake tool. It is an executable, not a bundle: it has no
+# plugInfo.json and registers nothing with OpenUSD -- it opens stages the
+# plugins above already know how to read. Added last so its end-to-end test can
+# rely on those bundles existing in the same build tree.
+add_subdirectory("tools/motionRetarget")
 
 install(FILES
     LICENSE

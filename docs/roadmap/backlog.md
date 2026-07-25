@@ -8,14 +8,15 @@ Legend: ⬜ not started
 
 ## Milestone ladder (beyond next)
 
-- ⬜ **Motion Phase C — offline retarget.** The first end-to-end evaluation
-  point of the whole motion layer (motion policy §16-C).
-- ⬜ **Workspace Phase 6b — `motionRuntime` + `vrmRetarget` bootstrap.**
+- ⬜ **Motion Phase D — live-capture prototype.** The next motion deliverable
+  after v0.4.0's offline retarget.
 - ⬜ **Workspace Phase 8 — `execMotion` + `execVrm` bootstrap**, then **Motion
   Phase E** inside it.
 
 Workspace phases establish boundaries; Motion phases fill them. They are never
-the same milestone.
+the same milestone. Workspace Phase 6b and Motion Phase C both landed in v0.4.0
+— the boundary and the behaviour together, because the retarget core is only
+meaningful once something drives it end to end.
 
 ## Product P2 — fix the canonical-model contract
 
@@ -79,10 +80,11 @@ Always written "Motion Phase X", never a bare "Phase X".
   humanoid rotation, hips translation, canonical `HumanoidSkeleton`,
   `UsdSkelAnimation`, time range, provenance. Not expression, not look-at, not
   retarget, not live.
-- ⬜ **Motion Phase C — offline retarget.** `vrmRetarget` + a `motion_retarget`
-  CLI: humanoid mapping from the target VRM, rest-pose correction, expansion to
-  target joint order, `UsdSkelAnimation` output, `skel:animationSource` binding.
-  **The first end-to-end evaluation point.**
+- ✅ **Motion Phase C — shipped in v0.4.0.** `vrmRetarget` + the
+  `motion_retarget` CLI: humanoid mapping from the target VRM, rest-pose
+  correction, expansion to target joint order, `UsdSkelAnimation` output,
+  `skel:animationSource` binding. **The first end-to-end evaluation point** —
+  the Motion Phase A design triplet is now reproduced by a test.
 - ⬜ **Motion Phase D — live-capture prototype.** Generic `LiveCaptureSource`,
   timestamped `PoseBuffer`, reproducible tests from recorded samples, missing
   bones / confidence / root-motion evaluation. Product-specific support is an

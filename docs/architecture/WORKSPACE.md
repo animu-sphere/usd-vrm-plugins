@@ -41,8 +41,9 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `execMotion` | plugin bundle (reserved) | Vendor-neutral OpenExec motion nodes: clip sample, pose buffer, resample, filter, blend, apply-constraints, generate, record |
 | `execVrm` | plugin bundle (reserved) | VRM semantics applied to a target rig: humanoid retarget, root-motion resolve, expression, look-at, avatar apply — driven by the schema contract only |
 | `motionCore` | plain static CMake library (v0.3.0) | `motion::HumanoidPose`, `HumanoidAnimation`, `RootMotion`, `MotionConstraintSet`, source metadata. No USD stage authoring, no vendor SDK, no network. |
-| `motionRuntime` | plain CMake library (reserved) | Timestamped pose buffer, interpolation/extrapolation, resample, filter, blend — the OpenExec-independent runtime |
-| `vrmRetarget` | plain CMake library (reserved) | Humanoid map, rest pose, pose retargeter, root-motion policy, expression resolver. **Completed before OpenExec** (motion policy §18.12). |
+| `motionRuntime` | plain static CMake library (v0.4.0) | Timestamped pose buffer, interpolation/extrapolation, resample, filter, blend — the OpenExec-independent runtime |
+| `vrmRetarget` | plain static CMake library (v0.4.0) | Humanoid map, rest pose, pose retargeter, root-motion policy. **Completed before OpenExec** (motion policy §18.12). Expression resolution stays with Motion Phase G. |
+| `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | The motion layer's only stage-aware component: reads the target rig and the semantic clip off stages, drives `vrmRetarget` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
 | adapters | optional bundles (reserved, `adapters/`) | The only place product names are permitted: `adapters/liveCapture/mocopi/`, `adapters/generators/ardy/` |
 
 Shared code is never a plugin bundle: `vrmContainer` has no plugin
@@ -70,6 +71,7 @@ usdVrmaFileFormat     -> motionCore
 motionRuntime         -> motionCore
 vrmRetarget           -> motionCore
 vrmRetarget           -> motionRuntime
+motion_retarget       -> vrmRetarget, motionRuntime, motionCore, OpenUSD stage
 execMotion            -> motionCore, motionRuntime
 execVrm               -> vrmSchema
 execVrm               -> motionCore, motionRuntime, vrmRetarget
@@ -240,7 +242,7 @@ as the gate in every migration PR.
 | 4 | `usdVrmFileFormat` purification/rename | done (`plugins/usdVrmFileFormat`) |
 | 5 | workspace packaging (per-bundle + aggregate) | aggregate product done; standalone registration P0 remains open upstream |
 | 6a | `motionCore` bootstrap | done (`libs/motionCore`) |
-| 6b | `motionRuntime` + `vrmRetarget` bootstrap | not started |
+| 6b | `motionRuntime` + `vrmRetarget` bootstrap | done (`libs/motionRuntime`, `libs/vrmRetarget`) |
 | 7 | `usdVrmaFileFormat` bundle bootstrap | done (`plugins/usdVrmaFileFormat`) |
 | 8 | `execMotion` + `execVrm` bundle bootstrap | not started |
 
@@ -266,5 +268,20 @@ Scaffolds for new bundles start from the ost template catalog
 > PR lane runs `ost plugin test <bundle>` per cell (twelve cells: four bundles ×
 > three OS) and no lane runs the workspace graph validation. The dependency
 > directions in §2 are enforced today by the per-bundle binary link checks and
-> by `vrmContainer`'s boundary check — not by the graph gate. Wiring it in is
+> by each library's own boundary check — not by the graph gate. Wiring it in is
 > tracked in the [roadmap](../roadmap/current.md).
+>
+> **What the gate actually covers (measured on ost 0.20.0, Workspace Phase 6b).**
+> `ost plugin test --workspace` reports `4 bundle(s), 1 bundle edge(s), 4
+> libraries, 7 library edge(s)` — so it *does* discover plain libraries from
+> their `openstrata.library.yaml` and validate their `requires.libraries`
+> edges, not only the plugin bundles. It caught a real
+> `WORKSPACE_LIBRARY_DEPENDENCY_VERSION_MISMATCH` while Phase 6b was landing
+> (the new libraries declared `motionCore >=0.4,<0.5` before `VERSION` moved off
+> `0.3.0`), which is precisely the class of break this gate exists for. That
+> makes the missing CI wiring more costly than it looked, not less. What the
+> gate does **not** do is compile or unit-test a plain library: `--workspace`
+> tests bundles, and `ost ci generate` emits one job per *bundle* cell, so
+> `motionRuntime`, `vrmRetarget`, and `motion_retarget` have no CI lane at all.
+> Recorded as an ask in
+> [report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md).

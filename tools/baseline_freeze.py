@@ -62,22 +62,34 @@ REPO = pathlib.Path(__file__).resolve().parents[1]
 PLUGINS = REPO / "plugins"
 BASELINE = REPO / "tests" / "baseline"
 
-_KIND_RE = re.compile(r"^\s*kind:\s*(\S+)\s*$", re.M)
+_PROVIDES_RE = re.compile(r"^\s*-\s*(\S+)\s*$", re.M)
 
 
-def _bundle_by_kind(kind: str) -> pathlib.Path:
-    """Bundle root of the one manifest declaring `kind`. Looked up rather than
-    named so a bundle directory rename moves no baseline bytes."""
-    hits = [m.parent for m in sorted(PLUGINS.glob("*/openstrata.plugin.yaml"))
-            if (k := _KIND_RE.search(m.read_text("utf-8")))
-            and k.group(1) == kind]
+def _bundle_by_provides(capability: str) -> pathlib.Path:
+    """Bundle root of the one manifest providing `capability`.
+
+    Looked up rather than named so a bundle directory rename moves no baseline
+    bytes. Keyed on `provides` rather than `kind`: since v0.3.0 the workspace
+    holds two `usd-fileformat` bundles, and this baseline belongs to the `.vrm`
+    importer specifically.
+    """
+    hits = []
+    for manifest in sorted(PLUGINS.glob("*/openstrata.plugin.yaml")):
+        text = manifest.read_text("utf-8")
+        provides = text.split("provides:", 1)
+        if len(provides) != 2:
+            continue
+        # Stop at the next top-level key; `provides` is a flat list of strings.
+        block = re.split(r"^\w", provides[1], maxsplit=1, flags=re.M)[0]
+        if capability in _PROVIDES_RE.findall(block):
+            hits.append(manifest.parent)
     if len(hits) != 1:
-        raise RuntimeError(f"expected exactly one {kind} bundle under "
-                           f"{PLUGINS}, found {[str(h) for h in hits]}")
+        raise RuntimeError(f"expected exactly one bundle providing {capability} "
+                           f"under {PLUGINS}, found {[str(h) for h in hits]}")
     return hits[0]
 
 
-BUNDLE = _bundle_by_kind("usd-fileformat")
+BUNDLE = _bundle_by_provides("usd-fileformat:vrm")
 FIXTURES = BUNDLE / "tests" / "fixtures"
 CORPUS = BUNDLE / "tests" / "corpus"
 TOOLS = BUNDLE / "tools"

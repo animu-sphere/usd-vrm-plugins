@@ -1,0 +1,63 @@
+# vrmRetarget
+
+The offline retarget core: it takes a clip of semantic humanoid poses and
+expands it into a specific rig's joint order, correcting for the two rigs'
+differing rest poses and resolving where root motion lands.
+
+`vrmRetarget` is a **plain static CMake library**, not a plugin bundle. It has
+no `plugInfo.json`, no `openstrata.plugin.yaml`, and — the load-bearing
+constraint — **no OpenExec dependency**: the retarget core is complete and
+testable before any exec node exists (motion policy §10.1, §18.12), so
+`execVrm`'s future `HumanoidRetarget` node is a thin wrapper over this, not a
+reimplementation. See [WORKSPACE.md](../../docs/architecture/WORKSPACE.md) §1–2,
+enforced by [`tests/check_boundaries.py`](tests/check_boundaries.py).
+
+Workspace Phase: **6b** · Motion Phase: **C** (both land in v0.4.0).
+
+## It never opens a stage
+
+The target rig arrives as plain values — `TargetSkeleton`, a `HumanoidMap`, a
+`SourceRestPose` — not as a `UsdSkelSkeleton`. Reading those off a stage is the
+caller's job ([`tools/motionRetarget`](../../tools/motionRetarget/) does it for
+the CLI). That keeps the core testable without USD composition and usable by a
+live source that has no stage at all.
+
+## What it provides
+
+| Header | Contents |
+| --- | --- |
+| `vrmRetarget/TargetSkeleton.h` | `TargetJoint`, `TargetSkeleton` — joint tokens, parents derived from `a/b/c` joint paths, decomposed rest transforms |
+| `vrmRetarget/HumanoidMap.h` | `HumanoidMap` — human bone → target joint index, plus missing-required-bone and duplicate-binding reporting |
+| `vrmRetarget/RestPose.h` | `SourceRestPose`, `RestPoseCorrection`, `ComputeRestPoseCorrection` |
+| `vrmRetarget/RootMotionPolicy.h` | `RootMotionMode` (`Ignore` / `Hips` / `RootJoint`), `RootMotionOptions`, `ResolveRootTranslation` |
+| `vrmRetarget/PoseRetargeter.h` | `PoseRetargeter`, `RetargetedPose`, `RetargetedAnimation`, `RetargetDiagnostics` |
+
+## Three decisions worth knowing
+
+- **Joint names are never guessed.** A binding comes from the avatar's
+  `vrm:humanBones:<bone>` or from an explicit map file. Name heuristics are
+  exactly the silent mis-retarget this contract exists to prevent, so a bone
+  the caller did not bind stays unmapped and is *reported*, not inferred.
+- **Rest-pose correction preserves the world delta.** With source rest `S`,
+  source parent rest `Sp`, target rest `T`, and target parent rest `Tp`, the
+  bone's world rotation away from its own rest is what survives the change of
+  rig; the closed form falls out of equating the two deltas, and a unit test
+  checks the invariant directly rather than the formula.
+- **Root motion carries a delta, not a height.** The hips translation is
+  applied relative to each rig's own rest translation, so a clip authored on a
+  1.0 m rig drives a 1.6 m one without the avatar snapping to the source's hip
+  height. `preserveTargetHeight` drops the vertical component entirely.
+
+Unmapped joints keep their rest transform, so a clip that drives only part of a
+rig leaves the rest of it alone instead of collapsing it to identity.
+
+## Building
+
+It builds as part of the workspace root `CMakeLists.txt`. Standalone:
+
+```bash
+cmake -S libs/vrmRetarget -B build/vrmRetarget \
+      -DCMAKE_PREFIX_PATH="<usd-install>;<motionCore-install>;<motionRuntime-install>"
+cmake --build build/vrmRetarget
+ctest --test-dir build/vrmRetarget --output-on-failure
+```
