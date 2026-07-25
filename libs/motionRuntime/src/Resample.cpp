@@ -56,8 +56,17 @@ Resample(const HumanoidAnimation& animation, double frameRate)
     }
 
     result.nominalFrameRate = frameRate;
-    const double start = animation.startTime;
-    const double end = animation.endTime;
+    double start = animation.startTime;
+    double end = animation.endTime;
+    if (end <= start) {
+        // A caller that filled `samples` but left the declared interval at its
+        // default would otherwise collapse the whole clip to a single pose. The
+        // samples are the authority on what the clip actually spans.
+        start = animation.samples.front().timestamp;
+        end = animation.samples.back().timestamp;
+        result.startTime = start;
+        result.endTime = end;
+    }
     if (end <= start) {
         result.samples.push_back(SampleAnimation(animation, start));
         result.samples.back().timestamp = start;

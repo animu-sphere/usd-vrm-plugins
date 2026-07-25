@@ -29,9 +29,9 @@ public:
 
     HumanoidMap();
 
-    // Binds `bone` to a target joint index. A negative or out-of-range index
-    // clears the binding instead. Returns false when the bone itself is out of
-    // range.
+    // Binds `bone` to a target joint index. Returns false — leaving the bone
+    // unmapped — when either the bone or the joint index is out of range, so a
+    // rejected binding is never mistaken for a successful one.
     bool SetJointIndex(motion::HumanBone bone, int jointIndex,
                        std::size_t jointCount);
 

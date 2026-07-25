@@ -39,15 +39,24 @@ struct SourceRestPose
 
     VRMRETARGET_API void SetParent(motion::HumanBone bone,
                                    motion::HumanBone parent);
-    VRMRETARGET_API pxr::GfQuatf GetParentRotation(motion::HumanBone bone) const;
+
+    // The bone's rest orientation in the clip's own root space: its local rest
+    // rotation with every ancestor's composed on the left, root-first. The
+    // correction below is a world-space identity, so an ancestor two levels up
+    // contributes even though it is not the bone's parent — reading the
+    // parent's *local* rotation instead is only right when the parent is
+    // itself a root.
+    VRMRETARGET_API pxr::GfQuatf GetWorldRestRotation(
+        motion::HumanBone bone) const;
 };
 
 // Per-bone correction carrying a rest-relative rotation from the source rig
 // onto a target whose rest pose differs.
 //
 // The invariant is that the bone's world-space rotation *away from its own
-// rest* is preserved. With source rest `S`, source parent rest `Sp`, target
-// rest `T`, and target parent rest `Tp`, equating the two world deltas
+// rest* is preserved. With source local rest `S`, target local rest `T`, and
+// `Sp`/`Tp` the *accumulated* rest rotations of each parent chain — not the
+// parent's own local rotation — equating the two world deltas
 //
 //     Tp * Qt * T^-1 * Tp^-1  ==  Sp * Qs * S^-1 * Sp^-1
 //

@@ -119,8 +119,12 @@ are the two documented adjustments.
 
 **Output.** The bake authors a `UsdSkelAnimation` in the target rig's joint
 order and binds it with `skel:animationSource` on an *override* of the
-referenced skeleton, so the avatar keeps owning its own rig. Scale channels are
-not authored, matching the v0.3.0 exclusion.
+referenced skeleton, so the avatar keeps owning its own rig. Scale is never
+*animated*, matching the v0.3.0 exclusion — but a constant identity `scales`
+array is authored, because UsdSkel resolves translations, rotations and scales
+as a unit and `scales` carries no schema fallback. Omitting the attribute does
+not mean "no scale animation"; it means the clip binds correctly and then
+resolves no joint transforms at all.
 
 The hand-authored triplet under [`fixtures/motion/`](fixtures/motion/) is the
 executable statement of all of the above:

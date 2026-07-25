@@ -21,9 +21,11 @@ HumanoidMap::SetJointIndex(motion::HumanBone bone, int jointIndex,
     }
     const auto slot = static_cast<std::size_t>(bone);
     if (jointIndex < 0 || static_cast<std::size_t>(jointIndex) >= jointCount) {
+        // Rejected, not bound: the bone is left unmapped and the caller is told
+        // so, rather than having to re-query IsMapped to find out.
         _jointIndices[slot] = kUnmapped;
         _mapped.reset(slot);
-        return true;
+        return false;
     }
     _jointIndices[slot] = jointIndex;
     _mapped.set(slot);

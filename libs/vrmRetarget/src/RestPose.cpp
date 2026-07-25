@@ -44,16 +44,24 @@ SourceRestPose::SetParent(motion::HumanBone bone, motion::HumanBone parent)
 }
 
 pxr::GfQuatf
-SourceRestPose::GetParentRotation(motion::HumanBone bone) const
+SourceRestPose::GetWorldRestRotation(motion::HumanBone bone) const
 {
     if (!motion::IsValidHumanBone(bone)) {
         return Identity();
     }
-    const std::size_t parent = parents[static_cast<std::size_t>(bone)];
-    if (parent >= motion::HumanBoneCount) {
-        return Identity();
+    // world = L_root * ... * L_parent * L_bone, so each ancestor composes on
+    // the left as the walk climbs. The depth cap makes a malformed `parents`
+    // cycle terminate instead of spinning; a well-formed chain never revisits a
+    // bone, so it cannot reach the cap.
+    pxr::GfQuatf world = Identity();
+    std::size_t cursor = static_cast<std::size_t>(bone);
+    for (std::size_t depth = 0;
+         depth < motion::HumanBoneCount && cursor < motion::HumanBoneCount;
+         ++depth) {
+        world = localRotations[cursor].GetNormalized() * world;
+        cursor = parents[cursor];
     }
-    return localRotations[parent];
+    return world.GetNormalized();
 }
 
 RestPoseCorrection::RestPoseCorrection()
@@ -92,19 +100,23 @@ ComputeRestPoseCorrection(const SourceRestPose& source,
             continue;
         }
 
+        // Sp and Tp are the parents' *accumulated* rest rotations. Using each
+        // parent's own local rotation would agree only where the parent is
+        // itself a root, and would silently mis-retarget every bone below the
+        // second level of a rig whose rest pose is not identity.
         const pxr::GfQuatf sourceRest =
             source.localRotations[slot].GetNormalized();
+        const std::size_t sourceParent = source.parents[slot];
         const pxr::GfQuatf sourceParentRest =
-            source.GetParentRotation(bone).GetNormalized();
+            sourceParent < motion::HumanBoneCount
+                ? source.GetWorldRestRotation(
+                      static_cast<motion::HumanBone>(sourceParent))
+                : Identity();
 
         const TargetJoint& joint = joints[static_cast<std::size_t>(jointIndex)];
         const pxr::GfQuatf targetRest = joint.restRotation.GetNormalized();
         const pxr::GfQuatf targetParentRest =
-            (joint.parent >= 0
-             && static_cast<std::size_t>(joint.parent) < joints.size())
-                ? joints[static_cast<std::size_t>(joint.parent)]
-                      .restRotation.GetNormalized()
-                : Identity();
+            target.GetWorldRestRotation(joint.parent);
 
         if (IsIdentityRotation(sourceRest) && IsIdentityRotation(sourceParentRest)
             && IsIdentityRotation(targetRest)

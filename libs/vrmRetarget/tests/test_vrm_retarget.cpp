@@ -239,6 +239,83 @@ TestRestPoseCorrectionPreservesTheWorldDelta()
         correction.Apply(motion::HumanBone::Spine, sourceRest), targetRest));
 }
 
+// The same invariant one level deeper. A grandparent's rest rotation reaches
+// the bone only through the accumulated chain, so a correction built from each
+// parent's own local rotation passes the two-level test above and fails here.
+void
+TestRestPoseCorrectionAccountsForTheWholeAncestorChain()
+{
+    const pxr::GfQuatf targetHipsRest = Rotation(kAxisY, 25.0f);
+    const pxr::GfQuatf targetSpineRest = Rotation(kAxisX, -15.0f);
+    const pxr::GfQuatf targetChestRest = Rotation(kAxisZ, 40.0f);
+    const pxr::GfQuatf sourceHipsRest = Rotation(kAxisZ, -10.0f);
+    const pxr::GfQuatf sourceSpineRest = Rotation(kAxisY, 30.0f);
+    const pxr::GfQuatf sourceChestRest = Rotation(kAxisX, 55.0f);
+
+    vrmRetarget::TargetSkeleton skeleton;
+    vrmRetarget::TargetJoint hips;
+    hips.token = "Hips";
+    hips.restRotation = targetHipsRest;
+    skeleton.AddJoint(hips);
+    vrmRetarget::TargetJoint spine;
+    spine.token = "Hips/Spine";
+    spine.restRotation = targetSpineRest;
+    skeleton.AddJoint(spine);
+    vrmRetarget::TargetJoint chest;
+    chest.token = "Hips/Spine/Chest";
+    chest.restRotation = targetChestRest;
+    skeleton.AddJoint(chest);
+    skeleton.ResolveParentsFromTokens();
+
+    vrmRetarget::SourceRestPose sourceRest;
+    sourceRest.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] =
+        sourceHipsRest;
+    sourceRest.localRotations[static_cast<std::size_t>(motion::HumanBone::Spine)] =
+        sourceSpineRest;
+    sourceRest.localRotations[static_cast<std::size_t>(motion::HumanBone::Chest)] =
+        sourceChestRest;
+    sourceRest.SetParent(motion::HumanBone::Spine, motion::HumanBone::Hips);
+    sourceRest.SetParent(motion::HumanBone::Chest, motion::HumanBone::Spine);
+
+    // Both accumulators compose root-first.
+    assert(SameOrientation(skeleton.GetWorldRestRotation(2),
+                           targetHipsRest * targetSpineRest * targetChestRest));
+    assert(SameOrientation(
+        sourceRest.GetWorldRestRotation(motion::HumanBone::Chest),
+        sourceHipsRest * sourceSpineRest * sourceChestRest));
+    // A root joint's absent parent contributes identity, not a dangling index.
+    assert(SameOrientation(
+        skeleton.GetWorldRestRotation(vrmRetarget::TargetSkeleton::kNoParent),
+        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
+
+    vrmRetarget::HumanoidMap map;
+    map.SetJointToken(motion::HumanBone::Hips, "Hips", skeleton);
+    map.SetJointToken(motion::HumanBone::Spine, "Hips/Spine", skeleton);
+    map.SetJointToken(motion::HumanBone::Chest, "Hips/Spine/Chest", skeleton);
+
+    const vrmRetarget::RestPoseCorrection correction =
+        vrmRetarget::ComputeRestPoseCorrection(sourceRest, skeleton, map);
+
+    const pxr::GfQuatf animated = Rotation(kAxisY, 42.0f) * sourceChestRest;
+    const pxr::GfQuatf retargeted =
+        correction.Apply(motion::HumanBone::Chest, animated);
+
+    const pxr::GfQuatf sourceParentWorld = sourceHipsRest * sourceSpineRest;
+    const pxr::GfQuatf targetParentWorld = targetHipsRest * targetSpineRest;
+    const pxr::GfQuatf sourceDelta =
+        (sourceParentWorld * animated)
+        * (sourceParentWorld * sourceChestRest).GetInverse();
+    const pxr::GfQuatf targetDelta =
+        (targetParentWorld * retargeted)
+        * (targetParentWorld * targetChestRest).GetInverse();
+    assert(SameOrientation(sourceDelta, targetDelta));
+
+    // And the rest pose itself still maps onto the target's rest pose.
+    assert(SameOrientation(
+        correction.Apply(motion::HumanBone::Chest, sourceChestRest),
+        targetChestRest));
+}
+
 void
 TestRootMotionModes()
 {
@@ -434,6 +511,7 @@ main()
     TestHumanoidMapReportsGapsAndCollisions();
     TestIdentityRestPosesPassRotationsThrough();
     TestRestPoseCorrectionPreservesTheWorldDelta();
+    TestRestPoseCorrectionAccountsForTheWholeAncestorChain();
     TestRootMotionModes();
     TestDesignTripletHandOff();
     TestUnmappedJointsStayAtRestAndAreReported();

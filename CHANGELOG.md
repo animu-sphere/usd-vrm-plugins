@@ -39,7 +39,9 @@ Current schema contract version: **1**.
 - **The Motion Phase A design triplet is now executable.** An end-to-end test
   bakes `canonical_walk.usda` onto `avatar.usda` and compares the result with
   `expected_retargeted.usda` at the value level through USD composition on both
-  sides, rather than by byte-comparing a layer.
+  sides, rather than by byte-comparing a layer. It then resolves the baked clip
+  through a `UsdSkelSkeletonQuery`, so a stage that binds correctly but animates
+  nothing is a failure rather than a pass.
 - **Retarget semantics are written into
   [`MOTION_CONTRACT.md`](docs/design/MOTION_CONTRACT.md):** explicit binding
   (never name heuristics), the rest-pose correction's world-delta invariant, and
@@ -61,6 +63,24 @@ Current schema contract version: **1**.
 - `tools/baseline_freeze.py` located its bundle by `kind: usd-fileformat`, which
   stopped identifying exactly one bundle when `usdVrmaFileFormat` shipped in
   v0.3.0; it now keys on `provides: usd-fileformat:vrm`.
+- **`motion_retarget` authors a constant identity `scales` array.** UsdSkel
+  resolves translations, rotations and scales as a unit and `scales` has no
+  schema fallback, so the baked clip previously bound to the avatar and then
+  resolved no joint transforms at all. Scale is still never animated.
+- **The rest-pose correction accumulates each parent chain.** It read the
+  parent's own *local* rest rotation as the world-delta invariant's `Sp`/`Tp`,
+  which agrees only where that parent is itself a root — every bone below the
+  second level of a rig with a non-identity rest pose was mis-corrected. Clips
+  from `usdVrmaFileFormat`, whose rest pose is all identity, were unaffected.
+- **`motion_retarget` refuses an `--output` that names an input.** The output
+  layer is cleared before it is authored, and `SdfLayer::FindOrOpen` goes
+  through the layer registry, so a bake writing over its own avatar or clip
+  destroyed that file.
+- `motion::Resample` fell back to a single collapsed pose for a clip that
+  carries samples but leaves `startTime`/`endTime` at their defaults; it now
+  derives the interval from the samples.
+- `HumanoidMap::SetJointIndex` returned `true` after rejecting an out-of-range
+  joint index, so a refused binding was indistinguishable from a successful one.
 
 ### Known limitations
 

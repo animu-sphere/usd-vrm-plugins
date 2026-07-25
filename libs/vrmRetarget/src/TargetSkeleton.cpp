@@ -40,6 +40,26 @@ TargetSkeleton::ResolveParentsFromTokens()
     }
 }
 
+pxr::GfQuatf
+TargetSkeleton::GetWorldRestRotation(int jointIndex) const
+{
+    static const pxr::GfQuatf identity(1.0f, pxr::GfVec3f(0.0f));
+    // world = R_root * ... * R_parent * R_joint, so each ancestor composes on
+    // the left as the walk climbs. The depth cap terminates a malformed parent
+    // cycle; a well-formed skeleton never revisits a joint.
+    pxr::GfQuatf world = identity;
+    int cursor = jointIndex;
+    for (std::size_t depth = 0;
+         depth < _joints.size() && cursor >= 0
+         && static_cast<std::size_t>(cursor) < _joints.size();
+         ++depth) {
+        const TargetJoint& joint = _joints[static_cast<std::size_t>(cursor)];
+        world = joint.restRotation.GetNormalized() * world;
+        cursor = joint.parent;
+    }
+    return world.GetNormalized();
+}
+
 bool
 TargetSkeleton::IsTopologicallyOrdered() const
 {

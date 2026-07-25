@@ -70,6 +70,12 @@ public:
     // index — UsdSkelSkeleton requires parents to precede their children.
     bool IsTopologicallyOrdered() const;
 
+    // The joint's rest orientation in skeleton space: its own rest rotation
+    // with every ancestor's composed on the left, root-first. kNoParent — or
+    // any out-of-range index — yields identity, which is exactly what a root
+    // joint's absent parent contributes to a rest-pose correction.
+    pxr::GfQuatf GetWorldRestRotation(int jointIndex) const;
+
 private:
     std::vector<TargetJoint> _joints;
 };

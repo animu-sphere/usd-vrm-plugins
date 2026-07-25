@@ -3,12 +3,14 @@
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/quatd.h"
+#include "pxr/base/gf/vec3h.h"
 #include "pxr/base/js/json.h"
 #include "pxr/base/js/value.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/types.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/primRange.h"
@@ -415,7 +417,6 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride,
         timeCodes.insert(clip->stage->GetStartTimeCode());
     }
 
-    const auto hipsSlot = static_cast<std::size_t>(motion::HumanBone::Hips);
     int hipsJointIndex = -1;
     for (std::size_t i = 0; i < boneForJoint.size(); ++i) {
         if (boneForJoint[i] == motion::HumanBone::Hips) {
@@ -460,7 +461,6 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride,
     clip->animation.nominalFrameRate = clip->timeCodesPerSecond;
     clip->animation.source.kind = motion::MotionSourceKind::Clip;
     clip->animation.source.sourceId = path;
-    (void)hipsSlot;
     return true;
 }
 
@@ -511,6 +511,20 @@ WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar,
     // layer instead of failing the way UsdStage::CreateNew would.
     SdfLayerRefPtr layer = SdfLayer::FindOrOpen(outputPath);
     if (layer) {
+        // FindOrOpen goes through the layer registry, so an output naming an
+        // input returns the very layer we just read — Clear() would empty it and
+        // Save() would write the result over the user's asset. Compare layer
+        // identity rather than the paths, so a different spelling of the same
+        // file is caught too.
+        const SdfLayerHandle opened(layer);
+        if (opened == avatar.stage->GetRootLayer()) {
+            *error = "--output would overwrite the avatar layer " + outputPath;
+            return false;
+        }
+        if (opened == clip.stage->GetRootLayer()) {
+            *error = "--output would overwrite the animation layer " + outputPath;
+            return false;
+        }
         layer->Clear();
     } else {
         layer = SdfLayer::CreateNew(outputPath);
@@ -548,6 +562,14 @@ WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar,
         joints.push_back(TfToken(joint));
     }
     authored.CreateJointsAttr().Set(joints);
+
+    // UsdSkel fetches translations, rotations, and scales as a unit and fails
+    // as a unit; `scales` has no schema fallback, so an animation without it
+    // binds cleanly, reads back correctly attribute by attribute, and then
+    // resolves no joint transforms at all. Retargeting never animates scale, so
+    // author one constant identity array rather than a per-sample track.
+    const VtVec3hArray identityScales(animation.joints.size(), GfVec3h(1.0f));
+    authored.CreateScalesAttr().Set(identityScales);
 
     const UsdAttribute rotations = authored.CreateRotationsAttr();
     const UsdAttribute translations = authored.CreateTranslationsAttr();

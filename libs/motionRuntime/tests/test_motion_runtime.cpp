@@ -220,6 +220,15 @@ TestResampleCoversTheWholeInterval()
     assert(NearlyEqual(static_cast<float>(ragged.samples.back().timestamp),
                        0.7f));
 
+    // A clip that carries samples but never declared its interval falls back to
+    // the sample timestamps instead of collapsing to a single pose.
+    motion::HumanoidAnimation undeclared;
+    undeclared.samples = animation.samples;
+    const motion::HumanoidAnimation recovered =
+        motion::Resample(undeclared, 4.0);
+    assert(recovered.samples.size() == 5);
+    assert(NearlyEqual(static_cast<float>(recovered.endTime), 1.0f));
+
     // Degenerate inputs yield no samples rather than a fabricated timeline.
     assert(motion::Resample(animation, 0.0).samples.empty());
     assert(motion::Resample(motion::HumanoidAnimation(), 30.0).samples.empty());

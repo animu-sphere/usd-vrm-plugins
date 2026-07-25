@@ -23,6 +23,10 @@ def Scope "Avatar"
     def SkelAnimation "RetargetedWalk"
     {
         uniform token[] joints = ["Root", "Pelvis", "SpineA", "ChestA"]
+        # Retargeting animates no scale, but UsdSkel resolves translations,
+        # rotations and scales as a unit and `scales` has no fallback, so the
+        # constant identity array is what makes the clip evaluate at all.
+        half3[] scales = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
         quatf[] rotations.timeSamples = {
             0: [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0)],
             30: [(1, 0, 0, 0), (0.70710677, 0, 0.70710677, 0), (1, 0, 0, 0), (0.70710677, 0.70710677, 0, 0)],

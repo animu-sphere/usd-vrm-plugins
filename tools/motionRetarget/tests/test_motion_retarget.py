@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -138,6 +139,46 @@ def compare_with_expected(output: pathlib.Path, expected: pathlib.Path,
                     f"{got} != {want}")
 
 
+def check_usdskel_resolves_the_animation(output: pathlib.Path,
+                                         failures: Failures) -> None:
+    """Drive the consumer's own query, not the attributes we just wrote.
+
+    UsdSkel fetches translations, rotations and scales as a unit and fails as a
+    unit, and `scales` has no schema fallback. An animation missing one binds
+    cleanly and satisfies every value comparison above, then resolves no joint
+    transforms at all -- the avatar sits at rest. Only the skeleton query
+    distinguishes the two.
+    """
+    # Both the stage and the cache stay in locals: the query holds no strong
+    # reference back, so a temporary would be released out from under it.
+    stage = Usd.Stage.Open(str(output))
+    skeleton = find_skeleton(stage)
+    cache = UsdSkel.Cache()
+    query = cache.GetSkelQuery(skeleton)
+    if not failures.check(bool(query),
+                          f"{output} yields no UsdSkel skeleton query"):
+        return
+
+    transforms = query.ComputeJointLocalTransforms(Usd.TimeCode(30))
+    if not failures.check(
+            transforms is not None and len(transforms) == 4,
+            f"UsdSkel resolved no animated joint transforms from {output}: "
+            f"the SkelAnimation is bound but does not drive the rig"):
+        return
+
+    pelvis = transforms[1]
+    failures.check(
+        vectors_match(pelvis.ExtractTranslation(), Gf.Vec3d(0.0, 1.0, 0.5)),
+        f"UsdSkel resolved Pelvis at {pelvis.ExtractTranslation()}, "
+        f"expected (0, 1, 0.5)")
+    rotation = pelvis.ExtractRotationQuat()
+    failures.check(
+        quaternions_match(
+            Gf.Quatf(rotation.GetReal(), Gf.Vec3f(*rotation.GetImaginary())),
+            Gf.Quatf(0.70710677, 0.0, 0.70710677, 0.0)),
+        "UsdSkel did not resolve the retargeted Pelvis rotation")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tool", required=True)
@@ -173,6 +214,7 @@ def main() -> int:
             return failures.report()
         failures.check(output.is_file(), f"{output} was not written")
         compare_with_expected(output, expected, failures)
+        check_usdskel_resolves_the_animation(output, failures)
 
         # Re-baking over an existing output overwrites rather than failing.
         rerun = run_tool(
@@ -224,6 +266,21 @@ def main() -> int:
             failures.check(
                 abs(times[-1] - 30.0) <= TOLERANCE,
                 f"resampled clip ends at time code {times[-1]}, expected 30")
+
+        # Writing the output over an input is refused, and the input survives.
+        # The output layer is cleared before it is authored, so accepting this
+        # would destroy the avatar rather than merely producing a bad result.
+        guarded = workspace / "guarded_avatar.usda"
+        shutil.copy(avatar, guarded)
+        before = guarded.read_bytes()
+        result = run_tool(
+            options.tool,
+            "--avatar", str(guarded), "--animation", str(clip),
+            "--output", str(guarded), "--humanoid-map", options.humanoid_map)
+        failures.check(result.returncode != 0,
+                       "a bake whose --output names the avatar was accepted")
+        failures.check(guarded.read_bytes() == before,
+                       "the avatar was modified by a refused in-place bake")
 
         # A rig with no VrmHumanoidAPI and no map is refused, by name.
         result = run_tool(
