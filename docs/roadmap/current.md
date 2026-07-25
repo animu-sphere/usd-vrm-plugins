@@ -5,42 +5,87 @@ The next milestone and active carry-over work. Shipped detail is in the
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
-## v0.3.0 — VRMA motion-foundation release 🚧
+## v0.4.0 — offline retarget 🚧
 
-**Release boundary:** Motion Phase A + B, Workspace Phase 6a + 7. The branch
-ends at `usdVrmaFileFormat`; it does **not** begin retargeting or OpenExec.
+**Release boundary:** Workspace Phase 6b + Motion Phase C. The branch ends at a
+`.vrma` clip playing back on a real avatar; it does **not** begin live capture
+or OpenExec.
 
-- ✅ **Motion Phase A — contract frozen.**
-  [`MOTION_CONTRACT.md`](../design/MOTION_CONTRACT.md) defines the semantic
-  skeleton, source/target coordinates, time mapping, root motion, provenance,
-  and the Phase C hand-off triplet. `motionCore` exports the matching value
-  types as a plain static CMake library with a stage/plugin boundary test.
-- ✅ **Workspace Phase 6a — `motionCore`.** The library is packageable through
-  `openstrata.library.yaml`, has no stage or plugin dependency, and is consumed
-  as an installed package by the VRMA reader.
-- ✅ **Workspace Phase 7 + Motion Phase B — `usdVrmaFileFormat`.** The new
-  `.vrma` `SdfFileFormat` reads VRMC VRM Animation 1.0 GLB clips, maps humanoid
-  rotations plus hips translation to an avatar-independent semantic skeleton,
-  authors `UsdSkelAnimation` and provenance, and is covered by L0–L5 plus
-  value-level CTest assertions.
-- ✅ **Reproducible dependency closure.** `cgltf` v1.15 is vendored under
-  `third_party/` with its MIT license; no CMake configure-time network fetch is
-  needed.
+This is the motion layer's **first end-to-end evaluation point** (motion policy
+§16-C). Everything before it authored data that nothing consumed; from here a
+clip and an avatar produce a bound, playable result.
 
-Explicitly deferred: expressions, look-at, multi-clip selection, full cubic
-interpolation, retargeting, live capture, generation, constraints solving, and
-OpenExec (Motion Phases C–H).
+- ✅ **Workspace Phase 6b — `motionRuntime`.** A plain static CMake library over
+  `motionCore`: `PoseBuffer` (bounded, strictly ordered history with bracketed
+  sampling and capped position-only extrapolation), `SlerpShortest` / `LerpPose`
+  / `LerpRootMotion`, `Resample` / `SampleAnimation`, `PoseFilter`
+  (frame-rate-independent exponential smoothing), and two- and N-pose
+  `BlendPoses`. Two invariants hold throughout: a missing sample is held, never
+  faded toward identity; and every orientation stays a unit quaternion on the
+  short arc.
+- ✅ **Workspace Phase 6b — `vrmRetarget`.** `TargetSkeleton`, `HumanoidMap`,
+  `SourceRestPose` / `RestPoseCorrection`, `RootMotionPolicy`, and
+  `PoseRetargeter`. It never opens a stage — the rig arrives as plain values —
+  and it never depends on OpenExec, so `execVrm`'s future `HumanoidRetarget`
+  node is a wrapper over it rather than a second implementation.
+- ✅ **Motion Phase C — `motion_retarget`.** The CLI reads the target rig and
+  the semantic clip off stages, retargets, authors the `UsdSkelAnimation`, and
+  binds `skel:animationSource` on an override of the referenced skeleton, so the
+  avatar keeps owning its rig. `--root-motion hips|root|ignore`,
+  `--translation-scale`, `--preserve-target-height`, `--resample`, and
+  `--humanoid-map` are covered by tests.
+- ✅ **The design triplet is now executable.** `canonical_walk.usda` +
+  `avatar.usda` → `expected_retargeted.usda` is checked at the value level
+  through USD composition on both sides, rather than by byte-comparing a layer.
+  The hand-off Motion Phase A froze is met, not just described.
 
-## Shipped: the first workspace release
+Three decisions worth carrying forward:
 
-[v0.2.0](../releases/v0.2.0.md) is **released** — tagged and published
-2026-07-18 (`1f5f71d`) — and is the first to ship the multi-bundle workspace.
-It is **artifact-breaking**: consumers of the `usdVrm-0.1.0-*` asset names must
-move to `usdVrmFileFormat-0.2.0-<target>` **and** additionally install
-`vrmSchema` and `usdVrmPackageResolver`, which is now required rather than
-optional (see the release record for why).
+- **Joint names are never guessed.** A binding comes from the avatar's
+  `vrm:humanBones:<bone>` attributes or from an explicit `--humanoid-map`; an
+  unbound bone is reported, never inferred from a name.
+- **Root motion carries a delta, not a height.** The hips translation is applied
+  relative to each rig's own rest, so a clip authored on a 1.0 m rig drives a
+  1.6 m one without the avatar snapping to the source's hip height.
+- **The tool reads `vrm:humanBones:*` as plain attributes**, not through
+  `VrmHumanoidAPI`, so the motion layer needs no link against the `vrmSchema`
+  bundle.
 
-Carried out of that release as open work:
+Explicitly deferred: live capture, generation, expression, look-at, OpenExec
+evaluation, blending beyond the primitive, IK, and foot locking (Motion Phases
+D–H).
+
+### Open for this release
+
+- ⬜ **No CI lane covers the motion layer.** `ost ci generate` emits one job per
+  *bundle* cell, and `ost plugin test --workspace` tests bundles — so
+  `motionRuntime`, `vrmRetarget`, and `motion_retarget` are compiled and tested
+  only in the plain-CMake root build, which no lane runs. Their manifest edges
+  *are* validated by `ost plugin test --workspace` (it discovers plain
+  libraries; see [WORKSPACE.md §8](../architecture/WORKSPACE.md)). Filed as the
+  P0 ask in
+  [report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md).
+- ⬜ **`usdvrm_baseline` is red — a v0.3.0 carry-over, not a v0.4.0 change.**
+  `tools/baseline_freeze.py` looked its bundle up by `kind: usd-fileformat`,
+  which stopped being unique when `usdVrmaFileFormat` shipped; v0.4.0 changes
+  the lookup to key on `provides: usd-fileformat:vrm`, which fixes the crash and
+  exposes the real problem underneath: `tests/baseline/discovery.json` was
+  frozen before `usdVrmaFileFormat` existed, so the registered-type union no
+  longer matches. Closing it means **re-freezing the baseline** under a full
+  workspace session — a deliberate, reviewable change that does not belong in a
+  feature branch.
+- ⬜ **Dry-run, tag, and publish** once the two items above are settled.
+
+## Shipped: v0.3.0 — the VRMA motion foundation
+
+[v0.3.0](../releases/v0.3.0.md) is **released** — tagged and published
+2026-07-23 (`68a5d32`). It froze the motion contract (Motion Phase A), shipped
+`motionCore` (Workspace Phase 6a) and `usdVrmaFileFormat` (Workspace Phase 7 /
+Motion Phase B), and vendored `cgltf` v1.15 so no configure-time fetch is
+needed. Its release lane required `ost` 0.20.0 for the aggregate-product
+reproducibility gate.
+
+Carried out of the v0.2.0/v0.3.0 releases as open work:
 
 - ⬜ **Verify the non-`ost` install path on Windows.** The published bundles are
   only exercised through `ost`; a user composing them by hand against a plain
@@ -63,8 +108,9 @@ The importer-era docs described a single `usdVrm` bundle with co-located
 schemas. Since Workspace Phase 4 that is wrong in every particular.
 
 - 🚧 Describe `vrmSchema`, `usdVrmFileFormat`, `usdVrmPackageResolver`, and
-  `usdVrmaFileFormat` as separate bundles; `vrmContainer` and `motionCore` as
-  plain libraries; and `usdVrm` as the aggregate product name only.
+  `usdVrmaFileFormat` as separate bundles; `vrmContainer`, `motionCore`,
+  `motionRuntime`, and `vrmRetarget` as plain libraries; `motion_retarget` as a
+  CLI; and `usdVrm` as the aggregate product name only.
 - 🚧 Unify phase notation to **Product P0–P6**, **Workspace Phase 0–8**, and
   **Motion Phase A–H** — three sequences, never a bare "Phase N".
 - 🚧 Align build / test / install examples with what CI actually runs.
@@ -77,15 +123,14 @@ guards all of it in CI.
 
 ### Product P1 — release stabilization 🚧
 
-- ✅ **Decided: the release ships all four bundles.** `release.yml` now builds,
+- ✅ **Decided: the release ships all four bundles.** `release.yml` builds,
   tests, packages (`ost plugin package --workspace`), and publishes `vrmSchema`,
   `usdVrmFileFormat`, `usdVrmPackageResolver`, and `usdVrmaFileFormat` per
   target. The three VRM bundles ship together because that was forced, not
-  preferred:
-  not preferred: an `usdVrmFileFormat` package alone registers the `.vrm` format
-  and then **fails to open a stage** (L3/L4, `Used null prim`), because ost
-  0.19.0 stages a dependency bundle's link half without its USD registration
-  half. Measured in [report 23 §2.1](../reports/ost/23-2026-07-18-v0.18.0-workspace-packaging-v0.19.0-asks.md).
+  preferred: an `usdVrmFileFormat` package alone registers the `.vrm` format and
+  then **fails to open a stage** (L3/L4, `Used null prim`), because ost stages a
+  dependency bundle's link half without its USD registration half. Measured in
+  [report 23 §2.1](../reports/ost/23-2026-07-18-v0.18.0-workspace-packaging-v0.19.0-asks.md).
 - ✅ **Replaced the packaged-artifact gate.** A bare per-bundle
   `ost plugin test --from-package` tests the one configuration that provably
   fails (L3/L4 above). The lane gates on the composed
@@ -94,8 +139,10 @@ guards all of it in CI.
   green (see [report 25](../reports/ost/25-2026-07-18-v0.18.0-from-package-workspace-correction.md));
   it covers `minimal.vrm` per bundle, so it joins the smoke script rather than
   replacing it.
-- ⬜ **Dry-run, tag, and publish:** dry run (`workflow_dispatch`) → tag →
-  publish the draft.
+- ⬜ **Decide whether `motion_retarget` ships in the release artifacts.** It is
+  an executable, not a bundle, so no member archive carries it today. The
+  aggregate product is the obvious home; that needs an `ost` packaging answer
+  first (see report 28).
 - ⛔ **A second OpenUSD version cell** (min vs latest) in the compatibility
   matrix. Today CI runs cy2026 / OpenUSD 26.05 only. **Blocked externally:**
   GHCR has no published min-version (e.g. OpenUSD 25.05 / cy2025) runtime
@@ -115,9 +162,9 @@ The OS axis is shipped. Remaining:
   directions, and §8 called for it to be a required PR-lane gate from Workspace
   Phase 1 on — but **no lane runs it**. The generated PR lane runs
   `ost plugin test <bundle>` per cell (twelve cells: four bundles × three OS).
-  The directions are currently enforced only by the per-bundle binary link
-  checks and `vrmContainer`'s boundary check, which catch a bad *link* but not
-  a bad *manifest edge*. The command works locally today.
+  Workspace Phase 6b raised the cost of this gap: the gate validates plain
+  libraries too, and it caught a real version mismatch locally that no
+  per-bundle cell would have seen.
 - ⬜ Explicit **UTF-8 / Unicode path** and **DLL dependency discovery** coverage
   on the Windows cell.
 - ⬜ **Real VRM smoke test** (open + texture resolve) exercised in CI, not just
@@ -133,22 +180,22 @@ blocked on `ost` · **Contract:**
 `ost plugin package --workspace` (adopted by the release lane), and a `bundles`
 key in `dependencies.json`. What did not:
 
-- **A dependency bundle's USD registration half is never staged.** 0.19.0 stages
+- **A dependency bundle's USD registration half is never staged.** ost stages
   `libvrmSchema` + its CMake package into `runtime/libraries/`, but not
   `plugInfo.json` or `generatedSchema.usda` — so the packaged importer links
   against the schemas it can no longer register, and `--from-package` fails at
-  L3/L4. This is now the **P0 upstream ask**; it is also why the release must
-  ship all three bundles.
-The aggregate product artifact is now emitted by `--workspace --product` and is
-adopted by the release lane. The remaining packaging blocker is the standalone
-dependency registration half described above.
-`--from-package` **does** compose with `--workspace` in 0.19.0 — the shipped
-help text saying otherwise was stale, and this roadmap repeated it. That verb
-verifies the composed configuration and is green; it does not close the P0,
-because it works by putting the dependency's *separate package* on the path
-rather than by making any one package self-closed.
+  L3/L4. This is the **P0 upstream ask**; it is also why the release must ship
+  all three VRM bundles.
+
+The aggregate product artifact is emitted by `--workspace --product` and is
+adopted by the release lane. `--from-package` **does** compose with
+`--workspace` — the shipped help text saying otherwise was stale, and this
+roadmap repeated it. That verb verifies the composed configuration and is green;
+it does not close the P0, because it works by putting the dependency's
+*separate package* on the path rather than by making any one package
+self-closed.
 [Report 25](../reports/ost/25-2026-07-18-v0.18.0-from-package-workspace-correction.md)
-measures both, and §5 there is the live v0.19.0 ask list.
+measures both.
 
 `scripts/clean_install_smoke.py` remains the release lane's packaged-artifact
 gate: it extracts outside the repo and drives textured avatars end to end, where

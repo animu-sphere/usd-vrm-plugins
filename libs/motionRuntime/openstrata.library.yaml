@@ -1,0 +1,14 @@
+# OpenStrata plain-library descriptor. motionRuntime is the OpenExec-independent
+# pose runtime shared by the retargeter, future adapters, and the exec bundles.
+schema: openstrata.library/v1alpha1
+library:
+  id: motionRuntime
+  # Mirrors VERSION; release preparation updates this in lockstep.
+  version: 0.4.0
+requires:
+  libraries:
+    - id: motionCore
+      version: ">=0.4,<0.5"
+cmake:
+  package: motionRuntime
+  target: motionRuntime::motionRuntime

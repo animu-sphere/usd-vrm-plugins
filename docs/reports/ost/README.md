@@ -27,6 +27,7 @@ that was never given a series number.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
+| 28 | 2026-07-26 | [Plain libraries and CLI tools have no CI cell](28-2026-07-26-v0.20.0-motion-layer-ci-gap.md) | 0.20.0 | `--workspace` *does* validate library edges (caught a real version mismatch), but `ci generate` emits bundle cells only, so Workspace Phase 6b's libraries and the Motion Phase C tool are untested in CI. **Live v0.21.0 asks** |
 | 27 | 2026-07-23 | [v0.3.0 aggregate product reproducibility](27-2026-07-23-v0.19.0-aggregate-product-reproducibility.md) | 0.19.0 | v0.3.0 release blocked: member archives stable, aggregate product digest unstable. **Live v0.20.0 ask** |
 | 26 | 2026-07-23 | [v0.20.0 asks after v0.19.0 adoption](26-2026-07-23-v0.19.0-v0.20.0-asks.md) | 0.19.0 | Workspace composition and aggregate product verified; standalone dependency registration P0 remains reproducible. **Live v0.20.0 asks** |
 | 25 | 2026-07-18 | [`--from-package` already composed `--workspace`](25-2026-07-18-v0.18.0-from-package-workspace-correction.md) | 0.18.0 | Correction: an ask we re-filed twice had already shipped; we read the (stale) help text instead of running it. Registration-half P0 strengthened. **Live v0.19.0 asks** |

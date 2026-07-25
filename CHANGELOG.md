@@ -13,9 +13,86 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+### Added
+
+- **Workspace Phase 6b — `motionRuntime`:** a plain static CMake library over
+  `motionCore` providing `PoseBuffer` (a bounded, strictly ordered pose history
+  with bracketed sampling and capped position-only extrapolation),
+  `SlerpShortest` / `LerpPose` / `LerpRootMotion`, `Resample` /
+  `SampleAnimation`, `PoseFilter` (frame-rate-independent exponential
+  smoothing), and two- and N-pose `BlendPoses`. Every operation preserves
+  `validRotations` and the `RootMotion` presence flags: a bone present in only
+  one input is held, never faded toward identity.
+- **Workspace Phase 6b — `vrmRetarget`:** the offline retarget core —
+  `TargetSkeleton`, `HumanoidMap`, `SourceRestPose` / `RestPoseCorrection`,
+  `RootMotionPolicy`, and `PoseRetargeter`. It takes plain values and never
+  opens a stage, and it has no OpenExec dependency, so `execVrm`'s future
+  `HumanoidRetarget` node can wrap it rather than reimplement it.
+- **Motion Phase C — `motion_retarget`:** a CLI that reads a target rig and a
+  semantic clip off stages, retargets, authors the resulting
+  `UsdSkelAnimation`, and binds `skel:animationSource` on an override of the
+  referenced skeleton. Supports `--humanoid-map`, `--root-motion
+  hips|root|ignore`, `--root-joint`, `--translation-scale`,
+  `--preserve-target-height`, `--resample`, `--skeleton`, and
+  `--clip-skeleton`. It reads `vrm:humanBones:*` as plain attributes, so the
+  motion layer needs no link against the `vrmSchema` bundle.
+- **The Motion Phase A design triplet is now executable.** An end-to-end test
+  bakes `canonical_walk.usda` onto `avatar.usda` and compares the result with
+  `expected_retargeted.usda` at the value level through USD composition on both
+  sides, rather than by byte-comparing a layer. It then resolves the baked clip
+  through a `UsdSkelSkeletonQuery`, so a stage that binds correctly but animates
+  nothing is a failure rather than a pass.
+- **Retarget semantics are written into
+  [`MOTION_CONTRACT.md`](docs/design/MOTION_CONTRACT.md):** explicit binding
+  (never name heuristics), the rest-pose correction's world-delta invariant, and
+  root motion as a rest-relative delta rather than an absolute height.
+
+### Changed
+
 - **OpenStrata CI updated to `ost 0.20.0`**, including the release lane's
   aggregate-product reproducibility gate that blocked the v0.3.0 release under
   `ost 0.19.0`.
+- Every workspace manifest moves to `0.4.0` in lockstep with `VERSION`, and each
+  `requires` range moves from `>=0.3,<0.4` to `>=0.4,<0.5`.
+  `ost plugin test --workspace` validates plain libraries as well as bundles, so
+  a half-bumped workspace now fails the graph gate outright
+  (`WORKSPACE_LIBRARY_DEPENDENCY_VERSION_MISMATCH`).
+
+### Fixed
+
+- `tools/baseline_freeze.py` located its bundle by `kind: usd-fileformat`, which
+  stopped identifying exactly one bundle when `usdVrmaFileFormat` shipped in
+  v0.3.0; it now keys on `provides: usd-fileformat:vrm`.
+- **`motion_retarget` authors a constant identity `scales` array.** UsdSkel
+  resolves translations, rotations and scales as a unit and `scales` has no
+  schema fallback, so the baked clip previously bound to the avatar and then
+  resolved no joint transforms at all. Scale is still never animated.
+- **The rest-pose correction accumulates each parent chain.** It read the
+  parent's own *local* rest rotation as the world-delta invariant's `Sp`/`Tp`,
+  which agrees only where that parent is itself a root — every bone below the
+  second level of a rig with a non-identity rest pose was mis-corrected. Clips
+  from `usdVrmaFileFormat`, whose rest pose is all identity, were unaffected.
+- **`motion_retarget` refuses an `--output` that names an input.** The output
+  layer is cleared before it is authored, and `SdfLayer::FindOrOpen` goes
+  through the layer registry, so a bake writing over its own avatar or clip
+  destroyed that file.
+- `motion::Resample` fell back to a single collapsed pose for a clip that
+  carries samples but leaves `startTime`/`endTime` at their defaults; it now
+  derives the interval from the samples.
+- `HumanoidMap::SetJointIndex` returned `true` after rejecting an out-of-range
+  joint index, so a refused binding was indistinguishable from a successful one.
+
+### Known limitations
+
+- **No CI lane compiles or tests the motion layer.** `ost ci generate` emits one
+  job per *bundle* cell, so `motionRuntime`, `vrmRetarget`, and
+  `motion_retarget` are covered only by the plain-CMake root build. Recorded as
+  an ask in
+  [report 28](docs/reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md).
+- `usdvrm_baseline` remains red pending a deliberate re-freeze of
+  `tests/baseline/discovery.json`, which predates `usdVrmaFileFormat`.
+- Live capture, generation, expression, look-at, OpenExec evaluation, blending
+  beyond the primitive, IK, and foot locking remain Motion Phases D–H.
 
 ## [0.3.0] — 2026-07-23
 

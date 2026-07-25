@@ -44,12 +44,15 @@ A–H is unrelated to that retired A–E** and always carries the "Motion" quali
 
 ## Status at a glance
 
-- The workspace now reaches **Workspace Phase 7**: `motionCore` and
-  `usdVrmaFileFormat` implement Motion Phases A+B for the v0.3.0 release.
-- Current priorities: cut v0.3.0, close the remaining **Workspace Phase 5**
-  packaging P0, and widen runtime verification.
-- The next motion deliverable is **Motion Phase C** (`vrmRetarget` and offline
-  retarget), before any live-capture or OpenExec work.
+- The workspace covers **Workspace Phase 6b and 7**: `motionCore`,
+  `motionRuntime`, `vrmRetarget`, and `usdVrmaFileFormat` implement Motion
+  Phases A–C. Only Phase 8 (`execMotion` / `execVrm`) is unbuilt.
+- v0.3.0 is released; **v0.4.0** (Workspace Phase 6b + Motion Phase C, offline
+  retarget) is in progress.
+- Current priorities: get the motion layer under a CI lane, close the remaining
+  **Workspace Phase 5** packaging P0, and widen runtime verification.
+- The next motion deliverable is **Motion Phase D** (live-capture prototype),
+  before any OpenExec work.
 
 ## Quality bar (applies to every phase)
 
