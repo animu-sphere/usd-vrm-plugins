@@ -20,17 +20,32 @@ The output must match motionRuntime's own writer byte for byte; the corpus test
 (`motionRuntime_corpus`) enforces that. Run:
 
     python libs/motionRuntime/tools/generate_traces.py
+
+`manifest.json` is maintained from here too. Its measured fields (frame counts,
+durations, observed bones, digests) are re-derived from the traces on every run
+and compared under --check, so the manifest cannot quietly stop describing the
+corpus; its prose fields (`pins`, `tags`, the top-level notes) are hand-written
+and preserved untouched.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import math
 import pathlib
 import sys
 
+MANIFEST_NAME = "manifest.json"
+
 # The VRM 1.0 humanoid vocabulary in motionCore's enum order. The trace writer
 # emits bones in this order, so the corpus must too.
+#
+# This is a second copy of motionCore's HumanBone enum, and the C++ side stays
+# the single source of truth: motionRuntime_corpus re-emits every committed trace
+# through the C++ writer and compares bytes, so an order that drifted from the
+# enum would fail there rather than silently authoring a mis-ordered fixture.
 BONE_ORDER = [
     "hips", "spine", "chest", "upperChest", "neck", "head", "leftEye",
     "rightEye", "jaw",
@@ -277,6 +292,102 @@ TRACES = {
 }
 
 
+def measure(text: str) -> dict:
+    """Read back out of a trace everything the manifest claims about it.
+
+    The manifest says its values are "measured from the committed files, never
+    guessed". Nothing enforced that, so the numbers were free to drift the next
+    time a fixture changed shape -- which is exactly the failure a provenance
+    manifest exists to prevent. This is the measurement; `--check` is the gate.
+    """
+    timestamps: list[float] = []
+    bones: set[str] = set()
+    source_id = ""
+    frame_rate = 0.0
+    carries_confidence = False
+    for line in text.splitlines():
+        tokens = line.split()
+        if not tokens:
+            continue
+        if tokens[0] == "sourceId":
+            source_id = tokens[1]
+        elif tokens[0] == "frameRate":
+            frame_rate = float(tokens[1])
+        elif tokens[0] == "t":
+            timestamps.append(float(tokens[1]))
+        elif tokens[0] == "b":
+            bones.add(tokens[1])
+            carries_confidence = carries_confidence or len(tokens) > 6
+
+    data = text.encode("utf-8")
+    return {
+        "sourceId": source_id,
+        "frames": len(timestamps),
+        "durationSeconds": round(timestamps[-1] - timestamps[0], 6),
+        "nominalFrameRate": frame_rate,
+        "observedBones": len(bones),
+        "bones": sorted(bones),
+        "carriesConfidence": carries_confidence,
+        "sha256": hashlib.sha256(data).hexdigest(),
+        "bytes": len(data),
+    }
+
+
+def field_matches(claimed, measured) -> bool:
+    if isinstance(measured, float) or isinstance(claimed, float):
+        try:
+            return abs(float(claimed) - float(measured)) <= 1e-6
+        except (TypeError, ValueError):
+            return False
+    return claimed == measured
+
+
+def sync_manifest(directory: pathlib.Path, rendered: dict[str, str],
+                  check: bool) -> list[str]:
+    """Compare (or rewrite) the manifest's measured fields. Returns problems."""
+    path = directory / MANIFEST_NAME
+    if not path.exists():
+        return [f"{MANIFEST_NAME} is missing"]
+
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    problems: list[str] = []
+
+    if manifest.get("format", {}).get("version") != 1:
+        problems.append(
+            f"{MANIFEST_NAME}: format.version is "
+            f"{manifest.get('format', {}).get('version')!r}, expected 1")
+
+    listed = [entry.get("file") for entry in manifest.get("traces", [])]
+    if sorted(listed) != sorted(rendered):
+        problems.append(
+            f"{MANIFEST_NAME} describes {sorted(listed)}, the corpus is "
+            f"{sorted(rendered)}")
+        return problems
+
+    for entry in manifest["traces"]:
+        derived = {"id": pathlib.Path(entry["file"]).stem,
+                   **measure(rendered[entry["file"]])}
+        for key, value in derived.items():
+            if not field_matches(entry.get(key), value):
+                problems.append(
+                    f"{entry['file']}: {key} is {entry.get(key)!r}, measured "
+                    f"{value!r}")
+        if not check:
+            entry.update(derived)
+
+    if check:
+        return problems
+
+    # Writing mode fills the derived fields in, so a new entry needs only its
+    # `file` and the prose no tool can infer. Report what changed either way:
+    # silently rewriting a provenance record is the wrong kind of convenient.
+    path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+                    encoding="utf-8", newline="\n")
+    for problem in problems:
+        print(f"updated {problem}")
+    return []
+
+
 def main() -> int:
     default_output = pathlib.Path(__file__).resolve().parents[1] / "tests" / "corpus"
     parser = argparse.ArgumentParser(description=__doc__)
@@ -289,8 +400,10 @@ def main() -> int:
 
     args.output.mkdir(parents=True, exist_ok=True)
     drifted: list[str] = []
+    rendered: dict[str, str] = {}
     for name, builder in sorted(TRACES.items()):
         text = builder()
+        rendered[name] = text
         path = args.output / name
         existing = (path.read_text(encoding="utf-8", newline="")
                     if path.exists() else None)
@@ -311,6 +424,16 @@ def main() -> int:
         print("run: python libs/motionRuntime/tools/generate_traces.py",
               file=sys.stderr)
         return 1
+
+    problems = sync_manifest(args.output, rendered, args.check)
+    if problems:
+        for problem in problems:
+            print(f"manifest drift: {problem}", file=sys.stderr)
+        print("run: python libs/motionRuntime/tools/generate_traces.py",
+              file=sys.stderr)
+        return 1
+    if not args.check:
+        print(f"{MANIFEST_NAME} is in sync with {len(rendered)} trace(s)")
     return 0
 
 

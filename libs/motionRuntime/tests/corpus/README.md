@@ -7,7 +7,10 @@ line-oriented text, one `t` block per frame, deterministic to six decimals.
 
 **[`manifest.json`](manifest.json)** is the machine-readable source of truth
 (provenance, licence, frame count, rig coverage, and the phenomenon each trace
-pins). This file is the operator's guide.
+pins). Its measured fields are derived from the traces by
+`tools/generate_traces.py` and re-checked by `motionRuntime_traceGen`, so they
+cannot drift out of agreement with the fixtures; its prose fields (`pins`,
+`tags`) are hand-written. This file is the operator's guide.
 
 ## Why these are synthetic
 
@@ -65,8 +68,11 @@ downstream compare a golden result rather than merely parse one.
 
 1. Add a builder to `tools/generate_traces.py` and register it in `TRACES`.
    Keep it closed-form: no RNG, no wall clock, no external data.
-2. Run `python libs/motionRuntime/tools/generate_traces.py`.
-3. Record it in `manifest.json` — including *which phenomenon it pins*. A trace
-   that duplicates an existing one's coverage is not worth its review cost.
+2. Add an entry to `manifest.json` with its `id`, `file` and — the part no tool
+   can derive — *which phenomenon it pins*. A trace that duplicates an existing
+   one's coverage is not worth its review cost.
+3. Run `python libs/motionRuntime/tools/generate_traces.py`. It writes the trace
+   and fills in every measured field of the manifest entry (frames, duration,
+   observed bones, digest); `--check` then holds both to what it produced.
 4. Run `ctest -R motionRuntime_` and check the new trace appears in the corpus
    test's output.
