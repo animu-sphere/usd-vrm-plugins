@@ -23,10 +23,11 @@
 #     registered only from the root build. Its symbol baseline is per-platform
 #     and `--check` skips a platform with no committed file, so the Linux and
 #     macOS cells verify everything except symbols;
-#   * runs `ost plugin test --workspace`, the WORKSPACE.md §2 dependency-graph
-#     gate — specified as a required PR gate since Workspace Phase 1 and, until
-#     now, run by no lane either. It validates plain libraries, not just
-#     bundles.
+#   * runs the WORKSPACE.md §2 dependency-graph gate — specified as a required
+#     PR gate since Workspace Phase 1 and, until now, run by no lane either. It
+#     validates plain libraries, not just bundles. It is read out of `--json`
+#     because the verb that produces it also insists on testing every bundle;
+#     see the step for why that matters.
 #
 # Runtime pins MIRROR openstrata.ci.yaml. Update both together; a motion cell
 # on a different OpenUSD build than the bundle cells would be worse than no
@@ -58,7 +59,10 @@ jobs:
             runs_on: windows-2022
             runtime_artifact: sha256:e3368364f8f4661a7c34371e907f2e5ddcdec4e680b76f5e9e1c1ed656022f48
             runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1"
-            host_python: ""
+            # Unlike the generated lane, every cell here needs a host Python:
+            # this one drives plain CMake, and pxrConfig.cmake resolves Python
+            # development components at configure time.
+            host_python: "3.13"
           - name: motion-linux
             runs_on: ubuntu-24.04
             runtime_artifact: sha256:70b47d1b1a337b71d6c6fd63898e3295c0f91dc4b2ad2f5c09d14d6ac0ff2e1d
@@ -194,13 +198,33 @@ jobs:
       # Everything below runs inside an ost session, which puts the runtime on
       # PATH and exports CMAKE_PREFIX_PATH pointing at its prefix -- rather than
       # reaching into the runtime store's directory layout by hand.
+      # pxrConfig.cmake does `find_dependency(Python3 COMPONENTS Development
+      # Development.Module Development.Embed)`, so this needs Python *headers
+      # and libraries*, not just an interpreter. The location is passed as a
+      # CMake argument rather than left to the environment on purpose: the
+      # generated lane never hits this because `ost plugin build` resolves
+      # Python itself, and `ost plugin run` does not forward setup-python's
+      # `Python3_ROOT_DIR` into the child, so CMake falls back to a system
+      # Python that has no dev files ("Cannot find the directory
+      # /usr/include/python3.13"). An argument survives whatever the session
+      # does to the environment.
       - name: Configure the whole workspace (plain CMake, from the repo root)
         shell: bash
         run: |
           set -euo pipefail
-          ost plugin run plugins/vrmSchema -- \
-              cmake -S . -B build/motion-ci -DUSDVRM_BUILD_TESTS=ON \
-                    -DCMAKE_BUILD_TYPE=Release
+          arguments=(-S . -B build/motion-ci
+                     -DUSDVRM_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release)
+          python_root="${pythonLocation:-}"
+          # CMake wants forward slashes; on Windows setup-python exports a
+          # backslash path that bash would otherwise pass through as escapes.
+          python_root="${python_root//\\//}"
+          if [ -n "$python_root" ]; then
+            arguments+=(-DPython3_ROOT_DIR="$python_root"
+                        -DPython3_FIND_STRATEGY=LOCATION)
+          else
+            echo "::warning title=motion ci::no setup-python location; falling back to whatever CMake finds"
+          fi
+          ost plugin run plugins/vrmSchema -- cmake "${arguments[@]}"
 
       - name: Build
         shell: bash
