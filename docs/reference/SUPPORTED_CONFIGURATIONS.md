@@ -63,7 +63,8 @@ Other host OS versions / architectures (e.g. Linux arm64, x86_64 macOS) are not
 part of the verified matrix for `v0.5.0`.
 
 These cells cover the four plugin bundles only. `motionCore`, `motionRuntime`,
-`vrmRetarget`, and the `motion_retarget` CLI are **not built by any lane** —
+`vrmRetarget`, `vrmContainer`, and both CLIs (`motion_retarget`,
+`motion_capture`) are **not built by any lane** —
 `ost ci generate` emits one job per bundle cell and has no cell shape for a plain
 library or an executable
 ([report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md),
@@ -77,7 +78,8 @@ The file-format plugins are **shared** libraries
 `libUsdVrmaFileFormat.{dll,so,dylib}`) — USD loads them dynamically. There is
 no supported static-plugin build. `motionCore`, `motionRuntime`, and
 `vrmRetarget` are intentionally static and are linked into their consumers;
-`motion_retarget` is an ordinary executable and registers nothing with OpenUSD.
+`motion_retarget` and `motion_capture` are ordinary executables and register
+nothing with OpenUSD.
 Discovery follows OpenUSD's standard mechanism: add
 the required bundle's `plugin/resources/<bundle>` directory to
 `PXR_PLUGINPATH_NAME` and its `lib/` directory to the dynamic-loader path.
