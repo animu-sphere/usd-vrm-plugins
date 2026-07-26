@@ -17,8 +17,8 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 31 carries
-the consolidated live v0.21.0 asks, including those reports 28, 29 and 30
+The current `ost` ask list is always in the **newest** report. Report 32 carries
+the consolidated live v0.21.0 asks, including those reports 28, 29, 30 and 31
 raised.
 
 Numbering is the series' own: reports 1–8 call themselves "report #N" in their
@@ -29,7 +29,8 @@ each sorts immediately after the report it follows.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
-| 31 | 2026-07-26 | [A runtime can demand a host package the contract cannot name](31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md) | 0.20.0 | 26.08's MaterialX 1.39.5 hard-requires X11 on Linux, so re-pinning broke all four Linux cells at configure. `openstrata.ci.yaml` cannot express a host package, so the fix is a hand-edit `--force` deletes. **Live v0.21.0 asks (consolidated)** |
+| 32 | 2026-07-26 | [What a hand-rolled lane for plain libraries costs](32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md) | 0.20.0 | v0.5.0 tried to hand-roll the lane report 28's P0 asks for, and **could not finish**: a bare `cmake` cannot configure against a pulled runtime (Python dev components resolve to the build container's paths). ~210 lines, ~120 a copy of generated logic. Also found the baseline gate had been stale for a release. **Live v0.21.0 asks (consolidated)** |
+| 31 | 2026-07-26 | [A runtime can demand a host package the contract cannot name](31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md) | 0.20.0 | 26.08's MaterialX 1.39.5 hard-requires X11 on Linux, so re-pinning broke all four Linux cells at configure. `openstrata.ci.yaml` cannot express a host package, so the fix is a hand-edit `--force` deletes. Asks restated in 32 |
 | 30 | 2026-07-26 | [The macOS 26.08 runtime](30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md) | 0.20.0 | macOS arm64 26.08 published, so all three OS are on one OpenUSD version and CI is re-pinned. 26.08 needs the macOS 15.2 SDK, and a macOS artifact records no SDK or deployment target the way Linux records its glibc floor. Asks restated in 31 |
 | 29 | 2026-07-26 | [Publishing the OpenUSD 26.08 runtimes](29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md) | 0.20.0 | Windows + Linux 26.08 runtimes published and attested off-CI (`--build-metadata` works), but `runtime pull --build` forces `--no-examples` and `--build-arg` cannot override it. Asks restated in 30 |
 | 28 | 2026-07-26 | [Plain libraries and CLI tools have no CI cell](28-2026-07-26-v0.20.0-motion-layer-ci-gap.md) | 0.20.0 | `--workspace` *does* validate library edges (caught a real version mismatch), but `ci generate` emits bundle cells only, so Workspace Phase 6b's libraries and the Motion Phase C tool are untested in CI. Asks restated in 29 |

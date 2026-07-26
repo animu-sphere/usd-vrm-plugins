@@ -5,7 +5,7 @@ OpenUSD plugins for [VRM](https://vrm.dev/en/) avatars.
 This repository is an OpenUSD plugin **workspace**: it separates schema
 definitions, file-format import, package resolution, and shared GLB container
 parsing into independently buildable, independently testable components. The
-v0.4.0 release ships four plugin bundles, four shared libraries, and one CLI.
+v0.5.0 release ships four plugin bundles, four shared libraries, and two CLIs.
 
 The importer reads VRM 0.x and 1.0, normalizes the differences away, and authors
 a static USD stage. It **never evaluates or simulates** — that boundary is the
@@ -29,9 +29,10 @@ project's central design decision, and it is described below.
 | [`vrmContainer`](libs/vrmContainer) | Plain CMake library | GLB parsing + byte-range validation | Shipped |
 | [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle (`usd-fileformat`) | `.vrma` motion clips → canonical `UsdSkelAnimation` | v0.3.0 |
 | [`motionCore`](libs/motionCore) | Plain static CMake library | Vendor-neutral humanoid pose / animation / root-motion / constraint types | v0.3.0 |
-| [`motionRuntime`](libs/motionRuntime) | Plain static CMake library | Timestamped pose buffer, interpolation, resample, filter, blend | v0.4.0 |
+| [`motionRuntime`](libs/motionRuntime) | Plain static CMake library | Timestamped pose buffer, interpolation, resample, filter, blend; live-capture intake, recorded traces, replay | v0.4.0 · v0.5.0 |
 | [`vrmRetarget`](libs/vrmRetarget) | Plain static CMake library | Humanoid mapping, rest-pose correction, root-motion policy, pose retargeter | v0.4.0 |
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | Bakes a semantic clip onto a target rig as `UsdSkelAnimation` | v0.4.0 |
+| [`motion_capture`](tools/motionCapture) | CLI executable | Replays a recorded capture session into a semantic clip the above consumes unchanged | v0.5.0 |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
 
 `usdVrm` is not a bundle id — it names the product as a whole. It *was* the
@@ -40,9 +41,12 @@ that predate that rename use it in the old sense.
 
 ### The motion layer
 
-`motionCore` and `usdVrmaFileFormat` were the v0.3.0 foundation; v0.4.0 adds
+`motionCore` and `usdVrmaFileFormat` were the v0.3.0 foundation; v0.4.0 added
 `motionRuntime`, `vrmRetarget`, and the `motion_retarget` CLI, which together
-make a `.vrma` clip play back on a real avatar. The fixed contract is
+make a `.vrma` clip play back on a real avatar. v0.5.0 adds the observation
+side — a vendor-neutral `LiveCaptureSource`, a recorded-trace format, and the
+`motion_capture` CLI — which produces the *same* semantic clip, so a live
+session is baked by the retarget tool unchanged. The fixed contract is
 [docs/design/MOTION_CONTRACT.md](docs/design/MOTION_CONTRACT.md). The `exec*`
 identities remain reserved; runtime evaluation is not part of this release.
 

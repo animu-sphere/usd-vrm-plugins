@@ -13,6 +13,7 @@
 #include "cgltf.h"
 
 #include <algorithm>
+#include <bitset>
 #include <cstring>
 #include <map>
 #include <set>
@@ -60,70 +61,6 @@ GfMatrix4d NodeLocal(const cgltf_node& node)
     rotate.SetRotate(GfQuatd(r[3], r[0], r[1], r[2]));
     translate.SetTranslate(GfVec3d(t[0], t[1], t[2]));
     return scale * rotate * translate;
-}
-
-std::optional<motion::HumanBone> ParentOf(motion::HumanBone bone)
-{
-    using Bone = motion::HumanBone;
-    switch (bone) {
-    case Bone::Hips: return std::nullopt;
-    case Bone::Spine: return Bone::Hips;
-    case Bone::Chest: return Bone::Spine;
-    case Bone::UpperChest: return Bone::Chest;
-    case Bone::Neck: return Bone::UpperChest;
-    case Bone::Head: return Bone::Neck;
-    case Bone::LeftEye:
-    case Bone::RightEye:
-    case Bone::Jaw: return Bone::Head;
-    case Bone::LeftUpperLeg:
-    case Bone::RightUpperLeg: return Bone::Hips;
-    case Bone::LeftLowerLeg: return Bone::LeftUpperLeg;
-    case Bone::LeftFoot: return Bone::LeftLowerLeg;
-    case Bone::LeftToes: return Bone::LeftFoot;
-    case Bone::RightLowerLeg: return Bone::RightUpperLeg;
-    case Bone::RightFoot: return Bone::RightLowerLeg;
-    case Bone::RightToes: return Bone::RightFoot;
-    case Bone::LeftShoulder:
-    case Bone::RightShoulder: return Bone::UpperChest;
-    case Bone::LeftUpperArm: return Bone::LeftShoulder;
-    case Bone::LeftLowerArm: return Bone::LeftUpperArm;
-    case Bone::LeftHand: return Bone::LeftLowerArm;
-    case Bone::RightUpperArm: return Bone::RightShoulder;
-    case Bone::RightLowerArm: return Bone::RightUpperArm;
-    case Bone::RightHand: return Bone::RightLowerArm;
-    case Bone::LeftThumbMetacarpal:
-    case Bone::LeftIndexProximal:
-    case Bone::LeftMiddleProximal:
-    case Bone::LeftRingProximal:
-    case Bone::LeftLittleProximal: return Bone::LeftHand;
-    case Bone::LeftThumbProximal: return Bone::LeftThumbMetacarpal;
-    case Bone::LeftThumbDistal: return Bone::LeftThumbProximal;
-    case Bone::LeftIndexIntermediate: return Bone::LeftIndexProximal;
-    case Bone::LeftIndexDistal: return Bone::LeftIndexIntermediate;
-    case Bone::LeftMiddleIntermediate: return Bone::LeftMiddleProximal;
-    case Bone::LeftMiddleDistal: return Bone::LeftMiddleIntermediate;
-    case Bone::LeftRingIntermediate: return Bone::LeftRingProximal;
-    case Bone::LeftRingDistal: return Bone::LeftRingIntermediate;
-    case Bone::LeftLittleIntermediate: return Bone::LeftLittleProximal;
-    case Bone::LeftLittleDistal: return Bone::LeftLittleIntermediate;
-    case Bone::RightThumbMetacarpal:
-    case Bone::RightIndexProximal:
-    case Bone::RightMiddleProximal:
-    case Bone::RightRingProximal:
-    case Bone::RightLittleProximal: return Bone::RightHand;
-    case Bone::RightThumbProximal: return Bone::RightThumbMetacarpal;
-    case Bone::RightThumbDistal: return Bone::RightThumbProximal;
-    case Bone::RightIndexIntermediate: return Bone::RightIndexProximal;
-    case Bone::RightIndexDistal: return Bone::RightIndexIntermediate;
-    case Bone::RightMiddleIntermediate: return Bone::RightMiddleProximal;
-    case Bone::RightMiddleDistal: return Bone::RightMiddleIntermediate;
-    case Bone::RightRingIntermediate: return Bone::RightRingProximal;
-    case Bone::RightRingDistal: return Bone::RightRingIntermediate;
-    case Bone::RightLittleIntermediate: return Bone::RightLittleProximal;
-    case Bone::RightLittleDistal: return Bone::RightLittleIntermediate;
-    case Bone::Count: return std::nullopt;
-    }
-    return std::nullopt;
 }
 
 void ReadKey(const cgltf_animation_sampler* sampler, std::size_t key,
@@ -260,6 +197,15 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
         return fail("[VRMA005] no valid humanoid bone mappings");
     }
 
+    // The semantic hierarchy comes from motionCore, not from a private table
+    // here: the live-capture path authors the same skeleton, and two humanoid
+    // taxonomies that can disagree would produce two skeletons that look alike
+    // and do not compose.
+    std::bitset<motion::HumanBoneCount> presentBones;
+    for (const auto& mapping : boneNodes) {
+        presentBones.set(static_cast<std::size_t>(mapping.first));
+    }
+
     std::map<motion::HumanBone, std::size_t> jointByBone;
     for (std::size_t value = 0; value != motion::HumanBoneCount; ++value) {
         const auto bone = static_cast<motion::HumanBone>(value);
@@ -278,17 +224,7 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
                     static_cast<float>(rotation.GetImaginary()[1]),
                     static_cast<float>(rotation.GetImaginary()[2])));
 
-        std::optional<motion::HumanBone> parent = ParentOf(bone);
-        while (parent) {
-            const auto parentIt = jointByBone.find(*parent);
-            if (parentIt != jointByBone.end()) {
-                joint.path = outDocument->joints[parentIt->second].path + "/" +
-                    std::string(motion::HumanBoneName(bone));
-                break;
-            }
-            parent = ParentOf(*parent);
-        }
-        if (joint.path.empty()) joint.path = std::string(motion::HumanBoneName(bone));
+        joint.path = motion::HumanBoneJointPath(bone, presentBones);
         jointByBone[bone] = outDocument->joints.size();
         outDocument->joints.push_back(std::move(joint));
     }

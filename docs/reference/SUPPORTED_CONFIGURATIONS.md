@@ -1,7 +1,7 @@
 # Supported configurations
 
 The configurations `usd-vrm-plugins` targets and continuously verifies. Anything
-outside this list may work but is not part of the `v0.4.0` support contract.
+outside this list may work but is not part of the `v0.5.0` support contract.
 
 ## OpenUSD
 
@@ -17,10 +17,13 @@ guaranteed across OpenUSD versions** — rebuild the plugin against your target
 OpenUSD. A second OpenUSD version cell (min vs latest) is a roadmap P1 item; CI
 currently exercises `cy2026` / OpenUSD 26.08 only.
 
-**The v0.4.0 release itself was verified against 26.05.** All three runtimes
-were re-pinned to 26.08 on 2026-07-26, after v0.4.0 was tagged, so 26.08 is what
-CI exercises from that point forward rather than what the released artifacts
-were built on.
+**v0.5.0 is the first release built and verified against 26.08 throughout** —
+PR cells, the motion lane, and the release workflow all pin the same three
+published runtimes. (v0.4.0 was verified against 26.05; the runtimes were
+re-pinned after it was tagged.) The 26.05 → 26.08 move changed no observable
+behavior of these plugins: every Phase 0 baseline artifact is byte-identical
+across the two versions except the exported symbol names, which differ only by
+OpenUSD's internal `pxrInternal_v0_26_5` → `_26_8` namespace.
 
 **This range is scheduled to be retired.** v0.6.0 pins OpenUSD to **26.08
 exactly** and rejects anything else at configure time
@@ -57,10 +60,11 @@ These match the per-PR CI matrix in `.github/workflows/ost-source-ci.yml`
 | Linux | `ubuntu-24.04` | x86_64 | libstdc++ (glibc ≥ 2.38 floor) |
 
 Other host OS versions / architectures (e.g. Linux arm64, x86_64 macOS) are not
-part of the verified matrix for `v0.4.0`.
+part of the verified matrix for `v0.5.0`.
 
 These cells cover the four plugin bundles only. `motionCore`, `motionRuntime`,
-`vrmRetarget`, and the `motion_retarget` CLI are **not built by any lane** —
+`vrmRetarget`, `vrmContainer`, and both CLIs (`motion_retarget`,
+`motion_capture`) are **not built by any lane** —
 `ost ci generate` emits one job per bundle cell and has no cell shape for a plain
 library or an executable
 ([report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md),
@@ -74,7 +78,8 @@ The file-format plugins are **shared** libraries
 `libUsdVrmaFileFormat.{dll,so,dylib}`) — USD loads them dynamically. There is
 no supported static-plugin build. `motionCore`, `motionRuntime`, and
 `vrmRetarget` are intentionally static and are linked into their consumers;
-`motion_retarget` is an ordinary executable and registers nothing with OpenUSD.
+`motion_retarget` and `motion_capture` are ordinary executables and register
+nothing with OpenUSD.
 Discovery follows OpenUSD's standard mechanism: add
 the required bundle's `plugin/resources/<bundle>` directory to
 `PXR_PLUGINPATH_NAME` and its `lib/` directory to the dynamic-loader path.

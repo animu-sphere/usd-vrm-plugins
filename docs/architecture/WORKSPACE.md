@@ -43,7 +43,8 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `motionCore` | plain static CMake library (v0.3.0) | `motion::HumanoidPose`, `HumanoidAnimation`, `RootMotion`, `MotionConstraintSet`, source metadata. No USD stage authoring, no vendor SDK, no network. |
 | `motionRuntime` | plain static CMake library (v0.4.0) | Timestamped pose buffer, interpolation/extrapolation, resample, filter, blend — the OpenExec-independent runtime |
 | `vrmRetarget` | plain static CMake library (v0.4.0) | Humanoid map, rest pose, pose retargeter, root-motion policy. **Completed before OpenExec** (motion policy §18.12). Expression resolution stays with Motion Phase G. |
-| `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | The motion layer's only stage-aware component: reads the target rig and the semantic clip off stages, drives `vrmRetarget` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
+| `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig and the semantic clip off stages, drives `vrmRetarget` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
+| `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `vrmRetarget`: it stops at the clip. Not a bundle. |
 | adapters | optional bundles (reserved, `adapters/`) | The only place product names are permitted: `adapters/liveCapture/mocopi/`, `adapters/generators/ardy/` |
 
 Shared code is never a plugin bundle: `vrmContainer` has no plugin
@@ -72,6 +73,7 @@ motionRuntime         -> motionCore
 vrmRetarget           -> motionCore
 vrmRetarget           -> motionRuntime
 motion_retarget       -> vrmRetarget, motionRuntime, motionCore, OpenUSD stage
+motion_capture        -> motionRuntime, motionCore, OpenUSD stage
 execMotion            -> motionCore, motionRuntime
 execVrm               -> vrmSchema
 execVrm               -> motionCore, motionRuntime, vrmRetarget
@@ -263,13 +265,20 @@ Scaffolds for new bundles start from the ost template catalog
 (`ost plugin new usd-schema --template usd-schema-cpp`,
 `ost plugin new usd-package-resolver`) rather than hand-rolled skeletons.
 
-> **Gate status.** This document calls for `ost plugin test --workspace` to be
-> a required PR-lane gate from Phase 1 on. That has not happened: the generated
-> PR lane runs `ost plugin test <bundle>` per cell (twelve cells: four bundles ×
-> three OS) and no lane runs the workspace graph validation. The dependency
-> directions in §2 are enforced today by the per-bundle binary link checks and
-> by each library's own boundary check — not by the graph gate. Wiring it in is
-> tracked in the [roadmap](../roadmap/current.md).
+> **Gate status — still open.** This document calls for the §2 dependency
+> directions to be enforced by a required PR gate from Phase 1 on. That has
+> still not happened. v0.5.0 wrote the lane
+> ([`motion-ci.yml`](../../.github/workflows/motion-ci.yml)) and got the graph
+> gate itself working on all three OS, but the lane cannot configure the
+> workspace against the pulled runtime — `pxrConfig.cmake` resolves Python
+> development components to the paths of the Python the runtime was *built*
+> against, which do not exist on a hosted runner. It ships disabled
+> (`workflow_dispatch` only) rather than red on every PR, with the diagnosis in
+> its header and in
+> [report 32](../reports/ost/32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md).
+>
+> So the dependency directions are still enforced today by the per-bundle binary
+> link checks and by each library's own boundary check — not by the graph gate.
 >
 > **What the gate actually covers (measured on ost 0.20.0, Workspace Phase 6b).**
 > `ost plugin test --workspace` reports `4 bundle(s), 1 bundle edge(s), 4
@@ -282,6 +291,14 @@ Scaffolds for new bundles start from the ost template catalog
 > makes the missing CI wiring more costly than it looked, not less. What the
 > gate does **not** do is compile or unit-test a plain library: `--workspace`
 > tests bundles, and `ost ci generate` emits one job per *bundle* cell, so
-> `motionRuntime`, `vrmRetarget`, and `motion_retarget` have no CI lane at all.
-> Recorded as an ask in
+> `motionRuntime`, `vrmRetarget`, and the CLIs get no generated cell. Recorded
+> as an ask in
 > [report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md).
+>
+> **v0.5.0 tried to cover that by hand and did not finish.** `motion-ci.yml`
+> builds the whole workspace with plain CMake from the repo root — the only
+> configuration in which `libs/` and `tools/` targets exist — but is blocked at
+> configure time (above) and ships disabled. The upstream ask is unchanged and
+> the attempt strengthens it: a repo should not have to hand-roll a lane to
+> test a library it declares through `openstrata.library.yaml`, and when it
+> tries, it runs into a second problem the contract cannot express.

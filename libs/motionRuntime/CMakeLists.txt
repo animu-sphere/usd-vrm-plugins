@@ -7,7 +7,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
          _motion_runtime_version LIMIT_COUNT 1)
     string(STRIP "${_motion_runtime_version}" _motion_runtime_version)
 else()
-    set(_motion_runtime_version "0.4.0")
+    set(_motion_runtime_version "0.5.0")
 endif()
 
 project(motionRuntime
@@ -45,10 +45,15 @@ endif()
 
 add_library(motionRuntime STATIC
     src/Blend.cpp
+    src/CaptureTrace.cpp
     src/Filter.cpp
     src/Interpolation.cpp
+    src/LiveCaptureSource.cpp
+    src/MotionSource.cpp
     src/PoseBuffer.cpp
-    src/Resample.cpp)
+    src/Recorder.cpp
+    src/Resample.cpp
+    src/ReplaySender.cpp)
 add_library(motionRuntime::motionRuntime ALIAS motionRuntime)
 set_target_properties(motionRuntime PROPERTIES
     EXPORT_NAME motionRuntime
