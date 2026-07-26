@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Options.h"
 
+#include <cmath>
 #include <cstddef>
 #include <exception>
 #include <stdexcept>
@@ -10,6 +11,13 @@ namespace motionCaptureTool
 {
 namespace
 {
+
+// Upper bounds exist so that a fat-fingered flag fails with a message instead of
+// running the machine out of memory or looping past the heat death of the
+// universe: a HumanoidPose is roughly 1.3 KB, and the tick loop runs
+// `duration * rate` times.
+constexpr double kMaxBufferCapacity = 100000.0;   // ~130 MB of pose history
+constexpr double kMaxEvaluationRate = 10000.0;    // Hz; real rigs run 30-1000
 
 bool
 TakeValue(const std::vector<std::string>& arguments, std::size_t* index,
@@ -37,6 +45,12 @@ TakeDouble(const std::vector<std::string>& arguments, std::size_t* index,
         const double parsed = std::stod(text, &consumed);
         if (consumed != text.size()) {
             throw std::invalid_argument("trailing characters");
+        }
+        // `stod` happily accepts "nan" and "inf", and every range check below
+        // is a comparison -- which NaN passes by failing to be either side of
+        // it. Reject non-finite input here, once, rather than per flag.
+        if (!std::isfinite(parsed)) {
+            throw std::invalid_argument("not a finite number");
         }
         *value = parsed;
     } catch (const std::exception&) {
@@ -79,7 +93,7 @@ GetUsage()
         "                         (default 0.1). Zero holds instead.\n"
         "  --stale-after S        Frames further behind the head than this are\n"
         "                         counted stale rather than out-of-order.\n"
-        "  --buffer-capacity N    Pose history depth (default 120).\n"
+        "  --buffer-capacity N    Pose history depth, 1-100000 (default 120).\n"
         "\n"
         "Intake:\n"
         "  --confidence-floor F   Gate bones reporting less than F in [0, 1].\n"
@@ -91,7 +105,9 @@ GetUsage()
         "Output:\n"
         "  --clip-name NAME       Prim name for the UsdSkelAnimation\n"
         "                         (default BodyAnimation).\n"
-        "  --normalize PATH       Rewrite the trace canonically and exit.\n"
+        "  --normalize PATH       Rewrite the trace canonically and exit. Runs\n"
+        "                         no session, so it takes none of --output,\n"
+        "                         --dry-run or --report.\n"
         "  --dry-run              Replay and report, author nothing.\n"
         "  --report               Print intake and evaluation statistics.\n"
         "  --quiet                Suppress diagnostics on stderr.\n"
@@ -133,8 +149,11 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
                             error)) {
                 return false;
             }
-            if (options->evaluationRate <= 0.0) {
-                *error = "--rate expects a positive frequency";
+            if (options->evaluationRate <= 0.0
+                || options->evaluationRate > kMaxEvaluationRate) {
+                *error = "--rate expects a positive frequency no greater than "
+                    + std::to_string(static_cast<long long>(
+                          kMaxEvaluationRate));
                 return false;
             }
         } else if (argument == "--delivery-lag") {
@@ -171,8 +190,12 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
             if (!TakeDouble(arguments, &i, argument, &capacity, error)) {
                 return false;
             }
-            if (capacity < 1.0) {
-                *error = "--buffer-capacity expects at least 1";
+            if (capacity < 1.0 || capacity > kMaxBufferCapacity
+                || capacity != std::floor(capacity)) {
+                *error = "--buffer-capacity expects a whole number of frames "
+                         "between 1 and "
+                    + std::to_string(
+                          static_cast<long long>(kMaxBufferCapacity));
                 return false;
             }
             options->capture.bufferCapacity =
@@ -251,6 +274,24 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
         && !options->dryRun) {
         *error = "--output is required (or use --normalize / --dry-run)";
         return false;
+    }
+    // --normalize rewrites the trace and exits before a session is ever
+    // replayed, so pairing it with a flag about the replay is a mistake worth
+    // naming: it used to win silently and the other flag did nothing.
+    if (!options->normalizePath.empty()) {
+        const char* conflict = nullptr;
+        if (!options->outputPath.empty()) {
+            conflict = "--output";
+        } else if (options->dryRun) {
+            conflict = "--dry-run";
+        } else if (options->report) {
+            conflict = "--report";
+        }
+        if (conflict) {
+            *error = std::string("--normalize rewrites the trace and exits, so ")
+                + conflict + " has nothing to act on";
+            return false;
+        }
     }
     return true;
 }
