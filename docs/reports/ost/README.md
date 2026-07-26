@@ -17,17 +17,21 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 29 carries
-the consolidated live v0.21.0 asks, including the two report 28 raised.
+The current `ost` ask list is always in the **newest** report. Report 31 carries
+the consolidated live v0.21.0 asks, including those reports 28, 29 and 30
+raised.
 
 Numbering is the series' own: reports 1–8 call themselves "report #N" in their
 bodies, so the filenames preserve those numbers rather than renumbering history.
-`06a` is the odd one out — a macOS host build report written between #6 and #7
-that was never given a series number.
+Letter-suffixed entries (`06a`, `11a`, `13a`, `14a`) are macOS-host reports
+written alongside the main series but never given series numbers of their own;
+each sorts immediately after the report it follows.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
-| 29 | 2026-07-26 | [Publishing the OpenUSD 26.08 runtimes](29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md) | 0.20.0 | Windows + Linux 26.08 runtimes published and attested off-CI (`--build-metadata` works), but `runtime pull --build` forces `--no-examples` and `--build-arg` cannot override it. **Live v0.21.0 asks (consolidated)** |
+| 31 | 2026-07-26 | [A runtime can demand a host package the contract cannot name](31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md) | 0.20.0 | 26.08's MaterialX 1.39.5 hard-requires X11 on Linux, so re-pinning broke all four Linux cells at configure. `openstrata.ci.yaml` cannot express a host package, so the fix is a hand-edit `--force` deletes. **Live v0.21.0 asks (consolidated)** |
+| 30 | 2026-07-26 | [The macOS 26.08 runtime](30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md) | 0.20.0 | macOS arm64 26.08 published, so all three OS are on one OpenUSD version and CI is re-pinned. 26.08 needs the macOS 15.2 SDK, and a macOS artifact records no SDK or deployment target the way Linux records its glibc floor. Asks restated in 31 |
+| 29 | 2026-07-26 | [Publishing the OpenUSD 26.08 runtimes](29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md) | 0.20.0 | Windows + Linux 26.08 runtimes published and attested off-CI (`--build-metadata` works), but `runtime pull --build` forces `--no-examples` and `--build-arg` cannot override it. Asks restated in 30 |
 | 28 | 2026-07-26 | [Plain libraries and CLI tools have no CI cell](28-2026-07-26-v0.20.0-motion-layer-ci-gap.md) | 0.20.0 | `--workspace` *does* validate library edges (caught a real version mismatch), but `ci generate` emits bundle cells only, so Workspace Phase 6b's libraries and the Motion Phase C tool are untested in CI. Asks restated in 29 |
 | 27 | 2026-07-23 | [v0.3.0 aggregate product reproducibility](27-2026-07-23-v0.19.0-aggregate-product-reproducibility.md) | 0.19.0 | v0.3.0 release blocked: member archives stable, aggregate product digest unstable. **Live v0.20.0 ask** |
 | 26 | 2026-07-23 | [v0.20.0 asks after v0.19.0 adoption](26-2026-07-23-v0.19.0-v0.20.0-asks.md) | 0.19.0 | Workspace composition and aggregate product verified; standalone dependency registration P0 remains reproducible. **Live v0.20.0 asks** |
@@ -42,9 +46,12 @@ that was never given a series number.
 | 17 | 2026-07-13 | [v0.14.0 asks verified](17-2026-07-13-v0.14.0-verification-v0.15.0-asks.md) | 0.14.0 | 3 delivered / 3 carried; workspace tooling arrives |
 | 16 | 2026-07-12 | [Release lane on reproducible packaging](16-2026-07-12-v0.13.0-release-lane-v0.14.0-asks.md) | 0.13.0 | Digest-reproducible packaging drives the release workflow |
 | 15 | 2026-07-12 | [Clean-install smoke](15-2026-07-12-v0.12.0-clean-install-smoke-v0.13.0-asks.md) | 0.12.0 | Packaged-artifact consumer path |
+| 14a | 2026-07-11 | [macOS PR CI on the GHCR runtime](14a-2026-07-11-v0.12.0-macos-pr-ci-dogfooding.md) | 0.11/0.12 | First green macOS PR lane pulling the published runtime; GHCR access was fine, schema generation in the build environment was not |
 | 14 | 2026-07-11 | [Linux glibc floor fixed](14-2026-07-11-v0.12.0-linux-glibc-fix-v0.13.0-asks.md) | 0.12.0 | Real glibc floor measured; v0.11.0 asks rechecked |
+| 13a | 2026-07-10 | [macOS GHCR runtime publication](13a-2026-07-10-v0.11.0-macos-ghcr-runtime-publication.md) | 0.11/0.12 | The macOS arm64 runtime pushed to GHCR and tag-normalized to `26.05-macos-arm64`; GHCR retag requires deleting a package version. Re-exported under 0.12.0 to preserve exec bits |
 | 13 | 2026-07-10 | [v0.10.0 recheck](13-2026-07-10-v0.10.0-recheck-v0.11.0-asks.md) | 0.10.0 | OCI/publish asks rechecked; GHCR auth story |
 | 12 | 2026-07-09 | [First OCI runtime publish](12-2026-07-09-v0.9.0-oci-publish-v1.0.0-rc1-asks.md) | 0.9.0 | Hosted-bootstrap gap closed; two v1.0.0-rc1 asks |
+| 11a | 2026-07-05 | [macOS `plugin build` blockers](11a-2026-07-05-v0.8.0-macos-plugin-build-blockers.md) | 0.8.0 | `plugin build` reproducibly fails on a macOS host: no `python` on PATH, `plugInfo.json` pointing at `.dll`, and `--codesign-id -` needed without Xcode |
 | 11 | 2026-07-05 | [Hosted CI lanes](11-2026-07-05-v0.8.0-ci-hosted-lanes.md) | 0.8.0 | Real digests, generated lanes, the hosted bootstrap gap |
 | 10 | 2026-07-05 | [CI policy decision](10-2026-07-05-v0.7.0-ci-policy-decision.md) | 0.7.0 | Which lanes this repo commits to |
 | 9 | 2026-07-05 | [CI build-matrix policy notes](09-2026-07-05-v0.7.0-ci-build-matrix-policy.md) | 0.7.0 | Hosted vs self-hosted runner distinction |

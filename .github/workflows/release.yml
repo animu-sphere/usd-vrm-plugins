@@ -81,8 +81,8 @@ jobs:
         include:
           - name: release-windows
             cache_cell: usdvrmfileformat-pr-windows
-            runtime_artifact: sha256:c1c54f1e8a31983ad24f2997e419b000d4ad5d030c392d592d20fd6c8ac8b227
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:bf24d8b6af28d3b3be0fc780803da0ae1181fca8f336ee0c79c1b1607073f724"
+            runtime_artifact: sha256:e3368364f8f4661a7c34371e907f2e5ddcdec4e680b76f5e9e1c1ed656022f48
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1"
             platform: cy2026
             profile: usd
             runs_on: ["windows-2022"]
@@ -93,16 +93,16 @@ jobs:
             host_python: "3.13"
           - name: release-macos-arm64
             cache_cell: usdvrmfileformat-pr-macos-arm64
-            runtime_artifact: sha256:5630132e617c5234fb7a6ddac97dd5716642eeedd096c919c007c81787f3facf
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:459ec9a3930dede19b5c8f2ccf2fcdf9b8645fb9c95773e37b25f35ca30ee873"
+            runtime_artifact: sha256:b2cb7b68e72b05e486d57e96cde2ec7a8dc5a17b02b774af923aa58ee31d6d21
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:f8de29a4176d02ffbcf50a2205bb6b23d9a3cd9463e0d58a28a3c1c6ee5cb82c"
             platform: cy2026
             profile: usd
             runs_on: ["macos-15"]
             host_python: "3.13"
           - name: release-linux
             cache_cell: usdvrmfileformat-pr-linux
-            runtime_artifact: sha256:f6a2047c1681da4b4038f32d23b10f9713797a3f071945a799dedd73995739e5
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:3f785e3088e8701f653b2470c33ef384bcd79dff3781dd69aa861984225a7fa8"
+            runtime_artifact: sha256:70b47d1b1a337b71d6c6fd63898e3295c0f91dc4b2ad2f5c09d14d6ac0ff2e1d
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af"
             platform: cy2026
             profile: usd
             runs_on: ["ubuntu-24.04"]

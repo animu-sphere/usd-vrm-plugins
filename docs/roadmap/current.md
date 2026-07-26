@@ -31,21 +31,35 @@ v0.7.0 connects VRM humanoids to `ExecIr`. Both are planned in
 [openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md). Two pieces of it are
 already partly done and are tracked here because they are live:
 
-- ✅ **26.08 runtimes for Windows and Linux are published** (2026-07-26) to
-  `ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd` as `26.08-windows-x86_64`
-  and `26.08-linux-x86_64`. Both carry OpenExec (`exec`, `execGeom`, `execIr`,
-  `execUsd`, `usdExecImaging`, `vdf`) and were built with `--examples`, so the
-  26.08 `ExecIr` samples ship inside the runtime. Both verify `trust: attested`
-  with SBOM and provenance. Digests and evidence:
-  [report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md).
-- ⛔ **macOS arm64 is still on 26.05.** The 26.08 runtime for it is unbuilt, so
-  "one OpenUSD version across three OS" — the v0.6.0 P0-1 gate — cannot be met
-  yet. It needs an Apple-silicon host; see
-  [report 6a](../reports/ost/06a-2026-06-30-v0.4.0-macos-openusd-build.md) for the
-  build recipe.
-- ⬜ **CI still pins 26.05.** `openstrata.ci.yaml` was deliberately left alone
-  when the 26.08 runtimes were published, so nothing about the current lanes
-  moved. Re-pinning happens with the exact-pin work, not before.
+- ✅ **All three 26.08 runtimes are published** (2026-07-26) to
+  `ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd` as `26.08-windows-x86_64`,
+  `26.08-linux-x86_64` and `26.08-macos-arm64`. All carry OpenExec (`exec`,
+  `execGeom`, `execIr`, `execUsd`, `usdExecImaging`, `vdf` — 198 headers under
+  `include/pxr/exec`) and were built with `--examples`, so the 26.08 `ExecIr`
+  samples ship inside the runtime. All verify `trust: attested` with SBOM and
+  provenance. Digests and evidence:
+  [report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md)
+  (Windows, Linux) and
+  [report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md)
+  (macOS arm64).
+- ✅ **"One OpenUSD version across three OS" — the v0.6.0 P0-1 gate — is met.**
+  macOS arm64 was the last holdout; it needed Apple clang 16 and the macOS 15.2
+  SDK, because 26.08's Hd data sources rely on `allocate_shared` routing through
+  the allocator and the macOS 14.5 SDK's libc++ only does that under C++20
+  (report 30 §1).
+- ✅ **CI pins 26.08 on every lane.** `openstrata.ci.yaml`, the generated
+  `ost-*.yml` workflows, and the hand-authored `release.yml` were re-pinned
+  together on 2026-07-26.
+- ⚠️ **The Linux cells carry a hand-added `apt-get` step and will break on
+  regeneration.** 26.08's MaterialX 1.39.5 hard-requires X11 on non-Apple UNIX,
+  so a Linux consumer cannot `find_package(pxr)` without `libx11-dev
+  libxt-dev`, and `openstrata.ci.yaml` has no way to declare a host package.
+  `ost ci generate github --force` deletes the step silently — re-add it. See
+  [report 31](../reports/ost/31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md).
+- ⛔ **The scheduled lane's `plugin_artifact` is still a 26.05 build.**
+  `usdvrmfileformat-support-windows-cy2026` now pairs a 26.05-built plugin with
+  a 26.08 runtime. OpenUSD guarantees no ABI stability across versions, so that
+  artifact must be republished before the lane's result means anything.
 
 ## Shipped: v0.4.0 — offline retarget
 
@@ -192,7 +206,7 @@ guards all of it in CI.
   aggregate product is the obvious home; that needs an `ost` packaging answer
   first (see report 28).
 - ⛔ **A second OpenUSD version cell** (min vs latest) in the compatibility
-  matrix. Today CI runs cy2026 / OpenUSD 26.05 only. **Blocked externally:**
+  matrix. Today CI runs cy2026 / OpenUSD 26.08 only. **Blocked externally:**
   GHCR has no published min-version (e.g. OpenUSD 25.05 / cy2025) runtime
   artifact yet — this needs an open-strata runtime build + publish per OS, then
   a fourth cell in `openstrata.ci.yaml`. The OS axis already runs three cells.
