@@ -47,16 +47,16 @@ A–H is unrelated to that retired A–E** and always carries the "Motion" quali
 
 - The workspace covers **Workspace Phase 6b and 7**: `motionCore`,
   `motionRuntime`, `vrmRetarget`, and `usdVrmaFileFormat` implement Motion
-  Phases A–C. Only Phase 8 (`execMotion` / `execVrm`) is unbuilt.
-- **v0.4.0 is released** (Workspace Phase 6b + Motion Phase C, offline retarget).
-- Current priorities: get the motion layer under a CI lane, close the remaining
-  **Workspace Phase 5** packaging P0, and widen runtime verification.
-- The milestone ladder is **v0.5.0 → v0.6.0 → v0.7.0**:
+  Phases A–D. Only Phase 8 (`execMotion` / `execVrm`) is unbuilt.
+- **v0.5.0 is released** (Motion Phase D, live capture). It also put the motion
+  layer under CI for the first time and pinned every lane to OpenUSD 26.08.
+- Current priorities: close the remaining **Workspace Phase 5** packaging P0,
+  widen runtime verification, and begin the OpenExec foundation.
+- The milestone ladder is **v0.6.0 → v0.7.0**:
 
   | Release | Theme | Sequences |
   | --- | --- | --- |
-  | v0.5.0 | live-capture prototype | Motion Phase D |
-  | v0.6.0 | OpenUSD 26.08 exact pin + OpenExec VRM runtime foundation | Workspace Phase 8, Motion Phase E, Product P4 |
+  | v0.6.0 | OpenExec VRM runtime foundation | Workspace Phase 8, Motion Phase E, Product P4 |
   | v0.7.0 | `ExecIr` invertible VRM humanoid rig | Motion Phase E cont., Product P4 |
 
   v0.6.0 and v0.7.0 are planned in
@@ -69,7 +69,7 @@ A–H is unrelated to that retired A–E** and always carries the "Motion" quali
 - Every bundle builds standalone against installed packages, not just composed
   in the workspace tree.
 - Dependency directions in [WORKSPACE.md](../architecture/WORKSPACE.md) §2 are
-  enforced by CI, not convention. *(Partially met — the graph gate is not yet
-  wired; see [current.md](current.md).)*
+  enforced by CI, not convention. *(Met since v0.5.0 — `ost plugin test
+  --workspace` runs on every PR on all three OS in `motion-ci.yml`.)*
 - Every documented command is one that has actually been run, and no document
   contradicts what CI does.

@@ -1,6 +1,6 @@
 [project]
 name = "usd-vrm-plugins"
-version = "0.4.0"
+version = "0.5.0"
 
 [requires]
 platform = "cy2026"

@@ -67,19 +67,27 @@ This table covers the `.vrm` importer only. Skeletal animation *embedded in a
 `.vrm`* is listed above; a standalone reusable `.vrma` clip is a different thing
 and is handled by a different bundle.
 
-**The `.vrma` motion layer ships as of v0.4.0** and has its own status:
+**The `.vrma` motion layer ships as of v0.5.0** and has its own status:
 
 | Component | Since | Status |
 | --- | --- | --- |
 | `usdVrmaFileFormat` | v0.3.0 | GLB/glTF animation read, humanoid rotation, hips translation, canonical `HumanoidSkeleton`, `UsdSkelAnimation`, time range, provenance (Motion Phase B) |
 | `motionCore` | v0.3.0 | Vendor-neutral pose/animation types (Motion Phase A contract) |
 | `motionRuntime` | v0.4.0 | `PoseBuffer`, interpolation/extrapolation, resample, filter, blend |
+| `motionRuntime` | v0.5.0 | `IMotionSource` / `ClipSource` / `LiveCaptureSource`, the `motion-capture-trace` format, `ReplaySender`, `CaptureRecorder` (Motion Phase D) |
 | `vrmRetarget` | v0.4.0 | Humanoid map, rest-pose correction, pose retargeter, root-motion policy |
 | `motion_retarget` | v0.4.0 | CLI: retargets a clip onto an avatar and binds `skel:animationSource` (Motion Phase C) |
+| `motion_capture` | v0.5.0 | CLI: replays a recorded capture session into a semantic humanoid clip the retarget tool consumes unchanged (Motion Phase D) |
 
-Not yet in that layer: expression and look-at animation, live capture,
-generation, OpenExec evaluation, blending beyond the primitive, IK, and foot
-locking. See
+Live capture ships as the **generic** intake only. No product-specific adapter
+is included, and nothing has been validated against a real capture rig: protocol
+decode and coordinate conversion belong under `adapters/` (motion policy §8.1),
+and the [test corpus](../../libs/motionRuntime/tests/corpus/README.md) is
+synthetic by necessity — a corpus recorded from a commercial SDK could not be
+redistributed, so CI could not run it.
+
+Not yet in that layer: expression and look-at animation, motion generation,
+OpenExec evaluation, blending beyond the primitive, IK, and foot locking. See
 [MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md) and the
 Motion Phase ladder in the [backlog](../roadmap/backlog.md).
 

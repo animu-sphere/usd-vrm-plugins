@@ -5,61 +5,114 @@ The next milestone and active carry-over work. Shipped detail is in the
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
-## Next: v0.5.0 — live capture (Motion Phase D) ⬜
+## Next: v0.6.0 — the OpenExec foundation (Workspace Phase 8 + Motion Phase E) ⬜
 
-**Release boundary:** a generic `LiveCaptureSource` feeding the same retarget
-core v0.4.0 shipped. It does **not** begin OpenExec — that is v0.6.0.
+**Release boundary:** `execMotion` and `execVrm` bundles exist and evaluate a
+humanoid through OpenExec. Nodes are thin wrappers over `motionRuntime` and
+`vrmRetarget`, never a second implementation. Planned in
+[openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md).
 
-- ⬜ Generic `LiveCaptureSource`, timestamped `PoseBuffer` intake, reproducible
-  tests driven from recorded samples, and evaluation of missing bones,
-  confidence, and root motion. Product-specific support stays an optional leaf
-  adapter, never a core dependency
-  ([motion policy §8.1](../design/MOTION_ARCHITECTURE_POLICY.md)).
-- ⬜ **A motion corpus.** Recorded live-capture samples are what make the tests
-  reproducible; licensing is the same gate the VRM corpus hit
-  ([backlog](backlog.md#cross-cutting)).
+The two prerequisites this milestone was originally scoped around are already
+met, both ahead of schedule:
 
-`motionRuntime`'s `PoseBuffer` was built for this: bounded, strictly ordered
-history with bracketed sampling and capped position-only extrapolation, and a
-missing sample is held rather than faded toward identity. Phase D consumes that
-surface rather than extending it.
-
-## After that: the OpenUSD 26.08 / OpenExec direction
-
-v0.6.0 pins OpenUSD to **26.08 exactly** and makes OpenExec the execution layer;
-v0.7.0 connects VRM humanoids to `ExecIr`. Both are planned in
-[openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md). Two pieces of it are
-already partly done and are tracked here because they are live:
-
-- ✅ **All three 26.08 runtimes are published** (2026-07-26) to
-  `ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd` as `26.08-windows-x86_64`,
-  `26.08-linux-x86_64` and `26.08-macos-arm64`. All carry OpenExec (`exec`,
-  `execGeom`, `execIr`, `execUsd`, `usdExecImaging`, `vdf` — 198 headers under
-  `include/pxr/exec`) and were built with `--examples`, so the 26.08 `ExecIr`
-  samples ship inside the runtime. All verify `trust: attested` with SBOM and
-  provenance. Digests and evidence:
+- ✅ **One OpenUSD across three OS.** All three 26.08 runtimes are published to
+  `ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd` and every lane is pinned
+  to them, including the new motion lane and the release workflow. They carry
+  OpenExec (`exec`, `execGeom`, `execIr`, `execUsd`, `usdExecImaging`, `vdf` —
+  198 headers under `include/pxr/exec`) and were built `--examples`, so the
+  26.08 `ExecIr` samples ship inside the runtime. Digests and evidence:
   [report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md)
-  (Windows, Linux) and
+  (Windows, Linux),
   [report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md)
   (macOS arm64).
-- ✅ **"One OpenUSD version across three OS" — the v0.6.0 P0-1 gate — is met.**
-  macOS arm64 was the last holdout; it needed Apple clang 16 and the macOS 15.2
-  SDK, because 26.08's Hd data sources rely on `allocate_shared` routing through
-  the allocator and the macOS 14.5 SDK's libc++ only does that under C++20
-  (report 30 §1).
-- ✅ **CI pins 26.08 on every lane.** `openstrata.ci.yaml`, the generated
-  `ost-*.yml` workflows, and the hand-authored `release.yml` were re-pinned
-  together on 2026-07-26.
+- ✅ **The motion layer has CI.** Its absence was v0.6.0's named P0-2 blocker;
+  v0.5.0 closed it with a hand-authored lane (below).
+
+### Carried into v0.6.0
+
 - ⚠️ **The Linux cells carry a hand-added `apt-get` step and will break on
   regeneration.** 26.08's MaterialX 1.39.5 hard-requires X11 on non-Apple UNIX,
   so a Linux consumer cannot `find_package(pxr)` without `libx11-dev
   libxt-dev`, and `openstrata.ci.yaml` has no way to declare a host package.
-  `ost ci generate github --force` deletes the step silently — re-add it. See
+  `ost ci generate github --force` deletes the step silently — re-add it, in
+  **both** `ost-source-ci.yml` and `motion-ci.yml`. See
   [report 31](../reports/ost/31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md).
+- ⚠️ **Runtime digests are now pinned in two places.** `openstrata.ci.yaml` and
+  the hand-authored `motion-ci.yml` must be re-pinned together on every runtime
+  republish. A motion cell left on an older OpenUSD than the bundle cells would
+  be worse than no cell, because it would look like coverage. Ask 2 in
+  [report 32](../reports/ost/32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md)
+  is the fix.
 - ⛔ **The scheduled lane's `plugin_artifact` is still a 26.05 build.**
-  `usdvrmfileformat-support-windows-cy2026` now pairs a 26.05-built plugin with
-  a 26.08 runtime. OpenUSD guarantees no ABI stability across versions, so that
+  `usdvrmfileformat-support-windows-cy2026` pairs a 26.05-built plugin with a
+  26.08 runtime. OpenUSD guarantees no ABI stability across versions, so that
   artifact must be republished before the lane's result means anything.
+  Untouched by v0.5.0.
+- ⬜ **Decide whether the CLIs ship in the release artifacts.**
+  `motion_retarget` and now `motion_capture` are executables, not bundles, so no
+  member archive carries them. Needs the `ost` packaging answer first (ask 4 in
+  report 32).
+
+## Shipped: v0.5.0 — live capture
+
+[v0.5.0](../releases/v0.5.0.md) is **released** — tagged 2026-07-26.
+
+**Release boundary:** a generic `LiveCaptureSource` feeding the same retarget
+core v0.4.0 shipped. It does **not** begin OpenExec — that is v0.6.0.
+
+- ✅ **Motion Phase D — the live-capture surface.** `IMotionSource` with an
+  explicit `PoseSampleStatus`, `ClipSource`, and `LiveCaptureSource`:
+  timestamped intake into the `PoseBuffer` Phase 6b built for it, confidence
+  gating, a missing-bone policy (hold vs unbound), root-motion intake
+  (passthrough / ignore / derive-velocity), clock alignment, and statistics that
+  say what was refused and why.
+- ✅ **Reproducible by construction.** Nothing in the intake path opens a
+  transport or reads a wall clock: an adapter decodes a frame and calls `Push`,
+  and the caller drives the tick. So a recorded session replays exactly, on
+  every run and every OS — which is what makes the tests real rather than mocks.
+- ✅ **A recorded-trace format and a corpus.** `motion-capture-trace` v1 is
+  line-oriented text that round-trips byte-identically, so a fixture is compared
+  rather than merely parsed. The
+  [six committed traces](../../libs/motionRuntime/tests/corpus/README.md) are
+  generated by closed-form maths — deliberately synthetic, because a corpus
+  recorded from a commercial SDK would inherit the VRM corpus's redistribution
+  gate and CI could not run it.
+- ✅ **The claim is falsifiable.** `motion_capture` authors the same
+  avatar-independent semantic clip `usdVrmaFileFormat` produces, and the
+  end-to-end test bakes it onto a real avatar with the **unchanged** Phase C
+  tool, then resolves the result through a `UsdSkelSkeletonQuery`.
+- ✅ **The motion layer has a CI lane** — the v0.4.0 carry-over, closed. See
+  below.
+- ✅ **One humanoid taxonomy.** `HumanBoneParent` / `NearestPresentAncestor` /
+  `HumanBoneJointPath` moved into `motionCore`; the `.vrma` reader's private
+  copy is gone.
+
+Explicitly deferred: any product-specific adapter, validation against a real
+capture rig, and OpenExec evaluation (Motion Phases E–H).
+
+### Closed in v0.5.0
+
+- ✅ **The motion layer is under CI.** `ost ci generate` emits one job per
+  *bundle* cell, so `motionCore`, `motionRuntime`, `vrmRetarget`, `vrmContainer`
+  and both CLIs had no lane at all. `.github/workflows/motion-ci.yml` builds the
+  whole workspace with plain CMake — the only configuration where `libs/` and
+  `tools/` targets exist — and runs their 13 tests on Windows, Linux and macOS
+  arm64. It is a workaround; the P0 in
+  [report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md)
+  stays open, and [report 32](../reports/ost/32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md)
+  measures what it cost.
+- ✅ **The workspace graph gate runs in CI**, on every PR, on all three OS —
+  the [WORKSPACE.md §8](../architecture/WORKSPACE.md) requirement that had been
+  unmet since Workspace Phase 1.
+- ✅ **The baseline gate is no longer stale.** It is registered only from the
+  root build, which no lane ran, so nobody noticed the committed symbol baseline
+  was still frozen against OpenUSD 26.05 after the 26.08 bump. Refreezing
+  changed all 220 symbols by `pxrInternal_v0_26_5` → `_26_8` **and nothing
+  else**; every other baseline artifact is byte-identical across the two OpenUSD
+  versions. It now runs in `motion-ci.yml`.
+- ✅ **The baseline gate needs an explicit full-workspace session** (v0.4.0
+  carry-over). The lane names every bundle with `--with`, so the recurrence the
+  v0.4.0 record predicted is handled where it actually runs.
 
 ## Shipped: v0.4.0 — offline retarget
 
@@ -121,9 +174,9 @@ joint at its rest pose — the clip did not move
 now author a constant identity array, and the tests drive a
 `UsdSkelSkeletonQuery` rather than comparing authored values.
 
-### Carried out of v0.4.0
+### Carried out of v0.4.0 — both closed in v0.5.0
 
-- ⬜ **No CI lane covers the motion layer.** `ost ci generate` emits one job per
+- ✅ **No CI lane covers the motion layer.** `ost ci generate` emits one job per
   *bundle* cell, and `ost plugin test --workspace` tests bundles — so
   `motionRuntime`, `vrmRetarget`, and `motion_retarget` are compiled and tested
   only in the plain-CMake root build, which no lane runs. Their manifest edges
@@ -131,7 +184,7 @@ now author a constant identity array, and the tests drive a
   libraries; see [WORKSPACE.md §8](../architecture/WORKSPACE.md)). Filed as the
   P0 ask in
   [report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md).
-- ⬜ **The baseline gate needs an explicit full-workspace session.**
+- ✅ **The baseline gate needs an explicit full-workspace session.**
   `discovery.json` freezes the union across every bundle, but a bundle that
   registers a type without being a dependency (`usdVrmaFileFormat`) has to be
   named with `--with`. v0.4.0 wired that into the CTest env; the same gap will
@@ -218,15 +271,13 @@ models resolve; schema registration succeeds.* (design policy §14, §17-P3)
 
 The OS axis is shipped. Remaining:
 
-- ⬜ **Wire the workspace graph gate into CI.**
+- ✅ **Wire the workspace graph gate into CI** — done in v0.5.0.
   [WORKSPACE.md §2](../architecture/WORKSPACE.md) specifies
   `ost plugin test --workspace` as the enforcement for the dependency
   directions, and §8 called for it to be a required PR-lane gate from Workspace
-  Phase 1 on — but **no lane runs it**. The generated PR lane runs
-  `ost plugin test <bundle>` per cell (twelve cells: four bundles × three OS).
-  Workspace Phase 6b raised the cost of this gap: the gate validates plain
-  libraries too, and it caught a real version mismatch locally that no
-  per-bundle cell would have seen.
+  Phase 1 on. It now runs on every PR on all three OS, in `motion-ci.yml` —
+  the generated lane still cannot host it, because it is whole-workspace by
+  definition and `ost ci generate` emits per-bundle cells.
 - ⬜ Explicit **UTF-8 / Unicode path** and **DLL dependency discovery** coverage
   on the Windows cell.
 - ⬜ **Real VRM smoke test** (open + texture resolve) exercised in CI, not just

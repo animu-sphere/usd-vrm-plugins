@@ -8,6 +8,7 @@ rewritten; new work goes to a new record. Active, incomplete work lives in the
 
 | Version | Record | Theme |
 | --- | --- | --- |
+| v0.5.0 | [v0.5.0.md](v0.5.0.md) | Live capture: a generic `LiveCaptureSource` + the `motion_capture` CLI feed the unchanged retarget core; the motion layer gets its first CI lane |
 | v0.4.0 | [v0.4.0.md](v0.4.0.md) | Offline retarget: `motionRuntime` + `vrmRetarget` + the `motion_retarget` CLI; a `.vrma` clip finally plays back on a real avatar |
 | v0.3.0 | [v0.3.0.md](v0.3.0.md) | Motion foundation: `motionCore` + `usdVrmaFileFormat`; canonical `.vrma` animation import (no retarget yet) |
 | v0.2.0 | [v0.2.0.md](v0.2.0.md) | The multi-bundle workspace: `vrmSchema` / `usdVrmFileFormat` / `usdVrmPackageResolver` ship separately (artifact-breaking) |
