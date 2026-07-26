@@ -14,6 +14,14 @@
 #   four Linux cells fail at configure. Full diagnosis and the P0 ask:
 #   docs/reports/ost/31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md
 #
+#   EVERY Linux job that configures against a 26.08 runtime needs that step,
+#   not just the generated ones. It lives in THREE workflows: ost-source-ci.yml
+#   (generated, re-add after regeneration), motion-ci.yml and release.yml (both
+#   hand-authored, so regeneration never touches them). release.yml was missed
+#   when CI was re-pinned to 26.08 and the v0.5.0 tag build failed on it -- a
+#   green PR lane does not exercise release.yml, so nothing caught it earlier.
+#   When you add a Linux job anywhere, add the step with it.
+#
 # Lanes:
 #   - pull_request  -> GitHub-hosted source build from checkout. The runner
 #                      bootstraps a pinned `ost` and pulls the runtime SDK from

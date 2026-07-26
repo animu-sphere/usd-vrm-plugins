@@ -1,6 +1,9 @@
 # Release workflow (hand-authored). The ost-*.yml workflows are generated from
 # openstrata.ci.yaml; this one is not — but its runtime/bootstrap pins MIRROR
-# openstrata.ci.yaml, so update both together.
+# openstrata.ci.yaml, so update both together. That mirroring includes the
+# host-package steps the CI contract cannot express (see the X11 step below):
+# because this file is hand-authored, regenerating the PR lanes never updates
+# it, and a green PR lane proves nothing about it.
 #
 # Pushing a tag `vX.Y.Z` (which must equal the repo VERSION file and have a
 # finalized CHANGELOG section) builds the whole workspace -- vrmSchema,
@@ -110,6 +113,32 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      # OpenUSD 26.08 bundles MaterialX 1.39.5, whose exported
+      # MaterialXConfig.cmake gained
+      #     if(UNIX AND NOT APPLE)
+      #         find_dependency(X11 REQUIRED COMPONENTS Xt)
+      # which the 1.39.4 in 26.05 did not have. The guard is platform-only, and
+      # pxrConfig.cmake find_dependency(MaterialX)s, so every Linux consumer of a
+      # 26.08 runtime needs X11 dev headers merely to run find_package(pxr) --
+      # every configure in this job (build, test, package, --from-package) dies
+      # at "Could NOT find X11 (missing: X11_X11_INCLUDE_PATH X11_X11_LIB Xt)"
+      # without them. macOS (APPLE) and Windows (not UNIX) never enter the branch,
+      # which is why only the Linux cell fails.
+      #
+      # This mirrors the hand-added step in ost-source-ci.yml and motion-ci.yml.
+      # It was missed here when CI was re-pinned to 26.08 in 0ead959, because
+      # this workflow is hand-authored rather than generated -- so regenerating
+      # never touches it and the PR lane going green said nothing about it. The
+      # v0.5.0 tag build failed on exactly this. Drop all three once ost grows a
+      # per-cell host-package knob; tracked as the P0 ask in
+      # docs/reports/ost/31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md
+      - name: Install X11 dev headers required by MaterialX 1.39.5
+        if: ${{ runner.os == 'Linux' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libx11-dev libxt-dev
       - name: Bootstrap ost 0.20.0 (pinned release asset, checksum-verified)
         shell: bash
         run: |
