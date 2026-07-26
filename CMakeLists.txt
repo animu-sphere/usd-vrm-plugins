@@ -104,11 +104,20 @@ foreach(_bundle ${_schema_bundles} ${_other_bundles})
     add_subdirectory("plugins/${_bundle}")
 endforeach()
 
-# The Motion Phase C bake tool. It is an executable, not a bundle: it has no
-# plugInfo.json and registers nothing with OpenUSD -- it opens stages the
-# plugins above already know how to read. Added last so its end-to-end test can
-# rely on those bundles existing in the same build tree.
-add_subdirectory("tools/motionRetarget")
+# The motion layer's CLI tools. Both are executables, not bundles: they have no
+# plugInfo.json and register nothing with OpenUSD -- they open stages the
+# plugins above already know how to read. Added last so their end-to-end tests
+# can rely on those bundles existing in the same build tree.
+#
+# Order matters for the tests, not the build. The Phase D end-to-end test drives
+# motion_capture and then motion_retarget, so motionRetarget is added FIRST and
+# motionCapture's test wiring picks it up with `if(TARGET motion_retarget)`.
+# A standalone `ost plugin build tools/motionCapture` has no such target, and
+# referencing one that does not exist fails at generate time rather than at run
+# time -- so the guard, not a bare $<TARGET_FILE:>, is what keeps both
+# configurations green.
+add_subdirectory("tools/motionRetarget")    # Motion Phase C — offline retarget
+add_subdirectory("tools/motionCapture")     # Motion Phase D — live capture
 
 install(FILES
     LICENSE
