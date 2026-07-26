@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import pathlib
 import subprocess
 import sys
@@ -254,6 +255,53 @@ def check_normalize_is_idempotent(tool: str, corpus: pathlib.Path,
         "canonical form")
 
 
+def check_root_motion_survives_without_a_hips_rotation(
+        tool: str, directory: pathlib.Path, failures: Failures) -> None:
+    """A rig may report a root position while never solving a hips rotation.
+
+    Root translation is authored onto the Hips joint and nowhere else. Building
+    the joint set from observed *rotations* alone therefore dropped such a
+    session's entire root motion, with no error and no warning -- the clip was
+    simply a rig standing still. Hips now joins the joint set on the strength of
+    the root observation, with an identity rotation track.
+    """
+    trace = directory / "rootless_hips.trace"
+    lines = ["!motion-capture-trace 1", "provider example.test",
+             "protocol replay", "sourceId rootless-hips-01",
+             "frameRate 30.000000"]
+    for index in range(6):
+        half = math.radians(4.0 * index) * 0.5
+        lines += ["",
+                  f"t {index / 30.0:.6f}",
+                  f"root pos 0.000000 0.900000 {index * 0.05:.6f}",
+                  f"b spine {math.cos(half):.6f} {math.sin(half):.6f} "
+                  f"0.000000 0.000000"]
+    trace.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+
+    output = directory / "rootless_hips.usda"
+    result = capture(tool, trace, output)
+    if not failures.check(
+            result.returncode == 0,
+            f"motion_capture rejected a hips-less rig: {result.stderr.strip()}"):
+        return
+
+    stage = Usd.Stage.Open(str(output))
+    animation = find_animation(stage)
+    joints = list(animation.GetJointsAttr().Get() or [])
+    if not failures.check(
+            joints == ["hips", "hips/spine"],
+            f"a hips-less rig authored {joints}, not ['hips', 'hips/spine']"):
+        return
+
+    translations = animation.GetTranslationsAttr()
+    depths = [translations.Get(time)[joints.index("hips")][2]
+              for time in translations.GetTimeSamples()]
+    failures.check(
+        max(depths) - min(depths) > 1e-4,
+        "the hips translation track is flat: the session's root motion was "
+        "dropped because no hips rotation was ever observed")
+
+
 def check_malformed_trace_is_rejected(tool: str, directory: pathlib.Path,
                                       failures: Failures) -> None:
     bad = directory / "bad.trace"
@@ -365,6 +413,8 @@ def main() -> int:
         check_lagged_delivery_still_resolves(options.tool, corpus, directory,
                                              failures)
         check_normalize_is_idempotent(options.tool, corpus, directory, failures)
+        check_root_motion_survives_without_a_hips_rotation(
+            options.tool, directory, failures)
         check_malformed_trace_is_rejected(options.tool, directory, failures)
 
         if options.retarget_tool:

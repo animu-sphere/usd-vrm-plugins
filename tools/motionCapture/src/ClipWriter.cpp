@@ -37,15 +37,35 @@ WriteSemanticClip(const std::string& outputPath,
         *error = "the recorded session produced no frames";
         return false;
     }
+    // Checked before any work: a bad prim name is an argument error, and
+    // discovering it after authoring the joint set only obscures that.
+    if (!pxr::TfIsValidIdentifier(clipName)) {
+        *error = "'" + clipName + "' is not a valid prim name";
+        return false;
+    }
 
     // A joint exists in the clip when any frame observed it. A bone the rig
     // never solved is simply absent -- it is not authored at rest, because a
     // joint that is present and unmoving means something different downstream
     // from a joint that was never captured.
     std::bitset<motion::HumanBoneCount> present;
+    bool observedRoot = false;
     for (const motion::HumanoidPose& pose : animation.samples) {
         present |= pose.validRotations;
+        observedRoot = observedRoot || pose.root.hasPosition;
     }
+
+    // The one bone that is not purely a rotation question. Root translation is
+    // authored onto the Hips joint and nowhere else, so a rig that reports a
+    // root position while never solving a hips *rotation* would otherwise drop
+    // its whole root motion here without a word. Hips joins the joint set on
+    // the strength of the root observation; its rotation track falls back to
+    // identity below, exactly as any unobserved bone's does.
+    const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
+    if (observedRoot && !present.test(hips)) {
+        present.set(hips);
+    }
+
     if (!present.any()) {
         *error = "the recorded session observed no humanoid bone";
         return false;
@@ -61,11 +81,6 @@ WriteSemanticClip(const std::string& outputPath,
         bones.push_back(bone);
         joints.push_back(
             pxr::TfToken(motion::HumanBoneJointPath(bone, present)));
-    }
-
-    if (!pxr::TfIsValidIdentifier(clipName)) {
-        *error = "'" + clipName + "' is not a valid prim name";
-        return false;
     }
 
     const double frameRate =
