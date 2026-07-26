@@ -69,7 +69,7 @@ A–H is unrelated to that retired A–E** and always carries the "Motion" quali
 - Every bundle builds standalone against installed packages, not just composed
   in the workspace tree.
 - Dependency directions in [WORKSPACE.md](../architecture/WORKSPACE.md) §2 are
-  enforced by CI, not convention. *(Met since v0.5.0 — `ost plugin test
-  --workspace` runs on every PR on all three OS in `motion-ci.yml`.)*
+  enforced by CI, not convention. *(Met since v0.5.0 — the dependency-graph
+  validation runs on every PR on all three OS in `motion-ci.yml`.)*
 - Every documented command is one that has actually been run, and no document
   contradicts what CI does.

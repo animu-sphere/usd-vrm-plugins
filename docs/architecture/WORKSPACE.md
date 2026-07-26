@@ -265,14 +265,23 @@ Scaffolds for new bundles start from the ost template catalog
 (`ost plugin new usd-schema --template usd-schema-cpp`,
 `ost plugin new usd-package-resolver`) rather than hand-rolled skeletons.
 
-> **Gate status — closed in v0.5.0.** This document called for
-> `ost plugin test --workspace` to be a required PR-lane gate from Phase 1 on,
-> and for four releases no lane ran it. It now runs on every pull request, on
-> all three OS, in the hand-authored
-> [`motion-ci.yml`](../../.github/workflows/motion-ci.yml). The generated PR
-> lane still cannot host it: `ost ci generate` emits one job per *bundle* cell,
-> and the graph gate is whole-workspace by definition. So this is a workaround
-> lane, not the answer — see the note below and
+> **Gate status — closed in v0.5.0.** This document called for the §2
+> dependency directions to be enforced by a required PR gate from Phase 1 on,
+> and for four releases no lane enforced them. The **dependency-graph
+> validation** now runs on every pull request, on all three OS, in the
+> hand-authored [`motion-ci.yml`](../../.github/workflows/motion-ci.yml).
+>
+> It is read out of `ost plugin test --workspace --up-to 0 --json`, not from the
+> command's exit code, because that verb **couples** graph validation to testing
+> every bundle: on a fresh checkout it validates the graph, reports it valid,
+> and then exits non-zero because nothing has been built yet. Building all four
+> bundles to reach the graph result would duplicate the twelve generated cells
+> that already do exactly that. `data.graph` carries its own `passed` and
+> `issues`, so the lane asks for precisely the part no other lane covers — the
+> forbidden-edge and version-range checks — and leaves per-bundle verification
+> where it already runs.
+>
+> So this is a workaround lane, not the answer — see the note below and
 > [report 32](../reports/ost/32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md).
 >
 > **What the gate actually covers (measured on ost 0.20.0, Workspace Phase 6b).**

@@ -101,9 +101,11 @@ capture rig, and OpenExec evaluation (Motion Phases E–H).
   [report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md)
   stays open, and [report 32](../reports/ost/32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md)
   measures what it cost.
-- ✅ **The workspace graph gate runs in CI**, on every PR, on all three OS —
-  the [WORKSPACE.md §8](../architecture/WORKSPACE.md) requirement that had been
-  unmet since Workspace Phase 1.
+- ✅ **The workspace dependency-graph gate runs in CI**, on every PR, on all
+  three OS — the [WORKSPACE.md §8](../architecture/WORKSPACE.md) requirement
+  that had been unmet since Workspace Phase 1. It is read out of `--json`
+  because `ost plugin test --workspace` couples graph validation to testing
+  every bundle, which needs them all built first (report 32, ask 5).
 - ✅ **The baseline gate is no longer stale.** It is registered only from the
   root build, which no lane ran, so nobody noticed the committed symbol baseline
   was still frozen against OpenUSD 26.05 after the 26.08 bump. Refreezing
@@ -275,8 +277,8 @@ The OS axis is shipped. Remaining:
   [WORKSPACE.md §2](../architecture/WORKSPACE.md) specifies
   `ost plugin test --workspace` as the enforcement for the dependency
   directions, and §8 called for it to be a required PR-lane gate from Workspace
-  Phase 1 on. It now runs on every PR on all three OS, in `motion-ci.yml` —
-  the generated lane still cannot host it, because it is whole-workspace by
+  Phase 1 on. The graph validation now runs on every PR on all three OS, in
+  `motion-ci.yml`. The generated lane cannot host it: it is whole-workspace by
   definition and `ost ci generate` emits per-bundle cells.
 - ⬜ Explicit **UTF-8 / Unicode path** and **DLL dependency discovery** coverage
   on the Windows cell.

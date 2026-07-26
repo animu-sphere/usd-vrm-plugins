@@ -157,10 +157,39 @@ jobs:
 
       # The WORKSPACE.md §2 dependency-direction gate. It validates plain
       # libraries as well as bundles, so it is the only automated check that a
-      # forbidden edge (say motionRuntime -> vrmSchema) has not been introduced.
+      # forbidden edge (say motionRuntime -> vrmSchema) has not been introduced,
+      # and the only one that catches a half-bumped workspace.
+      #
+      # It is read out of --json rather than from the exit code, because `ost
+      # plugin test --workspace` COUPLES the graph validation to testing every
+      # bundle: on a fresh checkout it validates the graph, prints "valid", and
+      # then exits non-zero because no bundle has been built yet
+      # (WORKSPACE_LIBRARY_RUNTIME_MISSING / plugin.shared_library). Building all
+      # four bundles here just to reach the graph result would duplicate the
+      # twelve generated cells that already build and test them. `data.graph` is
+      # a discrete result with its own `passed` and `issues`, so this asks for
+      # exactly the part no other lane covers. Ask 5 in report 32 is a verb that
+      # would make this a one-liner.
       - name: Validate the workspace dependency graph
         shell: bash
-        run: ost plugin test --workspace
+        run: |
+          set -uo pipefail
+          mkdir -p .ost-ci
+          ost plugin test --workspace --up-to 0 --json > .ost-ci/workspace.json || true
+          set -e
+          python3 - <<'PY'
+          import json, sys
+          with open(".ost-ci/workspace.json", encoding="utf-8") as handle:
+              graph = json.load(handle)["data"]["graph"]
+          print(f'{len(graph["nodes"])} bundle(s), {len(graph["edges"])} bundle edge(s), '
+                f'{len(graph["libraries"])} librar(ies), {len(graph["library_edges"])} library edge(s)')
+          for issue in graph["issues"]:
+              code = issue.get("code", "WORKSPACE_ISSUE")
+              print(f'::error title={code}::{issue.get("message", issue)}')
+          if not graph["passed"] or graph["issues"]:
+              sys.exit(1)
+          print("workspace dependency graph: valid")
+          PY
 
       # Everything below runs inside an ost session, which puts the runtime on
       # PATH and exports CMAKE_PREFIX_PATH pointing at its prefix -- rather than
