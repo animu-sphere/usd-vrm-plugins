@@ -73,6 +73,14 @@ Current schema contract version: **1**.
 - **Every lane is pinned to OpenUSD 26.08**, the exact-pin half of what was
   scoped for v0.6.0, landed early. The `motion-ci.yml` runtime digests mirror
   `openstrata.ci.yaml` and must be re-pinned with it.
+- **The release lane needed the same X11 host package the PR lanes got.** 26.08's
+  MaterialX 1.39.5 makes X11 dev headers a hard requirement of
+  `find_package(pxr)` on Linux; the fix was added to the generated PR lane and to
+  `motion-ci.yml`, but `release.yml` is hand-authored, so regenerating never
+  touched it and no PR exercises it. The first `v0.5.0` tag build failed there,
+  Linux-only, at configure. Every Linux job that configures against a 26.08
+  runtime now carries the step, and `openstrata.ci.yaml` records that it lives in
+  three workflows rather than one.
 - **The Phase 0 baseline is refrozen against OpenUSD 26.08.** It is registered
   only from the plain-CMake root build, which no lane ran, so the committed
   symbol baseline was still frozen against 26.05 after the runtime bump. The
