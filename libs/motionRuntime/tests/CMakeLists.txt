@@ -1,13 +1,28 @@
 # SPDX-License-Identifier: Apache-2.0
 
+# Every suite in this workspace checks with `assert()`, and NDEBUG compiles
+# `assert()` away -- so a suite built Release prints "passed" and returns 0
+# without having checked anything. That is not hypothetical: the root
+# CMakeLists defaults single-config builds to Release, and motion-ci.yml passes
+# -DCMAKE_BUILD_TYPE=Release outright, so it was the normal case.
+#
+# NDEBUG is therefore undefined for test targets specifically: the library under
+# test stays Release, the checks inside the test stay live.
+# target_compile_options lands after CMAKE_CXX_FLAGS_<CONFIG>, so the /U wins.
+set(_motion_runtime_assertions $<IF:$<CXX_COMPILER_ID:MSVC>,/UNDEBUG,-UNDEBUG>)
+
 add_executable(motionRuntime_tests test_motion_runtime.cpp)
 target_link_libraries(motionRuntime_tests PRIVATE motionRuntime::motionRuntime)
+target_compile_options(motionRuntime_tests
+    PRIVATE ${_motion_runtime_assertions})
 add_test(NAME motionRuntime_unit COMMAND motionRuntime_tests)
 
 # Motion Phase D: live-capture intake, the recorded trace format, and replay.
 add_executable(motionRuntime_liveCapture_tests test_live_capture.cpp)
 target_link_libraries(motionRuntime_liveCapture_tests
     PRIVATE motionRuntime::motionRuntime)
+target_compile_options(motionRuntime_liveCapture_tests
+    PRIVATE ${_motion_runtime_assertions})
 add_test(NAME motionRuntime_liveCapture
          COMMAND motionRuntime_liveCapture_tests)
 
