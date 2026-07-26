@@ -4,6 +4,16 @@
 # renderer output from `ost ci generate github`. Do not hand-edit CI
 # semantics in the generated workflow YAML.
 #
+#   ONE STANDING EXCEPTION (2026-07-26). ost-source-ci.yml carries a
+#   hand-added step installing `libx11-dev libxt-dev` on the Linux cells.
+#   OpenUSD 26.08's MaterialX 1.39.5 exports an unconditional
+#   `find_dependency(X11 REQUIRED COMPONENTS Xt)` on non-Apple UNIX, so a
+#   Linux consumer of the 26.08 runtime cannot even configure without X11 dev
+#   headers, and this file has no way to express a host system package.
+#   `ost ci generate github --force` DELETES that step -- re-add it, or the
+#   four Linux cells fail at configure. Full diagnosis and the P0 ask:
+#   docs/reports/ost/31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md
+#
 # Lanes:
 #   - pull_request  -> GitHub-hosted source build from checkout. The runner
 #                      bootstraps a pinned `ost` and pulls the runtime SDK from

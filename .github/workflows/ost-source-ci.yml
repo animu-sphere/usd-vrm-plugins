@@ -231,6 +231,38 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      # ---------------------------------------------------------------------
+      # HAND-EDIT (2026-07-26) — a deliberate, documented exception to the
+      # "this file is generated output, do not hand-edit" policy at the top of
+      # openstrata.ci.yaml. `ost ci generate github --force` WILL delete it.
+      #
+      # Why: OpenUSD 26.08 bundles MaterialX 1.39.5, whose exported
+      # MaterialXConfig.cmake gained
+      #     if(UNIX AND NOT APPLE)
+      #         find_dependency(X11 REQUIRED COMPONENTS Xt)
+      # which is absent from the 1.39.4 that 26.05 shipped. The guard is
+      # platform-only — it does not check whether MaterialX was built with X11 —
+      # and pxrConfig.cmake find_dependency(MaterialX)s, so every Linux consumer
+      # of a 26.08 runtime needs X11 dev headers at configure time or dies with
+      # "Could NOT find X11 (missing: X11_X11_INCLUDE_PATH X11_X11_LIB Xt)".
+      # macOS (APPLE) and Windows (not UNIX) never enter the branch, which is
+      # why only the four Linux cells fail.
+      #
+      # Why here: openstrata.ci.yaml has no way to express host system packages
+      # (`host_python` is its only host-provisioning knob), so there is no
+      # in-contract place to put this.
+      #
+      # Re-add after any regeneration, and delete once ost grows a per-cell
+      # host-package knob. Tracked as the P0 ask in
+      # docs/reports/ost/31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md
+      # ---------------------------------------------------------------------
+      - name: Install X11 dev headers required by MaterialX 1.39.5 (hand-added)
+        if: ${{ matrix.hosted && runner.os == 'Linux' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libx11-dev libxt-dev
       - name: Hosted runner billing notice
         if: ${{ matrix.hosted }}
         shell: bash

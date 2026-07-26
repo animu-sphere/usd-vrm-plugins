@@ -50,6 +50,12 @@ already partly done and are tracked here because they are live:
 - ✅ **CI pins 26.08 on every lane.** `openstrata.ci.yaml`, the generated
   `ost-*.yml` workflows, and the hand-authored `release.yml` were re-pinned
   together on 2026-07-26.
+- ⚠️ **The Linux cells carry a hand-added `apt-get` step and will break on
+  regeneration.** 26.08's MaterialX 1.39.5 hard-requires X11 on non-Apple UNIX,
+  so a Linux consumer cannot `find_package(pxr)` without `libx11-dev
+  libxt-dev`, and `openstrata.ci.yaml` has no way to declare a host package.
+  `ost ci generate github --force` deletes the step silently — re-add it. See
+  [report 31](../reports/ost/31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md).
 - ⛔ **The scheduled lane's `plugin_artifact` is still a 26.05 build.**
   `usdvrmfileformat-support-windows-cy2026` now pairs a 26.05-built plugin with
   a 26.08 runtime. OpenUSD guarantees no ABI stability across versions, so that
