@@ -32,9 +32,13 @@
 // `t` opens a frame and every line after it belongs to that frame. Rotations
 // are `w x y z`; the trailing number on a `b` line is an optional confidence
 // in [0, 1]. Contact values are `unknown`, `contact`, or `free`. Bone names are
-// the VRM 1.0 vocabulary spelled as `motion::HumanBoneName` spells it, and an
-// unknown bone name is an error rather than a silent skip -- a typo in a
-// fixture must not read as a missing limb.
+// the VRM 1.0 vocabulary spelled as `motion::HumanBoneName` spells it.
+//
+// The parser is strict on purpose, in all three of the ways a fixture goes
+// wrong silently: an unknown bone name is an error rather than a skip (a typo
+// must not read as a missing limb), a line with text left over after its
+// operands is an error rather than a truncated read, and a rotation that is not
+// unit length is an error rather than a joint UsdSkel will quietly skew.
 #pragma once
 
 #include "motionRuntime/api.h"

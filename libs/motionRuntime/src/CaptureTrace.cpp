@@ -22,6 +22,12 @@ namespace
 constexpr const char* kMagic = "!motion-capture-trace";
 constexpr int kPrecision = 6;
 
+// The writer emits unit quaternions at six decimals, so a round trip perturbs
+// the squared length by at most ~4e-6. Anything past this never came from the
+// writer, and passing it downstream would silently skew or scale the joint that
+// UsdSkel builds from it.
+constexpr float kQuaternionLengthTolerance = 1e-3f;
+
 bool
 Fail(CaptureTraceError* error, std::size_t line, std::string message)
 {
@@ -30,6 +36,41 @@ Fail(CaptureTraceError* error, std::size_t line, std::string message)
         error->message = std::move(message);
     }
     return false;
+}
+
+// A line is either fully consumed or malformed. Ignoring the tail would let
+// `b hips 1 0 0 0 grbage` read as a perfectly good frame -- the same class of
+// mistake as an unknown bone name, which this parser already refuses outright
+// rather than treating as a missing limb (CaptureTrace.h).
+bool
+FullyConsumed(std::istringstream& stream, CaptureTraceError* error,
+              std::size_t line, const std::string& what)
+{
+    std::string extra;
+    if (stream >> extra) {
+        return Fail(error, line, "unexpected '" + extra + "' after " + what);
+    }
+    return true;
+}
+
+// Shared by `b` and `root rot`: a rotation has to be one, or nothing
+// downstream of the parse means what it says.
+bool
+CheckUnitQuaternion(const float* components, CaptureTraceError* error,
+                    std::size_t line, const std::string& what)
+{
+    const float lengthSquared = components[0] * components[0]
+        + components[1] * components[1] + components[2] * components[2]
+        + components[3] * components[3];
+    if (lengthSquared <= 0.0f) {
+        return Fail(error, line, what + " has a zero-length rotation");
+    }
+    if (std::fabs(lengthSquared - 1.0f) > kQuaternionLengthTolerance) {
+        return Fail(error, line,
+                    what + " rotation is not unit length (|q|^2 = "
+                        + std::to_string(lengthSquared) + ")");
+    }
+    return true;
 }
 
 // Parsing runs in the classic locale throughout: a trace written on a machine
@@ -148,6 +189,10 @@ ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
                             "unsupported capture trace format version "
                                 + std::to_string(version));
             }
+            if (!FullyConsumed(stream, error, lineNumber,
+                               "the trace magic's format version")) {
+                return false;
+            }
             sawMagic = true;
             continue;
         }
@@ -156,6 +201,9 @@ ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
             double timestamp = 0.0;
             if (!(stream >> timestamp) || !std::isfinite(timestamp)) {
                 return Fail(error, lineNumber, "'t' needs a finite timestamp");
+            }
+            if (!FullyConsumed(stream, error, lineNumber, "the 't' timestamp")) {
+                return false;
             }
             if (frame) {
                 if (timestamp <= frame->pose.timestamp) {
@@ -178,6 +226,10 @@ ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
                     return Fail(error, lineNumber,
                                 "'" + keyword + "' needs a value");
                 }
+                if (!FullyConsumed(stream, error, lineNumber,
+                                   "the '" + keyword + "' value")) {
+                    return false;
+                }
                 if (keyword == "provider") {
                     result.source.provider = value;
                 } else if (keyword == "protocol") {
@@ -192,6 +244,10 @@ ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
                 if (!(stream >> rate) || !std::isfinite(rate) || rate <= 0.0) {
                     return Fail(error, lineNumber,
                                 "'frameRate' needs a positive number");
+                }
+                if (!FullyConsumed(stream, error, lineNumber,
+                                   "the 'frameRate' value")) {
+                    return false;
                 }
                 frameRate = rate;
                 continue;
@@ -215,12 +271,9 @@ ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
                 return Fail(error, lineNumber,
                             "'b " + boneName + "' needs a w x y z rotation");
             }
-            const float lengthSquared = quaternion[0] * quaternion[0]
-                + quaternion[1] * quaternion[1] + quaternion[2] * quaternion[2]
-                + quaternion[3] * quaternion[3];
-            if (lengthSquared <= 0.0f) {
-                return Fail(error, lineNumber,
-                            "'b " + boneName + "' has a zero-length rotation");
+            if (!CheckUnitQuaternion(quaternion, error, lineNumber,
+                                     "'b " + boneName + "'")) {
+                return false;
             }
             const std::size_t index = static_cast<std::size_t>(*bone);
             if (frame->pose.validRotations.test(index)) {
@@ -240,8 +293,19 @@ ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
                 }
                 frame->confidence[index] = score;
                 frame->anyConfidence = true;
+            } else if (!stream.eof()) {
+                // The extraction failed on something that is not end of line,
+                // so the trailing text is not a confidence at all.
+                return Fail(error, lineNumber,
+                            "'b " + boneName
+                                + "' takes a w x y z rotation and an optional "
+                                  "confidence in [0, 1]");
             } else {
                 frame->confidence[index] = 1.0f;
+            }
+            if (!FullyConsumed(stream, error, lineNumber,
+                               "the 'b " + boneName + "' confidence")) {
+                return false;
             }
             continue;
         }
@@ -257,6 +321,11 @@ ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
                     return Fail(error, lineNumber,
                                 "'root rot' needs a w x y z rotation");
                 }
+                if (!CheckUnitQuaternion(values, error, lineNumber, "'root rot'")
+                    || !FullyConsumed(stream, error, lineNumber,
+                                      "the 'root rot' rotation")) {
+                    return false;
+                }
                 frame->pose.root.worldOrientation = pxr::GfQuatf(
                     values[0], pxr::GfVec3f(values[1], values[2], values[3]));
                 frame->pose.root.hasOrientation = true;
@@ -265,6 +334,10 @@ ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
             if (!ReadFloats(stream, values, 3)) {
                 return Fail(error, lineNumber,
                             "'root " + field + "' needs an x y z vector");
+            }
+            if (!FullyConsumed(stream, error, lineNumber,
+                               "the 'root " + field + "' vector")) {
+                return false;
             }
             const pxr::GfVec3f vector(values[0], values[1], values[2]);
             if (field == "pos") {
@@ -295,6 +368,10 @@ ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
                 || !ParseContact(right, &state.rightFoot)) {
                 return Fail(error, lineNumber,
                             "contact values must be unknown, contact, or free");
+            }
+            if (!FullyConsumed(stream, error, lineNumber,
+                               "the 'contacts' pair")) {
+                return false;
             }
             frame->pose.contacts = state;
             continue;

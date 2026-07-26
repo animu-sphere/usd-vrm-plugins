@@ -300,6 +300,13 @@ TestClockAlignmentAndSampleStatus()
     assert(source.Sample(0.05).status == motion::PoseSampleStatus::Held);
 
     assert(source.GetStats().peakLagSeconds > 0.0);
+
+    // One counter per PoseSampleStatus and nothing else, so the four sum to the
+    // number of Sample() calls made above -- five.
+    const motion::LiveCaptureStats& stats = source.GetStats();
+    assert(stats.samplesSampled + stats.samplesHeld + stats.samplesExtrapolated
+               + stats.samplesUnavailable
+           == 5);
 }
 
 void
@@ -386,6 +393,31 @@ TestCaptureTraceRejectsMalformedInput()
         {"unknown header key",
          "!motion-capture-trace 1\nnonsense 3\nt 0.0\nb hips 1 0 0 0\n"},
         {"no frames", "!motion-capture-trace 1\nprovider x\n"},
+        // A rotation that is not one. Accepting it would hand UsdSkel a joint
+        // basis that quietly skews or scales the limb.
+        {"non-unit rotation",
+         "!motion-capture-trace 1\nt 0.0\nb hips 2 0 0 0\n"},
+        // 0.5 0.5 0.5 0.5 would be a *unit* quaternion (|q|^2 = 4 * 0.25); the
+        // 0.9 is what makes this one 1.56 long.
+        {"non-unit root rotation",
+         "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0\n"
+         "root rot 0.5 0.5 0.5 0.9\n"},
+        // Text left over after a line's operands. Every one of these used to
+        // parse: the tail was simply dropped, so a typo read as good data.
+        {"trailing text after a rotation",
+         "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0 grbage\n"},
+        {"trailing text after a confidence",
+         "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0 0.9 extra\n"},
+        {"trailing text after a timestamp",
+         "!motion-capture-trace 1\nt 0.0 later\nb hips 1 0 0 0\n"},
+        {"trailing text after a root vector",
+         "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0\n"
+         "root pos 0 0 0 0\n"},
+        {"trailing text after a contact pair",
+         "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0\n"
+         "contacts contact free contact\n"},
+        {"trailing text after a header value",
+         "!motion-capture-trace 1\nframeRate 30 60\nt 0.0\nb hips 1 0 0 0\n"},
     };
 
     for (const Case& testCase : cases) {

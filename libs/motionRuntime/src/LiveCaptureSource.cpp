@@ -225,7 +225,7 @@ LiveCaptureSource::Sample(double evaluationTime)
         }
     } else {
         result.status = PoseSampleStatus::Sampled;
-        ++_stats.samplesServed;
+        ++_stats.samplesSampled;
     }
 
     // Report on the consumer's clock. SampleExtrapolated caps its own

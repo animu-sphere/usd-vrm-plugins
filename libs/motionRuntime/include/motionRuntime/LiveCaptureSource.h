@@ -111,7 +111,11 @@ struct LiveCaptureStats
     std::uint64_t rootSamplesObserved = 0;
     std::uint64_t rootVelocitiesDerived = 0;
 
-    std::uint64_t samplesServed = 0;
+    // One counter per PoseSampleStatus, and nothing else: every Sample() call
+    // lands in exactly one of the four, so they sum to the number of calls.
+    // (`samplesSampled` reads awkwardly and is meant to -- it counts the
+    // `Sampled` status specifically, not the total served.)
+    std::uint64_t samplesSampled = 0;
     std::uint64_t samplesHeld = 0;
     std::uint64_t samplesExtrapolated = 0;
     std::uint64_t samplesUnavailable = 0;

@@ -58,8 +58,9 @@ public:
     }
 
     // Stamps the time range, the nominal rate, and the provenance of the first
-    // recorded pose onto the clip, and hands it over. The recorder is empty
-    // afterwards.
+    // recorded pose onto the clip, and hands it over. The frames are gone
+    // afterwards; the report is not, so a caller can take the clip and still
+    // say how the session that produced it went. Clear() drops both.
     HumanoidAnimation Take();
 
     void Clear();
