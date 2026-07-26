@@ -120,11 +120,15 @@ compiler / standard library ABI, Python, TBB, MaterialX, and the artifact digest
 
 - ✅ **Windows x86_64** — published 2026-07-26.
 - ✅ **Linux x86_64** — published 2026-07-26.
-- ⬜ **macOS arm64** — still on 26.05. Needs an Apple-silicon host; it is the
-  remaining blocker for "all three OS on one OpenUSD version".
+- ✅ **macOS arm64** — published 2026-07-26. "All three OS on one OpenUSD
+  version" is met. It required Apple clang 16 and the macOS 15.2 SDK; the
+  macOS 14.5 SDK cannot compile 26.08's Hd data sources under C++17.
 
-Digests and verification evidence for the two published runtimes are in
-[report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md).
+Digests and verification evidence are in
+[report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md)
+(Windows, Linux) and
+[report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md)
+(macOS arm64).
 
 One correction to the original plan is worth stating: **26.08 has no OpenExec
 build toggle.** `build_usd.py` ships `exec`, `execGeom`, `execIr`, `execUsd`,

@@ -9,22 +9,28 @@ outside this list may work but is not part of the `v0.4.0` support contract.
 | --- | --- |
 | Tolerated range | `>=25.05, <27.0` (declared in `plugins/usdVrmFileFormat/openstrata.plugin.yaml`) |
 | Authored against | 25.05 |
-| Verified against | 26.05 (the certified point in the `cy2026` runtime, on all three OS) |
+| Verified against | 26.08 (the certified point in the `cy2026` runtime, on all three OS) |
 
 The importer builds against a single OpenUSD version per runtime; the runtime
 supplies the certified point within the tolerated range. **No ABI stability is
 guaranteed across OpenUSD versions** — rebuild the plugin against your target
 OpenUSD. A second OpenUSD version cell (min vs latest) is a roadmap P1 item; CI
-currently exercises `cy2026` / OpenUSD 26.05 only.
+currently exercises `cy2026` / OpenUSD 26.08 only.
+
+**The v0.4.0 release itself was verified against 26.05.** All three runtimes
+were re-pinned to 26.08 on 2026-07-26, after v0.4.0 was tagged, so 26.08 is what
+CI exercises from that point forward rather than what the released artifacts
+were built on.
 
 **This range is scheduled to be retired.** v0.6.0 pins OpenUSD to **26.08
 exactly** and rejects anything else at configure time
-([the OpenExec plan §4.1](../roadmap/openexec-v0.6.0-v0.7.0.md)). Two of the
-three 26.08 runtimes exist already — `26.08-windows-x86_64` and
-`26.08-linux-x86_64` were published on 2026-07-26
+([the OpenExec plan §4.1](../roadmap/openexec-v0.6.0-v0.7.0.md)). All three
+26.08 runtimes now exist — `26.08-windows-x86_64` and `26.08-linux-x86_64`
 ([report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md))
-— but macOS arm64 is still 26.05 and no CI lane consumes 26.08 yet, so the
-contract above is what this release actually verifies.
+and `26.08-macos-arm64`
+([report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md))
+— and every lane pins them, so the exact-pin work is no longer blocked on a
+missing runtime.
 
 ## Toolchain
 
