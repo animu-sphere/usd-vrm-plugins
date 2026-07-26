@@ -48,10 +48,12 @@ A–H is unrelated to that retired A–E** and always carries the "Motion" quali
 - The workspace covers **Workspace Phase 6b and 7**: `motionCore`,
   `motionRuntime`, `vrmRetarget`, and `usdVrmaFileFormat` implement Motion
   Phases A–D. Only Phase 8 (`execMotion` / `execVrm`) is unbuilt.
-- **v0.5.0 is released** (Motion Phase D, live capture). It also put the motion
-  layer under CI for the first time and pinned every lane to OpenUSD 26.08.
-- Current priorities: close the remaining **Workspace Phase 5** packaging P0,
-  widen runtime verification, and begin the OpenExec foundation.
+- **v0.5.0 is released** (Motion Phase D, live capture). Every lane is pinned to
+  OpenUSD 26.08. The motion layer still has no CI coverage — the attempt is
+  recorded, not claimed.
+- Current priorities: finish the motion-layer CI lane, close the remaining
+  **Workspace Phase 5** packaging P0, widen runtime verification, and begin the
+  OpenExec foundation.
 - The milestone ladder is **v0.6.0 → v0.7.0**:
 
   | Release | Theme | Sequences |
@@ -69,7 +71,8 @@ A–H is unrelated to that retired A–E** and always carries the "Motion" quali
 - Every bundle builds standalone against installed packages, not just composed
   in the workspace tree.
 - Dependency directions in [WORKSPACE.md](../architecture/WORKSPACE.md) §2 are
-  enforced by CI, not convention. *(Met since v0.5.0 — the dependency-graph
-  validation runs on every PR on all three OS in `motion-ci.yml`.)*
+  enforced by CI, not convention. *(Still unmet — v0.5.0 wrote the lane and got
+  the graph gate working, but it is blocked at configure time and ships
+  disabled; see [current.md](current.md).)*
 - Every documented command is one that has actually been run, and no document
   contradicts what CI does.

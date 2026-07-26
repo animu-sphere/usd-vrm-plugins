@@ -1,43 +1,55 @@
 # Motion-layer CI (hand-authored — NOT generated from openstrata.ci.yaml).
 #
-# Why this file exists at all
-# ---------------------------
-# `ost ci generate` emits one job per *bundle* cell. A plain CMake library
-# (`openstrata.library.yaml`) and a CLI executable have no cell shape, so
-# `motionCore`, `motionRuntime`, `vrmRetarget`, `motion_capture` and
-# `motion_retarget` were compiled and tested only in the plain-CMake root build
-# — which, until this workflow, no lane ran. v0.4.0 shipped that layer with zero
-# CI coverage and said so in its release record; this lane closes it.
+# STATUS: NOT WIRED. Runs on workflow_dispatch only; it does NOT gate pull
+# requests, and the motion layer therefore still has no CI coverage.
+# ---------------------------------------------------------------------------
+# This lane was written for v0.5.0 to close the v0.4.0 carry-over (report 28's
+# P0: `ost ci generate` emits one job per *bundle* cell, so plain libraries and
+# CLI executables get none). Two of its three problems were solved; the third
+# was not, and it was disabled rather than left failing on every PR.
 #
-# It is a workaround, not the answer. The upstream ask is the P0 in
-# docs/reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md: a cell shape
-# for plain libraries and executables. Delete this file when ost grows one.
+# WHAT WORKS (verified green on all three OS):
+#   * ost bootstrap, artifact pull, runtime materialisation;
+#   * the WORKSPACE.md §2 dependency-graph gate, read out of
+#     `ost plugin test --workspace --up-to 0 --json` — see the step for why the
+#     exit code cannot be used.
 #
-# What it does that no other lane does
-# ------------------------------------
-#   * builds the WHOLE workspace with plain CMake from the repo root, which is
-#     the only configuration where libs/ and tools/ targets exist at all;
-#   * runs the motion-layer ctests (motionCore, motionRuntime incl. the Phase D
-#     live-capture surface and the capture corpus, vrmRetarget, and both CLIs);
-#   * runs `usdvrm_baseline`, the whole-workspace behavior gate, which is also
-#     registered only from the root build. Its symbol baseline is per-platform
-#     and `--check` skips a platform with no committed file, so the Linux and
-#     macOS cells verify everything except symbols;
-#   * runs the WORKSPACE.md §2 dependency-graph gate — specified as a required
-#     PR gate since Workspace Phase 1 and, until now, run by no lane either. It
-#     validates plain libraries, not just bundles. It is read out of `--json`
-#     because the verb that produces it also insists on testing every bundle;
-#     see the step for why that matters.
+# WHAT BLOCKS IT:
+#   Configuring the workspace with plain CMake against the pulled runtime fails
+#   on all three OS at
 #
-# Runtime pins MIRROR openstrata.ci.yaml. Update both together; a motion cell
-# on a different OpenUSD build than the bundle cells would be worse than no
-# cell, because it would look like coverage.
+#       pxrConfig.cmake:46  find_dependency(Python3 COMPONENTS Development
+#                                           Development.Module Development.Embed)
+#       Could NOT find Python3 (missing: Development ...)
+#         Development: Cannot find the directory "/usr/include/python3.13"
+#                      Cannot find the library "/usr/lib/.../libpython3.13.so"
+#
+#   Those are the paths of the Python the runtime was BUILT against (a
+#   deadsnakes 3.13 inside the ubuntu:24.04 build container), not any path on
+#   the runner. `actions/setup-python` provides a dev-complete 3.13 and exports
+#   `Python3_ROOT_DIR`, and passing it again as `-DPython3_ROOT_DIR` changed
+#   nothing — FindPython3 is locking onto an interpreter from somewhere else
+#   first. The generated lane never meets this because `ost plugin build`
+#   resolves Python itself.
+#
+#   UNTRIED NEXT STEP: pass `-DPython3_EXECUTABLE=$pythonLocation/bin/python3`
+#   (a stronger hint than ROOT_DIR), and if that fails, find out what
+#   `ost plugin build` passes that a bare `cmake` does not.
+#
+# Do not re-enable the `pull_request` trigger until a manual
+# `workflow_dispatch` run is green on all three cells.
+#
+# Full diagnosis and the upstream asks:
+# docs/reports/ost/32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md
+#
+# Runtime pins MIRROR openstrata.ci.yaml. Update both together.
 #
 # Fork-PR safety: never publishes, never promotes, uses no secrets.
 name: motion ci
 
+# Manual only. See the STATUS block above before restoring `pull_request:`.
 on:
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -265,24 +265,20 @@ Scaffolds for new bundles start from the ost template catalog
 (`ost plugin new usd-schema --template usd-schema-cpp`,
 `ost plugin new usd-package-resolver`) rather than hand-rolled skeletons.
 
-> **Gate status — closed in v0.5.0.** This document called for the §2
-> dependency directions to be enforced by a required PR gate from Phase 1 on,
-> and for four releases no lane enforced them. The **dependency-graph
-> validation** now runs on every pull request, on all three OS, in the
-> hand-authored [`motion-ci.yml`](../../.github/workflows/motion-ci.yml).
->
-> It is read out of `ost plugin test --workspace --up-to 0 --json`, not from the
-> command's exit code, because that verb **couples** graph validation to testing
-> every bundle: on a fresh checkout it validates the graph, reports it valid,
-> and then exits non-zero because nothing has been built yet. Building all four
-> bundles to reach the graph result would duplicate the twelve generated cells
-> that already do exactly that. `data.graph` carries its own `passed` and
-> `issues`, so the lane asks for precisely the part no other lane covers — the
-> forbidden-edge and version-range checks — and leaves per-bundle verification
-> where it already runs.
->
-> So this is a workaround lane, not the answer — see the note below and
+> **Gate status — still open.** This document calls for the §2 dependency
+> directions to be enforced by a required PR gate from Phase 1 on. That has
+> still not happened. v0.5.0 wrote the lane
+> ([`motion-ci.yml`](../../.github/workflows/motion-ci.yml)) and got the graph
+> gate itself working on all three OS, but the lane cannot configure the
+> workspace against the pulled runtime — `pxrConfig.cmake` resolves Python
+> development components to the paths of the Python the runtime was *built*
+> against, which do not exist on a hosted runner. It ships disabled
+> (`workflow_dispatch` only) rather than red on every PR, with the diagnosis in
+> its header and in
 > [report 32](../reports/ost/32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md).
+>
+> So the dependency directions are still enforced today by the per-bundle binary
+> link checks and by each library's own boundary check — not by the graph gate.
 >
 > **What the gate actually covers (measured on ost 0.20.0, Workspace Phase 6b).**
 > `ost plugin test --workspace` reports `4 bundle(s), 1 bundle edge(s), 4
@@ -299,11 +295,10 @@ Scaffolds for new bundles start from the ost template catalog
 > as an ask in
 > [report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md).
 >
-> **v0.5.0 covers that by hand rather than leaving it uncovered.**
-> `motion-ci.yml` builds the whole workspace with plain CMake from the repo
-> root — the only configuration in which `libs/` and `tools/` targets exist —
-> and runs their tests, the workspace graph gate, and the `usdvrm_baseline`
-> behavior gate, on Windows, Linux and macOS arm64. Its runtime pins mirror
-> `openstrata.ci.yaml` and must be updated with it. The upstream ask stays
-> open: a repo should not have to hand-roll a lane to test a library it
-> declares through `openstrata.library.yaml`.
+> **v0.5.0 tried to cover that by hand and did not finish.** `motion-ci.yml`
+> builds the whole workspace with plain CMake from the repo root — the only
+> configuration in which `libs/` and `tools/` targets exist — but is blocked at
+> configure time (above) and ships disabled. The upstream ask is unchanged and
+> the attempt strengthens it: a repo should not have to hand-roll a lane to
+> test a library it declares through `openstrata.library.yaml`, and when it
+> tries, it runs into a second problem the contract cannot express.

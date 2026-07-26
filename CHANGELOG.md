@@ -52,14 +52,15 @@ Current schema contract version: **1**.
   `NearestPresentAncestor`, and `HumanBoneJointPath`. The `.vrma` reader carried
   a private copy; two tables that can disagree would produce two semantic
   skeletons that look alike and do not compose.
-- **A CI lane for the motion layer** (`.github/workflows/motion-ci.yml`), the
-  v0.4.0 carry-over. `ost ci generate` emits one job per *bundle* cell, so
-  `motionCore`, `motionRuntime`, `vrmRetarget`, `vrmContainer` and both CLI
-  tools had no lane at all. The new lane builds the whole workspace with plain
-  CMake — the only configuration where `libs/` and `tools/` targets exist — and
-  runs their tests on Windows, Linux and macOS arm64. It also runs
-  `ost plugin test --workspace` and the `usdvrm_baseline` behavior gate, neither
-  of which any lane ran before.
+- **A CI lane for the motion layer** (`.github/workflows/motion-ci.yml`) —
+  written, but **disabled** (`workflow_dispatch` only), so the v0.4.0
+  carry-over is *not* closed. `ost ci generate` emits one job per *bundle*
+  cell, so `motionCore`, `motionRuntime`, `vrmRetarget`, `vrmContainer` and
+  both CLI tools still have no lane. The bootstrap, the runtime pull and the
+  WORKSPACE.md §2 dependency-graph gate work on all three OS; configuring
+  against the runtime does not, because `pxrConfig.cmake` resolves Python
+  development components to the paths the runtime was *built* against. The
+  header records the diagnosis and the untried next step.
 
 ### Changed
 
@@ -78,6 +79,8 @@ Current schema contract version: **1**.
 
 ### Known limitations
 
+- **The motion layer still has no CI coverage.** The lane exists and is
+  disabled rather than red; see above.
 - **No product-specific capture adapter ships**, and nothing here has been
   validated against a real capture rig. Protocol decode and coordinate
   conversion belong under `adapters/`, the only place product names are

@@ -25,8 +25,9 @@ met, both ahead of schedule:
   (Windows, Linux),
   [report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md)
   (macOS arm64).
-- ✅ **The motion layer has CI.** Its absence was v0.6.0's named P0-2 blocker;
-  v0.5.0 closed it with a hand-authored lane (below).
+- ⛔ **The motion layer still has no CI.** This is v0.6.0's named P0-2 blocker
+  and v0.5.0 did **not** clear it: the lane is written and two thirds working,
+  but blocked at configure time and shipped disabled (below).
 
 ### Carried into v0.6.0
 
@@ -81,8 +82,8 @@ core v0.4.0 shipped. It does **not** begin OpenExec — that is v0.6.0.
   avatar-independent semantic clip `usdVrmaFileFormat` produces, and the
   end-to-end test bakes it onto a real avatar with the **unchanged** Phase C
   tool, then resolves the result through a `UsdSkelSkeletonQuery`.
-- ✅ **The motion layer has a CI lane** — the v0.4.0 carry-over, closed. See
-  below.
+- 🚧 **A CI lane for the motion layer was written but is not wired** — the
+  v0.4.0 carry-over is *not* closed. See below.
 - ✅ **One humanoid taxonomy.** `HumanBoneParent` / `NearestPresentAncestor` /
   `HumanBoneJointPath` moved into `motionCore`; the `.vrma` reader's private
   copy is gone.
@@ -90,31 +91,52 @@ core v0.4.0 shipped. It does **not** begin OpenExec — that is v0.6.0.
 Explicitly deferred: any product-specific adapter, validation against a real
 capture rig, and OpenExec evaluation (Motion Phases E–H).
 
-### Closed in v0.5.0
+### Attempted in v0.5.0 — the motion-layer CI lane 🚧
 
-- ✅ **The motion layer is under CI.** `ost ci generate` emits one job per
-  *bundle* cell, so `motionCore`, `motionRuntime`, `vrmRetarget`, `vrmContainer`
-  and both CLIs had no lane at all. `.github/workflows/motion-ci.yml` builds the
-  whole workspace with plain CMake — the only configuration where `libs/` and
-  `tools/` targets exist — and runs their 13 tests on Windows, Linux and macOS
-  arm64. It is a workaround; the P0 in
-  [report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md)
-  stays open, and [report 32](../reports/ost/32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md)
-  measures what it cost.
-- ✅ **The workspace dependency-graph gate runs in CI**, on every PR, on all
-  three OS — the [WORKSPACE.md §8](../architecture/WORKSPACE.md) requirement
-  that had been unmet since Workspace Phase 1. It is read out of `--json`
-  because `ost plugin test --workspace` couples graph validation to testing
-  every bundle, which needs them all built first (report 32, ask 5).
-- ✅ **The baseline gate is no longer stale.** It is registered only from the
-  root build, which no lane ran, so nobody noticed the committed symbol baseline
-  was still frozen against OpenUSD 26.05 after the 26.08 bump. Refreezing
-  changed all 220 symbols by `pxrInternal_v0_26_5` → `_26_8` **and nothing
-  else**; every other baseline artifact is byte-identical across the two OpenUSD
-  versions. It now runs in `motion-ci.yml`.
+`ost ci generate` emits one job per *bundle* cell, so `motionCore`,
+`motionRuntime`, `vrmRetarget`, `vrmContainer` and both CLIs get no lane.
+v0.5.0 wrote [`motion-ci.yml`](../../.github/workflows/motion-ci.yml) to cover
+them by building the whole workspace with plain CMake — the only configuration
+in which `libs/` and `tools/` targets exist.
+
+**It is not wired.** It ships on `workflow_dispatch` only and does not gate pull
+requests, so the layer's coverage is unchanged from v0.4.0. Shipping it red on
+every PR would have been worse than shipping it off.
+
+- ✅ **The parts that work**, verified green on all three OS: `ost` bootstrap,
+  artifact pull, runtime materialisation, and the **WORKSPACE.md §2
+  dependency-graph gate**. The gate has to be read out of
+  `ost plugin test --workspace --up-to 0 --json`, because that verb couples
+  graph validation to testing every bundle and so exits non-zero on a fresh
+  checkout where nothing is built yet.
+- ⛔ **What blocks it.** Configuring against the pulled runtime fails on all
+  three OS: `pxrConfig.cmake` does
+  `find_dependency(Python3 COMPONENTS Development ...)` and resolves to the
+  paths of the Python the runtime was *built* against
+  (`/usr/include/python3.13`), which do not exist on a hosted runner.
+  `actions/setup-python` provides a dev-complete 3.13 and exports
+  `Python3_ROOT_DIR`; passing it again as `-DPython3_ROOT_DIR` changed nothing.
+  The generated lane never meets this because `ost plugin build` resolves
+  Python itself.
+- ⬜ **Untried next step:** `-DPython3_EXECUTABLE=$pythonLocation/bin/python3`,
+  a stronger hint than `ROOT_DIR`; failing that, find out what
+  `ost plugin build` passes that a bare `cmake` does not.
+
+Diagnosis and the upstream asks:
+[report 32](../reports/ost/32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md).
+
+### Closed in v0.5.0 anyway
+
+- ✅ **The Phase 0 baseline is no longer stale.** It is registered only from the
+  plain-CMake root build, which no lane runs, so nobody noticed the committed
+  symbol baseline was still frozen against OpenUSD 26.05 after the 26.08 bump.
+  Refreezing changed all 220 symbols by `pxrInternal_v0_26_5` → `_26_8` **and
+  nothing else**; every other baseline artifact is byte-identical across the two
+  OpenUSD versions. Found only because the lane work made someone run it — and
+  it still runs nowhere automatically.
 - ✅ **The baseline gate needs an explicit full-workspace session** (v0.4.0
-  carry-over). The lane names every bundle with `--with`, so the recurrence the
-  v0.4.0 record predicted is handled where it actually runs.
+  carry-over). The lane names every bundle with `--with`; when the lane is
+  finished, the recurrence the v0.4.0 record predicted is handled.
 
 ## Shipped: v0.4.0 — offline retarget
 
@@ -176,9 +198,9 @@ joint at its rest pose — the clip did not move
 now author a constant identity array, and the tests drive a
 `UsdSkelSkeletonQuery` rather than comparing authored values.
 
-### Carried out of v0.4.0 — both closed in v0.5.0
+### Carried out of v0.4.0 — one closed, one still open
 
-- ✅ **No CI lane covers the motion layer.** `ost ci generate` emits one job per
+- ⬜ **No CI lane covers the motion layer.** Still true; see the attempt above. `ost ci generate` emits one job per
   *bundle* cell, and `ost plugin test --workspace` tests bundles — so
   `motionRuntime`, `vrmRetarget`, and `motion_retarget` are compiled and tested
   only in the plain-CMake root build, which no lane runs. Their manifest edges
@@ -273,13 +295,14 @@ models resolve; schema registration succeeds.* (design policy §14, §17-P3)
 
 The OS axis is shipped. Remaining:
 
-- ✅ **Wire the workspace graph gate into CI** — done in v0.5.0.
+- 🚧 **Wire the workspace graph gate into CI** — written in v0.5.0, not wired.
   [WORKSPACE.md §2](../architecture/WORKSPACE.md) specifies
   `ost plugin test --workspace` as the enforcement for the dependency
   directions, and §8 called for it to be a required PR-lane gate from Workspace
-  Phase 1 on. The graph validation now runs on every PR on all three OS, in
-  `motion-ci.yml`. The generated lane cannot host it: it is whole-workspace by
-  definition and `ost ci generate` emits per-bundle cells.
+  Phase 1 on. The graph validation works in `motion-ci.yml` and is verified
+  green on all three OS, but that lane ships disabled for an unrelated reason
+  (above), so no PR runs it yet. The generated lane cannot host it: it is
+  whole-workspace by definition and `ost ci generate` emits per-bundle cells.
 - ⬜ Explicit **UTF-8 / Unicode path** and **DLL dependency discovery** coverage
   on the Windows cell.
 - ⬜ **Real VRM smoke test** (open + texture resolve) exercised in CI, not just

@@ -16,7 +16,7 @@ This is not a description of current behavior — see [architecture/](../archite
 and [reference/](../reference/) for that — nor of planned work, which is in the
 [roadmap](../roadmap/). Per-version summaries are in [releases/](../releases/).
 
-Legend: ✅ done
+Legend: ✅ done · 🚧 in progress
 
 ---
 
@@ -213,11 +213,12 @@ Shipped across v0.3.0–v0.5.0; the fixed contract is
 - ✅ **One humanoid taxonomy** (v0.5.0). `HumanBoneParent`,
   `NearestPresentAncestor` and `HumanBoneJointPath` moved into `motionCore`; the
   `.vrma` reader's private copy of the VRM hierarchy is gone.
-- ✅ **The layer got its first CI lane** (v0.5.0). `ost ci generate` emits one
-  job per bundle cell, so plain libraries and CLI executables had none;
-  `.github/workflows/motion-ci.yml` builds the whole workspace with plain CMake
-  and runs their tests on all three OS, together with the workspace graph gate
-  and the Phase 0 baseline gate. Cost measured in
+- 🚧 **A CI lane was written but not wired** (v0.5.0). `ost ci generate` emits
+  one job per bundle cell, so plain libraries and CLI executables have none.
+  `.github/workflows/motion-ci.yml` builds the whole workspace with plain CMake;
+  its bootstrap, runtime pull and dependency-graph gate work on all three OS,
+  but configuring against the runtime does not, so it ships disabled and the
+  layer's coverage is unchanged. Diagnosis and cost in
   [report 32](ost/32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md).
 
 Motion Phases E–H (OpenExec evaluation, generation, expression/look-at,
