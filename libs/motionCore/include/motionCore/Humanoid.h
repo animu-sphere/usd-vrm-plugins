@@ -97,6 +97,29 @@ MOTIONCORE_API std::string_view HumanBoneName(HumanBone bone) noexcept;
 MOTIONCORE_API std::optional<HumanBone> FindHumanBone(
     std::string_view name) noexcept;
 
+// The canonical VRM 1.0 humanoid hierarchy. Nullopt for Hips, which is the
+// root, and for Count.
+//
+// This lives here rather than in each consumer because a second copy of the
+// humanoid taxonomy is a defect waiting to happen: the `.vrma` reader and the
+// live-capture path author the same semantic skeleton, and two tables that can
+// disagree would produce two skeletons that look alike and do not compose.
+MOTIONCORE_API std::optional<HumanBone> HumanBoneParent(
+    HumanBone bone) noexcept;
+
+// The nearest ancestor of `bone` that `present` carries, skipping bones the
+// rig does not solve -- a capture rig with no `upperChest` still parents its
+// shoulders somewhere. Nullopt when no ancestor is present.
+MOTIONCORE_API std::optional<HumanBone> NearestPresentAncestor(
+    HumanBone bone, const std::bitset<HumanBoneCount>& present) noexcept;
+
+// The semantic joint path for `bone` within a rig carrying `present`, e.g.
+// "hips/spine/chest/neck/head". This is the token a `UsdSkelSkeleton` built
+// from humanoid semantics carries; the string is plain text, and authoring it
+// onto a stage stays with the consumer.
+MOTIONCORE_API std::string HumanBoneJointPath(
+    HumanBone bone, const std::bitset<HumanBoneCount>& present);
+
 enum class MotionSourceKind : std::uint8_t
 {
     Clip,

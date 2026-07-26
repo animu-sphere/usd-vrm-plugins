@@ -8,3 +8,11 @@
 # checkout would flatten to different bytes than the committed golden
 # (vrmschema-pr-windows L5 failure, PR #42).
 *.usda text eol=lf
+
+# Capture traces must check out with LF everywhere. The corpus test re-emits
+# each committed trace through motionRuntime's writer -- which always writes
+# '\n', so a shared fixture is byte-identical across the three OS cells -- and
+# compares the raw bytes. A CRLF smudge on a Windows checkout would fail that
+# comparison for every trace while the data itself was fine. Same reason as
+# *.usda above.
+*.trace text eol=lf
