@@ -444,7 +444,21 @@ Mocopi
 ARDY
 any specific SDK name
 any specific research model name
+any specific real-time protocol name (VMC included)
+any specific sender application name
 ```
+
+A product name may be *carried* as provider metadata — `diagnostics.provider =
+"mocopi"` is fine — but never read as a branch condition. The rule that matters
+is the one that is easy to violate under deadline:
+
+```cpp
+// Forbidden, wherever it appears in the core:
+if (provider == "mocopi") { /* special behavior in motionRuntime */ }
+```
+
+If an input needs behavior the core does not have, the core grows a general
+capability with a general name, or the adapter normalizes before it pushes.
 
 Product names are permitted only in:
 
@@ -466,11 +480,30 @@ motion capture system
 → HumanoidPose
 ```
 
-Mocopi is one concrete adapter:
+Live capture arrives two ways, and both are kept:
+
+```text
+direct:   capture device -> vendor adapter -> motionRuntime
+generic:  capture device -> sender application -> VMC -> VMC adapter -> motionRuntime
+```
+
+The generic path costs one adapter and serves every sender application that
+speaks the protocol. The direct path exists because a protocol relay drops what
+it has no field for: SDK-specific confidence, device diagnostics, and metadata
+that only the vendor's own stream carries — and because a direct connection
+needs no third-party application running.
+
+Two concrete adapters, siblings rather than a stack:
 
 ```text
 adapters/liveCapture/mocopi/
+adapters/liveCapture/vmc/
 ```
+
+`mocopi` must not depend on `vmc` even though a user may route one through the
+other. Whether they share code is decided *after* both exist and their real
+data has been compared — not by anticipating it. Plan:
+[roadmap/adapters-mocopi-vmc-ardy.md](../roadmap/adapters-mocopi-vmc-ardy.md).
 
 ### 8.3 Generative-AI adapter
 
@@ -761,7 +794,8 @@ plugins/
 
 adapters/
 ├─ liveCapture/
-│  └─ mocopi/
+│  ├─ mocopi/
+│  └─ vmc/
 └─ generators/
    └─ ardy/
 
@@ -775,6 +809,10 @@ tools/
 Fixtures follow the existing per-bundle convention (`<bundle>/tests/`,
 `<bundle>/tests/corpus/`) rather than a new top-level `fixtures/` tree — see the
 deviations table above.
+
+There is deliberately **no `adapters/common/`**. It is extracted only once two
+adapters are shown to duplicate code that carries no vendor semantics; a shared
+layer created in advance is where vendor assumptions quietly become everyone's.
 
 ---
 
@@ -806,9 +844,19 @@ vrmRetarget       → network protocol
 usdVrmaFileFormat → live receiver
 usdVrmFileFormat  → motion generator
 execVrm           → GLB parser
+execMotion        → adapters
+execVrm           → adapters
+adapter           → another adapter
 ```
 
-Adapters depend on the core. The core never depends on an adapter.
+Adapters depend on the core. The core never depends on an adapter, and neither
+does an OpenExec node. Adapters do not depend on each other.
+
+One permission is easy to misread: an adapter's **CLI tool** may drive
+`vrmRetarget` and author a stage, exactly as `motion_retarget` does. The adapter
+**library** may not. An adapter library that retargets or authors USD has become
+a second motion pipeline, which is the thing this whole layering exists to
+prevent.
 
 These edges are normative and belong in
 [architecture/WORKSPACE.md §2](../architecture/WORKSPACE.md), which is what CI
@@ -880,7 +928,13 @@ motion_retarget \
 - feeds the same retarget core as VRMA
 - evaluation of missing bones, confidence, root motion
 
-Product-specific support ships as an optional adapter.
+Product-specific support ships as an optional adapter. The generic half shipped
+in v0.5.0; the adapters themselves — a direct capture-product adapter and a VMC
+protocol adapter — are planned in
+[roadmap/adapters-mocopi-vmc-ardy.md](../roadmap/adapters-mocopi-vmc-ardy.md)
+(Milestones A–D). Phase D's synthetic corpus is deliberately closed-form maths,
+so the first real device is also the first evidence about timestamp jitter,
+tracking loss, and reconnection — none of which a synthetic trace can produce.
 
 ### Motion Phase E: `execMotion` / `execVrm`
 
@@ -906,6 +960,11 @@ OpenExec nodes are thin wrappers over `motionRuntime` and `vrmRetarget`.
 - optional generation adapter
 
 Generator-specific models, services, and dependencies stay inside the adapter.
+The vendor-neutral contract is frozen **before** the first generator adapter is
+written, not derived from it — otherwise the first generator's shape becomes the
+contract by accident
+([roadmap/adapters-mocopi-vmc-ardy.md](../roadmap/adapters-mocopi-vmc-ardy.md),
+Milestones E–F).
 
 ### Motion Phase G: expression / look-at / recording
 

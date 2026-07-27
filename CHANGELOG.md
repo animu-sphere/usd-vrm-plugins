@@ -77,6 +77,15 @@ Current schema contract version: **1**.
   rewrites each bundle's staged library without recording bundle-managed
   provenance. It now asserts 4 bundle + 2 tool packages by member kind.
 
+- **The input-adapter direction is in the contracts, ahead of any adapter
+  code.** `WORKSPACE.md` §1 reserves `vrmAdapterMocopi`, `vrmAdapterVmc` and
+  `vrmAdapterArdy`; §2 adds the adapter-library vs adapter-tool split (a
+  library converts and stops; its CLI may retarget and author a stage),
+  `execMotion`/`execVrm` ⇸ `adapters/*`, and the rule that adapters are
+  siblings rather than a stack; §5 keeps them out of the aggregate product. The
+  motion policy gains VMC as a first-class generic input — it previously
+  described one direct adapter only — and the plan lives in
+  [docs/roadmap/adapters-mocopi-vmc-ardy.md](docs/roadmap/adapters-mocopi-vmc-ardy.md).
 - **`scripts/check_docs.py` guards the OpenUSD pin.** Two independent
   mechanisms assert it — `ost` reads the manifests, a plain CMake build reads
   the contract module — and nothing made them agree, so a half-bumped pair

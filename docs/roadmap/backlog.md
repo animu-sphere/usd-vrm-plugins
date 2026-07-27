@@ -98,7 +98,12 @@ Always written "Motion Phase X", never a bare "Phase X".
   missing-bone policy, root-motion intake, and a synthetic corpus that makes the
   tests reproducible. A captured session is baked onto an avatar by the
   **unchanged** Phase C tool. Product-specific adapters remain optional leaves
-  and none ships; validation against a real capture rig is still open.
+  and none ships; validation against a real capture rig is still open. The
+  vendor half is planned in
+  [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) — a direct
+  capture-product adapter first, then a VMC Protocol adapter — because the
+  v0.5.0 corpus is closed-form maths and answers no question about timestamp
+  jitter, tracking loss, or reconnection.
 - ⬜ **Motion Phase E — `execMotion` / `execVrm`** (**v0.6.0**, continuing into
   v0.7.0). ClipSample, PoseBuffer, HumanoidRetarget, RootMotionResolve,
   AvatarApply. Nodes are thin wrappers over `motionRuntime` and `vrmRetarget`.
@@ -108,7 +113,10 @@ Always written "Motion Phase X", never a bare "Phase X".
   the motion policy itself.
 - ⬜ **Motion Phase F — generation adapter.** `IMotionGenerator`,
   `MotionGenerationRequest`, text intent, root waypoints, sparse joint
-  constraints, pose history, clip-ification.
+  constraints, pose history, clip-ification. The contract is frozen before the
+  first generator adapter is written, not derived from it
+  ([adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) §6, Milestones
+  E–F).
 - ⬜ **Motion Phase G — expression / look-at / recording.** VRMA expression and
   look-at animation, `ExpressionResolve`, `LookAtEvaluate`, live recording,
   bake, VRMA export investigation.
@@ -190,7 +198,7 @@ or another plugin (design policy §15, §19; motion policy §8, §18):
 - Auto-repair of arbitrary broken glTF
 - A full VRM exporter (P6 is research only)
 - DCC-specific UI
-- **Product-specific motion support in core.** Mocopi, ARDY, and any other
+- **Product-specific motion support in core.** Mocopi, VMC, ARDY, and any other
   named system are optional leaf adapters, never a core dependency or a branch
   condition.
 - **Per-frame USD stage authoring for live playback.** Live evaluation produces

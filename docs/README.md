@@ -34,6 +34,12 @@ contract wins — structural changes go there first, in their own PR.
   contract — the source of truth for bundle identities, dependency directions,
   artifact naming, and **Workspace Phase 0–8**.
 
+Two milestone plans sit in [roadmap/](roadmap/) rather than here, because they
+are plans and not policy: the
+[OpenExec direction](roadmap/openexec-v0.6.0-v0.7.0.md) and the
+[input adapters](roadmap/adapters-mocopi-vmc-ardy.md). Both defer every
+structural claim to WORKSPACE.md and every motion claim to the motion policy.
+
 The three phase systems are separate and always qualified; see
 [roadmap/README.md](roadmap/README.md#three-sequences-deliberately-separate).
 
