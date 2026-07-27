@@ -247,11 +247,23 @@ avatar open and validate, and an embedded texture resolves straight from the
 
 CI is generated from the support matrix in `openstrata.ci.yaml`
 (`ost ci generate github`). The PR lane (`.github/workflows/ost-source-ci.yml`)
-runs **twelve cells** — each of the four bundles on hosted Windows / macOS arm64 /
-Linux against digest-pinned cy2026 runtimes — building, testing
-(`--up-to 5`; Windows is capped at 4), and packaging each. A weekly scheduled
-lane (`ost-support-matrix.yml`) re-validates pinned runtime × plugin artifact
-cells on a self-hosted real runtime.
+runs **sixteen cells** against digest-pinned cy2026 runtimes on hosted Windows /
+macOS arm64 / Linux:
+
+- **Twelve bundle cells** — each of the four bundles on each OS — building,
+  testing (`--up-to 5`; Windows is capped at 4), and packaging each.
+- **Three workspace cells** (`kind: workspace`), one per OS, which build the
+  root CMake tree and run its CTest suite. That tree is the only configuration
+  in which the plain libraries and the two CLI tools exist, so these cells are
+  the only coverage `motionCore`, `motionRuntime`, `vrmRetarget`,
+  `vrmContainer`, `motion_retarget`, `motion_capture` and the whole-workspace
+  `usdvrm_baseline` gate get.
+- **One graph cell** (`verify: graph`), which runs
+  `ost plugin test --workspace --graph-only` — the [WORKSPACE.md §2](docs/architecture/WORKSPACE.md)
+  dependency-direction gate — before anything is built, in milliseconds.
+
+A weekly scheduled lane (`ost-support-matrix.yml`) re-validates pinned
+runtime × plugin artifact cells on a self-hosted real runtime.
 
 ## Release artifacts
 

@@ -68,6 +68,18 @@ if(MSVC)
     target_compile_definitions(motion_capture PRIVATE NOMINMAX _USE_MATH_DEFINES)
 endif()
 
+# Stage the executable into the member root's bin/, the way each bundle stages
+# its shared library into lib/. `ost plugin package --workspace` packages a
+# workspace tool out of the directories openstrata.tool.yaml declares, not out
+# of the build tree, so a tool that only lands in build/ is refused at packaging
+# with PRECONDITION_FAILED.
+set_target_properties(motion_capture PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
+foreach(_cfg DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+    set_target_properties(motion_capture PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY_${_cfg} "${CMAKE_CURRENT_SOURCE_DIR}/bin")
+endforeach()
+
 include(GNUInstallDirs)
 install(TARGETS motion_capture RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 

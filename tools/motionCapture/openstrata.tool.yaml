@@ -1,0 +1,15 @@
+# OpenStrata workspace-tool descriptor. motion_capture is a user-facing
+# deliverable no bundle requires, so the workspace graph never reaches it; this
+# descriptor is what lets `ost plugin package --workspace --product` ship it.
+schema: openstrata.tool/v1alpha1
+tool:
+  id: motion_capture
+  # Mirrors VERSION; release preparation updates this in lockstep.
+  version: 0.5.0
+  license: Apache-2.0
+executables: [motion_capture]
+directories: [bin]
+requires:
+  libraries:
+    - id: motionRuntime
+      version: ">=0.5,<0.6"

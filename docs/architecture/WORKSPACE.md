@@ -265,20 +265,21 @@ Scaffolds for new bundles start from the ost template catalog
 (`ost plugin new usd-schema --template usd-schema-cpp`,
 `ost plugin new usd-package-resolver`) rather than hand-rolled skeletons.
 
-> **Gate status — still open.** This document calls for the §2 dependency
-> directions to be enforced by a required PR gate from Phase 1 on. That has
-> still not happened. v0.5.0 wrote the lane
-> ([`motion-ci.yml`](../../.github/workflows/motion-ci.yml)) and got the graph
-> gate itself working on all three OS, but the lane cannot configure the
-> workspace against the pulled runtime — `pxrConfig.cmake` resolves Python
-> development components to the paths of the Python the runtime was *built*
-> against, which do not exist on a hosted runner. It ships disabled
-> (`workflow_dispatch` only) rather than red on every PR, with the diagnosis in
-> its header and in
-> [report 32](../reports/ost/32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md).
+> **Gate status — closed (ost 0.21.0).** This document called for the §2
+> dependency directions to be enforced by a required PR gate from Phase 1 on.
+> They now are: the `workspace-graph-pr` cell in `openstrata.ci.yaml` runs
+> `ost plugin test --workspace --graph-only`, which validates the graph and
+> exits on that result alone — no build, no runtime, milliseconds. Three
+> `verify: test` workspace cells then build the root tree and run its CTest
+> suite on all three OS, which is what the libraries and CLIs never had.
 >
-> So the dependency directions are still enforced today by the per-bundle binary
-> link checks and by each library's own boundary check — not by the graph gate.
+> v0.5.0 had tried to do this by hand and could not finish; the history is
+> below, and the adoption is
+> [report 33](../reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md).
+>
+> The gate is a real one, not a formality: pointing `motionRuntime` at
+> `motionCore >=0.9,<1.0` fails it with
+> `WORKSPACE_LIBRARY_DEPENDENCY_VERSION_MISMATCH` and a non-zero exit.
 >
 > **What the gate actually covers (measured on ost 0.20.0, Workspace Phase 6b).**
 > `ost plugin test --workspace` reports `4 bundle(s), 1 bundle edge(s), 4
@@ -290,15 +291,20 @@ Scaffolds for new bundles start from the ost template catalog
 > `0.3.0`), which is precisely the class of break this gate exists for. That
 > makes the missing CI wiring more costly than it looked, not less. What the
 > gate does **not** do is compile or unit-test a plain library: `--workspace`
-> tests bundles, and `ost ci generate` emits one job per *bundle* cell, so
-> `motionRuntime`, `vrmRetarget`, and the CLIs get no generated cell. Recorded
-> as an ask in
-> [report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md).
+> tests bundles. Under ost 0.20.0 `ost ci generate` also emitted one job per
+> *bundle* cell, so `motionRuntime`, `vrmRetarget`, and the CLIs got no
+> generated cell at all — recorded as an ask in
+> [report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md) and
+> answered by 0.21.0's `kind: workspace` cell, which builds and tests them
+> through the root tree instead.
 >
 > **v0.5.0 tried to cover that by hand and did not finish.** `motion-ci.yml`
-> builds the whole workspace with plain CMake from the repo root — the only
-> configuration in which `libs/` and `tools/` targets exist — but is blocked at
-> configure time (above) and ships disabled. The upstream ask is unchanged and
-> the attempt strengthens it: a repo should not have to hand-roll a lane to
-> test a library it declares through `openstrata.library.yaml`, and when it
-> tries, it runs into a second problem the contract cannot express.
+> built the whole workspace with plain CMake from the repo root — the only
+> configuration in which `libs/` and `tools/` targets exist — but was blocked at
+> configure time: `pxrConfig.cmake` resolved Python development components to
+> the paths of the Python the runtime was *built* against, which exist on no
+> hosted runner. It shipped disabled and was deleted when the contract grew the
+> cell it had been standing in for. That attempt is why the ask was accepted:
+> a repo should not have to hand-roll a lane to test a library it declares
+> through `openstrata.library.yaml`, and when it tries, it runs into a second
+> problem the contract cannot express.

@@ -45,6 +45,15 @@ build (`ctest --test-dir build/plain -R usdvrm_baseline`).
 | `diagnostics.json` | full `VRMxxx` catalog (code → severity/source/title) + corpus expected-diagnostics table + negative-corpus contract | diagnostics code |
 | `symbols/<platform>.txt` | the **union** of exported native symbols across every built bundle library under `plugins/*/lib` (a symbol moving between bundles stays invisible; one appearing or vanishing does not) | public C++ symbols |
 
+**Only `symbols/windows-x86_64.txt` is frozen today.** A symbol baseline can
+only be produced on the platform it describes, and until the workspace CI cells
+landed (2026-07-28) no lane ever ran this gate on Linux or macOS. `--check`
+therefore *skips* a platform with no committed file and says so — it has nothing
+to regress against — while still failing on any difference where a baseline does
+exist. Freezing the other two means running `--update` on each host and
+committing the result; until then those platforms verify every artifact except
+symbols.
+
 Notes on the remaining plan §9 items:
 
 - **Clean-install smoke / embedded texture resolution** — the observable

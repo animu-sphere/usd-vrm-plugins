@@ -17,7 +17,7 @@ met, both ahead of schedule:
 
 - ✅ **One OpenUSD across three OS.** All three 26.08 runtimes are published to
   `ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd` and every lane is pinned
-  to them, including the new motion lane and the release workflow. They carry
+  to them, including the workspace cells and the release workflow. They carry
   OpenExec (`exec`, `execGeom`, `execIr`, `execUsd`, `usdExecImaging`, `vdf` —
   198 headers under `include/pxr/exec`) and were built `--examples`, so the
   26.08 `ExecIr` samples ship inside the runtime. Digests and evidence:
@@ -25,34 +25,46 @@ met, both ahead of schedule:
   (Windows, Linux),
   [report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md)
   (macOS arm64).
-- ⛔ **The motion layer still has no CI.** This is v0.6.0's named P0-2 blocker
-  and v0.5.0 did **not** clear it: the lane is written and two thirds working,
-  but blocked at configure time and shipped disabled (below).
+- ✅ **The motion layer has CI.** v0.6.0's named P0-2 blocker is cleared, not by
+  the v0.5.0 workaround (below) but by `ost 0.21.0`: four `kind: workspace`
+  cells in `openstrata.ci.yaml` build the root tree and run its whole 22-test
+  CTest suite, and `motion-ci.yml` is deleted. See
+  [report 33](../reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md).
 
 ### Carried into v0.6.0
 
-- ⚠️ **The Linux cells carry a hand-added `apt-get` step and will break on
-  regeneration.** 26.08's MaterialX 1.39.5 hard-requires X11 on non-Apple UNIX,
-  so a Linux consumer cannot `find_package(pxr)` without `libx11-dev
-  libxt-dev`, and `openstrata.ci.yaml` has no way to declare a host package.
-  `ost ci generate github --force` deletes the step silently — re-add it, in
-  **both** `ost-source-ci.yml` and `motion-ci.yml`. See
-  [report 31](../reports/ost/31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md).
-- ⚠️ **Runtime digests are now pinned in two places.** `openstrata.ci.yaml` and
-  the hand-authored `motion-ci.yml` must be re-pinned together on every runtime
-  republish. A motion cell left on an older OpenUSD than the bundle cells would
-  be worse than no cell, because it would look like coverage. Ask 2 in
-  [report 32](../reports/ost/32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md)
-  is the fix.
+- ⬜ **Freeze the Linux and macOS symbol baselines.** `tests/baseline/symbols/`
+  holds `windows-x86_64.txt` only, because until the workspace cells landed no
+  lane ran the Phase 0 gate anywhere else. `--check` skips a platform with no
+  committed file (it has nothing to regress against) and every other baseline
+  artifact is verified on all three OS, so the gap is symbols alone. Closing it
+  means running `tools/baseline_freeze.py --update` on a Linux and a macOS host
+  and committing the result.
 - ⛔ **The scheduled lane's `plugin_artifact` is still a 26.05 build.**
   `usdvrmfileformat-support-windows-cy2026` pairs a 26.05-built plugin with a
   26.08 runtime. OpenUSD guarantees no ABI stability across versions, so that
   artifact must be republished before the lane's result means anything.
-  Untouched by v0.5.0.
-- ⬜ **Decide whether the CLIs ship in the release artifacts.**
-  `motion_retarget` and now `motion_capture` are executables, not bundles, so no
-  member archive carries them. Needs the `ost` packaging answer first (ask 4 in
-  report 32).
+  Untouched by v0.5.0. It is also the reason `ost ci validate` exits non-zero on
+  a workstation that holds the artifact (the evidence gate); hosted runners do
+  not hold it, so the generated lanes stay green.
+- ⚠️ **`release.yml` stays hand-authored, and hand-mirrors what the contract now
+  expresses.** Its X11 step, its `ost` pin and its runtime digests are copies of
+  `openstrata.ci.yaml` values; regeneration never touches them and a green PR
+  lane proves nothing about it. The `ost` release contract (`release:` in the
+  matrix) is the eventual fix; adopting it is not scoped yet.
+
+### Closed by the ost 0.21.0 adoption
+
+- ✅ **The Linux cells' `apt-get` step is in-contract.** `host_packages:
+  {apt: [libx11-dev, libxt-dev]}` on every Linux cell renders the step, so
+  `ost ci generate github --force` re-emits it instead of deleting a hand-added
+  one. Only `release.yml` still hand-carries it.
+- ✅ **Runtime digests are pinned in one place again.** `motion-ci.yml` is gone;
+  a hand-written lane that still needs the pins can read them from
+  `ost ci matrix --json` rather than copying them.
+- ✅ **The CLIs ship in the release artifacts.** `tools/*/openstrata.tool.yaml`
+  makes `motion_retarget` and `motion_capture` tool members of the aggregate
+  product (6 members), and `release.yml` stages them with the bundles.
 
 ## Shipped: v0.5.0 — live capture
 
@@ -93,9 +105,14 @@ capture rig, and OpenExec evaluation (Motion Phases E–H).
 
 ### Attempted in v0.5.0 — the motion-layer CI lane 🚧
 
+> **Superseded 2026-07-28.** `ost 0.21.0` made this expressible in the CI
+> contract (`kind: workspace` cells), and `motion-ci.yml` was deleted with the
+> adoption. The record below is what v0.5.0 actually shipped; the resolution is
+> [report 33](../reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md).
+
 `ost ci generate` emits one job per *bundle* cell, so `motionCore`,
 `motionRuntime`, `vrmRetarget`, `vrmContainer` and both CLIs get no lane.
-v0.5.0 wrote [`motion-ci.yml`](../../.github/workflows/motion-ci.yml) to cover
+v0.5.0 wrote `.github/workflows/motion-ci.yml` (deleted 2026-07-28) to cover
 them by building the whole workspace with plain CMake — the only configuration
 in which `libs/` and `tools/` targets exist.
 
@@ -295,14 +312,10 @@ models resolve; schema registration succeeds.* (design policy §14, §17-P3)
 
 The OS axis is shipped. Remaining:
 
-- 🚧 **Wire the workspace graph gate into CI** — written in v0.5.0, not wired.
-  [WORKSPACE.md §2](../architecture/WORKSPACE.md) specifies
-  `ost plugin test --workspace` as the enforcement for the dependency
+- ✅ **The workspace graph gate is wired.** [WORKSPACE.md §2](../architecture/WORKSPACE.md)
+  specifies `ost plugin test --workspace` as the enforcement for the dependency
   directions, and §8 called for it to be a required PR-lane gate from Workspace
-  Phase 1 on. The graph validation works in `motion-ci.yml` and is verified
-  green on all three OS, but that lane ships disabled for an unrelated reason
-  (above), so no PR runs it yet. The generated lane cannot host it: it is
-  whole-workspace by definition and `ost ci generate` emits per-bundle cells.
+  Phase 1 on. The `workspace-graph-pr` cell runs `--graph-only` on every PR.
 - ⬜ Explicit **UTF-8 / Unicode path** and **DLL dependency discovery** coverage
   on the Windows cell.
 - ⬜ **Real VRM smoke test** (open + texture resolve) exercised in CI, not just
