@@ -2,30 +2,29 @@
 #
 # Policy: this file is the CI contract; .github/workflows/ost-*.yml are
 # renderer output from `ost ci generate github`. Do not hand-edit CI
-# semantics in the generated workflow YAML.
+# semantics in the generated workflow YAML. As of ost 0.21.0 there is no
+# standing exception to that policy: every Linux cell's X11 requirement is
+# declared below as `host_packages`, so regeneration re-renders the step
+# instead of deleting a hand-added one.
 #
-#   ONE STANDING EXCEPTION (2026-07-26). ost-source-ci.yml carries a
-#   hand-added step installing `libx11-dev libxt-dev` on the Linux cells.
-#   OpenUSD 26.08's MaterialX 1.39.5 exports an unconditional
-#   `find_dependency(X11 REQUIRED COMPONENTS Xt)` on non-Apple UNIX, so a
-#   Linux consumer of the 26.08 runtime cannot even configure without X11 dev
-#   headers, and this file has no way to express a host system package.
-#   `ost ci generate github --force` DELETES that step -- re-add it, or the
-#   four Linux cells fail at configure. Full diagnosis and the P0 ask:
-#   docs/reports/ost/31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md
+#   X11 BACKGROUND. OpenUSD 26.08's MaterialX 1.39.5 exports an unconditional
+#   `find_dependency(X11 REQUIRED COMPONENTS Xt)` on non-Apple UNIX, so a Linux
+#   consumer of the 26.08 runtime cannot even configure without X11 dev
+#   headers. Diagnosis: docs/reports/ost/31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md
 #
-#   EVERY Linux job that configures against a 26.08 runtime needs that step,
-#   not just the generated ones. It lives in THREE workflows: ost-source-ci.yml
-#   (generated, re-add after regeneration), motion-ci.yml and release.yml (both
-#   hand-authored, so regeneration never touches them). release.yml was missed
-#   when CI was re-pinned to 26.08 and the v0.5.0 tag build failed on it -- a
-#   green PR lane does not exercise release.yml, so nothing caught it earlier.
-#   When you add a Linux job anywhere, add the step with it.
+#   IT STILL APPLIES TO HAND-AUTHORED WORKFLOWS. release.yml is not generated
+#   from this file and carries its own apt step; it was missed when CI was
+#   re-pinned to 26.08 and the v0.5.0 tag build failed on it, because a green
+#   PR lane does not exercise release.yml. When you add a Linux job to a
+#   hand-authored workflow, add the step with it.
 #
 # Lanes:
 #   - pull_request  -> GitHub-hosted source build from checkout. The runner
 #                      bootstraps a pinned `ost` and pulls the runtime SDK from
-#                      its OCI reference (runtime_remote) below.
+#                      its OCI reference (runtime_remote) below. Both cell
+#                      kinds live here: `bundle:` cells run the per-bundle
+#                      verification pyramid, `kind: workspace` cells build the
+#                      root CMake tree (see the workspace cells at the end).
 #   - scheduled     -> self-hosted real compatibility validation from pinned
 #                      runtime + plugin artifacts (air-gapped local import).
 #
@@ -81,7 +80,7 @@ schema: 1
 
 bootstrap:
   ost:
-    version: "0.20.0"
+    version: "0.21.0"
     repository: animu-sphere/open-strata
 
 runners:
@@ -157,6 +156,9 @@ cells:
     platform: cy2026
     profile: usd
     host_python: "3.13"
+    # MaterialX 1.39.5 (OpenUSD 26.08) hard-requires X11 on Linux; see header.
+    host_packages:
+      apt: [libx11-dev, libxt-dev]
     up_to: 5
 
   - name: usdvrmafileformat-pr-windows
@@ -195,6 +197,9 @@ cells:
     platform: cy2026
     profile: usd
     host_python: "3.13"
+    # MaterialX 1.39.5 (OpenUSD 26.08) hard-requires X11 on Linux; see header.
+    host_packages:
+      apt: [libx11-dev, libxt-dev]
     up_to: 5
 
   - name: vrmschema-pr-windows
@@ -233,6 +238,9 @@ cells:
     platform: cy2026
     profile: usd
     host_python: "3.13"
+    # MaterialX 1.39.5 (OpenUSD 26.08) hard-requires X11 on Linux; see header.
+    host_packages:
+      apt: [libx11-dev, libxt-dev]
     up_to: 5
 
   - name: usdvrmresolver-pr-windows
@@ -271,7 +279,86 @@ cells:
     platform: cy2026
     profile: usd
     host_python: "3.13"
+    # MaterialX 1.39.5 (OpenUSD 26.08) hard-requires X11 on Linux; see header.
+    host_packages:
+      apt: [libx11-dev, libxt-dev]
     up_to: 5
+
+  # --- Workspace cells (ost 0.21.0) -------------------------------------
+  #
+  # A `bundle:` cell only ever reaches a plugin bundle. The plain libraries
+  # (libs/*/openstrata.library.yaml) and the two CLI tools
+  # (tools/*/openstrata.tool.yaml) are built by the ROOT CMake tree and no
+  # bundle requires them, so twelve bundle cells leave them untested. These
+  # cells build that tree: `ost build` then `ost test`, which is the whole
+  # 22-test CTest suite -- motionCore, motionRuntime (incl. live capture and
+  # the capture corpus), vrmRetarget, vrmContainer, both CLIs, and
+  # usdvrm_baseline, the whole-workspace behavior gate that no other lane runs
+  # (it had been silently stale for a release before v0.5.0 caught it).
+  #
+  # This replaces the hand-authored motion-ci.yml, which was ~210 lines of
+  # which ~120 duplicated generated logic and which could never finish: a bare
+  # `cmake` could not configure against a pulled runtime. 0.21.0's `plugin run`
+  # exports CMAKE_TOOLCHAIN_FILE and `ost build` uses it, so the lane is
+  # expressible in the contract instead. See
+  # docs/reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md
+  - name: workspace-graph-pr
+    kind: workspace
+    lane: pull_request
+    runner: linux-hosted
+    # A graph cell never materializes a runtime -- the rendered job stops after
+    # the checkout -- but the contract still wants the pin on record.
+    runtime_artifact: sha256:70b47d1b1a337b71d6c6fd63898e3295c0f91dc4b2ad2f5c09d14d6ac0ff2e1d
+    runtime_remote:
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
+      expected_oci_digest: sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
+    platform: cy2026
+    profile: usd
+    # The WORKSPACE.md §2 dependency-direction gate, in milliseconds, before
+    # anything is built. It catches a forbidden edge and a half-bumped
+    # workspace: verified to fail with WORKSPACE_LIBRARY_DEPENDENCY_VERSION_MISMATCH.
+    verify: graph
+
+  - name: workspace-pr-windows
+    kind: workspace
+    lane: pull_request
+    runner: windows-hosted
+    runtime_artifact: sha256:e3368364f8f4661a7c34371e907f2e5ddcdec4e680b76f5e9e1c1ed656022f48
+    runtime_remote:
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1
+      expected_oci_digest: sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1
+    platform: cy2026
+    profile: usd
+    verify: test
+
+  - name: workspace-pr-macos-arm64
+    kind: workspace
+    lane: pull_request
+    runner: macos-arm64-hosted
+    runtime_artifact: sha256:b2cb7b68e72b05e486d57e96cde2ec7a8dc5a17b02b774af923aa58ee31d6d21
+    runtime_remote:
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:f8de29a4176d02ffbcf50a2205bb6b23d9a3cd9463e0d58a28a3c1c6ee5cb82c
+      expected_oci_digest: sha256:f8de29a4176d02ffbcf50a2205bb6b23d9a3cd9463e0d58a28a3c1c6ee5cb82c
+    platform: cy2026
+    profile: usd
+    host_python: "3.13"
+    verify: test
+
+  - name: workspace-pr-linux
+    kind: workspace
+    lane: pull_request
+    runner: linux-hosted
+    runtime_artifact: sha256:70b47d1b1a337b71d6c6fd63898e3295c0f91dc4b2ad2f5c09d14d6ac0ff2e1d
+    runtime_remote:
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
+      expected_oci_digest: sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
+    platform: cy2026
+    profile: usd
+    host_python: "3.13"
+    # MaterialX 1.39.5 (OpenUSD 26.08) hard-requires X11 on Linux; see header.
+    host_packages:
+      apt: [libx11-dev, libxt-dev]
+    verify: test
 
   - name: usdvrmfileformat-support-windows-cy2026
     lane: scheduled

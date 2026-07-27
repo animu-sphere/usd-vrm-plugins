@@ -17,9 +17,9 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 32 carries
-the consolidated live v0.21.0 asks, including those reports 28, 29, 30 and 31
-raised.
+The current `ost` ask list is always in the **newest** report. Report 33 carries
+the live v0.22.0 asks; it also records that every ask reports 28–32 raised was
+delivered in `ost 0.21.0`.
 
 Numbering is the series' own: reports 1–8 call themselves "report #N" in their
 bodies, so the filenames preserve those numbers rather than renumbering history.
@@ -29,6 +29,7 @@ each sorts immediately after the report it follows.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
+| 33 | 2026-07-28 | [Six asks delivered, and what the workspace build costs](33-2026-07-28-v0.21.0-workspace-ci-adoption.md) | 0.21.0 | All six of report 32's asks land and are exercised: `kind: workspace` cells, `host_packages`, `ci matrix`, `--graph-only`, tool members, and the configure contract (`plugin run` exports `CMAKE_TOOLCHAIN_FILE`). `motion-ci.yml` deleted. Two new findings about the *root* build: an upgrade re-identifies an unchanged runtime, and `ost build` invalidates per-bundle packaging provenance. **Live v0.22.0 asks** |
 | 32 | 2026-07-26 | [What a hand-rolled lane for plain libraries costs](32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md) | 0.20.0 | v0.5.0 tried to hand-roll the lane report 28's P0 asks for, and **could not finish**: a bare `cmake` cannot configure against a pulled runtime (Python dev components resolve to the build container's paths). ~210 lines, ~120 a copy of generated logic. Also found the baseline gate had been stale for a release. **Live v0.21.0 asks (consolidated)** |
 | 31 | 2026-07-26 | [A runtime can demand a host package the contract cannot name](31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md) | 0.20.0 | 26.08's MaterialX 1.39.5 hard-requires X11 on Linux, so re-pinning broke all four Linux cells at configure. `openstrata.ci.yaml` cannot express a host package, so the fix is a hand-edit `--force` deletes. Asks restated in 32 |
 | 30 | 2026-07-26 | [The macOS 26.08 runtime](30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md) | 0.20.0 | macOS arm64 26.08 published, so all three OS are on one OpenUSD version and CI is re-pinned. 26.08 needs the macOS 15.2 SDK, and a macOS artifact records no SDK or deployment target the way Linux records its glibc floor. Asks restated in 31 |
@@ -71,5 +72,7 @@ each sorts immediately after the report it follows.
 The series is the reason several `ost` features exist in the shape they do:
 `requires.bundles` (reports 17–18), `requires.libraries` and the
 `openstrata.library.yaml` descriptor (reports 19–21), the reproducible packaging
-the release lane depends on (report 16), and the Linux glibc floor measurement
-(report 14). The still-open asks are in report 25.
+the release lane depends on (report 16), the Linux glibc floor measurement
+(report 14), and the whole v0.21.0 CI-contract pass — `kind: workspace` cells,
+`host_packages`, `ci matrix`, `--graph-only` and tool members (reports 28–32).
+The still-open asks are in report 33.

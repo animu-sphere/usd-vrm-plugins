@@ -6,15 +6,15 @@
 # it, and a green PR lane proves nothing about it.
 #
 # Pushing a tag `vX.Y.Z` (which must equal the repo VERSION file and have a
-# finalized CHANGELOG section) builds the whole workspace -- vrmSchema,
-# usdVrmFileFormat, usdVrmPackageResolver, usdVrmaFileFormat -- on the same
-# three OS cells and
-# digest-pinned runtimes as the PR lane, proves the *packaged* artifacts
+# finalized CHANGELOG section) builds the whole workspace -- the four bundles
+# vrmSchema, usdVrmFileFormat, usdVrmPackageResolver, usdVrmaFileFormat plus the
+# two CLI tools motion_retarget and motion_capture -- on the same three OS cells
+# and digest-pinned runtimes as the PR lane, proves the *packaged* artifacts
 # (composed clean-install smoke + digest reproducibility), then assembles a
-# DRAFT GitHub release: per-target lean bundles + manifest sidecars for all
-# four, a source archive, SHA256SUMS, and notes rendered from CHANGELOG.md via
-# docs/contributing/RELEASE_NOTES_TEMPLATE.md. Publishing the draft is a human
-# decision.
+# DRAFT GitHub release: per-target lean bundles and tool packages with manifest
+# sidecars for all six, a source archive, SHA256SUMS, and notes rendered from
+# CHANGELOG.md via docs/contributing/RELEASE_NOTES_TEMPLATE.md. Publishing the
+# draft is a human decision.
 #
 # The three VRM bundles ship together because they must: an usdVrmFileFormat package
 # on its own registers the `.vrm` format but cannot open a stage (see the
@@ -125,12 +125,13 @@ jobs:
       # without them. macOS (APPLE) and Windows (not UNIX) never enter the branch,
       # which is why only the Linux cell fails.
       #
-      # This mirrors the hand-added step in ost-source-ci.yml and motion-ci.yml.
-      # It was missed here when CI was re-pinned to 26.08 in 0ead959, because
-      # this workflow is hand-authored rather than generated -- so regenerating
-      # never touches it and the PR lane going green said nothing about it. The
-      # v0.5.0 tag build failed on exactly this. Drop all three once ost grows a
-      # per-cell host-package knob; tracked as the P0 ask in
+      # The generated lanes no longer need a hand-added step: ost 0.21.0 grew a
+      # per-cell `host_packages` knob and openstrata.ci.yaml declares it, so
+      # regeneration re-renders their apt step. THIS workflow is hand-authored
+      # and outside that contract, so the step below stays hand-maintained. It
+      # was missed here when CI was re-pinned to 26.08 in 0ead959 and the v0.5.0
+      # tag build failed on exactly this -- a green PR lane says nothing about
+      # release.yml. Background:
       # docs/reports/ost/31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md
       - name: Install X11 dev headers required by MaterialX 1.39.5
         if: ${{ runner.os == 'Linux' }}
@@ -139,7 +140,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libx11-dev libxt-dev
-      - name: Bootstrap ost 0.20.0 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.21.0 (pinned release asset, checksum-verified)
         shell: bash
         run: |
           set -euo pipefail
@@ -152,7 +153,7 @@ jobs:
             *) echo "::error title=ost bootstrap::no ost release asset for ${RUNNER_OS}-${RUNNER_ARCH}" ; exit 1 ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.20.0"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.21.0"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$( (command -v sha256sum > /dev/null && sha256sum "$asset" || shasum -a 256 "$asset") | cut -d' ' -f1 )"
@@ -181,15 +182,15 @@ jobs:
           set -euo pipefail
           version="$(ost --version)"
           echo "$version"
-          if [ "$version" != "ost 0.20.0" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.20.0', got '$version'" ; exit 1
+          if [ "$version" != "ost 0.21.0" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.21.0', got '$version'" ; exit 1
           fi
       - name: Restore the artifact registry cache (speed only, never correctness)
         if: ${{ vars.OST_CI_DISABLE_CACHE != 'true' }}
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ost-ci-home/artifacts
-          key: ost-registry-0.20.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
+          key: ost-registry-0.21.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
       - name: Pull the pinned runtime SDK from its remote reference
         shell: bash
         run: |
@@ -229,6 +230,19 @@ jobs:
       # `.vrm` format but cannot open a stage (ost stages a dependency bundle's
       # link half without its USD registration half). Build in dependency order;
       # `--workspace` exists on `test`/`package` but not on `build`.
+      # The workspace tools (tools/*/openstrata.tool.yaml) are built by the ROOT
+      # CMake tree, which no `ost plugin build` reaches -- without this step
+      # `plugin package --workspace` fails with PRECONDITION_FAILED ("declares
+      # executable ..., which is not in bin").
+      #
+      # ORDER MATTERS. The root build also rewrites each bundle's
+      # plugins/<b>/lib/*.so|dylib|dll without recording bundle-managed
+      # provenance, so running it AFTER the per-bundle builds makes
+      # `plugin package` fail closed with PLUGIN_PACKAGE_OUTPUT_MISMATCH. Root
+      # build first, per-bundle builds second. See ost report 33 §4.
+      - name: Build the workspace root tree (plain libraries + CLI tools)
+        shell: bash
+        run: ost build --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --progress plain
       - name: Build every bundle from source (dependency order)
         shell: bash
         run: |
@@ -281,8 +295,13 @@ jobs:
           version="${{ needs.preflight.outputs.version }}"
           mkdir -p release-stage
           count="$(jq -r '.data.packages | length' .ost-ci/package.json)"
-          if [ "$count" -ne 4 ]; then
-            echo "::error title=release packaging::expected 4 workspace packages, got $count" ; exit 1
+          bundles="$(jq -r '[.data.packages[] | select(.member == "bundle")] | length' .ost-ci/package.json)"
+          tools="$(jq -r '[.data.packages[] | select(.member == "tool")] | length' .ost-ci/package.json)"
+          # 4 bundles + the 2 workspace tools (ost 0.21.0 tool members). Asserted
+          # by member kind so a tool silently dropping out cannot be masked by a
+          # bundle count that still adds up.
+          if [ "$bundles" -ne 4 ] || [ "$tools" -ne 2 ]; then
+            echo "::error title=release packaging::expected 4 bundle + 2 tool packages, got $bundles + $tools" ; exit 1
           fi
           for i in $(seq 0 $((count - 1))); do
             archive="$(jq -r ".data.packages[$i].archive" .ost-ci/package.json)"

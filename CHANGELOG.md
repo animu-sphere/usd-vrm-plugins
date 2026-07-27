@@ -11,6 +11,48 @@ The **schema contract version** is tracked separately from the package version
 [`plugins/vrmSchema/docs/SCHEMA_CONTRACT.md`](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)).
 Current schema contract version: **1**.
 
+## [Unreleased]
+
+### Added
+
+- **The motion layer has CI** — the v0.4.0 carry-over v0.5.0 could not close.
+  `ost 0.21.0` grew a `kind: workspace` cell, so `openstrata.ci.yaml` now
+  declares four of them: `workspace-graph-pr` runs the WORKSPACE.md §2
+  dependency-graph gate on every PR in milliseconds without building anything,
+  and `workspace-pr-{windows,macos-arm64,linux}` build the root CMake tree and
+  run its whole 22-test CTest suite — `motionCore`, `motionRuntime` (live
+  capture and the capture corpus), `vrmRetarget`, `vrmContainer`, both CLI
+  tools, and `usdvrm_baseline`, the whole-workspace behavior gate that no lane
+  had ever run.
+- **The CLI tools ship in the release.** `tools/motionRetarget` and
+  `tools/motionCapture` carry an `openstrata.tool.yaml`, so
+  `ost plugin package --workspace --product` packages them as tool members: the
+  aggregate product now has six members, and `ost plugin product install` places
+  each under `tools/<id>/bin` with its directory joined to the activation path.
+  Both tools stage into their member root's `bin/`, mirroring how each bundle
+  stages its shared library into `lib/`.
+
+### Changed
+
+- **`ost` is pinned at 0.21.0** in the CI contract and the release workflow.
+- **The Linux X11 requirement is in-contract.** Every Linux cell declares
+  `host_packages: {apt: [libx11-dev, libxt-dev]}`, so regenerating the
+  workflows re-renders the step instead of deleting a hand-added one. The
+  standing hand-edit exception in `ost-source-ci.yml` is retired; hand-authored
+  `release.yml` still carries its own copy.
+- **`release.yml` builds the workspace root before the bundles**, which is what
+  produces the tool executables — and must come first, because the root build
+  rewrites each bundle's staged library without recording bundle-managed
+  provenance. It now asserts 4 bundle + 2 tool packages by member kind.
+
+### Removed
+
+- **`.github/workflows/motion-ci.yml`** — 210 hand-written lines, ~120 of them a
+  copy of generated logic, which never worked (a bare `cmake` could not
+  configure against a pulled runtime) and shipped disabled. The workspace cells
+  replace it. Diagnosis and adoption:
+  [ost report 33](docs/reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md).
+
 ## [0.5.0] — 2026-07-26
 
 ### Added
