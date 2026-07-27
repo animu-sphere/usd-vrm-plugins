@@ -53,6 +53,17 @@ option(USDVRM_BUILD_TESTS "Build usdVrm plugin tests" ${VRM_IS_TOP_LEVEL})
 # discoverable by `ctest` from this build tree.
 if(USDVRM_BUILD_TESTS)
     enable_testing()
+
+    # The OpenUSD contract's refusals (cmake/UsdVrmOpenUsd.cmake), against
+    # fixture installs. Registered here rather than in a bundle because the
+    # module is a workspace-wide contract, and because every real runtime
+    # satisfies it -- nothing else in the tree ever takes the reject path.
+    add_test(NAME workspace_openusd_contract
+        COMMAND "${CMAKE_COMMAND}"
+                "-DFIXTURE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/tests/cmake/openusd-contract"
+                "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tests/openusd-contract"
+                "-DPROBE_GENERATOR=${CMAKE_GENERATOR}"
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/cmake/openusd_contract_test.cmake")
 endif()
 
 # vrmContainer has no OpenUSD dependency, so it can be added before the single
@@ -61,6 +72,7 @@ add_subdirectory("libs/vrmContainer")
 
 # Resolve OpenUSD once for the whole project; bundles reuse the result.
 find_package(pxr REQUIRED CONFIG)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/UsdVrmOpenUsd.cmake")
 
 # motionCore has only Gf value-type dependencies. Add it after pxr so the
 # composed plain-CMake build never asks pxrConfig.cmake to define its imported

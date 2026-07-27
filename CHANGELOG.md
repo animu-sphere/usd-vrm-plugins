@@ -24,6 +24,12 @@ Current schema contract version: **1**.
   capture and the capture corpus), `vrmRetarget`, `vrmContainer`, both CLI
   tools, and `usdvrm_baseline`, the whole-workspace behavior gate that no lane
   had ever run.
+- **`workspace_openusd_contract`** — a CTest that drives
+  `cmake/UsdVrmOpenUsd.cmake` against fixture OpenUSD installs (too old, too
+  new, an exec library with no imported target, an exec component with no
+  headers) and asserts both that it refuses and why. Every runtime this repo
+  builds against satisfies the contract, so on a normal build the pin and the
+  probe are code that never fires; this is what fires them.
 - **The CLI tools ship in the release.** `tools/motionRetarget` and
   `tools/motionCapture` carry an `openstrata.tool.yaml`, so
   `ost plugin package --workspace --product` packages them as tool members: the
@@ -34,6 +40,32 @@ Current schema contract version: **1**.
 
 ### Changed
 
+- **OpenUSD is pinned to 26.08 exactly, and a build against anything else is
+  refused rather than merely unsupported.** The `>=25.05,<27.0` tolerated range
+  is retired from all four bundle manifests (`openusd: "==26.08"`), and the new
+  `cmake/UsdVrmOpenUsd.cmake` enforces the same pin at configure time. It is
+  included by every entry point that resolves OpenUSD — the root project, each
+  bundle, each library under `libs/`, each tool under `tools/` — because a
+  bundle built standalone by `ost plugin build` never composes the root, and a
+  plain-CMake consumer never sees `ost` at all. A range could only ever defer
+  the failure to load time; OpenUSD guarantees no ABI stability across
+  releases.
+  - Not via `find_package(pxr 26.08 EXACT ...)`, which cannot work: OpenUSD
+    installs no `pxrConfigVersion.cmake`, so a version argument makes
+    `find_package` fail with "no config version file" against every OpenUSD,
+    including the right one. The module tests `PXR_VERSION`, which
+    `pxrConfig.cmake` does publish.
+- **A 26.08 without OpenExec is refused too.** The same module probes `exec`,
+  `execGeom`, `execIr`, `execUsd`, `vdf`, and `usdExecImaging` — each by both
+  its imported CMake target and one header, since `ost` stages the link and
+  development halves separately. 26.08 has no OpenExec build toggle, so this
+  detects a slimmed or hand-stripped install rather than a build-option
+  mistake. OpenExec becomes a first-class execution basis in v0.6.0.
+- **`buildInfo.json` is at schema 2.** It gains `openexecAvailable` and
+  `openexecComponents`, and `openusdVersion` is now the release name (`26.08`)
+  rather than `pxrConfig.cmake`'s `PXR_MAJOR.MINOR.PATCH` — which reads
+  `0.26.8`, because OpenUSD's major version is 0 and nobody calls the release
+  that. `pxrVersion` keeps the packed integer for machine comparison.
 - **`ost` is pinned at 0.21.0** in the CI contract and the release workflow.
 - **The Linux X11 requirement is in-contract.** Every Linux cell declares
   `host_packages: {apt: [libx11-dev, libxt-dev]}`, so regenerating the
@@ -44,6 +76,11 @@ Current schema contract version: **1**.
   produces the tool executables — and must come first, because the root build
   rewrites each bundle's staged library without recording bundle-managed
   provenance. It now asserts 4 bundle + 2 tool packages by member kind.
+
+- **`scripts/check_docs.py` guards the OpenUSD pin.** Two independent
+  mechanisms assert it — `ost` reads the manifests, a plain CMake build reads
+  the contract module — and nothing made them agree, so a half-bumped pair
+  would have failed only on whichever build path the next person took.
 
 ### Fixed
 

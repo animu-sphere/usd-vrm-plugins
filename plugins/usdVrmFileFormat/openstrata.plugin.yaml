@@ -9,9 +9,12 @@ plugin:
   kind: usd-fileformat
 license: Apache-2.0
 runtime:
-  # The OpenUSD version range this plugin tolerates. The runtime supplies the
-  # certified point within it. Authored against 25.05; verified against 26.08.
-  openusd: ">=25.05,<27.0"
+  # The one OpenUSD version this plugin supports. v0.6.0 retired the
+  # `>=25.05,<27.0` tolerated range v0.1.0-v0.5.0 declared: OpenUSD guarantees
+  # no ABI stability across releases, and from this release the workspace
+  # builds on OpenExec, whose API is not stable either. cmake/UsdVrmOpenUsd.cmake
+  # enforces the same pin at configure time, for builds that never see ost.
+  openusd: "==26.08"
   # Source bundles inherit the resolved runtime ABI. This keeps the manifest
   # portable across Windows (msvc143), macOS (libcxx), and Linux (libstdcxx)
   # while still letting `ost plugin doctor` enforce the concrete target ABI.

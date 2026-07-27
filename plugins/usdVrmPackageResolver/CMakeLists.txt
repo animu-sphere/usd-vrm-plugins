@@ -47,6 +47,7 @@ endif()
 if(NOT pxr_FOUND)
     find_package(pxr REQUIRED CONFIG)
 endif()
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 
 # Vendored cgltf (see cmake/Dependencies.cmake). Defines the cgltf::cgltf
 # INTERFACE target. Used only to enumerate the glTF image table;

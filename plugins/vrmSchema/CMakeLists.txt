@@ -45,6 +45,7 @@ endif()
 if(NOT pxr_FOUND)
     find_package(pxr REQUIRED CONFIG)
 endif()
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 
 set(PLUGIN_NAME vrmSchema)
 

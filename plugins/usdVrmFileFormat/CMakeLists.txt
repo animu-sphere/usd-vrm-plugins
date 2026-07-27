@@ -46,6 +46,7 @@ endif()
 if(NOT pxr_FOUND)
     find_package(pxr REQUIRED CONFIG)
 endif()
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 
 # Vendored cgltf (see cmake/Dependencies.cmake). Defines the cgltf::cgltf
 # INTERFACE target.
@@ -177,18 +178,23 @@ else()
     set(_vrm_build_type "${CMAKE_BUILD_TYPE}")
 endif()
 
-# pxrConfig.cmake publishes PXR_MAJOR/MINOR/PATCH_VERSION plus the numeric
-# PXR_VERSION (e.g. 2605 for OpenUSD 26.05).
-if(DEFINED PXR_MAJOR_VERSION)
-    set(_vrm_openusd_version
-        "${PXR_MAJOR_VERSION}.${PXR_MINOR_VERSION}.${PXR_PATCH_VERSION}")
+# OpenUSD identity and OpenExec availability come from the workspace contract
+# module (cmake/UsdVrmOpenUsd.cmake), which has already refused to configure
+# against anything that is not OpenUSD 26.08 carrying OpenExec. So the stamp
+# needs no "unknown" fallback: reaching this line means both are known.
+#
+# `openusdVersion` is the release name (26.08), not pxrConfig.cmake's
+# PXR_MAJOR.MINOR.PATCH -- OpenUSD's major version is 0, so that form reads
+# "0.26.8", which is what buildInfoSchema 1 stamped and what nobody calls this
+# release. `pxrVersion` keeps the packed integer for a machine to compare.
+if(USDVRM_OPENEXEC_AVAILABLE)
+    set(_vrm_openexec_available "true")
 else()
-    set(_vrm_openusd_version "unknown")
+    set(_vrm_openexec_available "false")
 endif()
-if(DEFINED PXR_VERSION)
-    set(_vrm_pxr_version "${PXR_VERSION}")
-else()
-    set(_vrm_pxr_version "unknown")
+list(JOIN USDVRM_OPENEXEC_COMPONENTS "\", \"" _vrm_openexec_components_json)
+if(_vrm_openexec_components_json)
+    set(_vrm_openexec_components_json "\"${_vrm_openexec_components_json}\"")
 endif()
 
 configure_file(

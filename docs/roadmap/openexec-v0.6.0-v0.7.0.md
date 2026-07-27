@@ -105,13 +105,22 @@ attributes, relationships, and `UsdSkel` data.
 
 ### 4.1 Exact pin
 
-- Reject any OpenUSD other than 26.08 at configure time —
-  `find_package(pxr 26.08 EXACT REQUIRED CONFIG)`, plus a header/build-metadata
-  check if `pxrConfig.cmake`'s version test proves insufficient.
-- Bring `VERSION`, the bundle manifests, `openstrata.ci.yaml`, the release
-  workflow, and the reference docs into agreement.
-- Record the OpenUSD version, commit, compiler, ABI, and OpenExec availability in
-  `buildInfo.json`.
+- ✅ Reject any OpenUSD other than 26.08 at configure time. Not through
+  `find_package(pxr 26.08 EXACT ...)`: OpenUSD installs no
+  `pxrConfigVersion.cmake`, so a version argument makes `find_package` fail
+  with "no config version file" whatever OpenUSD is present. `pxrConfig.cmake`
+  does publish `PXR_VERSION`, and `cmake/UsdVrmOpenUsd.cmake` tests that,
+  included by every entry point that resolves OpenUSD — a bundle built
+  standalone by `ost plugin build` never composes the root project, so the pin
+  travels with the `find_package` call rather than with the root.
+- ✅ Bring the bundle manifests (`openusd: "==26.08"`) and the reference docs
+  into agreement. `openstrata.ci.yaml` and the release workflow already pinned
+  26.08 runtimes by digest; `VERSION` moves at release prep.
+- ✅ Record OpenUSD release, `PXR_VERSION`, and OpenExec availability in
+  `buildInfo.json` (`buildInfoSchema` 2). Commit, compiler, and build type were
+  already stamped. `openusdVersion` is now the release name (`26.08`) rather
+  than `pxrConfig.cmake`'s `PXR_MAJOR.MINOR.PATCH`, which reads `0.26.8`
+  because OpenUSD's major version is 0.
 
 ### 4.2 Runtime artifacts
 
@@ -176,7 +185,7 @@ not a v0.6.0 requirement — the latter is a standing non-goal
 
 ## 6. v0.6.0 tasks
 
-### P0-1 — OpenUSD 26.08 exact pin ⬜
+### P0-1 — OpenUSD 26.08 exact pin 🚧
 
 Reject non-26.08 at configure time; publish the three runtimes (§4.2); update
 manifests, docs, and the release workflow; add an OpenUSD/OpenExec capability
@@ -185,6 +194,19 @@ probe; write the migration report.
 **Done when:** all three OS use one OpenUSD version and one runtime digest per
 OS; a runtime without the OpenExec libraries fails the build explicitly; and
 `buildInfo.json` reports OpenExec availability.
+
+- ✅ **The pin and the probe are in the tree** (§4.1). One module,
+  `cmake/UsdVrmOpenUsd.cmake`, included by the root project and by each bundle,
+  library, and tool that resolves OpenUSD.
+- ✅ **The refusals are tested.** Every runtime this repo builds against
+  satisfies the contract, so on a normal build the pin and the probe are code
+  that never fires. `workspace_openusd_contract` drives the module against
+  fixture OpenUSD installs — too old, too new, an exec library with no imported
+  target, an exec component with no headers — and asserts both that it refuses
+  and *why*. A gate nothing exercises is a gate nobody can trust.
+- ✅ **Three OS, one OpenUSD, one digest each** (§4.2), since v0.5.0.
+- ⬜ **The 26.08 OpenExec migration report** (§4.3) — the remaining piece, and
+  the input P0-4 and P0-5 need before either can be designed.
 
 ### P0-2 — motion layer CI ⬜
 
@@ -428,7 +450,9 @@ depends on them ([docs/README.md](../README.md)). Open:
   `execMotion` / `execVrm` nodes; this plan adds the `usdExecImaging` slice
   (v0.6.0 P0-7) and the whole `ExecIr` rig track (v0.7.0). Either Phase E widens
   or the ladder gains a phase.
-- ⬜ **The OpenUSD version contract is stated as a range.**
-  [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md) records
-  the tolerated range that §4.1 retires. It changes when the pin actually lands,
-  not before.
+- ✅ **The OpenUSD version contract was stated as a range.**
+  [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md) now
+  records one supported version and the two mechanisms that enforce it (the
+  manifests' `==26.08` and the configure-time module), which is what §4.1
+  landed. `scripts/check_docs.py` keeps the doc, the module, and the four
+  manifests from drifting apart.
