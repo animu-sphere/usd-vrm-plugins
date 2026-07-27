@@ -125,6 +125,10 @@ no build-tree reference.
   does not point at the directory that contains `plugInfo.json` (step 3), or
   the bundle target does not match your OpenUSD build. Compare
   `buildInfo.json` (`openusdVersion`, `buildOs`) against your environment.
+  `openusdVersion` is the release name and is always `26.08` from v0.6.0 on —
+  the bundles cannot be built against any other OpenUSD
+  ([supported configurations](../reference/SUPPORTED_CONFIGURATIONS.md)), so a
+  host OpenUSD that is not 26.08 explains this on its own.
 - **`.vrma` does not open / format not recognized** — register
   `usdVrmaFileFormat/plugin/resources/usdVrmaFileFormat` and add its `lib/`
   directory to the dynamic-loader path. Unlike `.vrm`, it does not require the

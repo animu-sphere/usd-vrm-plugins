@@ -9,9 +9,10 @@ plugin:
   kind: usd-schema
 license: Apache-2.0
 runtime:
-  # The OpenUSD version range this plugin tolerates. The runtime supplies the
-  # certified point within it. Mirrors the usdVrm bundle it was split from.
-  openusd: ">=25.05,<27.0"
+  # The one OpenUSD version this plugin supports; see usdVrmFileFormat's
+  # manifest for why the tolerated range was retired in v0.6.0. Mirrors the
+  # usdVrm bundle it was split from.
+  openusd: "==26.08"
   # Source bundles inherit the resolved runtime ABI (see plugins/usdVrmFileFormat).
   cxx_abi: inherit
 schema:

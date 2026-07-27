@@ -36,6 +36,7 @@ endif()
 if(NOT pxr_FOUND)
     find_package(pxr REQUIRED CONFIG)
 endif()
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 
 # In the composed workspace build motionCore is already an in-tree target; a
 # standalone `ost plugin build`-style configure resolves its installed package.

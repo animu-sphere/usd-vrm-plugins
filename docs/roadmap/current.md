@@ -12,7 +12,26 @@ humanoid through OpenExec. Nodes are thin wrappers over `motionRuntime` and
 `vrmRetarget`, never a second implementation. Planned in
 [openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md).
 
-The two prerequisites this milestone was originally scoped around are already
+### Landed so far
+
+- ✅ **OpenUSD is pinned to 26.08, and the pin is enforced rather than
+  declared** (plan P0-1 / §4.1). The `>=25.05,<27.0` tolerated range is retired
+  in all four bundle manifests, and `cmake/UsdVrmOpenUsd.cmake` refuses anything
+  else at configure time — from the root project, from a standalone
+  `ost plugin build`, and from a plain-CMake build that never sees `ost`. The
+  same module probes the six OpenExec libraries and refuses a 26.08 without
+  them, which is a *detection* check: 26.08 has no OpenExec build toggle.
+  `buildInfo.json` (schema 2) records the release, `PXR_VERSION`, and the
+  OpenExec components. `workspace_openusd_contract` drives the module against
+  fixture installs so the refusals are tested — no runtime we own takes that
+  path — and `scripts/check_docs.py` keeps the manifests, the module, and
+  [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md) from
+  drifting apart.
+- ⬜ The rest of P0-1 is the [26.08 OpenExec migration
+  report](openexec-v0.6.0-v0.7.0.md#43-2608-openexec-migration-report), which
+  P0-4 and P0-5 need before either can be designed.
+
+The two prerequisites this milestone was originally scoped around were already
 met, both ahead of schedule:
 
 - ✅ **One OpenUSD across three OS.** All three 26.08 runtimes are published to

@@ -1,39 +1,68 @@
 # Supported configurations
 
-The configurations `usd-vrm-plugins` targets and continuously verifies. Anything
-outside this list may work but is not part of the `v0.5.0` support contract.
+The configurations `usd-vrm-plugins` targets and continuously verifies, for the
+version in [`VERSION`](../../VERSION). Anything outside this list is not part of
+the support contract — and since v0.6.0, the OpenUSD row is not merely
+unsupported outside its one value but refused at configure time.
 
 ## OpenUSD
 
 | | |
 | --- | --- |
-| Tolerated range | `>=25.05, <27.0` (declared in `plugins/usdVrmFileFormat/openstrata.plugin.yaml`) |
-| Authored against | 25.05 |
-| Verified against | 26.08 (the certified point in the `cy2026` runtime, on all three OS) |
+| Supported version | **26.08, exactly** (`openusd: "==26.08"` in every `plugins/*/openstrata.plugin.yaml`) |
+| Enforced at configure time by | [`cmake/UsdVrmOpenUsd.cmake`](../../cmake/UsdVrmOpenUsd.cmake) |
+| OpenExec | required — `exec`, `execGeom`, `execIr`, `execUsd`, `vdf`, `usdExecImaging` |
+| Verified against | the `cy2026` runtime's 26.08, on all three OS |
 
-The importer builds against a single OpenUSD version per runtime; the runtime
-supplies the certified point within the tolerated range. **No ABI stability is
-guaranteed across OpenUSD versions** — rebuild the plugin against your target
-OpenUSD. A second OpenUSD version cell (min vs latest) is a roadmap P1 item; CI
-currently exercises `cy2026` / OpenUSD 26.08 only.
+**There is no tolerated range.** v0.6.0 retired the `>=25.05,<27.0` range
+v0.1.0–v0.5.0 declared. Two reasons, and only the first applied before:
 
-**v0.5.0 is the first release built and verified against 26.08 throughout** —
-PR cells, the motion lane, and the release workflow all pin the same three
-published runtimes. (v0.4.0 was verified against 26.05; the runtimes were
-re-pinned after it was tagged.) The 26.05 → 26.08 move changed no observable
-behavior of these plugins: every Phase 0 baseline artifact is byte-identical
-across the two versions except the exported symbol names, which differ only by
-OpenUSD's internal `pxrInternal_v0_26_5` → `_26_8` namespace.
+1. **OpenUSD guarantees no ABI stability across releases.** A plugin built
+   against one OpenUSD and loaded into another is undefined behavior, and the
+   range never made that safe — it only made it undiagnosed until load time.
+2. **The workspace now builds on OpenExec**, whose API is not stable either
+   ([the OpenExec plan §1](../roadmap/openexec-v0.6.0-v0.7.0.md)).
 
-**This range is scheduled to be retired.** v0.6.0 pins OpenUSD to **26.08
-exactly** and rejects anything else at configure time
-([the OpenExec plan §4.1](../roadmap/openexec-v0.6.0-v0.7.0.md)). All three
-26.08 runtimes now exist — `26.08-windows-x86_64` and `26.08-linux-x86_64`
+Anything other than 26.08 is refused **at configure time**, by every entry
+point that resolves OpenUSD — the root project, each bundle built standalone by
+`ost plugin build`, each library under `libs/`, and each tool under `tools/`:
+
+```text
+CMake Error: Unsupported OpenUSD: found 26.05 (PXR_VERSION 2605), require
+26.08 (PXR_VERSION 2608) exactly.
+```
+
+The same file probes OpenExec and refuses a 26.08 that does not carry it. 26.08
+has no OpenExec build toggle — `build_usd.py` ships those six libraries
+unconditionally — so this catches a slimmed or hand-stripped install, not a
+build-option mistake. Both refusals are covered by the
+`workspace_openusd_contract` test, which drives the module against fixture
+OpenUSD installs; no runtime we own would ever take the reject path.
+
+> `find_package(pxr 26.08 EXACT ...)` is **not** how this is done: OpenUSD
+> installs no `pxrConfigVersion.cmake`, so any version argument makes
+> `find_package` fail with "no config version file" whatever OpenUSD is present.
+> `pxrConfig.cmake` does set `PXR_VERSION`, and that is what the module tests.
+
+Rebuild the plugins against your target OpenUSD; there is no configuration in
+which a mismatch is supported. A second OpenUSD version cell (min vs latest) is
+a roadmap P1 item, and it is now a question of which *pinned* versions the
+matrix carries, not of widening a range.
+
+**v0.5.0 was the first release built and verified against 26.08 throughout;
+v0.6.0 is the first that cannot be built against anything else.** (v0.4.0 was
+verified against 26.05; the runtimes were re-pinned after it was tagged.) The
+26.05 → 26.08 move changed no observable behavior of these plugins: every
+Workspace Phase 0 baseline artifact is byte-identical across the two versions
+except the exported symbol names, which differ only by OpenUSD's internal
+`pxrInternal_v0_26_5` → `_26_8` namespace.
+
+All three 26.08 runtimes are published — `26.08-windows-x86_64` and
+`26.08-linux-x86_64`
 ([report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md))
 and `26.08-macos-arm64`
 ([report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md))
-— and every lane pins them, so the exact-pin work is no longer blocked on a
-missing runtime.
+— and every lane pins them by digest.
 
 ## Toolchain
 
@@ -60,16 +89,17 @@ These match the per-PR CI matrix in `.github/workflows/ost-source-ci.yml`
 | Linux | `ubuntu-24.04` | x86_64 | libstdc++ (glibc ≥ 2.38 floor) |
 
 Other host OS versions / architectures (e.g. Linux arm64, x86_64 macOS) are not
-part of the verified matrix for `v0.5.0`.
+part of the verified matrix.
 
-These cells cover the four plugin bundles only. `motionCore`, `motionRuntime`,
-`vrmRetarget`, `vrmContainer`, and both CLIs (`motion_retarget`,
-`motion_capture`) are **not built by any lane** —
-`ost ci generate` emits one job per bundle cell and has no cell shape for a plain
-library or an executable
-([report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md),
-ask 1). They are compiled and tested in the plain-CMake root build, which runs
-locally and in no workflow.
+These cells cover the four plugin bundles. `motionCore`, `motionRuntime`,
+`vrmRetarget`, `vrmContainer` and both CLIs (`motion_retarget`,
+`motion_capture`) are covered by the three `kind: workspace` cells that `ost`
+0.21.0 made expressible — they build the root CMake tree, which is the only
+configuration in which `libs/` and `tools/` targets exist, and run its whole
+CTest suite on the same three runners
+([report 33](../reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md)). A
+fourth workspace cell, `workspace-graph-pr`, runs the WORKSPACE.md §2
+dependency-direction gate before anything is built.
 
 ## Build outputs
 

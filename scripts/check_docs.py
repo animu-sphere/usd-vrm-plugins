@@ -10,7 +10,9 @@ the handful of facts that silently rot when the workspace changes shape:
 2. no current-state document describes `usdVrm` as a bundle id or points at the
    pre-rename `plugins/usdVrm/` path (history is exempt — see HISTORY);
 3. the schema contract version in the docs matches vrmSchema's manifest;
-4. every local markdown link resolves.
+4. the OpenUSD pin agrees across the bundle manifests, the configure-time
+   contract module, and the supported-configurations reference;
+5. every local markdown link resolves.
 
 Run: python scripts/check_docs.py   (exit 1 on any failure)
 """
@@ -121,6 +123,52 @@ def check_schema_contract(failures: list[str]) -> None:
             f"provides {contract!r}")
 
 
+def check_openusd_pin(failures: list[str]) -> None:
+    """One OpenUSD version, said the same way in all four places.
+
+    Since v0.6.0 the version is a pin rather than a range, and it is asserted
+    by two independent mechanisms — `ost` reads the manifests, a plain CMake
+    build reads cmake/UsdVrmOpenUsd.cmake. Nothing makes them agree, and a
+    half-bumped pair fails only on whichever build path the next person takes.
+    """
+    module = read("cmake/UsdVrmOpenUsd.cmake")
+    m = re.search(r'set\(USDVRM_OPENUSD_REQUIRED_RELEASE\s+"([^"]+)"\)', module)
+    if not m:
+        failures.append("cmake/UsdVrmOpenUsd.cmake declares no "
+                        "USDVRM_OPENUSD_REQUIRED_RELEASE")
+        return
+    release = m.group(1)
+
+    packed = re.search(
+        r"set\(USDVRM_OPENUSD_REQUIRED_PXR_VERSION\s+(\d+)\)", module)
+    if not packed:
+        failures.append("cmake/UsdVrmOpenUsd.cmake declares no "
+                        "USDVRM_OPENUSD_REQUIRED_PXR_VERSION")
+    elif packed.group(1) != release.replace(".", ""):
+        # 26.08 -> 2608. OpenUSD's own packed form; they cannot disagree.
+        failures.append(
+            f"cmake/UsdVrmOpenUsd.cmake pins release {release!r} but "
+            f"PXR_VERSION {packed.group(1)!r}")
+
+    expected = f"=={release}"
+    for name, manifest in sorted(discover()[0].items()):
+        declared = scalar(read(manifest), "openusd")
+        if declared != expected:
+            failures.append(
+                f"{manifest} declares openusd {declared!r}; the workspace pin "
+                f"is {expected!r} (cmake/UsdVrmOpenUsd.cmake). Bundle {name}.")
+
+    # The reference's OpenUSD table is the row a reader trusts, so require the
+    # pin *there* rather than anywhere in the prose -- the prose also names the
+    # retired range, on purpose, to say that it is retired.
+    doc = "docs/reference/SUPPORTED_CONFIGURATIONS.md"
+    rows = [ln for ln in read(doc).splitlines()
+            if ln.startswith("|") and expected in ln]
+    if not rows:
+        failures.append(
+            f"{doc} has no table row stating the OpenUSD pin {expected!r}")
+
+
 LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
 
@@ -147,7 +195,7 @@ def main() -> int:
 
     failures: list[str] = []
     for check in (check_inventory, check_no_stale_paths,
-                  check_schema_contract, check_links):
+                  check_schema_contract, check_openusd_pin, check_links):
         check(failures)
 
     if failures:

@@ -7,7 +7,9 @@ plugin:
   kind: usd-fileformat
 license: Apache-2.0
 runtime:
-  openusd: ">=25.05,<27.0"
+  # The one OpenUSD version this plugin supports; see usdVrmFileFormat's
+  # manifest for why the tolerated range was retired in v0.6.0.
+  openusd: "==26.08"
   cxx_abi: inherit
 provides:
   - usd-fileformat:vrma

@@ -277,8 +277,15 @@ a **draft** GitHub release — per-target lean + debug bundles, a source archive
 Publishing the draft is a human decision. Run the workflow manually
 (`workflow_dispatch`) for a dry run that creates no release.
 
-Each bundle carries a `buildInfo.json` stamp (commit / toolchain / OpenUSD /
-build type / schema contract version), surfaced by `tools/vrm_report.py`.
+`usdVrmFileFormat` carries a `buildInfo.json` stamp (commit / toolchain /
+OpenUSD release and `PXR_VERSION` / OpenExec components / build type / schema
+contract version), surfaced by `tools/vrm_report.py`.
+
+Every bundle is built against **OpenUSD 26.08 and nothing else**, and against a
+26.08 that carries OpenExec. Both are enforced at configure time by
+[`cmake/UsdVrmOpenUsd.cmake`](cmake/UsdVrmOpenUsd.cmake), for `ost` and
+plain-CMake builds alike — see
+[supported configurations](docs/reference/SUPPORTED_CONFIGURATIONS.md).
 
 ## Documentation
 
