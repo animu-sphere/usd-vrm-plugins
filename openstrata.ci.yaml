@@ -329,6 +329,15 @@ cells:
       expected_oci_digest: sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1
     platform: cy2026
     profile: usd
+    # Required here even though the Windows *bundle* cells do without it. This
+    # cell runs the root tree's native CTest executables, and the Windows
+    # runtime bundles no interpreter: its USD DLLs import python313.dll, which
+    # must therefore be on PATH for a plain .exe to start at all. Without
+    # setup-python the DLL lives only in the hosted tool cache, off PATH, and
+    # every USD-linking test exits 0xc0000135 (DLL not found) while the
+    # Python-driven tests still pass, because a python.exe finds its own DLL
+    # beside it. Same reason release.yml pins it on the Windows cell.
+    host_python: "3.13"
     verify: test
 
   - name: workspace-pr-macos-arm64

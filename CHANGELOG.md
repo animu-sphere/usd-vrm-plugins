@@ -45,6 +45,16 @@ Current schema contract version: **1**.
   rewrites each bundle's staged library without recording bundle-managed
   provenance. It now asserts 4 bundle + 2 tool packages by member kind.
 
+### Fixed
+
+- **The Phase 0 baseline gate no longer fails on a platform it has no baseline
+  for.** `tools/baseline_freeze.py --check` now skips a `symbols/<platform>.txt`
+  that is not committed — a platform with no frozen symbol list has nothing to
+  regress against, which is what the tool has always documented — while any
+  difference against a baseline that *does* exist still fails. Only
+  `windows-x86_64.txt` is frozen; the new workspace cells were the first thing
+  ever to run this gate on Linux and macOS. Freezing those two is roadmap work.
+
 ### Removed
 
 - **`.github/workflows/motion-ci.yml`** — 210 hand-written lines, ~120 of them a

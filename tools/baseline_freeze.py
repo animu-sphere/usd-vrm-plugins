@@ -741,6 +741,15 @@ def do_check(sections) -> int:
     for rel, expected_new in sorted(artifacts.items()):
         committed = BASELINE / rel
         if not committed.exists():
+            # A symbol baseline is per-platform and only obtainable by running
+            # this tool ON that platform, so a host with no committed file has
+            # nothing to regress against -- skip it (documented at the top of
+            # this file). Every other artifact is machine-independent, so a
+            # missing one is a real regression.
+            if rel.startswith("symbols/"):
+                skips.append(f"{rel}: no committed baseline for this platform "
+                             "(freeze it with --update on that host)")
+                continue
             failures.append((rel, "missing from committed baseline "
                              "(run --update on the baseline PR only)"))
             continue

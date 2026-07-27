@@ -33,6 +33,13 @@ met, both ahead of schedule:
 
 ### Carried into v0.6.0
 
+- ⬜ **Freeze the Linux and macOS symbol baselines.** `tests/baseline/symbols/`
+  holds `windows-x86_64.txt` only, because until the workspace cells landed no
+  lane ran the Phase 0 gate anywhere else. `--check` skips a platform with no
+  committed file (it has nothing to regress against) and every other baseline
+  artifact is verified on all three OS, so the gap is symbols alone. Closing it
+  means running `tools/baseline_freeze.py --update` on a Linux and a macOS host
+  and committing the result.
 - ⛔ **The scheduled lane's `plugin_artifact` is still a 26.05 build.**
   `usdvrmfileformat-support-windows-cy2026` pairs a 26.05-built plugin with a
   26.08 runtime. OpenUSD guarantees no ABI stability across versions, so that

@@ -573,7 +573,7 @@ jobs:
             runner_profile: windows-hosted
             verify: test
             runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1"
-            host_python: ""
+            host_python: "3.13"
             host_packages_apt: ""
             host_packages_brew: ""
           - name: workspace-pr-macos-arm64
