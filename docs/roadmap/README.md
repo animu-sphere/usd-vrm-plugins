@@ -12,6 +12,7 @@ Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 | [current.md](current.md) | The next milestone and active carry-over work. |
 | [backlog.md](backlog.md) | Ordered but unscheduled work: the milestone ladder beyond next, the motion layer, future phases, and cross-cutting open items. |
 | [openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md) | The OpenExec direction: the OpenUSD 26.08 exact pin, the `execMotion` / `execVrm` foundation, and the `ExecIr` invertible rig. Two milestones out; kept separate because it is a plan, not a status list. |
+| [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) | The input-adapter direction: a direct capture-product adapter, a VMC Protocol adapter, and a generation adapter — unscheduled, independent of the OpenExec plan, and ordered so the first one produces evidence the synthetic corpus cannot. |
 
 ## Three sequences, deliberately separate
 
@@ -49,11 +50,15 @@ A–H is unrelated to that retired A–E** and always carries the "Motion" quali
   `motionRuntime`, `vrmRetarget`, and `usdVrmaFileFormat` implement Motion
   Phases A–D. Only Phase 8 (`execMotion` / `execVrm`) is unbuilt.
 - **v0.5.0 is released** (Motion Phase D, live capture). Every lane is pinned to
-  OpenUSD 26.08. The motion layer still has no CI coverage — the attempt is
-  recorded, not claimed.
-- Current priorities: finish the motion-layer CI lane, close the remaining
-  **Workspace Phase 5** packaging P0, widen runtime verification, and begin the
-  OpenExec foundation.
+  OpenUSD 26.08 — and since v0.6.0's first change, no other OpenUSD will
+  configure at all.
+- **The motion layer has CI.** `ost` 0.21.0's `kind: workspace` cells build the
+  root tree and run its whole CTest suite on all three OS; the v0.5.0
+  hand-written lane is deleted.
+- Current priorities: the **OpenExec foundation** (v0.6.0), closing the
+  remaining **Workspace Phase 5** packaging P0, and widening runtime
+  verification. The [input adapters](adapters-mocopi-vmc-ardy.md) are planned
+  but unscheduled.
 - The milestone ladder is **v0.6.0 → v0.7.0**:
 
   | Release | Theme | Sequences |
@@ -71,8 +76,8 @@ A–H is unrelated to that retired A–E** and always carries the "Motion" quali
 - Every bundle builds standalone against installed packages, not just composed
   in the workspace tree.
 - Dependency directions in [WORKSPACE.md](../architecture/WORKSPACE.md) §2 are
-  enforced by CI, not convention. *(Still unmet — v0.5.0 wrote the lane and got
-  the graph gate working, but it is blocked at configure time and ships
-  disabled; see [current.md](current.md).)*
+  enforced by CI, not convention. *(Met since the `ost` 0.21.0 adoption: the
+  `workspace-graph-pr` cell runs `ost plugin test --workspace --graph-only` on
+  every PR, before anything is built.)*
 - Every documented command is one that has actually been run, and no document
   contradicts what CI does.

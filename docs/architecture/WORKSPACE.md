@@ -20,6 +20,11 @@ the aggregate product archive, but its standalone packaging-closure P0 remains
 open. The implementation contract for the shipped motion foundation is
 [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md).
 
+The three input-adapter identities (`vrmAdapterMocopi`, `vrmAdapterVmc`,
+`vrmAdapterArdy`) and their dependency directions were added to this contract on
+2026-07-28, ahead of any adapter code, from
+[roadmap/adapters-mocopi-vmc-ardy.md](../roadmap/adapters-mocopi-vmc-ardy.md).
+
 ## 1. Bundles and libraries
 
 Shipped through Workspace Phase 7:
@@ -45,7 +50,23 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `vrmRetarget` | plain static CMake library (v0.4.0) | Humanoid map, rest pose, pose retargeter, root-motion policy. **Completed before OpenExec** (motion policy §18.12). Expression resolution stays with Motion Phase G. |
 | `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig and the semantic clip off stages, drives `vrmRetarget` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
 | `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `vrmRetarget`: it stops at the clip. Not a bundle. |
-| adapters | optional bundles (reserved, `adapters/`) | The only place product names are permitted: `adapters/liveCapture/mocopi/`, `adapters/generators/ardy/` |
+| `vrmAdapterMocopi` | optional bundle (reserved, `adapters/liveCapture/mocopi/`) | Decodes one capture product's packets into canonical humanoid semantics and pushes them at `LiveCaptureSource`. Direct path: keeps the SDK-specific confidence and device diagnostics a protocol relay drops. |
+| `vrmAdapterVmc` | optional bundle (reserved, `adapters/liveCapture/vmc/`) | The generic real-time input: OSC-over-UDP decode, frame assembly, VRM humanoid bone names → canonical semantics. One adapter serves every sender application, including capture products relayed through it. |
+| `vrmAdapterArdy` | optional bundle (reserved, `adapters/generators/ardy/`) | One generator behind the vendor-neutral `IMotionGenerator` contract, producing canonical humanoid motion that `vrmRetarget` maps onto a target rig. |
+
+`adapters/` is the only place product, SDK, protocol, or research-model names
+are permitted. The three above are **siblings, not a stack**: no adapter may
+depend on another, and there is deliberately no `adapters/common/` until two of
+them are shown to duplicate code that carries no vendor semantics. Their plan,
+including the implementation order and per-adapter acceptance criteria, is
+[roadmap/adapters-mocopi-vmc-ardy.md](../roadmap/adapters-mocopi-vmc-ardy.md).
+
+> **Two unrelated things are called "adapter" in this repo.** The bundles above
+> are *input* adapters: vendor and protocol leaves under `adapters/`. The
+> `ExecIr` adapter named in
+> [the OpenExec plan §3](../roadmap/openexec-v0.6.0-v0.7.0.md) is an internal
+> insulation layer inside `execVrm`, confining a possibly-experimental OpenUSD
+> dependency. Neither is in the other's dependency graph.
 
 Shared code is never a plugin bundle: `vrmContainer` has no plugin
 registration, no `plugInfo.json`, and no OpenUSD types in its public API. The
@@ -78,7 +99,15 @@ execMotion            -> motionCore, motionRuntime
 execVrm               -> vrmSchema
 execVrm               -> motionCore, motionRuntime, vrmRetarget
 adapters/*            -> motionCore, motionRuntime
+adapters/*/tools/*    -> vrmRetarget, OpenUSD stage authoring
 ```
+
+The last two lines are not the same permission. An **adapter library** converts
+a vendor or protocol input into canonical motion values and stops there; an
+**adapter tool** (its CLI) may go on to retarget and author a stage, exactly as
+`motion_retarget` and `motion_capture` do. The moment retarget or USD authoring
+lives inside an adapter library, that adapter has become a second motion
+pipeline.
 
 Forbidden (non-exhaustive; anything not allowed above is forbidden):
 
@@ -98,6 +127,11 @@ vrmRetarget           -> network protocol, OpenExec
 usdVrmaFileFormat     -> live receiver, generator, vrmRetarget, a target VRM
 motionCore/motionRuntime/vrmRetarget -> adapters/*  (adapters depend on the
                          core; the core never depends on an adapter)
+execMotion/execVrm    -> adapters/*  (same rule, one layer up: an OpenExec
+                         node never reaches for a vendor input)
+adapters/<a>          -> adapters/<b>  (adapters are siblings, never a stack)
+adapters/*            -> vrmSchema, any USD file-format bundle, vrmRetarget
+                         (the *library*; its tool may — see above)
 any cycle, including self-cycles
 ```
 
@@ -110,8 +144,11 @@ reviewer can check them without opening the policy:
 - **`usdVrmaFileFormat` is avatar-independent.** It authors a canonical semantic
   humanoid skeleton, never a target skeleton's joint order. Retarget is a
   separate, later step (motion policy §4.2, §4.3).
-- **The dependency arrow points at the core, never at an adapter.** Mocopi and
-  ARDY are leaves.
+- **The dependency arrow points at the core, never at an adapter.** Every
+  adapter is a leaf — of the core, of the OpenExec nodes, and of each other.
+  This is what lets a capture product, a sender application, or a generation
+  model be swapped without touching retarget, runtime, OpenExec, or the
+  importer.
 
 Enforcement: `ost plugin test --workspace` (ost >= 0.15.0) validates the
 bundle graph declared via `requires.bundles` before running any bundle's
@@ -184,9 +221,21 @@ execVrm-<version>-<target>.tar.zst             (when it exists)
 usd-vrm-plugins-<version>-<target>-plugin-product.tar.zst (aggregate)
 ```
 
-Adapter bundles, if they are ever published, are named
-`vrmAdapter<Name>-<version>-<target>.tar.zst` and are **never** part of the
-aggregate: the aggregate stays free of product names (motion policy §8.1).
+Adapter bundles are named `vrmAdapter<Name>-<version>-<target>.tar.zst` and are
+**never** part of the aggregate:
+
+```text
+vrmAdapterMocopi-<version>-<target>.tar.zst    (when it exists)
+vrmAdapterVmc-<version>-<target>.tar.zst       (when it exists)
+vrmAdapterArdy-<version>-<target>.tar.zst      (when it exists)
+```
+
+The exclusion keeps the aggregate free of product names (motion policy §8.1),
+but it also keeps optional SDK, network, and model dependencies — and their
+license terms — out of the core distribution, and leaves each adapter free to
+take its own release and support cadence later. Adapter versions may track the
+repository tag at first; the artifact boundary that makes independent
+distribution possible exists from the first adapter, not retrofitted.
 
 Initial release rules: bundle identities and artifacts are separate; the git
 tag is shared; all bundle versions stay synchronized with the repository
