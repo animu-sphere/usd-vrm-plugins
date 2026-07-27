@@ -25,6 +25,11 @@
 #   USDVRM_OPENUSD_RELEASE       - "26.08"
 #   USDVRM_OPENEXEC_AVAILABLE    - TRUE (configure fails otherwise)
 #   USDVRM_OPENEXEC_COMPONENTS   - the exec libraries found, as a list
+#
+# The two USDVRM_OPENUSD_REQUIRED_* values below are the pin itself, and they
+# have a consumer outside CMake: scripts/check_docs.py greps them by name to
+# check that the bundle manifests and the supported-configurations reference
+# say the same thing. Renaming one fails that check rather than silencing it.
 include_guard(GLOBAL)
 
 # The single supported point. `PXR_VERSION` is OpenUSD's own packed form: 2608
@@ -120,12 +125,18 @@ foreach(_i RANGE 0 ${_usdvrm_probe_last} 2)
         list(APPEND USDVRM_OPENEXEC_COMPONENTS "${_component}")
     endif()
 endforeach()
+# This module is included into the scope of every project in the workspace, so
+# it leaves none of its working variables behind -- including the loop
+# variables, which have names an unrelated loop in an includer could reuse.
 unset(_usdvrm_openexec_probe)
 unset(_usdvrm_probe_length)
 unset(_usdvrm_probe_last)
 unset(_usdvrm_header_found)
 unset(_component)
 unset(_header)
+unset(_i)
+unset(_j)
+unset(_dir)
 
 if(_usdvrm_openexec_missing)
     string(REPLACE ";" "\n  - " _usdvrm_openexec_missing_text

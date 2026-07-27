@@ -11,9 +11,12 @@
 #   cmake -DFIXTURE_DIR=... -DWORK_DIR=... -DPROBE_GENERATOR=... -P <this>
 cmake_minimum_required(VERSION 3.22)
 
+# Non-empty, not merely defined: `-DWORK_DIR=` satisfies DEFINED and would make
+# the per-case `file(REMOVE_RECURSE "${WORK_DIR}/${_name}")` below delete
+# `/supported_runtime` at the filesystem root.
 foreach(_required FIXTURE_DIR WORK_DIR)
-    if(NOT DEFINED ${_required})
-        message(FATAL_ERROR "${_required} is required")
+    if(NOT DEFINED ${_required} OR "${${_required}}" STREQUAL "")
+        message(FATAL_ERROR "${_required} is required and must not be empty")
     endif()
 endforeach()
 
@@ -54,7 +57,11 @@ foreach(_case IN LISTS _cases)
                 "-DPROBE_MISSING_HEADERS=${_missing_headers}"
         OUTPUT_VARIABLE _stdout
         ERROR_VARIABLE _stderr
-        RESULT_VARIABLE _rc)
+        RESULT_VARIABLE _rc
+        # The fixture compiles nothing; a configure that has not returned in a
+        # minute is stuck, and failing here beats waiting out CTest's timeout
+        # with no indication of which case hung.
+        TIMEOUT 60)
     set(_output "${_stdout}${_stderr}")
 
     if(_expect STREQUAL "ACCEPT")
