@@ -27,9 +27,25 @@ humanoid through OpenExec. Nodes are thin wrappers over `motionRuntime` and
   path — and `scripts/check_docs.py` keeps the manifests, the module, and
   [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md) from
   drifting apart.
-- ⬜ The rest of P0-1 is the [26.08 OpenExec migration
-  report](openexec-v0.6.0-v0.7.0.md#43-2608-openexec-migration-report), which
-  P0-4 and P0-5 need before either can be designed.
+- ✅ **The 26.08 OpenExec migration audit is written** — the rest of P0-1, and
+  the input P0-4 and P0-5 were waiting on:
+  [reports/openusd/26.08-openexec-migration.md](../reports/openusd/26.08-openexec-migration.md).
+  It reads the published runtime's own headers and plugInfo files plus the
+  `v26.08` sources — nothing was compiled or run, and the report says so. The
+  plan's core bet holds: a computation can be a thin wrapper, because
+  registration is declarative and a callback is a pure function of resolved
+  inputs. Five findings change v0.6.0's scope, two of them structural:
+  **`VtArray` is not an execution value type**, so a pose crosses a computation
+  boundary as a registered `motionCore` aggregate rather than as an array — this
+  decides every `execMotion`/`execVrm` signature; and **`usdExecImaging`'s prim
+  adapter registry is hard-coded** to `UsdGeomXformable` and `ExecIrXformable`,
+  so the planned `UsdSkel` display slice (P0-7) cannot be registered in 26.08 and
+  is now marked ⛔ pending a re-scope decision.
+- ⬜ **Amend the OpenExec capability probe** with what the audit found: `esf`,
+  `esfUsd` and `ef` go unprobed although the public exec headers require them,
+  and `usdExecImaging` proves nothing because it is built whether or not
+  `PXR_BUILD_EXEC` is on. The refusal is still correct today — the other five
+  components are absent in that configuration — so this is precision, not a hole.
 
 The two prerequisites this milestone was originally scoped around were already
 met, both ahead of schedule:

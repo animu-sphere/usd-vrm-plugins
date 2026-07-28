@@ -24,6 +24,17 @@ Current schema contract version: **1**.
   capture and the capture corpus), `vrmRetarget`, `vrmContainer`, both CLI
   tools, and `usdvrm_baseline`, the whole-workspace behavior gate that no lane
   had ever run.
+- **The 26.08 OpenExec migration audit** —
+  [docs/reports/openusd/26.08-openexec-migration.md](docs/reports/openusd/26.08-openexec-migration.md),
+  the remaining half of the v0.6.0 P0-1 pin work and the input `execMotion` and
+  `execVrm` need before either can be designed. It reads the published runtime's
+  own headers, plugInfo files and 26.08 sources across registration, callbacks,
+  value types, connection dataflow, requests, cache/invalidation, `ExecIr` and
+  the Hydra path, and lands five findings that change v0.6.0's scope — chiefly
+  that `VtArray` is not an execution value type (so pose data crosses a
+  computation boundary as a registered aggregate) and that `usdExecImaging`'s
+  adapter registry is hard-coded to two prim types in 26.08, which makes the
+  planned `UsdSkel` display slice unreachable without upstream work.
 - **`workspace_openusd_contract`** — a CTest that drives
   `cmake/UsdVrmOpenUsd.cmake` against fixture OpenUSD installs (too old, too
   new, an exec library with no imported target, an exec component with no
@@ -58,9 +69,11 @@ Current schema contract version: **1**.
 - **A 26.08 without OpenExec is refused too.** The same module probes `exec`,
   `execGeom`, `execIr`, `execUsd`, `vdf`, and `usdExecImaging` — each by both
   its imported CMake target and one header, since `ost` stages the link and
-  development halves separately. 26.08 has no OpenExec build toggle, so this
-  detects a slimmed or hand-stripped install rather than a build-option
-  mistake. OpenExec becomes a first-class execution basis in v0.6.0.
+  development halves separately. `build_usd.py` exposes no flag for OpenExec, so
+  a runtime built that way always carries it; the CMake build does have
+  `PXR_BUILD_EXEC` (default `ON`), so the probe also catches a plain-CMake
+  install built without it, as well as a slimmed or hand-stripped one. OpenExec
+  becomes a first-class execution basis in v0.6.0.
 - **`buildInfo.json` is at schema 2.** It gains `openexecAvailable` and
   `openexecComponents`, and `openusdVersion` is now the release name (`26.08`)
   rather than `pxrConfig.cmake`'s `PXR_MAJOR.MINOR.PATCH` — which reads

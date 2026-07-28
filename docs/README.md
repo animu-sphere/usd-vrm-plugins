@@ -17,7 +17,7 @@ contract wins — structural changes go there first, in their own PR.
 | [roadmap/](roadmap/) | What is planned next (only incomplete work). | [README.md](roadmap/README.md) |
 | [releases/](releases/) | Immutable per-version release records. | [README.md](releases/README.md) |
 | [design/](design/) | Why significant decisions were made. | [DESIGN_POLICY.md](design/DESIGN_POLICY.md) |
-| [reports/](reports/) | Evidence from real runs: the `ost` dogfooding series and the delivery log. | [README.md](reports/README.md) |
+| [reports/](reports/) | Evidence from real runs: the `ost` dogfooding series, OpenUSD release audits, and the delivery log. | [README.md](reports/README.md) |
 | [contributing/](contributing/) | Contributor procedures. | [RELEASE_NOTES_TEMPLATE.md](contributing/RELEASE_NOTES_TEMPLATE.md) |
 
 ## Canonical documents
