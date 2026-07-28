@@ -139,26 +139,50 @@ Digests and verification evidence are in
 [report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md)
 (macOS arm64).
 
-One correction to the original plan is worth stating: **26.08 has no OpenExec
-build toggle.** `build_usd.py` ships `exec`, `execGeom`, `execIr`, `execUsd`,
-`usdExecImaging`, and `vdf` unconditionally. So the gate "the build fails on an
-OpenExec-less runtime" is a *detection* requirement — probe for the libraries and
-headers — not a build-option requirement.
+One correction to the original plan is worth stating: **`build_usd.py` has no
+OpenExec toggle.** It ships `exec`, `execGeom`, `execIr`, `execUsd`,
+`usdExecImaging`, and `vdf` unconditionally, so every runtime we publish carries
+them. The CMake build *does* have one — `PXR_BUILD_EXEC`, default `ON`, forced
+off only for Emscripten — so the gate "the build fails on an OpenExec-less
+runtime" stays a *detection* requirement, and now defends a configuration a
+third party can actually produce. `usdExecImaging` is built either way and is
+therefore not evidence of OpenExec; see the migration report
+[§1](../reports/openusd/26.08-openexec-migration.md#1-what-2608-actually-ships).
 
 ### 4.3 26.08 OpenExec migration report
 
-Verify against real 26.08 headers and sample code, and write it up:
-`exec`, `execUsd`, `execIr`, `vdf`, `usdExecImaging`, computation registration,
+✅ Done: [reports/openusd/26.08-openexec-migration.md](../reports/openusd/26.08-openexec-migration.md).
+It reads the published runtime — the same artifact every CI cell pins — plus the
+`v26.08` sources, and covers the whole list this section asked for: `exec`,
+`execUsd`, `execIr`, `vdf`, `usdExecImaging`, computation registration,
 callable/capturing-lambda callbacks, USD-connection dataflow, cache and
-invalidation, batch requests, and Hydra scene-index integration.
+invalidation, batch requests, and Hydra scene-index integration. The published
+runtimes were deliberately built with `--examples`, and that sample code
+(`share/exec/examples/…/irExampleAuthoringCode`, `pxr.IrExampleAuthoringCode`,
+`pxr.IrExampleUsdviewPlugin`) is read in
+[§7.4](../reports/openusd/26.08-openexec-migration.md#74-what-the-shipped-example-demonstrates).
 
-Output: `docs/reports/openusd/26.08-openexec-migration.md` (a new `reports/`
-subdirectory, alongside the `ost` series).
+The plan's core bet survives: a computation really can be a thin wrapper, because
+the registration language is declarative and a callback is a pure function of
+resolved inputs. Five findings change scope, each carried into the task below it:
 
-The published runtimes were deliberately built with `--examples`, so the audit
-has working 26.08 code to read: `share/exec/examples/…/irExampleAuthoringCode`,
-`pxr.IrExampleAuthoringCode`, and `pxr.IrExampleUsdviewPlugin` ship inside the
-runtime artifact.
+1. **`VtArray` is not an execution value type**, so a pose crosses a computation
+   boundary as a registered aggregate — this decides every P0-4 and P0-5
+   signature.
+2. **`usdExecImaging`'s adapter registry is hard-coded** to `UsdGeomXformable`
+   and `ExecIrXformable`, so no `UsdSkel` adapter can be registered — P0-7 is
+   re-scoped.
+3. **`PXR_BUILD_EXEC` exists** (§4.2 above, corrected), and `usdExecImaging` is
+   not evidence of OpenExec — the probe's component list needs amending.
+4. **`ExecIr` is per-prim scalar avars in world space**, against `UsdSkel`'s
+   joint arrays in joint-local space — a v0.7.0 design item, not an integration
+   item.
+5. **Inversion is a plugin-level construct in 26.08**, with an in-source TODO
+   saying it moves into the core later.
+
+The report's [§9](../reports/openusd/26.08-openexec-migration.md#9-what-this-changes-in-the-plan)
+lists all nine consequences; [§10](../reports/openusd/26.08-openexec-migration.md#10-what-this-audit-did-not-do)
+is what it did *not* verify — nothing was compiled or run.
 
 ## 5. 26.08 features this plan leans on
 
@@ -176,12 +200,24 @@ no private thread pool competing with the OpenExec scheduler.
 **USD connection dataflow.** v0.6.0 restricts itself to a one-to-one chain
 (`AnimationSource → SampleAnimation → FilterPose → HumanoidRetarget →
 JointTransforms`) within 26.08's limited connection support. Multi-input
-connections and graph authoring wait for v0.7.0 or later.
+connections and graph authoring wait for v0.7.0 or later. The audit sharpened
+this from a self-imposed restriction to a documented behavior: the builtin
+`computeValue` forwards a computed value across **exactly one** connection to a
+same-typed attribute, and silently falls back to the attribute's own resolved
+value when there are two
+([report §5.1](../reports/openusd/26.08-openexec-migration.md#51-the-connection-rule-the-plan-half-guessed)).
+One connection per link is a correctness requirement, and only we can enforce it.
+Fan-in exists today through `Relationship().TargetedObjects<T>()` and
+`IncomingConnections<T>()`, the latter with no deterministic ordering.
 
 **`usdExecImaging`.** The official route from computed results to Hydra/usdview.
 A custom viewer, or writing results back to the stage every frame, is explicitly
 not a v0.6.0 requirement — the latter is a standing non-goal
-(motion policy §12.1).
+(motion policy §12.1). The plumbing is one environment variable
+(`USDIMAGINGGL_ENGINE_ENABLE_EXEC_SCENE_INDEX`), but 26.08 resolves prim
+adapters from a hard-coded list rather than from plugins
+([report §8.2](../reports/openusd/26.08-openexec-migration.md#82-the-blocker-the-adapter-registry-is-hard-coded)),
+which is what re-scopes P0-7.
 
 ## 6. v0.6.0 tasks
 
@@ -205,8 +241,17 @@ OS; a runtime without the OpenExec libraries fails the build explicitly; and
   target, an exec component with no headers — and asserts both that it refuses
   and *why*. A gate nothing exercises is a gate nobody can trust.
 - ✅ **Three OS, one OpenUSD, one digest each** (§4.2), since v0.5.0.
-- ⬜ **The 26.08 OpenExec migration report** (§4.3) — the remaining piece, and
-  the input P0-4 and P0-5 need before either can be designed.
+- ✅ **The 26.08 OpenExec migration report** (§4.3) —
+  [reports/openusd/26.08-openexec-migration.md](../reports/openusd/26.08-openexec-migration.md).
+  P0-4 and P0-5 have the input they were waiting on.
+- ⬜ **Amend the capability probe** with what the audit found
+  ([report §9.1](../reports/openusd/26.08-openexec-migration.md#9-what-this-changes-in-the-plan)):
+  `esf`, `esfUsd` and `ef` are unprobed but are transitively required by the
+  public exec headers — a runtime missing them fails at *compile* time inside a
+  bundle, which is the failure the probe exists to move earlier — and
+  `usdExecImaging` carries no information, since it is built whether or not
+  `PXR_BUILD_EXEC` is on. `workspace_openusd_contract` gains a fixture case per
+  component.
 
 ### P0-2 — motion layer CI ⬜
 
@@ -260,6 +305,14 @@ calling the existing `motionRuntime` API.
 **Not in scope:** new retarget algorithms, stage mutation, vendor-specific
 sources, network input, live device state.
 
+**The value-type constraint is settled, not open**
+([report §4](../reports/openusd/26.08-openexec-migration.md#4-value-types-and-the-vtarray-rule)):
+`VtArray` is rejected by `ExecTypeRegistry::RegisterType` and by every
+`Computation<T>`, so a pose crosses a computation boundary as a `motionCore`
+value type registered with `ExecTypeRegistry::RegisterType` — which requires
+`operator==` on it, the same thing P0-6 parity needs. Array-valued USD inputs are
+declared with their *element* type and consumed with `VdfReadIterator<T>`.
+
 ### P0-5 — minimal `execVrm` bundle ⬜
 
 Computations: `vrm.computeHumanoidMap`, `vrm.computeTargetSkeleton`,
@@ -273,6 +326,13 @@ Inputs: `vrm:humanBones:*`, the typed `Vrm*API` schemas, `UsdSkelSkeleton`,
 bytes, joint-name heuristics, and duplicating an algorithm that already exists in
 `vrmRetarget`.
 
+**One obligation the audit added:** `execVrm`'s own `plugInfo.json` must carry an
+`Info.Exec.Schemas` block naming every schema it registers on — the `Vrm*API`
+schemas, `UsdSkelSkeleton`, `UsdSkelAnimation` — because the block lives with the
+*registering* library, not the schema owner, and nothing else declares them. A
+missing block fails as "computation not found", not as a load error
+([report §2.1](../reports/openusd/26.08-openexec-migration.md#21-the-pluginfo-half)).
+
 ### P0-6 — OpenExec / offline parity ⬜
 
 Compare `motion_retarget`'s offline result against the `execMotion` + `execVrm`
@@ -284,7 +344,7 @@ This is the check that keeps a computation a wrapper. v0.4.0 already produced th
 mechanism it needs: the design triplet is compared through USD composition at the
 value level, not by byte-comparing a layer.
 
-### P0-7 — `usdExecImaging` vertical slice ⬜
+### P0-7 — `usdExecImaging` vertical slice ⛔ re-scope needed
 
 Avatar stage + VRMA semantic animation + an OpenExec request → computed
 transforms → `usdExecImaging` → usdview.
@@ -293,6 +353,30 @@ transforms → `usdExecImaging` → usdview.
 humanoid mapping invalidates the right network; an unrelated material change does
 *not* recompute the motion network; and the whole thing works from packaged
 plugins.
+
+⛔ **Not reachable as written in 26.08.** `UsdExecImagingPrimAdapterInterface` is
+a public header that reads like a plugin point, but the registry behind it is a
+hard-coded pair of `IsA<>` checks — `UsdGeomXformable` and `ExecIrXformable` —
+with a source TODO promising generic plugin registration later. A VRM avatar
+posed through `UsdSkel` skinning is neither, so no adapter can be registered
+([report §8.2](../reports/openusd/26.08-openexec-migration.md#82-the-blocker-the-adapter-registry-is-hard-coded)).
+The proposal, pending a decision:
+
+- **Prove the mechanism on `UsdGeomXformable`** — an exec-computed transform on
+  a real VRM stage, displayed through the exec scene index, asserting all four
+  "done when" invalidation properties. Everything except the adapter is then
+  exercised for real, and the plumbing risk is retired.
+- **Defer the skinned slice to the `ExecIr` track** (v0.7.0), where
+  `ExecIrXformable` *is* adaptable — at the cost of the §7.2 shape mismatch the
+  report describes.
+- **File the upstream ask** for plugin registration of exec imaging adapters.
+
+Whichever is chosen, a display test must first assert the stage uses
+`xformOp:transform` only, or disable the geom adapter: the exec `UsdGeomXformable`
+computation reads that one attribute and **ignores `xformOpOrder`**. Our importer
+happens to author exactly that and nothing else, but a composed third-party
+avatar would draw wrong with no diagnostic
+([report §8.3](../reports/openusd/26.08-openexec-migration.md#83-the-xformoptransform-only-rule)).
 
 ### P1-1 — retarget diagnostics ⬜
 
@@ -310,6 +394,13 @@ VRM_OPENEXEC_INVALIDATED
 …and the CLI exit codes: `0` success, `1` invalid user input, `2` unsupported
 source feature, `3` stage/plugin failure, `4` retarget contract violation,
 `5` output authoring failure, `6` OpenExec evaluation failure.
+
+The three `VRM_OPENEXEC_*` codes have to be produced by our own checks around the
+request. 26.08 has exactly one structured compilation error
+(`ExecValidationErrorType::DataDependencyCycle`); everything else arrives as
+free-text `TF_ERROR` / `TF_RUNTIME_ERROR`, detectable with a `TfErrorMark` but
+not classifiable
+([report §6](../reports/openusd/26.08-openexec-migration.md#6-requests-evaluation-cache-and-invalidation)).
 
 ### P1-2 — scale policy ⬜
 
@@ -343,6 +434,15 @@ Compare the `execVrm` design against `ExecIr` across joint representation,
 controller representation, FK computation, controller switching, compensation,
 forward and inverse evaluation, and transform publication. Anything general moves
 to `ExecIr`; only VRM semantics stay in `execVrm`.
+
+Start from the shape table in
+[report §7.2](../reports/openusd/26.08-openexec-migration.md#72-the-shape-mismatch-with-usdskel).
+The real question is not what `execVrm` duplicates but what a `UsdSkel`↔`ExecIr`
+conversion costs and where it lives: `ExecIr` is one prim per joint with scalar
+Euler avars in **world** space, against one prim holding quaternion arrays in
+**joint-local** space. Also note that every `ExecIr` schema's own docstring says
+it is "not yet ready for production use", and the switch controller is hard-coded
+to two rigs literally named `rig1` and `rig2`.
 
 ### P0-2 — VRM humanoid → `ExecIr` adapter ⬜
 

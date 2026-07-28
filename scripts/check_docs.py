@@ -171,14 +171,27 @@ def check_openusd_pin(failures: list[str]) -> None:
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
+# Code is not prose, and C++ reads as markdown more often than is comfortable:
+# a lambda `+[](const VdfContext &ctx)` is exactly `[text](target)`. Strip code
+# before looking for links, or every quoted callback becomes a broken link.
+FENCE = re.compile(r"^```.*?^```", re.M | re.S)
+INLINE_CODE = re.compile(r"`[^`\n]*`")
+
+
+def prose_only(text: str) -> str:
+    """Blank out fenced blocks and inline spans, keeping line numbers intact."""
+    def blank(m: re.Match[str]) -> str:
+        return re.sub(r"[^\n]", " ", m.group(0))
+    return INLINE_CODE.sub(blank, FENCE.sub(blank, text))
+
 
 def check_links(failures: list[str]) -> None:
     for p in sorted(REPO_ROOT.glob("**/*.md")):
         rel = str(p.relative_to(REPO_ROOT)).replace("\\", "/")
         if rel.startswith(("build/", "scratch/")):
             continue
-        for target in LINK.findall(p.read_text(encoding="utf-8",
-                                               errors="replace")):
+        for target in LINK.findall(prose_only(p.read_text(encoding="utf-8",
+                                                          errors="replace"))):
             t = target.strip()
             if t.startswith(("http://", "https://", "mailto:", "#")):
                 continue
