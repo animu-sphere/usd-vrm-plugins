@@ -94,15 +94,25 @@ def _binary_dependencies(binary: pathlib.Path) -> str:
 # The OpenUSD libraries the adapter's closure may import, by the `usd_<name>` /
 # `libusd_<name>` decoration all three platforms use. Everything else in that
 # family is refused by name, which is what catches the ones that matter --
-# usd_usd, usd_sdf, usd_plug, usd_ar, usd_usdSkel, usd_exec*, usd_ms.
+# usd_usd, usd_sdf, usd_plug, usd_ar, usd_usdSkel, usd_usdGeom, usd_exec*,
+# usd_ms. Measured: run against `motion_retarget` this reports usd_sdf, usd_usd
+# and usd_usdSkel; against `libUsdVrmaFileFormat` those plus usd_usdGeom.
 #
 # An allowlist rather than a list of forbidden names, for the same reason the
 # CMake check below uses one: a denylist has to anticipate every library nobody
-# has linked yet. The four permitted entries are the value-type and foundation
-# layer motionCore's own contract already allows -- Gf is the one it uses, and
-# the other three are what Gf drags in on some platforms and not others. None of
-# them carries a stage, a composition engine, or a plugin registry.
-_ALLOWED_USD_LIBRARIES = {"gf", "tf", "arch", "vt"}
+# has linked yet. What is permitted is the value-type and foundation layer
+# motionCore's own contract already allows. None of it carries a stage, a
+# composition engine, or a plugin registry.
+#
+# `boost` and `python` are on the list because **the same source links
+# differently per platform**, which cost a CI round trip to learn. Gf's imported
+# target carries OpenUSD's vendored Boost and its Python layer transitively, and
+# Apple's ld64 records every dylib that satisfied a symbol on the link line,
+# where Linux's default --as-needed and Windows' import libraries both drop
+# them. So the adapter's test executable imports usd_gf alone on Windows and
+# Linux, and usd_gf + usd_boost + usd_python on macOS arm64 -- a property of the
+# published Python-enabled runtime, not of anything this repository wrote.
+_ALLOWED_USD_LIBRARIES = {"arch", "boost", "gf", "python", "tf", "vt"}
 _USD_LIBRARY = re.compile(r"usd_([A-Za-z0-9]+)")
 
 
