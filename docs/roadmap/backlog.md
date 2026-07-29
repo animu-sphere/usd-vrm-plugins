@@ -100,17 +100,22 @@ Always written "Motion Phase X", never a bare "Phase X".
   **unchanged** Phase C tool. Product-specific adapters remain optional leaves
   and none ships; validation against a real capture rig is still open. The
   vendor half is planned in
-  [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) — a direct
-  capture-product adapter first, then a VMC Protocol adapter — because the
-  v0.5.0 corpus is closed-form maths and answers no question about timestamp
-  jitter, tracking loss, or reconnection.
+  [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) — the VMC Protocol
+  adapter first, then a direct capture-product adapter — because the v0.5.0
+  corpus is closed-form maths and answers no question about timestamp jitter,
+  tracking loss, or reconnection, and the protocol adapter reaches a real device
+  through a relay without a second decoder. **It does not wait for v0.6.0:** the
+  whole track ends at a retargeted `UsdSkelAnimation` with no OpenExec
+  dependency.
 - ⬜ **Motion Phase E — `execMotion` / `execVrm`** (**v0.6.0**, continuing into
   v0.7.0). ClipSample, PoseBuffer, HumanoidRetarget, RootMotionResolve,
-  AvatarApply. Nodes are thin wrappers over `motionRuntime` and `vrmRetarget`.
-  The [OpenExec plan](openexec-v0.6.0-v0.7.0.md) adds a `usdExecImaging` vertical
-  slice and the `ExecIr` rig track on top of this description; §9 there records
-  that Phase E's scope needs to widen — or the ladder needs another phase — in
-  the motion policy itself.
+  AvatarApply. Nodes are thin wrappers over `motionRuntime` and `vrmRetarget`,
+  and each evaluates an immutable snapshot rather than a live source (motion
+  policy §11.4). The [OpenExec plan](openexec-v0.6.0-v0.7.0.md) adds a display
+  slice — re-scoped to `UsdGeomXformable`, because 26.08 cannot register a
+  `UsdSkel` exec imaging adapter — and the optional `ExecIr` rig track on top of
+  this description; §9 there records that Phase E's scope needs to widen, or the
+  ladder needs another phase, in the motion policy itself.
 - ⬜ **Motion Phase F — generation adapter.** `IMotionGenerator`,
   `MotionGenerationRequest`, text intent, root waypoints, sparse joint
   constraints, pose history, clip-ification. The contract is frozen before the
@@ -205,6 +210,13 @@ or another plugin (design policy §15, §19; motion policy §8, §18):
   transient poses; USD animation is authored only on bake / record / publish
   (motion policy §12.1).
 - **Model latent representations in a shared USD schema** (motion policy §13).
+- **I/O inside an OpenExec computation.** Sockets, SDK polling, file watching, a
+  wall clock, mutable global state, or a private thread pool in a callback.
+  Receiving belongs to an adapter and buffering to `motionRuntime`; a
+  computation evaluates an immutable snapshot (motion policy §11.4).
+- **`ExecIr` as the canonical motion contract**, or as a prerequisite for the
+  standard pipeline. It is an optional experimental adapter (motion policy
+  §11.5).
 
 ## Acceptance criteria for a production-oriented importer
 

@@ -479,6 +479,12 @@ monolithic update function.
 > `LiveCaptureSource` producing `motion::HumanoidPose`, and Mocopi is one
 > concrete adapter under `adapters/liveCapture/mocopi/`. No core code, shared
 > schema, retarget API, or shared OpenExec node names it.
+>
+> Two further corrections since: the **first** adapter written is the generic
+> VMC Protocol one, not the Mocopi-native one — a Mocopi application acting as a
+> VMC sender reaches the same pipeline today — and the "retarget node" below is
+> not a prerequisite. The whole path completes offline, through `vrmRetarget`
+> and `motion_retarget`, with no OpenExec involvement (motion policy §11.4).
 
 The recommended flow for Mocopi input:
 

@@ -7,7 +7,10 @@
 > Phase A–H** (§16).
 >
 > Section numbers are stable and match the source document, so the roadmap and
-> the bundle docs can cite them (e.g. "motion policy §10"). It is a companion
+> the bundle docs can cite them (e.g. "motion policy §10"). Later policy
+> revisions may add *subsections* under an existing number — §11.4 and §11.5
+> came from the 2026-07-29 mocopi/VMC direction — but a numbered section never
+> changes meaning. It is a companion
 > to [DESIGN_POLICY.md](DESIGN_POLICY.md), not a replacement: that document
 > remains canonical for the importer, the schema contract, and Product P0–P6.
 > Where the two overlap — runtime evaluation, OpenExec, Mocopi — **this document
@@ -483,27 +486,42 @@ motion capture system
 Live capture arrives two ways, and both are kept:
 
 ```text
-direct:   capture device -> vendor adapter -> motionRuntime
 generic:  capture device -> sender application -> VMC -> VMC adapter -> motionRuntime
+direct:   capture device -> vendor adapter -> motionRuntime
 ```
 
-The generic path costs one adapter and serves every sender application that
-speaks the protocol. The direct path exists because a protocol relay drops what
-it has no field for: SDK-specific confidence, device diagnostics, and metadata
-that only the vendor's own stream carries — and because a direct connection
-needs no third-party application running.
+**The generic path is built first.** It costs one adapter and serves every
+sender application that speaks the protocol, it is testable from recorded
+packets with no hardware attached, and it makes a real capture device usable
+immediately through a relay. The direct path is built second, because a protocol
+relay drops what it has no field for — SDK-specific confidence, device
+diagnostics, tracking-quality signals — and because a direct connection needs no
+third-party application running. Both remain first-class; only the order is
+fixed, and it is fixed so that the losses justifying the direct adapter are
+*measured* rather than presumed.
 
 Two concrete adapters, siblings rather than a stack:
 
 ```text
-adapters/liveCapture/mocopi/
 adapters/liveCapture/vmc/
+adapters/liveCapture/mocopi/
 ```
 
 `mocopi` must not depend on `vmc` even though a user may route one through the
-other. Whether they share code is decided *after* both exist and their real
-data has been compared — not by anticipating it. Plan:
+other — a runtime data path is not a build edge:
+
+```text
+runtime:  mocopi app -> VMC packet -> vrmAdapterVmc
+build:    vrmAdapterVmc -> motionCore, motionRuntime
+```
+
+Whether the two share code is decided *after* both exist and their real data has
+been compared — not by anticipating it. Plan:
 [roadmap/adapters-mocopi-vmc-ardy.md](../roadmap/adapters-mocopi-vmc-ardy.md).
+
+Neither adapter waits for OpenExec. Decode, canonical conversion, buffering,
+record/replay, offline retarget, and `UsdSkelAnimation` output are complete
+without it; OpenExec connects to that finished pipeline afterwards (§11.4).
 
 ### 8.3 Generative-AI adapter
 
@@ -682,6 +700,73 @@ Motion.Generate
 
 A provider-registry approach is a future option.
 
+### 11.4 A computation evaluates a snapshot and performs no I/O
+
+> Added 2026-07-29; not in the source policy's original numbering.
+
+`Motion.LivePoseReceive` names a computation that *consumes* received data. It
+does not receive. Inside an OpenExec callback the following are forbidden:
+
+```text
+UDP / OSC socket read        mutable global state
+vendor SDK polling           a hidden clock
+file watching                a private thread pool
+```
+
+The required arrangement:
+
+```text
+network / device thread
+        ↓
+adapter                                (decode, normalize, canonical semantics)
+        ↓
+thread-safe timestamped pose buffer    (motionRuntime)
+        ↓
+immutable snapshot
+        ↓
+OpenExec computation
+```
+
+OpenExec's responsibility is evaluation, dependency tracking, caching, and
+invalidation — not reception. A callback that reads a socket or a wall clock is
+not a pure function of its inputs, which makes cache reuse and invalidation
+unverifiable and forfeits the only reason to be on OpenExec at all.
+
+This also fixes the order of work: everything from input to offline
+`UsdSkelAnimation` is finished *before* OpenExec is introduced, and OpenExec
+attaches to it.
+
+```text
+canonical motion snapshot -> execMotion -> execVrm -> evaluation result
+```
+
+### 11.5 `ExecIr` is an optional adapter, never a prerequisite
+
+> Added 2026-07-29; not in the source policy's original numbering.
+
+`ExecIr` is OpenUSD's general-purpose invertible-rig machinery, and `execVrm`
+uses it rather than reimplementing FK, controllers, or switching. But it is
+reached through an adapter and is not load-bearing:
+
+```text
+UsdSkel / VRM semantics  ↕  ExecIr adapter  ↕  ExecIr representation
+```
+
+Forbidden:
+
+```text
+the importer authoring ExecIr prims as a requirement
+motionCore depending on ExecIr
+vrmRetarget depending on ExecIr
+an adapter emitting ExecIr values directly
+ExecIr as the canonical motion contract
+```
+
+The last is the one with lasting cost. `ExecIr` is per-prim scalar avars in
+world space; the canonical contract is quaternion arrays in joint-local space.
+Adopting the first as the second would push a representation still documented
+upstream as experimental into every adapter and every offline test.
+
 ---
 
 ## 12. Separating live evaluation from USD authoring
@@ -794,8 +879,8 @@ plugins/
 
 adapters/
 ├─ liveCapture/
-│  ├─ mocopi/
-│  └─ vmc/
+│  ├─ vmc/
+│  └─ mocopi/
 └─ generators/
    └─ ardy/
 
@@ -868,7 +953,7 @@ enforces via `ost plugin test --workspace`.
 
 > Live status is tracked in [the roadmap](../roadmap/) as **Motion Phase A–H** —
 > always qualified, never a bare "Phase A". This is the third and last sequence
-> in the repo, alongside Product P0–P6 and Workspace Phase 0–6; see
+> in the repo, alongside Product P0–P6 and Workspace Phase 0–8; see
 > [roadmap/README.md](../roadmap/README.md#three-sequences-deliberately-separate).
 
 ### Motion Phase A: freeze the contract
@@ -929,12 +1014,14 @@ motion_retarget \
 - evaluation of missing bones, confidence, root motion
 
 Product-specific support ships as an optional adapter. The generic half shipped
-in v0.5.0; the adapters themselves — a direct capture-product adapter and a VMC
-protocol adapter — are planned in
+in v0.5.0; the adapters themselves — the VMC protocol adapter first, then a
+direct capture-product adapter — are planned in
 [roadmap/adapters-mocopi-vmc-ardy.md](../roadmap/adapters-mocopi-vmc-ardy.md)
 (Milestones A–D). Phase D's synthetic corpus is deliberately closed-form maths,
-so the first real device is also the first evidence about timestamp jitter,
-tracking loss, and reconnection — none of which a synthetic trace can produce.
+so the first *recorded* session is also the first evidence about timestamp
+jitter, tracking loss, and reconnection — none of which a synthetic trace can
+produce. It arrives through the protocol adapter, which is why that one comes
+first: the evidence is the same, and it arrives as a replayable trace.
 
 ### Motion Phase E: `execMotion` / `execVrm`
 
@@ -946,7 +1033,18 @@ tracking loss, and reconnection — none of which a synthetic trace can produce.
 - runtime evaluation
 - transient application of live poses
 
-OpenExec nodes are thin wrappers over `motionRuntime` and `vrmRetarget`.
+OpenExec nodes are thin wrappers over `motionRuntime` and `vrmRetarget`, and
+each evaluates an immutable snapshot rather than a live source (§11.4). Phase E
+begins only once the offline path it wraps is finished, and its first
+correctness claim is numerical parity with that path on the same recorded input.
+
+The display half of Phase E is bounded by what OpenUSD 26.08 allows: exec prim
+adapters are resolved from a hard-coded list, so a `UsdSkel`-skinned avatar
+cannot be displayed through the exec scene index. Phase E therefore proves the
+display mechanism on `UsdGeomXformable`; realtime skinned display is a later
+milestone and not a completion condition for anything in Phase D, E, or F
+([roadmap/openexec-v0.6.0-v0.7.0.md](../roadmap/openexec-v0.6.0-v0.7.0.md)
+P0-7).
 
 ### Motion Phase F: generation adapter
 
@@ -1037,6 +1135,22 @@ Milestones E–F).
 14. USD animation is authored only on bake / record / publish.
 15. VRMA, live capture, and generative AI converge on one humanoid motion
     pipeline.
+
+Added 2026-07-29, from the mocopi/VMC implementation direction:
+
+16. **Input adapters do not wait for OpenExec.** Receive, normalize, record,
+    replay, retarget offline, and author USD — all of it completes without an
+    OpenExec dependency, and none of it may be re-scoped around one (§11.4).
+17. **The generic protocol adapter is written before the vendor-native one**,
+    so the losses that justify a native adapter are measured rather than
+    presumed (§8.2).
+18. **An OpenExec computation performs no I/O and evaluates an immutable
+    snapshot** (§11.4).
+19. **`ExecIr` is an optional experimental adapter**, never the canonical
+    motion contract and never a prerequisite for the standard pipeline (§11.5).
+20. **A display limitation upstream is not an adapter's completion condition.**
+    26.08 cannot register a `UsdSkel` exec imaging adapter; that bounds the
+    display claim, not the motion pipeline.
 
 ---
 
