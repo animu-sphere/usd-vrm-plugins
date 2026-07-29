@@ -450,11 +450,21 @@ corpus, so a device is needed once per behavior rather than once per run.
 
 ## 10. Milestones
 
-### Milestone A — VMC decoding ⬜
+### Milestone A — VMC decoding 🚧
 
 `adapters/liveCapture/vmc` scaffold · recorded packet fixture format · OSC
 decoder · VMC message decoder · bone mapping · coordinate conversion · canonical
 pose output · diagnostics · deterministic unit tests
+
+- ✅ **Scaffold and diagnostics.** `adapters/liveCapture/vmc` builds as a plain
+  library in the root workspace tree, declares its two permitted edges, and
+  carries a boundary check that fails on a plugin manifest, a stage/exec API, a
+  sibling adapter, or a link to anything but `motionCore` and `motionRuntime`.
+  The eight `VRM_VMC_*` codes of §8 are frozen with it — before a decoder
+  exists, so the set describes the protocol rather than whichever failure was
+  hit first.
+- ⬜ Everything else above, in the §5 order: recorded fixtures, then the OSC
+  decoder, then VMC semantics.
 
 ### Milestone B — VMC live receipt ⬜
 
@@ -527,7 +537,26 @@ depends on them ([docs/README.md](../README.md)).
 - ⬜ **Adapter CI lanes are not in `openstrata.ci.yaml`.** The four lanes in §9.5
   are named here and expressed nowhere. `kind: workspace` cells (ost 0.21.0)
   cover the root tree, so `adapter-unit` may need no new cell shape; the
-  hardware lane certainly does, since it must never gate a PR.
+  hardware lane certainly does, since it must never gate a PR. **Measured with
+  the scaffold:** the workspace cells picked the adapter's tests up on all three
+  OS with no CI edit at all, so `adapter-unit` and `adapter-recorded-corpus` are
+  covered as they land. `adapter-integration-loopback` opens a socket and needs
+  its own decision about a hosted runner; `adapter-hardware-opt-in` still has no
+  expressible shape.
+- ⬜ **The workspace graph gate does not reach an adapter.** `ost` 0.21.0
+  discovers plain libraries in the project root's immediate subdirectories and
+  under `libs/`, so `adapters/liveCapture/vmc/openstrata.library.yaml` is never
+  loaded and its declared edges are never validated — silently, since the gate
+  still reports "valid". WORKSPACE.md §2 records this rather than claiming the
+  enforcement, and the ask is
+  [report 34](../reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md).
+  Until it is answered, the per-adapter binary link check is the enforcement.
+- ⬜ **An adapter cannot be packaged.** §13 makes each adapter its own shippable
+  boundary and WORKSPACE.md §5 names the artifact, but `ost` 0.21.0 has no
+  per-library packaging command — `plugin package` takes a bundle or a workspace
+  of them (report 34 §2). This does not block Milestones A–C, which end at a
+  retargeted `UsdSkelAnimation` from the workspace build; it blocks shipping the
+  adapter separately from the product.
 
 ## 12. PR splitting
 

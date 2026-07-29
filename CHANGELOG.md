@@ -15,6 +15,31 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **The first input adapter exists as a boundary** — `adapters/liveCapture/vmc`,
+  the `vrmAdapterVmc` scaffold. A plain static library declaring the only two
+  edges `WORKSPACE.md` §2 permits it (`motionCore`, `motionRuntime`), built by
+  the root workspace tree, with the eight `VRM_VMC_*` diagnostic codes frozen
+  before any decoder exists so the set describes the protocol rather than
+  whichever failure was hit first. No OSC, no VMC semantics, and no socket yet —
+  transport arrives last on purpose, so every test stays fixture-driven.
+  `tests/check_boundaries.py` is what makes the boundary a fact: it fails on a
+  plugin manifest anywhere in the tree, a stage/registration/exec API in
+  `include/` or `src/`, a mention of a sibling adapter or a plugin bundle, and —
+  through an allowlist rather than a denylist — a `target_link_libraries` naming
+  anything but the two permitted libraries, or a binary import outside the
+  OpenUSD value-type layer. The import check reads the **test executable**: a
+  static archive records no imports, so a check pointed at the library could
+  never fail. Pointed at the executable it reports `usd_sdf` / `usd_usd` /
+  `usd_usdSkel` when run against `motion_retarget`.
+- **`ost` report 34** —
+  [docs/reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md](docs/reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md).
+  Scaffolding the adapter measured two gaps: `ost plugin test --workspace`
+  discovers plain libraries only in the project root's immediate subdirectories
+  and under `libs/`, so an adapter's descriptor is skipped *silently* while the
+  gate still reports "valid"; and there is no per-library verb at all, so an
+  adapter cannot be packaged outside the aggregate. Coverage was unaffected —
+  the `kind: workspace` cells picked the adapter's tests up on all three OS with
+  no CI edit.
 - **The motion layer has CI** — the v0.4.0 carry-over v0.5.0 could not close.
   `ost 0.21.0` grew a `kind: workspace` cell, so `openstrata.ci.yaml` now
   declares four of them: `workspace-graph-pr` runs the WORKSPACE.md §2

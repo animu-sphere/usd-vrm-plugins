@@ -55,7 +55,13 @@ def discover() -> tuple[dict[str, str], dict[str, str]]:
         name = scalar(m.read_text(encoding="utf-8"), "name")
         if name:
             bundles[name] = str(m.relative_to(REPO_ROOT)).replace("\\", "/")
-    for m in sorted(REPO_ROOT.glob("libs/*/openstrata.library.yaml")):
+    # Adapters are plain libraries too (WORKSPACE.md §1), one directory deeper:
+    # adapters/<group>/<name>/. Globbing them here is what makes an adapter
+    # identity subject to the same README/WORKSPACE inventory rule as every
+    # other one.
+    descriptors = sorted(REPO_ROOT.glob("libs/*/openstrata.library.yaml"))
+    descriptors += sorted(REPO_ROOT.glob("adapters/*/*/openstrata.library.yaml"))
+    for m in descriptors:
         lid = scalar(m.read_text(encoding="utf-8"), "id")
         if lid:
             libraries[lid] = str(m.relative_to(REPO_ROOT)).replace("\\", "/")

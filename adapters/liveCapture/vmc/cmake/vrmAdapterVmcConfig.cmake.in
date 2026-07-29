@@ -1,0 +1,17 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+# OpenUSD's pxrConfig.cmake defines imported targets unconditionally, so skip it
+# when a consumer has already resolved the Gf target this package needs
+# transitively through motionCore.
+if(NOT TARGET gf AND NOT TARGET pxr::gf)
+    find_dependency(pxr CONFIG REQUIRED)
+endif()
+if(NOT TARGET motionCore::motionCore)
+    find_dependency(motionCore CONFIG REQUIRED)
+endif()
+if(NOT TARGET motionRuntime::motionRuntime)
+    find_dependency(motionRuntime CONFIG REQUIRED)
+endif()
+include("${CMAKE_CURRENT_LIST_DIR}/vrmAdapterVmcTargets.cmake")
+check_required_components(vrmAdapterVmc)

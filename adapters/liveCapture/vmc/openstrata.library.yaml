@@ -1,0 +1,22 @@
+# OpenStrata plain-library descriptor. vrmAdapterVmc is an input leaf: it decodes
+# one real-time protocol into canonical motion values and stops there.
+#
+# A library, not a plugin bundle, and deliberately so -- it registers nothing
+# with OpenUSD and has no plugInfo.json (WORKSPACE.md §1). The two edges below
+# are the *only* ones it is allowed (WORKSPACE.md §2); its future CLI gets its
+# own openstrata.tool.yaml under tools/, which is where retarget and stage
+# authoring become permissible.
+schema: openstrata.library/v1alpha1
+library:
+  id: vrmAdapterVmc
+  # Mirrors VERSION; release preparation updates this in lockstep.
+  version: 0.5.0
+requires:
+  libraries:
+    - id: motionCore
+      version: ">=0.5,<0.6"
+    - id: motionRuntime
+      version: ">=0.5,<0.6"
+cmake:
+  package: vrmAdapterVmc
+  target: vrmAdapterVmc::vrmAdapterVmc

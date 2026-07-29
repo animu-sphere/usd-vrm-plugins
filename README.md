@@ -60,6 +60,7 @@ identities remain reserved; runtime evaluation is not part of this release.
 | `execMotion` | OpenExec bundle | Vendor-neutral motion nodes |
 | `execVrm` | OpenExec bundle | VRM semantics: retarget, root motion, expression, look-at, avatar apply |
 | `adapters/` | Optional plain libraries + their CLIs | Input leaves — a VMC Protocol adapter first, then vendor-native and generator adapters. The **only** place product or protocol names are permitted (e.g. VMC, Mocopi, ARDY) |
+| [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | The first of those leaves: VMC Protocol input, from OSC-over-UDP datagrams to canonical humanoid semantics. Scaffold and diagnostic codes only so far — the decoder is next |
 
 `.vrm` and `.vrma` are deliberately **separate** file-format plugins with
 symmetric structure, and they compose by **reference**, not `subLayer` — a
@@ -81,10 +82,11 @@ motionRuntime ──────────> motionCore
 vrmRetarget ────────────> motionCore, motionRuntime
 motion_retarget (CLI) ──> vrmRetarget + OpenUSD stage APIs
 
+vrmAdapterVmc ──────────> motionCore, motionRuntime
+
                           (planned)
 execMotion ─────────────> motionCore, motionRuntime
 execVrm ────────────────> vrmSchema, vrmRetarget
-adapters/* ─────────────> motionCore, motionRuntime
 ```
 
 Five rules keep those edges honest:
