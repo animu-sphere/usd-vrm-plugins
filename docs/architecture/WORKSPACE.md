@@ -26,6 +26,10 @@ The three input-adapter identities (`vrmAdapterMocopi`, `vrmAdapterVmc`,
 [roadmap/adapters-mocopi-vmc-ardy.md](../roadmap/adapters-mocopi-vmc-ardy.md).
 On 2026-07-29 §2 gained two more rules from the same direction: an OpenExec
 computation performs no I/O, and `ExecIr` is optional rather than foundational.
+Also on 2026-07-29, and before the first adapter directory existed, §1 and §5
+corrected those three identities from *bundle* to *plain library plus CLI tool* —
+the kind they had to be all along, for the reason stated under §1's identity
+table.
 
 ## 1. Bundles and libraries
 
@@ -52,9 +56,36 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `vrmRetarget` | plain static CMake library (v0.4.0) | Humanoid map, rest pose, pose retargeter, root-motion policy. **Completed before OpenExec** (motion policy §18.12). Expression resolution stays with Motion Phase G. |
 | `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig and the semantic clip off stages, drives `vrmRetarget` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
 | `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `vrmRetarget`: it stops at the clip. Not a bundle. *(Gains a live adapter source when the first adapter lands; this row is updated in that PR, not before.)* |
-| `vrmAdapterVmc` | optional bundle (reserved, `adapters/liveCapture/vmc/`) | The generic real-time input: OSC-over-UDP decode, frame assembly, VRM humanoid bone names → canonical semantics. One adapter serves every sender application, including capture products relayed through it. **First adapter implemented.** |
-| `vrmAdapterMocopi` | optional bundle (reserved, `adapters/liveCapture/mocopi/`) | Decodes one capture product's native packets into canonical humanoid semantics and pushes them at `LiveCaptureSource`. Direct path: keeps the SDK-specific confidence and device diagnostics a protocol relay drops. Does **not** wrap `vrmAdapterVmc`. |
-| `vrmAdapterArdy` | optional bundle (reserved, `adapters/generators/ardy/`) | One generator behind the vendor-neutral `IMotionGenerator` contract, producing canonical humanoid motion that `vrmRetarget` maps onto a target rig. |
+| `vrmAdapterVmc` | optional plain static CMake library (reserved, `adapters/liveCapture/vmc/`) | The generic real-time input: OSC-over-UDP decode, frame assembly, VRM humanoid bone names → canonical semantics. One adapter serves every sender application, including capture products relayed through it. **First adapter implemented.** |
+| `vrmAdapterMocopi` | optional plain static CMake library (reserved, `adapters/liveCapture/mocopi/`) | Decodes one capture product's native packets into canonical humanoid semantics and pushes them at `LiveCaptureSource`. Direct path: keeps the SDK-specific confidence and device diagnostics a protocol relay drops. Does **not** wrap `vrmAdapterVmc`. |
+| `vrmAdapterArdy` | optional plain static CMake library (reserved, `adapters/generators/ardy/`) | One generator behind the vendor-neutral `IMotionGenerator` contract, producing canonical humanoid motion that `vrmRetarget` maps onto a target rig. |
+
+Each adapter may also carry one CLI, declared beside it as an
+`openstrata.tool.yaml` workspace tool in the way `motion_retarget` and
+`motion_capture` are. Those executables are named when they are written, not
+reserved here.
+
+> **An adapter is a library, not a plugin bundle.** The three rows above read
+> "optional bundle" until 2026-07-29, which no manifest could have expressed. An
+> `openstrata.plugin.yaml` declares one of OpenUSD's plugin kinds and points at a
+> `plugInfo.json`; an adapter has neither, because §2 keeps it away from
+> `vrmSchema`, from every file-format bundle, and from OpenExec, leaving it
+> nothing to register. Its entire output is `motionCore` values pushed at a
+> `motionRuntime` source. So an adapter is a plain static CMake library carrying
+> an `openstrata.library.yaml`, exactly as `motionRuntime` and `vrmRetarget` are
+> — which is also the only form in which §2's adapter-library / adapter-tool
+> split is expressible in a manifest rather than only in prose.
+>
+> §5 is unaffected in substance: the artifact name and the aggregate exclusion
+> are the same rule under either reading, and under *neither* is `ost` 0.21.0
+> able to emit one — `plugin package` takes a bundle directory or `--workspace`
+> over bundles, with no per-library equivalent. That was equally true of the
+> "bundle" wording, which could not have produced a valid manifest to package.
+> What the correction buys is that an adapter's dependencies become *declarable*
+> in the one form the workspace graph reads — `requires.libraries` — rather than
+> living in a manifest `ost` would reject. Whether the graph gate then reaches
+> them is a separate, measured question; §2 has the answer, and today it is
+> "not yet".
 
 `adapters/` is the only place product, SDK, protocol, or research-model names
 are permitted. The three above are **siblings, not a stack**: no adapter may
@@ -81,9 +112,9 @@ including the implementation order and per-adapter acceptance criteria, is
 
 Shared code is never a plugin bundle: `vrmContainer` has no plugin
 registration, no `plugInfo.json`, and no OpenUSD types in its public API. The
-same rule binds `motionCore`, `motionRuntime`, and `vrmRetarget` — and
-`motionCore` additionally carries no OpenUSD *stage* dependency, only value
-types (`GfVec3f`, `GfQuatf`).
+same rule binds `motionCore`, `motionRuntime`, `vrmRetarget`, and every adapter
+library under `adapters/` — and `motionCore` additionally carries no OpenUSD
+*stage* dependency, only value types (`GfVec3f`, `GfQuatf`).
 
 Product names (`Mocopi`, `ARDY`, any SDK or research-model name) are forbidden
 in every identity above except `adapters/`. They may otherwise appear only in
@@ -200,6 +231,24 @@ binary link check (`dumpbin`/`nm`) proving it imports `vrmContainer` and does no
 import the other bundles' libraries (`usdVrmPackageResolver` proves it links
 neither `usdVrmFileFormat` nor `vrmSchema`).
 
+Adapters declare through that same door (§1): an adapter library states
+`adapters/* -> motionCore, motionRuntime` in its `openstrata.library.yaml`.
+**The graph gate does not yet walk those edges**, and the difference is
+measured rather than assumed — `ost` 0.21.0 discovers plain libraries in the
+project root's immediate subdirectories and under `libs/`, so a descriptor at
+`adapters/<group>/<name>/` is invisible to it and the reported library count
+does not move when one is added. An adapter's declared edges are therefore
+accurate documentation and a standing `ost` ask, not an enforced gate, until
+discovery widens.
+
+Two things carry the enforcement in the meantime, and both are required of every
+adapter. The workspace CMake tree builds it, so a link against something it may
+not have fails the build on all three OS. And it carries the same binary link
+check its neighbours do, proving it imports the two core libraries and imports
+no sibling adapter, no `vrmRetarget`, and no plugin bundle — which is what
+covers the sibling rule and the prohibitions above the line in any case, since
+nothing declares an edge it is forbidden to have.
+
 ## 3. Schema contract versioning
 
 - `vrmSchema` carries two independent versions: `plugin.version` (semantic
@@ -251,14 +300,20 @@ execVrm-<version>-<target>.tar.zst             (when it exists)
 usd-vrm-plugins-<version>-<target>-plugin-product.tar.zst (aggregate)
 ```
 
-Adapter bundles are named `vrmAdapter<Name>-<version>-<target>.tar.zst` and are
-**never** part of the aggregate:
+Adapter artifacts are named `vrmAdapter<Name>-<version>-<target>.tar.zst`, carry
+the adapter library together with its CLI tool, and are **never** part of the
+aggregate:
 
 ```text
 vrmAdapterMocopi-<version>-<target>.tar.zst    (when it exists)
 vrmAdapterVmc-<version>-<target>.tar.zst       (when it exists)
 vrmAdapterArdy-<version>-<target>.tar.zst      (when it exists)
 ```
+
+Those three are a naming rule for when the artifacts exist, not a description of
+what the release lane emits: `ost` 0.21.0 packages a plugin bundle or a
+workspace of them, and has no per-library command, so an adapter reaches a
+consumer through the workspace build until one arrives.
 
 The exclusion keeps the aggregate free of product names (motion policy §8.1),
 but it also keeps optional SDK, network, and model dependencies — and their
