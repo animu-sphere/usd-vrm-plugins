@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "description": "Machine-readable provenance for the VMC packet corpus. Every capture is assembled by adapters/liveCapture/vmc/tools/generate_packets.py from the OSC and VMC message shapes - there is no third-party capture data here and therefore no redistribution gate. Field values are measured from the committed files, never guessed.",
+  "format": {
+    "name": "vmc-packet-capture",
+    "version": 1,
+    "spec": "adapters/liveCapture/vmc/include/vrmAdapterVmc/PacketCapture.h"
+  },
+  "provenance": {
+    "origin": "synthetic",
+    "generator": "adapters/liveCapture/vmc/tools/generate_packets.py",
+    "license": "Apache-2.0",
+    "redistributionAllowed": true,
+    "capturedFromRealSender": false,
+    "generatedAt": "2026-07-29"
+  },
+  "limitations": [
+    "Reproduces the shapes the protocol produces (bundled and unbundled frames, ignorable traffic, malformed datagrams, a duplicate, a backwards sender clock, a restart), not any particular sender application's quirks.",
+    "No real avatar is described: the rest offsets are invented proportions and the model message names a placeholder file.",
+    "Sender-application compatibility evidence is Milestone B's, recorded with the record tool from real senders and added here as it is measured."
+  ],
+  "captures": [
+    {
+      "file": "neutral-standing-30hz.vmcpackets",
+      "pins": "The happy path: one OSC bundle per frame, a full torso rig including UpperChest, every rotation identity. The sender's clock starts at 12.5 s while the receive clock starts at 0, so an adapter that conflates the two cannot pass on this fixture alone.",
+      "tags": [
+        "baseline",
+        "bundled",
+        "clock-origin"
+      ],
+      "id": "neutral-standing-30hz",
+      "sender": "example.synthetic",
+      "sourceId": "neutral-standing-01",
+      "datagrams": 6,
+      "payloadBytes": 9124,
+      "durationSeconds": 0.143333,
+      "addressPatterns": [
+        "/VMC/Ext/Bone/Pos",
+        "/VMC/Ext/OK",
+        "/VMC/Ext/Root/Pos",
+        "/VMC/Ext/T",
+        "/VMC/Ext/VRM"
+      ],
+      "sha256": "4d822c5d947d8071ca764cea6c0f1905b483d981e1793ad5a3b8bf7f7c3ff94e",
+      "bytes": 40231
+    },
+    {
+      "file": "arm-raise-30hz.vmcpackets",
+      "pins": "The other sender shape: one message per datagram, spread across the frame interval, with the frame closed by a trailing /VMC/Ext/T rather than opened by a bundle. No UpperChest - a rig that does not solve it.",
+      "tags": [
+        "unbundled",
+        "frame-boundary",
+        "missing-bone"
+      ],
+      "id": "arm-raise-30hz",
+      "sender": "example.synthetic",
+      "sourceId": "arm-raise-01",
+      "datagrams": 117,
+      "payloadBytes": 8180,
+      "durationSeconds": 0.152133,
+      "addressPatterns": [
+        "/VMC/Ext/Bone/Pos",
+        "/VMC/Ext/OK",
+        "/VMC/Ext/Root/Pos",
+        "/VMC/Ext/T",
+        "/VMC/Ext/VRM"
+      ],
+      "sha256": "d03105048c2c4ed2d953267b56c9ef456aa15affe5043b41075c279b7a68f4a5",
+      "bytes": 40556
+    },
+    {
+      "file": "mixed-traffic-30hz.vmcpackets",
+      "pins": "Well-formed traffic the body path does not implement: blend shapes, an HMD and controller transform, a camera, an option string. Unsupported is not malformed, and this is the fixture that holds the two diagnostics apart.",
+      "tags": [
+        "unsupported-message",
+        "expression",
+        "device"
+      ],
+      "id": "mixed-traffic-30hz",
+      "sender": "example.synthetic",
+      "sourceId": "mixed-traffic-01",
+      "datagrams": 13,
+      "payloadBytes": 6380,
+      "durationSeconds": 0.078067,
+      "addressPatterns": [
+        "/VMC/Ext/Blend/Apply",
+        "/VMC/Ext/Blend/Val",
+        "/VMC/Ext/Bone/Pos",
+        "/VMC/Ext/Cam",
+        "/VMC/Ext/Con/Pos",
+        "/VMC/Ext/Hmd/Pos",
+        "/VMC/Ext/OK",
+        "/VMC/Ext/Opt",
+        "/VMC/Ext/Root/Pos",
+        "/VMC/Ext/T",
+        "/VMC/Ext/VRM"
+      ],
+      "sha256": "2c3993f70e0986eec2c513088d0cca2095f0a8d7761ce9b357428b9429a76548",
+      "bytes": 28567
+    },
+    {
+      "file": "malformed-packets.vmcpackets",
+      "pins": "One datagram per packet-level refusal: empty, unterminated address, a type-tag string with no comma, a truncated argument, an unterminated string argument, a bundle element that overruns, an unaligned tail, and bytes that are not OSC at all - plus the two well-formed-but-unimplemented cases for contrast.",
+      "tags": [
+        "negative",
+        "malformed",
+        "unsupported-message"
+      ],
+      "id": "malformed-packets",
+      "sender": "example.synthetic",
+      "sourceId": "malformed-01",
+      "datagrams": 10,
+      "payloadBytes": 215,
+      "durationSeconds": 0.009,
+      "addressPatterns": [
+        "/VMC/Ext/Bone/Pos",
+        "/VMC/Ext/Midi/Note",
+        "/VMC/Ext/T",
+        "/foo/bar"
+      ],
+      "sha256": "931fe1c916bff2ddd8be0e3bf08edc5b7dec076e3128e9cd0c5705268cd1331b",
+      "bytes": 1500
+    },
+    {
+      "file": "sender-restart-30hz.vmcpackets",
+      "pins": "The arrival-order phenomena in one session: a byte-identical datagram delivered twice, a sender clock that goes backwards while arrival order does not, a frame that stops after six bones, and a restart that resets the sender clock to zero.",
+      "tags": [
+        "duplicate",
+        "timestamp-regression",
+        "incomplete-frame",
+        "source-restart"
+      ],
+      "id": "sender-restart-30hz",
+      "sender": "example.synthetic",
+      "sourceId": "sender-restart-01",
+      "datagrams": 10,
+      "payloadBytes": 12884,
+      "durationSeconds": 0.943333,
+      "addressPatterns": [
+        "/VMC/Ext/Bone/Pos",
+        "/VMC/Ext/OK",
+        "/VMC/Ext/Root/Pos",
+        "/VMC/Ext/T",
+        "/VMC/Ext/VRM"
+      ],
+      "sha256": "983e48afaf7c97617dfab7ac1f7b2dd8d56e5a81c0a525e9e5dfa125f411c4c3",
+      "bytes": 56745
+    }
+  ]
+}

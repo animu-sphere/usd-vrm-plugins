@@ -14,6 +14,30 @@ target_compile_options(vrmAdapterVmc_tests
     PRIVATE ${_vrm_adapter_vmc_assertions})
 add_test(NAME vrmAdapterVmc_unit COMMAND vrmAdapterVmc_tests)
 
+# The recorded packet format, and the corpus recorded in it.
+add_executable(vrmAdapterVmc_packetCapture_tests test_packet_capture.cpp)
+target_link_libraries(vrmAdapterVmc_packetCapture_tests
+    PRIVATE vrmAdapterVmc::vrmAdapterVmc)
+target_compile_options(vrmAdapterVmc_packetCapture_tests
+    PRIVATE ${_vrm_adapter_vmc_assertions})
+add_test(NAME vrmAdapterVmc_packetCapture
+         COMMAND vrmAdapterVmc_packetCapture_tests)
+
+set(_vrm_adapter_vmc_tests vrmAdapterVmc_unit vrmAdapterVmc_packetCapture)
+
+# Every committed capture parses and re-emits byte-identically, or every
+# decoder test downstream of it compares against a fixture that has drifted from
+# the writer. The same binary takes the corpus directory as an argument rather
+# than referencing a target from another directory, so a standalone configure of
+# this adapter still generates.
+set(_vrm_adapter_vmc_corpus "${CMAKE_CURRENT_SOURCE_DIR}/corpus")
+if(EXISTS "${_vrm_adapter_vmc_corpus}")
+    add_test(NAME vrmAdapterVmc_corpus
+        COMMAND vrmAdapterVmc_packetCapture_tests
+                "${_vrm_adapter_vmc_corpus}")
+    list(APPEND _vrm_adapter_vmc_tests vrmAdapterVmc_corpus)
+endif()
+
 if(WIN32)
     if(TARGET gf)
         set(_vrm_adapter_vmc_gf gf)
@@ -34,7 +58,7 @@ if(WIN32)
         list(APPEND _vrm_adapter_vmc_test_path
              "PATH=path_list_prepend:${_vrm_adapter_vmc_python_dir}")
     endif()
-    set_tests_properties(vrmAdapterVmc_unit PROPERTIES
+    set_tests_properties(${_vrm_adapter_vmc_tests} PROPERTIES
         ENVIRONMENT_MODIFICATION "${_vrm_adapter_vmc_test_path}")
 endif()
 
@@ -50,4 +74,16 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/check_boundaries.py"
             "${CMAKE_CURRENT_SOURCE_DIR}/.."
             "$<TARGET_FILE:vrmAdapterVmc_tests>")
+
+    # vrmAdapterVmc_corpus proves the committed captures are canonical for the
+    # C++ writer; this proves they still match the generator that authored
+    # them. Without it a hand-edited fixture would stay green while the
+    # generator no longer reproduces it, and the corpus would quietly become
+    # unregenerable.
+    if(EXISTS "${_vrm_adapter_vmc_corpus}")
+        add_test(NAME vrmAdapterVmc_packetGen
+            COMMAND "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/../tools/generate_packets.py"
+                --check --output "${_vrm_adapter_vmc_corpus}")
+    endif()
 endif()

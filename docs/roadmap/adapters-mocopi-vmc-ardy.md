@@ -398,7 +398,8 @@ normalization · stale state · sender reset.
 
 ### 9.2 Corpus
 
-The minimum recorded set, per live-capture adapter:
+The minimum **recorded** set, per live-capture adapter — from real senders and
+real devices, which is Milestone B's work:
 
 ```text
 neutral-standing           tracking-loss-and-recovery
@@ -407,6 +408,13 @@ arm-raise                  body-and-expression
 walk-root-motion           sender-restart
 partial-upper-body         out-of-order-packets
 ```
+
+The generated captures that landed with the packet format are not this set and
+do not substitute for it. They reproduce the protocol's *shapes* — a bundled
+frame, an unbundled one, ignorable traffic, ten packet-level refusals, a
+duplicate, a backwards sender clock, a restart — so that a decoder is testable
+with no hardware and no socket. What a real sender actually emits is evidence
+only a real sender can give.
 
 The corpus manifest carries **measured fields** and the generating tool's
 `--check` mode verifies the committed traces still match — the same convention
@@ -463,8 +471,18 @@ pose output · diagnostics · deterministic unit tests
   The eight `VRM_VMC_*` codes of §8 are frozen with it — before a decoder
   exists, so the set describes the protocol rather than whichever failure was
   hit first.
-- ⬜ Everything else above, in the §5 order: recorded fixtures, then the OSC
-  decoder, then VMC semantics.
+- ✅ **The recorded input format and the first fixtures.** `vmc-packet-capture`
+  v1 records the datagrams a session delivered, verbatim, with the instant each
+  arrived — line-oriented text with an ASCII gutter, so a fixture diffs in a
+  pull request and an address pattern is legible without a decoder. It is
+  deliberately not a `motion-capture-trace`: a trace records what an adapter
+  produced, and only a capture can represent a truncated datagram, a duplicate
+  delivery, or a restart mid-frame. Five generated captures land with it,
+  pinning the bundled and unbundled sender shapes, ignorable-but-valid traffic,
+  ten packet-level refusals, and the arrival-order phenomena. Two tests hold the
+  corpus: the C++ writer's canonical form, and the generator that authored it.
+- ⬜ Everything else above, in the §5 order: the OSC decoder, then VMC
+  semantics.
 
 ### Milestone B — VMC live receipt ⬜
 

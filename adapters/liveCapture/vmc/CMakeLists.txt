@@ -56,7 +56,8 @@ if(NOT TARGET motionRuntime::motionRuntime)
 endif()
 
 add_library(vrmAdapterVmc STATIC
-    src/Diagnostics.cpp)
+    src/Diagnostics.cpp
+    src/PacketCapture.cpp)
 add_library(vrmAdapterVmc::vrmAdapterVmc ALIAS vrmAdapterVmc)
 set_target_properties(vrmAdapterVmc PROPERTIES
     EXPORT_NAME vrmAdapterVmc

@@ -16,3 +16,10 @@
 # comparison for every trace while the data itself was fine. Same reason as
 # *.usda above.
 *.trace text eol=lf
+
+# Recorded VMC packet captures, for exactly the same reason: vrmAdapterVmc_corpus
+# re-emits every committed capture through the adapter's writer and compares raw
+# bytes. The writer always emits '\n', so a CRLF smudge on a Windows checkout
+# would fail the comparison for every fixture while the recorded datagrams were
+# fine.
+*.vmcpackets text eol=lf
