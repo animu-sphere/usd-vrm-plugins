@@ -17,9 +17,10 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 33 carries
-the live v0.22.0 asks; it also records that every ask reports 28–32 raised was
-delivered in `ost 0.21.0`.
+The current `ost` ask list is always in the **newest** report. Report 34 carries
+the live v0.22.0 asks — report 33's three, unchanged, plus two the first input
+adapter turned up. Report 33 is still the record that every ask reports 28–32
+raised was delivered in `ost 0.21.0`.
 
 Numbering is the series' own: reports 1–8 call themselves "report #N" in their
 bodies, so the filenames preserve those numbers rather than renumbering history.
@@ -29,7 +30,8 @@ each sorts immediately after the report it follows.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
-| 33 | 2026-07-28 | [Six asks delivered, and what the workspace build costs](33-2026-07-28-v0.21.0-workspace-ci-adoption.md) | 0.21.0 | All six of report 32's asks land and are exercised: `kind: workspace` cells, `host_packages`, `ci matrix`, `--graph-only`, tool members, and the configure contract (`plugin run` exports `CMAKE_TOOLCHAIN_FILE`). `motion-ci.yml` deleted. Two new findings about the *root* build: an upgrade re-identifies an unchanged runtime, and `ost build` invalidates per-bundle packaging provenance. **Live v0.22.0 asks** |
+| 34 | 2026-07-29 | [A plain library two directories down is invisible](34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md) | 0.21.0 | The first input adapter lands outside `libs/`, and `--workspace` never sees its descriptor: plain-library discovery is the root's immediate children plus `libs/*`, and a skipped descriptor is indistinguishable from a validated one. Also: there is no per-library verb at all, so an adapter cannot be packaged outside the aggregate. Coverage is fine — the `kind: workspace` cells picked the new tests up with no CI edit. **Live v0.22.0 asks** |
+| 33 | 2026-07-28 | [Six asks delivered, and what the workspace build costs](33-2026-07-28-v0.21.0-workspace-ci-adoption.md) | 0.21.0 | All six of report 32's asks land and are exercised: `kind: workspace` cells, `host_packages`, `ci matrix`, `--graph-only`, tool members, and the configure contract (`plugin run` exports `CMAKE_TOOLCHAIN_FILE`). `motion-ci.yml` deleted. Two new findings about the *root* build: an upgrade re-identifies an unchanged runtime, and `ost build` invalidates per-bundle packaging provenance. Asks restated in 34 |
 | 32 | 2026-07-26 | [What a hand-rolled lane for plain libraries costs](32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md) | 0.20.0 | v0.5.0 tried to hand-roll the lane report 28's P0 asks for, and **could not finish**: a bare `cmake` cannot configure against a pulled runtime (Python dev components resolve to the build container's paths). ~210 lines, ~120 a copy of generated logic. Also found the baseline gate had been stale for a release. **Live v0.21.0 asks (consolidated)** |
 | 31 | 2026-07-26 | [A runtime can demand a host package the contract cannot name](31-2026-07-26-v0.20.0-materialx-x11-ci-host-deps.md) | 0.20.0 | 26.08's MaterialX 1.39.5 hard-requires X11 on Linux, so re-pinning broke all four Linux cells at configure. `openstrata.ci.yaml` cannot express a host package, so the fix is a hand-edit `--force` deletes. Asks restated in 32 |
 | 30 | 2026-07-26 | [The macOS 26.08 runtime](30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md) | 0.20.0 | macOS arm64 26.08 published, so all three OS are on one OpenUSD version and CI is re-pinned. 26.08 needs the macOS 15.2 SDK, and a macOS artifact records no SDK or deployment target the way Linux records its glibc floor. Asks restated in 31 |

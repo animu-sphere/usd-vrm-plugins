@@ -131,6 +131,28 @@ endforeach()
 add_subdirectory("tools/motionRetarget")    # Motion Phase C — offline retarget
 add_subdirectory("tools/motionCapture")     # Motion Phase D — live capture
 
+# Input adapters (WORKSPACE.md §1, §2). Each adapters/<group>/<name>/ carrying
+# both an openstrata.library.yaml and a CMakeLists.txt is added here — plain
+# libraries, not plugin bundles: an adapter registers nothing with OpenUSD.
+#
+# Added LAST, and that is the point. Every adapter is a leaf of the core, of the
+# OpenExec bundles, and of every other adapter, so nothing configured above may
+# name an adapter target; at this position CMake would fail on the unknown
+# target rather than quietly accept the inverted edge. CONFIGURE_DEPENDS
+# re-globs when an adapter is added or removed.
+file(GLOB _adapters LIST_DIRECTORIES true CONFIGURE_DEPENDS RELATIVE
+     "${CMAKE_CURRENT_SOURCE_DIR}/adapters"
+     "${CMAKE_CURRENT_SOURCE_DIR}/adapters/*/*")
+foreach(_adapter ${_adapters})
+    set(_adapterDir "${CMAKE_CURRENT_SOURCE_DIR}/adapters/${_adapter}")
+    if(IS_DIRECTORY "${_adapterDir}"
+       AND EXISTS "${_adapterDir}/openstrata.library.yaml"
+       AND EXISTS "${_adapterDir}/CMakeLists.txt")
+        message(STATUS "OpenStrata: adding input adapter 'adapters/${_adapter}'")
+        add_subdirectory("adapters/${_adapter}")
+    endif()
+endforeach()
+
 install(FILES
     LICENSE
     README.md
