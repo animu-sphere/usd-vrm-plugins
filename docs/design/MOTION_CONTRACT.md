@@ -218,3 +218,37 @@ can disagree would produce two skeletons that look alike and do not compose.
 Live capture's corpus is synthetic by necessity, not convenience — see
 [`libs/motionRuntime/tests/corpus/README.md`](../../libs/motionRuntime/tests/corpus/README.md).
 Validation against a real capture rig needs an adapter and remains open.
+
+## What the contract still owes its next two consumers
+
+Recorded 2026-07-29, when the input-adapter and OpenExec directions were
+re-planned. Neither is a change to anything above; both are additions the
+shipped types do not yet carry, and each is wanted by more than one caller —
+which is the argument for adding them once, deliberately, rather than at the
+first call site that needs one.
+
+- ⬜ **Deterministic comparison.** `HumanoidPose`, `HumanoidAnimation`,
+  `RootMotion` and `MotionSourceMetadata` have no `operator==`.
+  `ExecTypeRegistry::RegisterType` requires one before a pose can cross an
+  OpenExec computation boundary at all
+  ([OpenExec plan](../roadmap/openexec-v0.6.0-v0.7.0.md) P0-4), the
+  offline/OpenExec parity comparison is defined in terms of one (P0-6), and
+  adapter corpus tests compare decoded poses against committed fixtures
+  ([adapters plan](../roadmap/adapters-mocopi-vmc-ardy.md) §9). Float equality is
+  the wrong default here, so the comparison and its tolerance are part of the
+  contract rather than of each test.
+- ⬜ **Tracking state.** `validRotations` says a bone is absent and `confidence`
+  says a bone is uncertain. Neither distinguishes *tracking lost* — a source
+  that is connected and no longer solving — from *zero pose* or from a bone the
+  session never observed. The three mean different things downstream, and only a
+  live adapter produces the middle one.
+- ⬜ **An expression sample.** Motion Phase G owns expressions, but VMC
+  blend-shape messages reach them first. A timestamped set of weights alongside
+  `HumanoidPose` is the shape both need; whichever lands first should author it
+  here rather than privately.
+
+A fourth is adjacent and already satisfied, worth naming so it is not
+re-litigated: **serialization** exists as the `motion-capture-trace` format
+above, and a trace round-trips byte-identically. Anything added to the value
+types is added to that format in the same change, or a replay stops reproducing
+the session it recorded.

@@ -14,7 +14,9 @@ Items this plan needs from those contracts are listed in
 [§9](#9-contract-changes-this-plan-requires) rather than asserted here.
 
 Sequence context: v0.5.0 is **Motion Phase D** (live capture); it is tracked in
-[current.md](current.md) and is not part of this plan.
+[current.md](current.md) and is not part of this plan. The
+[input adapters](adapters-mocopi-vmc-ardy.md) are a separate track that
+deliberately does not wait for anything here.
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
@@ -29,10 +31,20 @@ Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
   [WORKSPACE.md §2](../architecture/WORKSPACE.md); the plan does not relax it.
 - An OpenExec computation is a **thin wrapper over the existing plain C++
   implementation**. It never becomes a second algorithm.
+- **A computation evaluates an immutable snapshot and performs no I/O.** No
+  socket read, no SDK poll, no file watch, no mutable global state, no hidden
+  clock, no private thread pool competing with the OpenExec scheduler (§5).
+- **Nothing else in the repository waits for this plan.** Input adapters,
+  record/replay, offline retarget, and semantic-clip authoring complete without
+  OpenExec, by
+  [design](adapters-mocopi-vmc-ardy.md#3-this-track-does-not-wait-for-openexec).
+  This plan connects to a finished canonical pipeline; it does not gate one.
 - General-purpose rig mechanics come from **`ExecIr`**. `execVrm` does not
   reimplement them.
-- `ExecIr` may be experimental at 26.08, so every dependency on it is confined
-  to an **adapter layer**.
+- **`ExecIr` is an optional, experimental adapter and never a prerequisite.**
+  Every dependency on it is confined to an **adapter layer**, and the v0.6.0
+  pipeline (canonical motion → retarget → `UsdSkelAnimation`) must remain whole
+  with that adapter absent (§7.0).
 
 ## 2. Release themes
 
@@ -40,16 +52,23 @@ Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
 Fix 26.08 as the only supported runtime, raise the existing offline motion
 pipeline to product quality, and complete the first OpenExec VRM pose
-evaluation: a minimal vertical slice from a VRMA semantic clip to retargeted
-joint transforms visible in usdview.
+evaluation: a VRMA semantic clip evaluated to retargeted joint transforms,
+proven equal to the offline result.
 
 ```text
 VRMA semantic clip
         ↓  OpenExec SampleAnimation
         ↓  OpenExec HumanoidRetarget
 computed joint-local transforms
-        ↓  usdExecImaging
-Hydra / usdview
+        ↓  numerical parity against motion_retarget      (P0-6)
+```
+
+Display is a **separate, narrower** claim in v0.6.0: an exec-computed
+`UsdGeomXformable` shown through `usdExecImaging`, because 26.08 cannot register
+a `UsdSkel` prim adapter at all (P0-7).
+
+```text
+computed xform  ->  usdExecImaging  ->  Hydra / usdview
 ```
 
 In parallel, offline retarget must be reachable from published artifacts alone:
@@ -197,6 +216,26 @@ C++ API directly. Each callback is a pure function: no side effects, no stage
 mutation, no mutable global state, no network or file I/O, no hidden clock, and
 no private thread pool competing with the OpenExec scheduler.
 
+That rule decides where a live input meets OpenExec, so it is worth drawing:
+
+```text
+network / device thread
+        ↓
+adapter                      (decode, normalize, map to canonical semantics)
+        ↓
+thread-safe timestamped pose buffer      (motionRuntime)
+        ↓
+immutable snapshot
+        ↓
+OpenExec computation
+```
+
+A computation is handed a snapshot; it never reaches back for one. OpenExec's
+job here is evaluation, dependency tracking, caching, and invalidation — not
+receiving. The temptation this forbids is concrete: a `Motion.LivePoseReceive`
+computation that opens the socket itself would be shorter to write and would
+make every OpenExec property in P0-7 untestable.
+
 **USD connection dataflow.** v0.6.0 restricts itself to a one-to-one chain
 (`AnimationSource → SampleAnimation → FilterPose → HumanoidRetarget →
 JointTransforms`) within 26.08's limited connection support. Multi-input
@@ -217,7 +256,8 @@ not a v0.6.0 requirement — the latter is a standing non-goal
 (`USDIMAGINGGL_ENGINE_ENABLE_EXEC_SCENE_INDEX`), but 26.08 resolves prim
 adapters from a hard-coded list rather than from plugins
 ([report §8.2](../reports/openusd/26.08-openexec-migration.md#82-the-blocker-the-adapter-registry-is-hard-coded)),
-which is what re-scopes P0-7.
+which is why P0-7 proves the mechanism on `UsdGeomXformable` and leaves skinned
+display to a later milestone.
 
 ## 6. v0.6.0 tasks
 
@@ -269,9 +309,15 @@ humanoid mapping, invalid mapping, output/input path collision, resolved
 `UsdSkel` transforms, Windows Unicode paths, packaged CLI execution, and
 OpenExec/offline parity.
 
-⛔ **Blocked on `ost`** for the lane shape — `ci generate` emits one job per
-bundle cell and has no cell for a library or a workspace. Filed as the P0 ask in
-[report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md).
+✅ **Unblocked and largely delivered by `ost` 0.21.0.** The lane shape existed
+nowhere: `ci generate` emitted one job per bundle cell and had no cell for a
+library or a workspace, filed as the P0 ask in
+[report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md). Four
+`kind: workspace` cells now build the root tree and run its whole CTest suite on
+all three OS
+([report 33](../reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md)).
+What remains of this task is coverage, not lane shape: the CTest labels above and
+the OpenExec/offline parity case, which needs P0-4 and P0-5 first.
 
 ### P0-3 — `motion_retarget` distribution ⬜
 
@@ -290,20 +336,50 @@ Artifact-only smoke: `motion_retarget --avatar avatar.vrm --animation walk.vrma
 resolution, humanoid map loading, retarget execution, animation binding,
 evaluated joint transforms, and the absence of any build-tree dependency.
 
-⛔ **Blocked on `ost`** — no member archive can carry an executable
+✅ **Unblocked by `ost` 0.21.0** — no member archive could carry an executable
 ([report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md),
-ask 5). Two existing carry-overs land here too: the unverified non-`ost` Windows
-install path, and the DLL-discovery question in
-[INSTALL.md](../guides/INSTALL.md).
+ask 5). `tools/*/openstrata.tool.yaml` now makes `motion_retarget` and
+`motion_capture` tool members of the aggregate product, and `release.yml` stages
+them with the bundles. Still open here: the artifact-only smoke above, and two
+existing carry-overs — the unverified non-`ost` Windows install path and the
+DLL-discovery question in [INSTALL.md](../guides/INSTALL.md).
 
 ### P0-4 — minimal `execMotion` bundle ⬜
 
-Computations: `motion.sampleAnimation`, `motion.interpolatePose`,
-`motion.filterPose`, `motion.blendPoses`, `motion.extractRootMotion` — each
-calling the existing `motionRuntime` API.
+Computations: `motion.sampleAnimation`, `motion.filterPose`,
+`motion.extractRootMotion`, `motion.interpolatePose`, `motion.blendPoses` — each
+calling the existing `motionRuntime` API, and each taking a **canonical motion
+snapshot** as input rather than a live source (§5).
 
 **Not in scope:** new retarget algorithms, stage mutation, vendor-specific
 sources, network input, live device state.
+
+**Mechanism before behavior.** The first spike registers no real computation at
+all, so a failure is attributable:
+
+1. type registration for the canonical aggregate
+2. an identity computation
+3. request compile
+4. compute
+5. cache hit
+6. explicit invalidation
+7. discovery from a **packaged** plugin, not a build tree
+
+Only then the real ones, in that order: `sampleAnimation` → `filterPose` →
+`extractRootMotion` → `interpolatePose` → `blendPoses`.
+
+**`blendPoses` is last on purpose.** It is the one computation that wants
+multiple inputs, and 26.08's builtin `computeValue` forwards across exactly one
+connection and silently falls back when there are two (§5, connection dataflow).
+Fan-in is reachable only through relationships with no deterministic ordering,
+so blending is where a fan-in surprise would surface — after the single-input
+chain is proven, not during it.
+
+**One precondition is not yet met.** `motionCore`'s aggregates carry no
+`operator==` today, and `ExecTypeRegistry::RegisterType` requires one; step 1
+above cannot start until it exists. It is the same addition the adapter corpus
+tests want ([adapters plan §11](adapters-mocopi-vmc-ardy.md#11-contract-changes-this-plan-requires))
+and the same one P0-6 parity needs, so it is one change serving three callers.
 
 **The value-type constraint is settled, not open**
 ([report §4](../reports/openusd/26.08-openexec-migration.md#4-value-types-and-the-vtarray-rule)):
@@ -344,38 +420,57 @@ This is the check that keeps a computation a wrapper. v0.4.0 already produced th
 mechanism it needs: the design triplet is compared through USD composition at the
 value level, not by byte-comparing a layer.
 
-### P0-7 — `usdExecImaging` vertical slice ⛔ re-scope needed
+### P0-7 — display smoke, re-scoped to `UsdGeomXformable` ⬜
 
-Avatar stage + VRMA semantic animation + an OpenExec request → computed
-transforms → `usdExecImaging` → usdview.
+**Originally:** avatar stage + VRMA semantic animation + an OpenExec request →
+computed transforms → `usdExecImaging` → usdview, with a skinned avatar moving.
 
-**Done when:** changing animation time updates the displayed pose; changing the
-humanoid mapping invalidates the right network; an unrelated material change does
-*not* recompute the motion network; and the whole thing works from packaged
-plugins.
-
-⛔ **Not reachable as written in 26.08.** `UsdExecImagingPrimAdapterInterface` is
-a public header that reads like a plugin point, but the registry behind it is a
+**Not reachable as written in 26.08.** `UsdExecImagingPrimAdapterInterface` is a
+public header that reads like a plugin point, but the registry behind it is a
 hard-coded pair of `IsA<>` checks — `UsdGeomXformable` and `ExecIrXformable` —
 with a source TODO promising generic plugin registration later. A VRM avatar
 posed through `UsdSkel` skinning is neither, so no adapter can be registered
 ([report §8.2](../reports/openusd/26.08-openexec-migration.md#82-the-blocker-the-adapter-registry-is-hard-coded)).
-The proposal, pending a decision:
 
-- **Prove the mechanism on `UsdGeomXformable`** — an exec-computed transform on
-  a real VRM stage, displayed through the exec scene index, asserting all four
-  "done when" invalidation properties. Everything except the adapter is then
-  exercised for real, and the plumbing risk is retired.
-- **Defer the skinned slice to the `ExecIr` track** (v0.7.0), where
-  `ExecIrXformable` *is* adaptable — at the cost of the §7.2 shape mismatch the
-  report describes.
-- **File the upstream ask** for plugin registration of exec imaging adapters.
+**Decided 2026-07-29: prove the mechanism on `UsdGeomXformable`.** v0.6.0 ships
+a display test over an exec-computed `UsdGeomXformable`, not a skinned avatar:
 
-Whichever is chosen, a display test must first assert the stage uses
-`xformOp:transform` only, or disable the geom adapter: the exec `UsdGeomXformable`
-computation reads that one attribute and **ignores `xformOpOrder`**. Our importer
-happens to author exactly that and nothing else, but a composed third-party
-avatar would draw wrong with no diagnostic
+```text
+canonical motion / time input
+        ↓  OpenExec computed xform
+        ↓  usdExecImaging
+usdview
+```
+
+**Done when:** changing time recomputes; changing the motion input recomputes;
+an unrelated material change does **not** recompute the motion network; it works
+from packaged plugins, not a build tree; and the test asserts the
+`xformOp:transform` precondition below.
+
+Everything except the prim adapter is then exercised for real — request
+compilation, computed dataflow into Hydra, the invalidation properties, and
+packaged discovery — so the plumbing risk is retired on the half we control, and
+what remains blocked is isolated to one upstream registry.
+
+The other two options considered are **not** dropped; they are re-filed:
+
+- ⬜ **File the upstream ask** for plugin registration of exec imaging adapters.
+  This is the only route to the original slice and nothing else in the plan
+  advances it, so it is tracked whether or not it is answered.
+- ⬜ **Real `UsdSkel` skinning display is its own milestone**, after v0.7.0's
+  `ExecIr` track, and is not a v0.6.0 or v0.7.0 release condition. Four routes
+  exist, in the order they should be tried: the upstream ask above; an adapter
+  via `ExecIrXformable`, where a prim adapter *is* registrable — at the cost of
+  the §7.2 shape mismatch; a custom Hydra scene index; or integration outside
+  OpenExec entirely, in an application or DCC. **A custom scene index is not the
+  first choice**: it carries a standing maintenance cost against an OpenUSD
+  version this repository pins exactly.
+
+A display test must assert the stage uses `xformOp:transform` only, or disable
+the geom adapter: the exec `UsdGeomXformable` computation reads that one
+attribute and **ignores `xformOpOrder`**. Our importer happens to author exactly
+that and nothing else, but a composed third-party avatar would draw wrong with no
+diagnostic
 ([report §8.3](../reports/openusd/26.08-openexec-migration.md#83-the-xformoptransform-only-rule)).
 
 ### P1-1 — retarget diagnostics ⬜
@@ -422,11 +517,45 @@ parent rest transform.
 Every item green, no exceptions: OpenUSD 26.08 exact · OpenExec-capable runtime ·
 three-OS root workspace build · all libraries, bundles, and tools tested ·
 `ost plugin test --workspace` · packaged `motion_retarget` · artifact-only offline
-retarget · OpenExec/offline parity · `usdExecImaging` display smoke · Windows DLL
-discovery · Unicode paths · resolved-transform validation · reproducible
-packaging · documentation consistency.
+retarget · OpenExec/offline parity · **xform-based** `usdExecImaging` display
+smoke · Windows DLL discovery · Unicode paths · resolved-transform validation ·
+reproducible packaging · documentation consistency.
+
+Explicitly **not** a v0.6.0 gate: realtime skinned-avatar display (P0-7), any
+`ExecIr` dependency, and any input adapter — the last of those ships on its own
+track ([adapters plan §13](adapters-mocopi-vmc-ardy.md#13-release-boundaries)).
 
 ## 7. v0.7.0 tasks
+
+### 7.0 What `ExecIr` is, and is not
+
+`ExecIr` is an **optional experimental adapter**, evaluated on its own track. It
+is not a prerequisite for anything below it in the stack:
+
+```text
+required, and finished first:
+mocopi / VMC  ->  canonical motion  ->  standard retarget pipeline
+
+optional, connected afterwards:
+UsdSkel / VRM semantics  ↕  ExecIr adapter  ↕  ExecIr representation
+```
+
+Forbidden, in addition to
+[WORKSPACE.md §2](../architecture/WORKSPACE.md):
+
+```text
+usdVrmFileFormat  -X->  authoring ExecIr prims as a requirement
+motionCore        -X->  ExecIr
+vrmRetarget       -X->  ExecIr
+adapters/*        -X->  emitting ExecIr values directly
+ExecIr            -X->  being the canonical motion contract
+```
+
+The last one is the one that would do real damage. `ExecIr` is per-prim scalar
+avars in world space; the canonical contract is quaternion arrays in joint-local
+space (§7.2 of the migration report). Letting the first shape define the second
+would push a rig representation, still documented upstream as "not yet ready for
+production use", into every adapter and every offline test in the repository.
 
 ### P0-1 — `ExecIr` responsibility audit ⬜
 
@@ -526,12 +655,18 @@ the adapter.
 
 ## 8. Deferred past v0.7.0
 
-Spring-bone simulation proper, full-body IK, foot locking, contact solving,
-motion generation, GPU computation, vendor SDK integration, Mocopi / ARDY
-adapters proper, network transport, live device discovery, per-frame stage
-write-back, editor UI, Python computation registration, and production-grade
-arbitrary rig authoring. Several are permanent non-goals — see
+Spring-bone simulation proper, full-body IK, foot locking, contact solving, GPU
+computation, per-frame stage write-back, editor UI, Python computation
+registration, production-grade arbitrary rig authoring, and realtime skinned
+display through `usdExecImaging` (P0-7). Several are permanent non-goals — see
 [backlog.md](backlog.md#non-goals).
+
+**Corrected 2026-07-29.** This list previously also deferred "motion generation,
+vendor SDK integration, Mocopi / ARDY adapters proper, network transport, live
+device discovery". Those are not deferred *behind* this plan — they are a
+[parallel track](adapters-mocopi-vmc-ardy.md) that starts from the shipped
+v0.5.0 live-capture surface and reaches a retargeted `UsdSkelAnimation` with no
+OpenExec involvement. They are unscheduled, which is a different statement.
 
 ## 9. Contract changes this plan requires
 
@@ -540,16 +675,27 @@ depends on them ([docs/README.md](../README.md)). Open:
 
 - ⬜ **`ExecIr` adapter is not in the workspace contract.**
   [WORKSPACE.md §2](../architecture/WORKSPACE.md)'s dependency tables have no
-  `ExecIr adapter` row and no `execVrm -X-> GLB / VRM JSON reparse` rule; §1's
-  identity table has no adapter entry. §3 above states both — they need to move
-  into the contract.
+  `ExecIr adapter` row, and §1's identity table has no adapter entry. §3 and
+  §7.0 above state the edges — they need to move into the contract. *(The
+  `execVrm -X-> GLB parser` rule and the four §7.0 `ExecIr` prohibitions landed
+  in WORKSPACE.md §2 on 2026-07-29; the identity row did not.)*
 - ⬜ **`usdExecImaging` has no declared place.** It is an OpenUSD component, not
   a workspace member, but the presentation path through it should be named
   somewhere binding rather than only here.
 - ⬜ **Motion Phase E's scope grew.** Motion policy §16 describes Phase E as
-  `execMotion` / `execVrm` nodes; this plan adds the `usdExecImaging` slice
-  (v0.6.0 P0-7) and the whole `ExecIr` rig track (v0.7.0). Either Phase E widens
-  or the ladder gains a phase.
+  `execMotion` / `execVrm` nodes; this plan adds the display slice (v0.6.0 P0-7)
+  and the whole `ExecIr` rig track (v0.7.0). Either Phase E widens or the ladder
+  gains a phase.
+- ⬜ **The snapshot-input rule needs a contract home.** §5 requires that a
+  computation evaluate an immutable snapshot and perform no I/O; motion policy
+  §11.4 now states it, but nothing enforces it. The obvious enforcement is a
+  `execMotion`/`execVrm` link check for socket, clock, and threading symbols,
+  in the way each bundle already proves what it links.
+- ⬜ **`operator==` on the `motionCore` aggregates** (P0-4). Required by
+  `ExecTypeRegistry::RegisterType`, by P0-6 parity, and by the adapter corpus
+  tests. It belongs in
+  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md) as a stated property of the
+  value types, not as an implementation detail discovered at registration time.
 - ✅ **The OpenUSD version contract was stated as a range.**
   [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md) now
   records one supported version and the two mechanisms that enforce it (the

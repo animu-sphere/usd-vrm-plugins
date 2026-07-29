@@ -39,6 +39,9 @@ are plans and not policy: the
 [OpenExec direction](roadmap/openexec-v0.6.0-v0.7.0.md) and the
 [input adapters](roadmap/adapters-mocopi-vmc-ardy.md). Both defer every
 structural claim to WORKSPACE.md and every motion claim to the motion policy.
+They are also **independent of each other**: the adapter track completes from a
+live protocol to a retargeted `UsdSkelAnimation` with no OpenExec dependency,
+and the OpenExec track attaches to that finished pipeline afterwards.
 
 The three phase systems are separate and always qualified; see
 [roadmap/README.md](roadmap/README.md#three-sequences-deliberately-separate).

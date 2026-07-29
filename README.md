@@ -59,7 +59,7 @@ identities remain reserved; runtime evaluation is not part of this release.
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | The stage half: reads the rig and the clip, bakes the retargeted `UsdSkelAnimation`, binds `skel:animationSource` |
 | `execMotion` | OpenExec bundle | Vendor-neutral motion nodes |
 | `execVrm` | OpenExec bundle | VRM semantics: retarget, root motion, expression, look-at, avatar apply |
-| `adapters/` | Optional bundles | The **only** place product names are permitted (e.g. Mocopi, ARDY) |
+| `adapters/` | Optional bundles | Input leaves — a VMC Protocol adapter first, then vendor-native and generator adapters. The **only** place product or protocol names are permitted (e.g. VMC, Mocopi, ARDY) |
 
 `.vrm` and `.vrma` are deliberately **separate** file-format plugins with
 symmetric structure, and they compose by **reference**, not `subLayer` — a

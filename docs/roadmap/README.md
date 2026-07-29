@@ -12,7 +12,7 @@ Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 | [current.md](current.md) | The next milestone and active carry-over work. |
 | [backlog.md](backlog.md) | Ordered but unscheduled work: the milestone ladder beyond next, the motion layer, future phases, and cross-cutting open items. |
 | [openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md) | The OpenExec direction: the OpenUSD 26.08 exact pin, the `execMotion` / `execVrm` foundation, and the `ExecIr` invertible rig. Two milestones out; kept separate because it is a plan, not a status list. |
-| [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) | The input-adapter direction: a direct capture-product adapter, a VMC Protocol adapter, and a generation adapter — unscheduled, independent of the OpenExec plan, and ordered so the first one produces evidence the synthetic corpus cannot. |
+| [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) | The input-adapter direction: a VMC Protocol adapter, then a direct capture-product adapter, then a generation adapter — unscheduled, and completing end to end with no OpenExec dependency. The filename keeps the original triple; the order inside was reversed on 2026-07-29. |
 
 ## Three sequences, deliberately separate
 
@@ -58,7 +58,13 @@ A–H is unrelated to that retired A–E** and always carries the "Motion" quali
 - Current priorities: the **OpenExec foundation** (v0.6.0), closing the
   remaining **Workspace Phase 5** packaging P0, and widening runtime
   verification. The [input adapters](adapters-mocopi-vmc-ardy.md) are planned
-  but unscheduled.
+  but unscheduled — and deliberately **not** sequenced behind v0.6.0: they
+  complete from input to retargeted `UsdSkelAnimation` without OpenExec.
+- v0.6.0's display slice is **re-scoped** (2026-07-29). OpenUSD 26.08 resolves
+  exec prim adapters from a hard-coded list, so a skinned VRM avatar cannot be
+  displayed through the exec scene index at all. v0.6.0 proves the mechanism on
+  an exec-computed `UsdGeomXformable`; realtime skinned display is a later
+  milestone, not a v0.6.0 or v0.7.0 release condition.
 - The milestone ladder is **v0.6.0 → v0.7.0**:
 
   | Release | Theme | Sequences |

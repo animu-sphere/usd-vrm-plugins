@@ -8,9 +8,15 @@ Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 ## Next: v0.6.0 — the OpenExec foundation (Workspace Phase 8 + Motion Phase E) ⬜
 
 **Release boundary:** `execMotion` and `execVrm` bundles exist and evaluate a
-humanoid through OpenExec. Nodes are thin wrappers over `motionRuntime` and
-`vrmRetarget`, never a second implementation. Planned in
-[openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md).
+humanoid through OpenExec, proven equal to the offline result on the same input.
+Nodes are thin wrappers over `motionRuntime` and `vrmRetarget`, never a second
+implementation, and each evaluates an immutable snapshot rather than a live
+source. Planned in [openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md).
+
+Not in this boundary: realtime skinned display (bounded upstream — see the P0-7
+decision below), any `ExecIr` dependency, and the
+[input adapters](adapters-mocopi-vmc-ardy.md), which are a parallel track that
+reaches a retargeted `UsdSkelAnimation` with no OpenExec involvement at all.
 
 ### Landed so far
 
@@ -41,11 +47,28 @@ humanoid through OpenExec. Nodes are thin wrappers over `motionRuntime` and
   adapter registry is hard-coded** to `UsdGeomXformable` and `ExecIrXformable`,
   so the planned `UsdSkel` display slice (P0-7) cannot be registered in 26.08 and
   is now marked ⛔ pending a re-scope decision.
+- ✅ **P0-7's re-scope is decided** (2026-07-29). The `usdExecImaging` slice
+  ships as an **exec-computed `UsdGeomXformable`** shown through the exec scene
+  index — time and motion inputs recompute, an unrelated material change does
+  not, and it runs from packaged plugins. Everything except the prim adapter is
+  exercised for real, so the plumbing risk is retired on the half we control.
+  Realtime **skinned** display becomes its own milestone after v0.7.0, and the
+  upstream ask for plugin-registered exec imaging adapters is tracked separately
+  — a custom Hydra scene index is deliberately *not* the first fallback. Two
+  further decisions landed with it: an OpenExec computation evaluates an
+  immutable snapshot and performs no I/O, and `ExecIr` is an optional
+  experimental adapter rather than a foundation. All three are in the
+  [plan](openexec-v0.6.0-v0.7.0.md) §1, §7.0 and P0-7, and the two structural
+  ones in [WORKSPACE.md §2](../architecture/WORKSPACE.md).
 - ⬜ **Amend the OpenExec capability probe** with what the audit found: `esf`,
   `esfUsd` and `ef` go unprobed although the public exec headers require them,
   and `usdExecImaging` proves nothing because it is built whether or not
   `PXR_BUILD_EXEC` is on. The refusal is still correct today — the other five
   components are absent in that configuration — so this is precision, not a hole.
+- ⬜ **`operator==` on the `motionCore` aggregates.** Type registration requires
+  it (`ExecTypeRegistry::RegisterType`), so P0-4 cannot register a pose type
+  without it; P0-6 parity and the adapter corpus tests want the same thing. One
+  change, three callers, and today the types have none.
 
 The two prerequisites this milestone was originally scoped around were already
 met, both ahead of schedule:

@@ -24,6 +24,8 @@ The three input-adapter identities (`vrmAdapterMocopi`, `vrmAdapterVmc`,
 `vrmAdapterArdy`) and their dependency directions were added to this contract on
 2026-07-28, ahead of any adapter code, from
 [roadmap/adapters-mocopi-vmc-ardy.md](../roadmap/adapters-mocopi-vmc-ardy.md).
+On 2026-07-29 §2 gained two more rules from the same direction: an OpenExec
+computation performs no I/O, and `ExecIr` is optional rather than foundational.
 
 ## 1. Bundles and libraries
 
@@ -49,9 +51,9 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `motionRuntime` | plain static CMake library (v0.4.0) | Timestamped pose buffer, interpolation/extrapolation, resample, filter, blend — the OpenExec-independent runtime |
 | `vrmRetarget` | plain static CMake library (v0.4.0) | Humanoid map, rest pose, pose retargeter, root-motion policy. **Completed before OpenExec** (motion policy §18.12). Expression resolution stays with Motion Phase G. |
 | `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig and the semantic clip off stages, drives `vrmRetarget` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
-| `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `vrmRetarget`: it stops at the clip. Not a bundle. |
-| `vrmAdapterMocopi` | optional bundle (reserved, `adapters/liveCapture/mocopi/`) | Decodes one capture product's packets into canonical humanoid semantics and pushes them at `LiveCaptureSource`. Direct path: keeps the SDK-specific confidence and device diagnostics a protocol relay drops. |
-| `vrmAdapterVmc` | optional bundle (reserved, `adapters/liveCapture/vmc/`) | The generic real-time input: OSC-over-UDP decode, frame assembly, VRM humanoid bone names → canonical semantics. One adapter serves every sender application, including capture products relayed through it. |
+| `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `vrmRetarget`: it stops at the clip. Not a bundle. *(Gains a live adapter source when the first adapter lands; this row is updated in that PR, not before.)* |
+| `vrmAdapterVmc` | optional bundle (reserved, `adapters/liveCapture/vmc/`) | The generic real-time input: OSC-over-UDP decode, frame assembly, VRM humanoid bone names → canonical semantics. One adapter serves every sender application, including capture products relayed through it. **First adapter implemented.** |
+| `vrmAdapterMocopi` | optional bundle (reserved, `adapters/liveCapture/mocopi/`) | Decodes one capture product's native packets into canonical humanoid semantics and pushes them at `LiveCaptureSource`. Direct path: keeps the SDK-specific confidence and device diagnostics a protocol relay drops. Does **not** wrap `vrmAdapterVmc`. |
 | `vrmAdapterArdy` | optional bundle (reserved, `adapters/generators/ardy/`) | One generator behind the vendor-neutral `IMotionGenerator` contract, producing canonical humanoid motion that `vrmRetarget` maps onto a target rig. |
 
 `adapters/` is the only place product, SDK, protocol, or research-model names
@@ -60,6 +62,15 @@ depend on another, and there is deliberately no `adapters/common/` until two of
 them are shown to duplicate code that carries no vendor semantics. Their plan,
 including the implementation order and per-adapter acceptance criteria, is
 [roadmap/adapters-mocopi-vmc-ardy.md](../roadmap/adapters-mocopi-vmc-ardy.md).
+
+> **A runtime route is not a build edge.** A capture application may act as a
+> VMC sender, so a user's data can travel `mocopi app → VMC packet →
+> vrmAdapterVmc`. That is a path assembled at runtime and creates no dependency:
+> `vrmAdapterMocopi` handles native input and links `motionCore` /
+> `motionRuntime` only, exactly as `vrmAdapterVmc` does. The ordering above
+> (VMC implemented first, the native adapter added on measured evidence) is the
+> roadmap's; the identities and the sibling rule are this contract's, and they do
+> not move with it.
 
 > **Two unrelated things are called "adapter" in this repo.** The bundles above
 > are *input* adapters: vendor and protocol leaves under `adapters/`. The
@@ -118,7 +129,11 @@ usdVrmFileFormat      -> usdVrmPackageResolver (link-time; resolver is a
                          runtime bundle dependency only)
 usdVrmFileFormat      -> usdVrmaFileFormat, motion generator, any motion library
 execVrm               -> usdVrmFileFormat private API, importer canonical model
-execVrm               -> GLB parser (vrmContainer, cgltf)
+execVrm               -> GLB parser (vrmContainer, cgltf), reparse of the
+                         source .vrm / .vrma bytes, joint-name heuristics
+execMotion/execVrm    -> socket or device I/O, file watching, a wall clock, a
+                         private thread pool, or mutable global state inside a
+                         computation callback (see below)
 
 motionCore            -> any vendor SDK, any product-named code, any network
                          protocol, any OpenUSD stage authoring
@@ -132,10 +147,15 @@ execMotion/execVrm    -> adapters/*  (same rule, one layer up: an OpenExec
 adapters/<a>          -> adapters/<b>  (adapters are siblings, never a stack)
 adapters/*            -> vrmSchema, any USD file-format bundle, vrmRetarget
                          (the *library*; its tool may — see above)
+adapters/*            -> OpenExec, ExecIr, or emitting ExecIr values
+
+motionCore            -> ExecIr
+vrmRetarget           -> ExecIr
+usdVrmFileFormat      -> authoring ExecIr prims as a requirement of import
 any cycle, including self-cycles
 ```
 
-Three of these are the motion layer's load-bearing invariants, restated so a
+Five of these are the motion layer's load-bearing invariants, restated so a
 reviewer can check them without opening the policy:
 
 - **`vrmRetarget` does not depend on OpenExec.** The retarget core is finished
@@ -149,6 +169,16 @@ reviewer can check them without opening the policy:
   This is what lets a capture product, a sender application, or a generation
   model be swapped without touching retarget, runtime, OpenExec, or the
   importer.
+- **An OpenExec computation evaluates an immutable snapshot and performs no
+  I/O.** Receiving is the adapter's job and buffering is `motionRuntime`'s; a
+  callback that opened a socket or read a clock would make cache reuse and
+  invalidation untestable, which is the whole reason to be on OpenExec at all
+  ([OpenExec plan §5](../roadmap/openexec-v0.6.0-v0.7.0.md)).
+- **`ExecIr` is optional and never a prerequisite.** It is confined to an
+  adapter layer inside `execVrm`; the canonical motion contract is not derived
+  from its representation, the importer never has to author its prims, and the
+  offline pipeline stays whole with it absent
+  ([OpenExec plan §7.0](../roadmap/openexec-v0.6.0-v0.7.0.md)).
 
 Enforcement: `ost plugin test --workspace` (ost >= 0.15.0) validates the
 bundle graph declared via `requires.bundles` before running any bundle's
