@@ -26,10 +26,19 @@ two dependencies, and they are the two its manifest declares:
 vrmAdapterVmc -> motionCore, motionRuntime
 ```
 
-`tests/check_boundaries.py` is what makes that a fact rather than an intention:
-it fails on a plugin manifest anywhere in the tree, on a stage/registration/exec
+`tests/check_boundaries.py` is what makes that a fact rather than an intention.
+It fails on a plugin manifest anywhere in the tree, on a stage/registration/exec
 API in `include/` or `src/`, on a mention of a sibling adapter or a plugin
-bundle, and on a binary that imports one.
+bundle, on a `target_link_libraries` naming anything but the two permitted
+libraries, and on a binary whose imports leave the OpenUSD value-type layer.
+
+That last one inspects the **test executable**, not the adapter's own archive.
+A static `.lib`/`.a` records no imports at all — `dumpbin /dependents` on one
+prints a section summary and nothing else — so a check pointed at the library
+would be a gate that cannot fail. Pointed at the linked executable it has real
+teeth: run against `motion_retarget` it reports `usd_sdf`, `usd_usd`, and
+`usd_usdSkel`, which is exactly the class of import this boundary exists to
+refuse.
 
 ## What it is not allowed to do
 

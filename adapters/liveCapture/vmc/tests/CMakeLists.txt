@@ -39,9 +39,15 @@ if(WIN32)
 endif()
 
 if(Python3_Interpreter_FOUND)
+    # The *test executable*, not $<TARGET_FILE:vrmAdapterVmc>. The adapter is a
+    # static library and an archive records no imports at all, so inspecting it
+    # is a check that cannot fail. This executable is the first artifact in
+    # which the adapter's real transitive imports exist, and its link closure is
+    # exactly the one the boundary is about: the adapter, motionCore, and
+    # motionRuntime.
     add_test(NAME vrmAdapterVmc_boundaries
         COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_CURRENT_SOURCE_DIR}/check_boundaries.py"
             "${CMAKE_CURRENT_SOURCE_DIR}/.."
-            "$<TARGET_FILE:vrmAdapterVmc>")
+            "$<TARGET_FILE:vrmAdapterVmc_tests>")
 endif()

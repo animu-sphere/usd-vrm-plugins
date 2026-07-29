@@ -26,7 +26,11 @@ Current schema contract version: **1**.
   plugin manifest anywhere in the tree, a stage/registration/exec API in
   `include/` or `src/`, a mention of a sibling adapter or a plugin bundle, and —
   through an allowlist rather than a denylist — a `target_link_libraries` naming
-  anything but the two permitted libraries.
+  anything but the two permitted libraries, or a binary import outside the
+  OpenUSD value-type layer. The import check reads the **test executable**: a
+  static archive records no imports, so a check pointed at the library could
+  never fail. Pointed at the executable it reports `usd_sdf` / `usd_usd` /
+  `usd_usdSkel` when run against `motion_retarget`.
 - **`ost` report 34** —
   [docs/reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md](docs/reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md).
   Scaffolding the adapter measured two gaps: `ost plugin test --workspace`

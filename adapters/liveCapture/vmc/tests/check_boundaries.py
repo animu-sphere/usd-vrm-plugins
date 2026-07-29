@@ -18,6 +18,15 @@ deliberate, and both come straight from the contract:
   is a workspace *tool*, and a tool may drive `vrmRetarget` and author a stage
   exactly as `motion_retarget` does. Scanning it would flag the one place the
   contract permits what the library may not do.
+
+The binary argument is the adapter's **test executable**, not its `.lib`/`.a`.
+A static archive records no imports at all — `dumpbin /dependents` on one prints
+a section summary and nothing else — so pointing this check at the library would
+make it a gate that cannot fail, which is worse than no gate. The linked test
+executable is the first artifact in which the adapter's real transitive imports
+exist, so it is the first one worth inspecting. It links the adapter plus
+`motionCore` and `motionRuntime` and nothing else, which is exactly the closure
+this boundary is about.
 """
 
 from __future__ import annotations
@@ -61,30 +70,53 @@ def _code_only(text: str) -> str:
     return _LINE_COMMENT.sub("", _BLOCK_COMMENT.sub("", text))
 
 
-def _binary_dependencies(library: pathlib.Path) -> str:
+def _binary_dependencies(binary: pathlib.Path) -> str:
     if sys.platform == "win32":
         tool = _find_dumpbin()
         if not tool:
             raise RuntimeError("dumpbin was not found")
-        command = [tool, "/nologo", "/dependents", str(library)]
+        command = [tool, "/nologo", "/dependents", str(binary)]
     elif sys.platform == "darwin":
         tool = shutil.which("otool")
         if not tool:
             raise RuntimeError("otool was not found")
-        command = [tool, "-L", str(library)]
+        command = [tool, "-L", str(binary)]
     else:
         tool = shutil.which("readelf")
         if not tool:
             raise RuntimeError("readelf was not found")
-        command = [tool, "-d", str(library)]
+        command = [tool, "-d", str(binary)]
     return subprocess.run(
         command, check=True, text=True, encoding="utf-8", errors="replace",
         stdout=subprocess.PIPE).stdout
 
 
+# The OpenUSD libraries the adapter's closure may import, by the `usd_<name>` /
+# `libusd_<name>` decoration all three platforms use. Everything else in that
+# family is refused by name, which is what catches the ones that matter --
+# usd_usd, usd_sdf, usd_plug, usd_ar, usd_usdSkel, usd_exec*, usd_ms.
+#
+# An allowlist rather than a list of forbidden names, for the same reason the
+# CMake check below uses one: a denylist has to anticipate every library nobody
+# has linked yet. The four permitted entries are the value-type and foundation
+# layer motionCore's own contract already allows -- Gf is the one it uses, and
+# the other three are what Gf drags in on some platforms and not others. None of
+# them carries a stage, a composition engine, or a plugin registry.
+_ALLOWED_USD_LIBRARIES = {"gf", "tf", "arch", "vt"}
+_USD_LIBRARY = re.compile(r"usd_([A-Za-z0-9]+)")
+
+
+def _report(errors: list[str]) -> int:
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        return 1
+    print("vrmAdapterVmc boundary check passed")
+    return 0
+
+
 def main() -> int:
     source = pathlib.Path(sys.argv[1]).resolve()
-    library = pathlib.Path(sys.argv[2]).resolve()
+    binary = pathlib.Path(sys.argv[2]).resolve()
     errors: list[str] = []
 
     # WORKSPACE.md §1: an adapter is a library, never a plugin bundle.
@@ -136,25 +168,38 @@ def main() -> int:
                     "vrmAdapterVmc may link only motionCore and motionRuntime; "
                     f"CMakeLists.txt links `{token}`")
 
-    try:
-        dependencies = _binary_dependencies(library)
-    except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
-        errors.append(f"could not inspect vrmAdapterVmc dependencies: {exc}")
-        dependencies = ""
-    forbidden_binary = re.compile(
-        r"(?:usd_ms|lib(?:usd|sdf|plug|ar)(?:[._-]|\.(?:dll|dylib|so))|"
-        r"vrmSchema|vrmContainer|vrmRetarget|vrmAdapter(?:Mocopi|Ardy))",
-        re.IGNORECASE)
-    if forbidden_binary.search(dependencies):
+    # Refuse a static archive outright rather than inspecting one and finding
+    # nothing. An archive records no imports, so this check would pass on any
+    # input whatsoever -- which is how it was written the first time.
+    if binary.suffix.lower() in {".lib", ".a"}:
         errors.append(
-            "vrmAdapterVmc binary imports an OpenUSD stage/plugin library, a "
-            "plugin bundle, or a sibling adapter")
+            f"{binary.name} is a static archive and records no imports; point "
+            "this check at a linked binary (the test executable)")
+        return _report(errors)
 
-    if errors:
-        print("\n".join(errors), file=sys.stderr)
-        return 1
-    print("vrmAdapterVmc boundary check passed")
-    return 0
+    try:
+        dependencies = _binary_dependencies(binary)
+    except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
+        errors.append(f"could not inspect {binary.name}: {exc}")
+        dependencies = ""
+
+    for name in sorted({m.lower() for m in _USD_LIBRARY.findall(dependencies)}):
+        if name not in _ALLOWED_USD_LIBRARIES:
+            errors.append(
+                f"{binary.name} imports OpenUSD library `usd_{name}`; the "
+                "adapter's closure may reach the value-type layer only "
+                f"({', '.join(f'usd_{a}' for a in sorted(_ALLOWED_USD_LIBRARIES))})")
+
+    forbidden_binary = re.compile(
+        r"\b(?:vrmSchema|vrmContainer|vrmRetarget|vrmAdapterMocopi|"
+        r"vrmAdapterArdy|UsdVrm\w*)\b", re.IGNORECASE)
+    imported = forbidden_binary.search(dependencies)
+    if imported:
+        errors.append(
+            f"{binary.name} imports `{imported.group(0)}` — a plugin bundle, a "
+            "sibling adapter, or vrmRetarget")
+
+    return _report(errors)
 
 
 if __name__ == "__main__":

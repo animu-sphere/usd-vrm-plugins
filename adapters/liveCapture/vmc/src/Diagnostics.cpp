@@ -3,7 +3,10 @@
 #include "vrmAdapterVmc/Diagnostics.h"
 
 #include <array>
-#include <cstdio>
+#include <iomanip>
+#include <ios>
+#include <locale>
+#include <sstream>
 
 namespace vrmAdapterVmc
 {
@@ -41,12 +44,20 @@ const CodeEntry* Entry(DiagnosticCode code) noexcept
 // Six decimals, matching the recorded-trace format's quantum
 // (motionRuntime/CaptureTrace.h), so a diagnostic line and the trace it refers
 // to spell the same instant the same way.
+//
+// The classic locale is not decoration. `printf("%.6f")` and a default-imbued
+// stream both take their decimal point from the *host's* locale, and a DCC that
+// calls setlocale(LC_ALL, "") turns 1.500000 into 1,500000 — which would make a
+// diagnostic and the trace it refers to disagree in exactly the environment
+// where a live session is being debugged. CaptureTrace.cpp imbues the classic
+// locale on both its reader and its writer for this reason; this matches it
+// rather than inventing a second answer.
 std::string FormatSeconds(double seconds)
 {
-    char buffer[32];
-    const int written = std::snprintf(buffer, sizeof(buffer), "%.6f", seconds);
-    return written > 0 ? std::string(buffer, static_cast<std::size_t>(written))
-                       : std::string();
+    std::ostringstream out;
+    out.imbue(std::locale::classic());
+    out << std::fixed << std::setprecision(6) << seconds;
+    return out.str();
 }
 
 } // namespace

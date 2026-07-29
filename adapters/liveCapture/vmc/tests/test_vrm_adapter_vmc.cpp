@@ -9,6 +9,7 @@
 
 #include <cassert>
 #include <cstdio>
+#include <locale>
 #include <set>
 #include <string>
 
@@ -111,6 +112,34 @@ TestFormattingIsDeterministicAndOmitsAbsentFields()
            == "[VRM_VMC_SOCKET_BIND_FAILED] error fatal");
 }
 
+// A locale whose decimal point is a comma, constructed in-process so this test
+// depends on no system locale being installed anywhere.
+struct CommaDecimalPoint : std::numpunct<char>
+{
+protected:
+    char do_decimal_point() const override { return ','; }
+};
+
+void
+TestFormattingSurvivesAHostileGlobalLocale()
+{
+    // A default-constructed ostringstream is imbued with the *global* locale,
+    // so a host that installs one — a DCC calling setlocale is the realistic
+    // case — would otherwise turn `t=1.500000` into `t=1,500000` and make a
+    // diagnostic disagree with the capture trace it refers to.
+    Diagnostic pinned =
+        vrmAdapterVmc::MakeDiagnostic(DiagnosticCode::TimestampRegression);
+    pinned.timestamp = 1.5;
+
+    const std::locale previous = std::locale::global(
+        std::locale(std::locale::classic(), new CommaDecimalPoint));
+    const std::string formatted = vrmAdapterVmc::FormatDiagnostic(pinned);
+    std::locale::global(previous);
+
+    assert(formatted
+           == "[VRM_VMC_TIMESTAMP_REGRESSION] warning recoverable t=1.500000");
+}
+
 void
 TestTheDeclaredDependencyEdgesAreReal()
 {
@@ -136,6 +165,7 @@ main()
     TestOnlyABindFailureStopsTheSession();
     TestMakeDiagnosticCannotDisagreeWithTheTable();
     TestFormattingIsDeterministicAndOmitsAbsentFields();
+    TestFormattingSurvivesAHostileGlobalLocale();
     TestTheDeclaredDependencyEdgesAreReal();
     std::puts("vrmAdapterVmc unit tests passed");
     return 0;
