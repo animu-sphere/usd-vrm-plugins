@@ -151,18 +151,26 @@ An adapter is done when a recorded session replays into a retargeted
 adapters/
 ├─ liveCapture/
 │  ├─ vmc/        include/vrmAdapterVmc/ · src/ · tests/fixtures/ · tests/corpus/
-│  │              tools/ · CMakeLists.txt · openstrata.plugin.yaml
+│  │              tools/ · CMakeLists.txt · openstrata.library.yaml
 │  └─ mocopi/     include/vrmAdapterMocopi/ · src/ · tests/fixtures/ · tools/
-│                 CMakeLists.txt · openstrata.plugin.yaml
+│                 CMakeLists.txt · openstrata.library.yaml
 └─ generators/
    └─ ardy/       include/vrmAdapterArdy/ · src/ · tests/fixtures/ · tools/
-                  CMakeLists.txt · openstrata.plugin.yaml
+                  CMakeLists.txt · openstrata.library.yaml
 ```
 
 The `liveCapture/` and `generators/` grouping is the one already fixed in
 [WORKSPACE.md §1](../architecture/WORKSPACE.md); the source policy's flatter
 sketch (`adapters/vrmAdapterVmc/`) is the same set of leaves and the contract
 wins on structure.
+
+The manifest is `openstrata.library.yaml`, and each `tools/` CLI carries an
+`openstrata.tool.yaml` beside it. This document said `openstrata.plugin.yaml`
+until 2026-07-29, which no adapter could ever have written: a plugin manifest
+names an OpenUSD plugin kind and a `plugInfo.json`, and an adapter registers
+nothing with OpenUSD. The reasoning and the corrected identities are in
+[WORKSPACE.md §1](../architecture/WORKSPACE.md); nothing else in this plan moves
+with it.
 
 No `adapters/common/`. It gets extracted when two adapters demonstrably
 duplicate code that carries no vendor semantics — after both exist, not in
@@ -490,7 +498,10 @@ depends on them ([docs/README.md](../README.md)).
   `vrmAdapterVmc`, and `vrmAdapterArdy`; §2 carries the adapter-library vs
   adapter-tool split, `execMotion`/`execVrm` ⇸ `adapters/*`, and the
   no-sibling-dependency rule; §5 carries the artifact names and the aggregate
-  exclusion. Landed 2026-07-28 with this document.
+  exclusion. Landed 2026-07-28 with this document. **Amended 2026-07-29**, before
+  Milestone A: the three identities are plain libraries plus their CLI tools, not
+  plugin bundles, and §2's split is now expressible in a manifest instead of only
+  in prose (§4 above).
 - ✅ **VMC as a first-class generic input.** Motion policy §8.2 previously named
   one direct adapter only, and now carries the VMC-first ordering.
 - ⬜ **The canonical contract owes three things before Milestone A ends.**

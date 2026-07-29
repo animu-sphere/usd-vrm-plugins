@@ -99,6 +99,15 @@ Current schema contract version: **1**.
   motion policy gains VMC as a first-class generic input — it previously
   described one direct adapter only — and the plan lives in
   [docs/roadmap/adapters-mocopi-vmc-ardy.md](docs/roadmap/adapters-mocopi-vmc-ardy.md).
+  The three identities were then corrected from *bundle* to *plain library plus
+  CLI tool*, still ahead of any adapter directory: a plugin manifest names an
+  OpenUSD plugin kind and a `plugInfo.json`, and an adapter — barred from
+  `vrmSchema`, from the file-format bundles, and from OpenExec — has nothing to
+  register. The artifact name and the aggregate exclusion are unchanged, and an
+  adapter's dependencies are now expressible as `requires.libraries` — the one
+  form the workspace graph reads — though `ost` 0.21.0 does not yet discover a
+  library descriptor nested under `adapters/<group>/<name>/`, which §2 records
+  as a measured gap rather than a claim.
 - **`scripts/check_docs.py` guards the OpenUSD pin.** Two independent
   mechanisms assert it — `ost` reads the manifests, a plain CMake build reads
   the contract module — and nothing made them agree, so a half-bumped pair
