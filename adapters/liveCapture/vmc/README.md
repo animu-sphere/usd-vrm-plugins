@@ -8,8 +8,9 @@ UDP datagram → OSC decode → VMC message decode → frame assembly
              → VRM bone mapping → HumanoidPose → LiveCaptureSource
 ```
 
-**Status: scaffold.** The build, the manifest, the boundary check, and the
-frozen diagnostic codes exist. No decoder does yet — see
+**Status: recorded input, no decoder.** The build, the manifest, the boundary
+check, the frozen diagnostic codes, the recorded-packet format, and the corpus
+recorded in it exist. Nothing decodes a packet yet — see
 [the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §5 for the
 implementation order and Milestone A for what "done" means.
 
@@ -64,6 +65,32 @@ recorded-packet decoder → semantic mapping → frame assembly → live-source 
 → thin UDP receiver. Building the receiver first would make every subsequent
 test require a live sender; building it last keeps the whole adapter verifiable
 in CI from committed fixtures, with no hardware and no socket.
+
+## Recorded input
+
+`vmc-packet-capture` v1 — spec on
+[`PacketCapture.h`](include/vrmAdapterVmc/PacketCapture.h) — is what makes that
+order possible: the datagrams a session delivered, verbatim, with the instant
+each arrived. Line-oriented text, so a fixture diffs; hex with an ASCII gutter,
+so an address pattern is legible without a decoder ring:
+
+```text
+d 0.000000 20
+  2f 56 4d 43 2f 45 78 74 2f 54 00 00 2c 66 00 00  |/VMC/Ext/T..,f..|
+  3d cc cc cd                                      |=...|
+```
+
+It is not a `motion-capture-trace`, and the difference is the adapter's two
+ends: a trace records what an adapter *produced*, a capture what it was *given*.
+Only the second can represent a truncated datagram, a duplicate delivery, or a
+restart mid-frame — which is to say, only the second can test a decoder.
+
+The corpus lives in [`tests/corpus/`](tests/corpus/) and is generated, never
+recorded off a commercial sender, because a fixture carrying someone's avatar is
+one CI cannot redistribute. Two tests hold it: `vrmAdapterVmc_corpus` re-emits
+every committed capture through the C++ writer and compares bytes, and
+`vrmAdapterVmc_packetGen` re-runs the generator and compares against that. A
+hand-edited fixture that is still canonical fails the second, not the first.
 
 ## Diagnostics
 

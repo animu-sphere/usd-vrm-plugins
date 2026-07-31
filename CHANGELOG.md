@@ -15,6 +15,35 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **A VMC session can be recorded and replayed before anything decodes one** —
+  `vmc-packet-capture` v1
+  ([`PacketCapture.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/PacketCapture.h)),
+  the format that makes the adapter's transport-last order possible. It records
+  the datagrams a session delivered, verbatim, with the instant each arrived:
+  line-oriented text with hex bytes and an ASCII gutter, so a fixture diffs in a
+  pull request and an OSC address pattern is legible without a decoder. It is
+  deliberately *not* a `motion-capture-trace` — a trace records what an adapter
+  produced, and only a capture can represent a truncated datagram, a duplicate
+  delivery, or a restart mid-frame, which is to say only a capture can test a
+  decoder. The reader is strict in the four ways a fixture goes wrong silently:
+  a record whose hex lines under- or overrun its declared length, a gutter that
+  disagrees with its bytes (a reviewer reads the gutter, not the hex), an
+  unknown header key, and a length above the largest UDP payload.
+- **The VMC packet corpus** — five generated captures in
+  [`adapters/liveCapture/vmc/tests/corpus/`](adapters/liveCapture/vmc/tests/corpus/),
+  pinning the bundled and the unbundled sender shape, well-formed traffic the
+  body path must ignore rather than refuse, ten packet-level refusals, and the
+  arrival-order phenomena (a byte-identical duplicate, a backwards sender clock,
+  a frame cut off after six bones, a restart). Generated rather than recorded
+  off a commercial sender for the reason the VRM corpus is licence-gated: a
+  fixture carrying someone's avatar is one CI cannot redistribute. Two tests
+  hold it — `vrmAdapterVmc_corpus` re-emits every capture through the C++ writer
+  and compares bytes, `vrmAdapterVmc_packetGen` re-runs the generator and
+  compares against that, and a hand-edited fixture that is still canonical fails
+  the second and not the first. Three properties are deliberate: the receive and
+  sender clocks share no origin, receive times never go backwards while sender
+  times do, and bones arrive in Unity's `HumanBodyBones` order, in which
+  `UpperChest` sorts last of all.
 - **The first input adapter exists as a boundary** — `adapters/liveCapture/vmc`,
   the `vrmAdapterVmc` scaffold. A plain static library declaring the only two
   edges `WORKSPACE.md` §2 permits it (`motionCore`, `motionRuntime`), built by
