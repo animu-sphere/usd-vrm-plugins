@@ -39,14 +39,17 @@ Current schema contract version: **1**.
   never interpreted** — longer forms are in the wild (a third string on
   `/VMC/Ext/VRM`, further status integers on `/VMC/Ext/OK`, more floats after
   `/VMC/Ext/Root/Pos`'s quaternion), refusing those blames a sender for being
-  newer, and decoding them would invent a meaning for bytes no fixture here pins. `vrmAdapterVmc_vmcCorpus` runs both
-  layers over the whole recorded corpus to counts derived from the generator's
-  structure (122 / 117 / 83 / 173 decoded, ten ignored), plus two claims counts
-  cannot make: the neutral capture's rotations are all identity with its root at
-  the origin and its sender clock starts at 12.5 s where the receive clock starts
-  at 0, and the sender-restart capture's backwards clock decodes without
-  complaint — `VRM_VMC_TIMESTAMP_REGRESSION` needs the assembler's memory of the
-  previous frame, and this layer has none.
+  newer, and decoding them would invent a meaning for bytes the corpus records
+  the *shape* of and no meaning for. `vrmAdapterVmc_vmcCorpus` runs both layers
+  over all seven captures to counts derived from the generator's structure (568
+  decoded, twelve ignored, eight refused, nine arguments counted and not read),
+  plus three claims counts cannot make: the neutral capture's rotations are all
+  identity with its root at the origin and its sender clock starts at 12.5 s
+  where the receive clock starts at 0; the sender-restart capture's backwards
+  clock decodes without complaint — `VRM_VMC_TIMESTAMP_REGRESSION` needs the
+  assembler's memory of the previous frame, and this layer has none; and the
+  malformed-forms capture's bad bone costs that bone, its datagram still
+  yielding the twenty-two messages that arrived with it.
 - **The OSC layer, and nothing about VMC in it** —
   [`OscPacket.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/OscPacket.h)
   decodes a datagram into addresses, type tags, arguments, and bundles flattened
@@ -82,12 +85,16 @@ Current schema contract version: **1**.
   a record whose hex lines under- or overrun its declared length, a gutter that
   disagrees with its bytes (a reviewer reads the gutter, not the hex), an
   unknown header key, and a length above the largest UDP payload.
-- **The VMC packet corpus** — five generated captures in
+- **The VMC packet corpus** — seven generated captures in
   [`adapters/liveCapture/vmc/tests/corpus/`](adapters/liveCapture/vmc/tests/corpus/),
   pinning the bundled and the unbundled sender shape, well-formed traffic the
-  body path must ignore rather than refuse, ten packet-level refusals, and the
-  arrival-order phenomena (a byte-identical duplicate, a backwards sender clock,
-  a frame cut off after six bones, a restart). Generated rather than recorded
+  body path must ignore rather than refuse, ten packet-level refusals, seven
+  message-level ones plus a bad bone inside an otherwise whole frame, the longer
+  forms of known messages, and the arrival-order phenomena (a byte-identical
+  duplicate, a backwards sender clock, a frame cut off after six bones, a
+  restart). The two `malformed-*` captures are a pair rather than a duplicate:
+  `-packets` dies in the OSC layer before an address means anything, and only
+  `-forms` still has a frame for a bad message to be *inside* of. Generated rather than recorded
   off a commercial sender for the reason the VRM corpus is licence-gated: a
   fixture carrying someone's avatar is one CI cannot redistribute. Two tests
   hold it — `vrmAdapterVmc_corpus` re-emits every capture through the C++ writer

@@ -506,12 +506,18 @@ pose output · diagnostics · deterministic unit tests
   field, so accepting `,sddddddd` as a bone pose would pin nothing about the wire
   format — and **arguments past the known form are counted, never interpreted**,
   so a sender emitting one of the longer forms in the wild is reported rather
-  than refused or guessed at. `vrmAdapterVmc_vmcCorpus` runs both layers over the
-  recorded bytes to counts derived from the generator's structure, and checks two
-  claims counts cannot: the neutral capture is all-identity with its root at the
-  origin, and the sender-restart capture's backwards clock decodes without
-  complaint, since `VRM_VMC_TIMESTAMP_REGRESSION` needs the assembler's memory of
-  the previous frame.
+  than refused or guessed at. Two captures land with it, because the packet-level
+  corpus could not reach either rule: `malformed-forms` is valid OSC refused one
+  layer up — including **a bad bone inside an otherwise whole frame**, which is
+  the "a message, never a packet" rule stated as a recorded session rather than
+  as a unit test — and `extended-forms` carries nine arguments that are counted
+  and not read. `vrmAdapterVmc_vmcCorpus` runs both layers over all seven to
+  counts derived from the generator's structure, and checks three claims counts
+  cannot: the neutral capture is all-identity with its root at the origin, the
+  sender-restart capture's backwards clock decodes without complaint (since
+  `VRM_VMC_TIMESTAMP_REGRESSION` needs the assembler's memory of the previous
+  frame), and the bad bone's datagram still yields the twenty-two messages that
+  arrived with it.
 - ⬜ Everything else above, in the §5 order: bone mapping, then coordinate
   conversion — which is where §11's canonical-contract debt comes due.
 

@@ -2,6 +2,7 @@
 
 #include "vrmAdapterVmc/VmcMessage.h"
 
+#include <cassert>
 #include <string>
 #include <utility>
 
@@ -233,6 +234,15 @@ DecodeVmcPacket(const OscPacket& packet, VmcPacket* out,
             continue;
         }
 
+        // The split is read back out of the diagnostic, which means this loop
+        // depends on `DecodeVmcMessage` filling one on every false return. It
+        // does -- `Refuse` is the only path -- but a default-constructed
+        // Diagnostic reads as PacketMalformed, so a future path that forgot
+        // would be silently miscounted as a defect rather than as traffic this
+        // adapter ignores. Naming the two codes this layer can raise turns that
+        // from a convention into something a test build trips over.
+        assert(diagnostic.code == DiagnosticCode::UnsupportedMessage
+               || diagnostic.code == DiagnosticCode::PacketMalformed);
         if (diagnostic.code == DiagnosticCode::UnsupportedMessage) {
             ++result.unsupported;
         } else {

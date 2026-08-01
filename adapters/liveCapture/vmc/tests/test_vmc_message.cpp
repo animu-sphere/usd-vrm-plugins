@@ -132,6 +132,8 @@ TestTheKindTableIsWholeAndAddressesRoundTrip()
     }
     // Count is the "no message" value and names nothing.
     assert(vrmAdapterVmc::VmcMessageKindAddress(VmcMessageKind::Count).empty());
+    assert(vrmAdapterVmc::VmcMessageKindTypeTags(VmcMessageKind::Count)
+           .empty());
     assert(vrmAdapterVmc::VmcMessageKindTypeTags(VmcMessageKind::BoneTransform)
            == "sfffffff");
     assert(vrmAdapterVmc::VmcMessageKindTypeTags(VmcMessageKind::BlendApply)
@@ -167,6 +169,18 @@ TestEachKnownAddressDecodes()
     assert(message.availability.loaded == 1);
     assert(!message.availability.calibrationState);
     assert(!message.availability.calibrationMode);
+
+    // Between the two: the optional list is per *argument*, not per whole form,
+    // so a message that stops halfway through it decodes what it carried. No
+    // sender is known to send this one — it is here because the code permits it
+    // and an untested reachable branch is a branch nobody has read.
+    const Built partial("/VMC/Ext/OK", {I(1), I(3)});
+    assert(Decode(partial, &message));
+    assert(message.availability.loaded == 1);
+    assert(message.availability.calibrationState
+           && *message.availability.calibrationState == 3);
+    assert(!message.availability.calibrationMode);
+    assert(message.unreadArguments == 0);
 
     const Built time("/VMC/Ext/T", {F(12.5)});
     assert(Decode(time, &message));
@@ -505,6 +519,8 @@ struct Expected
     std::size_t decoded;
     std::size_t unsupported;
     std::size_t malformed;
+    // Summed over the capture's decoded messages.
+    std::size_t unread;
     // Per kind, in enum order: OK, T, VRM, Root/Pos, Bone/Pos, Blend/Val,
     // Blend/Apply.
     std::array<std::size_t, VmcMessageKindCount> kinds;
@@ -517,14 +533,25 @@ struct Expected
 // device messages this adapter ignores, and sender-restart is seven full frames
 // plus one cut off after six bones, around a second handshake.
 constexpr Expected kExpected[] = {
-    {"arm-raise-30hz.vmcpackets", 117, 0, 0, {1, 5, 1, 5, 105, 0, 0}},
+    {"arm-raise-30hz.vmcpackets", 117, 0, 0, 0, {1, 5, 1, 5, 105, 0, 0}},
+    // A handshake and a frame in longer forms than this decoder reads: a fourth
+    // integer on OK, a third string on VRM, six floats past the root's
+    // quaternion, an argument on Blend/Apply. Nine unread arguments, no refusal
+    // -- a sender being newer is not a sender being wrong.
+    {"extended-forms.vmcpackets", 26, 0, 0, 9, {1, 1, 1, 1, 21, 0, 1}},
+    // The counterpart to the capture below: every datagram is valid OSC and the
+    // refusal is at *this* layer. Seven are a message on their own; the eighth
+    // is a bone truncated to three floats inside an otherwise whole frame, and
+    // the twenty-two messages it arrived with still decode. That one row is why
+    // the capture exists.
+    {"malformed-forms.vmcpackets", 47, 0, 8, 0, {1, 2, 1, 2, 41, 0, 0}},
     // Eight of its ten datagrams never reach this layer -- the OSC decoder
     // refuses them, which `vrmAdapterVmc_oscCorpus` is what pins. The two that
     // do are valid OSC outside what this adapter implements.
-    {"malformed-packets.vmcpackets", 0, 2, 0, {0, 0, 0, 0, 0, 0, 0}},
-    {"mixed-traffic-30hz.vmcpackets", 83, 10, 0, {1, 3, 1, 3, 63, 9, 3}},
-    {"neutral-standing-30hz.vmcpackets", 122, 0, 0, {1, 5, 1, 5, 110, 0, 0}},
-    {"sender-restart-30hz.vmcpackets", 173, 0, 0, {2, 8, 2, 8, 153, 0, 0}},
+    {"malformed-packets.vmcpackets", 0, 2, 0, 0, {0, 0, 0, 0, 0, 0, 0}},
+    {"mixed-traffic-30hz.vmcpackets", 83, 10, 0, 0, {1, 3, 1, 3, 63, 9, 3}},
+    {"neutral-standing-30hz.vmcpackets", 122, 0, 0, 0, {1, 5, 1, 5, 110, 0, 0}},
+    {"sender-restart-30hz.vmcpackets", 173, 0, 0, 0, {2, 8, 2, 8, 153, 0, 0}},
 };
 
 struct Decoded
@@ -532,8 +559,18 @@ struct Decoded
     std::size_t decoded = 0;
     std::size_t unsupported = 0;
     std::size_t malformed = 0;
+    std::size_t unread = 0;
     std::array<std::size_t, VmcMessageKindCount> kinds{};
     std::vector<double> times;
+    // Kept rather than printed as they arrive: a capture that is *supposed* to
+    // carry refusals would otherwise fill the log with its own expected output,
+    // and the one run worth reading -- a disagreement with the table -- would
+    // be the hardest to find.
+    std::vector<std::string> refusals;
+    // How much each datagram that carried a refusal still yielded. This is the
+    // headline claim in one number: a bad message costs that message, not the
+    // frame it arrived in.
+    std::vector<std::size_t> survivedRefusal;
     bool everyRotationIsIdentity = true;
     bool everyRootIsAtTheOrigin = true;
 };
@@ -622,14 +659,18 @@ CheckCorpus(const std::filesystem::path& directory)
             actual.decoded += vmc.messages.size();
             actual.unsupported += vmc.unsupported;
             actual.malformed += vmc.malformed;
+            // Every message is accounted for exactly once, whatever happened to
+            // it. The tallies and the vector are filled on separate paths, and
+            // this is the only place the two can be caught disagreeing.
+            assert(vmc.messages.size() + vmc.unsupported + vmc.malformed
+                   == osc.messages.size());
             if (vmc.malformed != 0) {
-                for (const Diagnostic& diagnostic : diagnostics) {
-                    if (diagnostic.code == DiagnosticCode::PacketMalformed) {
-                        const std::string line =
-                            vrmAdapterVmc::FormatDiagnostic(diagnostic);
-                        std::fprintf(stderr, "%s: %s\n", name.c_str(),
-                                     line.c_str());
-                    }
+                actual.survivedRefusal.push_back(vmc.messages.size());
+            }
+            for (const Diagnostic& diagnostic : diagnostics) {
+                if (diagnostic.code == DiagnosticCode::PacketMalformed) {
+                    actual.refusals.push_back(
+                        vrmAdapterVmc::FormatDiagnostic(diagnostic));
                 }
             }
 
@@ -656,32 +697,31 @@ CheckCorpus(const std::filesystem::path& directory)
                 default:
                     break;
                 }
-                if (message.unreadArguments != 0) {
-                    std::fprintf(stderr,
-                                 "%s: %zu unread argument(s) on %s -- the "
-                                 "corpus records no extended form\n",
-                                 name.c_str(), message.unreadArguments,
-                                 std::string(message.name).c_str());
-                    ++failures;
-                }
+                actual.unread += message.unreadArguments;
             }
         }
 
         if (actual.decoded != entry->decoded
             || actual.unsupported != entry->unsupported
             || actual.malformed != entry->malformed
+            || actual.unread != entry->unread
             || actual.kinds != entry->kinds) {
             std::fprintf(stderr,
                          "%s: %zu decoded, %zu unsupported, %zu malformed, "
-                         "kinds [%zu %zu %zu %zu %zu %zu %zu] -- expected %zu, "
-                         "%zu, %zu, [%zu %zu %zu %zu %zu %zu %zu]\n",
+                         "%zu unread, kinds [%zu %zu %zu %zu %zu %zu %zu] -- "
+                         "expected %zu, %zu, %zu, %zu, "
+                         "[%zu %zu %zu %zu %zu %zu %zu]\n",
                          name.c_str(), actual.decoded, actual.unsupported,
-                         actual.malformed, actual.kinds[0], actual.kinds[1],
-                         actual.kinds[2], actual.kinds[3], actual.kinds[4],
-                         actual.kinds[5], actual.kinds[6], entry->decoded,
-                         entry->unsupported, entry->malformed, entry->kinds[0],
-                         entry->kinds[1], entry->kinds[2], entry->kinds[3],
-                         entry->kinds[4], entry->kinds[5], entry->kinds[6]);
+                         actual.malformed, actual.unread, actual.kinds[0],
+                         actual.kinds[1], actual.kinds[2], actual.kinds[3],
+                         actual.kinds[4], actual.kinds[5], actual.kinds[6],
+                         entry->decoded, entry->unsupported, entry->malformed,
+                         entry->unread, entry->kinds[0], entry->kinds[1],
+                         entry->kinds[2], entry->kinds[3], entry->kinds[4],
+                         entry->kinds[5], entry->kinds[6]);
+            for (const std::string& refusal : actual.refusals) {
+                std::fprintf(stderr, "  %s\n", refusal.c_str());
+            }
             ++failures;
             continue;
         }
@@ -706,6 +746,27 @@ CheckCorpus(const std::filesystem::path& directory)
             }
         }
 
+        // The claim the capture exists for, as one number. Its second frame
+        // carries a bone truncated to three floats; the clock, the root and the
+        // twenty other bones that arrived in the same bundle still decode, so
+        // the datagram yields 22 messages rather than 0. The seven refusals
+        // after it are a message on their own and yield nothing, which is what
+        // makes 22 the interesting entry rather than the only one.
+        if (name == "malformed-forms.vmcpackets") {
+            const bool ok = actual.survivedRefusal.size() == 8
+                && actual.survivedRefusal.front() == 22;
+            if (!ok) {
+                std::fprintf(stderr,
+                             "%s: %zu datagram(s) carried a refusal, the first "
+                             "yielding %zu message(s) -- expected 8 and 22\n",
+                             name.c_str(), actual.survivedRefusal.size(),
+                             actual.survivedRefusal.empty()
+                                 ? 0
+                                 : actual.survivedRefusal.front());
+                ++failures;
+            }
+        }
+
         // The sender's clock goes backwards in this capture and is decoded
         // without complaint: VRM_VMC_TIMESTAMP_REGRESSION needs a memory of the
         // previous frame, and this layer has none. Raising it here would make
@@ -722,9 +783,10 @@ CheckCorpus(const std::filesystem::path& directory)
             }
         }
 
-        std::printf("%s: %zu decoded, %zu unsupported, %zu malformed\n",
+        std::printf("%s: %zu decoded, %zu unsupported, %zu malformed, %zu "
+                    "unread\n",
                     name.c_str(), actual.decoded, actual.unsupported,
-                    actual.malformed);
+                    actual.malformed, actual.unread);
     }
 
     for (const Expected& entry : kExpected) {

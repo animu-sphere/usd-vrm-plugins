@@ -475,6 +475,12 @@ CheckCorpus(const std::filesystem::path& directory)
     };
     const Expected expected[] = {
         {"arm-raise-30hz.vmcpackets", 117, "", 117, 5, false},
+        // Two captures this layer has nothing to say about: every datagram is
+        // valid OSC, and whether the *VMC* arguments make sense is a question
+        // one layer up. They are listed because the corpus is enumerated rather
+        // than the table -- a capture nobody decodes is a failure here.
+        {"extended-forms.vmcpackets", 2, "", 26, 6, true},
+        {"malformed-forms.vmcpackets", 10, "", 55, 6, true},
         // The first eight are the packet-level refusals. The last two are
         // well-formed OSC this adapter does not implement, which is not this
         // layer's business to notice.

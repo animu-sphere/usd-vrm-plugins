@@ -133,6 +133,13 @@ struct VmcAvailability
 // a temporary packet and neither outlives the bytes. Decode a packet from a
 // temporary datagram and they dangle — which is what `DecodeOscPacket`'s
 // deleted rvalue overload already refuses one step earlier.
+//
+// The receiver that has not been written yet meets this from a direction no
+// overload can refuse: a receive loop with **one reusable buffer** invalidates
+// every `name` in an already-decoded `VmcPacket` the next time it calls `recv`.
+// Nothing here can detect that, so a caller that keeps a decoded message past
+// the datagram must copy the string itself — or, better, convert it to the
+// canonical value it was going to become anyway before the next receive.
 struct VmcMessage
 {
     // Count is the "no message" value, and no decode produces it: a VmcMessage

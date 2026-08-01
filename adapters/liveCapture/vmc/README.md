@@ -168,12 +168,18 @@ Four more decisions, each written down where it is enforced:
   by what they are believed to mean. Each moves into the table above when a
   capture of it exists.
 
-`vrmAdapterVmc_vmcCorpus` runs both layers over the recorded bytes — 122 / 117 /
-83 / 173 decoded messages and ten ignored — and checks two things counts cannot:
-the neutral capture's rotations are all identity with its root at the origin, and
-the sender-restart capture's backwards clock decodes without complaint, because
-`VRM_VMC_TIMESTAMP_REGRESSION` needs a memory of the previous frame and this
-layer has none.
+`vrmAdapterVmc_vmcCorpus` runs both layers over all seven recorded captures —
+568 decoded messages, twelve ignored, eight refused and nine arguments counted
+but not read — and checks three things counts cannot:
+
+- the neutral capture's rotations are all identity with its root at the origin,
+  and its sender clock starts at 12.5 s where the receive clock starts at 0;
+- the sender-restart capture's backwards clock decodes without complaint,
+  because `VRM_VMC_TIMESTAMP_REGRESSION` needs a memory of the previous frame
+  and this layer has none;
+- the malformed-forms capture's bad bone costs **that bone** — the datagram
+  carrying it still yields the twenty-two messages that arrived with it, which
+  is the first rule above stated as a number.
 
 ## Diagnostics
 
