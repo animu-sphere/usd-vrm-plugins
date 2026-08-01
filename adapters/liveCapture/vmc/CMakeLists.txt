@@ -58,7 +58,8 @@ endif()
 add_library(vrmAdapterVmc STATIC
     src/Diagnostics.cpp
     src/OscPacket.cpp
-    src/PacketCapture.cpp)
+    src/PacketCapture.cpp
+    src/VmcMessage.cpp)
 add_library(vrmAdapterVmc::vrmAdapterVmc ALIAS vrmAdapterVmc)
 set_target_properties(vrmAdapterVmc PROPERTIES
     EXPORT_NAME vrmAdapterVmc

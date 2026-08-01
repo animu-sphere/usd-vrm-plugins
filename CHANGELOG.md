@@ -15,6 +15,38 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **The VMC message layer, and no humanoid in it** —
+  [`VmcMessage.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/VmcMessage.h)
+  turns a decoded OSC message into one of seven VMC messages: availability
+  (`/VMC/Ext/OK`), the sender's clock (`/VMC/Ext/T`), the model
+  (`/VMC/Ext/VRM`), the root and bone transforms, and blend-shape values with
+  their apply. It stays in VMC's own terms — a bone name is plain text and a
+  quaternion keeps the sender's `(x, y, z, w)` order rather than the
+  `pxr::GfQuatf` one a layer down uses — because handedness, up axis, units,
+  normalisation and the map to a `motion::HumanBone` belong to the skeleton map,
+  and a conversion here would make the corpus agree with exactly one downstream
+  reading of it. Four rules are decisions rather than details, and the first
+  inverts the OSC layer's: **a message is refused, never a packet**, since the
+  framing is already established and one malformed `/VMC/Ext/Bone/Pos` should
+  cost that bone rather than the twenty-one that arrived with it. An address
+  this adapter does not implement is **not** a defect — `VRM_VMC_UNSUPPORTED_MESSAGE`
+  is info, `DecodeVmcPacket` still returns true, and every real sender emits a
+  headset transform, a camera or a MIDI note. A **known** address whose arguments
+  disagree with the protocol *is* malformed, and the refusal quotes both tag
+  strings: OSC puts an `f` and a `d` in the same field, so a decoder reading
+  values without checking tags would accept `,sddddddd` as a bone pose and pin
+  nothing about the wire format. And arguments past the known form are **counted,
+  never interpreted** — longer forms are in the wild (a third string on
+  `/VMC/Ext/VRM`, further status integers on `/VMC/Ext/OK`, more floats after
+  `/VMC/Ext/Root/Pos`'s quaternion), refusing those blames a sender for being
+  newer, and decoding them would invent a meaning for bytes no fixture here pins. `vrmAdapterVmc_vmcCorpus` runs both
+  layers over the whole recorded corpus to counts derived from the generator's
+  structure (122 / 117 / 83 / 173 decoded, ten ignored), plus two claims counts
+  cannot make: the neutral capture's rotations are all identity with its root at
+  the origin and its sender clock starts at 12.5 s where the receive clock starts
+  at 0, and the sender-restart capture's backwards clock decodes without
+  complaint — `VRM_VMC_TIMESTAMP_REGRESSION` needs the assembler's memory of the
+  previous frame, and this layer has none.
 - **The OSC layer, and nothing about VMC in it** —
   [`OscPacket.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/OscPacket.h)
   decodes a datagram into addresses, type tags, arguments, and bundles flattened

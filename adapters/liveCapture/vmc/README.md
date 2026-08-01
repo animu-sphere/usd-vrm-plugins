@@ -8,11 +8,14 @@ UDP datagram → OSC decode → VMC message decode → frame assembly
              → VRM bone mapping → HumanoidPose → LiveCaptureSource
 ```
 
-**Status: OSC decoding, no VMC semantics.** The build, the manifest, the
+**Status: VMC message decoding, no humanoid.** The build, the manifest, the
 boundary check, the frozen diagnostic codes, the recorded-packet format and its
-corpus, and the OSC layer exist. Nothing knows what `/VMC/Ext/Bone/Pos` *means*
-yet — see [the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §5 for
-the implementation order and Milestone A for what "done" means.
+corpus, the OSC layer, and the VMC message layer exist. A datagram now becomes
+bone poses, a root transform, blend-shape values and the sender's clock — but
+nothing knows that "LeftUpperArm" is a `motion::HumanBone`, which way the
+sender's axes point, or where a frame begins. See
+[the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §5 for the
+implementation order and Milestone A for what "done" means.
 
 ## What this is, structurally
 
@@ -117,6 +120,60 @@ Three rules are decisions rather than details:
 Diagnostics carry the offending address as their subject and a byte offset in
 their detail — inside a bundle, an offset into the *datagram*, so it can be
 found in a committed capture rather than bisected.
+
+## VMC, and not yet a humanoid
+
+[`VmcMessage.h`](include/vrmAdapterVmc/VmcMessage.h) is the layer where an
+address means something. Seven messages decode; everything else is reported and
+skipped:
+
+```text
+kind          | address              | known form | fields
+--------------+----------------------+------------+---------------------
+Availability  | /VMC/Ext/OK          | ,i[ii]     | availability
+Time          | /VMC/Ext/T           | ,f         | seconds
+Model         | /VMC/Ext/VRM         | ,ss        | name (path), title
+RootTransform | /VMC/Ext/Root/Pos    | ,sfffffff  | name, transform
+BoneTransform | /VMC/Ext/Bone/Pos    | ,sfffffff  | name, transform
+BlendValue    | /VMC/Ext/Blend/Val   | ,sf        | name, value
+BlendApply    | /VMC/Ext/Blend/Apply | ,          | —
+```
+
+A bone name stays plain text and a quaternion stays in the sender's
+`(x, y, z, w)` order. Nothing is converted, normalised, or resolved against a
+rig — handedness, up axis, units, and the map from "LeftUpperArm" to a
+`motion::HumanBone` belong to the next layer, which is the one that knows what
+the numbers are for.
+
+Four more decisions, each written down where it is enforced:
+
+- **A message is refused, never a packet.** The opposite of the OSC layer's rule,
+  for the opposite reason: the framing is already established here, so one
+  malformed `/VMC/Ext/Bone/Pos` costs that bone and not the twenty-one that came
+  with it. A frame missing one bone is the assembler's ordinary business.
+- **An unimplemented address is not a defect.** Every sender emits a headset
+  transform, a camera, a MIDI note. `VRM_VMC_UNSUPPORTED_MESSAGE` is info and
+  recoverable, `DecodeVmcPacket` still returns true, and the mixed-traffic
+  capture is in the corpus to hold the two codes apart — ten of its ninety-three
+  messages take that path.
+- **A known address with the wrong arguments is malformed.** OSC puts an `f` and
+  a `d` in the same field, so a decoder reading values without checking tags
+  would accept `,sddddddd` as a bone pose and pin nothing about the wire format.
+  The refusal quotes both tag strings.
+- **Arguments past the known form are counted, never interpreted.** Longer forms
+  are in the wild: a third string on `/VMC/Ext/VRM`, further status integers on
+  `/VMC/Ext/OK`, more floats after `/VMC/Ext/Root/Pos`'s quaternion. Refusing
+  those blames a sender for being newer; decoding them would invent a meaning for
+  bytes no fixture here pins — which is why they are described by shape and not
+  by what they are believed to mean. Each moves into the table above when a
+  capture of it exists.
+
+`vrmAdapterVmc_vmcCorpus` runs both layers over the recorded bytes — 122 / 117 /
+83 / 173 decoded messages and ten ignored — and checks two things counts cannot:
+the neutral capture's rotations are all identity with its root at the origin, and
+the sender-restart capture's backwards clock decodes without complaint, because
+`VRM_VMC_TIMESTAMP_REGRESSION` needs a memory of the previous frame and this
+layer has none.
 
 ## Diagnostics
 
