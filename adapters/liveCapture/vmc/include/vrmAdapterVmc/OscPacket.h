@@ -129,4 +129,17 @@ DecodeOscPacket(const std::vector<std::uint8_t>& datagram, OscPacket* packet,
                            diagnostic);
 }
 
+// Decoding a temporary is always a bug: the decoded packet's `address`, `text`
+// and `blob` point into the datagram, and a temporary is gone at the end of the
+// full expression that produced it. This overload turns that into a compile
+// error rather than a read of freed memory -- which is not hypothetical. The
+// first test written against this API did exactly that, passed on Windows
+// because the freed bytes happened to survive, and aborted on Linux and macOS.
+//
+// The default argument is load-bearing: without it a two-argument call would
+// not consider this overload at all, and the temporary would bind to the
+// reference above.
+bool DecodeOscPacket(std::vector<std::uint8_t>&& datagram, OscPacket* packet,
+                     Diagnostic* diagnostic = nullptr) = delete;
+
 } // namespace vrmAdapterVmc

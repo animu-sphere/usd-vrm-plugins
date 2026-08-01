@@ -137,6 +137,15 @@ private:
         // one would blame a sender for a legal, if pointless, packet.
         std::size_t offset = kBundleHeaderSize;
         while (offset < size) {
+            // Unreachable while the alignment invariant holds -- `size` is a
+            // multiple of four, the header is sixteen bytes, and an element
+            // whose own length is not a multiple of four is refused by the
+            // recursive call below before `offset` advances past it, so
+            // `size - offset` is always a multiple of four and never 1..3. It
+            // stays because it is this loop's own bound: reading the invariant
+            // as guaranteed *here*, where it is established three frames away,
+            // is how a decoder acquires an out-of-bounds read during a later
+            // edit.
             if (size - offset < 4) {
                 return Fail(base + offset,
                             "a bundle element's size field is truncated");

@@ -125,6 +125,15 @@ Decode(const std::vector<std::uint8_t>& datagram, OscPacket* packet,
     return vrmAdapterVmc::DecodeOscPacket(datagram, packet, diagnostic);
 }
 
+// A decoded packet points into the datagram, so decoding a temporary is a read
+// of freed memory the moment the full expression ends -- which is how the first
+// version of this file was written, and it passed on Windows and aborted on
+// Linux and macOS. `DecodeOscPacket` refuses an rvalue for that reason, and
+// this wrapper has to refuse one too: taking `const&` and forwarding an lvalue
+// would launder the temporary straight past the guard.
+bool Decode(std::vector<std::uint8_t>&& datagram, OscPacket* packet,
+            Diagnostic* diagnostic = nullptr) = delete;
+
 // ---------------------------------------------------------------------------
 
 void
@@ -136,16 +145,22 @@ TestAMessageDecodesToItsArguments()
     body.F32(0.0f).F32(0.9f).F32(0.0f);
     body.F32(0.0f).F32(0.0f).F32(0.0f).F32(1.0f);
 
+    // Named, not a temporary: every view in the decoded packet points into it.
+    const std::vector<std::uint8_t> datagram =
+        Message("/VMC/Ext/Bone/Pos", "sfffffff", body.data);
+
     OscPacket packet;
     Diagnostic diagnostic;
-    if (!Decode(Message("/VMC/Ext/Bone/Pos", "sfffffff", body.data), &packet,
-                &diagnostic)) {
+    if (!Decode(datagram, &packet, &diagnostic)) {
         std::fprintf(stderr, "%s\n",
                      vrmAdapterVmc::FormatDiagnostic(diagnostic).c_str());
         assert(false);
     }
 
     assert(!packet.bundled);
+    // An unbundled datagram carries no time tag of its own; the default reads
+    // as "immediately", which is what a lone message means.
+    assert(packet.timeTag == vrmAdapterVmc::OscTimeTagImmediate);
     assert(packet.messages.size() == 1);
     const auto& message = packet.messages.front();
     assert(message.address == "/VMC/Ext/Bone/Pos");
@@ -183,10 +198,12 @@ TestEveryOscTypeTagIsSized()
     body.U32(0x55667788);                 // m
                                           // T F N I [ ] carry no bytes
 
+    const std::vector<std::uint8_t> datagram =
+        Message("/every/tag", "ifsSbhtdcrmTFNI[]", body.data);
+
     OscPacket packet;
     Diagnostic diagnostic;
-    if (!Decode(Message("/every/tag", "ifsSbhtdcrmTFNI[]", body.data), &packet,
-                &diagnostic)) {
+    if (!Decode(datagram, &packet, &diagnostic)) {
         std::fprintf(stderr, "%s\n",
                      vrmAdapterVmc::FormatDiagnostic(diagnostic).c_str());
         assert(false);
@@ -245,8 +262,10 @@ TestABundleFlattensIntoWireOrder()
     assert(packet.messages[2].arguments.empty());
 
     // An empty bundle carries nothing and is still valid OSC.
+    const std::vector<std::uint8_t> hollow =
+        Bundle(vrmAdapterVmc::OscTimeTagImmediate, {});
     OscPacket empty;
-    assert(Decode(Bundle(vrmAdapterVmc::OscTimeTagImmediate, {}), &empty));
+    assert(Decode(hollow, &empty));
     assert(empty.bundled);
     assert(empty.messages.empty());
 }
@@ -256,8 +275,10 @@ TestNestedBundlesFlattenAndDepthIsCapped()
 {
     const std::vector<std::uint8_t> inner =
         Bundle(2, {Message("/inner/one", ""), Message("/inner/two", "")});
+    const std::vector<std::uint8_t> outer =
+        Bundle(1, {Message("/outer", ""), inner});
     OscPacket packet;
-    assert(Decode(Bundle(1, {Message("/outer", ""), inner}), &packet));
+    assert(Decode(outer, &packet));
     assert(packet.messages.size() == 3);
     assert(packet.messages[0].address == "/outer");
     assert(packet.messages[2].address == "/inner/two");
@@ -288,10 +309,15 @@ TestValidButUnimplementedAddressesDecodeCleanly()
     Bytes three;
     three.U32(1).U32(60).U32(100);
 
+    const std::vector<std::uint8_t> outside = Message("/foo/bar", "i", one.data);
+    const std::vector<std::uint8_t> unimplemented =
+        Message("/VMC/Ext/Midi/Note", "iii", three.data);
+
     OscPacket packet;
-    assert(Decode(Message("/foo/bar", "i", one.data), &packet));
+    assert(Decode(outside, &packet));
     assert(packet.messages.front().address == "/foo/bar");
-    assert(Decode(Message("/VMC/Ext/Midi/Note", "iii", three.data), &packet));
+    assert(Decode(unimplemented, &packet));
+    assert(packet.messages.front().address == "/VMC/Ext/Midi/Note");
     assert(packet.messages.front().arguments[1].integer == 60);
 }
 
@@ -347,6 +373,15 @@ TestMalformedDatagramsAreRefusedAndSayWhy()
          "argument has no terminator"},
         {"a blob running past the message",
          Message("/blob", "b", longBlob.data), "runs past the end"},
+        {"a blob of negative length",
+         Message("/blob", "b", Bytes().U32(0xffffffff).data),
+         "declares -1 bytes"},
+        // The one refusal that is about the decoder's own limits rather than
+        // the sender's bytes -- and it has to be a refusal: an unknown tag has
+        // an unknown size, so everything after it would be read at the wrong
+        // offset.
+        {"an unknown type tag", Message("/VMC/Ext/T", "q"),
+         "unknown type tag 'q'"},
         {"bytes after the arguments",
          Concatenated(Message("/VMC/Ext/T", "f", oneFloat.data),
                       {0, 0, 0, 0}),
@@ -394,6 +429,27 @@ TestMalformedDatagramsAreRefusedAndSayWhy()
     }
 }
 
+void
+TestTheArgumentGuardsRefuseRatherThanDereference()
+{
+    const std::vector<std::uint8_t> datagram = Message("/VMC/Ext/T", "");
+    OscPacket packet;
+    Diagnostic diagnostic;
+
+    // A caller with no output has nowhere for a decode to land, and a size with
+    // no bytes describes a datagram that cannot exist. Both are caller bugs,
+    // and both are reported rather than dereferenced.
+    assert(!vrmAdapterVmc::DecodeOscPacket(datagram.data(), datagram.size(),
+                                           nullptr, &diagnostic));
+    assert(diagnostic.code == DiagnosticCode::PacketMalformed);
+    assert(!vrmAdapterVmc::DecodeOscPacket(nullptr, 4, &packet, &diagnostic));
+    assert(diagnostic.code == DiagnosticCode::PacketMalformed);
+    assert(packet.messages.empty());
+
+    // No diagnostic is the documented default, and it must not crash either.
+    assert(!vrmAdapterVmc::DecodeOscPacket(nullptr, 4, &packet));
+}
+
 // Corpus mode: the decoder against every committed capture.
 int
 CheckCorpus(const std::filesystem::path& directory)
@@ -408,48 +464,95 @@ CheckCorpus(const std::filesystem::path& directory)
     {
         const char* file;
         std::size_t datagrams;
-        std::size_t refused;
+        // The indices of the datagrams this layer refuses, comma separated. A
+        // count would not do: refusing a different eight of the ten would leave
+        // it unchanged, and *which* datagram is refused is the claim the
+        // malformed corpus exists to make.
+        const char* refused;
         std::size_t messages;
         std::size_t addresses;
         bool bundled;
     };
     const Expected expected[] = {
-        {"arm-raise-30hz.vmcpackets", 117, 0, 117, 5, false},
-        // Eight of the ten datagrams are refused here. The other two are
+        {"arm-raise-30hz.vmcpackets", 117, "", 117, 5, false},
+        // The first eight are the packet-level refusals. The last two are
         // well-formed OSC this adapter does not implement, which is not this
         // layer's business to notice.
-        {"malformed-packets.vmcpackets", 10, 8, 2, 2, false},
-        {"mixed-traffic-30hz.vmcpackets", 13, 0, 93, 11, true},
-        {"neutral-standing-30hz.vmcpackets", 6, 0, 122, 5, true},
-        {"sender-restart-30hz.vmcpackets", 10, 0, 173, 5, true},
+        {"malformed-packets.vmcpackets", 10, "0,1,2,3,4,5,6,7", 2, 2, false},
+        {"mixed-traffic-30hz.vmcpackets", 13, "", 93, 11, true},
+        {"neutral-standing-30hz.vmcpackets", 6, "", 122, 5, true},
+        {"sender-restart-30hz.vmcpackets", 10, "", 173, 5, true},
     };
 
+    // Enumerate the corpus rather than the table. A test that walked only its
+    // own expectations would skip a capture added later in silence -- and the
+    // corpus README tells an author to check that a new capture appears here.
+    std::vector<std::filesystem::path> captures;
+    if (!std::filesystem::is_directory(directory)) {
+        std::fprintf(stderr, "corpus directory not found: %s\n",
+                     directory.string().c_str());
+        return 1;
+    }
+    for (const std::filesystem::directory_entry& file :
+         std::filesystem::directory_iterator(directory)) {
+        if (file.is_regular_file()
+            && file.path().extension() == ".vmcpackets") {
+            captures.push_back(file.path());
+        }
+    }
+    std::sort(captures.begin(), captures.end());
+    if (captures.empty()) {
+        std::fprintf(stderr, "no .vmcpackets fixtures in %s\n",
+                     directory.string().c_str());
+        return 1;
+    }
+
     int failures = 0;
-    for (const Expected& entry : expected) {
-        const std::filesystem::path path = directory / entry.file;
+    std::set<std::string> covered;
+    for (const std::filesystem::path& path : captures) {
+        const std::string name = path.filename().string();
+        const Expected* entry = nullptr;
+        for (const Expected& candidate : expected) {
+            if (name == candidate.file) {
+                entry = &candidate;
+                break;
+            }
+        }
+        if (!entry) {
+            std::fprintf(stderr,
+                         "%s: no expected decode in this test -- add one, or "
+                         "the capture is in the corpus and decoded by nobody\n",
+                         name.c_str());
+            ++failures;
+            continue;
+        }
+        covered.insert(name);
+
         vrmAdapterVmc::PacketCapture capture;
         vrmAdapterVmc::PacketCaptureError error;
         if (!vrmAdapterVmc::ReadPacketCaptureFile(path.string(), &capture,
                                                   &error)) {
-            std::fprintf(stderr, "%s:%zu: %s\n", entry.file, error.line,
+            std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line,
                          error.message.c_str());
             ++failures;
             continue;
         }
 
-        std::size_t refused = 0;
+        std::string refused;
         std::size_t messages = 0;
         std::size_t bundles = 0;
         std::set<std::string> addresses;
-        for (const vrmAdapterVmc::RecordedDatagram& datagram :
-             capture.datagrams) {
+        for (std::size_t index = 0; index < capture.datagrams.size(); ++index) {
             OscPacket packet;
             Diagnostic diagnostic;
-            if (!vrmAdapterVmc::DecodeOscPacket(datagram.bytes, &packet,
-                                                &diagnostic)) {
-                ++refused;
-                if (entry.refused == 0) {
-                    std::fprintf(stderr, "%s: %s\n", entry.file,
+            if (!vrmAdapterVmc::DecodeOscPacket(capture.datagrams[index].bytes,
+                                                &packet, &diagnostic)) {
+                if (!refused.empty()) {
+                    refused += ',';
+                }
+                refused += std::to_string(index);
+                if (std::string_view(entry->refused).empty()) {
+                    std::fprintf(stderr, "%s: %s\n", name.c_str(),
                                  vrmAdapterVmc::FormatDiagnostic(diagnostic)
                                      .c_str());
                 }
@@ -462,35 +565,44 @@ CheckCorpus(const std::filesystem::path& directory)
             }
         }
 
-        const bool ok = capture.datagrams.size() == entry.datagrams
-            && refused == entry.refused && messages == entry.messages
-            && addresses.size() == entry.addresses
-            && (bundles != 0) == entry.bundled;
+        const bool ok = capture.datagrams.size() == entry->datagrams
+            && refused == entry->refused && messages == entry->messages
+            && addresses.size() == entry->addresses
+            && (bundles != 0) == entry->bundled;
         if (!ok) {
             std::fprintf(stderr,
-                         "%s: %zu datagram(s), %zu refused, %zu message(s), "
-                         "%zu address(es), %zu bundle(s) -- expected %zu, %zu, "
+                         "%s: %zu datagram(s), refused [%s], %zu message(s), "
+                         "%zu address(es), %zu bundle(s) -- expected %zu, [%s], "
                          "%zu, %zu, bundled=%d\n",
-                         entry.file, capture.datagrams.size(), refused,
-                         messages, addresses.size(), bundles, entry.datagrams,
-                         entry.refused, entry.messages, entry.addresses,
-                         entry.bundled ? 1 : 0);
+                         name.c_str(), capture.datagrams.size(),
+                         refused.c_str(), messages, addresses.size(), bundles,
+                         entry->datagrams, entry->refused, entry->messages,
+                         entry->addresses, entry->bundled ? 1 : 0);
             ++failures;
             continue;
         }
 
-        std::printf("%s: %zu datagram(s), %zu refused, %zu message(s), %zu "
+        std::printf("%s: %zu datagram(s), refused [%s], %zu message(s), %zu "
                     "address(es)\n",
-                    entry.file, capture.datagrams.size(), refused, messages,
-                    addresses.size());
+                    name.c_str(), capture.datagrams.size(), refused.c_str(),
+                    messages, addresses.size());
+    }
+
+    // The other direction: an expectation whose capture is gone would otherwise
+    // pass by never being visited.
+    for (const Expected& entry : expected) {
+        if (covered.find(entry.file) == covered.end()) {
+            std::fprintf(stderr, "%s: expected in this test, absent from %s\n",
+                         entry.file, directory.string().c_str());
+            ++failures;
+        }
     }
 
     if (failures != 0) {
         std::fprintf(stderr, "%d corpus capture(s) failed\n", failures);
         return 1;
     }
-    std::printf("OSC decode: %zu capture(s) verified\n",
-                sizeof(expected) / sizeof(expected[0]));
+    std::printf("OSC decode: %zu capture(s) verified\n", captures.size());
     return 0;
 }
 
@@ -509,6 +621,7 @@ main(int argc, char** argv)
     TestNestedBundlesFlattenAndDepthIsCapped();
     TestValidButUnimplementedAddressesDecodeCleanly();
     TestMalformedDatagramsAreRefusedAndSayWhy();
+    TestTheArgumentGuardsRefuseRatherThanDereference();
     std::puts("vrmAdapterVmc OSC packet tests passed");
     return 0;
 }
