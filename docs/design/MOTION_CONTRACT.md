@@ -1,4 +1,4 @@
-# Motion contract (v0.3.0, extended in v0.4.0 and v0.5.0)
+# Motion contract (v0.3.0, extended in v0.4.0, v0.5.0 and v0.6.0)
 
 This is the executable contract frozen by **Motion Phase A**. It gives
 `motionCore` and `usdVrmaFileFormat` one vocabulary without making either a
@@ -6,10 +6,11 @@ retargeter or runtime. The implementation is deliberately limited to the first
 VRMA vertical slice; later Motion Phases may extend this document but may not
 silently reinterpret these fields.
 
-v0.4.0 extends it with the **Motion Phase C retarget semantics** and v0.5.0
-with the **Motion Phase D live-capture semantics**, both below. Nothing above
-those sections changed: the v0.3.0 fields mean exactly what they meant, and each
-later phase is a new consumer of them rather than a reinterpretation.
+v0.4.0 extends it with the **Motion Phase C retarget semantics**, v0.5.0 with
+the **Motion Phase D live-capture semantics**, and v0.6.0 with **comparison
+semantics**, all below. Nothing above those sections changed: the v0.3.0 fields
+mean exactly what they meant, and each later phase is a new consumer of them
+rather than a reinterpretation.
 
 ## Scope
 
@@ -219,6 +220,57 @@ Live capture's corpus is synthetic by necessity, not convenience — see
 [`libs/motionRuntime/tests/corpus/README.md`](../../libs/motionRuntime/tests/corpus/README.md).
 Validation against a real capture rig needs an adapter and remains open.
 
+## Comparison semantics (v0.6.0)
+
+Three consumers asked for one comparison and wanted two different answers, so
+`motionCore` states both and each is named for the question it answers.
+[`Compare.h`](../../libs/motionCore/include/motionCore/Compare.h) carries the
+reasoning; this is what the contract promises.
+
+```text
+a == b                is this the same recorded value?
+NearlyEqual(a, b)     is this the same motion?
+```
+
+`operator==` / `operator!=` are exact, on `MotionSourceMetadata`, `RootMotion`,
+`ContactState`, `HumanoidPose` and `HumanoidAnimation`. That is what
+`ExecTypeRegistry::RegisterType` requires before a pose can cross an OpenExec
+computation boundary at all, and it is the comparison a trace round-trip is
+defined by. The declarative `MotionConstraintSet` types deliberately have none:
+nothing compares them yet.
+
+`NearlyEqual` takes a `MotionTolerance` and answers the question a parity check
+and a corpus test are actually asking. The two differ in exactly three places,
+and each is a decision rather than an implementation detail:
+
+- **A quaternion and its negation are the same orientation and different
+  values.** `NearlyEqual` measures the angle between two orientations
+  (`AngleBetween`, always the short arc), so `q` and `-q` are zero apart; `==`
+  compares components, so they are not. Downstream of an exec computation the
+  strict answer is the conservative one — a flipped sign recomputes what depends
+  on it, which is wasteful and never wrong.
+- **Provenance is part of the value and not part of the motion.** `==` reads
+  `MotionSourceMetadata`; `NearlyEqual` does not. This is the only place the two
+  read different fields, and it is why comparing an offline result against an
+  OpenExec one needs no switch to turn metadata off.
+- **The tolerance is stated once.** Every default is derived from the
+  recorded-trace format's six decimals, which a value that survived a round trip
+  is already up to 5e-7 away from: `angle` 1e-4 rad, `distance` 1e-5 m,
+  `velocity` 1e-4 (looser, because a velocity is a position delta divided by a
+  frame interval), `confidence` 1e-6, `time` 1e-6 s. A test that picks its own
+  epsilon is asserting a contract nobody reviewed.
+
+Two rules hold for both. **A field the pose does not claim is not compared** —
+an absent bone's rotation slot and an unset `RootMotion` field hold whatever the
+producer left there, so only the claim itself (the presence bits) is compared,
+and a pose that omits a bone never equals one that carries it. **A NaN equals
+nothing, including itself**; that is a property of the sample, and a comparison
+that hid it would make a non-finite transform arrive later and quieter.
+
+`NearlyEqual` also reports *what* differed, in a fixed order — timestamp, root,
+bones in humanoid enum order, confidence, contacts — so a failing corpus test
+names the bone and the amount rather than only the disagreement.
+
 ## What the contract still owes its next two consumers
 
 Recorded 2026-07-29, when the input-adapter and OpenExec directions were
@@ -227,16 +279,12 @@ shipped types do not yet carry, and each is wanted by more than one caller —
 which is the argument for adding them once, deliberately, rather than at the
 first call site that needs one.
 
-- ⬜ **Deterministic comparison.** `HumanoidPose`, `HumanoidAnimation`,
-  `RootMotion` and `MotionSourceMetadata` have no `operator==`.
-  `ExecTypeRegistry::RegisterType` requires one before a pose can cross an
-  OpenExec computation boundary at all
+- ✅ **Deterministic comparison.** Landed 2026-08-02 as the comparison semantics
+  above, ahead of the bone mapping that is its first caller. The three consumers
+  it was owed to are `ExecTypeRegistry::RegisterType`
   ([OpenExec plan](../roadmap/openexec-v0.6.0-v0.7.0.md) P0-4), the
-  offline/OpenExec parity comparison is defined in terms of one (P0-6), and
-  adapter corpus tests compare decoded poses against committed fixtures
-  ([adapters plan](../roadmap/adapters-mocopi-vmc-ardy.md) §9). Float equality is
-  the wrong default here, so the comparison and its tolerance are part of the
-  contract rather than of each test.
+  offline/OpenExec parity comparison (P0-6), and the adapter corpus tests
+  ([adapters plan](../roadmap/adapters-mocopi-vmc-ardy.md) §9).
 - ⬜ **Tracking state.** `validRotations` says a bone is absent and `confidence`
   says a bone is uncertain. Neither distinguishes *tracking lost* — a source
   that is connected and no longer solving — from *zero pose* or from a bone the

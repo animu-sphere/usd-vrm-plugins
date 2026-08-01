@@ -137,6 +137,19 @@ struct MotionSourceMetadata
     std::string sourceId;
 };
 
+// Exact value equality, on the four aggregates that cross a boundary: the two
+// OpenExec asks for it, a trace round-trip is defined by it, and a test that
+// wants to know whether two poses describe the same *motion* wants
+// `NearlyEqual` from Compare.h instead. That header carries the reasoning for
+// both, including why a pose does not compare the fields it says it does not
+// carry. The declarative `MotionConstraintSet` types are deliberately left
+// without one: nothing compares them yet, and an operator no caller exercises
+// is untested surface.
+MOTIONCORE_API bool operator==(const MotionSourceMetadata& a,
+                               const MotionSourceMetadata& b) noexcept;
+MOTIONCORE_API bool operator!=(const MotionSourceMetadata& a,
+                               const MotionSourceMetadata& b) noexcept;
+
 // All positions and orientations are expressed independently of the hips local
 // transform. Booleans distinguish a missing root sample from a zero-valued one.
 struct RootMotion
@@ -153,6 +166,11 @@ struct RootMotion
     bool hasAngularVelocity = false;
 };
 
+MOTIONCORE_API bool operator==(const RootMotion& a,
+                               const RootMotion& b) noexcept;
+MOTIONCORE_API bool operator!=(const RootMotion& a,
+                               const RootMotion& b) noexcept;
+
 enum class FootContact : std::uint8_t
 {
     Unknown,
@@ -165,6 +183,11 @@ struct ContactState
     FootContact leftFoot = FootContact::Unknown;
     FootContact rightFoot = FootContact::Unknown;
 };
+
+MOTIONCORE_API bool operator==(const ContactState& a,
+                               const ContactState& b) noexcept;
+MOTIONCORE_API bool operator!=(const ContactState& a,
+                               const ContactState& b) noexcept;
 
 struct HumanoidPose
 {
@@ -184,6 +207,11 @@ struct HumanoidPose
     std::optional<MotionSourceMetadata> source;
 };
 
+MOTIONCORE_API bool operator==(const HumanoidPose& a,
+                               const HumanoidPose& b) noexcept;
+MOTIONCORE_API bool operator!=(const HumanoidPose& a,
+                               const HumanoidPose& b) noexcept;
+
 struct HumanoidAnimation
 {
     std::vector<HumanoidPose> samples;
@@ -192,6 +220,11 @@ struct HumanoidAnimation
     double nominalFrameRate = 30.0;
     MotionSourceMetadata source;
 };
+
+MOTIONCORE_API bool operator==(const HumanoidAnimation& a,
+                               const HumanoidAnimation& b) noexcept;
+MOTIONCORE_API bool operator!=(const HumanoidAnimation& a,
+                               const HumanoidAnimation& b) noexcept;
 
 // Coordinate-space identifiers are values, not USD schema names. Stage
 // authoring and conversion live in the consuming file-format/retarget layers.

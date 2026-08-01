@@ -15,6 +15,33 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **Two comparisons for one motion value, because three callers wanted
+  different answers** — [`Compare.h`](libs/motionCore/include/motionCore/Compare.h)
+  gives `motionCore` exact `operator==` on `MotionSourceMetadata`, `RootMotion`,
+  `ContactState`, `HumanoidPose` and `HumanoidAnimation`, plus a tolerant
+  `NearlyEqual` beside it. `ExecTypeRegistry::RegisterType` requires the exact
+  one before a pose can cross an OpenExec computation boundary at all; the
+  offline/OpenExec parity check and the adapter corpus tests compare two float
+  paths that will never agree bit for bit. So `==` answers *is this the same
+  recorded value* and `NearlyEqual` answers *is this the same motion*, and they
+  diverge in exactly three places, each a decision: **a quaternion and its
+  negation** are the same orientation and different components, so `NearlyEqual`
+  measures the angle between two orientations and `==` does not; **provenance**
+  is part of the value and not of the motion, which is why a parity check needs
+  no switch to turn `MotionSourceMetadata` off; and **the tolerance is stated
+  once**, derived from the recorded-trace format's six decimals — a value that
+  survived a round trip is already 5e-7 away from the one recorded, so a test
+  picking its own epsilon would be asserting a contract nobody reviewed. Two
+  rules hold for both: a field the pose does not claim is never compared (an
+  absent bone's rotation slot holds whatever the producer left there, so only
+  the presence bits are read), and a NaN equals nothing including itself, which
+  is a property of the sample rather than something a comparison should hide.
+  `NearlyEqual` also names the first field that differed and by how much, in a
+  fixed order, so a failing corpus test says `leftUpperArm rotation differs by
+  0.0031 rad` rather than only that two poses disagree. Landed before the VMC
+  bone mapping that is its first caller, which is the order
+  [docs/README.md](docs/README.md) asks for; the semantics are in
+  [MOTION_CONTRACT.md](docs/design/MOTION_CONTRACT.md#comparison-semantics-v060).
 - **The VMC message layer, and no humanoid in it** —
   [`VmcMessage.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/VmcMessage.h)
   turns a decoded OSC message into one of seven VMC messages: availability

@@ -65,10 +65,17 @@ reaches a retargeted `UsdSkelAnimation` with no OpenExec involvement at all.
   and `usdExecImaging` proves nothing because it is built whether or not
   `PXR_BUILD_EXEC` is on. The refusal is still correct today — the other five
   components are absent in that configuration — so this is precision, not a hole.
-- ⬜ **`operator==` on the `motionCore` aggregates.** Type registration requires
-  it (`ExecTypeRegistry::RegisterType`), so P0-4 cannot register a pose type
-  without it; P0-6 parity and the adapter corpus tests want the same thing. One
-  change, three callers, and today the types have none.
+- ✅ **`operator==` on the `motionCore` aggregates** — and, because the three
+  callers did not want the same comparison, a second one beside it.
+  `ExecTypeRegistry::RegisterType` needs exact equality before P0-4 can register
+  a pose type; P0-6 parity and the adapter corpus compare two float paths that
+  will never agree bit for bit. So `==` answers *is this the same recorded
+  value* and `NearlyEqual` answers *is this the same motion*, differing in three
+  stated places: a quaternion and its negation, provenance, and a tolerance
+  derived from the recorded-trace format's six decimals rather than picked per
+  test. Both read only the fields a pose claims to carry.
+  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060)
+  carries the semantics.
 
 The two prerequisites this milestone was originally scoped around were already
 met, both ahead of schedule:
