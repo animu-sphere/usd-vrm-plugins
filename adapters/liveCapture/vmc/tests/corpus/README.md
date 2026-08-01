@@ -58,8 +58,16 @@ with the record tool and added here as they are measured
 | `neutral-standing-30hz.vmcpackets` | 6 | The happy path: one bundle per frame, a full torso rig, every rotation identity. |
 | `arm-raise-30hz.vmcpackets` | 117 | The other sender shape: one message per datagram, frame closed by a trailing `/VMC/Ext/T`, no `UpperChest`. |
 | `mixed-traffic-30hz.vmcpackets` | 13 | Blend shapes, HMD, controller, camera, option string — well-formed, unimplemented, and *not* malformed. |
-| `malformed-packets.vmcpackets` | 10 | One datagram per packet-level refusal, plus the two unsupported-but-valid cases for contrast. |
+| `malformed-packets.vmcpackets` | 10 | One datagram per **packet**-level refusal, plus the two unsupported-but-valid cases for contrast. |
+| `malformed-forms.vmcpackets` | 10 | One datagram per **message**-level refusal — valid OSC, invalid VMC — plus a bad bone inside an otherwise whole frame. |
+| `extended-forms.vmcpackets` | 2 | Longer forms of known messages: nine arguments counted and not read, and nothing refused. |
 | `sender-restart-30hz.vmcpackets` | 10 | A duplicate delivery, a backwards sender clock, a frame cut off after six bones, and a restart. |
+
+The two `malformed-*` captures are a pair, not a duplicate. `-packets` refuses
+before an address means anything, so every one of its datagrams dies in the OSC
+layer; `-forms` decodes as OSC every time and is refused one layer up. Only the
+second can carry the case that matters most — a bad message **inside a good
+frame** — because the first has no frame left to be inside of.
 
 Three properties are deliberate and easy to lose:
 
@@ -83,6 +91,8 @@ Both checks run under `ctest`:
 ```sh
 ctest -R vrmAdapterVmc_corpus     # every capture parses and round trips byte-identically
 ctest -R vrmAdapterVmc_packetGen  # the committed captures still match the generator
+ctest -R vrmAdapterVmc_oscCorpus  # what the datagrams decode to as OSC
+ctest -R vrmAdapterVmc_vmcCorpus  # what those OSC messages mean as VMC
 ```
 
 `vrmAdapterVmc_corpus` is the load-bearing one. It re-emits each committed

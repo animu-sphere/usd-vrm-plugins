@@ -15,8 +15,9 @@ across machines, and reviewable in a diff.
 What they are not: a substitute for validating against real senders. These
 reproduce the *shapes* the protocol produces -- a bundled frame, an unbundled
 one, blend-shape and device traffic the body path must ignore, malformed
-datagrams, a duplicate, a backwards sender clock, a restart -- not any
-particular application's quirks. Two sender applications and a capture device
+datagrams, a bad message inside a good frame, a longer form of a known message,
+a duplicate, a backwards sender clock, a restart -- not any particular
+application's quirks. Two sender applications and a capture device
 relayed through one are Milestone B's evidence, recorded with the record tool
 and added to this corpus as they are measured
 (roadmap/adapters-mocopi-vmc-ardy.md §10).
@@ -68,14 +69,29 @@ def osc_string(text: str) -> bytes:
     return raw + b"\x00" * padding
 
 
+class Float64(float):
+    """An argument written with the `d` type tag instead of `f`.
+
+    VMC sends none, and it exists here for one fixture: OSC puts an `f` and a
+    `d` in the same decoded field, so a decoder that read values without
+    checking type tags would accept a double-valued bone pose and the corpus
+    would pin nothing at all about the wire format.
+    """
+
+
 def osc_message(address: str, *arguments) -> bytes:
-    """One OSC message. Argument types are inferred: int, float, str."""
+    """One OSC message. Types are inferred: int, float, str, Float64."""
     tags = ","
     body = b""
     for argument in arguments:
         if isinstance(argument, bool):
             raise TypeError("OSC 1.0 has no boolean argument type here")
-        if isinstance(argument, int):
+        # Before the `float` branch, which would otherwise claim it: Float64 is
+        # a float subclass so that call sites read as plain numbers.
+        if isinstance(argument, Float64):
+            tags += "d"
+            body += struct.pack(">d", argument)
+        elif isinstance(argument, int):
             tags += "i"
             body += struct.pack(">i", argument)
         elif isinstance(argument, float):
@@ -418,11 +434,96 @@ def capture_sender_restart() -> Capture:
     return capture
 
 
+def capture_malformed_forms() -> Capture:
+    """Well-formed OSC whose *VMC* arguments disagree with the protocol.
+
+    The packet-level capture above cannot reach this: every one of its refusals
+    happens before an address means anything. Here every datagram decodes as OSC
+    and the refusal is one layer up, which is what makes the two captures a pair
+    rather than a duplicate.
+
+    The load-bearing datagram is the second frame. It carries a bone truncated
+    to three floats in the middle of an otherwise complete frame, so the claim
+    that a bad message costs *that message* -- and not the twenty other bones,
+    the root, or the clock it arrived with -- is made by a recorded session
+    rather than only by a unit test.
+    """
+    capture = Capture("example.synthetic", "malformed-forms-01",
+                      "0.0.0.0:39539", "127.0.0.1:52006")
+    capture.add(0.0, osc_bundle(vmc_ok(), vmc_model(MODEL_PATH, MODEL_TITLE)))
+
+    # A whole frame first, so the next one differs in exactly one message.
+    capture.add(0.010000,
+                osc_bundle(vmc_time(50.000000), *body_messages(BODY_RIG)))
+
+    # The same frame with `Chest` truncated to a position and no quaternion.
+    # `body_messages` puts the root first, so index 9 is BODY_RIG[8].
+    interrupted = body_messages(BODY_RIG)
+    interrupted[9] = osc_message("/VMC/Ext/Bone/Pos", "Chest",
+                                 *REST_OFFSETS["Chest"])
+    capture.add(0.043333, osc_bundle(vmc_time(50.033333), *interrupted))
+
+    # One datagram per message-level refusal, one per known address that has a
+    # wrong form at all. `/VMC/Ext/Blend/Apply` has none: its known form is
+    # empty, so anything a sender adds is an extended form rather than a bad one
+    # (see extended-forms.vmcpackets).
+    time = 0.076667
+
+    def add(payload: bytes) -> None:
+        nonlocal time
+        capture.add(time, payload)
+        time += 0.001
+
+    # The sender's clock in integer seconds.
+    add(osc_message("/VMC/Ext/T", 12))
+    # ... and with no argument at all.
+    add(osc_message("/VMC/Ext/T"))
+    # A blend-shape value with no name.
+    add(osc_message("/VMC/Ext/Blend/Val", 1.0, 0.5))
+    # Availability in floats.
+    add(osc_message("/VMC/Ext/OK", 1.0))
+    # A model whose title is a number.
+    add(osc_message("/VMC/Ext/VRM", MODEL_PATH, 1))
+    # A root transform one float short of a quaternion.
+    add(osc_message("/VMC/Ext/Root/Pos", "root", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+    # The right count and every type wrong: a bone in doubles.
+    add(osc_message("/VMC/Ext/Bone/Pos", "Hips",
+                    *[Float64(value) for value in (0.0, 0.9, 0.0)],
+                    *[Float64(value) for value in IDENTITY]))
+    return capture
+
+
+def capture_extended_forms() -> Capture:
+    """Longer forms of known messages, which are not errors.
+
+    A sender at a version this adapter has not been taught appends arguments:
+    the decoder reads the form it knows, counts the rest, and refuses nothing.
+    This capture pins the *shape* of that -- an argument is there -- and
+    deliberately not a meaning for it, which no fixture in this repository is in
+    a position to assert.
+    """
+    capture = Capture("example.synthetic", "extended-forms-01", "0.0.0.0:39539",
+                      "127.0.0.1:52007")
+    capture.add(0.0, osc_bundle(
+        osc_message("/VMC/Ext/OK", 1, 3, 0, 2),
+        osc_message("/VMC/Ext/VRM", MODEL_PATH, MODEL_TITLE, "0f1e2d")))
+    capture.add(0.010000, osc_bundle(
+        vmc_time(60.000000),
+        osc_message("/VMC/Ext/Root/Pos", "root",
+                    *ROOT_POSITION, *IDENTITY,
+                    1.0, 1.0, 1.0, 0.0, 0.0, 0.0),
+        *[vmc_bone(bone, REST_OFFSETS[bone], IDENTITY) for bone in BODY_RIG],
+        osc_message("/VMC/Ext/Blend/Apply", 1)))
+    return capture
+
+
 CAPTURES = {
     "neutral-standing-30hz.vmcpackets": capture_neutral_standing,
     "arm-raise-30hz.vmcpackets": capture_arm_raise,
     "mixed-traffic-30hz.vmcpackets": capture_mixed_traffic,
     "malformed-packets.vmcpackets": capture_malformed,
+    "malformed-forms.vmcpackets": capture_malformed_forms,
+    "extended-forms.vmcpackets": capture_extended_forms,
     "sender-restart-30hz.vmcpackets": capture_sender_restart,
 }
 

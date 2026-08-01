@@ -492,8 +492,34 @@ pose output · diagnostics · deterministic unit tests
   unimplemented address from any other one. The corpus decodes to counts derived
   from the generator's structure, so the encoder and the decoder agree without
   either having been written from the other.
-- ⬜ Everything else above, in the §5 order: VMC semantics, then bone mapping
-  and coordinate conversion.
+- ✅ **The VMC message decoder.** Seven address patterns — availability, the
+  sender's clock, the model, the root and bone transforms, blend-shape values and
+  their apply — decoded into VMC's own terms: a bone name is plain text and a
+  quaternion stays in the sender's `(x, y, z, w)` order, because handedness, up
+  axis, units and the map to a `HumanBone` belong to the layer that knows what
+  the numbers are for. Four rules are decided rather than emergent, and the first
+  is the OSC layer's inverted: **a message is refused, never a packet** — the
+  framing is already established, so one malformed bone costs that bone and not
+  the twenty-one that arrived with it. An **unimplemented address is not a
+  defect** (info, recoverable, and the packet still decodes), a **known address
+  with the wrong arguments is malformed** — OSC puts an `f` and a `d` in the same
+  field, so accepting `,sddddddd` as a bone pose would pin nothing about the wire
+  format — and **arguments past the known form are counted, never interpreted**,
+  so a sender emitting one of the longer forms in the wild is reported rather
+  than refused or guessed at. Two captures land with it, because the packet-level
+  corpus could not reach either rule: `malformed-forms` is valid OSC refused one
+  layer up — including **a bad bone inside an otherwise whole frame**, which is
+  the "a message, never a packet" rule stated as a recorded session rather than
+  as a unit test — and `extended-forms` carries nine arguments that are counted
+  and not read. `vrmAdapterVmc_vmcCorpus` runs both layers over all seven to
+  counts derived from the generator's structure, and checks three claims counts
+  cannot: the neutral capture is all-identity with its root at the origin, the
+  sender-restart capture's backwards clock decodes without complaint (since
+  `VRM_VMC_TIMESTAMP_REGRESSION` needs the assembler's memory of the previous
+  frame), and the bad bone's datagram still yields the twenty-two messages that
+  arrived with it.
+- ⬜ Everything else above, in the §5 order: bone mapping, then coordinate
+  conversion — which is where §11's canonical-contract debt comes due.
 
 ### Milestone B — VMC live receipt ⬜
 

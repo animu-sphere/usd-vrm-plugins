@@ -31,8 +31,18 @@ target_compile_options(vrmAdapterVmc_oscPacket_tests
     PRIVATE ${_vrm_adapter_vmc_assertions})
 add_test(NAME vrmAdapterVmc_oscPacket COMMAND vrmAdapterVmc_oscPacket_tests)
 
+# The VMC layer, which knows addresses and argument forms and nothing about a
+# humanoid.
+add_executable(vrmAdapterVmc_vmcMessage_tests test_vmc_message.cpp)
+target_link_libraries(vrmAdapterVmc_vmcMessage_tests
+    PRIVATE vrmAdapterVmc::vrmAdapterVmc)
+target_compile_options(vrmAdapterVmc_vmcMessage_tests
+    PRIVATE ${_vrm_adapter_vmc_assertions})
+add_test(NAME vrmAdapterVmc_vmcMessage COMMAND vrmAdapterVmc_vmcMessage_tests)
+
 set(_vrm_adapter_vmc_tests
-    vrmAdapterVmc_unit vrmAdapterVmc_packetCapture vrmAdapterVmc_oscPacket)
+    vrmAdapterVmc_unit vrmAdapterVmc_packetCapture vrmAdapterVmc_oscPacket
+    vrmAdapterVmc_vmcMessage)
 
 # Every committed capture parses and re-emits byte-identically, or every
 # decoder test downstream of it compares against a fixture that has drifted from
@@ -49,8 +59,13 @@ if(EXISTS "${_vrm_adapter_vmc_corpus}")
     # changed shape fails here as well as in the round-trip check.
     add_test(NAME vrmAdapterVmc_oscCorpus
         COMMAND vrmAdapterVmc_oscPacket_tests "${_vrm_adapter_vmc_corpus}")
+    # And one layer further up: what those OSC messages mean. Both layers run
+    # over the recorded bytes, so the composition is checked rather than assumed
+    # from two green unit suites.
+    add_test(NAME vrmAdapterVmc_vmcCorpus
+        COMMAND vrmAdapterVmc_vmcMessage_tests "${_vrm_adapter_vmc_corpus}")
     list(APPEND _vrm_adapter_vmc_tests
-         vrmAdapterVmc_corpus vrmAdapterVmc_oscCorpus)
+         vrmAdapterVmc_corpus vrmAdapterVmc_oscCorpus vrmAdapterVmc_vmcCorpus)
 endif()
 
 if(WIN32)

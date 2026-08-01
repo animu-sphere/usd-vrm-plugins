@@ -15,7 +15,7 @@
     "generatedAt": "2026-07-29"
   },
   "limitations": [
-    "Reproduces the shapes the protocol produces (bundled and unbundled frames, ignorable traffic, malformed datagrams, a duplicate, a backwards sender clock, a restart), not any particular sender application's quirks.",
+    "Reproduces the shapes the protocol produces (bundled and unbundled frames, ignorable traffic, malformed datagrams, a bad message inside a good frame, a longer form of a known message, a duplicate, a backwards sender clock, a restart), not any particular sender application's quirks.",
     "No real avatar is described: the rest offsets are invented proportions and the model message names a placeholder file.",
     "Sender-application compatibility evidence is Milestone B's, recorded with the record tool from real senders and added here as it is measured."
   ],
@@ -120,6 +120,56 @@
       ],
       "sha256": "931fe1c916bff2ddd8be0e3bf08edc5b7dec076e3128e9cd0c5705268cd1331b",
       "bytes": 1500
+    },
+    {
+      "file": "malformed-forms.vmcpackets",
+      "pins": "Well-formed OSC whose VMC arguments disagree with the protocol - the refusals the packet-level capture cannot reach, because every one of these decodes as OSC first. The load-bearing datagram is the second frame: one bone truncated to three floats inside an otherwise complete frame, so 'a bad message costs that message and not the frame' is pinned by a recorded session rather than only by a unit test.",
+      "tags": [
+        "negative",
+        "malformed-form",
+        "partial-frame"
+      ],
+      "id": "malformed-forms",
+      "sender": "example.synthetic",
+      "sourceId": "malformed-forms-01",
+      "datagrams": 10,
+      "payloadBytes": 3824,
+      "durationSeconds": 0.082667,
+      "addressPatterns": [
+        "/VMC/Ext/Blend/Val",
+        "/VMC/Ext/Bone/Pos",
+        "/VMC/Ext/OK",
+        "/VMC/Ext/Root/Pos",
+        "/VMC/Ext/T",
+        "/VMC/Ext/VRM"
+      ],
+      "sha256": "5cfff8abf77a9341be468017e069230cd347e630871a64dd9275f60987a74608",
+      "bytes": 17164
+    },
+    {
+      "file": "extended-forms.vmcpackets",
+      "pins": "Longer forms of known messages, which are not errors: a fourth integer on /VMC/Ext/OK, a third string on /VMC/Ext/VRM, six floats past /VMC/Ext/Root/Pos's quaternion, an argument on /VMC/Ext/Blend/Apply. It pins the shape - an argument is there and is counted, not read - and deliberately not a meaning for it, which no fixture in this repository is in a position to assert.",
+      "tags": [
+        "extended-form",
+        "unread-arguments",
+        "forward-compatibility"
+      ],
+      "id": "extended-forms",
+      "sender": "example.synthetic",
+      "sourceId": "extended-forms-01",
+      "datagrams": 2,
+      "payloadBytes": 1912,
+      "durationSeconds": 0.01,
+      "addressPatterns": [
+        "/VMC/Ext/Blend/Apply",
+        "/VMC/Ext/Bone/Pos",
+        "/VMC/Ext/OK",
+        "/VMC/Ext/Root/Pos",
+        "/VMC/Ext/T",
+        "/VMC/Ext/VRM"
+      ],
+      "sha256": "bc16f76c4ec4797142090b39098c7d7bf4b0ea2ea93bf784718612fd956d007d",
+      "bytes": 8541
     },
     {
       "file": "sender-restart-30hz.vmcpackets",
