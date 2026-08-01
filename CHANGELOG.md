@@ -15,6 +15,27 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **The OSC layer, and nothing about VMC in it** —
+  [`OscPacket.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/OscPacket.h)
+  decodes a datagram into addresses, type tags, arguments, and bundles flattened
+  into wire order. It does not know that `/VMC/Ext/Bone/Pos` means anything, and
+  that separation is what makes both layers testable: OSC has its own
+  malformed-input cases, and a decoder that mixed the two could only be tested
+  end to end. Three rules are decisions rather than details — a datagram decodes
+  entirely or not at all, so a bundle with one bad element yields no messages
+  and the assembler is never handed half a frame; every OSC 1.0 and 1.1 type tag
+  is sized, including the fourteen VMC never sends, because a decoder that knew
+  only `i`/`f`/`s` would refuse a valid message the moment a sender attached a
+  `d`; and the only code this layer raises is `VRM_VMC_PACKET_MALFORMED`, since
+  it cannot tell an unimplemented address from any other one (`/foo/bar` and
+  `/VMC/Ext/Midi/Note` both decode cleanly — `VRM_VMC_UNSUPPORTED_MESSAGE`
+  belongs one layer up). Diagnostics carry the address as subject and a
+  datagram-relative byte offset, so a refusal inside a bundle can be found in a
+  committed capture rather than bisected. `vrmAdapterVmc_oscCorpus` decodes the
+  whole recorded corpus to message counts derived from the generator's
+  structure: 122 / 117 / 93 / 173 messages, and eight of the ten malformed
+  datagrams refused with the other two — valid OSC this adapter does not
+  implement — decoded.
 - **A VMC session can be recorded and replayed before anything decodes one** —
   `vmc-packet-capture` v1
   ([`PacketCapture.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/PacketCapture.h)),

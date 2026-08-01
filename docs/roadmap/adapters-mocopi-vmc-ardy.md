@@ -481,8 +481,19 @@ pose output · diagnostics · deterministic unit tests
   pinning the bundled and unbundled sender shapes, ignorable-but-valid traffic,
   ten packet-level refusals, and the arrival-order phenomena. Two tests hold the
   corpus: the C++ writer's canonical form, and the generator that authored it.
-- ⬜ Everything else above, in the §5 order: the OSC decoder, then VMC
-  semantics.
+- ✅ **The OSC decoder.** Addresses, type tags, arguments, and bundles flattened
+  into wire order — and no VMC semantics at all, which is what keeps both layers
+  testable. Three rules are decided rather than emergent: a datagram decodes
+  entirely or not at all (a half-decoded frame leaves the assembler unable to
+  tell which half it got); every OSC 1.0 and 1.1 type tag is sized, including
+  the fourteen VMC never sends, because refusing a message over a tag the decoder
+  cannot skip blames the sender for the decoder's gap; and the only code this
+  layer raises is `VRM_VMC_PACKET_MALFORMED`, since it cannot tell an
+  unimplemented address from any other one. The corpus decodes to counts derived
+  from the generator's structure, so the encoder and the decoder agree without
+  either having been written from the other.
+- ⬜ Everything else above, in the §5 order: VMC semantics, then bone mapping
+  and coordinate conversion.
 
 ### Milestone B — VMC live receipt ⬜
 

@@ -8,11 +8,11 @@ UDP datagram → OSC decode → VMC message decode → frame assembly
              → VRM bone mapping → HumanoidPose → LiveCaptureSource
 ```
 
-**Status: recorded input, no decoder.** The build, the manifest, the boundary
-check, the frozen diagnostic codes, the recorded-packet format, and the corpus
-recorded in it exist. Nothing decodes a packet yet — see
-[the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §5 for the
-implementation order and Milestone A for what "done" means.
+**Status: OSC decoding, no VMC semantics.** The build, the manifest, the
+boundary check, the frozen diagnostic codes, the recorded-packet format and its
+corpus, and the OSC layer exist. Nothing knows what `/VMC/Ext/Bone/Pos` *means*
+yet — see [the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §5 for
+the implementation order and Milestone A for what "done" means.
 
 ## What this is, structurally
 
@@ -91,6 +91,32 @@ one CI cannot redistribute. Two tests hold it: `vrmAdapterVmc_corpus` re-emits
 every committed capture through the C++ writer and compares bytes, and
 `vrmAdapterVmc_packetGen` re-runs the generator and compares against that. A
 hand-edited fixture that is still canonical fails the second, not the first.
+
+## OSC, and only OSC
+
+[`OscPacket.h`](include/vrmAdapterVmc/OscPacket.h) decodes a datagram into
+messages: addresses, type tags, arguments, bundles flattened into wire order. It
+does not know that `/VMC/Ext/Bone/Pos` means anything, and that is what makes
+both layers testable — OSC has its own malformed-input cases, and a decoder that
+mixed the two could only ever be tested end to end.
+
+Three rules are decisions rather than details:
+
+- **A datagram decodes entirely or not at all.** A bundle whose third element is
+  malformed yields no messages, not two. A half-decoded frame is worse than a
+  refused one: the assembler cannot tell which half it got.
+- **Every OSC 1.0 and 1.1 type tag is understood**, including the fourteen VMC
+  never sends. Skipping an argument requires knowing its size, so a decoder that
+  handled only `i`, `f` and `s` would have to refuse a valid message the moment
+  a sender attached a `d` — blaming the sender for the decoder's gap.
+- **The only refusal is `VRM_VMC_PACKET_MALFORMED`.** This layer cannot tell an
+  unimplemented address from any other one; `/foo/bar` and `/VMC/Ext/Midi/Note`
+  both decode cleanly here. `VRM_VMC_UNSUPPORTED_MESSAGE` belongs one layer up,
+  where addresses have meanings.
+
+Diagnostics carry the offending address as their subject and a byte offset in
+their detail — inside a bundle, an offset into the *datagram*, so it can be
+found in a committed capture rather than bisected.
 
 ## Diagnostics
 
