@@ -23,7 +23,16 @@ target_compile_options(vrmAdapterVmc_packetCapture_tests
 add_test(NAME vrmAdapterVmc_packetCapture
          COMMAND vrmAdapterVmc_packetCapture_tests)
 
-set(_vrm_adapter_vmc_tests vrmAdapterVmc_unit vrmAdapterVmc_packetCapture)
+# The OSC layer, which knows nothing about VMC.
+add_executable(vrmAdapterVmc_oscPacket_tests test_osc_packet.cpp)
+target_link_libraries(vrmAdapterVmc_oscPacket_tests
+    PRIVATE vrmAdapterVmc::vrmAdapterVmc)
+target_compile_options(vrmAdapterVmc_oscPacket_tests
+    PRIVATE ${_vrm_adapter_vmc_assertions})
+add_test(NAME vrmAdapterVmc_oscPacket COMMAND vrmAdapterVmc_oscPacket_tests)
+
+set(_vrm_adapter_vmc_tests
+    vrmAdapterVmc_unit vrmAdapterVmc_packetCapture vrmAdapterVmc_oscPacket)
 
 # Every committed capture parses and re-emits byte-identically, or every
 # decoder test downstream of it compares against a fixture that has drifted from
@@ -35,7 +44,13 @@ if(EXISTS "${_vrm_adapter_vmc_corpus}")
     add_test(NAME vrmAdapterVmc_corpus
         COMMAND vrmAdapterVmc_packetCapture_tests
                 "${_vrm_adapter_vmc_corpus}")
-    list(APPEND _vrm_adapter_vmc_tests vrmAdapterVmc_corpus)
+    # The same corpus, one layer up: what the recorded datagrams decode to. The
+    # counts it holds come from the generator's structure, so a fixture that
+    # changed shape fails here as well as in the round-trip check.
+    add_test(NAME vrmAdapterVmc_oscCorpus
+        COMMAND vrmAdapterVmc_oscPacket_tests "${_vrm_adapter_vmc_corpus}")
+    list(APPEND _vrm_adapter_vmc_tests
+         vrmAdapterVmc_corpus vrmAdapterVmc_oscCorpus)
 endif()
 
 if(WIN32)
