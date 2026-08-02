@@ -175,7 +175,14 @@ IDENTITY = (0.0, 0.0, 0.0, 1.0)
 
 
 def quaternion_z(degrees: float) -> tuple[float, float, float, float]:
-    """Axis-angle about +Z to Unity's (x, y, z, w) order."""
+    """Axis-angle about +Z to Unity's (x, y, z, w) order.
+
+    The matrix this builds is the standard one -- it maps (1, 0, 0) toward
+    +Y for a positive angle -- so which way a limb travels depends on which
+    side of the body it started. A bone at -X, which is where a Unity
+    character's left side is, goes *down* for a positive angle and up for a
+    negative one.
+    """
     half = math.radians(degrees) * 0.5
     return (0.0, 0.0, math.sin(half), math.cos(half))
 
@@ -184,10 +191,19 @@ def quaternion_z(degrees: float) -> tuple[float, float, float, float]:
 # its parent, as a VMC sender reports it. Invented proportions -- no real
 # avatar's measurements are committed here -- but plausible ones, so a decoded
 # frame is recognisable as a humanoid rather than a pile of zeros.
+#
+# In *Unity's* axes, which is the whole point of the table: left-handed, +Y up,
+# the character facing +Z, and therefore `Vector3.right` at +X and a character's
+# **left side at -X**. glTF -- and so VRM 1.0, and so everything downstream of
+# the skeleton map -- says the opposite, "-X is right", and the adapter's
+# reflection through X is exactly what carries one into the other. Authoring
+# these offsets in the canonical basis instead would produce a corpus that is
+# self-consistent, decodes cleanly, and is a mirror image of a person; the
+# left/right pairs below are signed the way a Unity sender signs them.
 REST_OFFSETS = {
     "Hips": (0.0, 0.9, 0.0),
-    "LeftUpperLeg": (0.09, 0.0, 0.0),
-    "RightUpperLeg": (-0.09, 0.0, 0.0),
+    "LeftUpperLeg": (-0.09, 0.0, 0.0),
+    "RightUpperLeg": (0.09, 0.0, 0.0),
     "LeftLowerLeg": (0.0, -0.42, 0.0),
     "RightLowerLeg": (0.0, -0.42, 0.0),
     "LeftFoot": (0.0, -0.4, 0.0),
@@ -196,14 +212,14 @@ REST_OFFSETS = {
     "Chest": (0.0, 0.12, 0.0),
     "Neck": (0.0, 0.2, 0.0),
     "Head": (0.0, 0.08, 0.0),
-    "LeftShoulder": (0.03, 0.15, 0.0),
-    "RightShoulder": (-0.03, 0.15, 0.0),
-    "LeftUpperArm": (0.12, 0.0, 0.0),
-    "RightUpperArm": (-0.12, 0.0, 0.0),
-    "LeftLowerArm": (0.26, 0.0, 0.0),
-    "RightLowerArm": (-0.26, 0.0, 0.0),
-    "LeftHand": (0.24, 0.0, 0.0),
-    "RightHand": (-0.24, 0.0, 0.0),
+    "LeftShoulder": (-0.03, 0.15, 0.0),
+    "RightShoulder": (0.03, 0.15, 0.0),
+    "LeftUpperArm": (-0.12, 0.0, 0.0),
+    "RightUpperArm": (0.12, 0.0, 0.0),
+    "LeftLowerArm": (-0.26, 0.0, 0.0),
+    "RightLowerArm": (0.26, 0.0, 0.0),
+    "LeftHand": (-0.24, 0.0, 0.0),
+    "RightHand": (0.24, 0.0, 0.0),
     "LeftToes": (0.0, -0.06, 0.12),
     "RightToes": (0.0, -0.06, 0.12),
     "UpperChest": (0.0, 0.08, 0.0),
@@ -289,6 +305,11 @@ def capture_arm_raise() -> Capture:
     The frame boundary is not a bundle here -- it is the `/VMC/Ext/T` that
     *closes* each frame, the opposite convention from the bundled capture. Both
     are in the corpus so that neither can be assumed.
+
+    The angles are negative because the arm is on the left, which in Unity's
+    axes is -X: a positive rotation about +Z would lower it. This capture is the
+    only one whose *name* asserts a direction, so it is the only one where the
+    sign is load-bearing rather than arbitrary.
     """
     capture = Capture("example.synthetic", "arm-raise-01", "0.0.0.0:39539",
                       "127.0.0.1:52002")
@@ -298,9 +319,9 @@ def capture_arm_raise() -> Capture:
     receive = 0.01
     for index in range(5):
         rotations = {
-            "LeftShoulder": quaternion_z(3.0 * index),
-            "LeftUpperArm": quaternion_z(15.0 * index),
-            "LeftLowerArm": quaternion_z(8.0 * index),
+            "LeftShoulder": quaternion_z(-3.0 * index),
+            "LeftUpperArm": quaternion_z(-15.0 * index),
+            "LeftLowerArm": quaternion_z(-8.0 * index),
         }
         for message in body_messages(BODY_RIG, rotations):
             capture.add(receive, message)
