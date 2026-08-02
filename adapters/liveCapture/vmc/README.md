@@ -8,13 +8,14 @@ UDP datagram → OSC decode → VMC message decode → frame assembly
              → VRM bone mapping → HumanoidPose → LiveCaptureSource
 ```
 
-**Status: a live motion source.** Every layer exists — the recorded-packet format
-and its corpus, the OSC layer, the VMC message layer, the skeleton map, the frame
-assembler, the bridge into `motionRuntime`, and now the socket. A sender on the
-network drives a `motion::LiveCaptureSource` that samples like any clip, and a
-recorded capture drives the same thing with no socket at all, so the decode path
-stays verifiable in CI from committed bytes. What is left is the record tool, the
-CLI, and the evidence only a real sender can give. See
+**Status: a live motion source with a CLI.** Every layer exists — the
+recorded-packet format and its corpus, the OSC layer, the VMC message layer, the
+skeleton map, the frame assembler, the bridge into `motionRuntime`, the socket,
+and [`vmc_record`](tools/vmcRecord/) on top of them. A sender on the network
+drives a `motion::LiveCaptureSource` that samples like any clip, and a recorded
+capture drives the same thing with no socket at all, so the decode path stays
+verifiable in CI from committed bytes. What is left is the evidence only a real
+sender can give — which is what the CLI exists to collect. See
 [the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §5 for the
 implementation order and Milestone B for what remains.
 
@@ -57,10 +58,11 @@ The adapter maps a VMC bone name to a `motion::HumanBone`, and stops. It never
 resolves a joint index in a target skeleton — that is `vrmRetarget`'s job, one
 layer down the pipeline and behind a `VrmHumanoidAPI` mapping.
 
-One permission is easy to misread in the other direction: this adapter's future
-**CLI**, under `tools/`, *may* drive `vrmRetarget` and author a stage, exactly as
-`motion_retarget` does. The library may not. That is why the boundary check
-scans `include/` and `src/` only.
+One permission is easy to misread in the other direction: this adapter's **CLI**,
+[`tools/vmcRecord/`](tools/vmcRecord/), *may* drive `vrmRetarget` and author a
+stage, exactly as `motion_retarget` does. The library may not. That is why the
+boundary check scans `include/` and `src/` only. The CLI as written needs
+neither, and links this adapter alone.
 
 ## Transport arrives last
 
@@ -431,6 +433,41 @@ CTest names (`vrmAdapterVmc_udpReceiver`, `vrmAdapterVmc_loopbackCorpus`): a
 runner that forbids one excludes two names and loses no coverage of the decode
 path. They bind loopback on an OS-assigned port, never 39539 — a suite that
 claimed the real VMC port would fight a developer's own sender for it.
+
+## The CLI, and what it is for
+
+[`tools/vmcRecord/`](tools/vmcRecord/) is `vmc_record`: the one part of this
+adapter that meets a real sender.
+
+```sh
+vmc_record --output walk-01.vmcpackets --duration 10 --sender vseeface
+vmc_record --inspect tests/corpus/arm-raise-30hz.vmcpackets
+```
+
+Everything above it is verifiable from committed bytes, which is this adapter's
+build order and also its limit: the corpus is *generated*, so it reproduces the
+protocol's shapes and not what any real application emits. Every item still open
+in Milestone B is that shape — two senders validated, a device through a relay,
+a recorded corpus — and none of them closes by writing more code. So the tool
+turns one real session into the two things this repository can keep: a capture
+file, and a statement of what was in it.
+
+**The datagram reaches the file before the decoder sees it.** A recorder whose
+decoder could refuse a datagram would record what this adapter already
+understands, and the sessions worth recording are exactly the ones it might not.
+The decode still runs in the same loop, because an operator with a sender open
+needs to know now whether the session is worth keeping — what it produces is a
+report, and a report is not a filter.
+
+The report reads the layers' tallies together, in the order the questions are
+asked when a session is not working. Two of its lines are not statistics:
+`hips offset` and `root` are the evidence for the two questions the frame
+assembler left to a real sender, reported as how far each value moved and never
+as what it means. `--inspect` prints the same block from a file with no socket,
+which is what makes the CLI testable in CI — and `vmc_record_loopback` raises
+`vrmAdapterVmc_loopbackCorpus`'s claim to the artifact an operator keeps: what
+comes off the socket is byte-identical to what went in, and reports the same
+motion as the file it was replayed from.
 
 ## Diagnostics
 

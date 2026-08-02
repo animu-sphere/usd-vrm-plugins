@@ -15,6 +15,52 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`vmc_record`, the VMC adapter's CLI and the one part of it that meets a real
+  sender** —
+  [`adapters/liveCapture/vmc/tools/vmcRecord/`](adapters/liveCapture/vmc/tools/vmcRecord/)
+  records a live session to a `vmc-packet-capture` file and reports what it
+  decoded to. Every layer beneath it is verifiable from committed bytes, which
+  is the adapter's build order and also its limit: the corpus is *generated*, so
+  it reproduces the protocol's shapes and not what any real application emits.
+  Every item still open in Milestone B is that same shape — two sender
+  applications validated, a capture device through a relay, a recorded corpus —
+  and none of them closes by writing more code; they close by an operator
+  pointing a sender at a port. **The datagram reaches the file before the
+  decoder sees it**, which is the only rule here: a recorder whose decoder could
+  refuse a datagram would record what the adapter already understands, and the
+  sessions worth recording are exactly the ones it might not. The decode still
+  runs in the same loop rather than afterwards, because an operator with a
+  sender open needs to know *now* whether the session is worth keeping — what it
+  produces is a report, and a report is not a filter. The report reads the
+  layers' tallies together in the order the questions are asked when a session
+  is not working (is anything arriving, does it decode, does it become motion,
+  what went wrong), because `UdpReceiverStats` cannot see a bone and
+  `VmcFrameStats` cannot see a datagram that never decoded. **Two of its lines
+  are not statistics**: `hips offset` and `root` are the evidence the frame
+  assembler's two open questions need, reported as how far each value moved and
+  never as what it means — this tool is in no better position to decide what a
+  sender means by a field than the layer that declined to. A third, `model`,
+  reports that the sender's model title is in the recorded bytes and never
+  *uses* it, since naming a capture after the avatar it happened to see would
+  put someone's title in a fixture's header as well as its payload.
+  `--inspect` prints the same block from a recorded capture with no socket at
+  all, so the CLI is testable in CI over the committed corpus — all seven
+  captures to the same 168 datagrams and 22 frames the corpus tests below it are
+  written against — and so a fixture recorded months ago can be re-read.
+  `vmc_record_loopback` then raises `vrmAdapterVmc_loopbackCorpus`'s claim to
+  the artifact an operator keeps: the datagrams that come off a real socket are
+  byte-identical to the ones that went in, and the recorded file reports the
+  same motion as the file it was replayed from. Every session has a stop
+  condition — `--duration`, `--idle-timeout`, Ctrl-C, and a `--max-datagrams`
+  bound that is on by default because the capture is held in memory until it is
+  written — and **reports which one ended it**, since a recording that stopped
+  because a flag said so and one that stopped because the socket failed are
+  different sessions and the file cannot tell them apart afterwards. It links
+  `vrmAdapterVmc` and nothing else: WORKSPACE.md §2 permits an adapter tool to
+  drive `vrmRetarget` and author a stage, this one needs neither, and a second
+  path from a VMC session to an avatar would be the fork the adapter plan §2
+  forbids. Both tests were picked up by the `kind: workspace` CI cells with no
+  CI edit, taking the root suite from 41 names to 43.
 - **The VMC adapter has a socket, and the runtime still has one thread** —
   [`UdpReceiver.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/UdpReceiver.h)
   is the last layer of the VMC path and the first one a live session touches.
