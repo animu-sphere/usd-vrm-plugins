@@ -39,6 +39,7 @@ endif()
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 
 add_library(motionCore STATIC
+    src/Compare.cpp
     src/Humanoid.cpp)
 add_library(motionCore::motionCore ALIAS motionCore)
 set_target_properties(motionCore PROPERTIES

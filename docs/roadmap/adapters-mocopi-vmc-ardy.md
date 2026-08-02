@@ -518,8 +518,14 @@ pose output · diagnostics · deterministic unit tests
   `VRM_VMC_TIMESTAMP_REGRESSION` needs the assembler's memory of the previous
   frame), and the bad bone's datagram still yields the twenty-two messages that
   arrived with it.
+- ✅ **The canonical contract can be compared.** `motionCore` gained exact
+  equality and a tolerant `NearlyEqual` before the layer that produces a
+  `HumanoidPose` exists, so the bone mapping's corpus test compares a decoded
+  pose against a committed one under a tolerance the contract states rather than
+  one the test invents. First of §11's three debts.
 - ⬜ Everything else above, in the §5 order: bone mapping, then coordinate
-  conversion — which is where §11's canonical-contract debt comes due.
+  conversion — which is where the rest of §11's canonical-contract debt comes
+  due.
 
 ### Milestone B — VMC live receipt ⬜
 
@@ -569,16 +575,24 @@ depends on them ([docs/README.md](../README.md)).
   in prose (§4 above).
 - ✅ **VMC as a first-class generic input.** Motion policy §8.2 previously named
   one direct adapter only, and now carries the VMC-first ordering.
-- ⬜ **The canonical contract owes three things before Milestone A ends.**
-  `motionCore` has `HumanoidPose`, `HumanoidAnimation`, `RootMotion`, and
-  `MotionSourceMetadata`, which is most of what an adapter needs. Missing:
-  a **deterministic comparison** (`operator==`) on the pose aggregate — needed
-  by corpus tests here and required outright by `ExecTypeRegistry::RegisterType`
-  later ([openexec plan](openexec-v0.6.0-v0.7.0.md) P0-4); an explicit
-  **tracking state**, so "tracking lost" is distinguishable from "zero pose" and
-  from "bone absent"; and an **expression sample**, which Motion Phase G owns
-  but which the VMC blend-shape messages reach first. See
-  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md).
+- 🚧 **The canonical contract owed three things before Milestone A ends; one is
+  paid.** `motionCore` has `HumanoidPose`, `HumanoidAnimation`, `RootMotion`,
+  and `MotionSourceMetadata`, which is most of what an adapter needs.
+  - ✅ **Deterministic comparison**, landed 2026-08-02 — and as *two*
+    comparisons, because the callers wanted different answers: `operator==` is
+    the exact one `ExecTypeRegistry::RegisterType` requires
+    ([openexec plan](openexec-v0.6.0-v0.7.0.md) P0-4), and `NearlyEqual` with a
+    stated `MotionTolerance` is the one a corpus test here needs, since a
+    fixture recorded through six decimals never equals the pose that produced it
+    bit for bit. The two differ in three stated places, and the corpus-relevant
+    one is that a quaternion and its negation are the same motion and a
+    different value.
+  - ⬜ An explicit **tracking state**, so "tracking lost" is distinguishable
+    from "zero pose" and from "bone absent".
+  - ⬜ An **expression sample**, which Motion Phase G owns but which the VMC
+    blend-shape messages reach first.
+
+  See [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060).
 - ⬜ **`motion_capture` grows a live source.** WORKSPACE.md §1 describes it as
   replaying a recorded trace. Milestone C adds `--source vmc --listen <addr>`
   alongside `--replay`, which makes the CLI a consumer of an adapter and needs
