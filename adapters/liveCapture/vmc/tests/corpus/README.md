@@ -69,8 +69,18 @@ layer; `-forms` decodes as OSC every time and is refused one layer up. Only the
 second can carry the case that matters most — a bad message **inside a good
 frame** — because the first has no frame left to be inside of.
 
-Three properties are deliberate and easy to lose:
+Four properties are deliberate and easy to lose:
 
+- **Every number is in the sender's axes, which are Unity's.** Left-handed, +Y
+  up, the character facing +Z, and so `Vector3.right` at +X and a character's
+  **left side at −X**. glTF says the opposite — "−X is right" — and VRM 1.0, the
+  canonical contract, and everything downstream of the skeleton map follow glTF;
+  the adapter's reflection through X is what carries one into the other. A
+  corpus authored in the canonical basis by mistake would be self-consistent,
+  decode cleanly, and be a mirror image of a person, which is a defect no
+  decoder test can see. The sign of the arm-raise capture's angles depends on
+  this: the arm is at −X, so raising it is a *negative* rotation about +Z, and
+  that capture is the only one whose name asserts a direction at all.
 - **The two clocks do not share an origin.** `d` records carry the *receive*
   clock; `/VMC/Ext/T` carries the sender's, which starts at 12.5 s in the
   neutral-standing capture. An adapter that conflates them passes every fixture

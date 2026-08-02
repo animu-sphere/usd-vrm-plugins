@@ -256,6 +256,24 @@ Current schema contract version: **1**.
 
 ### Fixed
 
+- **The VMC packet corpus was a mirror image of a person.**
+  `tools/generate_packets.py` placed `LeftUpperLeg` at +0.09 X and
+  `RightUpperLeg` at −0.09, but the table is in the *sender's* axes and Unity is
+  left-handed with the character facing +Z — so a character's left side is −X,
+  and every left/right pair in the rest skeleton was on the wrong side. Nothing
+  was inconsistent and no decoder test could see it: the bytes are valid, the
+  counts are unchanged, and a packet decoder never asks which side a bone is on.
+  What it cost was the one claim the offsets exist to make, that a decoded frame
+  is "recognisable as a humanoid" — it was recognisable as a mirrored one, and
+  the first thing to render the corpus would have found it. The signs are
+  flipped and all seven captures are regenerated. The arm-raise capture's angles
+  are negated with them, because the arm is now at −X where a positive rotation
+  about +Z *lowers* it: that capture is the only one whose name asserts a
+  direction, so it is the only one where the sign is load-bearing. Both
+  conventions — Unity's here, glTF's "−X is right" downstream of the skeleton
+  map — are now written down where the numbers are, since the two differ by
+  exactly the reflection the adapter applies and a corpus authored in the wrong
+  one decodes perfectly.
 - **The Phase 0 baseline gate no longer fails on a platform it has no baseline
   for.** `tools/baseline_freeze.py --check` now skips a `symbols/<platform>.txt`
   that is not committed — a platform with no frozen symbol list has nothing to
