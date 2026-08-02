@@ -69,7 +69,16 @@ layer; `-forms` decodes as OSC every time and is refused one layer up. Only the
 second can carry the case that matters most — a bad message **inside a good
 frame** — because the first has no frame left to be inside of.
 
-Four properties are deliberate and easy to lose:
+Five properties are deliberate and easy to lose:
+
+- **The two sender shapes put their clock at opposite ends of a frame.**
+  `neutral-standing` sends `/VMC/Ext/T` first and `arm-raise` sends it last, and
+  that disagreement is the whole reason the frame assembler cannot draw a
+  boundary from the clock's position. A corpus carrying only one of the two would
+  let either convention pass as a rule, and the sender it did not record would
+  come out off by half a frame with every rotation in it still correct —
+  which is why `vrmAdapterVmc_frameAssemblerCorpus` compares the two captures'
+  frame counts and cadence against each other rather than each against a number.
 
 - **Every number is in the sender's axes, which are Unity's.** Left-handed, +Y
   up, the character facing +Z, and so `Vector3.right` at +X and a character's
@@ -104,6 +113,7 @@ ctest -R vrmAdapterVmc_packetGen         # the committed captures still match th
 ctest -R vrmAdapterVmc_oscCorpus         # what the datagrams decode to as OSC
 ctest -R vrmAdapterVmc_vmcCorpus         # what those OSC messages mean as VMC
 ctest -R vrmAdapterVmc_skeletonMapCorpus # what those VMC messages are in canonical terms
+ctest -R vrmAdapterVmc_frameAssemblerCorpus # which of those samples belong to one frame
 ```
 
 `vrmAdapterVmc_corpus` is the load-bearing one. It re-emits each committed

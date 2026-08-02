@@ -560,12 +560,85 @@ pose output · diagnostics · deterministic unit tests
   sender emits — which is the same argument §9.2 makes about the rest of the
   generated set. A real sender's capture in Milestone B closes it.
 
-### Milestone B — VMC live receipt ⬜
+### Milestone B — VMC live receipt 🚧
 
 UDP receiver · frame assembler · stale/partial/out-of-order policy · source
 reset · `LiveCaptureSource` bridge · loopback integration test · VMC record tool
 · recorded trace corpus · at least two sender applications validated · one
 capture device validated through a VMC relay
+
+- ✅ **The frame assembler.** `FrameAssembler.h` is the first layer that
+  *decides* rather than converts, and the decision the protocol forces is where a
+  frame begins. The corpus already holds two sender shapes that disagree about
+  it: the bundled sender's `/VMC/Ext/T` **opens** its frame and the unbundled
+  sender's **closes** it, so either convention read as a rule produces one frame
+  per two on the other sender — off by half a frame, with every rotation in it
+  still individually correct, which is the kind of defect no per-message test can
+  see. Two rules cover both: **a second clock ends the frame**, and **a repeat
+  ends it unless it arrived in the same datagram**, where the same repetition is
+  `VRM_VMC_DUPLICATE_BONE` instead. That exception is the only place a datagram
+  boundary is load-bearing anywhere in the adapter, and it is why the assembler
+  consumes packets rather than a flattened message stream.
+
+  A backwards clock means three different things, told apart by one comparison
+  against the last accepted frame, and the sender-restart capture records all
+  three: **equal or slightly earlier** is `VRM_VMC_TIMESTAMP_REGRESSION` and the
+  frame is refused — which is what stops a duplicated datagram from becoming a
+  duplicated pose, since the same bytes twice are the same instant twice;
+  **earlier by more than the restart threshold** is `VRM_VMC_SOURCE_RESTARTED`,
+  accepted as the first frame of a new session, with everything the old session
+  taught dropped; anything later is accepted. A restart is *reported and not
+  repaired* — the sender's new clock comes out verbatim, and a caller that
+  ignores `beginsNewSession` will see `LiveCaptureSource` refuse the new session
+  as stale, which is the correct outcome for a caller that has not decided what a
+  restart means to it. Offsetting the stream here would be manufacturing
+  continuity out of a discontinuity, which is the class of invention §2 forbids.
+
+  The assembler **holds nothing forward**: a bone the session has observed and
+  this frame did not carry is reported as missing and the frame is still emitted,
+  because `MissingBonePolicy` is the intake's answer and an adapter that baked
+  one in would be a second motion runtime. A bone missing past the staleness
+  horizon is additionally `VRM_VMC_STALE_JOINT`, raised **once per crossing**
+  rather than per frame, or a 30 Hz stream buries its own session in
+  diagnostics. Both are measured against the rig the session has actually
+  observed rather than the full 55-bone humanoid — a sender that solves no
+  fingers is complete, not incomplete forty times a second.
+  `vrmAdapterVmc_frameAssemblerCorpus` assembles all seven captures to counts
+  derived from the layer below (every one of the 493 bones and 24 roots the
+  skeleton map produced is grouped and none dropped), and makes the claim this
+  layer exists for: **both sender shapes yield five frames at the same 30 Hz
+  cadence**, with the unbundled one's arm rising 15° per frame in the order it
+  was sent.
+
+  Two things it deliberately leaves open. **Blend-shape values are seen and
+  dropped** — `motionCore` has no expression sample yet (§11), and inventing a
+  place to put one is a contract change rather than an adapter's decision, so
+  expression/body synchronisation stays unanswered until Motion Phase G. And the
+  **hips offset is reachable and not composed** with `/VMC/Ext/Root/Pos`, closing
+  the question the skeleton map handed here only halfway: a `HumanoidPose` has
+  nowhere to put fifty-four of a frame's fifty-five local positions, so those are
+  dropped, and whether the fifty-fifth is body translation or rig geometry is
+  still a real sender's to say. `root transform update rate` and `source clock
+  drift` are likewise untested here for want of a sender that varies either.
+- ⬜ **The receive-clock fallback and the unknown bone have no capture.** A frame
+  with no `/VMC/Ext/T` is stamped from arrival and flagged `timestampFromSender`;
+  a bone name outside the Unity vocabulary costs that bone. Both are unit-tested
+  and neither is in the corpus, for the reason §9.2 gives about the rest of the
+  generated set — what a real sender emits is evidence only a real sender can
+  give.
+- ⬜ **The repeat rule assumes a sender's bone set does not change**, and the
+  capture that would test it is `tracking-loss-and-recovery` from §9.2's
+  recorded set. A bone the open frame does not already carry joins it whether or
+  not the frame has met its clock, so an unbundled sender whose *first* message
+  of a new frame is a bone the previous frame lacked hands that bone backwards
+  one frame. The rule that would repair it — content after the clock begins a
+  new frame — is true of the unbundled sender and false of the bundled one,
+  which is the same asymmetry that made the clock's position unusable to begin
+  with, so this is a limit of what a boundary can be inferred from rather than a
+  defect with a fix. It is narrow in practice (a Unity sender walks
+  `HumanBodyBones` in a fixed order, so only a *leading* bone going away and
+  coming back reorders anything) and it is pinned by a characterisation test, so
+  a later third rule has to change the header before it changes the behaviour.
 
 ### Milestone C — capture integration and offline E2E ⬜
 
