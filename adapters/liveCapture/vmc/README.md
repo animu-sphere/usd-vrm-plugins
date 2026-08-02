@@ -324,6 +324,13 @@ sessions — is not offered anywhere in this adapter. A restart also invalidates
 the clock offset, which only the consumer can re-align, so it is latched and
 handed back rather than repaired.
 
+**What a pose cannot carry stays readable.** The hips offset, the `missing` and
+`stale` sets, and the session flag reach a `HumanoidPose` nowhere at all, so
+`GetFramesFromLastPush()` is a window on exactly what was just delivered — valid
+until the next push. Whether the hips offset is body translation or rig geometry
+is a question only a real sender's session answers, and a recording tool
+gathering that evidence should not have to drive the assembler separately.
+
 Two smaller properties are worth knowing. **Provenance applies from when the
 sender sent it**: `/VMC/Ext/VRM` may arrive mid-session, and poses buffered
 before it keep the bare `vmc` provenance rather than retroactively learning a
@@ -332,6 +339,16 @@ every string view a decoded packet holds has become a value before the push
 returns, so a receiver may hand this API the buffer it is about to overwrite,
 which is the hazard [`VmcMessage.h`](include/vrmAdapterVmc/VmcMessage.h)
 describes and no overload can refuse.
+
+**Nothing here is thread-safe, and neither is what it wraps.** `motionRuntime`
+contains no mutex or atomic: `PoseBuffer` holds a deque and
+`LiveCaptureSource::Sample` writes its statistics as it answers, so a push and a
+sample may not run concurrently and neither may two samples. Motion policy §11.4
+puts a network thread on one side of a *thread-safe* pose buffer, which does not
+exist yet, and that is the first question the UDP receiver has to answer — a
+queue hand-off it owns, or synchronisation inside `motionRuntime`. This class
+takes no private lock meanwhile, because a mutex here would leave every
+`GetIntake()` caller racing on the same buffer and look like a fix.
 
 `vrmAdapterVmc_liveSourceCorpus` replays all seven captures from bytes and makes
 the cross-layer claim: **every frame the assembler emitted was admitted by the

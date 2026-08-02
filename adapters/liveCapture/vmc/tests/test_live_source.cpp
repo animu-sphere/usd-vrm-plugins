@@ -199,6 +199,16 @@ BoneDatagram(std::string_view name, float qx, float qy, float qz, float qw)
     return out.data;
 }
 
+// Well-formed OSC and well-formed VMC, at an address this adapter does not
+// implement. Refused by the layer that knows addresses and not sessions.
+std::vector<std::uint8_t>
+UnsupportedDatagram()
+{
+    Bytes out;
+    out.Str("/VMC/Ext/Midi/Note").Str(",f").F32(60.0f);
+    return out.data;
+}
+
 // ---------------------------------------------------------------------------
 // The hand-off
 // ---------------------------------------------------------------------------
@@ -353,9 +363,12 @@ TestARestartKeepsTheStreamAndIsLatchedForTheCaller()
 void
 TestRefusingARestartStopsTheStreamVisibly()
 {
-    VmcLiveSourceConfig config;
-    config.restart = SessionRestartPolicy::Refuse;
-    VmcLiveSource source(config);
+    // Set after construction rather than through the config, because the two
+    // are separate paths to the same field and a policy that could only be
+    // chosen once would be a different class.
+    VmcLiveSource source;
+    source.SetRestartPolicy(SessionRestartPolicy::Refuse);
+    assert(source.GetRestartPolicy() == SessionRestartPolicy::Refuse);
     PushARestartingSession(&source);
 
     assert(source.GetStats().framesDelivered == 4);
@@ -411,8 +424,96 @@ TestProvenanceAppliesFromWhenTheSenderSentIt()
 }
 
 // ---------------------------------------------------------------------------
+// What a pose cannot carry
+// ---------------------------------------------------------------------------
+
+void
+TestTheFrameDetailStaysReadableAfterTheHandOff()
+{
+    // The hips offset, the missing set, and the session flag reach a
+    // `HumanoidPose` nowhere at all. Milestone B has to settle what the first of
+    // them means with a real sender's session in front of it, so the hand-off
+    // must not be where they stop being visible.
+    VmcLiveSource source;
+
+    VmcPacket opening;
+    opening.messages.push_back(TimeMessage(1.0));
+    opening.messages.push_back(RootMessage());
+    VmcMessage hips = BoneMessage(HumanBone::Hips);
+    hips.transform.position = {0.2f, 0.9f, 0.0f};
+    opening.messages.push_back(hips);
+    opening.messages.push_back(BoneMessage(HumanBone::Spine));
+    assert(source.PushPacket(opening, 0.0) == 0);
+    // Nothing was delivered, so the window is empty rather than showing the
+    // previous push's frames.
+    assert(source.GetFramesFromLastPush().empty());
+
+    assert(source.PushPacket(BundledFrame(2.0, {HumanBone::Hips}), 0.0) == 1);
+    assert(source.GetFramesFromLastPush().size() == 1);
+    const vrmAdapterVmc::VmcFrame& first = source.GetFramesFromLastPush()[0];
+    assert(first.hipsOffset.has_value());
+    // Converted — the reflection through X is the skeleton map's — and still
+    // uncomposed with the root, which is the open question itself.
+    assert(std::abs((*first.hipsOffset)[0] + 0.2f) <= 1e-6f);
+    assert(first.timestampFromSender);
+    assert(!first.beginsNewSession);
+
+    assert(source.Flush() == 1);
+    const vrmAdapterVmc::VmcFrame& second = source.GetFramesFromLastPush()[0];
+    assert(second.missing.count() == 1);
+    assert(second.missing.test(static_cast<std::size_t>(HumanBone::Spine)));
+
+    // Replaced by the next push rather than appended to, or a receive loop
+    // would grow the window into the history this class does not keep.
+    assert(source.PushPacket(BundledFrame(3.0), 0.0) == 0);
+    assert(source.GetFramesFromLastPush().empty());
+}
+
+// ---------------------------------------------------------------------------
 // Datagrams
 // ---------------------------------------------------------------------------
+
+void
+TestEveryDiagnosticOfOneDatagramCarriesItsNumber()
+{
+    VmcLiveSource source;
+    source.SetSource("127.0.0.1:39539");
+    std::vector<Diagnostic> diagnostics;
+
+    // 1: refused whole by the OSC layer, so the assembler never sees it — and a
+    //    delivery it never sees is one its own serial cannot count.
+    const std::vector<std::uint8_t> junk = {0xde, 0xad, 0xbe, 0xef};
+    source.PushDatagram(junk, 0.001, &diagnostics);
+    // 2 and 3: a bone and a clock, decoding cleanly and raising nothing.
+    source.PushDatagram(
+        BoneDatagram(VmcHumanBoneName(HumanBone::Hips), 0.0f, 0.0f, 0.0f, 1.0f),
+        0.002, &diagnostics);
+    source.PushDatagram(TimeDatagram(1.0f), 0.003, &diagnostics);
+    // 4: refused by the VMC layer, which knows an address and not a session.
+    source.PushDatagram(UnsupportedDatagram(), 0.004, &diagnostics);
+    // 5: refused by the skeleton map and passed through the assembler, which
+    //    stamps its own packet serial — 4 by now, because the OSC layer's
+    //    refusal was never handed to it.
+    source.PushDatagram(
+        BoneDatagram(VmcHumanBoneName(HumanBone::Spine), 0.0f, 0.0f, 0.0f, 0.0f),
+        0.005, &diagnostics);
+
+    assert(diagnostics.size() == 3);
+    assert(diagnostics[0].code == DiagnosticCode::PacketMalformed);
+    assert(diagnostics[1].code == DiagnosticCode::UnsupportedMessage);
+    assert(diagnostics[2].code == DiagnosticCode::PacketMalformed);
+    for (const Diagnostic& diagnostic : diagnostics) {
+        assert(diagnostic.source == "127.0.0.1:39539");
+        assert(diagnostic.sequence.has_value());
+    }
+    // The datagram a reader would go looking for in a capture, on every line
+    // whichever layer raised it — including the last, where the assembler's own
+    // numbering said 4 and was overwritten.
+    assert(*diagnostics[0].sequence == 1);
+    assert(*diagnostics[1].sequence == 4);
+    assert(*diagnostics[2].sequence == 5);
+    assert(source.GetAssembler().GetStats().bonesMalformed == 1);
+}
 
 void
 TestARefusedDatagramCostsItselfAndIsCounted()
@@ -490,8 +591,14 @@ TestResetForgetsBothHalvesAndKeepsTheTally()
     source.PushPacket(BundledFrame(30.0), 0.0);
     source.PushPacket(BundledFrame(30.033), 0.0);
     assert(source.GetIntake().GetBuffer().GetSize() == 1);
+    assert(source.GetIntake().AlignClock(0.0));
 
     source.Reset();
+    // The clock offset survives, because `LiveCaptureSource::Reset` keeps it
+    // deliberately — so a caller replaying a second capture into this object
+    // re-aligns it rather than inheriting the first capture's origin. Pinned
+    // here because the sentence above is the only warning it gets.
+    assert(!Near(source.GetIntake().GetClockOffset(), 0.0));
     assert(source.GetIntake().IsEmpty());
     assert(source.GetAssembler().GetObservedBones().none());
     // The sender is unknown again: after a reset nothing about it is still true.
@@ -545,16 +652,23 @@ struct Expected
     std::size_t datagramsRefused;
     std::size_t framesAdmitted;
     std::size_t sessionsReset;
+    // Poses still in the buffer at the end: the admitted count, less the ones a
+    // restart dropped. It is named rather than derived because only the capture
+    // knows how its session was split — and it is compared against the buffer's
+    // capacity below, since a longer capture than any committed here loses its
+    // oldest poses to eviction, which is the buffer working and not a fault.
+    std::size_t buffered;
 };
 
 constexpr Expected kExpected[] = {
-    {"arm-raise-30hz.vmcpackets", 117, 0, 5, 0},
-    {"extended-forms.vmcpackets", 2, 0, 1, 0},
-    {"malformed-forms.vmcpackets", 10, 0, 2, 0},
-    {"malformed-packets.vmcpackets", 2, 8, 0, 0},
-    {"mixed-traffic-30hz.vmcpackets", 13, 0, 3, 0},
-    {"neutral-standing-30hz.vmcpackets", 6, 0, 5, 0},
-    {"sender-restart-30hz.vmcpackets", 10, 0, 6, 1},
+    {"arm-raise-30hz.vmcpackets", 117, 0, 5, 0, 5},
+    {"extended-forms.vmcpackets", 2, 0, 1, 0, 1},
+    {"malformed-forms.vmcpackets", 10, 0, 2, 0, 2},
+    {"malformed-packets.vmcpackets", 2, 8, 0, 0, 0},
+    {"mixed-traffic-30hz.vmcpackets", 13, 0, 3, 0, 3},
+    {"neutral-standing-30hz.vmcpackets", 6, 0, 5, 0, 5},
+    // Six admitted, two of them the old session's and dropped with it.
+    {"sender-restart-30hz.vmcpackets", 10, 0, 6, 1, 2},
 };
 
 bool
@@ -710,12 +824,13 @@ CheckCorpus(const std::filesystem::path& directory)
 
         // And the buffer is the delivery: a bridge that had grown a history of
         // its own would show up here as a count that no longer matches.
-        if (source.GetIntake().GetBuffer().GetSize()
-            != (entry->sessionsReset != 0 ? 2u : entry->framesAdmitted)) {
-            std::fprintf(stderr, "%s: %zu pose(s) buffered from %zu admitted\n",
+        const std::size_t expectedBuffered = std::min(
+            entry->buffered, source.GetIntake().GetBuffer().GetCapacity());
+        if (source.GetIntake().GetBuffer().GetSize() != expectedBuffered) {
+            std::fprintf(stderr, "%s: %zu pose(s) buffered, expected %zu\n",
                          name.c_str(),
                          source.GetIntake().GetBuffer().GetSize(),
-                         entry->framesAdmitted);
+                         expectedBuffered);
             ++failures;
         }
 
@@ -783,6 +898,8 @@ main(int argc, char** argv)
     TestARestartKeepsTheStreamAndIsLatchedForTheCaller();
     TestRefusingARestartStopsTheStreamVisibly();
     TestProvenanceAppliesFromWhenTheSenderSentIt();
+    TestTheFrameDetailStaysReadableAfterTheHandOff();
+    TestEveryDiagnosticOfOneDatagramCarriesItsNumber();
     TestARefusedDatagramCostsItselfAndIsCounted();
     TestTheDatagramNeedNotOutliveThePush();
     TestResetForgetsBothHalvesAndKeepsTheTally();

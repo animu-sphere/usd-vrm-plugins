@@ -64,14 +64,19 @@ VmcLiveSource::_Deliver()
 }
 
 void
-VmcLiveSource::_StampSource(std::vector<Diagnostic>* diagnostics,
-                            std::size_t from) const
+VmcLiveSource::_StampDatagram(std::vector<Diagnostic>* diagnostics,
+                              std::size_t from) const
 {
     if (!diagnostics) {
         return;
     }
     for (std::size_t index = from; index != diagnostics->size(); ++index) {
         (*diagnostics)[index].source = _assembler.GetSource();
+        // Overwrites the assembler's own serial on the lines it raised, which
+        // is the point: it counts packets it was handed and this counts
+        // deliveries, and only one of the two can name the datagram a reader
+        // would go looking for in a capture.
+        (*diagnostics)[index].sequence = _datagramSerial;
     }
 }
 
@@ -80,6 +85,7 @@ VmcLiveSource::PushDatagram(const std::uint8_t* bytes, std::size_t size,
                             double receiveTime,
                             std::vector<Diagnostic>* diagnostics)
 {
+    ++_datagramSerial;
     const std::size_t before = diagnostics ? diagnostics->size() : 0;
 
     OscPacket osc;
@@ -88,7 +94,7 @@ VmcLiveSource::PushDatagram(const std::uint8_t* bytes, std::size_t size,
         ++_stats.datagramsRefused;
         if (diagnostics) {
             diagnostics->push_back(std::move(refusal));
-            _StampSource(diagnostics, before);
+            _StampDatagram(diagnostics, before);
         }
         return 0;
     }
@@ -96,11 +102,11 @@ VmcLiveSource::PushDatagram(const std::uint8_t* bytes, std::size_t size,
 
     VmcPacket packet;
     DecodeVmcPacket(osc, &packet, diagnostics);
-    _StampSource(diagnostics, before);
-    // The assembler stamps its own from here on, including the ones it passes
-    // through from the skeleton map, so the stamp above covers exactly the two
-    // layers that could not.
-    return PushPacket(packet, receiveTime, diagnostics);
+    const std::size_t admitted = PushPacket(packet, receiveTime, diagnostics);
+    // After the assembler rather than before it, so one datagram's diagnostics
+    // are numbered alike however many layers raised them.
+    _StampDatagram(diagnostics, before);
+    return admitted;
 }
 
 std::size_t

@@ -661,6 +661,13 @@ capture device validated through a VMC relay
   restart also invalidates the intake's clock offset, which only the consumer can
   re-align, so it is latched and handed back rather than repaired.
 
+  What a pose cannot carry stays readable. The hips offset, the `missing` and
+  `stale` sets, and the session flag reach a `HumanoidPose` nowhere at all, so
+  the bridge opens a window on the frames it just delivered rather than being
+  where they stop being visible — the hips-offset question is Milestone B's to
+  settle with a real sender's session in front of it, and a recording tool
+  should not have to drive the assembler separately to see one.
+
   Three smaller things are settled with it. Provenance **applies from when the
   sender sent it** — `/VMC/Ext/VRM` may arrive mid-session, and poses buffered
   before it are not retroactively taught a title the session did not know yet.
@@ -736,6 +743,22 @@ depends on them ([docs/README.md](../README.md)).
     blend-shape messages reach first.
 
   See [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060).
+- ⬜ **`motionRuntime` is not thread-safe, and motion policy §11.4 assumes it
+  is.** The required arrangement puts a *network or device thread* on one side
+  of a "thread-safe timestamped pose buffer" and evaluation on the other, and
+  `libs/motionRuntime` contains no mutex or atomic at all — `PoseBuffer` holds a
+  deque and `LiveCaptureSource::Sample` writes its own statistics as it answers,
+  so two samples are no safer than a sample racing a push. It costs nothing
+  today: every layer of this adapter is caller-driven and its tests are
+  single-threaded by construction, which is the reproducibility property v0.5.0
+  shipped rather than an accident. It is the **first question the UDP receiver
+  has to answer**, and the answer is one of two — a queue hand-off owned by the
+  receiver, or the synchronisation the policy already assumes, which is a
+  `motionRuntime` change and not an adapter's. `LiveSource.h` states the
+  constraint where a caller meets it and deliberately takes no private lock: a
+  mutex inside the bridge would make the class safe against itself and leave
+  every `GetIntake()` caller racing on the same buffer, which is a worse fault
+  for looking like a fixed one.
 - ⬜ **`motion_capture` grows a live source.** WORKSPACE.md §1 describes it as
   replaying a recorded trace. Milestone C adds `--source vmc --listen <addr>`
   alongside `--replay`, which makes the CLI a consumer of an adapter and needs

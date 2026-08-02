@@ -15,8 +15,8 @@
 // root-motion intake all exist exactly once, in `motionRuntime`, and an adapter
 // that grew a second copy would have forked the pipeline rather than extended
 // it (roadmap/adapters-mocopi-vmc-ardy.md §2). So this class keeps no history
-// of its own: one scratch vector the receive loop reuses, the provenance it has
-// already told the intake about, and a latch for the one event a consumer
+// of its own: the frames of the push it is in the middle of, the provenance it
+// has already told the intake about, and a latch for the one event a consumer
 // cannot reconstruct from the poses it receives.
 //
 // ## The hand-off
@@ -80,6 +80,39 @@
 // after it carries the model's title. Re-stamping the buffered ones would claim
 // they were recorded knowing something the session did not know yet, which is
 // exactly the sort of small lie a provenance field exists to prevent.
+//
+// ## What a pose cannot carry, and where it is still readable
+//
+// A frame knows things a `HumanoidPose` has nowhere to put: the hips offset the
+// skeleton map converted and nobody has yet decided the meaning of, which bones
+// were missing and which of those are stale, whether it began a session, and
+// how many samples were refused as duplicates. The two statistics structs carry
+// the aggregates, and the per-frame detail would otherwise stop here — which
+// would close the evidence path Milestone B needs, since whether the hips
+// offset is body translation or rig geometry is a question only a real sender's
+// session answers (FrameAssembler.h). So `GetFramesFromLastPush()` opens a
+// window on exactly what was just delivered, and a recording tool does not have
+// to drive the assembler separately to look through it.
+//
+// ## One thread, and the receiver's problem
+//
+// Nothing here is thread-safe, and neither is what it wraps: `PoseBuffer` holds
+// a deque, `LiveCaptureSource::Sample` writes its own statistics as it answers,
+// and `motionRuntime` contains no mutex or atomic at all. So a push and a
+// sample may not run concurrently, and neither may two samples.
+//
+// That is deliberately not solved here, because the shape of the solution is
+// the receiver's. Motion policy §11.4 requires
+//
+//     network / device thread -> adapter -> thread-safe pose buffer
+//
+// and the buffer it names is not thread-safe today. Whether a receiver hands
+// its datagrams to the consumer's thread through a queue, or `motionRuntime`
+// grows the synchronisation the policy assumes, is a decision with measurement
+// behind it — and this adapter would inherit either without changing. What it
+// must *not* do meanwhile is grow a private lock: a mutex here would make the
+// class safe against itself and leave every `GetIntake()` caller racing on the
+// same buffer, which is a worse fault for looking like a fixed one.
 //
 // ## The datagram's lifetime stops here
 //
@@ -191,6 +224,17 @@ public:
     // emitted: a frame the restart policy chose to refuse was emitted and not
     // admitted. `GetStats()` is where the two are told apart.
     //
+    // Every diagnostic this call appends — the decode layers' and the
+    // assembler's alike — is stamped with the session's source and with this
+    // datagram's serial, counted from the first datagram this object was ever
+    // given and including the ones no packet came out of. That numbering is
+    // this layer's because it is the only one that knows what a datagram is:
+    // the assembler is handed packets, so its own serial skips whatever the OSC
+    // layer refused, and a list mixing the two would number the packet-level
+    // failures differently from everything else. `PushPacket` leaves the
+    // assembler's numbering alone, since a caller decoding for itself has no
+    // other.
+    //
     // `bytes` need not outlive the call (see the header).
     std::size_t PushDatagram(const std::uint8_t* bytes, std::size_t size,
                              double receiveTime,
@@ -236,6 +280,18 @@ public:
         return _assembler;
     }
 
+    // The frames the last push produced, in order, including any the restart
+    // policy or the intake then refused. Valid until the next push, which
+    // reuses the vector rather than allocating one per datagram.
+    //
+    // This is the window onto what a `HumanoidPose` cannot carry — see the
+    // header. A caller that only wants poses never touches it; a recording tool
+    // gathering the evidence Milestone B is missing reads it after every push.
+    const std::vector<VmcFrame>& GetFramesFromLastPush() const noexcept
+    {
+        return _frames;
+    }
+
     const VmcLiveSourceStats& GetStats() const noexcept { return _stats; }
 
     // This layer's tally only. The assembler's and the intake's are reset
@@ -244,7 +300,11 @@ public:
 
     // A new session on the same object: both halves forget the stream, and the
     // provenance goes with it, because after this nothing is known about the
-    // sender again. Stats survive, like everywhere else in this adapter.
+    // sender again. Stats survive, like everywhere else in this adapter — and
+    // so does the intake's clock offset, which `LiveCaptureSource::Reset` keeps
+    // deliberately. A caller replaying a second capture into the same object
+    // re-aligns that offset exactly as it would after a restart; inheriting the
+    // first capture's is the same fault the latch exists to make visible.
     void Reset();
 
 private:
@@ -252,21 +312,25 @@ private:
     // Returns how many were admitted.
     std::size_t _Deliver();
 
-    // Names the session on the diagnostics the decode layers raised before the
-    // assembler saw them. Neither of those layers knows which sender it is
-    // reading, and a caller with one list must not have to tell which layer
-    // produced a line in order to know what it is about.
-    void _StampSource(std::vector<Diagnostic>* diagnostics,
-                      std::size_t from) const;
+    // Names the session and the datagram on every diagnostic a `PushDatagram`
+    // appended. The decode layers know neither: one is reading bytes and the
+    // other addresses, and a caller with one list must not have to tell which
+    // layer produced a line in order to know what it is about.
+    void _StampDatagram(std::vector<Diagnostic>* diagnostics,
+                        std::size_t from) const;
 
     VmcFrameAssembler _assembler;
     motion::LiveCaptureSource _intake;
     SessionRestartPolicy _restart;
 
     // Reused across pushes rather than allocated per datagram: at 30 Hz with a
-    // per-message sender this is called a hundred times a second, and the frames
-    // are consumed before the call returns.
+    // per-message sender this is called a hundred times a second. It outlives
+    // the call only as the evidence window `GetFramesFromLastPush()` opens.
     std::vector<VmcFrame> _frames;
+
+    // Received datagrams, refused ones included, so a diagnostic can name the
+    // delivery it came from rather than the packet the assembler was handed.
+    std::uint64_t _datagramSerial = 0;
 
     // What the intake was last told, so the handshake is forwarded once rather
     // than on every frame that follows it.
