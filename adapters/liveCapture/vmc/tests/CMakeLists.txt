@@ -69,10 +69,24 @@ target_compile_options(vrmAdapterVmc_liveSource_tests
     PRIVATE ${_vrm_adapter_vmc_assertions})
 add_test(NAME vrmAdapterVmc_liveSource COMMAND vrmAdapterVmc_liveSource_tests)
 
+# The socket, and the queue that keeps it off the decoder's thread. This is the
+# only test binary in the adapter that opens one, which is deliberate: every
+# other claim here is made from committed bytes, so a runner that forbids
+# sockets excludes these two names and loses no coverage of the decode path
+# (roadmap §9.5, the `adapter-integration-loopback` lane).
+add_executable(vrmAdapterVmc_udpReceiver_tests test_udp_receiver.cpp)
+target_link_libraries(vrmAdapterVmc_udpReceiver_tests
+    PRIVATE vrmAdapterVmc::vrmAdapterVmc)
+target_compile_options(vrmAdapterVmc_udpReceiver_tests
+    PRIVATE ${_vrm_adapter_vmc_assertions})
+add_test(NAME vrmAdapterVmc_udpReceiver
+         COMMAND vrmAdapterVmc_udpReceiver_tests)
+
 set(_vrm_adapter_vmc_tests
     vrmAdapterVmc_unit vrmAdapterVmc_packetCapture vrmAdapterVmc_oscPacket
     vrmAdapterVmc_vmcMessage vrmAdapterVmc_skeletonMap
-    vrmAdapterVmc_frameAssembler vrmAdapterVmc_liveSource)
+    vrmAdapterVmc_frameAssembler vrmAdapterVmc_liveSource
+    vrmAdapterVmc_udpReceiver)
 
 # Every committed capture parses and re-emits byte-identically, or every
 # decoder test downstream of it compares against a fixture that has drifted from
@@ -110,10 +124,16 @@ if(EXISTS "${_vrm_adapter_vmc_corpus}")
     # about the decode path it also proves about the hand-off.
     add_test(NAME vrmAdapterVmc_liveSourceCorpus
         COMMAND vrmAdapterVmc_liveSource_tests "${_vrm_adapter_vmc_corpus}")
+    # And once more over a real socket: the same bytes sent to a bound port and
+    # read back off it, checked to produce the *same poses* the file path
+    # produces. That equality is what says the receiver added nothing and lost
+    # nothing -- a claim no amount of socket unit testing can make.
+    add_test(NAME vrmAdapterVmc_loopbackCorpus
+        COMMAND vrmAdapterVmc_udpReceiver_tests "${_vrm_adapter_vmc_corpus}")
     list(APPEND _vrm_adapter_vmc_tests
          vrmAdapterVmc_corpus vrmAdapterVmc_oscCorpus vrmAdapterVmc_vmcCorpus
          vrmAdapterVmc_skeletonMapCorpus vrmAdapterVmc_frameAssemblerCorpus
-         vrmAdapterVmc_liveSourceCorpus)
+         vrmAdapterVmc_liveSourceCorpus vrmAdapterVmc_loopbackCorpus)
 endif()
 
 if(WIN32)

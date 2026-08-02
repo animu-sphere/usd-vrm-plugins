@@ -15,6 +15,55 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **The VMC adapter has a socket, and the runtime still has one thread** —
+  [`UdpReceiver.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/UdpReceiver.h)
+  is the last layer of the VMC path and the first one a live session touches.
+  It owns a socket, a bind address, a receive clock and a size limit, and owns
+  no decoding at all: `Receive` hands back the bytes exactly as they arrived,
+  including the ones the layers above will refuse, because a receiver that
+  filtered its own input would make the corpus a record of what the receiver let
+  through rather than of what a sender sent. **The thread question the plan left
+  for it is answered by moving the boundary rather than by locking anything.**
+  Motion policy §11.4 put a network thread on one side of a "thread-safe
+  timestamped pose buffer" that does not exist — `motionRuntime` contains no
+  mutex or atomic — so the hand-off happens on **raw datagrams, before the
+  decoder**: `DatagramQueue` is the only synchronised object in the whole path,
+  and the five decode layers and all of `motionRuntime` stay single-threaded
+  exactly as their tests are written. Locking `LiveCaptureSource` instead would
+  have made one class safe against itself and left every `GetIntake()` caller
+  racing on the same buffer, which is a worse fault for looking like a fixed one.
+  A consumer that already has a tick needs no second thread at all — `Receive`
+  with a zero timeout is a true poll — so the queue is for the narrow case of a
+  consumer that cannot drain often enough, and exists mainly so that the first
+  caller who meets it reaches for a queue rather than for a mutex around the
+  runtime; overflow drops the **oldest** datagram, because holding a stale frame
+  and refusing a fresh one adds latency a live session never gets back. Four
+  smaller decisions carry the rest. **Every wait has a timeout**, for
+  cancellation rather than latency: a thread parked in `recvfrom` can only be
+  woken by closing the socket underneath it, which races the descriptor's reuse
+  on every platform here. **Nothing arrives truncated** — the buffer is
+  `MaxDatagramBytes`, so truncation is impossible rather than configurable, which
+  is a decision about blame, since a truncated datagram is indistinguishable at
+  the OSC layer from a malformed one and a smaller buffer would let the receiver
+  manufacture `VRM_VMC_PACKET_MALFORMED` against a sender that did nothing wrong.
+  **The clock is monotonic**, which the recorded capture format requires rather
+  than prefers: it forbids backwards receive times because arrival order is the
+  whole point of it, and a wall clock steps for reasons that have nothing to do
+  with the session. And **the frozen diagnostic set needed no ninth code** —
+  `VRM_VMC_SOCKET_BIND_FAILED` is the only socket failure a session cannot
+  continue past, so a lost datagram, a transient error and an empty poll are
+  counts in `UdpReceiverStats` rather than diagnostics that would report
+  "recoverable" on every line. `vrmAdapterVmc_loopbackCorpus` replays all seven
+  captures **through a real socket** — 168 datagrams sent to a bound port and
+  read back off it — and makes the claim the layer exists for: the 22 poses that
+  come out are `operator==` identical to the ones the same bytes produce read
+  from the file, with the arrival clock the only thing the wire is allowed to
+  have changed. One buffer is reused for the whole replay, so the bridge's
+  lifetime claim is checked by the poses matching rather than by an assertion
+  about bytes. The two socket tests are their own CTest names so a runner that
+  forbids one excludes two names and loses no coverage of the decode path, and
+  they bind loopback on an OS-assigned port — never 39539, which would fight a
+  developer's own sender for it.
 - **VMC's names and VMC's axes, turned into a humanoid** —
   [`SkeletonMap.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/SkeletonMap.h)
   is the one conversion the VMC adapter exists to perform and the first layer in

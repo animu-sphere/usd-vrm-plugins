@@ -62,6 +62,7 @@ add_library(vrmAdapterVmc STATIC
     src/OscPacket.cpp
     src/PacketCapture.cpp
     src/SkeletonMap.cpp
+    src/UdpReceiver.cpp
     src/VmcMessage.cpp)
 add_library(vrmAdapterVmc::vrmAdapterVmc ALIAS vrmAdapterVmc)
 set_target_properties(vrmAdapterVmc PROPERTIES
@@ -78,6 +79,22 @@ target_link_libraries(vrmAdapterVmc
     PUBLIC
         motionCore::motionCore
         motionRuntime::motionRuntime)
+
+# The platform's own transport and threading primitives, which are not a
+# dependency direction: WORKSPACE.md §2 constrains which *workspace* libraries an
+# adapter may reach, and motion policy §8.2 puts the socket inside the adapter on
+# purpose. `tests/check_boundaries.py` allows exactly these two names and nothing
+# else, so the gate still fails on a workspace edge.
+#
+# Threads arrives with `DatagramQueue`, whose mutex is the whole of this
+# adapter's answer to motion policy §11.4 (UdpReceiver.h). libstdc++ needs the
+# link even for a std::mutex that is never contended.
+if(WIN32)
+    target_link_libraries(vrmAdapterVmc PUBLIC ws2_32)
+else()
+    find_package(Threads REQUIRED)
+    target_link_libraries(vrmAdapterVmc PUBLIC Threads::Threads)
+endif()
 
 if(MSVC)
     # PUBLIC for the same reason motionRuntime uses it: the installed headers

@@ -683,6 +683,56 @@ capture device validated through a VMC relay
   session and that is exactly the ordering `LiveCaptureSource::Push` requires.
   The restart capture is then replayed under both policies — six frames against
   four, on the same bytes — so what a restart costs is recorded as a choice.
+- ✅ **The receiver, and the thread question it had to answer first.**
+  `UdpReceiver.h` is the last layer written and the first one a live session
+  touches, which is the order §5 insists on — everything below it was already
+  verifiable from committed bytes, so this is the only part of the adapter whose
+  tests need a socket at all.
+
+  **The answer to §11's thread debt is to move the boundary rather than to lock
+  the buffer.** Motion policy §11.4 put a network thread on one side of a
+  "thread-safe timestamped pose buffer" that does not exist, and the resolution
+  is that the hand-off happens on **raw datagrams, before the decoder**:
+  `DatagramQueue` is the only synchronised object in the whole path, and this
+  adapter's five layers and all of `motionRuntime` stay on one thread, exactly as
+  their tests are written. A consumer that already has a tick needs no second
+  thread at all — `Receive` with a zero timeout is a true poll — so the queue is
+  for the narrow case of a consumer that cannot drain often enough, and exists
+  mainly so that the first caller who meets it reaches for a queue rather than
+  for a mutex around the runtime. The policy is amended to say so
+  ([§11.4](../design/MOTION_ARCHITECTURE_POLICY.md)).
+
+  Four smaller decisions carry the rest. **Every wait has a timeout**, for
+  cancellation rather than latency: a thread parked in `recvfrom` can only be
+  woken by closing the socket underneath it, which races the descriptor's reuse
+  on every platform here. **Nothing arrives truncated** — the buffer is
+  `MaxDatagramBytes`, so truncation is impossible rather than configurable, and
+  that is a decision about blame, since a truncated datagram is
+  indistinguishable at the OSC layer from a malformed one and a smaller buffer
+  would let the receiver manufacture `VRM_VMC_PACKET_MALFORMED` against a sender
+  that did nothing wrong. **The clock is monotonic**, which the recorded capture
+  format requires rather than prefers: it forbids backwards receive times, and a
+  wall clock steps for reasons that have nothing to do with the session. And
+  **the frozen set needed no ninth code** — `VRM_VMC_SOCKET_BIND_FAILED` is the
+  only socket failure a session cannot continue past, so a lost datagram, a
+  transient error and an empty poll are counts rather than diagnostics.
+
+  `vrmAdapterVmc_loopbackCorpus` replays all seven captures **through a real
+  socket** — 168 datagrams sent to a bound port and read back off it — and makes
+  the claim this layer exists for: the 22 poses that come out are `operator==`
+  identical to the ones the same bytes produce read from the file, with the
+  arrival clock the only thing the wire is allowed to have changed. One buffer is
+  reused for the whole replay, so the bridge's lifetime claim is checked by the
+  poses matching rather than by an assertion about bytes.
+- ⬜ **A hosted runner has not yet been shown to allow a loopback socket.** The
+  two socket tests are their own CTest names (`vrmAdapterVmc_udpReceiver` and
+  `vrmAdapterVmc_loopbackCorpus`), so excluding them would cost no coverage of
+  the decode path, and the `kind: workspace` cells will pick them up with no CI
+  edit the way they picked up every other adapter test. Whether all three hosted
+  OS run them green is a fact only the PR lane can produce; until it has, §9.5's
+  `adapter-integration-loopback` is expected rather than measured. The tests bind
+  loopback on an OS-assigned port — never 39539, which would fight a developer's
+  real sender for it.
 
 ### Milestone C — capture integration and offline E2E ⬜
 
@@ -743,22 +793,18 @@ depends on them ([docs/README.md](../README.md)).
     blend-shape messages reach first.
 
   See [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060).
-- ⬜ **`motionRuntime` is not thread-safe, and motion policy §11.4 assumes it
-  is.** The required arrangement puts a *network or device thread* on one side
-  of a "thread-safe timestamped pose buffer" and evaluation on the other, and
-  `libs/motionRuntime` contains no mutex or atomic at all — `PoseBuffer` holds a
-  deque and `LiveCaptureSource::Sample` writes its own statistics as it answers,
-  so two samples are no safer than a sample racing a push. It costs nothing
-  today: every layer of this adapter is caller-driven and its tests are
-  single-threaded by construction, which is the reproducibility property v0.5.0
-  shipped rather than an accident. It is the **first question the UDP receiver
-  has to answer**, and the answer is one of two — a queue hand-off owned by the
-  receiver, or the synchronisation the policy already assumes, which is a
-  `motionRuntime` change and not an adapter's. `LiveSource.h` states the
-  constraint where a caller meets it and deliberately takes no private lock: a
-  mutex inside the bridge would make the class safe against itself and leave
-  every `GetIntake()` caller racing on the same buffer, which is a worse fault
-  for looking like a fixed one.
+- ✅ **`motionRuntime` is not thread-safe, and motion policy §11.4 assumed it
+  was.** Answered by the receiver, and answered by moving the boundary rather
+  than by locking anything: the hand-off is a bounded queue of **raw datagrams**
+  between the network thread and the consumer's, so the decode path and all of
+  `motionRuntime` keep the single-threaded contract their tests are written
+  against, and `DatagramQueue` is the only synchronised object anywhere in the
+  path. The alternative — the synchronisation the policy assumed — would have
+  made `LiveCaptureSource` safe against itself while leaving every `GetIntake()`
+  caller racing on the same buffer, which is a worse fault for looking like a
+  fixed one. `motionRuntime` is unchanged and stays unchanged; policy §11.4
+  carries the amended arrangement, and `UdpReceiver.h` the argument. Landed
+  2026-08-03.
 - ⬜ **`motion_capture` grows a live source.** WORKSPACE.md §1 describes it as
   replaying a recorded trace. Milestone C adds `--source vmc --listen <addr>`
   alongside `--replay`, which makes the CLI a consumer of an adapter and needs
@@ -775,9 +821,11 @@ depends on them ([docs/README.md](../README.md)).
   hardware lane certainly does, since it must never gate a PR. **Measured with
   the scaffold:** the workspace cells picked the adapter's tests up on all three
   OS with no CI edit at all, so `adapter-unit` and `adapter-recorded-corpus` are
-  covered as they land. `adapter-integration-loopback` opens a socket and needs
-  its own decision about a hosted runner; `adapter-hardware-opt-in` still has no
-  expressible shape.
+  covered as they land. `adapter-integration-loopback` now exists as two CTest
+  names of its own (Milestone B), which is what makes the hosted-runner decision
+  cheap in either direction — but whether all three hosted OS let a test bind a
+  loopback UDP socket is unmeasured until the PR lane runs one.
+  `adapter-hardware-opt-in` still has no expressible shape.
 - ⬜ **The workspace graph gate does not reach an adapter.** `ost` 0.21.0
   discovers plain libraries in the project root's immediate subdirectories and
   under `libs/`, so `adapters/liveCapture/vmc/openstrata.library.yaml` is never
