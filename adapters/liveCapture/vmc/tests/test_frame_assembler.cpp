@@ -379,6 +379,83 @@ TestABigBackwardsJumpIsARestartAndNotARegression()
     assert(assembler.GetStats().framesRefusedOutOfOrder == 0);
     assert(CountCode(diagnostics, DiagnosticCode::SourceRestarted) == 1);
     assert(CountCode(diagnostics, DiagnosticCode::TimestampRegression) == 0);
+
+    // A zero threshold disables restart detection rather than making every
+    // backwards frame a restart -- which is the reading the field's name
+    // invites, and the opposite of what it does. The same stream then stalls on
+    // the old clock instead of splitting into two sessions.
+    VmcFrameConfig never;
+    never.restartBackwardsSeconds = 0.0;
+    VmcFrameAssembler held(never);
+    std::vector<VmcFrame> stalled;
+    held.Push(BundledFrame(30.000), 0.010, &stalled, nullptr);
+    held.Push(BundledFrame(0.016), 0.900, &stalled, nullptr);
+    held.Push(BundledFrame(0.050), 0.933, &stalled, nullptr);
+    held.Flush(&stalled, nullptr);
+    assert(stalled.size() == 1);
+    assert(held.GetStats().sessionRestarts == 0);
+    assert(held.GetStats().framesRefusedOutOfOrder == 2);
+}
+
+void
+TestANewBoneJoinsTheFrameThatIsOpenEvenAfterItsClock()
+{
+    // A limit, recorded rather than desired. A bone the open frame does not
+    // already carry is added to it whether or not the frame has met its clock,
+    // so an unbundled sender whose *first* message of a new frame is a bone the
+    // previous frame lacked hands that bone to the previous frame.
+    //
+    // The rule that would repair it -- content after the clock begins a new
+    // frame -- is true of this sender and false of the bundled one, which is the
+    // same asymmetry that made the clock's position unusable to begin with. So
+    // this test exists to make the limit visible to whoever tries to fix it, and
+    // to fail if the behaviour changes without the header changing with it.
+    VmcFrameAssembler assembler;
+    std::vector<VmcFrame> frames;
+
+    for (const HumanBone bone : {HumanBone::Hips, HumanBone::Spine}) {
+        assembler.Push(OneMessage(BoneMessage(bone)), 0.0, &frames);
+    }
+    assembler.Push(OneMessage(TimeMessage(1.0)), 0.0, &frames);
+    // The next frame leads with a bone the first one never carried.
+    assembler.Push(OneMessage(BoneMessage(HumanBone::Head)), 0.0, &frames);
+    assembler.Push(OneMessage(BoneMessage(HumanBone::Hips)), 0.0, &frames);
+    assembler.Push(OneMessage(TimeMessage(1.033)), 0.0, &frames);
+    assembler.Flush(&frames, nullptr);
+
+    assert(frames.size() == 2);
+    assert(frames[0].pose.validRotations.count() == 3);
+    assert(frames[0].pose.validRotations.test(
+        static_cast<std::size_t>(HumanBone::Head)));
+    assert(frames[1].pose.validRotations.count() == 1);
+
+    // Narrow in practice for the reason the header gives: a Unity sender walks
+    // `HumanBodyBones` in a fixed order, so a bone lost mid-chain and recovered
+    // still sorts behind one that repeats first, and the frames come out whole.
+    VmcFrameAssembler ordered;
+    std::vector<VmcFrame> recovered;
+    for (const HumanBone bone : {HumanBone::Hips, HumanBone::Spine,
+                                 HumanBone::Chest}) {
+        ordered.Push(OneMessage(BoneMessage(bone)), 0.0, &recovered);
+    }
+    ordered.Push(OneMessage(TimeMessage(1.0)), 0.0, &recovered);
+    // `Chest` drops out for a frame and comes back in the next.
+    for (const HumanBone bone : {HumanBone::Hips, HumanBone::Spine}) {
+        ordered.Push(OneMessage(BoneMessage(bone)), 0.0, &recovered);
+    }
+    ordered.Push(OneMessage(TimeMessage(1.033)), 0.0, &recovered);
+    for (const HumanBone bone : {HumanBone::Hips, HumanBone::Spine,
+                                 HumanBone::Chest}) {
+        ordered.Push(OneMessage(BoneMessage(bone)), 0.0, &recovered);
+    }
+    ordered.Push(OneMessage(TimeMessage(1.066)), 0.0, &recovered);
+    ordered.Flush(&recovered, nullptr);
+
+    assert(recovered.size() == 3);
+    assert(recovered[0].pose.validRotations.count() == 3);
+    assert(recovered[1].pose.validRotations.count() == 2);
+    assert(recovered[1].missing.count() == 1);
+    assert(recovered[2].pose.validRotations.count() == 3);
 }
 
 // ---------------------------------------------------------------------------
@@ -1021,6 +1098,7 @@ main(int argc, char** argv)
     TestAFrameWithNoSenderClockFallsBackToArrival();
     TestAFrameThatDoesNotAdvanceIsRefused();
     TestABigBackwardsJumpIsARestartAndNotARegression();
+    TestANewBoneJoinsTheFrameThatIsOpenEvenAfterItsClock();
     TestAMissingBoneIsReportedAndTheFrameIsKept();
     TestAStaleBoneIsReportedOnceAndRecovers();
     TestTheModelBecomesProvenanceAndThePathDoesNot();

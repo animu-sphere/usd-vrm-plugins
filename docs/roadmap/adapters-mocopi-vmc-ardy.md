@@ -626,6 +626,19 @@ capture device validated through a VMC relay
   and neither is in the corpus, for the reason §9.2 gives about the rest of the
   generated set — what a real sender emits is evidence only a real sender can
   give.
+- ⬜ **The repeat rule assumes a sender's bone set does not change**, and the
+  capture that would test it is `tracking-loss-and-recovery` from §9.2's
+  recorded set. A bone the open frame does not already carry joins it whether or
+  not the frame has met its clock, so an unbundled sender whose *first* message
+  of a new frame is a bone the previous frame lacked hands that bone backwards
+  one frame. The rule that would repair it — content after the clock begins a
+  new frame — is true of the unbundled sender and false of the bundled one,
+  which is the same asymmetry that made the clock's position unusable to begin
+  with, so this is a limit of what a boundary can be inferred from rather than a
+  defect with a fix. It is narrow in practice (a Unity sender walks
+  `HumanBodyBones` in a fixed order, so only a *leading* bone going away and
+  coming back reorders anything) and it is pinned by a characterisation test, so
+  a later third rule has to change the header before it changes the behaviour.
 
 ### Milestone C — capture integration and offline E2E ⬜
 

@@ -49,6 +49,29 @@
 // A stream has no end marker, so `Flush()` closes whatever is still open. A
 // caller that forgets it loses the last frame of every capture.
 //
+// ### What the second rule assumes, and when it is wrong
+//
+// The repeat rule holds exactly while a sender emits the same bones every frame.
+// A bone the open frame does not already carry is added to it, whether or not
+// the frame has met its clock — because "content after the clock belongs to the
+// next frame" is true of the unbundled sender and false of the bundled one,
+// which is the same asymmetry that made the clock's position unusable in the
+// first place. So an unbundled sender whose *first* message of a new frame is a
+// bone the previous frame lacked hands that bone to the previous frame:
+//
+//     sent      A B C T | D A B C T
+//     assembled { A B C D }   { A B C }
+//
+// This is a limit of what a boundary can be inferred from, not a bug with a
+// fix: the rule that would repair it breaks the other sender. It is narrow in
+// practice — a Unity sender walks `HumanBodyBones` in a fixed order, so a bone
+// lost mid-chain and recovered still sorts behind one that repeats first, and
+// only a *leading* bone (`Hips`) going away and coming back reorders anything.
+// It is written down because §9.2 puts `tracking-loss-and-recovery` in the
+// corpus Milestone B has to record, and that is the capture in which this would
+// first be seen. What settles it is a sender that varies its set — until one
+// exists, inventing a third rule for it would be guessing.
+//
 // ## Clocks
 //
 // The sender's clock and the receiver's share no origin (tests/corpus/README.md),
@@ -144,6 +167,13 @@ struct VmcFrameConfig
     // a sender's clock produces and far shorter than the gap a restart leaves,
     // so the two cases do not overlap in practice — and a stream where they do
     // is one whose clock cannot be trusted for either reading.
+    //
+    // Zero disables restart detection rather than making every backwards frame a
+    // restart, which is the reading the sentence above would otherwise invite:
+    // every frame that does not advance is then a regression, and a session that
+    // restarts never recovers. That is the safe direction — a stream wrongly
+    // held to one clock stalls visibly, where one wrongly split into sessions
+    // discards its own history.
     double restartBackwardsSeconds = 1.0;
 };
 
@@ -249,8 +279,13 @@ public:
     //
     // Completed frames are appended to `frames` and diagnostics to
     // `diagnostics`; neither is ever cleared, so a caller can accumulate a
-    // datagram's worth or a session's. Returns the number of frames this packet
-    // completed, which is zero for every packet that does not end one.
+    // datagram's worth or a session's.
+    //
+    // Returns how many frames this packet *emitted*, which is how many were
+    // appended — not how many it closed. A packet that ends a frame the clock
+    // check then refuses closed one and returns zero, so the count is always the
+    // growth of `frames` and never an announcement that a boundary was reached.
+    // `GetStats()` is where a caller reads the difference.
     std::size_t Push(const VmcPacket& packet, double receiveTime,
                      std::vector<VmcFrame>* frames,
                      std::vector<Diagnostic>* diagnostics = nullptr);
