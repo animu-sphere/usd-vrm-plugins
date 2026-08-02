@@ -130,21 +130,24 @@ RunInspect(const vmcRecordTool::Options& options)
     vmcRecordTool::SessionReport report;
     std::vector<vrmAdapterVmc::Diagnostic> log;
     for (const vrmAdapterVmc::RecordedDatagram& datagram : capture.datagrams) {
-        const std::size_t seen = log.size();
         report.ObserveDatagram(capture.peerEndpoint, datagram.bytes.size(),
                                datagram.receiveTime);
         source.PushDatagram(datagram.bytes, datagram.receiveTime, &log);
         report.ObserveFrames(source.GetFramesFromLastPush());
-        report.ObserveDiagnostics(log, seen);
-        ReportDiagnostics(log, seen, options.quiet);
+        report.ObserveDiagnostics(log, 0);
+        ReportDiagnostics(log, 0, options.quiet);
+        // Cleared per datagram, exactly as the record loop does it: the report
+        // has counted these and kept the first of each code, and a capture
+        // whose every packet is malformed would otherwise accumulate one
+        // diagnostic per packet for the length of the file.
+        log.clear();
     }
 
     // A capture ends with a frame still open — a live session never reaches
     // this, and a replay that forgets it loses its last frame.
-    const std::size_t seen = log.size();
     source.Flush(&log);
     report.ObserveFrames(source.GetFramesFromLastPush());
-    report.ObserveDiagnostics(log, seen);
+    report.ObserveDiagnostics(log, 0);
 
     report.SetStopReason(vmcRecordTool::StopReason::EndOfCapture);
     report.Print(stdout, source, nullptr);
@@ -298,21 +301,26 @@ RunRecord(const vmcRecordTool::Options& options)
                   << "\n";
     }
 
+    // The write can fail, and the report is printed either way. A session that
+    // has just run for ten minutes exists in exactly two places — the file and
+    // this report — and returning early on a full disk would destroy both at
+    // once, which is the moment an operator most needs to be told what they
+    // had.
+    bool written = true;
     if (!options.dryRun) {
-        if (!vrmAdapterVmc::WritePacketCaptureFile(options.outputPath,
-                                                   capture)) {
+        written = vrmAdapterVmc::WritePacketCaptureFile(options.outputPath,
+                                                        capture);
+        if (!written) {
             std::cerr << "vmc_record: could not write " << options.outputPath
                       << "\n";
-            return 1;
-        }
-        if (!options.quiet) {
+        } else if (!options.quiet) {
             std::cerr << "vmc_record: wrote " << capture.datagrams.size()
                       << " datagram(s) to " << options.outputPath << "\n";
         }
     }
 
     report.Print(stdout, source, &receiver);
-    return 0;
+    return written ? 0 : 1;
 }
 
 } // namespace

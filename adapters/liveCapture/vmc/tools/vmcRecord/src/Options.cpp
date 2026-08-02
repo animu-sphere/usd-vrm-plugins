@@ -385,8 +385,8 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
         // that survive: they are how a capture is *read*, which is the whole of
         // what this mode does.
         if (sessionFlag) {
-            *error = std::string("--inspect reads a recorded capture and opens "
-                                 "no socket, so ")
+            *error = std::string("--inspect reads a recorded capture, opening "
+                                 "no socket and writing no file, so ")
                 + sessionFlag + " has nothing to act on";
             return false;
         }
