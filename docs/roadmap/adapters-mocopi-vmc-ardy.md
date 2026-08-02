@@ -724,15 +724,17 @@ capture device validated through a VMC relay
   arrival clock the only thing the wire is allowed to have changed. One buffer is
   reused for the whole replay, so the bridge's lifetime claim is checked by the
   poses matching rather than by an assertion about bytes.
-- ⬜ **A hosted runner has not yet been shown to allow a loopback socket.** The
-  two socket tests are their own CTest names (`vrmAdapterVmc_udpReceiver` and
-  `vrmAdapterVmc_loopbackCorpus`), so excluding them would cost no coverage of
-  the decode path, and the `kind: workspace` cells will pick them up with no CI
-  edit the way they picked up every other adapter test. Whether all three hosted
-  OS run them green is a fact only the PR lane can produce; until it has, §9.5's
-  `adapter-integration-loopback` is expected rather than measured. The tests bind
-  loopback on an OS-assigned port — never 39539, which would fight a developer's
-  real sender for it.
+- ✅ **A hosted runner does allow a loopback socket** — on all three, measured
+  rather than assumed. The `kind: workspace` cells picked the two socket tests up
+  with no CI edit, exactly as they picked up every other adapter test, and
+  `vrmAdapterVmc_udpReceiver` and `vrmAdapterVmc_loopbackCorpus` ran and passed
+  in `workspace-pr-{windows,macos-arm64,linux}` (41/41 per cell, PR #84). So
+  §9.5's `adapter-integration-loopback` lane needs no cell of its own: it is the
+  workspace cells, and the only thing that would have to change is an exclusion
+  if some future runner refuses. They are separate CTest names for exactly that,
+  and they bind loopback on an OS-assigned port — never 39539, which would fight
+  a developer's real sender for it. `adapter-hardware-opt-in` is still the one
+  lane in §9.5 with no expressible shape.
 
 ### Milestone C — capture integration and offline E2E ⬜
 
@@ -821,11 +823,11 @@ depends on them ([docs/README.md](../README.md)).
   hardware lane certainly does, since it must never gate a PR. **Measured with
   the scaffold:** the workspace cells picked the adapter's tests up on all three
   OS with no CI edit at all, so `adapter-unit` and `adapter-recorded-corpus` are
-  covered as they land. `adapter-integration-loopback` now exists as two CTest
-  names of its own (Milestone B), which is what makes the hosted-runner decision
-  cheap in either direction — but whether all three hosted OS let a test bind a
-  loopback UDP socket is unmeasured until the PR lane runs one.
-  `adapter-hardware-opt-in` still has no expressible shape.
+  covered as they land, and so is `adapter-integration-loopback`: its two CTest
+  names ran green in the workspace cells on all three hosted OS with no CI edit
+  (Milestone B), so three of §9.5's four lanes need no new cell shape at all.
+  `adapter-hardware-opt-in` still has no expressible shape, since it must never
+  gate a PR.
 - ⬜ **The workspace graph gate does not reach an adapter.** `ost` 0.21.0
   discovers plain libraries in the project root's immediate subdirectories and
   under `libs/`, so `adapters/liveCapture/vmc/openstrata.library.yaml` is never

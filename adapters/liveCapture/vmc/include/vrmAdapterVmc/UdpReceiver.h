@@ -153,6 +153,12 @@ struct UdpReceiverConfig
     // 30 Hz sender needs almost none, and one that ticks at 1 Hz needs enough to
     // hold a second of frames or the kernel drops them before this class ever
     // sees them. The queue below is the other answer to the same problem.
+    //
+    // A request, not a setting. Every platform is free to clamp it and Linux
+    // doubles it, so what was actually granted is read back and reported by
+    // `GetReceiveBufferBytes()` — asking for four megabytes, silently getting
+    // 212992, and then losing datagrams is the single hardest failure in this
+    // class to diagnose from the outside.
     std::size_t receiveBufferBytes = 0;
 };
 
@@ -230,7 +236,7 @@ struct UdpReceiverStats
 class VRMADAPTERVMC_API UdpReceiver final
 {
 public:
-    UdpReceiver() = default;
+    UdpReceiver();
     ~UdpReceiver();
 
     UdpReceiver(const UdpReceiver&) = delete;
@@ -263,6 +269,15 @@ public:
     // demonstrably sending.
     bool IsLoopbackOnly() const noexcept { return _loopbackOnly; }
 
+    // What the kernel actually granted for the receive buffer, read back at
+    // `Open` rather than assumed from the request — see
+    // `UdpReceiverConfig::receiveBufferBytes`. 0 when the socket is closed or
+    // the platform would not say.
+    std::size_t GetReceiveBufferBytes() const noexcept
+    {
+        return _receiveBufferBytes;
+    }
+
     // Waits up to `timeoutSeconds` for one datagram. Zero polls and returns
     // immediately; negative waits indefinitely, which is only correct for a
     // caller that has another way to stop (see the header).
@@ -277,6 +292,11 @@ public:
     // same monotonic timeline every `receiveTime` is stamped from. A loop
     // measures how long it has been quiet with this, and stamps its own events
     // on the same axis as the traffic.
+    //
+    // Counts from construction on a receiver that has never been opened, rather
+    // than from the clock's own epoch — which on Linux would be the time since
+    // the machine booted, a number a caller could easily mistake for a session
+    // that has been quiet for weeks.
     double Now() const noexcept;
 
     // The platform's message for the last failure, bind or receive. Empty until
@@ -296,11 +316,20 @@ private:
 
     std::string _boundEndpoint;
     bool _loopbackOnly = false;
+    std::size_t _receiveBufferBytes = 0;
     std::string _lastError;
 
     // The steady-clock reading at `Open`, in the clock's own ticks, so that
-    // `receiveTime` counts from a session's start (see the header).
+    // `receiveTime` counts from a session's start (see the header). Set at
+    // construction too, so `Now()` never reports the clock's own epoch.
     std::int64_t _epoch = 0;
+
+    // Where a datagram is read before its real length is known. Sized once at
+    // `Open` and never resized, which is the point: resizing the *caller's*
+    // vector up to `MaxDatagramBytes` and back on every call would value-
+    // initialise ~64 KB per datagram — a memset on the hot path of a class
+    // whose whole shape exists to avoid one.
+    std::vector<std::uint8_t> _buffer;
 
     UdpReceiverStats _stats;
 };
@@ -312,6 +341,14 @@ struct DatagramQueueConfig
     // memory long before the count. Neither default is tuned — they are a
     // second or so of a fast sender, which is far more than a consumer that is
     // keeping up ever holds and far less than a leak.
+    //
+    // **A queue always holds the datagram it was last given**, even when that
+    // one datagram is larger than `maxBytes` on its own: the bound is enforced
+    // by dropping older datagrams, and there is nothing older to drop. So
+    // `maxBytes` bounds what accumulates, not what a single push may cost, and
+    // the worst case is one `MaxDatagramBytes` over. The alternative — refusing
+    // the newest datagram — is the one thing this queue must never do, for the
+    // same reason overflow drops the oldest.
     std::size_t maxDatagrams = 1024;
     std::size_t maxBytes = 4u * 1024u * 1024u;
 };

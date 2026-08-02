@@ -412,6 +412,11 @@ Four more decisions are written down where they are enforced:
   continue past, so the frozen set needed no ninth code: a lost datagram, a
   transient error and an empty poll are counts in `UdpReceiverStats`, not
   diagnostics that would say "recoverable" on every line.
+- **The receive buffer is a request, and what was granted is read back.** Every
+  platform may clamp `receiveBufferBytes` and Linux doubles it, so
+  `GetReceiveBufferBytes()` reports what the socket actually has. Asking for four
+  megabytes, silently getting the default, and then losing datagrams between two
+  slow ticks is the hardest failure in this class to see from the outside.
 
 `vrmAdapterVmc_loopbackCorpus` replays all seven captures **through a real
 socket** — 168 datagrams sent to a bound port and read back off it — and makes

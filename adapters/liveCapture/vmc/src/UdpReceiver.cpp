@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstring>
 #include <utility>
 
 #if defined(_WIN32)
@@ -281,7 +282,24 @@ AddressIsLoopbackOnly(const sockaddr* address)
     }
     if (address->sa_family == AF_INET6) {
         const auto* v6 = reinterpret_cast<const sockaddr_in6*>(address);
-        return IN6_IS_ADDR_LOOPBACK(&v6->sin6_addr) != 0;
+        if (IN6_IS_ADDR_LOOPBACK(&v6->sin6_addr) != 0) {
+            return true;
+        }
+        // `::ffff:127.0.0.1` is the same unreachable-from-the-LAN address
+        // wearing the other family's clothes, and a dual-stack socket is how a
+        // caller meets it. Reporting that one as reachable would be exactly
+        // backwards for the question this answers.
+        if (IN6_IS_ADDR_V4MAPPED(&v6->sin6_addr) != 0) {
+            // The last four bytes carry the IPv4 address; read them where they
+            // are rather than through a member name that differs per platform.
+            std::uint32_t mapped = 0;
+            std::memcpy(&mapped,
+                        reinterpret_cast<const std::uint8_t*>(&v6->sin6_addr)
+                            + 12,
+                        sizeof(mapped));
+            return (ntohl(mapped) >> 24) == 127u;
+        }
+        return false;
     }
     return false;
 }
@@ -315,7 +333,30 @@ TimeoutToMilliseconds(double seconds)
     return static_cast<int>(milliseconds + 0.999);
 }
 
+// What the kernel says the receive buffer is, which is rarely what was asked
+// for: every platform may clamp it and Linux reports double what was set. 0 when
+// the platform will not say, which is a fact rather than a failure — the socket
+// works either way, and a caller reading 0 knows only that it cannot check.
+std::size_t
+ReadReceiveBuffer(SocketHandle handle)
+{
+    int granted = 0;
+    socklen_t length = sizeof(granted);
+    if (::getsockopt(handle, SOL_SOCKET, SO_RCVBUF,
+                     reinterpret_cast<char*>(&granted), &length)
+            != 0
+        || granted < 0) {
+        return 0;
+    }
+    return static_cast<std::size_t>(granted);
+}
+
 } // namespace
+
+UdpReceiver::UdpReceiver()
+    : _epoch(SteadyTicks())
+{
+}
 
 UdpReceiver::~UdpReceiver()
 {
@@ -418,6 +459,11 @@ UdpReceiver::Open(const UdpReceiverConfig& config,
                                   : error);
     }
 
+    // Sized once, and never resized again: this is where a datagram is read
+    // before its real length is known.
+    _buffer.resize(MaxDatagramBytes);
+    _receiveBufferBytes = ReadReceiveBuffer(ToHandle(_socket));
+
     sockaddr_storage bound = {};
     socklen_t boundLength = sizeof(bound);
     if (::getsockname(ToHandle(_socket),
@@ -445,6 +491,7 @@ UdpReceiver::Close() noexcept
     }
     _boundEndpoint.clear();
     _loopbackOnly = false;
+    _receiveBufferBytes = 0;
 }
 
 double
@@ -469,16 +516,22 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds)
     // number of ICMP reports.
     const std::int64_t start = SteadyTicks();
     double remaining = timeoutSeconds;
-    // A negative timeout means "wait indefinitely" and stays negative; anything
-    // else is what is left of it. A caller that asked to wait forever and meets
-    // an unending stream of transient errors waits forever, which is what it
-    // asked for.
+    // Charges the elapsed time against the caller's budget and answers whether
+    // any is left. A negative timeout means "wait indefinitely" and always has
+    // budget: a caller that asked to wait forever and meets an unending stream
+    // of transient errors waits forever, which is what it asked for — and it
+    // cannot spin, because the poll at the top of the loop blocks.
+    //
+    // A *bounded* budget must be checked rather than merely decremented. Once it
+    // reaches zero the poll stops blocking, so a socket that reports readable
+    // and then yields nothing would turn the retry below into a tight loop.
     const auto spend = [&]() {
         if (timeoutSeconds < 0.0) {
-            return;
+            return true;
         }
         remaining = std::max(
             0.0, timeoutSeconds - TicksToSeconds(SteadyTicks() - start));
+        return remaining > 0.0;
     };
 
     for (;;) {
@@ -495,18 +548,20 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds)
         if (ready < 0) {
             const int code = LastSocketError();
             if (ErrorIsInterrupted(code)) {
-                spend();
+                if (!spend()) {
+                    ++_stats.idleReceives;
+                    return ReceiveStatus::Idle;
+                }
                 continue;
             }
             _lastError = SocketErrorText(code);
             return ReceiveStatus::Failed;
         }
 
-        datagram->bytes.resize(MaxDatagramBytes);
         sockaddr_storage from = {};
         socklen_t fromLength = sizeof(from);
         const auto received = ::recvfrom(
-            ToHandle(_socket), reinterpret_cast<char*>(datagram->bytes.data()),
+            ToHandle(_socket), reinterpret_cast<char*>(_buffer.data()),
             static_cast<int>(MaxDatagramBytes), 0,
             reinterpret_cast<sockaddr*>(&from), &fromLength);
 
@@ -517,7 +572,13 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds)
             // protocol's own maximum rather than a tunable. Windows is the one
             // platform that says so, with WSAEMSGSIZE below.
             const std::size_t size = static_cast<std::size_t>(received);
-            datagram->bytes.resize(size);
+            // Assigned rather than read into directly: growing the caller's
+            // vector to `MaxDatagramBytes` and shrinking it back would value-
+            // initialise ~64 KB per datagram, which at a per-message sender's
+            // rate is megabytes a second of memset on the one path that has to
+            // stay cheap. This copies the datagram's real length and nothing
+            // more, and reuses the caller's capacity exactly as before.
+            datagram->bytes.assign(_buffer.data(), _buffer.data() + size);
             datagram->receiveTime = TicksToSeconds(SteadyTicks() - _epoch);
             datagram->peer =
                 FormatEndpoint(reinterpret_cast<const sockaddr*>(&from),
@@ -534,22 +595,33 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds)
         }
 
         const int code = LastSocketError();
-        if (ErrorIsWouldBlock(code)) {
-            // The poll said readable and the read found nothing, which happens
-            // when a datagram was dropped by the kernel between the two.
-            ++_stats.idleReceives;
-            return ReceiveStatus::Idle;
+        if (ErrorIsWouldBlock(code) || ErrorIsInterrupted(code)) {
+            // The poll said readable and the read found nothing — the kernel
+            // discarded the datagram between the two, or a signal arrived. The
+            // caller asked to wait for a datagram, so keep waiting out what is
+            // left of its timeout rather than reporting an idle socket it did
+            // not ask about. Neither is a receive error: a caller polling with
+            // a zero timeout meets both routinely and can do nothing with the
+            // count.
+            if (!spend()) {
+                ++_stats.idleReceives;
+                return ReceiveStatus::Idle;
+            }
+            continue;
         }
         if (ErrorIsTruncation(code)) {
             ++_stats.datagramsTruncated;
-        } else if (ErrorIsInterrupted(code) || ErrorIsTransient(code)) {
+        } else if (ErrorIsTransient(code)) {
             ++_stats.receiveErrors;
         } else {
             _lastError = SocketErrorText(code);
             return ReceiveStatus::Failed;
         }
         _lastError = SocketErrorText(code);
-        spend();
+        if (!spend()) {
+            ++_stats.idleReceives;
+            return ReceiveStatus::Idle;
+        }
     }
 }
 

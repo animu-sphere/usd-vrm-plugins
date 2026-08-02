@@ -92,6 +92,10 @@ target_link_libraries(vrmAdapterVmc
 if(WIN32)
     target_link_libraries(vrmAdapterVmc PUBLIC ws2_32)
 else()
+    # Ask for `-pthread` rather than a bare `-lpthread`: on GCC the flag also
+    # affects code generation, and a target that only gets the library links but
+    # is not built for threads.
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
     target_link_libraries(vrmAdapterVmc PUBLIC Threads::Threads)
 endif()

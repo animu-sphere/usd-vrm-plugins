@@ -278,6 +278,42 @@ TestASocketReportsWhereItLandedAndWhoCanReachIt()
     open.Close();
     assert(!open.IsOpen());
     assert(open.GetBoundEndpoint().empty());
+    assert(open.GetReceiveBufferBytes() == 0);
+}
+
+void
+TestTheReceiveBufferIsReportedAsGrantedRatherThanAsAsked()
+{
+    UdpReceiver defaulted;
+    assert(defaulted.Open(LoopbackConfig()));
+    // Whatever the platform's default is, it is a real number and this class
+    // knows it. A caller that cannot see one cannot diagnose the loss that
+    // happens when its tick is slower than its sender.
+    assert(defaulted.GetReceiveBufferBytes() > 0);
+
+    UdpReceiverConfig config = LoopbackConfig();
+    config.receiveBufferBytes = 1024u * 1024u;
+    UdpReceiver asked;
+    assert(asked.Open(config));
+
+    // Deliberately *not* asserted equal to the request: every platform may clamp
+    // it and Linux reports double what it was given. What is asserted is that
+    // asking moved it and that the answer is read back from the socket, which is
+    // the whole point — silently getting the default and then losing datagrams
+    // is the hardest failure here to see from the outside.
+    assert(asked.GetReceiveBufferBytes() > 0);
+    assert(asked.GetReceiveBufferBytes() >= defaulted.GetReceiveBufferBytes());
+}
+
+void
+TestAReceiverCountsFromItselfBeforeItIsEverOpened()
+{
+    // Not the steady clock's own epoch, which on Linux is the time since the
+    // machine booted — a number a caller would read as a session that has been
+    // quiet for weeks.
+    UdpReceiver fresh;
+    assert(fresh.Now() >= 0.0);
+    assert(fresh.Now() < 60.0);
 }
 
 // ---------------------------------------------------------------------------
@@ -381,7 +417,12 @@ TestTheQueueCarriesEveryDatagramAcrossAThreadInOrder()
 {
     constexpr std::size_t kCount = 500;
     DatagramQueueConfig config;
-    config.maxDatagrams = kCount;
+    // Comfortably above what is pushed, so the queue cannot overflow however the
+    // two threads interleave. Sizing it at exactly `kCount` would also never
+    // drop — but a later edit raising the count would then *hang* this test on
+    // the drain loop below rather than failing it, and a hang is the one
+    // outcome a suite cannot report.
+    config.maxDatagrams = kCount * 4;
 
     DatagramQueue queue(config);
 
@@ -414,6 +455,7 @@ TestTheQueueCarriesEveryDatagramAcrossAThreadInOrder()
     assert(queue.GetStats().drained == kCount);
     assert(queue.GetStats().dropped == 0);
     assert(queue.GetStats().highWaterMark <= kCount);
+    assert(queue.GetStats().highWaterMark >= 1);
 }
 
 void
@@ -462,6 +504,28 @@ TestTheQueueIsBoundedByBytesAsWellAsByCount()
     assert(queue.GetSize() == 0);
     // Clearing is not draining: the tally describes the session, not the queue.
     assert(queue.GetStats().pushed == 8);
+}
+
+void
+TestAQueueAlwaysHoldsTheDatagramItWasLastGiven()
+{
+    DatagramQueueConfig config;
+    config.maxBytes = 512;
+
+    DatagramQueue queue(config);
+    queue.Push(Queued(0, 256));
+    // Larger on its own than the whole bound. It displaces everything older and
+    // is then kept anyway, because refusing the newest datagram is the one thing
+    // this queue must never do — the same reason overflow drops the oldest. So
+    // `maxBytes` bounds what accumulates, not what a single push may cost.
+    queue.Push(Queued(1, 4096));
+
+    assert(queue.GetSize() == 1);
+    assert(queue.GetStats().dropped == 1);
+
+    std::vector<ReceivedDatagram> drained;
+    assert(queue.Drain(&drained) == 1);
+    assert(drained.front().bytes.size() == 4096);
 }
 
 // ---------------------------------------------------------------------------
@@ -706,11 +770,14 @@ main(int argc, char** argv)
     TestAnAddressThatIsNotOneIsRefusedBeforeTheNetworkIsTouched();
     TestAPortAlreadyServedIsRefusedRatherThanQuietlyShared();
     TestASocketReportsWhereItLandedAndWhoCanReachIt();
+    TestTheReceiveBufferIsReportedAsGrantedRatherThanAsAsked();
+    TestAReceiverCountsFromItselfBeforeItIsEverOpened();
     TestAQuietSocketIsIdleAndAClosedOneSaysSo();
     TestADatagramArrivesWholeWithItsSenderAndItsInstant();
     TestTheQueueCarriesEveryDatagramAcrossAThreadInOrder();
     TestAFullQueueDropsTheOldestAndCountsIt();
     TestTheQueueIsBoundedByBytesAsWellAsByCount();
+    TestAQueueAlwaysHoldsTheDatagramItWasLastGiven();
     std::puts("vrmAdapterVmc udp receiver tests passed");
     return 0;
 }

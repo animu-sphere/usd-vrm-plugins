@@ -53,7 +53,12 @@ Current schema contract version: **1**.
   `VRM_VMC_SOCKET_BIND_FAILED` is the only socket failure a session cannot
   continue past, so a lost datagram, a transient error and an empty poll are
   counts in `UdpReceiverStats` rather than diagnostics that would report
-  "recoverable" on every line. `vrmAdapterVmc_loopbackCorpus` replays all seven
+  "recoverable" on every line. The kernel receive buffer is a *request* and what
+  was granted is read back through `GetReceiveBufferBytes()` — every platform may
+  clamp it and Linux doubles it, and asking for four megabytes, silently getting
+  the default, and then losing datagrams between two slow ticks is the hardest
+  failure in this class to see from the outside.
+  `vrmAdapterVmc_loopbackCorpus` replays all seven
   captures **through a real socket** — 168 datagrams sent to a bound port and
   read back off it — and makes the claim the layer exists for: the 22 poses that
   come out are `operator==` identical to the ones the same bytes produce read
