@@ -15,6 +15,44 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **VMC's names and VMC's axes, turned into a humanoid** —
+  [`SkeletonMap.h`](adapters/liveCapture/vmc/include/vrmAdapterVmc/SkeletonMap.h)
+  is the one conversion the VMC adapter exists to perform and the first layer in
+  it that knows a `motion::HumanBone` exists. It converts and it does not
+  decide: frame boundaries and missing bones stay with the assembler, and
+  resolving a target joint stays with `vrmRetarget`. Two decisions carry the
+  risk. **The vocabulary is Unity's `HumanBodyBones`, not VRM 1.0's** — a sender
+  is a Unity application and writes PascalCase where VRM 1.0 writes lowerCamel —
+  and for the thumb the two disagree about more than case, because VRM 1.0
+  renamed the chain one joint down (`LeftThumbProximal` → `leftThumbMetacarpal`,
+  `LeftThumbIntermediate` → `leftThumbProximal`). A map that lowercased the first
+  letter would land every thumb rotation one joint out while every other bone in
+  the hand arrived correctly, so the table is written out rather than derived.
+  **The basis change is VRM 1.0's reflection through X**, not VRM 0.x's through
+  Z: `(x, y, z)` → `(-x, y, z)` and `(x, y, z, w)` → `(w, (x, -y, -z))`, where
+  the two sign flips on the imaginary part are one from the axis and one from
+  the reversed sense of rotation — which is why a rotation about +X survives
+  unchanged and one about +Z comes out about −Z. Quaternions are normalised on
+  the way through, because senders emit un-normalised ones and a retarget
+  composing them would skew a joint rather than rotate it; a zero-length or
+  non-finite one is refused as `VRM_VMC_PACKET_MALFORMED` instead, since it names
+  no orientation and the identity that would have to be invented to carry on is
+  exactly what a reader could not tell from a real sample. An unrecognised name
+  is `VRM_VMC_UNSUPPORTED_MESSAGE` — info, recoverable, that bone dropped and the
+  frame kept — for the same reason an unimplemented address is. Two questions are
+  deliberately left open rather than guessed: a VMC bone rotation is the
+  *sender's local* rotation and equals a rotation away from rest only when the
+  sender's rest is identity (`vrmRetarget`'s `SourceRestPose` is where that is
+  answered, not here), and a bone's position has nowhere canonical to go, so it
+  is converted and handed on unread until the frame assembler decides whether
+  the hips offset composes with `/VMC/Ext/Root/Pos`.
+  `vrmAdapterVmc_skeletonMapCorpus` maps every transform in all seven captures —
+  493 bones and 24 roots, none unsupported and none refused, 232 reflected off
+  the X axis — and pins the sign flip against recorded bytes rather than against
+  a hand-written quaternion: the arm-raise capture's five rotations about Unity's
+  −Z come out about the canonical +Z at 0°, 15°, 30°, 45° and 60°, which is the
+  same left arm going up on both sides of a conversion that moved it from −X
+  to +X.
 - **Two comparisons for one motion value, because three callers wanted
   different answers** — [`Compare.h`](libs/motionCore/include/motionCore/Compare.h)
   gives `motionCore` exact `operator==` on `MotionSourceMetadata`, `RootMotion`,
