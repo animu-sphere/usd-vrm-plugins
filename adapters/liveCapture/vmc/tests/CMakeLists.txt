@@ -50,9 +50,20 @@ target_compile_options(vrmAdapterVmc_skeletonMap_tests
 add_test(NAME vrmAdapterVmc_skeletonMap
          COMMAND vrmAdapterVmc_skeletonMap_tests)
 
+# The first layer that decides rather than converts: where a frame begins, and
+# what it means that a bone is not in it.
+add_executable(vrmAdapterVmc_frameAssembler_tests test_frame_assembler.cpp)
+target_link_libraries(vrmAdapterVmc_frameAssembler_tests
+    PRIVATE vrmAdapterVmc::vrmAdapterVmc)
+target_compile_options(vrmAdapterVmc_frameAssembler_tests
+    PRIVATE ${_vrm_adapter_vmc_assertions})
+add_test(NAME vrmAdapterVmc_frameAssembler
+         COMMAND vrmAdapterVmc_frameAssembler_tests)
+
 set(_vrm_adapter_vmc_tests
     vrmAdapterVmc_unit vrmAdapterVmc_packetCapture vrmAdapterVmc_oscPacket
-    vrmAdapterVmc_vmcMessage vrmAdapterVmc_skeletonMap)
+    vrmAdapterVmc_vmcMessage vrmAdapterVmc_skeletonMap
+    vrmAdapterVmc_frameAssembler)
 
 # Every committed capture parses and re-emits byte-identically, or every
 # decoder test downstream of it compares against a fixture that has drifted from
@@ -79,9 +90,15 @@ if(EXISTS "${_vrm_adapter_vmc_corpus}")
     # against recorded values rather than hand-written ones.
     add_test(NAME vrmAdapterVmc_skeletonMapCorpus
         COMMAND vrmAdapterVmc_skeletonMap_tests "${_vrm_adapter_vmc_corpus}")
+    # And the whole stack, over the same bytes: which of those canonical samples
+    # belong to one frame. This is the only corpus test whose subject is the
+    # *arrangement* of the recorded datagrams rather than their contents, so it
+    # is the one the two sender shapes and the restart capture were recorded for.
+    add_test(NAME vrmAdapterVmc_frameAssemblerCorpus
+        COMMAND vrmAdapterVmc_frameAssembler_tests "${_vrm_adapter_vmc_corpus}")
     list(APPEND _vrm_adapter_vmc_tests
          vrmAdapterVmc_corpus vrmAdapterVmc_oscCorpus vrmAdapterVmc_vmcCorpus
-         vrmAdapterVmc_skeletonMapCorpus)
+         vrmAdapterVmc_skeletonMapCorpus vrmAdapterVmc_frameAssemblerCorpus)
 endif()
 
 if(WIN32)
