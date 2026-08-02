@@ -40,9 +40,19 @@ target_compile_options(vrmAdapterVmc_vmcMessage_tests
     PRIVATE ${_vrm_adapter_vmc_assertions})
 add_test(NAME vrmAdapterVmc_vmcMessage COMMAND vrmAdapterVmc_vmcMessage_tests)
 
+# The first layer that knows a humanoid exists: VMC's names and VMC's axes into
+# canonical semantics.
+add_executable(vrmAdapterVmc_skeletonMap_tests test_skeleton_map.cpp)
+target_link_libraries(vrmAdapterVmc_skeletonMap_tests
+    PRIVATE vrmAdapterVmc::vrmAdapterVmc)
+target_compile_options(vrmAdapterVmc_skeletonMap_tests
+    PRIVATE ${_vrm_adapter_vmc_assertions})
+add_test(NAME vrmAdapterVmc_skeletonMap
+         COMMAND vrmAdapterVmc_skeletonMap_tests)
+
 set(_vrm_adapter_vmc_tests
     vrmAdapterVmc_unit vrmAdapterVmc_packetCapture vrmAdapterVmc_oscPacket
-    vrmAdapterVmc_vmcMessage)
+    vrmAdapterVmc_vmcMessage vrmAdapterVmc_skeletonMap)
 
 # Every committed capture parses and re-emits byte-identically, or every
 # decoder test downstream of it compares against a fixture that has drifted from
@@ -64,8 +74,14 @@ if(EXISTS "${_vrm_adapter_vmc_corpus}")
     # from two green unit suites.
     add_test(NAME vrmAdapterVmc_vmcCorpus
         COMMAND vrmAdapterVmc_vmcMessage_tests "${_vrm_adapter_vmc_corpus}")
+    # And the last layer, over the same bytes: every transform the VMC layer
+    # decoded reaches canonical semantics, and the basis change is checked
+    # against recorded values rather than hand-written ones.
+    add_test(NAME vrmAdapterVmc_skeletonMapCorpus
+        COMMAND vrmAdapterVmc_skeletonMap_tests "${_vrm_adapter_vmc_corpus}")
     list(APPEND _vrm_adapter_vmc_tests
-         vrmAdapterVmc_corpus vrmAdapterVmc_oscCorpus vrmAdapterVmc_vmcCorpus)
+         vrmAdapterVmc_corpus vrmAdapterVmc_oscCorpus vrmAdapterVmc_vmcCorpus
+         vrmAdapterVmc_skeletonMapCorpus)
 endif()
 
 if(WIN32)

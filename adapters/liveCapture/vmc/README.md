@@ -8,14 +8,16 @@ UDP datagram → OSC decode → VMC message decode → frame assembly
              → VRM bone mapping → HumanoidPose → LiveCaptureSource
 ```
 
-**Status: VMC message decoding, no humanoid.** The build, the manifest, the
+**Status: canonical values, not yet a frame.** The build, the manifest, the
 boundary check, the frozen diagnostic codes, the recorded-packet format and its
-corpus, the OSC layer, and the VMC message layer exist. A datagram now becomes
-bone poses, a root transform, blend-shape values and the sender's clock — but
-nothing knows that "LeftUpperArm" is a `motion::HumanBone`, which way the
-sender's axes point, or where a frame begins. See
+corpus, the OSC layer, the VMC message layer, and the skeleton map exist. A
+datagram now becomes `motion::HumanBone` rotations in the canonical basis and a
+`motion::RootMotion` — but nothing yet decides which of them belong to one
+frame, what a missing bone means, or when a sender restarted, so there is no
+`HumanoidPose` and no socket. See
 [the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §5 for the
-implementation order and Milestone A for what "done" means.
+implementation order, Milestone A for what "done" means here, and Milestone B
+for the frame assembler and the receiver.
 
 ## What this is, structurally
 
@@ -180,6 +182,72 @@ but not read — and checks three things counts cannot:
 - the malformed-forms capture's bad bone costs **that bone** — the datagram
   carrying it still yields the twenty-two messages that arrived with it, which
   is the first rule above stated as a number.
+
+## VMC's names and VMC's axes, into a humanoid
+
+[`SkeletonMap.h`](include/vrmAdapterVmc/SkeletonMap.h) is the one conversion the
+adapter exists to perform, and the first layer that knows a `motion::HumanBone`
+exists. It converts and it does not decide: frame boundaries, missing bones and
+sender restarts belong to the assembler, and resolving a target joint belongs to
+`vrmRetarget` two layers on.
+
+**The vocabulary is Unity's `HumanBodyBones`, not VRM 1.0's.** A sender is a
+Unity application and writes PascalCase where VRM 1.0 writes lowerCamel. The two
+have the same 55 bones — but for the thumb they disagree about more than case,
+because VRM 1.0 renamed the chain one joint down:
+
+```text
+Unity / VRM 0.x            VRM 1.0 / motion::HumanBone
+LeftThumbProximal      ->  leftThumbMetacarpal
+LeftThumbIntermediate  ->  leftThumbProximal
+LeftThumbDistal        ->  leftThumbDistal
+```
+
+A map that lowercased the first letter would land every thumb rotation one joint
+out while every other bone in the hand arrived correctly, so the table is
+written out rather than derived and the tests state the thumb twice. The
+spelling is matched exactly: an unrecognised name is
+`VRM_VMC_UNSUPPORTED_MESSAGE` — info, recoverable, that bone ignored and the
+frame kept — for the same reason an unimplemented address is.
+
+**The basis change is VRM 1.0's, not VRM 0.x's.** Unity is left-handed with the
+avatar facing +Z; the canonical contract is glTF's right-handed, Y-up, metre
+basis. VRM 1.0 defines that conversion as a reflection through X where VRM 0.x
+used Z, and this adapter follows VRM 1.0 because the vocabulary it converts into
+is VRM 1.0's:
+
+```text
+position   (x, y, z)     ->  (-x, y, z)
+rotation   (x, y, z, w)  ->  (w, (x, -y, -z))
+```
+
+The two sign flips on the imaginary part are one from the axis and one from the
+reversed sense of rotation, which is why a rotation about +X survives unchanged
+and one about +Z comes out about −Z. Quaternions are normalised on the way
+through — senders emit un-normalised ones and a retarget composing them would
+skew a joint. A zero-length or non-finite one is refused as
+`VRM_VMC_PACKET_MALFORMED` instead: it names no orientation, and the value that
+would have to be invented to carry on is exactly the identity a reader could not
+tell from a real sample.
+
+Two things this layer deliberately does not answer. **What a VMC bone rotation
+means relative to rest** — it is the sender's local rotation, which equals the
+rotation away from rest only when the sender's humanoid rest is identity; a
+sender where it is not needs `vrmRetarget`'s `SourceRestPose`, and manufacturing
+one from the first frame seen would be a guess. And **where a bone's position
+goes** — the canonical pose carries rotations plus one `RootMotion`, so a bone's
+local offset is the sender's rig geometry rather than motion. It is converted
+and handed on unread, because whether the hips offset composes with
+`/VMC/Ext/Root/Pos` needs the frame the assembler owns.
+
+`vrmAdapterVmc_skeletonMapCorpus` maps every transform in all seven captures —
+493 bones and 24 roots, none unsupported and none refused, 232 of them reflected
+off the X axis — and checks two claims counts cannot: a neutral pose is still a
+neutral pose after the basis change, and the arm-raise capture's five rotations
+about Unity's −Z come out about the canonical +Z at 0°, 15°, 30°, 45° and 60°.
+That capture raises a *left* arm, which Unity puts at −X and glTF at +X, so the
+sign flips with the basis and both describe the same arm going up — a conversion
+that dropped the flip would lower it.
 
 ## Diagnostics
 

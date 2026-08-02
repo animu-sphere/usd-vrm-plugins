@@ -523,9 +523,42 @@ pose output · diagnostics · deterministic unit tests
   `HumanoidPose` exists, so the bone mapping's corpus test compares a decoded
   pose against a committed one under a tolerance the contract states rather than
   one the test invents. First of §11's three debts.
-- ⬜ Everything else above, in the §5 order: bone mapping, then coordinate
-  conversion — which is where the rest of §11's canonical-contract debt comes
-  due.
+- ✅ **The skeleton map.** `SkeletonMap.h` is the first layer that knows a
+  `motion::HumanBone` exists, and the last one of Milestone A's: it converts and
+  it does not decide. Two decisions carry the risk. The vocabulary is Unity's
+  `HumanBodyBones` rather than VRM 1.0's, and the two disagree about **more than
+  case for the thumb** — VRM 1.0 renamed the chain one joint down, so a map that
+  lowercased the first letter would land every thumb rotation one joint out
+  while the rest of the hand arrived correctly. And the basis change is **VRM
+  1.0's reflection through X**, not VRM 0.x's through Z: `(x, y, z)` →
+  `(-x, y, z)` and `(x, y, z, w)` → `(w, (x, -y, -z))`, where the two sign flips
+  are one from the axis and one from the reversed sense of rotation.
+  Un-normalised quaternions are normalised (senders emit them, and a composed
+  skew is not a rotation); a zero-length or non-finite one is refused as
+  `VRM_VMC_PACKET_MALFORMED`, because the value that would have to be invented
+  to carry on is exactly the identity a reader could not tell from a real
+  sample. `vrmAdapterVmc_skeletonMapCorpus` maps all seven captures — 493 bones
+  and 24 roots, none unsupported, 232 reflected off the X axis — and pins the
+  sign flip against recorded bytes: the arm-raise capture's rotations about
+  Unity's −Z come out about the canonical +Z at the five angles the generator
+  wrote, which is one left arm going up on both sides of a conversion that moved
+  it from −X to +X.
+
+  Two questions it deliberately leaves open, because answering either here would
+  be a guess this repository cannot check. **A VMC bone rotation is the sender's
+  local rotation**, which equals the rotation away from rest only when the
+  sender's humanoid rest is identity; a sender where it is not needs
+  `vrmRetarget`'s `SourceRestPose`, and manufacturing one from the first frame
+  seen is exactly the kind of invention §2 forbids. **A bone's position has
+  nowhere canonical to go** — `HumanoidPose` carries rotations and one
+  `RootMotion` — so it is converted and handed on unread, and whether the hips
+  offset composes with `/VMC/Ext/Root/Pos` is the frame assembler's decision
+  with a real sender's evidence behind it. Both are Milestone B's to settle.
+- ⬜ **An unknown bone name is unit-tested and not in the corpus.** The refusal
+  path (`VRM_VMC_UNSUPPORTED_MESSAGE`, the bone dropped and the frame kept) has
+  no recorded capture behind it, and inventing one would be guessing at what a
+  sender emits — which is the same argument §9.2 makes about the rest of the
+  generated set. A real sender's capture in Milestone B closes it.
 
 ### Milestone B — VMC live receipt ⬜
 

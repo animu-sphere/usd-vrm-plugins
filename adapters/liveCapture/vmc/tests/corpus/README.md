@@ -96,13 +96,14 @@ Four properties are deliberate and easy to lose:
 
 ## Verify
 
-Both checks run under `ctest`:
+Every check runs under `ctest`:
 
 ```sh
-ctest -R vrmAdapterVmc_corpus     # every capture parses and round trips byte-identically
-ctest -R vrmAdapterVmc_packetGen  # the committed captures still match the generator
-ctest -R vrmAdapterVmc_oscCorpus  # what the datagrams decode to as OSC
-ctest -R vrmAdapterVmc_vmcCorpus  # what those OSC messages mean as VMC
+ctest -R vrmAdapterVmc_corpus            # every capture parses and round trips byte-identically
+ctest -R vrmAdapterVmc_packetGen         # the committed captures still match the generator
+ctest -R vrmAdapterVmc_oscCorpus         # what the datagrams decode to as OSC
+ctest -R vrmAdapterVmc_vmcCorpus         # what those OSC messages mean as VMC
+ctest -R vrmAdapterVmc_skeletonMapCorpus # what those VMC messages are in canonical terms
 ```
 
 `vrmAdapterVmc_corpus` is the load-bearing one. It re-emits each committed
