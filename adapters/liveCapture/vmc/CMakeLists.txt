@@ -58,6 +58,7 @@ endif()
 add_library(vrmAdapterVmc STATIC
     src/Diagnostics.cpp
     src/FrameAssembler.cpp
+    src/LiveSource.cpp
     src/OscPacket.cpp
     src/PacketCapture.cpp
     src/SkeletonMap.cpp
