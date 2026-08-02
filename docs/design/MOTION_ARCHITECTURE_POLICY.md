@@ -740,6 +740,44 @@ attaches to it.
 canonical motion snapshot -> execMotion -> execVrm -> evaluation result
 ```
 
+#### The thread boundary sits before the decoder, not after it
+
+> Amended 2026-08-03, when the first receiver was written against this section.
+
+The diagram above puts the synchronisation on a "thread-safe timestamped pose
+buffer", and `motionRuntime` has none: `PoseBuffer` holds a deque and
+`LiveCaptureSource::Sample` writes its own statistics as it answers, so a push
+and a sample may not run concurrently and neither may two samples. That is not
+an oversight to be repaired — it is the reproducibility property v0.5.0 shipped,
+and a lock inside `LiveCaptureSource` would make one class safe while leaving
+every holder of a reference to its buffer racing on it.
+
+So the boundary moved one layer earlier, and the arrangement in force is:
+
+```text
+network / device thread
+        ↓
+bounded queue of *raw datagrams*        (the adapter's receiver)
+        ↓
+consumer thread: decode, normalize, canonical semantics
+        ↓
+timestamped pose buffer                 (motionRuntime, single-threaded)
+        ↓
+immutable snapshot
+        ↓
+OpenExec computation
+```
+
+Everything this section forbids inside a callback is still forbidden, and the
+property it exists to protect is unchanged: a computation still evaluates an
+immutable snapshot produced by somebody else's thread. What changed is *which*
+object carries the lock — one queue in the adapter that nothing downstream can
+see, rather than the shared runtime the whole pipeline reads through.
+
+A consumer that already has a tick needs no second thread at all; the receiver
+polls without blocking, and single-threaded is then the whole arrangement.
+`vrmAdapterVmc`'s `UdpReceiver.h` is where this is implemented and argued.
+
 ### 11.5 `ExecIr` is an optional adapter, never a prerequisite
 
 > Added 2026-07-29; not in the source policy's original numbering.

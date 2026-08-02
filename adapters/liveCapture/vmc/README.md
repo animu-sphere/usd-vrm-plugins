@@ -8,13 +8,13 @@ UDP datagram → OSC decode → VMC message decode → frame assembly
              → VRM bone mapping → HumanoidPose → LiveCaptureSource
 ```
 
-**Status: a motion source, and still no socket.** The whole decode path exists —
-the recorded-packet format and its corpus, the OSC layer, the VMC message layer,
-the skeleton map, the frame assembler, and the bridge into `motionRuntime`. A
-recorded capture replays into a `motion::LiveCaptureSource` that samples like any
-clip, so everything except transport is verifiable in CI from committed bytes.
-What is left is the receiver, the record tool, and the evidence only a real
-sender can give. See
+**Status: a live motion source.** Every layer exists — the recorded-packet format
+and its corpus, the OSC layer, the VMC message layer, the skeleton map, the frame
+assembler, the bridge into `motionRuntime`, and now the socket. A sender on the
+network drives a `motion::LiveCaptureSource` that samples like any clip, and a
+recorded capture drives the same thing with no socket at all, so the decode path
+stays verifiable in CI from committed bytes. What is left is the record tool, the
+CLI, and the evidence only a real sender can give. See
 [the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §5 for the
 implementation order and Milestone B for what remains.
 
@@ -343,12 +343,10 @@ describes and no overload can refuse.
 **Nothing here is thread-safe, and neither is what it wraps.** `motionRuntime`
 contains no mutex or atomic: `PoseBuffer` holds a deque and
 `LiveCaptureSource::Sample` writes its statistics as it answers, so a push and a
-sample may not run concurrently and neither may two samples. Motion policy §11.4
-puts a network thread on one side of a *thread-safe* pose buffer, which does not
-exist yet, and that is the first question the UDP receiver has to answer — a
-queue hand-off it owns, or synchronisation inside `motionRuntime`. This class
-takes no private lock meanwhile, because a mutex here would leave every
-`GetIntake()` caller racing on the same buffer and look like a fix.
+sample may not run concurrently and neither may two samples. This class takes no
+private lock, because a mutex here would leave every `GetIntake()` caller racing
+on the same buffer and look like a fix. Where the lock actually went is the
+receiver's section below.
 
 `vrmAdapterVmc_liveSourceCorpus` replays all seven captures from bytes and makes
 the cross-layer claim: **every frame the assembler emitted was admitted by the
@@ -357,6 +355,82 @@ and that is exactly the ordering `LiveCaptureSource::Push` requires. The
 sender-restart capture is then replayed twice more to show that what a restart
 costs is a policy and not an accident — six frames under `Reset`, four under
 `Refuse`, on the same bytes.
+
+## The socket, and the thread it does not create
+
+[`UdpReceiver.h`](include/vrmAdapterVmc/UdpReceiver.h) is the last layer written
+and the first one a live session touches. It owns a socket, a bind address, a
+receive clock and a size limit, and it owns no decoding at all: `Receive` hands
+back the bytes exactly as they arrived, including the ones the layers above will
+refuse, because a receiver that filtered its own input would make the corpus a
+record of what the receiver let through rather than of what a sender sent.
+
+**The thread boundary sits before the decoder, not after it.** Motion policy
+§11.4 put a network thread on one side of a *thread-safe* pose buffer, and
+`motionRuntime` has none — so rather than locking the buffer the whole pipeline
+reads through, the hand-off moved one layer earlier:
+
+```text
+network thread → [ DatagramQueue ] → consumer thread → decode → pose
+```
+
+`DatagramQueue` is the only synchronised object in this adapter. Everything
+downstream of `Drain` — all five layers above and all of `motionRuntime` — runs
+on one thread exactly as its tests do. Overflow drops the **oldest** datagram,
+because for live motion the alternative is indefensible: holding a stale frame
+and refusing a fresh one adds latency the session never gets back.
+
+A consumer that already has a tick needs no second thread at all, and should not
+take one. `Receive` with a zero timeout is a true poll:
+
+```cpp
+ReceivedDatagram datagram;
+while (receiver.Receive(&datagram) == ReceiveStatus::Received) {
+    source.PushDatagram(datagram.bytes, datagram.receiveTime, &log);
+}
+```
+
+Four more decisions are written down where they are enforced:
+
+- **Every wait has a timeout**, for cancellation rather than latency. A thread
+  parked in `recvfrom` can only be woken by closing the socket underneath it,
+  which races the descriptor's reuse on every platform this repository builds
+  for. A bounded wait turns stopping into a flag the loop already checks.
+- **Nothing arrives truncated.** The buffer is `MaxDatagramBytes`, so truncation
+  is impossible rather than configurable — a decision about blame, since a
+  truncated datagram is indistinguishable at the OSC layer from a malformed one
+  and a smaller buffer would let the receiver manufacture
+  `VRM_VMC_PACKET_MALFORMED` against a sender that did nothing wrong.
+- **The clock is monotonic**, which the capture format requires rather than
+  prefers: it forbids backwards receive times because arrival order is the whole
+  point of it, and a wall clock steps backwards for reasons that have nothing to
+  do with the session. Counting from `Open` is also the origin
+  `vmc-packet-capture` records against, so a recording tool copies the number
+  instead of rebasing it.
+- **One transport code, because one transport failure is fatal.**
+  `VRM_VMC_SOCKET_BIND_FAILED` is the only socket failure a session cannot
+  continue past, so the frozen set needed no ninth code: a lost datagram, a
+  transient error and an empty poll are counts in `UdpReceiverStats`, not
+  diagnostics that would say "recoverable" on every line.
+- **The receive buffer is a request, and what was granted is read back.** Every
+  platform may clamp `receiveBufferBytes` and Linux doubles it, so
+  `GetReceiveBufferBytes()` reports what the socket actually has. Asking for four
+  megabytes, silently getting the default, and then losing datagrams between two
+  slow ticks is the hardest failure in this class to see from the outside.
+
+`vrmAdapterVmc_loopbackCorpus` replays all seven captures **through a real
+socket** — 168 datagrams sent to a bound port and read back off it — and makes
+the claim this layer exists for: the 22 poses that come out are `operator==`
+identical to the ones the same bytes produce read from the file, with the arrival
+clock the only thing the wire is allowed to have changed. One buffer is reused
+for the whole replay, so the bridge's lifetime claim is checked by the poses
+matching rather than by an assertion about bytes.
+
+These are the only tests here that open a socket, which is why they are their own
+CTest names (`vrmAdapterVmc_udpReceiver`, `vrmAdapterVmc_loopbackCorpus`): a
+runner that forbids one excludes two names and loses no coverage of the decode
+path. They bind loopback on an OS-assigned port, never 39539 — a suite that
+claimed the real VMC port would fight a developer's own sender for it.
 
 ## Diagnostics
 

@@ -13,5 +13,11 @@ endif()
 if(NOT TARGET motionRuntime::motionRuntime)
     find_dependency(motionRuntime CONFIG REQUIRED)
 endif()
+# The exported target names Threads::Threads on every non-Windows platform (the
+# receiver's hand-off queue holds a mutex), and an imported target a consumer
+# cannot resolve is a configure error rather than a link one.
+if(NOT WIN32 AND NOT TARGET Threads::Threads)
+    find_dependency(Threads REQUIRED)
+endif()
 include("${CMAKE_CURRENT_LIST_DIR}/vrmAdapterVmcTargets.cmake")
 check_required_components(vrmAdapterVmc)

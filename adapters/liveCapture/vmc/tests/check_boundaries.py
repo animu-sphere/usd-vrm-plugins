@@ -166,9 +166,16 @@ def main() -> int:
     # permitted cannot.
     cmake = re.sub(r"#[^\n]*", "",
                    (source / "CMakeLists.txt").read_text(encoding="utf-8"))
+    # `ws2_32` and `Threads::Threads` are the platform's own transport and
+    # threading primitives, and neither is a dependency direction: §2 constrains
+    # which *workspace* libraries an adapter may reach, and motion policy §8.2
+    # puts the socket inside the adapter deliberately. They are named
+    # individually rather than by a pattern, so a third platform library still
+    # has to be argued for here before it can be linked.
     allowed_link = {
         "vrmadaptervmc", "public", "private", "interface",
         "motioncore::motioncore", "motionruntime::motionruntime",
+        "ws2_32", "threads::threads",
     }
     for arguments in re.findall(r"target_link_libraries\s*\((.*?)\)", cmake,
                                 re.DOTALL):
