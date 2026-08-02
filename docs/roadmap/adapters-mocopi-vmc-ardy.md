@@ -639,6 +639,43 @@ capture device validated through a VMC relay
   `HumanBodyBones` in a fixed order, so only a *leading* bone going away and
   coming back reorders anything) and it is pinned by a characterisation test, so
   a later third rule has to change the header before it changes the behaviour.
+- ✅ **The bridge into the runtime.** `LiveSource.h` is the last layer that is
+  still this adapter's, and deliberately the thinnest: it hands assembled frames
+  to `LiveCaptureSource` and answers `IMotionSource` by forwarding, so a recorded
+  capture now samples like any clip and the whole path is verifiable in CI from
+  committed bytes. What it contributes to a pose is nothing — buffering,
+  interpolation, smoothing, confidence gating, missing-bone resolution and
+  root-motion intake exist once, in `motionRuntime`, and the tests run the same
+  input under both `MissingBonePolicy` settings so the answer visibly changes
+  with the runtime's configuration rather than with the adapter.
+
+  **The one decision it takes is what a sender restart costs**, and it is the
+  deadlock the two halves would otherwise reach: the assembler emits the new
+  session's clock verbatim, which for the intake is a frame arriving behind the
+  newest it holds — refused, forever. `Reset` drops the intake's history and
+  admits the new session; `Refuse` lets the session visibly stop. `Reset` is the
+  default because the alternative is a stream that dies the first time an
+  operator restarts their sender application, and because it is what the layer
+  below already does with everything it learned. Splicing the two sessions by
+  offsetting the new timestamps is offered nowhere in this adapter (§2). A
+  restart also invalidates the intake's clock offset, which only the consumer can
+  re-align, so it is latched and handed back rather than repaired.
+
+  Three smaller things are settled with it. Provenance **applies from when the
+  sender sent it** — `/VMC/Ext/VRM` may arrive mid-session, and poses buffered
+  before it are not retroactively taught a title the session did not know yet.
+  Staleness reaches an operator as `VRM_VMC_STALE_JOINT` and never as a bone this
+  layer unbound, because a second missing-bone policy inside the adapter would
+  disagree with the configured one invisibly. And **the datagram's lifetime stops
+  here**: every string view a decoded packet holds has become a value before the
+  push returns, so a receiver may hand this API the buffer it is about to
+  overwrite — which is the hazard `VmcMessage.h` names and no overload can
+  refuse. `vrmAdapterVmc_liveSourceCorpus` replays all seven captures from bytes
+  and makes the cross-layer claim: every frame the assembler emitted was admitted
+  by the intake, because the assembler emits strictly advancing frames within a
+  session and that is exactly the ordering `LiveCaptureSource::Push` requires.
+  The restart capture is then replayed under both policies — six frames against
+  four, on the same bytes — so what a restart costs is recorded as a choice.
 
 ### Milestone C — capture integration and offline E2E ⬜
 

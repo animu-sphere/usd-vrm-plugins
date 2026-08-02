@@ -60,10 +60,19 @@ target_compile_options(vrmAdapterVmc_frameAssembler_tests
 add_test(NAME vrmAdapterVmc_frameAssembler
          COMMAND vrmAdapterVmc_frameAssembler_tests)
 
+# The bridge into the runtime, which is the last layer that is still this
+# adapter's: what it hands over is `motionRuntime`'s from there on.
+add_executable(vrmAdapterVmc_liveSource_tests test_live_source.cpp)
+target_link_libraries(vrmAdapterVmc_liveSource_tests
+    PRIVATE vrmAdapterVmc::vrmAdapterVmc)
+target_compile_options(vrmAdapterVmc_liveSource_tests
+    PRIVATE ${_vrm_adapter_vmc_assertions})
+add_test(NAME vrmAdapterVmc_liveSource COMMAND vrmAdapterVmc_liveSource_tests)
+
 set(_vrm_adapter_vmc_tests
     vrmAdapterVmc_unit vrmAdapterVmc_packetCapture vrmAdapterVmc_oscPacket
     vrmAdapterVmc_vmcMessage vrmAdapterVmc_skeletonMap
-    vrmAdapterVmc_frameAssembler)
+    vrmAdapterVmc_frameAssembler vrmAdapterVmc_liveSource)
 
 # Every committed capture parses and re-emits byte-identically, or every
 # decoder test downstream of it compares against a fixture that has drifted from
@@ -96,9 +105,15 @@ if(EXISTS "${_vrm_adapter_vmc_corpus}")
     # is the one the two sender shapes and the restart capture were recorded for.
     add_test(NAME vrmAdapterVmc_frameAssemblerCorpus
         COMMAND vrmAdapterVmc_frameAssembler_tests "${_vrm_adapter_vmc_corpus}")
+    # The same bytes once more, all the way into the runtime: every capture
+    # replays from datagrams into `LiveCaptureSource`, so what the corpus proves
+    # about the decode path it also proves about the hand-off.
+    add_test(NAME vrmAdapterVmc_liveSourceCorpus
+        COMMAND vrmAdapterVmc_liveSource_tests "${_vrm_adapter_vmc_corpus}")
     list(APPEND _vrm_adapter_vmc_tests
          vrmAdapterVmc_corpus vrmAdapterVmc_oscCorpus vrmAdapterVmc_vmcCorpus
-         vrmAdapterVmc_skeletonMapCorpus vrmAdapterVmc_frameAssemblerCorpus)
+         vrmAdapterVmc_skeletonMapCorpus vrmAdapterVmc_frameAssemblerCorpus
+         vrmAdapterVmc_liveSourceCorpus)
 endif()
 
 if(WIN32)

@@ -272,6 +272,7 @@ public:
     // raises, so a session replayed from a capture reports the same `source` a
     // live one would.
     void SetSource(std::string source);
+    const std::string& GetSource() const noexcept { return _source; }
 
     // Accepts one decoded datagram. `receiveTime` is the receiver's clock — the
     // `d` record's time on a replayed capture — and is used only to stamp a

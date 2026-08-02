@@ -8,16 +8,15 @@ UDP datagram → OSC decode → VMC message decode → frame assembly
              → VRM bone mapping → HumanoidPose → LiveCaptureSource
 ```
 
-**Status: canonical values, not yet a frame.** The build, the manifest, the
-boundary check, the frozen diagnostic codes, the recorded-packet format and its
-corpus, the OSC layer, the VMC message layer, and the skeleton map exist. A
-datagram now becomes `motion::HumanBone` rotations in the canonical basis and a
-`motion::RootMotion` — but nothing yet decides which of them belong to one
-frame, what a missing bone means, or when a sender restarted, so there is no
-`HumanoidPose` and no socket. See
+**Status: a motion source, and still no socket.** The whole decode path exists —
+the recorded-packet format and its corpus, the OSC layer, the VMC message layer,
+the skeleton map, the frame assembler, and the bridge into `motionRuntime`. A
+recorded capture replays into a `motion::LiveCaptureSource` that samples like any
+clip, so everything except transport is verifiable in CI from committed bytes.
+What is left is the receiver, the record tool, and the evidence only a real
+sender can give. See
 [the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §5 for the
-implementation order, Milestone A for what "done" means here, and Milestone B
-for the frame assembler and the receiver.
+implementation order and Milestone B for what remains.
 
 ## What this is, structurally
 
@@ -248,6 +247,99 @@ about Unity's −Z come out about the canonical +Z at 0°, 15°, 30°, 45° and 
 That capture raises a *left* arm, which Unity puts at −X and glTF at +X, so the
 sign flips with the basis and both describe the same arm going up — a conversion
 that dropped the flip would lower it.
+
+## Where a frame begins
+
+[`FrameAssembler.h`](include/vrmAdapterVmc/FrameAssembler.h) is the first layer
+that *decides* rather than converts, and the decision the protocol forces is
+where a frame begins — VMC promises nothing about one datagram being one frame.
+The corpus already holds two sender shapes that disagree about it:
+
+```text
+bundled     | T(12.500) root Hips … UpperChest | T(12.533) root Hips …
+unbundled   | root Hips … RightToes T(20.000)  | root Hips … T(20.033)
+```
+
+In one the clock *opens* the frame and in the other it *closes* it, so either
+convention read as a rule produces one frame per two on the other sender — off
+by half a frame, with every rotation in it still individually correct. Two rules
+cover both: **a second clock ends the frame**, and **a repeat ends it unless it
+arrived in the same datagram**, where the same repetition is
+`VRM_VMC_DUPLICATE_BONE` instead. That exception is the only place a datagram
+boundary is load-bearing anywhere in the adapter, and it is why the assembler
+consumes packets rather than a flattened message stream.
+
+A backwards clock means three things, told apart by one comparison against the
+last accepted frame: **equal or slightly earlier** is
+`VRM_VMC_TIMESTAMP_REGRESSION` and the frame is refused, which is what stops a
+duplicated datagram from becoming a duplicated pose; **earlier by more than the
+restart threshold** is `VRM_VMC_SOURCE_RESTARTED`; anything later is accepted. A
+restart is reported and not repaired — offsetting the stream to keep timestamps
+rising would manufacture continuity out of a discontinuity.
+
+The assembler **holds nothing forward**: a bone the session has observed and this
+frame did not carry is reported missing and the frame is still emitted, because
+`MissingBonePolicy` is the intake's answer. A bone missing past the staleness
+horizon is additionally `VRM_VMC_STALE_JOINT`, raised once per crossing rather
+than per frame. Both are measured against the rig the session has actually
+observed — a sender that solves no fingers is complete, not incomplete forty
+times a second.
+
+`vrmAdapterVmc_frameAssemblerCorpus` assembles all seven captures and makes the
+claim this layer exists for: **both sender shapes yield five frames at the same
+30 Hz cadence**, with the unbundled one's arm rising 15° per frame in the order
+it was sent.
+
+## Into the runtime
+
+[`LiveSource.h`](include/vrmAdapterVmc/LiveSource.h) is the last layer that is
+still this adapter's, and the thinnest. It hands assembled frames to
+`motion::LiveCaptureSource` and answers `IMotionSource` by forwarding, so a
+consumer holds one object and samples poses off it like any clip:
+
+```cpp
+VmcLiveSource source;
+source.PushDatagram(bytes, size, receiveTime, &diagnostics);
+if (source.ConsumeSessionRestart()) {
+    source.GetIntake().AlignClock(now);
+}
+motion::PoseSampleResult pose = source.Sample(now);
+```
+
+Buffering, interpolation, smoothing, confidence gating, missing-bone resolution
+and root-motion intake all exist exactly once, in `motionRuntime`, and this class
+contributes none of them: the assembler reports a gap, `MissingBonePolicy`
+decides what a gap means, and the tests run the same input under both policies to
+show the answer changing with the runtime's configuration rather than with the
+adapter.
+
+**The one decision it takes is what a sender restart costs.** The assembler emits
+the new session's clock verbatim, which for the intake is a frame arriving behind
+the newest it holds — refused, forever. So the policy is explicit: `Reset` drops
+the intake's history and admits the new session (the default, because the
+alternative is a stream that dies the first time an operator restarts their
+sender application), and `Refuse` hands the frame on and lets the session visibly
+stop. The third option — offsetting the new timestamps to splice the two
+sessions — is not offered anywhere in this adapter. A restart also invalidates
+the clock offset, which only the consumer can re-align, so it is latched and
+handed back rather than repaired.
+
+Two smaller properties are worth knowing. **Provenance applies from when the
+sender sent it**: `/VMC/Ext/VRM` may arrive mid-session, and poses buffered
+before it keep the bare `vmc` provenance rather than retroactively learning a
+title the session did not know yet. And **the datagram's lifetime stops here** —
+every string view a decoded packet holds has become a value before the push
+returns, so a receiver may hand this API the buffer it is about to overwrite,
+which is the hazard [`VmcMessage.h`](include/vrmAdapterVmc/VmcMessage.h)
+describes and no overload can refuse.
+
+`vrmAdapterVmc_liveSourceCorpus` replays all seven captures from bytes and makes
+the cross-layer claim: **every frame the assembler emitted was admitted by the
+intake**, because the assembler emits strictly advancing frames within a session
+and that is exactly the ordering `LiveCaptureSource::Push` requires. The
+sender-restart capture is then replayed twice more to show that what a restart
+costs is a policy and not an accident — six frames under `Reset`, four under
+`Refuse`, on the same bytes.
 
 ## Diagnostics
 
