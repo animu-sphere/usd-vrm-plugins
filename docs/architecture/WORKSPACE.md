@@ -57,7 +57,7 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig and the semantic clip off stages, drives `vrmRetarget` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
 | `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `vrmRetarget`: it stops at the clip. Not a bundle. *(Gains a live adapter source when the first adapter lands; this row is updated in that PR, not before.)* |
 | `vrmAdapterVmc` | optional plain static CMake library (reserved, `adapters/liveCapture/vmc/`) | The generic real-time input: OSC-over-UDP decode, frame assembly, VRM humanoid bone names → canonical semantics. One adapter serves every sender application, including capture products relayed through it. **First adapter implemented.** |
-| `vrmAdapterMocopi` | optional plain static CMake library (reserved, `adapters/liveCapture/mocopi/`) | Decodes one capture product's native packets into canonical humanoid semantics and pushes them at `LiveCaptureSource`. Direct path: keeps the SDK-specific confidence and device diagnostics a protocol relay drops. Does **not** wrap `vrmAdapterVmc`. |
+| `vrmAdapterMocopi` | optional plain static CMake library (reserved, `adapters/liveCapture/mocopi/`) | **Live UDP only.** Decodes one capture product's native packets into canonical humanoid semantics and pushes them at `LiveCaptureSource`. Direct path: keeps the SDK-specific confidence and device diagnostics a protocol relay drops. Does **not** wrap `vrmAdapterVmc`, and does **not** read that product's recorded files — a recording is a file format, and file formats are `motionBvh`'s (below). |
 | `vrmAdapterArdy` | optional plain static CMake library (reserved, `adapters/generators/ardy/`) | One generator behind the vendor-neutral `IMotionGenerator` contract, producing canonical humanoid motion that `vrmRetarget` maps onto a target rig. |
 | `vmc_record` | CLI executable (`adapters/liveCapture/vmc/tools/vmcRecord/`, v0.5.0) | Records a live VMC session to a `vmc-packet-capture` file and reports what it decoded to; `--inspect` reports on a recorded capture with no socket. Links `vrmAdapterVmc` and nothing else: it neither retargets nor authors a stage, though §2 would permit both. |
 
@@ -65,6 +65,42 @@ Each adapter may also carry one CLI, declared beside it as an
 `openstrata.tool.yaml` workspace tool in the way `motion_retarget` and
 `motion_capture` are. Those executables are named when they are written, not
 reserved here — `vmc_record` is the first, added with the VMC adapter's CLI.
+
+Recorded motion sources — the file half of the input layer (motion policy §8.3):
+
+| Identity | Kind | Role |
+| --- | --- | --- |
+| `motionSource` | plain static CMake library (reserved, `libs/motionSource/`) | The **format-neutral** intermediate: `SourceSkeleton`, `SourceAnimation`, `SourceProvenance`, the `MotionSourceProfile` contract, and the converter from those plus a profile to `motion::HumanoidAnimation`. Knows no file format and no producer. |
+| `motionBvh` | plain static CMake library (reserved, `libs/motionBvh/`) | BVH **syntax** only — `HIERARCHY`, `ROOT`/`JOINT`, `OFFSET`, `CHANNELS`, `End Site`, `MOTION`, frame time, channel values in declaration order — plus the extractor that turns a `BvhDocument` into `motionSource` values. Decides no semantics: not which joint is which `HumanBone`, not the unit, not the axes, not what a root translation means. |
+| `motion_bvh_inspect` | CLI executable (reserved, `tools/motionBvh/`) | Reports what a BVH file contains, and optionally which profiles are candidates for it, with the reasons. Links `motionBvh`. |
+| `motion_bvh_convert` | CLI executable (reserved, `tools/motionBvh/`) | BVH + an explicitly named profile → the avatar-independent semantic clip `motion_retarget` already consumes. Links `motionBvh` and `motionSource`, and authors a stage. Never binds to a target avatar. |
+| motion source profiles | package data (`profiles/motion/*.yaml`) | One declarative file per producer *and export preset*: joint map, coordinate basis, unit, root and rest-pose policy, required/optional joints, provenance label. Data, never code — see below. |
+| `motionFbx` | plain static CMake library (deferred) | A second reader behind the same `motionSource` boundary, if and when a consumer needs FBX. Named here so the boundary is designed for two readers rather than retrofitted for the second. |
+| `usdBvhFileFormat` | plugin bundle (deferred) | A thin `SdfFileFormat` over `motionBvh`, only if reading `.bvh` directly off a stage is wanted. It would re-implement no parsing and no conversion. |
+
+> **A producer profile is the one place a product name may appear outside
+> `adapters/`, because it is data and not a branch.** `profiles/motion/` will
+> hold files named for Mocopi, Rokoko Studio, MotionBuilder and Blender, which
+> reads at first like the rule below being broken. It is not, and the distinction
+> is worth stating precisely: the *rule* forbids product-conditional code in the
+> core, and a profile is a declaration the code never has a name for. `motionBvh`
+> and `motionSource` contain no producer identifier, no `if (producer == ...)`,
+> and no default profile — a caller names one, or the conversion is refused
+> (`VRM_BVH_PROFILE_REQUIRED`). Ship every profile file and the libraries are
+> byte-identical; that is the test of whether this line has been crossed.
+>
+> The profile **id** carries producer, format, skeleton preset, and contract
+> version — `<producer>-<format>-<preset>-v<N>` — because a producer is not a
+> profile: one application's export presets can disagree with each other, and two
+> applications can agree. Application versions belong in a corpus manifest; the
+> contract version moves only when a producer's output contract breaks.
+
+A profile file is declarative and stays that way: mappings, units, axes, root
+policy, rest-pose policy, and required/optional joints. **No arbitrary code, no
+expression language, no embedded producer-specific algorithm, and no target VRM
+path** — a profile that could name an avatar would have made the converter
+avatar-aware through the back door. A producer that genuinely needs an algorithm
+gets a profile implementation in code, not a richer file format.
 
 > **An adapter is a library, not a plugin bundle.** The three rows above read
 > "optional bundle" until 2026-07-29, which no manifest could have expressed. An
@@ -100,14 +136,15 @@ including the implementation order and per-adapter acceptance criteria, is
 > vrmAdapterVmc`. That is a path assembled at runtime and creates no dependency:
 > `vrmAdapterMocopi` handles native input and links `motionCore` /
 > `motionRuntime` only, exactly as `vrmAdapterVmc` does. The ordering above
-> (VMC implemented first, the native adapter added on measured evidence) is the
-> roadmap's; the identities and the sibling rule are this contract's, and they do
-> not move with it.
+> (VMC implemented first, the native adapter second so the two paths can be
+> compared on the same motion) is the roadmap's; the identities and the sibling
+> rule are this contract's, and they do not move with it — including when the
+> roadmap re-ordered its releases on 2026-08-03.
 
 > **Two unrelated things are called "adapter" in this repo.** The bundles above
 > are *input* adapters: vendor and protocol leaves under `adapters/`. The
 > `ExecIr` adapter named in
-> [the OpenExec plan §3](../roadmap/openexec-v0.6.0-v0.7.0.md) is an internal
+> [the OpenExec plan §3](../roadmap/openexec-foundation.md) is an internal
 > insulation layer inside `execVrm`, confining a possibly-experimental OpenUSD
 > dependency. Neither is in the other's dependency graph.
 
@@ -143,14 +180,27 @@ execVrm               -> vrmSchema
 execVrm               -> motionCore, motionRuntime, vrmRetarget
 adapters/*            -> motionCore, motionRuntime
 adapters/*/tools/*    -> vrmRetarget, OpenUSD stage authoring
+
+motionSource          -> motionCore
+motionBvh             -> motionSource
+motion_bvh_inspect    -> motionBvh
+motion_bvh_convert    -> motionBvh, motionSource, motionCore, OpenUSD stage
 ```
 
-The last two lines are not the same permission. An **adapter library** converts
-a vendor or protocol input into canonical motion values and stops there; an
-**adapter tool** (its CLI) may go on to retarget and author a stage, exactly as
-`motion_retarget` and `motion_capture` do. The moment retarget or USD authoring
-lives inside an adapter library, that adapter has become a second motion
-pipeline.
+The last two lines of the adapter block are not the same permission. An
+**adapter library** converts a vendor or protocol input into canonical motion
+values and stops there; an **adapter tool** (its CLI) may go on to retarget and
+author a stage, exactly as `motion_retarget` and `motion_capture` do. The moment
+retarget or USD authoring lives inside an adapter library, that adapter has
+become a second motion pipeline.
+
+The four `motionSource` / `motionBvh` lines are a chain and are meant to be read
+as one: a **reader** knows a file format and no semantics, `motionSource` knows
+semantics and no file format, and a **profile** supplies what neither can know
+on its own. The arrow `motionBvh -> motionSource` never reverses — the day
+`motionSource` gains a BVH-shaped field is the day a second reader cannot be
+added without changing it, which is the entire reason the layer exists before a
+second reader does.
 
 Forbidden (non-exhaustive; anything not allowed above is forbidden):
 
@@ -184,6 +234,19 @@ adapters/*            -> OpenExec, ExecIr, or emitting ExecIr values
 motionCore            -> ExecIr
 vrmRetarget           -> ExecIr
 usdVrmFileFormat      -> authoring ExecIr prims as a requirement of import
+
+motionSource          -> motionBvh, motionFbx, or any other reader
+motionCore            -> motionSource, motionBvh
+motionRuntime         -> motionBvh, motionSource
+motionBvh             -> motionFbx, and any future reader -> any other reader
+motionBvh             -> vrmRetarget, vrmSchema, any USD file-format bundle
+motionBvh/motionSource-> adapters/*  (and adapters/* -> motionBvh, motionSource:
+                         live input and file input meet at canonical motion and
+                         nowhere earlier)
+motionBvh             -> a producer name in code, a default profile, or a
+                         joint-name heuristic standing in for one
+motionSource/motionBvh-> a target VRM joint index, a target rest pose, or any
+                         retarget step (that is vrmRetarget's, once)
 any cycle, including self-cycles
 ```
 
@@ -205,12 +268,12 @@ reviewer can check them without opening the policy:
   I/O.** Receiving is the adapter's job and buffering is `motionRuntime`'s; a
   callback that opened a socket or read a clock would make cache reuse and
   invalidation untestable, which is the whole reason to be on OpenExec at all
-  ([OpenExec plan §5](../roadmap/openexec-v0.6.0-v0.7.0.md)).
+  ([OpenExec plan §5](../roadmap/openexec-foundation.md)).
 - **`ExecIr` is optional and never a prerequisite.** It is confined to an
   adapter layer inside `execVrm`; the canonical motion contract is not derived
   from its representation, the importer never has to author its prims, and the
   offline pipeline stays whole with it absent
-  ([OpenExec plan §7.0](../roadmap/openexec-v0.6.0-v0.7.0.md)).
+  ([OpenExec plan §7.0](../roadmap/openexec-foundation.md)).
 
 Enforcement: `ost plugin test --workspace` (ost >= 0.15.0) validates the
 bundle graph declared via `requires.bundles` before running any bundle's
@@ -321,7 +384,21 @@ what the release lane emits: `ost` 0.21.0 packages a plugin bundle or a
 workspace of them, and has no per-library command, so an adapter reaches a
 consumer through the workspace build until one arrives.
 
-The exclusion keeps the aggregate free of product names (motion policy §8.1),
+`motionSource` and `motionBvh` are **not** adapters and take the opposite
+decision: they carry no product name in code, so they belong in the aggregate
+product exactly as `motionCore` and `motionRuntime` do, and `motion_bvh_inspect`
+/ `motion_bvh_convert` join `motion_retarget` and `motion_capture` as tool
+members of it. The profile files ship as package data beside them —
+`share/usd-vrm-plugins/profiles/motion/` — because a converter with no profile
+available refuses every file it is given, which would make an artifact-only
+smoke test of the BVH path impossible to pass.
+
+That split is the one to check when a future reader arrives: a reader is in the
+product if the *library* is producer-neutral, whatever the data beside it is
+named. `vrmAdapterMocopi` stays out because the library itself decodes one
+product's packets.
+
+The adapter exclusion keeps the aggregate free of product names (motion policy §8.1),
 but it also keeps optional SDK, network, and model dependencies — and their
 license terms — out of the core distribution, and leaves each adapter free to
 take its own release and support cadence later. Adapter versions may track the
@@ -400,6 +477,16 @@ standalone build, discovery test, packaging. Motion Phases A+B fill the shipped
 6a/7 boundaries; later behavior belongs to Motion Phases C–H. The two
 sequences are not the same milestone, exactly as Workspace Phase 6 and Product
 P4 are not.
+
+> **The ladder ends at 8 and does not grow with every new library.** It tracks
+> the *migration* out of the single `usdVrm` bundle — §6's invariants are written
+> for moving existing code — and that migration is finished but for Phase 5's
+> packaging P0 and Phase 8's bootstrap. Greenfield libraries take their identity
+> and edges from §1 and §2 and no phase number: `adapters/liveCapture/vmc`
+> shipped that way in v0.6.0, and `motionSource`, `motionBvh` and the BVH tools
+> arrive the same way. Renumbering the ladder for each of them would make
+> "Workspace Phase 0–8" — a string five documents repeat — mean something
+> different every release, for no gain in what anyone can check.
 
 Scaffolds for new bundles start from the ost template catalog
 (`ost plugin new usd-schema --template usd-schema-cpp`,

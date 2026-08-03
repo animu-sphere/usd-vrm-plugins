@@ -12,7 +12,17 @@ the handful of facts that silently rot when the workspace changes shape:
 3. the schema contract version in the docs matches vrmSchema's manifest;
 4. the OpenUSD pin agrees across the bundle manifests, the configure-time
    contract module, and the supported-configurations reference;
-5. every local markdown link resolves.
+5. the roadmap and the release records agree about which versions are out:
+   VERSION has a record and a changelog section, a `Next:` / `Then:` milestone
+   is not an already-released version, a `Shipped:` one is, the roadmap status
+   table agrees with those headings, and no document points at a retired
+   roadmap filename;
+6. every local markdown link resolves.
+
+Check 5 exists because the roadmap said "Next: v0.6.0 - the OpenExec
+foundation" for two weeks after v0.6.0 shipped VMC input instead. Nothing was
+wrong with any single document; the pair had drifted, and only a reader holding
+both noticed.
 
 Run: python scripts/check_docs.py   (exit 1 on any failure)
 """
@@ -175,6 +185,112 @@ def check_openusd_pin(failures: list[str]) -> None:
             f"{doc} has no table row stating the OpenUSD pin {expected!r}")
 
 
+# --- roadmap / release drift -------------------------------------------------
+
+# Roadmap documents that were renamed when their target version moved. The name
+# must survive nowhere except in the two documents whose job is to record the
+# rename; anywhere else it is a reader following a path that no longer exists.
+RETIRED_DOC_NAMES = {
+    "openexec-v0.6.0-v0.7.0.md": (
+        "docs/roadmap/README.md",
+        "docs/roadmap/openexec-foundation.md",
+    ),
+}
+
+VERSION_RE = re.compile(r"v(\d+\.\d+\.\d+)")
+# "## Next: v0.7.0 - ..." / "## Then: ..." / "## Shipped: ..."
+MILESTONE_HEADING = re.compile(
+    r"^##\s+(Next|Then|Shipped):\s*v(\d+\.\d+\.\d+)\b", re.M)
+
+
+def released_versions() -> set[str]:
+    """Versions with a release record. A record exists only once cut."""
+    return {p.stem.lstrip("v")
+            for p in REPO_ROOT.glob("docs/releases/v*.md")}
+
+
+def check_release_records(failures: list[str]) -> None:
+    """VERSION, the release records, and the changelog name the same release."""
+    version = read("VERSION").strip()
+    released = released_versions()
+    if version not in released:
+        failures.append(
+            f"VERSION is {version!r} but docs/releases/v{version}.md does not "
+            f"exist. A released version needs a record (docs/releases/README.md)")
+    if not re.search(rf"^##\s*\[{re.escape(version)}\]", read("CHANGELOG.md"), re.M):
+        failures.append(
+            f"CHANGELOG.md has no `## [{version}]` section, but VERSION says "
+            f"{version!r}")
+
+
+def check_roadmap_status(failures: list[str]) -> None:
+    """The roadmap's next milestone is not a version that already shipped."""
+    released = released_versions()
+    current = read("docs/roadmap/current.md")
+
+    headings = MILESTONE_HEADING.findall(current)
+    if not headings:
+        failures.append(
+            "docs/roadmap/current.md has no `## Next: vX.Y.Z` heading; the "
+            "next milestone is what this document is for")
+        return
+
+    planned = [v for kind, v in headings if kind in ("Next", "Then")]
+    for kind, ver in headings:
+        if kind in ("Next", "Then") and ver in released:
+            failures.append(
+                f"docs/roadmap/current.md says `{kind}: v{ver}` but "
+                f"docs/releases/v{ver}.md exists — that version has shipped")
+        if kind == "Shipped" and ver not in released:
+            failures.append(
+                f"docs/roadmap/current.md says `Shipped: v{ver}` with no "
+                f"docs/releases/v{ver}.md to back it")
+
+    # The status table is the single source for a track's target version, so
+    # the Next milestone has to be one of the versions it lists as unshipped.
+    table = read("docs/roadmap/README.md")
+    targets = set(VERSION_RE.findall(table))
+    unmet = [v for v in planned if v not in targets]
+    if unmet:
+        failures.append(
+            "docs/roadmap/README.md's status table does not name "
+            + ", ".join(f"v{v}" for v in unmet)
+            + ", which docs/roadmap/current.md is planning. One table decides "
+              "which release a track lands in")
+
+
+def check_retired_doc_names(failures: list[str]) -> None:
+    """A renamed roadmap document leaves no mentions behind it."""
+    for name, allowed in RETIRED_DOC_NAMES.items():
+        for p in sorted(REPO_ROOT.glob("**/*.md")):
+            rel = str(p.relative_to(REPO_ROOT)).replace("\\", "/")
+            if rel.startswith(("build/", "scratch/")) or rel in allowed:
+                continue
+            if is_history(rel):
+                continue  # history keeps its own words; links are checked below
+            for i, line in enumerate(
+                    p.read_text(encoding="utf-8",
+                                errors="replace").splitlines(), 1):
+                if name in line:
+                    failures.append(
+                        f"{rel}:{i} names the retired roadmap document "
+                        f"`{name}` (allowed only in {', '.join(allowed)})")
+
+
+def check_component_status(failures: list[str]) -> None:
+    """A version in the README's component table is a version that shipped."""
+    released = released_versions()
+    for i, line in enumerate(read("README.md").splitlines(), 1):
+        if not line.startswith("|"):
+            continue
+        for ver in VERSION_RE.findall(line):
+            if ver not in released:
+                failures.append(
+                    f"README.md:{i} gives a component the status v{ver}, which "
+                    f"has no docs/releases/v{ver}.md. Planned work belongs in "
+                    f"the roadmap, not in the component table")
+
+
 LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
 # Code is not prose, and C++ reads as markdown more often than is comfortable:
@@ -214,7 +330,10 @@ def main() -> int:
 
     failures: list[str] = []
     for check in (check_inventory, check_no_stale_paths,
-                  check_schema_contract, check_openusd_pin, check_links):
+                  check_schema_contract, check_openusd_pin,
+                  check_release_records, check_roadmap_status,
+                  check_retired_doc_names, check_component_status,
+                  check_links):
         check(failures)
 
     if failures:

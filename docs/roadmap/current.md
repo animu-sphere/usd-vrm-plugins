@@ -1,102 +1,139 @@
 # Current
 
 The next milestone and active carry-over work. Shipped detail is in the
-[delivery history](../reports/delivery-history.md).
+[delivery history](../reports/delivery-history.md) and the per-version
+[release records](../releases/).
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
-## Next: v0.6.0 — the OpenExec foundation (Workspace Phase 8 + Motion Phase E) ⬜
+## Next: v0.7.0 — mocopi live input and generic BVH recorded-motion ingestion ⬜
 
-**Release boundary:** `execMotion` and `execVrm` bundles exist and evaluate a
-humanoid through OpenExec, proven equal to the offline result on the same input.
-Nodes are thin wrappers over `motionRuntime` and `vrmRetarget`, never a second
-implementation, and each evaluates an immutable snapshot rather than a live
-source. Planned in [openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md).
+**Release boundary:** a capture product's **two** surfaces both reach a
+retargeted `UsdSkelAnimation` through the **unchanged** `motion_retarget` — the
+live one over UDP through `vrmAdapterMocopi`, and the recorded one through a
+generic BVH pipeline that is not that product's importer. Planned in
+[adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) (Milestones B–D) and
+[recorded-motion-sources.md](recorded-motion-sources.md) (BVH-0 to BVH-4).
 
-Not in this boundary: realtime skinned display (bounded upstream — see the P0-7
-decision below), any `ExecIr` dependency, and the
-[input adapters](adapters-mocopi-vmc-ardy.md), which are a parallel track that
-reaches a retargeted `UsdSkelAnimation` with no OpenExec involvement at all.
+Two decisions shape the whole release. **A recording is not a mode of the live
+adapter** — a BVH file argues about a hierarchy, channel order, a frame time and
+a rest pose, where a socket argues about packets, timestamps, restarts and
+tracking loss — so they are separate code meeting at `motionCore`
+([motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md)). And **the BVH
+pipeline's centre is not mocopi**: joint names, units, axes and root conventions
+are facts about the *writer*, so they live in a declarative producer profile and
+a second producer's profile lands while the first is still being written.
 
-### Landed so far
+It is also measured in **evidence, not code volume**. Both corpora in the tree
+are generated — closed-form traces and protocol-shaped captures — so nothing has
+yet met a device. The items that close that do not close by writing more code.
 
-- ✅ **OpenUSD is pinned to 26.08, and the pin is enforced rather than
-  declared** (plan P0-1 / §4.1). The `>=25.05,<27.0` tolerated range is retired
-  in all four bundle manifests, and `cmake/UsdVrmOpenUsd.cmake` refuses anything
-  else at configure time — from the root project, from a standalone
-  `ost plugin build`, and from a plain-CMake build that never sees `ost`. The
-  same module probes the six OpenExec libraries and refuses a 26.08 without
-  them, which is a *detection* check: 26.08 has no OpenExec build toggle.
-  `buildInfo.json` (schema 2) records the release, `PXR_VERSION`, and the
-  OpenExec components. `workspace_openusd_contract` drives the module against
-  fixture installs so the refusals are tested — no runtime we own takes that
-  path — and `scripts/check_docs.py` keeps the manifests, the module, and
-  [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md) from
-  drifting apart.
-- ✅ **The 26.08 OpenExec migration audit is written** — the rest of P0-1, and
-  the input P0-4 and P0-5 were waiting on:
-  [reports/openusd/26.08-openexec-migration.md](../reports/openusd/26.08-openexec-migration.md).
-  It reads the published runtime's own headers and plugInfo files plus the
-  `v26.08` sources — nothing was compiled or run, and the report says so. The
-  plan's core bet holds: a computation can be a thin wrapper, because
-  registration is declarative and a callback is a pure function of resolved
-  inputs. Five findings change v0.6.0's scope, two of them structural:
-  **`VtArray` is not an execution value type**, so a pose crosses a computation
-  boundary as a registered `motionCore` aggregate rather than as an array — this
-  decides every `execMotion`/`execVrm` signature; and **`usdExecImaging`'s prim
-  adapter registry is hard-coded** to `UsdGeomXformable` and `ExecIrXformable`,
-  so the planned `UsdSkel` display slice (P0-7) cannot be registered in 26.08 and
-  is now marked ⛔ pending a re-scope decision.
-- ✅ **P0-7's re-scope is decided** (2026-07-29). The `usdExecImaging` slice
-  ships as an **exec-computed `UsdGeomXformable`** shown through the exec scene
-  index — time and motion inputs recompute, an unrelated material change does
-  not, and it runs from packaged plugins. Everything except the prim adapter is
-  exercised for real, so the plumbing risk is retired on the half we control.
-  Realtime **skinned** display becomes its own milestone after v0.7.0, and the
-  upstream ask for plugin-registered exec imaging adapters is tracked separately
-  — a custom Hydra scene index is deliberately *not* the first fallback. Two
-  further decisions landed with it: an OpenExec computation evaluates an
-  immutable snapshot and performs no I/O, and `ExecIr` is an optional
-  experimental adapter rather than a foundation. All three are in the
-  [plan](openexec-v0.6.0-v0.7.0.md) §1, §7.0 and P0-7, and the two structural
-  ones in [WORKSPACE.md §2](../architecture/WORKSPACE.md).
-- ⬜ **Amend the OpenExec capability probe** with what the audit found: `esf`,
-  `esfUsd` and `ef` go unprobed although the public exec headers require them,
-  and `usdExecImaging` proves nothing because it is built whether or not
-  `PXR_BUILD_EXEC` is on. The refusal is still correct today — the other five
-  components are absent in that configuration — so this is precision, not a hole.
-- ✅ **`operator==` on the `motionCore` aggregates** — and, because the three
-  callers did not want the same comparison, a second one beside it.
-  `ExecTypeRegistry::RegisterType` needs exact equality before P0-4 can register
-  a pose type; P0-6 parity and the adapter corpus compare two float paths that
-  will never agree bit for bit. So `==` answers *is this the same recorded
-  value* and `NearlyEqual` answers *is this the same motion*, differing in three
-  stated places: a quaternion and its negation, provenance, and a tolerance
-  derived from the recorded-trace format's six decimals rather than picked per
-  test. Both read only the fields a pose claims to carry.
-  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060)
-  carries the semantics.
+Not in this boundary: OpenExec evaluation of any kind (that is v0.8.0), realtime
+skinned display, an FBX reader, an `SdfFileFormat` bundle for `.bvh`, the ARDY
+generator, and expression / look-at, which need a `motionCore` addition first.
 
-The two prerequisites this milestone was originally scoped around were already
-met, both ahead of schedule:
+### Done when
 
-- ✅ **One OpenUSD across three OS.** All three 26.08 runtimes are published to
-  `ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd` and every lane is pinned
-  to them, including the workspace cells and the release workflow. They carry
-  OpenExec (`exec`, `execGeom`, `execIr`, `execUsd`, `usdExecImaging`, `vdf` —
-  198 headers under `include/pxr/exec`) and were built `--examples`, so the
-  26.08 `ExecIr` samples ship inside the runtime. Digests and evidence:
-  [report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md)
-  (Windows, Linux),
-  [report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md)
-  (macOS arm64).
-- ✅ **The motion layer has CI.** v0.6.0's named P0-2 blocker is cleared, not by
-  the v0.5.0 workaround (below) but by `ost 0.21.0`: four `kind: workspace`
-  cells in `openstrata.ci.yaml` build the root tree and run its whole 22-test
-  CTest suite, and `motion-ci.yml` is deleted. See
-  [report 33](../reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md).
+**Live**
 
-### Carried into v0.6.0
+- [ ] a mocopi device drives the pipeline **natively** over UDP, through
+      `vrmAdapterMocopi`;
+- [ ] recorded packet fixtures decode deterministically with no socket, and a
+      loopback test proves the socket path agrees with them;
+- [ ] tracking loss, recovery, and source restart are recorded rather than
+      described;
+- [ ] the session reaches a real VRM avatar through **unchanged**
+      `motion_capture` and `motion_retarget`.
+
+**Recorded**
+
+- [ ] a generic BVH parser, with `motion_bvh_inspect` over it;
+- [ ] the format-neutral `motionSource` model and the profile contract;
+- [ ] the mocopi profile **and one independent mocap producer's**, plus a
+      user-defined profile proving the contract is usable from outside;
+- [ ] BVH → `HumanoidAnimation` → the same avatar-independent semantic clip
+      `motion_capture` and `usdVrmaFileFormat` already author;
+- [ ] `motion_bvh_convert` → **unchanged** `motion_retarget` → a target VRM,
+      verified through a `UsdSkelSkeletonQuery`;
+- [ ] no producer name in `motionBvh` or `motionSource` code, and no default
+      profile anywhere.
+
+**Cross-source and evidence**
+
+- [ ] one physical session observed as mocopi UDP *and* mocopi BVH, compared at
+      the canonical layer, with a VMC relay added if one is available;
+- [ ] what each path cannot carry is written down, from evidence;
+- [ ] the root / hips observation is written down, and the canonical answer
+      chosen or explicitly left open with its downstream cost stated;
+- [ ] redistributable captures and BVH files are committed; the rest survive as
+      measured manifests with no bytes;
+- [ ] both paths run from release artifacts alone, profiles included;
+- [ ] a v0.7.0 release record exists.
+
+**Best-effort, no longer a gate.** Recording two or more real VMC sender
+applications and publishing an interoperability matrix was a numbered condition
+here until the BVH axis joined this release. It is still the right work and any
+sender available during v0.7.0 gets recorded — but the release no longer waits on
+lining up other people's applications, because the cross-source comparison above
+needs only the device.
+
+### The three questions this release exists to answer
+
+Each is open in the tree today, each is named at the layer that declined to
+guess, and none of them is answerable from generated bytes:
+
+- **What a sender means by hips offset and root.** `/VMC/Ext/Root/Pos` and the
+  hips local position are both reachable and deliberately **not composed** — a
+  `HumanoidPose` has one `RootMotion` and nowhere to put the other. `vmc_record`
+  already reports how far each moved, and reports it as movement rather than as
+  meaning, because the tool is in no better position to decide than the layer
+  below it. The decision record is a v0.7.0 deliverable whether or not a policy
+  is chosen: what was observed, what differed between senders, which value is
+  canonical today, what stays open, and what that costs downstream.
+- **What each path drops.** The mocopi native adapter is a committed deliverable
+  rather than something gated on this measurement — but the measurement still has
+  to happen, because it is the release's distinguishing check. One physical
+  session, observed live over UDP and exported to a file, gives motion that is
+  genuinely the same rather than merely similar; a VMC relay makes it three. The
+  results must differ only within a stated tolerance, and each difference outside
+  it must name the field responsible rather than widen the tolerance. Latency is
+  a live-path number only — a file has none, and reporting one would be inventing
+  it.
+- **What a real sender's bone set does.** Three refusal paths are unit-tested
+  with no capture behind them — an unknown bone name, the receive-clock fallback
+  when a frame carries no `/VMC/Ext/T`, and a leading bone that disappears and
+  returns (which the frame assembler's repeat rule hands back one frame early).
+  Inventing captures for them would be guessing at what a sender emits.
+
+### Corpus policy — recorded evidence is not the generated corpus
+
+The generated corpora stay. Real-session evidence goes beside them, never mixed
+in, and the same shape serves both halves of the release:
+
+```text
+<adapter or library>/tests/corpus/
+├─ generated/     protocol or format shapes, committed, CI-runnable, no hardware
+└─ recorded/
+   ├─ redistributable/   real sessions and files cleared for publication
+   └─ manifests/         everything else, as measured facts
+```
+
+A capture or a file that cannot be redistributed leaves **no bytes** in the
+repository. It leaves a manifest: hash, recording or exporting tool version,
+sender or producer identity and version, device or relay identity, the measured
+statistics, the expected diagnostics, expected frame and pose counts, the
+validation date, and the redistribution status. A BVH manifest additionally
+carries the profile id, frame time, joint and channel counts, coordinate
+convention, unit, root policy, and the bones it is expected to map. That is
+enough for a later reader to tell whether a claim still holds without the bytes,
+and it is the same convention the VRM corpus already uses for models it cannot
+ship.
+
+Public CI runs the redistributable half. Hardware validation is an **opt-in
+lane** that never gates a pull request — its output is a capture and a manifest,
+not a green tick. A device is needed once per behavior, not once per run.
+
+### Carried into v0.7.0
 
 - ⬜ **Freeze the Linux and macOS symbol baselines.** `tests/baseline/symbols/`
   holds `windows-x86_64.txt` only, because until the workspace cells landed no
@@ -109,34 +146,179 @@ met, both ahead of schedule:
   `usdvrmfileformat-support-windows-cy2026` pairs a 26.05-built plugin with a
   26.08 runtime. OpenUSD guarantees no ABI stability across versions, so that
   artifact must be republished before the lane's result means anything.
-  Untouched by v0.5.0. It is also the reason `ost ci validate` exits non-zero on
-  a workstation that holds the artifact (the evidence gate); hosted runners do
-  not hold it, so the generated lanes stay green.
+  Untouched by v0.5.0 and v0.6.0. It is also the reason `ost ci validate` exits
+  non-zero on a workstation that holds the artifact (the evidence gate); hosted
+  runners do not hold it, so the generated lanes stay green.
 - ⚠️ **`release.yml` stays hand-authored, and hand-mirrors what the contract now
   expresses.** Its X11 step, its `ost` pin and its runtime digests are copies of
   `openstrata.ci.yaml` values; regeneration never touches them and a green PR
   lane proves nothing about it. The `ost` release contract (`release:` in the
   matrix) is the eventual fix; adopting it is not scoped yet.
+- ⬜ **The workspace graph gate does not reach an adapter.** `ost` 0.21.0
+  discovers plain libraries in the project root's immediate subdirectories and
+  under `libs/`, so `adapters/liveCapture/*/openstrata.library.yaml` is never
+  loaded and its declared edges are never validated — silently, since the gate
+  still reports "valid". Until
+  [report 34](../reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md)
+  is answered, the per-adapter binary link check is the enforcement — and
+  `vrmAdapterMocopi` will need its own from the first commit.
+- ⬜ **An adapter cannot be packaged separately.** `ost` 0.21.0 has no
+  per-library packaging command, and adapters are deliberately not part of the
+  aggregate product ([WORKSPACE.md §5](../architecture/WORKSPACE.md)). This does
+  not block v0.7.0 — the release boundary ends at a retargeted
+  `UsdSkelAnimation` from the workspace build — but it does block shipping an
+  adapter on its own.
+- ⬜ **Profiles are data that has to reach an artifact.** `motionSource` and
+  `motionBvh` *are* in the aggregate product (their libraries carry no product
+  name, only the data beside them does), so the BVH path's artifact-only smoke
+  needs `share/usd-vrm-plugins/profiles/motion/` staged with the tools. `ost`
+  0.21.0 has no notion of a data-only member and how the files get there is
+  unverified. A converter with no profile available refuses every file it is
+  given, so this is the difference between the smoke test passing and being
+  impossible to write.
 
-### Closed by the ost 0.21.0 adoption
+## Then: v0.8.0 — the OpenExec foundation (Workspace Phase 8 + Motion Phase E) ⬜
 
-- ✅ **The Linux cells' `apt-get` step is in-contract.** `host_packages:
-  {apt: [libx11-dev, libxt-dev]}` on every Linux cell renders the step, so
-  `ost ci generate github --force` re-emits it instead of deleting a hand-added
-  one. Only `release.yml` still hand-carries it.
-- ✅ **Runtime digests are pinned in one place again.** `motion-ci.yml` is gone;
-  a hand-written lane that still needs the pins can read them from
-  `ost ci matrix --json` rather than copying them.
-- ✅ **The CLIs ship in the release artifacts.** `tools/*/openstrata.tool.yaml`
-  makes `motion_retarget` and `motion_capture` tool members of the aggregate
-  product (6 members), and `release.yml` stages them with the bundles.
+**Release boundary:** `execMotion` and `execVrm` bundles exist and evaluate a
+humanoid through OpenExec, proven equal to the offline result on the same input.
+Nodes are thin wrappers over `motionRuntime` and `vrmRetarget`, never a second
+implementation, and each evaluates an immutable snapshot rather than a live
+source. Planned in [openexec-foundation.md](openexec-foundation.md).
+
+**Why it moved behind v0.7.0.** It was scoped as v0.6.0 and could have been built
+there: parity is structurally implementable against generated fixtures alone. But
+what that proves is that two implementations agree about generated data — not
+that either one matches what a device or a sender emits. Ordering the adapter
+release first makes v0.7.0's recorded sessions the parity input, so OpenExec
+arrives as a second evaluation surface over a pipeline already validated against
+real hardware, rather than as a new path validated against itself.
+
+Not in this boundary: realtime skinned display (bounded upstream — see the P0-7
+decision below), any `ExecIr` dependency, and network I/O inside a computation,
+which is a permanent non-goal rather than a deferral.
+
+### Prerequisites already met
+
+Three of this milestone's blockers cleared early — two in v0.5.0, one in v0.6.0:
+
+- ✅ **One OpenUSD across three OS.** All three 26.08 runtimes are published to
+  `ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd` and every lane is pinned
+  to them, including the workspace cells and the release workflow. They carry
+  OpenExec (`exec`, `execGeom`, `execIr`, `execUsd`, `usdExecImaging`, `vdf` —
+  198 headers under `include/pxr/exec`) and were built `--examples`, so the
+  26.08 `ExecIr` samples ship inside the runtime. Digests and evidence:
+  [report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md)
+  (Windows, Linux),
+  [report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md)
+  (macOS arm64).
+- ✅ **The motion layer has CI.** The named P0-2 blocker is cleared, not by the
+  v0.5.0 workaround but by `ost 0.21.0`: four `kind: workspace` cells in
+  `openstrata.ci.yaml` build the root tree and run its whole CTest suite, and
+  `motion-ci.yml` is deleted. See
+  [report 33](../reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md).
+  What remains is coverage, not lane shape.
+- ✅ **The `motionCore` aggregates can be compared** (v0.6.0, below).
+  `ExecTypeRegistry::RegisterType` needs exact equality before a pose type can be
+  registered at all; that was P0-4's stated blocker and it is gone.
+
+### Still open
+
+- ⬜ **Amend the OpenExec capability probe** with what the audit found: `esf`,
+  `esfUsd` and `ef` go unprobed although the public exec headers require them,
+  and `usdExecImaging` proves nothing because it is built whether or not
+  `PXR_BUILD_EXEC` is on. The refusal is still correct today — the other five
+  components are absent in that configuration — so this is precision, not a hole.
+- ⬜ **`execMotion`, `execVrm`, parity, and the display slice** — P0-4 through
+  P0-7 of the [plan](openexec-foundation.md#6-foundation-tasks). Mechanism before
+  behavior: the first spike registers no real computation, so a failure is
+  attributable.
+- ✅ **P0-7's re-scope is decided** (2026-07-29). The `usdExecImaging` slice
+  ships as an **exec-computed `UsdGeomXformable`** shown through the exec scene
+  index — time and motion inputs recompute, an unrelated material change does
+  not, and it runs from packaged plugins. Everything except the prim adapter is
+  exercised for real, so the plumbing risk is retired on the half we control.
+  Realtime **skinned** display becomes its own milestone after the `ExecIr`
+  track, and the upstream ask for plugin-registered exec imaging adapters is
+  tracked separately — a custom Hydra scene index is deliberately *not* the first
+  fallback. Two further decisions landed with it: an OpenExec computation
+  evaluates an immutable snapshot and performs no I/O, and `ExecIr` is an
+  optional experimental adapter rather than a foundation. All three are in the
+  [plan](openexec-foundation.md) §1, §7.0 and P0-7, and the two structural ones
+  in [WORKSPACE.md §2](../architecture/WORKSPACE.md).
+
+## Shipped: v0.6.0 — VMC input
+
+[v0.6.0](../releases/v0.6.0.md) is **released** — tagged 2026-08-03.
+
+**Release boundary:** VMC Protocol arrives as OSC-over-UDP and becomes canonical
+humanoid motion, recorded and replayable. It does **not** begin OpenExec — that
+is v0.8.0 — and it validates against generated bytes rather than a real sender,
+which is v0.7.0.
+
+- ✅ **`vrmAdapterVmc`, built transport-last.** `UdpReceiver`,
+  `OscPacketDecoder`, `VmcMessageDecoder`, `VmcFrameAssembler`, `SkeletonMap`,
+  and the `LiveSource` bridge — five layers verifiable from committed bytes
+  before a socket exists, which is what keeps the corpus a record of what a
+  sender sent rather than of what the receiver let through.
+- ✅ **A packet capture format, not a trace.** `vmc-packet-capture` v1 records
+  the datagrams a session delivered, verbatim, with the instant each arrived.
+  A `motion-capture-trace` records what an adapter *produced*; only a capture can
+  represent a truncated datagram, a duplicate delivery, or a restart mid-frame.
+- ✅ **Seven generated captures, replayed through every layer.** Bundled and
+  unbundled sender shapes, ignorable traffic, ten packet-level refusals, a
+  duplicate, a backwards clock, a restart, valid-OSC-refused-one-layer-up, and
+  nine arguments counted but never interpreted. The loopback corpus replays all
+  seven **through a real socket** and gets `operator==`-identical poses.
+- ✅ **`vmc_record`.** Records a bounded live session or inspects a capture, and
+  reports receive, decode, frame, and intake statistics in one block — plus hips
+  offset and root movement as evidence for the two open questions, and the
+  condition that stopped the recording.
+- ✅ **Exact and tolerant motion comparison** — `operator==` and `NearlyEqual`
+  on the `motionCore` aggregates, differing in three stated places: a quaternion
+  and its negation, provenance, and a tolerance derived from the recorded-trace
+  format's six decimals rather than picked per test.
+  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060)
+  carries the semantics. This also unblocked the OpenExec plan's P0-4.
+- ✅ **The thread question, answered by moving the boundary.** Motion policy
+  §11.4 assumed a thread-safe pose buffer that does not exist. The hand-off is a
+  bounded queue of **raw datagrams** instead, so `DatagramQueue` is the only
+  synchronised object anywhere in the path and `motionRuntime` keeps the
+  single-threaded contract its tests are written against.
+
+Also landed with v0.6.0, ahead of the OpenExec plan that needed them:
+
+- ✅ **OpenUSD is pinned to 26.08, and the pin is enforced rather than
+  declared.** The `>=25.05,<27.0` tolerated range is retired in all four bundle
+  manifests, and `cmake/UsdVrmOpenUsd.cmake` refuses anything else at configure
+  time — from the root project, from a standalone `ost plugin build`, and from a
+  plain-CMake build that never sees `ost`. The same module probes the six
+  OpenExec libraries and refuses a 26.08 without them, which is a *detection*
+  check: 26.08 has no OpenExec build toggle. `buildInfo.json` (schema 2) records
+  the release, `PXR_VERSION`, and the OpenExec components.
+  `workspace_openusd_contract` drives the module against fixture installs so the
+  refusals are tested — no runtime we own takes that path — and
+  `scripts/check_docs.py` keeps the manifests, the module, and
+  [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md) from
+  drifting apart.
+- ✅ **The 26.08 OpenExec migration audit is written**:
+  [reports/openusd/26.08-openexec-migration.md](../reports/openusd/26.08-openexec-migration.md).
+  It reads the published runtime's own headers and plugInfo files plus the
+  `v26.08` sources — nothing was compiled or run, and the report says so. The
+  plan's core bet holds: a computation can be a thin wrapper, because
+  registration is declarative and a callback is a pure function of resolved
+  inputs. Five findings changed the foundation's scope, two of them structural:
+  **`VtArray` is not an execution value type**, so a pose crosses a computation
+  boundary as a registered `motionCore` aggregate rather than as an array — this
+  decides every `execMotion`/`execVrm` signature; and **`usdExecImaging`'s prim
+  adapter registry is hard-coded** to `UsdGeomXformable` and `ExecIrXformable`,
+  so the planned `UsdSkel` display slice cannot be registered in 26.08.
 
 ## Shipped: v0.5.0 — live capture
 
 [v0.5.0](../releases/v0.5.0.md) is **released** — tagged 2026-07-26.
 
 **Release boundary:** a generic `LiveCaptureSource` feeding the same retarget
-core v0.4.0 shipped. It does **not** begin OpenExec — that is v0.6.0.
+core v0.4.0 shipped. It does **not** ship a vendor adapter — that is v0.6.0.
 
 - ✅ **Motion Phase D — the live-capture surface.** `IMotionSource` with an
   explicit `PoseSampleStatus`, `ClipSource`, and `LiveCaptureSource`:
@@ -159,14 +341,12 @@ core v0.4.0 shipped. It does **not** begin OpenExec — that is v0.6.0.
   avatar-independent semantic clip `usdVrmaFileFormat` produces, and the
   end-to-end test bakes it onto a real avatar with the **unchanged** Phase C
   tool, then resolves the result through a `UsdSkelSkeletonQuery`.
-- 🚧 **A CI lane for the motion layer was written but is not wired** — the
-  v0.4.0 carry-over is *not* closed. See below.
 - ✅ **One humanoid taxonomy.** `HumanBoneParent` / `NearestPresentAncestor` /
   `HumanBoneJointPath` moved into `motionCore`; the `.vrma` reader's private
   copy is gone.
 
 Explicitly deferred: any product-specific adapter, validation against a real
-capture rig, and OpenExec evaluation (Motion Phases E–H).
+capture rig, and OpenExec evaluation.
 
 ### Attempted in v0.5.0 — the motion-layer CI lane 🚧
 
@@ -269,8 +449,7 @@ Three decisions worth carrying forward:
   bundle.
 
 Explicitly deferred: live capture, generation, expression, look-at, OpenExec
-evaluation, blending beyond the primitive, IK, and foot locking (Motion Phases
-D–H).
+evaluation, blending beyond the primitive, IK, and foot locking.
 
 Shipped with the tag, after the retarget work: the `.vrma` importer and the bake
 both authored a `UsdSkelAnimation` without `scales`, which UsdSkel resolves as a
@@ -280,15 +459,10 @@ joint at its rest pose — the clip did not move
 now author a constant identity array, and the tests drive a
 `UsdSkelSkeletonQuery` rather than comparing authored values.
 
-### Carried out of v0.4.0 — one closed, one still open
+### Carried out of v0.4.0 — both now closed
 
-- ⬜ **No CI lane covers the motion layer.** Still true; see the attempt above. `ost ci generate` emits one job per
-  *bundle* cell, and `ost plugin test --workspace` tests bundles — so
-  `motionRuntime`, `vrmRetarget`, and `motion_retarget` are compiled and tested
-  only in the plain-CMake root build, which no lane runs. Their manifest edges
-  *are* validated by `ost plugin test --workspace` (it discovers plain
-  libraries; see [WORKSPACE.md §8](../architecture/WORKSPACE.md)). Filed as the
-  P0 ask in
+- ✅ **No CI lane covers the motion layer.** Closed by the `ost` 0.21.0
+  adoption; filed as the P0 ask in
   [report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md).
 - ✅ **The baseline gate needs an explicit full-workspace session.**
   `discovery.json` freezes the union across every bundle, but a bundle that
@@ -330,13 +504,20 @@ schemas. Since Workspace Phase 4 that is wrong in every particular.
 
 - 🚧 Describe `vrmSchema`, `usdVrmFileFormat`, `usdVrmPackageResolver`, and
   `usdVrmaFileFormat` as separate bundles; `vrmContainer`, `motionCore`,
-  `motionRuntime`, and `vrmRetarget` as plain libraries; `motion_retarget` as a
-  CLI; and `usdVrm` as the aggregate product name only.
+  `motionRuntime`, `vrmRetarget`, and `vrmAdapterVmc` as plain libraries;
+  `motion_retarget`, `motion_capture`, and `vmc_record` as CLIs; and `usdVrm` as
+  the aggregate product name only.
 - 🚧 Unify phase notation to **Product P0–P6**, **Workspace Phase 0–8**, and
   **Motion Phase A–H** — three sequences, never a bare "Phase N".
 - 🚧 Align build / test / install examples with what CI actually runs.
 - 🚧 Adopt the house documentation taxonomy shared with `open-strata` and
   `hydra-merlin`.
+- ✅ **Version drift between the roadmap and the release records is checked**
+  (2026-08-03). `scripts/check_docs.py` asserts that `VERSION` has a release
+  record, that a `Next:` / `Then:` milestone is not an already-released version,
+  that a `Shipped:` one is, that the roadmap status table agrees with the
+  headings, and that no document references a retired roadmap filename. The
+  v0.6.0→v0.8.0 re-ordering is exactly the drift it exists to catch.
 
 Done when: the component table matches the manifests, no document describes
 `usdVrm` as a bundle id, every local link resolves, and a consistency check
@@ -360,10 +541,11 @@ guards all of it in CI.
   green (see [report 25](../reports/ost/25-2026-07-18-v0.18.0-from-package-workspace-correction.md));
   it covers `minimal.vrm` per bundle, so it joins the smoke script rather than
   replacing it.
-- ⬜ **Decide whether `motion_retarget` ships in the release artifacts.** It is
-  an executable, not a bundle, so no member archive carries it today. The
-  aggregate product is the obvious home; that needs an `ost` packaging answer
-  first (see report 28).
+- ✅ **The CLIs ship in the release artifacts.** `tools/*/openstrata.tool.yaml`
+  makes `motion_retarget` and `motion_capture` tool members of the aggregate
+  product, and `release.yml` stages them with the bundles. `vmc_record` is an
+  adapter tool and stays outside the product by
+  [WORKSPACE.md §5](../architecture/WORKSPACE.md).
 - ⛔ **A second OpenUSD version cell** (min vs latest) in the compatibility
   matrix. Today CI runs cy2026 / OpenUSD 26.08 only. **Blocked externally:**
   GHCR has no published min-version (e.g. OpenUSD 25.05 / cy2025) runtime
@@ -381,6 +563,7 @@ The OS axis is shipped. Remaining:
   specifies `ost plugin test --workspace` as the enforcement for the dependency
   directions, and §8 called for it to be a required PR-lane gate from Workspace
   Phase 1 on. The `workspace-graph-pr` cell runs `--graph-only` on every PR.
+  *(It does not yet reach an adapter — see the v0.7.0 carry-over above.)*
 - ⬜ Explicit **UTF-8 / Unicode path** and **DLL dependency discovery** coverage
   on the Windows cell.
 - ⬜ **Real VRM smoke test** (open + texture resolve) exercised in CI, not just

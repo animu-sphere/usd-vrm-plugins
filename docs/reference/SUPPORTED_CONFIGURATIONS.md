@@ -20,8 +20,11 @@ v0.1.0–v0.5.0 declared. Two reasons, and only the first applied before:
 1. **OpenUSD guarantees no ABI stability across releases.** A plugin built
    against one OpenUSD and loaded into another is undefined behavior, and the
    range never made that safe — it only made it undiagnosed until load time.
-2. **The workspace now builds on OpenExec**, whose API is not stable either
-   ([the OpenExec plan §1](../roadmap/openexec-v0.6.0-v0.7.0.md)).
+2. **The workspace is committed to OpenExec**, whose API is not stable either
+   ([the OpenExec plan §1](../roadmap/openexec-foundation.md)). Nothing links it
+   yet — the `execMotion` / `execVrm` bundles are v0.8.0 — but the runtime is
+   required to carry it from v0.6.0 on, so the refusal is in place before the
+   first computation rather than after it.
 
 Anything other than 26.08 is refused **at configure time**, by every entry
 point that resolves OpenUSD — the root project, each bundle built standalone by

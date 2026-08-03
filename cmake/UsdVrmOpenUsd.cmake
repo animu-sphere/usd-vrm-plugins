@@ -6,9 +6,12 @@
 #
 #   1. OpenUSD is 26.08 and nothing else. The `>=25.05,<27.0` tolerated range
 #      v0.1.0-v0.5.0 declared is retired in v0.6.0 (the OpenExec plan §1, §4.1).
-#   2. The runtime carries OpenExec. From v0.6.0 OpenExec is a first-class
-#      execution basis, not an optional experiment, so a runtime without it is
-#      rejected at configure time rather than at link time inside execMotion.
+#   2. The runtime carries OpenExec. The workspace is committed to it as a
+#      first-class execution basis rather than an optional experiment, so a
+#      runtime without it is rejected at configure time rather than at link time
+#      inside execMotion. The pin landed in v0.6.0 and the bundles that use it
+#      are a later release (docs/roadmap/README.md carries the schedule); the
+#      refusal is deliberately in place before the first computation, not after.
 #
 # Every entry point that resolves OpenUSD includes this immediately after its
 # `find_package(pxr ...)`: the root project, each bundle under plugins/, each
@@ -145,9 +148,10 @@ if(_usdvrm_openexec_missing)
         "This OpenUSD ${USDVRM_OPENUSD_RELEASE} install has no usable "
         "OpenExec. Missing:\n  - ${_usdvrm_openexec_missing_text}\n"
         "  OpenUSD prefix: ${PXR_INCLUDE_DIRS}\n"
-        "From v0.6.0 OpenExec is a first-class execution basis, not an "
-        "optional experiment (the OpenExec plan §1). Build or pull an OpenUSD "
-        "26.08 that installs the exec libraries and their headers.")
+        "This workspace is committed to OpenExec as a first-class execution "
+        "basis, not an optional experiment (the OpenExec plan §1). Build or "
+        "pull an OpenUSD 26.08 that installs the exec libraries and their "
+        "headers.")
 endif()
 unset(_usdvrm_openexec_missing)
 

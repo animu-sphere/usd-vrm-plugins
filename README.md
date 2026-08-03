@@ -36,6 +36,9 @@ project's central design decision, and it is described below.
 | [`motion_capture`](tools/motionCapture) | CLI executable | Replays a recorded capture session into a semantic clip the above consumes unchanged | v0.5.0 |
 | [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | VMC Protocol input: OSC-over-UDP datagrams → canonical humanoid motion | v0.6.0 |
 | [`vmc_record`](adapters/liveCapture/vmc/tools/vmcRecord) | CLI executable | Records and inspects VMC packet captures with a decode report | v0.6.0 |
+| `motionSource` | Plain static CMake library | Format-neutral source skeleton / animation model, the producer-profile contract, and the converter to canonical humanoid motion | Planned |
+| `motionBvh` | Plain static CMake library | BVH syntax and extraction only — no producer semantics, no default profile | Planned |
+| `motion_bvh_inspect` · `motion_bvh_convert` | CLI executables | Report what a BVH file contains; convert one to the avatar-independent semantic clip under a named profile | Planned |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
 
 `usdVrm` is not a bundle id — it names the product as a whole. It *was* the
@@ -57,6 +60,16 @@ VMC Protocol from OSC-over-UDP through frame assembly and VRM bone mapping into
 the existing `LiveCaptureSource`; `vmc_record` records the same wire input for
 inspection and corpus work.
 
+Every corpus behind that is **generated** — the motion traces from closed-form
+maths, the VMC captures from the protocol's shapes — so nothing here has yet met
+a real sender or a real device. Recording that evidence is the next release,
+along with the other half of the input layer: a capture product sends packets
+*and* writes files, and reading the files is a generic BVH pipeline
+(`motionBvh` + `motionSource` + a declarative producer profile) rather than that
+product's importer. The two halves meet at `motionCore` and nowhere earlier.
+OpenExec evaluation follows, and uses those recordings as its parity input.
+Schedule: [docs/roadmap/](docs/roadmap/README.md#status-at-a-glance).
+
 | Component | Type | Role |
 | --- | --- | --- |
 | [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle | `.vrma` motion clips → `UsdSkelAnimation` on a *canonical semantic* humanoid skeleton |
@@ -66,7 +79,9 @@ inspection and corpus work.
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | The stage half: reads the rig and the clip, bakes the retargeted `UsdSkelAnimation`, binds `skel:animationSource` |
 | `execMotion` | OpenExec bundle | Vendor-neutral motion nodes |
 | `execVrm` | OpenExec bundle | VRM semantics: retarget, root motion, expression, look-at, avatar apply |
-| `adapters/` | Optional plain libraries + their CLIs | Input leaves — a VMC Protocol adapter first, then vendor-native and generator adapters. The **only** place product or protocol names are permitted (e.g. VMC, Mocopi, ARDY) |
+| `adapters/` | Optional plain libraries + their CLIs | **Live** input leaves — a VMC Protocol adapter first, then vendor-native and generator adapters. The **only** place product or protocol names are permitted *in code* (e.g. VMC, Mocopi, ARDY) |
+| `motionSource` · `motionBvh` | Plain static CMake libraries | **Recorded-file** input: BVH syntax, a format-neutral source model, and conversion to canonical humanoid motion under an explicit producer profile |
+| `profiles/motion/` | Package data | One declarative file per producer *and export preset*. Product names live here rather than in the libraries that read them |
 | [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | The first input leaf: VMC Protocol from OSC-over-UDP datagrams through frame assembly and VRM bone mapping to canonical humanoid semantics; includes a recorded-packet corpus and the `vmc_record` CLI |
 
 `.vrm` and `.vrma` are deliberately **separate** file-format plugins with
@@ -92,6 +107,9 @@ motion_retarget (CLI) ──> vrmRetarget + OpenUSD stage APIs
 vrmAdapterVmc ──────────> motionCore, motionRuntime
 
                           (planned)
+motionSource ───────────> motionCore
+motionBvh ──────────────> motionSource
+motion_bvh_convert ─────> motionBvh, motionSource, OpenUSD stage
 execMotion ─────────────> motionCore, motionRuntime
 execVrm ────────────────> vrmSchema, vrmRetarget
 ```
@@ -107,6 +125,11 @@ Five rules keep those edges honest:
   testable before any OpenExec node exists; the nodes are thin wrappers.
 - Adapters depend on the core. The core never depends on an adapter, and
   `motionCore` never sees a vendor SDK, a network protocol, or a product name.
+- A file reader knows a format and no semantics; `motionSource` knows semantics
+  and no format. `motionBvh → motionSource` never reverses, so a second reader
+  can be added without changing anything above it.
+- **Live input and recorded files meet at `motionCore` and nowhere earlier.** An
+  adapter never reaches for a reader, and a reader never reaches for an adapter.
 
 The bundle graph is validated by `ost plugin test --workspace`, and each
 consumer adds a binary link check proving what it does and does not import. Full

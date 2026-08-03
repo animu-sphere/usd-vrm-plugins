@@ -17,13 +17,31 @@ semantics in
 > adapter second. The reasoning is in [§1](#1-what-this-adds-and-why-in-this-order).
 > The filename keeps the original triple so existing links and the v0.5.0
 > changelog entry still resolve; it is not the implementation order.
+>
+> **Scheduled on 2026-08-03.** This track was written as unscheduled work
+> alongside the OpenExec plan. It is now the repository's *primary* line:
+> Milestone A shipped in [v0.6.0](../releases/v0.6.0.md) and Milestones B–D are
+> [v0.7.0](current.md). The [OpenExec foundation](openexec-foundation.md) moved
+> behind it, because its parity comparison wants recorded sessions from a real
+> device and real senders as input, and only this track produces those. **The
+> mocopi native adapter is a committed deliverable**, not a decision to be taken
+> later — see [§6](#6-phase-2--the-mocopi-native-adapter).
+>
+> **Narrowed the same day: this plan is *live* input.** A capture product also
+> writes recorded files, and reading those is a file-format problem with its own
+> layering, its own diagnostics, and its own second-producer requirement. It is
+> [recorded-motion-sources.md](recorded-motion-sources.md), and it is deliberately
+> not a mocopi importer. This document keeps sockets; that one keeps files; they
+> meet at `motionCore`. The one place they are compared is
+> [§9.6](#96-cross-source-comparison), on a single session observed both ways.
 
 Sequence context: the generic live-capture surface these adapters plug into
 shipped in v0.5.0 (Motion Phase D). This plan is the vendor half of Motion
-Phase D and the whole of Motion Phase F. It is independent of the v0.6.0/v0.7.0
-[OpenExec direction](openexec-v0.6.0-v0.7.0.md) and neither blocks the other —
-[§3](#3-this-track-does-not-wait-for-openexec) states that as a commitment
-rather than an observation.
+Phase D and the whole of Motion Phase F. It does not depend on the
+[OpenExec foundation](openexec-foundation.md) in any direction that could block
+it — [§3](#3-this-track-does-not-wait-for-openexec) states that as a commitment
+rather than an observation — and the one dependency that does exist runs the
+other way: this track's recorded corpus is that plan's parity input.
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
@@ -32,11 +50,11 @@ Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 Three inputs, added one at a time:
 
 1. **A VMC Protocol adapter** — generic real-time input from any sender
-   application.
+   application. Shipped in [v0.6.0](../releases/v0.6.0.md).
 2. **A direct capture-product adapter** (mocopi) — native input from a real
-   device, added on measured evidence that the protocol path loses something.
+   device, built *after* the protocol path so the two can be compared. v0.7.0.
 3. **A generation adapter** (ARDY) — generated motion behind a vendor-neutral
-   generator contract.
+   generator contract. Unscheduled.
 
 ```text
 VMC adapter ────┐
@@ -58,10 +76,18 @@ mocopi first on the argument that only a real device produces evidence about
 timestamp drift, tracking loss, dropped joints, confidence behavior, and
 reconnection. That argument survives intact — but the same evidence arrives
 through the relay path, without a second decoder, and it arrives as a *recorded
-trace* CI can replay. So the native adapter is now justified by what the relay
-is **measured** to drop rather than by what it might drop, and the four triggers
-are written down in [§6](#6-phase-2--the-mocopi-native-adapter) before any code
-is written against them.
+trace* CI can replay. So the protocol adapter comes first because it is the
+cheaper way to reach a real device, not because the native one is optional.
+
+**The native adapter is not conditional.** An earlier draft of this document
+made it contingent: four triggers, and if the relay dropped nothing measurable
+the native adapter would be deferred. That is retired. Building it is a decided
+part of v0.7.0, and the relay comparison changed roles with the decision — it is
+no longer a go/no-go, it is the phase's **distinguishing check**, the one that
+says the two paths deliver the same motion and names every difference that
+remains ([§6](#6-phase-2--the-mocopi-native-adapter)). A comparison that decides
+whether to build something can only be run once; a comparison that verifies two
+shipped paths runs on every recorded session, forever.
 
 **Why generation is last.** Its prerequisite is a contract, not a device.
 
@@ -130,6 +156,20 @@ OpenExec connects *afterwards*, on top of a finished canonical pipeline:
 ```text
 canonical motion snapshot  ->  execMotion  ->  execVrm  ->  evaluation result
 ```
+
+**Since 2026-08-03 the schedule agrees with the dependency.** The OpenExec
+foundation is v0.8.0 and this track's Milestones B–D are v0.7.0, so the recorded
+sessions exist before anything compares against them:
+
+```text
+v0.7.0  recorded mocopi / VMC sessions  ──┬──>  offline pipeline
+                                          └──>  v0.8.0 execMotion / execVrm
+                                                      └── NearlyEqual ──┘
+```
+
+The arrow that matters is the one that is absent: nothing here reads back from
+OpenExec. An adapter that could not be tested until an exec bundle existed would
+have violated the paragraph above; supplying that bundle's input does not.
 
 One consequence is worth stating because it would otherwise leak in as a hidden
 blocker. This path has an independent upstream constraint in OpenUSD 26.08 —
@@ -264,20 +304,48 @@ and no VMC-specific code has leaked into `motionCore` or `motionRuntime`.
 
 ## 6. Phase 2 — the mocopi native adapter
 
-**Goal:** native device input, for the cases the relay path is measured to fail.
-
-It is added when at least one of these is demonstrated, not assumed:
-
-- metadata the VMC path drops is actually needed (SDK-specific confidence,
-  device and sensor state, tracking-quality signals);
-- latency through a sender application is measurably too high;
-- tracking confidence or sensor state must reach the runtime's confidence
-  gating;
-- a direct connection is required with no third-party sender running.
+**Goal:** native **live** device input, with no third-party sender application in
+the path — and a measured account of what the relay path does to the same motion.
 
 ```text
-mocopi native SDK / native stream → vrmAdapterMocopi → canonical motion
+mocopi native UDP stream → vrmAdapterMocopi → canonical motion
 ```
+
+> **This adapter is the live half only.** A capture product also writes recorded
+> files, and those are not a mode of this adapter: a BVH file argues about a
+> hierarchy, channel order, a frame time and a rest pose, where this argues about
+> packets, arrival timestamps, restarts and tracking loss. The recorded half is
+> [recorded-motion-sources.md](recorded-motion-sources.md), built as a generic BVH
+> pipeline rather than as this product's importer, and the two meet at
+> `motionCore` and nowhere earlier
+> ([motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md),
+> [WORKSPACE.md §2](../architecture/WORKSPACE.md)). Sharing a decoder between them
+> is how a file reader acquires a socket's assumptions, or a socket a file's.
+>
+> They do meet again in one place that is worth the trouble: the **same physical
+> session** can be captured live over UDP and exported to a file, so the two paths
+> can be compared on motion that is genuinely the same. That comparison is
+> [§9.6](#96-cross-source-comparison).
+
+**Decided 2026-08-03: this is built, not gated.** The four triggers this section
+used to list — metadata the VMC path drops, relay latency, confidence and sensor
+state reaching the runtime's gating, and a direct connection with no third-party
+sender running — are no longer conditions for starting. They are the list of
+things the native path is expected to **recover**, and each one is a measurement
+this phase owes rather than a hypothesis it tests first:
+
+| What the relay may cost | What v0.7.0 records |
+| --- | --- |
+| SDK-specific confidence, sensor and device state | which fields exist natively and reach the runtime's confidence gating |
+| latency through a sender application | the measured added latency, both paths, same session |
+| timestamp quality | the native clock against the relayed one, and what alignment costs |
+| root and hips semantics | what each path reports, against the open question in §5.2 |
+| tracking loss and reconnect semantics | whether the relay can express them at all |
+| operational dependency | that a session runs with no third-party application |
+
+The two paths stay strictly separate in code no matter what the measurement
+says: `vrmAdapterMocopi` does not use `vrmAdapterVmc` internally (§2.1), and a
+relay-shaped assumption is exactly what a native decoder must not inherit.
 
 | Component | Owns |
 | --- | --- |
@@ -354,9 +422,11 @@ VRM_VMC_TIMESTAMP_REGRESSION    VRM_VMC_DUPLICATE_BONE
 VRM_VMC_INCOMPLETE_FRAME        VRM_VMC_SOURCE_RESTARTED
 VRM_VMC_SOCKET_BIND_FAILED      VRM_VMC_STALE_JOINT
 
-VRM_MOCOPI_DEVICE_UNAVAILABLE   VRM_MOCOPI_TRACKING_LOST
-VRM_MOCOPI_UNSUPPORTED_JOINT    VRM_MOCOPI_TIMESTAMP_INVALID
-VRM_MOCOPI_PACKET_MALFORMED
+VRM_MOCOPI_SOCKET_BIND_FAILED   VRM_MOCOPI_TRACKING_LOST
+VRM_MOCOPI_DEVICE_UNAVAILABLE   VRM_MOCOPI_TIMESTAMP_INVALID
+VRM_MOCOPI_UNSUPPORTED_JOINT    VRM_MOCOPI_SOURCE_RESTARTED
+VRM_MOCOPI_PACKET_MALFORMED     VRM_MOCOPI_FRAME_INCOMPLETE
+VRM_MOCOPI_NON_FINITE_TRANSFORM
 
 VRM_ARDY_REQUEST_REJECTED       VRM_ARDY_TIMEOUT
 VRM_ARDY_OUTPUT_MALFORMED       VRM_ARDY_UNSUPPORTED_SEMANTIC
@@ -369,9 +439,19 @@ VRM_MOTION_NON_FINITE_TRANSFORM VRM_MOTION_INVALID_ROTATION
 The `VRM_` prefix was added on 2026-07-29; an earlier draft of this document
 used bare `MOCOPI_*` / `VMC_*` / `ARDY_*`, which is the only diagnostic family
 in the repository without it (compare `VRM_RETARGET_*` in the
-[OpenExec plan](openexec-v0.6.0-v0.7.0.md) P1-1 and the importer's `VRM###`
+[OpenExec plan](openexec-foundation.md) P1-1 and the importer's `VRM###`
 codes). `VRM_OPENEXEC_*` is a **separate** namespace owned by that plan, not by
-any adapter.
+any adapter, and so is `VRM_BVH_*`
+([recorded motion sources §6](recorded-motion-sources.md#6-diagnostics)) —
+a file syntax error and a dropped packet are not the same class of event, and a
+reader should not have to know which adapter it might be compared against.
+
+The `VRM_MOCOPI_*` set gained four codes on 2026-08-03, so that it covers the
+same ground the VMC set does rather than a subset of it: a bind failure, a source
+restart, an incomplete frame, and a non-finite transform are all things the VMC
+adapter learned it needed and there is no reason a second live adapter would not.
+The set is still frozen before its decoder, which is the point — a code list
+written afterwards describes whichever failures were hit first.
 
 A diagnostic carries, where it applies: code, severity, source, timestamp,
 joint or message name, packet sequence, a recoverable flag, and human-readable
@@ -422,6 +502,45 @@ the importer corpus and `tools/baseline_freeze.py --check` already use, so a
 silently re-recorded fixture is a failing test rather than a quiet baseline
 move.
 
+#### Recorded evidence lives beside the generated corpus, never inside it
+
+```text
+adapters/liveCapture/<adapter>/tests/corpus/
+├─ generated/     protocol shapes, committed, CI-runnable, no hardware
+└─ recorded/
+   ├─ redistributable/   real sessions cleared for publication
+   └─ manifests/         everything else, as measured facts
+```
+
+A session that cannot be redistributed leaves **no bytes here at all**. It leaves
+a manifest, and the manifest has to be enough to tell whether a claim still holds
+without them: capture hash · recording tool version · sender identity and
+version · device or relay identity · the measured statistics · expected
+diagnostics · expected frame and pose counts · validation date · redistribution
+status. Where the bytes are kept is the operator's business and is not recorded
+in the repository.
+
+This is the same split the VRM corpus already runs for models it cannot ship, and
+it exists for the same reason: a fixture nobody can fetch is not evidence, but a
+measurement nobody can reproduce is at least a claim with a date on it.
+
+The **minimum recorded set for v0.7.0**, across mocopi and at least two more
+senders of different shape:
+
+```text
+mocopi-neutral-standing        vmc-tool-a-neutral
+mocopi-head-turn               vmc-tool-b-neutral
+mocopi-arm-raise               vmc-tool-b-unbundled-or-different-clock-shape
+mocopi-walk-root-motion        vmc-long-session
+mocopi-tracking-loss-recovery
+mocopi-sender-restart
+```
+
+Recorded where the session offers them, because each closes a question the
+generated corpus was written around rather than into: `partial-upper-body` ·
+`root-update-rate-differs` · `30hz-session` · `60hz-session` ·
+`two-peer-observation` · `relay-reconnection`.
+
 ### 9.3 Integration
 
 ```text
@@ -446,19 +565,70 @@ authoring · `motion_retarget` · plugin discovery · embedded resource resoluti
 
 ### 9.5 Lanes
 
+| Lane | Trigger | Hardware |
+| --- | --- | --- |
+| `adapter-unit` | every PR | no |
+| `adapter-generated-corpus` | every PR | no |
+| `adapter-recorded-public-corpus` | every PR | no |
+| `adapter-integration-loopback` | every PR (VMC) | no |
+| `adapter-hardware-opt-in` | manual / scheduled | **yes** |
+| `artifact-only-adapter-smoke` | release, and PRs where practical | no |
+
+**The hardware lane is never a required PR gate**, and its purpose is not to be
+green. Its purpose is to turn one session in front of a device into the two
+things this repository can keep: a capture and a measured manifest. A device is
+then needed once per behavior rather than once per run, and every subsequent run
+replays bytes.
+
+That is also why a red hardware lane is not a release blocker in itself — a
+device that behaves differently from last time is a finding, and the response is
+a new capture and an amended manifest, not a retry.
+
+### 9.6 Cross-source comparison
+
+One physical session can be observed three ways, and a device that writes files
+as well as sending packets is what makes the comparison honest — the motion is
+genuinely the same, not merely similar:
+
 ```text
-adapter-unit                  every PR
-adapter-integration-loopback  every PR (VMC; no hardware)
-adapter-recorded-corpus       every PR (fixtures from real sessions)
-adapter-hardware-opt-in       separate; never gates a PR
+                    ┌─> mocopi UDP     -> vrmAdapterMocopi ─┐
+one recorded ───────┼─> VMC relay      -> vrmAdapterVmc ────┼─> canonical motion
+session             └─> mocopi BVH     -> motionBvh ────────┘        ↓
+                                                              compared here
 ```
 
-Hardware results are saved as reproducible traces and fed back into the recorded
-corpus, so a device is needed once per behavior rather than once per run.
+Compared at the canonical layer, never at a decoder's: sample timing · bone
+rotations · root translation · missing joints · provenance · metadata loss · how
+each path represents tracking loss. **Latency is a live-path measurement only** —
+a file has none, and reporting one for it would be inventing a number.
+
+`NearlyEqual` for motion equivalence, `operator==` for recorded-value identity
+([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060)).
+A difference outside tolerance is classified before it is accepted, and the useful
+outcome of this comparison is not a green test — it is the list of what each path
+cannot carry, written down once, from evidence.
+
+The BVH half of this is planned in
+[recorded-motion-sources.md](recorded-motion-sources.md#7-testing); it appears
+here too because the comparison belongs to neither plan alone.
 
 ## 10. Milestones
 
-### Milestone A — VMC decoding 🚧
+| Milestone | Release | State |
+| --- | --- | --- |
+| A — VMC decoding | v0.6.0 | shipped |
+| B — VMC live receipt | v0.6.0 code, v0.7.0 evidence | the socket, the tool, and the corpus shipped; what a real sender does is v0.7.0 |
+| C — capture integration and offline E2E | v0.7.0 | ⬜ |
+| D — the mocopi native adapter | v0.7.0 | ⬜ |
+| E — the generator contract | unscheduled | ⬜ |
+| F — the generation adapter | unscheduled | ⬜ |
+
+Milestone B is split across two releases on purpose. Everything in it that can be
+verified from committed bytes shipped with v0.6.0; everything in it that needs an
+operator, a sender application, or a device is v0.7.0, and no amount of code
+closes those.
+
+### Milestone A — VMC decoding ✅ (v0.6.0, one item carried)
 
 `adapters/liveCapture/vmc` scaffold · recorded packet fixture format · OSC
 decoder · VMC message decoder · bone mapping · coordinate conversion · canonical
@@ -558,9 +728,11 @@ pose output · diagnostics · deterministic unit tests
   path (`VRM_VMC_UNSUPPORTED_MESSAGE`, the bone dropped and the frame kept) has
   no recorded capture behind it, and inventing one would be guessing at what a
   sender emits — which is the same argument §9.2 makes about the rest of the
-  generated set. A real sender's capture in Milestone B closes it.
+  generated set. **Carried to Milestone B and v0.7.0**, with the other two paths
+  of the same shape; it is the one item of this milestone that no amount of code
+  closes.
 
-### Milestone B — VMC live receipt 🚧
+### Milestone B — VMC live receipt 🚧 (code v0.6.0 · evidence v0.7.0)
 
 UDP receiver · frame assembler · stale/partial/out-of-order policy · source
 reset · `LiveCaptureSource` bridge · loopback integration test · VMC record tool
@@ -793,19 +965,77 @@ capture device validated through a VMC relay
   The CLI's two tests landed the same way, taking the root suite from 41 names
   to 43: `vmc_record_inspect` needs no socket and `vmc_record_loopback` binds
   one, split for the same reason and excludable the same way.
+- ⬜ **Real senders, of deliberately different shape** — a mocopi relay, a
+  general avatar tracker, and a VTuber or DCC application, plus the repository's
+  own loopback sender as the deterministic control. The roadmap names categories
+  rather than products on purpose: the property being bought is *different sender
+  behavior*, and pinning product names here would age faster than the document.
+  The chosen tools are fixed at validation time and recorded in the manifest,
+  because a sender's behavior is a property of its version.
 
-### Milestone C — capture integration and offline E2E ⬜
+  > **Best-effort as of 2026-08-03, not a release gate.** This was a numbered
+  > v0.7.0 release condition until the BVH axis was added to that release. It is
+  > still the right work and it is still where these questions get answered — a
+  > sender that is available during v0.7.0 gets recorded and reported — but the
+  > release no longer waits on lining up two or three applications. What replaces
+  > it as the gate is [§9.6](#96-cross-source-comparison), which needs only the
+  > device: one session, observed natively and as a file, with a VMC relay added
+  > where one is running.
+
+  Per sender, recorded rather than described: application and version · platform
+  · VMC output settings · sample rate · bundle usage · where `/VMC/Ext/T` sits
+  and how often · root update frequency · the observed bone set · which messages
+  it emits that we do not implement · restart behavior · packet count · refused
+  message count · emitted frame count · admitted pose count · stop condition.
+
+  Four of those lines are the ones the generated corpus could not produce, and
+  each corresponds to a rule this adapter decided from one sender shape:
+  `/VMC/Ext/T`'s position (the frame boundary), the observed bone set (the repeat
+  rule, and the staleness horizon it is measured against), root update frequency
+  (untested for want of a sender that varies it), and the unsupported message set
+  (`VRM_VMC_UNSUPPORTED_MESSAGE` has no recorded capture behind it at all).
+- ⬜ **The root and hips decision record.** §5.2 left it open twice — the
+  skeleton map handed it to the assembler, the assembler handed it to a real
+  sender — and `vmc_record` already reports both values as movement without
+  interpreting either. v0.7.0 closes it as a record whether or not it closes it
+  as a policy. If a policy is chosen it is one of `RootOnly`, `HipsOnly`,
+  `RootPlusHipsOffset`, or an explicit per-sender profile, and it is **never**
+  synthesised from a sender-specific guess (§2). If none is chosen, the record
+  still states: what was observed, what differed between senders, which value is
+  canonical today, what stays open, and what the open part costs downstream.
+- ⬜ **The three unit-tested paths with no capture behind them** close here or
+  are stated as unclosable: an unknown bone name, the receive-clock fallback when
+  a frame carries no `/VMC/Ext/T`, and the leading-bone reordering the repeat
+  rule's characterisation test pins. Each needs a real sender to *emit* it;
+  inventing a capture would be the guessing §9.2 argues against.
+
+### Milestone C — capture integration and offline E2E ⬜ (v0.7.0)
 
 `motion_capture` accepts a live VMC source · VMC trace → canonical samples →
 semantic clip reproducible in CI · semantic clip + VRM avatar → `motion_retarget`
 → retargeted `UsdSkelAnimation` · artifact-only adapter and retarget smoke
 
-### Milestone D — the mocopi native adapter ⬜
+### Milestone D — the mocopi native live adapter ⬜ (v0.7.0)
 
-`adapters/liveCapture/mocopi` scaffold · packet decoder · joint mapping ·
-coordinate conversion · tracking state and confidence · thin receiver ·
-reconnection · trace recording · opt-in real-device test · **native vs
-VMC-relayed comparison within a stated tolerance**
+`adapters/liveCapture/mocopi` scaffold · packet-capture fixture format · packet
+decoder · joint mapping · coordinate conversion · tracking state and confidence ·
+frame assembly · `LiveCaptureSource` bridge · thin UDP receiver · reconnection ·
+opt-in real-device test · **the cross-source comparison of §9.6**
+
+Same build order as Milestone A, for the same reason: recorded decoder → mapping
+→ live-source bridge → thin receiver. The transport arrives last so every layer
+below it is testable from committed bytes, and the device is needed for
+recording sessions rather than for running tests.
+
+Two things this milestone does **not** get to do, and they are worth naming
+because a native adapter is exactly where the temptation appears. It does not
+grow buffering, interpolation, or filtering — `MocopiLiveSource` is a bridge, and
+a bridge that acquires those has become a second motion runtime. And it does not
+widen the canonical contract: product-specific metadata is isolated as
+provenance, never as a new value type, so its output meets the *same* contract as
+`vrmAdapterVmc`'s rather than a superset of it. The one contract addition this
+phase legitimately needs is an explicit **tracking state** (§11), which is
+vendor-neutral and belongs to `motionCore` rather than to mocopi.
 
 ### Milestone E — the generator contract ⬜
 
@@ -841,7 +1071,7 @@ depends on them ([docs/README.md](../README.md)).
   - ✅ **Deterministic comparison**, landed 2026-08-02 — and as *two*
     comparisons, because the callers wanted different answers: `operator==` is
     the exact one `ExecTypeRegistry::RegisterType` requires
-    ([openexec plan](openexec-v0.6.0-v0.7.0.md) P0-4), and `NearlyEqual` with a
+    ([OpenExec plan](openexec-foundation.md) P0-4), and `NearlyEqual` with a
     stated `MotionTolerance` is the one a corpus test here needs, since a
     fixture recorded through six decimals never equals the pose that produced it
     bit for bit. The two differ in three stated places, and the corpus-relevant
@@ -928,16 +1158,17 @@ Adapters are never part of the aggregate product
 ([WORKSPACE.md §5](../architecture/WORKSPACE.md)), so each of these is its own
 shippable boundary:
 
-| Milestone | Includes | Excludes |
-| --- | --- | --- |
-| **Adapter** (A–C) | `vrmAdapterVmc`, the canonical-contract additions, the VMC corpus, record/replay, offline retarget E2E | OpenExec, usdview realtime skinning, `ExecIr`, any mocopi SDK |
-| **mocopi** (D) | `vrmAdapterMocopi`, native input, the VMC-path comparison, packaging and platform support | any OpenExec requirement, any `ExecIr` requirement |
-| **generation** (E–F) | the generator contract, `vrmAdapterArdy` | a hosted model as a build dependency |
+| Milestone | Release | Includes | Excludes |
+| --- | --- | --- | --- |
+| **VMC** (A–B, from bytes) | v0.6.0 | `vrmAdapterVmc`, the comparison additions to `motionCore`, the generated VMC corpus, `vmc_record`, loopback | any real-sender claim, OpenExec, `ExecIr`, any mocopi SDK |
+| **device** (B–C, D) | v0.7.0 | `vrmAdapterMocopi` **live**, the real-session corpus and manifests, the §9.6 cross-source comparison, the root/hips record, offline retarget E2E | recorded-file reading (that is [the BVH plan](recorded-motion-sources.md)), OpenExec, usdview realtime skinning, `ExecIr`, the ARDY generator |
+| **generation** (E–F) | unscheduled | the generator contract, `vrmAdapterArdy` | a hosted model as a build dependency |
 
 The OpenExec and `ExecIr` milestones are the
-[OpenExec plan](openexec-v0.6.0-v0.7.0.md)'s, and neither appears in the
-right-hand column by accident: an adapter that cannot ship without them has
-violated §3.
+[OpenExec plan](openexec-foundation.md)'s, and neither appears in a right-hand
+column by accident: an adapter that cannot ship without them has violated §3.
+That the OpenExec release is now scheduled *after* both adapter releases does not
+change the rule — it makes it cheaper to keep.
 
 ## 14. The shape this converges on
 

@@ -13,6 +13,70 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+### Changed
+
+- **The roadmap is rebased on what v0.6.0 actually shipped.** It still said
+  "Next: v0.6.0 — the OpenExec foundation" after v0.6.0 shipped VMC input, so the
+  sequence was rebuilt rather than renumbered by one: v0.7.0 is the mocopi native
+  adapter and real VMC sender validation, and the OpenExec foundation is v0.8.0.
+  The ordering is a claim about evidence, not preference — OpenExec parity is
+  worth exactly as much as its input, so the release that records real device and
+  sender sessions comes first and OpenExec then re-evaluates a pipeline that has
+  already met real hardware. Two decisions land with it: the mocopi native
+  adapter is a **committed deliverable** rather than something gated on measuring
+  what the VMC relay drops (the native-vs-relay comparison stays, as the phase's
+  distinguishing check rather than as a go/no-go), and recorded real-session
+  evidence is kept separately from the generated corpora — redistributable
+  captures committed, everything else as a measured manifest with no bytes.
+  `docs/roadmap/openexec-v0.6.0-v0.7.0.md` is renamed
+  `docs/roadmap/openexec-foundation.md`, because a filename carrying a version
+  number is drift waiting to happen, and
+  [`docs/roadmap/README.md`](docs/roadmap/README.md) now holds the one status
+  table that decides which release a track lands in.
+
+- **A capture product has two surfaces, and one adapter must not carry both.**
+  v0.7.0 grows a second axis: reading recorded motion files. It is deliberately
+  *not* a mode of the live adapter — a BVH file argues about a hierarchy, channel
+  order, a frame time and a rest pose, where a socket argues about packets,
+  timestamps, restarts and tracking loss — so the two are separate code meeting
+  at `motionCore` and nowhere earlier
+  ([motion policy §8.3](docs/design/MOTION_ARCHITECTURE_POLICY.md)).
+  `vrmAdapterMocopi` is now stated as live UDP only, and the VMC sender
+  interoperability matrix drops from a release condition to best-effort: the
+  cross-source comparison that replaces it as the gate needs only the device,
+  since one physical session can be captured live *and* exported to a file, which
+  makes the two paths comparable on motion that is genuinely the same.
+
+### Added
+
+- **The recorded half is a generic BVH pipeline, not a capture product's
+  importer** — [`docs/roadmap/recorded-motion-sources.md`](docs/roadmap/recorded-motion-sources.md),
+  with the identities and edges in
+  [`docs/architecture/WORKSPACE.md`](docs/architecture/WORKSPACE.md) §1, §2, §5.
+  A BVH file outlives the application that wrote it, and joint names, units, axes
+  and root conventions are facts about the *writer* rather than the format — so
+  `motionBvh` reads syntax and decides nothing semantic, `motionSource` is the
+  format-neutral model a second reader can be added behind, and what one
+  producer's export *means* is a declarative profile
+  (`<producer>-<format>-<preset>-v<N>`). A producer is not a profile: one
+  application's export presets can disagree, and two applications can agree.
+  There is **no default profile** — a caller names one or the conversion is
+  refused, because guessing from joint names is right often enough to be trusted
+  and wrong silently, and it produces motion that is subtly misassembled rather
+  than absent. The second producer's profile lands while the first is still being
+  written, since a pipeline validated against one writer cannot tell its own
+  assumptions from the format's. This adds the one place a product name may
+  appear outside `adapters/`, with a stated test for whether the line has been
+  crossed: ship every profile file and the libraries are byte-identical.
+- **`scripts/check_docs.py` checks the roadmap against the release records.**
+  Nothing was wrong with any single document during the drift above; the pair had
+  gone out of step, and only a reader holding both noticed. Five assertions now
+  hold them together: `VERSION` has a release record and a changelog section, a
+  `Next:` / `Then:` milestone is not an already-released version, a `Shipped:`
+  one is, the roadmap status table names every version `current.md` plans, a
+  component's status in the root README is a version that shipped, and no
+  document points at a retired roadmap filename.
+
 ## [0.6.0] — 2026-08-03
 
 ### Added

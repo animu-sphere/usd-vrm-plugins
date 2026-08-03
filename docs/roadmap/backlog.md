@@ -8,22 +8,28 @@ Legend: 🚧 in progress · ⬜ not started
 
 ## Milestone ladder (beyond next)
 
+The version each track targets is fixed in the
+[roadmap status table](README.md#status-at-a-glance); this section is the work,
+not the schedule.
+
 | Release | Theme | Sequences | Plan |
 | --- | --- | --- | --- |
-| v0.6.0 | OpenExec VRM runtime foundation | Workspace Phase 8, Motion Phase E | [openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md) §6 |
-| v0.7.0 | `ExecIr` invertible VRM humanoid rig | Motion Phase E cont. | [openexec-v0.6.0-v0.7.0.md](openexec-v0.6.0-v0.7.0.md) §7 |
+| v0.8.0 | OpenExec VRM runtime foundation | Workspace Phase 8, Motion Phase E | [openexec-foundation.md](openexec-foundation.md) §6 |
+| after v0.8.0 | `ExecIr` invertible VRM humanoid rig | Motion Phase E cont. | [openexec-foundation.md](openexec-foundation.md) §7 |
 
 - ⬜ **Workspace Phase 8 — `execMotion` + `execVrm` bootstrap**, then **Motion
-  Phase E** inside it; scheduled as **v0.6.0**. The OpenUSD 26.08 exact pin that
-  was part of this milestone landed early, in v0.5.0.
+  Phase E** inside it. The OpenUSD 26.08 exact pin that was part of this
+  milestone landed early, in v0.6.0, along with the `motionCore` `operator==`
+  that OpenExec type registration requires.
 
 Workspace phases establish boundaries; Motion phases fill them. They are never
 the same milestone. Workspace Phase 6b and Motion Phase C both landed in v0.4.0
 — the boundary and the behaviour together, because the retarget core is only
 meaningful once something drives it end to end. Motion Phase D needed no new
 boundary at all: v0.5.0 filled the `motionRuntime` boundary Phase 6b had already
-established. Workspace Phase 8 and Motion Phase E land together in v0.6.0 for
-the same reason as v0.4.0.
+established, and v0.6.0 added the first vendor leaf over it without moving
+either. Workspace Phase 8 and Motion Phase E land together for the same reason
+as v0.4.0.
 
 ## Product P2 — fix the canonical-model contract
 
@@ -92,30 +98,44 @@ Always written "Motion Phase X", never a bare "Phase X".
   correction, expansion to target joint order, `UsdSkelAnimation` output,
   `skel:animationSource` binding. **The first end-to-end evaluation point** —
   the Motion Phase A design triplet is now reproduced by a test.
-- ✅ **Motion Phase D — shipped in v0.5.0.** `IMotionSource` / `ClipSource` /
-  `LiveCaptureSource`, the `motion-capture-trace` format, `ReplaySender`,
-  `CaptureRecorder`, and the `motion_capture` CLI: confidence gating,
-  missing-bone policy, root-motion intake, and a synthetic corpus that makes the
-  tests reproducible. A captured session is baked onto an avatar by the
-  **unchanged** Phase C tool. Product-specific adapters remain optional leaves
-  and none ships; validation against a real capture rig is still open. The
-  vendor half is planned in
-  [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) — the VMC Protocol
-  adapter first, then a direct capture-product adapter — because the v0.5.0
-  corpus is closed-form maths and answers no question about timestamp jitter,
-  tracking loss, or reconnection, and the protocol adapter reaches a real device
-  through a relay without a second decoder. **It does not wait for v0.6.0:** the
-  whole track ends at a retargeted `UsdSkelAnimation` with no OpenExec
-  dependency.
-- ⬜ **Motion Phase E — `execMotion` / `execVrm`** (**v0.6.0**, continuing into
-  v0.7.0). ClipSample, PoseBuffer, HumanoidRetarget, RootMotionResolve,
-  AvatarApply. Nodes are thin wrappers over `motionRuntime` and `vrmRetarget`,
-  and each evaluates an immutable snapshot rather than a live source (motion
-  policy §11.4). The [OpenExec plan](openexec-v0.6.0-v0.7.0.md) adds a display
-  slice — re-scoped to `UsdGeomXformable`, because 26.08 cannot register a
-  `UsdSkel` exec imaging adapter — and the optional `ExecIr` rig track on top of
-  this description; §9 there records that Phase E's scope needs to widen, or the
-  ladder needs another phase, in the motion policy itself.
+- 🚧 **Motion Phase D — the core shipped in v0.5.0, the vendor half is in
+  progress.** `IMotionSource` / `ClipSource` / `LiveCaptureSource`, the
+  `motion-capture-trace` format, `ReplaySender`, `CaptureRecorder`, and the
+  `motion_capture` CLI: confidence gating, missing-bone policy, root-motion
+  intake, and a synthetic corpus that makes the tests reproducible. A captured
+  session is baked onto an avatar by the **unchanged** Phase C tool. The vendor
+  half is [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md): the VMC
+  Protocol adapter shipped in v0.6.0, and the mocopi native **live** adapter is
+  v0.7.0 — because both the v0.5.0 traces and the v0.6.0 captures are
+  *generated*, and answer no question about timestamp jitter, tracking loss, or
+  reconnection as a real device produces them. **The track needs no OpenExec:**
+  it ends at a retargeted `UsdSkelAnimation`.
+- ⬜ **Recorded-file ingestion — `motionSource` + `motionBvh`** (v0.7.0, with the
+  above). A generic BVH pipeline whose semantics live in declarative producer
+  profiles, planned in
+  [recorded-motion-sources.md](recorded-motion-sources.md) and contracted in
+  [motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md). It is the *other*
+  surface of the same capture product, and deliberately not a mode of the live
+  adapter.
+
+  **It does not extend the Motion Phase ladder.** In kind it is Phase B's
+  territory — a recorded clip becoming a canonical semantic clip — with a
+  different container and an explicit producer profile where `.vrma` has a
+  specification. Adding "Motion Phase I" for it would make the string
+  "Motion Phase A–H", which four documents repeat, mean something different this
+  release for no gain in what anyone can check; the same argument
+  [WORKSPACE.md §8](../architecture/WORKSPACE.md) makes about the workspace
+  ladder and greenfield libraries.
+- ⬜ **Motion Phase E — `execMotion` / `execVrm`.** ClipSample, PoseBuffer,
+  HumanoidRetarget, RootMotionResolve, AvatarApply. Nodes are thin wrappers over
+  `motionRuntime` and `vrmRetarget`, and each evaluates an immutable snapshot
+  rather than a live source (motion policy §11.4). The
+  [OpenExec plan](openexec-foundation.md) adds a display slice — re-scoped to
+  `UsdGeomXformable`, because 26.08 cannot register a `UsdSkel` exec imaging
+  adapter — and the optional `ExecIr` rig track on top of this description; §9
+  there records that Phase E's scope needs to widen, or the ladder needs another
+  phase, in the motion policy itself. Its parity input is the recorded corpus
+  Motion Phase D's vendor half produces, which is why it is sequenced behind it.
 - ⬜ **Motion Phase F — generation adapter.** `IMotionGenerator`,
   `MotionGenerationRequest`, text intent, root waypoints, sparse joint
   constraints, pose history, clip-ification. The contract is frozen before the
@@ -184,14 +204,19 @@ not a commitment to ship one.
 - ⬜ **Morph-weight animation** authoring (glTF morph targets → USD), currently
   the one documented importer animation gap. Motion Phase G covers the VRMA
   side; this is the `.vrm` side and the two should land compatibly.
-- 🚧 **A motion corpus.** The live-capture half shipped in v0.5.0 —
-  [six synthetic traces](../../libs/motionRuntime/tests/corpus/README.md),
-  generated by closed-form maths precisely so they carry no redistribution
-  gate. What that deliberately does **not** cover is real capture data: the
-  traces reproduce the shapes a live source produces, not any device's noise
-  characteristics. Still open: `.vrma` clips with known-good expected output,
-  and validation against a real rig — where licensing is the same gate the VRM
-  corpus hit.
+- 🚧 **A motion corpus.** Two generated halves have shipped:
+  [six synthetic traces](../../libs/motionRuntime/tests/corpus/README.md) in
+  v0.5.0, and seven VMC packet captures in v0.6.0 — both generated by
+  construction precisely so they carry no redistribution gate, and both
+  reproducing *shapes* rather than any device's behavior. The real half is
+  v0.7.0, and it splits: redistributable captures are committed, and everything
+  else survives as a measured manifest with no bytes
+  ([adapters plan §9.2](adapters-mocopi-vmc-ardy.md#92-corpus)). The BVH corpus
+  lands under the same rule with one addition of its own — **a second producer
+  from the start** ([BVH plan §8](recorded-motion-sources.md#8-corpus)), because
+  a pipeline validated against one writer cannot tell its own assumptions from
+  the format's. Still open beyond that: `.vrma` clips with known-good expected
+  output, where licensing is the same gate the VRM corpus hit.
 
 ## Non-goals
 
@@ -205,7 +230,16 @@ or another plugin (design policy §15, §19; motion policy §8, §18):
 - DCC-specific UI
 - **Product-specific motion support in core.** Mocopi, VMC, ARDY, and any other
   named system are optional leaf adapters, never a core dependency or a branch
-  condition.
+  condition. A **producer profile is the one exception, and it is data**: a
+  `profiles/motion/*.yaml` may be named for a product because the library that
+  reads it has no name for one — no producer identifier in code, no default
+  profile, and a conversion that refuses rather than guesses. Ship every profile
+  and the libraries are byte-identical; that is the test
+  ([WORKSPACE.md §1](../architecture/WORKSPACE.md)).
+- **A capture product's file format as that product's importer.** Recorded
+  motion is read by a generic reader plus an explicit profile, never by a
+  vendor-branded parser — otherwise the first writer's export silently becomes
+  the format (motion policy §8.3).
 - **Per-frame USD stage authoring for live playback.** Live evaluation produces
   transient poses; USD animation is authored only on bake / record / publish
   (motion policy §12.1).
