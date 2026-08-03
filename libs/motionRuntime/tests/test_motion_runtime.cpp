@@ -106,6 +106,42 @@ TestMissingBonesAreHeldNotFaded()
 }
 
 void
+TestExpressionsAreHeldNotFaded()
+{
+    motion::HumanoidPose a;
+    a.timestamp = 0.0;
+    a.expressions.Set("happy", 0.2f);
+    a.expressions.Set("blink", 1.0f);
+
+    motion::HumanoidPose b;
+    b.timestamp = 1.0;
+    b.expressions.Set("happy", 0.6f);
+    b.expressions.Set("aa", 0.5f);
+
+    const motion::HumanoidPose mid = motion::LerpPose(a, b, 0.5f);
+
+    // Reported by both: interpolated.
+    const float* happy = mid.expressions.Find("happy");
+    assert(happy != nullptr && NearlyEqual(*happy, 0.4f));
+
+    // Reported by one endpoint only: held at that weight. Fading it toward zero
+    // would invent a blink closing that neither pose described -- the same rule
+    // a missing bone follows, for the same reason.
+    const float* blink = mid.expressions.Find("blink");
+    assert(blink != nullptr && NearlyEqual(*blink, 1.0f));
+    const float* aa = mid.expressions.Find("aa");
+    assert(aa != nullptr && NearlyEqual(*aa, 0.5f));
+
+    // A name neither endpoint reported stays unreported rather than becoming 0.
+    assert(mid.expressions.Find("sad") == nullptr);
+    // The union arrives sorted, whichever endpoint each name came from.
+    assert(mid.expressions.entries.size() == 3);
+    assert(mid.expressions.entries[0].name == "aa");
+    assert(mid.expressions.entries[1].name == "blink");
+    assert(mid.expressions.entries[2].name == "happy");
+}
+
+void
 TestRootMotionFlagsSurviveInterpolation()
 {
     motion::RootMotion a;
@@ -305,6 +341,7 @@ main()
 {
     TestSlerpTakesTheShortArc();
     TestMissingBonesAreHeldNotFaded();
+    TestExpressionsAreHeldNotFaded();
     TestRootMotionFlagsSurviveInterpolation();
     TestPoseBufferOrderingAndSampling();
     TestPoseBufferExtrapolatesPositionOnly();

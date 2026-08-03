@@ -28,8 +28,9 @@ reviewable in a diff.
 **They are not real capture data.** They reproduce the *shapes* a live source
 produces — a self-occluded limb dropping out, confidence collapsing at the
 extremities, irregular arrival, a rig that solves no legs, an explicit root
-velocity — not the noise characteristics of any particular device. Validating
-against a real rig remains open work and needs an adapter
+velocity, a face channel opening and closing — not the noise characteristics of
+any particular device. No blend-shape solver produced the expression curves
+either. Validating against a real rig remains open work and needs an adapter
 ([motion policy §8.2](../../../../docs/design/MOTION_ARCHITECTURE_POLICY.md)),
 not another fixture.
 
@@ -37,6 +38,7 @@ not another fixture.
 
 | Trace | Frames | Pins |
 | --- | --- | --- |
+| `expressions-30hz.trace` | 46 | A face channel beside the body — and the difference between a weight of 0 and no weight at all. |
 | `walk-clean-30hz.trace` | 61 | The happy path: a complete 30 Hz body capture, root advancing at 1 m/s. |
 | `walk-dropout-30hz.trace` | 61 | The left arm chain vanishes for 15 frames — `MissingBonePolicy` held vs unbound. |
 | `walk-low-confidence-30hz.trace` | 61 | Per-bone confidence; the extremities collapse to 0.3 mid-clip — the confidence gate. |

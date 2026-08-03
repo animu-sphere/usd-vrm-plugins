@@ -123,6 +123,17 @@ ParseContact(const std::string& token, FootContact* contact)
     return true;
 }
 
+// A name is written as one token, so one that is empty or carries whitespace
+// cannot be read back as itself. The alternative is a quoting rule, which needs
+// an escaping rule behind it, in a format whose whole value is that a fixture
+// diffs and round-trips.
+bool
+IsWritableExpressionName(const std::string& name) noexcept
+{
+    return !name.empty()
+        && name.find_first_of(" \t\r\n\v\f") == std::string::npos;
+}
+
 struct FrameBuilder
 {
     HumanoidPose pose;
@@ -153,6 +164,7 @@ ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
     result.source.kind = MotionSourceKind::LiveCapture;
 
     bool sawMagic = false;
+    int formatVersion = 0;
     std::optional<FrameBuilder> frame;
     std::optional<double> frameRate;
 
@@ -179,15 +191,15 @@ ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
                             std::string("expected the trace magic '") + kMagic
                                 + "'");
             }
-            int version = 0;
-            if (!(stream >> version)) {
+            if (!(stream >> formatVersion)) {
                 return Fail(error, lineNumber,
                             "the trace magic carries no format version");
             }
-            if (version != CaptureTraceFormatVersion) {
+            if (formatVersion < CaptureTraceMinReadableVersion
+                || formatVersion > CaptureTraceFormatVersion) {
                 return Fail(error, lineNumber,
                             "unsupported capture trace format version "
-                                + std::to_string(version));
+                                + std::to_string(formatVersion));
             }
             if (!FullyConsumed(stream, error, lineNumber,
                                "the trace magic's format version")) {
@@ -377,6 +389,41 @@ ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
             continue;
         }
 
+        if (keyword == "e") {
+            if (formatVersion < CaptureTraceExpressionsVersion) {
+                return Fail(error, lineNumber,
+                            "'e' expression weights need format version "
+                                + std::to_string(CaptureTraceExpressionsVersion)
+                                + "; this trace declares "
+                                + std::to_string(formatVersion));
+            }
+            std::string name;
+            if (!(stream >> name)) {
+                return Fail(error, lineNumber,
+                            "'e' needs an expression name and a weight");
+            }
+            float weight = 0.0f;
+            if (!ReadFloats(stream, &weight, 1)) {
+                return Fail(error, lineNumber,
+                            "'e " + name + "' needs a finite weight");
+            }
+            if (!FullyConsumed(stream, error, lineNumber,
+                               "the 'e " + name + "' weight")) {
+                return false;
+            }
+            // The name is the producer's and this layer knows no vocabulary to
+            // check it against, so a repeat is the only thing that can be wrong
+            // with it here -- and it is the same defect a repeated `b` is: two
+            // values for one channel in one frame, with no rule saying which
+            // wins.
+            if (!frame->pose.expressions.Set(name, weight)) {
+                return Fail(error, lineNumber,
+                            "expression '" + name
+                                + "' appears twice in a frame");
+            }
+            continue;
+        }
+
         return Fail(error, lineNumber, "unknown keyword '" + keyword + "'");
     }
 
@@ -428,6 +475,17 @@ ReadCaptureTraceFile(const std::string& path, HumanoidAnimation* animation,
 bool
 WriteCaptureTrace(std::ostream& output, const HumanoidAnimation& animation)
 {
+    // Checked before a byte is emitted rather than as each frame is reached: a
+    // caller that gets `false` back has an untouched stream, instead of a file
+    // that is a valid trace of the frames that happened to come first.
+    for (const HumanoidPose& pose : animation.samples) {
+        for (const ExpressionWeight& entry : pose.expressions.entries) {
+            if (!IsWritableExpressionName(entry.name)) {
+                return false;
+            }
+        }
+    }
+
     output.imbue(std::locale::classic());
     output << std::fixed << std::setprecision(kPrecision);
 
@@ -483,6 +541,13 @@ WriteCaptureTrace(std::ostream& output, const HumanoidAnimation& animation)
                 output << ' ' << (*pose.confidence)[index];
             }
             output << '\n';
+        }
+
+        // Already in name order: that is the order `ExpressionWeights` keeps,
+        // and sorting here instead would let a set that lost the invariant
+        // still write a well-formed file.
+        for (const ExpressionWeight& entry : pose.expressions.entries) {
+            output << "e " << entry.name << ' ' << entry.weight << '\n';
         }
     }
 

@@ -31,10 +31,11 @@ MOTIONRUNTIME_API RootMotion LerpRootMotion(
 // slerped; a bone valid in exactly one is copied from that endpoint; a bone
 // valid in neither stays absent. The result's timestamp is interpolated.
 //
-// Optional channels (confidence, contacts, source) follow the same
+// Optional channels (confidence, expressions, contacts, source) follow the same
 // hold-not-fade rule: confidence is interpolated only where both endpoints
-// carry it, and contacts/source are taken from the nearer endpoint because
-// they are discrete.
+// carry it, expressions are interpolated per name and a name only one endpoint
+// reports is held at that weight rather than faded toward zero, and
+// contacts/source are taken from the nearer endpoint because they are discrete.
 MOTIONRUNTIME_API HumanoidPose LerpPose(
     const HumanoidPose& a, const HumanoidPose& b, float t);
 

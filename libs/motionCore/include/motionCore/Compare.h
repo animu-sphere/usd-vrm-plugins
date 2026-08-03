@@ -103,6 +103,13 @@ struct MotionTolerance
     // carries no accumulated error -- only the rounding.
     float confidence = 1e-6f;
 
+    // Dimensionless, conventionally in [0, 1]. Looser than `confidence`, which
+    // is otherwise the same kind of number, because an expression weight is
+    // *interpolated*: `LerpPose` blends it between two frames and a glTF
+    // sampler evaluates it between two keys, so it accumulates where a reported
+    // confidence does not. Twenty times the six-decimal rounding.
+    float expression = 1e-5f;
+
     // Seconds. The trace format's own quantum: a timestamp is exactly what was
     // written unless something recomputed it.
     double time = 1e-6;
@@ -115,8 +122,13 @@ struct MotionTolerance
 // the first field that differed and by how much -- "leftUpperArm rotation
 // differs by 0.0031 rad", "sample 12: timestamp differs by 0.002 s". The
 // order is fixed, so the same pair always reports the same line: timestamp,
-// root, bones in humanoid enum order, confidence, contacts. `difference` is
-// assigned only on a false return and is left untouched otherwise.
+// root, bones in humanoid enum order, confidence, contacts, expressions by
+// name. `difference` is assigned only on a false return and is left untouched
+// otherwise.
+//
+// An expression *name* is an identifier rather than a measurement, so it is
+// compared exactly by both -- there is no tolerance under which "happy" and
+// "happyy" are the same channel. Only the weight takes one.
 MOTIONCORE_API bool NearlyEqual(const RootMotion& a, const RootMotion& b,
                                 const MotionTolerance& tolerance = {},
                                 std::string* difference = nullptr);

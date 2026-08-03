@@ -15,7 +15,7 @@
 // what lets a golden trace be compared rather than merely parsed.
 //
 //     # a comment
-//     !motion-capture-trace 1
+//     !motion-capture-trace 2
 //     provider   example.replay
 //     protocol   replay
 //     sourceId   walk-01
@@ -28,17 +28,35 @@
 //     contacts contact free
 //     b hips  1.000000 0.000000 0.000000 0.000000
 //     b spine 0.999962 0.008727 0.000000 0.000000 0.95
+//     e aa    0.250000
+//     e happy 0.750000
 //
 // `t` opens a frame and every line after it belongs to that frame. Rotations
 // are `w x y z`; the trailing number on a `b` line is an optional confidence
 // in [0, 1]. Contact values are `unknown`, `contact`, or `free`. Bone names are
 // the VRM 1.0 vocabulary spelled as `motion::HumanBoneName` spells it.
 //
+// `e` is an expression weight (format 2 on). Unlike a bone, its name is the
+// producer's own and this layer knows no vocabulary to check it against, so the
+// two things a name is checked for are the two that would break the file: it
+// must carry no whitespace, because the format is token-separated and a quoting
+// rule would need an escaping rule behind it; and it must appear once per
+// frame. Weights are written in name order, which is the order
+// `ExpressionWeights` keeps them in.
+//
 // The parser is strict on purpose, in all three of the ways a fixture goes
 // wrong silently: an unknown bone name is an error rather than a skip (a typo
 // must not read as a missing limb), a line with text left over after its
 // operands is an error rather than a truncated read, and a rotation that is not
 // unit length is an error rather than a joint UsdSkel will quietly skew.
+//
+// ## Versions
+//
+// A version is a claim about content, so it is checked in both directions: a
+// format 1 trace carrying an `e` line is refused rather than read leniently.
+// Format 1 files still parse -- an old recording on disk stays readable -- but
+// the writer only ever emits the current version, so byte-identical round trips
+// are a property of traces this writer produced.
 #pragma once
 
 #include "motionRuntime/api.h"
@@ -52,7 +70,14 @@
 namespace motion
 {
 
-inline constexpr int CaptureTraceFormatVersion = 1;
+inline constexpr int CaptureTraceFormatVersion = 2;
+
+// The oldest format the reader accepts. A trace is a recording, and a recording
+// that stops being readable because the format moved on is a recording lost.
+inline constexpr int CaptureTraceMinReadableVersion = 1;
+
+// The format version that introduced `e` expression lines.
+inline constexpr int CaptureTraceExpressionsVersion = 2;
 
 // The format writes six decimals, so a timestamp read back from a trace can sit
 // up to half of this away from the exact instant it was meant to represent --
@@ -85,11 +110,17 @@ MOTIONRUNTIME_API bool ReadCaptureTraceFile(
     CaptureTraceError* error = nullptr);
 
 // Writes `animation` as a trace. Emission is deterministic: fixed precision,
-// bones in humanoid enum order, and only the fields the pose actually carries
-// -- so re-reading and rewriting a trace this writer produced is byte-identical
-// and two runs of the same pipeline diff cleanly. (Confidence is all-or-nothing
-// per frame: a hand-written trace that annotates only some bones is normalised
-// to annotate all of them on the way back out.)
+// bones in humanoid enum order, expressions in name order, and only the fields
+// the pose actually carries -- so re-reading and rewriting a trace this writer
+// produced is byte-identical and two runs of the same pipeline diff cleanly.
+// (Confidence is all-or-nothing per frame: a hand-written trace that annotates
+// only some bones is normalised to annotate all of them on the way back out.)
+//
+// Returns false without writing anything when an expression name is empty or
+// carries whitespace, which is the one value that cannot be spelled in this
+// format. Refusing is the point: emitting it would produce a file that reads
+// back as a different animation, or as none. The check runs before the first
+// byte, so a caller that is refused still has an untouched stream.
 MOTIONRUNTIME_API bool WriteCaptureTrace(
     std::ostream& output, const HumanoidAnimation& animation);
 

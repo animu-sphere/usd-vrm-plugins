@@ -125,6 +125,26 @@ LerpPose(const HumanoidPose& a, const HumanoidPose& b, float t)
         result.confidence = b.confidence;
     }
 
+    // Expressions follow the bones' rule rather than confidence's, because they
+    // are keyed by name and the two endpoints need not carry the same names: a
+    // weight reported by both is interpolated, one reported by a single
+    // endpoint is held at that value, and a name neither reported stays absent.
+    // Fading a one-sided weight toward zero would invent a channel closing that
+    // no producer described -- the same reason a missing bone is held rather
+    // than eased to identity.
+    for (const ExpressionWeight& entry : a.expressions.entries) {
+        const float* other = b.expressions.Find(entry.name);
+        result.expressions.Set(
+            entry.name,
+            other ? entry.weight + (*other - entry.weight) * alpha
+                  : entry.weight);
+    }
+    for (const ExpressionWeight& entry : b.expressions.entries) {
+        if (!a.expressions.Find(entry.name)) {
+            result.expressions.Set(entry.name, entry.weight);
+        }
+    }
+
     // Contact state and provenance are discrete, so they snap to the nearer
     // endpoint instead of being averaged into a value neither side reported.
     const HumanoidPose& nearer = (alpha < 0.5f) ? a : b;
