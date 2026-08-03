@@ -157,7 +157,10 @@ struct BvhDocument
     MOTIONBVH_API bool HasUniqueJointNames() const;
 
     // Root-relative depth: 0 for the `ROOT`, 1 for its children. Zero for an
-    // out-of-range index, which no caller of a validated document can produce.
+    // out-of-range index, and zero for a parent chain that cycles — neither is
+    // a depth, and a document carrying either is one `ValidateBvhDocument`
+    // rejects. Both answers exist because this is a plain struct: the parser
+    // cannot produce such a document, and a caller assembling one by hand can.
     MOTIONBVH_API std::size_t Depth(std::size_t jointIndex) const noexcept;
 
     // The deepest joint's depth, or 0 for an empty document.

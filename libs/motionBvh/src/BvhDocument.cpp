@@ -175,10 +175,19 @@ BvhDocument::Depth(std::size_t jointIndex) const noexcept
     }
     std::size_t depth = 0;
     int parent = joints[jointIndex].parent;
-    // Parents are stored before their children, so this terminates on any
-    // document `ValidateBvhDocument` accepts -- and on one it would reject,
-    // the strictly decreasing index still bounds the walk.
     while (parent >= 0 && static_cast<std::size_t>(parent) < joints.size()) {
+        // Parents precede their children in every document
+        // `ValidateBvhDocument` accepts, so this walk is bounded there. It is
+        // *not* bounded on a document that validation would reject: a joint
+        // that is its own parent is a cycle, and index-decreases-each-step is
+        // an invariant of the accepted shape rather than of the type. This is
+        // a plain struct a caller can hand-assemble, so the walk has to
+        // terminate on its own. A chain longer than the joint array is that
+        // cycle, and it gets zero -- the same answer an out-of-range index
+        // gets, because neither is a depth.
+        if (depth >= joints.size()) {
+            return 0;
+        }
         ++depth;
         parent = joints[static_cast<std::size_t>(parent)].parent;
     }

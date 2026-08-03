@@ -2,7 +2,6 @@
 
 #include "motionBvh/BvhParser.h"
 
-#include <cerrno>
 #include <charconv>
 #include <clocale>
 #include <cmath>
@@ -91,15 +90,16 @@ ParseDoubleToken(std::string_view token, double* out) noexcept
         }
     }
 
-    errno = 0;
     char* end = nullptr;
     const double value = std::strtod(buffer, &end);
     if (end != buffer + token.size()) {
         return false;
     }
-    // ERANGE on overflow yields +/-HUGE_VAL, which the caller refuses as
-    // non-finite; on underflow it yields a denormal or zero, which is a real
-    // value and not a refusal.
+    // `errno` is deliberately not consulted. Overflow yields +/-HUGE_VAL, which
+    // the caller already refuses as non-finite and reports with the offending
+    // token; underflow yields a denormal or zero, which is a real value and not
+    // a refusal. Reading ERANGE would add a second way to say the first thing
+    // and a way to disagree with it.
     *out = value;
     return true;
 }

@@ -31,9 +31,12 @@ import sys
 PRODUCER_NAMES = [
     "mocopi", "sony", "rokoko", "xsens", "noitom", "perception neuron",
     "optitrack", "vicon", "qualisys", "motionbuilder", "motion builder",
-    "autodesk", "blender", "maya", "3ds max", "unity", "unreal", "mixamo",
-    "ardy", "vrchat", "vseeface", "waidayo",
+    "autodesk", "blender", "maya", "3ds max", "unity", "unreal engine",
+    "mixamo", "ardy", "vrchat", "vseeface", "waidayo",
 ]
+# "unreal engine" rather than "unreal", because that one is an ordinary English
+# adjective and the others are not. A bare "unreal" in a sentence is not a
+# producer assumption; a bare "mocopi" always is.
 
 # The semantic half of the frozen set. Definitions live in Diagnostics.cpp; no
 # other source may name one.
@@ -120,8 +123,13 @@ def main() -> int:
         if path.is_file() and path.name.lower() in forbidden_files:
             errors.append(f"plugin registration file is forbidden: {path}")
 
-    producers = re.compile("|".join(re.escape(n) for n in PRODUCER_NAMES),
-                           re.IGNORECASE)
+    # Word boundaries are load-bearing, not decoration: without them "unity"
+    # matches inside "community", "maya" inside "Mayan", and "unreal" inside
+    # "unreal expectations". A check that fails on an ordinary English sentence
+    # gets read as noise, and a check read as noise stops being enforcement.
+    producers = re.compile(
+        r"\b(?:" + "|".join(re.escape(n) for n in PRODUCER_NAMES) + r")\b",
+        re.IGNORECASE)
     # OpenUSD in any form, the humanoid vocabulary, and the retarget layer.
     # `motionSource` is absent only because its extractor has not landed; every
     # other name here stays forbidden after it does.

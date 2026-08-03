@@ -138,6 +138,38 @@ TestDuplicateNames()
     assert(document.FindJoints("Spine").empty());
 }
 
+// `Depth` and `MaxDepth` walk parent links, and a hand-assembled document can
+// point one at itself. That walk has to terminate on the type's own terms:
+// "parents precede their children" is an invariant of what validation accepts,
+// not of what a caller can build, and a `noexcept` accessor that hangs is worse
+// than one that refuses. Both of these looped forever before the bound.
+void
+TestCyclicParentTerminates()
+{
+    {
+        BvhDocument document;
+        document.joints.push_back(MakeJoint("Hips", 0, {}, 0));
+        assert(document.Depth(0) == 0);
+        assert(document.MaxDepth() == 0);
+        assert(!motionBvh::ValidateBvhDocument(document));
+    }
+    {
+        // A two-joint cycle, which no single index check would catch.
+        BvhDocument document;
+        document.joints.push_back(MakeJoint("A", 1, {}, 0));
+        document.joints.push_back(MakeJoint("B", 0, {}, 0));
+        assert(document.Depth(0) == 0);
+        assert(document.Depth(1) == 0);
+        assert(document.MaxDepth() == 0);
+        assert(!motionBvh::ValidateBvhDocument(document));
+    }
+    // The accepted shape still reports real depths, so the bound did not turn
+    // every answer into zero.
+    const BvhDocument valid = MakeDocument();
+    assert(valid.Depth(1) == 1);
+    assert(valid.MaxDepth() == 1);
+}
+
 void
 TestValidationRefusals()
 {
@@ -245,6 +277,7 @@ main()
     TestChannelVocabulary();
     TestAccessors();
     TestDuplicateNames();
+    TestCyclicParentTerminates();
     TestValidationRefusals();
     TestZeroFrameTimeBelowTwoFrames();
     std::printf("motionBvh document model: verified\n");
