@@ -379,6 +379,18 @@ TestExpressions()
     assert(difference
            == "expression 'blink' is reported only by the first pose");
 
+    // One set a strict prefix of the other. This reaches the comparison by a
+    // different route than the case above -- every shared index agrees and only
+    // the counts differ -- and it is the shape a producer that stopped
+    // reporting its last channel actually takes.
+    HumanoidPose extra = reported;
+    extra.expressions.Set("zz", 0.1f);
+    assert(extra != reported);
+    assert(!NearlyEqual(extra, reported, MotionTolerance{}, &difference));
+    assert(difference == "expression 'zz' is reported only by the first pose");
+    assert(!NearlyEqual(reported, extra, MotionTolerance{}, &difference));
+    assert(difference == "expression 'zz' is reported only by the second pose");
+
     // A name is an identifier: no tolerance makes two spellings one channel.
     HumanoidPose misspelt;
     misspelt.expressions.Set("happy", 0.5f);
