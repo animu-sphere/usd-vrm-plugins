@@ -592,8 +592,17 @@ WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar,
             + avatar.skeletonPath.GetString() + ">";
         return false;
     }
-    UsdSkelBindingAPI(skeletonOverride).CreateAnimationSourceRel().SetTargets(
-        {animationPath});
+    // Apply the schema, don't just author the relationship: UsdSkel resolves
+    // skel:animationSource only on a prim that carries SkelBindingAPI, so a
+    // bare rel leaves the rig in its rest pose with no diagnostic.
+    const UsdSkelBindingAPI skeletonBinding =
+        UsdSkelBindingAPI::Apply(skeletonOverride);
+    if (!skeletonBinding) {
+        *error = "could not apply SkelBindingAPI at <"
+            + avatar.skeletonPath.GetString() + ">";
+        return false;
+    }
+    skeletonBinding.CreateAnimationSourceRel().SetTargets({animationPath});
 
     stage->SetTimeCodesPerSecond(clip.timeCodesPerSecond);
     if (!animation.samples.empty()) {

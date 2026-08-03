@@ -12,7 +12,7 @@ contract wins — structural changes go there first, in their own PR.
 | Category | Answers | Start here |
 | --- | --- | --- |
 | [architecture/](architecture/) | How the workspace is structured: bundle identities, dependency directions, artifact naming. | [WORKSPACE.md](architecture/WORKSPACE.md) |
-| [guides/](guides/) | How to accomplish a task. | [INSTALL.md](guides/INSTALL.md) |
+| [guides/](guides/) | How to accomplish a task. | [INSTALL.md](guides/INSTALL.md) · [VIEWING_MOTION.md](guides/VIEWING_MOTION.md) |
 | [reference/](reference/) | Factual contracts: what is supported, on what. | [CAPABILITY_MATRIX.md](reference/CAPABILITY_MATRIX.md) |
 | [roadmap/](roadmap/) | What is planned next (only incomplete work). | [README.md](roadmap/README.md) |
 | [releases/](releases/) | Immutable per-version release records. | [README.md](releases/README.md) |

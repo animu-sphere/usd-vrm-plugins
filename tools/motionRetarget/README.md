@@ -14,6 +14,11 @@ motion_retarget \
 registered; any layer OpenUSD can open works, so a plain `.usda` rig and clip
 need no plugin at all.
 
+[docs/guides/VIEWING_MOTION.md](../../docs/guides/VIEWING_MOTION.md) walks the
+whole path end to end — registering the bundles, opening the result in
+`usdview`, composing a whole motion pack into one stage, and checking that the
+rig is actually driven rather than sitting at rest.
+
 ## The stage boundary lives here
 
 This is the motion layer's **only** stage-aware component. `vrmRetarget`,
