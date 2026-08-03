@@ -30,7 +30,9 @@ yet met a device. The items that close that do not close by writing more code.
 
 Not in this boundary: OpenExec evaluation of any kind (that is v0.8.0), realtime
 skinned display, an FBX reader, an `SdfFileFormat` bundle for `.bvh`, the ARDY
-generator, and expression / look-at, which need a `motionCore` addition first.
+generator, and look-at. Expression *animation* is no longer on that list — the
+`motionCore` addition it was waiting on landed (below) — but expressions
+reaching a **rig** still is: that is Motion Phase G.
 
 ### Done when
 
@@ -132,6 +134,52 @@ ship.
 Public CI runs the redistributable half. Hardware validation is an **opt-in
 lane** that never gates a pull request — its output is a capture and a manifest,
 not a green tick. A device is needed once per behavior, not once per run.
+
+### Landed early: the expression sample and its first producer
+
+Not a v0.7.0 deliverable and not scope creep either — the contract owed this to
+two consumers, and the ordering question it left open
+([#88](https://github.com/animu-sphere/usd-vrm-plugins/issues/88)) turned out to
+be answerable by measurement rather than preference.
+
+- ✅ **`ExpressionWeights` on `HumanoidPose`**, plus `motion-capture-trace`
+  format 2 (2026-08-03, [#91](https://github.com/animu-sphere/usd-vrm-plugins/pull/91)).
+  The semantics and the one departure from what the contract asked for — on the
+  pose rather than in a parallel track — are in
+  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#expression-semantics-v070).
+- ✅ **`vrmAdapterVmc` carries `/VMC/Ext/Blend/Val`** instead of decoding and
+  dropping it ([#92](https://github.com/animu-sphere/usd-vrm-plugins/pull/92)).
+
+**Why the format change happened now rather than in Phase G.** The contract
+requires that a value-type addition reach the trace format in the same change,
+and v0.7.0 is the release that starts committing *recorded sessions*. Changing
+the format after real captures accumulate means re-recording them or carrying a
+compatibility story; before, it costs one regenerated corpus. That timing was
+the deciding argument, not the feature.
+
+**Why VMC and not `.vrma`.** The contract said whichever producer arrived first
+should author the type publicly. `vrmAdapterVmc` already decoded blend values to
+name and value and threw them away, naming this exact gap as the reason;
+`usdVrmaFileFormat` has no `expressions` parsing at all and no fixture to verify
+one against. One was a contract addition away, the other is a milestone.
+
+### Still Motion Phase G, and unchanged by the above
+
+Expressions now travel from a sender to a canonical pose and back out of a
+trace. They do not yet reach a **rig**, which is what #88 is actually about:
+
+- ⬜ **`usdVrmaFileFormat` reads no `expressions` channel.** The reader already
+  evaluates every glTF channel at the union of their key times, so the timing
+  machinery exists; what is missing is the channel and a fixture. All seven
+  `VRMA_MotionPack` clips carry `humanBones` and **no** `expressions`, so the
+  fixture has to be generated the way the other motion corpora are.
+- ⬜ **`ExpressionResolve`.** A VRM expression binds N morph targets across M
+  meshes plus material colours — it is *not* one blend shape — so expanding a
+  named weight onto a rig needs `VrmExpressionAPI`, which is why `motionCore`
+  carries the name verbatim and resolves nothing.
+- ⬜ **`motion_retarget` authors no `blendShapeWeights`**, and no
+  `skel:blendShapes` / `skel:blendShapeTargets` binding on its output.
+- ⬜ **Look-at is untouched**, in every layer.
 
 ### Carried into v0.7.0
 
