@@ -3,6 +3,8 @@
 #include "vrmAdapterVmc/FrameAssembler.h"
 
 #include <cstddef>
+#include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -300,10 +302,22 @@ VmcFrameAssembler::Push(const VmcPacket& packet, double receiveTime,
             // check it against (motionCore/Humanoid.h): the only thing that can
             // be wrong with it here is arriving twice.
             const std::string name(message.name);
-            if (_frame.open && _frame.pose.expressions.Find(name) != nullptr) {
+            // `expressionPacket` is asked rather than `pose.expressions`,
+            // although a name is written to both: two containers that must
+            // agree about which names are present is one invariant more than
+            // this needs, and the packet serial is the thing being tested.
+            // Copied out rather than held as an iterator: `_Close` below
+            // replaces the map, so anything still pointing into it would
+            // dangle. The bone path reads its serial the same way.
+            std::optional<std::uint64_t> carriedBy;
+            if (_frame.open) {
                 const auto seen = _frame.expressionPacket.find(name);
-                if (seen != _frame.expressionPacket.end()
-                    && seen->second == _packetSerial) {
+                if (seen != _frame.expressionPacket.end()) {
+                    carriedBy = seen->second;
+                }
+            }
+            if (carriedBy) {
+                if (*carriedBy == _packetSerial) {
                     // Same reading as a repeated bone, and the same code: the
                     // set is frozen (Diagnostics.h), and a blend shape occupies
                     // the same one-per-frame slot a bone does.

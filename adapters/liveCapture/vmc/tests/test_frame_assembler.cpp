@@ -994,11 +994,15 @@ CheckCorpus(const std::filesystem::path& directory)
         // A committed capture that started duplicating inside a bundle would
         // change the frame count above, so this says which of the two rules is
         // doing the work.
-        if (stats.bonesDuplicated != 0) {
-            std::fprintf(stderr, "%s: %llu duplicate(s) inside one datagram\n",
+        if (stats.bonesDuplicated != 0 || stats.expressionsDuplicated != 0) {
+            std::fprintf(stderr,
+                         "%s: %llu bone and %llu expression duplicate(s) "
+                         "inside one datagram\n",
                          name.c_str(),
                          static_cast<unsigned long long>(
-                             stats.bonesDuplicated));
+                             stats.bonesDuplicated),
+                         static_cast<unsigned long long>(
+                             stats.expressionsDuplicated));
             ++failures;
         }
 
