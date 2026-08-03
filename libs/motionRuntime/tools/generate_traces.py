@@ -39,6 +39,12 @@ import sys
 
 MANIFEST_NAME = "manifest.json"
 
+# Must equal motionRuntime's CaptureTraceFormatVersion. The corpus test re-emits
+# every committed trace through the C++ writer and compares bytes, so a version
+# that drifted from the header fails there rather than authoring a fixture the
+# reader would refuse.
+TRACE_FORMAT_VERSION = 2
+
 # The VRM 1.0 humanoid vocabulary in motionCore's enum order. The trace writer
 # emits bones in this order, so the corpus must too.
 #
@@ -147,12 +153,15 @@ class Frame:
         self.root_position: tuple[float, float, float] | None = None
         self.root_velocity: tuple[float, float, float] | None = None
         self.contacts: tuple[str, str] | None = None
+        # Name -> weight. A name absent from a frame was not reported by that
+        # frame, which is not the same as a weight of 0 -- see CaptureTrace.h.
+        self.expressions: dict[str, float] = {}
 
 
 def render(frames: list[Frame], provider: str, protocol: str, source_id: str,
            frame_rate: float) -> str:
     """Emit the trace exactly as motionRuntime's WriteCaptureTrace would."""
-    out: list[str] = ["!motion-capture-trace 1"]
+    out: list[str] = [f"!motion-capture-trace {TRACE_FORMAT_VERSION}"]
     out.append(f"provider {provider}")
     out.append(f"protocol {protocol}")
     out.append(f"sourceId {source_id}")
@@ -175,6 +184,10 @@ def render(frames: list[Frame], provider: str, protocol: str, source_id: str,
             if frame.has_confidence:
                 line += f" {frame.confidence.get(bone, 1.0):.6f}"
             out.append(line)
+        # Name order, which is the order ExpressionWeights keeps them in and so
+        # the order the C++ writer emits.
+        for name in sorted(frame.expressions):
+            out.append(f"e {name} {frame.expressions[name]:.6f}")
 
     return "\n".join(out) + "\n"
 
@@ -282,7 +295,42 @@ def trace_root_velocity() -> str:
     return render(frames, "example.synthetic", "replay", "walk-rootvel-01", 30.0)
 
 
+def trace_expressions() -> str:
+    """A face channel beside the body -- and a name that comes and goes.
+
+    Three shapes in one fixture, because each is a rule rather than a value:
+
+    `happy` is reported on every frame, so it is the ordinary case. `aa` follows
+    a vowel envelope and reaches exactly 0 in the middle -- reported and zero,
+    which a reader must not confuse with unreported. `blink` is reported only
+    across five frames, which is unreported on either side of them, and is what
+    separates the two: a consumer that treats absence as 0 sees the same clip as
+    one that holds the last weight, until this fixture.
+
+    `studio.browRaise` is deliberately not a VRM preset name. The expression
+    vocabulary is open -- a VMC sender's blend-shape names are its model's, not a
+    spec's -- so a corpus of preset names only would let a reader that quietly
+    validated against a preset table keep passing.
+    """
+    frames = build_walk(BODY_RIG, 46, 30.0, speed=0.0)
+    for index, frame in enumerate(frames):
+        frame.root_position = (0.0, 0.9, 0.0)
+        frame.contacts = None
+        phase = 2.0 * math.pi * index / 30.0
+        frame.expressions["happy"] = 0.4
+        # Exactly 0 where the sine is, rather than nearly 0: the point of the
+        # channel is that a reported zero is a value.
+        frame.expressions["aa"] = round(0.5 * (1.0 - math.cos(phase)), 6)
+        frame.expressions["studio.browRaise"] = round(0.25 * abs(
+            math.sin(phase)), 6)
+        if 20 <= index < 25:
+            frame.expressions["blink"] = round(
+                1.0 - abs(index - 22) / 2.0, 6)
+    return render(frames, "example.synthetic", "replay", "expressions-01", 30.0)
+
+
 TRACES = {
+    "expressions-30hz.trace": trace_expressions,
     "walk-clean-30hz.trace": trace_walk,
     "walk-dropout-30hz.trace": trace_dropout,
     "walk-low-confidence-30hz.trace": trace_low_confidence,
@@ -302,6 +350,7 @@ def measure(text: str) -> dict:
     """
     timestamps: list[float] = []
     bones: set[str] = set()
+    expressions: set[str] = set()
     source_id = ""
     frame_rate = 0.0
     carries_confidence = False
@@ -318,6 +367,8 @@ def measure(text: str) -> dict:
         elif tokens[0] == "b":
             bones.add(tokens[1])
             carries_confidence = carries_confidence or len(tokens) > 6
+        elif tokens[0] == "e":
+            expressions.add(tokens[1])
 
     data = text.encode("utf-8")
     return {
@@ -328,6 +379,10 @@ def measure(text: str) -> dict:
         "observedBones": len(bones),
         "bones": sorted(bones),
         "carriesConfidence": carries_confidence,
+        # The union across the clip, so a name only some frames report is still
+        # listed -- which is the whole point of the expressions fixture.
+        "observedExpressions": len(expressions),
+        "expressions": sorted(expressions),
         "sha256": hashlib.sha256(data).hexdigest(),
         "bytes": len(data),
     }
@@ -352,10 +407,13 @@ def sync_manifest(directory: pathlib.Path, rendered: dict[str, str],
     manifest = json.loads(path.read_text(encoding="utf-8"))
     problems: list[str] = []
 
-    if manifest.get("format", {}).get("version") != 1:
+    if manifest.get("format", {}).get("version") != TRACE_FORMAT_VERSION:
         problems.append(
             f"{MANIFEST_NAME}: format.version is "
-            f"{manifest.get('format', {}).get('version')!r}, expected 1")
+            f"{manifest.get('format', {}).get('version')!r}, expected "
+            f"{TRACE_FORMAT_VERSION}")
+        if not check:
+            manifest.setdefault("format", {})["version"] = TRACE_FORMAT_VERSION
 
     listed = [entry.get("file") for entry in manifest.get("traces", [])]
     if sorted(listed) != sorted(rendered):

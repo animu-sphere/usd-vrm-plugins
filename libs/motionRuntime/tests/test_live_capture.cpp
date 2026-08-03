@@ -115,6 +115,13 @@ MakeTrace(std::size_t frames = 12)
             ? motion::FootContact::NotInContact
             : motion::FootContact::InContact;
         pose.contacts = contacts;
+        // A face channel on the same timeline, and one name that only some
+        // frames report -- so the round trip below covers both an expression
+        // that is always there and the absent/zero distinction.
+        pose.expressions.Set("happy", 0.25f);
+        if (index % 3 == 0) {
+            pose.expressions.Set("blink", 1.0f);
+        }
         pose.source = trace.source;
         trace.samples.push_back(pose);
     }
@@ -357,6 +364,9 @@ TestCaptureTraceRoundTripsByteIdentically()
         assert(b.contacts.has_value());
         assert(a.contacts->leftFoot == b.contacts->leftFoot);
         assert(a.contacts->rightFoot == b.contacts->rightFoot);
+        // The expression channel survives with the same names, and a frame that
+        // reported no `blink` still reports none -- rather than a zero.
+        assert(a.expressions == b.expressions);
     }
 
     // The byte-level claim: a trace this writer produced survives a read and a
@@ -418,6 +428,22 @@ TestCaptureTraceRejectsMalformedInput()
          "contacts contact free contact\n"},
         {"trailing text after a header value",
          "!motion-capture-trace 1\nframeRate 30 60\nt 0.0\nb hips 1 0 0 0\n"},
+        // A version is a claim about content. Reading this leniently would let
+        // a file be one format by its header and another by its body, and the
+        // header is what a reader dispatches on.
+        {"expression in a format 1 trace",
+         "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0\ne happy 0.5\n"},
+        // The same defect a repeated bone is: two values for one channel in one
+        // frame, with no rule saying which wins.
+        {"duplicate expression",
+         "!motion-capture-trace 2\nt 0.0\nb hips 1 0 0 0\ne happy 0.5\n"
+         "e happy 0.25\n"},
+        {"expression with no weight",
+         "!motion-capture-trace 2\nt 0.0\nb hips 1 0 0 0\ne happy\n"},
+        {"trailing text after an expression weight",
+         "!motion-capture-trace 2\nt 0.0\nb hips 1 0 0 0\ne happy 0.5 extra\n"},
+        {"non-finite expression weight",
+         "!motion-capture-trace 2\nt 0.0\nb hips 1 0 0 0\ne happy nan\n"},
     };
 
     for (const Case& testCase : cases) {
@@ -434,6 +460,41 @@ TestCaptureTraceRejectsMalformedInput()
         // fixed without a debugger.
         assert(!error.message.empty());
         assert(parsed.samples.empty());
+    }
+}
+
+void
+TestCaptureTraceVersioningAndUnwritableNames()
+{
+    // A recording that stops being readable because the format moved on is a
+    // recording lost, so format 1 still parses -- it simply carries no `e`.
+    motion::HumanoidAnimation old;
+    motion::CaptureTraceError error;
+    std::istringstream input(
+        "!motion-capture-trace 1\nprovider x\nt 0.0\nb hips 1 0 0 0\n");
+    assert(motion::ReadCaptureTrace(input, &old, &error));
+    assert(old.samples.size() == 1);
+    assert(old.samples.front().expressions.IsEmpty());
+
+    // The writer only ever emits the current version, so a format 1 file read
+    // back out is a format 2 file. That is why the committed corpus was
+    // regenerated rather than left alone: byte-identity is a property of traces
+    // this writer produced, not of every trace it can read.
+    std::ostringstream rewritten;
+    assert(motion::WriteCaptureTrace(rewritten, old));
+    assert(rewritten.str().rfind("!motion-capture-trace 2", 0) == 0);
+
+    // The one value this format cannot spell. A name is written as a single
+    // token, so whitespace in one would read back as a different animation --
+    // or as none. The refusal happens before the first byte, so a caller that
+    // is refused still has an untouched stream rather than a plausible file
+    // holding the frames that happened to come first.
+    for (const char* unwritable : {"pursed lips", "", "tab\there"}) {
+        motion::HumanoidAnimation broken = MakeTrace(3);
+        broken.samples[1].expressions.Set(unwritable, 0.5f);
+        std::ostringstream refused;
+        assert(!motion::WriteCaptureTrace(refused, broken));
+        assert(refused.str().empty());
     }
 }
 
@@ -717,6 +778,7 @@ main(int argc, char** argv)
     TestAnEmptySourceIsUnavailableRatherThanWrong();
     TestCaptureTraceRoundTripsByteIdentically();
     TestCaptureTraceRejectsMalformedInput();
+    TestCaptureTraceVersioningAndUnwritableNames();
     TestReplayIsDeterministicAndFeedsTheSameInterface();
     TestAQuantisedTraceStillSamplesOnItsOwnTicks();
     TestRecorderCountsWhatItCouldNotSample();

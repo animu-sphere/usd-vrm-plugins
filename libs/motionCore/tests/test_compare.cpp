@@ -356,6 +356,66 @@ TestAnimation()
 }
 
 void
+TestExpressions()
+{
+    HumanoidPose reported;
+    reported.expressions.Set("happy", 0.5f);
+    reported.expressions.Set("aa", 0.25f);
+
+    // The set is sorted, so the order two producers reported the same weights
+    // in cannot make them different values.
+    HumanoidPose reversed;
+    reversed.expressions.Set("aa", 0.25f);
+    reversed.expressions.Set("happy", 0.5f);
+    assert(reversed == reported && NearlyEqual(reversed, reported));
+
+    // An unreported name is not a zero weight, under either comparison. This is
+    // the pose-level half of the rule `Find` states at the value level.
+    HumanoidPose zeroed = reported;
+    zeroed.expressions.Set("blink", 0.0f);
+    std::string difference;
+    assert(zeroed != reported);
+    assert(!NearlyEqual(zeroed, reported, MotionTolerance{}, &difference));
+    assert(difference
+           == "expression 'blink' is reported only by the first pose");
+
+    // One set a strict prefix of the other. This reaches the comparison by a
+    // different route than the case above -- every shared index agrees and only
+    // the counts differ -- and it is the shape a producer that stopped
+    // reporting its last channel actually takes.
+    HumanoidPose extra = reported;
+    extra.expressions.Set("zz", 0.1f);
+    assert(extra != reported);
+    assert(!NearlyEqual(extra, reported, MotionTolerance{}, &difference));
+    assert(difference == "expression 'zz' is reported only by the first pose");
+    assert(!NearlyEqual(reported, extra, MotionTolerance{}, &difference));
+    assert(difference == "expression 'zz' is reported only by the second pose");
+
+    // A name is an identifier: no tolerance makes two spellings one channel.
+    HumanoidPose misspelt;
+    misspelt.expressions.Set("happy", 0.5f);
+    misspelt.expressions.Set("aa", 0.25f);
+    misspelt.expressions.entries[1].name = "happyy";
+    assert(misspelt != reported);
+    assert(!NearlyEqual(misspelt, reported, MotionTolerance{}, &difference));
+    assert(difference
+           == "expression 'happy' is reported only by the second pose");
+
+    // A weight does take one, and it has to be wide enough for the trace
+    // format: these two are adjacent six-decimal values, so a fixture and the
+    // pose that produced it land here routinely. Different values, same motion.
+    HumanoidPose quantum = reported;
+    quantum.expressions.Set("happy", Rounded(0.500001f));
+    assert(quantum != reported);
+    assert(NearlyEqual(quantum, reported));
+
+    HumanoidPose wider = reported;
+    wider.expressions.Set("happy", 0.5f + 1e-3f);
+    assert(!NearlyEqual(wider, reported, MotionTolerance{}, &difference));
+    assert(difference.rfind("expression 'happy' weight differs by ", 0) == 0);
+}
+
+void
 TestExactImpliesNearly()
 {
     // The two comparisons read the same fields, so the strict one can never
@@ -384,6 +444,7 @@ main()
     TestNonFinite();
     TestDifferenceReport();
     TestAnimation();
+    TestExpressions();
     TestExactImpliesNearly();
     return 0;
 }

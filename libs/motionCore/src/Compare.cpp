@@ -3,6 +3,7 @@
 
 #include "motionCore/Humanoid.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <limits>
@@ -10,6 +11,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace motion
 {
@@ -29,6 +31,7 @@ struct ExactPolicy
 
     static bool Time(double a, double b) noexcept { return a == b; }
     static bool Confidence(float a, float b) noexcept { return a == b; }
+    static bool Weight(float a, float b) noexcept { return a == b; }
 
     static bool Vector(const pxr::GfVec3f& a, const pxr::GfVec3f& b) noexcept
     {
@@ -63,6 +66,11 @@ struct TolerantPolicy
     bool Confidence(float a, float b) const noexcept
     {
         return Within(static_cast<double>(a) - b, tolerance.confidence);
+    }
+
+    bool Weight(float a, float b) const noexcept
+    {
+        return Within(static_cast<double>(a) - b, tolerance.expression);
     }
 
     bool Vector(const pxr::GfVec3f& a, const pxr::GfVec3f& b) const noexcept
@@ -271,6 +279,48 @@ ComparePose(const Policy& policy, const HumanoidPose& a, const HumanoidPose& b,
         Report(difference, [] { return std::string("foot contact differs"); });
         return false;
     }
+    // A name is an identifier rather than a measurement, so it compares exactly
+    // under both policies and only the weight takes a tolerance. Both sets are
+    // sorted by name (Humanoid.h), so one walk finds the first difference, and
+    // at a mismatch the lexicographically smaller name is the one its own pose
+    // reported alone.
+    {
+        const std::vector<ExpressionWeight>& first = a.expressions.entries;
+        const std::vector<ExpressionWeight>& second = b.expressions.entries;
+        const std::size_t shared = std::min(first.size(), second.size());
+        for (std::size_t index = 0; index != shared; ++index) {
+            if (first[index].name != second[index].name) {
+                Report(difference, [&] {
+                    const bool onlyFirst =
+                        first[index].name < second[index].name;
+                    return "expression '"
+                        + (onlyFirst ? first[index].name : second[index].name)
+                        + "' is reported only by the "
+                        + (onlyFirst ? "first" : "second") + " pose";
+                });
+                return false;
+            }
+            if (!policy.Weight(first[index].weight, second[index].weight)) {
+                Report(difference, [&] {
+                    return "expression '" + first[index].name + "' weight "
+                        + Amount(static_cast<double>(first[index].weight)
+                                     - second[index].weight,
+                                 "");
+                });
+                return false;
+            }
+        }
+        if (first.size() != second.size()) {
+            const bool longerIsFirst = first.size() > second.size();
+            Report(difference, [&] {
+                return "expression '"
+                    + (longerIsFirst ? first : second)[shared].name
+                    + "' is reported only by the "
+                    + (longerIsFirst ? "first" : "second") + " pose";
+            });
+            return false;
+        }
+    }
     if constexpr (Policy::ReadsProvenance) {
         if (a.source.has_value() != b.source.has_value()
             || (a.source && *a.source != *b.source)) {
@@ -434,6 +484,30 @@ operator==(const ContactState& a, const ContactState& b) noexcept
 
 bool
 operator!=(const ContactState& a, const ContactState& b) noexcept
+{
+    return !(a == b);
+}
+
+bool
+operator==(const ExpressionWeight& a, const ExpressionWeight& b) noexcept
+{
+    return a.name == b.name && a.weight == b.weight;
+}
+
+bool
+operator!=(const ExpressionWeight& a, const ExpressionWeight& b) noexcept
+{
+    return !(a == b);
+}
+
+bool
+operator==(const ExpressionWeights& a, const ExpressionWeights& b) noexcept
+{
+    return a.entries == b.entries;
+}
+
+bool
+operator!=(const ExpressionWeights& a, const ExpressionWeights& b) noexcept
 {
     return !(a == b);
 }

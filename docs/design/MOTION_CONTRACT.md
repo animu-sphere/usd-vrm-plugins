@@ -184,9 +184,13 @@ deliberate playback delay is the same operation with an earlier alignment.
   monotonic and the caller has a fault to investigate. Both are refused.
 
 **A recorded trace stores capture order, not arrival order.** The
-`motion-capture-trace` format (`CaptureTrace.h`, version 1) is line-oriented
+`motion-capture-trace` format (`CaptureTrace.h`, version 2) is line-oriented
 text with fixed six-decimal precision, so a trace round-trips byte-identically
-and a fixture can be *compared* rather than merely parsed. It deliberately does
+and a fixture can be *compared* rather than merely parsed. Version 2 added the
+`e` expression line; version 1 still reads, because a recording that stops being
+readable when the format moves on is a recording lost, and the writer emits only
+the current version — so byte-identity is a property of traces this writer
+produced. It deliberately does
 not record delivery order: when a frame arrived is a property of the transport,
 and it is reproduced by the replay schedule instead. `ReplaySender` pushes
 frames as a caller-driven clock advances; `CaptureRecorder` accumulates the
@@ -268,8 +272,10 @@ nothing, including itself**; that is a property of the sample, and a comparison
 that hid it would make a non-finite transform arrive later and quieter.
 
 `NearlyEqual` also reports *what* differed, in a fixed order — timestamp, root,
-bones in humanoid enum order, confidence, contacts — so a failing corpus test
-names the bone and the amount rather than only the disagreement.
+bones in humanoid enum order, confidence, contacts, expressions by name — so a
+failing corpus test names the bone and the amount rather than only the
+disagreement. An expression *name* is an identifier rather than a measurement,
+so both comparisons read it exactly; only the weight takes a tolerance.
 
 ## What the contract still owes its next two consumers
 
@@ -290,13 +296,49 @@ first call site that needs one.
   that is connected and no longer solving — from *zero pose* or from a bone the
   session never observed. The three mean different things downstream, and only a
   live adapter produces the middle one.
-- ⬜ **An expression sample.** Motion Phase G owns expressions, but VMC
-  blend-shape messages reach them first. A timestamped set of weights alongside
-  `HumanoidPose` is the shape both need; whichever lands first should author it
-  here rather than privately.
+- ✅ **An expression sample.** Landed 2026-08-03 as `ExpressionWeights` on
+  `HumanoidPose`, together with format 2 of the recorded trace. See below for
+  the one place it departs from what was written here.
 
 A fourth is adjacent and already satisfied, worth naming so it is not
 re-litigated: **serialization** exists as the `motion-capture-trace` format
 above, and a trace round-trips byte-identically. Anything added to the value
 types is added to that format in the same change, or a replay stops reproducing
 the session it recorded.
+
+## Expression semantics (v0.7.0)
+
+`HumanoidPose::expressions` is a set of named weights, sorted by name and
+holding each name once. The ordering is an invariant rather than a convention:
+two producers that reported the same weights in a different order describe the
+same motion, so they have to be the same *value*, and a trace written from
+either has to round-trip to the same bytes.
+
+**A name is carried verbatim, and the vocabulary is open.** VRM 1.0 defines
+preset names and then lets an author add their own; a VMC sender's blend-shape
+names are its model's, not a specification's. Resolving one producer's `Joy`
+onto a particular rig's `happy` needs the rig, which this layer does not have,
+so it is a consumer step (`ExpressionResolve`, Motion Phase G) rather than a
+table here that would guess for every producer at once.
+
+**An unreported name is not a zero weight**, exactly as a bone outside
+`validRotations` is not an identity rotation. `Find` answers with a pointer so
+the two cannot be confused, and `LerpPose` holds a weight only one endpoint
+reported rather than fading it toward zero — fading would invent a channel
+closing that no producer described.
+
+### The one departure: on the pose, not beside it
+
+The item above asked for *a timestamped set of weights alongside `HumanoidPose`*
+— a parallel track. It landed as a field on the pose instead, and the reason is
+that both producers put expressions on the pose's instants already: a VMC
+datagram carries bones and blend values under one `/VMC/Ext/T`, and the `.vrma`
+reader already evaluates every channel at the union of their key times. A
+parallel track would have required a second buffer, a second intake policy and a
+second resampler in `motionRuntime` to carry data arriving at the same instants
+as the poses — machinery with one producer and nothing to distinguish it.
+
+What this costs is stated rather than hidden: a producer whose expression
+channel genuinely runs on its own clock has to be resampled onto the pose
+timeline by whoever reads it. No producer in the tree does, and the day one
+does, this is the paragraph to revisit.

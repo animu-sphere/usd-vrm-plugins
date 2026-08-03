@@ -3,7 +3,7 @@
   "description": "Machine-readable provenance for the Motion Phase D capture corpus. Every trace is synthesised by libs/motionRuntime/tools/generate_traces.py from closed-form maths - there is no third-party capture data here and therefore no redistribution gate. Field values are measured from the committed files, never guessed.",
   "format": {
     "name": "motion-capture-trace",
-    "version": 1,
+    "version": 2,
     "spec": "libs/motionRuntime/include/motionRuntime/CaptureTrace.h"
   },
   "provenance": {
@@ -16,9 +16,57 @@
   },
   "limitations": [
     "Reproduces the shapes a live source produces (dropout, confidence collapse, irregular arrival, partial rig, reported root velocity), not the noise characteristics of any real capture device.",
-    "Delivery order is not recorded: a trace stores capture order, and arrival order is reproduced by the replay schedule instead."
+    "Delivery order is not recorded: a trace stores capture order, and arrival order is reproduced by the replay schedule instead.",
+    "Expression weights are shaped like a face channel, not measured from one: no blend-shape solver produced these curves."
   ],
   "traces": [
+    {
+      "file": "expressions-30hz.trace",
+      "pins": "A face channel beside the body: a weight reported every frame, one that reaches exactly 0 while still being reported, and one reported only across five frames - which is what separates unreported from zero. One name is deliberately outside the VRM preset vocabulary.",
+      "tags": [
+        "expressions",
+        "open-vocabulary"
+      ],
+      "id": "expressions-30hz",
+      "sourceId": "expressions-01",
+      "frames": 46,
+      "durationSeconds": 1.5,
+      "nominalFrameRate": 30.0,
+      "observedBones": 21,
+      "bones": [
+        "chest",
+        "head",
+        "hips",
+        "leftFoot",
+        "leftHand",
+        "leftLowerArm",
+        "leftLowerLeg",
+        "leftShoulder",
+        "leftToes",
+        "leftUpperArm",
+        "leftUpperLeg",
+        "neck",
+        "rightFoot",
+        "rightHand",
+        "rightLowerArm",
+        "rightLowerLeg",
+        "rightShoulder",
+        "rightToes",
+        "rightUpperArm",
+        "rightUpperLeg",
+        "spine"
+      ],
+      "carriesConfidence": false,
+      "observedExpressions": 4,
+      "expressions": [
+        "aa",
+        "blink",
+        "happy",
+        "studio.browRaise"
+      ],
+      "sha256": "ce3ab79218349fb573bf5319c8be48189697f1db68f0250647ebce9ff085aea3",
+      "bytes": 53508
+    },
     {
       "id": "upper-body-30hz",
       "file": "upper-body-30hz.trace",
@@ -47,8 +95,10 @@
         "spine"
       ],
       "carriesConfidence": false,
-      "sha256": "403d010e17d3dbaa3fa4297c99de60d5f3a90d6978bd4300d658b755496d2f19",
-      "bytes": 31850
+      "sha256": "4053e99deef638735cdee127d57b8c7deee9a400ae1791dd1add94dda6fcec91",
+      "bytes": 31850,
+      "observedExpressions": 0,
+      "expressions": []
     },
     {
       "id": "walk-clean-30hz",
@@ -87,8 +137,10 @@
         "spine"
       ],
       "carriesConfidence": false,
-      "sha256": "2b7c74f0b463a2098cf3db79f5e4aa73cc620bff8dff1f4019376d90db853e3b",
-      "bytes": 68685
+      "sha256": "ece771dd75b8bd312bc280372acc30c78983ff1f55d200221a2cadfb461bfd05",
+      "bytes": 68685,
+      "observedExpressions": 0,
+      "expressions": []
     },
     {
       "id": "walk-dropout-30hz",
@@ -126,8 +178,10 @@
         "spine"
       ],
       "carriesConfidence": false,
-      "sha256": "7eceaf5dec44e2cd19d37c506c7b936aa7d6043b043336ce587bf6678556f2c3",
-      "bytes": 65564
+      "sha256": "125e9998fc88887c331ff4d280cef30528fa1ac3cc653d79be039cc84f14c8c4",
+      "bytes": 65564,
+      "observedExpressions": 0,
+      "expressions": []
     },
     {
       "id": "walk-jitter-30hz",
@@ -166,8 +220,10 @@
         "spine"
       ],
       "carriesConfidence": false,
-      "sha256": "e310819329442222b1abf08976b8c49b129e957d47ec80861d24a52b4e0f36fb",
-      "bytes": 54000
+      "sha256": "b11a42fb23acc3c5b0ab3a3d93f65f7083357d686313bbc293b2acba77c2f8d1",
+      "bytes": 54000,
+      "observedExpressions": 0,
+      "expressions": []
     },
     {
       "id": "walk-low-confidence-30hz",
@@ -205,8 +261,10 @@
         "spine"
       ],
       "carriesConfidence": true,
-      "sha256": "4aef427882a63cd825cae0b02e0fbae4d9bd3f6ba42036969f728247dff0d6e2",
-      "bytes": 80219
+      "sha256": "dc73ef334d01e0d7e0adfca52ef2a6693f7dfb19b017e24aa558c5133012d6c0",
+      "bytes": 80219,
+      "observedExpressions": 0,
+      "expressions": []
     },
     {
       "id": "walk-root-velocity-30hz",
@@ -245,8 +303,10 @@
         "spine"
       ],
       "carriesConfidence": false,
-      "sha256": "061ab970419d1eca6540091d2e647b095ae4f680ede0a1332cbe837d998bdf66",
-      "bytes": 53378
+      "sha256": "02bdc1aac0f0619bf0623db8f1f2b6509009e8f747550915657478d96b8c5287",
+      "bytes": 53378,
+      "observedExpressions": 0,
+      "expressions": []
     }
   ]
 }

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "motionCore/Humanoid.h"
 
+#include <algorithm>
 #include <array>
+#include <utility>
 
 namespace motion
 {
@@ -164,6 +166,38 @@ HumanoidPose::HumanoidPose()
     // Exported rather than inline so every consumer receives the same identity
     // defaults across the motionCore DLL boundary.
     localRotations.fill(pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f)));
+}
+
+bool
+ExpressionWeights::Set(std::string_view name, float weight)
+{
+    const auto position = std::lower_bound(
+        entries.begin(), entries.end(), name,
+        [](const ExpressionWeight& entry, std::string_view sought) {
+            return entry.name < sought;
+        });
+    if (position != entries.end() && position->name == name) {
+        position->weight = weight;
+        return false;
+    }
+    ExpressionWeight entry;
+    entry.name.assign(name);
+    entry.weight = weight;
+    entries.insert(position, std::move(entry));
+    return true;
+}
+
+const float*
+ExpressionWeights::Find(std::string_view name) const noexcept
+{
+    const auto position = std::lower_bound(
+        entries.begin(), entries.end(), name,
+        [](const ExpressionWeight& entry, std::string_view sought) {
+            return entry.name < sought;
+        });
+    return position != entries.end() && position->name == name
+        ? &position->weight
+        : nullptr;
 }
 
 } // namespace motion

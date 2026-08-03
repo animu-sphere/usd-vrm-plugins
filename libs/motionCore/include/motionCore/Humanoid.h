@@ -137,7 +137,7 @@ struct MotionSourceMetadata
     std::string sourceId;
 };
 
-// Exact value equality, on the four aggregates that cross a boundary: the two
+// Exact value equality, on the aggregates that cross a boundary: the two
 // OpenExec asks for it, a trace round-trip is defined by it, and a test that
 // wants to know whether two poses describe the same *motion* wants
 // `NearlyEqual` from Compare.h instead. That header carries the reasoning for
@@ -189,6 +189,62 @@ MOTIONCORE_API bool operator==(const ContactState& a,
 MOTIONCORE_API bool operator!=(const ContactState& a,
                                const ContactState& b) noexcept;
 
+// One expression weight, under the name its producer used.
+//
+// The humanoid vocabulary is closed, so it is an enum. The expression
+// vocabulary is not: VRM 1.0 defines preset names and then lets an author add
+// their own, and a VMC sender's blend-shape names are whatever its model
+// carries. So a name is carried verbatim. Deciding that one producer's "Joy"
+// is a particular rig's `happy` is a resolve step in the consumer -- it needs
+// the rig, which this layer does not have, and a table here would be a guess
+// applied to every producer at once (Motion Phase G).
+struct ExpressionWeight
+{
+    std::string name;
+
+    // Conventionally in [0, 1] and deliberately not clamped: a sender that
+    // said 1.5 said 1.5, and a value type that quietly corrected it would hide
+    // the sender from the operator judging the session.
+    float weight = 0.0f;
+};
+
+MOTIONCORE_API bool operator==(const ExpressionWeight& a,
+                               const ExpressionWeight& b) noexcept;
+MOTIONCORE_API bool operator!=(const ExpressionWeight& a,
+                               const ExpressionWeight& b) noexcept;
+
+// The expression weights one sample reported.
+//
+// Sorted by name, each name once -- an invariant rather than a convention, and
+// `Set` is what maintains it. Two producers that reported the same weights in a
+// different order are the same motion, so they must be the same value; and a
+// trace written from either has to round-trip to the same bytes. Neither holds
+// for a list in arrival order, and both are load-bearing here.
+//
+// An absent name is not a zero weight. A name this set does not carry was not
+// reported, exactly as a bone outside `validRotations` was not reported. `Find`
+// answers with a pointer rather than a value so the two cannot be confused.
+struct ExpressionWeights
+{
+    std::vector<ExpressionWeight> entries;
+
+    // Sets `name` to `weight`, keeping `entries` sorted. Returns false when
+    // `name` was already present: the new weight replaces the old one, and the
+    // caller is told, because only the caller knows whether a repeat is a
+    // duplicate delivery to count or an update to accept.
+    MOTIONCORE_API bool Set(std::string_view name, float weight);
+
+    // The weight reported for `name`, or null when it was not reported.
+    MOTIONCORE_API const float* Find(std::string_view name) const noexcept;
+
+    bool IsEmpty() const noexcept { return entries.empty(); }
+};
+
+MOTIONCORE_API bool operator==(const ExpressionWeights& a,
+                               const ExpressionWeights& b) noexcept;
+MOTIONCORE_API bool operator!=(const ExpressionWeights& a,
+                               const ExpressionWeights& b) noexcept;
+
 struct HumanoidPose
 {
     MOTIONCORE_API HumanoidPose();
@@ -204,6 +260,22 @@ struct HumanoidPose
 
     std::optional<std::array<float, HumanBoneCount>> confidence;
     std::optional<ContactState> contacts;
+
+    // What this sample said about the character's face, on the same timeline as
+    // its body. Empty means the sample reported no weights, and there is no
+    // separate absent state because there is nothing it would mean that "the
+    // producer reported none" does not -- an `optional` here would make two
+    // values differ over a distinction neither carries.
+    //
+    // This is on the pose rather than in a track of its own, and that was the
+    // decision (MOTION_CONTRACT.md). Both producers put expressions on the
+    // pose's instants already: a VMC datagram carries bones and blend values
+    // under one `/VMC/Ext/T`, and the `.vrma` reader already evaluates every
+    // channel at the union of their key times. A parallel track would have
+    // needed a second buffer, a second intake policy and a second resampler in
+    // `motionRuntime` to carry data that arrives at the same instants anyway.
+    ExpressionWeights expressions;
+
     std::optional<MotionSourceMetadata> source;
 };
 

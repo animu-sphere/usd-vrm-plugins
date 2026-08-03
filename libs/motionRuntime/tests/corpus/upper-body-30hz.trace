@@ -1,4 +1,4 @@
-!motion-capture-trace 1
+!motion-capture-trace 2
 provider example.synthetic
 protocol replay
 sourceId upper-body-01
