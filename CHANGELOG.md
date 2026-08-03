@@ -13,6 +13,8 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-08-03
+
 ### Added
 
 - **`vmc_record`, the VMC adapter's CLI and the one part of it that meets a real

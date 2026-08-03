@@ -5,7 +5,8 @@ OpenUSD plugins for [VRM](https://vrm.dev/en/) avatars.
 This repository is an OpenUSD plugin **workspace**: it separates schema
 definitions, file-format import, package resolution, and shared GLB container
 parsing into independently buildable, independently testable components. The
-v0.5.0 release ships four plugin bundles, four shared libraries, and two CLIs.
+v0.6.0 release adds the VMC input adapter and its `vmc_record` CLI to the
+workspace's four plugin bundles, five shared libraries, and three CLIs.
 
 The importer reads VRM 0.x and 1.0, normalizes the differences away, and authors
 a static USD stage. It **never evaluates or simulates** — that boundary is the
@@ -33,6 +34,8 @@ project's central design decision, and it is described below.
 | [`vrmRetarget`](libs/vrmRetarget) | Plain static CMake library | Humanoid mapping, rest-pose correction, root-motion policy, pose retargeter | v0.4.0 |
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | Bakes a semantic clip onto a target rig as `UsdSkelAnimation` | v0.4.0 |
 | [`motion_capture`](tools/motionCapture) | CLI executable | Replays a recorded capture session into a semantic clip the above consumes unchanged | v0.5.0 |
+| [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | VMC Protocol input: OSC-over-UDP datagrams → canonical humanoid motion | v0.6.0 |
+| [`vmc_record`](adapters/liveCapture/vmc/tools/vmcRecord) | CLI executable | Records and inspects VMC packet captures with a decode report | v0.6.0 |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
 
 `usdVrm` is not a bundle id — it names the product as a whole. It *was* the
@@ -49,6 +52,10 @@ side — a vendor-neutral `LiveCaptureSource`, a recorded-trace format, and the
 session is baked by the retarget tool unchanged. The fixed contract is
 [docs/design/MOTION_CONTRACT.md](docs/design/MOTION_CONTRACT.md). The `exec*`
 identities remain reserved; runtime evaluation is not part of this release.
+v0.6.0 supplies the first product-specific input leaf: `vrmAdapterVmc` decodes
+VMC Protocol from OSC-over-UDP through frame assembly and VRM bone mapping into
+the existing `LiveCaptureSource`; `vmc_record` records the same wire input for
+inspection and corpus work.
 
 | Component | Type | Role |
 | --- | --- | --- |
@@ -60,7 +67,7 @@ identities remain reserved; runtime evaluation is not part of this release.
 | `execMotion` | OpenExec bundle | Vendor-neutral motion nodes |
 | `execVrm` | OpenExec bundle | VRM semantics: retarget, root motion, expression, look-at, avatar apply |
 | `adapters/` | Optional plain libraries + their CLIs | Input leaves — a VMC Protocol adapter first, then vendor-native and generator adapters. The **only** place product or protocol names are permitted (e.g. VMC, Mocopi, ARDY) |
-| [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | The first of those leaves: VMC Protocol input, from OSC-over-UDP datagrams to canonical humanoid semantics. Diagnostic codes, a recorded-packet corpus, and the OSC and VMC message layers so far — bone mapping is next |
+| [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | The first input leaf: VMC Protocol from OSC-over-UDP datagrams through frame assembly and VRM bone mapping to canonical humanoid semantics; includes a recorded-packet corpus and the `vmc_record` CLI |
 
 `.vrm` and `.vrma` are deliberately **separate** file-format plugins with
 symmetric structure, and they compose by **reference**, not `subLayer` — a

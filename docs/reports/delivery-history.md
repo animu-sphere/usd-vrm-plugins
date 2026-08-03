@@ -10,7 +10,7 @@ work.
 bundle. The workspace split (§D, §E) landed in
 [v0.2.0](../releases/v0.2.0.md) and the negative corpus (§G) in
 [v0.3.0](../releases/v0.3.0.md); everything logged here is released as of
-[v0.5.0](../releases/v0.5.0.md).
+[v0.6.0](../releases/v0.6.0.md).
 
 This is not a description of current behavior — see [architecture/](../architecture/)
 and [reference/](../reference/) for that — nor of planned work, which is in the
@@ -223,3 +223,20 @@ Shipped across v0.3.0–v0.5.0; the fixed contract is
 
 Motion Phases E–H (OpenExec evaluation, generation, expression/look-at,
 IK/foot-locking) are in the [roadmap](../roadmap/).
+
+## I. VMC input adapter (v0.6.0)
+
+- ✅ **`vrmAdapterVmc`**: a plain static library that keeps VMC Protocol at an
+  input leaf. It receives OSC-over-UDP datagrams, decodes OSC and VMC messages,
+  maps Unity bone names and axes into `motion::HumanBone`, assembles frames, and
+  pushes canonical poses into the existing `LiveCaptureSource`; it neither
+  retargets nor authors a stage.
+- ✅ **Recorded-packet corpus and live socket coverage**: `vmc-packet-capture`
+  v1 preserves datagrams before decoding, and generated fixtures exercise the
+  OSC, message, skeleton-map, frame-assembly, bridge, and UDP layers. The
+  loopback test proves the socket path produces the same motion as replaying
+  the captured bytes.
+- ✅ **`vmc_record` CLI**: records a bounded live session or inspects a capture,
+  retaining bytes before decode and reporting transport, decoding, frame, and
+  intake results together. It reports hips-offset and root movement without
+  assigning semantics the adapter cannot establish.
