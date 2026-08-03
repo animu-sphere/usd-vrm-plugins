@@ -6,46 +6,76 @@ The next milestone and active carry-over work. Shipped detail is in the
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
-## Next: v0.7.0 — the mocopi native adapter and real VMC interoperability ⬜
+## Next: v0.7.0 — mocopi live input and generic BVH recorded-motion ingestion ⬜
 
-**Release boundary:** motion from a **real mocopi device** and from several real
-VMC sender applications reaches a retargeted `UsdSkelAnimation` through the
-**unchanged** `motion_capture` and `motion_retarget`, and every session that
-proves it is kept as a replayable capture. `vrmAdapterMocopi` ships beside
-`vrmAdapterVmc` as a second input leaf — not as a wrapper over it. Planned in
-[adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md), Milestones B–D.
+**Release boundary:** a capture product's **two** surfaces both reach a
+retargeted `UsdSkelAnimation` through the **unchanged** `motion_retarget` — the
+live one over UDP through `vrmAdapterMocopi`, and the recorded one through a
+generic BVH pipeline that is not that product's importer. Planned in
+[adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) (Milestones B–D) and
+[recorded-motion-sources.md](recorded-motion-sources.md) (BVH-0 to BVH-4).
 
-This release is measured in **evidence, not in code volume**. v0.6.0's corpus is
-generated: it reproduces the protocol's shapes so a decoder is testable with no
-hardware, and it answers nothing about what a device or an application actually
-emits. Every open item in the VMC adapter's Milestone B is that same shape, and
-none of them closes by writing more code — they close by an operator pointing a
-sender at a port and keeping what arrives.
+Two decisions shape the whole release. **A recording is not a mode of the live
+adapter** — a BVH file argues about a hierarchy, channel order, a frame time and
+a rest pose, where a socket argues about packets, timestamps, restarts and
+tracking loss — so they are separate code meeting at `motionCore`
+([motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md)). And **the BVH
+pipeline's centre is not mocopi**: joint names, units, axes and root conventions
+are facts about the *writer*, so they live in a declarative producer profile and
+a second producer's profile lands while the first is still being written.
+
+It is also measured in **evidence, not code volume**. Both corpora in the tree
+are generated — closed-form traces and protocol-shaped captures — so nothing has
+yet met a device. The items that close that do not close by writing more code.
 
 Not in this boundary: OpenExec evaluation of any kind (that is v0.8.0), realtime
-skinned display, the ARDY generator, and expression / look-at, which need a
-`motionCore` contract addition first.
+skinned display, an FBX reader, an `SdfFileFormat` bundle for `.bvh`, the ARDY
+generator, and expression / look-at, which need a `motionCore` addition first.
 
 ### Done when
 
-- [ ] a mocopi device drives the pipeline **natively**, through
+**Live**
+
+- [ ] a mocopi device drives the pipeline **natively** over UDP, through
       `vrmAdapterMocopi`;
-- [ ] the same device drives it **through a VMC relay**, and the two agree
-      within a stated tolerance — every difference outside it explained by a
-      field the relay drops rather than absorbed into the tolerance;
-- [ ] a live session records with `vmc_record`, and replays with no socket;
-- [ ] the replay passes through `motion_capture` and `motion_retarget`
-      **unchanged**, onto a real VRM avatar;
-- [ ] at least two more real VMC senders are recorded, of different shape;
-- [ ] an interoperability matrix says what each sender emits;
-- [ ] tracking loss, recovery, and sender restart are recorded rather than
+- [ ] recorded packet fixtures decode deterministically with no socket, and a
+      loopback test proves the socket path agrees with them;
+- [ ] tracking loss, recovery, and source restart are recorded rather than
       described;
+- [ ] the session reaches a real VRM avatar through **unchanged**
+      `motion_capture` and `motion_retarget`.
+
+**Recorded**
+
+- [ ] a generic BVH parser, with `motion_bvh_inspect` over it;
+- [ ] the format-neutral `motionSource` model and the profile contract;
+- [ ] the mocopi profile **and one independent mocap producer's**, plus a
+      user-defined profile proving the contract is usable from outside;
+- [ ] BVH → `HumanoidAnimation` → the same avatar-independent semantic clip
+      `motion_capture` and `usdVrmaFileFormat` already author;
+- [ ] `motion_bvh_convert` → **unchanged** `motion_retarget` → a target VRM,
+      verified through a `UsdSkelSkeletonQuery`;
+- [ ] no producer name in `motionBvh` or `motionSource` code, and no default
+      profile anywhere.
+
+**Cross-source and evidence**
+
+- [ ] one physical session observed as mocopi UDP *and* mocopi BVH, compared at
+      the canonical layer, with a VMC relay added if one is available;
+- [ ] what each path cannot carry is written down, from evidence;
 - [ ] the root / hips observation is written down, and the canonical answer
       chosen or explicitly left open with its downstream cost stated;
-- [ ] redistributable captures are committed and the rest survive as measured
-      manifests;
-- [ ] the whole path replays from release artifacts alone;
+- [ ] redistributable captures and BVH files are committed; the rest survive as
+      measured manifests with no bytes;
+- [ ] both paths run from release artifacts alone, profiles included;
 - [ ] a v0.7.0 release record exists.
+
+**Best-effort, no longer a gate.** Recording two or more real VMC sender
+applications and publishing an interoperability matrix was a numbered condition
+here until the BVH axis joined this release. It is still the right work and any
+sender available during v0.7.0 gets recorded — but the release no longer waits on
+lining up other people's applications, because the cross-source comparison above
+needs only the device.
 
 ### The three questions this release exists to answer
 
@@ -60,12 +90,15 @@ guess, and none of them is answerable from generated bytes:
   below it. The decision record is a v0.7.0 deliverable whether or not a policy
   is chosen: what was observed, what differed between senders, which value is
   canonical today, what stays open, and what that costs downstream.
-- **What the relay path drops.** The mocopi native adapter is now a committed
-  deliverable rather than something gated on this measurement — but the
-  measurement still has to happen, because it is the phase's distinguishing
-  check. Native and VMC-relayed results for the same recorded motion must differ
-  only within a stated tolerance, and each difference outside it must name the
-  metadata field responsible.
+- **What each path drops.** The mocopi native adapter is a committed deliverable
+  rather than something gated on this measurement — but the measurement still has
+  to happen, because it is the release's distinguishing check. One physical
+  session, observed live over UDP and exported to a file, gives motion that is
+  genuinely the same rather than merely similar; a VMC relay makes it three. The
+  results must differ only within a stated tolerance, and each difference outside
+  it must name the field responsible rather than widen the tolerance. Latency is
+  a live-path number only — a file has none, and reporting one would be inventing
+  it.
 - **What a real sender's bone set does.** Three refusal paths are unit-tested
   with no capture behind them — an unknown bone name, the receive-clock fallback
   when a frame carries no `/VMC/Ext/T`, and a leading bone that disappears and
@@ -74,24 +107,27 @@ guess, and none of them is answerable from generated bytes:
 
 ### Corpus policy — recorded evidence is not the generated corpus
 
-The generated corpus stays. Real-session evidence goes beside it, never mixed
-into it:
+The generated corpora stay. Real-session evidence goes beside them, never mixed
+in, and the same shape serves both halves of the release:
 
 ```text
-adapters/liveCapture/vmc/tests/corpus/
-├─ generated/     protocol shapes, committed, CI-runnable, no hardware
+<adapter or library>/tests/corpus/
+├─ generated/     protocol or format shapes, committed, CI-runnable, no hardware
 └─ recorded/
-   ├─ redistributable/   real sessions cleared for publication
+   ├─ redistributable/   real sessions and files cleared for publication
    └─ manifests/         everything else, as measured facts
 ```
 
-A capture that cannot be redistributed leaves **no bytes** in the repository. It
-leaves a manifest: capture hash, recording tool version, sender identity and
-version, device or relay identity, the measured statistics, the expected
-diagnostics, expected frame and pose counts, the validation date, and the
-redistribution status. That is enough for a later reader to tell whether a claim
-still holds without the bytes, and it is the same convention the VRM corpus
-already uses for models it cannot ship.
+A capture or a file that cannot be redistributed leaves **no bytes** in the
+repository. It leaves a manifest: hash, recording or exporting tool version,
+sender or producer identity and version, device or relay identity, the measured
+statistics, the expected diagnostics, expected frame and pose counts, the
+validation date, and the redistribution status. A BVH manifest additionally
+carries the profile id, frame time, joint and channel counts, coordinate
+convention, unit, root policy, and the bones it is expected to map. That is
+enough for a later reader to tell whether a claim still holds without the bytes,
+and it is the same convention the VRM corpus already uses for models it cannot
+ship.
 
 Public CI runs the redistributable half. Hardware validation is an **opt-in
 lane** that never gates a pull request — its output is a capture and a manifest,
@@ -132,6 +168,14 @@ not a green tick. A device is needed once per behavior, not once per run.
   not block v0.7.0 — the release boundary ends at a retargeted
   `UsdSkelAnimation` from the workspace build — but it does block shipping an
   adapter on its own.
+- ⬜ **Profiles are data that has to reach an artifact.** `motionSource` and
+  `motionBvh` *are* in the aggregate product (their libraries carry no product
+  name, only the data beside them does), so the BVH path's artifact-only smoke
+  needs `share/usd-vrm-plugins/profiles/motion/` staged with the tools. `ost`
+  0.21.0 has no notion of a data-only member and how the files get there is
+  unverified. A converter with no profile available refuses every file it is
+  given, so this is the difference between the smoke test passing and being
+  impossible to write.
 
 ## Then: v0.8.0 — the OpenExec foundation (Workspace Phase 8 + Motion Phase E) ⬜
 

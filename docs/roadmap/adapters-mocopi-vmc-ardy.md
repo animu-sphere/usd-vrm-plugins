@@ -26,6 +26,14 @@ semantics in
 > device and real senders as input, and only this track produces those. **The
 > mocopi native adapter is a committed deliverable**, not a decision to be taken
 > later — see [§6](#6-phase-2--the-mocopi-native-adapter).
+>
+> **Narrowed the same day: this plan is *live* input.** A capture product also
+> writes recorded files, and reading those is a file-format problem with its own
+> layering, its own diagnostics, and its own second-producer requirement. It is
+> [recorded-motion-sources.md](recorded-motion-sources.md), and it is deliberately
+> not a mocopi importer. This document keeps sockets; that one keeps files; they
+> meet at `motionCore`. The one place they are compared is
+> [§9.6](#96-cross-source-comparison), on a single session observed both ways.
 
 Sequence context: the generic live-capture surface these adapters plug into
 shipped in v0.5.0 (Motion Phase D). This plan is the vendor half of Motion
@@ -296,12 +304,28 @@ and no VMC-specific code has leaked into `motionCore` or `motionRuntime`.
 
 ## 6. Phase 2 — the mocopi native adapter
 
-**Goal:** native device input, with no third-party sender application in the
-path — and a measured account of what the relay path does to the same motion.
+**Goal:** native **live** device input, with no third-party sender application in
+the path — and a measured account of what the relay path does to the same motion.
 
 ```text
-mocopi native SDK / native stream → vrmAdapterMocopi → canonical motion
+mocopi native UDP stream → vrmAdapterMocopi → canonical motion
 ```
+
+> **This adapter is the live half only.** A capture product also writes recorded
+> files, and those are not a mode of this adapter: a BVH file argues about a
+> hierarchy, channel order, a frame time and a rest pose, where this argues about
+> packets, arrival timestamps, restarts and tracking loss. The recorded half is
+> [recorded-motion-sources.md](recorded-motion-sources.md), built as a generic BVH
+> pipeline rather than as this product's importer, and the two meet at
+> `motionCore` and nowhere earlier
+> ([motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md),
+> [WORKSPACE.md §2](../architecture/WORKSPACE.md)). Sharing a decoder between them
+> is how a file reader acquires a socket's assumptions, or a socket a file's.
+>
+> They do meet again in one place that is worth the trouble: the **same physical
+> session** can be captured live over UDP and exported to a file, so the two paths
+> can be compared on motion that is genuinely the same. That comparison is
+> [§9.6](#96-cross-source-comparison).
 
 **Decided 2026-08-03: this is built, not gated.** The four triggers this section
 used to list — metadata the VMC path drops, relay latency, confidence and sensor
@@ -398,9 +422,11 @@ VRM_VMC_TIMESTAMP_REGRESSION    VRM_VMC_DUPLICATE_BONE
 VRM_VMC_INCOMPLETE_FRAME        VRM_VMC_SOURCE_RESTARTED
 VRM_VMC_SOCKET_BIND_FAILED      VRM_VMC_STALE_JOINT
 
-VRM_MOCOPI_DEVICE_UNAVAILABLE   VRM_MOCOPI_TRACKING_LOST
-VRM_MOCOPI_UNSUPPORTED_JOINT    VRM_MOCOPI_TIMESTAMP_INVALID
-VRM_MOCOPI_PACKET_MALFORMED
+VRM_MOCOPI_SOCKET_BIND_FAILED   VRM_MOCOPI_TRACKING_LOST
+VRM_MOCOPI_DEVICE_UNAVAILABLE   VRM_MOCOPI_TIMESTAMP_INVALID
+VRM_MOCOPI_UNSUPPORTED_JOINT    VRM_MOCOPI_SOURCE_RESTARTED
+VRM_MOCOPI_PACKET_MALFORMED     VRM_MOCOPI_FRAME_INCOMPLETE
+VRM_MOCOPI_NON_FINITE_TRANSFORM
 
 VRM_ARDY_REQUEST_REJECTED       VRM_ARDY_TIMEOUT
 VRM_ARDY_OUTPUT_MALFORMED       VRM_ARDY_UNSUPPORTED_SEMANTIC
@@ -415,7 +441,17 @@ used bare `MOCOPI_*` / `VMC_*` / `ARDY_*`, which is the only diagnostic family
 in the repository without it (compare `VRM_RETARGET_*` in the
 [OpenExec plan](openexec-foundation.md) P1-1 and the importer's `VRM###`
 codes). `VRM_OPENEXEC_*` is a **separate** namespace owned by that plan, not by
-any adapter.
+any adapter, and so is `VRM_BVH_*`
+([recorded motion sources §6](recorded-motion-sources.md#6-diagnostics)) —
+a file syntax error and a dropped packet are not the same class of event, and a
+reader should not have to know which adapter it might be compared against.
+
+The `VRM_MOCOPI_*` set gained four codes on 2026-08-03, so that it covers the
+same ground the VMC set does rather than a subset of it: a bind failure, a source
+restart, an incomplete frame, and a non-finite transform are all things the VMC
+adapter learned it needed and there is no reason a second live adapter would not.
+The set is still frozen before its decoder, which is the point — a code list
+written afterwards describes whichever failures were hit first.
 
 A diagnostic carries, where it applies: code, severity, source, timestamp,
 joint or message name, packet sequence, a recoverable flag, and human-readable
@@ -547,6 +583,34 @@ replays bytes.
 That is also why a red hardware lane is not a release blocker in itself — a
 device that behaves differently from last time is a finding, and the response is
 a new capture and an amended manifest, not a retry.
+
+### 9.6 Cross-source comparison
+
+One physical session can be observed three ways, and a device that writes files
+as well as sending packets is what makes the comparison honest — the motion is
+genuinely the same, not merely similar:
+
+```text
+                    ┌─> mocopi UDP     -> vrmAdapterMocopi ─┐
+one recorded ───────┼─> VMC relay      -> vrmAdapterVmc ────┼─> canonical motion
+session             └─> mocopi BVH     -> motionBvh ────────┘        ↓
+                                                              compared here
+```
+
+Compared at the canonical layer, never at a decoder's: sample timing · bone
+rotations · root translation · missing joints · provenance · metadata loss · how
+each path represents tracking loss. **Latency is a live-path measurement only** —
+a file has none, and reporting one for it would be inventing a number.
+
+`NearlyEqual` for motion equivalence, `operator==` for recorded-value identity
+([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060)).
+A difference outside tolerance is classified before it is accepted, and the useful
+outcome of this comparison is not a green test — it is the list of what each path
+cannot carry, written down once, from evidence.
+
+The BVH half of this is planned in
+[recorded-motion-sources.md](recorded-motion-sources.md#7-testing); it appears
+here too because the comparison belongs to neither plan alone.
 
 ## 10. Milestones
 
@@ -901,13 +965,22 @@ capture device validated through a VMC relay
   The CLI's two tests landed the same way, taking the root suite from 41 names
   to 43: `vmc_record_inspect` needs no socket and `vmc_record_loopback` binds
   one, split for the same reason and excludable the same way.
-- ⬜ **At least three real senders, of deliberately different shape** — a mocopi
-  relay, a general avatar tracker, and a VTuber or DCC application, plus the
-  repository's own loopback sender as the deterministic control. The roadmap
-  names categories rather than products on purpose: the property being bought is
-  *different sender behavior*, and pinning product names here would age faster
-  than the document. The chosen tools are fixed at validation time and recorded
-  in the manifest, because a sender's behavior is a property of its version.
+- ⬜ **Real senders, of deliberately different shape** — a mocopi relay, a
+  general avatar tracker, and a VTuber or DCC application, plus the repository's
+  own loopback sender as the deterministic control. The roadmap names categories
+  rather than products on purpose: the property being bought is *different sender
+  behavior*, and pinning product names here would age faster than the document.
+  The chosen tools are fixed at validation time and recorded in the manifest,
+  because a sender's behavior is a property of its version.
+
+  > **Best-effort as of 2026-08-03, not a release gate.** This was a numbered
+  > v0.7.0 release condition until the BVH axis was added to that release. It is
+  > still the right work and it is still where these questions get answered — a
+  > sender that is available during v0.7.0 gets recorded and reported — but the
+  > release no longer waits on lining up two or three applications. What replaces
+  > it as the gate is [§9.6](#96-cross-source-comparison), which needs only the
+  > device: one session, observed natively and as a file, with a VMC relay added
+  > where one is running.
 
   Per sender, recorded rather than described: application and version · platform
   · VMC output settings · sample rate · bundle usage · where `/VMC/Ext/T` sits
@@ -942,12 +1015,12 @@ capture device validated through a VMC relay
 semantic clip reproducible in CI · semantic clip + VRM avatar → `motion_retarget`
 → retargeted `UsdSkelAnimation` · artifact-only adapter and retarget smoke
 
-### Milestone D — the mocopi native adapter ⬜ (v0.7.0)
+### Milestone D — the mocopi native live adapter ⬜ (v0.7.0)
 
-`adapters/liveCapture/mocopi` scaffold · packet decoder · joint mapping ·
-coordinate conversion · tracking state and confidence · thin receiver ·
-reconnection · trace recording · opt-in real-device test · **native vs
-VMC-relayed comparison within a stated tolerance**
+`adapters/liveCapture/mocopi` scaffold · packet-capture fixture format · packet
+decoder · joint mapping · coordinate conversion · tracking state and confidence ·
+frame assembly · `LiveCaptureSource` bridge · thin UDP receiver · reconnection ·
+opt-in real-device test · **the cross-source comparison of §9.6**
 
 Same build order as Milestone A, for the same reason: recorded decoder → mapping
 → live-source bridge → thin receiver. The transport arrives last so every layer
@@ -1088,7 +1161,7 @@ shippable boundary:
 | Milestone | Release | Includes | Excludes |
 | --- | --- | --- | --- |
 | **VMC** (A–B, from bytes) | v0.6.0 | `vrmAdapterVmc`, the comparison additions to `motionCore`, the generated VMC corpus, `vmc_record`, loopback | any real-sender claim, OpenExec, `ExecIr`, any mocopi SDK |
-| **device and interoperability** (B–C, D) | v0.7.0 | `vrmAdapterMocopi`, native input, the VMC-path comparison, the real-session corpus and manifests, the sender matrix, the root/hips record, offline retarget E2E | OpenExec, usdview realtime skinning, `ExecIr`, the ARDY generator |
+| **device** (B–C, D) | v0.7.0 | `vrmAdapterMocopi` **live**, the real-session corpus and manifests, the §9.6 cross-source comparison, the root/hips record, offline retarget E2E | recorded-file reading (that is [the BVH plan](recorded-motion-sources.md)), OpenExec, usdview realtime skinning, `ExecIr`, the ARDY generator |
 | **generation** (E–F) | unscheduled | the generator contract, `vrmAdapterArdy` | a hosted model as a build dependency |
 
 The OpenExec and `ExecIr` milestones are the

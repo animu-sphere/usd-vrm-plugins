@@ -524,7 +524,60 @@ Neither adapter waits for OpenExec. Decode, canonical conversion, buffering,
 record/replay, offline retarget, and `UsdSkelAnimation` output are complete
 without it; OpenExec connects to that finished pipeline afterwards (§11.4).
 
-### 8.3 Generative-AI adapter
+### 8.3 Recorded-file input is a third path, not a mode of the second
+
+A capture product usually has **two** surfaces, and they are not variants of one
+another:
+
+```text
+live:      sensors -> phone or PC app -> UDP -> live adapter -> LiveCaptureSource
+recorded:  sensors -> PC app          -> a motion file -> reader -> HumanoidAnimation
+```
+
+The live surface deals in packets, arrival timestamps, restarts, and tracking
+loss. The recorded surface deals in a hierarchy, channels, a frame time, and a
+rest pose. They share a vendor and almost nothing else, so **one adapter must not
+carry both**: the live half is an `adapters/` leaf, and the recorded half is a
+file reader.
+
+The reader is **not** built as that product's importer. A motion file format
+outlives any one application that writes it, and the layering that keeps this
+true is four deep:
+
+```text
+file syntax            what the bytes say         (motionBvh)
+    ↓
+extraction             format shapes -> neutral   (motionBvh)
+    ↓
+motionSource           source skeleton/animation, no format  (motionSource)
+    ↓
+source profile         what one producer's export means      (data)
+    ↓
+canonical conversion   -> motion::HumanoidAnimation          (motionSource)
+```
+
+Two rules make the difference between this and a product importer:
+
+- **The syntax layer decides nothing semantic.** Not which joint is a
+  `HumanBone`, not whether a unit is centimetres, not the up axis or handedness,
+  not what a root translation means. Those are the profile's, because they are
+  facts about a *writer*, not about the format.
+- **There is no default profile.** A file arrives with no reliable statement of
+  who wrote it, so a caller names a profile or the conversion is refused. Guessing
+  from joint names is the specific failure this forbids: it is right often enough
+  to be trusted and wrong silently, and it produces motion that is subtly
+  misassembled rather than absent.
+
+The second producer profile is therefore added **early**, while the first is
+still being written. A pipeline validated against one writer has no way to tell
+its own assumptions from the format's, and every one of them — joint names, unit,
+axes, root policy, hierarchy shape — is invisible until something disagrees.
+
+Live and recorded input converge at `motionCore` and nowhere earlier. Neither may
+reach into the other; sharing a decoder between them is how a file reader
+acquires a socket's assumptions, or a socket a file's.
+
+### 8.4 Generative-AI adapter
 
 ```text
 text / trajectory / sparse constraints / pose history
@@ -907,6 +960,8 @@ libs/
 ├─ vrmContainer/
 ├─ motionCore/
 ├─ motionRuntime/
+├─ motionSource/          format-neutral source model + profile contract
+├─ motionBvh/             BVH syntax + extraction only
 └─ vrmRetarget/
 
 plugins/
@@ -919,16 +974,26 @@ plugins/
 adapters/
 ├─ liveCapture/
 │  ├─ vmc/
-│  └─ mocopi/
+│  └─ mocopi/            live UDP only; recorded files are motionBvh's
 └─ generators/
    └─ ardy/
+
+profiles/
+└─ motion/               one declarative file per producer + export preset
 
 tools/
 ├─ vrma_inspect
 ├─ motion_retarget
 ├─ motion_bake
-└─ motion_record
+├─ motion_record
+└─ motionBvh/            motion_bvh_inspect, motion_bvh_convert
 ```
+
+`profiles/` is the one top-level directory holding no code. It sits outside
+`libs/motionBvh/` on purpose: the profile contract belongs to `motionSource`
+rather than to any one reader, and a future FBX reader must be able to use the
+same files without depending on the BVH library
+([WORKSPACE.md §1](../architecture/WORKSPACE.md)).
 
 Fixtures follow the existing per-bundle convention (`<bundle>/tests/`,
 `<bundle>/tests/corpus/`) rather than a new top-level `fixtures/` tree — see the
@@ -949,14 +1014,18 @@ usdVrmFileFormat / usdVrmaFileFormat
 
 motionCore
     ↑
-motionRuntime
-    ↑
-vrmRetarget
+motionRuntime            motionSource
+    ↑                        ↑
+vrmRetarget              motionBvh  (and any future reader)
     ↑
 execMotion / execVrm
     ↑
 optional adapters
 ```
+
+`motionSource` hangs off `motionCore` beside `motionRuntime` rather than under
+it: a recorded file becomes a `HumanoidAnimation` without ever entering the live
+intake, and nothing in the runtime knows a file format exists.
 
 Forbidden:
 
@@ -971,10 +1040,19 @@ execVrm           → GLB parser
 execMotion        → adapters
 execVrm           → adapters
 adapter           → another adapter
+
+motionCore        → motionSource / motionBvh
+motionRuntime     → motionSource / motionBvh
+motionSource      → motionBvh, or any other reader
+reader            → another reader
+motionBvh         → vrmRetarget, vrmSchema, a target VRM
+motionBvh         → a producer name in code, or a default profile
+adapter           → motionBvh / motionSource, and the reverse
 ```
 
 Adapters depend on the core. The core never depends on an adapter, and neither
-does an OpenExec node. Adapters do not depend on each other.
+does an OpenExec node. Adapters do not depend on each other, and neither do
+readers.
 
 One permission is easy to misread: an adapter's **CLI tool** may drive
 `vrmRetarget` and author a stage, exactly as `motion_retarget` does. The adapter

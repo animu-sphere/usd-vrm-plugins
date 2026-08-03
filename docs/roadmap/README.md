@@ -11,7 +11,8 @@ Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 | --- | --- |
 | [current.md](current.md) | The next milestone and active carry-over work. |
 | [backlog.md](backlog.md) | Ordered but unscheduled work: the milestone ladder beyond next, the motion layer, future phases, and cross-cutting open items. |
-| [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) | The input-adapter direction: a VMC Protocol adapter (shipped), then a direct capture-product adapter, then a generation adapter — completing end to end with no OpenExec dependency. The filename keeps the original triple; the order inside was reversed on 2026-07-29. |
+| [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) | The **live** input-adapter direction: a VMC Protocol adapter (shipped), then a direct capture-product adapter, then a generation adapter — completing end to end with no OpenExec dependency. The filename keeps the original triple; the order inside was reversed on 2026-07-29. |
+| [recorded-motion-sources.md](recorded-motion-sources.md) | The **recorded-file** direction: a generic BVH pipeline over a format-neutral `motionSource` layer, with producer semantics in declarative profiles. Deliberately not any one capture product's importer. Added 2026-08-03. |
 | [openexec-foundation.md](openexec-foundation.md) | The OpenExec direction: the OpenUSD 26.08 exact pin, the `execMotion` / `execVrm` foundation, and the `ExecIr` invertible rig. Kept separate because it is a plan, not a status list. Renamed from `openexec-v0.6.0-v0.7.0.md` on 2026-08-03, when its target moved. |
 
 ## Three sequences, deliberately separate
@@ -58,7 +59,8 @@ must repeat one, `scripts/check_docs.py` checks it against this table.
 | Track | Status | Target |
 | --- | --- | --- |
 | VMC input | Shipped | v0.6.0 |
-| mocopi native adapter and real sender validation | Next | v0.7.0 |
+| mocopi live input | Next | v0.7.0 |
+| generic BVH recorded-motion ingestion | Next | v0.7.0 |
 | OpenExec foundation | Planned | v0.8.0 |
 | `ExecIr` invertible VRM humanoid rig | Planned | after v0.8.0 |
 
@@ -81,8 +83,13 @@ carrying a version number is drift waiting to be re-litigated.
   root tree and run its whole CTest suite on all three OS; the v0.5.0
   hand-written lane is deleted. They picked the adapter's tests up — including
   the two that bind a socket — with no CI edit.
-- Current priorities: **real device and sender evidence**
-  ([the adapter track](adapters-mocopi-vmc-ardy.md), v0.7.0), closing the
+- **Input has two halves, and v0.7.0 builds both.** Live input is
+  [the adapter track](adapters-mocopi-vmc-ardy.md); recorded files are
+  [the BVH track](recorded-motion-sources.md), which is a generic pipeline with
+  producer semantics in data rather than a capture product's importer. They meet
+  at `motionCore` and nowhere earlier
+  ([motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md)).
+- Current priorities: **real device evidence** across both halves, closing the
   remaining **Workspace Phase 5** packaging P0, and widening runtime
   verification. The [OpenExec foundation](openexec-foundation.md) follows in
   v0.8.0 and blocks none of them.

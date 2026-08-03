@@ -105,11 +105,27 @@ Always written "Motion Phase X", never a bare "Phase X".
   intake, and a synthetic corpus that makes the tests reproducible. A captured
   session is baked onto an avatar by the **unchanged** Phase C tool. The vendor
   half is [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md): the VMC
-  Protocol adapter shipped in v0.6.0, and the mocopi native adapter plus real
-  sender validation is v0.7.0 — because both the v0.5.0 traces and the v0.6.0
-  captures are *generated*, and answer no question about timestamp jitter,
-  tracking loss, or reconnection as a real device produces them. **The track
-  needs no OpenExec:** it ends at a retargeted `UsdSkelAnimation`.
+  Protocol adapter shipped in v0.6.0, and the mocopi native **live** adapter is
+  v0.7.0 — because both the v0.5.0 traces and the v0.6.0 captures are
+  *generated*, and answer no question about timestamp jitter, tracking loss, or
+  reconnection as a real device produces them. **The track needs no OpenExec:**
+  it ends at a retargeted `UsdSkelAnimation`.
+- ⬜ **Recorded-file ingestion — `motionSource` + `motionBvh`** (v0.7.0, with the
+  above). A generic BVH pipeline whose semantics live in declarative producer
+  profiles, planned in
+  [recorded-motion-sources.md](recorded-motion-sources.md) and contracted in
+  [motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md). It is the *other*
+  surface of the same capture product, and deliberately not a mode of the live
+  adapter.
+
+  **It does not extend the Motion Phase ladder.** In kind it is Phase B's
+  territory — a recorded clip becoming a canonical semantic clip — with a
+  different container and an explicit producer profile where `.vrma` has a
+  specification. Adding "Motion Phase I" for it would make the string
+  "Motion Phase A–H", which four documents repeat, mean something different this
+  release for no gain in what anyone can check; the same argument
+  [WORKSPACE.md §8](../architecture/WORKSPACE.md) makes about the workspace
+  ladder and greenfield libraries.
 - ⬜ **Motion Phase E — `execMotion` / `execVrm`.** ClipSample, PoseBuffer,
   HumanoidRetarget, RootMotionResolve, AvatarApply. Nodes are thin wrappers over
   `motionRuntime` and `vrmRetarget`, and each evaluates an immutable snapshot
@@ -195,9 +211,12 @@ not a commitment to ship one.
   reproducing *shapes* rather than any device's behavior. The real half is
   v0.7.0, and it splits: redistributable captures are committed, and everything
   else survives as a measured manifest with no bytes
-  ([adapters plan §9.2](adapters-mocopi-vmc-ardy.md#92-corpus)). Still open
-  beyond that: `.vrma` clips with known-good expected output, where licensing is
-  the same gate the VRM corpus hit.
+  ([adapters plan §9.2](adapters-mocopi-vmc-ardy.md#92-corpus)). The BVH corpus
+  lands under the same rule with one addition of its own — **a second producer
+  from the start** ([BVH plan §8](recorded-motion-sources.md#8-corpus)), because
+  a pipeline validated against one writer cannot tell its own assumptions from
+  the format's. Still open beyond that: `.vrma` clips with known-good expected
+  output, where licensing is the same gate the VRM corpus hit.
 
 ## Non-goals
 
@@ -211,7 +230,16 @@ or another plugin (design policy §15, §19; motion policy §8, §18):
 - DCC-specific UI
 - **Product-specific motion support in core.** Mocopi, VMC, ARDY, and any other
   named system are optional leaf adapters, never a core dependency or a branch
-  condition.
+  condition. A **producer profile is the one exception, and it is data**: a
+  `profiles/motion/*.yaml` may be named for a product because the library that
+  reads it has no name for one — no producer identifier in code, no default
+  profile, and a conversion that refuses rather than guesses. Ship every profile
+  and the libraries are byte-identical; that is the test
+  ([WORKSPACE.md §1](../architecture/WORKSPACE.md)).
+- **A capture product's file format as that product's importer.** Recorded
+  motion is read by a generic reader plus an explicit profile, never by a
+  vendor-branded parser — otherwise the first writer's export silently becomes
+  the format (motion policy §8.3).
 - **Per-frame USD stage authoring for live playback.** Live evaluation produces
   transient poses; USD animation is authored only on bake / record / publish
   (motion policy §12.1).

@@ -34,21 +34,27 @@ contract wins — structural changes go there first, in their own PR.
   contract — the source of truth for bundle identities, dependency directions,
   artifact naming, and **Workspace Phase 0–8**.
 
-Two milestone plans sit in [roadmap/](roadmap/) rather than here, because they
-are plans and not policy: the
-[input adapters](roadmap/adapters-mocopi-vmc-ardy.md) and the
-[OpenExec foundation](roadmap/openexec-foundation.md). Both defer every
+Three milestone plans sit in [roadmap/](roadmap/) rather than here, because they
+are plans and not policy: the [live input adapters](roadmap/adapters-mocopi-vmc-ardy.md),
+the [recorded motion sources](roadmap/recorded-motion-sources.md), and the
+[OpenExec foundation](roadmap/openexec-foundation.md). All three defer every
 structural claim to WORKSPACE.md and every motion claim to the motion policy,
-and **neither states its own release version** — that is the
+and **none states its own release version** — that is the
 [roadmap status table](roadmap/README.md#status-at-a-glance), which exists
-because the two plans traded places once already.
+because two of them traded places once already.
 
-The adapter track completes from a live protocol to a retargeted
-`UsdSkelAnimation` with no OpenExec dependency; the OpenExec track attaches to
-that finished pipeline afterwards. Since 2026-08-03 it is also *scheduled*
-afterwards, so its parity comparison runs on sessions recorded from a real device
-and real senders rather than on generated fixtures. That is a one-way
-relationship: the adapters supply evidence, and nothing in them reads back.
+The two input tracks are the **live** and **recorded** halves of the same layer,
+and they are separate plans because they share a vendor and almost nothing else —
+one argues about packets and restarts, the other about a hierarchy and a rest
+pose. Both complete to a retargeted `UsdSkelAnimation` with no OpenExec
+dependency, and both converge at `motionCore` and nowhere earlier
+([motion policy §8.3](design/MOTION_ARCHITECTURE_POLICY.md)).
+
+The OpenExec track attaches to that finished pipeline afterwards, and since
+2026-08-03 it is also *scheduled* afterwards, so its parity comparison runs on
+sessions recorded from a real device rather than on generated fixtures. That is a
+one-way relationship: the input tracks supply evidence, and nothing in them reads
+back.
 
 The three phase systems are separate and always qualified; see
 [roadmap/README.md](roadmap/README.md#three-sequences-deliberately-separate).
