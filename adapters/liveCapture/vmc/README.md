@@ -287,10 +287,29 @@ than per frame. Both are measured against the rig the session has actually
 observed — a sender that solves no fingers is complete, not incomplete forty
 times a second.
 
+**Blend shapes are assembled exactly as bones are.** `/VMC/Ext/Blend/Val`
+becomes `HumanoidPose::expressions` under the sender's own name — the same
+repeat rule, the same duplicate reading, the same one-per-frame slot. Giving
+expressions a rule of their own would be a third framing convention in a layer
+whose argument is that two are already one too many. Two consequences are
+deliberate: a frame carrying *only* expressions is emitted, because a pose can
+hold them and refusing it would discard motion this layer can represent; and
+`/VMC/Ext/Blend/Apply` is still only counted, because reading it as "the set is
+complete" would make it a frame boundary that neither sender shape justifies.
+
+There is no missing/stale reporting for expressions. That is measured against a
+rig the session learned, and the expression vocabulary is the sender's model's
+rather than a fixed one — "the sender stopped reporting `Joy`" is not the same
+claim as "this rig solves no fingers", and inventing the stronger one here is
+the kind of decision this adapter does not take.
+
 `vrmAdapterVmc_frameAssemblerCorpus` assembles all seven captures and makes the
 claim this layer exists for: **both sender shapes yield five frames at the same
 30 Hz cadence**, with the unbundled one's arm rising 15° per frame in the order
-it was sent.
+it was sent. It also pins the blend shapes the mixed-traffic capture carries —
+`Joy`, `Blink`, and `A`, the last sent as `0.0` on every frame, which is the
+corpus's record of the difference between a weight that is zero and a name that
+was never sent.
 
 ## Into the runtime
 

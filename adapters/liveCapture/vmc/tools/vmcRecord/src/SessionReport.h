@@ -37,6 +37,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -133,6 +134,12 @@ private:
     // `GetObservedBones()`: that one is reset by a restart, and a report of
     // what a sender sends should not shrink because the operator restarted it.
     std::bitset<motion::HumanBoneCount> _observed;
+
+    // The same union for expression names, which cannot be a bitset because the
+    // vocabulary is the sender's model's rather than a fixed one
+    // (motionCore/Humanoid.h). Sorted, so two runs of the same capture report
+    // the names in the same order.
+    std::set<std::string> _expressionNames;
 
     // The first open question's evidence. A hips offset that never moves is rig
     // geometry; one that tracks the body is translation. Neither this tool nor

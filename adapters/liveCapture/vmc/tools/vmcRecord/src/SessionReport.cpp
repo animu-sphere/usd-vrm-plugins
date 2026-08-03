@@ -111,6 +111,13 @@ SessionReport::ObserveFrames(const std::vector<vrmAdapterVmc::VmcFrame>& frames)
             ++_framesBeginningSession;
         }
         _observed |= frame.pose.validRotations;
+        // The union across the session, because the vocabulary is the sender's
+        // and an operator judging a capture wants to know which names it holds
+        // -- not merely that some arrived.
+        for (const motion::ExpressionWeight& weight :
+             frame.pose.expressions.entries) {
+            _expressionNames.insert(weight.name);
+        }
 
         const double timestamp = frame.pose.timestamp;
         if (!_haveFrameTime) {
@@ -261,6 +268,35 @@ SessionReport::Print(std::FILE* out,
                  static_cast<unsigned long long>(assembly.bonesDuplicated),
                  static_cast<unsigned long long>(assembly.bonesUnsupported),
                  static_cast<unsigned long long>(assembly.bonesMalformed));
+
+    // Only when the session carried any. A sender that sends no face should not
+    // be reported as sending an empty one, for the same reason the bone line is
+    // measured against what was observed rather than against all 55.
+    if (assembly.expressionsAccepted != 0 || !_expressionNames.empty()) {
+        std::fprintf(out,
+                     "expressions: %zu name(s); %llu accepted, "
+                     "%llu duplicated\n",
+                     _expressionNames.size(),
+                     static_cast<unsigned long long>(
+                         assembly.expressionsAccepted),
+                     static_cast<unsigned long long>(
+                         assembly.expressionsDuplicated));
+        std::fprintf(out, "             ");
+        std::size_t printed = 0;
+        for (const std::string& name : _expressionNames) {
+            // The names are the sender's, so the list is evidence rather than
+            // decoration -- but a face rig can carry dozens and the report is
+            // meant to be read.
+            if (printed == 12) {
+                std::fprintf(out, ", ... (%zu more)",
+                             _expressionNames.size() - printed);
+                break;
+            }
+            std::fprintf(out, "%s%s", printed == 0 ? "" : ", ", name.c_str());
+            ++printed;
+        }
+        std::fputc('\n', out);
+    }
 
     std::fprintf(out,
                  "clock:       %llu frame(s) stamped by the sender, %llu by the "

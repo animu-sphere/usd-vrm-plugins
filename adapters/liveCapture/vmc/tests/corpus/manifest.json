@@ -70,7 +70,7 @@
     },
     {
       "file": "mixed-traffic-30hz.vmcpackets",
-      "pins": "Well-formed traffic the body path does not implement: blend shapes, an HMD and controller transform, a camera, an option string. Unsupported is not malformed, and this is the fixture that holds the two diagnostics apart.",
+      "pins": "Well-formed traffic the body path does not implement: an HMD and controller transform, a camera, an option string. Unsupported is not malformed, and this is the fixture that holds the two diagnostics apart. It also carries the corpus's only blend shapes, which do reach a frame - and one of them (`A`) is sent as 0.0, recording the difference between a zero weight and a name that was never sent.",
       "tags": [
         "unsupported-message",
         "expression",

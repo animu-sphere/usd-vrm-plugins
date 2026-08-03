@@ -125,12 +125,33 @@
 // frame from a rig with no fingers, and the difference is the whole reason
 // `HumanoidPose::validRotations` exists.
 //
-// ## What this layer drops
+// ## Blend shapes
 //
-// Blend-shape values and their apply are seen and deliberately not carried:
-// `motionCore` has no expression sample yet, and inventing a place to put one is
-// a contract change rather than an adapter's decision (§11, Motion Phase G).
-// They are counted, so a session that is mostly expression traffic says so.
+// `/VMC/Ext/Blend/Val` becomes `HumanoidPose::expressions` under the name the
+// sender used. It is treated exactly as a bone is — it joins the open frame, it
+// opens one when none is open, and a name the frame already carries closes the
+// frame unless it arrived in the same datagram, where it is a duplicate. Giving
+// it its own rule would be a third framing convention in a layer whose whole
+// argument is that two are already one too many.
+//
+// **A frame carrying only expressions is emitted.** The emptiness check used to
+// read "neither a bone nor a root", from a time when a blend value was not
+// something a `HumanoidPose` could hold. It can now, so a frame carrying
+// expressions carries content, and refusing it would discard motion this layer
+// is able to represent. Nothing in the corpus sends one today; the alternative
+// was to drop those values silently, which is worse than emitting a frame whose
+// shape is unusual.
+//
+// **`/VMC/Ext/Blend/Apply` is still only counted.** It carries no value, and
+// reading it as "the blend set is complete" would make it a frame boundary —
+// the third rule again, and one the two sender shapes above give no reason to
+// trust. The values already belong to the frame they arrived in.
+//
+// What this layer does *not* do for expressions is the missing/stale reporting
+// it does for bones. That is measured against a rig the session learned, and
+// the expression vocabulary is open (`motionCore/Humanoid.h`) — "the sender has
+// stopped reporting `Joy`" is not the same claim as "the rig solves no fingers",
+// and inventing the stronger one here would be the kind of decision §2 forbids.
 #pragma once
 
 #include "vrmAdapterVmc/Diagnostics.h"
@@ -146,6 +167,7 @@
 #include <bitset>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -181,10 +203,11 @@ struct VmcFrameConfig
 // record.
 struct VmcFrame
 {
-    // Stamped, rooted, and carrying exactly the bones this frame carried. Its
-    // `confidence` and `contacts` are absent because VMC reports neither, and
-    // `source` is absent because the session's metadata belongs on the source
-    // once rather than on thirty poses a second (see `GetSourceMetadata`).
+    // Stamped, rooted, and carrying exactly the bones and expression weights
+    // this frame carried. Its `confidence` and `contacts` are absent because VMC
+    // reports neither, and `source` is absent because the session's metadata
+    // belongs on the source once rather than on thirty poses a second (see
+    // `GetSourceMetadata`).
     motion::HumanoidPose pose;
 
     // Whether the sender's clock restarted immediately before this frame, making
@@ -213,8 +236,9 @@ struct VmcFrame
     std::optional<pxr::GfVec3f> hipsOffset;
 
     // How many of this frame's samples were refused as a repeat inside one
-    // datagram — the root included, which occupies the same one-per-frame slot
-    // a bone does. The repeats are dropped; the first value stands.
+    // datagram — the root and the blend shapes included, which occupy the same
+    // one-per-frame slot a bone does. The repeats are dropped; the first value
+    // stands.
     std::size_t duplicateBones = 0;
 };
 
@@ -245,13 +269,22 @@ struct VmcFrameStats
     std::uint64_t rootsAccepted = 0;
     std::uint64_t rootsMalformed = 0;
 
+    // Blend-shape values that reached a frame, and those refused as a repeat
+    // inside one datagram. There is no `expressionsUnsupported` counterpart to
+    // `bonesUnsupported`: a bone name outside Unity's vocabulary is a refusal
+    // because the humanoid vocabulary is closed, and an expression name is
+    // whatever the sender's model calls it.
+    std::uint64_t expressionsAccepted = 0;
+    std::uint64_t expressionsDuplicated = 0;
+
     // Bones that crossed the staleness horizon, counted per crossing rather than
     // per frame.
     std::uint64_t stalenessCrossings = 0;
 
-    // Availability, model, and blend-shape messages: none of them carry body
-    // motion, so none of them open, close, or stamp a frame. The model's title
-    // is still read out of one, as provenance.
+    // Availability, model, and blend-shape *apply* messages: none of them carry
+    // a value, so none of them open, close, or stamp a frame. The model's title
+    // is still read out of one, as provenance. `/VMC/Ext/Blend/Val` left this
+    // count when expressions became something a pose could hold.
     std::uint64_t messagesIgnored = 0;
 };
 
@@ -345,6 +378,10 @@ private:
         // boundary. Only meaningful where `pose.validRotations` is set.
         std::array<std::uint64_t, motion::HumanBoneCount> bonePacket{};
         std::uint64_t rootPacket = 0;
+        // The same, for expressions. A map rather than a parallel array because
+        // the names are the sender's and there is no fixed slot to index: the
+        // key is the name exactly as `pose.expressions` holds it.
+        std::map<std::string, std::uint64_t> expressionPacket;
     };
 
     void _Open(double receiveTime);

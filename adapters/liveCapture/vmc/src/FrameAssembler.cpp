@@ -72,11 +72,15 @@ VmcFrameAssembler::_Close(std::vector<VmcFrame>* frames,
     OpenFrame frame = std::move(_frame);
     _frame = OpenFrame();
 
-    if (!frame.pose.validRotations.any() && !frame.hasRoot) {
+    // Expressions count as content: a pose can hold them, so a frame carrying
+    // only them is carrying motion rather than an empty boundary.
+    if (!frame.pose.validRotations.any() && !frame.hasRoot
+        && frame.pose.expressions.IsEmpty()) {
         ++_stats.framesRefusedEmpty;
         _Report(diagnostics, DiagnosticCode::IncompleteFrame, {},
                 frame.senderTime,
-                "frame boundary carried neither a bone nor a root");
+                "frame boundary carried neither a bone, a root, nor an "
+                "expression");
         return false;
     }
 
@@ -291,14 +295,45 @@ VmcFrameAssembler::Push(const VmcPacket& packet, double receiveTime,
             ++_stats.messagesIgnored;
             break;
 
+        case VmcMessageKind::BlendValue: {
+            // The name is the sender's, and this layer has no vocabulary to
+            // check it against (motionCore/Humanoid.h): the only thing that can
+            // be wrong with it here is arriving twice.
+            const std::string name(message.name);
+            if (_frame.open && _frame.pose.expressions.Find(name) != nullptr) {
+                const auto seen = _frame.expressionPacket.find(name);
+                if (seen != _frame.expressionPacket.end()
+                    && seen->second == _packetSerial) {
+                    // Same reading as a repeated bone, and the same code: the
+                    // set is frozen (Diagnostics.h), and a blend shape occupies
+                    // the same one-per-frame slot a bone does.
+                    ++_frame.duplicateBones;
+                    ++_stats.expressionsDuplicated;
+                    _Report(diagnostics, DiagnosticCode::DuplicateBone,
+                            message.name, _frame.senderTime,
+                            "already carried by this frame from the same "
+                            "datagram; the first value stands");
+                    break;
+                }
+                completed += _Close(frames, diagnostics) ? 1 : 0;
+            }
+            if (!_frame.open) {
+                _Open(receiveTime);
+            }
+            _frame.pose.expressions.Set(name, message.value);
+            _frame.expressionPacket[name] = _packetSerial;
+            ++_stats.expressionsAccepted;
+            break;
+        }
+
         case VmcMessageKind::Availability:
-        case VmcMessageKind::BlendValue:
         case VmcMessageKind::BlendApply:
         case VmcMessageKind::Count:
-            // None of these carry body motion, and none of them open, close, or
-            // stamp a frame. The blend-shape pair is the one that will move:
-            // it waits on an expression sample in the canonical contract, not
-            // on anything here.
+            // None of these carry a value, and none of them open, close, or
+            // stamp a frame. `Blend/Apply` in particular is not read as "the
+            // blend set is complete": that would make it a frame boundary, and
+            // the header says why a third boundary rule is not something the
+            // two sender shapes justify.
             ++_stats.messagesIgnored;
             break;
         }

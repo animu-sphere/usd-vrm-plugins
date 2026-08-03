@@ -129,6 +129,18 @@ OneMessage(const VmcMessage& message)
     return packet;
 }
 
+// `name` must outlive the packet: like every other message built here, the view
+// does not own its bytes. Callers pass string literals.
+VmcMessage
+BlendMessage(std::string_view name, float value)
+{
+    VmcMessage message;
+    message.kind = VmcMessageKind::BlendValue;
+    message.name = name;
+    message.value = value;
+    return message;
+}
+
 std::size_t
 CountCode(const std::vector<Diagnostic>& diagnostics, DiagnosticCode code)
 {
@@ -296,6 +308,72 @@ TestAFrameBoundaryCarryingNothingIsRefused()
     assert(frames.empty());
     assert(assembler.GetStats().framesRefusedEmpty == 1);
     assert(CountCode(diagnostics, DiagnosticCode::IncompleteFrame) == 1);
+}
+
+void
+TestABlendValueIsAssembledLikeABone()
+{
+    // Both halves of the repeat rule, on a blend shape rather than a bone,
+    // because the rule is the same rule and a second convention for expressions
+    // is the thing this layer is written to avoid.
+    VmcFrameAssembler assembler;
+    std::vector<VmcFrame> frames;
+    std::vector<Diagnostic> diagnostics;
+
+    // Twice inside one datagram: a sender repeating itself.
+    VmcPacket bundled = BundledFrame(1.0);
+    bundled.messages.push_back(BlendMessage("Joy", 0.5f));
+    bundled.messages.push_back(BlendMessage("A", 0.0f));
+    bundled.messages.push_back(BlendMessage("Joy", 0.9f));
+    assert(assembler.Push(bundled, 0.0, &frames, &diagnostics) == 0);
+    assert(frames.empty());
+    assert(assembler.GetStats().expressionsDuplicated == 1);
+    assert(assembler.GetStats().expressionsAccepted == 2);
+    assert(CountCode(diagnostics, DiagnosticCode::DuplicateBone) == 1);
+    assert(diagnostics[0].subject == "Joy");
+
+    // The same name in a *later* datagram: the sender has moved on, so it ends
+    // the frame exactly as a repeated bone does.
+    assert(assembler.Push(OneMessage(BlendMessage("Joy", 0.1f)), 0.033, &frames,
+                          &diagnostics)
+           == 1);
+    assert(frames.size() == 1);
+
+    // The first value stood, and the reported zero is a value: a reader that
+    // dropped it would find one name here instead of two.
+    const motion::ExpressionWeights& weights = frames[0].pose.expressions;
+    assert(weights.entries.size() == 2);
+    assert(weights.Find("Joy") != nullptr && *weights.Find("Joy") == 0.5f);
+    assert(weights.Find("A") != nullptr && *weights.Find("A") == 0.0f);
+    assert(weights.Find("Blink") == nullptr);
+}
+
+void
+TestAFrameCarryingOnlyExpressionsIsEmitted()
+{
+    // No committed capture contains a sender that sends a face and no body, so
+    // this is unit-tested rather than pinned by a fixture -- the same choice the
+    // receive-clock fallback below is given, and for the same reason: inventing
+    // the capture would be a claim about a sender nobody has recorded.
+    //
+    // What is being pinned is that expressions are content. The emptiness rule
+    // predates a pose being able to hold them, and had it been left alone these
+    // weights would have been assembled and then discarded at the boundary.
+    VmcFrameAssembler assembler;
+    std::vector<VmcFrame> frames;
+    std::vector<Diagnostic> diagnostics;
+
+    VmcPacket packet;
+    packet.messages.push_back(TimeMessage(5.0));
+    packet.messages.push_back(BlendMessage("Blink", 1.0f));
+    assert(assembler.Push(packet, 0.0, &frames, &diagnostics) == 0);
+    assert(assembler.Flush(&frames, &diagnostics) == 1);
+
+    assert(frames.size() == 1);
+    assert(Near(frames[0].pose.timestamp, 5.0));
+    assert(!frames[0].pose.validRotations.any());
+    assert(frames[0].pose.expressions.entries.size() == 1);
+    assert(assembler.GetStats().framesRefusedEmpty == 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -729,16 +807,25 @@ struct Expected
     std::size_t staleCrossings;
     std::size_t bones;
     std::size_t roots;
+    // Blend-shape values that reached a frame. Zero for every capture that
+    // sends none, which is most of them -- and the column exists so that a
+    // capture which does send them cannot have them silently dropped again.
+    std::size_t expressions;
 };
 
 constexpr Expected kExpected[] = {
-    {"arm-raise-30hz.vmcpackets", 5, 0, 0, 0, 0, 105, 5},
-    {"extended-forms.vmcpackets", 1, 0, 0, 0, 0, 21, 1},
-    {"malformed-forms.vmcpackets", 2, 0, 1, 0, 0, 41, 2},
-    {"malformed-packets.vmcpackets", 0, 0, 0, 0, 0, 0, 0},
-    {"mixed-traffic-30hz.vmcpackets", 3, 0, 0, 0, 0, 63, 3},
-    {"neutral-standing-30hz.vmcpackets", 5, 0, 0, 0, 0, 110, 5},
-    {"sender-restart-30hz.vmcpackets", 6, 2, 1, 1, 15, 153, 8},
+    {"arm-raise-30hz.vmcpackets", 5, 0, 0, 0, 0, 105, 5, 0},
+    // Its one `Blend/Val` carries a float where the name goes, so it is refused
+    // a layer below this one and never reaches a frame.
+    {"extended-forms.vmcpackets", 1, 0, 0, 0, 0, 21, 1, 0},
+    {"malformed-forms.vmcpackets", 2, 0, 1, 0, 0, 41, 2, 0},
+    {"malformed-packets.vmcpackets", 0, 0, 0, 0, 0, 0, 0, 0},
+    // Three names in each of three frames: `Joy`, `Blink`, and `A` -- the last
+    // of which is sent as 0.0, so this capture also records the difference
+    // between a weight that is zero and a name that was never sent.
+    {"mixed-traffic-30hz.vmcpackets", 3, 0, 0, 0, 0, 63, 3, 9},
+    {"neutral-standing-30hz.vmcpackets", 5, 0, 0, 0, 0, 110, 5, 0},
+    {"sender-restart-30hz.vmcpackets", 6, 2, 1, 1, 15, 153, 8, 0},
 };
 
 // Low enough that the one gap a capture actually records crosses it: the
@@ -875,12 +962,13 @@ CheckCorpus(const std::filesystem::path& directory)
             || stats.sessionRestarts != entry->restarts
             || stats.stalenessCrossings != entry->staleCrossings
             || stats.bonesAccepted != entry->bones
-            || stats.rootsAccepted != entry->roots) {
+            || stats.rootsAccepted != entry->roots
+            || stats.expressionsAccepted != entry->expressions) {
             std::fprintf(stderr,
                          "%s: %zu frame(s), %llu out of order, %llu "
                          "incomplete, %llu restart(s), %llu stale, %llu "
-                         "bone(s), %llu root(s) -- expected %zu, %zu, %zu, "
-                         "%zu, %zu, %zu, %zu\n",
+                         "bone(s), %llu root(s), %llu expression(s) -- "
+                         "expected %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu\n",
                          name.c_str(), frames.size(),
                          static_cast<unsigned long long>(
                              stats.framesRefusedOutOfOrder),
@@ -891,9 +979,12 @@ CheckCorpus(const std::filesystem::path& directory)
                              stats.stalenessCrossings),
                          static_cast<unsigned long long>(stats.bonesAccepted),
                          static_cast<unsigned long long>(stats.rootsAccepted),
+                         static_cast<unsigned long long>(
+                             stats.expressionsAccepted),
                          entry->frames, entry->refusedOutOfOrder,
                          entry->incomplete, entry->restarts,
-                         entry->staleCrossings, entry->bones, entry->roots);
+                         entry->staleCrossings, entry->bones, entry->roots,
+                         entry->expressions);
             ++failures;
             continue;
         }
@@ -923,6 +1014,45 @@ CheckCorpus(const std::filesystem::path& directory)
                              name.c_str(), frame.pose.timestamp);
                 ++failures;
                 break;
+            }
+        }
+
+        // The one capture that sends blend shapes. The counts above say three
+        // arrived per frame; this says which three and with what weights, which
+        // is what a count cannot: `A` is sent as 0.0 every frame, and a reader
+        // that treated a zero weight as "not sent" would land on two names here
+        // while the count above still read nine.
+        if (name == "mixed-traffic-30hz.vmcpackets") {
+            for (std::size_t index = 0; index != frames.size(); ++index) {
+                const motion::ExpressionWeights& weights =
+                    frames[index].pose.expressions;
+                const float* joy = weights.Find("Joy");
+                const float* blink = weights.Find("Blink");
+                const float* a = weights.Find("A");
+                const float expected = 0.25f * static_cast<float>(index);
+                if (weights.entries.size() != 3 || !joy || !blink || !a
+                    || std::abs(*joy - expected) > 1e-6f
+                    || std::abs(*blink - (1.0f - expected)) > 1e-6f
+                    || *a != 0.0f) {
+                    std::fprintf(stderr,
+                                 "%s: frame %zu carried %zu expression(s), not "
+                                 "Joy/Blink/A at the recorded weights\n",
+                                 name.c_str(), index, weights.entries.size());
+                    ++failures;
+                    break;
+                }
+                // Sent under the sender's own spelling, not normalised to a VRM
+                // preset name: the vocabulary is the model's.
+                if (weights.entries[0].name != "A"
+                    || weights.entries[1].name != "Blink"
+                    || weights.entries[2].name != "Joy") {
+                    std::fprintf(stderr,
+                                 "%s: frame %zu did not carry the sender's own "
+                                 "names in name order\n",
+                                 name.c_str(), index);
+                    ++failures;
+                    break;
+                }
             }
         }
 
@@ -1095,6 +1225,8 @@ main(int argc, char** argv)
     TestARepeatInsideOneDatagramIsADuplicate();
     TestASecondClockEndsTheFrameWhereverItArrived();
     TestAFrameBoundaryCarryingNothingIsRefused();
+    TestABlendValueIsAssembledLikeABone();
+    TestAFrameCarryingOnlyExpressionsIsEmitted();
     TestAFrameWithNoSenderClockFallsBackToArrival();
     TestAFrameThatDoesNotAdvanceIsRefused();
     TestABigBackwardsJumpIsARestartAndNotARegression();

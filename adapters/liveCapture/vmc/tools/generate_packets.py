@@ -336,10 +336,16 @@ def capture_arm_raise() -> Capture:
 def capture_mixed_traffic() -> Capture:
     """What a real sender also emits, and the body path must ignore quietly.
 
-    Blend shapes, a head-mounted display, a controller, a camera, an option
-    string. None of it is malformed; all of it is unimplemented, which is a
-    different diagnostic (`VRM_VMC_UNSUPPORTED_MESSAGE`, info, recoverable) and
-    the distinction is the point of this fixture.
+    A head-mounted display, a controller, a camera, an option string. None of it
+    is malformed; all of it is unimplemented, which is a different diagnostic
+    (`VRM_VMC_UNSUPPORTED_MESSAGE`, info, recoverable) and the distinction is the
+    point of this fixture.
+
+    The blend shapes were once in that list and are not any more: they become
+    `HumanoidPose::expressions`. `A` is sent as `0.0` on every frame, which makes
+    this the capture that records the difference between a weight that is zero
+    and a name a sender never sent -- a reader that conflated the two would find
+    two names here where the assembler reports three.
     """
     capture = Capture("example.synthetic", "mixed-traffic-01",
                       "0.0.0.0:39539", "127.0.0.1:52003")
