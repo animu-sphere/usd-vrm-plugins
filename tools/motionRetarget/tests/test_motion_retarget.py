@@ -225,6 +225,33 @@ def main() -> int:
         failures.check(rerun.returncode == 0,
                        f"re-bake over an existing output failed: {rerun.stderr}")
 
+        # The tool must apply SkelBindingAPI, not assume the rig already has
+        # it. `avatar.usda` does, but an imported `.vrm` skeleton does not, and
+        # UsdSkel honours skel:animationSource only on a prim carrying the
+        # schema -- so a bare relationship binds nothing, the avatar sits at
+        # rest, and no diagnostic fires anywhere. Every check above passes on
+        # this fixture either way; only a rig without the schema separates them.
+        bare = workspace / "bare_avatar.usda"
+        bare.write_text(
+            "\n".join(line
+                      for line in avatar.read_text(encoding="utf-8").splitlines()
+                      if "apiSchemas" not in line) + "\n",
+            encoding="utf-8")
+        failures.check("SkelBindingAPI" not in bare.read_text(encoding="utf-8"),
+                       "the bare-rig fixture still applies SkelBindingAPI, so "
+                       "it cannot detect a missing Apply()")
+        bare_output = workspace / "bare_rig_bake.usda"
+        result = run_tool(
+            options.tool,
+            "--avatar", str(bare), "--animation", str(clip),
+            "--output", str(bare_output), "--humanoid-map", options.humanoid_map,
+            "--animation-name", "RetargetedWalk", "--quiet")
+        if failures.check(
+                result.returncode == 0,
+                f"bake onto a rig without SkelBindingAPI failed: "
+                f"{result.stderr}"):
+            check_usdskel_resolves_the_animation(bare_output, failures)
+
         # --root-motion ignore leaves every joint at its rest translation.
         in_place = workspace / "in_place.usda"
         result = run_tool(

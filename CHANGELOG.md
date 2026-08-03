@@ -77,6 +77,30 @@ Current schema contract version: **1**.
   component's status in the root README is a version that shipped, and no
   document points at a retired roadmap filename.
 
+- **[`docs/guides/VIEWING_MOTION.md`](docs/guides/VIEWING_MOTION.md) walks a
+  `.vrm` and a `.vrma` to a moving character in `usdview`.** The path existed and
+  was only ever written down in pieces: which bundles a session needs, why `view`
+  is the one command that does not compose them, how to compose a whole motion
+  pack into one stage, and — the part that motivated it — how to tell a bound
+  animation from an ignored one, since UsdSkel answers a failed binding with the
+  rest pose rather than an error.
+
+### Fixed
+
+- **A baked clip bound nothing, and the avatar stood still.** `motion_retarget`
+  authored `skel:animationSource` through the non-applied `UsdSkelBindingAPI`
+  constructor, so the relationship landed with the correct target and the schema
+  was never applied. UsdSkel honours that binding only on a prim carrying
+  `SkelBindingAPI`, so it resolved the rest pose instead — a full-length, wholly
+  valid array of joint transforms, which is why every value-level check passed
+  and no diagnostic fired anywhere. The design triplet could not see it either:
+  `docs/design/fixtures/motion/avatar.usda` applies the schema on its own
+  skeleton, and an imported `.vrm` skeleton does not, so the fixture that proved
+  the tool correct was the one shape where the bug is invisible. The tool now
+  applies the schema, and the regression case bakes onto a copy of the fixture
+  with the schema stripped — without the fix it resolves the rest pose
+  (pelvis `(0, 1, 0)` where the clip says `(0, 1, 0.5)`) and fails.
+
 ## [0.6.0] — 2026-08-03
 
 ### Added
