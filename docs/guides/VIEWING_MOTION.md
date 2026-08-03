@@ -73,6 +73,7 @@ whole motion pack fits in one stage:
     startTimeCode = 0
     endTimeCode = 354
     timeCodesPerSecond = 30
+    metersPerUnit = 1
     upAxis = "Y"
 )
 
@@ -94,6 +95,15 @@ The slot prims are **typeless on purpose**. The referenced `defaultPrim` is a
 `SkelRoot`; declaring `def Xform` locally would override that type and skinning
 would stop resolving. `SkelRoot` is itself transformable, so the `xformOp`
 applies either way — which is what makes the mistake quiet.
+
+`metersPerUnit` is not decoration either. Stage metrics come from the root
+layer alone and do **not** compose through a reference, so this layer has to
+repeat what the baked ones declare. Omit it and the pack resolves to USD's
+default of `0.01`, describing a row of 1.6 cm characters — and rendering them
+perfectly, because the scale is self-consistent until something that declares
+its units honestly joins the stage. `motion_retarget` carries the avatar's
+metrics onto its own output for the same reason; before v0.7.0 it authored
+neither ([#89](https://github.com/animu-sphere/usd-vrm-plugins/issues/89)).
 
 Set `endTimeCode` to the longest clip; shorter ones hold their last pose.
 
@@ -129,13 +139,18 @@ the character stands still. Two ways to land there:
 - **A `SkelAnimation` with no `scales`.** UsdSkel fetches translations,
   rotations and scales as a unit, and `scales` has no schema fallback.
 
-## Known gap: the baked layer drops the stage metrics
+## Checking that it is the right size
 
-A `.vrm` stage authors `metersPerUnit = 1` and `upAxis = "Y"`. The layer
-`motion_retarget` writes authors neither, and stage metrics come from the root
-layer alone — so the baked stage falls back to USD's defaults and reports
-`metersPerUnit = 0.01`, describing a 1.6 cm avatar.
+```python
+from pxr import Usd, UsdGeom
 
-Nothing renders differently in `usdview`, where the scale is self-consistent.
-It matters when the result is composed with assets that declare their units
-honestly, or read by anything that respects the metric.
+stage = Usd.Stage.Open("avatar_clip.usda")
+assert UsdGeom.GetStageMetersPerUnit(stage) == 1.0
+assert UsdGeom.GetStageUpAxis(stage) == UsdGeom.Tokens.y
+```
+
+A `.vrm` stage declares `metersPerUnit = 1` and `upAxis = "Y"`, and the bake
+re-declares whatever the avatar resolved. A layer that declared neither would
+report `0.01` and describe a 1.6 cm avatar while looking identical in
+`usdview` — the same failure the multi-clip stage above can still be written
+into by hand.
