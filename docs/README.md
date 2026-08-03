@@ -36,12 +36,19 @@ contract wins — structural changes go there first, in their own PR.
 
 Two milestone plans sit in [roadmap/](roadmap/) rather than here, because they
 are plans and not policy: the
-[OpenExec direction](roadmap/openexec-v0.6.0-v0.7.0.md) and the
-[input adapters](roadmap/adapters-mocopi-vmc-ardy.md). Both defer every
-structural claim to WORKSPACE.md and every motion claim to the motion policy.
-They are also **independent of each other**: the adapter track completes from a
-live protocol to a retargeted `UsdSkelAnimation` with no OpenExec dependency,
-and the OpenExec track attaches to that finished pipeline afterwards.
+[input adapters](roadmap/adapters-mocopi-vmc-ardy.md) and the
+[OpenExec foundation](roadmap/openexec-foundation.md). Both defer every
+structural claim to WORKSPACE.md and every motion claim to the motion policy,
+and **neither states its own release version** — that is the
+[roadmap status table](roadmap/README.md#status-at-a-glance), which exists
+because the two plans traded places once already.
+
+The adapter track completes from a live protocol to a retargeted
+`UsdSkelAnimation` with no OpenExec dependency; the OpenExec track attaches to
+that finished pipeline afterwards. Since 2026-08-03 it is also *scheduled*
+afterwards, so its parity comparison runs on sessions recorded from a real device
+and real senders rather than on generated fixtures. That is a one-way
+relationship: the adapters supply evidence, and nothing in them reads back.
 
 The three phase systems are separate and always qualified; see
 [roadmap/README.md](roadmap/README.md#three-sequences-deliberately-separate).

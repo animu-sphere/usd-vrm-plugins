@@ -53,8 +53,10 @@ simulates:
 - **LookAt**, **node constraints**, and **spring bones** are authored as typed
   schema data on the stage. Their runtime evaluation/simulation is a **separate
   layer** (`execVrm`, Product P4), never run by this importer. `execVrm` does not
-  exist yet; it is planned for v0.6.0
-  ([the OpenExec plan](../roadmap/openexec-v0.6.0-v0.7.0.md)).
+  exist yet; it is planned for v0.8.0
+  ([the OpenExec plan](../roadmap/openexec-foundation.md), and the
+  [roadmap status table](../roadmap/README.md#status-at-a-glance) for the
+  version).
 - MToon **shading** realization (beyond the PreviewSurface approximation) is
   Product P5.
 
@@ -67,7 +69,8 @@ This table covers the `.vrm` importer only. Skeletal animation *embedded in a
 `.vrm`* is listed above; a standalone reusable `.vrma` clip is a different thing
 and is handled by a different bundle.
 
-**The `.vrma` motion layer ships as of v0.5.0** and has its own status:
+**The `.vrma` motion layer ships as of v0.5.0**, and the first live-input adapter
+as of v0.6.0. Its own status:
 
 | Component | Since | Status |
 | --- | --- | --- |
@@ -78,13 +81,21 @@ and is handled by a different bundle.
 | `vrmRetarget` | v0.4.0 | Humanoid map, rest-pose correction, pose retargeter, root-motion policy |
 | `motion_retarget` | v0.4.0 | CLI: retargets a clip onto an avatar and binds `skel:animationSource` (Motion Phase C) |
 | `motion_capture` | v0.5.0 | CLI: replays a recorded capture session into a semantic humanoid clip the retarget tool consumes unchanged (Motion Phase D) |
+| `vrmAdapterVmc` | v0.6.0 | VMC Protocol input: OSC and VMC decode, frame assembly, Unity `HumanBodyBones` → `motion::HumanBone` mapping, `LiveCaptureSource` bridge, UDP receiver |
+| `vmc_record` | v0.6.0 | CLI: records a bounded live VMC session to a `vmc-packet-capture` file, or inspects one, with a decode report |
 
-Live capture ships as the **generic** intake only. No product-specific adapter
-is included, and nothing has been validated against a real capture rig: protocol
-decode and coordinate conversion belong under `adapters/` (motion policy §8.1),
-and the [test corpus](../../libs/motionRuntime/tests/corpus/README.md) is
-synthetic by necessity — a corpus recorded from a commercial SDK could not be
-redistributed, so CI could not run it.
+**Nothing in this layer has been validated against a real sender or a real
+capture rig.** Both corpora are generated: the
+[motion traces](../../libs/motionRuntime/tests/corpus/README.md) are closed-form
+maths, and the VMC captures reproduce the protocol's shapes. That is deliberate —
+a corpus recorded from a commercial SDK could not be redistributed and CI could
+not run it — but it bounds what the table above claims. Recording real sessions
+from a device and from several sender applications, with the redistributable ones
+committed and the rest kept as measured manifests, is v0.7.0
+([adapter plan](../roadmap/adapters-mocopi-vmc-ardy.md)).
+
+There is no native capture-device adapter yet. Protocol and SDK decode belong
+under `adapters/` (motion policy §8.1) and `vrmAdapterMocopi` is the next one.
 
 Not yet in that layer: expression and look-at animation, motion generation,
 OpenExec evaluation, blending beyond the primitive, IK, and foot locking. See

@@ -100,14 +100,15 @@ including the implementation order and per-adapter acceptance criteria, is
 > vrmAdapterVmc`. That is a path assembled at runtime and creates no dependency:
 > `vrmAdapterMocopi` handles native input and links `motionCore` /
 > `motionRuntime` only, exactly as `vrmAdapterVmc` does. The ordering above
-> (VMC implemented first, the native adapter added on measured evidence) is the
-> roadmap's; the identities and the sibling rule are this contract's, and they do
-> not move with it.
+> (VMC implemented first, the native adapter second so the two paths can be
+> compared on the same motion) is the roadmap's; the identities and the sibling
+> rule are this contract's, and they do not move with it — including when the
+> roadmap re-ordered its releases on 2026-08-03.
 
 > **Two unrelated things are called "adapter" in this repo.** The bundles above
 > are *input* adapters: vendor and protocol leaves under `adapters/`. The
 > `ExecIr` adapter named in
-> [the OpenExec plan §3](../roadmap/openexec-v0.6.0-v0.7.0.md) is an internal
+> [the OpenExec plan §3](../roadmap/openexec-foundation.md) is an internal
 > insulation layer inside `execVrm`, confining a possibly-experimental OpenUSD
 > dependency. Neither is in the other's dependency graph.
 
@@ -205,12 +206,12 @@ reviewer can check them without opening the policy:
   I/O.** Receiving is the adapter's job and buffering is `motionRuntime`'s; a
   callback that opened a socket or read a clock would make cache reuse and
   invalidation untestable, which is the whole reason to be on OpenExec at all
-  ([OpenExec plan §5](../roadmap/openexec-v0.6.0-v0.7.0.md)).
+  ([OpenExec plan §5](../roadmap/openexec-foundation.md)).
 - **`ExecIr` is optional and never a prerequisite.** It is confined to an
   adapter layer inside `execVrm`; the canonical motion contract is not derived
   from its representation, the importer never has to author its prims, and the
   offline pipeline stays whole with it absent
-  ([OpenExec plan §7.0](../roadmap/openexec-v0.6.0-v0.7.0.md)).
+  ([OpenExec plan §7.0](../roadmap/openexec-foundation.md)).
 
 Enforcement: `ost plugin test --workspace` (ost >= 0.15.0) validates the
 bundle graph declared via `requires.bundles` before running any bundle's

@@ -496,9 +496,10 @@ packets with no hardware attached, and it makes a real capture device usable
 immediately through a relay. The direct path is built second, because a protocol
 relay drops what it has no field for — SDK-specific confidence, device
 diagnostics, tracking-quality signals — and because a direct connection needs no
-third-party application running. Both remain first-class; only the order is
-fixed, and it is fixed so that the losses justifying the direct adapter are
-*measured* rather than presumed.
+third-party application running. **Both are first-class and both are built**;
+only the order is fixed. The order buys one thing beyond cost: the two paths can
+then be run on the same motion and compared, so what the relay drops is a
+*measured* quantity attached to a recorded session rather than a presumed one.
 
 Two concrete adapters, siblings rather than a stack:
 
@@ -1052,14 +1053,15 @@ motion_retarget \
 - evaluation of missing bones, confidence, root motion
 
 Product-specific support ships as an optional adapter. The generic half shipped
-in v0.5.0; the adapters themselves — the VMC protocol adapter first, then a
-direct capture-product adapter — are planned in
+in v0.5.0 and the VMC protocol adapter in v0.6.0; the direct capture-product
+adapter follows, planned in
 [roadmap/adapters-mocopi-vmc-ardy.md](../roadmap/adapters-mocopi-vmc-ardy.md)
 (Milestones A–D). Phase D's synthetic corpus is deliberately closed-form maths,
-so the first *recorded* session is also the first evidence about timestamp
-jitter, tracking loss, and reconnection — none of which a synthetic trace can
-produce. It arrives through the protocol adapter, which is why that one comes
-first: the evidence is the same, and it arrives as a replayable trace.
+and the VMC adapter's is generated from the protocol's shapes, so **neither has
+yet seen a real sender**: the first recorded session is still the first evidence
+about timestamp jitter, tracking loss, and reconnection. It arrives through the
+protocol adapter, which is why that one comes first — the evidence is the same,
+and it arrives as a replayable capture.
 
 ### Motion Phase E: `execMotion` / `execVrm`
 
@@ -1081,7 +1083,7 @@ adapters are resolved from a hard-coded list, so a `UsdSkel`-skinned avatar
 cannot be displayed through the exec scene index. Phase E therefore proves the
 display mechanism on `UsdGeomXformable`; realtime skinned display is a later
 milestone and not a completion condition for anything in Phase D, E, or F
-([roadmap/openexec-v0.6.0-v0.7.0.md](../roadmap/openexec-v0.6.0-v0.7.0.md)
+([roadmap/openexec-foundation.md](../roadmap/openexec-foundation.md)
 P0-7).
 
 ### Motion Phase F: generation adapter

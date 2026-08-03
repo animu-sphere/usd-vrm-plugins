@@ -13,6 +13,38 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+### Changed
+
+- **The roadmap is rebased on what v0.6.0 actually shipped.** It still said
+  "Next: v0.6.0 — the OpenExec foundation" after v0.6.0 shipped VMC input, so the
+  sequence was rebuilt rather than renumbered by one: v0.7.0 is the mocopi native
+  adapter and real VMC sender validation, and the OpenExec foundation is v0.8.0.
+  The ordering is a claim about evidence, not preference — OpenExec parity is
+  worth exactly as much as its input, so the release that records real device and
+  sender sessions comes first and OpenExec then re-evaluates a pipeline that has
+  already met real hardware. Two decisions land with it: the mocopi native
+  adapter is a **committed deliverable** rather than something gated on measuring
+  what the VMC relay drops (the native-vs-relay comparison stays, as the phase's
+  distinguishing check rather than as a go/no-go), and recorded real-session
+  evidence is kept separately from the generated corpora — redistributable
+  captures committed, everything else as a measured manifest with no bytes.
+  `docs/roadmap/openexec-v0.6.0-v0.7.0.md` is renamed
+  `docs/roadmap/openexec-foundation.md`, because a filename carrying a version
+  number is drift waiting to happen, and
+  [`docs/roadmap/README.md`](docs/roadmap/README.md) now holds the one status
+  table that decides which release a track lands in.
+
+### Added
+
+- **`scripts/check_docs.py` checks the roadmap against the release records.**
+  Nothing was wrong with any single document during the drift above; the pair had
+  gone out of step, and only a reader holding both noticed. Five assertions now
+  hold them together: `VERSION` has a release record and a changelog section, a
+  `Next:` / `Then:` milestone is not an already-released version, a `Shipped:`
+  one is, the roadmap status table names every version `current.md` plans, a
+  component's status in the root README is a version that shipped, and no
+  document points at a retired roadmap filename.
+
 ## [0.6.0] — 2026-08-03
 
 ### Added

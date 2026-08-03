@@ -57,6 +57,13 @@ VMC Protocol from OSC-over-UDP through frame assembly and VRM bone mapping into
 the existing `LiveCaptureSource`; `vmc_record` records the same wire input for
 inspection and corpus work.
 
+Every corpus behind that is **generated** — the motion traces from closed-form
+maths, the VMC captures from the protocol's shapes — so nothing here has yet met
+a real sender or a real device. Recording that evidence, and adding the native
+mocopi adapter beside the protocol one, is the next release; OpenExec evaluation
+follows it and uses the same recordings as its parity input. Schedule:
+[docs/roadmap/](docs/roadmap/README.md#status-at-a-glance).
+
 | Component | Type | Role |
 | --- | --- | --- |
 | [`usdVrmaFileFormat`](plugins/usdVrmaFileFormat) | `SdfFileFormat` bundle | `.vrma` motion clips → `UsdSkelAnimation` on a *canonical semantic* humanoid skeleton |

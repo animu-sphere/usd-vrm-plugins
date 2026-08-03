@@ -282,7 +282,7 @@ first call site that needs one.
 - ✅ **Deterministic comparison.** Landed 2026-08-02 as the comparison semantics
   above, ahead of the bone mapping that is its first caller. The three consumers
   it was owed to are `ExecTypeRegistry::RegisterType`
-  ([OpenExec plan](../roadmap/openexec-v0.6.0-v0.7.0.md) P0-4), the
+  ([OpenExec plan](../roadmap/openexec-foundation.md) P0-4), the
   offline/OpenExec parity comparison (P0-6), and the adapter corpus tests
   ([adapters plan](../roadmap/adapters-mocopi-vmc-ardy.md) §9).
 - ⬜ **Tracking state.** `validRotations` says a bone is absent and `confidence`
