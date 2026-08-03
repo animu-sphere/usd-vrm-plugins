@@ -21,8 +21,16 @@ namespace
 // end as an out-of-memory kill with nothing written at all.
 //
 // A million datagrams is ten minutes of the densest sender shape the corpus
-// holds (55 bones, a root and a clock, per message, at 30 Hz) and roughly 60 MB
-// of payload. An operator recording longer says so.
+// holds: 55 bones, a root and a clock, one message per datagram, at 30 Hz.
+//
+// That is roughly 60 MB of payload and **appreciably more than 60 MB of
+// process**, which is the number that matters here. Each datagram is a
+// `std::vector` — 24 bytes of header plus a separate heap block whose allocator
+// rounds a 60-byte request up — so a million of them cost on the order of 150
+// MB resident. Stated because "60 MB" is the misleading half of it: the bound
+// is on memory, so the estimate has to be of memory.
+//
+// An operator recording longer says so.
 constexpr std::size_t kDefaultMaxDatagrams = 1000000;
 
 // Two hours. Not a limit on what a session may be, a limit on what a mistyped

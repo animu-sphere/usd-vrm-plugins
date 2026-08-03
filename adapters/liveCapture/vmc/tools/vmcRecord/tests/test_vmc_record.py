@@ -29,6 +29,7 @@ import re
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 
@@ -169,12 +170,17 @@ def check_inspect(tool: pathlib.Path, corpus: pathlib.Path) -> None:
           f"datagram(s), {total_frames} frame(s) reported as expected")
 
 
-def check_help_and_refusals(tool: pathlib.Path, corpus: pathlib.Path) -> None:
+def check_help_and_refusals(tool: pathlib.Path, corpus: pathlib.Path,
+                            workspace: pathlib.Path) -> None:
     """The CLI's own contract: --help succeeds, a bad combination does not."""
     usage = run_tool(tool, "--help")
     if "--inspect" not in usage or "vmc_record" not in usage:
         fail("--help did not print the usage")
 
+    # Named inside the caller's temporary directory rather than the working one:
+    # a refused invocation must write nothing, and checking that against a path
+    # in the build tree would pass on a stale file from an earlier run.
+    unused = workspace / "unused.vmcpackets"
     for arguments in (
         # No output, no dry run, no inspect: nothing to do and no file to show
         # for it.
@@ -189,9 +195,9 @@ def check_help_and_refusals(tool: pathlib.Path, corpus: pathlib.Path) -> None:
         ["--inspect", str(corpus / "arm-raise-30hz.vmcpackets"),
          "--max-datagrams", "10"],
         ["--inspect", str(corpus / "arm-raise-30hz.vmcpackets"),
-         "--output", "unused.vmcpackets"],
+         "--output", str(unused)],
         # A dry run writes nothing.
-        ["--dry-run", "--output", "unused.vmcpackets"],
+        ["--dry-run", "--output", str(unused)],
         # An unbracketed IPv6 address with a port is ambiguous, not guessed at.
         ["--dry-run", "--listen", "::1:39539"],
         ["--dry-run", "--max-datagrams", "0"],
@@ -203,9 +209,119 @@ def check_help_and_refusals(tool: pathlib.Path, corpus: pathlib.Path) -> None:
         if result.returncode != 2:
             fail(f"`vmc_record {' '.join(arguments)}` should have been refused "
                  f"with exit 2, got {result.returncode}")
-        if pathlib.Path("unused.vmcpackets").exists():
+        if unused.exists():
             fail("a refused invocation wrote a file")
     print("vmc_record: usage and eight refusals behave")
+
+
+class Session:
+    """One `vmc_record` run against a real socket, driven from this process.
+
+    Every live check needs the same four things -- a port nothing holds, a
+    started tool, datagrams delivered only after it says it is bound, and a
+    process that stops on its own -- so they are here once. What varies is the
+    arguments and what is sent, which is what each check is actually about.
+    """
+
+    def __init__(self, tool: pathlib.Path, output: pathlib.Path | None,
+                 *extra: str) -> None:
+        self.tool = tool
+        self.output = output
+        self.extra = extra
+        self.port = 0
+        self.stdout = ""
+        self.stderr: list[str] = []
+
+    def _spawn(self, port: int) -> subprocess.Popen:
+        arguments = [str(self.tool), "--listen", "127.0.0.1", "--port",
+                     str(port)]
+        if self.output is not None:
+            arguments += ["--output", str(self.output)]
+        else:
+            arguments.append("--dry-run")
+        return subprocess.Popen([*arguments, *self.extra],
+                                text=True, encoding="utf-8", errors="replace",
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    def start(self) -> "Session":
+        """Binds, retrying on a port taken between the probe and the bind.
+
+        `free_udp_port` closes its probe before the tool binds, so the port can
+        be claimed in between. That is unlikely and it is not impossible, and a
+        test that fails once a month for a reason it cannot explain is worse
+        than one that retries.
+        """
+        for attempt in range(3):
+            port = free_udp_port()
+            process = self._spawn(port)
+            listening = threading.Event()
+
+            def drain(process: subprocess.Popen = process) -> None:
+                assert process.stderr is not None
+                for line in process.stderr:
+                    self.stderr.append(line)
+                    if "listening on" in line:
+                        listening.set()
+
+            # Drained on a thread: the tool writes a progress line a second, and
+            # a full stderr pipe would block it mid-session.
+            self._reader = threading.Thread(target=drain, daemon=True)
+            self._reader.start()
+
+            # Nothing is sent until the socket says it is bound. Sending first
+            # would lose the datagrams outright -- UDP has nowhere to hold them.
+            if listening.wait(timeout=30.0):
+                self.port = port
+                self._process = process
+                return self
+
+            process.kill()
+            process.wait(timeout=10.0)
+            if attempt == 2:
+                fail(f"vmc_record never bound a port\n{''.join(self.stderr)}")
+            self.stderr.clear()
+        raise AssertionError("unreachable")
+
+    def send(self, payloads: list, *, source_port: int = 0) -> "Session":
+        """Delivers datagrams, from an optionally distinct source port."""
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sender:
+            if source_port:
+                sender.bind(("127.0.0.1", source_port))
+            for payload in payloads:
+                sender.sendto(payload, ("127.0.0.1", self.port))
+                # 117 datagrams inside 170 ms of session, sent flat out, can
+                # outrun the receive buffer on a loaded runner -- and a dropped
+                # datagram would make this flaky rather than failing.
+                time.sleep(0.002)
+        return self
+
+    def finish(self) -> dict:
+        """Waits for the session to end, and collects both streams.
+
+        Deliberately not `communicate()`: the drain thread above is already
+        reading stderr, and `communicate()` reads and closes it too. The two
+        race, and the loser is whichever lines are near EOF -- which is exactly
+        where the end-of-session warnings are. That cost a green test claiming
+        a warning had not been printed when it had.
+
+        The watchdog replaces `communicate(timeout=)`, which is the only thing
+        that call was still buying: a hung tool must fail this test, not park
+        the runner on a blocking read.
+        """
+        watchdog = threading.Timer(90.0, self._process.kill)
+        watchdog.start()
+        try:
+            assert self._process.stdout is not None
+            self.stdout = self._process.stdout.read()
+            self._process.wait()
+        finally:
+            watchdog.cancel()
+        # Only after stderr has reached EOF is `self.stderr` the whole session.
+        self._reader.join(timeout=10.0)
+        if self._process.returncode != 0:
+            fail(f"vmc_record exited {self._process.returncode}\n"
+                 f"{''.join(self.stderr)}")
+        return report_lines(self.stdout)
 
 
 def free_udp_port() -> int:
@@ -215,72 +331,28 @@ def free_udp_port() -> int:
         return probe.getsockname()[1]
 
 
-def check_loopback(tool: pathlib.Path, corpus: pathlib.Path) -> None:
+def check_loopback(tool: pathlib.Path, corpus: pathlib.Path,
+                   workspace: pathlib.Path) -> None:
+    """What went in came out, and reports the same motion as its source."""
     source = corpus / "arm-raise-30hz.vmcpackets"
     _, payloads = read_capture(source)
+    output = workspace / "recorded-loopback.vmcpackets"
 
-    output = pathlib.Path("recorded-loopback.vmcpackets").absolute()
-    if output.exists():
-        output.unlink()
+    session = Session(tool, output,
+                      "--sender", "test.loopback",
+                      "--source-id", "loopback-01",
+                      # Stops a couple of seconds after the last datagram; the
+                      # duration is the net that catches a sender that never
+                      # arrives, so the test cannot hang.
+                      "--idle-timeout", "2.0",
+                      "--duration", "60").start()
+    session.send(payloads)
+    lines = session.finish()
 
-    port = free_udp_port()
-    process = subprocess.Popen(
-        [str(tool),
-         "--listen", "127.0.0.1", "--port", str(port),
-         "--output", str(output),
-         "--sender", "test.loopback",
-         "--source-id", "loopback-01",
-         # Stops a second after the last datagram; the duration is the net that
-         # catches a sender that never arrives, so the test cannot hang.
-         "--idle-timeout", "2.0",
-         "--duration", "60"],
-        text=True, encoding="utf-8", errors="replace",
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    # Drained on a thread: the tool writes a progress line a second, and a full
-    # stderr pipe would block it mid-session.
-    stderr_lines: list[str] = []
-    listening = threading.Event()
-
-    def drain() -> None:
-        assert process.stderr is not None
-        for line in process.stderr:
-            stderr_lines.append(line)
-            if "listening on" in line:
-                listening.set()
-
-    reader = threading.Thread(target=drain, daemon=True)
-    reader.start()
-
-    # Nothing is sent until the socket says it is bound. Sending first would
-    # lose the datagrams outright -- UDP has nowhere to hold them.
-    if not listening.wait(timeout=30.0):
-        process.kill()
-        fail("vmc_record never reported a bound endpoint")
-
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sender:
-        for payload in payloads:
-            sender.sendto(payload, ("127.0.0.1", port))
-            # The corpus is 117 datagrams inside 170 ms of session; sent flat
-            # out they can outrun the receive buffer on a loaded runner, and a
-            # dropped datagram would make this test flaky rather than failing.
-            time.sleep(0.002)
-
-    try:
-        stdout, _ = process.communicate(timeout=60)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        fail("vmc_record did not stop on its idle timeout")
-    reader.join(timeout=5.0)
-    if process.returncode != 0:
-        fail(f"vmc_record exited {process.returncode}\n"
-             f"{''.join(stderr_lines)}")
-
-    lines = report_lines(stdout)
     if lines.get("stopped") != "--idle-timeout elapsed with nothing arriving":
         fail(f"expected the idle timeout to stop the session, got "
              f"'{lines.get('stopped')}'")
-    if not lines.get("listen", "").startswith(f"127.0.0.1:{port}"):
+    if not lines.get("listen", "").startswith(f"127.0.0.1:{session.port}"):
         fail(f"the report did not name the bound endpoint: "
              f"'{lines.get('listen')}'")
 
@@ -290,7 +362,7 @@ def check_loopback(tool: pathlib.Path, corpus: pathlib.Path) -> None:
              f"{len(recorded)} recorded, {len(payloads)} sent")
     if header.get("sender") != "test.loopback":
         fail(f"the capture did not record its provenance: {header}")
-    if header.get("listen") != f"127.0.0.1:{port}":
+    if header.get("listen") != f"127.0.0.1:{session.port}":
         fail(f"the capture did not record its listen endpoint: {header}")
 
     # And the claim this test exists for: what arrived over the wire reports the
@@ -303,9 +375,60 @@ def check_loopback(tool: pathlib.Path, corpus: pathlib.Path) -> None:
                  f"  recorded: {live.get(label)}\n"
                  f"  source:   {replayed.get(label)}")
 
-    output.unlink()
     print(f"vmc_record: {len(recorded)} datagram(s) through a real socket, "
           f"recorded verbatim and reporting the same motion")
+
+
+def check_stop_reasons(tool: pathlib.Path, corpus: pathlib.Path,
+                       workspace: pathlib.Path) -> None:
+    """Every session ends for exactly one stated reason, and says which.
+
+    The report makes that claim, so each reason a test can reach is reached.
+    Ctrl-C is the one that is not here: delivering a console interrupt to a
+    child without also killing the test runner needs a process group on POSIX
+    and a detached console on Windows, and the two share no mechanism.
+    """
+    _, payloads = read_capture(corpus / "arm-raise-30hz.vmcpackets")
+
+    # --max-datagrams stops the session mid-stream, and what is written is
+    # exactly the datagrams that arrived before it did: not the whole send, and
+    # not a truncated last record.
+    bounded = workspace / "bounded.vmcpackets"
+    session = Session(tool, bounded, "--max-datagrams", "40",
+                      "--idle-timeout", "10", "--duration", "60").start()
+    session.send(payloads)
+    lines = session.finish()
+    if lines.get("stopped") != "--max-datagrams reached":
+        fail(f"expected --max-datagrams to stop the session, got "
+             f"'{lines.get('stopped')}'")
+    _, bounded_payloads = read_capture(bounded)
+    if bounded_payloads != payloads[:40]:
+        fail(f"a bounded session recorded {len(bounded_payloads)} datagram(s), "
+             f"expected the first 40 that arrived")
+
+    # --duration against a sender that never says anything: the timer runs from
+    # the bind rather than from the first datagram, so a session nobody sends to
+    # still ends.
+    lines = Session(tool, None, "--duration", "1").start().finish()
+    if lines.get("stopped") != "--duration elapsed":
+        fail(f"expected --duration to stop a silent session, got "
+             f"'{lines.get('stopped')}'")
+
+    # Two peers: the capture header names one, so the report has to say there
+    # were more. A fixture whose provenance is true of some of its datagrams and
+    # not the rest is the failure that warning exists for.
+    mixed = workspace / "two-peers.vmcpackets"
+    session = Session(tool, mixed, "--idle-timeout", "2",
+                      "--duration", "60").start()
+    session.send(payloads[:20], source_port=free_udp_port())
+    session.send(payloads[20:40], source_port=free_udp_port())
+    lines = session.finish()
+    if not lines.get("peers", "").startswith("2 ("):
+        fail(f"expected two peers to be reported, got '{lines.get('peers')}'")
+    if not any("more than one peer" in line for line in session.stderr):
+        fail("a two-peer session did not warn that its header names one")
+
+    print("vmc_record: three stop reasons and the two-peer warning behave")
 
 
 def main() -> int:
@@ -316,11 +439,17 @@ def main() -> int:
                         choices=("inspect", "loopback"))
     arguments = parser.parse_args()
 
-    if arguments.mode == "inspect":
-        check_inspect(arguments.tool, arguments.corpus)
-        check_help_and_refusals(arguments.tool, arguments.corpus)
-    else:
-        check_loopback(arguments.tool, arguments.corpus)
+    # Every file this test writes lands here and leaves with it, including the
+    # ones a failing run abandons. CTest's working directory is the build tree,
+    # which is shared with every other test and outlives all of them.
+    with tempfile.TemporaryDirectory(prefix="vmc_record-") as scratch:
+        workspace = pathlib.Path(scratch)
+        if arguments.mode == "inspect":
+            check_inspect(arguments.tool, arguments.corpus)
+            check_help_and_refusals(arguments.tool, arguments.corpus, workspace)
+        else:
+            check_loopback(arguments.tool, arguments.corpus, workspace)
+            check_stop_reasons(arguments.tool, arguments.corpus, workspace)
     return 0
 
 
