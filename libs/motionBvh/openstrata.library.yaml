@@ -1,0 +1,21 @@
+# OpenStrata plain-library descriptor. motionBvh reads BVH syntax and stops
+# there: `HIERARCHY`, `ROOT`/`JOINT`, `OFFSET`, `CHANNELS`, `End Site`,
+# `MOTION`, a frame time, and channel values in declaration order.
+#
+# A library, not a plugin bundle: it registers nothing with OpenUSD and has no
+# plugInfo.json (WORKSPACE.md §1). It is *inside* the aggregate product, unlike
+# an adapter, because it carries no producer name -- only the profile data
+# beside it does.
+#
+# `requires` is empty on purpose and is not an oversight: the syntax layer links
+# nothing at all, not even OpenUSD's value types. The declared
+# `motionBvh -> motionSource` edge (WORKSPACE.md §2) is added here in the same
+# change as the extractor that needs it.
+schema: openstrata.library/v1alpha1
+library:
+  id: motionBvh
+  # Mirrors VERSION; release preparation updates this in lockstep.
+  version: 0.6.0
+cmake:
+  package: motionBvh
+  target: motionBvh::motionBvh

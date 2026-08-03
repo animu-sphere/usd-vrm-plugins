@@ -1,0 +1,23 @@
+hierarchy
+root hips
+{
+  offset 0.0 0.0 0.0
+  channels 6 xposition yposition zposition zrotation xrotation yrotation
+  joint spine
+  {
+      offset   0.0    10.0   0.0
+      channels 3 zrotation xrotation yrotation
+      end site
+      {
+          offset 0.0 6.0 0.0
+      }
+  }
+}
+motion
+Frames : 2
+Frame Time : 0.0333333
+
+0.0 90.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+
+0.0 90.0 0.0 0.0 0.0 0.0 0.0 15.0 0.0
+

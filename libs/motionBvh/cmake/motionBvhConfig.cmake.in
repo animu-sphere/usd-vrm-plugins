@@ -1,0 +1,7 @@
+@PACKAGE_INIT@
+
+# No find_dependency: motionBvh's syntax layer links nothing. The motionSource
+# dependency (WORKSPACE.md §2) arrives with the extractor and is added here in
+# the same change.
+include("${CMAKE_CURRENT_LIST_DIR}/motionBvhTargets.cmake")
+check_required_components(motionBvh)

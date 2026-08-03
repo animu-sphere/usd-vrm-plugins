@@ -37,7 +37,7 @@ project's central design decision, and it is described below.
 | [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | VMC Protocol input: OSC-over-UDP datagrams → canonical humanoid motion | v0.6.0 |
 | [`vmc_record`](adapters/liveCapture/vmc/tools/vmcRecord) | CLI executable | Records and inspects VMC packet captures with a decode report | v0.6.0 |
 | `motionSource` | Plain static CMake library | Format-neutral source skeleton / animation model, the producer-profile contract, and the converter to canonical humanoid motion | Planned |
-| `motionBvh` | Plain static CMake library | BVH syntax and extraction only — no producer semantics, no default profile | Planned |
+| [`motionBvh`](libs/motionBvh) | Plain static CMake library | BVH syntax and extraction only — no producer semantics, no default profile | Syntax landed; extraction planned |
 | `motion_bvh_inspect` · `motion_bvh_convert` | CLI executables | Report what a BVH file contains; convert one to the avatar-independent semantic clip under a named profile | Planned |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
 

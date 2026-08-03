@@ -23,3 +23,10 @@
 # would fail the comparison for every fixture while the recorded datagrams were
 # fine.
 *.vmcpackets text eol=lf
+
+# BVH fixtures, for a third variant of the same reason: the corpus manifest
+# records each file's size and SHA-256, and a CRLF smudge on a Windows checkout
+# would change both. Hashes that differ per OS pin nothing. The parser accepts
+# CRLF regardless -- motionBvh_parser proves it against text built in memory,
+# where the bytes are the test's rather than the checkout's.
+*.bvh text eol=lf
