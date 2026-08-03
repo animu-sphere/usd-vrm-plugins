@@ -57,7 +57,7 @@ with the record tool and added here as they are measured
 | --- | --- | --- |
 | `neutral-standing-30hz.vmcpackets` | 6 | The happy path: one bundle per frame, a full torso rig, every rotation identity. |
 | `arm-raise-30hz.vmcpackets` | 117 | The other sender shape: one message per datagram, frame closed by a trailing `/VMC/Ext/T`, no `UpperChest`. |
-| `mixed-traffic-30hz.vmcpackets` | 13 | Blend shapes, HMD, controller, camera, option string — well-formed, unimplemented, and *not* malformed. |
+| `mixed-traffic-30hz.vmcpackets` | 13 | HMD, controller, camera, option string — well-formed, unimplemented, and *not* malformed. Also the only capture carrying blend shapes, one of them (`A`) sent as `0.0`. |
 | `malformed-packets.vmcpackets` | 10 | One datagram per **packet**-level refusal, plus the two unsupported-but-valid cases for contrast. |
 | `malformed-forms.vmcpackets` | 10 | One datagram per **message**-level refusal — valid OSC, invalid VMC — plus a bad bone inside an otherwise whole frame. |
 | `extended-forms.vmcpackets` | 2 | Longer forms of known messages: nine arguments counted and not read, and nothing refused. |

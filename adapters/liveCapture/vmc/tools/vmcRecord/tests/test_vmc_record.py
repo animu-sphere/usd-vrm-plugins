@@ -39,17 +39,27 @@ import time
 #
 # `datagrams` and `frames` are the two the other corpus tests already pin, so a
 # disagreement here is a disagreement with them.
+#
+# `expressions` is the report line, or None when the session carried no blend
+# shapes and the line must therefore be absent: a sender that sends no face is
+# not a sender that sent an empty one.
 EXPECTED = {
-    "arm-raise-30hz": {"datagrams": 117, "frames": 5},
-    "extended-forms": {"datagrams": 2, "frames": 1},
-    "malformed-forms": {"datagrams": 10, "frames": 2},
-    "malformed-packets": {"datagrams": 10, "frames": 0},
-    "mixed-traffic-30hz": {"datagrams": 13, "frames": 3},
-    "neutral-standing-30hz": {"datagrams": 6, "frames": 5},
+    "arm-raise-30hz": {"datagrams": 117, "frames": 5, "expressions": None},
+    "extended-forms": {"datagrams": 2, "frames": 1, "expressions": None},
+    "malformed-forms": {"datagrams": 10, "frames": 2, "expressions": None},
+    "malformed-packets": {"datagrams": 10, "frames": 0, "expressions": None},
+    # Three names across three frames, one of them (`A`) sent as 0.0 every
+    # time -- so a reader that dropped a zero weight would report two names
+    # here. The name list is a continuation line, which `report_lines` joins
+    # onto the label above it.
+    "mixed-traffic-30hz": {"datagrams": 13, "frames": 3,
+                           "expressions": "3 name(s); 9 accepted, "
+                                          "0 duplicated A, Blink, Joy"},
+    "neutral-standing-30hz": {"datagrams": 6, "frames": 5, "expressions": None},
     # Six, not five: the restart is admitted as a new session under the default
     # policy, which is the difference `vrmAdapterVmc_liveSourceCorpus` records
     # as six frames against four.
-    "sender-restart-30hz": {"datagrams": 10, "frames": 6},
+    "sender-restart-30hz": {"datagrams": 10, "frames": 6, "expressions": None},
 }
 # 168 and 22 -- the same totals the corpus tests one layer down are written
 # against, which is what makes this a check on the report rather than a second
@@ -60,8 +70,8 @@ TOTAL_FRAMES = 22
 # The report lines a replayed session and a recorded one must agree on: what the
 # bytes decoded to. Everything else -- when they arrived, from where, over which
 # socket -- is what the wire is allowed to have changed.
-MOTION_LABELS = ("decoded", "frames", "cadence", "bones", "clock", "intake",
-                 "hips offset", "root")
+MOTION_LABELS = ("decoded", "frames", "cadence", "bones", "expressions",
+                 "clock", "intake", "hips offset", "root")
 
 
 def fail(message: str) -> None:
@@ -134,6 +144,16 @@ def check_inspect(tool: pathlib.Path, corpus: pathlib.Path) -> None:
         if not frames.startswith(f"{expected['frames']} emitted"):
             fail(f"{name}: expected {expected['frames']} frames, report said "
                  f"'{frames}'")
+
+        # Absent, not empty, when the session carried no blend shapes.
+        expressions = lines.get("expressions")
+        if expected["expressions"] is None:
+            if expressions is not None:
+                fail(f"{name}: carries no blend shapes, but the report has an "
+                     f"expressions line: '{expressions}'")
+        elif expressions != expected["expressions"]:
+            fail(f"{name}: expected expressions "
+                 f"'{expected['expressions']}', report said '{expressions}'")
 
         if lines.get("stopped") != "end of capture":
             fail(f"{name}: a replayed capture ends at its end, not at "
