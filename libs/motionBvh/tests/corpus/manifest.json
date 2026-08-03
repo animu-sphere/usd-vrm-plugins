@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "description": "Machine-readable provenance for the generated BVH corpus: format shapes, hand-written, committed, runnable with no hardware. Measured fields are produced by libs/motionBvh/tools/check_corpus.py, whose scanner is an independent reading of the format rather than a call into the C++ parser, and are re-checked by motionBvh_corpusManifest. Prose fields are hand-written.",
+  "format": {
+    "name": "bvh",
+    "spec": "libs/motionBvh/include/motionBvh/BvhDocument.h"
+  },
+  "provenance": {
+    "origin": "synthetic",
+    "author": "hand-written for this repository",
+    "license": "Apache-2.0",
+    "redistributionAllowed": true,
+    "recordedFromRealProducer": false,
+    "authoredAt": "2026-08-04"
+  },
+  "limitations": [
+    "These are shapes of the format -- hierarchy, channel order, row width, frame time, writer variation -- not any producer's export. No fixture here is named after an application, and none should be: a producer's file in the syntax layer's corpus is where that producer's export becomes the format's definition.",
+    "No file here carries a real skeleton, a real unit, or a real basis. Joint names are placeholders and offsets are invented proportions, because this layer refuses to interpret any of them.",
+    "Real producer files land with the profiles, under tests/corpus/recorded/, with the redistribution split docs/roadmap/recorded-motion-sources.md §8 describes."
+  ],
+  "fixtures": [
+    {
+      "file": "malformed-channel-count.bvh",
+      "status": "refused",
+      "pins": "CHANNELS declares six and lists three, so the reader runs into the JOINT keyword. Reported as a structural failure naming JOINT -- calling it an unsupported channel would send the reader looking for a channel.",
+      "diagnostic": "VRM_BVH_PARSE_FAILED",
+      "bytes": 233,
+      "sha256": "f5e91b632d297bc9255ef26c9e03f921ce14ce677d0b4b6b910e9674fb816fa2"
+    },
+    {
+      "file": "malformed-frame-count.bvh",
+      "status": "refused",
+      "pins": "Declares four frames and carries two. There is no frame-count code in the frozen set, so this is VRM_BVH_PARSE_FAILED with the counts in its detail; inventing a code the moment a parser meets this file is the drift the freeze prevents.",
+      "diagnostic": "VRM_BVH_PARSE_FAILED",
+      "bytes": 243,
+      "sha256": "a5d415a82b60b86fc3f55fd30a73f456d5fefbc1940aee4181cf869f7e021935"
+    },
+    {
+      "file": "malformed-frame-time.bvh",
+      "status": "refused",
+      "pins": "A negative frame time. Nothing downstream can place two frames in time with it.",
+      "diagnostic": "VRM_BVH_INVALID_FRAME_TIME",
+      "bytes": 244,
+      "sha256": "873379f7a694937cb00c555cc56d650097170c8b9f78ac7e4d957e050647613e"
+    },
+    {
+      "file": "malformed-frame-width.bvh",
+      "status": "refused",
+      "pins": "The second of three rows carries five values instead of six. The refusal names that row -- which is the whole reason the motion section is read as lines rather than as a stream of numbers.",
+      "diagnostic": "VRM_BVH_FRAME_WIDTH_MISMATCH",
+      "bytes": 264,
+      "sha256": "4fd1584abd1a517a267a8c7a6d082b1cb93ab4979043234319c9fad1c437ab41"
+    },
+    {
+      "file": "malformed-missing-hierarchy.bvh",
+      "status": "refused",
+      "pins": "Starts at ROOT with no HIERARCHY keyword. The first refusal a file can earn, and it is reported on line 1 rather than after a speculative read.",
+      "diagnostic": "VRM_BVH_PARSE_FAILED",
+      "bytes": 127,
+      "sha256": "7917a2095f3257746e3b13aeb6be5a7e4be18f473458b86485dd0471772f559f"
+    },
+    {
+      "file": "malformed-missing-offset.bvh",
+      "status": "refused",
+      "pins": "A joint with CHANNELS and no OFFSET. A joint with no offset is not a bone, and a converter would have to invent one to build a rest pose.",
+      "diagnostic": "VRM_BVH_PARSE_FAILED",
+      "bytes": 198,
+      "sha256": "2f68fc5982a93b0f286d20608005704c0d0dd752be0b9031e1985d9ba713cbba"
+    },
+    {
+      "file": "malformed-no-motion.bvh",
+      "status": "refused",
+      "pins": "A hierarchy and no MOTION section. The file ends where the animation should start.",
+      "diagnostic": "VRM_BVH_PARSE_FAILED",
+      "bytes": 154,
+      "sha256": "b3912abc5ebfac8bd115b8f5718a753fc12e2c766c41f1ba4dc45520dd8f2ccd"
+    },
+    {
+      "file": "malformed-non-finite.bvh",
+      "status": "refused",
+      "pins": "A NaN in a motion row. Not a rounding question: a rotation that is not finite has no interpretation at any layer above.",
+      "diagnostic": "VRM_BVH_NON_FINITE_VALUE",
+      "bytes": 242,
+      "sha256": "2e69b6714f9ebb59e808e08a9e26ee662bee08cbfea071cc61178ccd2174865f"
+    },
+    {
+      "file": "malformed-unclosed-joint.bvh",
+      "status": "refused",
+      "pins": "A JOINT block whose brace closes the wrong level, so MOTION arrives where a joint member was expected. Refused where the structure breaks, not at end of file.",
+      "diagnostic": "VRM_BVH_PARSE_FAILED",
+      "bytes": 272,
+      "sha256": "f2b0fa42785d14f3e24f3476f1383cecda7db6cc06de73516272072762274dad"
+    },
+    {
+      "file": "malformed-unsupported-channel.bvh",
+      "status": "refused",
+      "pins": "A CHANNELS list naming Wrotation. Refused rather than retained as an unknown column: nothing above could attribute its values, and a silently dropped channel shifts every number after it.",
+      "diagnostic": "VRM_BVH_UNSUPPORTED_CHANNEL",
+      "bytes": 189,
+      "sha256": "9244c1ba5bbb11bf385596bfe99d289190387d5bb981a79353f49e5ee3d177d8"
+    },
+    {
+      "file": "valid-channel-order-yxz.bvh",
+      "status": "valid",
+      "pins": "A rotation declaration order that is not ZXY, and a joint whose order differs from its parent's. A parser that normalised channels would pass every other fixture and lose this file's only statement about its Euler order.",
+      "joints": 2,
+      "channels": 9,
+      "frames": 2,
+      "frameTime": 0.0166667,
+      "bytes": 357,
+      "sha256": "c6ab588e73b71434e437014e02ec28fe38cc578cbf01f164e6924c49a5148da8"
+    },
+    {
+      "file": "valid-duplicate-joint-names.bvh",
+      "status": "valid",
+      "pins": "Two joints with the same name. BVH does not require unique names and real exports repeat them, so a profile matching by name has to be able to see the ambiguity rather than silently take the first match.",
+      "joints": 3,
+      "channels": 12,
+      "frames": 1,
+      "frameTime": 0.0333333,
+      "bytes": 452,
+      "sha256": "67a5940b0e241f42fbc183318c680c996080a18fb01ac2a8148ca07b261985ee"
+    },
+    {
+      "file": "valid-empty-motion.bvh",
+      "status": "valid",
+      "pins": "A hierarchy with no motion at all: Frames: 0 and no rows. The document is still valid and carries a rest pose.",
+      "joints": 1,
+      "channels": 6,
+      "frames": 0,
+      "frameTime": 0.0333333,
+      "bytes": 193,
+      "sha256": "3e649692c7df0919d3f3e826de5bc9f3eec8465a8811025cb1323719381c40e9"
+    },
+    {
+      "file": "valid-lowercase-and-padding.bvh",
+      "status": "valid",
+      "pins": "Everything a writer varies and nothing that changes meaning: lowercase keywords, spaces before the colons, run-together indentation, blank lines between rows, and a trailing blank line.",
+      "joints": 2,
+      "channels": 9,
+      "frames": 2,
+      "frameTime": 0.0333333,
+      "bytes": 399,
+      "sha256": "a7a28c105b4244250171fd97a1dc4bf295a8f2a99273ff59cafe2271490c6368"
+    },
+    {
+      "file": "valid-minimal-root.bvh",
+      "status": "valid",
+      "pins": "The smallest thing that is still a BVH file: one ROOT, six channels, an End Site, two rows. Every other fixture is this plus one difference.",
+      "joints": 1,
+      "channels": 6,
+      "frames": 2,
+      "frameTime": 0.0333333,
+      "bytes": 246,
+      "sha256": "588e0a2079b851cabee4f72568e038cd3ecd93f6248b8d958ea397fc53b6a63a"
+    },
+    {
+      "file": "valid-nested-joints.bvh",
+      "status": "valid",
+      "pins": "Nesting and branching: a three-deep chain beside a second child, so joint order is depth-first declaration order rather than a level walk, and the channel columns follow it.",
+      "joints": 4,
+      "channels": 15,
+      "frames": 3,
+      "frameTime": 0.0333333,
+      "bytes": 692,
+      "sha256": "bb0d41f73a2cfc9633ef6d3ba592cb2dc46793bbfa72ea0a624b3f24acfb97c7"
+    },
+    {
+      "file": "valid-position-on-joint.bvh",
+      "status": "valid",
+      "pins": "Position channels on a non-root joint. Real exports carry them for a floating joint, and a parser that assumed six channels mean 'root' would misread the row.",
+      "joints": 2,
+      "channels": 12,
+      "frames": 2,
+      "frameTime": 0.04,
+      "bytes": 409,
+      "sha256": "948dae12ae5dd318c85ece851ff1e51c804507442c763c5ab2311d22c43485a9"
+    },
+    {
+      "file": "valid-single-frame-zero-time.bvh",
+      "status": "valid",
+      "pins": "One frame and a zero frame time. A single pose has no interval to describe, so this is a statement rather than an error -- refusing it would refuse the single-pose files real exporters write.",
+      "joints": 1,
+      "channels": 6,
+      "frames": 1,
+      "frameTime": 0.0,
+      "bytes": 212,
+      "sha256": "211e03362d073d628d3f1bd1583b53192aeeb071cd9cbcd25ff05c89a2b8d7d4"
+    },
+    {
+      "file": "valid-static-joint.bvh",
+      "status": "valid",
+      "pins": "CHANNELS 0 -- a joint the file animates nothing about, which is how a producer exports a static prop beside the rig. What to do about the prop is a profile's decision, one layer up.",
+      "joints": 2,
+      "channels": 6,
+      "frames": 2,
+      "frameTime": 0.0333333,
+      "bytes": 306,
+      "sha256": "f97106c437026a960fabc017ce34fa15921e5eb698238dc2b5eab6d788d006f1"
+    }
+  ]
+}

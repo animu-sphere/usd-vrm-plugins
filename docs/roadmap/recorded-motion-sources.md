@@ -295,7 +295,7 @@ sessions and the VRM corpus uses for models.
 | Milestone | Contents | State |
 | --- | --- | --- |
 | **BVH-0** — contract and fixtures | real samples from mocopi and a second producer; joints, hierarchy, channels, unit, axis measured; the `motionSource` model and profile schema settled; the diagnostic set frozen | ⬜ |
-| **BVH-1** — syntax | `BvhDocument`, the parser, `motion_bvh_inspect`, malformed fixtures, deterministic tests | ⬜ |
+| **BVH-1** — syntax | `BvhDocument`, the parser, `motion_bvh_inspect`, malformed fixtures, deterministic tests | 🚧 |
 | **BVH-2** — semantics | the `motionSource` API, the profile API, the mocopi profile, the second producer's, basis and unit conversion, source rest pose, root policy, `HumanoidAnimation`, the semantic clip writer | ⬜ |
 | **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, artifact-only smoke, the recorded corpus | ⬜ |
 | **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | ⬜ |
@@ -303,6 +303,17 @@ sessions and the VRM corpus uses for models.
 BVH-0 is a measurement milestone, and skipping it is the failure mode this whole
 plan is shaped around: writing the profile schema from one producer's file makes
 that producer's export the schema.
+
+**BVH-1 started ahead of BVH-0, and that is not the shortcut it looks like.**
+The syntax layer is the one part of this plan that owes nothing to a
+measurement: `HIERARCHY`, `CHANNELS`, a row width and a frame time are the
+format's, not a producer's, which is exactly why §2 puts them in a layer that is
+forbidden to know a producer at all. What waits on real files is everything
+BVH-0 actually names — the joint sets, units, axes and root conventions, and
+therefore the `motionSource` model and the profile schema. `libs/motionBvh`
+landed with its corpus named after format shapes rather than applications
+([§8](#8-corpus)), so there is no producer's export for the profile schema to be
+written from later.
 
 ## 10. Contract changes this plan requires
 
@@ -333,10 +344,14 @@ depends on them ([docs/README.md](../README.md)).
   in WORKSPACE.md §5 — but `ost` 0.21.0 has no notion of a data-only member, and
   how the files get staged is unverified. This is the same shape as the adapter
   packaging gap ([report 34](../reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md)).
-- ⬜ **The workspace graph gate will not reach these libraries either** if they
-  live under `libs/` — it does, for `libs/` — but the profile directory and the
-  `tools/motionBvh/` grouping are new shapes. Worth confirming with the scaffold
-  rather than assuming, the way the adapter's discovery gap was found.
+- 🚧 **The workspace graph gate reaches `libs/motionBvh`, measured rather than
+  assumed.** With the library committed, `ost plugin test --workspace
+  --graph-only` reports `4 bundle(s), 1 bundle edge(s), 5 libraries, 7 library
+  edge(s), valid` on `ost` 0.21.0 — one more library than before it, so the
+  descriptor is discovered and its (currently empty) `requires` is validated.
+  The `profiles/motion/` directory and the `tools/motionBvh/` grouping are still
+  new shapes and still unconfirmed; they get the same treatment when they land,
+  the way the adapter's discovery gap was found.
 
 ## 11. Non-goals
 
@@ -358,8 +373,11 @@ depends on them ([docs/README.md](../README.md)).
 
 One PR never introduces a boundary and a large feature together:
 
-1. this document and the contract changes it names
-2. `motionBvh` syntax model and parser
+1. ✅ this document and the contract changes it names
+2. ✅ `motionBvh` syntax model and parser — the frozen diagnostic set, the
+   document model, the parser, the format-shape corpus and its manifest, and a
+   boundary check that fails on a producer name, a semantic diagnostic, or an
+   OpenUSD value type in the syntax layer (2026-08-04)
 3. `motion_bvh_inspect`
 4. `motionSource` skeleton and animation model
 5. the source profile contract

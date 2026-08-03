@@ -66,9 +66,15 @@ if(USDVRM_BUILD_TESTS)
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/cmake/openusd_contract_test.cmake")
 endif()
 
-# vrmContainer has no OpenUSD dependency, so it can be added before the single
-# workspace-wide OpenUSD resolution below.
+# vrmContainer and motionBvh have no OpenUSD dependency, so they can be added
+# before the single workspace-wide OpenUSD resolution below. For motionBvh that
+# is a statement rather than a convenience: its syntax layer reads three numbers
+# off an OFFSET line and does not know the file's basis or unit, so it has no
+# value type to borrow from Gf (libs/motionBvh/include/motionBvh/BvhDocument.h).
+# It moves below the resolution the day its extractor takes the declared
+# motionBvh -> motionSource edge (WORKSPACE.md §2).
 add_subdirectory("libs/vrmContainer")
+add_subdirectory("libs/motionBvh")
 
 # Resolve OpenUSD once for the whole project; bundles reuse the result.
 find_package(pxr REQUIRED CONFIG)

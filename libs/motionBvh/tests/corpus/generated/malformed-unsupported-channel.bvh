@@ -1,0 +1,14 @@
+HIERARCHY
+ROOT Hips
+{
+	OFFSET 0.0 0.0 0.0
+	CHANNELS 4 Zrotation Xrotation Yrotation Wrotation
+	End Site
+	{
+		OFFSET 0.0 10.0 0.0
+	}
+}
+MOTION
+Frames: 1
+Frame Time: 0.0333333
+0.0 0.0 0.0 1.0
