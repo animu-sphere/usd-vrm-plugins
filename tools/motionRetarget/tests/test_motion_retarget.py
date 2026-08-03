@@ -231,15 +231,21 @@ def main() -> int:
         # schema -- so a bare relationship binds nothing, the avatar sits at
         # rest, and no diagnostic fires anywhere. Every check above passes on
         # this fixture either way; only a rig without the schema separates them.
+        # Strip the schema through USD rather than by filtering the layer text:
+        # a line filter drops `apiSchemas` from every prim that happens to carry
+        # it, so adding a skinned mesh to the fixture would quietly widen what
+        # this case changes while it kept on passing.
         bare = workspace / "bare_avatar.usda"
-        bare.write_text(
-            "\n".join(line
-                      for line in avatar.read_text(encoding="utf-8").splitlines()
-                      if "apiSchemas" not in line) + "\n",
-            encoding="utf-8")
-        failures.check("SkelBindingAPI" not in bare.read_text(encoding="utf-8"),
-                       "the bare-rig fixture still applies SkelBindingAPI, so "
-                       "it cannot detect a missing Apply()")
+        shutil.copy(avatar, bare)
+        # The stage stays in a local for the same reason as above: the prim
+        # holds only a weak reference back to it.
+        bare_stage = Usd.Stage.Open(str(bare))
+        bare_skeleton = find_skeleton(bare_stage).GetPrim()
+        bare_skeleton.RemoveAPI(UsdSkel.BindingAPI)
+        bare_stage.GetRootLayer().Save()
+        failures.check(not bare_skeleton.HasAPI(UsdSkel.BindingAPI),
+                       "the bare-rig fixture still applies SkelBindingAPI on "
+                       "its skeleton, so it cannot detect a missing Apply()")
         bare_output = workspace / "bare_rig_bake.usda"
         result = run_tool(
             options.tool,
