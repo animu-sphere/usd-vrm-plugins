@@ -415,7 +415,12 @@ Queued(std::uint8_t seed, std::size_t size = 8)
 void
 TestTheQueueCarriesEveryDatagramAcrossAThreadInOrder()
 {
-    constexpr std::size_t kCount = 500;
+    // `static` so the lambda below can read it without capturing it. A plain
+    // function-local `constexpr` is not odr-used by `index != kCount` and needs
+    // no capture by the standard, but MSVC 14.34 refuses it as C3493 where
+    // 14.4x and both other compilers accept it — and a capture list is not the
+    // fix, since adding one warns on clang instead.
+    static constexpr std::size_t kCount = 500;
     DatagramQueueConfig config;
     // Comfortably above what is pushed, so the queue cannot overflow however the
     // two threads interleave. Sizing it at exactly `kCount` would also never

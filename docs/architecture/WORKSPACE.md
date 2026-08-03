@@ -59,11 +59,12 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `vrmAdapterVmc` | optional plain static CMake library (reserved, `adapters/liveCapture/vmc/`) | The generic real-time input: OSC-over-UDP decode, frame assembly, VRM humanoid bone names → canonical semantics. One adapter serves every sender application, including capture products relayed through it. **First adapter implemented.** |
 | `vrmAdapterMocopi` | optional plain static CMake library (reserved, `adapters/liveCapture/mocopi/`) | Decodes one capture product's native packets into canonical humanoid semantics and pushes them at `LiveCaptureSource`. Direct path: keeps the SDK-specific confidence and device diagnostics a protocol relay drops. Does **not** wrap `vrmAdapterVmc`. |
 | `vrmAdapterArdy` | optional plain static CMake library (reserved, `adapters/generators/ardy/`) | One generator behind the vendor-neutral `IMotionGenerator` contract, producing canonical humanoid motion that `vrmRetarget` maps onto a target rig. |
+| `vmc_record` | CLI executable (`adapters/liveCapture/vmc/tools/vmcRecord/`, v0.5.0) | Records a live VMC session to a `vmc-packet-capture` file and reports what it decoded to; `--inspect` reports on a recorded capture with no socket. Links `vrmAdapterVmc` and nothing else: it neither retargets nor authors a stage, though §2 would permit both. |
 
 Each adapter may also carry one CLI, declared beside it as an
 `openstrata.tool.yaml` workspace tool in the way `motion_retarget` and
 `motion_capture` are. Those executables are named when they are written, not
-reserved here.
+reserved here — `vmc_record` is the first, added with the VMC adapter's CLI.
 
 > **An adapter is a library, not a plugin bundle.** The three rows above read
 > "optional bundle" until 2026-07-29, which no manifest could have expressed. An
@@ -239,7 +240,12 @@ project root's immediate subdirectories and under `libs/`, so a descriptor at
 `adapters/<group>/<name>/` is invisible to it and the reported library count
 does not move when one is added. An adapter's declared edges are therefore
 accurate documentation and a standing `ost` ask, not an enforced gate, until
-discovery widens.
+discovery widens. An adapter's CLI inherits that: adding `vmc_record` under
+`adapters/liveCapture/vmc/tools/` left `ost plugin test --workspace
+--graph-only` reporting the same 4 bundles and 4 libraries it reported before,
+so its `openstrata.tool.yaml` is not walked either. Whether a per-adapter
+package would find it is untested for the reason §5 gives — there is no
+per-library packaging command to try it with.
 
 Two things carry the enforcement in the meantime, and both are required of every
 adapter. The workspace CMake tree builds it, so a link against something it may

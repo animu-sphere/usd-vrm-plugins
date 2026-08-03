@@ -12,8 +12,10 @@ strata.lock
 
 # Workspace tools stage their executable into the member root's bin/, which is
 # what `ost plugin package --workspace` packages an openstrata.tool.yaml member
-# out of.
+# out of. An adapter's CLI stages the same way one level deeper, beside the
+# adapter it ships with (WORKSPACE.md §1, §5).
 /tools/*/bin/
+/adapters/*/*/tools/*/bin/
 
 # --- Docs ---
 # /docs is tracked by default. It was local-by-default while the ost dogfooding

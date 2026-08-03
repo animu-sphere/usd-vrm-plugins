@@ -724,6 +724,60 @@ capture device validated through a VMC relay
   arrival clock the only thing the wire is allowed to have changed. One buffer is
   reused for the whole replay, so the bridge's lifetime claim is checked by the
   poses matching rather than by an assertion about bytes.
+- ✅ **The record tool, and what it is for.** `vmc_record` is the adapter's CLI
+  and the one part of it that meets a real sender. Everything under it is
+  verifiable from committed bytes, which is the build order's whole point and
+  also its limit: the corpus is *generated*, so it reproduces the protocol's
+  shapes and not what any application emits. Every item still open in this
+  milestone is that same shape — two senders validated, a device through a
+  relay, a recorded corpus — and none of them closes by writing more code. They
+  close by an operator pointing a sender at a port, so the tool's job is to turn
+  one such session into the two things this repository can keep: a capture file,
+  and a statement of what was in it.
+
+  **The datagram reaches the file before the decoder sees it**, and that is the
+  only rule here. A recorder whose decoder could refuse a datagram would record
+  what the adapter already understands, and the sessions worth recording are
+  exactly the ones it might not. The decode still runs in the same loop rather
+  than afterwards, because an operator with a sender open needs to know *now*
+  whether the session is worth keeping — what it produces is a report, and a
+  report is not a filter.
+
+  The report is one block, ordered the way the questions are asked when a live
+  session is not working: is anything arriving, does it decode, does it become
+  motion, what went wrong. Each line is a tally some layer already keeps, and
+  the report is the one place they are read together — `UdpReceiverStats` cannot
+  see a bone and `VmcFrameStats` cannot see a datagram that never decoded. Two
+  lines are not statistics at all: **`hips offset` and `root` are the evidence
+  the two open questions above need**, reported as how far each value moved and
+  never as what it means, because this tool is in no better position to decide
+  what a sender means by a field than the layer that declined to. A third,
+  `model`, says that the sender's model title is in the recorded bytes — it is
+  never *used*, since naming a capture after the avatar it happened to see would
+  put someone's title in a fixture's header as well as its payload.
+
+  `--inspect` decodes a recorded capture and prints the same block with no
+  socket at all, which is what makes the CLI testable in CI over the committed
+  corpus — `vmc_record_inspect` reports all seven captures to the same 168
+  datagrams and 22 frames the corpus tests below it are written against. It also
+  answers "is this fixture still what I thought it was" for a capture recorded
+  months ago. `vmc_record_loopback` then makes the claim the tool exists for,
+  which is `vrmAdapterVmc_loopbackCorpus`'s raised to the CLI: the datagrams
+  that come off a real socket are byte-identical to the ones that went in, and
+  the recorded file reports the same motion as the file it was replayed from.
+  The library test compares poses; this one compares the artifact an operator
+  keeps.
+
+  Two smaller things are settled with it. A session always has a stop condition
+  — `--duration`, `--idle-timeout`, Ctrl-C, and a `--max-datagrams` bound that
+  is on by default because the capture is held in memory until it is written —
+  and **every session reports which one ended it**, since a recording that
+  stopped because a flag said so and one that stopped because the socket failed
+  are different sessions and the file cannot tell them apart afterwards. And the
+  tool links `vrmAdapterVmc` and nothing else: §2 permits an adapter tool to
+  drive `vrmRetarget` and author a stage, this one needs neither, and a second
+  path from a VMC session to an avatar would be the fork §2 forbids —
+  `motion_capture` is where a session becomes a clip (Milestone C).
 - ✅ **A hosted runner does allow a loopback socket** — on all three, measured
   rather than assumed. The `kind: workspace` cells picked the two socket tests up
   with no CI edit, exactly as they picked up every other adapter test, and
@@ -735,6 +789,10 @@ capture device validated through a VMC relay
   and they bind loopback on an OS-assigned port — never 39539, which would fight
   a developer's real sender for it. `adapter-hardware-opt-in` is still the one
   lane in §9.5 with no expressible shape.
+
+  The CLI's two tests landed the same way, taking the root suite from 41 names
+  to 43: `vmc_record_inspect` needs no socket and `vmc_record_loopback` binds
+  one, split for the same reason and excludable the same way.
 
 ### Milestone C — capture integration and offline E2E ⬜
 
