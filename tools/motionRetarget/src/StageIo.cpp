@@ -15,6 +15,7 @@
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/references.h"
+#include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdSkel/animation.h"
 #include "pxr/usd/usdSkel/bindingAPI.h"
 #include "pxr/usd/usdSkel/skeleton.h"
@@ -609,6 +610,16 @@ WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar,
         stage->SetStartTimeCode(animation.startTime * clip.timeCodesPerSecond);
         stage->SetEndTimeCode(animation.endTime * clip.timeCodesPerSecond);
     }
+
+    // Stage metrics come from the root layer alone — the reference authored
+    // above does not carry them. An output that declares neither resolves to
+    // USD's defaults, so a `.vrm` rig that says `metersPerUnit = 1` composes
+    // back as a 1.6 cm avatar. Carry what the avatar resolves rather than
+    // assuming VRM's values: the tool takes any rig OpenUSD can open, and a
+    // plain `.usda` one may legitimately declare either.
+    UsdGeomSetStageMetersPerUnit(stage,
+                                 UsdGeomGetStageMetersPerUnit(avatar.stage));
+    UsdGeomSetStageUpAxis(stage, UsdGeomGetStageUpAxis(avatar.stage));
 
     if (!stage->GetRootLayer()->Save()) {
         *error = "could not save " + outputPath;

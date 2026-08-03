@@ -18,7 +18,7 @@ import subprocess
 import sys
 import tempfile
 
-from pxr import Gf, Usd, UsdSkel
+from pxr import Gf, Usd, UsdGeom, UsdSkel
 
 TOLERANCE = 1e-5
 
@@ -179,6 +179,30 @@ def check_usdskel_resolves_the_animation(output: pathlib.Path,
         "UsdSkel did not resolve the retargeted Pelvis rotation")
 
 
+def check_stage_metrics(output: pathlib.Path, avatar: pathlib.Path,
+                        failures: Failures) -> None:
+    """The bake must re-declare the avatar's metrics, not inherit them.
+
+    Stage metrics are read from the root layer alone, so the reference to the
+    avatar does not carry them: an output layer that declares nothing resolves
+    to USD's defaults and describes a 1 m avatar as 1.6 cm. Nothing above
+    notices -- the joint values are identical either way, and usdview renders
+    such a stage correctly because there is nothing else on it to disagree.
+    """
+    # Both stages stay in locals; the metrics accessors take a stage, not a
+    # prim, but a temporary would still be released before the comparison.
+    avatar_stage = Usd.Stage.Open(str(avatar))
+    baked_stage = Usd.Stage.Open(str(output))
+    for name, read in (("metersPerUnit", UsdGeom.GetStageMetersPerUnit),
+                       ("upAxis", UsdGeom.GetStageUpAxis)):
+        want = read(avatar_stage)
+        got = read(baked_stage)
+        failures.check(
+            got == want,
+            f"{output.name} resolves {name} = {got}, expected the avatar's "
+            f"{want}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tool", required=True)
@@ -215,6 +239,29 @@ def main() -> int:
         failures.check(output.is_file(), f"{output} was not written")
         compare_with_expected(output, expected, failures)
         check_usdskel_resolves_the_animation(output, failures)
+        check_stage_metrics(output, avatar, failures)
+
+        # The metrics are read off the avatar, not assumed to be VRM's. The
+        # tool takes any rig OpenUSD can open, and every check above passes
+        # against `avatar.usda` on a bake that hardcodes `metersPerUnit = 1`
+        # and `upAxis = "Y"` -- which is what that fixture declares.
+        rescaled = workspace / "centimetre_avatar.usda"
+        shutil.copy(avatar, rescaled)
+        # The stage stays in a local: the layer it saves is fetched back off it.
+        rescaled_stage = Usd.Stage.Open(str(rescaled))
+        UsdGeom.SetStageMetersPerUnit(rescaled_stage, 0.01)
+        UsdGeom.SetStageUpAxis(rescaled_stage, UsdGeom.Tokens.z)
+        rescaled_stage.GetRootLayer().Save()
+        rescaled_output = workspace / "centimetre_bake.usda"
+        result = run_tool(
+            options.tool,
+            "--avatar", str(rescaled), "--animation", str(clip),
+            "--output", str(rescaled_output),
+            "--humanoid-map", options.humanoid_map, "--quiet")
+        if failures.check(
+                result.returncode == 0,
+                f"bake onto a centimetre, Z-up rig failed: {result.stderr}"):
+            check_stage_metrics(rescaled_output, rescaled, failures)
 
         # Re-baking over an existing output overwrites rather than failing.
         rerun = run_tool(
