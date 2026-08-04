@@ -2,6 +2,7 @@
 #include "motionSource/SourceProfile.h"
 
 #include <algorithm>
+#include <array>
 #include <bitset>
 #include <cstdio>
 #include <string>
@@ -52,6 +53,14 @@ Fail(std::string* reason, std::string text)
 // The one table per vocabulary. `Name` indexes it and `Find` scans it, so the
 // canonical spelling and the accepted one cannot drift apart -- an alias lives
 // beside the entry it aliases rather than in a second switch.
+//
+// Each table is a `std::array` sized by its enum's `Count` and asserted to be in
+// enumerator order, which is what turns two silent failures into compile errors:
+// an enumerator appended without a row would otherwise return an empty name and
+// never be found by any spelling, and a row inserted in the wrong place would
+// return a neighbour's. Seven vocabularies is too many to keep in step by
+// attention, and the sibling table in SourceAnimation.cpp is sized the same way
+// for the same reason.
 template <typename Enum>
 struct Term
 {
@@ -61,20 +70,28 @@ struct Term
 };
 
 template <typename Enum, std::size_t N>
-std::string_view
-NameOf(const Term<Enum> (&terms)[N], Enum value) noexcept
+constexpr bool
+TermsAreInEnumOrder(const std::array<Term<Enum>, N>& terms) noexcept
 {
-    for (const Term<Enum>& term : terms) {
-        if (term.value == value) {
-            return term.name;
+    for (std::size_t index = 0; index < N; ++index) {
+        if (static_cast<std::size_t>(terms[index].value) != index) {
+            return false;
         }
     }
-    return {};
+    return true;
+}
+
+template <typename Enum, std::size_t N>
+std::string_view
+NameOf(const std::array<Term<Enum>, N>& terms, Enum value) noexcept
+{
+    const auto index = static_cast<std::size_t>(value);
+    return index < N ? terms[index].name : std::string_view();
 }
 
 template <typename Enum, std::size_t N>
 std::optional<Enum>
-FindIn(const Term<Enum> (&terms)[N], std::string_view name) noexcept
+FindIn(const std::array<Term<Enum>, N>& terms, std::string_view name) noexcept
 {
     for (const Term<Enum>& term : terms) {
         if (EqualsIgnoreCase(term.name, name)
@@ -85,15 +102,18 @@ FindIn(const Term<Enum> (&terms)[N], std::string_view name) noexcept
     return std::nullopt;
 }
 
-constexpr Term<SourceHandedness> kHandedness[] = {
+constexpr std::array<Term<SourceHandedness>, SourceHandednessCount>
+    kHandedness = {{
     {SourceHandedness::Unspecified, "unspecified", {}},
     {SourceHandedness::Right, "right", {}},
     {SourceHandedness::Left, "left", {}},
-};
+}};
+static_assert(TermsAreInEnumOrder(kHandedness),
+              "kHandedness must be in enumerator order");
 
 // The alias column is the unsigned spelling: a profile writing `Y` means `+Y`
 // (SourceProfile.h).
-constexpr Term<SourceAxis> kAxes[] = {
+constexpr std::array<Term<SourceAxis>, SourceAxisCount> kAxes = {{
     {SourceAxis::Unspecified, "unspecified", {}},
     {SourceAxis::PlusX, "+X", "X"},
     {SourceAxis::MinusX, "-X", {}},
@@ -101,44 +121,62 @@ constexpr Term<SourceAxis> kAxes[] = {
     {SourceAxis::MinusY, "-Y", {}},
     {SourceAxis::PlusZ, "+Z", "Z"},
     {SourceAxis::MinusZ, "-Z", {}},
-};
+}};
+static_assert(TermsAreInEnumOrder(kAxes),
+              "kAxes must be in enumerator order");
 
-constexpr Term<SourceLengthUnit> kLengthUnits[] = {
+constexpr std::array<Term<SourceLengthUnit>, SourceLengthUnitCount>
+    kLengthUnits = {{
     {SourceLengthUnit::Unspecified, "unspecified", {}},
     {SourceLengthUnit::Meters, "meters", "metres"},
     {SourceLengthUnit::Centimeters, "centimeters", "centimetres"},
     {SourceLengthUnit::Millimeters, "millimeters", "millimetres"},
     {SourceLengthUnit::Inches, "inches", {}},
-};
+}};
+static_assert(TermsAreInEnumOrder(kLengthUnits),
+              "kLengthUnits must be in enumerator order");
 
-constexpr Term<RootTranslationPolicy> kRootTranslationPolicies[] = {
+constexpr std::array<Term<RootTranslationPolicy>, RootTranslationPolicyCount>
+    kRootTranslationPolicies = {{
     {RootTranslationPolicy::Unspecified, "unspecified", {}},
     {RootTranslationPolicy::AbsolutePosition, "absolute-position", {}},
     {RootTranslationPolicy::RestRelative, "rest-relative", {}},
     {RootTranslationPolicy::None, "none", {}},
-};
+}};
+static_assert(TermsAreInEnumOrder(kRootTranslationPolicies),
+              "kRootTranslationPolicies must be in enumerator order");
 
-constexpr Term<RootRotationPolicy> kRootRotationPolicies[] = {
+constexpr std::array<Term<RootRotationPolicy>, RootRotationPolicyCount>
+    kRootRotationPolicies = {{
     {RootRotationPolicy::Unspecified, "unspecified", {}},
     {RootRotationPolicy::BodyOrientation, "body-orientation", {}},
     {RootRotationPolicy::None, "none", {}},
-};
+}};
+static_assert(TermsAreInEnumOrder(kRootRotationPolicies),
+              "kRootRotationPolicies must be in enumerator order");
 
-constexpr Term<RestPoseSource> kRestPoseSources[] = {
+constexpr std::array<Term<RestPoseSource>, RestPoseSourceCount>
+    kRestPoseSources = {{
     {RestPoseSource::Unspecified, "unspecified", {}},
     {RestPoseSource::RestOffsets, "rest-offsets", {}},
     {RestPoseSource::StatedRestRotations, "stated-rest-rotations", {}},
     {RestPoseSource::FirstFrame, "first-frame", {}},
-};
+}};
+static_assert(TermsAreInEnumOrder(kRestPoseSources),
+              "kRestPoseSources must be in enumerator order");
 
-constexpr Term<UnmappedJointPolicy> kUnmappedJointPolicies[] = {
+constexpr std::array<Term<UnmappedJointPolicy>, UnmappedJointPolicyCount>
+    kUnmappedJointPolicies = {{
     {UnmappedJointPolicy::Unspecified, "unspecified", {}},
     {UnmappedJointPolicy::Ignore, "ignore", {}},
     {UnmappedJointPolicy::Report, "report", {}},
     {UnmappedJointPolicy::Refuse, "refuse", {}},
-};
+}};
+static_assert(TermsAreInEnumOrder(kUnmappedJointPolicies),
+              "kUnmappedJointPolicies must be in enumerator order");
 
-constexpr Term<SourceProfileRefusal> kRefusals[] = {
+constexpr std::array<Term<SourceProfileRefusal>, SourceProfileRefusalCount>
+    kRefusals = {{
     {SourceProfileRefusal::None, "none", {}},
     {SourceProfileRefusal::ProfileInvalid, "profile-invalid", {}},
     {SourceProfileRefusal::SkeletonInvalid, "skeleton-invalid", {}},
@@ -147,7 +185,9 @@ constexpr Term<SourceProfileRefusal> kRefusals[] = {
     {SourceProfileRefusal::RequiredJointMissing, "required-joint-missing", {}},
     {SourceProfileRefusal::HierarchyMismatch, "hierarchy-mismatch", {}},
     {SourceProfileRefusal::UnmappedJointRefused, "unmapped-joint-refused", {}},
-};
+}};
+static_assert(TermsAreInEnumOrder(kRefusals),
+              "kRefusals must be in enumerator order");
 
 // Whether `ancestor` is above `descendant` in the rig. Bounded by the joint
 // count rather than by reaching the root: this runs over rigs a caller
@@ -555,6 +595,18 @@ SourceProfileMatch::JointFor(motion::HumanBone bone) const
     return std::nullopt;
 }
 
+std::size_t
+SourceProfileMatch::BoundRequiredCount() const noexcept
+{
+    std::size_t count = 0;
+    for (const SourceProfileBinding& binding : bound) {
+        if (binding.required) {
+            ++count;
+        }
+    }
+    return count;
+}
+
 SourceProfileMatch
 MatchSourceProfile(const SourceProfile& profile, const SourceSkeleton& skeleton)
 {
@@ -594,7 +646,8 @@ MatchSourceProfile(const SourceProfile& profile, const SourceSkeleton& skeleton)
             }
             continue;
         }
-        match.bound.push_back(SourceProfileBinding{mapping.bone, found[0]});
+        match.bound.push_back(
+            SourceProfileBinding{mapping.bone, found[0], mapping.required});
         boundBones.set(BoneIndex(mapping.bone));
         boneJoint[BoneIndex(mapping.bone)] = found[0];
     }

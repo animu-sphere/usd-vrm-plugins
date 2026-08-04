@@ -31,29 +31,37 @@ using motionSource::FindSourceLengthUnit;
 using motionSource::FindUnmappedJointPolicy;
 using motionSource::MatchSourceProfile;
 using motionSource::RestPoseSource;
+using motionSource::RestPoseSourceCount;
 using motionSource::RestPoseSourceName;
 using motionSource::RootRotationPolicy;
+using motionSource::RootRotationPolicyCount;
 using motionSource::RootRotationPolicyName;
 using motionSource::RootTranslationPolicy;
+using motionSource::RootTranslationPolicyCount;
 using motionSource::RootTranslationPolicyName;
 using motionSource::SourceAxis;
 using motionSource::SourceAxisComponent;
 using motionSource::SourceAxisIsNegative;
+using motionSource::SourceAxisCount;
 using motionSource::SourceAxisName;
 using motionSource::SourceHandedness;
+using motionSource::SourceHandednessCount;
 using motionSource::SourceHandednessName;
 using motionSource::SourceJoint;
 using motionSource::SourceJointMapping;
 using motionSource::SourceLengthUnit;
 using motionSource::SourceLengthUnitInMeters;
+using motionSource::SourceLengthUnitCount;
 using motionSource::SourceLengthUnitName;
 using motionSource::SourceProfile;
 using motionSource::SourceProfileMatch;
 using motionSource::SourceProfileRefusal;
+using motionSource::SourceProfileRefusalCount;
 using motionSource::SourceProfileRefusalName;
 using motionSource::SourceSkeleton;
 using motionSource::SourceVec3;
 using motionSource::UnmappedJointPolicy;
+using motionSource::UnmappedJointPolicyCount;
 using motionSource::UnmappedJointPolicyName;
 using motionSource::ValidateSourceProfile;
 
@@ -204,6 +212,110 @@ TestVocabulary()
 
     assert(SourceProfileRefusalName(SourceProfileRefusal::HierarchyMismatch)
            == "hierarchy-mismatch");
+
+    // `Count` is not a value and names nothing, in every vocabulary -- the same
+    // assertion the animation model's enums carry, and the one that would catch
+    // a table gone out of step with its enum at runtime if the static_assert
+    // beside it were ever loosened.
+    assert(SourceHandednessName(SourceHandedness::Count).empty());
+    assert(SourceAxisName(SourceAxis::Count).empty());
+    assert(SourceLengthUnitName(SourceLengthUnit::Count).empty());
+    assert(RootTranslationPolicyName(RootTranslationPolicy::Count).empty());
+    assert(RootRotationPolicyName(RootRotationPolicy::Count).empty());
+    assert(RestPoseSourceName(RestPoseSource::Count).empty());
+    assert(UnmappedJointPolicyName(UnmappedJointPolicy::Count).empty());
+    assert(SourceProfileRefusalName(SourceProfileRefusal::Count).empty());
+
+    // Every enumerator below Count has a spelling, and every spelling finds its
+    // way back to it. The static_assert in the implementation makes a missing
+    // row a compile error; this makes an *empty* one a test failure.
+    for (std::size_t i = 0; i < SourceAxisCount; ++i) {
+        const auto axis = static_cast<SourceAxis>(i);
+        assert(!SourceAxisName(axis).empty());
+        assert(FindSourceAxis(SourceAxisName(axis)) == axis);
+    }
+    for (std::size_t i = 0; i < SourceLengthUnitCount; ++i) {
+        const auto unit = static_cast<SourceLengthUnit>(i);
+        assert(!SourceLengthUnitName(unit).empty());
+        assert(FindSourceLengthUnit(SourceLengthUnitName(unit)) == unit);
+    }
+    for (std::size_t i = 0; i < RootTranslationPolicyCount; ++i) {
+        const auto policy = static_cast<RootTranslationPolicy>(i);
+        assert(!RootTranslationPolicyName(policy).empty());
+        assert(FindRootTranslationPolicy(RootTranslationPolicyName(policy))
+               == policy);
+    }
+    for (std::size_t i = 0; i < RootRotationPolicyCount; ++i) {
+        const auto policy = static_cast<RootRotationPolicy>(i);
+        assert(!RootRotationPolicyName(policy).empty());
+        assert(FindRootRotationPolicy(RootRotationPolicyName(policy))
+               == policy);
+    }
+    for (std::size_t i = 0; i < RestPoseSourceCount; ++i) {
+        const auto rest = static_cast<RestPoseSource>(i);
+        assert(!RestPoseSourceName(rest).empty());
+        assert(FindRestPoseSource(RestPoseSourceName(rest)) == rest);
+    }
+    for (std::size_t i = 0; i < UnmappedJointPolicyCount; ++i) {
+        const auto policy = static_cast<UnmappedJointPolicy>(i);
+        assert(!UnmappedJointPolicyName(policy).empty());
+        assert(FindUnmappedJointPolicy(UnmappedJointPolicyName(policy))
+               == policy);
+    }
+    for (std::size_t i = 0; i < SourceHandednessCount; ++i) {
+        const auto handedness = static_cast<SourceHandedness>(i);
+        assert(!SourceHandednessName(handedness).empty());
+        assert(FindSourceHandedness(SourceHandednessName(handedness))
+               == handedness);
+    }
+    for (std::size_t i = 0; i < SourceProfileRefusalCount; ++i) {
+        assert(!SourceProfileRefusalName(
+                    static_cast<SourceProfileRefusal>(i)).empty());
+    }
+}
+
+// A value cast in from outside the enum is refused the same way `Unspecified`
+// is. These branches exist because a profile is a plain struct a caller
+// assembles, and a `>= Count` a test never reaches is a `>= Count` that can be
+// wrong.
+void
+TestOutOfRangeConventionsAreRefused()
+{
+    SourceProfile profile = MakeProfile();
+    profile.handedness = static_cast<SourceHandedness>(200);
+    Refuses(profile, "handedness");
+
+    profile = MakeProfile();
+    profile.upAxis = static_cast<SourceAxis>(200);
+    Refuses(profile, "up axis");
+
+    profile = MakeProfile();
+    profile.forwardAxis = static_cast<SourceAxis>(200);
+    Refuses(profile, "forward axis");
+
+    profile = MakeProfile();
+    profile.translationUnit = static_cast<SourceLengthUnit>(200);
+    Refuses(profile, "translation unit");
+
+    profile = MakeProfile();
+    profile.rootTranslation = static_cast<RootTranslationPolicy>(200);
+    Refuses(profile, "root translation policy");
+
+    profile = MakeProfile();
+    profile.rootRotation = static_cast<RootRotationPolicy>(200);
+    Refuses(profile, "root rotation policy");
+
+    profile = MakeProfile();
+    profile.restPose = static_cast<RestPoseSource>(200);
+    Refuses(profile, "rest pose source");
+
+    profile = MakeProfile();
+    profile.unmappedJoints = static_cast<UnmappedJointPolicy>(200);
+    Refuses(profile, "unmapped-joint policy");
+
+    // And nothing out of range names anything.
+    assert(SourceAxisName(static_cast<SourceAxis>(200)).empty());
+    assert(SourceLengthUnitName(static_cast<SourceLengthUnit>(200)).empty());
 }
 
 // There is no default profile and no automatic fallback (roadmap §3.1), and the
@@ -404,6 +516,65 @@ TestAmbiguousJointName()
     assert(match.unmappedJoints == std::vector<std::size_t>{10});
 }
 
+// The one number roadmap §3.1's candidate report prints, and the one way of
+// computing it that is wrong.
+//
+// A required mapping whose name the rig repeats binds nothing and is *not*
+// missing -- it is ambiguous -- so `RequiredMappingCount()` less
+// `missingRequired.size()` counts it as matched. `BoundRequiredCount()` is what
+// the report has to use, and this pins the difference rather than leaving the
+// first detector to find it.
+void
+TestBoundRequiredCountSurvivesAmbiguity()
+{
+    const SourceProfile profile = MakeProfile();
+    assert(profile.RequiredMappingCount() == 6);
+
+    // Nothing ambiguous: the two agree, which is why the wrong arithmetic looks
+    // right for as long as nobody writes this test.
+    SourceProfileMatch match = MatchSourceProfile(profile, MakeSkeleton());
+    assert(match.BoundRequiredCount() == 6);
+    assert(profile.RequiredMappingCount() - match.missingRequired.size() == 6);
+
+    // The rig repeats a name a *required* mapping addresses.
+    SourceSkeleton skeleton = MakeSkeleton();
+    skeleton.joints.push_back(MakeJoint("handL", 3));
+    match = MatchSourceProfile(profile, skeleton);
+
+    assert(match.refusal == SourceProfileRefusal::AmbiguousJointName);
+    assert(match.missingRequired.empty());
+    // The subtraction still says six of six matched ...
+    assert(profile.RequiredMappingCount() - match.missingRequired.size() == 6);
+    // ... and five is the truth.
+    assert(match.BoundRequiredCount() == 5);
+
+    // An optional mapping going ambiguous moves the same way, without touching
+    // the required count.
+    skeleton = MakeSkeleton();
+    skeleton.joints.push_back(MakeJoint("chest", 3));
+    match = MatchSourceProfile(profile, skeleton);
+    assert(match.BoundRequiredCount() == 6);
+    assert(match.bound.size() == 8);
+}
+
+// A binding carries what the mapping declared, so the profile is not needed
+// beside the match to read one.
+void
+TestBindingsCarryRequired()
+{
+    const SourceProfileMatch match =
+        MatchSourceProfile(MakeProfile(), MakeSkeleton());
+    for (const auto& binding : match.bound) {
+        const bool expected = binding.bone == Bone::Hips
+                              || binding.bone == Bone::Spine
+                              || binding.bone == Bone::Head
+                              || binding.bone == Bone::LeftUpperArm
+                              || binding.bone == Bone::LeftLowerArm
+                              || binding.bone == Bone::LeftHand;
+        assert(binding.required == expected);
+    }
+}
+
 void
 TestRequiredJointMissing()
 {
@@ -591,6 +762,7 @@ int
 main()
 {
     TestVocabulary();
+    TestOutOfRangeConventionsAreRefused();
     TestDefaultProfileIsNotAProfile();
     TestValidationRefusals();
     TestUpAndForwardAreDifferentAxes();
@@ -598,6 +770,8 @@ main()
     TestOptionalJointMissing();
     TestRootJointMismatch();
     TestAmbiguousJointName();
+    TestBoundRequiredCountSurvivesAmbiguity();
+    TestBindingsCarryRequired();
     TestRequiredJointMissing();
     TestHierarchyMismatch();
     TestUnsolvedAncestorIsNotAMismatch();

@@ -193,6 +193,13 @@ because a weighting fitted to the exports on hand today would be a producer's
 answer reaching the format-neutral layer through a float instead of through an
 `if`.
 
+The `24/24` above is the one number that arithmetic gets wrong, which is worth
+stating because it is the only figure this section actually prints. A required
+mapping whose name the rig repeats binds nothing *and* is not missing — it is
+ambiguous — so required-count less missing-count reports it as matched. The
+match carries `BoundRequiredCount()` for that reason, and a test pins the two
+apart rather than leaving the first detector to discover it.
+
 ## 4. Rest pose, and who corrects it
 
 BVH `OFFSET` values and the first frame's rotations are the *source* rest, and

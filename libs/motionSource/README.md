@@ -44,7 +44,8 @@ in a diff:
 | An unanimated component is an empty vector, never a run of identity values | `SourceAnimation.h` |
 | Every convention has an `Unspecified` and validation refuses it, so a profile nobody finished is a refusal rather than a silent set of answers | `SourceProfile.h` |
 | A joint map is a hierarchy embedding, not a name lookup — the near-miss profile is the one where every name matched and the body is assembled wrong | `SourceProfile.h` |
-| A match returns facts and never a score; a confidence is the detector's arithmetic over them | `SourceProfile.h` |
+| A match returns facts and never a score; a confidence is the detector's arithmetic over them — except the one count that arithmetic gets wrong, which the match carries | `SourceProfile.h` |
+| A name table is an array sized by its enum and asserted in enumerator order, so a vocabulary that grows without its spelling is a compile error | `SourceProfile.cpp` |
 
 ## Provenance is a neighbour of `MotionSourceMetadata`, not the same type
 

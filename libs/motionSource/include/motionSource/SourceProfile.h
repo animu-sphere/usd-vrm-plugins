@@ -82,7 +82,11 @@ namespace motionSource
 //
 // Values are stable array indices; append only before Count. `Unspecified` is
 // index 0 in every one of them so that a profile nobody finished is refused
-// rather than assumed.
+// rather than assumed. Each `...Count` below is what ties a vocabulary's name
+// table to its enum: the table is an array of that size in enumerator order, so
+// an enumerator appended without its spelling is a compile error rather than a
+// name that silently comes back empty. Seven vocabularies is six too many to
+// keep in step by attention.
 
 enum class SourceHandedness : std::uint8_t
 {
@@ -92,6 +96,9 @@ enum class SourceHandedness : std::uint8_t
 
     Count,
 };
+
+inline constexpr std::size_t SourceHandednessCount =
+    static_cast<std::size_t>(SourceHandedness::Count);
 
 // A **signed** axis, because "up" and "forward" are directions. Producers
 // disagree about the sign as readily as about the letter, and an unsigned axis
@@ -112,6 +119,9 @@ enum class SourceAxis : std::uint8_t
     Count,
 };
 
+inline constexpr std::size_t SourceAxisCount =
+    static_cast<std::size_t>(SourceAxis::Count);
+
 enum class SourceLengthUnit : std::uint8_t
 {
     Unspecified,
@@ -122,6 +132,9 @@ enum class SourceLengthUnit : std::uint8_t
 
     Count,
 };
+
+inline constexpr std::size_t SourceLengthUnitCount =
+    static_cast<std::size_t>(SourceLengthUnit::Count);
 
 // What a root joint's translation samples *are*, which is not the same question
 // as whether the motion is wanted. The two stated values differ in their zero,
@@ -143,6 +156,9 @@ enum class RootTranslationPolicy : std::uint8_t
     Count,
 };
 
+inline constexpr std::size_t RootTranslationPolicyCount =
+    static_cast<std::size_t>(RootTranslationPolicy::Count);
+
 enum class RootRotationPolicy : std::uint8_t
 {
     Unspecified,
@@ -154,6 +170,9 @@ enum class RootRotationPolicy : std::uint8_t
 
     Count,
 };
+
+inline constexpr std::size_t RootRotationPolicyCount =
+    static_cast<std::size_t>(RootRotationPolicy::Count);
 
 // Which of the things a source may state is its rest pose. The three are
 // genuinely different files, not three readings of one: `SourceJoint` carries an
@@ -172,6 +191,9 @@ enum class RestPoseSource : std::uint8_t
     Count,
 };
 
+inline constexpr std::size_t RestPoseSourceCount =
+    static_cast<std::size_t>(RestPoseSource::Count);
+
 // What a source joint the profile maps nothing to means. `Ignore` is silent,
 // `Report` expects a recoverable diagnostic per joint, and `Refuse` stops the
 // conversion — which only a profile listing its `ignoredJoints` can afford.
@@ -184,6 +206,9 @@ enum class UnmappedJointPolicy : std::uint8_t
 
     Count,
 };
+
+inline constexpr std::size_t UnmappedJointPolicyCount =
+    static_cast<std::size_t>(UnmappedJointPolicy::Count);
 
 MOTIONSOURCE_API std::string_view SourceHandednessName(
     SourceHandedness handedness) noexcept;
@@ -372,6 +397,9 @@ enum class SourceProfileRefusal : std::uint8_t
     Count,
 };
 
+inline constexpr std::size_t SourceProfileRefusalCount =
+    static_cast<std::size_t>(SourceProfileRefusal::Count);
+
 MOTIONSOURCE_API std::string_view SourceProfileRefusalName(
     SourceProfileRefusal refusal) noexcept;
 
@@ -381,10 +409,19 @@ struct SourceProfileBinding
     motion::HumanBone bone = motion::HumanBone::Count;
     std::size_t jointIndex = 0;
 
+    // Carried from the mapping, so a match can be counted without the profile
+    // beside it. This is not redundancy: a required mapping whose name the rig
+    // repeats binds nothing *and* is not missing — it is ambiguous — so
+    // `RequiredMappingCount()` less `missingRequired.size()` overstates what
+    // bound, by exactly the number the one report roadmap §3.1 sketches would
+    // print. `BoundRequiredCount()` is the numerator; the subtraction is not.
+    bool required = false;
+
     friend bool operator==(const SourceProfileBinding& lhs,
                            const SourceProfileBinding& rhs) noexcept
     {
-        return lhs.bone == rhs.bone && lhs.jointIndex == rhs.jointIndex;
+        return lhs.bone == rhs.bone && lhs.jointIndex == rhs.jointIndex
+               && lhs.required == rhs.required;
     }
     friend bool operator!=(const SourceProfileBinding& lhs,
                            const SourceProfileBinding& rhs) noexcept
@@ -413,7 +450,9 @@ struct SourceProfileMatch
     std::vector<motion::HumanBone> missingOptional;
     // Rig joints the profile neither maps nor ignores, in joint order.
     std::vector<std::size_t> unmappedJoints;
-    // Mapped names the rig carries more than once, in the profile's order.
+    // Mapped names the rig carries more than once, in the profile's order. A
+    // mapping listed here is in neither `bound` nor the two missing vectors: the
+    // rig carries such a joint twice, which is not the same as not carrying one.
     std::vector<std::string> ambiguousNames;
     // Whether the rig roots at the joint the profile names.
     bool rootMatched = false;
@@ -426,6 +465,13 @@ struct SourceProfileMatch
     // The rig joint bound to `bone`, or nullopt when nothing was.
     MOTIONSOURCE_API std::optional<std::size_t> JointFor(
         motion::HumanBone bone) const;
+
+    // How many of the profile's *required* mappings actually bound — the
+    // numerator of a detector's "required joints matched: n/m", whose
+    // denominator is `SourceProfile::RequiredMappingCount()`. Deriving it by
+    // subtracting `missingRequired` instead is wrong wherever a name is
+    // ambiguous; see `SourceProfileBinding::required`.
+    MOTIONSOURCE_API std::size_t BoundRequiredCount() const noexcept;
 };
 
 // Match `profile` against `skeleton`: bind what the rig carries, and conclude.

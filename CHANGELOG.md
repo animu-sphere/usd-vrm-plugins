@@ -72,7 +72,11 @@ Current schema contract version: **1**.
   detector reporting on candidates that did *not* match. A confidence is that
   detector's arithmetic over the counts: a weighting fitted to the exports on
   hand today would be a producer's answer reaching the format-neutral layer
-  through a float instead of through an `if`.
+  through a float instead of through an `if`. The one count that arithmetic
+  cannot derive is on the match itself — `BoundRequiredCount()`, because a
+  required mapping whose name the rig repeats binds nothing *and* is not
+  missing, so subtracting the missing ones overstates what matched by exactly
+  the figure the sketched candidate report prints.
 
 - **The six semantic diagnostics now have a layer that can raise them, and it is
   not this one.** The question was open against the profile contract as the
