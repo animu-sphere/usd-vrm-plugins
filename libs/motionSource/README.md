@@ -27,13 +27,13 @@ The value model and its invariants, and the profile contract over them:
 | `SourceProfile.h` | what one producer's export means: the stated vocabulary, `SourceProfile`, `ValidateSourceProfile`, `MatchSourceProfile` and its typed refusals |
 | `SourceProfileFile.h` | a profile as a file: the keys, the small language they are written in, and the line a file that gets one wrong is told about |
 | `CanonicalMetadata.h` | provenance's crossing into `motionCore` |
+| `CanonicalConversion.h` | the converter: the change of basis, the angle composition, the path rule, the rest pose, the root policies, and the four ways a conversion refuses |
 
 The profiles themselves are **data**, in [`profiles/motion/`](../../profiles/motion/)
 rather than here: a product name may appear in one precisely because no code in
 this library has a name for it.
 
-Still to come: the second producer's profile, and the converter from a skeleton,
-an animation and a profile to `motion::HumanoidAnimation`
+Still to come: the second producer's profile
 ([§12](../../docs/roadmap/recorded-motion-sources.md)).
 
 ## The decisions the model is shaped by
@@ -53,6 +53,10 @@ in a diff:
 | A name table is an array sized by its enum and asserted in enumerator order, so a vocabulary that grows without its spelling is a compile error | `SourceProfile.cpp` |
 | A profile file is a stated subset and an unknown key is refused, because a `requred:` quietly dropped unbinds a joint the profile called mandatory | `SourceProfileFile.h` |
 | A profile that is read is already valid, so no caller re-proves that there is no default profile | `SourceProfileFile.h` |
+| The change of basis is one signed permutation and handedness is its determinant, so a left-handed source is mirrored once rather than corrected twice | `CanonicalConversion.h` |
+| A bound bone's local rotation is the composition of the path above it, so a joint no profile maps is not a rotation thrown away | `CanonicalConversion.h` |
+| The rest pose is built by that same walk, because a second traversal is a second traversal that can disagree with the first | `CanonicalConversion.h` |
+| A quaternion track is refused with a reason, because no reader writes one and converting it would test a path against a value this repository invented | `CanonicalConversion.h` |
 
 ## Provenance is a neighbour of `MotionSourceMetadata`, not the same type
 
@@ -86,8 +90,12 @@ product name and its *code* never does, which is the line
 [WORKSPACE.md §1](../../docs/architecture/WORKSPACE.md) draws and the test of
 whether it has been crossed: ship every profile and this library is
 byte-identical. `motionSource_boundaries` checks it on every build, together
-with the claim that only `CanonicalMetadata` and `SourceProfile` name a
-canonical type at all.
+with the claim that exactly four files name a canonical type at all —
+`CanonicalMetadata`, `SourceProfile`, `SourceProfileFile` and
+`CanonicalConversion` — and that only those four name a `Gf` value type. Stage,
+`Sdf` and plugin APIs are forbidden in every file including the converter's:
+authoring a clip belongs to a caller, and a library that opened a stage would
+have stopped being one.
 
 ## Build
 

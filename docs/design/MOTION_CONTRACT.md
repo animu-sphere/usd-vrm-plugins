@@ -401,3 +401,105 @@ the mapping — packing a profile id into `sourceId`, say — fails there.
 recorded so a conversion is reproducible and auditable; code that read it to
 decide behavior would be the producer-conditional core the whole profile design
 exists to prevent ([WORKSPACE.md §1](../architecture/WORKSPACE.md)).
+
+## The canonical basis, stated (v0.7.0)
+
+Canonical motion is **right-handed, +Y up, +Z forward, metres**. Three of those
+four were already written down at the top of this document; the forward axis was
+not, and the recorded-file converter is the first code in this repository that
+has to *state* it rather than inherit it.
+
+It is a recording of an existing fact and not a new decision, which is worth
+saying because it could easily be read as one. Two independent things in the
+tree already answer it. The VMC adapter converts a left-handed, +Y-up,
++Z-forward sender into canonical by flipping X alone and leaving Z untouched
+(`vrmAdapterVmc/SkeletonMap.cpp`), so the sender's forward is canonical's. And
+the avatars this motion is retargeted onto face +Z by their own specification,
+which is what the whole pipeline is aimed at. Anything else would have been
+noticed already — as a character walking backwards, which is exactly the class
+of failure that looks like a result.
+
+What forced the statement is that a producer profile declares a `forwardAxis`
+and a `handedness`, and a converter cannot map "+Z forward" onto canonical
+without knowing which way canonical faces. `motionSource::CanonicalBasis` is
+that mapping made a value: a signed permutation of the three components whose
+**determinant is the handedness question** — +1 where the change of basis is a
+rotation, -1 where a left-handed source has to be mirrored to reach a
+right-handed canonical space. A position is `M v`; a rotation is
+`(w, det(M) · M v)`, which is the same conjugation written for quaternions.
+
+The determinant also settles the angle convention, and this is the part a second
+implementation would most likely get wrong twice. Euler angles are composed into
+quaternions by the **right-hand rule always**, out of the raw numbers, with no
+reference to the source's handedness — a left-handed source's positive angle
+then comes out negated in canonical space, which is what a left-hand-rule
+rotation *is* once mirrored. Applying handedness in both places produces a body
+that is correct in every axis-aligned test pose and wrong the moment anything
+turns, so `motionSource_conversion` checks the rotation half *physically*: a
+direction is rotated and the answer compared against where that direction has to
+end up, because a component-against-component test agrees with a mirrored
+implementation as readily as with a correct one.
+
+A named Euler order composes **intrinsically**: `ZXY` is `qZ * qX * qY`, so the
+last-declared angle is applied first and each successive one turns about axes
+the previous have already moved. Nothing in the source model states this —
+`SourceEulerOrder` says only which angle is stored where — so the converter is
+where it is decided, and it is written down because the opposite reading also
+produces plausible motion: mirrored about the order, agreeing exactly wherever
+one axis moves at a time.
+
+## Recorded-source rest pose and the path rule (v0.7.0)
+
+A producer profile maps a rig onto the canonical humanoid, which has fewer
+joints than any real rig. **A bound bone's local rotation is the composition of
+the source local rotations from just below its nearest bound ancestor down to
+itself, root-first.** The joints in between are not rotations to drop — a joint
+between two mapped ones is *on the path* between them — and a converter taking a
+mapped joint's local rotation verbatim would lose every rotation above it and
+place the arms and head wrong. That reads as a subtly misassembled body rather
+than as a failure, which is why the rule is stated here rather than left to be
+found as a bug in a retarget nobody can localise.
+
+It belongs to the converter and not to a profile: a profile that could state it
+would be stating an algorithm, and profiles are declarative
+([recorded-motion-sources.md §3](../roadmap/recorded-motion-sources.md)). What a
+profile's choice of *which* joints to map changes is how a chain's bend is
+distributed, never the chain's total orientation — the composition preserves
+that whatever the profile chose.
+
+The same walk builds the clip's rest pose, from whichever rotations the profile
+says are the rest (`restPose: rest-offsets` | `stated-rest-rotations` |
+`first-frame`) and from the rest offsets along the path. One composition with
+two callers, deliberately: a rest pose derived by a second traversal is a second
+traversal that can disagree with the first, and the disagreement would appear as
+a constant per-bone offset that looks like a bad capture.
+
+`motionSource::CanonicalRestPose` carries a local rotation and a local
+translation per bone plus a presence bitset, and **no parent array**: the
+semantic parent of a bone within a rig carrying `present` is
+`motion::NearestPresentAncestor`, and a second copy of the humanoid taxonomy is
+the defect `HumanBoneParent` was moved into `motionCore` to avoid. It is
+deliberately not a field of `motion::HumanoidAnimation` — that type is compared
+by `operator==` and round-tripped through the recorded-trace format, so a field
+added to it is one every live-capture consumer inherits. It is
+`vrmRetarget::SourceRestPose`-shaped and never meets it in code: a semantic clip
+stands between them, and `motion_retarget` reads the rest back off the stage.
+Should a third shape of the same value appear, that is the point at which it
+belongs in `motionCore` rather than beside each caller.
+
+**Root translation and root rotation are the profile's two questions.**
+`AbsolutePosition` and `RestRelative` differ only in where their zero is, and
+both become the same canonical thing — an absolute position in the clip's own
+space, which is what `vrmRetarget` subtracts each rig's own hips rest from.
+`RootTranslationPolicy::None` drops the channel. `RootRotationPolicy::None`
+drops the root's rotation *everywhere*, including out of the path composition:
+a scene node's rotation reaching the first bound bone below it is body motion
+invented from a transform that says nothing about a body.
+
+**A track expressed as quaternions is refused**, with the reason, until a reader
+writes one. Nothing in the tree does, so converting it would mean implementing a
+path no fixture exercises end to end and testing it against a value this
+repository invented. The alternative recorded in
+[§10](../roadmap/recorded-motion-sources.md) — a synthetic fixture, said in the
+corpus to be synthetic — stays open and is what a reader producing quaternions
+would arrive with.

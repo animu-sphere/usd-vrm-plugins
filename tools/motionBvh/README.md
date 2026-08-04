@@ -67,15 +67,21 @@ executable in it.
 
 ```sh
 cmake -S tools/motionBvh -B build/motion-bvh-tools \
-      -DCMAKE_PREFIX_PATH=<prefix holding motionBvh>
+      -DCMAKE_PREFIX_PATH="<prefix holding motionBvh and motionSource>;<usd-install>"
 cmake --build build/motion-bvh-tools --config Release
 ctest --test-dir build/motion-bvh-tools -C Release --output-on-failure
 ```
 
-No OpenUSD, and no `CMAKE_PREFIX_PATH` entry for one: this executable links
-`motionBvh` and nothing else. `motion_bvh_inspect_boundaries` checks that on
-every build, against the binary's real imports rather than against the link
-line.
+**OpenUSD is needed to configure, and by nothing this tool contains.**
+`find_package(motionBvh)` resolves `motionSource` and, through it, `pxr` — the
+declared `motionBvh -> motionSource` edge — so the prefix path needs an OpenUSD
+install even though no source file here names a `Gf` type and no code path
+reaches one. On macOS the linker also records those dylibs on the executable,
+because ld64 keeps every library on the link line whether or not a symbol is
+used; MSVC and GNU ld with `--as-needed` do not. All three are correct about
+their own artifact, which is why `motion_bvh_inspect_boundaries` no longer
+inspects one — it checks the link line and the source, both of which say the
+same thing on every platform.
 
 ## Tests
 

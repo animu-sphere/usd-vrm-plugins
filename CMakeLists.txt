@@ -80,15 +80,9 @@ if(USDVRM_BUILD_TESTS)
     endif()
 endif()
 
-# vrmContainer and motionBvh have no OpenUSD dependency, so they can be added
-# before the single workspace-wide OpenUSD resolution below. For motionBvh that
-# is a statement rather than a convenience: its syntax layer reads three numbers
-# off an OFFSET line and does not know the file's basis or unit, so it has no
-# value type to borrow from Gf (libs/motionBvh/include/motionBvh/BvhDocument.h).
-# It moves below the resolution the day its extractor takes the declared
-# motionBvh -> motionSource edge (WORKSPACE.md §2).
+# vrmContainer has no OpenUSD dependency, so it is added before the single
+# workspace-wide OpenUSD resolution below.
 add_subdirectory("libs/vrmContainer")
-add_subdirectory("libs/motionBvh")
 
 # Resolve OpenUSD once for the whole project; bundles reuse the result.
 find_package(pxr REQUIRED CONFIG)
@@ -109,6 +103,15 @@ add_subdirectory("libs/vrmRetarget")
 # input and recorded files meet at motionCore and nowhere earlier
 # (motion policy §8.3).
 add_subdirectory("libs/motionSource")
+
+# The recorded-file half's reader, above the layer it hands its extraction to.
+# It used to be added before the OpenUSD resolution above, and that position was
+# a statement rather than a convenience: the syntax layer reads three numbers off
+# an OFFSET line and has no value type to borrow from Gf. It moved here when the
+# extractor took the declared motionBvh -> motionSource edge (WORKSPACE.md §2),
+# which is the arrow this line's position now says out loud. It still names no
+# OpenUSD of its own; what it needs configured first is motionSource.
+add_subdirectory("libs/motionBvh")
 
 # Discover every plugin bundle under plugins/ rather than naming them one by one:
 # an immediate plugins/<name>/ that carries both an openstrata.plugin.yaml (the

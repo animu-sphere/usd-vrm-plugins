@@ -390,6 +390,7 @@ turned out differently in practice:
 | **BVH-0** — contract and fixtures | real samples from mocopi and a second producer; joints, hierarchy, channels, unit, axis measured; the `motionSource` model and profile schema settled; the diagnostic set frozen | 🚧 |
 | **BVH-1** — syntax | `BvhDocument`, the parser, `motion_bvh_inspect`, malformed fixtures, deterministic tests | ✅ |
 | **BVH-2** — semantics | the `motionSource` API, the profile API, the mocopi profile, the second producer's, basis and unit conversion, source rest pose, root policy, `HumanoidAnimation`, the semantic clip writer | 🚧 |
+| ↳ what remains of BVH-2 | the **second producer's profile** and the **semantic clip writer**. Everything else landed 2026-08-05: the value model, the profile contract and file, the extractor, and the converter — basis, unit, rest pose, root policy and `HumanoidAnimation` all reached over the one real export, checked against the `.bvh` text | 🚧 |
 | **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, artifact-only smoke, the recorded corpus | ⬜ |
 | **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | ⬜ |
 
@@ -484,17 +485,31 @@ depends on them ([docs/README.md](../README.md)).
   `protocol`, and always `kind = Clip`, dropping the producer version and the
   profile id — the narrowing is pinned by a test rather than by a sentence.
   Semantics: [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#recorded-source-provenance-v070).
-- ⬜ **The quaternion rotation form has no producer, and the converter has to
-  decide what that costs.** `SourceJointTrack` carries angles-with-an-order *or*
-  quaternions, because composing three angles needs the handedness a profile
-  supplies and decomposing a quaternion would invent an order the writer never
-  declared — so neither converts into the other before a profile is in hand.
-  Nothing in the tree writes the quaternion form today, which means the
-  converter would implement a path no fixture exercises end to end. Two honest
-  answers: refuse a quaternion track with a stated reason until a reader
-  produces one, or add a synthetic fixture and say in the corpus that it is
-  synthetic. Choosing at the converter is fine; arriving at the converter
-  without having noticed is what this entry prevents.
+- ✅ **The quaternion rotation form has no producer, and the converter decided
+  what that costs** (2026-08-05, with the converter). `SourceJointTrack` carries
+  angles-with-an-order *or* quaternions, because composing three angles needs the
+  handedness a profile supplies and decomposing a quaternion would invent an
+  order the writer never declared — so neither converts into the other before a
+  profile is in hand. Of the two honest answers, the **first** was taken: a
+  quaternion track is refused as `UnsupportedRotationForm`, naming the joint and
+  saying that no reader writes this form yet. The second — a synthetic fixture,
+  said in the corpus to be synthetic — stays open and is what a reader producing
+  quaternions arrives with. What settled it is that the refused path costs one
+  branch and the implemented one would cost a code path tested only against a
+  value this repository invented.
+- ✅ **The canonical basis had a forward axis nobody had written down**
+  (2026-08-05, with the converter). Three of the four canonical conventions were
+  in [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md) already; the forward axis
+  was not, and a converter that has to map a profile's `forwardAxis` onto
+  canonical cannot proceed without it. It is recorded as **+Z**, which is a
+  reading of the tree rather than a new decision — the VMC adapter's existing
+  conversion leaves a +Z-forward sender's forward untouched, and the avatars this
+  is retargeted onto face +Z by specification. Two things now depend on it in
+  code: `CanonicalBasis`, whose determinant is the handedness question, and the
+  rule that angles are composed by the right-hand rule *always*, leaving the
+  mirror to that determinant. Handling handedness in both places is the failure
+  the contract section spells out, because it is correct in every axis-aligned
+  test pose.
 - ✅ **The six semantic diagnostics are raised by the caller, from typed refusals
   the profile API returns** (2026-08-05, with the profile contract). The frozen
   set ([§6](#6-diagnostics)) lives in the reader, named for the format it reads,
@@ -515,20 +530,25 @@ depends on them ([docs/README.md](../README.md)).
   not one-to-one and does not need to be — an ambiguous joint name has no code
   of its own and is a profile mismatch — which is exactly why the refusal names
   the event rather than the code.
-- ⬜ **A mapped bone's local rotation is the composition of the path above it,
-  and nothing implements that yet.** A profile maps a rig's joints onto the
-  canonical humanoid, which has fewer of them: the first real one leaves four
-  spine segments and a neck segment mapped to nothing
+- ✅ **A mapped bone's local rotation is the composition of the path above it,
+  and the converter implements it** (2026-08-05). A profile maps a rig's joints
+  onto the canonical humanoid, which has fewer of them: the first real one leaves
+  four spine segments and a neck segment mapped to nothing
   ([§9](#9-milestones)). Those are not joints to drop — each sits *between* two
   mapped ones, so a converter that took a mapped joint's local rotation verbatim
   would lose every rotation above it and place the arms and head wrong, which
-  reads as a subtly misassembled body rather than as a failure. The rule that
-  avoids it is one sentence — a bound bone's local rotation is the composition
-  of the source local rotations from its nearest bound ancestor down to it — and
-  it belongs to the converter rather than to a profile, because a profile that
-  could state it would be stating an algorithm. It is written here so the
-  converter meets it as a decision already taken rather than as a bug in a
-  retarget nobody can localise.
+  reads as a subtly misassembled body rather than as a failure. The rule is one
+  sentence — a bound bone's local rotation is the composition of the source local
+  rotations from just below its nearest bound ancestor down to it — and it
+  belongs to the converter rather than to a profile, because a profile that could
+  state it would be stating an algorithm. Written here before the converter
+  existed, it arrived as a decision already taken rather than as a bug in a
+  retarget nobody could localise. Two things landed with it that the sentence did
+  not say: the **rest pose is built by the same walk**, so one composition serves
+  both and cannot disagree with itself, and *which* bones absorbed a chain is
+  reported (`ConversionReport::composedBones`) because a cross-source comparison
+  will want to know. Over the one real export it is four: `spine`, `chest`,
+  `upperChest` and `head`.
 - 🚧 **Profiles need a packaging answer.** They are data that must reach an
   artifact-only smoke test, so `share/usd-vrm-plugins/profiles/motion/` is named
   in WORKSPACE.md §5. **The plain-CMake half is done and measured**
@@ -537,6 +557,25 @@ depends on them ([docs/README.md](../README.md)).
   not — 0.21.0 has no notion of a data-only member, and whether a packaged
   product carries these files is untested. This is the same shape as the adapter
   packaging gap ([report 34](../reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md)).
+- ✅ **A binary import check cannot survive this chain, and that is measured**
+  (2026-08-05, with the converter). `motionBvh` refused any OpenUSD library in a
+  built artifact's imports, which was the strongest form its "no OpenUSD" claim
+  could take. Once the extractor took the edge to `motionSource` — and through it
+  to `motionCore`'s `Gf` value types — what that check reports became the
+  *linker's* answer rather than the library's: MSVC pulls only the archive
+  members that resolve a symbol, GNU ld with `--as-needed` drops the resulting
+  unused entries, and Apple's ld64 records every library on the link line whether
+  or not one is used. All three are right about their own artifact, so one source
+  tree produces two answers. **It cost a red macOS lane to establish**, on a
+  claim verified on Windows and generalised in the same change — the same failure
+  shape as the quaternion-precision one, and the reason this entry exists rather
+  than a quieter fix. The check is removed rather than narrowed on both
+  `motionBvh` and `motion_bvh_inspect`; the source rule, which forbids every
+  OpenUSD name in every file of the library, is platform independent and carries
+  the claim. Two consequences are stated where somebody meets them rather than
+  discovered: a standalone configure of `tools/motionBvh` now needs OpenUSD on
+  the prefix path, because `find_package(motionBvh)` resolves `motionSource` and
+  through it `pxr`; and on macOS `motion_bvh_inspect` records those dylibs.
 - 🚧 **The workspace graph gate reaches both libraries, measured rather than
   assumed.** `ost plugin test --workspace --graph-only` reported `5 libraries, 7
   library edge(s)` with `motionBvh` committed and `6 libraries, 8 library
@@ -619,7 +658,19 @@ One PR never introduces a boundary and a large feature together:
    this plan is shaped around, wearing the shape of progress
 7. the second producer's profile
 8. a DCC interoperability profile (optional)
-9. BVH → canonical animation conversion
+9. ✅ BVH → canonical animation conversion, in two commits because it is two
+   layers and the boundary between them is the point. **The extractor**
+   (`motionBvh`) turns a document into `motionSource` values and is what took the
+   declared edge — a channel set becomes a track, and nothing about a unit, an
+   axis, a handedness or a bone travels with it; three shapes BVH permits and the
+   value model does not are refused rather than reinterpreted. **The converter**
+   (`motionSource`) is the change of basis as one signed permutation whose
+   determinant is the handedness question, the intrinsic Euler composition, the
+   path rule and the rest pose it also builds, the two root policies, and the
+   four ways a conversion refuses. A test that holds a reader and a profile at
+   once — which neither library may — drives the real export the whole way and
+   checks every number against the `.bvh` text rather than against the converter
+   (2026-08-05)
 10. `motion_bvh_convert`
 11. the retarget end-to-end test
 12. 🚧 the recorded corpus and its manifest — the split, the manifest shape, the

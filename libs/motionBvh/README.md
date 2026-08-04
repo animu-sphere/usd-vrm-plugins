@@ -19,13 +19,34 @@ half of that claim on every build.
 
 ## What is here today
 
-The syntax half: the model (`BvhDocument.h`), the parser (`BvhParser.h`), and
-the frozen diagnostic set (`Diagnostics.h`). The extractor that turns a
-`BvhDocument` into `motionSource` values arrives with `motionSource` itself, and
-brings the declared `motionBvh -> motionSource` edge with it
-([WORKSPACE.md §2](../../docs/architecture/WORKSPACE.md)). Until then this
-library links nothing at all — not even OpenUSD's value types, because three
-numbers on an `OFFSET` line are not a vector in any basis this layer knows.
+Both halves. The syntax model (`BvhDocument.h`), the parser (`BvhParser.h`), the
+frozen diagnostic set (`Diagnostics.h`), and the extractor (`BvhExtract.h`) that
+turns a `BvhDocument` into `motionSource` values — which is what took the
+declared `motionBvh -> motionSource` edge
+([WORKSPACE.md §2](../../docs/architecture/WORKSPACE.md)).
+
+That edge is the library's only one, and it is not a route to OpenUSD by another
+name: `motionSource` links `motionCore`, whose `Gf` value types nothing here
+names, because three numbers on an `OFFSET` line are not a vector in any basis
+this layer knows.
+
+What the edge cost is the **binary** half of the boundary check, which is now
+removed rather than narrowed. Whether a built artifact records an OpenUSD import
+turns out to be the linker's answer and not this library's: MSVC pulls only the
+archive members something references, GNU ld with `--as-needed` drops the
+resulting unused entries, and Apple's ld64 records every library on the link
+line regardless. One source tree, two answers, so the check was measuring a
+toolchain. The rule that survives is about **source** — no OpenUSD name in any
+file here, extractor included — and it is platform independent.
+`tests/check_boundaries.py` carries the measurement.
+
+What the extractor decides is how a channel set becomes a track, and nothing
+else. Three of those answers are worth knowing before reading a converted clip:
+position channels **state** a joint's local translation rather than adding to
+its `OFFSET`; a component a joint did not animate falls back to the `OFFSET`
+rather than to zero; and the Euler order is the *relative* order of the rotation
+channels, whatever position channels sit between them. Each is argued in
+`BvhExtract.h`.
 
 ## The four rules the parser is shaped by
 
@@ -42,9 +63,15 @@ Each one is a decision, and each is argued where it is implemented:
 
 Eleven `VRM_BVH_*` codes, frozen before the parser was written
 ([§6](../../docs/roadmap/recorded-motion-sources.md)). Five are syntax and are
-the only ones this library raises; six are semantics and belong to the layer
-where a document meets a profile. `DiagnosticIsSyntax` states the split, and the
+the only ones the parser raises; six are semantics and belong to the layer where
+a document meets a profile. `DiagnosticIsSyntax` states the split, and the
 boundary check fails a parser source that names a semantic code.
+
+The extractor is granted exactly one of the six, `VRM_BVH_INVALID_ROTATION_ORDER`,
+by name in that check. The grant is narrow because the reason is: a joint
+declaring two rotation channels, or the same axis twice, forms no Euler order
+whoever wrote the file — no profile is involved, and the layer raising it holds
+none.
 
 A failure the set does not name is `VRM_BVH_PARSE_FAILED` with a precise
 `detail` — a file declaring ten frames and carrying eight is the standing
@@ -54,14 +81,16 @@ freezing the set prevents.
 ## Build
 
 ```sh
-cmake -S libs/motionBvh -B build/motion-bvh
+cmake -S libs/motionBvh -B build/motion-bvh -DCMAKE_PREFIX_PATH="<motionSource-prefix>;<usd-install>"
 cmake --build build/motion-bvh --config Release
 ctest --test-dir build/motion-bvh -C Release --output-on-failure
 cmake --install build/motion-bvh --prefix <prefix> --config Release
 ```
 
-No `CMAKE_PREFIX_PATH` is needed, which is itself the point: this library has no
-OpenUSD dependency to resolve.
+A standalone configure needs `motionSource` on the prefix path, and OpenUSD
+behind it — `motionSource` reaches `motionCore`, which is where the `Gf` value
+types come from. Nothing here names one; the prefix is for the edge, not for
+this library's own code.
 
 Consumers use the installed package contract:
 

@@ -7,15 +7,20 @@
 # an adapter, because it carries no producer name -- only the profile data
 # beside it does.
 #
-# `requires` is empty on purpose and is not an oversight: the syntax layer links
-# nothing at all, not even OpenUSD's value types. The declared
-# `motionBvh -> motionSource` edge (WORKSPACE.md §2) is added here in the same
-# change as the extractor that needs it.
+# One edge, and it is the only one this library ever acquires: the extractor
+# turns a document into `motionSource` values (WORKSPACE.md §2). It never
+# reverses -- the day `motionSource` gains a BVH-shaped field is the day a second
+# reader cannot be added -- and motionCore arrives only through it, never named
+# here and never named in this library's code.
 schema: openstrata.library/v1alpha1
 library:
   id: motionBvh
   # Mirrors VERSION; release preparation updates this in lockstep.
   version: 0.6.0
+requires:
+  libraries:
+    - id: motionSource
+      version: ">=0.6,<0.7"
 cmake:
   package: motionBvh
   target: motionBvh::motionBvh

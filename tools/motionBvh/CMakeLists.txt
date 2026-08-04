@@ -4,12 +4,19 @@
 # it in this same directory (WORKSPACE.md §1), which is why the project is named
 # after the layer rather than after the first executable in it.
 #
-# No OpenUSD, and that is the same statement libs/motionBvh makes rather than a
-# convenience: this tool prints what a file says, and the values it prints have
-# no basis, no unit and no axis for a Gf type to imply. `motion_bvh_convert`
-# will link OpenUSD's stage libraries when it lands, because authoring a clip is
-# what it is for -- the two tools sharing a directory does not make them share a
-# link line.
+# This tool names no OpenUSD: it prints what a file says, and the values it
+# prints have no basis, no unit and no axis for a Gf type to imply. What it can
+# no longer claim is that OpenUSD is absent from its *configure* and its
+# artifact. `find_package(motionBvh)` now resolves motionSource and, through it,
+# pxr -- so a standalone configure of this directory needs OpenUSD on the prefix
+# path even though nothing here references it, and on macOS the linker records
+# those dylibs on the executable as well. Both are the cost of the declared
+# motionBvh -> motionSource edge and are stated in the README rather than
+# discovered by whoever follows its build recipe.
+#
+# `motion_bvh_convert` will link OpenUSD's stage libraries when it lands,
+# because authoring a clip is what it is for -- the two tools sharing a
+# directory does not make them share a link line.
 
 cmake_minimum_required(VERSION 3.22)
 
@@ -64,7 +71,9 @@ if(MSVC)
 endif()
 # No NOMINMAX / _USE_MATH_DEFINES pair here, unlike every other tool in this
 # workspace: those exist for windows.h meeting OpenUSD's numeric_limits<> uses,
-# which arrive through motionCore. Nothing on this link line reaches them.
+# which arrive through motionCore. motionCore is now on this link line
+# transitively, but no header this tool includes reaches those uses -- it
+# includes the syntax half only, and BvhExtract.h is where motionSource starts.
 
 # Staged into the member root's bin/, the way `motion_capture` and `vmc_record`
 # are: `ost plugin package` reads the directories openstrata.tool.yaml declares

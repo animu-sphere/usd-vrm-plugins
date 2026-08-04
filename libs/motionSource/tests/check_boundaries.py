@@ -17,13 +17,23 @@ makes that possible rather than merely intended:
   literal is not.
 * **The crossing into canonical motion is a list, and the list is short.** The
   model is expressed in the source's own basis, unit and angle convention, so it
-  names no Gf type and no humanoid bone. Three files are permitted a canonical
+  names no Gf type and no humanoid bone. Four files are permitted a canonical
   type -- `CanonicalMetadata`, which derives the canonical provenance,
-  `SourceProfile`, whose joint map has a `HumanBone` on its right-hand side, and
+  `SourceProfile`, whose joint map has a `HumanBone` on its right-hand side,
   `SourceProfileFile`, which reads that right-hand side out of a file and cannot
-  do it without naming what it reads -- and the permitted set is a list in this
-  script: a later file that needs the crossing adds itself here, in review,
-  rather than acquiring it quietly.
+  do it without naming what it reads, and `CanonicalConversion`, which produces
+  canonical motion and could not do it without naming what canonical motion is
+  made of -- and the permitted set is a list in this script: a later file that
+  needs the crossing adds itself here, in review, rather than acquiring it
+  quietly.
+
+  The crossing now has two halves, because the converter needs the one thing the
+  other three did not: OpenUSD's *value* types. `GfVec3f` and `GfQuatf` are
+  permitted in the same four files and nowhere else, so "a value in a basis this
+  layer does not know is not a geometric vector" still holds everywhere except
+  the one file that does know the basis. Stage, Sdf and plugin APIs stay
+  forbidden in every file, converter included -- authoring is a caller's, and a
+  library that opened a stage would have stopped being one.
 * **No live-input and no target rig.** Live capture and recorded files meet at
   `motionCore` and nowhere earlier, and turning source motion onto a target rig
   is `vrmRetarget`'s job, once.
@@ -73,12 +83,14 @@ FORMAT_NAMES = [
 # a new file genuinely needs the crossing. `SourceProfileFile` was the third and
 # was granted for the narrowest possible reason: a joint map's right-hand side is
 # a bone, so a reader of that map has to be able to turn a written word into one.
-# The converter will be the next, because producing a `motion::HumanoidAnimation`
-# is what it is for -- and it is the last one this library has a reason to grant.
+# `CanonicalConversion` is the fourth and the last one this library has a reason
+# to grant: producing a `motion::HumanoidAnimation` is what a converter is for,
+# and anything after it would be a second converter.
 CANONICAL_FILES = {
     "CanonicalMetadata.h", "CanonicalMetadata.cpp",
     "SourceProfile.h", "SourceProfile.cpp",
     "SourceProfileFile.h", "SourceProfileFile.cpp",
+    "CanonicalConversion.h", "CanonicalConversion.cpp",
 }
 
 
@@ -132,17 +144,22 @@ def main() -> int:
     formats = re.compile(
         r"\b(?:" + "|".join(re.escape(n) for n in FORMAT_NAMES) + r")\b",
         re.IGNORECASE)
-    # OpenUSD value and stage types, the schema and retarget layers, and the live
-    # half of the input layer. None of these is permitted anywhere here, in any
-    # file: a value in a basis this layer does not know is not a geometric
-    # vector, a target rig is `vrmRetarget`'s, and live input meets recorded
+    # OpenUSD's stage, schema and plugin APIs, the schema and retarget layers,
+    # and the live half of the input layer. None of these is permitted anywhere
+    # here, in any file, converter included: authoring a stage belongs to a
+    # caller, a target rig is `vrmRetarget`'s, and live input meets recorded
     # input at `motionCore` and nowhere earlier.
     forbidden_api = re.compile(
-        r"pxr/|PXR_NAMESPACE|\bGf(?:Vec|Quat|Matrix)|\bUsd[A-Z]|\bSdf[A-Z]|"
-        r"TF_REGISTRY_FUNCTION|vrmRetarget|vrmSchema|vrmContainer|"
-        r"motionRuntime|vrmAdapter|\bTargetSkeleton\b")
-    # Canonical motion, permitted only where the crossing is declared.
-    canonical_api = re.compile(r"\bmotion::|motionCore|\bHumanBone\b")
+        r"\bUsd[A-Z]|\bSdf[A-Z]|TF_REGISTRY_FUNCTION|"
+        r"vrmRetarget|vrmSchema|vrmContainer|motionRuntime|vrmAdapter|"
+        r"\bTargetSkeleton\b")
+    # OpenUSD's value types, and canonical motion itself. Both are permitted
+    # only where the crossing is declared, and they are one rule rather than two
+    # because they answer one question: whether this file is allowed to say what
+    # canonical motion is made of.
+    canonical_api = re.compile(
+        r"\bmotion::|motionCore|\bHumanBone\b|"
+        r"pxr/|PXR_NAMESPACE|\bGf(?:Vec|Quat|Matrix)")
 
     for area in (source / "include", source / "src"):
         for path in sorted(area.rglob("*")):

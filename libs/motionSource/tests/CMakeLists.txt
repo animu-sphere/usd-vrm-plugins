@@ -21,13 +21,17 @@ add_executable(motionSource_profile_tests test_source_profile.cpp)
 # The profile as a file: the keys, and the line a file that gets one wrong is
 # told about.
 add_executable(motionSource_profileFile_tests test_source_profile_file.cpp)
+# The converter: the change of basis, the angle composition, the path rule, and
+# the four ways a conversion refuses.
+add_executable(motionSource_conversion_tests test_canonical_conversion.cpp)
 
 set(_motion_source_tests
     motionSource_skeleton_tests
     motionSource_animation_tests
     motionSource_provenance_tests
     motionSource_profile_tests
-    motionSource_profileFile_tests)
+    motionSource_profileFile_tests
+    motionSource_conversion_tests)
 
 foreach(_motion_source_test ${_motion_source_tests})
     target_link_libraries(${_motion_source_test} PRIVATE
@@ -47,6 +51,7 @@ add_test(NAME motionSource_animation COMMAND motionSource_animation_tests)
 add_test(NAME motionSource_provenance COMMAND motionSource_provenance_tests)
 add_test(NAME motionSource_profile COMMAND motionSource_profile_tests)
 add_test(NAME motionSource_profileFile COMMAND motionSource_profileFile_tests)
+add_test(NAME motionSource_conversion COMMAND motionSource_conversion_tests)
 
 # Every profile this repository ships, read by the library that defines what one
 # is. It takes the directory rather than referencing a target from another
@@ -65,11 +70,11 @@ if(WIN32)
     else()
         set(_motion_source_gf pxr::gf)
     endif()
-    # This library names no Gf type, but it links motionCore, which does -- so
-    # the test executables can still import usd_gf.dll, which pulls usd_tf.dll ->
-    # tbb.dll from bin/ plus python3xx.dll from the Python install. An activated
-    # `ost` session has all three on PATH; a plain-CMake `ctest` run does not,
-    # and the test exits 0xC0000135 (DLL not found) without them.
+    # The converter names Gf types and the rest of this library links motionCore,
+    # which does -- so the test executables import usd_gf.dll, which pulls
+    # usd_tf.dll -> tbb.dll from bin/ plus python3xx.dll from the Python install.
+    # An activated `ost` session has all three on PATH; a plain-CMake `ctest` run
+    # does not, and the test exits 0xC0000135 (DLL not found) without them.
     set(_motion_source_test_path
         "PATH=path_list_prepend:$<TARGET_FILE_DIR:motionSource>"
         "PATH=path_list_prepend:$<TARGET_FILE_DIR:${_motion_source_gf}>"
@@ -82,7 +87,7 @@ if(WIN32)
     endif()
     set(_motion_source_test_names
         motionSource_skeleton motionSource_animation motionSource_provenance
-        motionSource_profile motionSource_profileFile)
+        motionSource_profile motionSource_profileFile motionSource_conversion)
     if(EXISTS "${_motion_source_profiles}")
         list(APPEND _motion_source_test_names motionSource_shippedProfiles)
     endif()

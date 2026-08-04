@@ -49,6 +49,90 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **A recording plus what its producer meant becomes canonical humanoid motion.**
+  `CanonicalConversion.h` is the last crossing `motionSource` has a reason to
+  grant, and four of its decisions are worth reading before a converted clip is.
+  *The change of basis is one signed permutation and handedness is its
+  determinant* — +1 where the change is a rotation, -1 where a left-handed source
+  has to be mirrored — so a position is `M v` and a rotation is
+  `(w, det(M) · M v)`. That one sign also settles the angle convention: Euler
+  angles are composed by the right-hand rule **always**, out of the raw numbers,
+  and a left-handed source's positive angle comes out negated in canonical space
+  because that is what a left-hand-rule rotation *is* once mirrored. Handling
+  handedness in both places produces a body correct in every axis-aligned test
+  pose and wrong the moment anything turns, which is why the rotation half is
+  checked physically — a direction is rotated and the answer compared against
+  where it has to end up.
+
+  *A bound bone's local rotation is the composition of the path above it*
+  ([roadmap §10](docs/roadmap/recorded-motion-sources.md), written down before the
+  converter existed). A profile maps a rig onto a humanoid with fewer joints, and
+  a joint between two mapped ones is on the path between them — taking a mapped
+  joint's rotation verbatim would lose every rotation above it and place the arms
+  and head wrong, which reads as a subtly misassembled body rather than as a
+  failure. *The rest pose is built by the same walk*, from whichever rotations
+  the profile calls the rest, because a second traversal is one that can disagree
+  with the first. And *a quaternion track is refused with a reason*: nothing in
+  the tree writes that form, so converting it would mean testing a path against a
+  value this repository invented — the roadmap's other honest answer, a fixture
+  said to be synthetic, stays open.
+
+  `MOTION_CONTRACT.md` gains the two sections this forced. The **canonical basis
+  is stated** — right-handed, +Y up, +Z forward, metres — because a converter is
+  the first code here that has to map a profile's `forwardAxis` onto canonical
+  rather than inherit it. The forward axis is a *recording* of an existing fact:
+  the VMC adapter's conversion already leaves a +Z-forward sender's forward
+  untouched, and the avatars this is retargeted onto face +Z by specification.
+  The second section carries the path rule, the rest pose and the two root
+  policies, including why `CanonicalRestPose` is not a field of
+  `motion::HumanoidAnimation` and carries no parent array.
+
+  A test that holds a reader and a profile at once — which neither library may —
+  drives the one committed real export the whole way to canonical motion against
+  the shipped profile written from it, and every expected number in it was
+  measured out of the `.bvh` text rather than read back out of the conversion:
+  27 joints, 853 frames, the hips at the root's own 0.959893 m, four bones that
+  absorbed a chain, 26 of 26 non-root joints restating their rest geometry and
+  nothing lost by dropping them, and the session's turn carried on the hips
+  within ten degrees of what the root's own channel states.
+
+- **A BVH document becomes source values, and the reader takes its one declared
+  edge.** `BvhExtract.h` is the first code in `motionBvh` that produces anything
+  a converter can use, and it is as much about what does not cross the boundary
+  as about what does: a channel set becomes a track, and nothing about a unit, an
+  axis, a handedness or a bone travels with it. Three of its answers are
+  decisions rather than mechanics — position channels **state** a joint's local
+  translation rather than adding to its `OFFSET` (read additively, a rig stands
+  at twice its own height with every bone twice its length, in a file nothing is
+  wrong with); a component a joint did not animate falls back to the `OFFSET`
+  rather than to zero; and the Euler order is the *relative* order of the
+  rotation channels, whatever position channels sit between them. Three shapes
+  BVH permits and the neutral value model does not are refused rather than
+  reinterpreted: two rotation channels, one axis declared twice, and a chain that
+  both ends and continues.
+
+  `VRM_BVH_INVALID_ROTATION_ORDER` is granted to the extractor by name in
+  `motionBvh_boundaries` — one file, one code, in review. It sits in the frozen
+  set's semantic half because most of what it can mean is, but the half the
+  extractor meets needs no profile at all: a joint declaring two rotation
+  channels forms no Euler order whoever wrote the file.
+
+  **The edge cost `motionBvh` the binary half of its boundary check, and finding
+  that out cost a red macOS lane.** The check inspected a built artifact and
+  refused any OpenUSD import; with the edge reaching `motionCore`'s `Gf` value
+  types, what it reports is the *linker's* answer rather than the library's —
+  MSVC pulls only the archive members something references, GNU ld with
+  `--as-needed` drops the resulting unused entries, and Apple's ld64 records
+  every library on the link line whether or not a symbol is used. All three are
+  correct about their own artifact, so one source tree produces two answers and
+  the check was measuring a toolchain. It is removed rather than narrowed, with
+  the measurement written down where it was made; the source rule — no OpenUSD
+  name in any file here, extractor included — is platform independent and is what
+  carries the claim. `tools/motionBvh` gains the same correction: a standalone
+  configure of it now needs OpenUSD on the prefix path, because
+  `find_package(motionBvh)` resolves `motionSource` and through it `pxr`, and its
+  README said the opposite.
+
 - **A profile is a file now, and the first producer is described by one.**
   `SourceProfileFile.h` settles the keys the profile sketch left open and reads
   them: a stated subset of the shape the plan already wrote, with an unknown key
