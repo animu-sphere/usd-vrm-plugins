@@ -14,10 +14,16 @@ Three claims are checked, and each one is load-bearing rather than tidy:
 * **No OpenUSD, no humanoid vocabulary, no stage.** Three numbers on an OFFSET
   line are not a vector in any basis this layer knows, and which joint is a
   `HumanBone` is a profile's answer.
+
+It runs over `tools/motionBvh` as well as over the library, because a CLI that
+named a producer would put the assumption one directory away from the layer that
+forbids it and call the boundary kept. One script rather than two: a second copy
+of the producer list is a second list to keep current.
 """
 
 from __future__ import annotations
 
+import argparse
 import os
 import pathlib
 import re
@@ -114,8 +120,25 @@ def strip_comments(text: str) -> str:
 
 
 def main() -> int:
-    source = pathlib.Path(sys.argv[1]).resolve()
-    binary = pathlib.Path(sys.argv[2]).resolve()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("source", type=pathlib.Path,
+                        help="Directory whose include/ and src/ are checked.")
+    parser.add_argument("binary", type=pathlib.Path,
+                        help="An executable whose transitive imports must "
+                             "contain no OpenUSD library.")
+    parser.add_argument(
+        "--cmake-target", default=None,
+        help="Check only this target's link lines. The library's CMakeLists "
+             "declares one target and needs no filter; the tools directory "
+             "will also hold motion_bvh_convert, which links OpenUSD's stage "
+             "libraries by design.")
+    arguments = parser.parse_args()
+
+    source = arguments.source.resolve()
+    binary = arguments.binary.resolve()
+    # "libs/motionBvh" or "tools/motionBvh" -- both directories are named
+    # motionBvh, so the parent is what tells a failure apart.
+    label = f"{source.parent.name}/{source.name}"
     errors: list[str] = []
 
     forbidden_files = {"openstrata.plugin.yaml", "pluginfo.json"}
@@ -159,25 +182,31 @@ def main() -> int:
                     f"the syntax layer raises a semantic diagnostic: {path}")
 
     cmake = (source / "CMakeLists.txt").read_text(encoding="utf-8")
-    if re.search(r"target_link_libraries\([^)]*(?:\bgf\b|\busd|\bsdf|\bplug\b|"
-                 r"pxr::)", cmake, re.IGNORECASE):
-        errors.append("motionBvh CMake must link no OpenUSD library")
+    target = re.escape(arguments.cmake_target) + r"\b" \
+        if arguments.cmake_target else ""
+    openusd_link = re.compile(r"\bgf\b|\busd|\bsdf|\bplug\b|pxr::",
+                              re.IGNORECASE)
+    for call in re.findall(r"target_link_libraries\(\s*" + target + r"[^)]*\)",
+                           cmake):
+        if openusd_link.search(call):
+            errors.append(f"{label} CMake must link no OpenUSD library")
+            break
 
     try:
         dependencies = _binary_dependencies(binary)
     except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
-        errors.append(f"could not inspect motionBvh dependencies: {exc}")
+        errors.append(f"could not inspect {label} dependencies: {exc}")
         dependencies = ""
     forbidden_binary = re.compile(
         r"(?:usd_ms|usd_gf|lib(?:usd|sdf|plug|ar|gf)(?:[._-]|\.(?:dll|dylib|so)))",
         re.IGNORECASE)
     if forbidden_binary.search(dependencies):
-        errors.append("motionBvh binary imports an OpenUSD library")
+        errors.append(f"{label} binary imports an OpenUSD library")
 
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1
-    print("motionBvh boundary check passed")
+    print(f"{label} boundary check passed")
     return 0
 
 

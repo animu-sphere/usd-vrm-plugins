@@ -295,7 +295,7 @@ sessions and the VRM corpus uses for models.
 | Milestone | Contents | State |
 | --- | --- | --- |
 | **BVH-0** — contract and fixtures | real samples from mocopi and a second producer; joints, hierarchy, channels, unit, axis measured; the `motionSource` model and profile schema settled; the diagnostic set frozen | ⬜ |
-| **BVH-1** — syntax | `BvhDocument`, the parser, `motion_bvh_inspect`, malformed fixtures, deterministic tests | 🚧 |
+| **BVH-1** — syntax | `BvhDocument`, the parser, `motion_bvh_inspect`, malformed fixtures, deterministic tests | ✅ |
 | **BVH-2** — semantics | the `motionSource` API, the profile API, the mocopi profile, the second producer's, basis and unit conversion, source rest pose, root policy, `HumanoidAnimation`, the semantic clip writer | ⬜ |
 | **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, artifact-only smoke, the recorded corpus | ⬜ |
 | **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | ⬜ |
@@ -349,9 +349,21 @@ depends on them ([docs/README.md](../README.md)).
   --graph-only` reports `4 bundle(s), 1 bundle edge(s), 5 libraries, 7 library
   edge(s), valid` on `ost` 0.21.0 — one more library than before it, so the
   descriptor is discovered and its (currently empty) `requires` is validated.
-  The `profiles/motion/` directory and the `tools/motionBvh/` grouping are still
-  new shapes and still unconfirmed; they get the same treatment when they land,
-  the way the adapter's discovery gap was found.
+  The `profiles/motion/` directory is still a new shape and still unconfirmed;
+  it gets the same treatment when it lands, the way the adapter's discovery gap
+  was found.
+- 🚧 **`tools/motionBvh/` is one member carrying two executables, and the graph
+  gate has nothing to say about it.** Adding the directory left `--graph-only`
+  reporting the same `4 bundle(s), 5 libraries` — and `--graph-only --json`
+  names no tool at all, not even `motion_capture` or `motion_retarget`, so this
+  is the graph walking bundles and libraries by design rather than a discovery
+  gap like the adapter's. What that leaves unverified is the *grouping*: every
+  workspace tool so far has been one directory, one executable, and an id equal
+  to that executable's name, where this member is `motion_bvh` with
+  `motion_bvh_inspect` inside it and `motion_bvh_convert` to come. Only
+  `ost plugin package --workspace --product` walks a tool descriptor, so the
+  member count and the `tools/<id>/bin` layout are measured when a packaging run
+  next happens rather than asserted here.
 
 ## 11. Non-goals
 
@@ -378,7 +390,10 @@ One PR never introduces a boundary and a large feature together:
    document model, the parser, the format-shape corpus and its manifest, and a
    boundary check that fails on a producer name, a semantic diagnostic, or an
    OpenUSD value type in the syntax layer (2026-08-04)
-3. `motion_bvh_inspect`
+3. ✅ `motion_bvh_inspect` — the report, its sections, the CLI's own boundary
+   check, and a test that drives it over the library's corpus and checks every
+   number against the manifest and against the `.bvh` text rather than against
+   the parser (2026-08-04)
 4. `motionSource` skeleton and animation model
 5. the source profile contract
 6. the mocopi BVH profiles

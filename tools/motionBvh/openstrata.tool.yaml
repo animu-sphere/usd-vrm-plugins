@@ -1,0 +1,25 @@
+# OpenStrata workspace-tool descriptor for the BVH path's CLIs.
+#
+# The member is the layer, not the executable: WORKSPACE.md §1 puts both
+# `motion_bvh_inspect` and `motion_bvh_convert` in `tools/motionBvh/`, so the id
+# is `motion_bvh` and the second executable joins the list below rather than
+# arriving as a second member. That is a shape `motion_capture`,
+# `motion_retarget` and `vmc_record` have not used -- each of those is one
+# directory, one executable, one id -- and it is measured rather than assumed
+# (roadmap/recorded-motion-sources.md §10).
+#
+# It requires `motionBvh` and nothing else, which is the tool's half of the
+# library's claim: the syntax layer links no OpenUSD, and neither does the
+# command that prints what it read.
+schema: openstrata.tool/v1alpha1
+tool:
+  id: motion_bvh
+  # Mirrors VERSION; release preparation updates this in lockstep.
+  version: 0.6.0
+  license: Apache-2.0
+executables: [motion_bvh_inspect]
+directories: [bin]
+requires:
+  libraries:
+    - id: motionBvh
+      version: ">=0.6,<0.7"

@@ -49,9 +49,11 @@ reaching a **rig** still is: that is Motion Phase G.
 
 **Recorded**
 
-- [ ] a generic BVH parser, with `motion_bvh_inspect` over it — *the parser,
-      its frozen diagnostic set and its format-shape corpus landed 2026-08-04
-      (`libs/motionBvh`); the CLI is next*;
+- [ ] a generic BVH parser, with `motion_bvh_inspect` over it — *both landed
+      2026-08-04: the parser, its frozen diagnostic set and its format-shape
+      corpus (`libs/motionBvh`), then the CLI over it (`tools/motionBvh`),
+      which links no OpenUSD because the layer under it has no value type to
+      borrow from Gf*;
 - [ ] the format-neutral `motionSource` model and the profile contract;
 - [ ] the mocopi profile **and one independent mocap producer's**, plus a
       user-defined profile proving the contract is usable from outside;

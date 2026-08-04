@@ -97,12 +97,16 @@ committed and the rest kept as measured manifests, is v0.7.0
 There is no native capture-device adapter yet. Protocol and SDK decode belong
 under `adapters/` (motion policy §8.1) and `vrmAdapterMocopi` is the next one.
 
-**No recorded motion file format other than `.vrma` is read.** BVH — the format
-most capture applications export — is v0.7.0, as a generic pipeline
+**No recorded motion file format other than `.vrma` becomes motion.** BVH — the
+format most capture applications export — is v0.7.0, as a generic pipeline
 (`motionBvh` + `motionSource`) whose producer semantics live in declarative
 profiles rather than in the parser
-([plan](../roadmap/recorded-motion-sources.md)). FBX is not planned; the layering
-exists so that a second reader can be added without changing anything above it.
+([plan](../roadmap/recorded-motion-sources.md)). Its **syntax** half is
+implemented: `motionBvh` reads a BVH document and `motion_bvh_inspect` reports
+what one contains. Neither produces a pose — a joint's name, unit and axes stay
+uninterpreted until a profile says what they mean, so nothing yet reaches
+`motion::HumanoidAnimation` from a file. FBX is not planned; the layering exists
+so that a second reader can be added without changing anything above it.
 
 Not yet in that layer: expression and look-at animation, motion generation,
 OpenExec evaluation, blending beyond the primitive, IK, and foot locking. See
