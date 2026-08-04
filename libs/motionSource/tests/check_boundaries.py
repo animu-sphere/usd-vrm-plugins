@@ -15,11 +15,13 @@ makes that possible rather than merely intended:
   changing it (WORKSPACE.md §2). The `format` field carries a reader's label and
   is never compared to anything here, which is why the field is allowed and a
   literal is not.
-* **One crossing into canonical motion.** The model is expressed in the source's
-  own basis, unit and angle convention, so it names no Gf type and no humanoid
-  bone. `CanonicalMetadata` is the single file permitted to name a canonical
-  type, and the permitted set is a list in this script: a later file that needs
-  the crossing adds itself here, in review, rather than acquiring it quietly.
+* **The crossing into canonical motion is a list, and the list is short.** The
+  model is expressed in the source's own basis, unit and angle convention, so it
+  names no Gf type and no humanoid bone. Two files are permitted a canonical
+  type -- `CanonicalMetadata`, which derives the canonical provenance, and
+  `SourceProfile`, whose joint map has a `HumanBone` on its right-hand side --
+  and the permitted set is a list in this script: a later file that needs the
+  crossing adds itself here, in review, rather than acquiring it quietly.
 * **No live-input and no target rig.** Live capture and recorded files meet at
   `motionCore` and nowhere earlier, and turning source motion onto a target rig
   is `vrmRetarget`'s job, once.
@@ -66,9 +68,13 @@ FORMAT_NAMES = [
 ]
 
 # The files permitted to name a canonical type. Add to this list in review when
-# a new file genuinely needs the crossing -- the profile contract will be the
-# next one, because a joint map's right-hand side is a `HumanBone`.
-CANONICAL_FILES = {"CanonicalMetadata.h", "CanonicalMetadata.cpp"}
+# a new file genuinely needs the crossing. The converter will be the next one,
+# because producing a `motion::HumanoidAnimation` is what it is for -- and it is
+# the last one this library has a reason to grant.
+CANONICAL_FILES = {
+    "CanonicalMetadata.h", "CanonicalMetadata.cpp",
+    "SourceProfile.h", "SourceProfile.cpp",
+}
 
 
 def strip_comments(text: str) -> str:

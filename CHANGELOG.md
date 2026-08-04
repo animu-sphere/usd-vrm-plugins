@@ -49,6 +49,47 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **The source profile contract — what one producer's export means, declared
+  where no code has a name for it.** `motionSource` grows `SourceProfile`: the
+  vocabulary a profile file states by name (handedness, a **signed** up and
+  forward axis, a translation unit, a root translation and rotation policy, a
+  rest-pose source, an unmapped-joint policy), the joint map whose right-hand
+  side is a `motion::HumanBone`, `ValidateSourceProfile`, and
+  `MatchSourceProfile` for matching one against a rig before a frame is read.
+  Three decisions are the substance of it. **Every convention has an
+  `Unspecified` and validation refuses it**, so a default-constructed profile is
+  invalid by construction — "there is no default profile"
+  ([recorded-motion-sources.md §3.1](docs/roadmap/recorded-motion-sources.md))
+  said somewhere it can be checked, because a silently-assumed handedness
+  produces motion that is subtly misassembled rather than absent, which is worse
+  than a refusal because it looks like a result. **A joint map is a hierarchy
+  embedding, not a name lookup**: each bound bone's nearest bound humanoid
+  ancestor has to be a source ancestor too, which is what catches the near-miss
+  profile where every name matched and the body is assembled wrong. And **a
+  match returns facts, never a score** — which bones bound, which required ones
+  did not, which joints nothing maps, which names are ambiguous, all of them
+  filled whatever the refusal, because the caller that most needs them is a
+  detector reporting on candidates that did *not* match. A confidence is that
+  detector's arithmetic over the counts: a weighting fitted to the exports on
+  hand today would be a producer's answer reaching the format-neutral layer
+  through a float instead of through an `if`. The one count that arithmetic
+  cannot derive is on the match itself — `BoundRequiredCount()`, because a
+  required mapping whose name the rig repeats binds nothing *and* is not
+  missing, so subtracting the missing ones overstates what matched by exactly
+  the figure the sketched candidate report prints.
+
+- **The six semantic diagnostics now have a layer that can raise them, and it is
+  not this one.** The question was open against the profile contract as the
+  change that had to choose. `MatchSourceProfile` returns a typed
+  `SourceProfileRefusal` naming the *event* in terms no format supplies, and the
+  caller holding both a reader and a profile maps it onto that reader's codes.
+  The two rejected answers are recorded with it: plain text alone would make
+  that caller parse prose to pick a code, and a second `VRM_MOTION_SOURCE_*`
+  namespace would give one event two spellings and duplicate a set whose whole
+  value is being frozen and closed. A reader's `VRM_*` string appearing in
+  `motionSource` is the dependency reversal
+  ([WORKSPACE.md §2](docs/architecture/WORKSPACE.md)) however it got there.
+
 - **`vmc_record --export-trace` — a VMC session reaches the product as a file,
   not as a link.** Milestone C's first item read "`motion_capture` accepts a
   live VMC source" until that edge was costed. `motion_capture` is a member of
