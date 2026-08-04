@@ -25,6 +25,18 @@ struct Options
     // half of this tool: the same report, from a file instead of a wire.
     std::string inspectPath;
 
+    // The canonical trace to write beside the report: what the adapter
+    // delivered, in the format `motion_capture` replays (TraceExport.h). It
+    // belongs to neither mode in particular -- a live session and a recorded
+    // capture deliver the same frames -- which is why it is not one of the
+    // session-only flags `--inspect` refuses.
+    std::string traceExportPath;
+
+    // Which session to export, 1-based. Zero means "the only one", and a
+    // capture holding more than one is refused rather than guessed at: the
+    // sessions in it are separate recordings that happen to share a file.
+    std::size_t traceSession = 0;
+
     // Provenance for the capture's header, and operator-supplied on purpose --
     // see main.cpp on why the sender's model title is never borrowed for it.
     std::string sender;

@@ -180,6 +180,7 @@ GetUsage()
         "  vmc_record --output <session.vmcpackets> [options]\n"
         "  vmc_record --dry-run [options]\n"
         "  vmc_record --inspect <capture.vmcpackets>\n"
+        "  vmc_record --inspect <capture.vmcpackets> --export-trace <t.trace>\n"
         "\n"
         "Listening:\n"
         "  --listen ADDR[:PORT]   Bind address, numeric (default 0.0.0.0).\n"
@@ -202,6 +203,17 @@ GetUsage()
         "                         provenance. Never taken from the sender's\n"
         "                         model title - see the report's 'model' line.\n"
         "  --dry-run              Listen and report, write nothing.\n"
+        "\n"
+        "Exporting (works on a live session and on --inspect alike):\n"
+        "  --export-trace PATH    Write what the adapter delivered as a\n"
+        "                         motion-capture-trace - the canonical form\n"
+        "                         motion_capture replays, carrying no VMC\n"
+        "                         vocabulary. This is the whole of this\n"
+        "                         adapter's hand-off to the product's tools.\n"
+        "  --session N            Which session to export, 1-based. Needed only\n"
+        "                         when the sender restarted: one trace is one\n"
+        "                         session, because two sessions' clocks overlap\n"
+        "                         and a spliced trace would stall on replay.\n"
         "\n"
         "Stopping (a session always has at least one):\n"
         "  --duration S           Stop after S seconds of session.\n"
@@ -299,6 +311,23 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
                            error)) {
                 return false;
             }
+        } else if (argument == "--export-trace") {
+            // Not a session flag: --inspect delivers the same frames a socket
+            // does, and refusing to export from a capture would leave the CI
+            // path unable to produce the artifact the live path produces.
+            if (!TakeValue(arguments, &i, argument, &options->traceExportPath,
+                           error)) {
+                return false;
+            }
+        } else if (argument == "--session") {
+            if (!TakeCount(arguments, &i, argument, 1000000.0,
+                           &options->traceSession, error)) {
+                return false;
+            }
+            if (options->traceSession == 0) {
+                *error = "--session counts from 1";
+                return false;
+            }
         } else if (argument == "--sender") {
             session("--sender");
             if (!TakeValue(arguments, &i, argument, &options->sender, error)) {
@@ -384,6 +413,19 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
 
     if (options->maxDatagrams == 0) {
         options->maxDatagrams = kDefaultMaxDatagrams;
+    }
+
+    if (options->traceSession != 0 && options->traceExportPath.empty()) {
+        *error = "--session says which session to export, so it needs "
+                 "--export-trace";
+        return false;
+    }
+    if (!options->traceExportPath.empty() && options->dryRun) {
+        // The same rule --output already follows. A flag that writes a file is
+        // not silently disabled by the flag that says nothing is written.
+        *error = "--dry-run writes nothing, so --export-trace has nothing to "
+                 "act on";
+        return false;
     }
 
     if (!options->inspectPath.empty()) {

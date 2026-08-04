@@ -43,23 +43,43 @@ import time
 # `expressions` is the report line, or None when the session carried no blend
 # shapes and the line must therefore be absent: a sender that sends no face is
 # not a sender that sent an empty one.
+#
+# `sessions` is what `--export-trace` must produce: one trace per session, with
+# that many frames in each. They sum to `frames`, because a trace carries what
+# the adapter delivered and the adapter delivers every frame it emitted -- a
+# session boundary changes which file a frame lands in, never whether it is
+# there at all.
 EXPECTED = {
-    "arm-raise-30hz": {"datagrams": 117, "frames": 5, "expressions": None},
-    "extended-forms": {"datagrams": 2, "frames": 1, "expressions": None},
-    "malformed-forms": {"datagrams": 10, "frames": 2, "expressions": None},
-    "malformed-packets": {"datagrams": 10, "frames": 0, "expressions": None},
+    "arm-raise-30hz": {"datagrams": 117, "frames": 5, "expressions": None,
+                       "sessions": [5]},
+    "extended-forms": {"datagrams": 2, "frames": 1, "expressions": None,
+                       "sessions": [1]},
+    "malformed-forms": {"datagrams": 10, "frames": 2, "expressions": None,
+                        "sessions": [2]},
+    # Nothing decoded into a frame, so there is no session and no trace: an
+    # export here is refused rather than writing an empty recording.
+    "malformed-packets": {"datagrams": 10, "frames": 0, "expressions": None,
+                          "sessions": []},
     # Three names across three frames, one of them (`A`) sent as 0.0 every
     # time -- so a reader that dropped a zero weight would report two names
     # here. The name list is a continuation line, which `report_lines` joins
     # onto the label above it.
     "mixed-traffic-30hz": {"datagrams": 13, "frames": 3,
                            "expressions": "3 name(s); 9 accepted, "
-                                          "0 duplicated A, Blink, Joy"},
-    "neutral-standing-30hz": {"datagrams": 6, "frames": 5, "expressions": None},
+                                          "0 duplicated A, Blink, Joy",
+                           "sessions": [3]},
+    "neutral-standing-30hz": {"datagrams": 6, "frames": 5, "expressions": None,
+                              "sessions": [5]},
     # Six, not five: the restart is admitted as a new session under the default
     # policy, which is the difference `vrmAdapterVmc_liveSourceCorpus` records
     # as six frames against four.
-    "sender-restart-30hz": {"datagrams": 10, "frames": 6, "expressions": None},
+    #
+    # And the only capture that exports two traces. The two sessions' clocks
+    # overlap, so a single spliced trace would stall on replay at the
+    # discontinuity -- which is why an export from this one has to be told which
+    # session it means.
+    "sender-restart-30hz": {"datagrams": 10, "frames": 6, "expressions": None,
+                            "sessions": [4, 2]},
 }
 # 168 and 22 -- the same totals the corpus tests one layer down are written
 # against, which is what makes this a check on the report rather than a second
@@ -190,6 +210,120 @@ def check_inspect(tool: pathlib.Path, corpus: pathlib.Path) -> None:
           f"datagram(s), {total_frames} frame(s) reported as expected")
 
 
+def read_trace(path: pathlib.Path) -> tuple[dict[str, str], int]:
+    """The header, and how many frames a trace holds.
+
+    Read here rather than through `motion_capture`, for the same reason the
+    capture above is: this test is a check on what the tool wrote, and reading
+    it back with the writer's own counterpart would only prove the two agree.
+    The format is line-oriented text precisely so that a second reader is four
+    lines long.
+    """
+    header: dict[str, str] = {}
+    frames = 0
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or stripped.startswith("!"):
+            continue
+        key, _, rest = stripped.partition(" ")
+        if key == "t":
+            frames += 1
+        elif frames == 0:
+            # A header value is the rest of the line: a sender's model title has
+            # spaces in it, which is the defect this format was carrying until
+            # a real one was written through it.
+            header[key] = rest.strip()
+    return header, frames
+
+
+def check_trace_export(tool: pathlib.Path, corpus: pathlib.Path,
+                       workspace: pathlib.Path) -> None:
+    """The adapter's hand-off: what it delivered, as a canonical trace.
+
+    This is the whole of the boundary WORKSPACE.md §2 keeps -- no tool in the
+    product links this adapter, so a live session reaches `motion_capture` as a
+    file. What is checked is that the file holds exactly the frames the report
+    says were delivered, split into one trace per session.
+    """
+    exported = 0
+    for name, expected in sorted(EXPECTED.items()):
+        capture = corpus / f"{name}.vmcpackets"
+        sessions = expected["sessions"]
+        target = workspace / f"{name}.trace"
+
+        if not sessions:
+            # Nothing decoded into a frame. The export is refused with exit 1 --
+            # not 2, because the arguments were fine and the recording was not
+            # -- and no file appears.
+            result = subprocess.run(
+                [str(tool), "--inspect", str(capture), "--export-trace",
+                 str(target)],
+                text=True, encoding="utf-8", errors="replace",
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if result.returncode != 1:
+                fail(f"{name}: an export with no frames should exit 1, got "
+                     f"{result.returncode}")
+            if target.exists():
+                fail(f"{name}: a refused export wrote {target}")
+            continue
+
+        if len(sessions) > 1:
+            # More than one session and nobody said which: refused, because the
+            # alternatives are discarding a recording or splicing two clocks.
+            result = subprocess.run(
+                [str(tool), "--inspect", str(capture), "--export-trace",
+                 str(target)],
+                text=True, encoding="utf-8", errors="replace",
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if result.returncode != 1:
+                fail(f"{name}: {len(sessions)} sessions and no --session should "
+                     f"exit 1, got {result.returncode}")
+            if target.exists():
+                fail(f"{name}: a refused export wrote {target}")
+            if "--session" not in result.stderr:
+                fail(f"{name}: the refusal did not name the flag that resolves "
+                     f"it: {result.stderr}")
+
+        for index, frames in enumerate(sessions, start=1):
+            path = workspace / f"{name}.{index}.trace"
+            arguments = ["--inspect", str(capture), "--export-trace", str(path)]
+            if len(sessions) > 1:
+                arguments += ["--session", str(index)]
+            run_tool(tool, *arguments)
+
+            header, written = read_trace(path)
+            if written != frames:
+                fail(f"{name} session {index}: expected {frames} frame(s) in "
+                     f"the trace, found {written}")
+            if header.get("protocol") != "vmc":
+                fail(f"{name} session {index}: the trace does not record what "
+                     f"produced it: {header}")
+            exported += 1
+
+        # A session past the last one is refused rather than clamped.
+        result = subprocess.run(
+            [str(tool), "--inspect", str(capture), "--export-trace",
+             str(workspace / f"{name}.over.trace"), "--session",
+             str(len(sessions) + 1)],
+            text=True, encoding="utf-8", errors="replace",
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode != 1:
+            fail(f"{name}: --session past the end should exit 1, got "
+                 f"{result.returncode}")
+
+    # The capture that carries a model title, checked by value: "Example Avatar"
+    # has a space in it, and a trace whose header lost half of it would still
+    # parse. That is the failure the format was carrying before a real sender's
+    # provenance was written through it.
+    header, _ = read_trace(workspace / "arm-raise-30hz.1.trace")
+    if header.get("sourceId") != "Example Avatar":
+        fail(f"the exported trace did not carry the sender's model title "
+             f"whole: {header.get('sourceId')!r}")
+
+    print(f"vmc_record --export-trace: {exported} session(s) written as "
+          f"canonical traces")
+
+
 def check_help_and_refusals(tool: pathlib.Path, corpus: pathlib.Path,
                             workspace: pathlib.Path) -> None:
     """The CLI's own contract: --help succeeds, a bad combination does not."""
@@ -221,6 +355,13 @@ def check_help_and_refusals(tool: pathlib.Path, corpus: pathlib.Path,
         # An unbracketed IPv6 address with a port is ambiguous, not guessed at.
         ["--dry-run", "--listen", "::1:39539"],
         ["--dry-run", "--max-datagrams", "0"],
+        # --session says which session to export, so it needs something to
+        # export; and a dry run writes nothing, trace included.
+        ["--inspect", str(corpus / "arm-raise-30hz.vmcpackets"), "--session",
+         "1"],
+        ["--dry-run", "--export-trace", str(unused)],
+        ["--inspect", str(corpus / "arm-raise-30hz.vmcpackets"),
+         "--export-trace", str(unused), "--session", "0"],
     ):
         result = subprocess.run([str(tool), *arguments], text=True,
                                 encoding="utf-8", errors="replace",
@@ -231,7 +372,7 @@ def check_help_and_refusals(tool: pathlib.Path, corpus: pathlib.Path,
                  f"with exit 2, got {result.returncode}")
         if unused.exists():
             fail("a refused invocation wrote a file")
-    print("vmc_record: usage and eight refusals behave")
+    print("vmc_record: usage and eleven refusals behave")
 
 
 class Session:
@@ -466,6 +607,7 @@ def main() -> int:
         workspace = pathlib.Path(scratch)
         if arguments.mode == "inspect":
             check_inspect(arguments.tool, arguments.corpus)
+            check_trace_export(arguments.tool, arguments.corpus, workspace)
             check_help_and_refusals(arguments.tool, arguments.corpus, workspace)
         else:
             check_loopback(arguments.tool, arguments.corpus, workspace)
