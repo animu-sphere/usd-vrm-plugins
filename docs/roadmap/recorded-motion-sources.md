@@ -161,6 +161,25 @@ profile" holds inside a file as well as between files. And **a profile that is
 read is already valid** — parsing ends in `ValidateSourceProfile`, so no
 half-built profile reaches a caller who would have to re-prove it.
 
+**Why the reader is written rather than borrowed**, since the file is YAML and
+libraries for it exist. Two reasons and one consequence. A profile needs an
+unknown key to be an *error*, which a document parser hands back as a key like
+any other — so the strict half would be written either way, and it is the half
+where the risk is. And YAML's implicit typing is actively wrong for this data: a
+joint named `on`, `y`, `no` or `null` is a *writer's word*, and a reader that
+turned it into a boolean would rename a joint nobody renamed. Against that,
+`motionSource` links exactly one thing ([WORKSPACE.md §2](../architecture/WORKSPACE.md)),
+and spending that on a configuration file would be a contract change.
+
+The consequence is that the subset must not disagree with YAML *silently*. So
+`scripts/check_motion_profiles.py` reads every shipped profile a second time with
+a real YAML implementation, where one is installed, and compares the two
+readings. The claim is not that this reader accepts everything YAML does — it
+refuses anchors, tags, block scalars and nested flow forms, and says so — but
+that a file it *accepts* means to it what it means to YAML. A refusal is a bad
+file's worst outcome; a difference of interpretation nobody is told about is the
+failure a hand-written reader can produce and a refusal cannot.
+
 **Declarative only** — no arbitrary code, no expression language, no embedded
 producer algorithm, and no target VRM path. A profile that could name an avatar
 would make the converter avatar-aware through the back door, and one that could

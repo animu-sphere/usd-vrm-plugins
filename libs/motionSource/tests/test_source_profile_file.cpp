@@ -255,6 +255,52 @@ TestTheOtherShapes()
     assert(Parse(text) == ExpectedProfile());
 }
 
+// A block sequence may sit at its key's own indentation. This is how the format
+// is ordinarily written -- and it is the shape that costs nothing to accept and
+// reads as a refusal of a correct file when it is not, because the message a
+// reader gets is "states no value" about a line whose value is the next one.
+void
+TestASequenceAtItsKeysIndentation()
+{
+    assert(Parse(With("ignoredJoints: [reference, propHandle]",
+                      "ignoredJoints:\n- reference\n- propHandle"))
+           == ExpectedProfile());
+
+    // What ends such a sequence is the next key, not an error: the whole point
+    // is that this indentation belongs to the mapping too. So the same list,
+    // moved into the middle of the file, has to read the same.
+    constexpr std::string_view kTrailing =
+        "ignoredJoints: [reference, propHandle]\n";
+    std::string moved(kProfileText);
+    moved.erase(moved.find(kTrailing), kTrailing.size());
+    moved.insert(moved.find("restPose: rest-offsets"),
+                 "ignoredJoints:\n- reference\n- propHandle\n");
+    assert(Parse(moved) == ExpectedProfile());
+
+    // A sequence indented *under* its key still refuses a stray line at its own
+    // indentation, so nothing that was refused before is accepted now.
+    Refuses(With("ignoredJoints: [reference, propHandle]",
+                 "ignoredJoints:\n  - reference\n  restPose: rest-offsets"),
+            29, "unexpected indentation");
+}
+
+// The two block readers recurse once per level, so a file with no bottom is a
+// stack overflow unless something refuses it -- the argument `BvhParseLimits`
+// makes one layer down, for a file this layer invites a user to write by hand.
+void
+TestNestingIsBounded()
+{
+    std::string deep = "schemaVersion: 1\nid: x\n";
+    for (std::size_t level = 0; level < 64; ++level) {
+        deep += std::string(level * 2, ' ') + "nest:\n";
+    }
+    deep += std::string(64 * 2, ' ') + "leaf: 1\n";
+    SourceProfile profile;
+    SourceProfileParseError error;
+    assert(!ParseSourceProfileText(deep, &profile, &error));
+    assert(error.reason.find("nests deeper") != std::string::npos);
+}
+
 // A value carrying a `#`, a comma or a colon is written quoted, and a joint name
 // is the writer's word rather than a set of characters this reader reserves.
 void
@@ -479,13 +525,16 @@ TestFiles()
     assert(profile == ExpectedProfile());
     std::filesystem::remove(path);
 
-    // A path that is not a file is a refusal about no line, in the words the
-    // reader below this layer uses for the same failure -- this layer has no
-    // vocabulary for I/O and does not invent one.
+    // A path that is not a file is a refusal about no line, and it names the
+    // path: this error carries no field for one, so a caller walking a
+    // directory of profiles would otherwise be told only that something was
+    // unreadable.
     SourceProfile untouched = ExpectedProfile();
-    assert(!ParseSourceProfileFile(path / "absent.yaml", &untouched, &error));
+    const std::filesystem::path absent = path / "absent.yaml";
+    assert(!ParseSourceProfileFile(absent, &untouched, &error));
     assert(error.line == 0);
     assert(error.reason.find("could not be opened") != std::string::npos);
+    assert(error.reason.find("absent.yaml") != std::string::npos);
     assert(untouched == ExpectedProfile());
 }
 
@@ -557,6 +606,8 @@ main(int argc, char** argv)
 
     TestTheKeys();
     TestTheOtherShapes();
+    TestASequenceAtItsKeysIndentation();
+    TestNestingIsBounded();
     TestQuotingAndComments();
     TestUnknownKeysAreRefused();
     TestMissingKeys();

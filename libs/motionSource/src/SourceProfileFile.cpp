@@ -234,8 +234,37 @@ public:
     }
 
 private:
+    // A refusal of the pathological shape rather than a limit anyone will meet:
+    // the keys below nest three deep and this is twice that. It exists because
+    // the two block readers recurse once per level, so without it a generated
+    // file of ten thousand indentations is a stack overflow rather than a
+    // refusal -- which is the reason the reader one layer down carries
+    // `BvhParseLimits`, and the same argument applies to a file a user is
+    // invited to write by hand.
+    static constexpr std::size_t kMaxNestingDepth = 8;
+
+    // RAII rather than a decrement at each return: `ReadMapping` returns from
+    // eight places and a missed one would make the limit fire on a file nothing
+    // is wrong with, which is worse than not having it.
+    class Nesting
+    {
+    public:
+        explicit Nesting(std::size_t& depth) : depth_(depth) { ++depth_; }
+        ~Nesting() { --depth_; }
+        Nesting(const Nesting&) = delete;
+        Nesting& operator=(const Nesting&) = delete;
+
+    private:
+        std::size_t& depth_;
+    };
+
     bool ReadMapping(std::size_t indent, Node* out)
     {
+        const Nesting nesting(depth_);
+        if (depth_ > kMaxNestingDepth) {
+            return Fail(error_, lines_[index_].number,
+                        "the file nests deeper than a profile can");
+        }
         out->kind = Node::Kind::Mapping;
         out->line = lines_[index_].number;
         while (index_ < lines_.size()) {
@@ -264,7 +293,20 @@ private:
 
             Node value;
             if (rest.empty()) {
-                if (index_ >= lines_.size() || lines_[index_].indent <= indent) {
+                // A block under the key, and a **sequence** may sit at the key's
+                // own indentation as well as under it. That is ordinary YAML and
+                // ordinary practice, so refusing it would refuse a file with
+                // nothing wrong in it -- and the refusal it produced said "key
+                // 'x' states no value" about a line whose value is the next one,
+                // which is the kind of message that sends a reader looking for a
+                // mistake that is not there. A mapping has no such spelling:
+                // block keys at the parent's indentation are the parent's.
+                const bool block = index_ < lines_.size()
+                                   && lines_[index_].indent > indent;
+                const bool ownIndentSequence =
+                    index_ < lines_.size() && lines_[index_].indent == indent
+                    && IsSequenceItem(lines_[index_].text);
+                if (!block && !ownIndentSequence) {
                     return Fail(error_, line.number,
                                 "key " + Quoted(key) + " states no value");
                 }
@@ -286,6 +328,11 @@ private:
 
     bool ReadSequence(std::size_t indent, Node* out)
     {
+        const Nesting nesting(depth_);
+        if (depth_ > kMaxNestingDepth) {
+            return Fail(error_, lines_[index_].number,
+                        "the file nests deeper than a profile can");
+        }
         out->kind = Node::Kind::Sequence;
         out->line = lines_[index_].number;
         while (index_ < lines_.size()) {
@@ -296,8 +343,14 @@ private:
             if (line.indent > indent) {
                 return Fail(error_, line.number, "unexpected indentation");
             }
+            // A line at this indentation that is not an item **ends** the
+            // sequence rather than breaking it: at the key's own indentation
+            // that line is the next key, which is the whole reason a sequence
+            // may sit there. Where the sequence was indented under its key, the
+            // mapping this returns to refuses the same line as unexpected
+            // indentation, so nothing is accepted here that was refused before.
             if (!IsSequenceItem(line.text)) {
-                return Fail(error_, line.number, "expected '- value'");
+                break;
             }
             const std::string_view rest = Trim(line.text.substr(1));
             if (rest.empty()) {
@@ -529,6 +582,7 @@ private:
 
     const std::vector<SourceLine>& lines_;
     std::size_t index_ = 0;
+    std::size_t depth_ = 0;
     SourceProfileParseError* error_;
 };
 
@@ -882,12 +936,13 @@ ParseSourceProfileFile(const std::filesystem::path& path,
 {
     std::ifstream file(path, std::ios::binary);
     if (!file) {
-        return Fail(error, 0, "the file could not be opened");
+        return Fail(error, 0,
+                    "'" + path.string() + "' could not be opened");
     }
     std::string text((std::istreambuf_iterator<char>(file)),
                      std::istreambuf_iterator<char>());
     if (file.bad()) {
-        return Fail(error, 0, "the file could not be read");
+        return Fail(error, 0, "'" + path.string() + "' could not be read");
     }
     return ParseSourceProfileText(text, profile, error);
 }

@@ -183,12 +183,20 @@ def read_value(text: str, lines: list[tuple[int, int, str]], index: int,
         return [scalar(part, where) for part in read_flow(text, "]", where)], index
     if text:
         return scalar(text, where), index
-    if index >= len(lines) or lines[index][1] <= indent:
+    if index >= len(lines):
+        raise Refused(f"{where}: states no value")
+    # A sequence may sit at its key's own indentation as well as under it, which
+    # is how the format is ordinarily written. A mapping may not: a key at the
+    # parent's indentation is the parent's.
+    own_indent_sequence = (lines[index][1] == indent
+                           and lines[index][2].startswith("- "))
+    if lines[index][1] <= indent and not own_indent_sequence:
         raise Refused(f"{where}: states no value")
     if lines[index][2].startswith("- "):
         items = []
         child = lines[index][1]
-        while index < len(lines) and lines[index][1] == child:
+        while (index < len(lines) and lines[index][1] == child
+               and lines[index][2].startswith("- ")):
             items.append(scalar(lines[index][2][1:].strip(), where))
             index += 1
         return items, index
@@ -223,6 +231,85 @@ def read_profile(path: pathlib.Path) -> dict:
     if index != len(lines):
         raise Refused(f"{path.name}: trailing content")
     return document
+
+
+# --- the same file, through a real YAML implementation --------------------
+#
+# The reader in `motionSource` is a stated subset, written rather than borrowed:
+# a profile needs an unknown key to be an error, and YAML's implicit typing would
+# read a joint named `on`, `y` or `null` as something other than its name. Both
+# are reasons to keep the dependency out of the library.
+#
+# Neither is a reason to skip the check a real implementation can make for free.
+# What is claimed is not "everything YAML accepts, this accepts" -- deliberately
+# false, and the header says which constructs are refused -- but "a file this
+# accepts means to it what it means to YAML". A refusal is a bad file's worst
+# outcome; a *silent difference of interpretation* is the failure a hand-written
+# reader can produce and a refusal cannot, and it is the one this catches.
+#
+# Skipped, and said to be skipped, where PyYAML is not installed: it is a check
+# on files this repository ships, not a build dependency of anything.
+
+
+def yaml_reading(path: pathlib.Path):
+    try:
+        import yaml
+    except ImportError:
+        return None
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+
+def as_text(value) -> str:
+    """One YAML scalar in the form this reader would have produced."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if value is None:
+        return "null"
+    return str(value)
+
+
+def as_ours(value):
+    if isinstance(value, dict):
+        return {as_text(key): as_ours(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [as_ours(item) for item in value]
+    return as_text(value)
+
+
+def disagreements(ours, theirs, where: str) -> list[str]:
+    """Where the two readings of one file differ.
+
+    Scalars are compared without case, because every vocabulary lookup in the
+    library is ASCII case-insensitive -- so a case difference cannot change what
+    a profile means, and only YAML's own `True` for a written `TRUE` produces
+    one. A difference in characters is a difference in meaning and is reported.
+    """
+    if isinstance(ours, dict) or isinstance(theirs, dict):
+        if not (isinstance(ours, dict) and isinstance(theirs, dict)):
+            return [f"{where}: one reading is a mapping and the other is not"]
+        errors = []
+        for key in sorted(set(ours) | set(theirs)):
+            if key not in ours:
+                errors.append(f"{where}: YAML reads a key '{key}' that this "
+                              f"reader does not")
+            elif key not in theirs:
+                errors.append(f"{where}: YAML does not read the key '{key}'")
+            else:
+                errors += disagreements(ours[key], theirs[key],
+                                        f"{where}.{key}")
+        return errors
+    if isinstance(ours, list) or isinstance(theirs, list):
+        if not (isinstance(ours, list) and isinstance(theirs, list)):
+            return [f"{where}: one reading is a sequence and the other is not"]
+        if len(ours) != len(theirs):
+            return [f"{where}: {len(ours)} entries here, {len(theirs)} in YAML"]
+        errors = []
+        for index, (mine, other) in enumerate(zip(ours, theirs)):
+            errors += disagreements(mine, other, f"{where}[{index}]")
+        return errors
+    if str(ours).lower() != str(theirs).lower():
+        return [f"{where}: '{ours}' here, '{theirs}' in YAML"]
+    return []
 
 
 # --- the recorded file's hierarchy, scanned from the format ---------------
@@ -291,14 +378,23 @@ def check(profile: dict, profile_name: str, joints: list[tuple[str, int]],
           fixture: str, expected_bones: list[str] | None) -> list[str]:
     errors: list[str] = []
     names = [name for name, _ in joints]
-    mapped: dict[str, str] = {
-        name: entry["bone"] for name, entry in profile["joints"].items()
-    }
-    ignored = set(profile.get("ignoredJoints", []))
     where = f"{profile_name} vs {fixture}"
 
-    if names[0] != profile["root"]["joint"]:
-        errors.append(f"{where}: the profile roots at '{profile['root']['joint']}'"
+    # Refused rather than indexed into. The C++ side validates a profile's shape
+    # and would fail first, but the two checks are independent tests: this one
+    # meeting a profile without a joint map has to say so, not raise a
+    # traceback at whoever is reading the other failure.
+    try:
+        mapped: dict[str, str] = {
+            name: entry["bone"] for name, entry in profile["joints"].items()
+        }
+        root_joint = profile["root"]["joint"]
+    except (KeyError, TypeError, AttributeError) as broken:
+        raise Refused(f"{where}: the profile states no {broken}") from broken
+    ignored = set(profile.get("ignoredJoints", []))
+
+    if names[0] != root_joint:
+        errors.append(f"{where}: the profile roots at '{root_joint}'"
                       f"; the file roots at '{names[0]}'")
 
     bound: dict[str, int] = {}
@@ -354,6 +450,7 @@ def main() -> int:
 
     profiles: dict[str, dict] = {}
     errors: list[str] = []
+    conformed = 0
     for path in sorted(arguments.profiles.glob("*.yaml")):
         try:
             profile = read_profile(path)
@@ -363,6 +460,10 @@ def main() -> int:
         if profile.get("id") != path.stem:
             errors.append(f"{path.name}: states id '{profile.get('id')}'")
             continue
+        theirs = yaml_reading(path)
+        if theirs is not None:
+            errors += disagreements(profile, as_ours(theirs), path.name)
+            conformed += 1
         profiles[path.stem] = profile
     if not profiles and not errors:
         errors.append(f"no profile in {arguments.profiles}")
@@ -387,21 +488,24 @@ def main() -> int:
             continue
         try:
             joints = read_hierarchy(path)
+            if len(joints) != fixture["joints"]:
+                errors.append(f"{fixture['file']}: {len(joints)} joints, "
+                              f"manifest says {fixture['joints']}")
+            errors.extend(check(profiles[profile_id], profile_id, joints,
+                                fixture["file"],
+                                fixture.get("expectedMappedBones")))
         except Refused as refusal:
             errors.append(str(refusal))
             continue
-        if len(joints) != fixture["joints"]:
-            errors.append(f"{fixture['file']}: {len(joints)} joints, manifest "
-                          f"says {fixture['joints']}")
-        errors.extend(check(profiles[profile_id], profile_id, joints,
-                            fixture["file"], fixture.get("expectedMappedBones")))
         checked += 1
 
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1
+    conformance = (f"{conformed} agreed with a YAML implementation"
+                   if conformed else "no YAML implementation to agree with")
     print(f"motion profiles: {len(profiles)} read, "
-          f"{checked} checked against a recorded file")
+          f"{checked} checked against a recorded file, {conformance}")
     return 0
 
 

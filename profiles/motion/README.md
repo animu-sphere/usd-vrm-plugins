@@ -57,11 +57,26 @@ privileged over one written elsewhere.
 | Check | Claims |
 | --- | --- |
 | `motionSource_shippedProfiles` | every file here is one the library can read, and its id is its file name |
-| `workspace_motion_profiles` | each profile describes the recorded file that names it: the root, every mapped and ignored joint, no joint left neither, and the hierarchy the mapping implies |
+| `workspace_motion_profiles` | each profile describes the recorded file that names it: the root, every mapped and ignored joint, no joint left neither, and the hierarchy the mapping implies — and that a real YAML implementation reads the file the same way |
 
-The second reads both the profile and the recorded file itself
+**Neither checks what a profile says**, and that is deliberate rather than a
+gap. A test asserting that this rig's root maps to `hips` would be the library or
+its suite learning a producer, which is the one thing the layer is built not to
+do. What is checked is the shape of the claim: that the file loads, and that the
+rig it describes is the rig in the corpus.
+
+The second check reads both the profile and the recorded file itself
 ([`scripts/check_motion_profiles.py`](../../scripts/check_motion_profiles.py)),
 rather than calling into the libraries that will: a profile checked with the same
 parser the pipeline uses would be two implementations agreeing with each other.
 It is also the one check that may hold a reader's file and a profile at once,
 which is why it is a script and not a library test.
+
+Its third reading is a real YAML implementation, where one is installed. The
+library's reader is a stated subset written rather than borrowed — a profile
+needs an unknown key to be an error, and YAML's implicit typing would read a
+joint named `on`, `y` or `null` as something other than its name — so the claim
+is not "everything YAML accepts, this accepts". It is that **a file this accepts
+means to it what it means to YAML**: a refusal is a bad file's worst outcome, and
+a silent difference of interpretation is the failure a hand-written reader can
+produce that a refusal cannot.

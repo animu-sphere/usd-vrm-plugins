@@ -52,14 +52,29 @@
 //     which is the one place this reader is stricter than it looks: a file
 //     indented with tabs is a file whose structure nobody can see.
 //   * A block mapping is `key: value` lines at one indentation. A key with no
-//     value on its line takes the more-indented block below it, which is either
-//     another mapping or a sequence of `- item` lines.
+//     value on its line takes the block below it: a mapping indented under it,
+//     or a sequence of `- item` lines either indented under it **or at its own
+//     indentation**, which is how the format is ordinarily written and so is
+//     accepted rather than refused for looking unusual.
 //   * A value on the line is a scalar, a flow mapping `{ a: 1, b: 2 }`, or a
 //     flow sequence `[a, b]`. Neither flow form nests, and a sequence holds
 //     scalars.
 //   * A scalar is the rest of the line, trimmed, or a `"…"` string with `\"` and
-//     `\\` escapes — which is how a value carrying a `#`, a comma or a colon is
-//     written.
+//     `\\` escapes. Quoting is what a value needs when it carries a `#` that
+//     opens a word, or any of `{ } [ ]`, or — inside a flow form — a comma.
+//   * Not supported, and refused rather than half-read: anchors and aliases,
+//     tags, multiple documents, block scalars (`|`, `>`), and a flow form
+//     inside another. A profile is a table of names, and every one of those is
+//     an indirection a reader of the file would have to resolve in their head
+//     to know which joint is mapped to what.
+//
+// What is *not* claimed is that this reads every file YAML would: the list above
+// is deliberately absent. What is claimed, and checked, is that it never
+// disagrees with YAML about a file it does accept —
+// `scripts/check_motion_profiles.py` reads each shipped profile a second time
+// with a real YAML implementation where one is available and compares the two
+// readings, because a silent difference of interpretation is the one failure a
+// hand-written reader can produce that a refusal cannot.
 //
 // and the keys, in the shape a profile file writes them:
 //
@@ -124,8 +139,11 @@ MOTIONSOURCE_API bool ParseSourceProfileText(std::string_view text,
                                              = nullptr);
 
 // Reads the file and parses it. A file that cannot be opened or read is a
-// refusal at line 0 naming the path: there is no line, and the document this
-// error is about is one nobody managed to read.
+// refusal at line 0 naming the path — there is no line, and the document this
+// error is about is one nobody managed to read. The path is in the text because
+// this error carries no field for it, unlike the reader below this layer whose
+// diagnostic does: a caller loading a directory of profiles otherwise gets a
+// refusal that does not say which file.
 MOTIONSOURCE_API bool ParseSourceProfileFile(const std::filesystem::path& path,
                                              SourceProfile* profile,
                                              SourceProfileParseError* error

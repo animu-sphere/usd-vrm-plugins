@@ -65,6 +65,18 @@ Current schema contract version: **1**.
   angles are degrees or radians and a producer does not get to disagree with its
   own format about that.
 
+  **Written rather than borrowed, and checked against a borrowed one.** A
+  document parser hands an unknown key back like any other, so the strict half
+  would be written either way and it is the half where the risk is; and YAML's
+  implicit typing would read a joint named `on`, `y` or `null` as something other
+  than the writer's word for it. Against that, `motionSource` links exactly one
+  thing, and spending that on a configuration file would be a contract change.
+  What the subset owes in return is that it never disagrees with YAML *silently*
+  — so every shipped profile is read a second time with a real implementation
+  where one is installed, and the two readings are compared. It refuses anchors,
+  tags, block scalars and nested flow forms and says so; what it accepts, it
+  reads the way YAML does.
+
   Beside it, `profiles/motion/` and the first profile in it, written from the one
   export this pipeline has measured. What the file settles and what the profile
   decides are separated in both directions: the export states a basis, a unit, a
