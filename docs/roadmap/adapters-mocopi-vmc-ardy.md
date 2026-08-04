@@ -618,7 +618,7 @@ here too because the comparison belongs to neither plan alone.
 | --- | --- | --- |
 | A — VMC decoding | v0.6.0 | shipped |
 | B — VMC live receipt | v0.6.0 code, v0.7.0 evidence | the socket, the tool, and the corpus shipped; what a real sender does is v0.7.0 |
-| C — capture integration and offline E2E | v0.7.0 | ⬜ |
+| C — capture integration and offline E2E | v0.7.0 | 🚧 |
 | D — the mocopi native adapter | v0.7.0 | ⬜ |
 | E — the generator contract | unscheduled | ⬜ |
 | F — the generation adapter | unscheduled | ⬜ |
@@ -1009,11 +1009,19 @@ capture device validated through a VMC relay
   rule's characterisation test pins. Each needs a real sender to *emit* it;
   inventing a capture would be the guessing §9.2 argues against.
 
-### Milestone C — capture integration and offline E2E ⬜ (v0.7.0)
+### Milestone C — capture integration and offline E2E 🚧 (v0.7.0)
 
-`motion_capture` accepts a live VMC source · VMC trace → canonical samples →
-semantic clip reproducible in CI · semantic clip + VRM avatar → `motion_retarget`
-→ retargeted `UsdSkelAnimation` · artifact-only adapter and retarget smoke
+VMC session → `motion-capture-trace` · that trace → canonical samples → semantic
+clip reproducible in CI · semantic clip + VRM avatar → **unchanged**
+`motion_retarget` → retargeted `UsdSkelAnimation` · artifact-only adapter and
+retarget smoke
+
+The first item read "`motion_capture` accepts a live VMC source" until §11
+costed that edge and rejected it. The integration is a file rather than a link:
+`vmc_record --export-trace` ends the adapter's half at the canonical trace, and
+every tool after it is one the product already ships and this milestone does not
+touch. That is why the third item can say *unchanged* about `motion_retarget`
+and this one can say it about `motion_capture` too.
 
 ### Milestone D — the mocopi native live adapter ⬜ (v0.7.0)
 
@@ -1095,11 +1103,34 @@ depends on them ([docs/README.md](../README.md)).
   fixed one. `motionRuntime` is unchanged and stays unchanged; policy §11.4
   carries the amended arrangement, and `UdpReceiver.h` the argument. Landed
   2026-08-03.
-- ⬜ **`motion_capture` grows a live source.** WORKSPACE.md §1 describes it as
-  replaying a recorded trace. Milestone C adds `--source vmc --listen <addr>`
-  alongside `--replay`, which makes the CLI a consumer of an adapter and needs
-  the identity note updated when it lands. Exact syntax is fixed at
-  implementation time.
+- ✅ **`motion_capture` does not grow a live source, and the hand-off is a
+  file.** This item read "Milestone C adds `--source vmc --listen <addr>`
+  alongside `--replay`" until the change was actually costed, and what it cost
+  was three things at once: `motion_capture` is a product tool and every adapter
+  is excluded from the product ([WORKSPACE.md §5](../architecture/WORKSPACE.md)),
+  so the edge would have pulled a protocol decoder and a product name into the
+  aggregate artifact — once per adapter, because `--source vmc` invites
+  `--source mocopi` behind it; no tool in the product opens a transport today,
+  which is what makes every clip reproducible by construction; and the adapter
+  would have stopped being separately shippable.
+
+  What is built instead was already the format's job. `vmc_record --export-trace`
+  writes what the adapter delivered as a `motion-capture-trace` — *after
+  protocol decode and coordinate conversion, before any intake policy*, which is
+  that format's own definition of its content (`motionRuntime/CaptureTrace.h`) —
+  and `motion_capture` replays it unchanged, knowing nothing about VMC. So
+  §2 gains no edge, the identity note in §1 says the same thing after the first
+  adapter as before it, and a session still becomes a clip in exactly one place.
+  The cost is that a live session is two commands; the intermediate is canonical
+  and carries no VMC vocabulary, so the second is the one a `.vrma` clip already
+  goes through. Settled 2026-08-04, in the contract before the code.
+
+  The release was already asking for this and nobody had read it that way: the
+  v0.7.0 boundary requires that a session reach a real VRM avatar through
+  **unchanged** `motion_capture` and `motion_retarget`
+  ([current.md](current.md#done-when)). A `--source vmc` inside `motion_capture`
+  would have made that condition unsatisfiable by the change meant to satisfy
+  it.
 - ⬜ **The generator contract has no home yet.** `IMotionGenerator` and
   `MotionGenerationRequest` are named in motion policy §16 Phase F as
   deliverables, but the interface itself will need a contract document before
