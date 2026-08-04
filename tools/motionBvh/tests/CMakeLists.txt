@@ -35,4 +35,18 @@ if(EXISTS "${_motion_bvh_lib}/tests/check_boundaries.py")
                 "${CMAKE_CURRENT_SOURCE_DIR}/.."
                 "$<TARGET_FILE:motion_bvh_inspect>"
                 --cmake-target motion_bvh_inspect)
+
+    # The same check pointed at a target that does not exist, and it must FAIL.
+    # `--cmake-target` filters which link lines are examined, so a misspelled
+    # one examines none and the OpenUSD check quietly stops existing while still
+    # printing "boundary check passed". A check nobody has watched fail is a
+    # check nobody knows still works.
+    add_test(NAME motion_bvh_inspect_boundariesGuard
+        COMMAND "${Python3_EXECUTABLE}"
+                "${_motion_bvh_lib}/tests/check_boundaries.py"
+                "${CMAKE_CURRENT_SOURCE_DIR}/.."
+                "$<TARGET_FILE:motion_bvh_inspect>"
+                --cmake-target no_such_target)
+    set_tests_properties(motion_bvh_inspect_boundariesGuard PROPERTIES
+        WILL_FAIL TRUE)
 endif()

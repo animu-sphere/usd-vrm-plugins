@@ -361,6 +361,20 @@ def check_command_errors(tool: str, generated: pathlib.Path,
     failures.check("motion_bvh_inspect" in helped.stdout,
                    "--help printed nothing useful")
 
+    # `--` makes a path reachable however it is spelled, which is the only way
+    # to inspect a file whose name begins with a dash.
+    minimal = str(generated / "valid-minimal-root.bvh")
+    separated = inspect(tool, "--", minimal)
+    failures.check(separated.returncode == 0,
+                   f"-- <file> exited {separated.returncode}")
+    failures.check(separated.stdout == inspect(tool, minimal).stdout,
+                   "-- <file> and <file> reported differently")
+    for arguments, code in (([], 2), ([minimal, "second"], 2)):
+        result = inspect(tool, "--", *arguments)
+        failures.check(
+            result.returncode == code,
+            f"-- {arguments} exited {result.returncode}, expected {code}")
+
 
 def check_determinism(tool: str, generated: pathlib.Path,
                       failures: Failures) -> None:

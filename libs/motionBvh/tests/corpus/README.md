@@ -82,6 +82,12 @@ The hash matters more here than in the generated half: a recorded file whose
 hash moved is a different capture wearing the same name, and every observation
 written about it stops being about the bytes on disk.
 
+This is the motion layer's first third-party fixture, not the repository's. The
+importer has vendored real models since its
+[spec samples](../../../../plugins/usdVrmFileFormat/tests/corpus/CORPUS.md),
+under the same rule: committed only where redistribution is cleared, recorded in
+a manifest either way.
+
 ## Line endings
 
 `.gitattributes` pins `*.bvh` to LF. The parser accepts CRLF and proves it in

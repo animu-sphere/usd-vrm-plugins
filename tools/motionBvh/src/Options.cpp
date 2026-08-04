@@ -100,6 +100,8 @@ GetUsage()
         "  --max-joints N         Joints (default 4096).\n"
         "  --max-frames N         Motion rows (default 1000000).\n"
         "\n"
+        "  --                     Everything after this is the file, however it\n"
+        "                         is spelled.\n"
         "  -h, --help             Show this message.\n"
         "\n"
         "Exit status: 0 the file was read, 1 the file was refused, 2 the command\n"
@@ -143,8 +145,33 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
                 return false;
             }
         } else if (argument == "--max-frames") {
+            // TakeSize, not TakePositive, and the asymmetry with the two limits
+            // above is deliberate: `--max-frames 0` means "refuse any file that
+            // carries a motion row", which is a coherent thing to ask of a
+            // format where `Frames: 0` is legal. A zero depth or joint limit
+            // would refuse every BVH file there is, including that one.
             if (!TakeSize(arguments, &i, argument, &options->limits.maxFrames,
                           error)) {
+                return false;
+            }
+        } else if (argument == "--") {
+            // Everything after this is a path, however it is spelled. A file
+            // whose name begins with '-' is otherwise unreachable, and this
+            // tool takes its path from wherever the caller got it.
+            if (i + 1 >= arguments.size()) {
+                *error = "-- must be followed by a file";
+                return false;
+            }
+            ++i;
+            if (!options->inputPath.empty()) {
+                *error = "this tool reads one file at a time; '" + arguments[i]
+                    + "' is a second";
+                return false;
+            }
+            options->inputPath = arguments[i];
+            if (i + 1 < arguments.size()) {
+                *error = "this tool reads one file at a time; '"
+                    + arguments[i + 1] + "' is a second";
                 return false;
             }
         } else if (!argument.empty() && argument[0] == '-'

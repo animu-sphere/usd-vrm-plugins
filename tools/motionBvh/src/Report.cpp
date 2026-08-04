@@ -208,21 +208,34 @@ PrintChannelRanges(std::ostream& out, const motionBvh::BvhDocument& document)
     // One pass over the rows rather than one pass per column: a real session is
     // tens of thousands of rows wide enough that the difference is the tool
     // feeling instant or not.
+    //
+    // `seeded` rather than `frame == 0`, and the difference is not cosmetic: a
+    // row this document cannot supply is skipped, and if that were ever the
+    // *first* row then seeding on the frame index would be skipped with it —
+    // leaving every column compared against a default-constructed 0.0f and a
+    // plausible-looking table of wrong ranges. The parser cannot produce such a
+    // document, which is precisely why the failure would be silent.
     std::vector<float> smallest(document.channelCount);
     std::vector<float> largest(document.channelCount);
+    bool seeded = false;
     for (std::size_t frame = 0; frame < document.frameCount; ++frame) {
         const float* row = document.Frame(frame);
         if (!row) {
             continue;
         }
         for (std::size_t column = 0; column < document.channelCount; ++column) {
-            if (frame == 0 || row[column] < smallest[column]) {
+            if (!seeded || row[column] < smallest[column]) {
                 smallest[column] = row[column];
             }
-            if (frame == 0 || row[column] > largest[column]) {
+            if (!seeded || row[column] > largest[column]) {
                 largest[column] = row[column];
             }
         }
+        seeded = true;
+    }
+    if (!seeded) {
+        out << "  (no readable rows)\n";
+        return;
     }
 
     const std::size_t width = IndexWidth(document.channelCount);

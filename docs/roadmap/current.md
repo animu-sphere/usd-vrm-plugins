@@ -154,10 +154,12 @@ not a green tick. A device is needed once per behavior, not once per run.
 
 - ✅ **One vendor's phone export is committed** (2026-08-04) — 17 seconds, 27
   joints, 162 channels, 853 rows at 50 Hz, cleared for publication by the
-  capture's owner. It is the first fixture in this repository that the code
-  could be *surprised* by: everything else was written here, and a file written
-  here can only confirm what was already believed. The parser read it whole on
-  first contact and both checks over it are green.
+  capture's owner. It is the first fixture the **motion layer** can be
+  *surprised* by: every corpus under `libs/` and `adapters/` was written here,
+  and a file written here can only confirm what was already believed. The
+  importer has had third-party files since the vendored
+  [spec samples](../../plugins/usdVrmFileFormat/tests/corpus/CORPUS.md) — this
+  is the same practice reaching the motion side, not a new one.
 - The measurements — the basis, the unit, the root convention, the seven-segment
   spine, the position channels that restate the rest pose every frame — are in
   [recorded-motion-sources.md §9](recorded-motion-sources.md#9-milestones) and in

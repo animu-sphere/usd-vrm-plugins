@@ -186,8 +186,27 @@ def main() -> int:
         if arguments.cmake_target else ""
     openusd_link = re.compile(r"\bgf\b|\busd|\bsdf|\bplug\b|pxr::",
                               re.IGNORECASE)
-    for call in re.findall(r"target_link_libraries\(\s*" + target + r"[^)]*\)",
-                           cmake):
+    calls = re.findall(r"target_link_libraries\(\s*" + target + r"[^)]*\)",
+                       cmake)
+    # A filter that matches nothing is the failure mode this check is least able
+    # to survive: `re.findall` returns an empty list, the loop below never runs,
+    # and a misspelled --cmake-target reports "boundary check passed" having
+    # examined no link line at all. The whole check would then be one typo away
+    # from silently not existing.
+    #
+    # Only with a filter, though. Unfiltered, zero calls is this library's
+    # actual and intended state -- `libs/motionBvh/CMakeLists.txt` has no
+    # `target_link_libraries` line because the library links nothing at all --
+    # and the binary import check below is what covers that claim.
+    if arguments.cmake_target and not calls:
+        # ASCII: this lands on a Windows console in CI, where a non-cp932
+        # character comes out as a backslash escape and the sentence stops
+        # reading as a sentence.
+        errors.append(
+            f"{label}: no target_link_libraries call for target "
+            f"'{arguments.cmake_target}'; the OpenUSD link check examined "
+            f"nothing, so --cmake-target names a target that is not there")
+    for call in calls:
         if openusd_link.search(call):
             errors.append(f"{label} CMake must link no OpenUSD library")
             break

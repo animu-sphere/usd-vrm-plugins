@@ -5,7 +5,12 @@
 # is `motion_bvh` and the second executable joins the list below rather than
 # arriving as a second member. That is a shape `motion_capture`,
 # `motion_retarget` and `vmc_record` have not used -- each of those is one
-# directory, one executable, one id -- and it is measured rather than assumed
+# directory, one executable, one id.
+#
+# `ost` 0.21.0 packages it: `plugin package --workspace --product` reports
+# `== motion_bvh 0.6.0 (tool) ==` and a 7-member product, and the archive
+# carries `bin/motion_bvh_inspect.exe`. Measured 2026-08-04 rather than assumed,
+# and before release preparation rather than during it
 # (roadmap/recorded-motion-sources.md §10).
 #
 # It requires `motionBvh` and nothing else, which is the tool's half of the

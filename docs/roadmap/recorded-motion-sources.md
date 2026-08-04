@@ -396,18 +396,27 @@ depends on them ([docs/README.md](../README.md)).
   The `profiles/motion/` directory is still a new shape and still unconfirmed;
   it gets the same treatment when it lands, the way the adapter's discovery gap
   was found.
-- 🚧 **`tools/motionBvh/` is one member carrying two executables, and the graph
-  gate has nothing to say about it.** Adding the directory left `--graph-only`
-  reporting the same `4 bundle(s), 5 libraries` — and `--graph-only --json`
-  names no tool at all, not even `motion_capture` or `motion_retarget`, so this
-  is the graph walking bundles and libraries by design rather than a discovery
-  gap like the adapter's. What that leaves unverified is the *grouping*: every
-  workspace tool so far has been one directory, one executable, and an id equal
-  to that executable's name, where this member is `motion_bvh` with
-  `motion_bvh_inspect` inside it and `motion_bvh_convert` to come. Only
-  `ost plugin package --workspace --product` walks a tool descriptor, so the
-  member count and the `tools/<id>/bin` layout are measured when a packaging run
-  next happens rather than asserted here.
+- ✅ **`tools/motionBvh/` is one member carrying two executables, and `ost`
+  0.21.0 packages it.** Every workspace tool before it was one directory, one
+  executable, and an id equal to that executable's name; this member is
+  `motion_bvh` with `motion_bvh_inspect` inside it and `motion_bvh_convert` to
+  come. `ost plugin package --workspace --product` reports
+  `== motion_bvh 0.6.0 (tool) ==`, `build: matched (ost-managed)`, and a
+  product of **7 exact members** (4 bundles + 3 tools); the archive carries
+  `bin/motion_bvh_inspect.exe`, so an id that is not an executable name costs
+  nothing. Measured 2026-08-04, deliberately *before* release preparation —
+  deferring it would have made release prep the place a new member shape is
+  first tried.
+- The graph gate has nothing to say about any of that, and that is by design
+  rather than a discovery gap like the adapter's: `--graph-only --json` names no
+  tool at all, not even `motion_capture` or `motion_retarget`. Only packaging
+  walks a tool descriptor.
+- **The packaging order is load-bearing and easy to get backwards.** A root
+  `ost build` rebuilds every bundle's library and invalidates the per-bundle
+  managed-build provenance, so packaging straight after one fails closed with
+  `PLUGIN_PACKAGE_OUTPUT_MISMATCH` on a digest that is not actually wrong. The
+  order is `ost build` → `ost plugin build <bundle>` for each → `ost plugin
+  package`.
 
 ## 11. Non-goals
 

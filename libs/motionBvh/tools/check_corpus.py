@@ -225,8 +225,17 @@ def measure(path: pathlib.Path) -> dict:
         "bytes": len(raw),
         "sha256": hashlib.sha256(raw).hexdigest(),
     }
+    # `surrogateescape`, not strict, and not a refusal either. A producer is
+    # free to write joint names in whatever encoding its platform handed it,
+    # and the recorded half is where such a file first appears -- but the C++
+    # parser reads *bytes*, treats a joint name as an opaque token and would
+    # accept the file without noticing. A scanner that refused it would put the
+    # two implementations in disagreement over a file neither has a problem
+    # with, which is exactly the disagreement this second reading exists to
+    # detect. Everything structural in BVH is ASCII, so round-tripping the
+    # undecodable bytes through surrogates costs the scan nothing.
     try:
-        entry.update(scan(raw.decode("utf-8")))
+        entry.update(scan(raw.decode("utf-8", errors="surrogateescape")))
         entry["status"] = "valid"
     except Refused as refusal:
         entry["status"] = "refused"
