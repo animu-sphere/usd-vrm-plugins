@@ -1,0 +1,94 @@
+#usda 1.0
+(
+    doc = """A target rig for the VMC end-to-end leg, and nothing else.
+
+    The design fixture at docs/design/fixtures/motion/avatar.usda carries four
+    joints -- Root, Pelvis, SpineA, ChestA -- because the canonical walk it was
+    built beside drives a spine. The committed VMC session that actually moves
+    is an arm raise, so retargeting it onto that rig would bind cleanly and
+    animate nothing: every varying bone would be unmapped, and the check that
+    the rig moves would fail for a reason that has nothing to do with the
+    adapter.
+
+    So this rig carries the chain that session drives, and it is deliberately a
+    *different* rig from the design one rather than an extension of it: that
+    fixture is a design contract with an expected retargeted result committed
+    beside it, and widening it to suit a test would move a contract to make a
+    test pass.
+
+    The joint names disagree with the humanoid vocabulary on purpose, the way
+    the design fixture's do. A binding comes from the `vrm:humanBones:*`
+    attributes below and never from a name, so a rig whose joints happened to
+    be called `hips` and `leftUpperArm` would let a name heuristic pass this
+    test without anyone noticing one had appeared.
+
+    The mapping lives on the stage rather than in a --humanoid-map file because
+    that is the path a real VRM takes: the importer authors these attributes,
+    and motion_retarget reads them as plain attributes without linking the
+    vrmSchema bundle.
+    """
+    defaultPrim = "Avatar"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Scope "Avatar"
+{
+    # The humanoid mapping, carried as plain attributes -- one per bone the
+    # committed VMC corpus can drive. A bone the session sends and this rig does
+    # not name is reported as unbound, which is the behaviour under test on the
+    # eighteen bones the arm raise holds still.
+    # Whole joint paths, because that is what a UsdSkel joint token is. The
+    # design fixture's four joints are flat names and therefore siblings; this
+    # rig is a chain, so an arm has to say which chest it hangs from.
+    custom token vrm:humanBones:hips = "Root/Pelvis"
+    custom token vrm:humanBones:spine = "Root/Pelvis/SpineA"
+    custom token vrm:humanBones:chest = "Root/Pelvis/SpineA/ChestA"
+    custom token vrm:humanBones:leftShoulder = "Root/Pelvis/SpineA/ChestA/ClavicleL"
+    custom token vrm:humanBones:leftUpperArm = "Root/Pelvis/SpineA/ChestA/ClavicleL/ArmUpperL"
+    custom token vrm:humanBones:leftLowerArm = "Root/Pelvis/SpineA/ChestA/ClavicleL/ArmUpperL/ArmLowerL"
+    custom token vrm:humanBones:leftHand = "Root/Pelvis/SpineA/ChestA/ClavicleL/ArmUpperL/ArmLowerL/HandL"
+    rel vrm:skeleton = </Avatar/TargetSkeleton>
+
+    def Skeleton "TargetSkeleton" (
+        apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        uniform token[] joints = [
+            "Root",
+            "Root/Pelvis",
+            "Root/Pelvis/SpineA",
+            "Root/Pelvis/SpineA/ChestA",
+            "Root/Pelvis/SpineA/ChestA/ClavicleL",
+            "Root/Pelvis/SpineA/ChestA/ClavicleL/ArmUpperL",
+            "Root/Pelvis/SpineA/ChestA/ClavicleL/ArmUpperL/ArmLowerL",
+            "Root/Pelvis/SpineA/ChestA/ClavicleL/ArmUpperL/ArmLowerL/HandL"]
+
+        # The same chain accumulated into world space. UsdSkel warns without it
+        # and resolves anyway, which is how the design fixture gets away with
+        # omitting it -- but a warning printed by every run of this test is a
+        # line a reader has to learn to ignore, and those are expensive.
+        uniform matrix4d[] bindTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.95, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.07, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.23, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.04, 1.37, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.15, 1.37, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.41, 1.37, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.65, 1.37, 0, 1))]
+
+        # A rest pose with real offsets rather than a stack of identities: the
+        # root-motion delta is applied relative to each rig's own rest, so a
+        # rig whose hips sit at the origin would not exercise it.
+        uniform matrix4d[] restTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.95, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.12, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.16, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.04, 0.14, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.11, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.26, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.24, 0, 0, 1))]
+    }
+}

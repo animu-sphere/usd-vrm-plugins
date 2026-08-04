@@ -1023,6 +1023,36 @@ every tool after it is one the product already ships and this milestone does not
 touch. That is why the third item can say *unchanged* about `motion_retarget`
 and this one can say it about `motion_capture` too.
 
+- ✅ **The first three items landed 2026-08-04.** `--export-trace` writes what
+  the adapter delivered, one trace per session; `vmc_record_endToEnd` drives
+  `arm-raise-30hz` through both product tools onto a rig and checks the result
+  through a `UsdSkelSkeletonQuery` — **by name**: the three joints the session
+  drove are the three UsdSkel resolves as moving, and a session that moves
+  nothing fails the test (verified by running it against
+  `neutral-standing-30hz`, which is how anyone knows the check works).
+
+  The test lives with the adapter rather than with the product, and that is the
+  same rule one level down: a product test that spawned `vmc_record` would be
+  the dependency this arrangement exists to avoid, in a test directory instead
+  of a link line, which is worse for being harder to see. It is skipped by a
+  `TARGET` guard in a build tree without the product's tools.
+
+  Its rig is a fixture of its own rather than the design avatar, because the
+  committed session that moves is an arm raise and the design avatar has four
+  joints and no arms. Widening a design contract fixture to suit a test would
+  move a contract to make a test pass.
+- ⬜ **The artifact-only leg is not done.** Nothing here has been run from
+  packaged artifacts, and `ost` 0.21.0 cannot package an adapter at all (§11),
+  so the chain is verified from the workspace build only.
+
+**Found on the way, and fixed in the layer that owned it.** The trace writer
+could emit a file its own reader refused: `provider`, `protocol` and `sourceId`
+were written verbatim and read back one token at a time, and a VMC session's
+`sourceId` is the model title a person typed — `"Example Avatar"`. Every trace
+in this repository was generated until now, and a generated `sourceId` is
+`walk-01`. The header takes the rest of the line since, and what no
+line-oriented format can carry is refused before the first byte.
+
 ### Milestone D — the mocopi native live adapter ⬜ (v0.7.0)
 
 `adapters/liveCapture/mocopi` scaffold · packet-capture fixture format · packet
