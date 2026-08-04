@@ -239,6 +239,47 @@ TestBasisOfAZUpSource()
                       pxr::GfVec3f(-1.0f, 3.0f, 2.0f)));
 }
 
+// A *negative* forward axis: a source that faces the other way. The profile
+// contract makes the sign load-bearing on purpose -- "+Z forward" and
+// "-Z forward" are both real, and an unsigned axis would make a rig that faces
+// backwards look like one that does not -- so this is the case that would pass
+// under an implementation that dropped the sign and produce a character walking
+// backwards.
+void
+TestBasisOfABackwardFacingSource()
+{
+    SourceProfile profile = BaseProfile();
+    profile.forwardAxis = SourceAxis::MinusZ;
+    profile.translationUnit = SourceLengthUnit::Meters;
+    const CanonicalBasis basis = *MakeCanonicalBasis(profile);
+    // Still right-handed, so still a rotation and not a mirror -- the third
+    // axis is what absorbs the flip.
+    assert(basis.determinant == 1);
+    // The source's forward is canonical's forward.
+    assert(NearVector(ConvertPosition(basis, Vec(0.0f, 0.0f, -1.0f)),
+                      pxr::GfVec3f(0.0f, 0.0f, 1.0f)));
+    // And its own +X is canonical -X, because in a right-handed source with +Y
+    // up and -Z forward, up x forward is -X.
+    assert(NearVector(ConvertPosition(basis, Vec(1.0f, 2.0f, 3.0f)),
+                      pxr::GfVec3f(-1.0f, 2.0f, -3.0f)));
+}
+
+// A negative *up* axis, which is the other half of the same statement and flips
+// the determinant's bookkeeping rather than the handedness.
+void
+TestBasisOfAnUpsideDownSource()
+{
+    SourceProfile profile = BaseProfile();
+    profile.upAxis = SourceAxis::MinusY;
+    profile.translationUnit = SourceLengthUnit::Meters;
+    const CanonicalBasis basis = *MakeCanonicalBasis(profile);
+    assert(basis.determinant == 1);
+    // -Y up with +Z forward puts up x forward at -X, so the source's own +X is
+    // canonical -X and the flip is not confined to the up axis.
+    assert(NearVector(ConvertPosition(basis, Vec(1.0f, 2.0f, 3.0f)),
+                      pxr::GfVec3f(-1.0f, -2.0f, 3.0f)));
+}
+
 // The mirror. A left-handed source with the same up and forward as canonical
 // differs from it in exactly one axis, and the sign is not a free choice: it is
 // whatever makes the determinant negative.
@@ -373,6 +414,121 @@ TestRestPoseFromOffsets()
     assert(result.report.composedBones[0] == motion::HumanBone::Spine);
 }
 
+// `stated-rest-rotations`: the source states a rest orientation per joint, and
+// the rest pose composes those along the same paths. This is also the only route
+// by which a source-supplied `SourceQuat` reaches `ConvertRotation`, so it is
+// where a non-unit quaternion has to be normalised rather than carried.
+void
+TestRestPoseFromStatedRotations()
+{
+    SourceSkeleton skeleton = BaseSkeleton();
+    // Deliberately *not* unit length: a source that wrote 0.9-scaled components
+    // wrote them, and `SourceQuat` keeps them (SourceSkeleton.h). Canonical
+    // motion is unit quaternions, and this layer is the last one able to say so.
+    const float half = static_cast<float>(3.14159265358979323846 / 8.0);
+    SourceQuat stated;
+    stated.w = std::cos(half) * 2.0f;
+    stated.y = std::sin(half) * 2.0f;
+    // The segment nothing maps carries the rest rotation; the joint below it is
+    // straight. So the composed rest of `spine` is the segment's, which is what
+    // a walk that skipped unmapped joints would lose.
+    skeleton.joints[1].restRotation = stated;
+
+    SourceProfile profile = BaseProfile();
+    profile.restPose = RestPoseSource::StatedRestRotations;
+    const SourceConversion result =
+        ConvertSourceToCanonical(skeleton, BaseAnimation(), profile);
+    assert(result.Converted());
+
+    const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
+    assert(NearRotation(result.rest.localRotations[spine], AboutY(45.0f)));
+    // Normalised on the way in: the double-length quaternion above describes a
+    // 45-degree turn and nothing else, and `GetLength` says so.
+    assert(std::abs(result.rest.localRotations[spine].GetLength() - 1.0f)
+           <= kTolerance.angle);
+    // The hips are above it and unaffected; the head is below a bound joint that
+    // states nothing.
+    const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
+    assert(NearRotation(result.rest.localRotations[hips],
+                        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
+
+    // The same rig read as `rest-offsets` states no rest rotation at all, which
+    // is the difference between "the source has none" and "the source says
+    // identity" that `SourceJoint::restRotation` exists to keep.
+    const SourceConversion offsets =
+        ConvertSourceToCanonical(skeleton, BaseAnimation(), BaseProfile());
+    assert(offsets.Converted());
+    assert(NearRotation(offsets.rest.localRotations[spine],
+                        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
+}
+
+// `first-frame`: the writer's first sample is the rest pose. The clip still
+// carries absolute local rotations -- it is the *rest* that moves, and the
+// retargeter is what subtracts one from the other.
+void
+TestRestPoseFromFirstFrame()
+{
+    SourceAnimation animation = BaseAnimation();
+    animation.tracks[2] = RotationTrack({Angles(0.0f, 0.0f, 30.0f),
+                                         Angles(0.0f, 0.0f, 80.0f)});
+    SourceProfile profile = BaseProfile();
+    profile.restPose = RestPoseSource::FirstFrame;
+    const SourceConversion result =
+        ConvertSourceToCanonical(BaseSkeleton(), animation, profile);
+    assert(result.Converted());
+
+    const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
+    // The rest is frame 0's rotation.
+    assert(NearRotation(result.rest.localRotations[spine], AboutY(30.0f)));
+    // And the samples are unchanged by that: frame 0 still reports 30, not the
+    // zero a rest-relative clip would carry.
+    assert(NearRotation(result.animation.samples[0].localRotations[spine],
+                        AboutY(30.0f)));
+    assert(NearRotation(result.animation.samples[1].localRotations[spine],
+                        AboutY(80.0f)));
+
+    // An empty clip has no first frame to read, and the rest falls back to the
+    // offsets rather than to whatever an out-of-range read would return.
+    SourceAnimation empty = BaseAnimation();
+    empty.frameCount = 0;
+    for (SourceJointTrack& track : empty.tracks) {
+        track.translations.clear();
+        track.eulerAngles.clear();
+    }
+    empty.frameTime = 0.0;
+    const SourceConversion none =
+        ConvertSourceToCanonical(BaseSkeleton(), empty, profile);
+    assert(none.Converted());
+    assert(none.animation.samples.empty());
+    assert(NearRotation(none.rest.localRotations[spine],
+                        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
+}
+
+// An absent bone is not an identity sample (MOTION_CONTRACT.md). A bone whose
+// whole path states no rotation gets no presence bit, rather than an identity
+// nobody wrote.
+void
+TestABoneNothingRotatesIsNotValid()
+{
+    SourceAnimation animation = BaseAnimation();
+    // Both joints on the spine's path go silent; the rig still carries them.
+    animation.tracks[1] = SourceJointTrack();
+    animation.tracks[2] = SourceJointTrack();
+    const SourceConversion result =
+        ConvertSourceToCanonical(BaseSkeleton(), animation, BaseProfile());
+    assert(result.Converted());
+
+    const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
+    const auto head = static_cast<std::size_t>(motion::HumanBone::Head);
+    assert(!result.animation.samples[0].validRotations.test(spine));
+    // The head is below a silent joint but states its own rotation, so it is
+    // reported.
+    assert(result.animation.samples[0].validRotations.test(head));
+    // The rest pose still carries the bone: the rig has it, and what the clip
+    // declines to claim is only how it turned.
+    assert(result.rest.present.test(spine));
+}
+
 // The rule roadmap §10 wrote down: a joint between two mapped ones is on the
 // path between them, and its rotation belongs to the lower bone.
 void
@@ -478,6 +634,11 @@ TestRootRotationPolicies()
         assert(!result.animation.samples[0].root.hasOrientation);
         assert(NearRotation(result.animation.samples[0].localRotations[hips],
                             pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
+        // And the hips carry no presence bit either. The profile said this
+        // root's rotation is not the body's; the only joint on the hips' path
+        // *is* that root, so the clip states nothing about how the hips turned
+        // rather than stating that they did not.
+        assert(!result.animation.samples[0].validRotations.test(hips));
     }
 }
 
@@ -632,12 +793,17 @@ main()
     TestBasisNeedsAStatedProfile();
     TestBasisOfAnAgreeingSource();
     TestBasisOfAZUpSource();
+    TestBasisOfABackwardFacingSource();
+    TestBasisOfAnUpsideDownSource();
     TestBasisOfALeftHandedSource();
     TestRightHandedRotationKeepsItsAngle();
     TestComposeUsesTheDeclaredOrder();
     TestCompositionOrderIsLastFirst();
     TestAngleUnitIsTheTracksAnswer();
     TestRestPoseFromOffsets();
+    TestRestPoseFromStatedRotations();
+    TestRestPoseFromFirstFrame();
+    TestABoneNothingRotatesIsNotValid();
     TestUnmappedJointRotationIsComposedNotDropped();
     TestRootTranslationPolicies();
     TestRootRotationPolicies();

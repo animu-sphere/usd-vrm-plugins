@@ -115,12 +115,23 @@ Current schema contract version: **1**.
   `motionBvh_boundaries` — one file, one code, in review. It sits in the frozen
   set's semantic half because most of what it can mean is, but the half the
   extractor meets needs no profile at all: a joint declaring two rotation
-  channels forms no Euler order whoever wrote the file. The edge costs
-  `motionBvh` the *binary* half of its boundary check, and the registration now
-  says what is left of it: the check still points at the parser suite, an archive
-  contributes only the objects something references, so what it measures is the
-  syntax half's import closure rather than the library's. The source rule — no
-  OpenUSD name in any file here, extractor included — is what covers the rest.
+  channels forms no Euler order whoever wrote the file.
+
+  **The edge cost `motionBvh` the binary half of its boundary check, and finding
+  that out cost a red macOS lane.** The check inspected a built artifact and
+  refused any OpenUSD import; with the edge reaching `motionCore`'s `Gf` value
+  types, what it reports is the *linker's* answer rather than the library's —
+  MSVC pulls only the archive members something references, GNU ld with
+  `--as-needed` drops the resulting unused entries, and Apple's ld64 records
+  every library on the link line whether or not a symbol is used. All three are
+  correct about their own artifact, so one source tree produces two answers and
+  the check was measuring a toolchain. It is removed rather than narrowed, with
+  the measurement written down where it was made; the source rule — no OpenUSD
+  name in any file here, extractor included — is platform independent and is what
+  carries the claim. `tools/motionBvh` gains the same correction: a standalone
+  configure of it now needs OpenUSD on the prefix path, because
+  `find_package(motionBvh)` resolves `motionSource` and through it `pxr`, and its
+  README said the opposite.
 
 - **A profile is a file now, and the first producer is described by one.**
   `SourceProfileFile.h` settles the keys the profile sketch left open and reads

@@ -15,12 +15,38 @@ Three claims are checked, and each one is load-bearing rather than tidy:
   for it is: a joint declaring two rotation channels forms no Euler order
   whoever wrote the file, so that code needs no profile and the file that
   raises it holds none.
-* **No OpenUSD, no humanoid vocabulary, no stage.** Three numbers on an OFFSET
-  line are not a vector in any basis this layer knows, and which joint is a
-  `HumanBone` is a profile's answer. The source rule covers the whole library;
-  the *binary* rule below covers what the binary it is pointed at actually
-  pulled in, and since the extractor landed those two are no longer the same
-  claim -- see the note beside `binary` in tests/CMakeLists.txt.
+* **No OpenUSD name, no humanoid vocabulary, no stage.** Three numbers on an
+  OFFSET line are not a vector in any basis this layer knows, and which joint is
+  a `HumanBone` is a profile's answer. This is a rule about *source*, and since
+  the extractor landed it is the only form the rule can take -- see below.
+
+**There is no binary import check here any more, and its removal is a
+measurement rather than a concession.** Until the extractor, this script also
+inspected a built executable and refused any OpenUSD library in its imports. The
+declared `motionBvh -> motionSource` edge reaches `motionCore`, whose Gf value
+types live in a shared library, so what that check now reports depends entirely
+on the linker:
+
+* MSVC pulls only the archive members that resolve a symbol, so an executable
+  using the parser alone records no OpenUSD import;
+* GNU ld with `--as-needed` -- the default on the distributions this builds on
+  -- drops the resulting unused `DT_NEEDED` entries, and reports the same;
+* Apple's ld64 records a load command for every dylib on the link line whether
+  or not a symbol is referenced, and reports the opposite.
+
+All three are correct about their own artifact. One source tree therefore
+produces two different answers, and a check that passes on two platforms and
+fails on the third is not measuring the property it names -- it is measuring the
+linker. It cost a red macOS lane to find that out, on a claim that had been
+verified on Windows and generalised. The source rule above is platform
+independent and is what carries the claim now: no OpenUSD name appears in any
+file of this library, extractor included, which is the thing a reviewer can act
+on.
+
+`motionSource`'s own check reached the same conclusion from the other end and
+says so at length: in a monolithic OpenUSD build Gf and Sdf are the same
+library, so no import listing could tell an allowed dependency from a forbidden
+one even where the listing is stable.
 
 It runs over `tools/motionBvh` as well as over the library, because a CLI that
 named a producer would put the assumption one directory away from the layer that
@@ -31,11 +57,8 @@ of the producer list is a second list to keep current.
 from __future__ import annotations
 
 import argparse
-import os
 import pathlib
 import re
-import shutil
-import subprocess
 import sys
 
 # Capture products, mocap vendors, and DCC applications whose BVH exports this
@@ -71,44 +94,6 @@ EXTRACTION_SOURCES = {"BvhExtract.h", "BvhExtract.cpp"}
 EXTRACTION_CODES = {"InvalidRotationOrder"}
 
 
-def _find_dumpbin() -> str | None:
-    tool = shutil.which("dumpbin")
-    if tool:
-        return tool
-    roots = [
-        pathlib.Path(os.environ.get("ProgramFiles", r"C:\\Program Files")),
-        pathlib.Path(os.environ.get("ProgramFiles(x86)", r"C:\\Program Files (x86)")),
-    ]
-    for root in roots:
-        matches = sorted(root.glob(
-            "Microsoft Visual Studio/2022/*/VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe"),
-            reverse=True)
-        if matches:
-            return str(matches[0])
-    return None
-
-
-def _binary_dependencies(binary: pathlib.Path) -> str:
-    if sys.platform == "win32":
-        tool = _find_dumpbin()
-        if not tool:
-            raise RuntimeError("dumpbin was not found")
-        command = [tool, "/nologo", "/dependents", str(binary)]
-    elif sys.platform == "darwin":
-        tool = shutil.which("otool")
-        if not tool:
-            raise RuntimeError("otool was not found")
-        command = [tool, "-L", str(binary)]
-    else:
-        tool = shutil.which("readelf")
-        if not tool:
-            raise RuntimeError("readelf was not found")
-        command = [tool, "-d", str(binary)]
-    return subprocess.run(
-        command, check=True, text=True, encoding="utf-8", errors="replace",
-        stdout=subprocess.PIPE).stdout
-
-
 def strip_comments(text: str) -> str:
     """Blank out // and /* */ comments, keeping line structure.
 
@@ -140,9 +125,6 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=pathlib.Path,
                         help="Directory whose include/ and src/ are checked.")
-    parser.add_argument("binary", type=pathlib.Path,
-                        help="An executable whose transitive imports must "
-                             "contain no OpenUSD library.")
     parser.add_argument(
         "--cmake-target", default=None,
         help="Check only this target's link lines. The library's CMakeLists "
@@ -152,7 +134,6 @@ def main() -> int:
     arguments = parser.parse_args()
 
     source = arguments.source.resolve()
-    binary = arguments.binary.resolve()
     # "libs/motionBvh" or "tools/motionBvh" -- both directories are named
     # motionBvh, so the parent is what tells a failure apart.
     label = f"{source.parent.name}/{source.name}"
@@ -252,17 +233,6 @@ def main() -> int:
                 errors.append(
                     f"{label} links something other than motionSource: "
                     f"{call.strip()}")
-
-    try:
-        dependencies = _binary_dependencies(binary)
-    except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
-        errors.append(f"could not inspect {label} dependencies: {exc}")
-        dependencies = ""
-    forbidden_binary = re.compile(
-        r"(?:usd_ms|usd_gf|lib(?:usd|sdf|plug|ar|gf)(?:[._-]|\.(?:dll|dylib|so)))",
-        re.IGNORECASE)
-    if forbidden_binary.search(dependencies):
-        errors.append(f"{label} binary imports an OpenUSD library")
 
     if errors:
         print("\n".join(errors), file=sys.stderr)

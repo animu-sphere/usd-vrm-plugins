@@ -52,6 +52,18 @@
 // than as a failure, and is the specific outcome roadmap §10 wrote this rule
 // down to prevent.
 //
+// What the composition keeps is the chain's total **orientation**, and it is
+// worth being exact about what that leaves behind. When the unmapped joints in
+// between rotate, the source's lower joint swings through an arc; the canonical
+// bone stays at a fixed offset in its bound ancestor's frame and only turns. The
+// difference is positional, and it is not this converter's to fix — canonical
+// motion carries body translation on the root alone, so a rig with more spine
+// segments than the humanoid has cannot round-trip its intermediate
+// displacements through any converter that targets this model.
+// `ConversionReport::composedBones` names exactly the bones where that residual
+// lives, which is what a cross-source comparison against the same session over a
+// live protocol needs in order to tell it apart from a real disagreement.
+//
 // **The rest pose is built by the same walk, from whichever rotations the
 // profile says are the rest.** One path composition, two callers: the animated
 // rotations and the rest ones. A rest pose derived by a second traversal is a

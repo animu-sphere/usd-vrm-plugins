@@ -16,10 +16,40 @@ namespace motionSource
 namespace
 {
 
-constexpr std::array<std::string_view, ConversionRefusalCount> kRefusalNames = {
-    "none", "profile-mismatch", "animation-invalid",
-    "unsupported-rotation-form",
+// Each entry carries its own enumerator, and the `static_assert` below is what
+// makes that pay: a bare array of names sized by the enum accepts a short
+// initialiser silently -- the tail value-initialises to an empty `string_view`,
+// and a refusal added without its spelling comes back nameless at runtime
+// instead of failing to build. This is `SourceProfile.cpp`'s shape for the same
+// reason it uses it there, and having one vocabulary in this library weaker than
+// the other seven is exactly the drift the pattern exists to stop.
+struct RefusalTerm
+{
+    ConversionRefusal value = ConversionRefusal::None;
+    std::string_view name;
 };
+
+constexpr std::array<RefusalTerm, ConversionRefusalCount> kRefusals = {{
+    {ConversionRefusal::None, "none"},
+    {ConversionRefusal::ProfileMismatch, "profile-mismatch"},
+    {ConversionRefusal::AnimationInvalid, "animation-invalid"},
+    {ConversionRefusal::UnsupportedRotationForm, "unsupported-rotation-form"},
+}};
+
+constexpr bool
+RefusalsAreInEnumOrder() noexcept
+{
+    for (std::size_t index = 0; index < kRefusals.size(); ++index) {
+        if (static_cast<std::size_t>(kRefusals[index].value) != index
+            || kRefusals[index].name.empty()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static_assert(RefusalsAreInEnumOrder(),
+              "kRefusals must be in enumerator order, one name each");
 
 constexpr double kPi = 3.14159265358979323846;
 
@@ -137,8 +167,7 @@ std::string_view
 ConversionRefusalName(ConversionRefusal refusal) noexcept
 {
     const auto index = static_cast<std::size_t>(refusal);
-    return index < kRefusalNames.size() ? kRefusalNames[index]
-                                        : std::string_view();
+    return index < kRefusals.size() ? kRefusals[index].name : std::string_view();
 }
 
 CanonicalRestPose::CanonicalRestPose()
@@ -323,6 +352,13 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
     {
         motion::HumanBone bone = motion::HumanBone::Count;
         std::vector<std::size_t> joints;
+        // Whether anything on the path states a rotation at all. An absent bone
+        // is not an identity sample (MOTION_CONTRACT.md), so a bone whose whole
+        // path is silent gets no presence bit rather than an identity the source
+        // never wrote. `CHANNELS 0` is legal in the format below and a profile
+        // may map such a joint, which is the whole of how this arises -- and a
+        // root whose rotation the profile drops is the other way in.
+        bool rotated = false;
     };
     std::vector<BoundPath> paths;
     paths.reserve(result.match.bound.size());
@@ -331,6 +367,15 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
         path.bone = binding.bone;
         path.joints =
             PathFromNearestBoundAncestor(skeleton, binding.jointIndex, bound);
+        for (const std::size_t jointIndex : path.joints) {
+            if (jointIndex == kRootJoint && dropRootRotation) {
+                continue;
+            }
+            if (animation.tracks[jointIndex].HasRotation()) {
+                path.rotated = true;
+                break;
+            }
+        }
         if (path.joints.size() > 1) {
             result.report.composedBones.push_back(binding.bone);
         }
@@ -442,7 +487,12 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
             }
             const auto slot = static_cast<std::size_t>(path.bone);
             pose.localRotations[slot] = rotation;
-            pose.validRotations.set(slot);
+            // Not unconditional: see `BoundPath::rotated`. The rest pose still
+            // carries the bone, because the rig has it -- what the clip does not
+            // claim is that the source said anything about how it turned.
+            if (path.rotated) {
+                pose.validRotations.set(slot);
+            }
         }
 
         const SourceJointTrack& rootTrack = animation.tracks[kRootJoint];

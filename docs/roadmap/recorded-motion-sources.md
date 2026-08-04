@@ -557,6 +557,25 @@ depends on them ([docs/README.md](../README.md)).
   not — 0.21.0 has no notion of a data-only member, and whether a packaged
   product carries these files is untested. This is the same shape as the adapter
   packaging gap ([report 34](../reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md)).
+- ✅ **A binary import check cannot survive this chain, and that is measured**
+  (2026-08-05, with the converter). `motionBvh` refused any OpenUSD library in a
+  built artifact's imports, which was the strongest form its "no OpenUSD" claim
+  could take. Once the extractor took the edge to `motionSource` — and through it
+  to `motionCore`'s `Gf` value types — what that check reports became the
+  *linker's* answer rather than the library's: MSVC pulls only the archive
+  members that resolve a symbol, GNU ld with `--as-needed` drops the resulting
+  unused entries, and Apple's ld64 records every library on the link line whether
+  or not one is used. All three are right about their own artifact, so one source
+  tree produces two answers. **It cost a red macOS lane to establish**, on a
+  claim verified on Windows and generalised in the same change — the same failure
+  shape as the quaternion-precision one, and the reason this entry exists rather
+  than a quieter fix. The check is removed rather than narrowed on both
+  `motionBvh` and `motion_bvh_inspect`; the source rule, which forbids every
+  OpenUSD name in every file of the library, is platform independent and carries
+  the claim. Two consequences are stated where somebody meets them rather than
+  discovered: a standalone configure of `tools/motionBvh` now needs OpenUSD on
+  the prefix path, because `find_package(motionBvh)` resolves `motionSource` and
+  through it `pxr`; and on macOS `motion_bvh_inspect` records those dylibs.
 - 🚧 **The workspace graph gate reaches both libraries, measured rather than
   assumed.** `ost plugin test --workspace --graph-only` reported `5 libraries, 7
   library edge(s)` with `motionBvh` committed and `6 libraries, 8 library

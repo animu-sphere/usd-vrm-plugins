@@ -28,10 +28,17 @@ declared `motionBvh -> motionSource` edge
 That edge is the library's only one, and it is not a route to OpenUSD by another
 name: `motionSource` links `motionCore`, whose `Gf` value types nothing here
 names, because three numbers on an `OFFSET` line are not a vector in any basis
-this layer knows. What the edge does cost is the *binary* half of the boundary
-check — an archive contributes only the objects something references, so what
-that check now measures is the syntax half's import closure rather than the
-library's, and `tests/CMakeLists.txt` says so where it is registered.
+this layer knows.
+
+What the edge cost is the **binary** half of the boundary check, which is now
+removed rather than narrowed. Whether a built artifact records an OpenUSD import
+turns out to be the linker's answer and not this library's: MSVC pulls only the
+archive members something references, GNU ld with `--as-needed` drops the
+resulting unused entries, and Apple's ld64 records every library on the link
+line regardless. One source tree, two answers, so the check was measuring a
+toolchain. The rule that survives is about **source** — no OpenUSD name in any
+file here, extractor included — and it is platform independent.
+`tests/check_boundaries.py` carries the measurement.
 
 What the extractor decides is how a channel set becomes a track, and nothing
 else. Three of those answers are worth knowing before reading a converted clip:
