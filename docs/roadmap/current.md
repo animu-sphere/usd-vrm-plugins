@@ -61,7 +61,16 @@ reaching a **rig** still is: that is Motion Phase G.
       corpus (`libs/motionBvh`), then the CLI over it (`tools/motionBvh`),
       which links no OpenUSD because the layer under it has no value type to
       borrow from Gf*;
-- [ ] the format-neutral `motionSource` model and the profile contract;
+- [ ] the format-neutral `motionSource` model and the profile contract — *the
+      model landed 2026-08-04 (`libs/motionSource`): the source rig, the source
+      animation in the source's own angle order and unit, provenance, and one
+      declared crossing into canonical motion. The profile contract is what is
+      left in this line, and it is the half that waits on a second producer.
+      Two things were settled with the model rather than after it: a recorded
+      file's provenance is a **neighbour** of `MotionSourceMetadata` with a
+      narrowing derivation ([contract](../design/MOTION_CONTRACT.md#recorded-source-provenance-v070)),
+      and the six semantic `VRM_BVH_*` codes still have no layer that can raise
+      them — the profile contract is the change that has to choose*;
 - [ ] the mocopi profile **and one independent mocap producer's**, plus a
       user-defined profile proving the contract is usable from outside;
 - [ ] BVH → `HumanoidAnimation` → the same avatar-independent semantic clip

@@ -313,7 +313,7 @@ turned out differently in practice:
 | --- | --- | --- |
 | **BVH-0** — contract and fixtures | real samples from mocopi and a second producer; joints, hierarchy, channels, unit, axis measured; the `motionSource` model and profile schema settled; the diagnostic set frozen | 🚧 |
 | **BVH-1** — syntax | `BvhDocument`, the parser, `motion_bvh_inspect`, malformed fixtures, deterministic tests | ✅ |
-| **BVH-2** — semantics | the `motionSource` API, the profile API, the mocopi profile, the second producer's, basis and unit conversion, source rest pose, root policy, `HumanoidAnimation`, the semantic clip writer | ⬜ |
+| **BVH-2** — semantics | the `motionSource` API, the profile API, the mocopi profile, the second producer's, basis and unit conversion, source rest pose, root policy, `HumanoidAnimation`, the semantic clip writer | 🚧 |
 | **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, artifact-only smoke, the recorded corpus | ⬜ |
 | **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | ⬜ |
 
@@ -379,23 +379,53 @@ depends on them ([docs/README.md](../README.md)).
   `motion_bvh_convert` will be the third. Whether that authoring is shared code
   or a repeated shape is currently undecided, and three callers is where it stops
   being ignorable.
-- ⬜ **`SourceProvenance` versus `MotionSourceMetadata`.** `motionCore` already
-  carries source metadata for live capture. Whether a recorded file's provenance
-  is the same type, a superset, or a neighbour is a `motionCore` question, and it
-  should be answered before the converter sets its first field rather than after.
+- ✅ **`SourceProvenance` versus `MotionSourceMetadata`** — a **neighbour**, with
+  a one-way narrowing derivation (2026-08-04, with the model). Two independent
+  arguments give the same answer: the canonical type rides on every pose and is
+  serialised with it, so a per-clip fact has no business on it; and everything in
+  `SourceProvenance` is known *before* any motion exists, which the canonical
+  type describes. `CanonicalMetadata` maps producer → `provider`, format →
+  `protocol`, and always `kind = Clip`, dropping the producer version and the
+  profile id — the narrowing is pinned by a test rather than by a sentence.
+  Semantics: [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#recorded-source-provenance-v070).
+- ⬜ **The quaternion rotation form has no producer, and the converter has to
+  decide what that costs.** `SourceJointTrack` carries angles-with-an-order *or*
+  quaternions, because composing three angles needs the handedness a profile
+  supplies and decomposing a quaternion would invent an order the writer never
+  declared — so neither converts into the other before a profile is in hand.
+  Nothing in the tree writes the quaternion form today, which means the
+  converter would implement a path no fixture exercises end to end. Two honest
+  answers: refuse a quaternion track with a stated reason until a reader
+  produces one, or add a synthetic fixture and say in the corpus that it is
+  synthetic. Choosing at the converter is fine; arriving at the converter
+  without having noticed is what this entry prevents.
+- ⬜ **The six semantic diagnostics have no layer that can raise them.** The
+  frozen set ([§6](#6-diagnostics)) lives in the reader, named for the format it
+  reads, and its semantic half is raised "where a document meets a profile" —
+  which is `motionSource`, the one library forbidden to know that reader exists
+  ([WORKSPACE.md §2](../architecture/WORKSPACE.md)). Three answers are open: the
+  converter CLI raises them, since it links both; `motionSource` grows a
+  `VRM_MOTION_SOURCE_*` namespace of its own and the reader's semantic half
+  becomes a mapping; or the profile API returns refusals a caller maps to codes.
+  The model layer sidesteps it today by reporting structural refusals as plain
+  text and saying so where it does
+  ([`SourceSkeleton.h`](../../libs/motionSource/include/motionSource/SourceSkeleton.h)),
+  but the profile contract is the change that has to choose — a `VRM_BVH_*`
+  string appearing in `motionSource` is the reversal, whichever way it got there.
 - ⬜ **Profiles need a packaging answer.** They are data that must reach an
   artifact-only smoke test, so `share/usd-vrm-plugins/profiles/motion/` is named
   in WORKSPACE.md §5 — but `ost` 0.21.0 has no notion of a data-only member, and
   how the files get staged is unverified. This is the same shape as the adapter
   packaging gap ([report 34](../reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md)).
-- 🚧 **The workspace graph gate reaches `libs/motionBvh`, measured rather than
-  assumed.** With the library committed, `ost plugin test --workspace
-  --graph-only` reports `4 bundle(s), 1 bundle edge(s), 5 libraries, 7 library
-  edge(s), valid` on `ost` 0.21.0 — one more library than before it, so the
-  descriptor is discovered and its (currently empty) `requires` is validated.
-  The `profiles/motion/` directory is still a new shape and still unconfirmed;
-  it gets the same treatment when it lands, the way the adapter's discovery gap
-  was found.
+- 🚧 **The workspace graph gate reaches both libraries, measured rather than
+  assumed.** `ost plugin test --workspace --graph-only` reported `5 libraries, 7
+  library edge(s)` with `motionBvh` committed and `6 libraries, 8 library
+  edge(s), valid` with `motionSource` beside it (`ost` 0.21.0, 2026-08-04) — one
+  more library and one more edge, so the new descriptor is discovered and its
+  declared `motionCore` edge is validated rather than assumed. The
+  `profiles/motion/` directory is still a new shape and still unconfirmed; it
+  gets the same treatment when it lands, the way the adapter's discovery gap was
+  found.
 - ✅ **`tools/motionBvh/` is one member carrying two executables, and `ost`
   0.21.0 packages it.** Every workspace tool before it was one directory, one
   executable, and an id equal to that executable's name; this member is
@@ -447,7 +477,10 @@ One PR never introduces a boundary and a large feature together:
    check, and a test that drives it over the library's corpus and checks every
    number against the manifest and against the `.bvh` text rather than against
    the parser (2026-08-04)
-4. `motionSource` skeleton and animation model
+4. ✅ `motionSource` skeleton and animation model — the source rig, the source
+   animation, provenance, the single declared crossing into canonical motion,
+   and a boundary check that fails on a producer name, a format name, a `Gf`
+   type anywhere, or a canonical type outside that one crossing (2026-08-04)
 5. the source profile contract
 6. the mocopi BVH profiles
 7. the second producer's profile

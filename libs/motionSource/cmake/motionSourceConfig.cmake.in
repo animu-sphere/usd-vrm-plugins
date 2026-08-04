@@ -1,0 +1,15 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+# OpenUSD's pxrConfig.cmake defines imported targets unconditionally, so skip it
+# when a consumer has already resolved the Gf target motionCore needs. This
+# library names no Gf type of its own; it inherits the dependency from the one
+# header that crosses into canonical motion.
+if(NOT TARGET gf AND NOT TARGET pxr::gf)
+    find_dependency(pxr CONFIG REQUIRED)
+endif()
+if(NOT TARGET motionCore::motionCore)
+    find_dependency(motionCore CONFIG REQUIRED)
+endif()
+include("${CMAKE_CURRENT_LIST_DIR}/motionSourceTargets.cmake")
+check_required_components(motionSource)
