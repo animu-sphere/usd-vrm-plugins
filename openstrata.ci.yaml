@@ -287,14 +287,16 @@ cells:
   # --- Workspace cells (ost 0.21.0) -------------------------------------
   #
   # A `bundle:` cell only ever reaches a plugin bundle. The plain libraries
-  # (libs/*/openstrata.library.yaml) and the two CLI tools
-  # (tools/*/openstrata.tool.yaml) are built by the ROOT CMake tree and no
-  # bundle requires them, so twelve bundle cells leave them untested. These
-  # cells build that tree: `ost build` then `ost test`, which is the whole
-  # 22-test CTest suite -- motionCore, motionRuntime (incl. live capture and
-  # the capture corpus), vrmRetarget, vrmContainer, both CLIs, and
-  # usdvrm_baseline, the whole-workspace behavior gate that no other lane runs
-  # (it had been silently stale for a release before v0.5.0 caught it).
+  # (libs/*/openstrata.library.yaml), the CLI tools
+  # (tools/*/openstrata.tool.yaml) and the adapters are built by the ROOT CMake
+  # tree and no bundle requires them, so twelve bundle cells leave them
+  # untested. These cells build that tree: `ost build` then `ost test`, which is
+  # the whole CTest suite -- motionCore, motionRuntime (incl. live capture and
+  # the capture corpus), vrmRetarget, vrmContainer, motionBvh (incl. the
+  # recorded corpus), vrmAdapterVmc, every CLI, and usdvrm_baseline, the
+  # whole-workspace behavior gate that no other lane runs (it had been silently
+  # stale for a release before v0.5.0 caught it). The count is deliberately not
+  # written down here: the last one said 22 and was stale by two releases.
   #
   # This replaces the hand-authored motion-ci.yml, which was ~210 lines of
   # which ~120 duplicated generated logic and which could never finish: a bare

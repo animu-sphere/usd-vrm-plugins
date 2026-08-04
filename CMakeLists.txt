@@ -137,6 +137,13 @@ endforeach()
 add_subdirectory("tools/motionRetarget")    # Motion Phase C — offline retarget
 add_subdirectory("tools/motionCapture")     # Motion Phase D — live capture
 
+# The BVH path's CLIs. `motion_bvh_inspect` is the exception to the paragraph
+# above: it opens no stage and links no OpenUSD, because the syntax layer under
+# it has no value type to borrow from Gf. It could have been added beside
+# libs/motionBvh for that reason, and is not — a tool is a tool, and
+# `motion_bvh_convert` lands in this same directory with a stage in its hands.
+add_subdirectory("tools/motionBvh")         # BVH-1 — recorded-file syntax
+
 # Input adapters (WORKSPACE.md §1, §2). Each adapters/<group>/<name>/ carrying
 # both an openstrata.library.yaml and a CMakeLists.txt is added here — plain
 # libraries, not plugin bundles: an adapter registers nothing with OpenUSD.

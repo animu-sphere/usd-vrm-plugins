@@ -84,25 +84,36 @@ as of v0.6.0. Its own status:
 | `vrmAdapterVmc` | v0.6.0 | VMC Protocol input: OSC and VMC decode, frame assembly, Unity `HumanBodyBones` → `motion::HumanBone` mapping, `LiveCaptureSource` bridge, UDP receiver |
 | `vmc_record` | v0.6.0 | CLI: records a bounded live VMC session to a `vmc-packet-capture` file, or inspects one, with a decode report |
 
-**Nothing in this layer has been validated against a real sender or a real
-capture rig.** Both corpora are generated: the
+**Nothing in the table above has been validated against a real sender or a real
+capture rig.** Every corpus behind it is generated: the
 [motion traces](../../libs/motionRuntime/tests/corpus/README.md) are closed-form
 maths, and the VMC captures reproduce the protocol's shapes. That is deliberate —
 a corpus recorded from a commercial SDK could not be redistributed and CI could
-not run it — but it bounds what the table above claims. Recording real sessions
+not run it — but it bounds what the table claims. Recording real sessions
 from a device and from several sender applications, with the redistributable ones
 committed and the rest kept as measured manifests, is v0.7.0
 ([adapter plan](../roadmap/adapters-mocopi-vmc-ardy.md)).
 
+The one exception is not in that table because it produces no motion: `motionBvh`
+reads a **real** producer export, committed at
+[`tests/corpus/recorded/`](../../libs/motionBvh/tests/corpus/recorded/) since
+2026-08-04. It is a file rather than a session — a parser meeting real bytes,
+which is a different claim from a runtime meeting a real device, and it is the
+only one of the two this repository can currently make.
+
 There is no native capture-device adapter yet. Protocol and SDK decode belong
 under `adapters/` (motion policy §8.1) and `vrmAdapterMocopi` is the next one.
 
-**No recorded motion file format other than `.vrma` is read.** BVH — the format
-most capture applications export — is v0.7.0, as a generic pipeline
+**No recorded motion file format other than `.vrma` becomes motion.** BVH — the
+format most capture applications export — is v0.7.0, as a generic pipeline
 (`motionBvh` + `motionSource`) whose producer semantics live in declarative
 profiles rather than in the parser
-([plan](../roadmap/recorded-motion-sources.md)). FBX is not planned; the layering
-exists so that a second reader can be added without changing anything above it.
+([plan](../roadmap/recorded-motion-sources.md)). Its **syntax** half is
+implemented: `motionBvh` reads a BVH document and `motion_bvh_inspect` reports
+what one contains. Neither produces a pose — a joint's name, unit and axes stay
+uninterpreted until a profile says what they mean, so nothing yet reaches
+`motion::HumanoidAnimation` from a file. FBX is not planned; the layering exists
+so that a second reader can be added without changing anything above it.
 
 Not yet in that layer: expression and look-at animation, motion generation,
 OpenExec evaluation, blending beyond the primitive, IK, and foot locking. See

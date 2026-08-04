@@ -7,10 +7,15 @@
 // mark, a lowercase keyword, and a colon in the wrong place are all things a
 // real writer emits and none of them are a difference in meaning.
 //
-// Corpus mode then runs the same parser over every committed fixture in
-// `tests/corpus/generated/`, against a table of what each file must produce or
-// refuse. `tools/check_corpus.py` measures those same files independently, so
-// the fixtures are pinned by two implementations rather than by this one.
+// Corpus mode then runs the same parser over every committed fixture, against a
+// table of what each file must produce or refuse. `tools/check_corpus.py`
+// measures those same files independently, so the fixtures are pinned by two
+// implementations rather than by this one.
+//
+// It runs over each half of the corpus separately — `generated/` holds shapes
+// of the format, `recorded/redistributable/` holds real producer exports — and
+// each half has its own table, so a file in the wrong one fails rather than
+// passing quietly.
 #include "motionBvh/BvhParser.h"
 
 #include "motionBvh/BvhDocument.h"
@@ -488,10 +493,21 @@ struct Expectation
     double frameTime = 0.0;
 };
 
+// Two tables, because the corpus has two halves and a fixture belonging to the
+// wrong one is a failure worth having. The generated half is shapes of the
+// format; the recorded half is real producer exports, and the difference is not
+// stylistic — see tests/corpus/recorded/manifest.json.
+//
+// The recorded rows say only what the parser must *read*. What the file means —
+// its unit, its axes, what its root translation is — lives in that manifest as
+// observations, because this layer may not act on any of it.
 const std::map<std::string, Expectation>&
-CorpusExpectations()
+CorpusExpectations(const std::string& half)
 {
-    static const std::map<std::string, Expectation> table = {
+    static const std::map<std::string, Expectation> recorded = {
+        {"mocopi-mobile-arm-raise-turn.bvh", {true, {}, 27, 162, 853, 0.02}},
+    };
+    static const std::map<std::string, Expectation> generated = {
         {"valid-minimal-root.bvh", {true, {}, 1, 6, 2, 0.0333333}},
         {"valid-nested-joints.bvh", {true, {}, 4, 15, 3, 0.0333333}},
         {"valid-channel-order-yxz.bvh", {true, {}, 2, 9, 2, 0.0166667}},
@@ -516,11 +532,11 @@ CorpusExpectations()
         {"malformed-channel-count.bvh", {false, DiagnosticCode::ParseFailed}},
         {"malformed-no-motion.bvh", {false, DiagnosticCode::ParseFailed}},
     };
-    return table;
+    return half == "recorded" ? recorded : generated;
 }
 
 int
-RunCorpus(const std::filesystem::path& directory)
+RunCorpus(const std::filesystem::path& directory, const std::string& half)
 {
     if (!std::filesystem::is_directory(directory)) {
         std::fprintf(stderr, "corpus directory not found: %s\n",
@@ -539,8 +555,8 @@ RunCorpus(const std::filesystem::path& directory)
         const std::string name = entry.path().filename().string();
         seen.insert(name);
 
-        const auto expectation = CorpusExpectations().find(name);
-        if (expectation == CorpusExpectations().end()) {
+        const auto expectation = CorpusExpectations(half).find(name);
+        if (expectation == CorpusExpectations(half).end()) {
             // A fixture nobody stated an expectation for is a fixture that
             // proves nothing, so adding one without a row here fails.
             std::fprintf(stderr, "%s: no expectation in the table\n",
@@ -624,7 +640,7 @@ RunCorpus(const std::filesystem::path& directory)
         ++verified;
     }
 
-    for (const auto& [name, expectation] : CorpusExpectations()) {
+    for (const auto& [name, expectation] : CorpusExpectations(half)) {
         (void)expectation;
         if (seen.find(name) == seen.end()) {
             std::fprintf(stderr, "%s: expected fixture is missing\n",
@@ -647,7 +663,9 @@ int
 main(int argc, char** argv)
 {
     if (argc > 1) {
-        return RunCorpus(argv[1]);
+        // A second argument names the half; without one this is the generated
+        // corpus, which is what every existing caller means.
+        return RunCorpus(argv[1], argc > 2 ? argv[2] : "generated");
     }
 
     TestMinimalDocument();

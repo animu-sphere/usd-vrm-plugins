@@ -41,7 +41,18 @@ add_test(NAME motionBvh_parser COMMAND motionBvh_parser_tests)
 set(_motion_bvh_corpus "${CMAKE_CURRENT_SOURCE_DIR}/corpus/generated")
 if(EXISTS "${_motion_bvh_corpus}")
     add_test(NAME motionBvh_corpus
-        COMMAND motionBvh_parser_tests "${_motion_bvh_corpus}")
+        COMMAND motionBvh_parser_tests "${_motion_bvh_corpus}" generated)
+endif()
+
+# The other half: real producer exports, with their own expectation table. The
+# generated fixtures are shapes this repository wrote and can therefore only
+# confirm what it already believed; this one is 1.2 MB of somebody else's
+# software, and it is the only fixture here that can be surprising.
+set(_motion_bvh_recorded
+    "${CMAKE_CURRENT_SOURCE_DIR}/corpus/recorded/redistributable")
+if(EXISTS "${_motion_bvh_recorded}")
+    add_test(NAME motionBvh_recordedCorpus
+        COMMAND motionBvh_parser_tests "${_motion_bvh_recorded}" recorded)
 endif()
 
 if(Python3_Interpreter_FOUND)
@@ -65,5 +76,17 @@ if(Python3_Interpreter_FOUND)
             COMMAND "${Python3_EXECUTABLE}"
                 "${CMAKE_CURRENT_SOURCE_DIR}/../tools/check_corpus.py"
                 --check --corpus "${CMAKE_CURRENT_SOURCE_DIR}/corpus")
+    endif()
+
+    # The recorded half's counts are a measurement of someone else's exporter,
+    # so the same scanner re-derives them and the hash pins the bytes those
+    # measurements were taken from. A recorded file whose hash moved is a
+    # different capture wearing the same name.
+    if(EXISTS "${_motion_bvh_recorded}")
+        add_test(NAME motionBvh_recordedManifest
+            COMMAND "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/../tools/check_corpus.py"
+                --check --recorded
+                --corpus "${CMAKE_CURRENT_SOURCE_DIR}/corpus")
     endif()
 endif()
