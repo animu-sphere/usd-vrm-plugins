@@ -342,3 +342,61 @@ What this costs is stated rather than hidden: a producer whose expression
 channel genuinely runs on its own clock has to be resampled onto the pose
 timeline by whoever reads it. No producer in the tree does, and the day one
 does, this is the paragraph to revisit.
+
+## Recorded-source provenance (v0.7.0)
+
+The recorded-file path carries its own provenance type, `SourceProvenance`, and
+this section settles what it is **relative to** `MotionSourceMetadata` — a
+question the plan asked to have answered before a converter set its first field
+rather than after ([recorded-motion-sources.md §10](../roadmap/recorded-motion-sources.md)).
+
+**It is a neighbour, not the same type and not a superset**, and the derivation
+runs one way: `motionSource::CanonicalMetadata(provenance)` produces the
+canonical value, and nothing produces a `SourceProvenance` from a canonical one.
+Two independent arguments give the same answer, and either alone would have been
+enough:
+
+- *They travel differently.* `MotionSourceMetadata` rides on every pose and every
+  canonical animation, is compared by `operator==`, and is written into the
+  recorded-trace format — so a field added to it is a field every sample carries
+  and every trace has to round-trip. A file's producer version and the profile it
+  was read under cannot vary within a clip, so paying that per-sample cost for
+  them would buy nothing.
+- *They are answerable by different layers.* Everything in `SourceProvenance` is
+  known before any motion is: a reader supplies the format and the file's
+  identity, a profile supplies the producer label, and a caller supplies which
+  profile it named. `MotionSourceMetadata` describes motion that by then already
+  exists.
+
+The mapping, and it is deliberately narrowing:
+
+| `SourceProvenance` | `MotionSourceMetadata` |
+| --- | --- |
+| — | `kind` = `Clip`, always |
+| `producer` | `provider` |
+| `format` | `protocol` |
+| `sourceId` | `sourceId` |
+| `producerVersion` | *dropped* |
+| `profileId` | *dropped* |
+
+`kind` is `Clip` because a recorded file **is** a clip by the time any of this
+sees it, whatever the sensors that produced it were doing. `LiveCapture` says
+values arrived over time from a running source, which is the property
+`motionRuntime`'s intake acts on, and a file has none of it.
+
+`protocol` carries the format because the field answers *how did these values
+arrive*, and for a recording that is the format it was read from. Leaving it
+empty would make a converted clip indistinguishable from one with no stated
+origin; putting the format in `provider` would overwrite the more specific fact.
+
+The two dropped fields survive **beside** the motion, in the semantic clip's
+authored metadata, the way the `.vrma` importer already records its own source's
+file facts. `motionSource_provenance` pins the narrowing as a fact rather than a
+sentence: two provenances differing only in producer version and profile id
+convert to the same canonical metadata, so a later change that quietly widened
+the mapping — packing a profile id into `sourceId`, say — fails there.
+
+**A profile id is never a branch condition**, in this layer or any other. It is
+recorded so a conversion is reproducible and auditable; code that read it to
+decide behavior would be the producer-conditional core the whole profile design
+exists to prevent ([WORKSPACE.md §1](../architecture/WORKSPACE.md)).

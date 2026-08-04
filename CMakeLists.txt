@@ -89,6 +89,13 @@ add_subdirectory("libs/motionCore")
 add_subdirectory("libs/motionRuntime")
 add_subdirectory("libs/vrmRetarget")
 
+# The recorded-file half's middle layer: motionSource -> motionCore and nothing
+# else (WORKSPACE.md §2). It is added after motionCore for the same reason
+# motionRuntime is, and it sits beside motionRuntime rather than above it -- live
+# input and recorded files meet at motionCore and nowhere earlier
+# (motion policy §8.3).
+add_subdirectory("libs/motionSource")
+
 # Discover every plugin bundle under plugins/ rather than naming them one by one:
 # an immediate plugins/<name>/ that carries both an openstrata.plugin.yaml (the
 # bundle contract) and a CMakeLists.txt (so `ost plugin build` can target it

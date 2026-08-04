@@ -1,0 +1,26 @@
+# OpenStrata plain-library descriptor. motionSource is the format-neutral middle
+# of the recorded-file path: the source rig and the source animation a reader
+# extracts, the provenance of the file they came from, and -- once the profile
+# contract and the converter land -- what a producer's export means and how it
+# reaches canonical humanoid motion.
+#
+# A library, not a plugin bundle: it registers nothing with OpenUSD and has no
+# plugInfo.json (WORKSPACE.md §1). It is *inside* the aggregate product, unlike
+# an adapter, because it carries no producer name -- only the profile data beside
+# it does.
+#
+# One edge, and it is the only one permitted (WORKSPACE.md §2). There is no edge
+# to any reader and there never is: `motionBvh -> motionSource` never reverses,
+# which is the whole reason this layer exists before a second reader does.
+schema: openstrata.library/v1alpha1
+library:
+  id: motionSource
+  # Mirrors VERSION; release preparation updates this in lockstep.
+  version: 0.6.0
+requires:
+  libraries:
+    - id: motionCore
+      version: ">=0.5,<0.6"
+cmake:
+  package: motionSource
+  target: motionSource::motionSource
