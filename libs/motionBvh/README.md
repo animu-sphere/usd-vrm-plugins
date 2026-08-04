@@ -75,9 +75,20 @@ target_link_libraries(consumer PRIVATE motionBvh::motionBvh)
 `tests/corpus/generated/` holds format shapes — hand-written, committed, and
 runnable with no hardware. They are named after the shape they pin
 (`valid-nested-joints.bvh`, `malformed-frame-width.bvh`), never after a
-producer: a fixture called `mocopi-*.bvh` in the syntax layer's corpus would be
-the first place a producer's export became the format's definition.
+producer: a fixture called `mocopi-*.bvh` among the format shapes would be the
+first place a producer's export became the format's definition.
 
-Real producer files are a different thing and land with the profiles, under
-`tests/corpus/recorded/`, with the redistribution split
+`tests/corpus/recorded/` holds real producer exports, and there is one:
+`mocopi-mobile-arm-raise-turn.bvh`, a 17-second session off a phone — 27 joints,
+162 channels, 853 rows at 50 Hz. It is a different kind of evidence and it is
+kept apart from the shapes rather than added to them, with its own manifest, its
+own expectation table, and the redistribution split
 [§8](../../docs/roadmap/recorded-motion-sources.md) describes.
+
+The parser reads it exactly as it reads a two-joint fixture. What that file
+*means* — that its unit is centimetres, that +Y is up, that only its root
+translates, that its seven `torso_*` joints are one spine — is measured, written
+down in
+[`recorded/manifest.json`](tests/corpus/recorded/manifest.json), and acted on
+nowhere in this library. Those are the facts a producer profile will be written
+from, and the profile is where they become decisions.

@@ -290,11 +290,28 @@ no bytes, which is the split the
 [adapter plan §9.2](adapters-mocopi-vmc-ardy.md#92-corpus) uses for recorded
 sessions and the VRM corpus uses for models.
 
+**The first file arrived 2026-08-04**, and two things about the shape above
+turned out differently in practice:
+
+- **The manifest is one file per corpus half, not a `manifests/` directory.**
+  `recorded/manifest.json` describes every recorded file, and whether its bytes
+  are committed beside it is a field rather than a location. A row that moved
+  directory when its redistribution status changed would break every reference
+  to it for a reason that has nothing to do with the file.
+- **Half of what the manifest carries cannot be measured, and is labelled.**
+  Producer, version and redistribution are provenance; coordinate convention,
+  unit and root policy are *observations* — read out of a file that declares
+  none of them. They sit under `observations` with that said in the data, so
+  nothing downstream can mistake "what this file appears to be" for "what this
+  file says". The profile id stays `null` until a profile exists: naming one
+  that has not been written would be the schema-from-one-file failure arriving
+  through the manifest instead of through the code.
+
 ## 9. Milestones
 
 | Milestone | Contents | State |
 | --- | --- | --- |
-| **BVH-0** — contract and fixtures | real samples from mocopi and a second producer; joints, hierarchy, channels, unit, axis measured; the `motionSource` model and profile schema settled; the diagnostic set frozen | ⬜ |
+| **BVH-0** — contract and fixtures | real samples from mocopi and a second producer; joints, hierarchy, channels, unit, axis measured; the `motionSource` model and profile schema settled; the diagnostic set frozen | 🚧 |
 | **BVH-1** — syntax | `BvhDocument`, the parser, `motion_bvh_inspect`, malformed fixtures, deterministic tests | ✅ |
 | **BVH-2** — semantics | the `motionSource` API, the profile API, the mocopi profile, the second producer's, basis and unit conversion, source rest pose, root policy, `HumanoidAnimation`, the semantic clip writer | ⬜ |
 | **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, artifact-only smoke, the recorded corpus | ⬜ |
@@ -304,6 +321,31 @@ BVH-0 is a measurement milestone, and skipping it is the failure mode this whole
 plan is shaped around: writing the profile schema from one producer's file makes
 that producer's export the schema.
 
+**The first real sample landed 2026-08-04**: a 17-second session exported from
+one vendor's phone application, committed at
+`libs/motionBvh/tests/corpus/recorded/redistributable/` with everything the
+manifest asks for measured from it. What it settles and what it does not are
+worth separating:
+
+| Measured | Value |
+| --- | --- |
+| joints · channels · rows · frame time | 27 · 162 · 853 · 0.02 s (50 Hz) |
+| channel declaration | identical on all 27 joints: `Xposition Yposition Zposition Zrotation Xrotation Yrotation`, so the Euler order is ZXY throughout |
+| position channels | the 78 non-root columns are exactly their joint's `OFFSET` in **all** 853 rows — rest geometry restated every frame, not translation |
+| root translation | absolute position beginning at the root `OFFSET` (0, 95.9893, 0), not a delta and not zero-based |
+| basis | +Y up, +Z forward (toe `End Site`s), +X the character's left — right-handed |
+| unit | centimetres, from a hip height of 95.9893 over an 81.46 leg chain |
+| `End Site`s | five, each 0.1 along one axis: direction markers, **not** bone lengths |
+| root joint | named `root`; there is no `hips`, and seven `torso_*` segments are one spine chain |
+
+That is one producer, and the milestone asks for two. It also proves the parser
+against something it could be surprised by for the first time — the generated
+fixtures are shapes this repository wrote, and a file it wrote can only confirm
+what it already believed. What is still open is everything BVH-0 names beyond
+one sample: the second producer, and therefore the `motionSource` model and the
+profile schema, which are exactly the things that must not be written from one
+file.
+
 **BVH-1 started ahead of BVH-0, and that is not the shortcut it looks like.**
 The syntax layer is the one part of this plan that owes nothing to a
 measurement: `HIERARCHY`, `CHANNELS`, a row width and a frame time are the
@@ -312,8 +354,10 @@ forbidden to know a producer at all. What waits on real files is everything
 BVH-0 actually names — the joint sets, units, axes and root conventions, and
 therefore the `motionSource` model and the profile schema. `libs/motionBvh`
 landed with its corpus named after format shapes rather than applications
-([§8](#8-corpus)), so there is no producer's export for the profile schema to be
-written from later.
+([§8](#8-corpus)); the real export that arrived the same week went into a
+separate half of that corpus, with its own manifest and its own expectation
+table, so the syntax layer still has nothing a producer's answers could leak
+into.
 
 ## 10. Contract changes this plan requires
 
@@ -402,7 +446,11 @@ One PR never introduces a boundary and a large feature together:
 9. BVH → canonical animation conversion
 10. `motion_bvh_convert`
 11. the retarget end-to-end test
-12. the recorded corpus and its manifest
+12. 🚧 the recorded corpus and its manifest — the split, the manifest shape, the
+    two checks over it, and the **first** producer export landed 2026-08-04,
+    ahead of this position because a real file arrived and measuring it is
+    BVH-0's whole content. The second producer's, and everything that needs a
+    profile to describe it, still belong here
 
 Every one of them checks: standalone build · dependency direction · no reverse
 dependency · **no producer name in library code** · deterministic fixture tests ·

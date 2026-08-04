@@ -24,9 +24,11 @@ pipeline's centre is not mocopi**: joint names, units, axes and root conventions
 are facts about the *writer*, so they live in a declarative producer profile and
 a second producer's profile lands while the first is still being written.
 
-It is also measured in **evidence, not code volume**. Both corpora in the tree
-are generated — closed-form traces and protocol-shaped captures — so nothing has
-yet met a device. The items that close that do not close by writing more code.
+It is also measured in **evidence, not code volume**. The live half's corpora
+are still generated — closed-form traces and protocol-shaped captures — so
+nothing on that side has met a device. The recorded half now has one real file
+(2026-08-04, below), which is the first fixture in this repository that could
+surprise it. The items that close the rest do not close by writing more code.
 
 Not in this boundary: OpenExec evaluation of any kind (that is v0.8.0), realtime
 skinned display, an FBX reader, an `SdfFileFormat` bundle for `.bvh`, the ARDY
@@ -72,7 +74,9 @@ reaching a **rig** still is: that is Motion Phase G.
 - [ ] the root / hips observation is written down, and the canonical answer
       chosen or explicitly left open with its downstream cost stated;
 - [ ] redistributable captures and BVH files are committed; the rest survive as
-      measured manifests with no bytes;
+      measured manifests with no bytes — *the first BVH file is in
+      (`libs/motionBvh/tests/corpus/recorded/`, 2026-08-04); no live capture
+      is*;
 - [ ] both paths run from release artifacts alone, profiles included;
 - [ ] a v0.7.0 release record exists.
 
@@ -120,9 +124,16 @@ in, and the same shape serves both halves of the release:
 <adapter or library>/tests/corpus/
 ├─ generated/     protocol or format shapes, committed, CI-runnable, no hardware
 └─ recorded/
-   ├─ redistributable/   real sessions and files cleared for publication
-   └─ manifests/         everything else, as measured facts
+   ├─ manifest.json      every recorded file, with or without its bytes
+   └─ redistributable/   real sessions and files cleared for publication
 ```
+
+*Amended 2026-08-04, when the first recorded file landed.* This block used to
+show a second `manifests/` directory for everything not redistributable. One
+manifest per half is what was built instead: whether a file's bytes are
+committed is a **field**, not a location, because a row that changed directory
+when its redistribution status changed would break every reference to it for a
+reason that has nothing to do with the file.
 
 A capture or a file that cannot be redistributed leaves **no bytes** in the
 repository. It leaves a manifest: hash, recording or exporting tool version,
@@ -138,6 +149,23 @@ ship.
 Public CI runs the redistributable half. Hardware validation is an **opt-in
 lane** that never gates a pull request — its output is a capture and a manifest,
 not a green tick. A device is needed once per behavior, not once per run.
+
+### The first real file, and what it settled
+
+- ✅ **One vendor's phone export is committed** (2026-08-04) — 17 seconds, 27
+  joints, 162 channels, 853 rows at 50 Hz, cleared for publication by the
+  capture's owner. It is the first fixture in this repository that the code
+  could be *surprised* by: everything else was written here, and a file written
+  here can only confirm what was already believed. The parser read it whole on
+  first contact and both checks over it are green.
+- The measurements — the basis, the unit, the root convention, the seven-segment
+  spine, the position channels that restate the rest pose every frame — are in
+  [recorded-motion-sources.md §9](recorded-motion-sources.md#9-milestones) and in
+  the corpus manifest beside the file. They are recorded as **observations**,
+  because BVH declares none of them and this layer may act on none of them.
+- BVH-0 is therefore **started, not finished**. Its release condition is two
+  producers, and one file settles the shape of the evidence rather than the
+  profile schema — which is the whole reason the milestone asks for two.
 
 ### Landed early: the expression sample and its first producer
 

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "description": "Real producer exports, and what was measured from them. Separate from the generated manifest one directory up because it is a separate kind of claim: a generated fixture pins a shape of the format and its counts are a property of what was written here, where a recorded file pins what one producer actually exports and its counts are a measurement of someone else's software that nobody here may adjust. Measured fields come from libs/motionBvh/tools/check_corpus.py --recorded, whose scanner is an independent reading of the format rather than a call into the C++ parser. Prose and observations are hand-written.",
+  "format": {
+    "name": "bvh",
+    "spec": "libs/motionBvh/include/motionBvh/BvhDocument.h"
+  },
+  "limitations": [
+    "Every `observations` entry is read OUT of a file that declares none of it. BVH states no unit, no up axis, no handedness, no rotation order and no humanoid bone, so these are evidence for a producer profile to settle -- not facts this layer knows, and not something the parser may act on (docs/roadmap/recorded-motion-sources.md §2).",
+    "One session, one application, one device, one performer. Nothing measured here generalises to the same vendor's PC export, to a later app version, or to any other producer -- which is exactly why a profile is named `<producer>-<format>-<preset>-v<N>` and why the release condition is two producers rather than one (§3, §8).",
+    "This file is not a shape of the format and does not belong in `generated/`. The two halves are never mixed: a producer's export sitting among the format shapes is the first place one application's answers quietly become the format's definition."
+  ],
+  "fixtures": [
+    {
+      "file": "mocopi-mobile-arm-raise-turn.bvh",
+      "status": "valid",
+      "pins": "The first real producer export this pipeline has read. It pins that the parser handles a full-size export -- 27 joints, 162 columns, 853 rows, scientific-notation values down to 1e-17, a trailing space on every row -- and it is the file the first producer profile will be written from. The session is a standing capture: both arms raised and bent to roughly 90 degrees at the elbow, the head nodding, the body turning about +/-59 degrees around the vertical, and the feet staying put.",
+      "producer": "mocopi (iOS app), Sony",
+      "producerVersion": null,
+      "originalFile": "MCPM_20260804_122818.bvh",
+      "capturedAt": "2026-08-04",
+      "redistribution": "cleared by the capture's owner for publication in this repository (2026-08-04)",
+      "observations": {
+        "note": "Observed, never declared. Each entry below is what the bytes imply, and every one of them is a producer profile's decision to make rather than this layer's.",
+        "channelDeclaration": "All 27 joints declare the same six channels in the same order: Xposition Yposition Zposition Zrotation Xrotation Yrotation. The Euler order is therefore ZXY throughout, and it is stated once per joint rather than assumed anywhere.",
+        "positionChannels": "The 78 non-root position columns carry exactly their joint's own OFFSET in all 853 frames. They are rest geometry restated every frame, not translation animation; only the root's three columns move.",
+        "rootTranslation": "Absolute position in the file's own frame, beginning at the root OFFSET (0, 95.9893, 0) in frame 0 -- not a delta, and not zero-based. Over the session it stays within about 7 units laterally.",
+        "upAxis": "+Y. The root sits at Y 95.9893, the torso chain climbs in +Y and the legs descend in -Y.",
+        "forwardAxis": "+Z, from the toe End Sites at (0, 0, 0.1).",
+        "lateralAxis": "+X is the character's left: every l_* joint sits at +X of its parent and every r_* at -X.",
+        "handedness": "Right-handed, implied by the three axes above rather than declared.",
+        "unit": "Centimetres, implied: a hip height of 95.9893 over an 81.46-long leg chain (39.89 thigh + 41.57 shank) is a human in centimetres and nothing else.",
+        "endSites": "Five, each 0.1 along a single axis -- head +Y, hands +/-X, toes +Z. They are direction markers of a fixed length rather than bone extents; a converter that read them as extents would give this skeleton 1 mm hands.",
+        "rootJointName": "`root`, and there is no joint named `hips` at all. The seven `torso_*` segments are one spine chain, so the mapping onto a VRM humanoid's hips / spine / chest / upperChest is a profile's decision and cannot be recovered from the names.",
+        "jointNames": [
+          "root", "torso_1", "torso_2", "torso_3", "torso_4", "torso_5",
+          "torso_6", "torso_7", "neck_1", "neck_2", "head", "l_shoulder",
+          "l_up_arm", "l_low_arm", "l_hand", "r_shoulder", "r_up_arm",
+          "r_low_arm", "r_hand", "l_up_leg", "l_low_leg", "l_foot", "l_toes",
+          "r_up_leg", "r_low_leg", "r_foot", "r_toes"
+        ]
+      },
+      "joints": 27,
+      "channels": 162,
+      "frames": 853,
+      "frameTime": 0.02,
+      "bytes": 1254790,
+      "sha256": "ecab09a166edc27f9e290bf604cc1a2b07be16bf7be55fac52d0bef33186e15d"
+    }
+  ]
+}

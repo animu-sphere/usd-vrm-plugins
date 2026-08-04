@@ -13,6 +13,14 @@ wrong and the fixture is not evidence of anything until that is settled.
 
     check_corpus.py --check    verify manifest.json against the committed files
     check_corpus.py --update   rewrite the measured fields, keeping the prose
+    check_corpus.py --recorded  ... over recorded/ instead of generated/
+
+The two halves are measured by the same scanner and kept in separate manifests,
+because they are separate kinds of claim. A generated fixture pins a *shape of
+the format* and its counts are a property of what was written; a recorded file
+pins *what one producer actually exports*, and its counts are a measurement of
+someone else's software that nobody here may adjust. Only the second kind has
+provenance, and only the second kind can stop being reproducible.
 """
 
 from __future__ import annotations
@@ -226,9 +234,31 @@ def measure(path: pathlib.Path) -> dict:
     return entry
 
 
-def ordered(entry: dict, pins: str) -> dict:
+# Hand-written per half, carried through `--update` untouched. A measured field
+# this script rewrites and a prose field a person wrote must never be the same
+# field: the whole point of re-measuring is that nobody edits the numbers.
+PROSE = {
+    "generated": ("pins",),
+    # A recorded file's provenance is the part no scanner can recover. Which
+    # application wrote it, which version, what it was called when it came off
+    # the device, and what may be done with it are facts about the world, and
+    # BVH carries a statement of none of them.
+    "recorded": ("pins", "producer", "producerVersion", "originalFile",
+                 "capturedAt", "redistribution", "observations"),
+}
+REQUIRED_PROSE = {
+    "generated": ("pins",),
+    "recorded": ("pins", "producer", "redistribution"),
+}
+
+
+def ordered(entry: dict, previous: dict, half: str) -> dict:
     """One manifest row, with a stable field order for a readable diff."""
-    row = {"file": entry["file"], "status": entry["status"], "pins": pins}
+    row = {"file": entry["file"], "status": entry["status"]}
+    for field in PROSE[half]:
+        if field in previous:
+            row[field] = previous[field]
+    row.setdefault("pins", "TODO: what this pins")
     if entry["status"] == "valid":
         for field in ("joints", "channels", "frames", "frameTime"):
             row[field] = entry[field]
@@ -244,44 +274,52 @@ def main() -> int:
     parser.add_argument("--corpus", type=pathlib.Path,
                         default=pathlib.Path(__file__).resolve().parents[1]
                         / "tests" / "corpus")
+    parser.add_argument(
+        "--recorded", action="store_true",
+        help="Measure recorded/redistributable against recorded/manifest.json "
+             "instead of the generated half.")
     action = parser.add_mutually_exclusive_group()
     action.add_argument("--check", action="store_true", default=True)
     action.add_argument("--update", action="store_true")
     args = parser.parse_args()
 
-    generated = args.corpus / "generated"
-    manifest_path = args.corpus / "manifest.json"
-    if not generated.is_dir():
-        print(f"corpus directory not found: {generated}", file=sys.stderr)
+    half = "recorded" if args.recorded else "generated"
+    if args.recorded:
+        files = args.corpus / "recorded" / "redistributable"
+        manifest_path = args.corpus / "recorded" / "manifest.json"
+    else:
+        files = args.corpus / "generated"
+        manifest_path = args.corpus / "manifest.json"
+    if not files.is_dir():
+        print(f"corpus directory not found: {files}", file=sys.stderr)
         return 1
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8")) \
         if manifest_path.exists() else {"schemaVersion": 1, "fixtures": []}
-    recorded = {row["file"]: row for row in manifest.get("fixtures", [])}
+    declared = {row["file"]: row for row in manifest.get("fixtures", [])}
     measured = {path.name: measure(path)
-                for path in sorted(generated.glob("*.bvh"))}
+                for path in sorted(files.glob("*.bvh"))}
 
     if args.update:
         manifest["fixtures"] = [
-            ordered(measured[name],
-                    recorded.get(name, {}).get("pins", "TODO: what this pins"))
+            ordered(measured[name], declared.get(name, {}), half)
             for name in sorted(measured)
         ]
         manifest_path.write_text(
             json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
             encoding="utf-8")
-        print(f"manifest updated: {len(measured)} fixture(s)")
+        print(f"{half} manifest updated: {len(measured)} fixture(s)")
         return 0
 
     failures: list[str] = []
-    for name in sorted(set(measured) | set(recorded)):
-        if name not in recorded:
+    for name in sorted(set(measured) | set(declared)):
+        if name not in declared:
             failures.append(f"{name}: committed but not in the manifest")
             continue
         if name not in measured:
             failures.append(f"{name}: in the manifest but not committed")
             continue
-        want, got = recorded[name], measured[name]
+        want, got = declared[name], measured[name]
         for field in ("status", "bytes", "sha256", "diagnostic", "joints",
                       "channels", "frames", "frameTime"):
             if field in want or field in got:
@@ -289,13 +327,14 @@ def main() -> int:
                     failures.append(
                         f"{name}: {field} is {got.get(field)!r}, the manifest "
                         f"says {want.get(field)!r}")
-        if not want.get("pins"):
-            failures.append(f"{name}: the manifest does not say what it pins")
+        for field in REQUIRED_PROSE[half]:
+            if not want.get(field):
+                failures.append(f"{name}: the manifest states no {field}")
 
     if failures:
         print("\n".join(failures), file=sys.stderr)
         return 1
-    print(f"motionBvh corpus manifest: {len(measured)} fixture(s) agree")
+    print(f"motionBvh {half} corpus manifest: {len(measured)} file(s) agree")
     return 0
 
 
