@@ -14,12 +14,20 @@
     {
       "file": "mocopi-mobile-arm-raise-turn.bvh",
       "status": "valid",
-      "pins": "The first real producer export this pipeline has read. It pins that the parser handles a full-size export -- 27 joints, 162 columns, 853 rows, scientific-notation values down to 1e-17, a trailing space on every row -- and it is the file the first producer profile will be written from. The session is a standing capture: both arms raised and bent to roughly 90 degrees at the elbow, the head nodding, the body turning about +/-59 degrees around the vertical, and the feet staying put.",
+      "pins": "The first real producer export this pipeline has read. It pins that the parser handles a full-size export -- 27 joints, 162 columns, 853 rows, scientific-notation values down to 1e-17, a trailing space on every row -- and it is the file the first producer profile was written from (2026-08-05). The session is a standing capture: both arms raised and bent to roughly 90 degrees at the elbow, the head nodding, the body turning about +/-59 degrees around the vertical, and the feet staying put.",
       "producer": "mocopi (iOS app), Sony",
       "producerVersion": null,
       "originalFile": "MCPM_20260804_122818.bvh",
       "capturedAt": "2026-08-04",
       "redistribution": "cleared by the capture's owner for publication in this repository (2026-08-04)",
+      "profileId": "mocopi-mobile-bvh-default-v1",
+      "expectedMappedBones": [
+        "hips", "spine", "chest", "upperChest", "neck", "head",
+        "leftShoulder", "leftUpperArm", "leftLowerArm", "leftHand",
+        "rightShoulder", "rightUpperArm", "rightLowerArm", "rightHand",
+        "leftUpperLeg", "leftLowerLeg", "leftFoot", "leftToes",
+        "rightUpperLeg", "rightLowerLeg", "rightFoot", "rightToes"
+      ],
       "observations": {
         "note": "Observed, never declared. Each entry below is what the bytes imply, and every one of them is a producer profile's decision to make rather than this layer's.",
         "channelDeclaration": "All 27 joints declare the same six channels in the same order: Xposition Yposition Zposition Zrotation Xrotation Yrotation. The Euler order is therefore ZXY throughout, and it is stated once per joint rather than assumed anywhere.",

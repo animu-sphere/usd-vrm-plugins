@@ -61,18 +61,25 @@ reaching a **rig** still is: that is Motion Phase G.
       corpus (`libs/motionBvh`), then the CLI over it (`tools/motionBvh`),
       which links no OpenUSD because the layer under it has no value type to
       borrow from Gf*;
-- [ ] the format-neutral `motionSource` model and the profile contract — *the
+- [x] the format-neutral `motionSource` model and the profile contract — *the
       model landed 2026-08-04 (`libs/motionSource`): the source rig, the source
       animation in the source's own angle order and unit, provenance, and one
-      declared crossing into canonical motion. The profile contract is what is
-      left in this line, and it is the half that waits on a second producer.
-      Two things were settled with the model rather than after it: a recorded
-      file's provenance is a **neighbour** of `MotionSourceMetadata` with a
-      narrowing derivation ([contract](../design/MOTION_CONTRACT.md#recorded-source-provenance-v070)),
-      and the six semantic `VRM_BVH_*` codes still have no layer that can raise
-      them — the profile contract is the change that has to choose*;
+      declared crossing into canonical motion. The contract followed on
+      2026-08-05 — the vocabulary a profile states by name, its invariants, the
+      typed refusals that settled where the six semantic `VRM_BVH_*` codes are
+      raised, and matching a profile against a rig as a hierarchy embedding
+      returning facts rather than a score — and the **file** with it: the keys,
+      and an unknown one refused rather than dropped. A recorded file's
+      provenance was settled with the model as a **neighbour** of
+      `MotionSourceMetadata` with a narrowing derivation
+      ([contract](../design/MOTION_CONTRACT.md#recorded-source-provenance-v070))*;
 - [ ] the mocopi profile **and one independent mocap producer's**, plus a
-      user-defined profile proving the contract is usable from outside;
+      user-defined profile proving the contract is usable from outside — *the
+      first landed 2026-08-05 (`profiles/motion/`), written from the one export
+      BVH-0 measured and checked against it by root, joint set, ignore list and
+      hierarchy. The second producer is the half of this line that no amount of
+      code closes, and a user-defined profile is now a file of the same shape
+      rather than a mechanism still to build*;
 - [ ] BVH → `HumanoidAnimation` → the same avatar-independent semantic clip
       `motion_capture` and `usdVrmaFileFormat` already author;
 - [ ] `motion_bvh_convert` → **unchanged** `motion_retarget` → a target VRM,
@@ -271,7 +278,11 @@ trace. They do not yet reach a **rig**, which is what #88 is actually about:
   0.21.0 has no notion of a data-only member and how the files get there is
   unverified. A converter with no profile available refuses every file it is
   given, so this is the difference between the smoke test passing and being
-  impossible to write.
+  impossible to write. **`profiles/motion/` now exists** with one file in it, and
+  the plain-CMake half is closed: the root project installs it to that exact
+  destination and a scratch-prefix install proves it (2026-08-05). What is left
+  is the `ost` half, which is now a question about a real directory rather than a
+  hypothetical one.
 
 ## Then: v0.8.0 — the OpenExec foundation (Workspace Phase 8 + Motion Phase E) ⬜
 

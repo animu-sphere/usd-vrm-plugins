@@ -34,10 +34,11 @@ endif()
 # The declared motionSource -> motionCore edge (WORKSPACE.md §2), and the only
 # OpenUSD this library sees. It arrives through motionCore rather than directly:
 # nothing here names a Gf type, because a value in a basis this layer does not
-# know is not a geometric vector (SourceSkeleton.h). Two files cross into
-# canonical motion -- CanonicalMetadata, and SourceProfile for the right-hand
-# side of a joint map -- and motionSource_boundaries carries the list, so a third
-# joins it in review rather than quietly.
+# know is not a geometric vector (SourceSkeleton.h). Three files cross into
+# canonical motion -- CanonicalMetadata, SourceProfile for the right-hand side of
+# a joint map, and SourceProfileFile, which reads that side out of a file -- and
+# motionSource_boundaries carries the list, so a fourth joins it in review rather
+# than quietly.
 if(NOT pxr_FOUND)
     find_package(pxr REQUIRED CONFIG)
 endif()
@@ -53,6 +54,7 @@ add_library(motionSource STATIC
     src/CanonicalMetadata.cpp
     src/SourceAnimation.cpp
     src/SourceProfile.cpp
+    src/SourceProfileFile.cpp
     src/SourceProvenance.cpp
     src/SourceSkeleton.cpp)
 add_library(motionSource::motionSource ALIAS motionSource)

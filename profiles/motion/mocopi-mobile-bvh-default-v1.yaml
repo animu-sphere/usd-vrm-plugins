@@ -1,0 +1,105 @@
+# What one producer's export means. Data, never code: the libraries that read
+# this file carry no product name, and shipping every profile leaves them
+# byte-identical (WORKSPACE.md §1).
+#
+# Written from ONE measured export -- the 17-second session committed at
+# libs/motionBvh/tests/corpus/recorded/redistributable/, 2026-08-04 -- and every
+# value below is either read out of those bytes or decided here for a reason
+# stated beside it. That distinction is the whole of this file: the format
+# declares no unit, no axis, no handedness and no humanoid bone, so an
+# observation is evidence and a profile is the decision taken on it.
+#
+# It describes that application's export and nothing else. A second application,
+# a different export preset, or an output contract that breaks gets its own file:
+# a producer is not a profile, which is why the id carries a preset and a version
+# that only moves when the producer's output changes
+# (docs/roadmap/recorded-motion-sources.md §3).
+schemaVersion: 1
+id: mocopi-mobile-bvh-default-v1
+producer: Sony mocopi (mobile app)
+
+# All four observed, none declared by the file (corpus manifest,
+# `observations`). The unit is the one inference rather than a reading: a hip
+# height of 95.9893 over an 81.46 leg chain is a human in centimetres and in
+# nothing else.
+coordinates:
+  handedness: right
+  upAxis: +Y
+  forwardAxis: +Z
+  translationUnit: centimeters
+
+# The rig roots at a joint named `root`, and there is no joint named `hips` at
+# all -- it sits at hip height, parents both legs and the whole spine chain, and
+# is the only joint whose translation channels move. So it is the hips, its
+# rotation is the body's orientation, and its samples are absolute positions
+# beginning at its own rest offset (0, 95.9893, 0) rather than displacements
+# from it. That last one is why `absolute-position` and `rest-relative` are
+# separate words: read the wrong way round, this file's root sits 96 units off
+# the floor for its whole length.
+root:
+  joint: root
+  translation: absolute-position
+  rotation: body-orientation
+
+# The rest pose is the offsets. The format states no rest rotation, and this
+# writer's first frame is a captured pose rather than a neutral one.
+restPose: rest-offsets
+
+# Every joint this export carries is either mapped or listed below, so a rig with
+# a joint neither of those is not this export -- a later app version that adds
+# fingers is a new profile, not a warning. `refuse` is only affordable because
+# `ignoredJoints` exists.
+unmappedJoints: refuse
+
+# 27 joints, of which 22 carry a canonical bone. Every one is `required`: this
+# producer exports a fixed skeleton, so a file missing one of them is not this
+# export, and an optional mapping would describe a file it never writes.
+#
+# The three-of-seven torso mapping is the one decision here that measurement
+# narrows but does not make. The canonical humanoid has hips, spine, chest and
+# upperChest between the pelvis and the neck; this rig has a root and seven
+# `torso_*` segments, and the manifest says so: "the mapping onto a VRM
+# humanoid's hips / spine / chest / upperChest is a profile's decision and cannot
+# be recovered from the names".
+#
+# What the geometry does settle is the top: `torso_7` is where both shoulders and
+# the neck attach, which is what `upperChest` is. The other two are placed by the
+# rest heights, as a fraction of the root-to-`torso_7` rise -- `torso_2` at 21%
+# and `torso_4` at 46%, which are the lumbar and the thoracolumbar junction of a
+# body this shape. Read the other way: the four unmapped segments are not motion
+# thrown away, because a joint between two mapped ones is on the path between
+# them and a converter composing that path keeps the chain's total orientation
+# whatever this file chose. What the choice changes is how the bend is
+# *distributed*, and a cross-source comparison against the same session over UDP
+# is what could revise it (roadmap §9, BVH-4).
+joints:
+  root:       { bone: hips,          required: true }
+  torso_2:    { bone: spine,         required: true }
+  torso_4:    { bone: chest,         required: true }
+  torso_7:    { bone: upperChest,    required: true }
+  neck_1:     { bone: neck,          required: true }
+  head:       { bone: head,          required: true }
+
+  l_shoulder: { bone: leftShoulder,  required: true }
+  l_up_arm:   { bone: leftUpperArm,  required: true }
+  l_low_arm:  { bone: leftLowerArm,  required: true }
+  l_hand:     { bone: leftHand,      required: true }
+  r_shoulder: { bone: rightShoulder, required: true }
+  r_up_arm:   { bone: rightUpperArm, required: true }
+  r_low_arm:  { bone: rightLowerArm, required: true }
+  r_hand:     { bone: rightHand,     required: true }
+
+  l_up_leg:   { bone: leftUpperLeg,  required: true }
+  l_low_leg:  { bone: leftLowerLeg,  required: true }
+  l_foot:     { bone: leftFoot,      required: true }
+  l_toes:     { bone: leftToes,      required: true }
+  r_up_leg:   { bone: rightUpperLeg, required: true }
+  r_low_leg:  { bone: rightLowerLeg, required: true }
+  r_foot:     { bone: rightFoot,     required: true }
+  r_toes:     { bone: rightToes,     required: true }
+
+# The five the canonical vocabulary has no bone for: four spine segments between
+# the three that are mapped, and the second of two neck segments. Listed rather
+# than left unmapped so that `refuse` above means what it says -- these are known
+# and deliberate, and anything else is not.
+ignoredJoints: [torso_1, torso_3, torso_5, torso_6, neck_2]

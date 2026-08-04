@@ -49,6 +49,60 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **A profile is a file now, and the first producer is described by one.**
+  `SourceProfileFile.h` settles the keys the profile sketch left open and reads
+  them: a stated subset of the shape the plan already wrote, with an unknown key
+  refused rather than dropped. That refusal is the point of the whole reader — a
+  misspelled `requred:` a permissive parser ignored would unbind a joint the
+  profile called mandatory and report nothing, which is the near-miss failure
+  [§3.1](docs/roadmap/recorded-motion-sources.md) forbids arriving through a
+  typo. Two more properties are decisions: every convention's `unspecified` is
+  refused *where it is written*, so "there is no default profile" holds inside a
+  file as well as between files; and parsing ends in `ValidateSourceProfile`, so
+  no half-built profile reaches a caller who would have to re-prove it. One key
+  changed on the way in — `units` became `translationUnit`, singular and saying
+  which, because a profile states no angle unit at all: a format says whether its
+  angles are degrees or radians and a producer does not get to disagree with its
+  own format about that.
+
+  **Written rather than borrowed, and checked against a borrowed one.** A
+  document parser hands an unknown key back like any other, so the strict half
+  would be written either way and it is the half where the risk is; and YAML's
+  implicit typing would read a joint named `on`, `y` or `null` as something other
+  than the writer's word for it. Against that, `motionSource` links exactly one
+  thing, and spending that on a configuration file would be a contract change.
+  What the subset owes in return is that it never disagrees with YAML *silently*
+  — so every shipped profile is read a second time with a real implementation
+  where one is installed, and the two readings are compared. It refuses anchors,
+  tags, block scalars and nested flow forms and says so; what it accepts, it
+  reads the way YAML does.
+
+  Beside it, `profiles/motion/` and the first profile in it, written from the one
+  export this pipeline has measured. What the file settles and what the profile
+  decides are separated in both directions: the export states a basis, a unit, a
+  root whose samples are absolute positions, and seven torso segments where the
+  canonical humanoid has three — and the profile is where "the root *is* the
+  hips" and "`torso_7` is `upperChest`" are *decided*, with the two middle
+  choices placed by rest height and said to be judgements. It maps 22 of 27
+  joints, names the 5 it ignores, and refuses a rig carrying anything else,
+  which only an ignore list makes affordable. One producer and not two, on
+  purpose: a second profile written from a file nobody has read would be the
+  failure this plan is shaped around wearing the shape of progress.
+
+  Two checks, because the interesting claim is not the one a library can make.
+  `motionSource_shippedProfiles` reads every file in `profiles/motion/` with the
+  library that defines what a profile is, so a profile added there cannot be
+  unloadable and unnoticed until a conversion asks for it.
+  `scripts/check_motion_profiles.py` checks the claim that a profile *describes a
+  rig* — root, every mapped and ignored joint, no joint left neither, and the
+  hierarchy the mapping implies — against the recorded file that names it in the
+  corpus manifest. It reads both sides itself rather than calling into either
+  library, and it lives in `scripts/` because it is the one check that holds a
+  reader's file and a profile at once: `motionSource` may not know a reader
+  exists and `motionBvh` may not know a producer does
+  ([WORKSPACE.md §2](docs/architecture/WORKSPACE.md)), so a caller is what may
+  hold both, and until `motion_bvh_convert` exists a script is the caller.
+
 - **The source profile contract — what one producer's export means, declared
   where no code has a name for it.** `motionSource` grows `SourceProfile`: the
   vocabulary a profile file states by name (handedness, a **signed** up and

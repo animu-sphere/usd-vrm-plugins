@@ -252,8 +252,16 @@ PROSE = {
     # application wrote it, which version, what it was called when it came off
     # the device, and what may be done with it are facts about the world, and
     # BVH carries a statement of none of them.
+    #
+    # `profileId` and `expectedMappedBones` are the same kind of fact one layer
+    # up: which producer profile claims to describe this file, and which bones
+    # that claim binds. They are listed here so `--update` carries them through
+    # untouched -- a re-measurement that dropped a file's profile link would be
+    # a scanner deciding a semantic question, which is the one thing it may not
+    # do. `scripts/check_motion_profiles.py` is what checks the claim.
     "recorded": ("pins", "producer", "producerVersion", "originalFile",
-                 "capturedAt", "redistribution", "observations"),
+                 "capturedAt", "redistribution", "profileId",
+                 "expectedMappedBones", "observations"),
 }
 REQUIRED_PROSE = {
     "generated": ("pins",),

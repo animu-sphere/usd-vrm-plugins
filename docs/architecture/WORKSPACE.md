@@ -70,7 +70,7 @@ Recorded motion sources — the file half of the input layer (motion policy §8.
 
 | Identity | Kind | Role |
 | --- | --- | --- |
-| `motionSource` | plain static CMake library (`libs/motionSource/`) | The **format-neutral** intermediate: `SourceSkeleton`, `SourceAnimation`, `SourceProvenance`, the `SourceProfile` contract, and the converter from those plus a profile to `motion::HumanoidAnimation`. Knows no file format and no producer. **The value model and the profile contract are implemented**; the converter follows. It names no `Gf` type of its own — a value in a basis this layer does not know is not a geometric vector — so the `motionCore` edge below is carried by two files: `CanonicalMetadata`, which derives canonical provenance, and `SourceProfile`, whose joint map has a `HumanBone` on its right-hand side. |
+| `motionSource` | plain static CMake library (`libs/motionSource/`) | The **format-neutral** intermediate: `SourceSkeleton`, `SourceAnimation`, `SourceProvenance`, the `SourceProfile` contract, the reader for the profile *file*, and the converter from those plus a profile to `motion::HumanoidAnimation`. Knows no file format and no producer — a profile file is data this layer reads, not a motion format it parses. **The value model, the profile contract and the profile file are implemented**; the converter follows. It names no `Gf` type of its own — a value in a basis this layer does not know is not a geometric vector — so the `motionCore` edge below is carried by three files: `CanonicalMetadata`, which derives canonical provenance, `SourceProfile`, whose joint map has a `HumanBone` on its right-hand side, and `SourceProfileFile`, which reads that side out of a file. |
 | `motionBvh` | plain static CMake library (`libs/motionBvh/`) | BVH **syntax** only — `HIERARCHY`, `ROOT`/`JOINT`, `OFFSET`, `CHANNELS`, `End Site`, `MOTION`, frame time, channel values in declaration order — plus the extractor that turns a `BvhDocument` into `motionSource` values. Decides no semantics: not which joint is which `HumanBone`, not the unit, not the axes, not what a root translation means. **The syntax half is implemented**; it links nothing at all, not even OpenUSD's value types, and the declared edge below arrives with the extractor. |
 | `motion_bvh_inspect` | CLI executable (`tools/motionBvh/`, v0.6.0) | Reports what a BVH file contains, and optionally which profiles are candidates for it, with the reasons. Links `motionBvh` and nothing else. **The reporting half is implemented**; candidate profiles arrive with the profile contract, because a detector written before it would settle the profile schema on whichever file was inspected first. |
 | `motion_bvh_convert` | CLI executable (reserved, `tools/motionBvh/`) | BVH + an explicitly named profile → the avatar-independent semantic clip `motion_retarget` already consumes. Links `motionBvh` and `motionSource`, and authors a stage. Never binds to a target avatar. |
@@ -79,8 +79,8 @@ Recorded motion sources — the file half of the input layer (motion policy §8.
 | `usdBvhFileFormat` | plugin bundle (deferred) | A thin `SdfFileFormat` over `motionBvh`, only if reading `.bvh` directly off a stage is wanted. It would re-implement no parsing and no conversion. |
 
 > **A producer profile is the one place a product name may appear outside
-> `adapters/`, because it is data and not a branch.** `profiles/motion/` will
-> hold files named for Mocopi, Rokoko Studio, MotionBuilder and Blender, which
+> `adapters/`, because it is data and not a branch.** `profiles/motion/` holds
+> files named for Mocopi, Rokoko Studio, MotionBuilder and Blender, which
 > reads at first like the rule below being broken. It is not, and the distinction
 > is worth stating precisely: the *rule* forbids product-conditional code in the
 > core, and a profile is a declaration the code never has a name for. `motionBvh`
