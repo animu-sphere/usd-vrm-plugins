@@ -388,6 +388,17 @@ depends on them ([docs/README.md](../README.md)).
   `protocol`, and always `kind = Clip`, dropping the producer version and the
   profile id — the narrowing is pinned by a test rather than by a sentence.
   Semantics: [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#recorded-source-provenance-v070).
+- ⬜ **The quaternion rotation form has no producer, and the converter has to
+  decide what that costs.** `SourceJointTrack` carries angles-with-an-order *or*
+  quaternions, because composing three angles needs the handedness a profile
+  supplies and decomposing a quaternion would invent an order the writer never
+  declared — so neither converts into the other before a profile is in hand.
+  Nothing in the tree writes the quaternion form today, which means the
+  converter would implement a path no fixture exercises end to end. Two honest
+  answers: refuse a quaternion track with a stated reason until a reader
+  produces one, or add a synthetic fixture and say in the corpus that it is
+  synthetic. Choosing at the converter is fine; arriving at the converter
+  without having noticed is what this entry prevents.
 - ⬜ **The six semantic diagnostics have no layer that can raise them.** The
   frozen set ([§6](#6-diagnostics)) lives in the reader, named for the format it
   reads, and its semantic half is raised "where a document meets a profile" —

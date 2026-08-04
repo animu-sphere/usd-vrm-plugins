@@ -1,4 +1,4 @@
-# Motion contract (v0.3.0, extended in v0.4.0, v0.5.0 and v0.6.0)
+# Motion contract (v0.3.0, extended in v0.4.0, v0.5.0, v0.6.0 and v0.7.0)
 
 This is the executable contract frozen by **Motion Phase A**. It gives
 `motionCore` and `usdVrmaFileFormat` one vocabulary without making either a
@@ -7,8 +7,9 @@ VRMA vertical slice; later Motion Phases may extend this document but may not
 silently reinterpret these fields.
 
 v0.4.0 extends it with the **Motion Phase C retarget semantics**, v0.5.0 with
-the **Motion Phase D live-capture semantics**, and v0.6.0 with **comparison
-semantics**, all below. Nothing above those sections changed: the v0.3.0 fields
+the **Motion Phase D live-capture semantics**, v0.6.0 with **comparison
+semantics**, and v0.7.0 with **expression semantics** and **recorded-source
+provenance**, all below. Nothing above those sections changed: the v0.3.0 fields
 mean exactly what they meant, and each later phase is a new consumer of them
 rather than a reinterpretation.
 

@@ -29,6 +29,13 @@ library links `motionCore`, whose Gf value types make "imports no OpenUSD" false
 by design — and in a monolithic OpenUSD build Gf and Sdf are the same library, so
 no import listing could tell the allowed dependency from a forbidden one. The
 CMake link line and the source rules above are what carry the claim.
+
+Two limits, stated so the claims above are not read as wider than they are. Only
+`include/`, `src/` and the library's own `CMakeLists.txt` are scanned, so a test
+target that linked OpenUSD directly would not be caught here — the same shape the
+reader's check has. And the CMake rule reads link *lines*: a dependency reached
+through a variable rather than named in a `target_link_libraries` call would pass
+it.
 """
 
 from __future__ import annotations

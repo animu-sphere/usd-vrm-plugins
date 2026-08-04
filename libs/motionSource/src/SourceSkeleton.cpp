@@ -181,6 +181,10 @@ ValidateSourceSkeleton(const SourceSkeleton& skeleton, std::string* reason)
         return Fail(reason, "joint 0 is not the root");
     }
 
+    // Filled as the parents are walked below, so the tip check afterwards costs
+    // one pass rather than a `ChildJoints` call per joint.
+    std::vector<bool> hasChildren(skeleton.joints.size(), false);
+
     for (std::size_t i = 0; i < skeleton.joints.size(); ++i) {
         const SourceJoint& joint = skeleton.joints[i];
         if (joint.name.empty()) {
@@ -199,6 +203,7 @@ ValidateSourceSkeleton(const SourceSkeleton& skeleton, std::string* reason)
                             JointLabel(skeleton, i)
                                 + " does not follow its parent");
             }
+            hasChildren[static_cast<std::size_t>(joint.parent)] = true;
         }
         if (!IsFinite(joint.restTranslation)) {
             return Fail(reason,
@@ -221,6 +226,18 @@ ValidateSourceSkeleton(const SourceSkeleton& skeleton, std::string* reason)
             return Fail(reason,
                         JointLabel(skeleton, i)
                             + " has a non-finite tip offset");
+        }
+    }
+
+    // A tip says where a chain *ends*, so a joint that has children has not
+    // ended and its tip has no meaning any layer above could act on. Checked
+    // after the walk because it is the one invariant that needs the whole
+    // hierarchy rather than one joint and its parent.
+    for (std::size_t i = 0; i < skeleton.joints.size(); ++i) {
+        if (skeleton.joints[i].tipOffset && hasChildren[i]) {
+            return Fail(reason,
+                        JointLabel(skeleton, i)
+                            + " has a tip offset and children");
         }
     }
 

@@ -138,6 +138,13 @@ struct SourceJointTrack
     // Never non-empty at the same time as `eulerAngles`: a track carrying both
     // would be two statements about one rotation with nothing here able to
     // arbitrate between them.
+    //
+    // **No reader writes this form yet**, and the converter is where that costs
+    // something: it would implement a path no fixture exercises end to end. The
+    // two honest answers — refuse it until a reader produces one, or add a
+    // fixture and say it is synthetic — are recorded against the converter in
+    // roadmap/recorded-motion-sources.md §10 rather than left to be discovered
+    // there.
     std::vector<SourceQuat> rotations;
 
     // Meaningful only when `eulerAngles` is non-empty. The defaults are not a

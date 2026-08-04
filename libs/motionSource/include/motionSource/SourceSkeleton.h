@@ -81,6 +81,11 @@ struct SourceVec3
 // an interpretation at any layer above.
 struct SourceQuat
 {
+    // The real part, and it is **first** — deliberately unlike `SourceVec3`
+    // beside it, and worth reading before writing a braced initialiser:
+    // `SourceQuat{0.9f, 0.1f, 0.0f, 0.0f}` is w = 0.9, not x. Serialised forms
+    // usually order a quaternion the other way, so this is the one place in
+    // this header where a habit from elsewhere gives the wrong answer.
     float w = 1.0f;
     float x = 0.0f;
     float y = 0.0f;
@@ -114,6 +119,11 @@ struct SourceJoint
     // Where this joint's chain ends, when the source marks it. A direction
     // marker or a bone length depending on the writer — which one is a profile's
     // answer, not this layer's.
+    //
+    // Only a joint with **no children** may carry one: a chain that continues
+    // has not ended, so a tip on it describes nothing a layer above could act
+    // on. `ValidateSourceSkeleton` refuses the combination rather than leaving
+    // each consumer to decide what it meant.
     std::optional<SourceVec3> tipOffset;
 
     MOTIONSOURCE_API friend bool operator==(const SourceJoint& lhs,

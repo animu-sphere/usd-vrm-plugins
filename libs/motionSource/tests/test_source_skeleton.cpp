@@ -71,8 +71,10 @@ TestQueries()
 void
 TestDuplicateNames()
 {
+    // Under joint 1 rather than under the leaf: the leaf carries a tip offset,
+    // and a joint with a tip may not have children.
     SourceSkeleton skeleton = MakeSkeleton();
-    skeleton.joints.push_back(MakeJoint("spine", 2, {0.0f, 3.0f, 0.0f}));
+    skeleton.joints.push_back(MakeJoint("spine", 1, {0.0f, 3.0f, 0.0f}));
 
     assert(!skeleton.HasUniqueJointNames());
     assert(*skeleton.FindJoint("spine") == 1);
@@ -184,6 +186,29 @@ TestValidationRefusals()
     Refuses(skeleton, "non-finite tip offset");
 }
 
+// A tip says where a chain ends, so a joint with children has not ended. The
+// combination is refused rather than left for each consumer to interpret: a
+// converter building a source rest pose would otherwise have to decide whether
+// the tip or the child is the continuation, and two consumers would decide
+// differently.
+void
+TestTipOffsetRequiresALeaf()
+{
+    SourceSkeleton skeleton = MakeSkeleton();
+    skeleton.joints[1].tipOffset = SourceVec3{0.0f, 0.1f, 0.0f};
+    Refuses(skeleton, "tip offset and children");
+
+    // The leaf keeps its own, so this is not a rule against tips.
+    assert(skeleton.joints[2].tipOffset.has_value());
+    skeleton.joints[1].tipOffset.reset();
+    assert(ValidateSourceSkeleton(skeleton));
+
+    // Growing a child under the leaf moves the refusal with it, which is what
+    // makes this a statement about the hierarchy rather than about one index.
+    skeleton.joints.push_back(MakeJoint("headTop", 2, {0.0f, 4.0f, 0.0f}));
+    Refuses(skeleton, "tip offset and children");
+}
+
 // The refusal names the joint by index *and* by name, because a source that
 // repeats a name would otherwise produce two identical messages for two
 // different joints.
@@ -191,7 +216,7 @@ void
 TestRefusalIdentifiesTheJoint()
 {
     SourceSkeleton skeleton = MakeSkeleton();
-    skeleton.joints.push_back(MakeJoint("spine", 2, {0.0f, 3.0f, 0.0f}));
+    skeleton.joints.push_back(MakeJoint("spine", 1, {0.0f, 3.0f, 0.0f}));
     skeleton.joints[3].restTranslation.x = std::numeric_limits<float>::infinity();
 
     std::string reason;
@@ -210,6 +235,7 @@ main()
     TestCyclicParentTerminates();
     TestEquality();
     TestValidationRefusals();
+    TestTipOffsetRequiresALeaf();
     TestRefusalIdentifiesTheJoint();
     std::printf("motionSource skeleton model: verified\n");
     return 0;
