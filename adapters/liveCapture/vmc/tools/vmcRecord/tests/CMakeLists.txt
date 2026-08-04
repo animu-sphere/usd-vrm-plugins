@@ -25,6 +25,33 @@ add_test(NAME vmc_record_loopback
             --corpus "${_vmc_record_corpus}"
             --mode loopback)
 
+# The chain a VMC session takes to a rig, which exists only in a build tree that
+# carries the product's tools as well as this adapter. A standalone configure of
+# the adapter has neither target, and naming one that does not exist fails at
+# generate time -- so the guard, exactly as tools/motionCapture uses one for
+# motion_retarget.
+#
+# The adapter is added last from the root CMakeLists (it is a leaf of
+# everything), so both targets already exist by the time this runs. That
+# ordering is what lets the end-to-end test live with the adapter rather than
+# with the product, which is where WORKSPACE.md §2 wants it: the product must
+# not know this adapter exists, in a test directory any more than in a link
+# line.
+if(TARGET motion_capture AND TARGET motion_retarget)
+    add_test(NAME vmc_record_endToEnd
+        COMMAND "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/test_vmc_end_to_end.py"
+                --record-tool "$<TARGET_FILE:vmc_record>"
+                --capture-tool "$<TARGET_FILE:motion_capture>"
+                --retarget-tool "$<TARGET_FILE:motion_retarget>"
+                --corpus "${_vmc_record_corpus}"
+                --avatar "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/vmc_avatar.usda")
+else()
+    message(STATUS
+        "vmcRecord: the product's motion tools are not in this build tree; the "
+        "VMC->rig end-to-end test will be skipped")
+endif()
+
 if(WIN32)
     # The same runtime the adapter's own tests need, for the same reason: the
     # tool is statically linked against the adapter, but motionCore and
@@ -46,4 +73,21 @@ if(WIN32)
          "PATH=path_list_prepend:${_vmc_record_python_dir}")
     set_tests_properties(vmc_record_inspect vmc_record_loopback PROPERTIES
         ENVIRONMENT_MODIFICATION "${_vmc_record_test_path}")
+endif()
+
+if(TEST vmc_record_endToEnd)
+    # This one needs more than the tools' own DLLs: it opens the baked stage
+    # through `pxr` in Python, so the USD runtime has to be importable and not
+    # merely loadable. Derived the way tools/motionCapture derives it -- pxr_DIR
+    # points at the config package, three levels below the prefix holding bin/,
+    # lib/ and the Python packages.
+    set(_vmc_usd_root "")
+    if(pxr_DIR AND EXISTS "${pxr_DIR}/bin")
+        set(_vmc_usd_root "${pxr_DIR}")
+    elseif(pxr_DIR)
+        get_filename_component(_vmc_usd_root "${pxr_DIR}/../../.." ABSOLUTE)
+    endif()
+    set_tests_properties(vmc_record_endToEnd PROPERTIES
+        ENVIRONMENT_MODIFICATION
+        "PATH=path_list_prepend:${_vmc_usd_root}/bin;PATH=path_list_prepend:${_vmc_usd_root}/lib;PYTHONPATH=path_list_prepend:${_vmc_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_vmc_usd_root}/lib/site-packages")
 endif()

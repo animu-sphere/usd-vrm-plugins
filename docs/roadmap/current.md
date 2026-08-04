@@ -47,7 +47,12 @@ reaching a **rig** still is: that is Motion Phase G.
 - [ ] tracking loss, recovery, and source restart are recorded rather than
       described;
 - [ ] the session reaches a real VRM avatar through **unchanged**
-      `motion_capture` and `motion_retarget`.
+      `motion_capture` and `motion_retarget` — *the chain closes for VMC
+      (2026-08-04): `vmc_record --export-trace` hands the product a
+      `motion-capture-trace` and both tools consume it unmodified, checked
+      through a `UsdSkelSkeletonQuery` by joint name. What is left in this line
+      is the words **real VRM avatar**: the rig is a committed fixture, not a
+      model, and no mocopi session has taken the path at all.*
 
 **Recorded**
 

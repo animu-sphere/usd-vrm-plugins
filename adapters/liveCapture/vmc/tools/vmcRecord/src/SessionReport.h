@@ -54,6 +54,7 @@ enum class StopReason : std::uint8_t
     Duration,
     IdleTimeout,
     MaxDatagrams,
+    MaxFrames,
     EndOfCapture,
     ReceiveFailed,
 };

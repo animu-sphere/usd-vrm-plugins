@@ -35,7 +35,7 @@ project's central design decision, and it is described below.
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | Bakes a semantic clip onto a target rig as `UsdSkelAnimation` | v0.4.0 |
 | [`motion_capture`](tools/motionCapture) | CLI executable | Replays a recorded capture session into a semantic clip the above consumes unchanged | v0.5.0 |
 | [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | VMC Protocol input: OSC-over-UDP datagrams → canonical humanoid motion | v0.6.0 |
-| [`vmc_record`](adapters/liveCapture/vmc/tools/vmcRecord) | CLI executable | Records and inspects VMC packet captures with a decode report | v0.6.0 |
+| [`vmc_record`](adapters/liveCapture/vmc/tools/vmcRecord) | CLI executable | Records and inspects VMC packet captures with a decode report, and exports what the adapter delivered as a capture trace the tools above replay unchanged | v0.6.0 |
 | `motionSource` | Plain static CMake library | Format-neutral source skeleton / animation model, the producer-profile contract, and the converter to canonical humanoid motion | Planned |
 | [`motionBvh`](libs/motionBvh) | Plain static CMake library | BVH syntax and extraction only — no producer semantics, no default profile | Syntax landed; extraction planned |
 | [`motion_bvh_inspect`](tools/motionBvh) | CLI executable | Reports what a BVH file contains — hierarchy, channels in declaration order, frames, and per-column value ranges | Reporting landed; profile candidates planned |
@@ -59,7 +59,9 @@ identities remain reserved; runtime evaluation is not part of this release.
 v0.6.0 supplies the first product-specific input leaf: `vrmAdapterVmc` decodes
 VMC Protocol from OSC-over-UDP through frame assembly and VRM bone mapping into
 the existing `LiveCaptureSource`; `vmc_record` records the same wire input for
-inspection and corpus work.
+inspection and corpus work, and `--export-trace` hands what the adapter
+delivered to `motion_capture` as a plain capture trace — the product's tools
+consume a live VMC session without linking the adapter, or knowing it exists.
 
 Every corpus behind that is **generated** — the motion traces from closed-form
 maths, the VMC captures from the protocol's shapes — so nothing here has yet met

@@ -65,6 +65,8 @@ StopReasonText(StopReason reason) noexcept
         return "--idle-timeout elapsed with nothing arriving";
     case StopReason::MaxDatagrams:
         return "--max-datagrams reached";
+    case StopReason::MaxFrames:
+        return "--max-frames reached";
     case StopReason::EndOfCapture:
         return "end of capture";
     case StopReason::ReceiveFailed:

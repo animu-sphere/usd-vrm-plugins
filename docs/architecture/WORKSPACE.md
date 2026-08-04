@@ -55,11 +55,11 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `motionRuntime` | plain static CMake library (v0.4.0) | Timestamped pose buffer, interpolation/extrapolation, resample, filter, blend — the OpenExec-independent runtime |
 | `vrmRetarget` | plain static CMake library (v0.4.0) | Humanoid map, rest pose, pose retargeter, root-motion policy. **Completed before OpenExec** (motion policy §18.12). Expression resolution stays with Motion Phase G. |
 | `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig and the semantic clip off stages, drives `vrmRetarget` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
-| `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `vrmRetarget`: it stops at the clip. Not a bundle. *(Gains a live adapter source when the first adapter lands; this row is updated in that PR, not before.)* |
+| `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `vrmRetarget`: it stops at the clip. Not a bundle. **It gains no adapter source, and that is the settled answer rather than a deferral** — a live session reaches it as a trace written by the adapter's own tool, so this row is the same after the first adapter as before it (§2). |
 | `vrmAdapterVmc` | optional plain static CMake library (reserved, `adapters/liveCapture/vmc/`) | The generic real-time input: OSC-over-UDP decode, frame assembly, VRM humanoid bone names → canonical semantics. One adapter serves every sender application, including capture products relayed through it. **First adapter implemented.** |
 | `vrmAdapterMocopi` | optional plain static CMake library (reserved, `adapters/liveCapture/mocopi/`) | **Live UDP only.** Decodes one capture product's native packets into canonical humanoid semantics and pushes them at `LiveCaptureSource`. Direct path: keeps the SDK-specific confidence and device diagnostics a protocol relay drops. Does **not** wrap `vrmAdapterVmc`, and does **not** read that product's recorded files — a recording is a file format, and file formats are `motionBvh`'s (below). |
 | `vrmAdapterArdy` | optional plain static CMake library (reserved, `adapters/generators/ardy/`) | One generator behind the vendor-neutral `IMotionGenerator` contract, producing canonical humanoid motion that `vrmRetarget` maps onto a target rig. |
-| `vmc_record` | CLI executable (`adapters/liveCapture/vmc/tools/vmcRecord/`, v0.5.0) | Records a live VMC session to a `vmc-packet-capture` file and reports what it decoded to; `--inspect` reports on a recorded capture with no socket. Links `vrmAdapterVmc` and nothing else: it neither retargets nor authors a stage, though §2 would permit both. |
+| `vmc_record` | CLI executable (`adapters/liveCapture/vmc/tools/vmcRecord/`, v0.5.0) | Records a live VMC session to a `vmc-packet-capture` file and reports what it decoded to; `--inspect` reports on a recorded capture with no socket; `--export-trace` writes what the adapter delivered as a `motion-capture-trace`, which is the whole of this adapter's hand-off to the product's tools (§2). Links `vrmAdapterVmc` and nothing else: it neither retargets nor authors a stage, though §2 would permit both. |
 
 Each adapter may also carry one CLI, declared beside it as an
 `openstrata.tool.yaml` workspace tool in the way `motion_retarget` and
@@ -193,6 +193,32 @@ values and stops there; an **adapter tool** (its CLI) may go on to retarget and
 author a stage, exactly as `motion_retarget` and `motion_capture` do. The moment
 retarget or USD authoring lives inside an adapter library, that adapter has
 become a second motion pipeline.
+
+**No product tool depends on an adapter, and the arrow that would have said so
+is deliberately absent.** `motion_capture` is a member of the aggregate product
+(§5) and every adapter is excluded from it, so an edge from the first to the
+second would have carried a protocol decoder, its network code, and a product
+name into the product artifact — and it would have done so once per adapter,
+since `--source vmc` invites `--source mocopi` behind it. The hand-off is a file
+instead. An adapter's tool writes what its adapter delivered as a
+`motion-capture-trace`, which is that format's stated content — *what an adapter
+delivered, after protocol decode and coordinate conversion, before any intake
+policy* (`motionRuntime/CaptureTrace.h`) — and `motion_capture` replays it
+through `LiveCaptureSource` exactly as it replays any other trace, unchanged and
+knowing nothing about where it came from.
+
+That keeps three properties that an in-process live source would each have cost.
+No tool in the product opens a transport or reads a wall clock, which is what
+makes every clip in this repository reproducible by construction. A session
+becomes a clip in exactly one place, so there is no second path from a live
+sender to an avatar for the two to disagree along. And the adapter stays
+separately shippable, because nothing in the product links it.
+
+The cost is stated rather than hidden: a live session is two commands, not one.
+That is the shape this repository already had — `vmc_record` exists because an
+operator keeps a session as a file — and the intermediate is a canonical trace
+carrying no VMC vocabulary at all, so the second command is the same one a
+`.vrma` clip or a generated fixture goes through.
 
 The four `motionSource` / `motionBvh` lines are a chain and are meant to be read
 as one: a **reader** knows a file format and no semantics, `motionSource` knows
