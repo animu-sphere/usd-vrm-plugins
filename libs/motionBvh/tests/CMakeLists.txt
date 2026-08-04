@@ -16,9 +16,15 @@ add_executable(motionBvh_parser_tests test_bvh_parser.cpp)
 # Extraction: a channel set into a track, and the shapes BVH permits that the
 # neutral value model does not.
 add_executable(motionBvh_extract_tests test_bvh_extract.cpp)
+# The whole recorded path over a real export, which is a *caller* holding a
+# reader and a profile at once -- something neither library may do and a test
+# may. Registered below only where both the corpus half and the profiles are
+# present.
+add_executable(motionBvh_conversion_tests test_bvh_conversion.cpp)
 
 foreach(_motion_bvh_test motionBvh_diagnostics_tests motionBvh_document_tests
-                         motionBvh_parser_tests motionBvh_extract_tests)
+                         motionBvh_parser_tests motionBvh_extract_tests
+                         motionBvh_conversion_tests)
     target_link_libraries(${_motion_bvh_test} PRIVATE motionBvh::motionBvh)
     target_compile_options(${_motion_bvh_test} PRIVATE ${_motion_bvh_assertions})
     if(MSVC)
@@ -63,6 +69,40 @@ set(_motion_bvh_recorded
 if(EXISTS "${_motion_bvh_recorded}")
     add_test(NAME motionBvh_recordedCorpus
         COMMAND motionBvh_parser_tests "${_motion_bvh_recorded}" recorded)
+endif()
+
+# The recorded export driven the whole way to canonical motion, against the
+# shipped profile written from it. It needs both halves and is skipped rather
+# than failed without them: the profiles are package data, the export is a
+# corpus file, and a library test that failed on their absence would fail a
+# standalone configure for a reason that is not about this library.
+set(_motion_bvh_profiles "${CMAKE_CURRENT_SOURCE_DIR}/../../../profiles/motion")
+if(EXISTS "${_motion_bvh_recorded}" AND EXISTS "${_motion_bvh_profiles}")
+    add_test(NAME motionBvh_recordedConversion
+        COMMAND motionBvh_conversion_tests
+                "${_motion_bvh_recorded}" "${_motion_bvh_profiles}")
+    # Unlike every other test here, this one reaches canonical motion and
+    # therefore Gf -- so it needs what the runtime's DLLs need, the way
+    # libs/motionSource/tests does. The paragraph above about loading nothing is
+    # about the other four executables.
+    if(WIN32)
+        if(TARGET gf)
+            set(_motion_bvh_gf gf)
+        else()
+            set(_motion_bvh_gf pxr::gf)
+        endif()
+        set(_motion_bvh_conversion_path
+            "PATH=path_list_prepend:$<TARGET_FILE_DIR:${_motion_bvh_gf}>"
+            "PATH=path_list_prepend:$<TARGET_FILE_DIR:${_motion_bvh_gf}>/../bin")
+        if(Python3_EXECUTABLE)
+            get_filename_component(_motion_bvh_python_dir
+                                   "${Python3_EXECUTABLE}" DIRECTORY)
+            list(APPEND _motion_bvh_conversion_path
+                 "PATH=path_list_prepend:${_motion_bvh_python_dir}")
+        endif()
+        set_tests_properties(motionBvh_recordedConversion PROPERTIES
+            ENVIRONMENT_MODIFICATION "${_motion_bvh_conversion_path}")
+    endif()
 endif()
 
 if(Python3_Interpreter_FOUND)
