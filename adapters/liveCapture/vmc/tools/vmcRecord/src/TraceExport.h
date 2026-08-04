@@ -35,6 +35,22 @@
 // A capture with one session -- every capture a sender did not restart during --
 // needs no such flag and is the ordinary case.
 //
+// ## A pose is expensive, and a session is bounded in two units now
+//
+// `sizeof(motion::HumanoidPose)` is 1320 bytes: fifty-five quaternions and a
+// confidence array, most of it unused by any one sender. A bundled sender emits
+// one frame per datagram, so a recording bounded only by `--max-datagrams` and
+// its million-datagram default would hold **1.26 GB** of poses here on top of
+// the capture the bound was sized for. That bound exists to be a memory bound
+// (Options.cpp), so the export cannot quietly stand outside it.
+//
+// Datagrams are the wrong unit for it: two senders differ by a factor of fifty
+// in datagrams per frame, and a datagram bound tight enough for a bundled
+// sender would cut a per-message sender's session to under a minute. So the
+// second accumulation carries its own bound in its own unit, `--max-frames`,
+// and reaching it ends the session the way every other bound does -- with the
+// capture written and the report saying which condition stopped it.
+//
 // ## What the trace does not carry, and why that is not a loss
 //
 // A `VmcFrame` knows things a trace has nowhere to put: which bones were missing
@@ -76,6 +92,11 @@ public:
     void Observe(const std::vector<vrmAdapterVmc::VmcFrame>& frames,
                  const motion::MotionSourceMetadata& metadata);
 
+    // How many frames are held, across every session. The caller's stop
+    // condition reads this rather than the report's frame count, which counts
+    // frames a session emitted before an export was ever asked for.
+    std::size_t GetFrameCount() const noexcept { return _frames; }
+
     // Finalises every session: the time range from its own first and last
     // sample, and a frame rate measured from them. Idempotent.
     //
@@ -94,6 +115,7 @@ public:
 
 private:
     std::vector<motion::HumanoidAnimation> _sessions;
+    std::size_t _frames = 0;
     bool _closed = false;
 };
 

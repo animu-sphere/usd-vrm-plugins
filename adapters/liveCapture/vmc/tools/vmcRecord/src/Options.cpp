@@ -33,6 +33,22 @@ namespace
 // An operator recording longer says so.
 constexpr std::size_t kDefaultMaxDatagrams = 1000000;
 
+// The same argument for the second thing a session accumulates, in the unit
+// that thing is measured in. `--export-trace` holds one `motion::HumanoidPose`
+// per delivered frame, and a pose is **1320 bytes** -- fifty-five quaternions
+// and a confidence array, most of which any one sender leaves untouched.
+//
+// The datagram bound above cannot stand in for this one. A bundled sender emits
+// one frame per datagram, so a million datagrams would be a million poses and
+// 1.26 GB of them; a per-message sender takes around fifty datagrams per frame,
+// so a datagram bound tight enough for the first would end the second's session
+// inside a minute. Two accumulations, two units, two bounds.
+//
+// 200,000 frames is about 264 MB of poses -- the same order as the capture
+// bound above, which is the property worth keeping -- and is an hour and a half
+// at 30 Hz.
+constexpr std::size_t kDefaultMaxFrames = 200000;
+
 // Two hours. Not a limit on what a session may be, a limit on what a mistyped
 // flag may cost: `--duration 3600000` should fail at the prompt rather than
 // forty days later.
@@ -210,8 +226,9 @@ GetUsage()
         "                         motion_capture replays, carrying no VMC\n"
         "                         vocabulary. This is the whole of this\n"
         "                         adapter's hand-off to the product's tools.\n"
-        "  --session N            Which session to export, 1-based. Needed only\n"
-        "                         when the sender restarted: one trace is one\n"
+        "  --sender-session N     Which of the SENDER's sessions to export,\n"
+        "                         1-based. Needed only when the sender\n"
+        "                         restarted mid-recording: one trace is one\n"
         "                         session, because two sessions' clocks overlap\n"
         "                         and a spliced trace would stall on replay.\n"
         "\n"
@@ -219,6 +236,11 @@ GetUsage()
         "  --duration S           Stop after S seconds of session.\n"
         "  --idle-timeout S       Stop after S seconds with nothing arriving.\n"
         "  --max-datagrams N      Stop after N datagrams (default 1000000).\n"
+        "  --max-frames N         Stop after N delivered frames (default\n"
+        "                         200000). Bounds what --export-trace holds in\n"
+        "                         memory, which the datagram bound cannot: a\n"
+        "                         bundled sender emits one frame per datagram\n"
+        "                         and a per-message one takes about fifty.\n"
         "  Ctrl-C stops at any point and still writes what was recorded.\n"
         "\n"
         "Reading:\n"
@@ -319,13 +341,13 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
                            error)) {
                 return false;
             }
-        } else if (argument == "--session") {
+        } else if (argument == "--sender-session") {
             if (!TakeCount(arguments, &i, argument, 1000000.0,
-                           &options->traceSession, error)) {
+                           &options->senderSession, error)) {
                 return false;
             }
-            if (options->traceSession == 0) {
-                *error = "--session counts from 1";
+            if (options->senderSession == 0) {
+                *error = "--sender-session counts from 1";
                 return false;
             }
         } else if (argument == "--sender") {
@@ -380,6 +402,19 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
                          "held in memory until it is written";
                 return false;
             }
+        } else if (argument == "--max-frames") {
+            session("--max-frames");
+            if (!TakeCount(arguments, &i, argument,
+                           static_cast<double>(kDefaultMaxFrames) * 10.0,
+                           &options->maxFrames, error)) {
+                return false;
+            }
+            if (options->maxFrames == 0) {
+                *error = "--max-frames expects at least 1; the same reason "
+                         "--max-datagrams does, for the poses the exported "
+                         "trace holds";
+                return false;
+            }
         } else if (argument == "--staleness") {
             double seconds = 0.0;
             if (!TakeDouble(arguments, &i, argument, &seconds, error)) {
@@ -414,9 +449,12 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
     if (options->maxDatagrams == 0) {
         options->maxDatagrams = kDefaultMaxDatagrams;
     }
+    if (options->maxFrames == 0) {
+        options->maxFrames = kDefaultMaxFrames;
+    }
 
-    if (options->traceSession != 0 && options->traceExportPath.empty()) {
-        *error = "--session says which session to export, so it needs "
+    if (options->senderSession != 0 && options->traceExportPath.empty()) {
+        *error = "--sender-session says which session to export, so it needs "
                  "--export-trace";
         return false;
     }
@@ -429,14 +467,20 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
     }
 
     if (!options->inspectPath.empty()) {
-        // --inspect opens no socket and writes no file, so every flag about
+        // --inspect opens no socket and records nothing, so every flag about
         // either is a mistake worth naming rather than a setting that silently
-        // does nothing. `--staleness` and `--restart-backwards` are the two
-        // that survive: they are how a capture is *read*, which is the whole of
-        // what this mode does.
+        // does nothing. Three survive, and they are the three that are about
+        // what a capture *becomes* rather than how one is taken: `--staleness`
+        // and `--restart-backwards` are how it is read, and `--export-trace`
+        // with `--sender-session` is what is written out of it.
+        //
+        // `--max-frames` is not among them, and that is deliberate: it is a
+        // stop condition, and a file has already stopped. Honouring it here
+        // would silently truncate an export of a capture the operator can see
+        // the whole of.
         if (sessionFlag) {
-            *error = std::string("--inspect reads a recorded capture, opening "
-                                 "no socket and writing no file, so ")
+            *error = std::string("--inspect reads a recorded capture and opens "
+                                 "no socket, so ")
                 + sessionFlag + " has nothing to act on";
             return false;
         }

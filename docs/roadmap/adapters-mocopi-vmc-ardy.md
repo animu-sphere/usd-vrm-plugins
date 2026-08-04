@@ -1045,6 +1045,19 @@ and this one can say it about `motion_capture` too.
   packaged artifacts, and `ost` 0.21.0 cannot package an adapter at all (§11),
   so the chain is verified from the workspace build only.
 
+**Observed while bounding the export, and worth writing down.** `LiveSource.h`
+says a sender that stops emitting `/VMC/Ext/T` mid-session drops onto the
+receive clock, whose origin is not the sender's, and that the assembler
+therefore reads the switch as a *restart* — adding that no capture records a
+sender doing it, so no rule is written against it. That is still true of
+senders. It is not true of this tool: a recording stopped mid-frame flushes a
+half-assembled frame that never got its `/VMC/Ext/T`, which is stamped from the
+receive clock and reads as a second session for exactly that reason. So a
+per-message session ended by `--max-frames` refuses its export until
+`--sender-session` names a half, and a bundled one does not. The behaviour is
+pinned by a test rather than smoothed over: the shape is now reachable without a
+sender, which is a cheaper way to study it than waiting for one.
+
 **Found on the way, and fixed in the layer that owned it.** The trace writer
 could emit a file its own reader refused: `provider`, `protocol` and `sourceId`
 were written verbatim and read back one token at a time, and a VMC session's

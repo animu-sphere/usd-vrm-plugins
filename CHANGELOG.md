@@ -49,6 +49,40 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`vmc_record --export-trace` — a VMC session reaches the product as a file,
+  not as a link.** Milestone C's first item read "`motion_capture` accepts a
+  live VMC source" until that edge was costed. `motion_capture` is a member of
+  the aggregate product and every adapter is excluded from it
+  ([`docs/architecture/WORKSPACE.md`](docs/architecture/WORKSPACE.md) §5), so
+  the edge would have carried a protocol decoder, its network code and a product
+  name into the product artifact — once per adapter, since `--source vmc`
+  invites `--source mocopi` behind it — and put a transport inside the one tool
+  whose reproducibility argument is that nothing in the intake path opens one.
+  The release was already asking for the other answer: v0.7.0 requires that a
+  session reach an avatar through **unchanged** `motion_capture` and
+  `motion_retarget`.
+
+  So the hand-off is the file that format was defined for. A
+  `motion-capture-trace` holds "what an adapter delivered, after protocol decode
+  and coordinate conversion, before any intake policy", which describes a
+  `VmcFrame` exactly, and `motion_capture` replays one knowing nothing about
+  VMC. §2 gains no edge. **One trace is one session**: a recording the sender
+  restarted during holds two whose clocks overlap, and a spliced trace would
+  replay as a session that stalls at the discontinuity, so the export is refused
+  until `--sender-session` names one.
+
+  `--max-frames` (default 200000) bounds what the export holds, because
+  `--max-datagrams` cannot: a pose is 1320 bytes, a bundled sender emits one
+  frame per datagram, and a million of them would be 1.26 GB against a datagram
+  bound sized for 150 MB. Two accumulations, two units, two bounds.
+
+  `vmc_record_endToEnd` drives a committed capture through both product tools
+  onto a rig and checks the result through a `UsdSkelSkeletonQuery` **by joint
+  name** — the three joints the session drove are the three UsdSkel resolves as
+  moving. It lives with the adapter: a product test that spawned `vmc_record`
+  would be the dependency this arrangement avoids, in a test directory instead
+  of a link line.
+
 - **The recorded half is a generic BVH pipeline, not a capture product's
   importer** — [`docs/roadmap/recorded-motion-sources.md`](docs/roadmap/recorded-motion-sources.md),
   with the identities and edges in
@@ -86,6 +120,21 @@ Current schema contract version: **1**.
   rest pose rather than an error.
 
 ### Fixed
+
+- **The capture-trace writer could emit a file its own reader refused.**
+  `provider`, `protocol` and `sourceId` were written verbatim into the header
+  and read back one token at a time, so a value with a space in it round-tripped
+  to `unexpected 'Avatar' after the 'sourceId' value`. Nothing had exercised it
+  because every trace in this repository was generated, and a generated
+  `sourceId` is `walk-01` — the first producer to supply provenance from outside
+  this repository is a VMC session, whose `sourceId` is the model title a person
+  typed into a sender application. Those three keys take the rest of the line
+  now, trimmed at both ends; every other key in the format stays
+  token-separated, and a file written before this reads back identically, so the
+  format version does not move. What no line-oriented format can carry is
+  refused before the first byte, beside the expression-name check that was
+  already there: a line break, and padding at either end — a refusal rather than
+  a trim, because trimming would silently edit somebody's recorded provenance.
 
 - **A baked clip bound nothing, and the avatar stood still.** `motion_retarget`
   authored `skel:animationSource` through the non-applied `UsdSkelBindingAPI`

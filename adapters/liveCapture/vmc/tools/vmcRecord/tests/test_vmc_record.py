@@ -276,11 +276,12 @@ def check_trace_export(tool: pathlib.Path, corpus: pathlib.Path,
                 text=True, encoding="utf-8", errors="replace",
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if result.returncode != 1:
-                fail(f"{name}: {len(sessions)} sessions and no --session should "
-                     f"exit 1, got {result.returncode}")
+                fail(f"{name}: {len(sessions)} sessions and no "
+                     f"--sender-session should exit 1, got "
+                     f"{result.returncode}")
             if target.exists():
                 fail(f"{name}: a refused export wrote {target}")
-            if "--session" not in result.stderr:
+            if "--sender-session" not in result.stderr:
                 fail(f"{name}: the refusal did not name the flag that resolves "
                      f"it: {result.stderr}")
 
@@ -288,7 +289,7 @@ def check_trace_export(tool: pathlib.Path, corpus: pathlib.Path,
             path = workspace / f"{name}.{index}.trace"
             arguments = ["--inspect", str(capture), "--export-trace", str(path)]
             if len(sessions) > 1:
-                arguments += ["--session", str(index)]
+                arguments += ["--sender-session", str(index)]
             run_tool(tool, *arguments)
 
             header, written = read_trace(path)
@@ -303,12 +304,12 @@ def check_trace_export(tool: pathlib.Path, corpus: pathlib.Path,
         # A session past the last one is refused rather than clamped.
         result = subprocess.run(
             [str(tool), "--inspect", str(capture), "--export-trace",
-             str(workspace / f"{name}.over.trace"), "--session",
+             str(workspace / f"{name}.over.trace"), "--sender-session",
              str(len(sessions) + 1)],
             text=True, encoding="utf-8", errors="replace",
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if result.returncode != 1:
-            fail(f"{name}: --session past the end should exit 1, got "
+            fail(f"{name}: --sender-session past the end should exit 1, got "
                  f"{result.returncode}")
 
     # The capture that carries a model title, checked by value: "Example Avatar"
@@ -355,13 +356,13 @@ def check_help_and_refusals(tool: pathlib.Path, corpus: pathlib.Path,
         # An unbracketed IPv6 address with a port is ambiguous, not guessed at.
         ["--dry-run", "--listen", "::1:39539"],
         ["--dry-run", "--max-datagrams", "0"],
-        # --session says which session to export, so it needs something to
-        # export; and a dry run writes nothing, trace included.
-        ["--inspect", str(corpus / "arm-raise-30hz.vmcpackets"), "--session",
+        # --sender-session says which session to export, so it needs
+        # something to export; and a dry run writes nothing, trace included.
+        ["--inspect", str(corpus / "arm-raise-30hz.vmcpackets"), "--sender-session",
          "1"],
         ["--dry-run", "--export-trace", str(unused)],
         ["--inspect", str(corpus / "arm-raise-30hz.vmcpackets"),
-         "--export-trace", str(unused), "--session", "0"],
+         "--export-trace", str(unused), "--sender-session", "0"],
     ):
         result = subprocess.run([str(tool), *arguments], text=True,
                                 encoding="utf-8", errors="replace",
@@ -456,8 +457,12 @@ class Session:
                 time.sleep(0.002)
         return self
 
-    def finish(self) -> dict:
+    def finish(self, expected_returncode: int = 0) -> dict:
         """Waits for the session to end, and collects both streams.
+
+        `expected_returncode` is not always 0: a session whose capture was
+        written and whose trace export was refused exits 1, and that pair is a
+        claim worth making rather than a failure to tolerate.
 
         Deliberately not `communicate()`: the drain thread above is already
         reading stderr, and `communicate()` reads and closes it too. The two
@@ -479,9 +484,9 @@ class Session:
             watchdog.cancel()
         # Only after stderr has reached EOF is `self.stderr` the whole session.
         self._reader.join(timeout=10.0)
-        if self._process.returncode != 0:
-            fail(f"vmc_record exited {self._process.returncode}\n"
-                 f"{''.join(self.stderr)}")
+        if self._process.returncode != expected_returncode:
+            fail(f"vmc_record exited {self._process.returncode}, expected "
+                 f"{expected_returncode}\n{''.join(self.stderr)}")
         return report_lines(self.stdout)
 
 
@@ -498,10 +503,15 @@ def check_loopback(tool: pathlib.Path, corpus: pathlib.Path,
     source = corpus / "arm-raise-30hz.vmcpackets"
     _, payloads = read_capture(source)
     output = workspace / "recorded-loopback.vmcpackets"
+    live_trace = workspace / "recorded-loopback.trace"
 
     session = Session(tool, output,
                       "--sender", "test.loopback",
                       "--source-id", "loopback-01",
+                      # Exported from the live loop, which is the half of
+                      # --export-trace no other test reaches: `--inspect` runs a
+                      # different function over a file that is already whole.
+                      "--export-trace", str(live_trace),
                       # Stops a couple of seconds after the last datagram; the
                       # duration is the net that catches a sender that never
                       # arrives, so the test cannot hang.
@@ -536,8 +546,31 @@ def check_loopback(tool: pathlib.Path, corpus: pathlib.Path,
                  f"  recorded: {live.get(label)}\n"
                  f"  source:   {replayed.get(label)}")
 
+    # And the same claim about the *canonical* artifact, which is the one the
+    # product consumes. A trace written from the live loop and one written from
+    # the file the loop recorded must be byte-identical: the frames carry the
+    # sender's own clock, so nothing in this file is a fact about the wire, and
+    # a difference would mean the two code paths disagree about what the adapter
+    # delivered. The exported header names the sender's model title, not the
+    # capture's operator-supplied `--source-id`, so the recording tool's
+    # provenance cannot leak into the canonical one.
+    replayed_trace = workspace / "replayed-from-file.trace"
+    run_tool(tool, "--inspect", str(output), "--export-trace",
+             str(replayed_trace))
+    if live_trace.read_bytes() != replayed_trace.read_bytes():
+        fail("the trace exported from the live loop differs from the one "
+             "exported from the capture it wrote")
+    header, frames = read_trace(live_trace)
+    if frames != EXPECTED["arm-raise-30hz"]["sessions"][0]:
+        fail(f"the live export holds {frames} frame(s), expected "
+             f"{EXPECTED['arm-raise-30hz']['sessions'][0]}")
+    if header.get("sourceId") != "Example Avatar":
+        fail(f"the live export did not carry the sender's model title: "
+             f"{header.get('sourceId')!r}")
+
     print(f"vmc_record: {len(recorded)} datagram(s) through a real socket, "
-          f"recorded verbatim and reporting the same motion")
+          f"recorded verbatim, reporting the same motion and exporting the "
+          f"same trace")
 
 
 def check_stop_reasons(tool: pathlib.Path, corpus: pathlib.Path,
@@ -567,6 +600,64 @@ def check_stop_reasons(tool: pathlib.Path, corpus: pathlib.Path,
         fail(f"a bounded session recorded {len(bounded_payloads)} datagram(s), "
              f"expected the first 40 that arrived")
 
+    # --max-frames stops on the second thing a session accumulates. It exists
+    # because a datagram bound cannot stand in for a pose bound -- a bundled
+    # sender emits one frame per datagram and a per-message one takes about
+    # fifty -- so a session has to be able to end on either.
+    #
+    # Driven by the bundled capture, where a frame arrives whole in one
+    # datagram. The per-message one is used below, for the opposite reason.
+    _, bundled = read_capture(corpus / "neutral-standing-30hz.vmcpackets")
+    bounded_frames = workspace / "bounded-frames.vmcpackets"
+    bounded_trace = workspace / "bounded-frames.trace"
+    session = Session(tool, bounded_frames, "--max-frames", "2",
+                      "--export-trace", str(bounded_trace),
+                      "--idle-timeout", "10", "--duration", "60").start()
+    session.send(bundled)
+    lines = session.finish()
+    if lines.get("stopped") != "--max-frames reached":
+        fail(f"expected --max-frames to stop the session, got "
+             f"'{lines.get('stopped')}'")
+    _, bounded_exported = read_trace(bounded_trace)
+    # A bound is a stop condition, not a truncation: the frame the loop was in
+    # the middle of is still flushed. So the trace holds at least the two the
+    # bound stopped on, and fewer than the five the whole capture carries.
+    if not 2 <= bounded_exported < EXPECTED["neutral-standing-30hz"]["frames"]:
+        fail(f"a session bounded at 2 frames exported {bounded_exported}, "
+             f"expected at least 2 and fewer than the capture's "
+             f"{EXPECTED['neutral-standing-30hz']['frames']}")
+
+    # A recording stopped in the *middle* of a frame, which only a per-message
+    # sender can be. `/VMC/Ext/T` ends a frame, so the half-assembled one the
+    # flush delivers has no sender clock and is stamped from the receive clock
+    # instead -- an origin some twenty seconds from the sender's here, which the
+    # assembler reads as a restart because it compares the two as one number.
+    #
+    # LiveSource.h says that switch is a phenomenon "no capture records a sender
+    # doing", and it is right about senders. This tool's own stop conditions
+    # reach the same shape from the other side, so the export refuses a
+    # two-session recording exactly as it does for a real restart. Pinned here
+    # rather than smoothed over: an operator who bounds a per-message session
+    # will meet it, and a refusal that named no reason would be a mystery.
+    truncated = workspace / "truncated-mid-frame.vmcpackets"
+    truncated_trace = workspace / "truncated-mid-frame.trace"
+    session = Session(tool, truncated, "--max-frames", "2",
+                      "--export-trace", str(truncated_trace),
+                      "--idle-timeout", "10", "--duration", "60")
+    session.start().send(payloads)
+    # Exit 1, not 0: the capture was written and the trace was refused.
+    lines = session.finish(expected_returncode=1)
+    if lines.get("stopped") != "--max-frames reached":
+        fail(f"expected --max-frames to stop the session, got "
+             f"'{lines.get('stopped')}'")
+    if not truncated.exists():
+        fail("the capture was not written when only the trace was refused")
+    if truncated_trace.exists():
+        fail("a refused export wrote a trace")
+    if not any("--sender-session" in line for line in session.stderr):
+        fail(f"the refusal did not name the flag that resolves it: "
+             f"{''.join(session.stderr)}")
+
     # --duration against a sender that never says anything: the timer runs from
     # the bind rather than from the first datagram, so a session nobody sends to
     # still ends.
@@ -589,7 +680,7 @@ def check_stop_reasons(tool: pathlib.Path, corpus: pathlib.Path,
     if not any("more than one peer" in line for line in session.stderr):
         fail("a two-peer session did not warn that its header names one")
 
-    print("vmc_record: three stop reasons and the two-peer warning behave")
+    print("vmc_record: four stop reasons and the two-peer warning behave")
 
 
 def main() -> int:

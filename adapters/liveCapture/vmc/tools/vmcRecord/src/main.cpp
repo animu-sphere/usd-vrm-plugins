@@ -128,19 +128,19 @@ WriteTrace(const vmcRecordTool::Options& options,
     }
 
     std::size_t index = 0;
-    if (options.traceSession != 0) {
-        if (options.traceSession > sessions.size()) {
-            std::cerr << "vmc_record: --session " << options.traceSession
+    if (options.senderSession != 0) {
+        if (options.senderSession > sessions.size()) {
+            std::cerr << "vmc_record: --sender-session " << options.senderSession
                       << ": this recording holds " << sessions.size()
                       << " session(s)\n";
             return false;
         }
-        index = options.traceSession - 1;
+        index = options.senderSession - 1;
     } else if (sessions.size() > 1) {
         std::cerr << "vmc_record: the sender restarted, so this recording holds "
                   << sessions.size()
                   << " sessions whose clocks overlap; one trace is one session, "
-                     "so name the one to export with --session 1.."
+                     "so name the one to export with --sender-session 1.."
                   << sessions.size() << "\n";
         return false;
     }
@@ -302,6 +302,16 @@ RunRecord(const vmcRecordTool::Options& options)
             if (report.GetDatagramCount() >= options.maxDatagrams) {
                 report.SetStopReason(
                     vmcRecordTool::StopReason::MaxDatagrams);
+                running = false;
+            }
+            // The second bound, and only while there is a second thing being
+            // accumulated. Checked here rather than beside the duration checks
+            // below so it reads next to the bound it parallels -- both are
+            // about what this process is holding, not about how long it has
+            // been running.
+            if (running && !options.traceExportPath.empty()
+                && trace.GetFrameCount() >= options.maxFrames) {
+                report.SetStopReason(vmcRecordTool::StopReason::MaxFrames);
                 running = false;
             }
             break;
