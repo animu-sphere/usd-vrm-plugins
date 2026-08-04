@@ -64,6 +64,20 @@ if(USDVRM_BUILD_TESTS)
                 "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/tests/openusd-contract"
                 "-DPROBE_GENERATOR=${CMAKE_GENERATOR}"
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/cmake/openusd_contract_test.cmake")
+
+    # Each shipped producer profile against the recorded file it claims to
+    # describe. Registered here rather than in either library because it is the
+    # one check that holds a reader's file and a profile at once, which neither
+    # of them may: motionSource is forbidden to know a reader exists, motionBvh
+    # to know a producer does (WORKSPACE.md §2). A caller is what may hold both,
+    # and until motion_bvh_convert exists a script is the caller.
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if(Python3_Interpreter_FOUND
+       AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion")
+        add_test(NAME workspace_motion_profiles
+            COMMAND "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_motion_profiles.py")
+    endif()
 endif()
 
 # vrmContainer and motionBvh have no OpenUSD dependency, so they can be added
@@ -178,3 +192,14 @@ install(FILES
     README.md
     DESTINATION "share/doc/usd-vrm-plugins"
     OPTIONAL)
+
+# The producer profiles, at the destination WORKSPACE.md §5 names. This is the
+# plain-CMake half of "profiles are data that has to reach an artifact" and only
+# that half: `ost` 0.21.0 has no notion of a data-only member, so whether a
+# packaged product carries these files is unverified and is a v0.7.0 carry-over,
+# not something this rule closes. A converter with no profile available refuses
+# every file it is given, which is why the destination is stated here rather than
+# left for the smoke test to discover.
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion/"
+    DESTINATION "share/usd-vrm-plugins/profiles/motion"
+    FILES_MATCHING PATTERN "*.yaml")

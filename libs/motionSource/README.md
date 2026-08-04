@@ -25,13 +25,18 @@ The value model and its invariants, and the profile contract over them:
 | `SourceAnimation.h` | `SourceJointTrack`, `SourceAnimation`, the Euler order and angle unit a source declares, `ValidateSourceAnimation` |
 | `SourceProvenance.h` | what file this was, under which profile, from which writer |
 | `SourceProfile.h` | what one producer's export means: the stated vocabulary, `SourceProfile`, `ValidateSourceProfile`, `MatchSourceProfile` and its typed refusals |
+| `SourceProfileFile.h` | a profile as a file: the keys, the small language they are written in, and the line a file that gets one wrong is told about |
 | `CanonicalMetadata.h` | provenance's crossing into `motionCore` |
 
-Still to come, in this order: the producer profiles, and the converter from a
-skeleton, an animation and a profile to `motion::HumanoidAnimation`
+The profiles themselves are **data**, in [`profiles/motion/`](../../profiles/motion/)
+rather than here: a product name may appear in one precisely because no code in
+this library has a name for it.
+
+Still to come: the second producer's profile, and the converter from a skeleton,
+an animation and a profile to `motion::HumanoidAnimation`
 ([§12](../../docs/roadmap/recorded-motion-sources.md)).
 
-## The four decisions the model is shaped by
+## The decisions the model is shaped by
 
 Each is argued where it is implemented, because each would have been invisible
 in a diff:
@@ -46,6 +51,8 @@ in a diff:
 | A joint map is a hierarchy embedding, not a name lookup — the near-miss profile is the one where every name matched and the body is assembled wrong | `SourceProfile.h` |
 | A match returns facts and never a score; a confidence is the detector's arithmetic over them — except the one count that arithmetic gets wrong, which the match carries | `SourceProfile.h` |
 | A name table is an array sized by its enum and asserted in enumerator order, so a vocabulary that grows without its spelling is a compile error | `SourceProfile.cpp` |
+| A profile file is a stated subset and an unknown key is refused, because a `requred:` quietly dropped unbinds a joint the profile called mandatory | `SourceProfileFile.h` |
+| A profile that is read is already valid, so no caller re-proves that there is no default profile | `SourceProfileFile.h` |
 
 ## Provenance is a neighbour of `MotionSourceMetadata`, not the same type
 

@@ -114,7 +114,7 @@ coordinates:
   handedness: right
   upAxis: +Y
   forwardAxis: +Z
-  units: centimeters
+  translationUnit: centimeters
 
 root:
   joint: Reference
@@ -133,19 +133,33 @@ joints:
 ignoredJoints: [Reference]
 ```
 
-Every **value** above is one the contract now defines by name
+Every **value** above is one the contract defines by name
 ([`SourceProfile.h`](../../libs/motionSource/include/motionSource/SourceProfile.h),
-2026-08-05); the **key** names are still a loader's to settle, and this sketch
-is the shape it will read. Three of them changed while the contract was being
-written, each because the sketch was stating an intention where a converter
+2026-08-05) and every **key** is one a reader now reads
+([`SourceProfileFile.h`](../../libs/motionSource/include/motionSource/SourceProfileFile.h),
+2026-08-05) — this is the file, not a sketch of one. Four names changed on the
+way here, each because the sketch was stating an intention where a converter
 needs a fact. An axis carries its sign, because "+Z forward" and "-Z forward"
 are both real and an unsigned axis makes a rig that faces backwards look like
 one that does not. `root-motion` became `absolute-position` versus
 `rest-relative`, which differ in where their zero is — a distinction the intent
 spelling could not carry and the first real export made concrete
-([§9](#9-milestones)). And a joint map's right-hand side grew a `required` flag,
+([§9](#9-milestones)). A joint map's right-hand side grew a `required` flag,
 because "expected joint names" and "required joints" were two lines of this
-section's own list with one place to put them.
+section's own list with one place to put them. And `units` became
+`translationUnit`, singular and saying which: a profile states no angle unit at
+all, because a format says whether its angles are degrees or radians and a
+producer does not get to disagree with its own format about that.
+
+Three properties of the reader are decisions rather than mechanics, and each is
+this section's own rule made checkable. **An unknown key is refused**, because a
+misspelled `requred:` a permissive reader dropped would unbind a joint the
+profile called mandatory and report nothing — the near-miss failure §3.1
+forbids, arriving through a typo. **Nothing is assumed**: every convention has an
+`unspecified` the reader refuses where it is written, so "there is no default
+profile" holds inside a file as well as between files. And **a profile that is
+read is already valid** — parsing ends in `ValidateSourceProfile`, so no
+half-built profile reaches a caller who would have to re-prove it.
 
 **Declarative only** — no arbitrary code, no expression language, no embedded
 producer algorithm, and no target VRM path. A profile that could name an avatar
@@ -341,9 +355,14 @@ turned out differently in practice:
   unit and root policy are *observations* — read out of a file that declares
   none of them. They sit under `observations` with that said in the data, so
   nothing downstream can mistake "what this file appears to be" for "what this
-  file says". The profile id stays `null` until a profile exists: naming one
+  file says". The profile id stayed `null` until a profile existed — naming one
   that has not been written would be the schema-from-one-file failure arriving
-  through the manifest instead of through the code.
+  through the manifest instead of through the code — and **it is now filled**
+  (2026-08-05), together with `expectedMappedBones`. Those two fields are a
+  claim rather than a measurement, so the scanner carries them through untouched
+  and `scripts/check_motion_profiles.py` is what checks them: the profile's root
+  against the file's, every mapped and ignored joint against the joints it
+  carries, and the hierarchy the mapping implies against the one it has.
 
 ## 9. Milestones
 
@@ -380,9 +399,29 @@ That is one producer, and the milestone asks for two. It also proves the parser
 against something it could be surprised by for the first time — the generated
 fixtures are shapes this repository wrote, and a file it wrote can only confirm
 what it already believed. What is still open is everything BVH-0 names beyond
-one sample: the second producer, and therefore the `motionSource` model and the
-profile schema, which are exactly the things that must not be written from one
-file.
+one sample: the second producer, and therefore whether the profile schema
+survives contact with an export that disagrees with this one.
+
+**The first profile is written from it** (2026-08-05,
+[`profiles/motion/mocopi-mobile-bvh-default-v1.yaml`](../../profiles/motion/mocopi-mobile-bvh-default-v1.yaml)),
+and the split between what the file settles and what the profile decides is the
+point of writing it here rather than in the corpus:
+
+| The file settles | The profile decides |
+| --- | --- |
+| the basis, the unit, the root's name and that its samples are absolute positions | that the root *is* the hips, since it sits at hip height and parents both legs and the spine |
+| that `torso_7` parents the neck and both shoulders | that `torso_7` is therefore `upperChest` |
+| that there are seven `torso_*` segments and the canonical humanoid has three | which two of the remaining six are `spine` and `chest` — placed at 21% and 46% of the root-to-`torso_7` rise, which is a judgement the geometry narrows and does not make |
+| that no joint declares a rest rotation | that the rest pose is `rest-offsets` |
+| that the export is a fixed 27-joint skeleton | that every mapped joint is `required` and unmapped ones are `refuse`d, with the five it deliberately ignores named |
+
+Two of those rows are worth carrying into the converter. The four unmapped spine
+segments are **not** motion thrown away — a joint between two mapped ones is on
+the path between them, so a converter that composes that path keeps the chain's
+total orientation whatever the profile chose, and what the choice changes is how
+the bend is *distributed*. And that composition is not written yet, which makes
+it a converter question this profile has now put a name to
+([§10](#10-contract-changes-this-plan-requires)).
 
 **BVH-1 started ahead of BVH-0, and that is not the shortcut it looks like.**
 The syntax layer is the one part of this plan that owes nothing to a
@@ -457,20 +496,40 @@ depends on them ([docs/README.md](../README.md)).
   not one-to-one and does not need to be — an ambiguous joint name has no code
   of its own and is a profile mismatch — which is exactly why the refusal names
   the event rather than the code.
-- ⬜ **Profiles need a packaging answer.** They are data that must reach an
+- ⬜ **A mapped bone's local rotation is the composition of the path above it,
+  and nothing implements that yet.** A profile maps a rig's joints onto the
+  canonical humanoid, which has fewer of them: the first real one leaves four
+  spine segments and a neck segment mapped to nothing
+  ([§9](#9-milestones)). Those are not joints to drop — each sits *between* two
+  mapped ones, so a converter that took a mapped joint's local rotation verbatim
+  would lose every rotation above it and place the arms and head wrong, which
+  reads as a subtly misassembled body rather than as a failure. The rule that
+  avoids it is one sentence — a bound bone's local rotation is the composition
+  of the source local rotations from its nearest bound ancestor down to it — and
+  it belongs to the converter rather than to a profile, because a profile that
+  could state it would be stating an algorithm. It is written here so the
+  converter meets it as a decision already taken rather than as a bug in a
+  retarget nobody can localise.
+- 🚧 **Profiles need a packaging answer.** They are data that must reach an
   artifact-only smoke test, so `share/usd-vrm-plugins/profiles/motion/` is named
-  in WORKSPACE.md §5 — but `ost` 0.21.0 has no notion of a data-only member, and
-  how the files get staged is unverified. This is the same shape as the adapter
+  in WORKSPACE.md §5. **The plain-CMake half is done and measured**
+  (2026-08-05): the root project installs `profiles/motion/*.yaml` to exactly
+  that destination, verified by installing to a scratch prefix. The `ost` half is
+  not — 0.21.0 has no notion of a data-only member, and whether a packaged
+  product carries these files is untested. This is the same shape as the adapter
   packaging gap ([report 34](../reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md)).
 - 🚧 **The workspace graph gate reaches both libraries, measured rather than
   assumed.** `ost plugin test --workspace --graph-only` reported `5 libraries, 7
   library edge(s)` with `motionBvh` committed and `6 libraries, 8 library
   edge(s), valid` with `motionSource` beside it (`ost` 0.21.0, 2026-08-04) — one
   more library and one more edge, so the new descriptor is discovered and its
-  declared `motionCore` edge is validated rather than assumed. The
-  `profiles/motion/` directory is still a new shape and still unconfirmed; it
-  gets the same treatment when it lands, the way the adapter's discovery gap was
-  found.
+  declared `motionCore` edge is validated rather than assumed. With
+  `profiles/motion/` committed the gate reports **the same** `6 libraries, 8
+  library edge(s), valid` (2026-08-05): a directory of data is discovered as
+  nothing and perturbs no edge, which is the right answer and now a measured one.
+  What it does **not** cover is whether those files reach an artifact — that is
+  the packaging item above, and this gate is as silent about it as it is about
+  every tool.
 - ✅ **`tools/motionBvh/` is one member carrying two executables, and `ost`
   0.21.0 packages it.** Every workspace tool before it was one directory, one
   executable, and an id equal to that executable's name; this member is
@@ -531,7 +590,14 @@ One PR never introduces a boundary and a large feature together:
    diagnostic question, and matching a profile against a rig: a hierarchy
    embedding rather than a name lookup, returning facts a detector reports and
    never a score (2026-08-05)
-6. the mocopi BVH profiles
+6. ✅ the profile file and the first producer described by one — the keys and
+   the small language they are written in, an unknown key refused rather than
+   dropped, the shipped-profile check that keeps a file in `profiles/motion/`
+   from being unloadable and unnoticed, and the check that holds a recorded file
+   and a profile at once because neither library may (2026-08-05). One producer,
+   not two: the export measured in BVH-0 is the only one anybody here has seen,
+   and a second profile written from a file nobody has read would be the failure
+   this plan is shaped around, wearing the shape of progress
 7. the second producer's profile
 8. a DCC interoperability profile (optional)
 9. BVH → canonical animation conversion

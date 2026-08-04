@@ -18,12 +18,16 @@ add_executable(motionSource_provenance_tests test_source_provenance.cpp)
 # The profile contract: the vocabulary a profile states, its invariants, and what
 # matching one against a rig concludes.
 add_executable(motionSource_profile_tests test_source_profile.cpp)
+# The profile as a file: the keys, and the line a file that gets one wrong is
+# told about.
+add_executable(motionSource_profileFile_tests test_source_profile_file.cpp)
 
 set(_motion_source_tests
     motionSource_skeleton_tests
     motionSource_animation_tests
     motionSource_provenance_tests
-    motionSource_profile_tests)
+    motionSource_profile_tests
+    motionSource_profileFile_tests)
 
 foreach(_motion_source_test ${_motion_source_tests})
     target_link_libraries(${_motion_source_test} PRIVATE
@@ -42,6 +46,18 @@ add_test(NAME motionSource_skeleton COMMAND motionSource_skeleton_tests)
 add_test(NAME motionSource_animation COMMAND motionSource_animation_tests)
 add_test(NAME motionSource_provenance COMMAND motionSource_provenance_tests)
 add_test(NAME motionSource_profile COMMAND motionSource_profile_tests)
+add_test(NAME motionSource_profileFile COMMAND motionSource_profileFile_tests)
+
+# Every profile this repository ships, read by the library that defines what one
+# is. It takes the directory rather than referencing a target from another
+# directory, so a standalone configure of this library still generates -- and it
+# is skipped rather than failed where the directory is absent, because those
+# files are package data and this is a library test.
+set(_motion_source_profiles "${CMAKE_CURRENT_SOURCE_DIR}/../../../profiles/motion")
+if(EXISTS "${_motion_source_profiles}")
+    add_test(NAME motionSource_shippedProfiles
+        COMMAND motionSource_profileFile_tests "${_motion_source_profiles}")
+endif()
 
 if(WIN32)
     if(TARGET gf)
@@ -64,8 +80,13 @@ if(WIN32)
         list(APPEND _motion_source_test_path
              "PATH=path_list_prepend:${_motion_source_python_dir}")
     endif()
-    set_tests_properties(motionSource_skeleton motionSource_animation
-                         motionSource_provenance motionSource_profile PROPERTIES
+    set(_motion_source_test_names
+        motionSource_skeleton motionSource_animation motionSource_provenance
+        motionSource_profile motionSource_profileFile)
+    if(EXISTS "${_motion_source_profiles}")
+        list(APPEND _motion_source_test_names motionSource_shippedProfiles)
+    endif()
+    set_tests_properties(${_motion_source_test_names} PROPERTIES
         ENVIRONMENT_MODIFICATION "${_motion_source_test_path}")
 endif()
 
