@@ -31,6 +31,12 @@
 //     e aa    0.250000
 //     e happy 0.750000
 //
+// The three provenance keys take the **rest of the line**, trimmed at both
+// ends, because their values are free text somebody outside this repository
+// supplied — a VMC sender's `sourceId` is the model title a person typed into
+// an application, and "Example Avatar" has a space in it. Everything else in
+// the format is token-separated, frame keys included.
+//
 // `t` opens a frame and every line after it belongs to that frame. Rotations
 // are `w x y z`; the trailing number on a `b` line is an optional confidence
 // in [0, 1]. Contact values are `unknown`, `contact`, or `free`. Bone names are
@@ -116,11 +122,17 @@ MOTIONRUNTIME_API bool ReadCaptureTraceFile(
 // (Confidence is all-or-nothing per frame: a hand-written trace that annotates
 // only some bones is normalised to annotate all of them on the way back out.)
 //
-// Returns false without writing anything when an expression name is empty or
-// carries whitespace, which is the one value that cannot be spelled in this
-// format. Refusing is the point: emitting it would produce a file that reads
-// back as a different animation, or as none. The check runs before the first
-// byte, so a caller that is refused still has an untouched stream.
+// Returns false without writing anything when a value cannot be spelled in this
+// format: an expression name that is empty or carries whitespace, or a
+// provenance string carrying a line break or padded with whitespace at either
+// end. Refusing is the point: emitting it would produce a file that reads back
+// as a different animation, or as none. The check runs before the first byte,
+// so a caller that is refused still has an untouched stream.
+//
+// The provenance half of that was added after the writer was found emitting a
+// `sourceId` its own reader refused — a sender's model title with a space in
+// it. The fix was mostly the reader's (the header takes rest-of-line now), and
+// what is left here is the residue no line-oriented format can carry.
 MOTIONRUNTIME_API bool WriteCaptureTrace(
     std::ostream& output, const HumanoidAnimation& animation);
 

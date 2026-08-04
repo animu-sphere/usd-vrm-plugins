@@ -499,6 +499,61 @@ TestCaptureTraceVersioningAndUnwritableNames()
 }
 
 void
+TestCaptureTraceCarriesProvenanceWithSpaces()
+{
+    // The bug this exists for: every `sourceId` in this repository was a single
+    // token until a VMC session supplied one, and a sender's is a model title
+    // somebody typed. The writer emitted it verbatim and the reader then
+    // refused the file the writer had just produced -- a round trip that failed
+    // on a value neither side had any reason to reject.
+    motion::HumanoidAnimation animation = MakeTrace(3);
+    animation.source.provider = "Studio Example, Inc.";
+    animation.source.protocol = "vmc";
+    animation.source.sourceId = "Example Avatar";
+
+    std::ostringstream first;
+    assert(motion::WriteCaptureTrace(first, animation));
+
+    motion::HumanoidAnimation parsed;
+    motion::CaptureTraceError error;
+    std::istringstream input(first.str());
+    if (!motion::ReadCaptureTrace(input, &parsed, &error)) {
+        std::fprintf(stderr, "provenance round trip failed at line %zu: %s\n",
+                     error.line, error.message.c_str());
+        assert(false);
+    }
+    assert(parsed.source.provider == "Studio Example, Inc.");
+    assert(parsed.source.sourceId == "Example Avatar");
+
+    // And it still diffs: a second write of what was read is byte-identical,
+    // which is the property the whole format exists for.
+    std::ostringstream second;
+    assert(motion::WriteCaptureTrace(second, parsed));
+    assert(first.str() == second.str());
+
+    // What no line-oriented format can carry, refused before the first byte for
+    // the same reason an expression name is. Padding is in this list because
+    // trimming it on the way back in would be a silent edit to somebody's
+    // recorded provenance, which is worse than a refusal for being invisible.
+    for (const char* unwritable : {"two\nlines", " leading", "trailing ",
+                                   "carriage\rreturn"}) {
+        motion::HumanoidAnimation broken = MakeTrace(3);
+        broken.source.sourceId = unwritable;
+        std::ostringstream refused;
+        assert(!motion::WriteCaptureTrace(refused, broken));
+        assert(refused.str().empty());
+    }
+
+    // A header key with nothing after it is still an error: the value is
+    // rest-of-line, and rest-of-line can be empty.
+    motion::HumanoidAnimation empty;
+    std::istringstream blank("!motion-capture-trace 2\nsourceId   \n"
+                             "t 0.0\nb hips 1 0 0 0\n");
+    assert(!motion::ReadCaptureTrace(blank, &empty, &error));
+    assert(error.message.find("sourceId") != std::string::npos);
+}
+
+void
 TestReplayIsDeterministicAndFeedsTheSameInterface()
 {
     const motion::HumanoidAnimation trace = MakeTrace(24);
@@ -779,6 +834,7 @@ main(int argc, char** argv)
     TestCaptureTraceRoundTripsByteIdentically();
     TestCaptureTraceRejectsMalformedInput();
     TestCaptureTraceVersioningAndUnwritableNames();
+    TestCaptureTraceCarriesProvenanceWithSpaces();
     TestReplayIsDeterministicAndFeedsTheSameInterface();
     TestAQuantisedTraceStillSamplesOnItsOwnTicks();
     TestRecorderCountsWhatItCouldNotSample();

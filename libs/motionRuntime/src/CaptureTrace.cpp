@@ -134,6 +134,41 @@ IsWritableExpressionName(const std::string& name) noexcept
         && name.find_first_of(" \t\r\n\v\f") == std::string::npos;
 }
 
+// Everything left on a header line, with the whitespace either side removed.
+// The interior is kept exactly, so "Example Avatar" survives and "Example
+// Avatar " does not come back with its trailing space -- which is why the
+// writer refuses the latter rather than letting it change on the way through.
+std::string
+TakeRestOfLine(std::istringstream& stream)
+{
+    std::string rest;
+    std::getline(stream, rest);
+    const std::size_t first = rest.find_first_not_of(" \t");
+    if (first == std::string::npos) {
+        return std::string();
+    }
+    const std::size_t last = rest.find_last_not_of(" \t");
+    return rest.substr(first, last - first + 1);
+}
+
+// A provenance value the header can carry and hand back unchanged. A line break
+// would end the line early and produce a different file; whitespace at either
+// end would be trimmed on the way back in, which is a silent edit to somebody's
+// recorded provenance. Interior spaces are fine and are the reason this exists.
+bool
+IsWritableProvenanceValue(const std::string& value) noexcept
+{
+    if (value.find_first_of("\r\n\v\f") != std::string::npos) {
+        return false;
+    }
+    if (value.empty()) {
+        // Not written at all, so nothing can go wrong with it.
+        return true;
+    }
+    const auto edge = [](char c) { return c == ' ' || c == '\t'; };
+    return !edge(value.front()) && !edge(value.back());
+}
+
 struct FrameBuilder
 {
     HumanoidPose pose;
@@ -234,13 +269,17 @@ ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
             std::string value;
             if (keyword == "provider" || keyword == "protocol"
                 || keyword == "sourceId") {
-                if (!(stream >> value)) {
+                // The rest of the line, not the next token. These three are
+                // free text a producer supplies -- a VMC sender's `sourceId` is
+                // the model title it chose to broadcast -- so "one token" was a
+                // rule about nothing: the writer emitted "Example Avatar"
+                // verbatim and this reader then refused the file it had just
+                // written. A frame's keys are still tokens; only the header's
+                // free-text values are not.
+                value = TakeRestOfLine(stream);
+                if (value.empty()) {
                     return Fail(error, lineNumber,
                                 "'" + keyword + "' needs a value");
-                }
-                if (!FullyConsumed(stream, error, lineNumber,
-                                   "the '" + keyword + "' value")) {
-                    return false;
                 }
                 if (keyword == "provider") {
                     result.source.provider = value;
@@ -478,6 +517,18 @@ WriteCaptureTrace(std::ostream& output, const HumanoidAnimation& animation)
     // Checked before a byte is emitted rather than as each frame is reached: a
     // caller that gets `false` back has an untouched stream, instead of a file
     // that is a valid trace of the frames that happened to come first.
+    //
+    // The provenance strings are checked for the same reason the expression
+    // names are, and they were not until a real producer supplied one this
+    // format could not spell. They are the only fields here whose content
+    // arrives from outside this repository -- a sender's model title is
+    // whatever a person typed into an application -- so this is where a file
+    // that would read back as something else gets refused instead of written.
+    if (!IsWritableProvenanceValue(animation.source.provider)
+        || !IsWritableProvenanceValue(animation.source.protocol)
+        || !IsWritableProvenanceValue(animation.source.sourceId)) {
+        return false;
+    }
     for (const HumanoidPose& pose : animation.samples) {
         for (const ExpressionWeight& entry : pose.expressions.entries) {
             if (!IsWritableExpressionName(entry.name)) {
