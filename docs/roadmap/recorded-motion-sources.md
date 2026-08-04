@@ -108,24 +108,44 @@ is the interesting part:
 ```yaml
 schemaVersion: 1
 id: studio-custom-bvh
+producer: Studio Custom
 
 coordinates:
   handedness: right
-  upAxis: Y
-  forwardAxis: Z
+  upAxis: +Y
+  forwardAxis: +Z
   units: centimeters
 
 root:
-  joint: Hips
-  translation: root-motion
+  joint: Reference
+  translation: absolute-position
   rotation: body-orientation
 
+restPose: rest-offsets
+unmappedJoints: report
+
 joints:
-  Hips: hips
-  Spine: spine
-  Spine1: chest
-  LeftArm: leftUpperArm
+  Hips:    { bone: hips, required: true }
+  Spine:   { bone: spine, required: true }
+  Spine1:  { bone: chest }
+  LeftArm: { bone: leftUpperArm, required: true }
+
+ignoredJoints: [Reference]
 ```
+
+Every **value** above is one the contract now defines by name
+([`SourceProfile.h`](../../libs/motionSource/include/motionSource/SourceProfile.h),
+2026-08-05); the **key** names are still a loader's to settle, and this sketch
+is the shape it will read. Three of them changed while the contract was being
+written, each because the sketch was stating an intention where a converter
+needs a fact. An axis carries its sign, because "+Z forward" and "-Z forward"
+are both real and an unsigned axis makes a rig that faces backwards look like
+one that does not. `root-motion` became `absolute-position` versus
+`rest-relative`, which differ in where their zero is — a distinction the intent
+spelling could not carry and the first real export made concrete
+([§9](#9-milestones)). And a joint map's right-hand side grew a `required` flag,
+because "expected joint names" and "required joints" were two lines of this
+section's own list with one place to put them.
 
 **Declarative only** — no arbitrary code, no expression language, no embedded
 producer algorithm, and no target VRM path. A profile that could name an avatar
@@ -161,6 +181,17 @@ support, conclude a producer from joint names alone, or continue past a profile
 mismatch with a warning. The failure this forbids is specific — a near-miss
 profile produces motion that is subtly misassembled rather than absent, which is
 worse than a refusal because it looks like a result.
+
+Two things follow from that in the contract, and both were choices. **Every
+convention has an `Unspecified` and validation refuses it**, so a profile nobody
+finished is a refusal rather than a silent set of answers — a default-constructed
+profile is invalid by construction, which is "there is no default profile" said
+where it can be checked. And **the match returns facts, never a score**: which
+bones bound, which required ones did not, which joints nothing maps, which names
+are ambiguous. A confidence is the detector's arithmetic over those counts,
+because a weighting fitted to the exports on hand today would be a producer's
+answer reaching the format-neutral layer through a float instead of through an
+`if`.
 
 ## 4. Rest pose, and who corrects it
 
@@ -399,19 +430,26 @@ depends on them ([docs/README.md](../README.md)).
   produces one, or add a synthetic fixture and say in the corpus that it is
   synthetic. Choosing at the converter is fine; arriving at the converter
   without having noticed is what this entry prevents.
-- ⬜ **The six semantic diagnostics have no layer that can raise them.** The
-  frozen set ([§6](#6-diagnostics)) lives in the reader, named for the format it
-  reads, and its semantic half is raised "where a document meets a profile" —
-  which is `motionSource`, the one library forbidden to know that reader exists
-  ([WORKSPACE.md §2](../architecture/WORKSPACE.md)). Three answers are open: the
-  converter CLI raises them, since it links both; `motionSource` grows a
-  `VRM_MOTION_SOURCE_*` namespace of its own and the reader's semantic half
-  becomes a mapping; or the profile API returns refusals a caller maps to codes.
-  The model layer sidesteps it today by reporting structural refusals as plain
-  text and saying so where it does
-  ([`SourceSkeleton.h`](../../libs/motionSource/include/motionSource/SourceSkeleton.h)),
-  but the profile contract is the change that has to choose — a `VRM_BVH_*`
-  string appearing in `motionSource` is the reversal, whichever way it got there.
+- ✅ **The six semantic diagnostics are raised by the caller, from typed refusals
+  the profile API returns** (2026-08-05, with the profile contract). The frozen
+  set ([§6](#6-diagnostics)) lives in the reader, named for the format it reads,
+  and its semantic half is raised "where a document meets a profile" — which is
+  `motionSource`, the one library forbidden to know that reader exists
+  ([WORKSPACE.md §2](../architecture/WORKSPACE.md)). Of the three answers that
+  were open, the third won: `MatchSourceProfile` returns a
+  `SourceProfileRefusal` naming the *event* in terms no format supplies —
+  `root-joint-mismatch`, `ambiguous-joint-name`, `required-joint-missing`,
+  `hierarchy-mismatch`, `unmapped-joint-refused` — and the caller holding both a
+  reader and a profile maps it onto that reader's codes. The two rejected
+  answers are worth keeping: plain text alone (which is right for a structural
+  invariant, and is what
+  [`SourceSkeleton.h`](../../libs/motionSource/include/motionSource/SourceSkeleton.h)
+  still does) would make that caller parse prose to pick a code, and a second
+  `VRM_MOTION_SOURCE_*` namespace would give one event two spellings and
+  duplicate a set whose whole value is being frozen and closed. The mapping is
+  not one-to-one and does not need to be — an ambiguous joint name has no code
+  of its own and is a profile mismatch — which is exactly why the refusal names
+  the event rather than the code.
 - ⬜ **Profiles need a packaging answer.** They are data that must reach an
   artifact-only smoke test, so `share/usd-vrm-plugins/profiles/motion/` is named
   in WORKSPACE.md §5 — but `ost` 0.21.0 has no notion of a data-only member, and
@@ -481,7 +519,11 @@ One PR never introduces a boundary and a large feature together:
    animation, provenance, the single declared crossing into canonical motion,
    and a boundary check that fails on a producer name, a format name, a `Gf`
    type anywhere, or a canonical type outside that one crossing (2026-08-04)
-5. the source profile contract
+5. ✅ the source profile contract — the vocabulary a profile states by name, the
+   profile value and its invariants, the typed refusals that settle §10's
+   diagnostic question, and matching a profile against a rig: a hierarchy
+   embedding rather than a name lookup, returning facts a detector reports and
+   never a score (2026-08-05)
 6. the mocopi BVH profiles
 7. the second producer's profile
 8. a DCC interoperability profile (optional)

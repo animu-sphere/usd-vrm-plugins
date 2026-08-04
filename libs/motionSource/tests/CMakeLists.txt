@@ -15,11 +15,15 @@ add_executable(motionSource_skeleton_tests test_source_skeleton.cpp)
 add_executable(motionSource_animation_tests test_source_animation.cpp)
 # Provenance, and the one narrowing crossing into canonical motion.
 add_executable(motionSource_provenance_tests test_source_provenance.cpp)
+# The profile contract: the vocabulary a profile states, its invariants, and what
+# matching one against a rig concludes.
+add_executable(motionSource_profile_tests test_source_profile.cpp)
 
 set(_motion_source_tests
     motionSource_skeleton_tests
     motionSource_animation_tests
-    motionSource_provenance_tests)
+    motionSource_provenance_tests
+    motionSource_profile_tests)
 
 foreach(_motion_source_test ${_motion_source_tests})
     target_link_libraries(${_motion_source_test} PRIVATE
@@ -37,6 +41,7 @@ endforeach()
 add_test(NAME motionSource_skeleton COMMAND motionSource_skeleton_tests)
 add_test(NAME motionSource_animation COMMAND motionSource_animation_tests)
 add_test(NAME motionSource_provenance COMMAND motionSource_provenance_tests)
+add_test(NAME motionSource_profile COMMAND motionSource_profile_tests)
 
 if(WIN32)
     if(TARGET gf)
@@ -60,7 +65,7 @@ if(WIN32)
              "PATH=path_list_prepend:${_motion_source_python_dir}")
     endif()
     set_tests_properties(motionSource_skeleton motionSource_animation
-                         motionSource_provenance PROPERTIES
+                         motionSource_provenance motionSource_profile PROPERTIES
         ENVIRONMENT_MODIFICATION "${_motion_source_test_path}")
 endif()
 

@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// The one place this library crosses into canonical motion, and the only header
-// here that includes `motionCore`.
+// Where a source's provenance becomes canonical provenance — one of the two
+// places this library crosses into canonical motion.
 //
 // Everything else in `motionSource` is expressed in the source's own terms and
 // links no OpenUSD value type of its own (SourceSkeleton.h says why). The
-// declared `motionSource -> motionCore` edge (WORKSPACE.md §2) exists for this
-// crossing and for the converter that follows it, and keeping the crossing in
-// one file is what lets `motionSource_boundaries` check the claim rather than
-// leave it as a habit.
+// declared `motionSource -> motionCore` edge (WORKSPACE.md §2) exists for the
+// crossings and for the converter that follows them, and keeping them to a named
+// set is what lets `motionSource_boundaries` check the claim rather than leave
+// it as a habit. `SourceProfile.h` is the other, because a joint map's
+// right-hand side is a `HumanBone` and there is no way to express one without
+// naming it; the list lives in the check, so a third is granted in review.
 #pragma once
 
 #include "motionSource/SourceProvenance.h"

@@ -70,7 +70,7 @@ Recorded motion sources — the file half of the input layer (motion policy §8.
 
 | Identity | Kind | Role |
 | --- | --- | --- |
-| `motionSource` | plain static CMake library (`libs/motionSource/`) | The **format-neutral** intermediate: `SourceSkeleton`, `SourceAnimation`, `SourceProvenance`, the `MotionSourceProfile` contract, and the converter from those plus a profile to `motion::HumanoidAnimation`. Knows no file format and no producer. **The value model is implemented**, together with the single declared crossing into canonical motion (`CanonicalMetadata`); the profile contract and the converter follow. It names no `Gf` type of its own — a value in a basis this layer does not know is not a geometric vector — so the `motionCore` edge below is carried by that one file. |
+| `motionSource` | plain static CMake library (`libs/motionSource/`) | The **format-neutral** intermediate: `SourceSkeleton`, `SourceAnimation`, `SourceProvenance`, the `SourceProfile` contract, and the converter from those plus a profile to `motion::HumanoidAnimation`. Knows no file format and no producer. **The value model and the profile contract are implemented**; the converter follows. It names no `Gf` type of its own — a value in a basis this layer does not know is not a geometric vector — so the `motionCore` edge below is carried by two files: `CanonicalMetadata`, which derives canonical provenance, and `SourceProfile`, whose joint map has a `HumanBone` on its right-hand side. |
 | `motionBvh` | plain static CMake library (`libs/motionBvh/`) | BVH **syntax** only — `HIERARCHY`, `ROOT`/`JOINT`, `OFFSET`, `CHANNELS`, `End Site`, `MOTION`, frame time, channel values in declaration order — plus the extractor that turns a `BvhDocument` into `motionSource` values. Decides no semantics: not which joint is which `HumanBone`, not the unit, not the axes, not what a root translation means. **The syntax half is implemented**; it links nothing at all, not even OpenUSD's value types, and the declared edge below arrives with the extractor. |
 | `motion_bvh_inspect` | CLI executable (`tools/motionBvh/`, v0.6.0) | Reports what a BVH file contains, and optionally which profiles are candidates for it, with the reasons. Links `motionBvh` and nothing else. **The reporting half is implemented**; candidate profiles arrive with the profile contract, because a detector written before it would settle the profile schema on whichever file was inspected first. |
 | `motion_bvh_convert` | CLI executable (reserved, `tools/motionBvh/`) | BVH + an explicitly named profile → the avatar-independent semantic clip `motion_retarget` already consumes. Links `motionBvh` and `motionSource`, and authors a stage. Never binds to a target avatar. |
@@ -101,6 +101,17 @@ expression language, no embedded producer-specific algorithm, and no target VRM
 path** — a profile that could name an avatar would have made the converter
 avatar-aware through the back door. A producer that genuinely needs an algorithm
 gets a profile implementation in code, not a richer file format.
+
+> **A profile refuses a rig in terms no format supplies, and the caller turns
+> that into a diagnostic.** The semantic half of a reader's frozen diagnostic set
+> is raised where a document meets a profile — which is `motionSource`, the one
+> library forbidden to know that reader exists (§2). So `MatchSourceProfile`
+> returns a typed `SourceProfileRefusal` naming the event, and whoever holds both
+> a reader and a profile maps it onto that reader's codes. A `VRM_BVH_*` string
+> in `motionSource` is the reversal however it got there, and a second
+> `VRM_MOTION_SOURCE_*` namespace would give one event two spellings; the
+> argument is in
+> [recorded-motion-sources.md §10](../roadmap/recorded-motion-sources.md).
 
 > **An adapter is a library, not a plugin bundle.** The three rows above read
 > "optional bundle" until 2026-07-29, which no manifest could have expressed. An
