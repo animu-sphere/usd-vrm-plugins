@@ -10,10 +10,17 @@ Three claims are checked, and each one is load-bearing rather than tidy:
 * **The syntax layer raises no semantic diagnostic.** The five syntax codes are
   this library's; the six semantic ones belong to the layer where a document
   meets a profile, and a parser that raised one would be deciding something it
-  has no information about.
+  has no information about. The extractor is granted exactly one of the six by
+  name -- see `EXTRACTION_CODES` -- and the grant is narrow because the reason
+  for it is: a joint declaring two rotation channels forms no Euler order
+  whoever wrote the file, so that code needs no profile and the file that
+  raises it holds none.
 * **No OpenUSD, no humanoid vocabulary, no stage.** Three numbers on an OFFSET
   line are not a vector in any basis this layer knows, and which joint is a
-  `HumanBone` is a profile's answer.
+  `HumanBone` is a profile's answer. The source rule covers the whole library;
+  the *binary* rule below covers what the binary it is pointed at actually
+  pulled in, and since the extractor landed those two are no longer the same
+  claim -- see the note beside `binary` in tests/CMakeLists.txt.
 
 It runs over `tools/motionBvh` as well as over the library, because a CLI that
 named a producer would put the assumption one directory away from the layer that
@@ -52,6 +59,16 @@ SEMANTIC_CODES = [
 ]
 
 DIAGNOSTIC_SOURCES = {"Diagnostics.h", "Diagnostics.cpp"}
+
+# One file, one code, granted in review the way `motionSource` grants a file its
+# crossing into canonical motion. `InvalidRotationOrder` is in the semantic half
+# because most of what it can mean is -- but the extraction layer meets the half
+# that a profile has nothing to say about: three rotation channels or none, and
+# three distinct axes among them, are what a `SourceJointTrack` can hold. A
+# second entry here, or a second code against this one, is a boundary moving and
+# belongs in a review rather than in a diff nobody reads.
+EXTRACTION_SOURCES = {"BvhExtract.h", "BvhExtract.cpp"}
+EXTRACTION_CODES = {"InvalidRotationOrder"}
 
 
 def _find_dumpbin() -> str | None:
@@ -154,13 +171,18 @@ def main() -> int:
         r"\b(?:" + "|".join(re.escape(n) for n in PRODUCER_NAMES) + r")\b",
         re.IGNORECASE)
     # OpenUSD in any form, the humanoid vocabulary, and the retarget layer.
-    # `motionSource` is absent only because its extractor has not landed; every
-    # other name here stays forbidden after it does.
+    # `motionSource` is absent because the extractor is the declared edge; every
+    # other name here stays forbidden with it in the tree, and `motionCore` most
+    # of all: the edge is to one library, not through it to another.
     forbidden_api = re.compile(
         r"pxr/|PXR_NAMESPACE|\bGf(?:Vec|Quat|Matrix)|\bUsd[A-Z]|\bSdf[A-Z]|"
         r"TF_REGISTRY_FUNCTION|\bHumanBone\b|\bmotion::|motionCore|"
         r"vrmRetarget|vrmSchema")
     semantic = re.compile(r"DiagnosticCode::(?:" + "|".join(SEMANTIC_CODES) + r")\b")
+    extraction_only = re.compile(
+        r"DiagnosticCode::(?:"
+        + "|".join(c for c in SEMANTIC_CODES if c not in EXTRACTION_CODES)
+        + r")\b")
 
     for area in (source / "include", source / "src"):
         for path in sorted(area.rglob("*")):
@@ -177,7 +199,15 @@ def main() -> int:
             if found:
                 errors.append(
                     f"'{found.group(0)}' is forbidden in this layer: {path}")
-            if path.name not in DIAGNOSTIC_SOURCES and semantic.search(code):
+            if path.name in DIAGNOSTIC_SOURCES:
+                pass
+            elif path.name in EXTRACTION_SOURCES:
+                found = extraction_only.search(code)
+                if found:
+                    errors.append(
+                        f"the extraction layer raises '{found.group(0)}', which "
+                        f"is not the one code it is granted: {path}")
+            elif semantic.search(code):
                 errors.append(
                     f"the syntax layer raises a semantic diagnostic: {path}")
 
@@ -194,22 +224,34 @@ def main() -> int:
     # examined no link line at all. The whole check would then be one typo away
     # from silently not existing.
     #
-    # Only with a filter, though. Unfiltered, zero calls is this library's
-    # actual and intended state -- `libs/motionBvh/CMakeLists.txt` has no
-    # `target_link_libraries` line because the library links nothing at all --
-    # and the binary import check below is what covers that claim.
-    if arguments.cmake_target and not calls:
+    # Unfiltered, zero calls used to be this library's intended state and is no
+    # longer: the extractor's edge to motionSource is declared in the descriptor
+    # and has to be in the link line too, so an absent call now means the one
+    # declared dependency is not actually linked.
+    if not calls:
         # ASCII: this lands on a Windows console in CI, where a non-cp932
         # character comes out as a backslash escape and the sentence stops
         # reading as a sentence.
         errors.append(
-            f"{label}: no target_link_libraries call for target "
-            f"'{arguments.cmake_target}'; the OpenUSD link check examined "
-            f"nothing, so --cmake-target names a target that is not there")
+            f"{label}: no target_link_libraries call"
+            + (f" for target '{arguments.cmake_target}'; --cmake-target names "
+               f"a target that is not there"
+               if arguments.cmake_target else
+               "; the link check examined nothing, so this library's one "
+               "declared edge is unverified"))
     for call in calls:
         if openusd_link.search(call):
             errors.append(f"{label} CMake must link no OpenUSD library")
             break
+    # The library's own edge, and only it. The tools directory is exempt because
+    # a tool links what a tool needs -- `motion_bvh_convert` authors a stage --
+    # and the --cmake-target filter is what keeps those apart.
+    if not arguments.cmake_target:
+        for call in calls:
+            if "motionSource::motionSource" not in call:
+                errors.append(
+                    f"{label} links something other than motionSource: "
+                    f"{call.strip()}")
 
     try:
         dependencies = _binary_dependencies(binary)

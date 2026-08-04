@@ -34,11 +34,21 @@ endif()
 # No OpenUSD, not even Gf, and that is a statement rather than an omission: this
 # layer reads three numbers out of an OFFSET line and does not know the file's
 # handedness, up axis, or unit, so a value typed as a geometric vector would be
-# an assertion it is in no position to make (BvhDocument.h). The declared edge
-# to motionSource (WORKSPACE.md §2) arrives with the extractor, which is the
-# first code here that produces anything a converter can use.
+# an assertion it is in no position to make (BvhDocument.h).
+#
+# The one declared edge (WORKSPACE.md §2) arrives below with the extractor, and
+# it is to motionSource alone. It is not a route to OpenUSD by another name:
+# motionSource links motionCore, whose Gf value types this library still names
+# nowhere, and motionBvh_boundaries checks the source rule that says so. What the
+# edge does cost is the *binary* half of that check, and tests/CMakeLists.txt
+# states what is left of it and why.
+if(NOT TARGET motionSource::motionSource)
+    find_package(motionSource REQUIRED CONFIG)
+endif()
+
 add_library(motionBvh STATIC
     src/BvhDocument.cpp
+    src/BvhExtract.cpp
     src/BvhParser.cpp
     src/Diagnostics.cpp)
 add_library(motionBvh::motionBvh ALIAS motionBvh)
@@ -52,9 +62,14 @@ target_include_directories(motionBvh
     PUBLIC
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
         "$<INSTALL_INTERFACE:include>")
+target_link_libraries(motionBvh PUBLIC motionSource::motionSource)
 
 if(MSVC)
-    target_compile_options(motionBvh PRIVATE /utf-8)
+    # PUBLIC rather than PRIVATE, unlike before the extractor: BvhExtract.h is
+    # an installed header citing the roadmap by its `§` sign, so every consumer
+    # that includes it needs the flag too or MSVC warns C4819 on a non-UTF-8
+    # code page. This is motionSource's answer, for motionSource's reason.
+    target_compile_options(motionBvh PUBLIC /utf-8)
 endif()
 
 include(GNUInstallDirs)

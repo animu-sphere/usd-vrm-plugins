@@ -13,9 +13,12 @@ add_executable(motionBvh_diagnostics_tests test_diagnostics.cpp)
 add_executable(motionBvh_document_tests test_bvh_document.cpp)
 # The parser, over hand-built text and over the committed corpus.
 add_executable(motionBvh_parser_tests test_bvh_parser.cpp)
+# Extraction: a channel set into a track, and the shapes BVH permits that the
+# neutral value model does not.
+add_executable(motionBvh_extract_tests test_bvh_extract.cpp)
 
 foreach(_motion_bvh_test motionBvh_diagnostics_tests motionBvh_document_tests
-                         motionBvh_parser_tests)
+                         motionBvh_parser_tests motionBvh_extract_tests)
     target_link_libraries(${_motion_bvh_test} PRIVATE motionBvh::motionBvh)
     target_compile_options(${_motion_bvh_test} PRIVATE ${_motion_bvh_assertions})
     if(MSVC)
@@ -29,10 +32,17 @@ endforeach()
 add_test(NAME motionBvh_diagnostics COMMAND motionBvh_diagnostics_tests)
 add_test(NAME motionBvh_document COMMAND motionBvh_document_tests)
 add_test(NAME motionBvh_parser COMMAND motionBvh_parser_tests)
+add_test(NAME motionBvh_extract COMMAND motionBvh_extract_tests)
 
-# No ENVIRONMENT_MODIFICATION for the runtime's bin/ here, unlike every other
-# suite in this workspace: motionBvh links no OpenUSD, so these executables load
-# nothing a plain `ctest` cannot find.
+# Still no ENVIRONMENT_MODIFICATION for the runtime's bin/, unlike every other
+# suite in this workspace, and with the extractor in the tree that is now a
+# measurement rather than a restatement. motionBvh links motionSource, which
+# links motionCore, whose Gf value types live in a DLL -- but nothing on the
+# extraction path names one, so no object that needs Gf is pulled out of those
+# archives and these executables still load nothing a plain `ctest` cannot find.
+# A future `motionSource` header that put a Gf type on the extraction path would
+# make this line wrong, and the failure would be a 0xC0000135 here rather than a
+# review comment.
 
 # The same parser over every committed fixture, against a table of what each
 # file must produce or refuse. The binary takes the directory as an argument
@@ -59,8 +69,19 @@ if(Python3_Interpreter_FOUND)
     # The *test executable*, not $<TARGET_FILE:motionBvh>. This library is a
     # static archive and an archive records no imports at all, so inspecting it
     # is a check that cannot fail. The executable is the first artifact in which
-    # the library's real transitive imports exist -- and for this library that
-    # closure is meant to be empty of OpenUSD entirely.
+    # the library's real transitive imports exist.
+    #
+    # It is `motionBvh_parser_tests` deliberately, and since the extractor
+    # landed that is a narrower claim than it reads as. An archive contributes
+    # only the objects something references, so this executable's closure is the
+    # syntax half's -- the half that is meant to be empty of OpenUSD entirely,
+    # and the half whose emptiness is a property worth a check. The library as a
+    # whole no longer has that property and cannot: its declared edge reaches
+    # motionCore's Gf value types, and in a monolithic OpenUSD build no import
+    # listing could tell an allowed dependency from a forbidden one anyway
+    # (libs/motionSource/tests/check_boundaries.py says so at length). What
+    # covers the rest is the source rule, which forbids every OpenUSD name in
+    # every file here including the extractor's.
     add_test(NAME motionBvh_boundaries
         COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_CURRENT_SOURCE_DIR}/check_boundaries.py"

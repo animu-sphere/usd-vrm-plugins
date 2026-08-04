@@ -49,6 +49,32 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **A BVH document becomes source values, and the reader takes its one declared
+  edge.** `BvhExtract.h` is the first code in `motionBvh` that produces anything
+  a converter can use, and it is as much about what does not cross the boundary
+  as about what does: a channel set becomes a track, and nothing about a unit, an
+  axis, a handedness or a bone travels with it. Three of its answers are
+  decisions rather than mechanics — position channels **state** a joint's local
+  translation rather than adding to its `OFFSET` (read additively, a rig stands
+  at twice its own height with every bone twice its length, in a file nothing is
+  wrong with); a component a joint did not animate falls back to the `OFFSET`
+  rather than to zero; and the Euler order is the *relative* order of the
+  rotation channels, whatever position channels sit between them. Three shapes
+  BVH permits and the neutral value model does not are refused rather than
+  reinterpreted: two rotation channels, one axis declared twice, and a chain that
+  both ends and continues.
+
+  `VRM_BVH_INVALID_ROTATION_ORDER` is granted to the extractor by name in
+  `motionBvh_boundaries` — one file, one code, in review. It sits in the frozen
+  set's semantic half because most of what it can mean is, but the half the
+  extractor meets needs no profile at all: a joint declaring two rotation
+  channels forms no Euler order whoever wrote the file. The edge costs
+  `motionBvh` the *binary* half of its boundary check, and the registration now
+  says what is left of it: the check still points at the parser suite, an archive
+  contributes only the objects something references, so what it measures is the
+  syntax half's import closure rather than the library's. The source rule — no
+  OpenUSD name in any file here, extractor included — is what covers the rest.
+
 - **A profile is a file now, and the first producer is described by one.**
   `SourceProfileFile.h` settles the keys the profile sketch left open and reads
   them: a stated subset of the shape the plan already wrote, with an unknown key
