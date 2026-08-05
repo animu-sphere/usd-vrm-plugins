@@ -147,10 +147,26 @@ install(TARGETS motion_bvh_inspect motion_bvh_convert
 # that is a test rather than a preference: a converter with no profile available
 # refuses every file it is given, which would make an artifact-only smoke of the
 # BVH path impossible to pass.
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../profiles/motion")
+#
+# Two things about this rule are deliberate and were both got wrong first.
+#
+# `share/` is spelled out rather than taken from `CMAKE_INSTALL_DATADIR`,
+# because the destination is a **contract** and not a packaging preference:
+# WORKSPACE.md §5 names `share/usd-vrm-plugins/profiles/motion/`, the root
+# CMakeLists installs there, and ProfileLocator.cpp looks there. A rule that
+# followed GNUInstallDirs would move the files on any prefix that redefines
+# DATADIR while the converter kept looking under `share` -- and a converter that
+# finds no profile refuses every file, so the three have to agree by
+# construction rather than by coincidence.
+#
+# And it runs only in a standalone configure of this directory. The root
+# CMakeLists installs the same directory to the same place, so in the composed
+# build this rule would be a second copy of one install -- harmless today, and
+# exactly the kind of duplicate that survives one of the two being edited.
+if(PROJECT_IS_TOP_LEVEL
+   AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../profiles/motion")
     install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../profiles/motion/"
-            DESTINATION
-                "${CMAKE_INSTALL_DATADIR}/usd-vrm-plugins/profiles/motion"
+            DESTINATION "share/usd-vrm-plugins/profiles/motion"
             FILES_MATCHING PATTERN "*.yaml")
 endif()
 

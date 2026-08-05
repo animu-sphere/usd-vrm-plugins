@@ -41,6 +41,15 @@
 //   4. `<exe>/../../../profiles/motion` — this repository, whose tools stage
 //      their executables in `tools/<member>/bin/`
 //
+// `share` in the third is literal on every platform, and that is the contract
+// rather than an assumption about GNUInstallDirs: WORKSPACE.md §5 names
+// `share/usd-vrm-plugins/profiles/motion/`, and both install rules that place
+// these files spell it the same way for the same reason. A lookup that followed
+// a configurable data directory while the packager's rule followed another would
+// leave the converter finding nothing — and finding nothing means refusing every
+// file it is given, which is a failure that looks like a broken build rather
+// than like a misplaced directory.
+//
 // The fourth is a convenience and is stated rather than hidden: a build tree
 // that found no profile would send whoever ran it looking for a packaging bug
 // that is not there.

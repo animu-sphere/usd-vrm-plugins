@@ -43,6 +43,7 @@ remaining item of §7's list and is a packaging test rather than this one.
 from __future__ import annotations
 
 import argparse
+import json
 import pathlib
 import subprocess
 import sys
@@ -239,9 +240,6 @@ def check_pipeline(failures: Failures, clip_path: pathlib.Path,
         if not failures.check(token in target.slot,
                               f"the avatar has no joint '{token}' for {bone}"):
             continue
-        if bone not in source.slot and bone not in {
-                name.rsplit("/", 1)[-1]: name for name in source.joints}:
-            continue
         source_token = next((name for name in source.joints
                              if name.rsplit("/", 1)[-1] == bone), None)
         if source_token is None:
@@ -332,7 +330,6 @@ def main() -> int:
             print(f"missing input: {path}", file=sys.stderr)
             return 1
 
-    import json
     humanoid_map = json.loads(map_path.read_text(encoding="utf-8"))
 
     failures = Failures()

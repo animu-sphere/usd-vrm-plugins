@@ -28,8 +28,6 @@ If either moves, this script fails on the premise instead of on the numbers.
 from __future__ import annotations
 
 import argparse
-import json
-import math
 import pathlib
 import subprocess
 import sys
