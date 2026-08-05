@@ -80,21 +80,27 @@ reaching a **rig** still is: that is Motion Phase G.
       hierarchy. The second producer is the half of this line that no amount of
       code closes, and a user-defined profile is now a file of the same shape
       rather than a mechanism still to build*;
-- [ ] BVH → `HumanoidAnimation` → the same avatar-independent semantic clip
-      `motion_capture` and `usdVrmaFileFormat` already author — *the first arrow
-      landed 2026-08-05, in two layers: the extractor (`motionBvh`) that turns a
-      document into `motionSource` values and took the declared edge, and the
-      converter (`motionSource`) that reads those under a profile — the change of
-      basis as one signed permutation whose determinant is the handedness
-      question, the intrinsic Euler composition, the path rule so a joint no
-      profile maps is not a rotation thrown away, the rest pose built by that
-      same walk, and the two root policies. The real export runs the whole way,
-      checked against the `.bvh` text. The second arrow is the clip **writer**,
-      which is where `motion_capture`, `usdVrmaFileFormat` and
-      `motion_bvh_convert` become three callers of one authoring shape and that
-      stops being ignorable ([§10](recorded-motion-sources.md))*;
+- [x] BVH → `HumanoidAnimation` → the same avatar-independent semantic clip
+      `motion_capture` and `usdVrmaFileFormat` already author — *both arrows
+      landed 2026-08-05. The first is two layers: the extractor (`motionBvh`)
+      that turns a document into `motionSource` values and took the declared
+      edge, and the converter (`motionSource`) that reads those under a
+      profile — the change of basis as one signed permutation whose determinant
+      is the handedness question, the intrinsic Euler composition, the path rule
+      so a joint no profile maps is not a rotation thrown away, the rest pose
+      built by that same walk, and the two root policies. The second is the clip
+      **writer** in `motion_bvh_convert`, which made three callers of one
+      authoring shape and settled that question as a repeated shape with the
+      condition that would change it, because the one field they differ in is
+      the rest pose and it is the field that matters most
+      ([§10](recorded-motion-sources.md))*;
 - [ ] `motion_bvh_convert` → **unchanged** `motion_retarget` → a target VRM,
-      verified through a `UsdSkelSkeletonQuery`;
+      verified through a `UsdSkelSkeletonQuery` — *the pipeline landed
+      2026-08-05 and the retargeter needed no change, which is the claim that
+      makes stopping at the avatar-independent clip worth anything. What is open
+      is the last two words: the bake runs onto a hand-authored humanoid fixture
+      shaped so a broken rest-pose correction cannot pass it, and not yet onto a
+      real VRM*;
 - [ ] no producer name in `motionBvh` or `motionSource` code, and no default
       profile anywhere.
 

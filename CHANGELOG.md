@@ -49,6 +49,50 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`motion_bvh_convert`: a recorded file, an explicitly named profile, and the
+  same avatar-independent semantic clip `motion_retarget` already consumes.** It
+  is the first program anywhere that holds a reader and a profile at once, which
+  neither library may, and three things follow from that and land here. *The six
+  semantic diagnostics are raised by this caller* — `MatchSourceProfile` returns
+  a typed refusal naming the event and the CLI maps it onto the reader's frozen
+  codes, deliberately not one-to-one, because an ambiguous joint name is a
+  profile mismatch and has no code of its own. *There is no default profile and
+  no fallback* — a missing `--profile` is `VRM_BVH_PROFILE_REQUIRED` and stops
+  the run, and a profile **id** resolves to a file through a search path rooted
+  at the executable, so the id a conversion records is the id the file states
+  rather than whatever the file was renamed to. *Exit status splits on whose
+  input was wrong*: 1 the recording, 2 the command or something it named.
+  The report separates what was lost from what was not — a rig restating its
+  rest geometry every frame lost nothing, a rig whose elbow translates lost
+  motion, and one word for both would hide the second inside the first.
+
+- **The semantic clip's third caller, and the decision to keep it a repeated
+  shape.** `motion_capture`, `usdVrmaFileFormat` and now `motion_bvh_convert`
+  all author the clip. They are not merged, because they differ in the field
+  that matters most: a capture stream reports rotations relative to the humanoid
+  rest and authors **identity** rests, while a recorded file states a rest and a
+  profile says how to read it, so this writer authors a **real** one — which is
+  what makes `vrmRetarget`'s source-rest-to-target-rest correction do anything
+  at all. What is pinned by test rather than by intention is the part that is
+  not a choice: the joint set in `HumanBone` order, frame time codes, and
+  `scales` authored — `UsdSkel` fetches translations, rotations and scales as a
+  unit and `scales` has no schema fallback, so a clip missing it does not
+  animate unscaled, it silently resolves to the rest pose.
+
+- **The recorded path end to end, onto a rig, through an unchanged
+  `motion_retarget`.** `workspace_bvh_end_to_end` drives the committed export
+  through both tools with the same flags a `.vrma` bake uses, and checks the
+  invariant the rest-pose correction exists to hold: a bone's world rotation
+  *away from its own rest* is the same on both rigs. The fixture avatar is built
+  so a broken bake cannot pass — its joints are named as a DCC names them so
+  nothing binds by coincidence, its proportions differ, and its arms rest 45°
+  down where the recorded rig's are straight, which makes the correction a real
+  rotation for four joints and identity elsewhere. Forcing the rest to identity
+  fails it on exactly those four by exactly 45°. It also checks that the *set* of
+  bones that move is preserved (this export never rotates its toes), that root
+  motion arrives as a displacement from the source's rest over the target's own
+  hips height, and that both tools are deterministic.
+
 - **A recording plus what its producer meant becomes canonical humanoid motion.**
   `CanonicalConversion.h` is the last crossing `motionSource` has a reason to
   grant, and four of its decisions are worth reading before a converted clip is.
@@ -297,6 +341,30 @@ Current schema contract version: **1**.
   pack into one stage, and — the part that motivated it — how to tell a bound
   animation from an ignored one, since UsdSkel answers a failed binding with the
   rest pose rather than an error.
+
+### Known issues
+
+- **A packaged product carries no producer profiles, so a converter unpacked
+  from one refuses every file it is given.** Measured, not suspected: the
+  `motion_bvh` member of a `--workspace --product` archive is exactly
+  `bin/motion_bvh_inspect.exe`, `bin/motion_bvh_convert.exe` and
+  `openstrata.tool.yaml`. `ost` 0.21.0 packages a tool member out of the
+  `directories:` its descriptor declares and has no notion of a data-only
+  member, so `share/usd-vrm-plugins/profiles/motion/` has no way into the
+  product. A plain `cmake --install` places them correctly and is unaffected.
+  This blocks BVH-3's artifact-only smoke and is an `ost` ask rather than
+  something a `--profile-dir` flag closes — "works if you pass a flag naming a
+  directory the artifact does not contain" is not an artifact-only smoke.
+
+- **A root-scope test guarded on `Python3_Interpreter_FOUND` after
+  `find_package(pxr)` silently never registers.** `pxrConfig.cmake` runs in the
+  calling scope and re-finds Python3 asking only for the Development components,
+  which leaves that variable FALSE from there on even though the interpreter is
+  found and good. The failure is the quiet kind — `add_test` is skipped and
+  `ctest` still reports 100% over a suite one test smaller. The root
+  `CMakeLists.txt` now captures `USDVRM_TEST_PYTHON` before the pxr resolution
+  and guards on that; the symptom is only visible in `ctest -N`, so check the
+  test *count* rather than the percentage.
 
 ### Fixed
 

@@ -1,0 +1,167 @@
+#usda 1.0
+(
+    doc = """A target rig for the recorded-motion end-to-end test.
+
+    Hand-authored, and deliberately NOT the shape of the rig any recorded file
+    in this repository carries. Three differences are the point, because each
+    one is a way the retarget step could be broken and still look right:
+
+      * **Its joint tokens are a DCC's, not the humanoid vocabulary.** `Hips`,
+        `Spine1`, `L_Clavicle` -- so a bake that matched clip joints to target
+        joints by name, or by position in the array, binds nothing. The
+        `humanBone -> token` map beside this file is the only thing that
+        relates the two, which is what makes this a test of the mapping rather
+        than of a coincidence.
+
+      * **Its proportions differ.** Hips at 1.0 m where the recorded rig stands
+        at 0.9599 m, and every limb a different length. Bone lengths do not
+        enter a rotation-only correction, so this checks the other half: that
+        translation lands where the target rig's own geometry says and not
+        where the source's did.
+
+      * **Its arms rest in an A-pose, 45 degrees down about Z.** This is the one
+        that has teeth. `RestPoseCorrection` is identity wherever the two rest
+        poses agree, so a rig resting in the same pose as the source would let a
+        completely broken correction pass -- the pre and post rotations would
+        both be identity and the samples would flow through untouched. With
+        these four joints turned, the correction is real for the arms and
+        identity everywhere else, and the test can tell those apart.
+
+    `Root` carries no human bone. It is here so that a bake which assumed the
+    skeleton's first joint is the hips lands on a joint that is not.
+
+    0.70710678118654752 is cos 45 = sin 45; the arm blocks are a rotation about
+    Z and nothing else."""
+    defaultPrim = "Avatar"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Xform "Avatar"
+{
+    def SkelRoot "Rig"
+    {
+        def Skeleton "TargetSkeleton"
+        {
+            uniform token[] joints = [
+                "Root",
+                "Root/Hips",
+                "Root/Hips/Spine1",
+                "Root/Hips/Spine1/Spine2",
+                "Root/Hips/Spine1/Spine2/Spine3",
+                "Root/Hips/Spine1/Spine2/Spine3/Neck",
+                "Root/Hips/Spine1/Spine2/Spine3/Neck/Head",
+                "Root/Hips/Spine1/Spine2/Spine3/L_Clavicle",
+                "Root/Hips/Spine1/Spine2/Spine3/L_Clavicle/L_UpperArm",
+                "Root/Hips/Spine1/Spine2/Spine3/L_Clavicle/L_UpperArm/L_Forearm",
+                "Root/Hips/Spine1/Spine2/Spine3/L_Clavicle/L_UpperArm/L_Forearm/L_Hand",
+                "Root/Hips/Spine1/Spine2/Spine3/R_Clavicle",
+                "Root/Hips/Spine1/Spine2/Spine3/R_Clavicle/R_UpperArm",
+                "Root/Hips/Spine1/Spine2/Spine3/R_Clavicle/R_UpperArm/R_Forearm",
+                "Root/Hips/Spine1/Spine2/Spine3/R_Clavicle/R_UpperArm/R_Forearm/R_Hand",
+                "Root/Hips/L_Thigh",
+                "Root/Hips/L_Thigh/L_Shin",
+                "Root/Hips/L_Thigh/L_Shin/L_Ankle",
+                "Root/Hips/L_Thigh/L_Shin/L_Ankle/L_Ball",
+                "Root/Hips/R_Thigh",
+                "Root/Hips/R_Thigh/R_Shin",
+                "Root/Hips/R_Thigh/R_Shin/R_Ankle",
+                "Root/Hips/R_Thigh/R_Shin/R_Ankle/R_Ball"
+            ]
+
+            uniform matrix4d[] restTransforms = [
+                # Root -- a scene node, no human bone.
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ),
+                # Hips, at 1.0 m: the recorded rig stands at 0.9599 m.
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1) ),
+                # Spine1 / Spine2 / Spine3
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.13, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.15, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.32, 0, 1) ),
+                # Neck / Head
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.07, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.12, 0, 1) ),
+                # L_Clavicle
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.03, 0.09, 0.01, 1) ),
+                # L_UpperArm -- A-pose, -45 degrees about Z.
+                ( (0.70710678118654752, -0.70710678118654752, 0, 0),
+                  (0.70710678118654752, 0.70710678118654752, 0, 0),
+                  (0, 0, 1, 0),
+                  (0.14, 0, 0, 1) ),
+                # L_Forearm -- A-pose, -45 degrees about Z.
+                ( (0.70710678118654752, -0.70710678118654752, 0, 0),
+                  (0.70710678118654752, 0.70710678118654752, 0, 0),
+                  (0, 0, 1, 0),
+                  (0.28, 0, 0, 1) ),
+                # L_Hand
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.26, 0, 0, 1) ),
+                # R_Clavicle
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.03, 0.09, 0.01, 1) ),
+                # R_UpperArm -- A-pose, +45 degrees about Z.
+                ( (0.70710678118654752, 0.70710678118654752, 0, 0),
+                  (-0.70710678118654752, 0.70710678118654752, 0, 0),
+                  (0, 0, 1, 0),
+                  (-0.14, 0, 0, 1) ),
+                # R_Forearm -- A-pose, +45 degrees about Z.
+                ( (0.70710678118654752, 0.70710678118654752, 0, 0),
+                  (-0.70710678118654752, 0.70710678118654752, 0, 0),
+                  (0, 0, 1, 0),
+                  (-0.28, 0, 0, 1) ),
+                # R_Hand
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.26, 0, 0, 1) ),
+                # L_Thigh / L_Shin / L_Ankle / L_Ball
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.10, -0.05, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.44, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.45, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.06, 0.13, 1) ),
+                # R_Thigh / R_Shin / R_Ankle / R_Ball
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.10, -0.05, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.44, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.45, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.06, 0.13, 1) )
+            ]
+
+            # The same pose in world space, which is what `bindTransforms` is.
+            # Present because UsdSkel warns on a skeleton whose bind and joint
+            # arrays disagree in length, and a fixture that makes every run of
+            # every test print a warning trains whoever reads that output to
+            # ignore it. Nothing here is skinned, so these are the rest
+            # transforms accumulated down each chain and nothing more.
+            uniform matrix4d[] bindTransforms = [
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.13, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.28, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.6, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.67, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.79, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.03, 1.69, 0.01, 1) ),
+                ( (0.70710678118654752, -0.70710678118654752, 0, 0),
+                  (0.70710678118654752, 0.70710678118654752, 0, 0),
+                  (0, 0, 1, 0),
+                  (0.17, 1.69, 0.01, 1) ),
+                ( (0, -1, 0, 0), (1, 0, 0, 0), (0, 0, 1, 0),
+                  (0.36798989873223331, 1.4920101012677667, 0.01, 1) ),
+                ( (0, -1, 0, 0), (1, 0, 0, 0), (0, 0, 1, 0),
+                  (0.36798989873223331, 1.2320101012677667, 0.01, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.03, 1.69, 0.01, 1) ),
+                ( (0.70710678118654752, 0.70710678118654752, 0, 0),
+                  (-0.70710678118654752, 0.70710678118654752, 0, 0),
+                  (0, 0, 1, 0),
+                  (-0.17, 1.69, 0.01, 1) ),
+                ( (0, 1, 0, 0), (-1, 0, 0, 0), (0, 0, 1, 0),
+                  (-0.36798989873223331, 1.4920101012677667, 0.01, 1) ),
+                ( (0, 1, 0, 0), (-1, 0, 0, 0), (0, 0, 1, 0),
+                  (-0.36798989873223331, 1.2320101012677667, 0.01, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.10, 0.95, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.10, 0.51, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.10, 0.06, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.10, 0, 0.13, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.10, 0.95, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.10, 0.51, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.10, 0.06, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.10, 0, 0.13, 1) )
+            ]
+        }
+    }
+}

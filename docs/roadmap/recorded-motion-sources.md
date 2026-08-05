@@ -390,8 +390,9 @@ turned out differently in practice:
 | **BVH-0** — contract and fixtures | real samples from mocopi and a second producer; joints, hierarchy, channels, unit, axis measured; the `motionSource` model and profile schema settled; the diagnostic set frozen | 🚧 |
 | **BVH-1** — syntax | `BvhDocument`, the parser, `motion_bvh_inspect`, malformed fixtures, deterministic tests | ✅ |
 | **BVH-2** — semantics | the `motionSource` API, the profile API, the mocopi profile, the second producer's, basis and unit conversion, source rest pose, root policy, `HumanoidAnimation`, the semantic clip writer | 🚧 |
-| ↳ what remains of BVH-2 | the **second producer's profile** and the **semantic clip writer**. Everything else landed 2026-08-05: the value model, the profile contract and file, the extractor, and the converter — basis, unit, rest pose, root policy and `HumanoidAnimation` all reached over the one real export, checked against the `.bvh` text | 🚧 |
-| **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, artifact-only smoke, the recorded corpus | ⬜ |
+| ↳ what remains of BVH-2 | the **second producer's profile**, and nothing else. The semantic clip writer landed 2026-08-05 with `motion_bvh_convert`, as a third repeated shape rather than shared code and with the condition that would change that written down ([§10](#10-contract-changes-this-plan-requires)). Everything else landed the same day: the value model, the profile contract and file, the extractor, and the converter — basis, unit, rest pose, root policy and `HumanoidAnimation` all reached over the one real export, checked against the `.bvh` text | 🚧 |
+| **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, artifact-only smoke, the recorded corpus | 🚧 |
+| ↳ what remains of BVH-3 | the **artifact-only smoke**, which is now **blocked and diagnosed** rather than merely unwritten: a packaged product carries no profiles, so a converter unpacked from one refuses every file it is given ([§10](#10-contract-changes-this-plan-requires)). And a **target VRM** rather than the hand-authored humanoid fixture the end-to-end test bakes onto today — a deliberate choice rather than a placeholder, because that fixture is shaped so a broken rest-pose correction cannot pass and a real avatar is not. The tool, the unchanged retargeter and the bake landed 2026-08-05 ([§12](#12-pr-splitting) items 10 and 11) | 🚧 |
 | **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | ⬜ |
 
 BVH-0 is a measurement milestone, and skipping it is the failure mode this whole
@@ -471,11 +472,26 @@ depends on them ([docs/README.md](../README.md)).
   WORKSPACE.md §1 states the exception and its test: ship every profile and the
   libraries are byte-identical. Motion policy §8.3 carries the recorded-input
   path itself.
-- ⬜ **The semantic clip has one writer, and now two callers.** `motion_capture`
-  and `usdVrmaFileFormat` both author the avatar-independent clip;
-  `motion_bvh_convert` will be the third. Whether that authoring is shared code
-  or a repeated shape is currently undecided, and three callers is where it stops
-  being ignorable.
+- ✅ **The semantic clip has one writer, three callers, and stays a repeated
+  shape** (2026-08-05, with the converter). `motion_capture`,
+  `usdVrmaFileFormat` and now `motion_bvh_convert` all author the
+  avatar-independent clip. The decision is *not* to share the code yet, and the
+  reason is that the writers differ in the field that matters most:
+  `motion_capture` authors **identity** rest transforms because a capture stream
+  reports rotations relative to the humanoid rest and never the rest itself,
+  while this one authors a **real** rest pose because a recorded file states one
+  and a profile says how to read it ([§4](#4-rest-pose-and-who-corrects-it)).
+  Sharing them today means parameterising over exactly that difference, and
+  [§12](#12-pr-splitting)'s rule is that one PR never introduces a boundary and
+  a large feature together. What *would* change the answer is a fourth caller,
+  or a third needing neither variant — at that point the difference is a
+  parameter and the shape is a function. In the meantime the risk is the two
+  drifting on the parts that are not a choice, so those are pinned by test
+  rather than by intention: the joint set is in `HumanBone` order, the time
+  codes are frames, and `scales` is authored. That last one is the scar —
+  `UsdSkel` fetches translations, rotations and scales as a unit and `scales`
+  has no schema fallback, so a clip missing it does not animate without scale,
+  it silently resolves to the rest pose.
 - ✅ **`SourceProvenance` versus `MotionSourceMetadata`** — a **neighbour**, with
   a one-way narrowing derivation (2026-08-04, with the model). Two independent
   arguments give the same answer: the canonical type rides on every pose and is
@@ -591,14 +607,30 @@ depends on them ([docs/README.md](../README.md)).
 - ✅ **`tools/motionBvh/` is one member carrying two executables, and `ost`
   0.21.0 packages it.** Every workspace tool before it was one directory, one
   executable, and an id equal to that executable's name; this member is
-  `motion_bvh` with `motion_bvh_inspect` inside it and `motion_bvh_convert` to
-  come. `ost plugin package --workspace --product` reports
+  `motion_bvh` with both `motion_bvh_inspect` and `motion_bvh_convert` inside
+  it. `ost plugin package --workspace --product` reports
   `== motion_bvh 0.6.0 (tool) ==`, `build: matched (ost-managed)`, and a
   product of **7 exact members** (4 bundles + 3 tools); the archive carries
   `bin/motion_bvh_inspect.exe`, so an id that is not an executable name costs
   nothing. Measured 2026-08-04, deliberately *before* release preparation —
   deferring it would have made release prep the place a new member shape is
-  first tried.
+  first tried, and the shape held: re-measured 2026-08-05 with the second
+  executable actually present, the archive carries **both** and the member
+  count does not move.
+- ⬜ **A packaged product carries no profiles, and that blocks the artifact-only
+  smoke** (measured 2026-08-05). The same archive is exactly
+  `bin/motion_bvh_inspect.exe`, `bin/motion_bvh_convert.exe` and
+  `openstrata.tool.yaml` — no `share/usd-vrm-plugins/profiles/motion/` anywhere
+  in the product. A tool member packages the `directories:` it declares, and
+  `ost` 0.21.0 has no notion of a data-only member, so a data directory outside
+  the member has no way in. The consequence is the specific one
+  [WORKSPACE.md §5](../architecture/WORKSPACE.md) put the profiles beside the
+  tools to prevent: a converter unpacked from a product finds nothing on its
+  executable-relative search path and refuses every file it is given. A plain
+  `cmake --install` is unaffected and does place them. This is BVH-3's remaining
+  blocker and a v0.7.0 carry-over — it is an `ost` ask, not something a
+  `--profile-dir` flag closes, because "works if you pass a flag naming a
+  directory the artifact does not contain" is not an artifact-only smoke.
 - The graph gate has nothing to say about any of that, and that is by design
   rather than a discovery gap like the adapter's: `--graph-only --json` names no
   tool at all, not even `motion_capture` or `motion_retarget`. Only packaging
@@ -671,8 +703,32 @@ One PR never introduces a boundary and a large feature together:
    once — which neither library may — drives the real export the whole way and
    checks every number against the `.bvh` text rather than against the converter
    (2026-08-05)
-10. `motion_bvh_convert`
-11. the retarget end-to-end test
+10. ✅ `motion_bvh_convert` — the composition point, and the first program
+    anywhere that holds a reader and a profile at once. It resolves a profile
+    **id** to a file (there is no default and no fallback, so a missing
+    `--profile` is `VRM_BVH_PROFILE_REQUIRED` and stops the run), maps the
+    typed `SourceProfileRefusal` onto the frozen semantic codes — which is where
+    §10 said that mapping would live — and authors the clip with the rest pose
+    the converter built. Exit status splits on *whose input was wrong*: 1 the
+    recording, 2 the command or something it named. Its boundary is not the
+    inspect tool's, and the check now says so per target: `--crossing` grants
+    the stage and the humanoid vocabulary and still refuses `vrmRetarget` and
+    `vrmSchema`, because the target avatar is the one thing this layer never
+    binds to (2026-08-05)
+11. ✅ the retarget end-to-end test — the recorded export through
+    `motion_bvh_convert` and then an **unchanged** `motion_retarget` onto a
+    target rig, checked through a `UsdSkelSkeletonQuery`. The fixture avatar is
+    built so that a broken bake cannot pass it: its joints are named as a DCC
+    names them so nothing binds by coincidence, its proportions differ, and its
+    arms rest 45° down where the recorded rig's rest is straight — which makes
+    the rest-pose correction a real rotation for four joints and identity
+    elsewhere. The claim checked is the invariant the correction exists to
+    hold, that a bone's world rotation *away from its own rest* is the same on
+    both rigs; forcing the rest to identity fails it on exactly those four arms
+    by exactly 45°. Also: the set of bones that move is preserved (this export
+    never rotates its toes), root motion arrives as a displacement from the
+    source's rest over the target's own hips height, and both tools are
+    deterministic (2026-08-05)
 12. 🚧 the recorded corpus and its manifest — the split, the manifest shape, the
     two checks over it, and the **first** producer export landed 2026-08-04,
     ahead of this position because a real file arrived and measuring it is
