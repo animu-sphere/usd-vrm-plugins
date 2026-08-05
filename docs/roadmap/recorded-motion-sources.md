@@ -411,8 +411,8 @@ to make small.
 | --- | --- | --- |
 | **BVH-0** — contract and fixtures | real samples from mocopi and a second producer; joints, hierarchy, channels, unit, axis measured; the `motionSource` model and profile schema settled; the diagnostic set frozen | 🚧 |
 | **BVH-1** — syntax | `BvhDocument`, the parser, `motion_bvh_inspect`, malformed fixtures, deterministic tests | ✅ |
-| **BVH-2** — semantics | the `motionSource` API, the profile API, the mocopi profile, the second producer's, basis and unit conversion, source rest pose, root policy, `HumanoidAnimation`, the semantic clip writer | 🚧 |
-| ↳ what remains of BVH-2 | the **second producer's profile**, and nothing else. The semantic clip writer landed 2026-08-05 with `motion_bvh_convert`, as a third repeated shape rather than shared code and with the condition that would change that written down ([§10](#10-contract-changes-this-plan-requires)). Everything else landed the same day: the value model, the profile contract and file, the extractor, and the converter — basis, unit, rest pose, root policy and `HumanoidAnimation` all reached over the one real export, checked against the `.bvh` text | 🚧 |
+| **BVH-2** — semantics | the `motionSource` API, the profile API, the mocopi profile, the second producer's, basis and unit conversion, source rest pose, root policy, `HumanoidAnimation`, the semantic clip writer | ✅ |
+| ↳ how BVH-2 closed | the **second producer's profile** landed 2026-08-05 and cost two contract changes on the way, which is the milestone paying for itself: the first export had made "the root joint is the hips" and "the offsets are the rest" look like properties of the format. The semantic clip writer landed the same day with `motion_bvh_convert`, as a third repeated shape rather than shared code and with the condition that would change that written down ([§10](#10-contract-changes-this-plan-requires)), along with the value model, the profile contract and file, the extractor and the converter | ✅ |
 | **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, artifact-only smoke, the recorded corpus | 🚧 |
 | ↳ what remains of BVH-3 | the **artifact-only smoke**, which is now **blocked and diagnosed** rather than merely unwritten: a packaged product carries no profiles, so a converter unpacked from one refuses every file it is given ([§10](#10-contract-changes-this-plan-requires)). And a **target VRM** rather than the hand-authored humanoid fixture the end-to-end test bakes onto today — a deliberate choice rather than a placeholder, because that fixture is shaped so a broken rest-pose correction cannot pass and a real avatar is not. The tool, the unchanged retargeter and the bake landed 2026-08-05 ([§12](#12-pr-splitting) items 10 and 11) | 🚧 |
 | **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | ⬜ |
@@ -468,10 +468,25 @@ listed in [§10](#10-contract-changes-this-plan-requires) rather than answered
 here: a profile states one `root.joint` where this export splits the answer
 across two; `restPose: rest-offsets` describes no pose this file has; and the
 converter reads root motion from joint index 0, which here is a static reference
-node. The two rows that are *not* problems are worth naming too — a rig with no
-`upperChest` is the first that needs `required: false`, and it is already
-expressible, and a per-file `Hips` `OFFSET` is exactly why the corpus keeps a
-second file from the same rig.
+node. The two rows that are *not* problems are worth naming too. A rig with no
+`upperChest` needs nothing new at all — a bone no source joint exists for is
+simply absent from a profile's map, and a clip's consumers ask for a bone's
+nearest *present* ancestor rather than assuming every slot is filled — and a
+per-file `Hips` `OFFSET` is exactly why the corpus keeps a second file from the
+same rig.
+
+One more difference surfaced only when the profile was written and the export
+was actually converted, which is worth recording as the reason to convert
+rather than only to measure. This producer restates each joint's `OFFSET` in
+its position channels the way the first one does, but **not bit-exactly**: the
+values carry solver noise at the 1e-5 to 1e-7 scale. Recorded-value identity is
+`operator==` by contract, so the converter reports 18 joints as translation it
+could not carry where the first producer reports none — and the two files from
+this one dataset disagree with each other (18 and 16), which is the clearest
+available statement that the number is about float noise rather than about
+motion. Nothing is lost; the report is a false alarm, and changing it means
+deciding what "restating rest geometry" tolerates, which is a contract question
+and not a profile one. It is left standing and written down.
 
 Note what this producer does **not** give: a documented export. Its README
 states the frame rate, the contents and the styles, and says nothing about the
@@ -621,8 +636,8 @@ depends on them ([docs/README.md](../README.md)).
   reported (`ConversionReport::composedBones`) because a cross-source comparison
   will want to know. Over the one real export it is four: `spine`, `chest`,
   `upperChest` and `head`.
-- 🚧 **A root is two joints in the second producer's export, and the answer is
-  the path rule again** (raised and decided 2026-08-05; the converter is next).
+- ✅ **A root is two joints in the second producer's export, and the answer is
+  the path rule again** (raised, decided and implemented 2026-08-05).
   `joint_Root` carries the locomotion and never rotates; `Hips`, its only child,
   carries the body's orientation and a translation of its own
   ([§9](#9-milestones)). A profile states one `root.joint`, and the converter
@@ -637,8 +652,8 @@ depends on them ([docs/README.md](../README.md)).
   which is what makes it safe to state after a producer had already shipped.
   `root.joint` keeps naming the rig's root, because that field is what a profile
   is *matched* by and matching is a question about shape.
-- 🚧 **A first-frame rest was half a rest, and the second producer is the export
-  that shows it** (raised and decided 2026-08-05; the converter is next). Its
+- ✅ **A first-frame rest was half a rest, and the second producer is the export
+  that shows it** (raised, decided and implemented 2026-08-05). Its
   `OFFSET`s are bone-local — every one along +X down its own bone — so composing
   them at identity puts the spine and both legs the same way and makes no figure
   at all; the rest is not recoverable from the rest translations, and
@@ -779,11 +794,18 @@ One PR never introduces a boundary and a large feature together:
    not two: the export measured in BVH-0 is the only one anybody here has seen,
    and a second profile written from a file nobody has read would be the failure
    this plan is shaped around, wearing the shape of progress
-7. the second producer's profile — its corpus rows landed with item 12, and the
-   profile itself now waits on the two contract changes they raised
-   ([§10](#10-contract-changes-this-plan-requires)), in that order: one PR never
-   introduces a boundary and a large feature together, and a profile written
-   against a root the contract cannot state would be the feature arriving first
+7. ✅ the second producer's profile
+   ([`bandai-namco-research-bvh-motiondataset-v1.yaml`](../../profiles/motion/bandai-namco-research-bvh-motiondataset-v1.yaml),
+   2026-08-05) — written from two exports, one per half of the dataset, whose
+   bytes this repository does not carry. It arrived third of three rather than
+   first, and deliberately: its corpus rows landed with item 12, the two
+   contract changes they raised landed next, and only then the file that depends
+   on both. A profile written against a root the contract could not state would
+   have been the feature arriving before the boundary. Its basis is measured
+   rather than assumed — composing the rig forward from its own channels puts
+   the head above the hips and the toes on the floor, and the left shoulder at
+   +X, which settles a forward axis that no `End Site` in this export could
+   (they hold ±5 in one file and zeros in the other)
 8. a DCC interoperability profile (optional)
 9. ✅ BVH → canonical animation conversion, in two commits because it is two
    layers and the boundary between them is the point. **The extractor**

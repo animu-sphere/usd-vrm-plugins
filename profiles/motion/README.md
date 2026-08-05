@@ -18,11 +18,22 @@ byte-identical.
 | Profile | Written from |
 | --- | --- |
 | [`mocopi-mobile-bvh-default-v1.yaml`](mocopi-mobile-bvh-default-v1.yaml) | one 17-second export measured in [the recorded corpus](../../libs/motionBvh/tests/corpus/recorded/manifest.json) (2026-08-04) |
+| [`bandai-namco-research-bvh-motiondataset-v1.yaml`](bandai-namco-research-bvh-motiondataset-v1.yaml) | two exports, one from each half of the same dataset, measured in the same corpus and **not committed** — their licence is non-commercial (2026-08-05) |
 
-One producer is not the milestone: BVH-0's release condition is **two**, because
-every assumption a single export makes — joint names, unit, axes, root policy,
-hierarchy shape — is indistinguishable from a property of the format until
-something disagrees with it.
+BVH-0's release condition is **two producers**, because every assumption a
+single export makes — joint names, unit, axes, root policy, hierarchy shape — is
+indistinguishable from a property of the format until something disagrees with
+it. The second one disagreed about three of them, and two were contract changes
+rather than profile ones: it splits the body's placement across a reference node
+and a hips, and its offsets compose into no pose at all, so `rest-offsets` is
+unavailable to it. Both are settled in
+[MOTION_CONTRACT.md](../../docs/design/MOTION_CONTRACT.md#recorded-source-rest-pose-and-the-path-rule-v070).
+
+The second profile also shows what a *second file from the same producer* is
+for. Its two rows are one walk and one standing clip, and neither alone
+describes the export: in the walk the reference node carries all the
+locomotion and looks like the body's root, and in the standing clip the same
+node is zero in all six channels and looks like a dead node.
 
 ## The file
 

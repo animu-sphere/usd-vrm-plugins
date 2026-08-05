@@ -1,0 +1,122 @@
+# What one producer's export means. Data, never code: the libraries that read
+# this file carry no product name, and shipping every profile leaves them
+# byte-identical (WORKSPACE.md §1).
+#
+# Written from TWO measured exports -- one from each half of the dataset, listed
+# in libs/motionBvh/tests/corpus/recorded/manifest.json and not committed here,
+# because their licence permits redistribution only non-commercially and this
+# repository is Apache-2.0. The pair is deliberate rather than thorough: read
+# alone, either file states something about itself that is not true of the
+# export. The walk makes the top joint look like the body's root; the standing
+# clip makes the same joint look like a dead node.
+#
+# One profile covers both halves of the dataset because they are one rig: the
+# hierarchy, the channel declaration and the frame rate are identical across the
+# files measured, and the offsets agree to the digit except at the hips -- which
+# is where the capture volume put the performer and is not a property of the
+# skeleton at all.
+schemaVersion: 1
+id: bandai-namco-research-bvh-motiondataset-v1
+producer: Bandai Namco Research Motiondataset (1 and 2)
+
+# Up and the lateral axis are read out of the files; forward is derived from
+# them and then confirmed a second way. Composing the rig forward from its
+# channels puts the head 47 units above the hips and both sets of toes on the
+# floor, so +Y is up; in that same pose the left shoulder sits at +X of the
+# right in both files, so +X is the character's left. Forward is then the axis
+# a right-handed frame has left over, +Z -- and the walk file agrees, its hips
+# travelling +157.634 in Z over 31 frames while facing that way.
+#
+# The unit is the one inference rather than a reading: a hip height of 92.1273
+# over an 80.07 leg chain (39.0811 thigh, 40.9854 shank) is a human in
+# centimetres and in nothing else.
+coordinates:
+  handedness: right
+  upAxis: +Y
+  forwardAxis: +Z
+  translationUnit: centimeters
+
+# The rig roots at `joint_Root`, which is not the hips and carries no bone. It
+# translates and never rotates -- 157.634 units of Z in the walk file, exactly
+# zero in all six channels in the standing one -- while `Hips`, its only child,
+# carries the body's orientation and a translation of its own. So where the body
+# is and which way it faces is split across two joints.
+#
+# That split is what these three lines are stating, and they read correctly only
+# because the policies describe the *path* from this joint down to whichever one
+# maps to `hips`, not this joint alone (MOTION_CONTRACT.md). `absolute-position`
+# because each joint's samples are its position in its parent's frame; taking
+# them as displacements from the rest would add this rig's hips offset back in,
+# and that offset is capture bookkeeping.
+root:
+  joint: joint_Root
+  translation: absolute-position
+  rotation: body-orientation
+
+# The one value available, and the reason is worth stating because
+# `rest-offsets` would be the obvious choice and produces nothing resembling a
+# body. Every offset in this rig runs along +X down its own bone -- Spine
+# (15.7357, 0, 0), Neck (16.3773, 0, 0), LowerLeg_L (39.0811, 0, 0) -- so
+# composed at identity the spine and both legs go the same way. The joint
+# orientations that reconcile them are inside the rotation channels, which
+# leaves the rest unrecoverable from the rest translations. The format states no
+# rest rotation either, so `stated-rest-rotations` describes nothing here.
+#
+# What `first-frame` costs is real and is not hidden: each clip is anchored to
+# its own first frame, which for a walk is mid-stride rather than neutral, so
+# two clips from this dataset are not comparable to each other in absolute
+# posture. What it buys is that motion *away* from that frame is right, which is
+# what a retarget uses.
+restPose: first-frame
+
+# Every joint this export carries is either mapped or listed below, so a rig
+# carrying one that is neither is not this export.
+unmappedJoints: refuse
+
+# 22 joints, of which 21 carry a canonical bone -- and unlike the first
+# producer's rig, almost nothing here is a decision. This writer names its
+# joints after the bones, one for one, and the mapping is a reading rather than
+# a judgement. The single place the vocabularies do not line up is the torso:
+# the canonical humanoid has hips / spine / chest / upperChest between the pelvis
+# and the neck, and this rig has three segments. `Chest` parents the neck and
+# both shoulders, which is what `upperChest` is for -- but it is also the only
+# chest-like joint the rig has, and calling it `upperChest` would leave `chest`
+# empty in the middle of a chain. It is mapped as `chest` and `upperChest` is
+# left unbound: a bone no source joint exists for is simply absent from this
+# map, and the canonical humanoid is built for that -- a clip's consumers ask
+# for a bone's nearest *present* ancestor rather than assuming every slot is
+# filled.
+#
+# Every mapping is `required`. This producer exports a fixed skeleton across
+# both halves of its dataset, so a file missing one of these joints is not this
+# export, and an optional mapping would describe a file it never writes.
+joints:
+  Hips:       { bone: hips,          required: true }
+  Spine:      { bone: spine,         required: true }
+  Chest:      { bone: chest,         required: true }
+  Neck:       { bone: neck,          required: true }
+  Head:       { bone: head,          required: true }
+
+  Shoulder_L: { bone: leftShoulder,  required: true }
+  UpperArm_L: { bone: leftUpperArm,  required: true }
+  LowerArm_L: { bone: leftLowerArm,  required: true }
+  Hand_L:     { bone: leftHand,      required: true }
+  Shoulder_R: { bone: rightShoulder, required: true }
+  UpperArm_R: { bone: rightUpperArm, required: true }
+  LowerArm_R: { bone: rightLowerArm, required: true }
+  Hand_R:     { bone: rightHand,     required: true }
+
+  UpperLeg_L: { bone: leftUpperLeg,  required: true }
+  LowerLeg_L: { bone: leftLowerLeg,  required: true }
+  Foot_L:     { bone: leftFoot,      required: true }
+  Toes_L:     { bone: leftToes,      required: true }
+  UpperLeg_R: { bone: rightUpperLeg, required: true }
+  LowerLeg_R: { bone: rightLowerLeg, required: true }
+  Foot_R:     { bone: rightFoot,     required: true }
+  Toes_R:     { bone: rightToes,     required: true }
+
+# The reference node above the hips. Listed rather than left unmapped so that
+# `refuse` above means what it says: this joint is known, and its being here is
+# load-bearing rather than incidental -- the root policies read the path that
+# starts at it.
+ignoredJoints: [joint_Root]
