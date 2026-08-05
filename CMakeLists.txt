@@ -69,14 +69,29 @@ if(USDVRM_BUILD_TESTS)
     # describe. Registered here rather than in either library because it is the
     # one check that holds a reader's file and a profile at once, which neither
     # of them may: motionSource is forbidden to know a reader exists, motionBvh
-    # to know a producer does (WORKSPACE.md §2). A caller is what may hold both,
-    # and until motion_bvh_convert exists a script is the caller.
+    # to know a producer does (WORKSPACE.md §2). A caller is what may hold both.
+    # `motion_bvh_convert` is now such a caller and this script stays anyway:
+    # the tool checks that a profile and a file *convert*, and this checks that
+    # a shipped profile still describes the file it claims to, which is a
+    # question about the data and is answerable with no build at all.
     find_package(Python3 COMPONENTS Interpreter QUIET)
     if(Python3_Interpreter_FOUND
        AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion")
         add_test(NAME workspace_motion_profiles
             COMMAND "${Python3_EXECUTABLE}"
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_motion_profiles.py")
+    endif()
+
+    # Kept under a name of our own, because `Python3_Interpreter_FOUND` does not
+    # survive this file. `find_package(pxr)` below runs pxrConfig.cmake in *this*
+    # scope, and it re-finds Python3 asking only for the Development components
+    # -- which leaves `Python3_Interpreter_FOUND` FALSE from that line onward
+    # even though the interpreter above was found and is still perfectly good.
+    # A later test guarded on that variable does not fail; it silently never
+    # registers, which is the worst of the available outcomes and is exactly
+    # what happened to workspace_bvh_end_to_end before this line existed.
+    if(Python3_Interpreter_FOUND)
+        set(USDVRM_TEST_PYTHON "${Python3_EXECUTABLE}")
     endif()
 endif()
 
@@ -165,8 +180,41 @@ add_subdirectory("tools/motionCapture")     # Motion Phase D — live capture
 # above: it opens no stage and links no OpenUSD, because the syntax layer under
 # it has no value type to borrow from Gf. It could have been added beside
 # libs/motionBvh for that reason, and is not — a tool is a tool, and
-# `motion_bvh_convert` lands in this same directory with a stage in its hands.
-add_subdirectory("tools/motionBvh")         # BVH-1 — recorded-file syntax
+# `motion_bvh_convert` sits in the same directory with a stage in its hands.
+add_subdirectory("tools/motionBvh")         # BVH-1/3 — syntax, and conversion
+
+# BVH-3's evaluation point: a recorded file onto a target rig, through
+# `motion_bvh_convert` and then an **unchanged** `motion_retarget`.
+#
+# Registered here rather than in either tool's own tests for the reason the
+# profile check above is: it is the composition that is being tested, and it
+# needs two executables that only the composed build guarantees. It is also the
+# one test that would catch the recorded path needing a special case in the
+# retargeter — which is the claim that makes stopping at the avatar-independent
+# clip worth anything (roadmap/recorded-motion-sources.md §5, §7).
+if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
+   AND TARGET motion_bvh_convert AND TARGET motion_retarget
+   AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/fixtures"
+   AND EXISTS
+       "${CMAKE_CURRENT_SOURCE_DIR}/libs/motionBvh/tests/corpus/recorded/redistributable")
+    set(_e2e_usd_root "")
+    if(pxr_DIR AND EXISTS "${pxr_DIR}/bin")
+        set(_e2e_usd_root "${pxr_DIR}")
+    elseif(pxr_DIR)
+        get_filename_component(_e2e_usd_root "${pxr_DIR}/../../.." ABSOLUTE)
+    endif()
+    add_test(NAME workspace_bvh_end_to_end
+        COMMAND "${USDVRM_TEST_PYTHON}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/test_bvh_end_to_end.py"
+            --convert "$<TARGET_FILE:motion_bvh_convert>"
+            --retarget "$<TARGET_FILE:motion_retarget>"
+            --corpus "${CMAKE_CURRENT_SOURCE_DIR}/libs/motionBvh/tests/corpus"
+            --profiles "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion"
+            --fixtures "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/fixtures")
+    set_tests_properties(workspace_bvh_end_to_end PROPERTIES
+        ENVIRONMENT_MODIFICATION
+            "PATH=path_list_prepend:${_e2e_usd_root}/bin;PATH=path_list_prepend:${_e2e_usd_root}/lib;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/site-packages")
+endif()
 
 # Input adapters (WORKSPACE.md §1, §2). Each adapters/<group>/<name>/ carrying
 # both an openstrata.library.yaml and a CMakeLists.txt is added here — plain
@@ -198,11 +246,19 @@ install(FILES
 
 # The producer profiles, at the destination WORKSPACE.md §5 names. This is the
 # plain-CMake half of "profiles are data that has to reach an artifact" and only
-# that half: `ost` 0.21.0 has no notion of a data-only member, so whether a
-# packaged product carries these files is unverified and is a v0.7.0 carry-over,
-# not something this rule closes. A converter with no profile available refuses
-# every file it is given, which is why the destination is stated here rather than
-# left for the smoke test to discover.
+# that half: `ost` 0.21.0 has no notion of a data-only member.
+#
+# That half is now **measured rather than unverified** (2026-08-05, with
+# `motion_bvh_convert`): `ost plugin package --workspace --product` produces a
+# 7-member product whose `motion_bvh` archive carries `bin/motion_bvh_inspect.exe`,
+# `bin/motion_bvh_convert.exe` and `openstrata.tool.yaml` — and no profile at
+# all, because `directories:` is what a tool member packages and a data
+# directory outside the member has no way in. So the converter in a packaged
+# product finds no profile on its executable-relative search path and refuses
+# every file it is given, which is exactly the outcome WORKSPACE.md §5 put the
+# profiles beside the tools to prevent. It blocks BVH-3's artifact-only smoke
+# and is a v0.7.0 carry-over; a plain `cmake --install` is unaffected and is
+# what this rule serves.
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion/"
     DESTINATION "share/usd-vrm-plugins/profiles/motion"
     FILES_MATCHING PATTERN "*.yaml")

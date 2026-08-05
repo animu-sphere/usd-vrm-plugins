@@ -1,0 +1,26 @@
+{
+  "hips": "Root/Hips",
+  "spine": "Root/Hips/Spine1",
+  "chest": "Root/Hips/Spine1/Spine2",
+  "upperChest": "Root/Hips/Spine1/Spine2/Spine3",
+  "neck": "Root/Hips/Spine1/Spine2/Spine3/Neck",
+  "head": "Root/Hips/Spine1/Spine2/Spine3/Neck/Head",
+
+  "leftShoulder": "Root/Hips/Spine1/Spine2/Spine3/L_Clavicle",
+  "leftUpperArm": "Root/Hips/Spine1/Spine2/Spine3/L_Clavicle/L_UpperArm",
+  "leftLowerArm": "Root/Hips/Spine1/Spine2/Spine3/L_Clavicle/L_UpperArm/L_Forearm",
+  "leftHand": "Root/Hips/Spine1/Spine2/Spine3/L_Clavicle/L_UpperArm/L_Forearm/L_Hand",
+  "rightShoulder": "Root/Hips/Spine1/Spine2/Spine3/R_Clavicle",
+  "rightUpperArm": "Root/Hips/Spine1/Spine2/Spine3/R_Clavicle/R_UpperArm",
+  "rightLowerArm": "Root/Hips/Spine1/Spine2/Spine3/R_Clavicle/R_UpperArm/R_Forearm",
+  "rightHand": "Root/Hips/Spine1/Spine2/Spine3/R_Clavicle/R_UpperArm/R_Forearm/R_Hand",
+
+  "leftUpperLeg": "Root/Hips/L_Thigh",
+  "leftLowerLeg": "Root/Hips/L_Thigh/L_Shin",
+  "leftFoot": "Root/Hips/L_Thigh/L_Shin/L_Ankle",
+  "leftToes": "Root/Hips/L_Thigh/L_Shin/L_Ankle/L_Ball",
+  "rightUpperLeg": "Root/Hips/R_Thigh",
+  "rightLowerLeg": "Root/Hips/R_Thigh/R_Shin",
+  "rightFoot": "Root/Hips/R_Thigh/R_Shin/R_Ankle",
+  "rightToes": "Root/Hips/R_Thigh/R_Shin/R_Ankle/R_Ball"
+}
