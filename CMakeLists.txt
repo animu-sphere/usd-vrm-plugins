@@ -80,6 +80,35 @@ if(USDVRM_BUILD_TESTS)
         add_test(NAME workspace_motion_profiles
             COMMAND "${Python3_EXECUTABLE}"
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_motion_profiles.py")
+
+        # The same script over an invented rig with no bytes anywhere. A
+        # recording this repository may not redistribute leaves a manifest row
+        # and its measured hierarchy, and the profile that names it is held
+        # against that instead of against a file -- a path the real corpus does
+        # not exercise while every row it can check has its bytes committed.
+        #
+        # The pair is the test. Passing alone would be satisfied by a check that
+        # had quietly stopped looking, so the second run is a profile that gets
+        # exactly one thing wrong -- a bone mapped outside the chain it belongs
+        # to, every name and count still agreeing -- and it must fail. That is
+        # the near-miss the check exists for, arriving through the path with no
+        # file behind it.
+        set(_motion_profile_fixture
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/fixtures/profile-check")
+        if(EXISTS "${_motion_profile_fixture}")
+            add_test(NAME workspace_motion_profiles_absent
+                COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_motion_profiles.py"
+                    --profiles "${_motion_profile_fixture}/profiles"
+                    --corpus "${_motion_profile_fixture}/corpus")
+            add_test(NAME workspace_motion_profiles_absent_misplaced
+                COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_motion_profiles.py"
+                    --profiles "${_motion_profile_fixture}/profiles-misplaced"
+                    --corpus "${_motion_profile_fixture}/corpus")
+            set_tests_properties(workspace_motion_profiles_absent_misplaced
+                PROPERTIES WILL_FAIL TRUE)
+        endif()
     endif()
 
     # Kept under a name of our own, because `Python3_Interpreter_FOUND` does not

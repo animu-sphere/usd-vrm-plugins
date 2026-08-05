@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "description": "A rig this repository invented, and no bytes at all. The recorded corpus has rows whose file is not here -- a recording under a licence this repository may not carry leaves a manifest row and its measurements (docs/roadmap/recorded-motion-sources.md §8) -- and scripts/check_motion_profiles.py holds a profile against such a row's `hierarchy` instead of against a file. This fixture is what exercises that path, in both directions: the profile beside it describes this rig, and the one in profiles-misplaced/ does not, in the one way that matters.",
+  "limitations": [
+    "Invented, so it is evidence about the CHECK and never about the format. Nothing here may be read as a shape a producer exports; the real corpus is libs/motionBvh/tests/corpus/.",
+    "No `bytes` and no `sha256`, because there is no file for them to describe. A real fetch row states both: they are what the fetcher verifies and what pins the bytes its measurements were taken from. Inventing values here would put a hash in the tree that matches nothing."
+  ],
+  "fixtures": [
+    {
+      "file": "absent-rig.bvh",
+      "status": "valid",
+      "pins": "That a profile is still checked when the recording it describes is absent, and that the check has not been reduced to a formality on the way: the near-miss it exists to catch is caught from a manifest hierarchy exactly as it is from a file. The rig is shaped like the second producer's rather than the first's -- a reference node above the hips -- so the row also stands as the smallest statement that a root joint need not be a body's hips.",
+      "producer": "none: this rig was written here",
+      "redistribution": "there are no bytes to redistribute; the row is the fixture",
+      "storage": "fetch",
+      "profileId": "fixture-bvh-minimal-v1",
+      "expectedMappedBones": ["hips", "spine", "chest"],
+      "joints": 5,
+      "hierarchy": [
+        { "name": "Reference", "parent": -1 },
+        { "name": "Hips", "parent": 0 },
+        { "name": "Spine", "parent": 1 },
+        { "name": "Chest", "parent": 2 },
+        { "name": "Bag", "parent": 1 }
+      ]
+    }
+  ]
+}

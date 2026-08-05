@@ -23,3 +23,16 @@ third-party art; they are covered by this repository's Apache-2.0 license.
 External `.vrm` avatars used for manual verification (e.g. under a local
 `vrm_test_data` directory) are **not** part of this repository and are not
 redistributed here. Respect each avatar's own VRM `meta` license terms.
+
+### Recorded motion referenced but not redistributed
+
+Some producer exports the BVH pipeline is measured against are **not carried
+here at all**. Their manifest row stays — what was measured from them, and the
+SHA-256 that pins the bytes it was measured from — and
+`scripts/fetch_corpus.py` downloads the file itself, license-gated, into a
+git-ignored directory. Nothing below is redistributed by this repository, and
+none of it is required to build or test anything.
+
+| Recording | How it is obtained | License |
+| --- | --- | --- |
+| [Bandai Namco Research Motiondataset](https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset) 1 and 2 — © 2022 Bandai Namco Research Inc. | two files named in [`libs/motionBvh/tests/corpus/recorded/manifest.json`](libs/motionBvh/tests/corpus/recorded/manifest.json), fetched with `scripts/fetch_corpus.py --corpus motion --accept-license bandai-namco-motiondataset` | [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/). Attribution required; **non-commercial use only**, which is why these bytes are not committed to an Apache-2.0 repository. |

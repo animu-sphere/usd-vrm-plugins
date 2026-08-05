@@ -24,7 +24,11 @@ Three things it deliberately re-derives rather than calls into:
 * **The file's hierarchy**, scanned from the format, the way
   `libs/motionBvh/tools/check_corpus.py` measures the corpus. A profile checked
   against the same parser the pipeline uses would be two implementations
-  agreeing with each other.
+  agreeing with each other. Where the bytes are not here at all -- a recording
+  under a licence this repository may not carry leaves a manifest row and no
+  file (roadmap §8) -- the row's own measured `hierarchy` stands in, and the
+  check is the same one. That is the point of the field: what a profile is held
+  against is a rig, and a rig is names and parents.
 * **The profile's keys**, read by a small reader of the same stated subset
   `SourceProfileFile.h` defines. A profile file is data a human wrote, and the
   second reading is what catches a key that reads one way to a person and
@@ -470,7 +474,8 @@ def main() -> int:
 
     manifest_path = arguments.corpus / "recorded" / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    checked = 0
+    recorded = arguments.corpus / "recorded"
+    from_file = from_manifest = 0
     for fixture in manifest["fixtures"]:
         profile_id = fixture.get("profileId")
         if profile_id is None:
@@ -481,31 +486,53 @@ def main() -> int:
         if profile_id not in profiles:
             errors.append(f"{fixture['file']}: no profile '{profile_id}'")
             continue
-        path = arguments.corpus / "recorded" / "redistributable" / fixture["file"]
-        if not path.exists():
-            # A manifest row with no bytes. The row is still a claim, and the
-            # claim this script makes needs the file.
-            continue
+        # The bytes if they are here, and the row's own reading of them if they
+        # are not. A recording this repository may not redistribute leaves a
+        # manifest row and nothing else (roadmap §8), and the claim this script
+        # makes -- that a profile describes this rig -- needs a hierarchy and
+        # not a file. `hierarchy` is a measured field, written by the scanner in
+        # `libs/motionBvh/tools/check_corpus.py` from the bytes and re-derived
+        # whenever anyone fetches them, so reading it here is not this check
+        # marking its own homework: what a person wrote is the profile, and the
+        # two sides still come from different hands.
         try:
-            joints = read_hierarchy(path)
-            if len(joints) != fixture["joints"]:
-                errors.append(f"{fixture['file']}: {len(joints)} joints, "
-                              f"manifest says {fixture['joints']}")
+            path = next((candidate for candidate in
+                         (recorded / "redistributable" / fixture["file"],
+                          recorded / "fetched" / fixture["file"])
+                         if candidate.exists()), None)
+            if path is not None:
+                joints = read_hierarchy(path)
+                # Only against the file: from the manifest this would be the row
+                # agreeing with itself, and the scanner is what pins it anyway.
+                if len(joints) != fixture["joints"]:
+                    errors.append(f"{fixture['file']}: {len(joints)} joints, "
+                                  f"manifest says {fixture['joints']}")
+                from_file += 1
+            elif fixture.get("hierarchy"):
+                joints = [(joint["name"], joint["parent"])
+                          for joint in fixture["hierarchy"]]
+                from_manifest += 1
+            else:
+                errors.append(f"{fixture['file']}: names profile "
+                              f"'{profile_id}' but has neither bytes here nor a "
+                              f"hierarchy, so nothing checks the claim")
+                continue
             errors.extend(check(profiles[profile_id], profile_id, joints,
                                 fixture["file"],
                                 fixture.get("expectedMappedBones")))
         except Refused as refusal:
             errors.append(str(refusal))
             continue
-        checked += 1
 
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1
     conformance = (f"{conformed} agreed with a YAML implementation"
                    if conformed else "no YAML implementation to agree with")
-    print(f"motion profiles: {len(profiles)} read, "
-          f"{checked} checked against a recorded file, {conformance}")
+    against = f"{from_file} checked against a recorded file"
+    if from_manifest:
+        against += f", {from_manifest} against a manifest hierarchy"
+    print(f"motion profiles: {len(profiles)} read, {against}, {conformance}")
     return 0
 
 
