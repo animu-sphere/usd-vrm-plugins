@@ -5,7 +5,8 @@
 # is `motion_bvh` and the second executable joins the list below rather than
 # arriving as a second member. That is a shape `motion_capture`,
 # `motion_retarget` and `vmc_record` have not used -- each of those is one
-# directory, one executable, one id.
+# directory, one executable, one id. The second executable has now landed, which
+# is what that shape was for.
 #
 # `ost` 0.21.0 packages it: `plugin package --workspace --product` reports
 # `== motion_bvh 0.6.0 (tool) ==` and a 7-member product, and the archive
@@ -13,18 +14,24 @@
 # and before release preparation rather than during it
 # (roadmap/recorded-motion-sources.md §10).
 #
-# It requires `motionBvh` and nothing else, which is the tool's half of the
-# library's claim: the syntax layer links no OpenUSD, and neither does the
-# command that prints what it read.
+# It requires `motionSource` **by name** rather than only through `motionBvh`,
+# and that is the one line here worth reading twice. `motion_bvh_inspect` needs
+# the syntax layer alone; `motion_bvh_convert` matches a profile, converts, and
+# reads a rest pose back, none of which `motionBvh`'s headers expose. A member
+# carrying two executables declares the union of what they need, so the
+# descriptor states the edge the second one actually has instead of leaving it
+# to be inferred from a transitive dependency that could stop being transitive.
 schema: openstrata.tool/v1alpha1
 tool:
   id: motion_bvh
   # Mirrors VERSION; release preparation updates this in lockstep.
   version: 0.6.0
   license: Apache-2.0
-executables: [motion_bvh_inspect]
+executables: [motion_bvh_inspect, motion_bvh_convert]
 directories: [bin]
 requires:
   libraries:
     - id: motionBvh
+      version: ">=0.6,<0.7"
+    - id: motionSource
       version: ">=0.6,<0.7"

@@ -93,6 +93,18 @@ DIAGNOSTIC_SOURCES = {"Diagnostics.h", "Diagnostics.cpp"}
 EXTRACTION_SOURCES = {"BvhExtract.h", "BvhExtract.cpp"}
 EXTRACTION_CODES = {"InvalidRotationOrder"}
 
+# What a `--crossing` target may not name, which is the whole of what the grant
+# costs. A converter authors a stage and speaks the humanoid vocabulary -- that
+# is what it is for -- so the strict rule above cannot apply to it. What stays
+# forbidden is the target avatar: `vrmRetarget` is the source-rest-to-target-rest
+# correction and `vrmSchema` is the VRM humanoid mapping, and a converter
+# reaching either would be a second retargeter whose fork nobody notices until
+# two sources disagree about one avatar (roadmap §4). This is the strongest
+# claim that survives the grant, and it is checkable, which the previous
+# formulation ("no OpenUSD anywhere in this directory") no longer is once one
+# executable in it authors a clip.
+CROSSING_FORBIDDEN = r"vrmRetarget|vrmSchema|UsdVrm|VrmHumanoid"
+
 
 def strip_comments(text: str) -> str:
     """Blank out // and /* */ comments, keeping line structure.
@@ -127,17 +139,72 @@ def main() -> int:
                         help="Directory whose include/ and src/ are checked.")
     parser.add_argument(
         "--cmake-target", default=None,
-        help="Check only this target's link lines. The library's CMakeLists "
-             "declares one target and needs no filter; the tools directory "
-             "will also hold motion_bvh_convert, which links OpenUSD's stage "
-             "libraries by design.")
+        help="Check only this target: its link lines, and the sources its "
+             "add_executable call names. The library's CMakeLists declares one "
+             "target and needs no filter; the tools directory holds two "
+             "executables whose boundaries are not the same one.")
+    parser.add_argument(
+        "--crossing", action="store_true",
+        help="This target is granted the crossing into canonical motion: it "
+             "may author a stage and name the humanoid vocabulary. Passed at "
+             "the registration site rather than inferred, so the grant is "
+             "visible in review; CROSSING_FORBIDDEN is what it still costs.")
     arguments = parser.parse_args()
 
     source = arguments.source.resolve()
     # "libs/motionBvh" or "tools/motionBvh" -- both directories are named
     # motionBvh, so the parent is what tells a failure apart.
     label = f"{source.parent.name}/{source.name}"
+    if arguments.cmake_target:
+        label = f"{label} [{arguments.cmake_target}]"
     errors: list[str] = []
+
+    # A crossing is granted to a *target*, never to a directory. Without this,
+    # `--crossing` alone would relax the rule over every file in include/ and
+    # src/ -- and pointed at the library that is the strict OpenUSD rule
+    # silently ceasing to exist, which is the same class of failure the
+    # misspelled-target guard below exists for.
+    if arguments.crossing and not arguments.cmake_target:
+        print("--crossing requires --cmake-target: the grant belongs to one "
+              "executable, not to a directory", file=sys.stderr)
+        return 2
+
+    cmake = (source / "CMakeLists.txt").read_text(encoding="utf-8")
+
+    # Which files this run is about. The set is read out of the CMakeLists'
+    # add_executable call rather than listed here, so the grant follows the
+    # build and a source moved between the two executables cannot keep the
+    # permissions of the one it left. A header is checked with the .cpp of the
+    # same stem: it is that translation unit's other half, and nothing in this
+    # tree pairs them differently.
+    executables = dict(re.findall(
+        r"add_executable\(\s*(\w+)\s*([^)]*)\)", cmake))
+    owned: set[str] | None = None
+    if arguments.cmake_target and executables:
+        if arguments.cmake_target not in executables:
+            errors.append(
+                f"{label}: --cmake-target names no add_executable target")
+        stems = {
+            pathlib.Path(entry).stem
+            for entry in executables.get(arguments.cmake_target, "").split()
+            if entry.endswith((".cpp", ".cc", ".cxx"))
+        }
+        owned = stems
+
+        # Every compiled source belongs to some target, or a file added to src/
+        # and never built would sit in this directory exempt from every rule
+        # below while looking checked.
+        claimed = {
+            pathlib.Path(entry).stem
+            for entries in executables.values()
+            for entry in entries.split()
+            if entry.endswith((".cpp", ".cc", ".cxx"))
+        }
+        for path in sorted((source / "src").glob("*.cpp")):
+            if path.stem not in claimed:
+                errors.append(
+                    f"{path} is compiled by no target, so no target's boundary "
+                    f"covers it")
 
     forbidden_files = {"openstrata.plugin.yaml", "pluginfo.json"}
     for path in source.rglob("*"):
@@ -165,17 +232,37 @@ def main() -> int:
         + "|".join(c for c in SEMANTIC_CODES if c not in EXTRACTION_CODES)
         + r")\b")
 
+    crossing_forbidden = re.compile(CROSSING_FORBIDDEN)
+
     for area in (source / "include", source / "src"):
         for path in sorted(area.rglob("*")):
             if not path.is_file():
                 continue
+            if owned is not None and path.stem not in owned:
+                continue
             text = path.read_text(encoding="utf-8")
+            # Checked whatever the grant, and it is the one rule with no
+            # exception anywhere in this tree: a converter that named an
+            # application would be a profile written in C++, which is the whole
+            # failure the profile design exists to prevent.
             found = producers.search(text)
             if found:
                 errors.append(
                     f"producer name '{found.group(0)}' is forbidden in library "
                     f"code: {path}")
             code = strip_comments(text)
+            if arguments.crossing:
+                # The grant. What it does not extend to is the target avatar --
+                # see CROSSING_FORBIDDEN -- and the semantic diagnostics are
+                # this layer's to raise, because it is the caller holding a
+                # reader and a profile at once.
+                found = crossing_forbidden.search(code)
+                if found:
+                    errors.append(
+                        f"'{found.group(0)}' is forbidden even with the "
+                        f"canonical crossing: a converter never binds to a "
+                        f"target avatar: {path}")
+                continue
             found = forbidden_api.search(code)
             if found:
                 errors.append(
@@ -192,7 +279,6 @@ def main() -> int:
                 errors.append(
                     f"the syntax layer raises a semantic diagnostic: {path}")
 
-    cmake = (source / "CMakeLists.txt").read_text(encoding="utf-8")
     target = re.escape(arguments.cmake_target) + r"\b" \
         if arguments.cmake_target else ""
     openusd_link = re.compile(r"\bgf\b|\busd|\bsdf|\bplug\b|pxr::",
@@ -220,10 +306,15 @@ def main() -> int:
                if arguments.cmake_target else
                "; the link check examined nothing, so this library's one "
                "declared edge is unverified"))
-    for call in calls:
-        if openusd_link.search(call):
-            errors.append(f"{label} CMake must link no OpenUSD library")
-            break
+    # A `--crossing` target links the stage libraries because authoring a clip
+    # is what it is for. Every other target in either directory still may not,
+    # and the --cmake-target filter is what keeps two executables sharing one
+    # CMakeLists from sharing one answer.
+    if not arguments.crossing:
+        for call in calls:
+            if openusd_link.search(call):
+                errors.append(f"{label} CMake must link no OpenUSD library")
+                break
     # The library's own edge, and only it. The tools directory is exempt because
     # a tool links what a tool needs -- `motion_bvh_convert` authors a stage --
     # and the --cmake-target filter is what keeps those apart.
