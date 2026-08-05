@@ -803,7 +803,8 @@ One PR never introduces a boundary and a large feature together:
    on both. A profile written against a root the contract could not state would
    have been the feature arriving before the boundary. Its basis is measured
    rather than assumed — composing the rig forward from its own channels puts
-   the head above the hips and the toes on the floor, and the left shoulder at
+   the head 47 units above the hips and every toe within 9 of zero, and the
+   left shoulder at
    +X, which settles a forward axis that no `End Site` in this export could
    (they hold ±5 in one file and zeros in the other)
 8. a DCC interoperability profile (optional)

@@ -21,11 +21,12 @@ producer: Bandai Namco Research Motiondataset (1 and 2)
 
 # Up and the lateral axis are read out of the files; forward is derived from
 # them and then confirmed a second way. Composing the rig forward from its
-# channels puts the head 47 units above the hips and both sets of toes on the
-# floor, so +Y is up; in that same pose the left shoulder sits at +X of the
-# right in both files, so +X is the character's left. Forward is then the axis
-# a right-handed frame has left over, +Z -- and the walk file agrees, its hips
-# travelling +157.634 in Z over 31 frames while facing that way.
+# channels puts the head about 47 units above the hips (47.5 in one file, 46.8
+# in the other) and every toe within 9 of zero, so +Y is up; in that same pose
+# the left shoulder sits at +X of the right in both files, so +X is the
+# character's left. Forward is then the axis a right-handed frame has left
+# over, +Z -- and the walk file agrees, its hips travelling +157.634 in Z over
+# 31 frames while facing that way.
 #
 # The unit is the one inference rather than a reading: a hip height of 92.1273
 # over an 80.07 leg chain (39.0811 thigh, 40.9854 shank) is a human in
