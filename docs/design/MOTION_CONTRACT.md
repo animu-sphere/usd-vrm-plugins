@@ -521,6 +521,13 @@ drops the root's rotation *everywhere*, including out of the path composition:
 a scene node's rotation reaching the first bound bone below it is body motion
 invented from a transform that says nothing about a body.
 
+`None` there means the rig's **root joint** and only it, which is deliberately
+not the same scope as the sentence below about paths — the value is a statement
+about one node, and `BodyOrientation` is a statement about a composition. The
+shape neither spells is a *turning* scene node above a hips that also turns; no
+export has it, and the day one does, that is a new value rather than a
+reinterpretation of these two.
+
 **Both questions are asked of a path, not of a joint** (v0.7.0, with the second
 producer). Where the body is and which way it faces is one fact about a rig, and
 a rig is free to spread it over more than one joint: the second producer's
