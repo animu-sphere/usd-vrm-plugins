@@ -1,0 +1,9 @@
+# Recordings this repository may not carry are NEVER committed — they are pulled
+# by scripts/fetch_corpus.py (pinned SHA-256, license-gated) into fetched/ per
+# the manifest's `storage: "fetch"` rows. Their manifest row stays, and carries
+# the measurements taken from them, which is what the corpus splits on:
+# redistribution, never worth (docs/roadmap/recorded-motion-sources.md §8).
+#
+# redistributable/ is the other half and is tracked, not matched here.
+fetched/**/*.bvh
+fetched/**/*.bvh.part

@@ -24,7 +24,7 @@ import pathlib
 import sys
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
-CORPUS = REPO_ROOT / "plugins" / "usdVrm" / "tests" / "corpus"
+CORPUS = REPO_ROOT / "plugins" / "usdVrmFileFormat" / "tests" / "corpus"
 MANIFEST = CORPUS / "manifest.json"
 
 REQUIRED_FIELDS = [

@@ -1,0 +1,36 @@
+# The same profile with one joint moved, and the reason this fixture is a pair.
+#
+# `chest` is mapped to `Bag`, which hangs off the hips rather than off the
+# spine. Every other check still passes: the id is the file name, the root is
+# the rig's root, all three mapped joints exist, nothing is left neither mapped
+# nor ignored, and `expectedMappedBones` still reads hips / spine / chest. Only
+# the hierarchy disagrees -- `Bag` does not sit under `Spine` -- and that is the
+# near-miss the whole check exists for, because a profile like this one produces
+# a body that is misassembled rather than absent.
+#
+# So this file must FAIL, and a run over a manifest hierarchy that passed it
+# would mean the absent-bytes path had been reduced to reading the id.
+schemaVersion: 1
+id: fixture-bvh-minimal-v1
+producer: none, this rig was written here
+
+coordinates:
+  handedness: right
+  upAxis: +Y
+  forwardAxis: +Z
+  translationUnit: centimeters
+
+root:
+  joint: Reference
+  translation: none
+  rotation: none
+
+restPose: rest-offsets
+unmappedJoints: refuse
+
+joints:
+  Hips:  { bone: hips,  required: true }
+  Spine: { bone: spine, required: true }
+  Bag:   { bone: chest, required: true }
+
+ignoredJoints: [Reference, Chest]

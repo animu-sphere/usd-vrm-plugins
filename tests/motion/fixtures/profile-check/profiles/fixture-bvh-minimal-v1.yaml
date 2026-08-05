@@ -1,0 +1,35 @@
+# A profile that describes the rig in ../corpus/recorded/manifest.json, which
+# has no bytes. Written to be ordinary: every convention stated, one bone per
+# mapped joint, and the two joints the canonical humanoid has no word for named
+# in `ignoredJoints` so that `refuse` above them means what it says.
+#
+# The values are not evidence of anything -- no file was measured to reach them
+# -- and this profile is never shipped. What it is for is the check: with this
+# beside the row, `check_motion_profiles.py` must pass with no recording on the
+# machine at all.
+schemaVersion: 1
+id: fixture-bvh-minimal-v1
+producer: none, this rig was written here
+
+coordinates:
+  handedness: right
+  upAxis: +Y
+  forwardAxis: +Z
+  translationUnit: centimeters
+
+# The rig roots at a reference node rather than at its hips, which is the shape
+# the second producer's export has and the first producer's does not.
+root:
+  joint: Reference
+  translation: none
+  rotation: none
+
+restPose: rest-offsets
+unmappedJoints: refuse
+
+joints:
+  Hips:  { bone: hips,  required: true }
+  Spine: { bone: spine, required: true }
+  Chest: { bone: chest, required: true }
+
+ignoredJoints: [Reference, Bag]

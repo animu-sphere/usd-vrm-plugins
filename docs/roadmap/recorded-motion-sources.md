@@ -382,6 +382,28 @@ turned out differently in practice:
   and `scripts/check_motion_profiles.py` is what checks them: the profile's root
   against the file's, every mapped and ignored joint against the joints it
   carries, and the hierarchy the mapping implies against the one it has.
+- **A row with no bytes is checked, not merely recorded** (2026-08-05, with the
+  second producer). The split above says a non-redistributable recording leaves
+  a manifest and no file, and the obvious reading of that is that the profile
+  describing it goes unchecked — which would leave the second profile, the one
+  this milestone exists for, verified by nothing. So the hierarchy left the
+  hand-written `observations` and became a **measured** field: joint names with
+  their parents, written by the scanner out of the bytes, and what
+  `check_motion_profiles.py` holds a profile against when the file is absent.
+  Everything that check claims survives — the root, every mapped and ignored
+  joint, nothing left neither, the chain the mapping implies. What does not is
+  one link, that the row is a faithful reading of those bytes, and that is held
+  by the SHA-256 and re-derived by anyone who runs `scripts/fetch_corpus.py`.
+  The fixture pair under `tests/motion/fixtures/profile-check/` keeps the absent
+  path honest: one profile that describes an invented rig and one that misplaces
+  a single bone inside it, the second of which must fail.
+
+**Nothing fetches in CI, and that is a decision rather than an omission.** A
+build lane that reached a third party's server would make a PR's colour depend
+on someone else's uptime, and it would automate an acknowledgement the corpus
+policy deliberately asks a person to make (`--accept-license`). The cost — that
+CI never re-measures those bytes — is what the `hierarchy` field above is spent
+to make small.
 
 ## 9. Milestones
 
@@ -419,9 +441,43 @@ worth separating:
 That is one producer, and the milestone asks for two. It also proves the parser
 against something it could be surprised by for the first time — the generated
 fixtures are shapes this repository wrote, and a file it wrote can only confirm
-what it already believed. What is still open is everything BVH-0 names beyond
-one sample: the second producer, and therefore whether the profile schema
-survives contact with an export that disagrees with this one.
+what it already believed.
+
+**The second producer arrived 2026-08-05**: two exports from the
+[Bandai Namco Research Motiondataset](https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset)
+(1 and 2), CC BY-NC 4.0 and therefore **not committed** — two rows in the same
+manifest, no bytes, fetched on demand ([§8](#8-corpus)). One walk and one
+standing wave, because the pair is what separates a property of the export from
+a property of a recording.
+
+| Measured | Value |
+| --- | --- |
+| joints · channels · rows · frame time | 22 · 132 · 31 and 19 · 0.0333333 s (30 Hz) |
+| channel declaration | identical on all 22 joints: `Xposition Yposition Zposition Zrotation Xrotation Yrotation` — ZXY, the one convention it shares with the first |
+| root | **two joints**. `joint_Root` translates and never rotates (157.634 of Z in the walk, exactly zero in the wave); `Hips`, its only child, carries the body's orientation and a translation of its own |
+| position channels | the 20 joints below `Hips` restate their own `OFFSET` every frame, as the first producer's do; `Hips` does not |
+| `OFFSET`s | bone-local, +X down each bone — `Spine` (15.7357, 0, 0), `LowerLeg_L` (39.0811, 0, 0). Composed at identity they send the spine and both legs the same way and make no figure at all |
+| `Hips` `OFFSET` | per file, not per rig: (0.0408292, 93.9915, 0.0639531) in one, (4.5925, 91.4895, **-427.239**) in the other, every other offset agreeing to the digit |
+| unit · up axis | centimetres, +Y — hip height 92.1273 over an 80.07 leg chain |
+| `End Site`s | five, and the two files **disagree**: 10 or ±5 along X in one, (0, 0, 0) in the other |
+| humanoid gaps | `Hips`/`Spine`/`Chest`/`Neck`/`Head` with both shoulders on `Chest` — no `upperChest` to bind |
+
+**The schema did not survive it unchanged**, which is the milestone working
+rather than failing. Three rows above are contract questions, and they are
+listed in [§10](#10-contract-changes-this-plan-requires) rather than answered
+here: a profile states one `root.joint` where this export splits the answer
+across two; `restPose: rest-offsets` describes no pose this file has; and the
+converter reads root motion from joint index 0, which here is a static reference
+node. The two rows that are *not* problems are worth naming too — a rig with no
+`upperChest` is the first that needs `required: false`, and it is already
+expressible, and a per-file `Hips` `OFFSET` is exactly why the corpus keeps a
+second file from the same rig.
+
+Note what this producer does **not** give: a documented export. Its README
+states the frame rate, the contents and the styles, and says nothing about the
+skeleton, the unit, the axes or the root — the same silence as the first. The
+release condition's word "documented" is satisfied by the dataset being
+published, versioned and hash-pinnable, not by the format declaring anything.
 
 **The first profile is written from it** (2026-08-05,
 [`profiles/motion/mocopi-mobile-bvh-default-v1.yaml`](../../profiles/motion/mocopi-mobile-bvh-default-v1.yaml)),
@@ -565,6 +621,36 @@ depends on them ([docs/README.md](../README.md)).
   reported (`ConversionReport::composedBones`) because a cross-source comparison
   will want to know. Over the one real export it is four: `spine`, `chest`,
   `upperChest` and `head`.
+- ⬜ **A root is two joints in the second producer's export, and the contract has
+  one field for it** (raised 2026-08-05, by the corpus rows). `joint_Root`
+  carries the locomotion and never rotates; `Hips`, its only child, carries the
+  body's orientation and a translation of its own ([§9](#9-milestones)). A
+  profile states one `root.joint`; `MatchSourceProfile` requires it to be
+  `skeleton.joints[0]`; and the converter reads root translation and rotation
+  from joint index 0. Naming `joint_Root` loses the orientation, and the
+  contract cannot name `Hips` at all — so this export cannot be described today,
+  and the failure is quiet in one direction: the hips' translation lands in
+  `ConversionReport::droppedTranslationJoints`, so a conversion would *say* it
+  dropped the walk. The answer this plan expects to take is the one already
+  taken for bones one entry above — **the root's placement is the composition of
+  the source path from the file's root down to the joint bound to `hips`** —
+  because it costs no new vocabulary and leaves the first producer's result
+  identical, its path being one joint long. That is a proposal, not a decision:
+  it belongs in a contract change of its own, before any profile depends on it.
+- ⬜ **`rest-offsets` describes no pose the second producer's files have**
+  (raised 2026-08-05). Its `OFFSET`s are bone-local — every one along +X down
+  its own bone — so composing them at identity rotation puts the spine and both
+  legs in the same direction. The joint orientations that reconcile them are
+  inside the rotation channels, which means the rest pose is not recoverable
+  from the rest translations. `RestPoseSource::FirstFrame` is the closest value
+  that exists and is *not* obviously right: it claims the first animated frame
+  **is** the rest, and the first frame of a walk clip is not a neutral pose. A
+  related consequence is measured rather than argued — the converter builds
+  `result.rest.localTranslations` from the `OFFSET` chain whatever `restPose`
+  says, and this producer's `Hips` `OFFSET` is per-file capture bookkeeping, so
+  one of the two corpus rows would put 427 cm of Z into a rest translation. The
+  three answers open are a new `RestPoseSource`, a redefinition of `FirstFrame`,
+  and a profile-stated rest translation policy; none is taken here.
 - 🚧 **Profiles need a packaging answer.** They are data that must reach an
   artifact-only smoke test, so `share/usd-vrm-plugins/profiles/motion/` is named
   in WORKSPACE.md §5. **The plain-CMake half is done and measured**
@@ -688,7 +774,11 @@ One PR never introduces a boundary and a large feature together:
    not two: the export measured in BVH-0 is the only one anybody here has seen,
    and a second profile written from a file nobody has read would be the failure
    this plan is shaped around, wearing the shape of progress
-7. the second producer's profile
+7. the second producer's profile — its corpus rows landed with item 12, and the
+   profile itself now waits on the two contract changes they raised
+   ([§10](#10-contract-changes-this-plan-requires)), in that order: one PR never
+   introduces a boundary and a large feature together, and a profile written
+   against a root the contract cannot state would be the feature arriving first
 8. a DCC interoperability profile (optional)
 9. ✅ BVH → canonical animation conversion, in two commits because it is two
    layers and the boundary between them is the point. **The extractor**
@@ -732,8 +822,15 @@ One PR never introduces a boundary and a large feature together:
 12. 🚧 the recorded corpus and its manifest — the split, the manifest shape, the
     two checks over it, and the **first** producer export landed 2026-08-04,
     ahead of this position because a real file arrived and measuring it is
-    BVH-0's whole content. The second producer's, and everything that needs a
-    profile to describe it, still belong here
+    BVH-0's whole content. The **second** producer's landed 2026-08-05: two
+    Bandai Namco Research Motiondataset exports as rows with no bytes, the
+    hierarchy promoted from prose to a measured field so a profile can be
+    checked against a row rather than a file, one fetcher over both corpora
+    where there were nearly two, and the fixture pair that keeps the absent-file
+    path from passing everything ([§8](#8-corpus)). What still belongs here is
+    everything that needs a profile to describe it — which is now blocked on two
+    contract questions the export raised rather than on finding a producer
+    ([§10](#10-contract-changes-this-plan-requires))
 
 Every one of them checks: standalone build · dependency direction · no reverse
 dependency · **no producer name in library code** · deterministic fixture tests ·

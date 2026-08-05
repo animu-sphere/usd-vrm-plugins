@@ -21,6 +21,15 @@ the format* and its counts are a property of what was written; a recorded file
 pins *what one producer actually exports*, and its counts are a measurement of
 someone else's software that nobody here may adjust. Only the second kind has
 provenance, and only the second kind can stop being reproducible.
+
+The recorded half has rows whose bytes are not here. A recording this
+repository may not redistribute leaves a manifest row and nothing else
+(roadmap §8), and such a row is checked when `recorded/fetched/` happens to
+hold the file and carried through untouched when it does not. What makes that
+tolerable rather than a hole is `hierarchy`: names and parents, measured, so
+`scripts/check_motion_profiles.py` can hold a producer profile against the rig
+it claims to describe with no bytes on the machine at all. It is required of
+exactly the rows that have none.
 """
 
 from __future__ import annotations
@@ -30,6 +39,7 @@ import hashlib
 import json
 import math
 import pathlib
+import re
 import sys
 
 CHANNELS = {
@@ -215,6 +225,16 @@ def scan(text: str) -> dict:
         "channels": channels,
         "frames": declared,
         "frameTime": frame_time,
+        # Names and parents, parent before child, the order they are declared
+        # in. Measured rather than prose because it is a *reading* of the file
+        # and not an inference about it -- the distinction the recorded
+        # manifest's `observations` exists to draw -- and because it is the one
+        # thing a profile is checked against. A row whose bytes this repository
+        # does not carry can still answer "does this profile describe this rig",
+        # and that is the whole reason this field is here rather than in the
+        # prose that used to hold a bare list of names.
+        "hierarchy": [{"name": joint["name"], "parent": joint["parent"]}
+                      for joint in joints],
     }
 
 
@@ -259,14 +279,64 @@ PROSE = {
     # untouched -- a re-measurement that dropped a file's profile link would be
     # a scanner deciding a semantic question, which is the one thing it may not
     # do. `scripts/check_motion_profiles.py` is what checks the claim.
+    #
+    # The acquisition fields say where bytes this repository does not carry
+    # come from and on what terms. They are prose for the same reason the rest
+    # of this tuple is: a licence and a URL are facts about the world, and a
+    # scanner that could rewrite them could quietly change what a corpus is
+    # allowed to be.
     "recorded": ("pins", "producer", "producerVersion", "originalFile",
-                 "capturedAt", "redistribution", "profileId",
+                 "capturedAt", "redistribution", "storage", "licenseId",
+                 "license", "licenseUrl", "redistributionAllowed", "sourceUrl",
+                 "downloadUrl", "targetPath", "profileId",
                  "expectedMappedBones", "observations"),
 }
 REQUIRED_PROSE = {
     "generated": ("pins",),
     "recorded": ("pins", "producer", "redistribution"),
 }
+
+# What the scanner writes and `--check` compares, per half. `hierarchy` is
+# recorded-only, and deliberately: it is here so a profile can be held against a
+# rig whose bytes are absent, and a generated fixture describes no producer and
+# is never absent. Carrying it there would double a manifest to restate what the
+# committed file beside it already says.
+MEASURED = {
+    "generated": ("status", "bytes", "sha256", "diagnostic", "joints",
+                  "channels", "frames", "frameTime"),
+    "recorded": ("status", "bytes", "sha256", "diagnostic", "joints",
+                 "channels", "frames", "frameTime", "hierarchy"),
+}
+
+
+# A hierarchy entry, as `json.dumps(indent=2)` leaves it. Collapsed to one line
+# per joint before the manifest is written: expanded, a 22-joint rig costs 88
+# lines and a three-row manifest three hundred, which buries the fields a person
+# actually edits. The array is meant to be read *down*, and a name beside its
+# parent is that reading. Nothing else is reformatted, so a changed measurement
+# is still one line of diff.
+_ENTRY = re.compile(
+    r'\{\n\s*"name": (?P<name>"(?:[^"\\]|\\.)*"),\n\s*"parent": (?P<parent>-?\d+)\n\s*\}')
+
+
+def dumped(manifest: dict) -> str:
+    text = json.dumps(manifest, indent=2, ensure_ascii=False)
+    return _ENTRY.sub(
+        lambda m: f'{{ "name": {m["name"]}, "parent": {m["parent"]} }}',
+        text) + "\n"
+
+
+def expected_absent(row: dict) -> bool:
+    """Whether this row's bytes are meant not to be here.
+
+    The corpus splits on redistribution, not on worth: a recording this
+    repository may not carry leaves a manifest row and no bytes
+    (docs/roadmap/recorded-motion-sources.md §8). Such a row is still a claim,
+    and `hierarchy` is what lets the claim be checked with the file absent, so
+    it is required of exactly these rows -- a fetch row without one would leave
+    the profile that names it checked by nothing at all.
+    """
+    return row.get("storage") == "fetch"
 
 
 def ordered(entry: dict, previous: dict, half: str) -> dict:
@@ -283,6 +353,10 @@ def ordered(entry: dict, previous: dict, half: str) -> dict:
         row["diagnostic"] = entry["diagnostic"]
     row["bytes"] = entry["bytes"]
     row["sha256"] = entry["sha256"]
+    if "hierarchy" in MEASURED[half] and "hierarchy" in entry:
+        # Last because it is the longest: a twenty-line array between two
+        # numbers puts the pins on a different screen from the counts.
+        row["hierarchy"] = entry["hierarchy"]
     return row
 
 
@@ -304,9 +378,16 @@ def main() -> int:
     if args.recorded:
         files = args.corpus / "recorded" / "redistributable"
         manifest_path = args.corpus / "recorded" / "manifest.json"
+        # A second directory, and everything in it is git-ignored. A row whose
+        # bytes this repository does not carry still states what was measured
+        # from them; `scripts/fetch_corpus.py` puts the file here so the same
+        # scanner can re-derive those measurements and disagree out loud. Absent
+        # is the ordinary case and is not a failure -- see `expected_absent`.
+        optional = args.corpus / "recorded" / "fetched"
     else:
         files = args.corpus / "generated"
         manifest_path = args.corpus / "manifest.json"
+        optional = None
     if not files.is_dir():
         print(f"corpus directory not found: {files}", file=sys.stderr)
         return 1
@@ -314,31 +395,47 @@ def main() -> int:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8")) \
         if manifest_path.exists() else {"schemaVersion": 1, "fixtures": []}
     declared = {row["file"]: row for row in manifest.get("fixtures", [])}
+    sources = [files] + ([optional] if optional and optional.is_dir() else [])
     measured = {path.name: measure(path)
-                for path in sorted(files.glob("*.bvh"))}
+                for source in sources for path in sorted(source.glob("*.bvh"))}
 
     if args.update:
+        # A declared row measured from bytes nobody here carries is kept as it
+        # stands. Rebuilding the list from what is on disk would otherwise
+        # delete it -- silently, and on a machine that had simply not fetched.
         manifest["fixtures"] = [
             ordered(measured[name], declared.get(name, {}), half)
-            for name in sorted(measured)
+            if name in measured else declared[name]
+            for name in sorted(set(measured) | set(declared))
+            if name in measured or expected_absent(declared[name])
         ]
-        manifest_path.write_text(
-            json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8")
-        print(f"{half} manifest updated: {len(measured)} fixture(s)")
+        manifest_path.write_text(dumped(manifest), encoding="utf-8")
+        kept = len(manifest["fixtures"]) - len(measured)
+        print(f"{half} manifest updated: {len(measured)} measured"
+              + (f", {kept} kept unmeasured" if kept else ""))
         return 0
 
     failures: list[str] = []
+    absent = 0
     for name in sorted(set(measured) | set(declared)):
         if name not in declared:
-            failures.append(f"{name}: committed but not in the manifest")
+            # "in the corpus" rather than "committed": on the recorded half this
+            # also catches a file sitting in `fetched/` that no row asked for,
+            # and telling whoever fetched it to commit it is the wrong advice.
+            failures.append(f"{name}: in the corpus but not in the manifest")
             continue
+        want = declared[name]
         if name not in measured:
-            failures.append(f"{name}: in the manifest but not committed")
+            if not expected_absent(want):
+                failures.append(f"{name}: in the manifest but not committed")
+            elif not want.get("hierarchy"):
+                failures.append(f"{name}: states no hierarchy, and its bytes "
+                                f"are not here to measure one from")
+            else:
+                absent += 1
             continue
-        want, got = declared[name], measured[name]
-        for field in ("status", "bytes", "sha256", "diagnostic", "joints",
-                      "channels", "frames", "frameTime"):
+        got = measured[name]
+        for field in MEASURED[half]:
             if field in want or field in got:
                 if want.get(field) != got.get(field):
                     failures.append(
@@ -351,7 +448,9 @@ def main() -> int:
     if failures:
         print("\n".join(failures), file=sys.stderr)
         return 1
-    print(f"motionBvh {half} corpus manifest: {len(measured)} file(s) agree")
+    unmeasured = (f", {absent} declared with no bytes here" if absent else "")
+    print(f"motionBvh {half} corpus manifest: "
+          f"{len(measured)} file(s) agree{unmeasured}")
     return 0
 
 
