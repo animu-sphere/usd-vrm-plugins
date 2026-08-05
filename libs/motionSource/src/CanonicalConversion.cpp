@@ -398,14 +398,18 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
     // Reusing it is the same "one composition, two callers" the rest pose
     // relies on, and it cannot drift from the hips bone's own path because it
     // *is* that path.
-    const std::vector<std::size_t>* rootPath = nullptr;
+    // Copied rather than pointed at. `paths` is complete here and nothing below
+    // grows it, so a reference would be valid today -- and silently dangling the
+    // day somebody appends to it, which is a class of bug worth more than the
+    // handful of indices this costs once per conversion.
+    std::vector<std::size_t> rootPath;
     for (const BoundPath& path : paths) {
         if (path.bone == motion::HumanBone::Hips) {
-            rootPath = &path.joints;
+            rootPath = path.joints;
             break;
         }
     }
-    if (!rootPath) {
+    if (rootPath.empty()) {
         // Unreachable: `ValidateSourceProfile` refuses a profile that does not
         // map the hips or maps them optionally, and a required bone that did
         // not bind has already been refused above as a profile mismatch.
@@ -418,7 +422,7 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
                           + ", so the body has no placement");
     }
     std::vector<bool> onRootPath(skeleton.joints.size(), false);
-    for (const std::size_t jointIndex : *rootPath) {
+    for (const std::size_t jointIndex : rootPath) {
         onRootPath[jointIndex] = true;
     }
 
@@ -558,7 +562,7 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
     // no placement, and a clip that reported one would be claiming the rig sat
     // at its own offsets rather than admitting the source never said.
     const bool rootPathTranslates =
-        std::any_of(rootPath->begin(), rootPath->end(),
+        std::any_of(rootPath.begin(), rootPath.end(),
                     [&animation](std::size_t jointIndex) {
                         return animation.tracks[jointIndex].HasTranslation();
                     });
@@ -601,7 +605,7 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
         // its hips, reduces to reading that joint's sample.
         pxr::GfVec3f position(0.0f);
         pxr::GfQuatf orientation = Identity();
-        for (const std::size_t jointIndex : *rootPath) {
+        for (const std::size_t jointIndex : rootPath) {
             position += orientation.Transform(ConvertPosition(
                 *basis, localTranslation(jointIndex, frame, true)));
             orientation = orientation * jointRotations[jointIndex];
