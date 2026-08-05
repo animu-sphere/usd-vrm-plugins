@@ -396,8 +396,27 @@ def main() -> int:
         if manifest_path.exists() else {"schemaVersion": 1, "fixtures": []}
     declared = {row["file"]: row for row in manifest.get("fixtures", [])}
     sources = [files] + ([optional] if optional and optional.is_dir() else [])
-    measured = {path.name: measure(path)
-                for source in sources for path in sorted(source.glob("*.bvh"))}
+    found: dict[str, pathlib.Path] = {}
+    collisions: list[str] = []
+    for source in sources:
+        for path in sorted(source.glob("*.bvh")):
+            # One name, one file. Merging the two directories into a dict keyed
+            # by name would otherwise let a fetched copy shadow a committed one
+            # silently, and every number below would then be measured from bytes
+            # the manifest is not about -- which is the exact failure a second
+            # independent reading of the corpus exists to catch, arriving
+            # through the reading itself.
+            if path.name in found:
+                collisions.append(
+                    f"{path.name}: in both {found[path.name].parent.name}/ and "
+                    f"{source.name}/, so which bytes the manifest describes is "
+                    f"not decided")
+                continue
+            found[path.name] = path
+    if collisions:
+        print("\n".join(collisions), file=sys.stderr)
+        return 1
+    measured = {name: measure(path) for name, path in sorted(found.items())}
 
     if args.update:
         # A declared row measured from bytes nobody here carries is kept as it

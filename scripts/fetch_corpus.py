@@ -91,6 +91,10 @@ CORPORA = {
         "entries": motion_entries,
         "identity": lambda entry: entry["file"],
         "label": lambda entry: entry.get("producer", "?"),
+        # The one git-ignored place a fetched recording may land. Declared here
+        # rather than left to each row, so that a row which forgets `targetPath`
+        # still cannot put licence-encumbered bytes in a tracked directory.
+        "fetchDir": "recorded/fetched",
     },
 }
 
@@ -104,8 +108,25 @@ def sha256_of(path: pathlib.Path) -> str:
 
 
 def target_path(corpus: dict, entry: dict) -> pathlib.Path | None:
-    rel = entry.get("targetPath") or entry.get("file")
-    return corpus["corpus"] / rel if rel else None
+    """Where this entry's bytes go, or None if the manifest does not say.
+
+    `file` is deliberately *not* a fallback. In the recorded corpus that name is
+    the manifest row's key and names a file in a tracked directory, so falling
+    back to it would put a recording this repository may not redistribute one
+    `git add -A` away from being committed -- the single outcome the whole
+    fetch/no-bytes split exists to prevent. A corpus that has one git-ignored
+    place for fetched files declares it as `fetchDir` and gets the file name
+    joined onto that; a corpus that does not requires `targetPath` per entry and
+    reports the entry as manual until it has one.
+    """
+    rel = entry.get("targetPath")
+    if rel:
+        return corpus["corpus"] / rel
+    name = entry.get("file")
+    fetch_dir = corpus.get("fetchDir")
+    if name and fetch_dir:
+        return corpus["corpus"] / fetch_dir / name
+    return None
 
 
 def accepted_by(entry: dict, accepted: set[str], identity: str) -> bool:
@@ -129,6 +150,12 @@ def status_of(corpus: dict, entry: dict, accepted: set[str]) -> tuple[str, str]:
     if gated and not accepted_by(entry, accepted,
                                  corpus["identity"](entry)):
         return ("license-gated", "needs --accept-license")
+    if tgt is None:
+        # Reported rather than raised on the way into `download`, and grouped
+        # with the other things a manifest has not said yet: an entry with
+        # nowhere to go is under-declared, not broken.
+        return ("manual", "no targetPath, and this corpus has no fetch "
+                          "directory to default to")
     if not entry.get("downloadUrl") or not sha:
         return ("manual", "no pinned downloadUrl + sha256 yet")
     return ("ready", entry["downloadUrl"])
