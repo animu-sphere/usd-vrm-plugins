@@ -621,36 +621,41 @@ depends on them ([docs/README.md](../README.md)).
   reported (`ConversionReport::composedBones`) because a cross-source comparison
   will want to know. Over the one real export it is four: `spine`, `chest`,
   `upperChest` and `head`.
-- ⬜ **A root is two joints in the second producer's export, and the contract has
-  one field for it** (raised 2026-08-05, by the corpus rows). `joint_Root`
-  carries the locomotion and never rotates; `Hips`, its only child, carries the
-  body's orientation and a translation of its own ([§9](#9-milestones)). A
-  profile states one `root.joint`; `MatchSourceProfile` requires it to be
-  `skeleton.joints[0]`; and the converter reads root translation and rotation
-  from joint index 0. Naming `joint_Root` loses the orientation, and the
-  contract cannot name `Hips` at all — so this export cannot be described today,
-  and the failure is quiet in one direction: the hips' translation lands in
-  `ConversionReport::droppedTranslationJoints`, so a conversion would *say* it
-  dropped the walk. The answer this plan expects to take is the one already
-  taken for bones one entry above — **the root's placement is the composition of
-  the source path from the file's root down to the joint bound to `hips`** —
-  because it costs no new vocabulary and leaves the first producer's result
-  identical, its path being one joint long. That is a proposal, not a decision:
-  it belongs in a contract change of its own, before any profile depends on it.
-- ⬜ **`rest-offsets` describes no pose the second producer's files have**
-  (raised 2026-08-05). Its `OFFSET`s are bone-local — every one along +X down
-  its own bone — so composing them at identity rotation puts the spine and both
-  legs in the same direction. The joint orientations that reconcile them are
-  inside the rotation channels, which means the rest pose is not recoverable
-  from the rest translations. `RestPoseSource::FirstFrame` is the closest value
-  that exists and is *not* obviously right: it claims the first animated frame
-  **is** the rest, and the first frame of a walk clip is not a neutral pose. A
-  related consequence is measured rather than argued — the converter builds
-  `result.rest.localTranslations` from the `OFFSET` chain whatever `restPose`
-  says, and this producer's `Hips` `OFFSET` is per-file capture bookkeeping, so
-  one of the two corpus rows would put 427 cm of Z into a rest translation. The
-  three answers open are a new `RestPoseSource`, a redefinition of `FirstFrame`,
-  and a profile-stated rest translation policy; none is taken here.
+- 🚧 **A root is two joints in the second producer's export, and the answer is
+  the path rule again** (raised and decided 2026-08-05; the converter is next).
+  `joint_Root` carries the locomotion and never rotates; `Hips`, its only child,
+  carries the body's orientation and a translation of its own
+  ([§9](#9-milestones)). A profile states one `root.joint`, and the converter
+  read root translation and rotation from joint index 0 — so naming `joint_Root`
+  lost the orientation and naming `Hips` was not expressible. The decision, in
+  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#recorded-source-rest-pose-and-the-path-rule-v070):
+  **both root policies describe the composition of the source path from the
+  rig's root down to the joint bound to `hips`.** It costs no new vocabulary,
+  the path is always defined because `ValidateSourceProfile` already refuses a
+  profile that does not bind `hips` and one that binds them optionally, and a
+  rig whose root *is* its hips has a path of one joint and reads identically —
+  which is what makes it safe to state after a producer had already shipped.
+  `root.joint` keeps naming the rig's root, because that field is what a profile
+  is *matched* by and matching is a question about shape.
+- 🚧 **A first-frame rest was half a rest, and the second producer is the export
+  that shows it** (raised and decided 2026-08-05; the converter is next). Its
+  `OFFSET`s are bone-local — every one along +X down its own bone — so composing
+  them at identity puts the spine and both legs the same way and makes no figure
+  at all; the rest is not recoverable from the rest translations, and
+  `rest-offsets` is not available to it. `FirstFrame` is, and it was
+  taking rotations from frame 0 and translations from the `OFFSET`s: one rest
+  built out of two poses, invisible for any producer whose offsets are its rest
+  and wrong for the only kind of producer that picks the setting. The decision:
+  **under `first-frame`, a joint's rest translation is its first sampled
+  translation where it has one.** This producer's `Hips` `OFFSET` is capture
+  bookkeeping — 427 cm of Z in one file, near zero in another from the same rig
+  — so the old reading put an artefact of the capture volume into a rest pose,
+  and `vrmRetarget` would have subtracted it from every frame. What the setting
+  *claims* is narrowed in the same change: not that the writer's first frame is
+  neutral, but that the source states no rest and the profile elects frame 0 to
+  measure motion away from. The limitation that follows is written down rather
+  than discovered — two clips from one dataset are each anchored to their own
+  first frame.
 - 🚧 **Profiles need a packaging answer.** They are data that must reach an
   artifact-only smoke test, so `share/usd-vrm-plugins/profiles/motion/` is named
   in WORKSPACE.md §5. **The plain-CMake half is done and measured**

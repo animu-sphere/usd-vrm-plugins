@@ -469,10 +469,35 @@ that whatever the profile chose.
 
 The same walk builds the clip's rest pose, from whichever rotations the profile
 says are the rest (`restPose: rest-offsets` | `stated-rest-rotations` |
-`first-frame`) and from the rest offsets along the path. One composition with
-two callers, deliberately: a rest pose derived by a second traversal is a second
-traversal that can disagree with the first, and the disagreement would appear as
-a constant per-bone offset that looks like a bad capture.
+`first-frame`) and from the rest translations along the path. One composition
+with two callers, deliberately: a rest pose derived by a second traversal is a
+second traversal that can disagree with the first, and the disagreement would
+appear as a constant per-bone offset that looks like a bad capture.
+
+**A rest taken from the first frame is taken from the first frame entirely**
+(v0.7.0, with the second producer). `first-frame` originally took its rotations
+from frame 0 and its translations from the rest offsets — one rest assembled out
+of two poses. That is invisible while a producer's offsets *are* its rest, and a
+producer whose offsets are its rest does not choose `first-frame`; the setting
+exists for the export whose offsets are not a pose at all, which is exactly the
+export the mixture is wrong for. So under `first-frame` a joint's rest
+translation is its **first sampled translation** where it has one, and its rest
+offset where it has none. The second producer's export makes the difference
+concrete: its `Hips` `OFFSET` is where the capture volume put the performer —
+427 cm of Z away in one file and near zero in another from the same rig — so the
+old reading put a capture artefact into a rest pose and `vrmRetarget` would have
+subtracted it from every frame.
+
+What the setting *means* is worth restating with it, because the name invites a
+claim the data does not make. `first-frame` does not assert that the writer's
+first frame is a neutral pose. It says the source states no rest, and the
+profile elects frame 0 as the one to measure motion away from — so the target
+avatar stands in its own rest at frame 0 and moves as the performer moved
+thereafter. That is coherent and it is a limitation: two clips from one dataset
+are each anchored to their own first frame, and their absolute postures are not
+comparable to each other. A source that genuinely states a rest says so with
+`rest-offsets` or `stated-rest-rotations`, and neither is affected by any of
+this.
 
 `motionSource::CanonicalRestPose` carries a local rotation and a local
 translation per bone plus a presence bitset, and **no parent array**: the
@@ -495,6 +520,33 @@ space, which is what `vrmRetarget` subtracts each rig's own hips rest from.
 drops the root's rotation *everywhere*, including out of the path composition:
 a scene node's rotation reaching the first bound bone below it is body motion
 invented from a transform that says nothing about a body.
+
+**Both questions are asked of a path, not of a joint** (v0.7.0, with the second
+producer). Where the body is and which way it faces is one fact about a rig, and
+a rig is free to spread it over more than one joint: the second producer's
+export puts the locomotion on a reference node that never rotates and the body's
+orientation on that node's only child. So the two policies describe the
+composition of the source path **from the rig's root down to the joint bound to
+`hips`** — the same walk, ending at the joint the canonical humanoid roots at.
+
+Three things follow, and each is why this is a contract line rather than an
+implementation detail. The path always exists: `ValidateSourceProfile` refuses a
+profile that does not bind `hips`, and refuses one that binds them optionally,
+so there is no valid profile for which "down to the hips" names nothing. A rig
+whose root *is* its hips has a path of length one and is unchanged by this
+sentence — the first producer's export reads identically before and after, which
+is what makes the rule safe to state after one producer had already shipped. And
+a profile still names the rig's **root** in `root.joint`, because that field is
+how a profile is matched against a skeleton and matching is a question about
+shape; the joint the policies act on is derived from the mapping instead, since
+a profile that could name it separately could also name one off the path and
+mean nothing by it.
+
+The failure this replaces is worth recording, because it was quiet in one
+direction and loud in the other. Reading the rig's root alone gave a body that
+never turned; naming the child instead was not expressible at all. Meanwhile the
+child's translation went to `ConversionReport::droppedTranslationJoints`, so a
+conversion of that export would have *said* it was throwing away the walk.
 
 **A track expressed as quaternions is refused**, with the reason, until a reader
 writes one. Nothing in the tree does, so converting it would mean implementing a
