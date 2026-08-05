@@ -136,11 +136,18 @@ enum class SourceLengthUnit : std::uint8_t
 inline constexpr std::size_t SourceLengthUnitCount =
     static_cast<std::size_t>(SourceLengthUnit::Count);
 
-// What a root joint's translation samples *are*, which is not the same question
-// as whether the motion is wanted. The two stated values differ in their zero,
-// and a real export settled that this distinction is not theoretical: samples
+// What a root's translation samples *are*, which is not the same question as
+// whether the motion is wanted. The two stated values differ in their zero, and
+// a real export settled that this distinction is not theoretical: samples
 // arriving as absolute positions that begin at the root's own rest offset read
 // as a large constant displacement under the other interpretation.
+//
+// "The root" here is the *path* from the rig's root joint down to the joint
+// bound to `Hips`, not a single joint: a rig is free to spread where the body
+// is and which way it faces over more than one node, and a second real export
+// settled that too. A rig whose root is its hips has a path of one joint and is
+// unaffected. See MOTION_CONTRACT.md, "Recorded-source rest pose and the path
+// rule".
 enum class RootTranslationPolicy : std::uint8_t
 {
     Unspecified,
@@ -162,10 +169,17 @@ inline constexpr std::size_t RootTranslationPolicyCount =
 enum class RootRotationPolicy : std::uint8_t
 {
     Unspecified,
-    // The root's rotation is the character's orientation.
+    // The composed rotation of the path down to the hips is the character's
+    // orientation.
     BodyOrientation,
-    // The root is a scene or armature node whose rotation says nothing about the
-    // body. Dropped rather than converted.
+    // The rig's *root joint* is a scene or armature node whose rotation says
+    // nothing about the body. Dropped rather than converted, and dropped before
+    // every path walk rather than after: a scene node's rotation otherwise
+    // reaches the first bound bone underneath it. Asymmetric with the value
+    // above on purpose -- this one is about one node, that one about a path --
+    // and a rig with a *turning* scene node above a hips that also turns has no
+    // spelling here. No export has that shape; the day one does, it is a
+    // vocabulary change and not a reinterpretation of these two.
     None,
 
     Count,
@@ -185,7 +199,19 @@ enum class RestPoseSource : std::uint8_t
     RestOffsets,
     // The rest translations plus the rest rotations the source states per joint.
     StatedRestRotations,
-    // The first animated frame is the rest pose.
+    // The source states no rest, and the profile elects frame 0 as the pose to
+    // measure motion away from -- which is a weaker claim than the name makes
+    // it sound, and deliberately so: nothing here asserts that a writer's first
+    // frame is neutral. Taken whole, rotations *and* translations, because a
+    // rest assembled from frame 0's rotations and the rest offsets is one rest
+    // built out of two poses. That mixture is invisible for a producer whose
+    // offsets are its rest, and such a producer does not choose this value; the
+    // setting exists for the export whose offsets compose into no figure at
+    // all, which is exactly the one it is wrong for.
+    //
+    // The limitation it carries is real and is not a defect to fix here: two
+    // clips from one dataset are each anchored to their own first frame, so
+    // their absolute postures are not comparable to each other.
     FirstFrame,
 
     Count,
@@ -302,10 +328,16 @@ struct SourceProfile
     // (WORKSPACE.md §1).
     std::string producer;
 
-    // The source name of the joint the hierarchy roots at, which is the joint
-    // the two root policies below describe. It need not be mapped to a bone — a
-    // writer whose root is a scene node maps nothing to it and lists it in
-    // `ignoredJoints`.
+    // The source name of the joint the hierarchy roots at. It need not be
+    // mapped to a bone — a writer whose root is a scene node maps nothing to it
+    // and lists it in `ignoredJoints`.
+    //
+    // This is what a profile is *matched* by, and matching is a question about
+    // shape. It is **not** the joint the two root policies below act on: those
+    // describe the path from here down to whichever joint the mapping binds to
+    // `Hips`, which is derived rather than named. A profile that could name the
+    // second one separately could also name a joint off that path and mean
+    // nothing by it.
     std::string rootJoint;
 
     SourceHandedness handedness = SourceHandedness::Unspecified;

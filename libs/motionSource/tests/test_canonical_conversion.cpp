@@ -150,6 +150,49 @@ BaseSkeleton()
     return skeleton;
 }
 
+// The same rig with a reference node above it: `reference` -> `root` ->
+// `segment` -> `back` -> `crown`, where `root` still carries the hips and
+// `reference` carries no canonical bone at all.
+//
+// This is the shape the second producer's export has (roadmap §9) and the first
+// producer's does not, and the two are indistinguishable until one of them
+// exists: a rig whose root *is* its hips answers "where is the body" on one
+// joint, and this one spreads it over two. `root`'s rest translation is
+// deliberately unlike anything a body has -- the export this is modelled on
+// states an offset that records where the capture volume put the performer.
+SourceSkeleton
+SplitRootSkeleton()
+{
+    SourceSkeleton skeleton;
+    SourceJoint reference;
+    reference.name = "reference";
+    reference.parent = -1;
+    SourceJoint root;
+    root.name = "root";
+    root.parent = 0;
+    root.restTranslation = Vec(0.0f, 90.0f, -400.0f);
+    SourceSkeleton base = BaseSkeleton();
+    skeleton.joints = {reference, root};
+    for (std::size_t index = 1; index < base.joints.size(); ++index) {
+        SourceJoint joint = base.joints[index];
+        joint.parent += 1;
+        skeleton.joints.push_back(joint);
+    }
+    return skeleton;
+}
+
+SourceProfile
+SplitRootProfile()
+{
+    SourceProfile profile = BaseProfile();
+    // The rig's root, which is what a profile is *matched* by. Which joint the
+    // body's placement is read from is derived from the mapping instead, and is
+    // the one bound to the hips.
+    profile.rootJoint = "reference";
+    profile.ignoredJoints = {"reference", "segment"};
+    return profile;
+}
+
 SourceJointTrack
 RotationTrack(const std::vector<SourceEulerAngles>& angles,
               SourceEulerOrder order = SourceEulerOrder::ZXY)
@@ -169,6 +212,26 @@ Angles(float first, float second, float third)
     value.second = second;
     value.third = third;
     return value;
+}
+
+SourceAnimation BaseAnimation();
+
+// The placement split the way the second producer splits it: `reference`
+// translates and never turns, `root` turns and states a translation of its own
+// that has nothing to do with its rest offset.
+SourceAnimation
+SplitRootAnimation()
+{
+    SourceAnimation animation = BaseAnimation();
+    SourceJointTrack reference =
+        RotationTrack({Angles(0.0f, 0.0f, 0.0f), Angles(0.0f, 0.0f, 0.0f)});
+    reference.translations = {Vec(0.0f, 0.0f, 0.0f), Vec(0.0f, 0.0f, 20.0f)};
+    SourceJointTrack root = RotationTrack({Angles(0.0f, 0.0f, 45.0f),
+                                           Angles(0.0f, 0.0f, 45.0f)});
+    root.translations = {Vec(10.0f, 92.0f, 0.0f), Vec(10.0f, 92.0f, 0.0f)};
+    animation.tracks.insert(animation.tracks.begin(), reference);
+    animation.tracks[1] = root;
+    return animation;
 }
 
 // Two frames, every joint still, the root standing at its own rest height.
@@ -642,6 +705,133 @@ TestRootRotationPolicies()
     }
 }
 
+// Where the body is and which way it faces is asked of the path down to the
+// hips, not of the rig's root joint (MOTION_CONTRACT.md). Every other test in
+// this file uses a rig whose root *is* its hips, which cannot tell the two
+// readings apart -- that is why this one exists, and why the rule could be
+// written only once a second producer had been read.
+void
+TestRootPlacementComposesThePathToTheHips()
+{
+    {
+        const SourceConversion result = ConvertSourceToCanonical(
+            SplitRootSkeleton(), SplitRootAnimation(), SplitRootProfile());
+        assert(result.Converted());
+
+        // 20 centimetres of Z from the reference node and the hips' own
+        // (10, 92, 0) on top of it. Reading the reference node alone gives
+        // (0, 0, 0.20) and reading the hips alone gives (0.10, 0.92, 0):
+        // each is half a placement, and each looks like a plausible clip.
+        assert(result.animation.samples[1].root.hasPosition);
+        assert(NearVector(result.animation.samples[1].root.worldPosition,
+                          pxr::GfVec3f(0.10f, 0.92f, 0.20f)));
+
+        // The orientation is on the hips, and the reference node never turns.
+        // Read from joint 0 this is identity -- a body that walks without ever
+        // facing anywhere, which is motion that looks merely odd rather than
+        // broken.
+        assert(result.animation.samples[1].root.hasOrientation);
+        assert(NearRotation(result.animation.samples[1].root.worldOrientation,
+                            AboutY(45.0f)));
+    }
+    {
+        // A composition, not a sum. Turning the reference node halfway round
+        // must turn the offset the hips state underneath it; 180 degrees is
+        // chosen because it negates X and Z whichever way the basis reads.
+        SourceAnimation animation = SplitRootAnimation();
+        animation.tracks[0] = RotationTrack({Angles(0.0f, 0.0f, 180.0f),
+                                             Angles(0.0f, 0.0f, 180.0f)});
+        animation.tracks[0].translations = {Vec(0.0f, 0.0f, 0.0f),
+                                            Vec(0.0f, 0.0f, 20.0f)};
+        const SourceConversion result = ConvertSourceToCanonical(
+            SplitRootSkeleton(), animation, SplitRootProfile());
+        assert(result.Converted());
+        assert(NearVector(result.animation.samples[1].root.worldPosition,
+                          pxr::GfVec3f(-0.10f, 0.92f, 0.20f)));
+    }
+}
+
+// A rest taken from the first frame is taken from the first frame entirely.
+// Rotations from frame 0 and translations from the offsets is one rest built
+// out of two poses, and it is wrong for precisely the export that needs the
+// setting: one whose offsets are not a pose at all.
+void
+TestRestFromFirstFrameTakesTranslationsToo()
+{
+    const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
+    {
+        const SourceConversion result = ConvertSourceToCanonical(
+            SplitRootSkeleton(), SplitRootAnimation(), SplitRootProfile());
+        assert(result.Converted());
+        // `rest-offsets` says the offsets are the rest and is taken at its
+        // word, artefact and all: four metres of Z that no sample in the clip
+        // goes anywhere near. A profile stating this of such a rig is wrong,
+        // and the converter is not the layer that gets to decide so.
+        assert(NearVector(result.rest.localTranslations[hips],
+                          pxr::GfVec3f(0.0f, 0.90f, -4.0f)));
+    }
+    {
+        SourceProfile profile = SplitRootProfile();
+        profile.restPose = RestPoseSource::FirstFrame;
+        const SourceConversion result = ConvertSourceToCanonical(
+            SplitRootSkeleton(), SplitRootAnimation(), profile);
+        assert(result.Converted());
+        // Frame 0's translations. The four metres are gone, and they would
+        // otherwise have reached `vrmRetarget` as a rest for it to subtract
+        // from every frame of the clip.
+        assert(NearVector(result.rest.localTranslations[hips],
+                          pxr::GfVec3f(0.10f, 0.92f, 0.0f)));
+    }
+}
+
+// Every joint on the root path is carried, so none of them is reported as
+// motion the clip could not take. Before the path rule the hips' translation
+// landed in `droppedTranslationJoints` -- which was the honest half of getting
+// that export wrong, and is the wrong answer now that it is carried.
+void
+TestRootPathTranslationIsCarriedNotDropped()
+{
+    {
+        const SourceConversion result = ConvertSourceToCanonical(
+            SplitRootSkeleton(), SplitRootAnimation(), SplitRootProfile());
+        assert(result.Converted());
+        assert(result.report.droppedTranslationJoints.empty());
+        assert(result.report.restatedTranslationJoints.empty());
+    }
+    {
+        SourceProfile profile = SplitRootProfile();
+        profile.rootTranslation = RootTranslationPolicy::None;
+        const SourceConversion result = ConvertSourceToCanonical(
+            SplitRootSkeleton(), SplitRootAnimation(), profile);
+        assert(result.Converted());
+        assert(!result.animation.samples[1].root.hasPosition);
+        // Both of them, because the policy drops the whole path's answer and
+        // both joints on it state translations that vary.
+        assert(result.report.droppedTranslationJoints.size() == 2);
+    }
+}
+
+// A path whose joints all state rest geometry and no translation channel says
+// nothing about where the body is. Reporting a position anyway would claim the
+// rig sat at its own offsets rather than admit the source never said.
+//
+// Unlike the three above, this one passes on the converter as it stood: it
+// pins behaviour the path rule had to *keep*, where those pin behaviour it
+// changed. Said here so nobody reads a green run as evidence of the change.
+void
+TestARootPathStatingNoTranslationHasNoPlacement()
+{
+    SourceAnimation animation = SplitRootAnimation();
+    animation.tracks[0].translations.clear();
+    animation.tracks[1].translations.clear();
+    const SourceConversion result = ConvertSourceToCanonical(
+        SplitRootSkeleton(), animation, SplitRootProfile());
+    assert(result.Converted());
+    assert(!result.animation.samples[0].root.hasPosition);
+    // Orientation is the other question and the path still answers it.
+    assert(result.animation.samples[0].root.hasOrientation);
+}
+
 // A rig that restates its rest geometry every frame loses nothing; one whose
 // joint actually translates loses motion. Reporting both with one word would
 // hide the second inside the first.
@@ -807,6 +997,10 @@ main()
     TestUnmappedJointRotationIsComposedNotDropped();
     TestRootTranslationPolicies();
     TestRootRotationPolicies();
+    TestRootPlacementComposesThePathToTheHips();
+    TestRestFromFirstFrameTakesTranslationsToo();
+    TestRootPathTranslationIsCarriedNotDropped();
+    TestARootPathStatingNoTranslationHasNoPlacement();
     TestTranslationReportSeparatesLossFromNoise();
     TestTiming();
     TestProvenance();
