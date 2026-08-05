@@ -339,8 +339,15 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
         result.rest.present.set(static_cast<std::size_t>(binding.bone));
     }
 
-    // The root joint is index 0 by `ValidateSourceSkeleton`, and the match has
-    // already established that it is the joint the profile names.
+    // The rig's root joint is index 0 by `ValidateSourceSkeleton`, and the
+    // match has already established that it is the joint the profile names.
+    //
+    // It is *not* where the body's placement is read from -- that is a path
+    // ending at the hips, built below. What this index still means is the one
+    // thing `RootRotationPolicy::None` is about: the rig's topmost node, whose
+    // rotation a profile may declare to say nothing about a body. Dropping it
+    // has to happen before every path walk rather than after, because a scene
+    // node's rotation otherwise reaches the first bound bone underneath it.
     constexpr std::size_t kRootJoint = 0;
     const bool dropRootRotation =
         profile.rootRotation == RootRotationPolicy::None;
@@ -382,6 +389,69 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
         paths.push_back(std::move(path));
     }
 
+    // Where the body is and which way it faces is asked of a *path*, not of a
+    // joint (MOTION_CONTRACT.md): a rig may spread that one fact over a
+    // reference node that translates and a hips that turns. The path is the one
+    // ending at the joint bound to `hips`, and this loop has already walked it
+    // -- `hips` is the canonical root, so it has no bound ancestor and
+    // `PathFromNearestBoundAncestor` handed it the whole chain from joint 0.
+    // Reusing it is the same "one composition, two callers" the rest pose
+    // relies on, and it cannot drift from the hips bone's own path because it
+    // *is* that path.
+    const std::vector<std::size_t>* rootPath = nullptr;
+    for (const BoundPath& path : paths) {
+        if (path.bone == motion::HumanBone::Hips) {
+            rootPath = &path.joints;
+            break;
+        }
+    }
+    if (!rootPath) {
+        // Unreachable: `ValidateSourceProfile` refuses a profile that does not
+        // map the hips or maps them optionally, and a required bone that did
+        // not bind has already been refused above as a profile mismatch.
+        // Handled rather than asserted, because the alternative is a null
+        // dereference if either of those two ever stops being true.
+        return Refuse(std::move(result), ConversionRefusal::ProfileMismatch,
+                      "the profile binds no "
+                          + std::string(motion::HumanBoneName(
+                              motion::HumanBone::Hips))
+                          + ", so the body has no placement");
+    }
+    std::vector<bool> onRootPath(skeleton.joints.size(), false);
+    for (const std::size_t jointIndex : *rootPath) {
+        onRootPath[jointIndex] = true;
+    }
+
+    // The local translation a joint has at `frame`, in the source's own terms:
+    // the sample where its track states one, and the rest translation where it
+    // does not -- a joint on the root path with no translation channel still
+    // displaces its child by its own offset. `rootPolicy` says whether this
+    // joint's samples are subject to the profile's root translation policy,
+    // which only the root path's are; `rest-relative` samples are displacements
+    // from the rest rather than positions, so the rest is added back. The two
+    // policies differ in where their zero is and in nothing else.
+    //
+    // A track is either empty or exactly `frameCount` long
+    // (`ValidateSourceAnimation`), so the bounds check here is the same
+    // question as `HasTranslation()` and is written as the one that cannot be
+    // wrong.
+    const bool restRelative =
+        profile.rootTranslation == RootTranslationPolicy::RestRelative;
+    const auto localTranslation = [&](std::size_t joint, std::size_t frame,
+                                      bool rootPolicy) -> SourceVec3 {
+        const SourceJointTrack& track = animation.tracks[joint];
+        const SourceVec3& rest = skeleton.joints[joint].restTranslation;
+        if (frame >= track.translations.size()) {
+            return rest;
+        }
+        const SourceVec3& sample = track.translations[frame];
+        if (!rootPolicy || !restRelative) {
+            return sample;
+        }
+        return SourceVec3{rest.x + sample.x, rest.y + sample.y,
+                          rest.z + sample.z};
+    };
+
     // --- the rest pose -----------------------------------------------------
     //
     // Which rotations are the rest is the profile's answer; composing them is
@@ -405,10 +475,25 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
         restRotations[kRootJoint] = Identity();
     }
 
+    // A rest taken from the first frame is taken from the first frame entirely
+    // (MOTION_CONTRACT.md). Rotations from frame 0 and translations from the
+    // rest offsets is one rest assembled out of two poses -- invisible while a
+    // producer's offsets *are* its rest, and a producer whose offsets are its
+    // rest does not choose `first-frame`. The setting exists for the export
+    // whose offsets compose into no figure at all, and that is exactly the
+    // export for which the mixture is wrong: its root offset can be where the
+    // capture volume happened to put the performer.
+    const bool restFromFirstFrame =
+        profile.restPose == RestPoseSource::FirstFrame
+        && animation.frameCount > 0;
     std::vector<pxr::GfVec3f> restOffsets;
     restOffsets.reserve(skeleton.joints.size());
-    for (const SourceJoint& joint : skeleton.joints) {
-        restOffsets.push_back(ConvertPosition(*basis, joint.restTranslation));
+    for (std::size_t index = 0; index < skeleton.joints.size(); ++index) {
+        restOffsets.push_back(ConvertPosition(
+            *basis,
+            restFromFirstFrame
+                ? localTranslation(index, 0, onRootPath[index])
+                : skeleton.joints[index].restTranslation));
     }
 
     for (const BoundPath& path : paths) {
@@ -431,9 +516,14 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
         if (!track.HasTranslation()) {
             continue;
         }
-        const bool isRoot = index == kRootJoint;
+        // Carried, not dropped, for every joint on the root path: the body's
+        // placement is the composition along it, so a reference node's
+        // translation and the hips' own are both in the clip. Reporting the
+        // second of them as dropped is what this converter did before the path
+        // rule, and it was the honest half of getting that export wrong.
         const bool carried =
-            isRoot && profile.rootTranslation != RootTranslationPolicy::None;
+            onRootPath[index]
+            && profile.rootTranslation != RootTranslationPolicy::None;
         if (carried) {
             continue;
         }
@@ -463,7 +553,15 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
     result.provenance.profileId = profile.id;
     clip.source = CanonicalMetadata(result.provenance);
 
-    const pxr::GfVec3f rootRest = restOffsets[kRootJoint];
+    // Whether the root path says anything about position at all. A path of
+    // joints that all declare rest geometry and no translation channel states
+    // no placement, and a clip that reported one would be claiming the rig sat
+    // at its own offsets rather than admitting the source never said.
+    const bool rootPathTranslates =
+        std::any_of(rootPath->begin(), rootPath->end(),
+                    [&animation](std::size_t jointIndex) {
+                        return animation.tracks[jointIndex].HasTranslation();
+                    });
     std::vector<pxr::GfQuatf> jointRotations(skeleton.joints.size());
     clip.samples.reserve(animation.frameCount);
     for (std::size_t frame = 0; frame < animation.frameCount; ++frame) {
@@ -495,22 +593,26 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
             }
         }
 
-        const SourceJointTrack& rootTrack = animation.tracks[kRootJoint];
+        // The body's placement, composed down the root path. Both translation
+        // policies land on the same canonical thing -- an absolute position in
+        // the clip's own space, which is what `vrmRetarget` subtracts each
+        // rig's own hips rest from -- and `localTranslation` is the only place
+        // they differ. A path of one joint, which is every rig whose root is
+        // its hips, reduces to reading that joint's sample.
+        pxr::GfVec3f position(0.0f);
+        pxr::GfQuatf orientation = Identity();
+        for (const std::size_t jointIndex : *rootPath) {
+            position += orientation.Transform(ConvertPosition(
+                *basis, localTranslation(jointIndex, frame, true)));
+            orientation = orientation * jointRotations[jointIndex];
+        }
         if (profile.rootTranslation != RootTranslationPolicy::None
-            && frame < rootTrack.translations.size()) {
-            pxr::GfVec3f position =
-                ConvertPosition(*basis, rootTrack.translations[frame]);
-            if (profile.rootTranslation == RootTranslationPolicy::RestRelative) {
-                // Both policies land on the same canonical thing -- an absolute
-                // position in the clip's own space -- and this is the only line
-                // that differs between them.
-                position += rootRest;
-            }
+            && rootPathTranslates) {
             pose.root.worldPosition = position;
             pose.root.hasPosition = true;
         }
         if (!dropRootRotation) {
-            pose.root.worldOrientation = jointRotations[kRootJoint];
+            pose.root.worldOrientation = orientation;
             pose.root.hasOrientation = true;
         }
         // `pose.source` stays absent. It cannot vary within a clip, the
