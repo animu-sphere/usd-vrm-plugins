@@ -213,6 +213,21 @@ enum class RestPoseSource : std::uint8_t
     // clips from one dataset are each anchored to their own first frame, so
     // their absolute postures are not comparable to each other.
     FirstFrame,
+    // The source states no rest either, and the producer's rig is an
+    // industry-standard humanoid whose neutral pose is the T-pose. The rest is
+    // built from the canonical T-pose -- arms along the lateral axis, legs
+    // down, spine up, toes forward -- and the rig's *own* bone lengths, which
+    // its rest offsets already carry.
+    //
+    // This is a statement about a rig, not an algorithm in a profile: which
+    // way a T-posed humanoid's bones point is canonical vocabulary, and the
+    // construction belongs to the converter for the same reason the path rule
+    // does. It is what a producer that retargeted its capture onto a published
+    // character rig has, where `first-frame` is what a producer with no stated
+    // rest at all is reduced to -- and the difference matters, because
+    // `first-frame` anchors every clip to a pose that is not neutral and puts
+    // that pose onto the target's rest.
+    TPose,
 
     Count,
 };

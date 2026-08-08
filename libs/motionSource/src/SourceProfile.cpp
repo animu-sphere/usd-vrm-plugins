@@ -161,6 +161,7 @@ constexpr std::array<Term<RestPoseSource>, RestPoseSourceCount>
     {RestPoseSource::RestOffsets, "rest-offsets", {}},
     {RestPoseSource::StatedRestRotations, "stated-rest-rotations", {}},
     {RestPoseSource::FirstFrame, "first-frame", {}},
+    {RestPoseSource::TPose, "t-pose", {}},
 }};
 static_assert(TermsAreInEnumOrder(kRestPoseSources),
               "kRestPoseSources must be in enumerator order");

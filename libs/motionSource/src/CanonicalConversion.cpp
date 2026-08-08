@@ -153,6 +153,91 @@ PathFromNearestBoundAncestor(const SourceSkeleton& skeleton,
     return path;
 }
 
+// Which way the bone *leaving* `bone` points when a humanoid stands in a
+// T-pose, in canonical axes: +Y up, +Z forward, +X the character's left.
+//
+// Canonical vocabulary rather than a producer's answer -- every T-posed
+// humanoid has its arms along the lateral axis and its legs down, which is what
+// makes the pose worth naming. A bone this table has no direction for
+// contributes identity, so a rig carrying fingers or a jaw is not refused; it
+// simply gets no T-pose opinion about them.
+pxr::GfVec3f
+TPoseDirection(motion::HumanBone bone) noexcept
+{
+    const pxr::GfVec3f up(0.0f, 1.0f, 0.0f);
+    const pxr::GfVec3f left(1.0f, 0.0f, 0.0f);
+    const pxr::GfVec3f forward(0.0f, 0.0f, 1.0f);
+    switch (bone) {
+        case motion::HumanBone::Hips:
+        case motion::HumanBone::Spine:
+        case motion::HumanBone::Chest:
+        case motion::HumanBone::UpperChest:
+        case motion::HumanBone::Neck:
+            return up;
+        case motion::HumanBone::LeftShoulder:
+        case motion::HumanBone::LeftUpperArm:
+        case motion::HumanBone::LeftLowerArm:
+            return left;
+        case motion::HumanBone::RightShoulder:
+        case motion::HumanBone::RightUpperArm:
+        case motion::HumanBone::RightLowerArm:
+            return -left;
+        case motion::HumanBone::LeftUpperLeg:
+        case motion::HumanBone::LeftLowerLeg:
+        case motion::HumanBone::RightUpperLeg:
+        case motion::HumanBone::RightLowerLeg:
+            return -up;
+        case motion::HumanBone::LeftFoot:
+        case motion::HumanBone::RightFoot:
+            return forward;
+        // The chain-ending bones. Their own segment still has a direction in a
+        // T-pose -- a skull rises, a hand continues outward, a toe points
+        // ahead -- and stating it is what lets the walk above recognise which
+        // child *continues* a bone when the alternatives leave it sideways. A
+        // rig that ends a chain here simply has no child to aim.
+        case motion::HumanBone::Head:
+            return up;
+        case motion::HumanBone::LeftHand:
+            return left;
+        case motion::HumanBone::RightHand:
+            return -left;
+        case motion::HumanBone::LeftToes:
+        case motion::HumanBone::RightToes:
+            return forward;
+        default:
+            return pxr::GfVec3f(0.0f);
+    }
+}
+
+// The shortest rotation taking `from` to `to`, both unit-length. Shortest
+// rather than any rotation that satisfies the constraint, because the
+// difference between them is a twist about the bone's own axis -- which is
+// exactly the freedom a T-pose does not pin, and which would show up as a
+// forearm or shin rotated about itself while every joint position stayed right.
+pxr::GfQuatf
+ShortestRotation(const pxr::GfVec3f& from, const pxr::GfVec3f& to) noexcept
+{
+    const float dot = pxr::GfDot(from, to);
+    if (dot > 0.999999f) {
+        return Identity();
+    }
+    if (dot < -0.999999f) {
+        // Opposed: any axis perpendicular to `from` is a half turn, and one has
+        // to be chosen. Taking the larger cross product of the two coordinate
+        // axes keeps it away from the degenerate one.
+        pxr::GfVec3f axis = pxr::GfCross(from, pxr::GfVec3f(1.0f, 0.0f, 0.0f));
+        if (axis.GetLength() < 1e-3f) {
+            axis = pxr::GfCross(from, pxr::GfVec3f(0.0f, 1.0f, 0.0f));
+        }
+        axis.Normalize();
+        return pxr::GfQuatf(0.0f, axis);
+    }
+    const pxr::GfVec3f axis = pxr::GfCross(from, to);
+    pxr::GfQuatf out(1.0f + dot, axis);
+    out.Normalize();
+    return out;
+}
+
 SourceConversion
 Refuse(SourceConversion result, ConversionRefusal refusal, std::string detail)
 {
@@ -467,6 +552,106 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
                 restRotations[index] =
                     ConvertRotation(*basis, *skeleton.joints[index].restRotation);
             }
+        }
+    } else if (profile.restPose == RestPoseSource::TPose) {
+        // The rig's neutral is the T-pose, and the file states neither it nor
+        // the joint orientations that would reach it. What it does state is
+        // every bone's *direction in its own parent's frame* -- the rest
+        // offsets -- so the rotation each joint needs is the one carrying that
+        // direction onto the direction a T-posed humanoid's bone points. Both
+        // are known here, and neither comes from the producer: one is the rig's
+        // own geometry and the other is canonical vocabulary.
+        //
+        // Walked root-first so a parent's world rotation is settled before the
+        // child that is stated relative to it. Index order *is* that walk:
+        // `ValidateSourceSkeleton` refuses a joint whose parent does not come
+        // before it, and the match has already run it. Stated because this loop
+        // reads `worldRest[parent]` and would compose against an identity
+        // nobody wrote if that ever stopped being true.
+        std::vector<pxr::GfQuatf> worldRest(skeleton.joints.size(), Identity());
+        std::vector<std::vector<std::size_t>> children(skeleton.joints.size());
+        for (std::size_t index = 0; index < skeleton.joints.size(); ++index) {
+            const int parent = skeleton.joints[index].parent;
+            if (parent >= 0) {
+                children[static_cast<std::size_t>(parent)].push_back(index);
+            }
+        }
+        for (std::size_t index = 0; index < skeleton.joints.size(); ++index) {
+            const int parent = skeleton.joints[index].parent;
+            const pxr::GfQuatf inherited =
+                parent >= 0 ? worldRest[static_cast<std::size_t>(parent)]
+                            : Identity();
+            worldRest[index] = inherited;
+
+            // A root whose rotation the profile drops is dropped here too, and
+            // it has to be dropped *inside* this walk rather than after it.
+            // Forcing the root's local rest to identity below, once every
+            // descendant had been stated relative to a root that was not
+            // identity, would turn each of them by whatever the aim had put
+            // there -- a rest that is no longer the T-pose it just built, for a
+            // profile pairing `t-pose` with `rotation: none`, which is a pair
+            // nothing forbids.
+            if (index == kRootJoint && dropRootRotation) {
+                continue;
+            }
+
+            const pxr::GfVec3f wanted =
+                boneForJoint[index] != motion::HumanBone::Count
+                    ? TPoseDirection(boneForJoint[index])
+                    : pxr::GfVec3f(0.0f);
+            if (wanted == pxr::GfVec3f(0.0f) || children[index].empty()) {
+                continue;
+            }
+            // Which child continues *this* bone. A hips joint parents the spine
+            // and both legs, and only one of the three is the bone that points
+            // the way the hips do; picking the first child would put the whole
+            // torso down a leg. The one whose own bone agrees on direction is
+            // that child, and a joint with a single child has no such question
+            // to answer.
+            std::size_t follower = children[index].front();
+            if (children[index].size() > 1) {
+                bool found = false;
+                for (const std::size_t child : children[index]) {
+                    const motion::HumanBone bone = boneForJoint[child];
+                    if (bone != motion::HumanBone::Count
+                        && TPoseDirection(bone) == wanted) {
+                        follower = child;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    continue;
+                }
+            }
+            pxr::GfVec3f along = ConvertPosition(
+                *basis, skeleton.joints[follower].restTranslation);
+            if (along.GetLength() < 1e-9f) {
+                continue;
+            }
+            along.Normalize();
+
+            // The offsets pin which way each bone *points* and say nothing
+            // about its roll around itself, and a rig's bind carries a roll per
+            // joint that the format never states. Choosing one -- the shortest
+            // rotation, say -- gets the skeleton's positions exactly right and
+            // its frames wrong, which reads as a limb twisted about its own
+            // axis while every joint sits where it should.
+            //
+            // So the roll comes from the file and only the aim comes from the
+            // T-pose: start at the joint's orientation in the first frame, and
+            // turn it by the least that brings its bone onto the T-pose
+            // direction. A frame of motion is a poor rest and a fine roll --
+            // the direction it disagrees about is exactly the part being
+            // replaced here.
+            const pxr::GfQuatf posed =
+                animation.frameCount > 0
+                    ? inherited * ConvertRotation(
+                          *basis, SourceRotationAt(animation.tracks[index], 0))
+                    : inherited;
+            const pxr::GfVec3f aimed = posed.Transform(along);
+            worldRest[index] = ShortestRotation(aimed, wanted) * posed;
+            restRotations[index] = inherited.GetInverse() * worldRest[index];
         }
     } else if (profile.restPose == RestPoseSource::FirstFrame
                && animation.frameCount > 0) {
