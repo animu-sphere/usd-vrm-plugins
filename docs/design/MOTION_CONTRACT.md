@@ -499,6 +499,51 @@ comparable to each other. A source that genuinely states a rest says so with
 `rest-offsets` or `stated-rest-rotations`, and neither is affected by any of
 this.
 
+**`first-frame` is not good enough to bake onto an avatar, and `t-pose` is what
+a producer with a real rig gets instead** (v0.7.0, from the first bake onto a
+real VRM). The limitation above is worse in practice than it reads: mapping the
+source's frame 0 onto the target's rest means the avatar never leaves its own
+rest pose's neighbourhood. A T-posed avatar driven by a walk whose arms hang at
+its sides walks with its arms held straight out, and the leg that happened to be
+bent in frame 0 carries that bend as a permanent offset while the straight one
+looks correct. Nothing is wrong with any individual rotation; the reference is
+wrong, and every frame inherits it.
+
+`restPose: t-pose` says the rig's neutral **is** the canonical T-pose — arms
+along the lateral axis, legs down, spine up, toes forward. It is the value for a
+producer that retargeted its capture onto a published character rig, which is
+common enough to be worth a word: the rest exists, the format simply has nowhere
+to write it. The rest is then built from the canonical T-pose directions and the
+rig's **own bone lengths**, which its rest offsets already carry, so nothing
+about the character the producer used enters this repository.
+
+**The offsets pin direction and not roll, and that gap is filled from the first
+frame.** A bone direction leaves the rotation *about* that bone free, and a
+rig's bind carries a roll per joint that BVH never states. Choosing one — the
+shortest rotation, say — puts every joint in exactly the right place and every
+frame in the wrong one, which reads as a limb twisted about its own axis rather
+than as a failure. So each joint starts at its orientation in frame 0 and is
+turned by the least that brings its bone onto the T-pose direction: the aim
+comes from the canonical pose and the roll comes from the file.
+
+**A root the profile has silenced cannot aim anything.** `t-pose` turns each
+joint to face the way a T-posed humanoid's bone does, and
+`RootRotationPolicy::None` says the rig's root joint states no body rotation, so
+on a rig whose root *is* its hips the two meet: the bone below an identity root
+goes wherever the rig's offsets send it and the body is not stood up. That is
+the profile being obeyed rather than a gap — a root whose rotation says nothing
+about the body cannot be the joint that orients it — and it does not arise for
+the shape the pair is normally written for, a reference node *above* the hips,
+which carries no bone and was never going to aim one.
+
+That makes `t-pose` a statement about a rig **plus one reading of one frame**,
+which is weaker than the name suggests and is stated here rather than discovered
+later. What it costs is bounded in a way `first-frame` is not: the part frame 0
+is wrong about is exactly the part being replaced, and a clip whose first frame
+holds a limb rolled unusually about its own axis inherits that roll. What
+recovers the last of it is a rest a profile could state outright, which is a
+vocabulary this does not add.
+
 `motionSource::CanonicalRestPose` carries a local rotation and a local
 translation per bone plus a presence bitset, and **no parent array**: the
 semantic parent of a bone within a rig carrying `present` is
