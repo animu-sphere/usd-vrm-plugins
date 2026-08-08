@@ -671,6 +671,25 @@ depends on them ([docs/README.md](../README.md)).
   measure motion away from. The limitation that follows is written down rather
   than discovered — two clips from one dataset are each anchored to their own
   first frame.
+- ✅ **A first-frame rest does not survive contact with a real avatar, and the
+  second producer's rig has a real one** (raised, decided and implemented
+  2026-08-05, by baking onto a VRM). `first-frame` maps the source's frame 0
+  onto the target's rest, so the avatar never leaves its own rest pose's
+  neighbourhood: a T-posed avatar walked with a clip whose arms hang at its
+  sides holds its arms straight out for the whole clip, and the leg bent 40° in
+  frame 0 carries that bend forever while the straight one looks right. Both
+  were visible on the first bake and the asymmetry is what identified the cause.
+  The fix is not a better default — it is that **this producer's rest exists**.
+  Its own paper says the capture was retargeted to the proportions of a
+  published character model, and the six bone lengths that claim implies agree
+  with the export's own offsets to five significant figures, so the rig is that
+  rig and its neutral is a T-pose. `restPose: t-pose` says exactly that, and the
+  rest is built from canonical T-pose directions and the rig's *own* offsets —
+  no number from that character model enters this repository, which matters
+  because its licence forbids redistribution outright.
+  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#recorded-source-rest-pose-and-the-path-rule-v070)
+  carries the one weakness: offsets pin a bone's direction and not its roll, so
+  the roll is taken from frame 0 and only the aim from the canonical pose.
 - 🚧 **Profiles need a packaging answer.** They are data that must reach an
   artifact-only smoke test, so `share/usd-vrm-plugins/profiles/motion/` is named
   in WORKSPACE.md §5. **The plain-CMake half is done and measured**
