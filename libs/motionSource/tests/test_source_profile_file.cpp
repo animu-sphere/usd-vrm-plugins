@@ -392,8 +392,12 @@ TestUnknownVocabulary()
             10, "meters, centimeters, millimeters, inches");
     Refuses(With("  translation: absolute-position", "  translation: root-motion"),
             14, "absolute-position, rest-relative, none");
-    Refuses(With("restPose: rest-offsets", "restPose: t-pose"), 17,
-            "rest-offsets, stated-rest-rotations, first-frame");
+    // `a-pose` rather than `t-pose`: this case wants a word that is plausible
+    // and absent, and `t-pose` stopped being absent when a producer whose rig
+    // has one arrived. A near-miss is the point -- a refusal that only caught
+    // nonsense would not catch the profile somebody nearly wrote.
+    Refuses(With("restPose: rest-offsets", "restPose: a-pose"), 17,
+            "rest-offsets, stated-rest-rotations, first-frame, t-pose");
     Refuses(With("unmappedJoints: report", "unmappedJoints: warn"), 18,
             "ignore, report, refuse");
 
