@@ -41,7 +41,14 @@ reaching a **rig** still is: that is Motion Phase G.
 **Live**
 
 - [ ] a mocopi device drives the pipeline **natively** over UDP, through
-      `vrmAdapterMocopi`;
+      `vrmAdapterMocopi` — *the adapter exists as of 2026-08-09: its identity,
+      its two edges, the nine frozen diagnostics and the recorded packet format,
+      with no decoder. What that commit settled is the order of the rest, and it
+      is not the order it looked like: the wire format is undocumented (the
+      vendor publishes the transport, Apache-2.0 source, and a `BVH Sender`),
+      so the corpus precedes the decoder — and `BVH Sender` can produce one from
+      a `.bvh` this repository wrote, with no device at all
+      ([Milestone D](adapters-mocopi-vmc-ardy.md))*;
 - [ ] recorded packet fixtures decode deterministically with no socket, and a
       loopback test proves the socket path agrees with them;
 - [ ] tracking loss, recovery, and source restart are recorded rather than
@@ -281,7 +288,11 @@ trace. They do not yet reach a **rig**, which is what #88 is actually about:
   still reports "valid". Until
   [report 34](../reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md)
   is answered, the per-adapter binary link check is the enforcement — and
-  `vrmAdapterMocopi` will need its own from the first commit.
+  `vrmAdapterMocopi` landed with its own in its first commit (2026-08-09). That
+  commit also measured the gap rather than restating it: the gate reports the
+  same `6 libraries, 9 library edge(s), valid` with the new adapter present and
+  absent, so a second adapter is discovered as nothing exactly as the first one
+  is.
 - ⬜ **An adapter cannot be packaged separately.** `ost` 0.21.0 has no
   per-library packaging command, and adapters are deliberately not part of the
   aggregate product ([WORKSPACE.md §5](../architecture/WORKSPACE.md)). This does
