@@ -29,7 +29,9 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace
@@ -832,6 +834,158 @@ TestARootPathStatingNoTranslationHasNoPlacement()
     assert(result.animation.samples[0].root.hasOrientation);
 }
 
+// A rig whose offsets all run down their own bones, which is what an export
+// retargeted onto a character rig looks like: composed at identity it is not a
+// figure at all, so `rest-offsets` describes nothing and `t-pose` is what says
+// what its neutral is.
+//
+// `reference` -> `root`(hips) -> `back`(spine) -> `crown`(head), and an arm off
+// `back`: `wing`(leftShoulder) -> `limb`(leftUpperArm) -> `tip`(leftHand). Every
+// offset is +X in its own parent's frame, and the arm is what makes the test
+// mean something -- a spine and an arm that agree in the source and must
+// disagree by ninety degrees in the rest.
+SourceSkeleton
+BoneLocalSkeleton()
+{
+    SourceSkeleton skeleton;
+    const auto joint = [](const char* name, int parent, float length) {
+        SourceJoint out;
+        out.name = name;
+        out.parent = parent;
+        out.restTranslation = Vec(length, 0.0f, 0.0f);
+        return out;
+    };
+    SourceJoint reference = joint("reference", -1, 0.0f);
+    reference.restTranslation = Vec(0.0f, 90.0f, 0.0f);
+    skeleton.joints = {reference,
+                       joint("root", 0, 0.0f),
+                       joint("back", 1, 20.0f),
+                       joint("crown", 2, 30.0f),
+                       joint("wing", 2, 10.0f),
+                       joint("limb", 4, 5.0f),
+                       joint("tip", 5, 25.0f)};
+    return skeleton;
+}
+
+SourceProfile
+BoneLocalProfile()
+{
+    SourceProfile profile = BaseProfile();
+    profile.rootJoint = "reference";
+    profile.restPose = RestPoseSource::TPose;
+    profile.joints = {
+        SourceJointMapping{"root", motion::HumanBone::Hips, true},
+        SourceJointMapping{"back", motion::HumanBone::Spine, true},
+        SourceJointMapping{"crown", motion::HumanBone::Head, true},
+        SourceJointMapping{"wing", motion::HumanBone::LeftShoulder, true},
+        SourceJointMapping{"limb", motion::HumanBone::LeftUpperArm, true},
+        SourceJointMapping{"tip", motion::HumanBone::LeftHand, true},
+    };
+    profile.ignoredJoints = {"reference"};
+    return profile;
+}
+
+SourceAnimation
+BoneLocalAnimation()
+{
+    SourceAnimation animation;
+    animation.frameCount = 2;
+    animation.frameTime = 0.5;
+    animation.provenance.format = "example";
+    animation.provenance.sourceId = "capture.example";
+    animation.tracks.assign(
+        7, RotationTrack({Angles(0.0f, 0.0f, 0.0f), Angles(0.0f, 0.0f, 0.0f)}));
+    animation.tracks[0].translations = {Vec(0.0f, 90.0f, 0.0f),
+                                        Vec(0.0f, 90.0f, 0.0f)};
+    return animation;
+}
+
+// The world rest of a bone, walked up the canonical humanoid. `CanonicalRestPose`
+// states each bone from its nearest *present* ancestor, so this is the same walk
+// its consumers make and not a shortcut past one.
+std::pair<pxr::GfQuatf, pxr::GfVec3f>
+WorldRest(const motionSource::CanonicalRestPose& rest, motion::HumanBone bone)
+{
+    std::vector<motion::HumanBone> chain;
+    for (std::optional<motion::HumanBone> at = bone; at;
+         at = motion::NearestPresentAncestor(*at, rest.present)) {
+        chain.push_back(*at);
+    }
+    pxr::GfQuatf rotation(1.0f, pxr::GfVec3f(0.0f));
+    pxr::GfVec3f position(0.0f);
+    for (auto step = chain.rbegin(); step != chain.rend(); ++step) {
+        const auto slot = static_cast<std::size_t>(*step);
+        position += rotation.Transform(rest.localTranslations[slot]);
+        rotation = rotation * rest.localRotations[slot];
+    }
+    return {rotation, position};
+}
+
+// `t-pose` is a claim about a rig, and this is the claim: the spine goes up and
+// the arm goes out, from offsets that all point the same way.
+void
+TestTPoseRestStandsTheRigUp()
+{
+    const SourceConversion result = ConvertSourceToCanonical(
+        BoneLocalSkeleton(), BoneLocalAnimation(), BoneLocalProfile());
+    assert(result.Converted());
+
+    const pxr::GfVec3f hips =
+        WorldRest(result.rest, motion::HumanBone::Hips).second;
+    const pxr::GfVec3f spine =
+        WorldRest(result.rest, motion::HumanBone::Spine).second;
+    const pxr::GfVec3f head =
+        WorldRest(result.rest, motion::HumanBone::Head).second;
+    const pxr::GfVec3f hand =
+        WorldRest(result.rest, motion::HumanBone::LeftHand).second;
+
+    // Centimetres in, metres out. The spine sits its own offset above the hips
+    // and the head above that: 0.20 and 0.30 of the rig's own bone lengths,
+    // stacked up the canonical up axis rather than along the source's +X.
+    assert(NearVector(hips, pxr::GfVec3f(0.0f, 0.90f, 0.0f)));
+    assert(NearVector(spine, pxr::GfVec3f(0.0f, 1.10f, 0.0f)));
+    assert(NearVector(head, pxr::GfVec3f(0.0f, 1.40f, 0.0f)));
+
+    // The arm leaves sideways, which is the half of the claim the spine cannot
+    // make. Its shoulder is stated 0.10 along the *spine's* own direction, so
+    // it sits above the spine at 1.20 and the arm goes out from there: 0.05 to
+    // the upper arm and 0.25 to the hand, both along the lateral axis. Under
+    // `rest-offsets` the whole rig instead lies along +X and the hand lands at
+    // (0.60, 0.90, 0), out of the hips and level with the head -- the figure
+    // that is not one.
+    assert(NearVector(hand, pxr::GfVec3f(0.30f, 1.20f, 0.0f)));
+
+    // And the same rig read the other way, so the claim is checked rather than
+    // described: `rest-offsets` takes the offsets at their word, every joint
+    // stacks along +X, and the whole body lies down one axis. A conversion that
+    // produced this and a retarget that trusted it would place an avatar's
+    // every bone by a rest that is not a pose.
+    SourceProfile offsets = BoneLocalProfile();
+    offsets.restPose = RestPoseSource::RestOffsets;
+    const SourceConversion flat = ConvertSourceToCanonical(
+        BoneLocalSkeleton(), BoneLocalAnimation(), offsets);
+    assert(flat.Converted());
+    assert(NearVector(WorldRest(flat.rest, motion::HumanBone::Head).second,
+                      pxr::GfVec3f(0.50f, 0.90f, 0.0f)));
+    assert(NearVector(WorldRest(flat.rest, motion::HumanBone::LeftHand).second,
+                      pxr::GfVec3f(0.60f, 0.90f, 0.0f)));
+}
+
+// The rig's own lengths, never a canonical skeleton's. A T-pose says which way
+// the bones point and has no opinion about how long they are, and a rest that
+// quietly normalised them would put every producer's clip on one body.
+void
+TestTPoseRestKeepsTheRigsOwnProportions()
+{
+    SourceSkeleton skeleton = BoneLocalSkeleton();
+    skeleton.joints[3].restTranslation = Vec(45.0f, 0.0f, 0.0f); // a long neck
+    const SourceConversion result = ConvertSourceToCanonical(
+        skeleton, BoneLocalAnimation(), BoneLocalProfile());
+    assert(result.Converted());
+    assert(NearVector(WorldRest(result.rest, motion::HumanBone::Head).second,
+                      pxr::GfVec3f(0.0f, 1.55f, 0.0f)));
+}
+
 // A rig that restates its rest geometry every frame loses nothing; one whose
 // joint actually translates loses motion. Reporting both with one word would
 // hide the second inside the first.
@@ -1001,6 +1155,8 @@ main()
     TestRestFromFirstFrameTakesTranslationsToo();
     TestRootPathTranslationIsCarriedNotDropped();
     TestARootPathStatingNoTranslationHasNoPlacement();
+    TestTPoseRestStandsTheRigUp();
+    TestTPoseRestKeepsTheRigsOwnProportions();
     TestTranslationReportSeparatesLossFromNoise();
     TestTiming();
     TestProvenance();
