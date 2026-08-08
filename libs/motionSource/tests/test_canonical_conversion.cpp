@@ -885,6 +885,46 @@ BoneLocalProfile()
     return profile;
 }
 
+// The same bone-local rig with no reference node above it: the hips *are* joint
+// 0. That is the only shape where the T-pose aim lands on the root itself, and
+// therefore the only one where aiming it and dropping its rotation can disagree.
+SourceSkeleton
+HipsRootedSkeleton()
+{
+    SourceSkeleton skeleton = BoneLocalSkeleton();
+    skeleton.joints.erase(skeleton.joints.begin());
+    skeleton.joints[0].parent = -1;
+    skeleton.joints[0].restTranslation = Vec(0.0f, 90.0f, 0.0f);
+    for (std::size_t index = 1; index < skeleton.joints.size(); ++index) {
+        skeleton.joints[index].parent -= 1;
+    }
+    return skeleton;
+}
+
+SourceProfile
+HipsRootedProfile()
+{
+    SourceProfile profile = BoneLocalProfile();
+    profile.rootJoint = "root";
+    profile.ignoredJoints = {};
+    return profile;
+}
+
+SourceAnimation
+HipsRootedAnimation()
+{
+    SourceAnimation animation;
+    animation.frameCount = 2;
+    animation.frameTime = 0.5;
+    animation.provenance.format = "example";
+    animation.provenance.sourceId = "capture.example";
+    animation.tracks.assign(
+        6, RotationTrack({Angles(0.0f, 0.0f, 0.0f), Angles(0.0f, 0.0f, 0.0f)}));
+    animation.tracks[0].translations = {Vec(0.0f, 90.0f, 0.0f),
+                                        Vec(0.0f, 90.0f, 0.0f)};
+    return animation;
+}
+
 SourceAnimation
 BoneLocalAnimation()
 {
@@ -969,6 +1009,43 @@ TestTPoseRestStandsTheRigUp()
                       pxr::GfVec3f(0.50f, 0.90f, 0.0f)));
     assert(NearVector(WorldRest(flat.rest, motion::HumanBone::LeftHand).second,
                       pxr::GfVec3f(0.60f, 0.90f, 0.0f)));
+}
+
+// `t-pose` and a dropped root rotation meet in one place, and only on a rig
+// whose root carries a bone: the aim lands on the root itself, and dropping the
+// root's rotation *after* the walk that stated every descendant relative to it
+// leaves each of them turned by an aim that no longer exists. The body then
+// lies down an axis while the profile reads as perfectly ordinary.
+//
+// Nothing forbids the pair, so it is dropped inside the walk instead. What that
+// costs is honest and is not hidden: a root the profile has silenced cannot aim
+// anything, so the first bone below it goes where the identity frame sends it
+// and the rig is not stood up. That is the profile's statement being obeyed --
+// a root whose rotation says nothing about the body cannot be the joint that
+// orients it.
+void
+TestTPoseRestObeysADroppedRootRotation()
+{
+    SourceProfile profile = HipsRootedProfile();
+    profile.rootRotation = RootRotationPolicy::None;
+    const SourceConversion result = ConvertSourceToCanonical(
+        HipsRootedSkeleton(), HipsRootedAnimation(), profile);
+    assert(result.Converted());
+
+    // The spine leaves the silenced hips along the rig's own +X and only then
+    // is the chain aimed: 0.20 out, 0.30 up. Built the other way round -- the
+    // root aimed and then erased -- the head lands at (0.50, 0.90, 0), flat
+    // along the axis the offsets happen to use.
+    assert(NearVector(WorldRest(result.rest, motion::HumanBone::Head).second,
+                      pxr::GfVec3f(0.20f, 1.20f, 0.0f)));
+
+    // And with the rotation kept, the same rig stands all the way up, which is
+    // what says the difference above is the policy and not the construction.
+    const SourceConversion kept = ConvertSourceToCanonical(
+        HipsRootedSkeleton(), HipsRootedAnimation(), HipsRootedProfile());
+    assert(kept.Converted());
+    assert(NearVector(WorldRest(kept.rest, motion::HumanBone::Head).second,
+                      pxr::GfVec3f(0.0f, 1.40f, 0.0f)));
 }
 
 // The rig's own lengths, never a canonical skeleton's. A T-pose says which way
@@ -1156,6 +1233,7 @@ main()
     TestRootPathTranslationIsCarriedNotDropped();
     TestARootPathStatingNoTranslationHasNoPlacement();
     TestTPoseRestStandsTheRigUp();
+    TestTPoseRestObeysADroppedRootRotation();
     TestTPoseRestKeepsTheRigsOwnProportions();
     TestTranslationReportSeparatesLossFromNoise();
     TestTiming();

@@ -563,7 +563,11 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
         // own geometry and the other is canonical vocabulary.
         //
         // Walked root-first so a parent's world rotation is settled before the
-        // child that is stated relative to it.
+        // child that is stated relative to it. Index order *is* that walk:
+        // `ValidateSourceSkeleton` refuses a joint whose parent does not come
+        // before it, and the match has already run it. Stated because this loop
+        // reads `worldRest[parent]` and would compose against an identity
+        // nobody wrote if that ever stopped being true.
         std::vector<pxr::GfQuatf> worldRest(skeleton.joints.size(), Identity());
         std::vector<std::vector<std::size_t>> children(skeleton.joints.size());
         for (std::size_t index = 0; index < skeleton.joints.size(); ++index) {
@@ -578,6 +582,18 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
                 parent >= 0 ? worldRest[static_cast<std::size_t>(parent)]
                             : Identity();
             worldRest[index] = inherited;
+
+            // A root whose rotation the profile drops is dropped here too, and
+            // it has to be dropped *inside* this walk rather than after it.
+            // Forcing the root's local rest to identity below, once every
+            // descendant had been stated relative to a root that was not
+            // identity, would turn each of them by whatever the aim had put
+            // there -- a rest that is no longer the T-pose it just built, for a
+            // profile pairing `t-pose` with `rotation: none`, which is a pair
+            // nothing forbids.
+            if (index == kRootJoint && dropRootRotation) {
+                continue;
+            }
 
             const pxr::GfVec3f wanted =
                 boneForJoint[index] != motion::HumanBone::Count
