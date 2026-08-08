@@ -676,9 +676,11 @@ depends on them ([docs/README.md](../README.md)).
   2026-08-05, by baking onto a VRM). `first-frame` maps the source's frame 0
   onto the target's rest, so the avatar never leaves its own rest pose's
   neighbourhood: a T-posed avatar walked with a clip whose arms hang at its
-  sides holds its arms straight out for the whole clip, and the leg bent 40° in
-  frame 0 carries that bend forever while the straight one looks right. Both
-  were visible on the first bake and the asymmetry is what identified the cause.
+  sides holds its arms straight out for the whole clip, and the leg frame 0
+  caught mid-stride carries that bend forever while the other looks right. Both
+  were visible on the first bake, and the asymmetry is what identified the
+  cause: 122.5° at one knee against 162.4° at the other, so the 40° between
+  them became a permanent offset on one leg and nothing on the other.
   The fix is not a better default — it is that **this producer's rest exists**.
   Its own paper says the capture was retargeted to the proportions of a
   published character model, and the six bone lengths that claim implies agree
