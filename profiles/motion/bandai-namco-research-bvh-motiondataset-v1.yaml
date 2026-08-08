@@ -54,21 +54,34 @@ root:
   translation: absolute-position
   rotation: body-orientation
 
-# The one value available, and the reason is worth stating because
-# `rest-offsets` would be the obvious choice and produces nothing resembling a
-# body. Every offset in this rig runs along +X down its own bone -- Spine
+# `rest-offsets` is the obvious choice and produces nothing resembling a body:
+# every offset in this rig runs along +X down its own bone -- Spine
 # (15.7357, 0, 0), Neck (16.3773, 0, 0), LowerLeg_L (39.0811, 0, 0) -- so
 # composed at identity the spine and both legs go the same way. The joint
-# orientations that reconcile them are inside the rotation channels, which
-# leaves the rest unrecoverable from the rest translations. The format states no
-# rest rotation either, so `stated-rest-rotations` describes nothing here.
+# orientations that reconcile them live in the rotation channels, and the format
+# states no rest rotation either, so `stated-rest-rotations` describes nothing
+# here. The rest is simply not in the file.
 #
-# What `first-frame` costs is real and is not hidden: each clip is anchored to
-# its own first frame, which for a walk is mid-stride rather than neutral, so
-# two clips from this dataset are not comparable to each other in absolute
-# posture. What it buys is that motion *away* from that frame is right, which is
-# what a retarget uses.
-restPose: first-frame
+# It is not lost, though, and that is why this is `t-pose` rather than
+# `first-frame`. The dataset's own paper says the capture was retargeted to the
+# proportions of a published character model, and that claim checks out against
+# this export's own numbers: six bone lengths taken from that model agree with
+# this rig's own offsets to five significant figures -- three of them are
+# quoted above and the rest are in the file. So the rig is a standard
+# humanoid with a real neutral, and its neutral is a T-pose.
+#
+# Nothing about that model is needed to say so. `t-pose` names a pose the
+# canonical humanoid already defines, and the rest is built from those
+# directions and the lengths this file itself states.
+#
+# `first-frame` was tried first and is wrong here in a way worth recording,
+# because it looks reasonable on paper: it maps this clip's frame 0 onto the
+# target's rest, so an avatar in a T-pose walks with its arms held straight out
+# for the whole clip, and the leg that frame 0 caught mid-stride keeps that
+# bend forever -- its knee is 40 degrees more bent than the other one there,
+# so one leg looks right and one does not. Nothing is wrong with any single rotation -- the reference is,
+# and every frame inherits it.
+restPose: t-pose
 
 # Every joint this export carries is either mapped or listed below, so a rig
 # carrying one that is neither is not this export.
