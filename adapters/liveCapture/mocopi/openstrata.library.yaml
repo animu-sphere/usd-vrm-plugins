@@ -1,0 +1,29 @@
+# OpenStrata plain-library descriptor. vrmAdapterMocopi is the second live input
+# leaf: it decodes one capture product's *native* UDP packets into canonical
+# motion values and stops there.
+#
+# A library, not a plugin bundle, and deliberately so -- it registers nothing
+# with OpenUSD and has no plugInfo.json (WORKSPACE.md §1). The two edges below
+# are the only ones it is allowed (WORKSPACE.md §2), and the sibling adapter is
+# emphatically not a third: a native decoder that reached `vrmAdapterVmc` would
+# inherit a relay's assumptions about framing, clocks and bone names, which is
+# the one thing this adapter exists to avoid (adapter plan §2.1). The two are
+# siblings, never a stack.
+#
+# This library is *outside* the aggregate product, unlike motionSource and
+# motionBvh, because it carries a producer's name in the library itself and not
+# only in data beside it (WORKSPACE.md §5).
+schema: openstrata.library/v1alpha1
+library:
+  id: vrmAdapterMocopi
+  # Mirrors VERSION; release preparation updates this in lockstep.
+  version: 0.6.0
+requires:
+  libraries:
+    - id: motionCore
+      version: ">=0.5,<0.6"
+    - id: motionRuntime
+      version: ">=0.5,<0.6"
+cmake:
+  package: vrmAdapterMocopi
+  target: vrmAdapterMocopi::vrmAdapterMocopi
