@@ -619,7 +619,7 @@ here too because the comparison belongs to neither plan alone.
 | A — VMC decoding | v0.6.0 | shipped |
 | B — VMC live receipt | v0.6.0 code, v0.7.0 evidence | the socket, the tool, and the corpus shipped; what a real sender does is v0.7.0 |
 | C — capture integration and offline E2E | v0.7.0 | 🚧 |
-| D — the mocopi native adapter | v0.7.0 | ⬜ |
+| D — the mocopi native adapter | v0.7.0 | 🚧 |
 | E — the generator contract | unscheduled | ⬜ |
 | F — the generation adapter | unscheduled | ⬜ |
 
@@ -1066,7 +1066,7 @@ in this repository was generated until now, and a generated `sourceId` is
 `walk-01`. The header takes the rest of the line since, and what no
 line-oriented format can carry is refused before the first byte.
 
-### Milestone D — the mocopi native live adapter ⬜ (v0.7.0)
+### Milestone D — the mocopi native live adapter 🚧 (v0.7.0)
 
 `adapters/liveCapture/mocopi` scaffold · packet-capture fixture format · packet
 decoder · joint mapping · coordinate conversion · tracking state and confidence ·
@@ -1077,6 +1077,52 @@ Same build order as Milestone A, for the same reason: recorded decoder → mappi
 → live-source bridge → thin receiver. The transport arrives last so every layer
 below it is testable from committed bytes, and the device is needed for
 recording sessions rather than for running tests.
+
+- ✅ **Scaffold, diagnostics, and the recorded packet format** (2026-08-09).
+  `adapters/liveCapture/mocopi` is a plain static library with the two edges
+  WORKSPACE.md §2 permits, the nine `VRM_MOCOPI_*` codes as a table tested
+  against the spelling and the order §8 lists them in, and
+  `mocopi-packet-capture` v1. Three CTest names, all green, and the boundary
+  check is measured rather than assumed: it fails on the sibling adapter named
+  in `src/`, on a stage API in `include/`, on a forbidden
+  `target_link_libraries` entry, and on being pointed at the static archive.
+  The library standalone-configures and builds against an installed prefix, and
+  the workspace graph gate reports the **same** `6 libraries, 9 library edge(s),
+  valid` with the directory present and absent — an adapter is still discovered
+  as nothing (report 34), so that boundary script is the only enforcement there
+  is.
+- ⬜ **The packet decoder, and the corpus that has to precede it.** Deliberately
+  not in the commit above, because of what the format's documentation turns out
+  to be.
+
+**The wire format is not documented, and the evidence path is a sender rather
+than a device** (established 2026-08-09). The vendor states the transport and
+stops: UDP, port 12351 by default, IPv4 only (`localhost` and IPv6 unsupported),
+unencrypted because the product assumes a local network. There is no prose
+specification of the packet structure anywhere in that documentation. What is
+published instead is Apache-2.0 **source** — a serialization library and a set of
+receiver plugins — and a **`BVH Sender`** application that transmits a BVH file
+over the same UDP format.
+
+That last one changes the order of this milestone, and for the better. A decoder
+written from a remembered format is the BVH-0 failure mode with worse
+consequences — a misread BVH makes a visibly broken figure, a field read at the
+wrong offset makes plausible numbers — so the corpus has to arrive first. And
+`BVH Sender` produces one **with no device at all**: pointed at a `.bvh` this
+repository wrote (`libs/motionBvh/tests/corpus/generated/`), it yields a capture
+whose *encoding* is the vendor's and whose *content* is ours. That is a fixture
+this project may commit and public CI may run, which is not true of a session
+recorded off a phone with somebody's motion in it. The device is then needed for
+what only a device can give — tracking loss, sensor state, reconnection, and the
+cross-source comparison of §9.6 — rather than for the decoder.
+
+The generated/recorded split of §9.2 holds either way, and this puts a third
+thing in it worth naming: a `BVH Sender` capture is neither. Its bytes are
+genuinely the vendor's protocol, so it is not *generated* in the sense the VMC
+corpus is; its motion never met a sensor, so it is not *recorded* evidence
+either. It belongs in `generated/` with its provenance saying exactly what
+produced it, because what it can be surprised by is the protocol and not the
+device.
 
 Two things this milestone does **not** get to do, and they are worth naming
 because a native adapter is exactly where the temptation appears. It does not
