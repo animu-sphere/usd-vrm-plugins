@@ -66,7 +66,8 @@ root:
 # `first-frame`. The dataset's own paper says the capture was retargeted to the
 # proportions of a published character model, and that claim checks out against
 # this export's own numbers: six bone lengths taken from that model agree with
-# the offsets above to five significant figures. So the rig is a standard
+# this rig's own offsets to five significant figures -- three of them are
+# quoted above and the rest are in the file. So the rig is a standard
 # humanoid with a real neutral, and its neutral is a T-pose.
 #
 # Nothing about that model is needed to say so. `t-pose` names a pose the
@@ -76,8 +77,9 @@ root:
 # `first-frame` was tried first and is wrong here in a way worth recording,
 # because it looks reasonable on paper: it maps this clip's frame 0 onto the
 # target's rest, so an avatar in a T-pose walks with its arms held straight out
-# for the whole clip and the leg that was bent 40 degrees in frame 0 keeps that
-# bend forever. Nothing is wrong with any single rotation -- the reference is,
+# for the whole clip, and the leg that frame 0 caught mid-stride keeps that
+# bend forever -- its knee is 40 degrees more bent than the other one there,
+# so one leg looks right and one does not. Nothing is wrong with any single rotation -- the reference is,
 # and every frame inherits it.
 restPose: t-pose
 
