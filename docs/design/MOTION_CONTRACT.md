@@ -526,6 +526,16 @@ than as a failure. So each joint starts at its orientation in frame 0 and is
 turned by the least that brings its bone onto the T-pose direction: the aim
 comes from the canonical pose and the roll comes from the file.
 
+**A root the profile has silenced cannot aim anything.** `t-pose` turns each
+joint to face the way a T-posed humanoid's bone does, and
+`RootRotationPolicy::None` says the rig's root joint states no body rotation, so
+on a rig whose root *is* its hips the two meet: the bone below an identity root
+goes wherever the rig's offsets send it and the body is not stood up. That is
+the profile being obeyed rather than a gap — a root whose rotation says nothing
+about the body cannot be the joint that orients it — and it does not arise for
+the shape the pair is normally written for, a reference node *above* the hips,
+which carries no bone and was never going to aim one.
+
 That makes `t-pose` a statement about a rig **plus one reading of one frame**,
 which is weaker than the name suggests and is stated here rather than discovered
 later. What it costs is bounded in a way `first-frame` is not: the part frame 0
