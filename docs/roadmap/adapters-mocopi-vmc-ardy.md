@@ -353,7 +353,9 @@ relay-shaped assumption is exactly what a native decoder must not inherit.
 | `MocopiPacketDecoder` | packet syntax, joint and root samples, tracking state, malformed rejection |
 | ↳ shipped as two | `PacketChunk` (the container: lengths and tags, nothing else) and `MotionPacket` (the two packet kinds), split for the reason the sibling splits OSC from VMC — a container has its own malformed-input cases, and a decoder that mixed the two could only be tested end to end. **Tracking state is not in this row's scope after all**: the measured grammar carries no per-joint confidence or state, so there is nothing here to decode into it (Milestone D) |
 | `MocopiSkeletonMap` | source joints → canonical humanoid semantics; unsupported joints ignored, missing bones declared, source-name provenance kept |
+| ↳ shipped as one header with the converter below | `SkeletonMap.h`, the sibling's arrangement, because the two are one question here: a joint id means nothing without the rig that declared it, so the map is *built from a skeleton packet* and validates the topology before it trusts an id. Three things it also owns and the plan did not name: the path composition for the five joints no canonical bone maps, the device's own **rest pose** (a relay sends none), and the hips translation as the body's placement (Milestone D) |
 | `MocopiCoordinateConverter` | handedness, up axis, quaternion convention, translation units, root orientation — **all five measured as of 2026-08-12**: right-handed, +Y up, +Z forward, scalar-last (x, y, z, w), metres, root translation absolute. This component now converts a known basis rather than discovering one (Milestone D) |
+| ↳ and the change of basis is the **identity** | Measured, not omitted: the device's basis and the canonical one are the same one, so nothing is permuted, mirrored or scaled and the only conversion is the quaternion's component order. Named and tested anyway — "nothing is converted" is a claim that can be wrong, and the sibling's answer to the same question is a reflection through X (Milestone D) |
 | `MocopiLiveSource` | pushes decoded frames at `LiveCaptureSource`, sets source metadata |
 
 `MocopiLiveSource` is a bridge. If it acquires buffering, interpolation, or
@@ -1119,8 +1121,8 @@ line-oriented format can carry is refused before the first byte.
 ### Milestone D — the mocopi native live adapter 🚧 (v0.7.0)
 
 ~~`adapters/liveCapture/mocopi` scaffold~~ · ~~packet-capture fixture format~~ ·
-~~thin UDP receiver~~ · ~~packet decoder~~ · joint mapping · coordinate
-conversion · tracking state and confidence · frame assembly ·
+~~thin UDP receiver~~ · ~~packet decoder~~ · ~~joint mapping~~ · ~~coordinate
+conversion~~ · tracking state and confidence · frame assembly ·
 `LiveCaptureSource` bridge · reconnection · opt-in real-device test ·
 **the cross-source comparison of §9.6**
 
@@ -1307,6 +1309,67 @@ original order that was never about the transport.
   motion, and a skeleton packet is a body measurement. So `BVH Sender` is still
   the path to bytes whose *encoding* is the vendor's own, and it is still the only
   thing in the plan that can refute this grammar rather than agree with it.
+
+- ✅ **The joint map and the basis change** (2026-08-12). The first layer in this
+  adapter that knows a `motion::HumanBone` exists, shipped as one header for the
+  reason the sibling ships one: they are a single question here.
+
+  **A bone id is a position, not a name, and that is what shapes the
+  component.** The sibling maps the string `LeftUpperArm`, which means the same
+  thing whoever sent it; a `bnid` means "the twelfth joint of whatever rig this
+  session is sending". So the map is **built from a skeleton packet** and the rig
+  it declares is checked against the measured parent column before any id is
+  trusted — the decoder deliberately validates neither the order nor the count,
+  and this is the layer where that is paid for. A rig that disagrees gets no map;
+  a *longer* rig keeps its measured joints and reports the rest once per session
+  rather than once per frame. The eleven-bone rig in `extended-form` is the
+  fixture that was already waiting for this.
+
+  **The change of basis is the identity, and that is a measurement rather than an
+  omission.** Canonical motion is right-handed, +Y up, +Z forward, metres; so is
+  this device, with +X the body's left. Nothing is permuted, mirrored or scaled,
+  and the only conversion is the quaternion's component order — scalar-last on
+  the wire, scalar-first in `GfQuatf`, which is a reorder and not a rotation. It
+  is a named, tested function anyway: "nothing is converted" is a claim that can
+  be wrong, and the sibling's answer to the same question is a reflection through
+  X.
+
+  **The path rule is now implemented twice, and the duplication is checked from
+  outside.** Four of the seven torso segments and one of the two neck segments
+  carry no canonical bone; their rotations reach the humanoid through the
+  composition from just below each bone's nearest bound ancestor
+  ([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md)). The recorded track
+  already does this, and §2.1 forbids sharing the table — so
+  `scripts/check_docs.py` reads the adapter's table, the producer profile, and
+  the committed BVH export, and fails when the three stop describing one rig. The
+  hierarchy is *derived* from that export rather than restated: the parent column
+  in the header is compared against the file's own depth-first nesting, which is
+  the claim the handedness measurement rested on made into a test.
+
+  **Two things the native path has that the relay does not**, both falling out of
+  this layer rather than being built for it. A skeleton packet *is* a source rest
+  pose, repeated every 3.5 s, so nothing manufactures one from the first frame —
+  which the sibling's header names as the thing an adapter must not do and, with
+  VMC, cannot avoid. And there is exactly one translating joint and it is the
+  hips, so §5.2's root/hips ambiguity does not arise natively at all: there is no
+  second channel to compose with. That is evidence for the release's root/hips
+  record and not a resolution of it — the hips translation is reported as the
+  body's placement and deliberately **not** as a `motion::RootMotion`, because
+  whether it is root motion is the question the record exists to answer.
+
+  `VRM_MOCOPI_UNSUPPORTED_JOINT` is raised here and brings the set to six paid
+  for by a real caller. `FRAME_INCOMPLETE` is deliberately *not*: whether 19 of 22
+  bones is a usable frame is the assembler's question, and this layer reports what
+  it could not form and stops.
+
+  Two new CTest names, 86 green in the workspace, and a third reading of the same
+  corpus — which is where the fixtures are finally asked which arm is which, the
+  question they were written for and could not be asked one layer down. That pass
+  measured something worth keeping: **a bilaterally symmetric rig cannot be asked
+  which arm moved.** Swapping the two sides in the map's table leaves every "both
+  arms went down" assertion passing, because the rest direction and the rotation
+  swap together — verified by doing it, not reasoned about. What catches the swap
+  is asking which arm is *where*, and that is a question about the basis.
 
 **The wire format is not documented, and the evidence path is a sender rather
 than a device** (established 2026-08-09). The vendor states the transport and

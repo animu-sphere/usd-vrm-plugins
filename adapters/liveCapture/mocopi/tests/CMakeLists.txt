@@ -68,9 +68,20 @@ target_compile_options(vrmAdapterMocopi_motionPacket_tests
 add_test(NAME vrmAdapterMocopi_motionPacket
          COMMAND vrmAdapterMocopi_motionPacket_tests)
 
+# The first layer that knows a humanoid exists, on its own name for the same
+# reason: a joint that maps to the wrong bone and a datagram that will not decode
+# are different failures, and one red name would not say which.
+add_executable(vrmAdapterMocopi_skeletonMap_tests test_skeleton_map.cpp)
+target_link_libraries(vrmAdapterMocopi_skeletonMap_tests
+    PRIVATE vrmAdapterMocopi::vrmAdapterMocopi)
+target_compile_options(vrmAdapterMocopi_skeletonMap_tests
+    PRIVATE ${_vrm_adapter_mocopi_assertions})
+add_test(NAME vrmAdapterMocopi_skeletonMap
+         COMMAND vrmAdapterMocopi_skeletonMap_tests)
+
 set(_vrm_adapter_mocopi_tests
     vrmAdapterMocopi_unit vrmAdapterMocopi_packetCapture
-    vrmAdapterMocopi_motionPacket
+    vrmAdapterMocopi_motionPacket vrmAdapterMocopi_skeletonMap
     vrmAdapterMocopi_udpReceiver vrmAdapterMocopi_udpReceiverTruncation)
 
 # Every committed capture parses and re-emits byte-identically, or every
@@ -102,8 +113,16 @@ if(EXISTS "${_vrm_adapter_mocopi_corpus}")
     add_test(NAME vrmAdapterMocopi_motionPacketCorpus
         COMMAND vrmAdapterMocopi_motionPacket_tests
                 "${_vrm_adapter_mocopi_corpus}")
+    # And a third reading of the same directory: what each capture becomes once
+    # its joints carry canonical bones. This is where the fixtures are finally
+    # asked which arm is which -- `arms-lowered-60hz` was written to be asked
+    # that and could not be, one layer down, by a decoder that names no bone.
+    add_test(NAME vrmAdapterMocopi_skeletonMapCorpus
+        COMMAND vrmAdapterMocopi_skeletonMap_tests
+                "${_vrm_adapter_mocopi_corpus}")
     list(APPEND _vrm_adapter_mocopi_tests
-         vrmAdapterMocopi_corpus vrmAdapterMocopi_motionPacketCorpus)
+         vrmAdapterMocopi_corpus vrmAdapterMocopi_motionPacketCorpus
+         vrmAdapterMocopi_skeletonMapCorpus)
 endif()
 
 if(WIN32)

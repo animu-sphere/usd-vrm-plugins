@@ -10,16 +10,20 @@ the handful of facts that silently rot when the workspace changes shape:
 2. no current-state document describes `usdVrm` as a bundle id or points at the
    pre-rename `plugins/usdVrm/` path (history is exempt — see HISTORY);
 3. the schema contract version in the docs matches vrmSchema's manifest;
-4. the OpenUSD pin agrees across the bundle manifests, the configure-time
+4. the live mocopi adapter's joint table and the recorded track's producer
+   profile describe the same rig, checked against the committed export the
+   correspondence was measured on — they must not share a table, so their
+   agreement has to cost a check;
+5. the OpenUSD pin agrees across the bundle manifests, the configure-time
    contract module, and the supported-configurations reference;
-5. the roadmap and the release records agree about which versions are out:
+6. the roadmap and the release records agree about which versions are out:
    VERSION has a record and a changelog section, a `Next:` / `Then:` milestone
    is not an already-released version, a `Shipped:` one is, the roadmap status
    table agrees with those headings, and no document points at a retired
    roadmap filename;
-6. every local markdown link resolves.
+7. every local markdown link resolves.
 
-Check 5 exists because the roadmap said "Next: v0.6.0 - the OpenExec
+Check 6 exists because the roadmap said "Next: v0.6.0 - the OpenExec
 foundation" for two weeks after v0.6.0 shipped VMC input instead. Nothing was
 wrong with any single document; the pair had drifted, and only a reader holding
 both noticed.
@@ -137,6 +141,130 @@ def check_schema_contract(failures: list[str]) -> None:
         failures.append(
             f"usdVrmFileFormat pins schema contract {pinned!r} but vrmSchema "
             f"provides {contract!r}")
+
+
+# --- one rig, described in three places --------------------------------------
+
+# The one capture-product rig this repository reads over two transports. The
+# live adapter maps its joints by id; the recorded profile maps the same joints
+# by name; and the committed export is where the correspondence between the two
+# was measured, because a BVH hierarchy is a depth-first list and `bnid` is a
+# position in one.
+MOCOPI_BVH = ("libs/motionBvh/tests/corpus/recorded/redistributable/"
+              "mocopi-mobile-arm-raise-turn.bvh")
+MOCOPI_PROFILE = "profiles/motion/mocopi-mobile-bvh-default-v1.yaml"
+MOCOPI_ADAPTER = "adapters/liveCapture/mocopi/src/SkeletonMap.cpp"
+MOCOPI_ADAPTER_HEADER = ("adapters/liveCapture/mocopi/include/"
+                         "vrmAdapterMocopi/SkeletonMap.h")
+
+
+def bvh_hierarchy() -> tuple[list[str], list[int]]:
+    """The export's joints depth-first: names, and each one's parent index."""
+    names: list[str] = []
+    parents: list[int] = []
+    stack: list[int] = []
+    pending: str | None = None
+    for line in read(MOCOPI_BVH).splitlines():
+        token = line.strip().split()
+        if not token:
+            continue
+        if token[0] in ("ROOT", "JOINT") and len(token) > 1:
+            pending = token[1]
+        elif token[0] == "End":
+            pending = None          # an End Site is geometry, not a joint
+        elif token[0] == "{":
+            if pending is None:
+                stack.append(-2)    # an End Site's braces, closed and ignored
+                continue
+            names.append(pending)
+            parents.append(stack[-1] if stack else -1)
+            stack.append(len(names) - 1)
+            pending = None
+        elif token[0] == "}":
+            if stack:
+                stack.pop()
+        elif token[0] == "MOTION":
+            break
+    return names, parents
+
+
+def profile_joint_bones() -> dict[str, str | None]:
+    """Each joint the profile names, and the canonical bone it carries."""
+    text = read(MOCOPI_PROFILE)
+    bones: dict[str, str | None] = {}
+    for name, bone in re.findall(
+            r"^\s{2}(\w+):\s*\{\s*bone:\s*(\w+)", text, re.M):
+        bones[name] = bone
+    ignored = re.search(r"^ignoredJoints:\s*\[([^\]]*)\]", text, re.M)
+    if ignored:
+        for name in ignored.group(1).split(","):
+            bones[name.strip()] = None
+    return bones
+
+
+def check_mocopi_rig_agreement(failures: list[str]) -> None:
+    """The live adapter and the recorded profile describe the same rig.
+
+    They are deliberately *not* one table. A file reader and a socket meet at
+    `motionCore` and nowhere earlier, so a shared mapping would hand a live
+    session a file's assumptions the first time the two rigs stopped being the
+    same rig (roadmap/adapters-mocopi-vmc-ardy.md §2.1).
+
+    Today they *are* the same rig — that is what the handedness measurement of
+    2026-08-12 established, by matching all 27 rest offsets sign for sign — so
+    the duplication has to cost a check rather than a silent divergence. This is
+    that check. It reads the committed export for the joint order, because a
+    BVH hierarchy is depth-first and a `bnid` is a position in exactly that
+    list; a difference here means one of the three has moved and the other two
+    have not been told.
+    """
+    names, parents = bvh_hierarchy()
+
+    block = re.search(r"kMeasuredBones\s*=\s*\{\{(.*?)\}\};",
+                      read(MOCOPI_ADAPTER), re.S)
+    if not block:
+        failures.append(f"{MOCOPI_ADAPTER}: no kMeasuredBones table to check "
+                        f"the recorded profile against")
+        return
+    adapter = re.findall(r"HumanBone::(\w+)", block.group(1))
+
+    column = re.search(r"MeasuredParentColumn\s*=\s*\{\{(.*?)\}\};",
+                       read(MOCOPI_ADAPTER_HEADER), re.S)
+    if not column:
+        failures.append(f"{MOCOPI_ADAPTER_HEADER}: no MeasuredParentColumn to "
+                        f"check the recorded export's hierarchy against")
+        return
+    declared = [int(v) for v in re.findall(r"-?\d+", re.sub(r"//[^\n]*", "",
+                                                            column.group(1)))]
+
+    if not (len(names) == len(adapter) == len(declared)):
+        failures.append(
+            f"the mocopi rig has {len(names)} joints in {MOCOPI_BVH}, "
+            f"{len(adapter)} in the adapter's table and {len(declared)} in its "
+            f"parent column")
+        return
+    if declared != parents:
+        failures.append(
+            f"{MOCOPI_ADAPTER_HEADER}: MeasuredParentColumn is not the "
+            f"hierarchy the committed export carries")
+
+    profile = profile_joint_bones()
+    for index, name in enumerate(names):
+        if name not in profile:
+            failures.append(
+                f"{MOCOPI_PROFILE}: joint {name!r} (bone {index} natively) is "
+                f"neither mapped nor listed as ignored")
+            continue
+        expected = profile[name]
+        # The profile writes VRM 1.0's lowerCamel and the enum is PascalCase;
+        # an unmapped joint is `Count` on one side and absent on the other.
+        native = adapter[index]
+        wanted = "Count" if expected is None else expected[0].upper() + expected[1:]
+        if native != wanted:
+            failures.append(
+                f"the mocopi rig's joint {name!r} is {expected or 'ignored'} in "
+                f"{MOCOPI_PROFILE} and HumanBone::{native} at bone {index} in "
+                f"{MOCOPI_ADAPTER}")
 
 
 def check_openusd_pin(failures: list[str]) -> None:
@@ -330,7 +458,8 @@ def main() -> int:
 
     failures: list[str] = []
     for check in (check_inventory, check_no_stale_paths,
-                  check_schema_contract, check_openusd_pin,
+                  check_schema_contract, check_mocopi_rig_agreement,
+                  check_openusd_pin,
                   check_release_records, check_roadmap_status,
                   check_retired_doc_names, check_component_status,
                   check_links):
