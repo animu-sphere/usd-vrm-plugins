@@ -134,3 +134,13 @@ if(VRMADAPTERMOCOPI_BUILD_TESTS)
     find_package(Python3 COMPONENTS Interpreter QUIET)
     add_subdirectory(tests)
 endif()
+
+# The adapter's CLI, which ships in the same artifact as the library
+# (WORKSPACE.md §5). Added after the library and its tests: the tool links the
+# target above, and adding it before would name a target that does not exist
+# yet. It is where WORKSPACE.md §2's adapter-tool permissions begin -- a tool may
+# drive `vrmRetarget` and author a stage where the library may not -- which is
+# also why `tests/check_boundaries.py` scans include/ and src/ only.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tools/mocopiRecord/CMakeLists.txt")
+    add_subdirectory(tools/mocopiRecord)
+endif()

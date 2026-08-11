@@ -11,9 +11,10 @@ UDP datagram → packet decode → joint mapping → coordinate conversion
 
 **Status: transport, and nothing above it.** What exists is the library's
 identity and its two edges, the frozen diagnostic set, the recorded-packet
-format, and the **UDP receiver** that can turn a source aimed at this machine
-into one of those files. What does not exist is any decoder — no packet syntax,
-no joint map, no basis change, no frame assembly — and the reason is in
+format, the **UDP receiver** that can turn a source aimed at this machine into
+one of those files, and [**`mocopi_record`**](tools/mocopiRecord/README.md) — the
+CLI that does it. What does not exist is any decoder — no packet syntax, no joint
+map, no basis change, no frame assembly — and the reason is in
 [the next section](#the-format-is-not-documented-and-that-shapes-the-order).
 See [the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §6 and
 Milestone D for the implementation order, and
@@ -153,6 +154,29 @@ states** — how long a device may reasonably take to start is a property of the
 session, not of the socket, so there is no default and no threshold means no
 code.
 
+## The recorder
+
+[`tools/mocopiRecord`](tools/mocopiRecord/README.md) is the CLI, and it is the
+consumer the receiver above was waiting for: `mocopi_record --output` turns a
+source aimed at this port into a capture file, and `--inspect` reads one back
+with no socket at all. It ships in the same artifact as the library
+([WORKSPACE.md §5](../../../docs/architecture/WORKSPACE.md)) and links the
+adapter and nothing else, which is less than §2 permits a tool — an adapter's
+CLI may drive `vrmRetarget` and author a stage, and this one cannot usefully do
+either, because there is no decoder for a retarget to act on.
+
+It decodes nothing, so its report is about the datagram *envelope*: the counts,
+the peers, the arrival rate on the receive clock, a census of distinct payload
+lengths, and the leading bytes every datagram shares. Those last two are the
+first sentences about this protocol anything here has been able to say, and the
+line they stay on the right side of is argued in
+[`SessionReport.h`](tools/mocopiRecord/src/SessionReport.h). It is also where
+`--silence-timeout` states the threshold `VRM_MOCOPI_DEVICE_UNAVAILABLE` has no
+default for, and where the vendor's IPv4-only and no-`localhost` statements
+become warnings that fire *before* the first datagram — the receiver refuses
+neither, on the grounds that a socket should not invent a restriction on itself
+out of a product's documentation.
+
 ## Recorded input
 
 `mocopi-packet-capture` v1 — spec on
@@ -224,7 +248,9 @@ Composed with the rest of the workspace:
 ```sh
 cmake -S . -B build -DCMAKE_PREFIX_PATH=<usd-install>
 cmake --build build --config Release
-ctest --test-dir build -R vrmAdapterMocopi
+# Both halves: the library's five names and the CLI's three. `-R vrmAdapterMocopi`
+# alone silently misses the tool, whose names begin with `mocopi_record`.
+ctest --test-dir build -R "vrmAdapterMocopi|mocopi_record"
 ```
 
 Or through the runtime `ost` resolves for the workspace:
@@ -234,7 +260,9 @@ ost build && ost test
 ```
 
 Standalone — this directory is its own CMake project, resolving `motionCore` and
-`motionRuntime` as installed packages rather than in-tree targets:
+`motionRuntime` as installed packages rather than in-tree targets, and building
+the CLI along with the library because that is the configuration the adapter's
+artifact would be built from:
 
 ```sh
 cmake -S adapters/liveCapture/mocopi -B build/mocopi \
