@@ -38,6 +38,12 @@ Four more claims, each named in §7:
 
 Running it from packaged artifacts with no build tree on the path is the
 remaining item of §7's list and is a packaging test rather than this one.
+
+`test_real_avatar.py` runs the same chain onto a released VRM. It is not a
+replacement for this file and this file is not a weaker version of it: the rig
+here is shaped to make one specific defect impossible to miss, and a shipped
+model is shaped by whoever shipped it -- extra joints, unbound joints in the
+middle of a chain, and optional human bones it simply does not have.
 """
 
 from __future__ import annotations
@@ -45,153 +51,19 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
-import subprocess
 import sys
 import tempfile
 
 from pxr import Gf, Usd, UsdSkel
 
+# The rig reader, the failure collector and the tolerances live beside this file
+# because the real-avatar test needs the same ones, and two copies of a
+# quaternion chain walk are how a test starts agreeing with a defect.
+from rigcheck import (DISTANCE_TOLERANCE, ROTATION_TOLERANCE, Failures, Rig,
+                      quat_distance, run_tool)
+
 RECORDED = "mocopi-mobile-arm-raise-turn.bvh"
 PROFILE_ID = "mocopi-mobile-bvh-default-v1"
-
-# The correction is composed in float and read back through matrix decomposition
-# on both sides, over chains up to seven joints deep.
-ROTATION_TOLERANCE = 2e-4
-DISTANCE_TOLERANCE = 1e-5
-# Below this, a joint's rotation over the session is the same rotation. It is
-# far above the numerical noise and far below any motion a person would call
-# movement, so the "which bones moved" set does not depend on where it sits.
-MOVEMENT_EPSILON = 1e-3
-
-
-class Failures:
-    def __init__(self) -> None:
-        self.messages: list[str] = []
-
-    def check(self, condition: bool, message: str) -> bool:
-        if not condition:
-            self.messages.append(message)
-        return condition
-
-    def report(self) -> int:
-        if not self.messages:
-            return 0
-        for message in self.messages:
-            print(f"FAIL: {message}", file=sys.stderr)
-        return 1
-
-
-def run_tool(tool: str, *arguments: str) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        [tool, *arguments], text=True, encoding="utf-8", errors="replace",
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-
-def find(stage: Usd.Stage, schema):
-    return [prim for prim in stage.Traverse() if prim.IsA(schema)]
-
-
-def quat_distance(a: Gf.Quatf, b: Gf.Quatf) -> float:
-    """How far apart two rotations are, treating q and -q as the same one."""
-    a = Gf.Quatd(float(a.GetReal()), Gf.Vec3d(*a.GetImaginary())).GetNormalized()
-    b = Gf.Quatd(float(b.GetReal()), Gf.Vec3d(*b.GetImaginary())).GetNormalized()
-    direct = abs(a.GetReal() - b.GetReal()) + sum(
-        abs(x - y) for x, y in zip(a.GetImaginary(), b.GetImaginary()))
-    flipped = abs(a.GetReal() + b.GetReal()) + sum(
-        abs(x + y) for x, y in zip(a.GetImaginary(), b.GetImaginary()))
-    return min(direct, flipped)
-
-
-class Rig:
-    """One side of the comparison: a skeleton, its rest, and its animation.
-
-    Both rigs are read the same way and neither is read the way the tools write
-    them -- the joint hierarchy comes from the token paths, which is the only
-    thing a `UsdSkelSkeleton` states about parenting.
-    """
-
-    def __init__(self, stage: Usd.Stage) -> None:
-        skeletons = find(stage, UsdSkel.Skeleton)
-        animations = find(stage, UsdSkel.Animation)
-        if not skeletons or not animations:
-            raise AssertionError(
-                f"{stage.GetRootLayer().identifier} has no Skeleton or no "
-                f"SkelAnimation")
-        self.stage = stage
-        self.skeleton = UsdSkel.Skeleton(skeletons[0])
-        self.animation = UsdSkel.Animation(animations[0])
-        self.joints = [str(token) for token in self.skeleton.GetJointsAttr().Get()]
-        self.slot = {token: index for index, token in enumerate(self.joints)}
-
-        rest = self.skeleton.GetRestTransformsAttr().Get()
-        self.rest_local = [matrix.ExtractRotationQuat() for matrix in rest]
-
-        self.anim_joints = [str(token)
-                            for token in self.animation.GetJointsAttr().Get()]
-        self.anim_slot = {token: index
-                          for index, token in enumerate(self.anim_joints)}
-        self.rotations = self.animation.GetRotationsAttr()
-        self.translations = self.animation.GetTranslationsAttr()
-        self.times = self.rotations.GetTimeSamples()
-
-    def parent(self, token: str) -> str | None:
-        while "/" in token:
-            token = token.rsplit("/", 1)[0]
-            if token in self.slot:
-                return token
-        return None
-
-    def world_rest(self, token: str) -> Gf.Quatd:
-        rotation = Gf.Quatd(1.0)
-        chain = []
-        current: str | None = token
-        while current is not None:
-            chain.append(current)
-            current = self.parent(current)
-        for name in reversed(chain):
-            local = self.rest_local[self.slot[name]]
-            rotation = rotation * Gf.Quatd(local.GetReal(),
-                                           Gf.Vec3d(*local.GetImaginary()))
-        return rotation.GetNormalized()
-
-    def world_sample(self, token: str, time: float) -> Gf.Quatd:
-        values = self.rotations.Get(time)
-        rotation = Gf.Quatd(1.0)
-        chain = []
-        current: str | None = token
-        while current is not None:
-            chain.append(current)
-            current = self.parent(current)
-        for name in reversed(chain):
-            index = self.anim_slot.get(name)
-            if index is None:
-                # A joint the animation does not carry contributes its rest.
-                local = self.rest_local[self.slot[name]]
-                sample = Gf.Quatd(local.GetReal(), Gf.Vec3d(*local.GetImaginary()))
-            else:
-                value = values[index]
-                sample = Gf.Quatd(float(value.GetReal()),
-                                  Gf.Vec3d(*value.GetImaginary()))
-            rotation = rotation * sample
-        return rotation.GetNormalized()
-
-    def rest_relative(self, token: str, time: float) -> Gf.Quatd:
-        """The bone's world rotation away from its own rest."""
-        return (self.world_sample(token, time)
-                * self.world_rest(token).GetInverse()).GetNormalized()
-
-    def moved(self, token: str) -> bool:
-        index = self.anim_slot.get(token)
-        if index is None:
-            return False
-        first = self.rotations.Get(self.times[0])[index]
-        return any(
-            quat_distance(self.rotations.Get(time)[index], first)
-            > MOVEMENT_EPSILON
-            for time in self.times)
-
-    def translation(self, token: str, time: float) -> Gf.Vec3f:
-        return self.translations.Get(time)[self.anim_slot[token]]
 
 
 def check_pipeline(failures: Failures, clip_path: pathlib.Path,

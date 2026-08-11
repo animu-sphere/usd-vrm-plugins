@@ -243,6 +243,49 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
     set_tests_properties(workspace_bvh_end_to_end PROPERTIES
         ENVIRONMENT_MODIFICATION
             "PATH=path_list_prepend:${_e2e_usd_root}/bin;PATH=path_list_prepend:${_e2e_usd_root}/lib;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/site-packages")
+
+    # The same chain onto a real VRM, which is the release condition's own
+    # wording (roadmap/current.md) and not a second opinion about the tools. It
+    # is registered separately rather than folded into the test above because the
+    # two rigs answer different questions and neither substitutes: the fixture is
+    # shaped so a broken rest-pose correction cannot pass it, and a released
+    # avatar is shaped by whoever made it -- 128 joints where 77 carry hair and
+    # luggage, two unbound joints between bound ones, and an optional human bone
+    # it simply does not have.
+    #
+    # This is the one test in the tree that needs a plugin bundle AND the motion
+    # tools in the same build, which is why it is here: `motion_retarget` opens a
+    # `.vrm` only if usdVrmFileFormat is registered, and only the composed root
+    # build guarantees both halves exist. Everything the plugin needs to load is
+    # mirrored from plugins/usdVrmFileFormat/tests/CMakeLists.txt, which is the
+    # same environment its own CI-proven smoke tests run in -- the importer
+    # applies the typed Vrm*API schemas, so the sibling vrmSchema bundle's
+    # resources are on the registry path and its library on the loader path.
+    set(_real_avatar
+        "${CMAKE_CURRENT_SOURCE_DIR}/plugins/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm")
+    if(TARGET UsdVrmFileFormat AND EXISTS "${_real_avatar}")
+        # Configured by the bundle's own tests, which this file has already
+        # added: an absolute LibraryPath, so the plugin loads with no assumption
+        # about the working directory or the ost flow having run.
+        set(_vrm_plug_resources
+            "${CMAKE_CURRENT_BINARY_DIR}/plugins/usdVrmFileFormat/tests/resources/usdVrmFileFormat")
+        set(_vrm_schema_bundle "${CMAKE_CURRENT_SOURCE_DIR}/plugins/vrmSchema")
+        add_test(NAME workspace_real_avatar_bake
+            COMMAND "${USDVRM_TEST_PYTHON}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/test_real_avatar.py"
+                --convert "$<TARGET_FILE:motion_bvh_convert>"
+                --retarget "$<TARGET_FILE:motion_retarget>"
+                --avatar "${_real_avatar}"
+                --corpus "${CMAKE_CURRENT_SOURCE_DIR}/libs/motionBvh/tests/corpus"
+                --profiles "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion")
+        set_tests_properties(workspace_real_avatar_bake PROPERTIES
+            ENVIRONMENT_MODIFICATION
+                "PATH=path_list_prepend:${_e2e_usd_root}/bin;PATH=path_list_prepend:${_e2e_usd_root}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmFileFormat>;PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmContainer::vrmContainer>;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_bundle}/plugin/resources/vrmSchema")
+    else()
+        message(STATUS
+            "usd-vrm-plugins: usdVrmFileFormat or the VRM spec sample is not in "
+            "this build tree; skipping the real-avatar bake")
+    endif()
 endif()
 
 # Input adapters (WORKSPACE.md §1, §2). Each adapters/<group>/<name>/ carrying

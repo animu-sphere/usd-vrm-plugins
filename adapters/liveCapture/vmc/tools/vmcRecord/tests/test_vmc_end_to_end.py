@@ -26,6 +26,15 @@ The last leg is a value check rather than a load check. A clip that binds and
 then holds the rest pose opens without error and animates nothing (#64), so what
 is asserted is that the joints the session actually drove are the joints
 UsdSkel resolves as moving -- named, not counted.
+
+It runs over two rigs where the build tree has both. The fixture avatar is
+hand-authored and deliberately awkward; the second is `Seed-san.vrm`, a released
+VRM 1.0 model, which is what the v0.7.0 release condition asks for by name. The
+first is the sharper test and the second is the honest one -- a real model has
+125 joints no human bone names, so "three joints moved" becomes "three moved and
+the hair did not". Opening it needs `usdVrmFileFormat` registered, which is an
+environment fact rather than an edge: this adapter links nothing new and
+`motion_retarget` takes the identical command line for both.
 """
 
 from __future__ import annotations
@@ -53,6 +62,25 @@ EXPECTED_MOVING = {
     "Root/Pelvis/SpineA/ChestA/ClavicleL/ArmUpperL",
     "Root/Pelvis/SpineA/ChestA/ClavicleL/ArmUpperL/ArmLowerL",
 }
+
+# The same three bones on `Seed-san.vrm`, when this build tree has the importer
+# to open it with. The fixture rig above is hand-authored and every bone its
+# humanoid names is bound; a released avatar is not, and the release condition
+# asks for one by name -- "the session reaches a real VRM avatar" (v0.7.0,
+# roadmap/current.md). What it buys here is the other 125 joints: this model
+# carries hair, a backpack, ropes and twist joints that no human bone names, so
+# the set comparison below stops being "three joints moved" and becomes "three
+# moved and a hundred and twenty-five did not".
+#
+# *Seed-san model by VirtualCast, Inc. — VRM Public License 1.0* (its
+# `creditNotation` is `required`; see the LICENSE.md beside the model).
+EXPECTED_MOVING_VRM = {
+    "hips/spine/chest/shoulder_L",
+    "hips/spine/chest/shoulder_L/upper_arm_L",
+    "hips/spine/chest/shoulder_L/upper_arm_L/forearm_L",
+}
+# Below this the model is not the one this expectation was measured against.
+MINIMUM_VRM_JOINTS = 100
 
 # Two rotations count as the same when their quaternions agree this closely. The
 # retarget composes a rest-pose correction, so an untouched joint comes back as
@@ -82,15 +110,14 @@ def same_rotation(a: Gf.Quatd, b: Gf.Quatd) -> bool:
     return abs(abs(dot) - 1.0) <= IDENTICAL
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--record-tool", required=True, type=pathlib.Path)
-    parser.add_argument("--capture-tool", required=True, type=pathlib.Path)
-    parser.add_argument("--retarget-tool", required=True, type=pathlib.Path)
-    parser.add_argument("--corpus", required=True, type=pathlib.Path)
-    parser.add_argument("--avatar", required=True, type=pathlib.Path)
-    options = parser.parse_args()
+def drive(options, avatar: pathlib.Path, expected: set[str],
+          minimum_joints: int) -> int:
+    """The whole chain onto one rig, from the capture to the joints that moved.
 
+    Called once per avatar. The session, the trace and the clip are re-made each
+    time rather than shared, because the claim is about the chain and a clip
+    written once and baked twice would only test the last step.
+    """
     capture = options.corpus / f"{CAPTURE}.vmcpackets"
     if not capture.is_file():
         fail(f"{capture} is missing")
@@ -112,8 +139,10 @@ def main() -> int:
 
         # 3. The offline retarget, unchanged since v0.4.0, onto a rig whose
         #    joint names disagree with the humanoid vocabulary -- the binding
-        #    comes from the avatar's `vrm:humanBones:*` attributes.
-        run(options.retarget_tool, "--avatar", str(options.avatar),
+        #    comes from the avatar's `vrm:humanBones:*` attributes. A `.vrm`
+        #    avatar takes the identical command; only usdVrmFileFormat being
+        #    registered makes it openable, and that is the environment's job.
+        run(options.retarget_tool, "--avatar", str(avatar),
             "--animation", str(clip), "--output", str(baked),
             "--root-motion", "hips")
 
@@ -149,6 +178,11 @@ def main() -> int:
                     for transform in transforms]
 
         joints = [str(joint) for joint in query.GetJointOrder()]
+        if len(joints) < minimum_joints:
+            fail(f"{avatar.name} resolves {len(joints)} joints and this "
+                 f"expectation was measured against at least {minimum_joints}; "
+                 f"the rig changed, so the set below has to be re-measured "
+                 f"rather than re-tuned")
         reference = rotations(times[0])
         moved = {
             joints[index]
@@ -158,13 +192,36 @@ def main() -> int:
             if not same_rotation(before, after)
         }
 
-        if moved != EXPECTED_MOVING:
-            fail("the wrong joints moved on the rig.\n"
-                 f"  expected: {sorted(EXPECTED_MOVING)}\n"
+        if moved != expected:
+            fail(f"the wrong joints moved on {avatar.name}.\n"
+                 f"  expected: {sorted(expected)}\n"
                  f"  moved:    {sorted(moved)}")
 
     print(f"vmc_record -> motion_capture -> motion_retarget: {CAPTURE} reaches "
-          f"a rig, {len(moved)} joint(s) moving as the session drove them")
+          f"{avatar.name}, {len(moved)} of {len(joints)} joint(s) moving as the "
+          f"session drove them")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--record-tool", required=True, type=pathlib.Path)
+    parser.add_argument("--capture-tool", required=True, type=pathlib.Path)
+    parser.add_argument("--retarget-tool", required=True, type=pathlib.Path)
+    parser.add_argument("--corpus", required=True, type=pathlib.Path)
+    parser.add_argument("--avatar", required=True, type=pathlib.Path)
+    # Optional, because a standalone build of this adapter has no importer bundle
+    # to open a `.vrm` with. The fixture rig above is not a stand-in for it: it
+    # is the sharper of the two, and this one is the *released* one.
+    parser.add_argument("--vrm-avatar", type=pathlib.Path)
+    options = parser.parse_args()
+
+    drive(options, options.avatar, EXPECTED_MOVING, minimum_joints=0)
+    if options.vrm_avatar is not None:
+        if not options.vrm_avatar.is_file():
+            fail(f"{options.vrm_avatar} is missing")
+        drive(options, options.vrm_avatar, EXPECTED_MOVING_VRM,
+              MINIMUM_VRM_JOINTS)
     return 0
 
 

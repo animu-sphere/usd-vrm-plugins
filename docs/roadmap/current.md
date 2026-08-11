@@ -57,9 +57,14 @@ reaching a **rig** still is: that is Motion Phase G.
       `motion_capture` and `motion_retarget` — *the chain closes for VMC
       (2026-08-04): `vmc_record --export-trace` hands the product a
       `motion-capture-trace` and both tools consume it unmodified, checked
-      through a `UsdSkelSkeletonQuery` by joint name. What is left in this line
-      is the words **real VRM avatar**: the rig is a committed fixture, not a
-      model, and no mocopi session has taken the path at all.*
+      through a `UsdSkelSkeletonQuery` by joint name. The words **real VRM
+      avatar** are closed too (2026-08-11): `vmc_record_endToEnd` now drives the
+      same session onto `Seed-san.vrm` as well as onto its fixture rig — three
+      joints of a hundred and twenty-eight move, so the claim is no longer
+      "three moved" but "three moved and the hair did not". What is left in this
+      line is the word **mocopi**: no session from that device has taken the
+      path at all, and it cannot until the native decoder exists
+      ([Milestone D](adapters-mocopi-vmc-ardy.md)).*
 
 **Recorded**
 
@@ -101,13 +106,19 @@ reaching a **rig** still is: that is Motion Phase G.
       condition that would change it, because the one field they differ in is
       the rest pose and it is the field that matters most
       ([§10](recorded-motion-sources.md))*;
-- [ ] `motion_bvh_convert` → **unchanged** `motion_retarget` → a target VRM,
+- [x] `motion_bvh_convert` → **unchanged** `motion_retarget` → a target VRM,
       verified through a `UsdSkelSkeletonQuery` — *the pipeline landed
       2026-08-05 and the retargeter needed no change, which is the claim that
-      makes stopping at the avatar-independent clip worth anything. What is open
-      is the last two words: the bake runs onto a hand-authored humanoid fixture
-      shaped so a broken rest-pose correction cannot pass it, and not yet onto a
-      real VRM*;
+      makes stopping at the avatar-independent clip worth anything. The last two
+      words closed 2026-08-11: `workspace_real_avatar_bake` bakes the recorded
+      session onto `Seed-san.vrm`, a released VRM 1.0 sample, and the fixture
+      test stays because the two rigs answer different questions. The real one
+      found what a fixture could not — **a released avatar's humanoid is
+      incomplete**: this model has no `upperChest`, the mocopi profile maps a
+      source joint to one, and the rotation is dropped whole rather than
+      redistributed. Measured, reported by name on stderr, and now pinned by a
+      characterisation test; the contract question it raises is
+      [§10](recorded-motion-sources.md#10-contract-changes-this-plan-requires)*;
 - [ ] no producer name in `motionBvh` or `motionSource` code, and no default
       profile anywhere.
 
