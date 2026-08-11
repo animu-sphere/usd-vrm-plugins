@@ -40,9 +40,25 @@ target_compile_options(vrmAdapterMocopi_udpReceiver_tests
 add_test(NAME vrmAdapterMocopi_udpReceiver
          COMMAND vrmAdapterMocopi_udpReceiver_tests)
 
+# The over-long datagram case, on its own name so that "could not check this
+# here" is a word in the ctest summary rather than a line nobody sees.
+#
+# It needs IPv6 to reach at all -- that is the only transport carrying more than
+# the IPv4 payload maximum the capture format bounds itself by -- and a runner
+# without IPv6 loopback cannot run it. Inside the suite above, that would have
+# been invisible: ctest hides a passing test's output, so a lane that checked
+# the claim and a lane that quietly declined to print the same line. With
+# SKIP_RETURN_CODE the summary says `Skipped`, and the question "was this
+# actually verified on POSIX" is answered by reading the log instead of by
+# re-running anything on a machine somebody has to find.
+add_test(NAME vrmAdapterMocopi_udpReceiverTruncation
+         COMMAND vrmAdapterMocopi_udpReceiver_tests truncation)
+set_tests_properties(vrmAdapterMocopi_udpReceiverTruncation PROPERTIES
+    SKIP_RETURN_CODE 77)
+
 set(_vrm_adapter_mocopi_tests
     vrmAdapterMocopi_unit vrmAdapterMocopi_packetCapture
-    vrmAdapterMocopi_udpReceiver)
+    vrmAdapterMocopi_udpReceiver vrmAdapterMocopi_udpReceiverTruncation)
 
 # Every committed capture parses and re-emits byte-identically, or every
 # decoder test downstream of it compares against a fixture that has drifted from

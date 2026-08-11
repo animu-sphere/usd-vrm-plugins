@@ -314,6 +314,15 @@ trace. They do not yet reach a **rig**, which is what #88 is actually about:
   same `6 libraries, 9 library edge(s), valid` with the new adapter present and
   absent, so a second adapter is discovered as nothing exactly as the first one
   is.
+- ⬜ **`vrmAdapterMocopi`'s standalone build is unverified since it grew a
+  platform link**
+  ([#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)). The
+  scaffold commit measured it; the receiver added `ws2_32` and an edit to the
+  installed package config without re-running the check, which is the one thing
+  a composed build cannot exercise. Low risk — `ws2_32` is a raw library name
+  rather than an imported target — and a prediction belongs in an issue rather
+  than in a claim. A POSIX run of the same check is worth more than the Windows
+  one, since there it verifies the *absence* of a threading link.
 - ⬜ **An adapter cannot be packaged separately.** `ost` 0.21.0 has no
   per-library packaging command, and adapters are deliberately not part of the
   aggregate product ([WORKSPACE.md §5](../architecture/WORKSPACE.md)). This does

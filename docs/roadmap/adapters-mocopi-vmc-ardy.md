@@ -970,7 +970,9 @@ capture device validated through a VMC relay
   to 43: `vmc_record_inspect` needs no socket and `vmc_record_loopback` binds
   one, split for the same reason and excludable the same way.
 - ⬜ **Four transport defects, found in the mocopi receiver and present here
-  identically** (2026-08-11). They were copied into that adapter along with
+  identically**
+  ([#112](https://github.com/animu-sphere/usd-vrm-plugins/issues/112),
+  2026-08-11). They were copied into that adapter along with
   everything else, fixed there, and are outstanding in this one: an over-long
   datagram handed back as whole on POSIX (`recvfrom` truncates silently and the
   buffer is exactly the bound, so a short read is indistinguishable from a whole

@@ -613,8 +613,18 @@ TestANewCountingWindowCanStillSeeAnOngoingSilence()
 // Truncation
 // ---------------------------------------------------------------------------
 
-void
-TestAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
+// CTest's convention for "this could not be checked here", set as
+// `SKIP_RETURN_CODE` on the test that runs this case. It is a separate CTest
+// name for exactly this reason: a skip inside the main suite is invisible —
+// ctest hides a passing test's output, so a run that verified nothing and a run
+// that verified everything print the same line. Reported as `Skipped`, the
+// answer is in every lane's log without anybody re-running anything, which
+// matters because the platforms that can run this are the ones where the defect
+// it is about was reachable in the first place.
+constexpr int kSkipExitCode = 77;
+
+int
+CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
 {
     // The defect this pins is the worst one a recorder can have, because it
     // fails *quietly and plausibly*: POSIX truncates a too-long datagram and
@@ -625,24 +635,22 @@ TestAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
     // be about this repository's own mistake.
     //
     // Reaching it needs IPv6, which is the one transport that can carry more
-    // than `MaxDatagramBytes` — so this test skips rather than fails where the
-    // host has no IPv6 loopback or refuses to send a datagram that large. A
-    // skip is honest here and a pass would not be: the platforms that can run
-    // it are the platforms where the claim is testable at all.
+    // than `MaxDatagramBytes` — so this reports a skip rather than a pass where
+    // the host has no IPv6 loopback or refuses to send a datagram that large.
     UdpReceiverConfig config;
     config.listenAddress = "::1";
     config.listenPort = 0;
 
     UdpReceiver receiver;
     if (!receiver.Open(config)) {
-        std::puts("  (skipped: no IPv6 loopback on this host)");
-        return;
+        std::puts("skipped: no IPv6 loopback on this host");
+        return kSkipExitCode;
     }
 
     LoopbackSender sender;
     if (!sender.Open(receiver.GetBoundEndpoint())) {
-        std::puts("  (skipped: could not reach the IPv6 loopback endpoint)");
-        return;
+        std::puts("skipped: could not reach the IPv6 loopback endpoint");
+        return kSkipExitCode;
     }
 
     // Above the IPv4 bound the capture format enforces, below IPv6's own 65527
@@ -650,8 +658,8 @@ TestAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
     const std::vector<std::uint8_t> overlong =
         Payload(vrmAdapterMocopi::MaxDatagramBytes + 8, 0x00);
     if (!sender.Send(overlong)) {
-        std::puts("  (skipped: this host will not send an over-long datagram)");
-        return;
+        std::puts("skipped: this host will not send an over-long datagram");
+        return kSkipExitCode;
     }
 
     ReceivedDatagram datagram;
@@ -678,6 +686,9 @@ TestAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
     assert(receiver.Receive(&datagram, kLoopbackTimeout)
            == ReceiveStatus::Received);
     assert(datagram.bytes == ordinary);
+
+    std::puts("an over-long datagram was dropped rather than recorded");
+    return 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -780,9 +791,16 @@ StartSockets()
 } // namespace
 
 int
-main()
+main(int argc, char** argv)
 {
     StartSockets();
+
+    // One case is split off behind an argument because it is the one that may
+    // legitimately not run here (see `kSkipExitCode`). Everything else is
+    // unconditional.
+    if (argc > 1 && std::string(argv[1]) == "truncation") {
+        return CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole();
+    }
 
     TestAnAddressThatIsNotOneIsRefusedBeforeTheNetworkIsTouched();
     TestAPortAlreadyServedIsRefusedRatherThanQuietlyShared();
@@ -796,7 +814,6 @@ main()
     TestSilenceIsCountedEvenWhenNobodyAskedForTheDiagnostic();
     TestAReopenedReceiverIsNotStillWaitingForTheLastSessionsSource();
     TestANewCountingWindowCanStillSeeAnOngoingSilence();
-    TestAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole();
     TestWhatCameOffTheSocketIsWhatACaptureKeeps();
     std::puts("vrmAdapterMocopi udp receiver tests passed");
     return 0;

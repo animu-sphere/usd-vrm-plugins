@@ -138,12 +138,22 @@ Current schema contract version: **1**.
     counting window over a device that was off the whole time would have ended
     reporting `silenceReports == 0`.
 
-  Three of the six now have tests that fail without them; the truncation one is
-  honest about where it can fail, since Windows catches that case through
-  `WSAEMSGSIZE` with or without the fix and only a POSIX lane exercises the
-  spare byte. Also corrected: the installed package config still claimed this
-  library had no transport, in the very file whose previous comment had promised
-  the receiver's change would update it.
+  Three of the six now have tests that fail without them, and the truncation one
+  is on **its own CTest name with `SKIP_RETURN_CODE`** rather than inside the
+  suite — because it needs IPv6 to be reachable at all, and a skip inside the
+  suite is invisible: ctest hides a passing test's output, so a lane that
+  checked the claim and a lane that quietly declined print the same line.
+  Reported as `Skipped`, the answer is in every lane's log. It also says where
+  it *can* fail, since Windows catches that case through `WSAEMSGSIZE` with or
+  without the fix and only a POSIX lane exercises the spare byte. Also
+  corrected: the installed package config still claimed this library had no
+  transport, in the very file whose previous comment had promised the receiver's
+  change would update it. 77/77 ctest.
+
+  The sibling's four copies are filed as
+  [#112](https://github.com/animu-sphere/usd-vrm-plugins/issues/112), and the
+  standalone build this change did not re-run as
+  [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113).
 
 - **Both recorded paths reach an avatar somebody actually made, and the real one
   found what the fixtures could not.** The v0.7.0 release conditions ask for a
