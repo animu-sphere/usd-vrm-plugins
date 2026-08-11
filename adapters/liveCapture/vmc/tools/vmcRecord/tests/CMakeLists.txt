@@ -38,6 +38,28 @@ add_test(NAME vmc_record_loopback
 # not know this adapter exists, in a test directory any more than in a link
 # line.
 if(TARGET motion_capture AND TARGET motion_retarget)
+    # And onto a released VRM as well, where the same tree carries the importer
+    # to open one with. That is the v0.7.0 condition's own wording -- a session
+    # reaching a *real* VRM avatar -- and it is an addition rather than a
+    # replacement: the fixture beside this file is shaped to be awkward on
+    # purpose, and a shipped model is shaped by whoever shipped it.
+    #
+    # It adds no edge. This adapter links nothing new, `motion_retarget` takes
+    # the same command line, and what changes is only that usdVrmFileFormat is
+    # on the plugin registry path when the test runs.
+    set(_vmc_vrm_avatar "")
+    if(TARGET UsdVrmFileFormat)
+        set(_vmc_vrm_avatar
+            "${CMAKE_SOURCE_DIR}/plugins/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm")
+        if(NOT EXISTS "${_vmc_vrm_avatar}")
+            set(_vmc_vrm_avatar "")
+        endif()
+    endif()
+    set(_vmc_vrm_argument "")
+    if(_vmc_vrm_avatar)
+        set(_vmc_vrm_argument --vrm-avatar "${_vmc_vrm_avatar}")
+    endif()
+
     add_test(NAME vmc_record_endToEnd
         COMMAND "${Python3_EXECUTABLE}"
                 "${CMAKE_CURRENT_SOURCE_DIR}/test_vmc_end_to_end.py"
@@ -45,7 +67,8 @@ if(TARGET motion_capture AND TARGET motion_retarget)
                 --capture-tool "$<TARGET_FILE:motion_capture>"
                 --retarget-tool "$<TARGET_FILE:motion_retarget>"
                 --corpus "${_vmc_record_corpus}"
-                --avatar "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/vmc_avatar.usda")
+                --avatar "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/vmc_avatar.usda"
+                ${_vmc_vrm_argument})
 else()
     message(STATUS
         "vmcRecord: the product's motion tools are not in this build tree; the "
@@ -87,7 +110,23 @@ if(TEST vmc_record_endToEnd)
     elseif(pxr_DIR)
         get_filename_component(_vmc_usd_root "${pxr_DIR}/../../.." ABSOLUTE)
     endif()
-    set_tests_properties(vmc_record_endToEnd PROPERTIES
-        ENVIRONMENT_MODIFICATION
+    set(_vmc_e2e_env
         "PATH=path_list_prepend:${_vmc_usd_root}/bin;PATH=path_list_prepend:${_vmc_usd_root}/lib;PYTHONPATH=path_list_prepend:${_vmc_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_vmc_usd_root}/lib/site-packages")
+    if(_vmc_vrm_avatar)
+        # Mirrored from plugins/usdVrmFileFormat/tests/CMakeLists.txt, which is
+        # the environment that bundle's own smoke tests run in on all three OS:
+        # the build-tree plugInfo (absolute LibraryPath, so no working-directory
+        # assumption), the plugin's own lib/, and the sibling vrmSchema bundle,
+        # whose typed Vrm*API schemas the importer applies and whose library
+        # libUsdVrmFileFormat links.
+        set(_vmc_schema_bundle "${CMAKE_SOURCE_DIR}/plugins/vrmSchema")
+        string(APPEND _vmc_e2e_env
+            ";PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmFileFormat>"
+            ";PATH=path_list_prepend:${_vmc_schema_bundle}/lib"
+            ";PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmContainer::vrmContainer>"
+            ";PXR_PLUGINPATH_NAME=path_list_prepend:${CMAKE_BINARY_DIR}/plugins/usdVrmFileFormat/tests/resources/usdVrmFileFormat"
+            ";PXR_PLUGINPATH_NAME=path_list_prepend:${_vmc_schema_bundle}/plugin/resources/vrmSchema")
+    endif()
+    set_tests_properties(vmc_record_endToEnd PROPERTIES
+        ENVIRONMENT_MODIFICATION "${_vmc_e2e_env}")
 endif()

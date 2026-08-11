@@ -49,6 +49,47 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **Both recorded paths reach an avatar somebody actually made, and the real one
+  found what the fixtures could not.** The v0.7.0 release conditions ask for a
+  *real VRM avatar* on both halves, and both now have one: the recorded path in
+  `workspace_real_avatar_bake` (a new workspace test) and the live path in the
+  VMC adapter's own `vmc_record_endToEnd`, each baking onto `Seed-san.vrm` — a
+  committed, redistributable VRM 1.0 sample. *Seed-san model by VirtualCast,
+  Inc. — VRM Public License 1.0.* The hand-authored fixtures stay beside them
+  rather than being replaced: a rig shaped so a broken rest-pose correction
+  cannot pass it and a rig somebody shipped are different tests, and neither
+  substitutes.
+
+  What a released model gives that a fixture cannot is three things it was never
+  designed to give. **128 joints of which the humanoid binds 51** — the rest are
+  hair, a backpack, ropes and heels, so "the right joints moved" stops meaning
+  "three moved" and starts meaning "three moved and the hair did not". **Two
+  unbound joints between bound ones** (`forearm_twist_L/R`), so the hand's
+  rotation has to arrive *through* a joint the clip knows nothing about, which
+  is the target-side of the path rule the converter answered on the source side.
+  And **an incomplete humanoid**: VRM 1.0 makes `upperChest` optional, this model
+  leaves it out, and the mocopi profile maps a source joint to one.
+
+  That last one is a finding, and it is exact rather than approximate. The
+  rotation is **dropped whole rather than redistributed**: every bone below it
+  reproduces the source computed as if the source's `upperChest` had never
+  moved, agreeing with that prediction to 6e-7 degrees, and costing 11.2° at
+  worst on the recorded session — the same figure at the neck, the head and both
+  arms. `motion_retarget` already named the bone on stderr rather than losing it
+  in silence. Whether dropping it is *right* is a contract question with two
+  candidate answers and one avatar behind it, so it is raised in
+  [`docs/roadmap/recorded-motion-sources.md`](docs/roadmap/recorded-motion-sources.md)
+  §10 and pinned here as a characterisation test, not decided.
+
+  Neither test adds an edge. The root one names no adapter, which is why the
+  live half lives with the adapter instead; the adapter one links nothing new
+  and passes `motion_retarget` the identical command line, the only difference
+  being that `usdVrmFileFormat` is on the plugin registry path when it runs — so
+  a build tree without the importer skips the real-avatar leg rather than
+  failing it. The rig-reading machinery both workspace tests share moved to
+  `tests/motion/rigcheck.py`, because two copies of a quaternion chain walk are
+  how a test starts agreeing with the defect it is meant to catch.
+
 - **`motion_bvh_convert`: a recorded file, an explicitly named profile, and the
   same avatar-independent semantic clip `motion_retarget` already consumes.** It
   is the first program anywhere that holds a reader and a profile at once, which

@@ -414,7 +414,7 @@ to make small.
 | **BVH-2** — semantics | the `motionSource` API, the profile API, the mocopi profile, the second producer's, basis and unit conversion, source rest pose, root policy, `HumanoidAnimation`, the semantic clip writer | ✅ |
 | ↳ how BVH-2 closed | the **second producer's profile** landed 2026-08-05 and cost two contract changes on the way, which is the milestone paying for itself: the first export had made "the root joint is the hips" and "the offsets are the rest" look like properties of the format. The semantic clip writer landed the same day with `motion_bvh_convert`, as a third repeated shape rather than shared code and with the condition that would change that written down ([§10](#10-contract-changes-this-plan-requires)), along with the value model, the profile contract and file, the extractor and the converter | ✅ |
 | **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, artifact-only smoke, the recorded corpus | 🚧 |
-| ↳ what remains of BVH-3 | the **artifact-only smoke**, which is now **blocked and diagnosed** rather than merely unwritten: a packaged product carries no profiles, so a converter unpacked from one refuses every file it is given ([§10](#10-contract-changes-this-plan-requires)). And a **target VRM** rather than the hand-authored humanoid fixture the end-to-end test bakes onto today — a deliberate choice rather than a placeholder, because that fixture is shaped so a broken rest-pose correction cannot pass and a real avatar is not. The tool, the unchanged retargeter and the bake landed 2026-08-05 ([§12](#12-pr-splitting) items 10 and 11) | 🚧 |
+| ↳ what remains of BVH-3 | the **artifact-only smoke**, which is **blocked and diagnosed** rather than merely unwritten: a packaged product carries no profiles, so a converter unpacked from one refuses every file it is given ([§10](#10-contract-changes-this-plan-requires)). The tool, the unchanged retargeter and the bake landed 2026-08-05 ([§12](#12-pr-splitting) items 10 and 11), and the **target VRM** landed 2026-08-11 — the fixture bake stays beside it rather than being replaced, because a rig shaped so a broken rest-pose correction cannot pass it and a rig somebody shipped are not the same test | 🚧 |
 | **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | ⬜ |
 
 BVH-0 is a measurement milestone, and skipping it is the failure mode this whole
@@ -692,6 +692,31 @@ depends on them ([docs/README.md](../README.md)).
   [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#recorded-source-rest-pose-and-the-path-rule-v070)
   carries the one weakness: offsets pin a bone's direction and not its roll, so
   the roll is taken from frame 0 and only the aim from the canonical pose.
+- ⬜ **A released avatar's humanoid is incomplete, and what a bone it cannot
+  bind costs is measured but not decided** (raised 2026-08-11, by baking onto a
+  real VRM). VRM 1.0 makes `upperChest` optional; `Seed-san.vrm` leaves it out;
+  the mocopi profile maps a source joint *to* it. `PoseRetargeter` reports the
+  bone as unmapped and drops its rotation, and the measurement is exact rather
+  than approximate: every bone below it reproduces the source **computed as if
+  the source's `upperChest` had never moved** — 11.2° at worst on the recorded
+  session, identical for the neck, the head and both arms, and agreeing with
+  that prediction to 6e-7 degrees. So the rotation is dropped *whole*, not
+  smeared, which is the one thing that had to be established before the question
+  could be asked properly.
+
+  This is the mirror of the path rule, and it does **not** have the same answer
+  by symmetry. On the source side an unmapped joint always sits between two
+  mapped ones, so composing it downward is the only reading. Here there are two:
+  **hoist** the rotation to the nearest bound ancestor (`chest`), which keeps
+  the chain rigid and pivots it too low; or **push** it onto each nearest bound
+  descendant (`neck`, both shoulders), which pivots too high and leaves the
+  missing joint's own offset unrotated. Which is less wrong is a fact about
+  rigs, and one avatar cannot supply it — a second released model with no
+  `upperChest` is what this needs, in the way BVH-0 needed a second producer.
+  Until then the drop is pinned by `workspace_real_avatar_bake` as a
+  characterisation, so a later rule has to change that test before it changes
+  the behaviour, and `motion_retarget` names the bone on stderr rather than
+  losing it in silence.
 - 🚧 **Profiles need a packaging answer.** They are data that must reach an
   artifact-only smoke test, so `share/usd-vrm-plugins/profiles/motion/` is named
   in WORKSPACE.md §5. **The plain-CMake half is done and measured**

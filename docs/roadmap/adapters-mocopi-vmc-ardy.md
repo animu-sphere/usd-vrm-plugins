@@ -1041,6 +1041,19 @@ and this one can say it about `motion_capture` too.
   committed session that moves is an arm raise and the design avatar has four
   joints and no arms. Widening a design contract fixture to suit a test would
   move a contract to make a test pass.
+- ✅ **And onto a real VRM** (2026-08-11). The same test drives the same session
+  onto `Seed-san.vrm` as well, which is the release condition's own wording —
+  *a real VRM avatar* — and an addition rather than a replacement: the fixture
+  is awkward on purpose and a shipped model is awkward on its own terms. Three
+  joints move out of a hundred and twenty-eight, so the claim stops being
+  "three joints moved" and becomes "three moved and the hair, the backpack and
+  the twist joints did not". It adds no edge in either direction: this adapter
+  links nothing new, `motion_retarget` takes the identical command line, and
+  the only difference is that `usdVrmFileFormat` is on the plugin registry path
+  when the test runs — so the test is skipped, not failed, in a build tree
+  without the importer. The recorded half's equivalent is
+  `workspace_real_avatar_bake`, which lives at the workspace root because its
+  chain names no adapter and this one's does.
 - ⬜ **The artifact-only leg is not done.** Nothing here has been run from
   packaged artifacts, and `ost` 0.21.0 cannot package an adapter at all (§11),
   so the chain is verified from the workspace build only.
