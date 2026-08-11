@@ -24,6 +24,13 @@
 # fine.
 *.vmcpackets text eol=lf
 
+# Recorded mocopi packet captures, for the VMC reason plus one more: this corpus
+# is also compared against the *generator* that authored it
+# (vrmAdapterMocopi_packetGen), which writes '\n' explicitly, so a CRLF smudge
+# would fail both the writer comparison and the generator comparison. The
+# manifest's SHA-256 of each capture is a third thing a smudge would move.
+*.mocopipackets text eol=lf
+
 # BVH fixtures, for a third variant of the same reason: the corpus manifest
 # records each file's size and SHA-256, and a CRLF smudge on a Windows checkout
 # would change both. Hashes that differ per OS pin nothing. The parser accepts

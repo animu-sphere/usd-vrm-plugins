@@ -351,6 +351,7 @@ relay-shaped assumption is exactly what a native decoder must not inherit.
 | --- | --- |
 | `MocopiReceiver` | transport, receive timestamps, reconnection, transport diagnostics |
 | `MocopiPacketDecoder` | packet syntax, joint and root samples, tracking state, malformed rejection |
+| ↳ shipped as two | `PacketChunk` (the container: lengths and tags, nothing else) and `MotionPacket` (the two packet kinds), split for the reason the sibling splits OSC from VMC — a container has its own malformed-input cases, and a decoder that mixed the two could only be tested end to end. **Tracking state is not in this row's scope after all**: the measured grammar carries no per-joint confidence or state, so there is nothing here to decode into it (Milestone D) |
 | `MocopiSkeletonMap` | source joints → canonical humanoid semantics; unsupported joints ignored, missing bones declared, source-name provenance kept |
 | `MocopiCoordinateConverter` | handedness, up axis, quaternion convention, translation units, root orientation |
 | `MocopiLiveSource` | pushes decoded frames at `LiveCaptureSource`, sets source metadata |
@@ -1103,10 +1104,11 @@ line-oriented format can carry is refused before the first byte.
 
 ### Milestone D — the mocopi native live adapter 🚧 (v0.7.0)
 
-`adapters/liveCapture/mocopi` scaffold · packet-capture fixture format · packet
-decoder · joint mapping · coordinate conversion · tracking state and confidence ·
-frame assembly · `LiveCaptureSource` bridge · thin UDP receiver · reconnection ·
-opt-in real-device test · **the cross-source comparison of §9.6**
+~~`adapters/liveCapture/mocopi` scaffold~~ · ~~packet-capture fixture format~~ ·
+~~thin UDP receiver~~ · ~~packet decoder~~ · joint mapping · coordinate
+conversion · tracking state and confidence · frame assembly ·
+`LiveCaptureSource` bridge · reconnection · opt-in real-device test ·
+**the cross-source comparison of §9.6**
 
 **The build order was Milestone A's and is not** — amended 2026-08-11, after the
 receiver landed first. It was planned as recorded decoder → mapping →
@@ -1205,14 +1207,66 @@ original order that was never about the transport.
   produce a file its own reader rejects. **The sibling format has this
   identically** as of 2026-08-11; the tool declines rather than leaving an
   unreadable artifact on disk, and fixing it in either library is its own change.
-- ⬜ **The corpus, and the packet decoder after it.** What is missing is now an
-  operator's action rather than a commit, and the tool for it exists: a source
-  aimed at this port, either the vendor's `BVH Sender` pointed at a `.bvh` this
-  repository wrote or a device. **A device is available as of 2026-08-11**, which
-  closes the access question and leaves the committable-fixture question exactly
-  where the paragraph below puts it — a session recorded off a phone is recorded
-  evidence and not a corpus fixture, so `BVH Sender` remains the path to the
-  bytes public CI may run.
+- ✅ **The corpus, and the packet decoder after it** (2026-08-12). The wire
+  format was **measured** rather than recalled, which is the whole point of the
+  ordering above: five real device sessions off an iPhone 16, 8000 datagrams,
+  four distinct motions, walked until the arithmetic closed — every chunk
+  consuming `length + 8` bytes and landing exactly on the end of its container,
+  at every level, on every datagram. The grammar, and the population behind each
+  claim, is on `include/vrmAdapterMocopi/MotionPacket.h`.
+
+  Two packet kinds and no more, confirmed by four completely different motions
+  producing byte-identical envelope reports: a 1605-byte frame and a 1821-byte
+  skeleton, both `head`/`sndf` plus one payload, nesting four levels deep to 27
+  bone records of `bnid` and a seven-float `tran`. The measurements that matter
+  downstream: the quaternion is **scalar-last** and its imaginary parts share the
+  translation's component order; translations are **metres**, up is **+Y**,
+  forward is **+Z**, all three from the rest pose rather than a document; `time`
+  is binary32 stream-relative seconds and `uttm` is binary64 Unix seconds, which
+  agree to 2 µs over 33 s and which `uttm` confirms against something outside the
+  protocol entirely — it decodes to the wall-clock instant the file was written.
+
+  **Three findings worth more than the decoder.** Only the root translates: in
+  207,064 bone-frames every non-root translation equalled its rest offset *bit
+  for bit*, so a frame packet is rotations plus one root position. An `fnum` gap
+  is **transport loss and not a protocol event**, and that is measured rather
+  than assumed — two sessions lost 14 and 8 datagrams to Wi-Fi and every gap's
+  `time` delta was exactly the missing count times 1/60 s, so the sender's clock
+  never skipped. And the sender rate is exactly 60 Hz in all five sessions, which
+  retires the unexplained "~65 Hz" from the first-contact session: that was
+  always the *arrival* rate on the receive clock, and there was no sender clock
+  to compare it against until now.
+
+  **Handedness is deliberately unresolved, and this is the milestone's one open
+  measurement.** A mirrored basis satisfies everything above, because a mirrored
+  skeleton is geometrically identical. Settling it needs an asymmetric motion
+  whose side is *labelled* — an operator's session, not a commit — so nothing
+  committed says left or right: the corpus names arm bones by their side of the
+  +X axis and by their bone id, and the decoder's structs stop short of x/y/z.
+  That is the coordinate converter's question, and it now has exactly one input
+  it is waiting on.
+
+  Three of the nine frozen codes are raised here and no others —
+  `PACKET_MALFORMED`, `NON_FINITE_TRANSFORM`, `TIMESTAMP_INVALID` — which brings
+  the set to five paid for by a real caller. The bone-not-frame rule is the
+  decision worth reviewing: the container has already closed by the time this
+  layer runs, so one unusable bone record costs that bone and not the twenty-six
+  that arrived with it, and whether 26 of 27 is a usable frame is
+  `FRAME_INCOMPLETE`'s question one layer up. `TRACKING_LOST` is now an open
+  question rather than a to-do: there is no per-joint confidence or state
+  anywhere in the measured grammar, so it lives in one of the two unidentified
+  fields or this application version does not send it.
+
+  Four new CTest names, 84 green in the workspace. The corpus is seven captures
+  written *from* the measurement, and `tests/corpus/README.md` is blunt about the
+  limit that implies: **they pin the decoder, not the protocol**, because the
+  grammar that wrote them is the grammar they are decoded with. Verified
+  negatively rather than assumed — reordering the quaternion in the decoder turns
+  both the unit test and the `arms-lowered` fixture red, and the fixture names the
+  exact claim. The recorded sessions stay uncommitted: they hold a real person's
+  motion, and a skeleton packet is a body measurement. So `BVH Sender` is still
+  the path to bytes whose *encoding* is the vendor's own, and it is still the only
+  thing in the plan that can refute this grammar rather than agree with it.
 
 **The wire format is not documented, and the evidence path is a sender rather
 than a device** (established 2026-08-09). The vendor states the transport and
