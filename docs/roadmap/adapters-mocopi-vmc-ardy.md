@@ -969,6 +969,22 @@ capture device validated through a VMC relay
   The CLI's two tests landed the same way, taking the root suite from 41 names
   to 43: `vmc_record_inspect` needs no socket and `vmc_record_loopback` binds
   one, split for the same reason and excludable the same way.
+- ⬜ **Four transport defects, found in the mocopi receiver and present here
+  identically** (2026-08-11). They were copied into that adapter along with
+  everything else, fixed there, and are outstanding in this one: an over-long
+  datagram handed back as whole on POSIX (`recvfrom` truncates silently and the
+  buffer is exactly the bound, so a short read is indistinguishable from a whole
+  datagram — the buffer needs one spare byte); a large *finite* timeout mapped
+  onto `-1`, which both `poll` and `WSAPoll` read as "wait forever"; a poll
+  wake-up whose `revents` is never inspected, which spins at 100% of a core
+  under the documented indefinite wait when only `POLLERR`/`POLLHUP` is set; and
+  idle accounting applied to a call that had just met a truncated datagram or an
+  ICMP report. The first is the one that matters most here too, and for the same
+  reason — this adapter is also a recorder, and a fixture containing a packet no
+  sender sent is worse than a missing one. Left out of the mocopi change on
+  purpose: a pull request that opens a socket in one adapter should not rewrite
+  another's transport, and these want their own change with the sibling's
+  corpus replayed against it.
 - ⬜ **Real senders, of deliberately different shape** — a mocopi relay, a
   general avatar tracker, and a VTuber or DCC application, plus the repository's
   own loopback sender as the deterministic control. The roadmap names categories

@@ -289,9 +289,13 @@ TestTheReceiveBufferIsReportedAsGrantedRatherThanAsAsked()
 {
     UdpReceiver defaulted;
     assert(defaulted.Open(LoopbackConfig()));
-    // Whatever the platform's default is, it is a real number and this class
-    // knows it. A caller that cannot see one cannot diagnose the loss that
-    // happens when its tick is slower than its source.
+
+    // **This is the read-back proof, and the request case below is not.** This
+    // receiver asked for nothing — `receiveBufferBytes` is 0 — so a non-zero
+    // answer cannot be an echo of anything the caller said and can only have
+    // come off the socket. Silently getting the default and then losing
+    // datagrams is the hardest failure here to see from the outside, and it is
+    // this assertion that would catch the read-back going away.
     assert(defaulted.GetReceiveBufferBytes() > 0);
 
     UdpReceiverConfig config = LoopbackConfig();
@@ -299,11 +303,12 @@ TestTheReceiveBufferIsReportedAsGrantedRatherThanAsAsked()
     UdpReceiver asked;
     assert(asked.Open(config));
 
-    // Deliberately *not* asserted equal to the request: every platform may
-    // clamp it and Linux reports double what it was given. What is asserted is
-    // that asking moved it and that the answer is read back from the socket,
-    // which is the whole point — silently getting the default and then losing
-    // datagrams is the hardest failure here to see from the outside.
+    // Deliberately *not* asserted equal to the request, and deliberately not
+    // asserted greater than the default either. Every platform may clamp the
+    // value, Linux reports double what it was given, and macOS caps it at a
+    // sysctl a test cannot read — so a strict `>` would be asserting a property
+    // of somebody's kernel configuration. What this checks is the weaker and
+    // true claim: asking for more never comes back with less.
     assert(asked.GetReceiveBufferBytes() > 0);
     assert(asked.GetReceiveBufferBytes() >= defaulted.GetReceiveBufferBytes());
 }
@@ -477,7 +482,13 @@ TestSilenceIsReportedOncePerEpisodeAndRearmedByADatagram()
     // waiting for a device to be switched on is an ordinary session.
     assert(diagnostics[0].recoverable);
     assert(diagnostics[0].source == receiver.GetBoundEndpoint());
-    assert(diagnostics[0].timestamp.has_value());
+    // No `timestamp`, deliberately. Diagnostics.h defines that field as the
+    // *source's* clock at a frame, and this diagnostic exists precisely because
+    // no frame arrived to carry one; the receiver's own clock in that column
+    // would put two unrelated timelines in one session log. The duration is in
+    // the detail instead, where a number needs no shared origin.
+    assert(!diagnostics[0].timestamp.has_value());
+    assert(diagnostics[0].detail.find("s ago") != std::string::npos);
 
     // Still quiet, still one report. A loop that noticed silence a hundred
     // times a second would fill a session log with the loop rather than with
@@ -520,6 +531,153 @@ TestSilenceIsCountedEvenWhenNobodyAskedForTheDiagnostic()
 
     PollUntilSilenceReports(receiver, 1, nullptr);
     assert(receiver.GetStats().silenceReports == 1);
+}
+
+void
+TestAReopenedReceiverIsNotStillWaitingForTheLastSessionsSource()
+{
+    // The defect this pins: `Open` restarts the receive clock, so a silence
+    // check that measured from a time stamped in the *previous* epoch compared
+    // a clock near zero against a number from a session that had been running
+    // for a while — and stayed blind for exactly that long, on a reconnect,
+    // which is the one moment the code exists for.
+    UdpReceiverConfig config = LoopbackConfig();
+    config.silenceTimeoutSeconds = 0.05;
+
+    UdpReceiver receiver;
+    assert(receiver.Open(config));
+
+    LoopbackSender sender;
+    assert(sender.Open(receiver.GetBoundEndpoint()));
+    assert(sender.Send(Payload(8, 0x30)));
+
+    ReceivedDatagram datagram;
+    assert(receiver.Receive(&datagram, kLoopbackTimeout)
+           == ReceiveStatus::Received);
+    assert(receiver.GetStats().datagramsReceived == 1);
+    assert(receiver.GetStats().lastReceiveTime > 0.0);
+
+    // Reconnect. The port is not the same one, which is the ordinary case and
+    // also the reason the previous session's peer means nothing now.
+    sender.Close();
+    receiver.Close();
+    assert(receiver.Open(config));
+
+    // A session's tallies are the session's: everything in the struct is either
+    // a count for this socket or a time on this epoch.
+    assert(receiver.GetStats().datagramsReceived == 0);
+    assert(receiver.GetStats().lastReceiveTime == 0.0);
+    assert(receiver.GetStats().silenceReports == 0);
+
+    std::vector<Diagnostic> diagnostics;
+    PollUntilSilenceReports(receiver, 1, &diagnostics);
+    assert(diagnostics.size() == 1);
+    // And it is the *right* half of the code: nothing has arrived on this
+    // socket, whatever the last one saw.
+    assert(diagnostics[0].detail.find("no datagram has arrived")
+           != std::string::npos);
+}
+
+void
+TestANewCountingWindowCanStillSeeAnOngoingSilence()
+{
+    // `ResetStats` starts a new window. If it zeroed the tally but left the
+    // episode marked as already reported, the window would end saying
+    // `silenceReports == 0` — "the session was fine" — for a device that was
+    // switched off the whole time, which is the precise failure the tally
+    // exists to prevent.
+    UdpReceiverConfig config = LoopbackConfig();
+    config.silenceTimeoutSeconds = 0.05;
+
+    UdpReceiver receiver;
+    assert(receiver.Open(config));
+
+    std::vector<Diagnostic> diagnostics;
+    PollUntilSilenceReports(receiver, 1, &diagnostics);
+    assert(receiver.GetStats().silenceReports == 1);
+
+    receiver.ResetStats();
+    assert(receiver.GetStats().silenceReports == 0);
+
+    // The same episode, still in progress, reported once more — in the new
+    // window. It is not measured afresh from the reset either: the silence is
+    // already older than the threshold, so the very next poll carries it.
+    ReceivedDatagram datagram;
+    assert(receiver.Receive(&datagram, 0.0, &diagnostics)
+           == ReceiveStatus::Idle);
+    assert(receiver.GetStats().silenceReports == 1);
+    assert(diagnostics.size() == 2);
+}
+
+// ---------------------------------------------------------------------------
+// Truncation
+// ---------------------------------------------------------------------------
+
+void
+TestAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
+{
+    // The defect this pins is the worst one a recorder can have, because it
+    // fails *quietly and plausibly*: POSIX truncates a too-long datagram and
+    // reports the buffer's length, which is indistinguishable from a datagram
+    // that happened to be exactly that long. A receiver whose buffer was the
+    // bound itself would therefore write a packet the source never sent into a
+    // fixture, and every conclusion a decoder later drew from that fixture would
+    // be about this repository's own mistake.
+    //
+    // Reaching it needs IPv6, which is the one transport that can carry more
+    // than `MaxDatagramBytes` — so this test skips rather than fails where the
+    // host has no IPv6 loopback or refuses to send a datagram that large. A
+    // skip is honest here and a pass would not be: the platforms that can run
+    // it are the platforms where the claim is testable at all.
+    UdpReceiverConfig config;
+    config.listenAddress = "::1";
+    config.listenPort = 0;
+
+    UdpReceiver receiver;
+    if (!receiver.Open(config)) {
+        std::puts("  (skipped: no IPv6 loopback on this host)");
+        return;
+    }
+
+    LoopbackSender sender;
+    if (!sender.Open(receiver.GetBoundEndpoint())) {
+        std::puts("  (skipped: could not reach the IPv6 loopback endpoint)");
+        return;
+    }
+
+    // Above the IPv4 bound the capture format enforces, below IPv6's own 65527
+    // maximum. One byte over would do; a handful makes the intent legible.
+    const std::vector<std::uint8_t> overlong =
+        Payload(vrmAdapterMocopi::MaxDatagramBytes + 8, 0x00);
+    if (!sender.Send(overlong)) {
+        std::puts("  (skipped: this host will not send an over-long datagram)");
+        return;
+    }
+
+    ReceivedDatagram datagram;
+    const ReceiveStatus status = receiver.Receive(&datagram, 0.25);
+
+    // Dropped, counted, and never presented as a datagram — on both platforms
+    // and by two different mechanisms: Windows says WSAEMSGSIZE, POSIX says
+    // nothing and is caught by the buffer's one spare byte.
+    //
+    // Which means **this test cannot fail on Windows for the defect it was
+    // written about**, because WSAEMSGSIZE catches it there with or without the
+    // spare byte. The lane that proves the fix is a POSIX one: without it,
+    // `recvfrom` returns the buffer's length, the code below sees an ordinary
+    // datagram, and the first assertion fails on `Received`. Worth knowing
+    // before reading a green Windows run as evidence.
+    assert(status == ReceiveStatus::Idle);
+    assert(receiver.GetStats().datagramsTruncated == 1);
+    assert(receiver.GetStats().datagramsReceived == 0);
+    assert(receiver.GetStats().bytesReceived == 0);
+
+    // And the socket still works afterwards: a refusal is not a shutdown.
+    const std::vector<std::uint8_t> ordinary = Payload(24, 0x61);
+    assert(sender.Send(ordinary));
+    assert(receiver.Receive(&datagram, kLoopbackTimeout)
+           == ReceiveStatus::Received);
+    assert(datagram.bytes == ordinary);
 }
 
 // ---------------------------------------------------------------------------
@@ -636,6 +794,9 @@ main()
     TestSilenceIsNotReportedUntilACallerSaysHowMuchIsTooMuch();
     TestSilenceIsReportedOncePerEpisodeAndRearmedByADatagram();
     TestSilenceIsCountedEvenWhenNobodyAskedForTheDiagnostic();
+    TestAReopenedReceiverIsNotStillWaitingForTheLastSessionsSource();
+    TestANewCountingWindowCanStillSeeAnOngoingSilence();
+    TestAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole();
     TestWhatCameOffTheSocketIsWhatACaptureKeeps();
     std::puts("vrmAdapterMocopi udp receiver tests passed");
     return 0;

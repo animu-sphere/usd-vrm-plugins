@@ -214,7 +214,7 @@ def main() -> int:
             if token.lower() not in allowed_link:
                 errors.append(
                     "vrmAdapterMocopi may link only motionCore, motionRuntime "
-                    f"and the platform's transport; CMakeLists.txt links "
+                    "and the platform's transport; CMakeLists.txt links "
                     f"`{token}`")
 
     # Refuse a static archive outright rather than inspecting one and finding

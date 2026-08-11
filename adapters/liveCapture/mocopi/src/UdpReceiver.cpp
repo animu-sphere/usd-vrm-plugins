@@ -12,6 +12,10 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <iomanip>
+#include <ios>
+#include <locale>
+#include <sstream>
 #include <utility>
 
 #if defined(_WIN32)
@@ -318,19 +322,40 @@ TicksToSeconds(std::int64_t ticks)
            / static_cast<double>(Period::den);
 }
 
+// -1 means "wait indefinitely" to both `poll` and `WSAPoll`, so it is a value
+// only a negative request may produce. A large *finite* request is clamped to
+// the largest wait either will accept instead — around 24 days, which no caller
+// distinguishes from the 35 it asked for, where an indefinite wait is the exact
+// opposite of what it asked for and leaves it with no way to stop.
+constexpr int kPollForever = -1;
+constexpr int kPollMaxMilliseconds = 2147483647;
+
 int
 TimeoutToMilliseconds(double seconds)
 {
     if (seconds < 0.0) {
-        return -1;
+        return kPollForever;
     }
     const double milliseconds = seconds * 1000.0;
-    if (milliseconds >= 2147483647.0) {
-        return -1;
+    if (milliseconds >= static_cast<double>(kPollMaxMilliseconds)) {
+        return kPollMaxMilliseconds;
     }
     // Rounded up, so a timeout smaller than the platform's resolution waits a
     // tick rather than degenerating into a spin.
     return static_cast<int>(milliseconds + 0.999);
+}
+
+// Six decimals and the classic locale, matching `FormatDiagnostic`'s own
+// rendering of a time (Diagnostics.cpp): a DCC that calls setlocale(LC_ALL, "")
+// would otherwise turn 2.000000 into 2,000000 in exactly the environment where
+// a live session is being debugged.
+std::string
+FormatSeconds(double seconds)
+{
+    std::ostringstream out;
+    out.imbue(std::locale::classic());
+    out << std::fixed << std::setprecision(6) << seconds;
+    return out.str();
 }
 
 // What the kernel says the receive buffer is, which is rarely what was asked
@@ -461,8 +486,10 @@ UdpReceiver::Open(const UdpReceiverConfig& config,
     }
 
     // Sized once, and never resized again: this is where a datagram is read
-    // before its real length is known.
-    _buffer.resize(MaxDatagramBytes);
+    // before its real length is known. One byte above the bound, so that a
+    // platform which truncates silently still yields a length this class can
+    // recognise as too long (UdpReceiver.h).
+    _buffer.resize(MaxDatagramBytes + 1);
     _receiveBufferBytes = ReadReceiveBuffer(ToHandle(_socket));
 
     sockaddr_storage bound = {};
@@ -479,9 +506,20 @@ UdpReceiver::Open(const UdpReceiverConfig& config,
     }
 
     _config = config;
-    _silenceReported = false;
     _epoch = SteadyTicks();
     _lastError.clear();
+
+    // A successful `Open` starts a session, and everything measured against the
+    // receive clock restarts with it. `_stats` is in that list rather than
+    // outside it: `firstReceiveTime` and `lastReceiveTime` are relative to this
+    // epoch, so carrying them across one would put two numbers on an axis they
+    // were never both on — and the silence check reading such a value found a
+    // source that "last sent" further in the future than the clock had yet
+    // reached, and stayed blind for as long as the previous session had run.
+    _stats = UdpReceiverStats();
+    _silenceReported = false;
+    _lastTrafficTime = 0.0;
+    _sawTraffic = false;
     return true;
 }
 
@@ -495,6 +533,18 @@ UdpReceiver::Close() noexcept
     _boundEndpoint.clear();
     _loopbackOnly = false;
     _receiveBufferBytes = 0;
+    // Actually released, rather than merely cleared. This is ~64 KB, and a
+    // caller holding receivers for interfaces it is not listening on — a
+    // reconnect loop is the ordinary case — should pay for the sockets it has
+    // open and not for the ones it has closed. `Open` sizes it again.
+    std::vector<std::uint8_t>().swap(_buffer);
+    // The configuration belonged to the session that just ended, and a stale
+    // silence threshold surviving a failed re-`Open` is the kind of coupling
+    // that is only harmless until something reorders two calls.
+    _config = UdpReceiverConfig();
+    _silenceReported = false;
+    _lastTrafficTime = 0.0;
+    _sawTraffic = false;
 }
 
 double
@@ -512,10 +562,10 @@ UdpReceiver::_ReportSilence(std::vector<Diagnostic>* diagnostics)
     // Measured from the last accepted datagram, or from `Open` when none has
     // arrived at all — the two are the same question asked at different points
     // in a session, and the frozen code covers both by design ("a device that
-    // has not been started and one that has stopped" — Diagnostics.h).
-    const double since = _stats.datagramsReceived == 0
-                             ? Now()
-                             : Now() - _stats.lastReceiveTime;
+    // has not been started and one that has stopped" — Diagnostics.h). Both
+    // facts are read from members rather than from `_stats`, which a caller may
+    // zero at any moment (UdpReceiver.h).
+    const double since = Now() - _lastTrafficTime;
     if (since < _config.silenceTimeoutSeconds) {
         return;
     }
@@ -529,13 +579,21 @@ UdpReceiver::_ReportSilence(std::vector<Diagnostic>* diagnostics)
         return;
     }
 
+    // No `timestamp`. That field is "seconds in the source's own clock, when the
+    // diagnostic is tied to a frame" (Diagnostics.h), and this diagnostic is
+    // tied to no frame and has no source clock reading by definition — nothing
+    // arrived to carry one. Putting the *receiver's* clock there would give a
+    // session report two unrelated timelines in one column, and it would sort
+    // this line against the decoder's future `TRACKING_LOST` and
+    // `TIMESTAMP_INVALID` lines as though they were comparable. The bind failure
+    // above leaves the field unset for the same reason; the duration goes in the
+    // detail, where a number needs no shared origin to be read.
     Diagnostic diagnostic = MakeDiagnostic(
         DiagnosticCode::DeviceUnavailable,
-        _stats.datagramsReceived == 0
-            ? "no datagram has arrived since the receiver was opened"
-            : "the source stopped sending");
+        (_sawTraffic ? "the source stopped sending "
+                     : "no datagram has arrived since the receiver was opened ")
+            + FormatSeconds(since) + "s ago");
     diagnostic.source = _boundEndpoint;
-    diagnostic.timestamp = Now();
     diagnostics->push_back(std::move(diagnostic));
 }
 
@@ -575,13 +633,17 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
         return remaining > 0.0;
     };
 
-    // Every path out of this function that is not `Received` goes through here,
-    // so silence is noticed by the call that waited rather than by whichever
-    // branch happened to remember.
-    const auto quiet = [&](ReceiveStatus status) {
+    // The two exits that mean *no traffic arrived*, and only those two: a poll
+    // that timed out, and a wait whose budget ran out with the socket still
+    // empty. `Closed` and `Failed` do not come through here and neither does the
+    // error tail below — a call that met a truncated datagram or an ICMP report
+    // found something waiting, so counting it as idle would tally it twice and
+    // then diagnose "the source stopped sending" about a source that had
+    // demonstrably just sent.
+    const auto quiet = [&]() {
         ++_stats.idleReceives;
         _ReportSilence(diagnostics);
-        return status;
+        return ReceiveStatus::Idle;
     };
 
     for (;;) {
@@ -592,13 +654,13 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
         const int ready =
             PollSockets(&descriptor, 1, TimeoutToMilliseconds(remaining));
         if (ready == 0) {
-            return quiet(ReceiveStatus::Idle);
+            return quiet();
         }
         if (ready < 0) {
             const int code = LastSocketError();
             if (ErrorIsInterrupted(code)) {
                 if (!spend()) {
-                    return quiet(ReceiveStatus::Idle);
+                    return quiet();
                 }
                 continue;
             }
@@ -606,20 +668,44 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
             return ReceiveStatus::Failed;
         }
 
+        // `revents` is checked rather than assumed, and the reason is a spin
+        // rather than tidiness. `POLLERR`, `POLLHUP` and `POLLNVAL` are reported
+        // whether or not they were requested, so a poll can return ready with no
+        // datagram to read; `recvfrom` then answers "would block", and a caller
+        // that asked to wait indefinitely has a budget that never runs out — so
+        // the loop returns to a poll that is still ready, forever, at 100% of a
+        // core. Since `POLLIN` is the only event this asks for, a ready
+        // descriptor without it is an error condition and is reported as one.
+        if ((descriptor.revents & POLLIN) == 0) {
+            _lastError = "the socket reported an error condition rather than a "
+                         "readable datagram";
+            return ReceiveStatus::Failed;
+        }
+
         sockaddr_storage from = {};
         socklen_t fromLength = sizeof(from);
         const auto received = ::recvfrom(
             ToHandle(_socket), reinterpret_cast<char*>(_buffer.data()),
-            static_cast<int>(MaxDatagramBytes), 0,
+            static_cast<int>(_buffer.size()), 0,
             reinterpret_cast<sockaddr*>(&from), &fromLength);
 
         if (received >= 0) {
-            // No truncation check on this path, and none is possible: POSIX
-            // truncates silently, so a short read and a whole datagram are the
-            // same return value — which is exactly why the buffer is the
-            // protocol's own maximum rather than a tunable. Windows is the one
-            // platform that says so, with WSAEMSGSIZE below.
             const std::size_t size = static_cast<std::size_t>(received);
+            // The buffer holds one byte more than the bound precisely so this
+            // comparison can exist. POSIX truncates silently — a short read and
+            // a whole datagram are the same return value — so on that spare byte
+            // rests the difference between refusing an over-long datagram and
+            // writing a packet the source never sent into a fixture. Windows
+            // reaches the same counter through WSAEMSGSIZE below.
+            if (size > MaxDatagramBytes) {
+                ++_stats.datagramsTruncated;
+                _lastError = "a datagram larger than the protocol's maximum was "
+                             "dropped rather than passed on half-read";
+                if (!spend()) {
+                    return ReceiveStatus::Idle;
+                }
+                continue;
+            }
             // Assigned rather than read into directly: growing the caller's
             // vector to `MaxDatagramBytes` and shrinking it back would value-
             // initialise ~64 KB per datagram, which at a capture product's rate
@@ -641,7 +727,11 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
             _stats.lastPeer = datagram->peer;
             // A datagram ends the episode. The next silence is a new one and is
             // reported again, which is what "once per episode" means: a source
-            // that drops out repeatedly says so repeatedly.
+            // that drops out repeatedly says so repeatedly. These three are the
+            // wire facts the silence check reads, and they are members rather
+            // than `_stats` fields so that zeroing the tally cannot move them.
+            _lastTrafficTime = datagram->receiveTime;
+            _sawTraffic = true;
             _silenceReported = false;
             return ReceiveStatus::Received;
         }
@@ -656,7 +746,7 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
             // a zero timeout meets both routinely and can do nothing with the
             // count.
             if (!spend()) {
-                return quiet(ReceiveStatus::Idle);
+                return quiet();
             }
             continue;
         }
@@ -669,8 +759,13 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
             return ReceiveStatus::Failed;
         }
         _lastError = SocketErrorText(code);
+        // Deliberately not `quiet()`. Both branches above met something —
+        // an over-long datagram, or an ICMP report about a peer — and a call
+        // that met something is neither an idle poll nor evidence of silence.
+        // Reporting it as either would let a session log say a source had
+        // stopped sending in the same breath as counting what it sent.
         if (!spend()) {
-            return quiet(ReceiveStatus::Idle);
+            return ReceiveStatus::Idle;
         }
     }
 }

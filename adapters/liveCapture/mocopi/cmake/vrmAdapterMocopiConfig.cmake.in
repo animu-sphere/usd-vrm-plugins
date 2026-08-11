@@ -13,9 +13,16 @@ endif()
 if(NOT TARGET motionRuntime::motionRuntime)
     find_dependency(motionRuntime CONFIG REQUIRED)
 endif()
-# No Threads dependency here, unlike the sibling adapter's config: this library
-# has no transport yet, so the exported target names no platform primitive. The
-# change that adds the receiver adds the find_dependency with it — an imported
-# target a consumer cannot resolve is a configure error rather than a link one.
+# Still no find_dependency for the transport, now that the receiver exists, and
+# that is a fact about what it links rather than an omission. The exported target
+# carries `ws2_32` on Windows, which is a raw library name the linker resolves
+# from the SDK — not an imported target — so there is nothing for a consumer to
+# find and a `find_dependency` here would name a package that does not exist.
+#
+# The sibling's config does carry one, because it links `Threads::Threads` for a
+# datagram queue's mutex, and that *is* an imported target: unresolved, it is a
+# configure error rather than a link one. This adapter has no queue, so it needs
+# no threading package. If one is ever linked here, the find_dependency lands in
+# the same change.
 include("${CMAKE_CURRENT_LIST_DIR}/vrmAdapterMocopiTargets.cmake")
 check_required_components(vrmAdapterMocopi)

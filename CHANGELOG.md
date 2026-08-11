@@ -99,6 +99,52 @@ Current schema contract version: **1**.
   test whose failure mode is a hang reports "timed out" for every cause there is.
   76/76 ctest.
 
+  **A review of that receiver then found six defects, and four of them the
+  sibling adapter has identically** — because they were copied along with
+  everything else, which turns the "a third recorder is what makes this a
+  library" trigger from an argument into a measurement. All six are fixed here;
+  the sibling's copies are **not** touched by this change and are recorded as
+  outstanding.
+
+  * **An over-long datagram was handed back as whole on POSIX.** The buffer was
+    exactly `MaxDatagramBytes`, and `recvfrom` truncates *silently* there — a
+    short read and a whole datagram are the same return value. A recorder would
+    have written a packet the source never sent into a fixture and blamed the
+    source. The buffer is now one byte larger so an overrun comes back as
+    `MaxDatagramBytes + 1`, is counted, and is dropped. This is the worst of the
+    six: it corrupts the corpus this whole track exists to record, and it fails
+    plausibly rather than loudly.
+  * **A large *finite* timeout became an infinite wait.** Milliseconds above
+    `INT_MAX` were mapped to `-1`, which is the value both `poll` and `WSAPoll`
+    read as "block forever" — the exact opposite of the bound the caller asked
+    for, with no other way to stop. Clamped to `INT_MAX` now. No test
+    distinguishes the two (both wait longer than any suite may run), so this one
+    is verified by reading and said so rather than claimed.
+  * **A poll wake-up's `revents` was never inspected.** `POLLERR`/`POLLHUP`/
+    `POLLNVAL` are reported whether or not they were asked for, so a ready
+    descriptor with no datagram sent the loop back to a poll that was still
+    ready — a 100% CPU spin under the documented indefinite wait, in the exact
+    place a comment asserted a spin was impossible.
+  * **Idle accounting reached the error paths.** A call that met a truncated
+    datagram or an ICMP report was counted as idle *and* checked for silence, so
+    a session log could say "the source stopped sending" in the same breath as
+    counting what it sent.
+  * **`Open` restarted the clock but not the stats** (mocopi only). A re-`Open`
+    measured silence from a time stamped in the previous epoch and went blind
+    for as long as the previous session had run — on a reconnect, which is the
+    one moment the code exists for. The silence reference is now two explicit
+    members rather than a reading of a tally a caller may zero.
+  * **`ResetStats` cleared the tally but not the episode** (mocopi only). A new
+    counting window over a device that was off the whole time would have ended
+    reporting `silenceReports == 0`.
+
+  Three of the six now have tests that fail without them; the truncation one is
+  honest about where it can fail, since Windows catches that case through
+  `WSAEMSGSIZE` with or without the fix and only a POSIX lane exercises the
+  spare byte. Also corrected: the installed package config still claimed this
+  library had no transport, in the very file whose previous comment had promised
+  the receiver's change would update it.
+
 - **Both recorded paths reach an avatar somebody actually made, and the real one
   found what the fixtures could not.** The v0.7.0 release conditions ask for a
   *real VRM avatar* on both halves, and both now have one: the recorded path in
