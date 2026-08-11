@@ -35,11 +35,12 @@ the C++ library, deliberately: a corpus generated with the same implementation
 the decoder uses would agree with the decoder by construction rather than by the
 protocol.
 
-Handedness is deliberately unresolved and no fixture names a left or a right --
-a mirrored basis satisfies every measurement taken so far, so the arm bones are
-described by their side of the +X axis and by their bone id. MotionPacket.h
-argues it; naming a side here would smuggle a guess into a fixture, which is the
-one place it would be hardest to notice later.
+Handedness is resolved -- right-handed, +X is the body's left, settled 2026-08-12
+against the same application's BVH export (MotionPacket.h carries the argument) --
+so the comments below name sides. The *fixtures* still do not: the decoder they
+test names no bone and changes no basis, so an assertion about "the left arm"
+would be asserting something two layers up. That belongs to MocopiSkeletonMap's
+fixtures when it exists.
 
 The output must match the C++ writer byte for byte; `vrmAdapterMocopi_corpus`
 enforces that. Run:
@@ -104,19 +105,19 @@ REST_OFFSETS = [
     (0.0, 0.05, 0.0),      # 8  neck
     (0.0, 0.05, 0.0),      # 9
     (0.0, 0.05, 0.0),      # 10 head
-    (0.02, -0.08, 0.08),   # 11 +X-side shoulder
-    (0.14, 0.0, 0.0),      # 12 +X-side upper arm
+    (0.02, -0.08, 0.08),   # 11 left shoulder
+    (0.14, 0.0, 0.0),      # 12 left upper arm
     (0.30, 0.0, 0.0),      # 13
     (0.25, 0.0, 0.0),      # 14
-    (-0.02, -0.08, 0.08),  # 15 -X-side shoulder
-    (-0.14, 0.0, 0.0),     # 16 -X-side upper arm
+    (-0.02, -0.08, 0.08),  # 15 right shoulder
+    (-0.14, 0.0, 0.0),     # 16 right upper arm
     (-0.30, 0.0, 0.0),     # 17
     (-0.25, 0.0, 0.0),     # 18
-    (0.09, -0.05, 0.0),    # 19 +X-side hip
+    (0.09, -0.05, 0.0),    # 19 left hip
     (0.0, -0.40, 0.0),     # 20
     (0.0, -0.42, 0.0),     # 21
-    (0.0, -0.10, 0.13),    # 22 +X-side toe, forward on +Z
-    (-0.09, -0.05, 0.0),   # 23 -X-side hip
+    (0.0, -0.10, 0.13),    # 22 left toe, forward on +Z
+    (-0.09, -0.05, 0.0),   # 23 right hip
     (0.0, -0.40, 0.0),     # 24
     (0.0, -0.42, 0.0),     # 25
     (0.0, -0.10, 0.13),    # 26
@@ -204,10 +205,11 @@ EPOCH = 1786492800.0
 
 
 def rotation_about_z(degrees: float) -> tuple:
-    """Scalar-last, and about the third imaginary component.
+    """Scalar-last, about the third imaginary component -- which is Z.
 
-    Which axis that *is* depends on a handedness this project has not measured,
-    so the name says which component carries it and stops there.
+    Named for the component rather than the axis when this was written, because
+    handedness was open. It is settled now (right-handed, +Y up, +Z forward), so
+    the two are the same thing and the name can say so.
     """
     half = math.radians(degrees) / 2.0
     return (0.0, 0.0, math.sin(half), math.cos(half))

@@ -71,22 +71,37 @@ and every packet-level failure — a truncated datagram, a duplicate delivery, a
 restart mid-frame — would be untestable, because a trace cannot represent one.
 Both formats exist because the adapter has two ends.
 
-## No side is named anywhere in here
+## Sides, and why the fixtures still do not lean on them
 
-Handedness is unresolved, and deliberately so: a mirrored basis satisfies every
-measurement taken so far, because a mirrored skeleton is geometrically
-identical. So the arm and leg bones are described by their side of the **+X
-axis** and by their **bone id**, never as left or right. Settling it needs an
-asymmetric motion whose side is *labelled*, which is an operator's session and
-not a commit — and a fixture that guessed would be the hardest place to notice
-the guess later.
+Handedness is **resolved**: the basis is right-handed and **+X is the body's
+left**, so in `bnid` order 11–14 is the left arm, 15–18 the right, 19–22 the left
+leg and 23–26 the right. It was settled on 2026-08-12 by comparing this rig
+against the one
+[`mocopi-mobile-bvh-default-v1`](../../../../../profiles/motion/mocopi-mobile-bvh-default-v1.yaml)
+measured from the same application's BVH export — all 27 rest offsets agree sign
+for sign to 4.4e-7 m — and the adapter
+[README](../../README.md#the-decoder-stops-where-the-measurement-does) carries
+the argument.
+
+The fixtures below still describe arm and leg bones **by bone id**, and the
+`_xPos`/`_xNeg` vocabulary is gone rather than replaced with left/right. That is
+not leftover caution. The decoder these captures test names no bone and performs
+no basis change; a fixture that asserted "the left arm rotated" would be
+asserting something this layer does not compute, and would go green or red for
+reasons belonging to `MocopiSkeletonMap` two layers up. When that component
+exists it gets fixtures that *do* name sides, and they will be the right place
+for it.
+
+What the resolution does change here: `arms-lowered-60hz` can now say which arm
+is which when it is describing the motion to a reader, and the manifest no longer
+lists handedness as unresolved.
 
 ## The set
 
 | Capture | Datagrams | Pins |
 | --- | --- | --- |
 | `neutral-standing-60hz.mocopipackets` | 6 | The happy path, and both packet kinds in one file: a skeleton then five 60 Hz frames, every rotation identity. Also the measured invariant that **only the root translates** — every non-root frame translation equals its rest offset bit for bit. |
-| `arms-lowered-60hz.mocopipackets` | 4 | A non-identity rotation on the two upper arms, in opposite directions: ~85° carried in the **third** imaginary component, which is what the measured standing sessions showed against a T-pose rest. A decoder that reordered the quaternion cannot pass this and the baseline at once. |
+| `arms-lowered-60hz.mocopipackets` | 4 | A non-identity rotation on the two upper arms (bones 12 and 16 — the left and the right, now that handedness is settled), in opposite directions: ~85° carried in the **third** imaginary component, which is what the measured standing sessions showed against a T-pose rest. A decoder that reordered the quaternion cannot pass this and the baseline at once. The assertion is still on the component and the antisymmetry, not on a side. |
 | `frame-loss-60hz.mocopipackets` | 8 | What the transport does and the decoder refuses none of: an `fnum` gap of 3 whose `time` delta is exactly 3/60 s — the measured Wi-Fi loss shape, where the sender's clock never skipped — then a duplicate delivery, then a restart. |
 | `malformed-container.mocopipackets` | 5 | One datagram per **container**-level refusal: empty, a header that does not fit, a payload longer than the datagram, a walk that ends between chunks, and a datagram of the sibling protocol. |
 | `malformed-packets.mocopipackets` | 13 | One datagram per **packet**-level refusal, and the row adds up: the wrong magic, an unmeasured version, a missing `head`, both payload kinds, neither, a duplicated field (1+1+1+1+1+1), three bad field widths — `fnum`, `tran`, `tmcd` — three unusable clocks, and a **skeleton** with one unusable rest transform. |

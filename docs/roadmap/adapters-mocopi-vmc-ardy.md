@@ -353,7 +353,7 @@ relay-shaped assumption is exactly what a native decoder must not inherit.
 | `MocopiPacketDecoder` | packet syntax, joint and root samples, tracking state, malformed rejection |
 | ↳ shipped as two | `PacketChunk` (the container: lengths and tags, nothing else) and `MotionPacket` (the two packet kinds), split for the reason the sibling splits OSC from VMC — a container has its own malformed-input cases, and a decoder that mixed the two could only be tested end to end. **Tracking state is not in this row's scope after all**: the measured grammar carries no per-joint confidence or state, so there is nothing here to decode into it (Milestone D) |
 | `MocopiSkeletonMap` | source joints → canonical humanoid semantics; unsupported joints ignored, missing bones declared, source-name provenance kept |
-| `MocopiCoordinateConverter` | handedness, up axis, quaternion convention, translation units, root orientation |
+| `MocopiCoordinateConverter` | handedness, up axis, quaternion convention, translation units, root orientation — **all five measured as of 2026-08-12**: right-handed, +Y up, +Z forward, scalar-last (x, y, z, w), metres, root translation absolute. This component now converts a known basis rather than discovering one (Milestone D) |
 | `MocopiLiveSource` | pushes decoded frames at `LiveCaptureSource`, sets source metadata |
 
 `MocopiLiveSource` is a bridge. If it acquires buffering, interpolation, or
@@ -616,6 +616,20 @@ cannot carry, written down once, from evidence.
 The BVH half of this is planned in
 [recorded-motion-sources.md](recorded-motion-sources.md#7-testing); it appears
 here too because the comparison belongs to neither plan alone.
+
+**The first comparison has happened, on the easy half** (2026-08-12). The UDP
+path's rest skeleton and the mocopi BVH export's rest skeleton are the same 27
+offsets, sign for sign, to 4.4e-7 m once centimetres and metres are reconciled —
+two recordings a week apart, two transports that share no code. That is what
+settled handedness for the live path (Milestone D), and it is worth recording
+here as the first data point this section has.
+
+It is also the *weakest* form of the comparison, and calling it more would be a
+mistake. A rest pose is a calibration the application computes once; agreeing
+about it says nothing about whether the two paths agree about a session's
+movement, its timing, or what each drops. The comparison this section is for
+still needs **one physical session captured both ways at once**, and still owes
+the list of what each path cannot carry.
 
 ## 10. Milestones
 
@@ -1237,14 +1251,40 @@ original order that was never about the transport.
   always the *arrival* rate on the receive clock, and there was no sender clock
   to compare it against until now.
 
-  **Handedness is deliberately unresolved, and this is the milestone's one open
-  measurement.** A mirrored basis satisfies everything above, because a mirrored
-  skeleton is geometrically identical. Settling it needs an asymmetric motion
-  whose side is *labelled* — an operator's session, not a commit — so nothing
-  committed says left or right: the corpus names arm bones by their side of the
-  +X axis and by their bone id, and the decoder's structs stop short of x/y/z.
-  That is the coordinate converter's question, and it now has exactly one input
-  it is waiting on.
+  **Handedness was this milestone's one open measurement, and it is now closed**
+  (2026-08-12): the basis is **right-handed and +X is the body's left**, so in
+  `bnid` order 11–14 is the left arm, 15–18 the right, 19–22 the left leg, 23–26
+  the right. It was open because a mirrored basis satisfies everything above — a
+  mirrored skeleton is geometrically identical.
+
+  It did **not** take the labelled asymmetric session this plan expected, and two
+  measurements are why. First, the recorded sessions could never have supplied
+  one: all four are bilateral, measured rather than assumed — the arm-raise
+  session raises *both* arms, the two hands rising 0.670 m and 0.650 m and
+  tracking each other frame by frame, and the operator confirms the head-turn was
+  both ways. Second, the answer was already in this repository, one track over.
+  [`mocopi-mobile-bvh-default-v1`](../../profiles/motion/mocopi-mobile-bvh-default-v1.yaml)
+  was measured on 2026-08-04 from *the same application's* BVH export and states
+  `handedness: right`, `+Y`, `+Z` and a side for every joint. The only remaining
+  question was whether the application mirrors between the file it writes and the
+  datagrams it sends, and it does not: **all 27 rest offsets agree sign for sign,
+  worst component difference 4.4e-7 m** once the centimetre/metre factor is
+  removed, with the hip height 95.9893 cm there and 0.95989 m here.
+
+  **This is the first time §9.6's two paths have been compared on anything, and
+  it is worth being precise about what it did and did not settle.** It compared
+  *rest poses*, not motion, and rest poses are the easy half — they are a
+  calibration the application computes once. Whether the two paths agree about a
+  session's *movement* is still owed, still §9.6, and still needs one physical
+  session observed both ways. What the agreement does license is narrower and
+  sufficient: the joint identities and the basis transfer, so
+  `MocopiSkeletonMap` and `MocopiCoordinateConverter` start from a measurement
+  instead of from a guess.
+
+  Nothing in the decoder changed. It still names no bone and performs no basis
+  change; the corpus still describes bones by id, because a fixture asserting
+  "the left arm rotated" would be testing a component two layers up through a
+  decoder that cannot be wrong about it.
 
   Three of the nine frozen codes are raised here and no others —
   `PACKET_MALFORMED`, `NON_FINITE_TRANSFORM`, `TIMESTAMP_INVALID` — which brings
