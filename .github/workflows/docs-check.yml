@@ -16,7 +16,7 @@ on:
       - "**/openstrata.library.yaml"
       - "scripts/check_docs.py"
       - ".github/workflows/docs-check.yml"
-      # The three files the mocopi rig-agreement check reads. Without them the
+      # The four files the mocopi rig-agreement check reads. Without them the
       # lane would pass by never running: a table edited on its own is exactly
       # the drift that check exists to catch.
       - "adapters/liveCapture/mocopi/src/SkeletonMap.cpp"
@@ -31,7 +31,7 @@ on:
       - "**/openstrata.library.yaml"
       - "scripts/check_docs.py"
       - ".github/workflows/docs-check.yml"
-      # The three files the mocopi rig-agreement check reads. Without them the
+      # The four files the mocopi rig-agreement check reads. Without them the
       # lane would pass by never running: a table edited on its own is exactly
       # the drift that check exists to catch.
       - "adapters/liveCapture/mocopi/src/SkeletonMap.cpp"

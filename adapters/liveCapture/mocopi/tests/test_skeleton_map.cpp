@@ -255,6 +255,12 @@ TestARigThatIsNotTheMeasuredOneIsRefused()
     assert(diagnostics.size() == 1);
     assert(diagnostics[0].code == DiagnosticCode::UnsupportedJoint);
     assert(diagnostics[0].subject == "bone 11");
+    // Louder than the code's own default, because this is the other case the
+    // code covers: no joint maps rather than one, so the session produces
+    // nothing at all and an operator filtering at warning has to see it.
+    assert(diagnostics[0].severity
+           == vrmAdapterMocopi::DiagnosticSeverity::Warning);
+    assert(diagnostics[0].recoverable);
     // Nothing was written: a caller that ignored the return value gets an empty
     // map rather than a half-built one.
     assert(map.present.none());
@@ -319,7 +325,25 @@ TestALongerRigKeepsItsMeasuredJoints()
     for (const Diagnostic& diagnostic : diagnostics) {
         assert(diagnostic.code == DiagnosticCode::UnsupportedJoint);
         assert(diagnostic.recoverable);
+        // Info, the code's own default: three joints nobody has measured is a
+        // session working with an extension, and a refused rig is the case that
+        // reads louder.
+        assert(diagnostic.severity
+               == vrmAdapterMocopi::DiagnosticSeverity::Info);
     }
+
+    // A trailing joint claiming an id inside the measured range is a different
+    // thing entirely: an id is a position, and that rig has broken the identity
+    // every id above it rests on. Refused rather than reported as "bone 5 is
+    // beyond the measured rig" while bone 5 sits where it always was.
+    MotionSkeleton collided = longer;
+    collided.bones.back().boneId = 5;
+    diagnostics.clear();
+    assert(!vrmAdapterMocopi::MakeSkeletonMap(collided, &map, &diagnostics));
+    assert(!diagnostics.empty());
+    assert(diagnostics.back().code == DiagnosticCode::UnsupportedJoint);
+    assert(diagnostics.back().severity
+           == vrmAdapterMocopi::DiagnosticSeverity::Warning);
 
     // A frame from that rig maps its twenty-two bones and counts the rest.
     MotionFrame frame = RestFrame();
@@ -619,6 +643,62 @@ TestATransformThatNamesNoOrientationIsRefused()
 }
 
 void
+TestSamplesComeOutInHumanoidOrder()
+{
+    // The order the header states, and it is not the order the joints arrive
+    // in: this rig runs both arms off the top of the torso where the canonical
+    // vocabulary numbers the legs first, so a walk by joint id emits every arm
+    // ahead of every leg. A consumer merging this against another list sorted by
+    // bone would find that as one wrong sample rather than as a failure.
+    const SkeletonMap map = MeasuredMap();
+    FrameMapping mapping;
+    assert(vrmAdapterMocopi::MapMotionFrame(map, RestFrame(), &mapping));
+    assert(mapping.bones.size() == kCanonicalBoneCount);
+    for (std::size_t index = 1; index < mapping.bones.size(); ++index) {
+        assert(mapping.bones[index - 1].bone < mapping.bones[index].bone);
+    }
+    // Named once so the test states the claim rather than only the invariant:
+    // the legs precede the arms, which the wire order reverses.
+    assert(mapping.bones[6].bone == HumanBone::LeftUpperLeg);
+    assert(mapping.bones[14].bone == HumanBone::LeftShoulder);
+
+    // `bones` and `present` are two spellings of one answer.
+    std::bitset<motion::HumanBoneCount> listed;
+    for (const vrmAdapterMocopi::BoneSample& sample : mapping.bones) {
+        listed.set(static_cast<std::size_t>(sample.bone));
+    }
+    assert(listed == mapping.present);
+}
+
+void
+TestARotationTooSmallToSquareIsStillNormalised()
+{
+    // The boundary check accumulates in double and the normalisation used to
+    // divide by a float length. A quaternion whose components sit near the
+    // denormal floor passes the first and underflows the second to exactly
+    // zero, which returns it un-normalised and collapses every composition it
+    // enters — the same two-precisions trap `motionCore/Compare.h` records
+    // paying for once already.
+    const float tiny = 1e-23f;
+    const pxr::GfQuatf converted =
+        vrmAdapterMocopi::ToCanonicalRotation({{tiny, tiny, tiny, tiny}});
+    assert(std::fabs(converted.GetLength() - 1.0f) <= kUnitLengthEpsilon);
+    assert(SameOrientation(converted,
+                           vrmAdapterMocopi::ToCanonicalRotation(
+                               {{1.0f, 1.0f, 1.0f, 1.0f}})));
+
+    // And it survives the layer, rather than only the arithmetic.
+    const SkeletonMap map = MeasuredMap();
+    MotionFrame frame = RestFrame();
+    Joint(&frame, 12)->transform.rotation = {{0.0f, 0.0f, tiny, tiny}};
+    FrameMapping mapping;
+    assert(vrmAdapterMocopi::MapMotionFrame(map, frame, &mapping));
+    const pxr::GfQuatf* upperArm = Rotation(mapping, HumanBone::LeftUpperArm);
+    assert(upperArm != nullptr);
+    assert(std::fabs(upperArm->GetLength() - 1.0f) <= kUnitLengthEpsilon);
+}
+
+void
 TestAFrameThatFormsNoBoneIsNotAPose()
 {
     const SkeletonMap map = MeasuredMap();
@@ -658,13 +738,17 @@ struct MappedCapture
     std::vector<Diagnostic> diagnostics;
     std::size_t skeletons = 0;
     std::size_t refusedSkeletons = 0;
+    // Frames that mapped no canonical bone at all. Not the same as a frame that
+    // arrived, which is what `frames.size()` counts.
+    std::size_t poselessFrames = 0;
 };
 
 int
 CheckNeutralStanding(const MappedCapture& capture, const std::string& name)
 {
-    if (!capture.declaredRig || capture.frames.size() != 5) {
-        return Failed(name, "a rig and five frames were expected");
+    if (!capture.declaredRig || capture.frames.size() != 5
+        || capture.poselessFrames != 0) {
+        return Failed(name, "a rig and five frames of motion were expected");
     }
     for (const FrameMapping& frame : capture.frames) {
         if (frame.present.count() != kCanonicalBoneCount
@@ -764,8 +848,9 @@ CheckFrameLoss(const MappedCapture& capture, const std::string& name)
     // questions, and this layer answers none of them: every frame in the file
     // maps the whole rig, and which of them the session should keep is the
     // assembler's.
-    if (!capture.declaredRig || capture.frames.size() != 7) {
-        return Failed(name, "a rig and seven frames were expected");
+    if (!capture.declaredRig || capture.frames.size() != 7
+        || capture.poselessFrames != 0) {
+        return Failed(name, "a rig and seven frames of motion were expected");
     }
     for (const FrameMapping& frame : capture.frames) {
         if (frame.present.count() != kCanonicalBoneCount) {
@@ -823,7 +908,7 @@ CheckExtendedForm(const MappedCapture& capture, const std::string& name)
     if (capture.declaredRig || capture.refusedSkeletons != 1) {
         return Failed(name, "a rig this map cannot read was accepted");
     }
-    if (capture.frames.size() != 1
+    if (capture.frames.size() != 1 || capture.poselessFrames != 0
         || capture.frames[0].present.count() != kCanonicalBoneCount) {
         return Failed(name, "the frame before the rig changed did not map");
     }
@@ -894,6 +979,11 @@ CheckCorpus(const std::filesystem::path& directory)
                                                       &mapped.diagnostics)) {
                     mapped.map = std::move(map);
                     mapped.declaredRig = true;
+                    // Cleared as well as set: a session whose rig this map
+                    // cannot read may declare a readable one afterwards, and a
+                    // latch would drop every frame after it and blame the
+                    // fixture's frame count for a defect in this loop.
+                    mapped.rigRefused = false;
                 } else {
                     ++mapped.refusedSkeletons;
                     // Everything after it belongs to a rig this map cannot
@@ -904,8 +994,15 @@ CheckCorpus(const std::filesystem::path& directory)
                 }
             } else if (packet.frame && !mapped.rigRefused) {
                 FrameMapping mapping;
-                vrmAdapterMocopi::MapMotionFrame(mapped.map, *packet.frame,
-                                                 &mapping, &mapped.diagnostics);
+                // The return value is the layer's only "this is not a pose"
+                // signal, so it is kept rather than discarded: a frame that
+                // mapped nothing would otherwise be counted as a frame by every
+                // assertion below that reads `frames.size()`.
+                if (!vrmAdapterMocopi::MapMotionFrame(mapped.map,
+                                                      *packet.frame, &mapping,
+                                                      &mapped.diagnostics)) {
+                    ++mapped.poselessFrames;
+                }
                 mapped.frames.push_back(std::move(mapping));
             }
         }
@@ -967,6 +1064,8 @@ main(int argc, char** argv)
     TestTheRestPoseIsTheDevicesOwn();
     TestARecordThatNoBoneCameFromIsCounted();
     TestATransformThatNamesNoOrientationIsRefused();
+    TestSamplesComeOutInHumanoidOrder();
+    TestARotationTooSmallToSquareIsStillNormalised();
     TestAFrameThatFormsNoBoneIsNotAPose();
     std::puts("vrmAdapterMocopi skeleton map tests passed");
     return 0;

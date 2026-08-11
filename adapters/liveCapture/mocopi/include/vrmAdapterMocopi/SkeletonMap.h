@@ -270,11 +270,17 @@ struct SkeletonMap
     // longer rig whose leading joints matched.
     std::size_t jointCount = 0;
 
-    // The rig's rest translations by joint id, exactly as the wire carried
+    // The measured joints' rest translations by id, exactly as the wire carried
     // them. Kept unconverted on purpose: it is what a frame's translations are
     // compared against, and the measured claim is that they are equal bit for
     // bit rather than nearly equal.
-    std::vector<std::array<float, 3>> jointRestTranslations;
+    //
+    // Fixed at the measured rig's size rather than the session's. A longer rig's
+    // extra joints carry no bone and no path, so their rest is never read — and
+    // an array indexed by an id this map has already bounded cannot be indexed
+    // past its end by any caller, which a vector sized from a separate field
+    // could.
+    std::array<std::array<float, 3>, MeasuredBoneCount> jointRestTranslations{};
 };
 
 // Builds the map for a session from its skeleton packet.
@@ -289,8 +295,20 @@ struct SkeletonMap
 // table with a hole in it leaves every bone below the hole unplaced.
 //
 // Returns true with one further diagnostic per joint beyond the measured rig:
-// those joints are carried by no bone and this is what says so, once per
-// session rather than once per frame.
+// those joints are carried by no bone and this is what says so — once per
+// skeleton packet, which a device sends about every 3.5 s, rather than once per
+// frame at sixty a second. A caller that rebuilds only when the rest table
+// changed reports it once per session, and a caller that rebuilds on every
+// packet gets it again each time, because a function cannot know it has already
+// been asked. A trailing joint claiming an id *inside* the measured range
+// refuses the rig instead: an id is a position, and that rig has broken the
+// identity every id above rests on.
+//
+// The severity is the code's default — info — except when the whole rig is
+// refused, which is reported as a warning. The code stays one of the frozen
+// nine; what differs is that one unmapped joint leaves a session working and no
+// mapped joint at all leaves it producing nothing, and an operator watching a
+// live log should not have to read the detail text to tell those apart.
 //
 // `diagnostics`, when given, is appended to and never cleared.
 VRMADAPTERMOCOPI_API bool MakeSkeletonMap(
@@ -340,6 +358,12 @@ struct FrameMapping
 // short of that is reported in the mapping rather than refused: a bone whose
 // path did not arrive is absent, a joint the rig does not have is counted, and
 // how much of that is still a usable frame is the assembler's question.
+//
+// `out` is written on **every** return, including false, which is the opposite
+// of `MakeSkeletonMap` above and is stated because the pair invites the
+// assumption. A rig is a session-long thing worth keeping when a packet fails to
+// replace it; a frame is not, and a receive loop reusing one `FrameMapping`
+// across frames must never see the previous frame's bones survive this call.
 //
 // `diagnostics`, when given, is appended to and never cleared.
 VRMADAPTERMOCOPI_API bool MapMotionFrame(
