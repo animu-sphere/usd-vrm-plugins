@@ -57,7 +57,8 @@ endif()
 
 add_library(vrmAdapterMocopi STATIC
     src/Diagnostics.cpp
-    src/PacketCapture.cpp)
+    src/PacketCapture.cpp
+    src/UdpReceiver.cpp)
 add_library(vrmAdapterMocopi::vrmAdapterMocopi ALIAS vrmAdapterMocopi)
 set_target_properties(vrmAdapterMocopi PROPERTIES
     EXPORT_NAME vrmAdapterMocopi
@@ -69,16 +70,30 @@ target_include_directories(vrmAdapterMocopi
     PUBLIC
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
         "$<INSTALL_INTERFACE:include>")
-# The two edges WORKSPACE.md §2 permits, and no platform library yet. The
-# sibling adapter links a socket and a mutex because it has a receiver; this one
-# has no transport at all until the receiver lands last (adapter plan §6), and
-# `tests/check_boundaries.py` allows only what is linked here today — so the
-# platform's own primitives have to be argued for in the change that needs them
-# rather than reserved in advance.
+# The two edges WORKSPACE.md §2 permits.
 target_link_libraries(vrmAdapterMocopi
     PUBLIC
         motionCore::motionCore
         motionRuntime::motionRuntime)
+
+# The platform's own transport, which is not a dependency direction:
+# WORKSPACE.md §2 constrains which *workspace* libraries an adapter may reach,
+# and motion policy §8.2 puts the socket inside the adapter on purpose.
+# `tests/check_boundaries.py` allows exactly this one extra name, so the gate
+# still fails on a workspace edge.
+#
+# This is the change that argues for it, which is what the previous revision of
+# this comment asked for — the receiver landed here rather than last because
+# this protocol has no published specification, so a socket is the only way to
+# obtain the bytes every layer above it would be built from (UdpReceiver.h).
+#
+# One name and not the sibling's two: `Threads` arrives there with a
+# `DatagramQueue` this adapter deliberately does not have, and asking for a
+# threading primitive no source file uses would reserve exactly what this
+# allowlist exists to prevent.
+if(WIN32)
+    target_link_libraries(vrmAdapterMocopi PUBLIC ws2_32)
+endif()
 
 if(MSVC)
     # PUBLIC for the same reason motionRuntime uses it: the installed headers

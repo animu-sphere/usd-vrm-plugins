@@ -49,6 +49,56 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **The mocopi adapter has a socket, and it arrives first rather than last —
+  which is a finding about the protocol, not a shortcut.** `vrmAdapterMocopi`
+  grows a thin UDP receiver: a bound socket, a monotonic receive clock, a size
+  limit, and no decoding whatsoever. Every datagram is handed back exactly as it
+  arrived, including the ones a decoder would refuse, because a receiver that
+  filtered its own input would make a corpus a description of what the receiver
+  let through rather than of what a source sent.
+
+  The plan had the transport last, for the reason its sibling did: every layer
+  below it then runs from committed bytes. That order needs a premise this
+  protocol does not supply. The VMC Protocol is published, so a corpus could be
+  *written* before a socket was opened; this one is documented only as far as its
+  transport, so there is nothing to write a corpus from and exactly one way to
+  obtain one without guessing — receive it from something that already speaks the
+  format. The transport is therefore not the last layer that needs writing but
+  the only one that *can* be, and the rule it appears to break is the rule that
+  sent it here: "the fixture-driven tests stay deterministic" is a statement
+  about the layers that decode, and this one decodes nothing. It costs nothing
+  the original order was protecting either — `vrmAdapterMocopi_udpReceiver` needs
+  no device, no sender application and no fixture, binds loopback on an
+  OS-assigned port, and never touches 12351.
+
+  Two of the nine frozen diagnostics are raised here and no others, which is the
+  first time that freeze has been paid rather than asserted.
+  `VRM_MOCOPI_SOCKET_BIND_FAILED` is the one transport failure a session cannot
+  continue past; a lost datagram, a transient platform error and an empty poll
+  are counts and not codes. `VRM_MOCOPI_DEVICE_UNAVAILABLE` is the code the
+  sibling's set does not have, and a socket is the only layer that can raise it —
+  silence is invisible above, where an absence of datagrams reads as an absence
+  of work. The **threshold is stated by the caller and has no default**, because
+  a device being strapped on and a device switched off produce the same nothing;
+  it is reported once per episode, re-armed by the next datagram, and counted
+  even when the caller passed nowhere to put the message.
+
+  `ws2_32` joins `tests/check_boundaries.py`'s allowlist with the change that
+  needs it rather than having been reserved for it, and the gate is measured
+  rather than assumed: widened by that one name it still refuses
+  `Threads::Threads` — which stays out precisely because this adapter has no
+  datagram queue and "a receiver usually needs one" is the reservation the
+  allowlist exists to catch. The workspace graph gate reports the same
+  `6 libraries, 9 library edge(s), valid` as before, as it does for any change
+  inside an adapter.
+
+  The new test was watched failing, and the first failure was its own: with the
+  silence re-arm deleted from `Receive` the suite **hung** rather than failed,
+  because the polling loops were unbounded. They are bounded on the receiver's
+  own clock now, so the same defect fails in two seconds naming the line — a
+  test whose failure mode is a hang reports "timed out" for every cause there is.
+  76/76 ctest.
+
 - **Both recorded paths reach an avatar somebody actually made, and the real one
   found what the fixtures could not.** The v0.7.0 release conditions ask for a
   *real VRM avatar* on both halves, and both now have one: the recorded path in

@@ -47,10 +47,20 @@ reaching a **rig** still is: that is Motion Phase G.
       is not the order it looked like: the wire format is undocumented (the
       vendor publishes the transport, Apache-2.0 source, and a `BVH Sender`),
       so the corpus precedes the decoder — and `BVH Sender` can produce one from
-      a `.bvh` this repository wrote, with no device at all
+      a `.bvh` this repository wrote, with no device at all. The **socket**
+      followed on 2026-08-11, which inverts the milestone's build order rather
+      than following it: a corpus that can only be received needs a receiver
+      before it, so the transport is not the last layer that needs writing but
+      the only one that can be. It decodes nothing, its tests need no device,
+      and it raises two of the nine frozen codes — the second of which,
+      `VRM_MOCOPI_DEVICE_UNAVAILABLE`, no layer above a socket could see
       ([Milestone D](adapters-mocopi-vmc-ardy.md))*;
 - [ ] recorded packet fixtures decode deterministically with no socket, and a
-      loopback test proves the socket path agrees with them;
+      loopback test proves the socket path agrees with them — *the second half
+      is half-built and the first is not started: the receiver's own test
+      already proves that what comes off a socket is byte-identical to what a
+      capture file keeps, which is the claim a corpus's worth rests on. What it
+      cannot yet compare is poses, because nothing decodes one*;
 - [ ] tracking loss, recovery, and source restart are recorded rather than
       described;
 - [ ] the session reaches a real VRM avatar through **unchanged**
