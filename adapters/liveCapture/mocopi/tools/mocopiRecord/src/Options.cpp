@@ -38,14 +38,25 @@ constexpr std::size_t kDefaultMaxDatagrams = 1000000;
 // forty days later.
 constexpr double kMaxDurationSeconds = 7200.0;
 
-// The four helpers below are a second copy of the sibling tool's, and the
-// trigger for making them one is the trigger `PacketCapture.h` states for the
-// format and `UdpReceiver.h` restates for the socket: a **third** recorder. What
-// is worth saying at this copy rather than there is how little of it is
-// protocol-shaped -- an endpoint splitter and a bounded number parser are the
-// same code for any UDP tool, so if the shared library those headers describe is
-// ever written, this file is the cheapest part of it to move and the least
-// interesting.
+// The helpers below began as a second copy of the sibling tool's, and the trigger
+// for making them one is the trigger `PacketCapture.h` states for the format and
+// `UdpReceiver.h` restates for the socket: a **third** recorder. What is worth
+// saying at this copy rather than there is how little of it is protocol-shaped --
+// an endpoint splitter and a bounded number parser are the same code for any UDP
+// tool, so if the shared library those headers describe is ever written, this
+// file is the cheapest part of it to move and the least interesting.
+//
+// **And the copy has now cost something measurable, like the socket's did.** A
+// review of this file found four defects in the parsing that the sibling has
+// identically, because they were copied along with everything else: an endpoint
+// whose port half is empty silently keeping the default port, a `--listen` error
+// message advertising a bare port the splitter reads as an address, a count's
+// range error naming a minimum a second check then refuses, and -- the one that
+// loses a recording -- provenance written into a capture header without being
+// checked for the whitespace that header cannot carry. All four are corrected
+// here and remain in `vmcRecord` as of 2026-08-11. That is the cost of the
+// repetition stated as a measurement rather than as a worry, which is the form
+// `UdpReceiver.h` established for it.
 
 bool
 TakeValue(const std::vector<std::string>& arguments, std::size_t* index,
@@ -87,21 +98,63 @@ TakeDouble(const std::vector<std::string>& arguments, std::size_t* index,
     return true;
 }
 
+// `minimum` is a parameter rather than an assumed zero so that the range in the
+// message is the range that is actually enforced. A count refused by a *second*
+// check below the range check is a flag that answers "expects a whole number
+// between 0 and 10000000" and then refuses 0.
 bool
 TakeCount(const std::vector<std::string>& arguments, std::size_t* index,
-          const std::string& flag, double limit, std::size_t* value,
-          std::string* error)
+          const std::string& flag, double minimum, double limit,
+          std::size_t* value, std::string* error)
 {
     double parsed = 0.0;
     if (!TakeDouble(arguments, index, flag, &parsed, error)) {
         return false;
     }
-    if (parsed < 0.0 || parsed > limit || parsed != std::floor(parsed)) {
-        *error = flag + " expects a whole number between 0 and "
+    if (parsed < minimum || parsed > limit || parsed != std::floor(parsed)) {
+        *error = flag + " expects a whole number between "
+            + std::to_string(static_cast<long long>(minimum)) + " and "
             + std::to_string(static_cast<long long>(limit));
         return false;
     }
     *value = static_cast<std::size_t>(parsed);
+    return true;
+}
+
+// A value destined for the capture's header, refused here if the format cannot
+// carry it.
+//
+// `mocopi-packet-capture` header values are single whitespace-delimited tokens:
+// the reader takes one token and then requires the line to be fully consumed
+// (PacketCapture.cpp), so `sender mocopi 1.2.3` fails to parse at the *value*
+// rather than being read as three words. The writer will emit it regardless.
+//
+// That combination is why this is checked at the prompt and not at the write. A
+// recorder that accepted `--sender "mocopi 1.2.3"`, ran for ten minutes against a
+// device, reported success and left behind a file its own reader refuses has
+// destroyed a session that cannot be re-recorded -- which is exactly the outcome
+// the datagram-less refusal in main.cpp exists to prevent, arrived at from the
+// other direction. A newline is worse than a space and the same check catches it:
+// it would land in the file as another header or record line.
+bool
+TakeHeaderValue(const std::vector<std::string>& arguments, std::size_t* index,
+                const std::string& flag, std::string* value,
+                std::string* error)
+{
+    std::string text;
+    if (!TakeValue(arguments, index, flag, &text, error)) {
+        return false;
+    }
+    const std::size_t space = text.find_first_of(" \t\r\n\v\f");
+    if (space != std::string::npos) {
+        *error = flag + " is written into the capture's header, which carries "
+                        "one whitespace-delimited token per key, so '"
+            + text
+            + "' would produce a file this adapter's own reader refuses; join "
+              "the words with '-' or '_'";
+        return false;
+    }
+    *value = text;
     return true;
 }
 
@@ -129,14 +182,26 @@ TakeSeconds(const std::vector<std::string>& arguments, std::size_t* index,
 // halves. A bracketed IPv6 literal is why this is not a search for the last
 // colon in the string, and an unbracketed one carrying a port is refused rather
 // than guessed at: "::1:12351" is a valid address in its own right.
+//
+// **A half that is present-but-empty is refused rather than ignored**, which is
+// the correction the sibling still needs. Returning success with an empty port
+// for "192.168.0.5:" left the caller's `if (!port.empty())` false, so the tool
+// bound 12351 while the operator believed they had named a port and nothing was
+// said either way -- a silent default is the one outcome an argument parser must
+// not reach, because it is indistinguishable from being obeyed.
 bool
 SplitEndpoint(const std::string& text, std::string* address, std::string* port,
               std::string* error)
 {
     address->clear();
     port->clear();
+    // ADDR, ADDR:PORT or :PORT. A bare "12351" is an *address* to this splitter
+    // and to `getaddrinfo` under AI_NUMERICHOST, so the message names the leading
+    // colon rather than offering "a port" and leaving the reader to find out at
+    // the bind that it meant something else.
+    const char* const shape = " expects ADDR, ADDR:PORT, or :PORT";
     if (text.empty()) {
-        *error = "--listen expects an address, a port, or address:port";
+        *error = std::string("--listen") + shape;
         return false;
     }
     if (text.front() == '[') {
@@ -155,6 +220,14 @@ SplitEndpoint(const std::string& text, std::string* address, std::string* port,
             }
             *port = text.substr(close + 2);
         }
+        if (address->empty()) {
+            *error = "--listen: '" + text + "' brackets an empty address";
+            return false;
+        }
+        if (text.size() > close + 1 && port->empty()) {
+            *error = "--listen: '" + text + "' ends with a ':' and names no port";
+            return false;
+        }
         return true;
     }
     const std::size_t colon = text.find(':');
@@ -169,6 +242,13 @@ SplitEndpoint(const std::string& text, std::string* address, std::string* port,
     }
     *address = text.substr(0, colon);
     *port = text.substr(colon + 1);
+    // An empty *address* is legal and documented -- ":12351" is how a port is
+    // given alone -- so only the port half is checked here. That also covers ":"
+    // on its own, which names neither.
+    if (port->empty()) {
+        *error = "--listen: '" + text + "' ends with a ':' and names no port";
+        return false;
+    }
     return true;
 }
 
@@ -216,7 +296,9 @@ GetUsage()
         "                         '0.0.0.0' every IPv4 interface, '127.0.0.1'\n"
         "                         this machine only - which no device can\n"
         "                         reach, because the vendor documents\n"
-        "                         'localhost' as unsupported.\n"
+        "                         'localhost' as unsupported. ':PORT' gives a\n"
+        "                         port alone; an IPv6 address must be\n"
+        "                         bracketed, as '[::1]' or '[::1]:12351'.\n"
         "  --port N               Listen port (default 12351, the product's\n"
         "                         own). 0 lets the OS choose and is reported\n"
         "                         back.\n"
@@ -243,6 +325,11 @@ GetUsage()
         "                         state a relay drops.\n"
         "  --source-id ID         Name for this capture, recorded as\n"
         "                         provenance.\n"
+        "                         These three become capture header values, and\n"
+        "                         the format carries one token per key - so a\n"
+        "                         value with a space in it is refused here\n"
+        "                         rather than written into a file the reader\n"
+        "                         would then refuse. Join words with '-'.\n"
         "  --dry-run              Listen and report, write nothing.\n"
         "\n"
         "Noticing a device that is not there:\n"
@@ -257,10 +344,12 @@ GetUsage()
         "Stopping (a session always has at least one):\n"
         "  --duration S           Stop after S seconds of session.\n"
         "  --idle-timeout S       Stop after S seconds with nothing arriving.\n"
-        "  --max-datagrams N      Stop after N datagrams (default 1000000).\n"
-        "                         The capture is held in memory until it is\n"
-        "                         written, so this bound is on memory.\n"
+        "  --max-datagrams N      Stop after N datagrams (1..10000000, default\n"
+        "                         1000000). The capture is held in memory until\n"
+        "                         it is written, so this bound is on memory.\n"
         "  Ctrl-C stops at any point and still writes what was recorded.\n"
+        "  A session the socket cut short writes what it had and exits 1, so a\n"
+        "  script can tell a complete recording from a truncated one.\n"
         "\n"
         "Reading:\n"
         "  --inspect PATH         Read a recorded capture and report on it.\n"
@@ -332,8 +421,9 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
         } else if (argument == "--receive-buffer") {
             session("--receive-buffer");
             // 256 MB. Every platform clamps this far lower, so the bound is
-            // only here to refuse a typo before the socket does.
-            if (!TakeCount(arguments, &i, argument, 268435456.0,
+            // only here to refuse a typo before the socket does. 0 is a real
+            // value here and means "leave the platform default".
+            if (!TakeCount(arguments, &i, argument, 0.0, 268435456.0,
                            &options->receiver.receiveBufferBytes, error)) {
                 return false;
             }
@@ -356,18 +446,20 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
             }
         } else if (argument == "--sender") {
             session("--sender");
-            if (!TakeValue(arguments, &i, argument, &options->sender, error)) {
+            if (!TakeHeaderValue(arguments, &i, argument, &options->sender,
+                                 error)) {
                 return false;
             }
         } else if (argument == "--device") {
             session("--device");
-            if (!TakeValue(arguments, &i, argument, &options->device, error)) {
+            if (!TakeHeaderValue(arguments, &i, argument, &options->device,
+                                 error)) {
                 return false;
             }
         } else if (argument == "--source-id") {
             session("--source-id");
-            if (!TakeValue(arguments, &i, argument, &options->sourceId,
-                           error)) {
+            if (!TakeHeaderValue(arguments, &i, argument, &options->sourceId,
+                                 error)) {
                 return false;
             }
         } else if (argument == "--duration") {
@@ -384,15 +476,12 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
             }
         } else if (argument == "--max-datagrams") {
             session("--max-datagrams");
-            if (!TakeCount(arguments, &i, argument,
+            // A minimum of 1, stated in the range rather than enforced under it:
+            // a session with no bound at all is not offered, because the capture
+            // is held in memory until it is written.
+            if (!TakeCount(arguments, &i, argument, 1.0,
                            static_cast<double>(kDefaultMaxDatagrams) * 10.0,
                            &options->maxDatagrams, error)) {
-                return false;
-            }
-            if (options->maxDatagrams == 0) {
-                *error = "--max-datagrams expects at least 1; a session with no "
-                         "bound at all is not offered, because the capture is "
-                         "held in memory until it is written";
                 return false;
             }
         } else if (argument == "--dry-run") {

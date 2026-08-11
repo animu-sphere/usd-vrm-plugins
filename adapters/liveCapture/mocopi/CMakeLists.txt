@@ -141,6 +141,13 @@ endif()
 # yet. It is where WORKSPACE.md §2's adapter-tool permissions begin -- a tool may
 # drive `vrmRetarget` and author a stage where the library may not -- which is
 # also why `tests/check_boundaries.py` scans include/ and src/ only.
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tools/mocopiRecord/CMakeLists.txt")
-    add_subdirectory(tools/mocopiRecord)
-endif()
+#
+# Unconditional, unlike the sibling adapter's guarded call. That guard was
+# written when the tool did not exist yet; once it does, an `if(EXISTS ...)`
+# around a file the build requires can never be false in a correct tree, so its
+# only reachable effect is to mask a rename or a bad checkout -- the configure
+# would succeed, the tool would not be built, and ctest would report 100% with
+# `mocopi_record_inspect`, `_loopback` and `_ipv6` simply absent. This repository
+# has already paid for a test that silently stopped registering, which is why
+# `ctest -N` counts are checked; a missing file here is a configure error.
+add_subdirectory(tools/mocopiRecord)

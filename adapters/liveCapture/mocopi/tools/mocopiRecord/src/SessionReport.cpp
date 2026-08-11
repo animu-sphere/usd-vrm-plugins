@@ -36,6 +36,8 @@ StopReasonText(StopReason reason) noexcept
         return "--max-datagrams reached";
     case StopReason::EndOfCapture:
         return "end of capture";
+    case StopReason::SocketClosed:
+        return "the socket was no longer open";
     case StopReason::ReceiveFailed:
         break;
     }
@@ -68,6 +70,9 @@ SessionReport::ObserveDatagram(const std::string& peer,
     }
     _lastReceiveTime = receiveTime;
 
+    if (_datagrams == 0 || count < _shortestDatagram) {
+        _shortestDatagram = count;
+    }
     ++_datagrams;
     _payloadBytes += count;
     if (count == 0) {
@@ -86,10 +91,21 @@ SessionReport::ObserveDatagram(const std::string& peer,
     if (peer.empty()) {
         return;
     }
-    if (std::find(_peers.begin(), _peers.end(), peer) != _peers.end()) {
+    // Deduplicated against the *counting* set and not against the short named
+    // list, which is the whole of the fix: searching the named list alone counted
+    // a datagram as a host for every peer that arrived too late to be named.
+    if (_distinctPeers.count(peer) != 0) {
         return;
     }
-    ++_peerCount;
+    if (_distinctPeers.size() < kMaxTrackedPeers) {
+        _distinctPeers.insert(peer);
+    } else {
+        // Past the bound the count stops being exact and says so. Not inserted,
+        // so the set cannot be grown without limit by a source that sends from a
+        // new port every datagram.
+        _peersUntracked = true;
+        return;
+    }
     if (_peers.size() < kMaxNamedPeers) {
         _peers.push_back(peer);
     }
@@ -98,6 +114,14 @@ SessionReport::ObserveDatagram(const std::string& peer,
 void
 SessionReport::_ObservePrefix(const std::uint8_t* bytes, std::size_t count)
 {
+    // A zero-length datagram shares no byte with anything, and `bytes` is the
+    // `data()` of an empty vector -- which may be null. `assign(null, null)` is a
+    // formally invalid iterator range even though every implementation treats it
+    // as empty, so it is answered here rather than relied on.
+    if (count == 0) {
+        _prefix.clear();
+        return;
+    }
     if (_datagrams == 0) {
         _prefix.assign(bytes, bytes + std::min(count, kMaxPrefixBytes));
         return;
@@ -112,15 +136,15 @@ SessionReport::_ObservePrefix(const std::uint8_t* bytes, std::size_t count)
 
 void
 SessionReport::ObserveDiagnostics(
-    const std::vector<vrmAdapterMocopi::Diagnostic>& log, std::size_t from)
+    const std::vector<vrmAdapterMocopi::Diagnostic>& log)
 {
-    for (std::size_t i = from; i < log.size(); ++i) {
-        const auto index = static_cast<std::size_t>(log[i].code);
+    for (const vrmAdapterMocopi::Diagnostic& diagnostic : log) {
+        const auto index = static_cast<std::size_t>(diagnostic.code);
         if (index >= vrmAdapterMocopi::DiagnosticCodeCount) {
             continue;
         }
         if (_diagnostics[index] == 0) {
-            _firstDiagnostic[index] = log[i];
+            _firstDiagnostic[index] = diagnostic;
         }
         ++_diagnostics[index];
     }
@@ -168,13 +192,16 @@ SessionReport::Print(std::FILE* out,
                      static_cast<unsigned long long>(_emptyDatagrams));
     }
 
-    std::fprintf(out, "peers:       %llu",
-                 static_cast<unsigned long long>(_peerCount));
+    std::fprintf(out, "peers:       %s%zu", _peersUntracked ? "at least " : "",
+                 _distinctPeers.size());
     for (std::size_t i = 0; i < _peers.size(); ++i) {
         std::fprintf(out, "%s%s", i == 0 ? " (" : ", ", _peers[i].c_str());
     }
     if (!_peers.empty()) {
-        std::fprintf(out, "%s)", _peerCount > _peers.size() ? ", ..." : "");
+        std::fprintf(out, "%s)",
+                     _distinctPeers.size() > _peers.size() || _peersUntracked
+                         ? ", ..."
+                         : "");
     }
     std::fputc('\n', out);
 
@@ -203,10 +230,15 @@ SessionReport::Print(std::FILE* out,
             std::fprintf(out,
                          "prefix:      no bytes common to every datagram\n");
         } else {
+            // "at least" only when the *cap* is what shortened the prefix. A
+            // prefix of exactly `kMaxPrefixBytes` where some datagram was itself
+            // that long is exact, and reporting it as a lower bound would send a
+            // reviewer looking for bytes that are not there.
+            const bool capped = _prefix.size() == kMaxPrefixBytes
+                && _shortestDatagram > kMaxPrefixBytes;
             std::fprintf(out, "prefix:      %s%zu byte(s) common to every "
                               "datagram:\n             ",
-                         _prefix.size() == kMaxPrefixBytes ? "at least " : "",
-                         _prefix.size());
+                         capped ? "at least " : "", _prefix.size());
             for (std::size_t i = 0; i < _prefix.size(); ++i) {
                 std::fprintf(out, "%s%02x", i == 0 ? "" : " ",
                              static_cast<unsigned>(_prefix[i]));
@@ -326,13 +358,17 @@ SessionReport::_PrintDiagnostics(std::FILE* out) const
             continue;
         }
         const auto code = static_cast<vrmAdapterMocopi::DiagnosticCode>(index);
+        // The severity the diagnostic was *raised* with, not the code's default.
+        // Diagnostics.h contemplates a caller escalating one, and the whole
+        // diagnostic is already kept here -- so recomputing the severity from the
+        // code's table would make this line contradict the `first:` line printed
+        // immediately below it, which formats the real one.
         std::fprintf(out, "diagnostics: %llu x %s (%s)\n",
                      static_cast<unsigned long long>(_diagnostics[index]),
                      std::string(vrmAdapterMocopi::DiagnosticCodeString(code))
                          .c_str(),
                      std::string(vrmAdapterMocopi::DiagnosticSeverityString(
-                                     vrmAdapterMocopi::DiagnosticDefaultSeverity(
-                                         code)))
+                                     _firstDiagnostic[index].severity))
                          .c_str());
         std::fprintf(out, "             first: %s\n",
                      vrmAdapterMocopi::FormatDiagnostic(_firstDiagnostic[index])

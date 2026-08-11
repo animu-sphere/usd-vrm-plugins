@@ -61,6 +61,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -82,7 +83,11 @@ enum class StopReason : std::uint8_t
     IdleTimeout,
     MaxDatagrams,
     EndOfCapture,
+    // A socket that reported an error, and a socket that was no longer open.
+    // Two reasons rather than one, because `UdpReceiver` distinguishes them and
+    // only the first has a platform message to print.
     ReceiveFailed,
+    SocketClosed,
 };
 
 const char* StopReasonText(StopReason reason) noexcept;
@@ -96,11 +101,17 @@ public:
     void ObserveDatagram(const std::string& peer, const std::uint8_t* bytes,
                          std::size_t count, double receiveTime);
 
-    // The diagnostics one receive call appended. The caller's list is passed as
-    // the slice that call added, so a caller accumulating a whole session's list
-    // does not re-count it.
+    // The diagnostics one receive call appended, and only those: the caller
+    // clears its list every iteration, so the whole of it is what the last call
+    // added.
+    //
+    // Deliberately not the sibling's `(log, from)` slice. Two mechanisms for one
+    // invariant is one too many -- with the per-iteration clear, `from` can only
+    // ever be 0, so a reader has to go and verify the clear before they can tell
+    // that the offset is inert. One of them had to go, and the clear is the one
+    // that also bounds how much a long session accumulates.
     void ObserveDiagnostics(
-        const std::vector<vrmAdapterMocopi::Diagnostic>& log, std::size_t from);
+        const std::vector<vrmAdapterMocopi::Diagnostic>& log);
 
     void SetStopReason(StopReason reason) noexcept { _stop = reason; }
     StopReason GetStopReason() const noexcept { return _stop; }
@@ -110,7 +121,10 @@ public:
     // Whether the session heard from more than one source. The capture format
     // names one peer in its header, so this is the difference between a
     // fixture's provenance being true and being the first of several.
-    bool HasMultiplePeers() const noexcept { return _peerCount > 1; }
+    bool HasMultiplePeers() const noexcept
+    {
+        return _distinctPeers.size() > 1;
+    }
 
     // Prints the block. `receiver` is null when the session came off a file: the
     // socket lines are then omitted rather than printed as zeroes, because a
@@ -147,11 +161,23 @@ private:
     double _intervalMax = 0.0;
     std::uint64_t _intervals = 0;
 
-    // Bounded: a session receiving from a hundred hosts is a misconfiguration,
-    // and the report needs to say that rather than list them.
+    // Bounded twice, at two different bounds, and the difference is the
+    // correction the sibling still needs. `_peers` is what the report *names*
+    // and stays small, because a session receiving from a hundred hosts is a
+    // misconfiguration the report should say rather than list. `_distinctPeers`
+    // is what it *counts*, and deduplicating against the named list alone made
+    // the count wrong the moment a fifth host appeared: every datagram from a
+    // peer too late to be named failed the search and incremented the tally, so
+    // one extra host sending a thousand datagrams reported a thousand peers.
+    //
+    // A count is bounded too, since a set is memory a hostile network can grow.
+    // Past the bound the report says "at least", which is the honest form of a
+    // number that stopped being exact.
     static constexpr std::size_t kMaxNamedPeers = 4;
+    static constexpr std::size_t kMaxTrackedPeers = 64;
     std::vector<std::string> _peers;
-    std::uint64_t _peerCount = 0;
+    std::set<std::string> _distinctPeers;
+    bool _peersUntracked = false;
 
     // The census. Bounded for the same reason the peer list is, and the bound is
     // generous rather than tight because a variable-length protocol is a real
@@ -168,6 +194,13 @@ private:
     // print 60 KB of hex, and a container's magic is not 32 bytes long.
     static constexpr std::size_t kMaxPrefixBytes = 32;
     std::vector<std::uint8_t> _prefix;
+
+    // The shortest datagram the session saw, which is what makes the cap
+    // reportable honestly. A full-length prefix means "at least this much" only
+    // when the cap is what shortened it -- if some datagram was itself only
+    // `kMaxPrefixBytes` long, then the shared prefix is exactly that and saying
+    // "at least" would invite a reviewer to look for bytes that are not there.
+    std::size_t _shortestDatagram = 0;
 
     std::array<std::uint64_t, vrmAdapterMocopi::DiagnosticCodeCount>
         _diagnostics{};

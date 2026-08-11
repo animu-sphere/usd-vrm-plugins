@@ -110,14 +110,14 @@ constexpr double kProgressSeconds = 1.0;
 // message an operator actually waits for.
 void
 ReportDiagnostics(const std::vector<vrmAdapterMocopi::Diagnostic>& log,
-                  std::size_t from, bool quiet)
+                  bool quiet)
 {
     if (quiet) {
         return;
     }
-    for (std::size_t i = from; i < log.size(); ++i) {
+    for (const vrmAdapterMocopi::Diagnostic& diagnostic : log) {
         std::cerr << "mocopi_record: "
-                  << vrmAdapterMocopi::FormatDiagnostic(log[i]) << "\n";
+                  << vrmAdapterMocopi::FormatDiagnostic(diagnostic) << "\n";
     }
 }
 
@@ -224,7 +224,6 @@ RunRecord(const mocopiRecordTool::Options& options)
             break;
         }
 
-        const std::size_t seen = log.size();
         const vrmAdapterMocopi::ReceiveStatus status =
             receiver.Receive(&datagram, kPollSeconds, &log);
         switch (status) {
@@ -253,6 +252,15 @@ RunRecord(const mocopiRecordTool::Options& options)
         case vrmAdapterMocopi::ReceiveStatus::Idle:
             break;
         case vrmAdapterMocopi::ReceiveStatus::Closed:
+            // Not folded into the arm below. `Closed` means no socket is open,
+            // which is a different fact from a socket that reported an error —
+            // and `GetLastErrorText()` is documented as empty until something
+            // fails, so the shared message printed "the socket failed:" with
+            // nothing after the colon for a socket that never said so.
+            std::cerr << "mocopi_record: the socket is no longer open\n";
+            report.SetStopReason(mocopiRecordTool::StopReason::SocketClosed);
+            running = false;
+            break;
         case vrmAdapterMocopi::ReceiveStatus::Failed:
             std::cerr << "mocopi_record: the socket failed: "
                       << receiver.GetLastErrorText() << "\n";
@@ -264,8 +272,8 @@ RunRecord(const mocopiRecordTool::Options& options)
         // Whatever the status was: a silence report is appended by a call that
         // received nothing, which is the majority of the calls a session waiting
         // for a device makes.
-        report.ObserveDiagnostics(log, seen);
-        ReportDiagnostics(log, seen, options.quiet);
+        report.ObserveDiagnostics(log);
+        ReportDiagnostics(log, options.quiet);
         // The list is a session's worth of history nobody reads twice: the
         // report has counted these and kept the first of each code.
         log.clear();
@@ -346,7 +354,17 @@ RunRecord(const mocopiRecordTool::Options& options)
     }
 
     report.Print(stdout, &receiver, nullptr);
-    return written ? 0 : 1;
+
+    // A session the transport cut short exits non-zero even though its datagrams
+    // were written, and the file is still there to be used. The alternative was
+    // exit 0 with the distinction surviving only as prose on stdout — which is no
+    // distinction at all to the script that wrapped this tool, and this file's own
+    // header says a capture cannot tell the two apart afterwards. So the one
+    // machine-readable channel carries it.
+    const bool completed =
+        report.GetStopReason() != mocopiRecordTool::StopReason::ReceiveFailed
+        && report.GetStopReason() != mocopiRecordTool::StopReason::SocketClosed;
+    return written && completed ? 0 : 1;
 }
 
 } // namespace

@@ -77,6 +77,33 @@ CAPTURES = {
         "prefix": "de ad be ef",
         "arrival_hz": 50.0,
     },
+    # Payloads that agree past the 32-byte prefix cap, so the report has to say
+    # "at least 32" -- the shared prefix genuinely may be longer than shown.
+    "capped-prefix": {
+        "header": {"sourceId": "capped-prefix-01"},
+        "records": [(round(0.05 * i, 6), b"\x5a" * 40 + bytes([i]))
+                    for i in range(4)],
+        "distinct": 1,
+        "lengths": "4 of 41 byte(s)",
+        "prefix": " ".join(["5a"] * 32),
+        "prefix_capped": True,
+        "arrival_hz": 20.0,
+    },
+    # The same agreement, cut off by a datagram that is *itself* 32 bytes long.
+    # The shared prefix is then exactly 32 and "at least" would be wrong -- it
+    # would send a reviewer looking for bytes that are not there.
+    "exact-prefix": {
+        "header": {"sourceId": "exact-prefix-01"},
+        "records": [
+            (0.000000, b"\x5a" * 40),
+            (0.050000, b"\x5a" * 32),
+        ],
+        "distinct": 2,
+        "lengths": "1 of 32 byte(s), 1 of 40",
+        "prefix": " ".join(["5a"] * 32),
+        "prefix_capped": False,
+        "arrival_hz": 20.0,
+    },
     # A zero-length datagram, which the format calls legal and meaningful and the
     # report therefore has to name rather than fold into a census entry. It also
     # drives the prefix to nothing: an empty payload shares no byte with anything.
@@ -218,8 +245,12 @@ def check_report(name: str, lines: dict[str, str], expected: dict) -> None:
     else:
         wanted = expected["prefix"]
         count = len(wanted.split())
-        if prefix != f"{count} byte(s) common to every datagram: {wanted}":
-            fail(f"{name}: expected a {count}-byte common prefix "
+        # "at least" is warranted only when the cap is what shortened the prefix,
+        # never merely because the prefix came out cap-length.
+        lower_bound = "at least " if expected.get("prefix_capped") else ""
+        if prefix != (f"{lower_bound}{count} byte(s) common to every datagram: "
+                      f"{wanted}"):
+            fail(f"{name}: expected a {lower_bound}{count}-byte common prefix "
                  f"'{wanted}', report said '{prefix}'")
 
     # Absent, not zero, when the session carried none: a line that always
@@ -375,6 +406,23 @@ def check_help_and_refusals(tool: pathlib.Path,
         # An unbracketed IPv6 address with a port is ambiguous, not guessed at.
         ["--dry-run", "--listen", "::1:12351"],
         ["--dry-run", "--listen", "[::1"],
+        # A half that is present-but-empty is refused rather than ignored. Each
+        # of these used to parse as success and silently leave the default port
+        # in place, which is indistinguishable from having been obeyed.
+        ["--dry-run", "--listen", "127.0.0.1:"],
+        ["--dry-run", "--listen", ":"],
+        ["--dry-run", "--listen", "[]"],
+        ["--dry-run", "--listen", "[::1]:"],
+        ["--dry-run", "--listen", "[::1]x"],
+        # Provenance is written into the capture header, which carries one token
+        # per key -- so a value with whitespace is refused at the prompt rather
+        # than after a session that cannot be re-recorded. `--sender "a b"` is
+        # the shape this tool's own README used to suggest.
+        ["--dry-run", "--sender", "mocopi 1.2.3"],
+        ["--dry-run", "--device", "xperia 5"],
+        ["--dry-run", "--source-id", "neutral standing"],
+        ["--dry-run", "--sender", "a\tb"],
+        ["--dry-run", "--device", "a\nd 0.0 1"],
         # A bound that admits no datagrams is refused rather than honoured.
         ["--dry-run", "--max-datagrams", "0"],
         # NaN and infinity pass every range check by failing to be on either
@@ -415,7 +463,37 @@ def check_help_and_refusals(tool: pathlib.Path,
     if not run_tool(tool, "--inspect", str(capture), "--quiet"):
         fail("--quiet suppressed the report, which is what the tool produces")
 
-    print(f"mocopi_record: usage and {len(refusals)} refusals behave")
+    # A range error states the range that is actually enforced. `--max-datagrams`
+    # refuses 0 under a separate check, so a message offering 0 sends a user who
+    # follows it straight into the second refusal.
+    over = expect_exit(tool, 2, "--dry-run", "--max-datagrams", "20000000")
+    if "between 1 and 10000000" not in over.stderr:
+        fail(f"--max-datagrams should state the range it enforces: "
+             f"{over.stderr.splitlines()[0] if over.stderr else ''}")
+    # And 0 is refused by that same stated range rather than by a check below it.
+    zero = expect_exit(tool, 2, "--dry-run", "--max-datagrams", "0")
+    if "between 1 and 10000000" not in zero.stderr:
+        fail(f"--max-datagrams 0 should be refused by the stated range: "
+             f"{zero.stderr.splitlines()[0] if zero.stderr else ''}")
+
+    # The forms that must keep working, so the refusals above are not a blanket
+    # tightening: a bare address, a port alone, and a bracketed IPv6 address with
+    # and without a port. `--dry-run --duration 0` binds, reports and exits.
+    for listen in ("127.0.0.1", ":0", "[::1]", "[::1]:0"):
+        result = subprocess.run(
+            [str(tool), "--dry-run", "--listen", listen, "--duration", "1"],
+            text=True, encoding="utf-8", errors="replace",
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # Exit 1 is allowed here and only here: a runner with no IPv6 cannot bind
+        # `[::1]` and reports VRM_MOCOPI_SOCKET_BIND_FAILED, which is the socket
+        # answering rather than the parser refusing. Exit 2 is the parser, and
+        # that is what must not happen.
+        if result.returncode == 2:
+            fail(f"`--listen {listen}` is a documented form and was refused: "
+                 f"{result.stderr}")
+
+    print(f"mocopi_record: usage, {len(refusals)} refusals, and four accepted "
+          f"--listen forms behave")
 
 
 class Session:
@@ -535,12 +613,31 @@ class Session:
         return report_lines(self.stdout)
 
 
-def free_udp_port(family: int = socket.AF_INET) -> int:
-    """A port nothing holds. UDP has no TIME_WAIT, so rebinding is immediate."""
+def free_udp_ports(count: int = 1, family: int = socket.AF_INET) -> list[int]:
+    """`count` distinct ports nothing holds.
+
+    Every probe is bound *before* any of them is closed, which is what makes the
+    ports distinct from each other. Calling a one-port helper twice does not:
+    UDP has no TIME_WAIT -- as the two-peer check relies on, since the tool has
+    to be able to rebind immediately -- so the second call can legitimately hand
+    back the port the first one just released, and a test that then expected two
+    peers would fail on a runner where nothing was wrong.
+    """
     host = "::1" if family == socket.AF_INET6 else "127.0.0.1"
-    with socket.socket(family, socket.SOCK_DGRAM) as probe:
-        probe.bind((host, 0))
-        return probe.getsockname()[1]
+    probes = []
+    try:
+        for _ in range(count):
+            probe = socket.socket(family, socket.SOCK_DGRAM)
+            probe.bind((host, 0))
+            probes.append(probe)
+        return [probe.getsockname()[1] for probe in probes]
+    finally:
+        for probe in probes:
+            probe.close()
+
+
+def free_udp_port(family: int = socket.AF_INET) -> int:
+    return free_udp_ports(1, family)[0]
 
 
 def check_loopback(tool: pathlib.Path, workspace: pathlib.Path) -> None:
@@ -669,11 +766,15 @@ def check_stop_reasons(tool: pathlib.Path, workspace: pathlib.Path) -> None:
     # Two peers: the capture header names one, so the report has to say there
     # were more. A fixture whose provenance is true of some of its datagrams and
     # not the rest is the failure that warning exists for.
+    #
+    # Both source ports come from one call, so they are distinct from each other
+    # by construction -- see `free_udp_ports`.
     mixed = workspace / "two-peers.mocopipackets"
+    first, second = free_udp_ports(2)
     session = Session(tool, mixed, "--idle-timeout", "2",
                       "--duration", "60").start()
-    session.send(payloads[:5], source_port=free_udp_port())
-    session.send(payloads[5:], source_port=free_udp_port())
+    session.send(payloads[:5], source_port=first)
+    session.send(payloads[5:], source_port=second)
     lines = session.finish()
     if not lines.get("peers", "").startswith("2 ("):
         fail(f"expected two peers to be reported, got '{lines.get('peers')}'")
@@ -682,6 +783,41 @@ def check_stop_reasons(tool: pathlib.Path, workspace: pathlib.Path) -> None:
 
     print("mocopi_record: three stop reasons, the empty-session refusal and "
           "the two-peer warning behave")
+
+
+def check_peer_count(tool: pathlib.Path, workspace: pathlib.Path) -> None:
+    """The peer count counts hosts, past the point where it stops naming them.
+
+    The report names at most four peers, and deduplicating new peers against that
+    short named list alone made the count wrong the moment a fifth host appeared:
+    every datagram from a peer too late to be named failed the search and
+    incremented the tally, so the line whose whole job is to catch a misconfigured
+    multi-source session reported a datagram count as a host count.
+
+    Six hosts, three datagrams each, is the smallest shape that separates the two.
+    The old arithmetic gives 4 + 3 + 3 = 10; the right answer is 6.
+    """
+    payloads = [payload for _, payload in CAPTURES["one-shape"]["records"]][:3]
+    output = workspace / "six-peers.mocopipackets"
+    ports = free_udp_ports(6)
+
+    session = Session(tool, output, "--idle-timeout", "2",
+                      "--duration", "60").start()
+    for port in ports:
+        session.send(payloads, source_port=port)
+    lines = session.finish()
+
+    peers = lines.get("peers", "")
+    if not peers.startswith("6 ("):
+        fail(f"expected six peers to be reported as 6, got '{peers}'")
+    # Four named, then an ellipsis: the count grows past the list, the list does
+    # not.
+    if peers.count(",") != 4 or not peers.endswith("...)"):
+        fail(f"expected four named peers and an ellipsis, got '{peers}'")
+    if len(read_capture(output)[1]) != len(ports) * len(payloads):
+        fail("a multi-peer session did not record every datagram")
+
+    print("mocopi_record: six peers are counted as six and named as four")
 
 
 def check_silence(tool: pathlib.Path, workspace: pathlib.Path) -> None:
@@ -805,6 +941,7 @@ def main() -> int:
         elif arguments.mode == "loopback":
             check_loopback(arguments.tool, workspace)
             check_stop_reasons(arguments.tool, workspace)
+            check_peer_count(arguments.tool, workspace)
             check_silence(arguments.tool, workspace)
         else:
             return check_ipv6(arguments.tool, workspace)

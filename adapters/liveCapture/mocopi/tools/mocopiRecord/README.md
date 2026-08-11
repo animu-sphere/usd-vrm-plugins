@@ -121,8 +121,8 @@ mocopi_record --dry-run --silence-timeout 5 --duration 20
 
 # Thirty seconds of it, recorded, with the provenance a fixture needs.
 mocopi_record --output session.mocopipackets \
-              --sender "<application and version>" \
-              --device "<hardware>" \
+              --sender mocopi-app-1.2.3 \
+              --device xperia-5-iv \
               --source-id mocopi-neutral-standing \
               --silence-timeout 5 --duration 30
 
@@ -130,11 +130,23 @@ mocopi_record --output session.mocopipackets \
 mocopi_record --inspect session.mocopipackets
 ```
 
-A session that received nothing writes **no file** and exits 1. The format has no
-datagram-less form — `WritePacketCapture` would emit a header and stop, and
-`ReadPacketCapture` refuses the result — so the alternative is handing an
-operator an artifact this adapter's own reader rejects, which they would discover
-at the point they tried to use it.
+**Provenance values carry no spaces**, and that is enforced at the prompt. A
+capture header holds one whitespace-delimited token per key, so `--sender "mocopi
+1.2.3"` would produce a file this adapter's own reader refuses — and finding that
+out *after* a session against a device is finding it out too late, since the
+session cannot be re-recorded. Join the words with `-`.
+
+Two more exits worth knowing before a long session:
+
+- A session that received nothing writes **no file** and exits 1. The format has
+  no datagram-less form — `WritePacketCapture` would emit a header and stop, and
+  `ReadPacketCapture` refuses the result — so the alternative is handing an
+  operator an artifact this adapter's own reader rejects, which they would
+  discover at the point they tried to use it.
+- A session the **socket** cut short writes what it had and exits 1. The file is
+  still there and still valid; the exit is how a script tells a complete
+  recording from a truncated one, because the capture cannot say afterwards which
+  it was and `stopped: the socket failed` is prose on stdout.
 
 ## What may be committed, and what may not
 
@@ -157,8 +169,8 @@ Three CTest names, split the way every claim in this adapter is split:
 
 | name | needs | what it checks |
 | --- | --- | --- |
-| `mocopi_record_inspect` | nothing | captures authored in Python, every report line, six malformed captures refused with a line number, and the CLI's refusals |
-| `mocopi_record_loopback` | a socket | bytes recorded verbatim, the stop reasons, the two-peer warning, and the silence report firing once with the session continuing through it |
+| `mocopi_record_inspect` | nothing | five captures authored in Python, every report line, six malformed captures refused with a line number, the CLI's refusals, and the four `--listen` forms that must keep working |
+| `mocopi_record_loopback` | a socket | bytes recorded verbatim, the stop reasons, the two-peer warning, six peers counted as six while four are named, and the silence report firing once with the session continuing through it |
 | `mocopi_record_ipv6` | IPv6 loopback | the socket takes the address and the tool warns; `Skipped` where the runner has no `::1` |
 
 The fixtures are authored beside the tests rather than read from a corpus, and
