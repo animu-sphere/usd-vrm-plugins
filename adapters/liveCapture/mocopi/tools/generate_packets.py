@@ -50,8 +50,15 @@ enforces that. Run:
 counts, payload sizes, durations, the packet kinds and chunk tags present, bone
 counts, digests) are re-derived from the captures on every run and compared under
 --check, so the manifest cannot quietly stop describing the corpus; its prose
-fields (`pins`, `tags`, and the top-level notes) are hand-written and preserved
-untouched.
+fields (`pins`, `tags`, and the top-level notes) live in the JSON, are
+hand-written, and are preserved untouched.
+
+The comparison is over **parsed field values and not over the serialised text**,
+which is the sibling adapter's arrangement and is load-bearing rather than
+stylistic: `.mocopipackets` carries `eol=lf` in `.gitattributes` and
+`manifest.json` does not, so a text comparison passes on a Linux checkout and
+fails on a Windows one for a file whose content is identical. That is exactly
+what it did, once.
 """
 
 from __future__ import annotations
@@ -543,142 +550,73 @@ def describe(capture: Capture) -> dict:
     }
 
 
-MANIFEST_NOTES = {
-    "schemaVersion": 1,
-    "description": (
-        "Machine-readable provenance for the mocopi packet corpus. Every capture "
-        "is assembled by adapters/liveCapture/mocopi/tools/generate_packets.py "
-        "from a container grammar measured on real device sessions - the grammar "
-        "is evidence, the content is invented, and neither the measured "
-        "recordings nor any real body proportions are committed here. Field "
-        "values are measured from the committed files, never guessed."),
-    "format": {
-        "name": "mocopi-packet-capture",
-        "version": FORMAT_VERSION,
-        "spec": "adapters/liveCapture/mocopi/include/vrmAdapterMocopi/PacketCapture.h",
-    },
-    "protocol": {
-        "grammar": "adapters/liveCapture/mocopi/include/vrmAdapterMocopi/MotionPacket.h",
-        "measuredFrom": "5 real device sessions, 8000 datagrams, 4 distinct motions",
-        "measuredOn": "2026-08-11/2026-08-12",
-        "recordingsCommitted": False,
-        "unresolved": [
-            "Handedness: a mirrored basis satisfies every measurement taken so "
-            "far, so no fixture here names a left or a right. Settling it needs "
-            "an asymmetric motion whose side is labelled.",
-            "The meaning of sndf/ipad (8 bytes, constant per session) and of "
-            "fram/tmcd (6 bytes, zero in all 7964 measured frames).",
-        ],
-    },
-    "provenance": {
-        "origin": "synthetic",
-        "generator": "adapters/liveCapture/mocopi/tools/generate_packets.py",
-        "license": "Apache-2.0",
-        "redistributionAllowed": True,
-        "capturedFromRealDevice": False,
-        "generatedAt": "2026-08-12",
-    },
-    "limitations": [
-        "These pin the decoder, not the protocol: the grammar that wrote them is "
-        "the grammar they are decoded with, so no fixture here can be surprised "
-        "by the wire format.",
-        "The rest pose is invented round-number proportions in metres. A real "
-        "skeleton packet is a body measurement of a real person and is not "
-        "committable.",
-        "No real device's sndf/ipad or peer address appears; both are treated as "
-        "possibly device-identifying.",
-        "A capture whose encoding is the vendor's own - the BVH Sender pointed at "
-        "a .bvh this repository wrote - is the evidence that can still surprise "
-        "the decoder, and it belongs in this directory when an operator makes one.",
-    ],
-}
+def field_matches(claimed, measured) -> bool:
+    """Compare one manifest field against its measured value.
 
-PROSE = {
-    "neutral-standing-60hz.mocopipackets": {
-        "pins": (
-            "The happy path, and both packet kinds in one capture: a skeleton "
-            "packet then five frames at 60 Hz, every rotation identity. Also the "
-            "measured invariant that only the root translates - every non-root "
-            "frame translation equals its rest offset bit for bit."),
-        "tags": ["baseline", "both-kinds", "rest-equals-frame"],
-    },
-    "arms-lowered-60hz.mocopipackets": {
-        "pins": (
-            "A non-identity rotation, on the two upper arms in opposite "
-            "directions: about 85 degrees carried in the third imaginary "
-            "component, which is what the measured standing sessions showed "
-            "against a T-pose rest. A decoder that reordered the quaternion's "
-            "components cannot pass this and the baseline at once."),
-        "tags": ["rotation", "component-order", "root-motion"],
-    },
-    "frame-loss-60hz.mocopipackets": {
-        "pins": (
-            "What the transport does, none of which the decoder refuses: an fnum "
-            "gap of 3 whose time delta is exactly 3/60 s - the measured Wi-Fi "
-            "loss shape, where the sender's clock never skipped - then a "
-            "duplicate delivery, then a restart with both fnum and time back to "
-            "the beginning."),
-        "tags": ["packet-loss", "duplicate", "restart", "assembler-input"],
-    },
-    "malformed-container.mocopipackets": {
-        "pins": (
-            "One datagram per container-level refusal: empty, a header that does "
-            "not fit, a payload longer than the datagram, a walk that ends "
-            "between chunks, and a datagram of the sibling protocol - which dies "
-            "in the container rather than at a field, which is what having two "
-            "magic lines is for."),
-        "tags": ["malformed", "container", "cross-protocol"],
-    },
-    "malformed-packets.mocopipackets": {
-        "pins": (
-            "One datagram per packet-level refusal: the wrong magic, an "
-            "unmeasured version, a missing head, both payload kinds at once, "
-            "neither, a duplicated field, two fields whose declared width "
-            "disagrees with their type, and three unusable clocks. Every one of "
-            "these walks as a container and is refused one layer up."),
-        "tags": ["malformed", "packet", "version", "timestamp"],
-    },
-    "refused-bones-60hz.mocopipackets": {
-        "pins": (
-            "The bone-not-frame rule: one frame with a non-finite rotation, a "
-            "zero-length rotation and a non-finite translation on three "
-            "different bones, which decodes to 24 usable bones and three "
-            "diagnostics rather than to a refused datagram - followed by the "
-            "same frame with nothing wrong with it."),
-        "tags": ["non-finite", "partial-frame", "bone-scoped"],
-    },
-    "extended-form.mocopipackets": {
-        "pins": (
-            "Everything carried forward unread: an unknown chunk beside the "
-            "payload, one inside fram, one inside all 27 bone records - reported "
-            "once and not 27 times - an 11-bone rig that is a different rig and "
-            "not a malformed packet, and the only non-zero tmcd anywhere, which "
-            "the decoder keeps as bytes and interprets not at all."),
-        "tags": ["forward-compatible", "unread-chunks", "bone-count", "timecode"],
-    },
-}
+    Floats go through a tolerance because a duration survives a JSON round trip
+    as the nearest binary64 and not as the decimal that was written.
+    """
+    if isinstance(measured, float):
+        try:
+            return abs(float(claimed) - float(measured)) <= 1e-6
+        except (TypeError, ValueError):
+            return False
+    return claimed == measured
 
 
-def sync_manifest(output: pathlib.Path, rendered: dict, check: bool) -> list:
-    manifest = dict(MANIFEST_NOTES)
-    captures = []
-    for name in sorted(CAPTURES):
-        entry = {"file": name}
-        entry.update(PROSE[name])
-        entry.update(describe(CAPTURES[name]()))
-        entry["sha256"] = hashlib.sha256(
-            rendered[name].encode("utf-8")).hexdigest()
-        captures.append(entry)
-    manifest["captures"] = captures
+def sync_manifest(directory: pathlib.Path, rendered: dict, check: bool) -> list:
+    """Compare (or rewrite) the manifest's measured fields. Returns problems.
 
-    text = json.dumps(manifest, indent=2, ensure_ascii=True) + "\n"
-    path = output / MANIFEST_NAME
-    existing = path.read_text(encoding="utf-8", newline="") if path.exists() else None
+    The manifest is the hand-maintained artifact and this only owns the fields it
+    can derive: the prose (`pins`, `tags`, and every top-level note) lives in the
+    JSON and is never touched here. Comparison is over parsed values rather than
+    over the serialised text, so a CRLF checkout of a file with no `eol=lf`
+    attribute cannot fail a check about the corpus.
+    """
+    path = directory / MANIFEST_NAME
+    if not path.exists():
+        return [f"{MANIFEST_NAME} is missing"]
+
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    problems: list = []
+
+    if manifest.get("format", {}).get("version") != FORMAT_VERSION:
+        problems.append(
+            f"{MANIFEST_NAME}: format.version is "
+            f"{manifest.get('format', {}).get('version')!r}, expected "
+            f"{FORMAT_VERSION}")
+
+    listed = [entry.get("file") for entry in manifest.get("captures", [])]
+    if sorted(listed) != sorted(rendered):
+        problems.append(
+            f"{MANIFEST_NAME} describes {sorted(listed)}, the corpus is "
+            f"{sorted(rendered)}")
+        return problems
+
+    for entry in manifest["captures"]:
+        name = entry["file"]
+        derived = {
+            "id": pathlib.Path(name).stem,
+            **describe(CAPTURES[name]()),
+            "sha256": hashlib.sha256(rendered[name].encode("utf-8")).hexdigest(),
+        }
+        for key, value in derived.items():
+            if not field_matches(entry.get(key), value):
+                problems.append(
+                    f"{name}: {key} is {entry.get(key)!r}, measured {value!r}")
+        if not check:
+            entry.update(derived)
+
     if check:
-        return [] if existing == text else [
-            f"{MANIFEST_NAME} does not describe the committed corpus"]
-    with open(path, "w", encoding="utf-8", newline="\n") as handle:
-        handle.write(text)
+        return problems
+
+    # Writing mode fills the derived fields in, so a new entry needs only its
+    # `file` and the prose no tool can infer. Report what changed either way:
+    # silently rewriting a provenance record is the wrong kind of convenient.
+    path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+                    encoding="utf-8", newline="\n")
+    for problem in problems:
+        print(f"updated {problem}")
     return []
 
 

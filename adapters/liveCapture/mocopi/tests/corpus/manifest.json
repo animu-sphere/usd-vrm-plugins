@@ -73,7 +73,8 @@
       "boneCounts": [
         27
       ],
-      "sha256": "645d5a6e757ed8a92b13cbd97f647ba766958f78d59d41a73b9b984889aa4ce9"
+      "sha256": "645d5a6e757ed8a92b13cbd97f647ba766958f78d59d41a73b9b984889aa4ce9",
+      "id": "arms-lowered-60hz"
     },
     {
       "file": "extended-form.mocopipackets",
@@ -122,7 +123,8 @@
         11,
         27
       ],
-      "sha256": "62136d8c87a5217a728723263b487a55148d5804069e8f57ec94533f7dc23980"
+      "sha256": "62136d8c87a5217a728723263b487a55148d5804069e8f57ec94533f7dc23980",
+      "id": "extended-form"
     },
     {
       "file": "frame-loss-60hz.mocopipackets",
@@ -167,7 +169,8 @@
       "boneCounts": [
         27
       ],
-      "sha256": "56103488e0981976066939295f27a5c0c663d95f32bb526c7e81a48ed6609af2"
+      "sha256": "56103488e0981976066939295f27a5c0c663d95f32bb526c7e81a48ed6609af2",
+      "id": "frame-loss-60hz"
     },
     {
       "file": "malformed-container.mocopipackets",
@@ -189,7 +192,8 @@
       },
       "chunkTags": [],
       "boneCounts": [],
-      "sha256": "e2b70ee2b59735f97d44b25724edf5cfda55ac8f5f38337c267d0c3696eba43a"
+      "sha256": "e2b70ee2b59735f97d44b25724edf5cfda55ac8f5f38337c267d0c3696eba43a",
+      "id": "malformed-container"
     },
     {
       "file": "malformed-packets.mocopipackets",
@@ -212,7 +216,7 @@
         "neither": 1
       },
       "chunkTags": [
-        "\u0000\u0000\u00f0\u007f",
+        "\u0000\u0000ð",
         "bnid",
         "bons",
         "btdt",
@@ -234,7 +238,8 @@
       "boneCounts": [
         1
       ],
-      "sha256": "1b641f55b5b149b2040e7399c215264c595bc38bc8dcb4eba69eef24b101446d"
+      "sha256": "1b641f55b5b149b2040e7399c215264c595bc38bc8dcb4eba69eef24b101446d",
+      "id": "malformed-packets"
     },
     {
       "file": "neutral-standing-60hz.mocopipackets",
@@ -278,7 +283,8 @@
       "boneCounts": [
         27
       ],
-      "sha256": "5352eeec0a55467389eacaa1e58110a7cac6feb600639b634ed7fcfd11e5806d"
+      "sha256": "5352eeec0a55467389eacaa1e58110a7cac6feb600639b634ed7fcfd11e5806d",
+      "id": "neutral-standing-60hz"
     },
     {
       "file": "refused-bones-60hz.mocopipackets",
@@ -317,7 +323,8 @@
       "boneCounts": [
         27
       ],
-      "sha256": "64689c470ee56c930ddf84307a9f7a18b74487199bce8fda4d24ab8e620fe3fd"
+      "sha256": "64689c470ee56c930ddf84307a9f7a18b74487199bce8fda4d24ab8e620fe3fd",
+      "id": "refused-bones-60hz"
     }
   ]
 }
