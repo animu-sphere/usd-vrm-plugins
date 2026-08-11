@@ -1,0 +1,30 @@
+# OpenStrata workspace-tool descriptor. `mocopi_record` is the mocopi adapter's
+# CLI: the one part of this adapter a user runs, and the only part that meets a
+# real device (WORKSPACE.md §1 — "each adapter may also carry one CLI, declared
+# beside it as an openstrata.tool.yaml").
+#
+# It requires the adapter and nothing else. §2 *permits* an adapter tool to drive
+# `vrmRetarget` and author a stage, which is what separates a tool from its
+# library — this one does neither, and here that is not merely unnecessary but
+# impossible: there is no decoder yet, so there is nothing canonical for a
+# retarget to act on. What this tool produces is a capture file, and the tool
+# that turns a canonical session into a clip is `motion_capture` (Milestone C).
+#
+# `ost` 0.21.0 does not discover this file: workspace members are the project
+# root's immediate subdirectories and `libs/`, so nothing under
+# `adapters/<group>/<name>/tools/` is loaded (report 34). The root CMake tree
+# builds the tool and CTest runs its tests; this descriptor is what makes the
+# adapter's artifact expressible when a per-library packaging command exists
+# (WORKSPACE.md §5), not a claim that one does today.
+schema: openstrata.tool/v1alpha1
+tool:
+  id: mocopi_record
+  # Mirrors VERSION; release preparation updates this in lockstep.
+  version: 0.6.0
+  license: Apache-2.0
+executables: [mocopi_record]
+directories: [bin]
+requires:
+  libraries:
+    - id: vrmAdapterMocopi
+      version: ">=0.6,<0.7"

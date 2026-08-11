@@ -72,11 +72,12 @@ set(_vrm_adapter_mocopi_tests
 # does -- and when it does it becomes a checked fixture by being committed,
 # rather than by somebody also remembering to add a test.
 #
-# What has changed since that was written is that the recording is now possible:
-# the receiver below turns a source aimed at this port into datagrams, and
-# `vrmAdapterMocopi_udpReceiver` checks that what comes off the socket is what a
-# capture keeps. What is still missing is a source to aim -- the vendor's `BVH
-# Sender` or a device -- which is an operator's action and not a commit's.
+# What has changed since that was written is that the recording is now possible
+# end to end: the receiver below turns a source aimed at this port into
+# datagrams, and `tools/mocopiRecord` writes them to one of these files --
+# `mocopi_record_loopback` checks that what comes off the socket is byte for byte
+# what the capture keeps. What is still missing is a source to aim, the vendor's
+# `BVH Sender` or a device, which is an operator's action and not a commit's.
 set(_vrm_adapter_mocopi_corpus "${CMAKE_CURRENT_SOURCE_DIR}/corpus")
 if(EXISTS "${_vrm_adapter_mocopi_corpus}")
     add_test(NAME vrmAdapterMocopi_corpus

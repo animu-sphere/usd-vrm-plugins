@@ -1167,14 +1167,52 @@ original order that was never about the transport.
   *threshold* is stated by the caller and has no default, because a device being
   strapped on and a device switched off produce the same nothing. It is reported
   once per episode and re-armed by the next datagram.
+- ✅ **`mocopi_record`, the recording tool** (2026-08-11). The consumer the
+  receiver was waiting for, and it decodes nothing either — the datagram reaches
+  the file before any decoder sees it, which is the rule Milestone B settled for
+  `vmc_record` and which is trivially true here, since there is no decoder in the
+  process at all. Three CTest names, all green: `mocopi_record_inspect` needs no
+  socket, `mocopi_record_loopback` records bytes through one and compares them
+  byte for byte, and `mocopi_record_ipv6` reports `Skipped` on a runner with no
+  `::1` rather than passing quietly.
+
+  **The report's discipline is the part worth reviewing.** Two of the four
+  questions the sibling's report answers have no answer here, and the temptation
+  a native recorder meets is to invent them because the operator is standing
+  there wanting to know whether the session was any good. What is printed instead
+  is the datagram *envelope*: the counts, the peers, the arrival rate on the
+  receive clock, a **length census**, and the **leading bytes every datagram
+  shares**. The last two are the first sentences about this protocol anything in
+  this repository has been able to say, and neither reads a field — a capture
+  whose every datagram is one length recorded one kind of packet, and a decoder
+  built from it would meet the second kind in production. No threshold is
+  attached to that measurement, because nothing here yet knows what a session
+  *should* hold.
+
+  Three smaller things it settles. `--silence-timeout` is the caller the frozen
+  `VRM_MOCOPI_DEVICE_UNAVAILABLE` was waiting for — it reports once per episode
+  and the session continues, since `--idle-timeout` is the flag that stops — which
+  makes this the first code in the set paid for by a real caller rather than by a
+  unit test. The two warnings that fire *before* the first datagram (a loopback
+  bind, an IPv6 bind) are the vendor's IPv4-only and no-`localhost` statements
+  landing in the layer that may hold them: `UdpReceiver` deliberately refuses
+  neither, because a socket inventing a restriction on itself out of a product's
+  documentation is the wrong layer, and an operator who learns after ten quiet
+  minutes that nothing could ever have arrived has lost the ten minutes. And a
+  session that received nothing writes **no file** and exits 1 — which surfaced a
+  format asymmetry worth recording: `WritePacketCapture` will emit a
+  datagram-less header that `ReadPacketCapture` then refuses, so the writer can
+  produce a file its own reader rejects. **The sibling format has this
+  identically** as of 2026-08-11; the tool declines rather than leaving an
+  unreadable artifact on disk, and fixing it in either library is its own change.
 - ⬜ **The corpus, and the packet decoder after it.** What is missing is now an
-  operator's action rather than a commit: a source aimed at this port, either
-  the vendor's `BVH Sender` pointed at a `.bvh` this repository wrote or a
-  device. The recording tool that turns one such session into a committed file
-  is the next code, and it decodes nothing either — the datagram reaches the
-  file before any decoder sees it, which is the rule Milestone B settled for
-  `vmc_record` and which matters more here, since the sessions worth recording
-  are precisely the ones nothing in this repository can yet read.
+  operator's action rather than a commit, and the tool for it exists: a source
+  aimed at this port, either the vendor's `BVH Sender` pointed at a `.bvh` this
+  repository wrote or a device. **A device is available as of 2026-08-11**, which
+  closes the access question and leaves the committable-fixture question exactly
+  where the paragraph below puts it — a session recorded off a phone is recorded
+  evidence and not a corpus fixture, so `BVH Sender` remains the path to the
+  bytes public CI may run.
 
 **The wire format is not documented, and the evidence path is a sender rather
 than a device** (established 2026-08-09). The vendor states the transport and

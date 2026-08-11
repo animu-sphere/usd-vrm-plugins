@@ -134,3 +134,20 @@ if(VRMADAPTERMOCOPI_BUILD_TESTS)
     find_package(Python3 COMPONENTS Interpreter QUIET)
     add_subdirectory(tests)
 endif()
+
+# The adapter's CLI, which ships in the same artifact as the library
+# (WORKSPACE.md §5). Added after the library and its tests: the tool links the
+# target above, and adding it before would name a target that does not exist
+# yet. It is where WORKSPACE.md §2's adapter-tool permissions begin -- a tool may
+# drive `vrmRetarget` and author a stage where the library may not -- which is
+# also why `tests/check_boundaries.py` scans include/ and src/ only.
+#
+# Unconditional, unlike the sibling adapter's guarded call. That guard was
+# written when the tool did not exist yet; once it does, an `if(EXISTS ...)`
+# around a file the build requires can never be false in a correct tree, so its
+# only reachable effect is to mask a rename or a bad checkout -- the configure
+# would succeed, the tool would not be built, and ctest would report 100% with
+# `mocopi_record_inspect`, `_loopback` and `_ipv6` simply absent. This repository
+# has already paid for a test that silently stopped registering, which is why
+# `ctest -N` counts are checked; a missing file here is a configure error.
+add_subdirectory(tools/mocopiRecord)
