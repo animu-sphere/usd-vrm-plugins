@@ -85,8 +85,15 @@ set(_vrm_adapter_mocopi_tests
 # Two names run over the same directory and they check different things.
 # `_corpus` is the format's: every capture parses and re-emits byte-identically,
 # so a fixture can never drift from the C++ writer. `_motionPacketCorpus` is the
-# decoder's: every capture decodes to what the manifest says it pins, or is
-# refused with the code it exists to be refused with.
+# decoder's: every capture decodes to what its `sourceId` claims it pins, or is
+# refused with the code, per datagram, that it exists to be refused with.
+#
+# Neither reads `manifest.json` — that is `_packetGen`'s, which compares the
+# manifest's derived fields against the *generator*. So the manifest is pinned to
+# the bytes and the bytes are pinned to the decoder, with no test asserting the
+# manifest's prose against either; a `pins` string is a claim to a reviewer and
+# not an assertion, which is why the assertions below are named after the
+# phenomenon rather than reading it out of the JSON.
 set(_vrm_adapter_mocopi_corpus "${CMAKE_CURRENT_SOURCE_DIR}/corpus")
 if(EXISTS "${_vrm_adapter_mocopi_corpus}")
     add_test(NAME vrmAdapterMocopi_corpus

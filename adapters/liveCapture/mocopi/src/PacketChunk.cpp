@@ -76,7 +76,8 @@ std::string PacketChunkTagText(std::string_view tag)
 
 bool DecodePacketChunks(const std::uint8_t* bytes, std::size_t size,
                         std::vector<PacketChunk>* chunks,
-                        std::string_view context, Diagnostic* diagnostic)
+                        std::string_view context, Diagnostic* diagnostic,
+                        std::size_t baseOffset)
 {
     if (chunks == nullptr)
     {
@@ -104,7 +105,8 @@ bool DecodePacketChunks(const std::uint8_t* bytes, std::size_t size,
                     "a chunk header needs "
                         + std::to_string(PacketChunkHeaderBytes)
                         + " bytes and only " + std::to_string(size - offset)
-                        + " remain at offset " + std::to_string(offset));
+                        + " remain at offset "
+                        + std::to_string(baseOffset + offset));
             }
             chunks->clear();
             return false;
@@ -124,7 +126,8 @@ bool DecodePacketChunks(const std::uint8_t* bytes, std::size_t size,
             {
                 *diagnostic = Malformed(
                     context, "chunk " + PacketChunkTagText(tag) + " at offset "
-                                 + std::to_string(offset) + " declares "
+                                 + std::to_string(baseOffset + offset)
+                                 + " declares "
                                  + std::to_string(length) + " payload byte(s) "
                                  + "and only " + std::to_string(available)
                                  + " remain");
@@ -137,7 +140,7 @@ bool DecodePacketChunks(const std::uint8_t* bytes, std::size_t size,
         chunk.tag = tag;
         chunk.bytes = bytes + offset + PacketChunkHeaderBytes;
         chunk.size = static_cast<std::size_t>(length);
-        chunk.offset = offset;
+        chunk.offset = baseOffset + offset;
         chunks->push_back(chunk);
 
         offset += PacketChunkHeaderBytes + static_cast<std::size_t>(length);

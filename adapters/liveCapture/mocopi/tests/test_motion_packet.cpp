@@ -387,6 +387,82 @@ TestASkeletonDecodes()
 }
 
 void
+TestASkeletonWithAnUnusableBoneIsRefusedWhole()
+{
+    // The asymmetry with a frame, and the reason for it: bone 1's parent is bone
+    // 0, so a table that dropped bone 0 would leave bone 1 pointing at an id that
+    // is not there. A frame has no such relationship between its records.
+    Bytes rootParent;
+    AppendU16(&rootParent, 0xffff);
+    const float nan = std::nanf("");
+    const Bytes bones = Join(
+        {Chunk("bndt", Join({BoneId(0), Chunk("pbid", rootParent),
+                             Tran(nan, 0.0f, 0.0f, 1.0f, 0.0f, 0.9f, 0.0f)})),
+         Chunk("bndt", Join({BoneId(1), Chunk("pbid", Bytes{0, 0}),
+                             IdentityTran()}))});
+    RefusedWith(Join({Head(), Sender(),
+                      Chunk("skdf", Chunk("bons", bones))}),
+                DiagnosticCode::NonFiniteTransform,
+                "a skeleton with an unusable rest transform");
+
+    // The same defect in a *frame* costs the bone and not the packet, which is
+    // the pair this test exists to hold apart.
+    MotionPacket packet;
+    std::vector<Diagnostic> diagnostics;
+    const Bytes frame =
+        Frame(1, 0.0f, 1786492800.0,
+              Join({Btdt(0, Tran(nan, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f)),
+                    Btdt(1, IdentityTran())}));
+    assert(Decode(frame, &packet, &diagnostics));
+    assert(packet.refusedBones == 1);
+    assert(packet.frame->bones.size() == 1);
+}
+
+void
+TestARefusalNamesAPositionInTheDatagram()
+{
+    // A truncated `tran` inside the second bone record. The offset quoted must be
+    // findable in the datagram's hex, which means it accumulates down the tree
+    // rather than restarting at each level -- so it is emphatically not the 8 a
+    // payload-relative walk would report, and 8 in a real datagram is inside
+    // `head`.
+    Bytes shortTran;
+    AppendU32(&shortTran, 4096);
+    const Bytes tag = Text("tran");
+    shortTran.insert(shortTran.end(), tag.begin(), tag.end());
+    shortTran.resize(shortTran.size() + 4, 0);
+
+    const Bytes records =
+        Join({Btdt(0, IdentityTran()),
+              Chunk("btdt", Join({BoneId(1), shortTran}))});
+    const Bytes datagram = Frame(1, 0.0f, 1786492800.0, records);
+
+    MotionPacket packet;
+    std::vector<Diagnostic> diagnostics;
+    assert(!Decode(datagram, &packet, &diagnostics));
+    assert(!diagnostics.empty());
+    const std::string& detail = diagnostics.back().detail;
+    assert(detail.find("tran") != std::string::npos);
+
+    // Recompute where that chunk really begins and require the message to name
+    // it, rather than accepting any number.
+    const Bytes head = Head();
+    const Bytes sender = Sender();
+    const std::size_t framHeader = head.size() + sender.size();
+    Bytes fnum;
+    AppendU32(&fnum, 1);
+    const std::size_t insideFram =
+        Chunk("fnum", fnum).size() + Chunk("time", Bytes(4, 0)).size()
+        + Chunk("uttm", Bytes(8, 0)).size() + Chunk("tmcd", Bytes(6, 0)).size();
+    const std::size_t btrsBody = framHeader + 8 + insideFram + 8;
+    const std::size_t secondRecord = btrsBody + Btdt(0, IdentityTran()).size();
+    const std::size_t tranOffset = secondRecord + 8 + BoneId(1).size();
+    assert(detail.find(std::to_string(tranOffset)) != std::string::npos);
+    // The trap the propagation exists to close.
+    assert(tranOffset > 8);
+}
+
+void
 TestTheQuaternionIsScalarLastAndIsNotReordered()
 {
     // Distinct values in every slot, so a decoder that rotated the components
@@ -698,7 +774,8 @@ int
 CheckNeutralStanding(const std::vector<MotionPacket>& packets,
                      const std::string& name)
 {
-    if (packets.size() != 6 || packets[0].kind != MotionPacketKind::Skeleton) {
+    if (packets.size() != 6 || packets[0].kind != MotionPacketKind::Skeleton
+        || !packets[0].skeleton.has_value()) {
         return Failed(name, "expected a skeleton packet then five frames");
     }
     const auto& bones = packets[0].skeleton->bones;
@@ -718,6 +795,13 @@ CheckNeutralStanding(const std::vector<MotionPacket>& packets,
 
     std::uint32_t expected = 1000;
     for (std::size_t index = 1; index < packets.size(); ++index) {
+        // Checked, not assumed: a regression that turned one of these into a
+        // skeleton should print which claim broke, not dereference an empty
+        // optional.
+        if (packets[index].kind != MotionPacketKind::Frame
+            || !packets[index].frame.has_value()) {
+            return Failed(name, "a datagram after the first is not a frame");
+        }
         const auto& frame = *packets[index].frame;
         if (frame.frameNumber != expected++) {
             return Failed(name, "the frame counter is not contiguous");
@@ -782,6 +866,31 @@ CheckArmsLowered(const std::vector<MotionPacket>& packets,
         if (plusSide->transform.rotation[0] != 0.0f
             || plusSide->transform.rotation[1] != 0.0f) {
             return Failed(name, "the quaternion components were reordered");
+        }
+
+        // The capture is tagged `root-motion` and the root is the one thing that
+        // varies across its three frames, so it is checked here rather than
+        // left to the tag. `CheckNeutralStanding` deliberately skips bone 0 while
+        // proving the *other* half of the same invariant -- that nothing else
+        // moves -- which would leave the root unpinned in both places.
+        const BoneFrame* root = nullptr;
+        for (const BoneFrame& bone : packet.frame->bones) {
+            if (bone.boneId == 0) {
+                root = &bone;
+            }
+        }
+        if (root == nullptr) {
+            return Failed(name, "the root bone is missing");
+        }
+        const auto step = static_cast<float>(packet.frame->frameNumber - 2000);
+        if (!NearlyEqual(root->transform.translation[0], 0.0f)
+            || !NearlyEqual(root->transform.translation[1], 0.90f - 0.01f * step)
+            || !NearlyEqual(root->transform.translation[2], 0.02f * step)) {
+            return Failed(name, "the root translation is not the recorded one");
+        }
+        if (step != 0.0f
+            && root->transform.translation[1] == kRestOffsets[0][1]) {
+            return Failed(name, "the root did not move off its rest offset");
         }
     }
     return 0;
@@ -859,7 +968,13 @@ CheckCorpus(const std::filesystem::path& directory)
 {
     std::vector<std::filesystem::path> files;
     for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-        if (entry.path().extension() == ".mocopipackets") {
+        // `is_regular_file` as well as the extension, which is what the format
+        // suite does over this same directory. The corpus README invites an
+        // operator to drop a BVH Sender recording in here, and a directory or a
+        // dangling symlink with the right suffix should read as "that is not a
+        // capture" rather than as a parse failure on line 0.
+        if (entry.is_regular_file()
+            && entry.path().extension() == ".mocopipackets") {
             files.push_back(entry.path());
         }
     }
@@ -884,39 +999,99 @@ CheckCorpus(const std::filesystem::path& directory)
 
         std::vector<MotionPacket> decoded;
         std::vector<Diagnostic> diagnostics;
-        std::size_t refused = 0;
+        // Per datagram, in order: the code its refusal reported, or Count when it
+        // decoded. Kept alongside `diagnostics` so a code can be attributed to the
+        // datagram that caused it rather than to the capture as a whole.
+        std::vector<DiagnosticCode> refusals;
         for (const RecordedDatagram& datagram : capture.datagrams) {
             MotionPacket packet;
+            const std::size_t before = diagnostics.size();
             if (vrmAdapterMocopi::DecodeMotionPacket(datagram.bytes, &packet,
                                                      &diagnostics)) {
                 decoded.push_back(std::move(packet));
+                refusals.push_back(DiagnosticCode::Count);
+            } else if (diagnostics.size() == before) {
+                // A refusal that reported nothing breaks the header's contract,
+                // and a live receiver would be dropping a datagram with nothing
+                // to log.
+                failures += Failed(name,
+                                   "a datagram was refused with no diagnostic");
+                refusals.push_back(DiagnosticCode::Count);
             } else {
-                ++refused;
+                refusals.push_back(diagnostics.back().code);
             }
         }
 
-        // The captures whose whole purpose is to be refused: every datagram
-        // fails, and every failure reported a code. A fixture that quietly
-        // started decoding would otherwise stay green.
-        const bool mustAllFail =
-            capture.sourceId == "malformed-container-01"
-            || capture.sourceId == "malformed-packets-01";
-        if (mustAllFail) {
-            if (decoded.empty() && refused == capture.datagrams.size()
-                && diagnostics.size() >= refused) {
-                std::printf("%s: %zu datagram(s), all refused as intended\n",
-                            name.c_str(), refused);
+        // The captures whose whole purpose is to be refused. Asserting the *code*
+        // per datagram, and not merely the count, is the point: a decoder that
+        // refused the cross-protocol datagram as a bad timestamp, or reported
+        // PACKET_MALFORMED where NON_FINITE_TRANSFORM belongs, would otherwise
+        // stay green while this file, the CMake comment and the corpus README all
+        // claim every capture is refused with the code it exists for.
+        static const std::vector<DiagnosticCode> kContainerCodes(
+            5, DiagnosticCode::PacketMalformed);
+        static const std::vector<DiagnosticCode> kPacketCodes = {
+            DiagnosticCode::PacketMalformed,    // the wrong magic
+            DiagnosticCode::PacketMalformed,    // an unmeasured version
+            DiagnosticCode::PacketMalformed,    // no head
+            DiagnosticCode::PacketMalformed,    // both payload kinds
+            DiagnosticCode::PacketMalformed,    // neither
+            DiagnosticCode::PacketMalformed,    // a duplicated fnum
+            DiagnosticCode::PacketMalformed,    // a two-byte fnum
+            DiagnosticCode::PacketMalformed,    // a six-float tran
+            DiagnosticCode::TimestampInvalid,   // time is NaN
+            DiagnosticCode::TimestampInvalid,   // time is negative
+            DiagnosticCode::TimestampInvalid,   // uttm is not finite
+            DiagnosticCode::PacketMalformed,    // a four-byte tmcd
+            DiagnosticCode::NonFiniteTransform, // a skeleton refused whole
+        };
+        const std::vector<DiagnosticCode>* expectedCodes = nullptr;
+        if (capture.sourceId == "malformed-container-01") {
+            expectedCodes = &kContainerCodes;
+        } else if (capture.sourceId == "malformed-packets-01") {
+            expectedCodes = &kPacketCodes;
+        }
+        if (expectedCodes != nullptr) {
+            if (refusals != *expectedCodes) {
+                std::string detail = "the refusal codes are";
+                for (const DiagnosticCode code : refusals) {
+                    detail += ' ';
+                    detail +=
+                        code == DiagnosticCode::Count
+                            ? std::string("DECODED")
+                            : std::string(
+                                vrmAdapterMocopi::DiagnosticCodeString(code));
+                }
+                failures += Failed(name, detail);
             } else {
-                failures += Failed(name, std::to_string(decoded.size())
-                                             + " datagram(s) decoded and none "
-                                               "should have");
+                std::printf("%s: %zu datagram(s), each refused with the code it "
+                            "exists for\n",
+                            name.c_str(), refusals.size());
             }
             continue;
         }
 
-        if (refused != 0) {
-            failures += Failed(name, std::to_string(refused)
-                                         + " datagram(s) were refused");
+        bool anyRefused = false;
+        for (const DiagnosticCode code : refusals) {
+            if (code != DiagnosticCode::Count) {
+                anyRefused = true;
+            }
+        }
+        if (anyRefused) {
+            failures += Failed(name, "a datagram was refused");
+            continue;
+        }
+
+        // The clean captures report nothing at all, except the one whose whole
+        // subject is a bone the decoder drops. An unknown chunk is explicitly not
+        // a diagnostic, and `extended-form` is the capture that would catch a
+        // decoder that started treating it as one.
+        const std::size_t expectedDiagnostics =
+            capture.sourceId == "refused-bones-01" ? 3 : 0;
+        if (diagnostics.size() != expectedDiagnostics) {
+            failures += Failed(name, std::to_string(diagnostics.size())
+                                         + " diagnostic(s), expected "
+                                         + std::to_string(expectedDiagnostics));
             continue;
         }
 
@@ -974,6 +1149,8 @@ main(int argc, char** argv)
     TestALeafIsReadAtItsExactWidth();
     TestAFrameDecodes();
     TestASkeletonDecodes();
+    TestASkeletonWithAnUnusableBoneIsRefusedWhole();
+    TestARefusalNamesAPositionInTheDatagram();
     TestTheQuaternionIsScalarLastAndIsNotReordered();
     TestTheContainerRefusalsReachThePacketLayer();
     TestTheMagicAndTheVersionAreTheOnlyGates();

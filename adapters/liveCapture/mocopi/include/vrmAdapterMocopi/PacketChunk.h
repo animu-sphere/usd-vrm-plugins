@@ -120,10 +120,13 @@ struct PacketChunk
     const std::uint8_t* bytes = nullptr;
     std::size_t size = 0;
 
-    // Where this chunk's *header* began, relative to the start of the buffer
-    // walked. Carried so a refusal one level down can be reported against a
-    // position in the datagram rather than against a position in a payload
-    // nobody can point at.
+    // Where this chunk's *header* began, counted from the start of the
+    // **datagram** and not of the payload it was found in. That is what makes a
+    // refusal four levels down quotable: "chunk tran at offset 1163" names a byte
+    // a reviewer can find in a capture's hex, where a payload-relative offset 8
+    // would point at a byte inside `head`. The nested overload below is what
+    // carries the base along, and `baseOffset` is how a caller that starts
+    // mid-buffer keeps it honest.
     std::size_t offset = 0;
 };
 
@@ -140,17 +143,24 @@ VRMADAPTERMOCOPI_API std::string PacketChunkTagText(std::string_view tag);
 // `context` names what is being walked ("datagram", "fram", "btdt") and appears
 // in the refusal. It is the caller's word rather than a tag read from the bytes,
 // because the level that failed to parse is the one thing the bytes cannot say.
+// `baseOffset` is added to every `PacketChunk::offset` and to the byte position a
+// refusal quotes, so a payload walked out of the middle of a datagram still
+// reports datagram-absolute positions. Zero is right for a whole datagram.
 VRMADAPTERMOCOPI_API bool DecodePacketChunks(
     const std::uint8_t* bytes, std::size_t size,
     std::vector<PacketChunk>* chunks, std::string_view context = "datagram",
-    Diagnostic* diagnostic = nullptr);
+    Diagnostic* diagnostic = nullptr, std::size_t baseOffset = 0);
 
+// Walks the payload of a chunk another walk produced, which is the only way this
+// container is descended. The base is that chunk's own offset plus its header, so
+// offsets accumulate down the tree instead of restarting at every level.
 inline bool DecodePacketChunks(const PacketChunk& chunk,
                                std::vector<PacketChunk>* chunks,
                                Diagnostic* diagnostic = nullptr)
 {
     return DecodePacketChunks(chunk.bytes, chunk.size, chunks,
-                              PacketChunkTagText(chunk.tag), diagnostic);
+                              PacketChunkTagText(chunk.tag), diagnostic,
+                              chunk.offset + PacketChunkHeaderBytes);
 }
 
 inline bool DecodePacketChunks(const std::vector<std::uint8_t>& datagram,

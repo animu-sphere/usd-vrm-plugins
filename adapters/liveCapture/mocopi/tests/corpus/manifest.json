@@ -197,26 +197,28 @@
     },
     {
       "file": "malformed-packets.mocopipackets",
-      "pins": "One datagram per packet-level refusal: the wrong magic, an unmeasured version, a missing head, both payload kinds at once, neither, a duplicated field, two fields whose declared width disagrees with their type, and three unusable clocks. Every one of these walks as a container and is refused one layer up.",
+      "pins": "One datagram per packet-level refusal, and every one of them walks as a container and is refused one layer up: the wrong magic, an unmeasured version, a missing head, both payload kinds at once, neither, a duplicated field, three fields whose declared width disagrees with their type (fnum, tran, tmcd), three unusable clocks, and a skeleton packet with one unusable rest transform - which is refused whole rather than short a bone, unlike a frame.",
       "tags": [
         "malformed",
         "packet",
         "version",
-        "timestamp"
+        "timestamp",
+        "hierarchy"
       ],
       "sender": "example.synthetic",
       "device": "example.synthetic",
       "sourceId": "malformed-packets-01",
-      "datagrams": 12,
-      "payloadBytes": 2266,
-      "durationSeconds": 1.1,
+      "datagrams": 13,
+      "payloadBytes": 4087,
+      "durationSeconds": 1.2,
       "packetKinds": {
         "both": 1,
         "fram": 10,
-        "neither": 1
+        "neither": 1,
+        "skdf": 1
       },
       "chunkTags": [
-        "\u0000\u0000ð",
+        "bndt",
         "bnid",
         "bons",
         "btdt",
@@ -226,6 +228,7 @@
         "ftyp",
         "head",
         "ipad",
+        "pbid",
         "rcvp",
         "skdf",
         "sndf",
@@ -236,9 +239,11 @@
         "vrsn"
       ],
       "boneCounts": [
-        1
+        0,
+        1,
+        27
       ],
-      "sha256": "1b641f55b5b149b2040e7399c215264c595bc38bc8dcb4eba69eef24b101446d",
+      "sha256": "3ff2a2823862c710d81c75552c063720738df16b3e5af83d4a95fb9478ec3224",
       "id": "malformed-packets"
     },
     {

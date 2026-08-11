@@ -75,10 +75,26 @@ const PacketChunk* RequireOne(const std::vector<PacketChunk>& chunks,
                               std::string_view tag, std::string_view container,
                               std::vector<Diagnostic>* diagnostics)
 {
-    const std::size_t count = CountPacketChunks(chunks, tag);
+    // One pass, not `CountPacketChunks` then `FindPacketChunk`. This runs 59 times
+    // per frame datagram -- twice at the top, five times inside `fram`, and twice
+    // per bone record -- so at the measured 60 Hz a second scan is a few thousand
+    // needless traversals a second for a list that is never longer than five.
+    const PacketChunk* first = nullptr;
+    std::size_t count = 0;
+    for (const PacketChunk& chunk : chunks)
+    {
+        if (chunk.tag == tag)
+        {
+            if (count == 0)
+            {
+                first = &chunk;
+            }
+            ++count;
+        }
+    }
     if (count == 1)
     {
-        return FindPacketChunk(chunks, tag);
+        return first;
     }
     Append(diagnostics,
            Malformed(std::string(tag),
@@ -131,6 +147,15 @@ bool ReadBoneTransform(const PacketChunk& chunk, BoneTransform* transform,
         float value = 0.0f;
         if (!ReadPacketChunkF32(component, &value))
         {
+            // Unreachable while the width check above holds -- every component is
+            // constructed at exactly sizeof(float) over non-null bytes -- but
+            // returning false with nothing appended would break the contract that
+            // every refusal reports a code, and leave a live receiver counting a
+            // dropped datagram it cannot log. The diagnostic costs nothing and
+            // survives a change to BoneTransformFloats or to the construction
+            // above; without it, that change is silent.
+            Append(diagnostics,
+                   BadWidth(chunk.tag, component.size, sizeof(float)));
             return false;
         }
         if (index < transform->rotation.size())
@@ -286,10 +311,19 @@ bool DecodeProvenance(const std::vector<PacketChunk>& top,
 
 // The repeated-record level shared by `btrs` and `bons`: one walk, one record
 // tag, and a refusal that names the record's position when its own walk fails.
-bool DecodeRecords(const PacketChunk& container, std::string_view recordTag,
-                   std::vector<std::vector<PacketChunk>>* records,
+//
+// `visit` is handed each record's fields in turn and returns false to abandon the
+// container. **One scratch vector is reused across every record**, which is the
+// point of the shape rather than a micro-optimisation: `DecodePacketChunks` clears
+// and refills it, so 27 bone records cost one allocation's worth of capacity
+// instead of 27. Materialising a vector-of-vectors here — which this did at first
+// — allocates once or twice per bone per frame, which is precisely the cost
+// `PacketChunk.h` explains the non-owning views exist to avoid, at the measured
+// 27 bones and 60 Hz.
+template <typename Visit>
+bool ForEachRecord(const PacketChunk& container, std::string_view recordTag,
                    std::vector<UnreadChunk>* unread,
-                   std::vector<Diagnostic>* diagnostics)
+                   std::vector<Diagnostic>* diagnostics, Visit visit)
 {
     std::vector<PacketChunk> chunks;
     Diagnostic walkFailure;
@@ -300,24 +334,36 @@ bool DecodeRecords(const PacketChunk& container, std::string_view recordTag,
     }
     CollectUnread(chunks, container.tag, {recordTag}, unread);
 
+    std::vector<PacketChunk> fields;
+    std::size_t index = 0;
     for (const PacketChunk& chunk : chunks)
     {
         if (chunk.tag != recordTag)
         {
             continue;
         }
-        std::vector<PacketChunk> fields;
         if (!DecodePacketChunks(chunk, &fields, &walkFailure))
         {
-            walkFailure.detail += " (record " + std::to_string(records->size())
-                                  + " of " + std::string(container.tag) + ")";
+            walkFailure.detail += " (record " + std::to_string(index) + " of "
+                                  + std::string(container.tag) + ")";
             Append(diagnostics, std::move(walkFailure));
             return false;
         }
-        records->push_back(std::move(fields));
+        if (!visit(fields))
+        {
+            return false;
+        }
+        ++index;
     }
     return true;
 }
+
+// A capacity hint and nothing more: `MeasuredBoneCount` is what every measured
+// session sent, so reserving it costs one allocation for the ordinary case, and
+// being wrong about a different rig costs only the growth it would have had.
+// Counting the records first would mean walking the container twice to save five
+// reallocations, which is the wrong trade.
+constexpr std::size_t kBoneCapacityHint = MeasuredBoneCount;
 
 bool DecodeFrame(const PacketChunk& frameChunk, MotionFrame* frame,
                  std::vector<UnreadChunk>* unread,
@@ -408,60 +454,56 @@ bool DecodeFrame(const PacketChunk& frameChunk, MotionFrame* frame,
         return false;
     }
 
-    std::vector<std::vector<PacketChunk>> records;
-    if (!DecodeRecords(*bones, ChunkTag::BoneTransformRecord, &records, unread,
-                       diagnostics))
-    {
-        return false;
-    }
+    frame->bones.reserve(kBoneCapacityHint);
+    return ForEachRecord(
+        *bones, ChunkTag::BoneTransformRecord, unread, diagnostics,
+        [&](const std::vector<PacketChunk>& fields) {
+            CollectUnread(fields, ChunkTag::BoneTransformRecord,
+                          {ChunkTag::BoneId, ChunkTag::Transform}, unread);
+            const PacketChunk* id =
+                RequireOne(fields, ChunkTag::BoneId, "btdt", diagnostics);
+            const PacketChunk* transform =
+                RequireOne(fields, ChunkTag::Transform, "btdt", diagnostics);
+            if (id == nullptr || transform == nullptr)
+            {
+                return false;
+            }
 
-    frame->bones.reserve(records.size());
-    for (const std::vector<PacketChunk>& fields : records)
-    {
-        CollectUnread(fields, ChunkTag::BoneTransformRecord,
-                      {ChunkTag::BoneId, ChunkTag::Transform}, unread);
-        const PacketChunk* id =
-            RequireOne(fields, ChunkTag::BoneId, "btdt", diagnostics);
-        const PacketChunk* transform =
-            RequireOne(fields, ChunkTag::Transform, "btdt", diagnostics);
-        if (id == nullptr || transform == nullptr)
-        {
-            return false;
-        }
+            BoneFrame bone;
+            if (!ReadPacketChunkU16(*id, &bone.boneId))
+            {
+                Append(diagnostics, BadWidth(ChunkTag::BoneId, id->size,
+                                             sizeof(std::uint16_t)));
+                return false;
+            }
+            if (!ReadBoneTransform(*transform, &bone.transform, diagnostics))
+            {
+                return false;
+            }
 
-        BoneFrame bone;
-        if (!ReadPacketChunkU16(*id, &bone.boneId))
-        {
-            Append(diagnostics, BadWidth(ChunkTag::BoneId, id->size,
-                                         sizeof(std::uint16_t)));
-            return false;
-        }
-        if (!ReadBoneTransform(*transform, &bone.transform, diagnostics))
-        {
-            return false;
-        }
-
-        std::string reason;
-        if (!TransformIsUsable(bone.transform, &reason))
-        {
-            // The bone, not the frame: MotionPacket.h's first rule.
-            Diagnostic diagnostic = MakeDiagnostic(
-                DiagnosticCode::NonFiniteTransform, std::move(reason));
-            diagnostic.subject = "bone " + std::to_string(bone.boneId);
-            diagnostic.timestamp = frame->streamSeconds;
-            diagnostic.sequence = frame->frameNumber;
-            Append(diagnostics, std::move(diagnostic));
-            ++*refusedBones;
-            continue;
-        }
-        frame->bones.push_back(bone);
-    }
-    return true;
+            std::string reason;
+            if (!TransformIsUsable(bone.transform, &reason))
+            {
+                // The bone, not the frame: MotionPacket.h's first rule.
+                Diagnostic diagnostic = MakeDiagnostic(
+                    DiagnosticCode::NonFiniteTransform, std::move(reason));
+                diagnostic.subject = "bone " + std::to_string(bone.boneId);
+                diagnostic.timestamp = frame->streamSeconds;
+                diagnostic.sequence = frame->frameNumber;
+                Append(diagnostics, std::move(diagnostic));
+                ++*refusedBones;
+                return true;
+            }
+            frame->bones.push_back(bone);
+            return true;
+        });
 }
 
+// No `refusedBones` out-parameter, unlike `DecodeFrame`: this layer never returns
+// a skeleton with a bone missing, so a count of missing bones would only ever be
+// zero. See the refusal below.
 bool DecodeSkeleton(const PacketChunk& skeletonChunk, MotionSkeleton* skeleton,
                     std::vector<UnreadChunk>* unread,
-                    std::size_t* refusedBones,
                     std::vector<Diagnostic>* diagnostics)
 {
     std::vector<PacketChunk> chunks;
@@ -481,16 +523,10 @@ bool DecodeSkeleton(const PacketChunk& skeletonChunk, MotionSkeleton* skeleton,
         return false;
     }
 
-    std::vector<std::vector<PacketChunk>> records;
-    if (!DecodeRecords(*bones, ChunkTag::BoneDefinitionRecord, &records, unread,
-                       diagnostics))
-    {
-        return false;
-    }
-
-    skeleton->bones.reserve(records.size());
-    for (const std::vector<PacketChunk>& fields : records)
-    {
+    skeleton->bones.reserve(kBoneCapacityHint);
+    return ForEachRecord(
+        *bones, ChunkTag::BoneDefinitionRecord, unread, diagnostics,
+        [&](const std::vector<PacketChunk>& fields) {
         CollectUnread(fields, ChunkTag::BoneDefinitionRecord,
                       {ChunkTag::BoneId, ChunkTag::ParentBoneId,
                        ChunkTag::Transform},
@@ -527,16 +563,25 @@ bool DecodeSkeleton(const PacketChunk& skeletonChunk, MotionSkeleton* skeleton,
         std::string reason;
         if (!TransformIsUsable(bone.restTransform, &reason))
         {
+            // **The skeleton is refused whole, and this is the deliberate
+            // asymmetry with a frame.** A frame is a set of independent samples,
+            // so dropping one costs one joint. A skeleton is a *tree*: every
+            // other bone's `pbid` names an id in this table, so a table with a
+            // hole in it has bones whose parent does not exist, and a consumer
+            // that indexes by position reads every bone after the hole as the
+            // wrong joint. There is no partial hierarchy to hand on, so nothing
+            // is handed on.
             Diagnostic diagnostic = MakeDiagnostic(
-                DiagnosticCode::NonFiniteTransform, std::move(reason));
+                DiagnosticCode::NonFiniteTransform,
+                std::move(reason)
+                    + "; a rest pose is a hierarchy and is refused whole");
             diagnostic.subject = "bone " + std::to_string(bone.boneId);
             Append(diagnostics, std::move(diagnostic));
-            ++*refusedBones;
-            continue;
+            return false;
         }
         skeleton->bones.push_back(bone);
-    }
-    return true;
+        return true;
+        });
 }
 
 } // namespace
@@ -616,8 +661,7 @@ bool DecodeMotionPacket(const std::uint8_t* bytes, std::size_t size,
     {
         MotionSkeleton skeleton;
         if (!DecodeSkeleton(*FindPacketChunk(top, ChunkTag::Skeleton), &skeleton,
-                            &decoded.unread, &decoded.refusedBones,
-                            diagnostics))
+                            &decoded.unread, diagnostics))
         {
             return false;
         }

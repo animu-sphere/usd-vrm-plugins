@@ -375,8 +375,8 @@ def malformed_packets() -> Capture:
                         + chunk("tmcd", NO_TIMECODE)
                         + chunk("btrs", btdt(0, IDENTITY, REST_OFFSETS[0]))),
                 1.0)
-    # A `tmcd` of the wrong width. Never read, still checked: a field this
-    # decoder carries as bytes is still a field whose length the protocol fixes.
+    # A `tmcd` of the wrong width. Never read, still checked: within a version the
+    # field widths are the format, and `vrsn` is what a producer bumps.
     capture.add(head() + sndf()
                 + chunk("fram", chunk("fnum", struct.pack("<I", 7))
                         + chunk("time", struct.pack("<f", seconds))
@@ -384,6 +384,16 @@ def malformed_packets() -> Capture:
                         + chunk("tmcd", bytes(4))
                         + chunk("btrs", btdt(0, IDENTITY, REST_OFFSETS[0]))),
                 1.1)
+    # A skeleton packet with one unusable rest transform, which is refused WHOLE
+    # rather than short a bone -- the deliberate asymmetry with a frame. Every
+    # other bone's `pbid` names an id in this table, so a table with a hole in it
+    # describes a hierarchy whose parents do not all exist.
+    bones = b"".join(
+        bndt(index, PARENTS[index],
+             (NAN32, 0.0, 0.0, 1.0) if index == 7 else IDENTITY,
+             REST_OFFSETS[index])
+        for index in range(len(PARENTS)))
+    capture.add(head() + sndf() + chunk("skdf", chunk("bons", bones)), 1.2)
     return capture
 
 
@@ -508,6 +518,34 @@ def walk_chunks(payload: bytes):
     return chunks if offset == len(payload) else None
 
 
+# The chunks whose payload is itself a sequence of chunks. Descending into
+# anything else is how a leaf's bytes become a fabricated tag, and it is not a
+# hypothetical: the binary64 for +inf is 00 00 00 00 00 00 f0 7f, whose first four
+# bytes read as length 0 and whose next four then look exactly like a tag that
+# closes the payload precisely -- so an unguarded walk of `uttm` invented the tag
+# "\x00\x00\xf0\x7f" and wrote it, plus a raw control byte, into the manifest this
+# corpus calls its machine-readable source of truth. A leaf is only recognisable
+# from the grammar, so the grammar is written down here rather than guessed at per
+# payload.
+CONTAINER_TAGS = frozenset({
+    "head", "sndf", "fram", "skdf", "btrs", "bons", "btdt", "bndt",
+})
+
+
+def collect_tags(chunks, tags: set, bone_counts: set) -> None:
+    """Record the tags of one level, descending only into known containers."""
+    for tag, body in chunks:
+        tags.add(tag)
+        if tag not in CONTAINER_TAGS:
+            continue
+        inner = walk_chunks(body)
+        if inner is None:
+            continue
+        if tag in ("btrs", "bons"):
+            bone_counts.add(len(inner))
+        collect_tags(inner, tags, bone_counts)
+
+
 def describe(capture: Capture) -> dict:
     kinds: collections.Counter = collections.Counter()
     tags: set = set()
@@ -517,21 +555,10 @@ def describe(capture: Capture) -> dict:
         if top is None:
             kinds["unwalkable"] += 1
             continue
-        names = [tag for tag, _ in top]
-        tags.update(names)
-        for _, body in top:
-            for inner_tag, inner_body in walk_chunks(body) or ():
-                tags.add(inner_tag)
-                for leaf_tag, leaf_body in walk_chunks(inner_body) or ():
-                    tags.add(leaf_tag)
-                    for deep_tag, _ in walk_chunks(leaf_body) or ():
-                        tags.add(deep_tag)
-                if inner_tag in ("btrs", "bons"):
-                    records = walk_chunks(inner_body)
-                    if records:
-                        bone_counts.add(len(records))
+        collect_tags(top, tags, bone_counts)
         # Reported by what the datagram carries rather than by the first tag
         # found: "both" is a refusal of its own and must not read as a frame.
+        names = [tag for tag, _ in top]
         has = ("fram" in names, "skdf" in names)
         kinds[{(True, False): "fram", (False, True): "skdf",
                (True, True): "both", (False, False): "neither"}[has]] += 1
@@ -631,7 +658,16 @@ def main() -> int:
                              "freshly generated one instead of rewriting it")
     args = parser.parse_args()
 
-    args.output.mkdir(parents=True, exist_ok=True)
+    if args.check:
+        # Not `mkdir(exist_ok=True)`: a check against a path that does not exist
+        # must say so, rather than materialise an empty directory and then report
+        # all seven captures as drifted -- which diagnoses the typo as a corpus
+        # problem and leaves a stray directory in the source tree.
+        if not args.output.is_dir():
+            print(f"{args.output} is not a directory", file=sys.stderr)
+            return 1
+    else:
+        args.output.mkdir(parents=True, exist_ok=True)
     drifted: list = []
     rendered: dict = {}
     for name, builder in sorted(CAPTURES.items()):

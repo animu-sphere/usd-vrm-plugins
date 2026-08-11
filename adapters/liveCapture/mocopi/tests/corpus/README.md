@@ -89,8 +89,8 @@ the guess later.
 | `arms-lowered-60hz.mocopipackets` | 4 | A non-identity rotation on the two upper arms, in opposite directions: ~85° carried in the **third** imaginary component, which is what the measured standing sessions showed against a T-pose rest. A decoder that reordered the quaternion cannot pass this and the baseline at once. |
 | `frame-loss-60hz.mocopipackets` | 8 | What the transport does and the decoder refuses none of: an `fnum` gap of 3 whose `time` delta is exactly 3/60 s — the measured Wi-Fi loss shape, where the sender's clock never skipped — then a duplicate delivery, then a restart. |
 | `malformed-container.mocopipackets` | 5 | One datagram per **container**-level refusal: empty, a header that does not fit, a payload longer than the datagram, a walk that ends between chunks, and a datagram of the sibling protocol. |
-| `malformed-packets.mocopipackets` | 12 | One datagram per **packet**-level refusal: the wrong magic, an unmeasured version, a missing `head`, both payload kinds, neither, a duplicated field, two bad field widths, and three unusable clocks. |
-| `refused-bones-60hz.mocopipackets` | 2 | The bone-not-frame rule: three unusable bone records decode to **24 usable bones and three diagnostics**, not to a refused datagram — followed by the same frame with nothing wrong with it. |
+| `malformed-packets.mocopipackets` | 13 | One datagram per **packet**-level refusal, and the row adds up: the wrong magic, an unmeasured version, a missing `head`, both payload kinds, neither, a duplicated field (1+1+1+1+1+1), three bad field widths — `fnum`, `tran`, `tmcd` — three unusable clocks, and a **skeleton** with one unusable rest transform. |
+| `refused-bones-60hz.mocopipackets` | 2 | The bone-not-frame rule: three unusable bone records decode to **24 usable bones and three diagnostics**, not to a refused datagram — followed by the same frame with nothing wrong with it. Its mirror image is the last datagram of `malformed-packets`: the same defect in a *skeleton* refuses the packet whole, because a rest table with a hole in it has bones whose `pbid` names an id that is not there. |
 | `extended-form.mocopipackets` | 4 | Everything carried forward unread: unknown chunks beside the payload, inside `fram`, and inside all 27 bone records (reported **once**, not 27 times); an 11-bone rig that is a different rig and not a malformed packet; and the only non-zero `tmcd` anywhere. |
 
 The two `malformed-*` captures are a pair, not a duplicate.
@@ -111,10 +111,16 @@ Three CTest names guard the result, and they check different things:
 
 - `vrmAdapterMocopi_corpus` — every capture parses and re-emits byte-identically
   through the **C++ writer**, so a fixture cannot drift from the format.
-- `vrmAdapterMocopi_motionPacketCorpus` — every capture decodes to what the
-  manifest says it pins, or is refused with the code it exists to be refused
-  with. A capture with no assertion registered against its `sourceId` fails
-  rather than passing quietly.
+- `vrmAdapterMocopi_motionPacketCorpus` — every capture decodes to what its
+  `sourceId` claims it pins, or is refused **per datagram** with the code it
+  exists to be refused with. A capture with no assertion registered against its
+  `sourceId` fails rather than passing quietly.
+
+  It does **not** read `manifest.json`: the assertions are hand-written C++ named
+  after the phenomenon. So the chain is manifest → bytes (`_packetGen`) and bytes
+  → decoder (this), with nothing asserting a `pins` string against behaviour. A
+  `pins` field is a claim addressed to a reviewer, and treating it as an
+  assertion would be reading a description as a specification.
 - `vrmAdapterMocopi_packetGen` — the committed bytes still match the
   **generator** that authored them. This matters more here than for the sibling
   adapter: regenerating is the only way this corpus can be extended, because the

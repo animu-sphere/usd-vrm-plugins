@@ -81,6 +81,14 @@
 // Something that has never been observed non-zero has no measured meaning, so it
 // is carried as bytes and no field of this struct claims to be a timecode.
 //
+// That rule is about chunks this decoder has never *seen*, and it does not extend
+// to the width of one it has. A `tmcd` of four bytes is refused, even though
+// nothing here reads the field — because within a version the field widths *are*
+// the format, and `vrsn` is the thing a producer bumps when they change. So the
+// two rules meet cleanly rather than contradicting: an unknown tag is carried, a
+// known tag at an unmeasured width is a v1 packet that is not a v1 packet, and a
+// genuinely new layout announces itself one field earlier.
+//
 // **`bnid` is an index, and duplicates are not this layer's business.** It
 // arrived as 0..26 in order in all 8000 datagrams, and the decoder still neither
 // requires the order nor the count: a rig with fingers would be a longer list,
@@ -265,10 +273,18 @@ struct MotionPacket
 
     std::vector<UnreadChunk> unread;
 
-    // Bone records dropped for a non-finite or zero-length rotation. A tally
-    // rather than only a diagnostic: a live receiver reports "3 bones dropped"
-    // in its statistics whether or not it kept every diagnostic, and a caller
-    // that passes none still has to be able to see that data was lost.
+    // Bone records dropped because their transform named no orientation: a
+    // non-finite component anywhere in the seven floats, or a rotation of zero
+    // length. That is `VRM_MOCOPI_NON_FINITE_TRANSFORM`'s own definition, and it
+    // covers the translation as well as the rotation.
+    //
+    // A tally rather than only a diagnostic: a live receiver reports "3 bones
+    // dropped" in its statistics whether or not it kept every diagnostic, and a
+    // caller that passes none still has to be able to see that data was lost.
+    //
+    // Only ever non-zero for a frame. A skeleton packet with an unusable bone is
+    // refused whole, because a rest table with a hole in it has bones whose
+    // `pbid` names an id that is not there.
     std::size_t refusedBones = 0;
 };
 
