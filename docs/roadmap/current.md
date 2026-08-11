@@ -41,26 +41,29 @@ reaching a **rig** still is: that is Motion Phase G.
 **Live**
 
 - [ ] a mocopi device drives the pipeline **natively** over UDP, through
-      `vrmAdapterMocopi` — *the adapter exists as of 2026-08-09: its identity,
-      its two edges, the nine frozen diagnostics and the recorded packet format,
-      with no decoder. What that commit settled is the order of the rest, and it
-      is not the order it looked like: the wire format is undocumented (the
-      vendor publishes the transport, Apache-2.0 source, and a `BVH Sender`),
-      so the corpus precedes the decoder — and `BVH Sender` can produce one from
-      a `.bvh` this repository wrote, with no device at all. The **socket**
-      followed on 2026-08-11, which inverts the milestone's build order rather
-      than following it: a corpus that can only be received needs a receiver
-      before it, so the transport is not the last layer that needs writing but
-      the only one that can be. It decodes nothing, its tests need no device,
-      and it raises two of the nine frozen codes — the second of which,
-      `VRM_MOCOPI_DEVICE_UNAVAILABLE`, no layer above a socket could see
-      ([Milestone D](adapters-mocopi-vmc-ardy.md))*;
+      `vrmAdapterMocopi` — *the adapter reaches the humanoid as of 2026-08-12,
+      and what is left in this line is the two layers above it. The order it was
+      built in is not the order it was planned in, and the inversion is the
+      finding: the wire format is undocumented, so there was nothing to write a
+      corpus from and the **socket** had to come first (2026-08-11) rather than
+      last. Then the corpus, measured off five real device sessions; then the
+      **decoder**; then the **joint map and the basis change** (2026-08-12),
+      which is the first layer here that names a bone. What does not exist is
+      frame assembly and the `LiveCaptureSource` bridge — nothing yet decides
+      whether a frame missing three bones is a frame, or whether the source
+      restarted ([Milestone D](adapters-mocopi-vmc-ardy.md))*;
 - [ ] recorded packet fixtures decode deterministically with no socket, and a
-      loopback test proves the socket path agrees with them — *the second half
-      is half-built and the first is not started: the receiver's own test
-      already proves that what comes off a socket is byte-identical to what a
-      capture file keeps, which is the claim a corpus's worth rests on. What it
-      cannot yet compare is poses, because nothing decodes one*;
+      loopback test proves the socket path agrees with them — *the first half is
+      done and the second is done at the wrong altitude. Seven committed
+      captures decode, and as of 2026-08-12 map onto canonical bones, with no
+      socket anywhere; the recorder's loopback test proves what comes off a
+      socket is byte-identical to what a capture file keeps. What is missing is
+      the sibling's arrangement, where the corpus is replayed **through** a
+      socket and the poses compared — and it is missing because nothing in this
+      adapter produces a pose yet. The corpus's own limit is separate and stays
+      whatever this line says: **these fixtures pin the decoder, not the
+      protocol**, because the grammar that wrote them is the grammar they are
+      read with*;
 - [ ] tracking loss, recovery, and source restart are recorded rather than
       described;
 - [ ] the session reaches a real VRM avatar through **unchanged**

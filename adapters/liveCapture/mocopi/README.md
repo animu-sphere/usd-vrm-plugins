@@ -9,19 +9,18 @@ UDP datagram → packet decode → joint mapping → coordinate conversion
              → frame assembly → HumanoidPose → LiveCaptureSource
 ```
 
-**Status: transport, and the packet decoder above it.** What exists is the
-library's identity and its two edges, the frozen diagnostic set, the
-recorded-packet format, the **UDP receiver**,
-[**`mocopi_record`**](tools/mocopiRecord/README.md) — the CLI that turns a source
-aimed at this machine into a capture file — and now the **packet decoder**: the
-[container](include/vrmAdapterMocopi/PacketChunk.h) and the
+**Status: through the semantic mapping.** What exists is the library's identity
+and its two edges, the frozen diagnostic set, the recorded-packet format, the
+**UDP receiver**, [**`mocopi_record`**](tools/mocopiRecord/README.md) — the CLI
+that turns a source aimed at this machine into a capture file — the **packet
+decoder** ([container](include/vrmAdapterMocopi/PacketChunk.h) and
 [two packet kinds](include/vrmAdapterMocopi/MotionPacket.h), with a
-[corpus](tests/corpus/README.md) behind them. What does not exist is anything
-that knows what the numbers *mean*: no joint map, no basis change, no frame
-assembly, no live-source bridge. **None of those is blocked any more** — the
-handedness that gated the basis change was settled on 2026-08-12 and
-[the section below](#the-decoder-stops-where-the-measurement-does) shows the
-measurement.
+[corpus](tests/corpus/README.md) behind them) — and now the
+[**joint map and the basis change**](include/vrmAdapterMocopi/SkeletonMap.h),
+which is the first layer here that knows a humanoid exists. What does not exist
+is **frame assembly** and the **live-source bridge**: nothing yet decides whether
+a frame missing three bones is a frame, whether the source restarted, or what a
+`HumanoidPose` timestamp is.
 See [the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §6 and
 Milestone D for the implementation order, and
 [below](#transport-arrives-first-here-and-that-is-the-finding) for why this
@@ -114,15 +113,60 @@ So the joint identities transfer in `bnid` order: 11–14 left arm, 15–18 righ
 19–22 left leg, 23–26 right.
 
 **The decoder still names no bone**, and that has not changed: which canonical
-bone a `bnid` is belongs to `MocopiSkeletonMap`, and the basis change into a
-target's convention to `MocopiCoordinateConverter`, exactly where the sibling
+bone a `bnid` is belongs to the joint map, and the basis change into a target's
+convention to the coordinate conversion beside it, exactly where the sibling
 adapter draws the line. What changed is that both now have a measured input
-rather than an open question.
+rather than an open question — and, as of 2026-08-12, that both exist.
 
 One thing not to over-read: this says the two paths agree about the *rest pose*,
 not about the motion. That is the
 [cross-source comparison](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) of
 §9.6, on a single session observed both ways, and it is still owed.
+
+## The map is where an id becomes a bone
+
+[`SkeletonMap.h`](include/vrmAdapterMocopi/SkeletonMap.h) carries the reasoning;
+four things in it are decisions rather than details.
+
+**A bone id is a position, not a name.** The sibling maps the string
+`LeftUpperArm`, which means the same thing whoever sent it. Here `bnid` 12 means
+"the twelfth joint of whatever rig this session is sending", so the map is built
+from a **skeleton packet** and the rig it declares is checked against the
+measured parent column before any id is trusted. A rig that disagrees gets no map
+rather than a map that reads the wrong joint; a *longer* rig keeps its measured
+joints and reports the rest once for the session. That is the same refusal the
+recorded track's profile makes with `unmappedJoints: refuse`, reached from the
+other direction.
+
+**The basis change is the identity, and that is a measurement.** Canonical motion
+is right-handed, +Y up, +Z forward, metres; so is this device, with +X the body's
+left. Nothing is permuted, mirrored or scaled — the one thing that does change is
+the quaternion's component order, scalar-last on the wire and scalar-first in
+`GfQuatf`, and a reorder is not a rotation. It is a named function anyway,
+because "nothing is converted" is a claim that can be wrong, and because the
+sibling's answer to the same question is *not* the identity.
+
+**Twenty-two of twenty-seven joints carry a bone, and the other five are not
+dropped.** A joint between two mapped ones is on the path between them, so a
+bound bone's rotation is the composition from just below its nearest bound
+ancestor down to itself — the path rule, stated in
+[MOTION_CONTRACT.md](../../../docs/design/MOTION_CONTRACT.md) and now implemented
+twice. The two tracks may not share the table (§2.1), so their agreement is
+enforced from outside instead: `scripts/check_docs.py` reads the adapter's table,
+the recorded profile, and the committed BVH export the correspondence was
+measured on, and fails when the three stop describing one rig.
+
+**One joint translates, and it is the hips.** The sibling has two candidate root
+translations and cannot compose them; natively there is no second channel, and in
+207,064 measured bone-frames every other translation restated its rest offset bit
+for bit. So the body's placement is the hips joint's own translation — reported
+as that, and deliberately not as a `motion::RootMotion`, because whether it *is*
+root motion is a policy question this release still owes a record of.
+
+A native session also brings something a relay cannot: a **real rest pose**. A
+skeleton packet is one, repeated about every 3.5 s, so nothing here has to
+manufacture a source rest from the first frame it happens to see — which is
+exactly what the sibling's header says an adapter must not do and cannot avoid.
 
 ## What this is, structurally
 
@@ -313,17 +357,19 @@ bound before the operator started the application, and **tracking loss** is the
 device reporting on itself accurately, which is a phenomenon a session recovers
 from rather than a defect.
 
-**Five of the nine are now paid for by a caller**, which is how a freeze earns
-its keep. The receiver raises `SOCKET_BIND_FAILED` and `DEVICE_UNAVAILABLE`; the
-decoder raises `PACKET_MALFORMED`, `NON_FINITE_TRANSFORM` and
-`TIMESTAMP_INVALID` and no others. The remaining four are all one layer up —
-`UNSUPPORTED_JOINT` needs a joint map, `FRAME_INCOMPLETE` and `SOURCE_RESTARTED`
-need something that holds more than one packet at a time, and `TRACKING_LOST`
-needs a field this project has not yet found on the wire. That last one is worth
-naming as an open question rather than a to-do: the measured grammar has 27 bone
-records and no per-joint confidence or state anywhere in them, so either it lives
-in one of the two unidentified fields (`sndf/ipad`, `fram/tmcd`) or this
-application version does not send it. Nothing here guesses which.
+**Six of the nine are now paid for by a caller**, which is how a freeze earns its
+keep. The receiver raises `SOCKET_BIND_FAILED` and `DEVICE_UNAVAILABLE`; the
+decoder raises `PACKET_MALFORMED`, `NON_FINITE_TRANSFORM` and `TIMESTAMP_INVALID`
+and no others; the joint map raises `UNSUPPORTED_JOINT` — for a rig it cannot
+read, never for the five segments it deliberately maps to no bone, and never per
+frame. The remaining three are one layer up or not on the wire:
+`FRAME_INCOMPLETE` and `SOURCE_RESTARTED` need something that holds more than one
+packet at a time, and `TRACKING_LOST` needs a field this project has not yet
+found. That last one is worth naming as an open question rather than a to-do: the
+measured grammar has 27 bone records and no per-joint confidence or state
+anywhere in them, so either it lives in one of the two unidentified fields
+(`sndf/ipad`, `fram/tmcd`) or this application version does not send it. Nothing
+here guesses which.
 
 ## Building and testing
 
@@ -332,7 +378,7 @@ Composed with the rest of the workspace:
 ```sh
 cmake -S . -B build -DCMAKE_PREFIX_PATH=<usd-install>
 cmake --build build --config Release
-# Both halves: the library's nine names and the CLI's three. `-R vrmAdapterMocopi`
+# Both halves: the library's eleven names and the CLI's three. `-R vrmAdapterMocopi`
 # alone silently misses the tool, whose names begin with `mocopi_record`.
 ctest --test-dir build -R "vrmAdapterMocopi|mocopi_record"
 ```

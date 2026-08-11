@@ -88,13 +88,22 @@ The fixtures below still describe arm and leg bones **by bone id**, and the
 not leftover caution. The decoder these captures test names no bone and performs
 no basis change; a fixture that asserted "the left arm rotated" would be
 asserting something this layer does not compute, and would go green or red for
-reasons belonging to `MocopiSkeletonMap` two layers up. When that component
-exists it gets fixtures that *do* name sides, and they will be the right place
-for it.
+reasons belonging to the joint map two layers up.
 
-What the resolution does change here: `arms-lowered-60hz` can now say which arm
-is which when it is describing the motion to a reader, and the manifest no longer
-lists handedness as unresolved.
+**That component now exists, and it reads this same directory** —
+`vrmAdapterMocopi_skeletonMapCorpus`, a third pass over the captures asking what
+each becomes once its joints carry canonical bones. So the sides are finally
+asserted, on the layer that computes them, and `arms-lowered-60hz` is where: the
+left forearm's rest direction is rotated by the sample and compared against where
+a lowered arm has to be.
+
+One thing that pass measured is worth having here, because it is a property of
+the *rig* rather than of the test. **A bilaterally symmetric rig cannot be asked
+which arm moved.** Swap left and right in the map's table and every "both arms
+went down" assertion still passes, because the rest direction and the rotation
+are swapped together — verified by doing it. What catches the swap is asking
+which arm is *where*: the left arm's rest offsets run along +X. Sides are a fact
+about the basis, and only the basis can be asked about them.
 
 ## The set
 
@@ -122,7 +131,7 @@ itself the boundary being drawn.
 python adapters/liveCapture/mocopi/tools/generate_packets.py
 ```
 
-Three CTest names guard the result, and they check different things:
+Four CTest names guard the result, and they check different things:
 
 - `vrmAdapterMocopi_corpus` — every capture parses and re-emits byte-identically
   through the **C++ writer**, so a fixture cannot drift from the format.
@@ -136,6 +145,11 @@ Three CTest names guard the result, and they check different things:
   → decoder (this), with nothing asserting a `pins` string against behaviour. A
   `pins` field is a claim addressed to a reviewer, and treating it as an
   assertion would be reading a description as a specification.
+- `vrmAdapterMocopi_skeletonMapCorpus` — what each capture becomes once its
+  joints carry canonical bones: which arm is which, which bones a refused record
+  costs, and which rigs get no map at all. Registered per `sourceId` like the
+  pass above, including for the two `malformed-*` captures, whose assertion is
+  that nothing reaches this layer from them — a claim that can stop being true.
 - `vrmAdapterMocopi_packetGen` — the committed bytes still match the
   **generator** that authored them. This matters more here than for the sibling
   adapter: regenerating is the only way this corpus can be extended, because the
