@@ -349,6 +349,36 @@ RunRecord(const mocopiRecordTool::Options& options)
             } else if (!options.quiet) {
                 std::cerr << "mocopi_record: wrote " << capture.datagrams.size()
                           << " datagram(s) to " << options.outputPath << "\n";
+
+                // Said at the write, because this is the last moment it is cheap.
+                // The corpus check refuses a committed fixture carrying neither a
+                // `sender` nor a `sourceId`, and the operator who can still
+                // supply them is the one who just ran the session -- half an hour
+                // later the answer is a guess, and a guessed provenance is worse
+                // than an absent one. A warning and not a refusal: an
+                // exploratory recording is a legitimate thing to want, and the
+                // first session against a new device is exactly that.
+                std::string missing;
+                if (capture.sender.empty()) {
+                    missing += " --sender";
+                }
+                if (capture.sourceId.empty()) {
+                    missing += " --source-id";
+                }
+                if (!missing.empty()) {
+                    std::cerr << "mocopi_record: warning: no" << missing
+                              << ", which the corpus check requires of a "
+                                 "committed fixture\n";
+                }
+                if (capture.device.empty()) {
+                    // Not required by that check, and named separately for the
+                    // reason this adapter exists: `device` is the one header key
+                    // this format has that the sibling's does not, and a capture
+                    // that cannot say which device produced it cannot support the
+                    // native path's claim to keep device state a relay drops.
+                    std::cerr << "mocopi_record: warning: no --device, so this "
+                                 "capture cannot say what produced it\n";
+                }
             }
         }
     }

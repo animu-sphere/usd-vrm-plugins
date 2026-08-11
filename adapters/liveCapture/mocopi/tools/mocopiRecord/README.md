@@ -35,17 +35,25 @@ that survives longest and is questioned least
 So three questions, and every number in the answers is a property of the
 datagram *envelope*:
 
+The counts below are a real session's. The endpoints are not, and neither is the
+tail of the prefix: a capture's `peer` is somebody's LAN address and the header
+carries an eight-byte field of unknown meaning that may well identify a device, so
+this sample stops at the end of the first chunk, which is protocol constants
+throughout.
+
 ```text
-listen:      192.168.0.7:12351, receive buffer 65536 bytes
-received:    118 datagram(s), 6844 byte(s) over 3.882 s
+listen:      0.0.0.0:12351, receive buffer 65536 bytes
+received:    4529 datagram(s), 7273365 byte(s) over 69.7354 s
 peers:       1 (192.168.0.20:52001)
-arrival:     30.1 Hz mean, interval 0.031-0.041 s, over 3.882 s of receive clock
-lengths:     3 distinct in 118 datagram(s)
-             96 of 68 byte(s), 21 of 44, 1 of 27
-prefix:      6 byte(s) common to every datagram:
-             08 00 00 00 68 65
+arrival:     64.9311 Hz mean, interval 2e-06-0.19366 s, over 69.7354 s of receive clock
+lengths:     2 distinct in 4529 datagram(s)
+             4509 of 1605 byte(s), 20 of 1821
+prefix:      43 byte(s) common to every datagram:
+             23 00 00 00 68 65 61 64 12 00 00 00 66 74 79 70  |#...head....ftyp|
+             73 6f 6e 79 20 6d 6f 74 69 6f 6e 20 66 6f 72 6d  |sony motion form|
+             61 74 01 00 00 00 76 72 73 6e 01                 |at....vrsn.|
 diagnostics: none
-stopped:     --idle-timeout elapsed with nothing arriving
+stopped:     --duration elapsed
 ```
 
 Two of those lines are the first sentences about this protocol anything in this
@@ -58,10 +66,26 @@ because neither reads a field:
   time in production. Whether a session *should* hold more than one shape is a
   question this tool refuses to answer, because it does not know and neither
   does anything else here yet. No threshold is attached to the measurement.
-- **`prefix`** is the leading bytes every datagram shares, which is how a
-  reviewer sees a container's magic without a decoder ring. A prefix of zero
-  bytes is as informative as a long one and is printed as such: it says the
-  shapes differ from the very first byte.
+
+  It earned itself on the first real session: `2 distinct` is how the second
+  packet kind was noticed at all, and following that up showed the larger one
+  arriving roughly every 3.5 seconds rather than once at the start — which is the
+  difference between "a capture must begin before the device does" and "any
+  capture longer than about four seconds will do".
+- **`prefix`** is the leading bytes every datagram shares, which is how a reviewer
+  sees a container's magic without a decoder ring. It is laid out the way the
+  capture format lays out a datagram — sixteen bytes a line, an ASCII gutter
+  rendered by the format's own function — because the tags are what a reader
+  recognises and hex alone would hide them in plain sight. A prefix of zero bytes
+  is as informative as a long one and is printed as such: it says the shapes
+  differ from the very first byte.
+
+  The 80-byte cap on that block is the one number here set from evidence rather
+  than taste. It was 32, on the reasoning that a container's magic is not longer
+  than that; the first real session shared **77** bytes and diverged at byte 77
+  exactly, so the old cap hid 45 of them and cut the line off immediately before
+  the one offset that mattered. A cap below the shared header of the protocol it
+  is describing reports the cap instead of the protocol.
 
 `arrival` is the **receive** clock and the line says so. The sibling reports a
 cadence on the sender's own clock, which describes a source's frame rate; this
@@ -135,6 +159,16 @@ capture header holds one whitespace-delimited token per key, so `--sender "mocop
 1.2.3"` would produce a file this adapter's own reader refuses — and finding that
 out *after* a session against a device is finding it out too late, since the
 session cannot be re-recorded. Join the words with `-`.
+
+**A capture written without `--sender` and `--source-id` warns**, because the
+corpus check refuses a committed fixture that carries neither, and the person who
+can still supply them is the one who just ran the session — half an hour later the
+answer is a guess, and a guessed provenance is worse than an absent one. A missing
+`--device` warns separately: it is not required by that check, but it is the one
+header key this format has that the sibling's does not, and a capture that cannot
+say what produced it cannot support the native path's claim to keep device state a
+relay drops. Warnings and not refusals — the first session against a new device is
+a legitimately exploratory recording.
 
 Two more exits worth knowing before a long session:
 

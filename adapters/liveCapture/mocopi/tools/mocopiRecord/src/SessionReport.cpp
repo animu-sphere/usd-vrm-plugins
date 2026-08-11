@@ -237,13 +237,36 @@ SessionReport::Print(std::FILE* out,
             const bool capped = _prefix.size() == kMaxPrefixBytes
                 && _shortestDatagram > kMaxPrefixBytes;
             std::fprintf(out, "prefix:      %s%zu byte(s) common to every "
-                              "datagram:\n             ",
+                              "datagram:\n",
                          capped ? "at least " : "", _prefix.size());
-            for (std::size_t i = 0; i < _prefix.size(); ++i) {
-                std::fprintf(out, "%s%02x", i == 0 ? "" : " ",
-                             static_cast<unsigned>(_prefix[i]));
+
+            // Laid out exactly as the capture format lays out a datagram --
+            // sixteen bytes a line, a padded hex column, an ASCII gutter -- and
+            // rendered by the format's own gutter function rather than a second
+            // copy of it. The gutter is not decoration here: the first real
+            // session's shared prefix read `#...head....ftypsony motion format`,
+            // and the tags are what a reader recognises. Hex alone would have
+            // hidden the finding in plain sight.
+            const std::size_t perLine =
+                vrmAdapterMocopi::PacketCaptureBytesPerLine;
+            for (std::size_t offset = 0; offset < _prefix.size();
+                 offset += perLine) {
+                const std::size_t count =
+                    std::min(perLine, _prefix.size() - offset);
+                std::fprintf(out, "             ");
+                for (std::size_t i = 0; i < count; ++i) {
+                    std::fprintf(out, "%s%02x", i == 0 ? "" : " ",
+                                 static_cast<unsigned>(_prefix[offset + i]));
+                }
+                // Pad to the full hex column so a short last line's gutter stays
+                // in the same column as every other line's.
+                for (std::size_t i = count; i < perLine; ++i) {
+                    std::fprintf(out, "   ");
+                }
+                std::fprintf(out, "  |%s|\n",
+                             vrmAdapterMocopi::PacketCaptureGutter(
+                                 _prefix.data() + offset, count).c_str());
             }
-            std::fputc('\n', out);
         }
     }
 

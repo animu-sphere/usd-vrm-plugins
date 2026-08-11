@@ -190,9 +190,17 @@ private:
     std::uint64_t _untalliedDatagrams = 0;
 
     // The leading bytes every datagram shares, shortened as datagrams disagree.
-    // Capped on the first datagram: a session of one 60 KB packet should not
-    // print 60 KB of hex, and a container's magic is not 32 bytes long.
-    static constexpr std::size_t kMaxPrefixBytes = 32;
+    // Capped on the first datagram, because a session of one 60 KB packet should
+    // not print 60 KB of hex.
+    //
+    // **80, and the number comes from a device rather than from taste.** It was
+    // 32, on the reasoning that a container's magic is not longer than that. The
+    // first real session disproved it precisely: every datagram shared **77**
+    // bytes, and byte 77 was exactly where the two packet kinds diverged -- so a
+    // 32-byte cap hid 45 of the 77 and cut the line off immediately before the
+    // one offset that mattered. A cap has to be past the shared header of the
+    // protocol it is describing or the line describes the cap instead.
+    static constexpr std::size_t kMaxPrefixBytes = 80;
     std::vector<std::uint8_t> _prefix;
 
     // The shortest datagram the session saw, which is what makes the cap

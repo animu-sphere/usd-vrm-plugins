@@ -39,6 +39,14 @@ import tempfile
 import threading
 import time
 
+# A container header of the shape the first real device session turned out to
+# send: <uint32 le length><4-byte tag>, twice, with an 18-byte string that its
+# length field agrees with exactly. 34 bytes, and used here only so that the
+# prefix block's gutter is checked against something a reader would recognise --
+# nothing in this file or in the tool decodes it.
+_CONTAINER = (b"\x23\x00\x00\x00" + b"head"
+              + b"\x12\x00\x00\x00" + b"ftyp" + b"sony motion format")
+
 # The captures this test authors, as (receiveTime, payload) records. Each one is
 # shaped to pin a specific line of the report rather than to look like a session:
 # nothing here knows what a mocopi packet is, and a fixture that pretended to
@@ -56,7 +64,7 @@ CAPTURES = {
         "distinct": 1,
         "lengths": "10 of 8 byte(s)",
         # Identical datagrams, so the common prefix is the whole payload.
-        "prefix": "08 00 00 00 68 65 61 64",
+        "prefix": bytes([0x08, 0x00, 0x00, 0x00, 0x68, 0x65, 0x61, 0x64]),
         "arrival_hz": 10.0,
     },
     # Three shapes sharing four leading bytes, which is the census line and the
@@ -74,33 +82,38 @@ CAPTURES = {
         "distinct": 3,
         # Commonest first, then by length: three of 16, one of 8, one of 4.
         "lengths": "3 of 16 byte(s), 1 of 4, 1 of 8",
-        "prefix": "de ad be ef",
+        "prefix": bytes([0xde, 0xad, 0xbe, 0xef]),
         "arrival_hz": 50.0,
     },
-    # Payloads that agree past the 32-byte prefix cap, so the report has to say
-    # "at least 32" -- the shared prefix genuinely may be longer than shown.
+    # Payloads that agree past the 80-byte prefix cap, so the report has to say
+    # "at least 80" -- the shared prefix genuinely may be longer than shown.
+    #
+    # Shaped like the container the first real session turned out to carry, so the
+    # gutter this block prints is checked against tags a reader would recognise
+    # rather than against filler alone. `_CONTAINER` is 34 bytes, which puts the
+    # 80-byte cap in the middle of the filler and gives five gutter lines.
     "capped-prefix": {
         "header": {"sourceId": "capped-prefix-01"},
-        "records": [(round(0.05 * i, 6), b"\x5a" * 40 + bytes([i]))
+        "records": [(round(0.05 * i, 6), _CONTAINER + b"\x5a" * 66 + bytes([i]))
                     for i in range(4)],
         "distinct": 1,
-        "lengths": "4 of 41 byte(s)",
-        "prefix": " ".join(["5a"] * 32),
+        "lengths": "4 of 101 byte(s)",
+        "prefix": (_CONTAINER + b"\x5a" * 66)[:80],
         "prefix_capped": True,
         "arrival_hz": 20.0,
     },
-    # The same agreement, cut off by a datagram that is *itself* 32 bytes long.
-    # The shared prefix is then exactly 32 and "at least" would be wrong -- it
-    # would send a reviewer looking for bytes that are not there.
+    # The same agreement, cut off by a datagram that is *itself* exactly the cap's
+    # length. The shared prefix is then exactly 80 and "at least" would be wrong:
+    # it would send a reviewer looking for bytes that are not there.
     "exact-prefix": {
         "header": {"sourceId": "exact-prefix-01"},
         "records": [
-            (0.000000, b"\x5a" * 40),
-            (0.050000, b"\x5a" * 32),
+            (0.000000, _CONTAINER + b"\x5a" * 66),
+            (0.050000, _CONTAINER + b"\x5a" * 46),
         ],
         "distinct": 2,
-        "lengths": "1 of 32 byte(s), 1 of 40",
-        "prefix": " ".join(["5a"] * 32),
+        "lengths": "1 of 80 byte(s), 1 of 100",
+        "prefix": _CONTAINER + b"\x5a" * 46,
         "prefix_capped": False,
         "arrival_hz": 20.0,
     },
@@ -178,6 +191,49 @@ def read_capture(path: pathlib.Path) -> tuple[dict[str, str], list[bytes]]:
     return header, [bytes(payload) for payload in payloads]
 
 
+def report_prefix_bytes(text: str) -> bytes | None:
+    """The `prefix:` block's bytes, read back out of the report.
+
+    The block is laid out as the capture format lays out a datagram -- sixteen
+    bytes a line, a padded hex column, an ASCII gutter -- so this reads it the way
+    the capture parser reads a record rather than the way `report_lines` joins a
+    continuation. Splitting at the *first* '|' is safe for the hex half; the
+    gutter itself may contain '|' where a payload byte is 0x7c, which is why only
+    the hex is taken from here and the gutter is checked separately.
+    """
+    collected = bytearray()
+    inside = False
+    for line in text.splitlines():
+        if line.startswith("prefix:"):
+            inside = True
+            continue
+        if not inside:
+            continue
+        if not line.startswith(" "):
+            break
+        hex_half = line.split("|")[0].strip()
+        if not hex_half:
+            break
+        collected += bytes.fromhex(hex_half)
+    return bytes(collected) if inside else None
+
+
+def report_gutters(text: str) -> list[str]:
+    """The `prefix:` block's gutters, one per line, in order."""
+    gutters = []
+    inside = False
+    for line in text.splitlines():
+        if line.startswith("prefix:"):
+            inside = True
+            continue
+        if not inside:
+            continue
+        if not line.startswith(" ") or "|" not in line:
+            break
+        gutters.append(line[line.index("|") + 1:line.rindex("|")])
+    return gutters
+
+
 def report_lines(text: str) -> dict[str, str]:
     """The report by label. Continuation lines join the label above them."""
     lines: dict[str, str] = {}
@@ -216,7 +272,8 @@ def expect_exit(tool: pathlib.Path, code: int,
     return result
 
 
-def check_report(name: str, lines: dict[str, str], expected: dict) -> None:
+def check_report(name: str, text: str, lines: dict[str, str],
+                 expected: dict) -> None:
     """Every line of the report that is a statement about the bytes."""
     records = expected["records"]
     payload_bytes = sum(len(payload) for _, payload in records)
@@ -237,21 +294,40 @@ def check_report(name: str, lines: dict[str, str], expected: dict) -> None:
         fail(f"{name}: expected the census to end '{expected['lengths']}', "
              f"report said '{lengths}'")
 
-    prefix = lines.get("prefix", "")
     if expected["prefix"] is None:
-        if prefix != "no bytes common to every datagram":
+        if lines.get("prefix") != "no bytes common to every datagram":
             fail(f"{name}: datagrams share no leading byte, report said "
-                 f"'{prefix}'")
+                 f"'{lines.get('prefix')}'")
     else:
         wanted = expected["prefix"]
-        count = len(wanted.split())
         # "at least" is warranted only when the cap is what shortened the prefix,
         # never merely because the prefix came out cap-length.
         lower_bound = "at least " if expected.get("prefix_capped") else ""
-        if prefix != (f"{lower_bound}{count} byte(s) common to every datagram: "
-                      f"{wanted}"):
-            fail(f"{name}: expected a {lower_bound}{count}-byte common prefix "
-                 f"'{wanted}', report said '{prefix}'")
+        label = f"prefix:      {lower_bound}{len(wanted)} byte(s) common to " \
+                f"every datagram:"
+        if label not in text:
+            fail(f"{name}: expected the prefix label '{label}', report said "
+                 f"'{lines.get('prefix')}'")
+
+        # The bytes, read back out of the hex column.
+        found = report_prefix_bytes(text)
+        if found != wanted:
+            fail(f"{name}: expected a {len(wanted)}-byte common prefix "
+                 f"{wanted.hex(' ')}, report carried "
+                 f"{found.hex(' ') if found else None}")
+
+        # And the gutter, rendered independently here. A gutter that disagrees
+        # with its bytes is worse than none -- the format's own reader says so and
+        # verifies it, and this block is laid out to that format, so it earns the
+        # same check. Sixteen bytes a line, so the line count is arithmetic too.
+        expected_gutters = [
+            "".join(chr(b) if 0x20 <= b <= 0x7e else "." for b in wanted[i:i + 16])
+            for i in range(0, len(wanted), 16)
+        ]
+        if report_gutters(text) != expected_gutters:
+            fail(f"{name}: the prefix gutters disagree with their bytes:\n"
+                 f"  report:   {report_gutters(text)}\n"
+                 f"  expected: {expected_gutters}")
 
     # Absent, not zero, when the session carried none: a line that always
     # printed would make "0 zero-length datagram(s)" the commonest line in
@@ -281,8 +357,9 @@ def check_inspect(tool: pathlib.Path, workspace: pathlib.Path) -> None:
     for name, expected in sorted(CAPTURES.items()):
         capture = workspace / f"{name}.mocopipackets"
         write_capture(capture, expected["header"], expected["records"])
-        lines = report_lines(run_tool(tool, "--inspect", str(capture)))
-        check_report(name, lines, expected)
+        text = run_tool(tool, "--inspect", str(capture))
+        lines = report_lines(text)
+        check_report(name, text, lines, expected)
 
         if lines.get("stopped") != "end of capture":
             fail(f"{name}: a replayed capture ends at its end, not at "
@@ -685,6 +762,13 @@ def check_loopback(tool: pathlib.Path, workspace: pathlib.Path) -> None:
     if not header.get("peer", "").startswith("127.0.0.1:"):
         fail(f"the capture did not record the peer it heard from: {header}")
 
+    # All three provenance flags were given, so the fixture warnings must stay
+    # silent. A warning that fires when nothing is missing is a warning an
+    # operator learns to ignore.
+    for line in session.stderr:
+        if "corpus check requires" in line or "no --device" in line:
+            fail(f"a fully-provenanced capture warned anyway: {line.strip()}")
+
     # And that a session off the wire is described the same way as one off the
     # disk. Only the byte-level lines: when they arrived and from where is what
     # the wire is allowed to have changed, and the arrival rate is a fact about
@@ -735,6 +819,17 @@ def check_stop_reasons(tool: pathlib.Path, workspace: pathlib.Path) -> None:
     if bounded_payloads != distinct[:3]:
         fail(f"a bounded session recorded {len(bounded_payloads)} datagram(s), "
              f"expected the first 3 that arrived")
+
+    # This session named no provenance, so the write warns about what a committed
+    # fixture would need -- at the write, which is the last moment the operator
+    # who ran the session can still answer. A warning and not a refusal: this very
+    # session is a legitimate exploratory recording.
+    stderr = "".join(session.stderr)
+    for wanted in ("--sender", "--source-id", "corpus check requires",
+                   "no --device"):
+        if wanted not in stderr:
+            fail(f"a capture with no provenance did not warn about {wanted}: "
+                 f"{stderr}")
 
     # --duration against a source that never says anything: the timer runs from
     # the bind rather than from the first datagram, so a session nobody sends to
