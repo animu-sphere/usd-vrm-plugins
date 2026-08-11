@@ -57,7 +57,9 @@ endif()
 
 add_library(vrmAdapterMocopi STATIC
     src/Diagnostics.cpp
+    src/MotionPacket.cpp
     src/PacketCapture.cpp
+    src/PacketChunk.cpp
     src/UdpReceiver.cpp)
 add_library(vrmAdapterMocopi::vrmAdapterMocopi ALIAS vrmAdapterMocopi)
 set_target_properties(vrmAdapterMocopi PROPERTIES

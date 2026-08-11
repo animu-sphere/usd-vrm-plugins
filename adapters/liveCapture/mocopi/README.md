@@ -9,19 +9,24 @@ UDP datagram → packet decode → joint mapping → coordinate conversion
              → frame assembly → HumanoidPose → LiveCaptureSource
 ```
 
-**Status: transport, and nothing above it.** What exists is the library's
-identity and its two edges, the frozen diagnostic set, the recorded-packet
-format, the **UDP receiver** that can turn a source aimed at this machine into
-one of those files, and [**`mocopi_record`**](tools/mocopiRecord/README.md) — the
-CLI that does it. What does not exist is any decoder — no packet syntax, no joint
-map, no basis change, no frame assembly — and the reason is in
-[the next section](#the-format-is-not-documented-and-that-shapes-the-order).
+**Status: transport, and the packet decoder above it.** What exists is the
+library's identity and its two edges, the frozen diagnostic set, the
+recorded-packet format, the **UDP receiver**,
+[**`mocopi_record`**](tools/mocopiRecord/README.md) — the CLI that turns a source
+aimed at this machine into a capture file — and now the **packet decoder**: the
+[container](include/vrmAdapterMocopi/PacketChunk.h) and the
+[two packet kinds](include/vrmAdapterMocopi/MotionPacket.h), with a
+[corpus](tests/corpus/README.md) behind them. What does not exist is anything
+that knows what the numbers *mean*: no joint map, no basis change, no frame
+assembly, no live-source bridge. One of those is blocked on a measurement rather
+than on a commit, and
+[the section below](#the-decoder-stops-where-the-measurement-does) says which.
 See [the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §6 and
 Milestone D for the implementation order, and
 [below](#transport-arrives-first-here-and-that-is-the-finding) for why this
 adapter's order is the reverse of its sibling's.
 
-## The format is not documented, and that shapes the order
+## The format is not documented, so it was measured instead
 
 The transport is stated publicly and the payload is not. What the vendor
 documents is that the application sends motion data over **UDP** to a PC on
@@ -34,8 +39,8 @@ documentation. The authoritative artifacts are the vendor's own **Apache-2.0**
 sources — a serialization library and a set of receiver plugins — and the
 `BVH Sender` application, which transmits a BVH file over the same UDP format.
 
-Two consequences, and they are the whole reason this adapter's first commit
-carries no decoder:
+Two consequences, and they are the whole reason the decoder is this adapter's
+fourth commit rather than its first:
 
 - **A decoder written from a remembered format is a guess wearing the shape of
   progress.** That is the failure mode the recorded-motion plan was built around
@@ -43,17 +48,54 @@ carries no decoder:
   it applies harder here: a BVH file that is misread produces a visibly wrong
   figure, where a packet field read at the wrong offset produces plausible
   numbers.
-- **`BVH Sender` is the evidence path, and it needs no device.** It encodes a
-  BVH file into this product's UDP form, so pointing it at a `.bvh` this
-  repository *wrote* — the generated format-shape fixtures under
-  [`libs/motionBvh/tests/corpus/generated/`](../../../libs/motionBvh/tests/corpus/generated/)
-  — yields a capture whose encoding is the vendor's and whose content is ours.
-  That is a fixture this project may commit and CI may run, which is not true of
-  a session recorded off a phone with somebody's motion in it.
+- **So the grammar was measured, not recalled.** Five real device sessions, 8000
+  datagrams, four distinct motions, walked until the arithmetic *closed* — every
+  chunk consuming `length + 8` bytes and landing exactly on the end of its
+  container, at every level, on every datagram. A container guess that closes
+  8000 times over four different motions is a measurement; one that does not is
+  a wrong guess, and the check was written to be able to say so. The grammar and
+  the population behind each claim are on
+  [`MotionPacket.h`](include/vrmAdapterMocopi/MotionPacket.h).
+
+The recorded sessions themselves are **not committable** — they hold a real
+person's motion, and a skeleton packet is a body measurement — so what is
+committed is a corpus written *from* the measurement, and
+[its README](tests/corpus/README.md) is blunt about what that can and cannot
+prove. `BVH Sender` remains the path to bytes whose **encoding** is the vendor's
+own while their content is ours, and it is still the thing that can refute the
+grammar rather than agree with it.
 
 So the corpus arrives before the decoder, the capture format arrives before the
 corpus — and the **receiver** arrives before either, because a corpus that can
 only be obtained from a socket needs a socket.
+
+## The decoder stops where the measurement does
+
+The decoder reads the container, the two packet kinds, both clocks, the frame
+counter, the parent column, and seven floats per joint. It does not name an axis,
+and that is the one deliberate hole in it.
+
+Almost everything about the basis is measured. The translations are **metres**,
+the up axis is **+Y** and forward is **+Z**, all three from the rest pose rather
+than from a document: the root sits 0.96 up, which is a hip height in metres and
+nothing else; the upper-arm and forearm offsets are 0.30 and 0.25; the toe sits
+forward of the ankle. The quaternion is **scalar-last**, and its imaginary parts
+are in the same component order as the translation — which is also measured, not
+assumed, because the rest pose holds the arms along ±X, a standing frame has them
+hanging down, and the component carrying that ~85° rotation is the one a rotation
+from +X to −Y must turn about.
+
+**Handedness is not.** A mirrored basis satisfies every measurement above,
+because a mirrored skeleton is geometrically identical — the two four-bone limbs
+off the root and the two off the top of the torso stay legs and arms either way.
+Settling it takes an asymmetric motion whose side is *labelled*, which is an
+operator's session and not a commit. Until then nothing here says left or right:
+the corpus describes arm bones by their side of the +X axis and by their bone id,
+and the naming stops short of x/y/z in the decoder's own structs. A layer that
+published a guess about which arm is which would be putting it in the one place
+hardest to notice later — which is why resolving it belongs to
+`MocopiCoordinateConverter`, one layer up, where the sibling adapter draws the
+same line for the same reason.
 
 ## What this is, structurally
 
@@ -200,7 +242,10 @@ d 0.000000 16
 It is not a `motion-capture-trace`, and the difference is the adapter's two
 ends: a trace records what an adapter *produced*, a capture what it was *given*.
 Only the second can represent a truncated datagram, a duplicate delivery, or a
-restart mid-frame — which is to say, only the second can test a decoder.
+restart mid-frame — which is to say, only the second can test a decoder. Seven of
+them now do, in [`tests/corpus/`](tests/corpus/README.md); the two
+`malformed-*` captures and `frame-loss-60hz` are the three that make the sentence
+above concrete.
 
 **It is a second format rather than the sibling's, and that is a decision.** The
 header file argues it in full; the short version is that reaching the sibling's
@@ -241,6 +286,18 @@ bound before the operator started the application, and **tracking loss** is the
 device reporting on itself accurately, which is a phenomenon a session recovers
 from rather than a defect.
 
+**Five of the nine are now paid for by a caller**, which is how a freeze earns
+its keep. The receiver raises `SOCKET_BIND_FAILED` and `DEVICE_UNAVAILABLE`; the
+decoder raises `PACKET_MALFORMED`, `NON_FINITE_TRANSFORM` and
+`TIMESTAMP_INVALID` and no others. The remaining four are all one layer up —
+`UNSUPPORTED_JOINT` needs a joint map, `FRAME_INCOMPLETE` and `SOURCE_RESTARTED`
+need something that holds more than one packet at a time, and `TRACKING_LOST`
+needs a field this project has not yet found on the wire. That last one is worth
+naming as an open question rather than a to-do: the measured grammar has 27 bone
+records and no per-joint confidence or state anywhere in them, so either it lives
+in one of the two unidentified fields (`sndf/ipad`, `fram/tmcd`) or this
+application version does not send it. Nothing here guesses which.
+
 ## Building and testing
 
 Composed with the rest of the workspace:
@@ -248,7 +305,7 @@ Composed with the rest of the workspace:
 ```sh
 cmake -S . -B build -DCMAKE_PREFIX_PATH=<usd-install>
 cmake --build build --config Release
-# Both halves: the library's five names and the CLI's three. `-R vrmAdapterMocopi`
+# Both halves: the library's nine names and the CLI's three. `-R vrmAdapterMocopi`
 # alone silently misses the tool, whose names begin with `mocopi_record`.
 ctest --test-dir build -R "vrmAdapterMocopi|mocopi_record"
 ```

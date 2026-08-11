@@ -56,8 +56,21 @@ add_test(NAME vrmAdapterMocopi_udpReceiverTruncation
 set_tests_properties(vrmAdapterMocopi_udpReceiverTruncation PROPERTIES
     SKIP_RETURN_CODE 77)
 
+# The container and the two packet kinds. Its own name rather than a case inside
+# the suite above, because the two layers fail for different reasons: a capture
+# that will not parse is a fixture problem, and a datagram that will not decode is
+# a decoder problem, and a single red name would not say which.
+add_executable(vrmAdapterMocopi_motionPacket_tests test_motion_packet.cpp)
+target_link_libraries(vrmAdapterMocopi_motionPacket_tests
+    PRIVATE vrmAdapterMocopi::vrmAdapterMocopi)
+target_compile_options(vrmAdapterMocopi_motionPacket_tests
+    PRIVATE ${_vrm_adapter_mocopi_assertions})
+add_test(NAME vrmAdapterMocopi_motionPacket
+         COMMAND vrmAdapterMocopi_motionPacket_tests)
+
 set(_vrm_adapter_mocopi_tests
     vrmAdapterMocopi_unit vrmAdapterMocopi_packetCapture
+    vrmAdapterMocopi_motionPacket
     vrmAdapterMocopi_udpReceiver vrmAdapterMocopi_udpReceiverTruncation)
 
 # Every committed capture parses and re-emits byte-identically, or every
@@ -66,24 +79,24 @@ set(_vrm_adapter_mocopi_tests
 # than referencing a target from another directory, so a standalone configure of
 # this adapter still generates.
 #
-# There is no corpus yet and this block is guarded rather than absent, which is
-# the deliberate half: the decoder cannot be written from a format nobody here
-# has measured, so the first recorded session arrives before the first decoder
-# does -- and when it does it becomes a checked fixture by being committed,
-# rather than by somebody also remembering to add a test.
+# The corpus exists as of the decoder, and the guard stays: a standalone
+# configure of a source tree without it must still generate.
 #
-# What has changed since that was written is that the recording is now possible
-# end to end: the receiver below turns a source aimed at this port into
-# datagrams, and `tools/mocopiRecord` writes them to one of these files --
-# `mocopi_record_loopback` checks that what comes off the socket is byte for byte
-# what the capture keeps. What is still missing is a source to aim, the vendor's
-# `BVH Sender` or a device, which is an operator's action and not a commit's.
+# Two names run over the same directory and they check different things.
+# `_corpus` is the format's: every capture parses and re-emits byte-identically,
+# so a fixture can never drift from the C++ writer. `_motionPacketCorpus` is the
+# decoder's: every capture decodes to what the manifest says it pins, or is
+# refused with the code it exists to be refused with.
 set(_vrm_adapter_mocopi_corpus "${CMAKE_CURRENT_SOURCE_DIR}/corpus")
 if(EXISTS "${_vrm_adapter_mocopi_corpus}")
     add_test(NAME vrmAdapterMocopi_corpus
         COMMAND vrmAdapterMocopi_packetCapture_tests
                 "${_vrm_adapter_mocopi_corpus}")
-    list(APPEND _vrm_adapter_mocopi_tests vrmAdapterMocopi_corpus)
+    add_test(NAME vrmAdapterMocopi_motionPacketCorpus
+        COMMAND vrmAdapterMocopi_motionPacket_tests
+                "${_vrm_adapter_mocopi_corpus}")
+    list(APPEND _vrm_adapter_mocopi_tests
+         vrmAdapterMocopi_corpus vrmAdapterMocopi_motionPacketCorpus)
 endif()
 
 if(WIN32)
@@ -129,4 +142,18 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/check_boundaries.py"
             "${CMAKE_CURRENT_SOURCE_DIR}/.."
             "$<TARGET_FILE:vrmAdapterMocopi_tests>")
+
+    # vrmAdapterMocopi_corpus proves the committed captures are canonical for the
+    # C++ writer; this proves they still match the generator that authored them.
+    # Without it a hand-edited fixture would stay green while the generator no
+    # longer reproduces it, and the corpus would quietly become unregenerable --
+    # which matters more here than for the sibling adapter, because regenerating
+    # is the only way this corpus can ever be extended: the measurement it was
+    # written from is not committed.
+    if(EXISTS "${_vrm_adapter_mocopi_corpus}")
+        add_test(NAME vrmAdapterMocopi_packetGen
+            COMMAND "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/../tools/generate_packets.py"
+                --check --output "${_vrm_adapter_mocopi_corpus}")
+    endif()
 endif()

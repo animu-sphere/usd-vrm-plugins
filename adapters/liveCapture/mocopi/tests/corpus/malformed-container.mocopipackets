@@ -1,0 +1,23 @@
+!mocopi-packet-capture 1
+sender example.synthetic
+device example.synthetic
+sourceId malformed-container-01
+listen 0.0.0.0:12351
+
+d 0.000000 0
+
+d 0.100000 4
+  00 00 00 00                                      |....|
+
+d 0.200000 24
+  00 10 00 00 66 72 61 6d 00 00 00 00 00 00 00 00  |....fram........|
+  00 00 00 00 00 00 00 00                          |........|
+
+d 0.300000 46
+  23 00 00 00 68 65 61 64 12 00 00 00 66 74 79 70  |#...head....ftyp|
+  73 6f 6e 79 20 6d 6f 74 69 6f 6e 20 66 6f 72 6d  |sony motion form|
+  61 74 01 00 00 00 76 72 73 6e 01 01 02 03        |at....vrsn....|
+
+d 0.400000 20
+  2f 56 4d 43 2f 45 78 74 2f 54 00 00 2c 66 00 00  |/VMC/Ext/T..,f..|
+  3f 80 00 00                                      |?...|

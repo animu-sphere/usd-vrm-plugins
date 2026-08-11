@@ -1,0 +1,323 @@
+{
+  "schemaVersion": 1,
+  "description": "Machine-readable provenance for the mocopi packet corpus. Every capture is assembled by adapters/liveCapture/mocopi/tools/generate_packets.py from a container grammar measured on real device sessions - the grammar is evidence, the content is invented, and neither the measured recordings nor any real body proportions are committed here. Field values are measured from the committed files, never guessed.",
+  "format": {
+    "name": "mocopi-packet-capture",
+    "version": 1,
+    "spec": "adapters/liveCapture/mocopi/include/vrmAdapterMocopi/PacketCapture.h"
+  },
+  "protocol": {
+    "grammar": "adapters/liveCapture/mocopi/include/vrmAdapterMocopi/MotionPacket.h",
+    "measuredFrom": "5 real device sessions, 8000 datagrams, 4 distinct motions",
+    "measuredOn": "2026-08-11/2026-08-12",
+    "recordingsCommitted": false,
+    "unresolved": [
+      "Handedness: a mirrored basis satisfies every measurement taken so far, so no fixture here names a left or a right. Settling it needs an asymmetric motion whose side is labelled.",
+      "The meaning of sndf/ipad (8 bytes, constant per session) and of fram/tmcd (6 bytes, zero in all 7964 measured frames)."
+    ]
+  },
+  "provenance": {
+    "origin": "synthetic",
+    "generator": "adapters/liveCapture/mocopi/tools/generate_packets.py",
+    "license": "Apache-2.0",
+    "redistributionAllowed": true,
+    "capturedFromRealDevice": false,
+    "generatedAt": "2026-08-12"
+  },
+  "limitations": [
+    "These pin the decoder, not the protocol: the grammar that wrote them is the grammar they are decoded with, so no fixture here can be surprised by the wire format.",
+    "The rest pose is invented round-number proportions in metres. A real skeleton packet is a body measurement of a real person and is not committable.",
+    "No real device's sndf/ipad or peer address appears; both are treated as possibly device-identifying.",
+    "A capture whose encoding is the vendor's own - the BVH Sender pointed at a .bvh this repository wrote - is the evidence that can still surprise the decoder, and it belongs in this directory when an operator makes one."
+  ],
+  "captures": [
+    {
+      "file": "arms-lowered-60hz.mocopipackets",
+      "pins": "A non-identity rotation, on the two upper arms in opposite directions: about 85 degrees carried in the third imaginary component, which is what the measured standing sessions showed against a T-pose rest. A decoder that reordered the quaternion's components cannot pass this and the baseline at once.",
+      "tags": [
+        "rotation",
+        "component-order",
+        "root-motion"
+      ],
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "arms-lowered-01",
+      "datagrams": 4,
+      "payloadBytes": 6636,
+      "durationSeconds": 0.05,
+      "packetKinds": {
+        "fram": 3,
+        "skdf": 1
+      },
+      "chunkTags": [
+        "bndt",
+        "bnid",
+        "bons",
+        "btdt",
+        "btrs",
+        "fnum",
+        "fram",
+        "ftyp",
+        "head",
+        "ipad",
+        "pbid",
+        "rcvp",
+        "skdf",
+        "sndf",
+        "time",
+        "tmcd",
+        "tran",
+        "uttm",
+        "vrsn"
+      ],
+      "boneCounts": [
+        27
+      ],
+      "sha256": "645d5a6e757ed8a92b13cbd97f647ba766958f78d59d41a73b9b984889aa4ce9"
+    },
+    {
+      "file": "extended-form.mocopipackets",
+      "pins": "Everything carried forward unread: an unknown chunk beside the payload, one inside fram, one inside all 27 bone records - reported once and not 27 times - an 11-bone rig that is a different rig and not a malformed packet, and the only non-zero tmcd anywhere, which the decoder keeps as bytes and interprets not at all.",
+      "tags": [
+        "forward-compatible",
+        "unread-chunks",
+        "bone-count",
+        "timecode"
+      ],
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "extended-form-01",
+      "datagrams": 4,
+      "payloadBytes": 5093,
+      "durationSeconds": 0.133333,
+      "packetKinds": {
+        "fram": 3,
+        "skdf": 1
+      },
+      "chunkTags": [
+        "bndt",
+        "bnid",
+        "bons",
+        "btdt",
+        "btrs",
+        "conf",
+        "fnum",
+        "fram",
+        "ftyp",
+        "head",
+        "ipad",
+        "pbid",
+        "rcvp",
+        "skdf",
+        "sndf",
+        "time",
+        "tmcd",
+        "tran",
+        "uttm",
+        "vrsn",
+        "xxxx",
+        "yyyy"
+      ],
+      "boneCounts": [
+        11,
+        27
+      ],
+      "sha256": "62136d8c87a5217a728723263b487a55148d5804069e8f57ec94533f7dc23980"
+    },
+    {
+      "file": "frame-loss-60hz.mocopipackets",
+      "pins": "What the transport does, none of which the decoder refuses: an fnum gap of 3 whose time delta is exactly 3/60 s - the measured Wi-Fi loss shape, where the sender's clock never skipped - then a duplicate delivery, then a restart with both fnum and time back to the beginning.",
+      "tags": [
+        "packet-loss",
+        "duplicate",
+        "restart",
+        "assembler-input"
+      ],
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "frame-loss-01",
+      "datagrams": 8,
+      "payloadBytes": 13056,
+      "durationSeconds": 0.116668,
+      "packetKinds": {
+        "fram": 7,
+        "skdf": 1
+      },
+      "chunkTags": [
+        "bndt",
+        "bnid",
+        "bons",
+        "btdt",
+        "btrs",
+        "fnum",
+        "fram",
+        "ftyp",
+        "head",
+        "ipad",
+        "pbid",
+        "rcvp",
+        "skdf",
+        "sndf",
+        "time",
+        "tmcd",
+        "tran",
+        "uttm",
+        "vrsn"
+      ],
+      "boneCounts": [
+        27
+      ],
+      "sha256": "56103488e0981976066939295f27a5c0c663d95f32bb526c7e81a48ed6609af2"
+    },
+    {
+      "file": "malformed-container.mocopipackets",
+      "pins": "One datagram per container-level refusal: empty, a header that does not fit, a payload longer than the datagram, a walk that ends between chunks, and a datagram of the sibling protocol - which dies in the container rather than at a field, which is what having two magic lines is for.",
+      "tags": [
+        "malformed",
+        "container",
+        "cross-protocol"
+      ],
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "malformed-container-01",
+      "datagrams": 5,
+      "payloadBytes": 94,
+      "durationSeconds": 0.4,
+      "packetKinds": {
+        "neither": 1,
+        "unwalkable": 4
+      },
+      "chunkTags": [],
+      "boneCounts": [],
+      "sha256": "e2b70ee2b59735f97d44b25724edf5cfda55ac8f5f38337c267d0c3696eba43a"
+    },
+    {
+      "file": "malformed-packets.mocopipackets",
+      "pins": "One datagram per packet-level refusal: the wrong magic, an unmeasured version, a missing head, both payload kinds at once, neither, a duplicated field, two fields whose declared width disagrees with their type, and three unusable clocks. Every one of these walks as a container and is refused one layer up.",
+      "tags": [
+        "malformed",
+        "packet",
+        "version",
+        "timestamp"
+      ],
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "malformed-packets-01",
+      "datagrams": 12,
+      "payloadBytes": 2266,
+      "durationSeconds": 1.1,
+      "packetKinds": {
+        "both": 1,
+        "fram": 10,
+        "neither": 1
+      },
+      "chunkTags": [
+        "\u0000\u0000\u00f0\u007f",
+        "bnid",
+        "bons",
+        "btdt",
+        "btrs",
+        "fnum",
+        "fram",
+        "ftyp",
+        "head",
+        "ipad",
+        "rcvp",
+        "skdf",
+        "sndf",
+        "time",
+        "tmcd",
+        "tran",
+        "uttm",
+        "vrsn"
+      ],
+      "boneCounts": [
+        1
+      ],
+      "sha256": "1b641f55b5b149b2040e7399c215264c595bc38bc8dcb4eba69eef24b101446d"
+    },
+    {
+      "file": "neutral-standing-60hz.mocopipackets",
+      "pins": "The happy path, and both packet kinds in one capture: a skeleton packet then five frames at 60 Hz, every rotation identity. Also the measured invariant that only the root translates - every non-root frame translation equals its rest offset bit for bit.",
+      "tags": [
+        "baseline",
+        "both-kinds",
+        "rest-equals-frame"
+      ],
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "neutral-standing-01",
+      "datagrams": 6,
+      "payloadBytes": 9846,
+      "durationSeconds": 0.083333,
+      "packetKinds": {
+        "fram": 5,
+        "skdf": 1
+      },
+      "chunkTags": [
+        "bndt",
+        "bnid",
+        "bons",
+        "btdt",
+        "btrs",
+        "fnum",
+        "fram",
+        "ftyp",
+        "head",
+        "ipad",
+        "pbid",
+        "rcvp",
+        "skdf",
+        "sndf",
+        "time",
+        "tmcd",
+        "tran",
+        "uttm",
+        "vrsn"
+      ],
+      "boneCounts": [
+        27
+      ],
+      "sha256": "5352eeec0a55467389eacaa1e58110a7cac6feb600639b634ed7fcfd11e5806d"
+    },
+    {
+      "file": "refused-bones-60hz.mocopipackets",
+      "pins": "The bone-not-frame rule: one frame with a non-finite rotation, a zero-length rotation and a non-finite translation on three different bones, which decodes to 24 usable bones and three diagnostics rather than to a refused datagram - followed by the same frame with nothing wrong with it.",
+      "tags": [
+        "non-finite",
+        "partial-frame",
+        "bone-scoped"
+      ],
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "refused-bones-01",
+      "datagrams": 2,
+      "payloadBytes": 3210,
+      "durationSeconds": 0.016667,
+      "packetKinds": {
+        "fram": 2
+      },
+      "chunkTags": [
+        "bnid",
+        "btdt",
+        "btrs",
+        "fnum",
+        "fram",
+        "ftyp",
+        "head",
+        "ipad",
+        "rcvp",
+        "sndf",
+        "time",
+        "tmcd",
+        "tran",
+        "uttm",
+        "vrsn"
+      ],
+      "boneCounts": [
+        27
+      ],
+      "sha256": "64689c470ee56c930ddf84307a9f7a18b74487199bce8fda4d24ab8e620fe3fd"
+    }
+  ]
+}
