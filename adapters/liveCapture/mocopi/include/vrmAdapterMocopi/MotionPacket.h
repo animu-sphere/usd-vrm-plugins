@@ -31,27 +31,49 @@
 // not, and in the skeleton packet the fourth component is exactly 1.0 while the
 // first three are exactly 0.0, so the scalar is **last**.
 //
-// ## What the numbers are, and what is deliberately still unknown
+// ## What the numbers are
 //
-// The translation triple is metres in a +Y-up, +Z-forward basis, and all three
-// of those come from the rest pose rather than from a document: the root sits
-// 0.96 up, which is a hip height in metres and nothing else; the upper-arm and
-// forearm offsets are 0.30 and 0.25; the toe sits forward of the ankle on +Z.
-// The rotation's imaginary parts are in the same component order as the
-// translation, which is one more measurement and not an assumption — the rest
-// pose holds the arms along ±X, a neutral standing frame has them hanging down,
-// and the component that carries that ~85° rotation is index 2, which is the Z
-// a rotation from +X to -Y must turn about.
+// The translation triple is metres in a **right-handed, +Y-up, +Z-forward**
+// basis. Three of those four come from the rest pose rather than from a
+// document: the root sits 0.96 up, which is a hip height in metres and nothing
+// else; the upper-arm and forearm offsets are 0.30 and 0.25; the toe sits
+// forward of the ankle on +Z. The rotation's imaginary parts are in the same
+// component order as the translation, which is one more measurement and not an
+// assumption — the rest pose holds the arms along ±X, a neutral standing frame
+// has them hanging down, and the component that carries that ~85° rotation is
+// index 2, which is the Z a rotation from +X to −Y must turn about.
 //
-// **Handedness is not resolved here, and that is on purpose.** A mirrored basis
-// satisfies every measurement above, because a mirrored skeleton is
-// geometrically identical — the two 4-bone limbs off the root and the two off
-// the top of the torso stay legs and arms either way. Settling it takes an
-// asymmetric motion whose side is *labelled*, which is an operator's session and
-// not a commit, and until then a decoder that named these components x, y, z
-// would be publishing a guess about which arm is which. So this layer reports
-// components and the coordinate converter resolves them, which is also where the
-// sibling adapter draws the same line for the same reason.
+// **Handedness was the fourth, and it is settled: +X is the body's left**
+// (2026-08-12). It was the last thing open here, because a mirrored basis
+// satisfies every measurement above — a mirrored skeleton is geometrically
+// identical, so the two four-bone limbs off the root and the two off the top of
+// the torso stay legs and arms either way. What settled it was not a new
+// recording but a comparison this repository could already make.
+//
+// `profiles/motion/mocopi-mobile-bvh-default-v1.yaml` was measured on 2026-08-04
+// from the **same application's BVH export**, and it states `handedness: right`,
+// `+Y`, `+Z`, and a name for every joint including which side each is on. The
+// only question left was whether the application mirrors between the file it
+// writes and the datagrams it sends. It does not: **all 27 rest offsets agree
+// sign for sign, worst component difference 4.4e-7 m**, once the centimetre /
+// metre factor is removed. Two recordings a week apart, two transports that share
+// no code, one skeleton — the hip height is 95.9893 cm there and 0.95989 m here.
+//
+// So the joint identities transfer with them, in `bnid` order: 11–14 is the left
+// arm, 15–18 the right, 19–22 the left leg, 23–26 the right.
+//
+// **None of which this layer acts on.** It still reports components and names no
+// bone, because which canonical bone a `bnid` is remains `MocopiSkeletonMap`'s
+// answer and the basis change into a target's convention remains
+// `MocopiCoordinateConverter`'s — the same line the sibling adapter draws. What
+// has changed is that those two now have a measured input instead of an open
+// question, and that a reader of this file no longer has to treat the sign of X
+// as unknown.
+//
+// The one thing worth *not* concluding from it: this says the two paths agree
+// about the rest pose, not that they agree about the motion. That is
+// [§9.6](../../../../docs/roadmap/adapters-mocopi-vmc-ardy.md)'s cross-source
+// comparison, on a single session observed both ways, and it is still owed.
 //
 // ## Four rules that are decisions
 //
@@ -174,7 +196,13 @@ VRMADAPTERMOCOPI_API std::string_view MotionPacketKindTag(
 // reordered the components would make the corpus agree with one downstream
 // reading of it and no other.
 //
-// The naming stops short of x/y/z on purpose; the header says why.
+// The components are (x, y, z) in the right-handed, +Y-up, +Z-forward basis the
+// header establishes, and the rotation is (x, y, z, w). They stay arrays rather
+// than named fields because every reader of them indexes uniformly — the wire
+// carries seven floats and the seventh is not special — and because naming them
+// would invite a caller to treat this as a basis it can use directly. It is not:
+// it is the *device's* basis, and arriving in a target's is still a conversion
+// somebody has to ask for.
 struct BoneTransform
 {
     std::array<float, 4> rotation{{0.0f, 0.0f, 0.0f, 1.0f}};

@@ -834,9 +834,14 @@ CheckArmsLowered(const std::vector<MotionPacket>& packets,
                  const std::string& name)
 {
     // About 85 degrees, carried in the third imaginary component and in opposite
-    // directions on the two sides. Which axis that is depends on a handedness
-    // this project has not measured, so the check is on the component and on the
-    // antisymmetry, and names no side.
+    // directions on the two sides -- bones 12 and 16, which handedness now says
+    // are the left and the right upper arm.
+    //
+    // The check is still on the *component* and the antisymmetry rather than on a
+    // side, and that is deliberate rather than left over. This layer names no
+    // bone and changes no basis, so an assertion that "the left arm rotated"
+    // would be testing `MocopiSkeletonMap`, which does not exist yet, through a
+    // decoder that cannot be wrong about it.
     const float expected = std::sin(85.0f * 3.14159265f / 180.0f / 2.0f);
     for (const MotionPacket& packet : packets) {
         if (packet.kind != MotionPacketKind::Frame) {

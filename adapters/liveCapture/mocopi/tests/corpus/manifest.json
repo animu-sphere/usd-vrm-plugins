@@ -12,9 +12,10 @@
     "measuredOn": "2026-08-11/2026-08-12",
     "recordingsCommitted": false,
     "unresolved": [
-      "Handedness: a mirrored basis satisfies every measurement taken so far, so no fixture here names a left or a right. Settling it needs an asymmetric motion whose side is labelled.",
-      "The meaning of sndf/ipad (8 bytes, constant per session) and of fram/tmcd (6 bytes, zero in all 7964 measured frames)."
-    ]
+      "The meaning of sndf/ipad (8 bytes, constant per session) and of fram/tmcd (6 bytes, zero in all 7964 measured frames).",
+      "Whether the two paths agree about the MOTION. The rest poses match; a single session observed both natively and relayed is the cross-source comparison of roadmap section 9.6, and it is still owed."
+    ],
+    "handedness": "right; +X is the body's left. Settled 2026-08-12 by comparing this rig against the one profiles/motion/mocopi-mobile-bvh-default-v1.yaml measured from the same application's BVH export: all 27 rest offsets agree sign for sign, worst component difference 4.4e-7 m. In bnid order 11-14 is the left arm, 15-18 the right, 19-22 the left leg, 23-26 the right."
   },
   "provenance": {
     "origin": "synthetic",

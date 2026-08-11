@@ -18,9 +18,10 @@ aimed at this machine into a capture file — and now the **packet decoder**: th
 [two packet kinds](include/vrmAdapterMocopi/MotionPacket.h), with a
 [corpus](tests/corpus/README.md) behind them. What does not exist is anything
 that knows what the numbers *mean*: no joint map, no basis change, no frame
-assembly, no live-source bridge. One of those is blocked on a measurement rather
-than on a commit, and
-[the section below](#the-decoder-stops-where-the-measurement-does) says which.
+assembly, no live-source bridge. **None of those is blocked any more** — the
+handedness that gated the basis change was settled on 2026-08-12 and
+[the section below](#the-decoder-stops-where-the-measurement-does) shows the
+measurement.
 See [the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §6 and
 Milestone D for the implementation order, and
 [below](#transport-arrives-first-here-and-that-is-the-finding) for why this
@@ -85,17 +86,43 @@ assumed, because the rest pose holds the arms along ±X, a standing frame has th
 hanging down, and the component carrying that ~85° rotation is the one a rotation
 from +X to −Y must turn about.
 
-**Handedness is not.** A mirrored basis satisfies every measurement above,
-because a mirrored skeleton is geometrically identical — the two four-bone limbs
-off the root and the two off the top of the torso stay legs and arms either way.
-Settling it takes an asymmetric motion whose side is *labelled*, which is an
-operator's session and not a commit. Until then nothing here says left or right:
-the corpus describes arm bones by their side of the +X axis and by their bone id,
-and the naming stops short of x/y/z in the decoder's own structs. A layer that
-published a guess about which arm is which would be putting it in the one place
-hardest to notice later — which is why resolving it belongs to
-`MocopiCoordinateConverter`, one layer up, where the sibling adapter draws the
-same line for the same reason.
+**Handedness was the fourth, and it is settled as of 2026-08-12: the basis is
+right-handed and +X is the body's left.** It was the last thing open, because a
+mirrored basis satisfies every measurement above — a mirrored skeleton is
+geometrically identical, so the two four-bone limbs off the root and the two off
+the top of the torso stay legs and arms either way.
+
+What settled it was not a new recording. The plan expected one: an asymmetric
+motion whose side an operator could name. Two things were then measured, and the
+second made the first moot.
+
+- **The recorded sessions cannot label a side, and that is measured rather than
+  assumed.** All four are bilateral. The arm-raise session raises *both* arms —
+  the two hands rise 0.670 m and 0.650 m, tracking each other frame by frame —
+  and the head-turn session turns both ways. No amount of remembering helps.
+- **The answer was already in the repository.**
+  [`mocopi-mobile-bvh-default-v1`](../../../profiles/motion/mocopi-mobile-bvh-default-v1.yaml)
+  was measured on 2026-08-04 from *the same application's* BVH export and states
+  `handedness: right`, `+Y`, `+Z`, and a side for every joint. The only question
+  left was whether the application mirrors between the file it writes and the
+  datagrams it sends — and it does not: **all 27 rest offsets agree sign for
+  sign, worst component difference 4.4e-7 m**, once the centimetre/metre factor
+  is removed. The hip height is 95.9893 cm there and 0.95989 m here. Two
+  recordings a week apart, two transports sharing no code, one skeleton.
+
+So the joint identities transfer in `bnid` order: 11–14 left arm, 15–18 right,
+19–22 left leg, 23–26 right.
+
+**The decoder still names no bone**, and that has not changed: which canonical
+bone a `bnid` is belongs to `MocopiSkeletonMap`, and the basis change into a
+target's convention to `MocopiCoordinateConverter`, exactly where the sibling
+adapter draws the line. What changed is that both now have a measured input
+rather than an open question.
+
+One thing not to over-read: this says the two paths agree about the *rest pose*,
+not about the motion. That is the
+[cross-source comparison](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) of
+§9.6, on a single session observed both ways, and it is still owed.
 
 ## What this is, structurally
 
