@@ -188,22 +188,34 @@ def main() -> int:
     # An allowlist, not a denylist. A pattern hunting for forbidden names has to
     # anticipate the spelling of every library nobody has linked yet, and it
     # misses a multi-line call outright; naming the tokens that *are* permitted
-    # cannot. Unlike the sibling's, this list carries no platform library: the
-    # receiver lands last (adapter plan §6), and `ws2_32` / `Threads::Threads`
-    # are added here by the change that needs them rather than reserved now.
+    # cannot.
+    #
+    # `ws2_32` joined the list with the receiver, which is the arrangement the
+    # previous revision of this comment asked for: a platform library is argued
+    # for by the change that needs it rather than reserved in advance. It is not
+    # a dependency direction — WORKSPACE.md §2 constrains which *workspace*
+    # libraries an adapter may reach, and motion policy §8.2 puts the socket
+    # inside the adapter deliberately.
+    #
+    # `Threads::Threads` is still absent, and that is the half of this list
+    # worth reading. The sibling links it for a `DatagramQueue`'s mutex; this
+    # adapter has no queue, so adding the name "because a receiver usually needs
+    # one" would be the reservation this allowlist exists to catch.
     cmake = re.sub(r"#[^\n]*", "",
                    (source / "CMakeLists.txt").read_text(encoding="utf-8"))
     allowed_link = {
         "vrmadaptermocopi", "public", "private", "interface",
         "motioncore::motioncore", "motionruntime::motionruntime",
+        "ws2_32",
     }
     for arguments in re.findall(r"target_link_libraries\s*\((.*?)\)", cmake,
                                 re.DOTALL):
         for token in arguments.split():
             if token.lower() not in allowed_link:
                 errors.append(
-                    "vrmAdapterMocopi may link only motionCore and "
-                    f"motionRuntime; CMakeLists.txt links `{token}`")
+                    "vrmAdapterMocopi may link only motionCore, motionRuntime "
+                    "and the platform's transport; CMakeLists.txt links "
+                    f"`{token}`")
 
     # Refuse a static archive outright rather than inspecting one and finding
     # nothing. An archive records no imports, so this check would pass on any

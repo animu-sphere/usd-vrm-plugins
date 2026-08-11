@@ -9,13 +9,16 @@ UDP datagram → packet decode → joint mapping → coordinate conversion
              → frame assembly → HumanoidPose → LiveCaptureSource
 ```
 
-**Status: scaffold.** What exists is the library's identity and its two edges,
-the frozen diagnostic set, and the recorded-packet format that makes every layer
-above it testable without a socket. What does not exist is any decoder — no
-packet syntax, no joint map, no basis change, no receiver — and the reason is in
+**Status: transport, and nothing above it.** What exists is the library's
+identity and its two edges, the frozen diagnostic set, the recorded-packet
+format, and the **UDP receiver** that can turn a source aimed at this machine
+into one of those files. What does not exist is any decoder — no packet syntax,
+no joint map, no basis change, no frame assembly — and the reason is in
 [the next section](#the-format-is-not-documented-and-that-shapes-the-order).
 See [the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §6 and
-Milestone D for the implementation order.
+Milestone D for the implementation order, and
+[below](#transport-arrives-first-here-and-that-is-the-finding) for why this
+adapter's order is the reverse of its sibling's.
 
 ## The format is not documented, and that shapes the order
 
@@ -47,8 +50,9 @@ carries no decoder:
   That is a fixture this project may commit and CI may run, which is not true of
   a session recorded off a phone with somebody's motion in it.
 
-So the corpus arrives before the decoder, the capture format below arrives
-before the corpus, and this commit is the format.
+So the corpus arrives before the decoder, the capture format arrives before the
+corpus — and the **receiver** arrives before either, because a corpus that can
+only be obtained from a socket needs a socket.
 
 ## What this is, structurally
 
@@ -66,8 +70,18 @@ vrmAdapterMocopi -> motionCore, motionRuntime
 `tests/check_boundaries.py` is what makes that a fact rather than an intention.
 It fails on a plugin manifest anywhere in the tree, on a stage/registration/exec
 API in `include/` or `src/`, on a mention of the sibling adapter or a plugin
-bundle, on a `target_link_libraries` naming anything but the two permitted
-libraries, and on a binary whose imports leave the OpenUSD value-type layer.
+bundle, on a `target_link_libraries` naming anything outside its allowlist, and
+on a binary whose imports leave the OpenUSD value-type layer.
+
+That allowlist is the two libraries above plus `ws2_32`, which is not a
+dependency direction — WORKSPACE.md §2 constrains which *workspace* libraries an
+adapter may reach, and motion policy §8.2 puts the socket inside the adapter
+deliberately. It arrived with the receiver rather than being reserved for it,
+which is the arrangement the scaffold commit asked for. `Threads::Threads` is
+still absent and is the half worth reading: the sibling links it for a datagram
+queue's mutex, this adapter has no queue, and adding the name "because a
+receiver usually needs one" is exactly the reservation the allowlist exists to
+catch.
 
 It is also the *only* enforcement: `ost` 0.21.0 does not discover a library
 under `adapters/`, so the workspace graph gate validates none of these edges and
@@ -106,19 +120,45 @@ product-specific metadata is isolated as provenance, never as a new value type,
 so its output meets the **same** contract as the sibling's rather than a
 superset of it.
 
-## Transport arrives last
+## Transport arrives *first* here, and that is the finding
 
-The implementation order is deliberately backwards from the tempting one:
-recorded-packet decoder → semantic mapping → frame assembly → live-source bridge
-→ thin UDP receiver. Building the receiver first would make every subsequent
-test require a live device; building it last keeps the whole adapter verifiable
-in CI from committed fixtures, with no hardware and no socket.
+The sibling adapter built its receiver last, and this one was planned the same
+way: recorded-packet decoder → semantic mapping → frame assembly → live-source
+bridge → thin UDP receiver. That order exists so every test below the transport
+runs from committed bytes, and it was right there because the bytes existed —
+the VMC Protocol is published, so a corpus could be *written* before a socket
+was ever opened.
+
+This protocol is not published, so there is nothing to write a corpus from and
+exactly one way to obtain one without guessing: receive it from something that
+already speaks the format. The transport is therefore not the last layer that
+needs writing but the only one that *can* be, and the rule it appears to break
+is the rule that sent it here — "the fixture-driven tests stay deterministic" is
+a statement about the layers that decode, and this one decodes nothing.
+
+It costs nothing the original order was protecting, either.
+`vrmAdapterMocopi_udpReceiver` needs no device, no sender application and no
+fixture: it binds loopback on an OS-assigned port and sends itself a dozen bytes.
+It is its own CTest name so a runner that forbids sockets excludes a name rather
+than a claim, and it never touches port 12351 — a developer with a real device
+aimed at this machine does not lose it to the test suite.
+
+What the receiver may do is bounded by what it knows. It hands back every
+datagram exactly as it arrived, including the ones a decoder would refuse,
+because a receiver that filtered its own input would make a corpus a description
+of what the receiver let through rather than of what a source sent. It raises
+two of the nine frozen codes and no others: `VRM_MOCOPI_SOCKET_BIND_FAILED`,
+and `VRM_MOCOPI_DEVICE_UNAVAILABLE` against a silence threshold **the caller
+states** — how long a device may reasonably take to start is a property of the
+session, not of the socket, so there is no default and no threshold means no
+code.
 
 ## Recorded input
 
 `mocopi-packet-capture` v1 — spec on
-[`PacketCapture.h`](include/vrmAdapterMocopi/PacketCapture.h) — is what makes
-that order possible: the datagrams a session delivered, verbatim, with the
+[`PacketCapture.h`](include/vrmAdapterMocopi/PacketCapture.h) — is the other
+half of the arrangement above: the receiver turns a source into datagrams, and
+this is what keeps them. The datagrams a session delivered, verbatim, with the
 instant each arrived. Line-oriented text, so a fixture diffs; hex with an ASCII
 gutter, so a binary protocol's field tags are legible without a decoder ring:
 

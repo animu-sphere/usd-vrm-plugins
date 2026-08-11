@@ -25,8 +25,40 @@ target_compile_options(vrmAdapterMocopi_packetCapture_tests
 add_test(NAME vrmAdapterMocopi_packetCapture
          COMMAND vrmAdapterMocopi_packetCapture_tests)
 
+# The socket, on its own CTest name. It is the only test in this adapter that
+# binds one, so a runner that forbids sockets excludes a name rather than a
+# claim (roadmap §9.5) -- and the sibling adapter's two socket tests have
+# already run green in all three `kind: workspace` cells, so this is a measured
+# arrangement rather than a hopeful one. It never touches port 12351: every bind
+# here is loopback on an OS-assigned port, so a developer with a real source
+# aimed at this machine does not lose it to the test suite.
+add_executable(vrmAdapterMocopi_udpReceiver_tests test_udp_receiver.cpp)
+target_link_libraries(vrmAdapterMocopi_udpReceiver_tests
+    PRIVATE vrmAdapterMocopi::vrmAdapterMocopi)
+target_compile_options(vrmAdapterMocopi_udpReceiver_tests
+    PRIVATE ${_vrm_adapter_mocopi_assertions})
+add_test(NAME vrmAdapterMocopi_udpReceiver
+         COMMAND vrmAdapterMocopi_udpReceiver_tests)
+
+# The over-long datagram case, on its own name so that "could not check this
+# here" is a word in the ctest summary rather than a line nobody sees.
+#
+# It needs IPv6 to reach at all -- that is the only transport carrying more than
+# the IPv4 payload maximum the capture format bounds itself by -- and a runner
+# without IPv6 loopback cannot run it. Inside the suite above, that would have
+# been invisible: ctest hides a passing test's output, so a lane that checked
+# the claim and a lane that quietly declined to print the same line. With
+# SKIP_RETURN_CODE the summary says `Skipped`, and the question "was this
+# actually verified on POSIX" is answered by reading the log instead of by
+# re-running anything on a machine somebody has to find.
+add_test(NAME vrmAdapterMocopi_udpReceiverTruncation
+         COMMAND vrmAdapterMocopi_udpReceiver_tests truncation)
+set_tests_properties(vrmAdapterMocopi_udpReceiverTruncation PROPERTIES
+    SKIP_RETURN_CODE 77)
+
 set(_vrm_adapter_mocopi_tests
-    vrmAdapterMocopi_unit vrmAdapterMocopi_packetCapture)
+    vrmAdapterMocopi_unit vrmAdapterMocopi_packetCapture
+    vrmAdapterMocopi_udpReceiver vrmAdapterMocopi_udpReceiverTruncation)
 
 # Every committed capture parses and re-emits byte-identically, or every
 # decoder test downstream of it compares against a fixture that has drifted from
@@ -39,6 +71,12 @@ set(_vrm_adapter_mocopi_tests
 # has measured, so the first recorded session arrives before the first decoder
 # does -- and when it does it becomes a checked fixture by being committed,
 # rather than by somebody also remembering to add a test.
+#
+# What has changed since that was written is that the recording is now possible:
+# the receiver below turns a source aimed at this port into datagrams, and
+# `vrmAdapterMocopi_udpReceiver` checks that what comes off the socket is what a
+# capture keeps. What is still missing is a source to aim -- the vendor's `BVH
+# Sender` or a device -- which is an operator's action and not a commit's.
 set(_vrm_adapter_mocopi_corpus "${CMAKE_CURRENT_SOURCE_DIR}/corpus")
 if(EXISTS "${_vrm_adapter_mocopi_corpus}")
     add_test(NAME vrmAdapterMocopi_corpus

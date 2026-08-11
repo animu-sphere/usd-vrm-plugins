@@ -361,8 +361,12 @@ use `vrmAdapterVmc` internally (§2.1), and its output meets the *same* canonica
 contract — not a superset with vendor fields bolted on. Product-specific
 metadata is isolated as provenance, never as a new value type.
 
-The same transport-last implementation order applies: recorded decoder →
-mapping → live-source bridge → thin receiver.
+The transport-last implementation order **does not** apply here, and the reason
+is a property of this protocol rather than a preference: it is undocumented, so
+there are no bytes to write a corpus from and the socket is the only way to
+obtain any. The order is thin receiver → corpus → recorded decoder → mapping →
+live-source bridge, amended 2026-08-11 and argued in
+[Milestone D](#milestone-d--the-mocopi-native-live-adapter--v070).
 
 **Done when:** recorded fixtures yield a deterministic `HumanoidPose`; malformed
 and truncated packets are refused with diagnostics; coordinate, unit, and
@@ -965,6 +969,24 @@ capture device validated through a VMC relay
   The CLI's two tests landed the same way, taking the root suite from 41 names
   to 43: `vmc_record_inspect` needs no socket and `vmc_record_loopback` binds
   one, split for the same reason and excludable the same way.
+- ⬜ **Four transport defects, found in the mocopi receiver and present here
+  identically**
+  ([#112](https://github.com/animu-sphere/usd-vrm-plugins/issues/112),
+  2026-08-11). They were copied into that adapter along with
+  everything else, fixed there, and are outstanding in this one: an over-long
+  datagram handed back as whole on POSIX (`recvfrom` truncates silently and the
+  buffer is exactly the bound, so a short read is indistinguishable from a whole
+  datagram — the buffer needs one spare byte); a large *finite* timeout mapped
+  onto `-1`, which both `poll` and `WSAPoll` read as "wait forever"; a poll
+  wake-up whose `revents` is never inspected, which spins at 100% of a core
+  under the documented indefinite wait when only `POLLERR`/`POLLHUP` is set; and
+  idle accounting applied to a call that had just met a truncated datagram or an
+  ICMP report. The first is the one that matters most here too, and for the same
+  reason — this adapter is also a recorder, and a fixture containing a packet no
+  sender sent is worse than a missing one. Left out of the mocopi change on
+  purpose: a pull request that opens a socket in one adapter should not rewrite
+  another's transport, and these want their own change with the sibling's
+  corpus replayed against it.
 - ⬜ **Real senders, of deliberately different shape** — a mocopi relay, a
   general avatar tracker, and a VTuber or DCC application, plus the repository's
   own loopback sender as the deterministic control. The roadmap names categories
@@ -1086,10 +1108,16 @@ decoder · joint mapping · coordinate conversion · tracking state and confiden
 frame assembly · `LiveCaptureSource` bridge · thin UDP receiver · reconnection ·
 opt-in real-device test · **the cross-source comparison of §9.6**
 
-Same build order as Milestone A, for the same reason: recorded decoder → mapping
-→ live-source bridge → thin receiver. The transport arrives last so every layer
-below it is testable from committed bytes, and the device is needed for
-recording sessions rather than for running tests.
+**The build order was Milestone A's and is not** — amended 2026-08-11, after the
+receiver landed first. It was planned as recorded decoder → mapping →
+live-source bridge → thin receiver, with the transport last so every layer below
+it stayed testable from committed bytes. That order depends on a premise this
+protocol does not supply: the VMC Protocol is published, so its corpus could be
+*written*, and this one's cannot. What replaces it is **thin receiver → corpus →
+recorded decoder → mapping → live-source bridge**, and the reasoning is in the
+receiver's entry below rather than restated here. The device is still needed for
+recording sessions rather than for running tests, which is the part of the
+original order that was never about the transport.
 
 - ✅ **Scaffold, diagnostics, and the recorded packet format** (2026-08-09).
   `adapters/liveCapture/mocopi` is a plain static library with the two edges
@@ -1104,9 +1132,49 @@ recording sessions rather than for running tests.
   valid` with the directory present and absent — an adapter is still discovered
   as nothing (report 34), so that boundary script is the only enforcement there
   is.
-- ⬜ **The packet decoder, and the corpus that has to precede it.** Deliberately
-  not in the commit above, because of what the format's documentation turns out
-  to be.
+- ✅ **The UDP receiver, and the order it inverts** (2026-08-11). A thin
+  transport that decodes nothing: it hands back every datagram exactly as it
+  arrived, including the ones a decoder would refuse, because a receiver that
+  filtered its own input would make a corpus a description of what the receiver
+  let through. Eleven tests on their own CTest name
+  (`vrmAdapterMocopi_udpReceiver`), all of them on loopback and an OS-assigned
+  port so that a developer's real device does not lose 12351 to the suite.
+  The `ws2_32` link arrived with it rather than being reserved for it, and the
+  boundary check is measured rather than assumed: widening the allowlist by one
+  name left it still refusing `Threads::Threads`. The graph gate reports the
+  **same** `6 libraries, 9 library edge(s), valid` as before, as it does for
+  every change inside an adapter (report 34).
+
+  **This is where the milestone's build order inverts, and the inversion is the
+  finding rather than a shortcut.** Milestone A put the transport last so that
+  every layer below it ran from committed bytes, and that was right there
+  because the bytes existed: the VMC Protocol is published, so a corpus could be
+  *written* before a socket was opened. This protocol is not, so there is
+  nothing to write a corpus from and exactly one way to obtain one without
+  guessing — receive it. The transport is therefore not the last layer that
+  needs writing but the only one that *can* be, and the rule it appears to break
+  is the rule that sent it here: "the fixture-driven tests stay deterministic"
+  is a statement about the layers that decode, and this one decodes nothing. It
+  also costs nothing that order was protecting, since its own tests need no
+  device, no sender and no fixture.
+
+  Two of the nine frozen codes are raised here and no others, which is the first
+  time the freeze has been paid rather than merely asserted.
+  `VRM_MOCOPI_SOCKET_BIND_FAILED` is the one failure a session cannot continue
+  past. `VRM_MOCOPI_DEVICE_UNAVAILABLE` is the code the sibling's set does not
+  have, and this layer is the only one that can raise it — silence is invisible
+  above, where an absence of datagrams reads as an absence of work — but the
+  *threshold* is stated by the caller and has no default, because a device being
+  strapped on and a device switched off produce the same nothing. It is reported
+  once per episode and re-armed by the next datagram.
+- ⬜ **The corpus, and the packet decoder after it.** What is missing is now an
+  operator's action rather than a commit: a source aimed at this port, either
+  the vendor's `BVH Sender` pointed at a `.bvh` this repository wrote or a
+  device. The recording tool that turns one such session into a committed file
+  is the next code, and it decodes nothing either — the datagram reaches the
+  file before any decoder sees it, which is the rule Milestone B settled for
+  `vmc_record` and which matters more here, since the sessions worth recording
+  are precisely the ones nothing in this repository can yet read.
 
 **The wire format is not documented, and the evidence path is a sender rather
 than a device** (established 2026-08-09). The vendor states the transport and
