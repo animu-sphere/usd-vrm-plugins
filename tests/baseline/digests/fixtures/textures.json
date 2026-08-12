@@ -24,7 +24,7 @@
               0.0
             ],
             "metallic": 1.0,
-            "opacity": 1.0,
+            "opacity": 0.600000024,
             "roughness": 1.0
           }
         },
@@ -35,6 +35,12 @@
               "asset": "${BUNDLE}/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]",
               "resolved": true
             },
+            "scale": [
+              0.5,
+              0.25,
+              0.75,
+              0.600000024
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/Skin/stReader.result"

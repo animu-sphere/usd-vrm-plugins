@@ -46,11 +46,11 @@ def Xform "Asset" (
             def Shader "Surface"
             {
                 uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (1, 1, 1)
+                color3f inputs:diffuseColor = (0.5, 0.25, 0.75)
                 color3f inputs:diffuseColor.connect = </Asset/mtl/Skin/baseColorTexture.outputs:rgb>
                 color3f inputs:emissiveColor = (0, 0, 0)
                 float inputs:metallic = 1
-                float inputs:opacity = 1
+                float inputs:opacity = 0.6
                 float inputs:roughness = 1
                 token outputs:surface
             }
@@ -66,6 +66,7 @@ def Xform "Asset" (
             {
                 uniform token info:id = "UsdUVTexture"
                 asset inputs:file = @${BUNDLE}/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]@
+                float4 inputs:scale = (0.5, 0.25, 0.75, 0.6)
                 token inputs:sourceColorSpace = "sRGB"
                 float2 inputs:st.connect = </Asset/mtl/Skin/stReader.outputs:result>
                 token inputs:wrapS = "repeat"
