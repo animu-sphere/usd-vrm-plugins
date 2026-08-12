@@ -541,7 +541,7 @@ def build_textures():
             "name": "Skin",
             "alphaMode": "OPAQUE",
             "pbrMetallicRoughness": {
-                "baseColorFactor": [1.0, 1.0, 1.0, 1.0],
+                "baseColorFactor": [0.5, 0.25, 0.75, 0.6],
                 "baseColorTexture": {"index": 0},
             },
             "extensions": {"VRMC_materials_mtoon": {

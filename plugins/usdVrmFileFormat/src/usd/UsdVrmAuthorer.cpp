@@ -326,6 +326,11 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
 
         if (vm.baseColorTex.present) {
             UsdShadeShader t = makeTexture(vm.baseColorTex, "baseColorTexture", true);
+            // glTF defines base color as factor * texture. UsdUVTexture's
+            // scale input preserves that relation without an extra shader node.
+            t.CreateInput(TfToken("scale"), SdfValueTypeNames->Float4)
+                .Set(GfVec4f(vm.baseColor[0], vm.baseColor[1], vm.baseColor[2],
+                             vm.opacity));
             // Unlit routes base color to emissive (flat); lit routes to diffuse.
             shader.GetInput(TfToken(unlit ? "emissiveColor" : "diffuseColor"))
                 .ConnectToSource(t.GetOutput(TfToken("rgb")));

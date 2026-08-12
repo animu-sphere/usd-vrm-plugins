@@ -349,6 +349,7 @@ def check_textures():
     assert tex.GetAttribute("inputs:sourceColorSpace").Get() == "sRGB"
     assert tex.GetAttribute("inputs:wrapS").Get() == "repeat"
     assert tex.GetAttribute("inputs:wrapT").Get() == "clamp"
+    assert tex.GetAttribute("inputs:scale").Get() == Gf.Vec4f(0.5, 0.25, 0.75, 0.6)
 
     # diffuseColor <- texture.rgb, and st <- stReader.result.
     conn = surf.GetAttribute("inputs:diffuseColor").GetConnections()
