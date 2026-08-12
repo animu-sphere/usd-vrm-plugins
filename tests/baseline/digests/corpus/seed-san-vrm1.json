@@ -142,6 +142,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/arm_mat/baseColorTexture_xf.result"
@@ -200,6 +206,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/arm_plastic/baseColorTexture_xf.result"
@@ -258,6 +270,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/armgear_plastic/baseColorTexture_xf.result"
@@ -319,6 +337,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/backpack_metal/baseColorTexture_xf.result"
@@ -424,6 +448,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/backpack_nm/baseColorTexture_xf.result"
@@ -529,6 +559,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/backpack_plastic/baseColorTexture_xf.result"
@@ -631,6 +667,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/body_bake/baseColorTexture_xf.result"
@@ -689,6 +731,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/body_nm/baseColorTexture_xf.result"
@@ -747,6 +795,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/eye/baseColorTexture_xf.result"
@@ -807,6 +861,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/eye_trans/baseColorTexture_xf.result"
@@ -887,6 +947,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/412ffa7124badd7c.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/green_emit/baseColorTexture_xf.result"
@@ -945,6 +1011,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/hair/baseColorTexture_xf.result"
@@ -1003,6 +1075,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/huku_bake/baseColorTexture_xf.result"
@@ -1061,6 +1139,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/robo_face/baseColorTexture_xf.result"
@@ -1119,6 +1203,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/wear_metal/baseColorTexture_xf.result"

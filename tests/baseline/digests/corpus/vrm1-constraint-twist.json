@@ -95,6 +95,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/f97432cbb6e6aad6.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/Body_00_SKIN/stReader.result"
@@ -136,6 +142,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/19dc728dbbc9e62f.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/Bottoms_01_CLOTH/stReader.result"
@@ -177,6 +189,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/d3832b613ce27fb7.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/EyeHighlight_00_EYE/stReader.result"
@@ -218,6 +236,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/5d47600f8dca5484.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/EyeIris_00_EYE/stReader.result"
@@ -259,6 +283,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/79cf633bf833ca7c.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/EyeWhite_00_EYE/stReader.result"
@@ -300,6 +330,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/c2d207c1a3dd8ac7.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/FaceBrow_00_FACE/stReader.result"
@@ -341,6 +377,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/1973a3a5dc0212ba.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/FaceEyeline_00_FACE/stReader.result"
@@ -382,6 +424,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/be267f504a0c306c.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/FaceMouth_00_FACE/stReader.result"
@@ -423,6 +471,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/71cf5f96608d7a4a.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/Face_00_SKIN/stReader.result"
@@ -464,6 +518,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/293a6685ff331da6.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/HairBack_00_HAIR/stReader.result"
@@ -505,6 +565,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/22cd608c6a94e609.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/Hair_00_HAIR/stReader.result"
@@ -546,6 +612,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/b5d68c995fdd9391.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/Shoes_01_CLOTH/stReader.result"
@@ -587,6 +659,12 @@
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/06518c61692d4ba4.png]",
               "resolved": true
             },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
             "sourceColorSpace": "sRGB",
             "st": {
               "connectedTo": "/Asset/mtl/Tops_01_CLOTH/stReader.result"
