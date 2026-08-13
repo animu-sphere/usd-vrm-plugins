@@ -6,13 +6,28 @@
       "resolved": true
     },
     {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
+      "attr": "/Asset/mtl/hair/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
       "attr": "/Asset/mtl/huku_bake/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "attr": "/Asset/mtl/huku_bake/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
       "attr": "/Asset/mtl/body_bake/preview/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+      "attr": "/Asset/mtl/body_bake/mtlx/baseColorImage.inputs:file",
       "resolved": true
     },
     {
@@ -22,7 +37,17 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+      "attr": "/Asset/mtl/eye/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
       "attr": "/Asset/mtl/eye_trans/preview/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+      "attr": "/Asset/mtl/eye_trans/mtlx/baseColorImage.inputs:file",
       "resolved": true
     },
     {
@@ -32,7 +57,17 @@
     },
     {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+      "attr": "/Asset/mtl/arm_mat/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
       "attr": "/Asset/mtl/arm_plastic/preview/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+      "attr": "/Asset/mtl/arm_plastic/mtlx/baseColorImage.inputs:file",
       "resolved": true
     },
     {
@@ -46,6 +81,11 @@
       "resolved": true
     },
     {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+      "attr": "/Asset/mtl/body_nm/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
       "attr": "/Asset/mtl/wear_metal/preview/baseColorTexture.inputs:file",
       "resolved": true
@@ -56,8 +96,18 @@
       "resolved": true
     },
     {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+      "attr": "/Asset/mtl/armgear_plastic/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
       "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
       "attr": "/Asset/mtl/robo_face/preview/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
+      "attr": "/Asset/mtl/robo_face/mtlx/baseColorImage.inputs:file",
       "resolved": true
     },
     {
@@ -129,6 +179,11 @@
     },
     "/Asset/mtl/arm_mat": {
       "graphs": {
+        "/Asset/mtl/arm_mat/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/arm_mat/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/arm_mat/preview": {
           "outputs": {
             "surface": "/Asset/mtl/arm_mat/preview/surface.surface"
@@ -136,6 +191,103 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/arm_mat/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/arm_mat/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/arm_mat/mtlx/baseColorRgb.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
         "/Asset/mtl/arm_mat/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -198,11 +350,17 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/arm_mat/mtlx.surface",
         "surface": "/Asset/mtl/arm_mat/preview.surface"
       }
     },
     "/Asset/mtl/arm_plastic": {
       "graphs": {
+        "/Asset/mtl/arm_plastic/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/arm_plastic/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/arm_plastic/preview": {
           "outputs": {
             "surface": "/Asset/mtl/arm_plastic/preview/surface.surface"
@@ -210,6 +368,103 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/arm_plastic/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/arm_plastic/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/arm_plastic/mtlx/baseColorRgb.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
         "/Asset/mtl/arm_plastic/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -272,11 +527,17 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/arm_plastic/mtlx.surface",
         "surface": "/Asset/mtl/arm_plastic/preview.surface"
       }
     },
     "/Asset/mtl/armgear_plastic": {
       "graphs": {
+        "/Asset/mtl/armgear_plastic/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/armgear_plastic/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/armgear_plastic/preview": {
           "outputs": {
             "surface": "/Asset/mtl/armgear_plastic/preview/surface.surface"
@@ -284,6 +545,103 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/armgear_plastic/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/armgear_plastic/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/armgear_plastic/mtlx/baseColorRgb.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
         "/Asset/mtl/armgear_plastic/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -346,6 +704,7 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/armgear_plastic/mtlx.surface",
         "surface": "/Asset/mtl/armgear_plastic/preview.surface"
       }
     },
@@ -714,6 +1073,11 @@
     },
     "/Asset/mtl/body_bake": {
       "graphs": {
+        "/Asset/mtl/body_bake/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/body_bake/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/body_bake/preview": {
           "outputs": {
             "surface": "/Asset/mtl/body_bake/preview/surface.surface"
@@ -721,6 +1085,103 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/body_bake/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/body_bake/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/body_bake/mtlx/baseColorRgb.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
         "/Asset/mtl/body_bake/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -783,11 +1244,17 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/body_bake/mtlx.surface",
         "surface": "/Asset/mtl/body_bake/preview.surface"
       }
     },
     "/Asset/mtl/body_nm": {
       "graphs": {
+        "/Asset/mtl/body_nm/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/body_nm/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/body_nm/preview": {
           "outputs": {
             "surface": "/Asset/mtl/body_nm/preview/surface.surface"
@@ -795,6 +1262,103 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/body_nm/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/body_nm/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/body_nm/mtlx/baseColorRgb.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
         "/Asset/mtl/body_nm/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -857,11 +1421,17 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/body_nm/mtlx.surface",
         "surface": "/Asset/mtl/body_nm/preview.surface"
       }
     },
     "/Asset/mtl/eye": {
       "graphs": {
+        "/Asset/mtl/eye/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/eye/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/eye/preview": {
           "outputs": {
             "surface": "/Asset/mtl/eye/preview/surface.surface"
@@ -869,6 +1439,103 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/eye/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/eye/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/eye/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/eye/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/eye/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/eye/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/eye/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/eye/mtlx/baseColorRgb.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
         "/Asset/mtl/eye/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -931,11 +1598,17 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/eye/mtlx.surface",
         "surface": "/Asset/mtl/eye/preview.surface"
       }
     },
     "/Asset/mtl/eye_trans": {
       "graphs": {
+        "/Asset/mtl/eye_trans/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/eye_trans/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/eye_trans/preview": {
           "outputs": {
             "surface": "/Asset/mtl/eye_trans/preview/surface.surface"
@@ -943,6 +1616,105 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/eye_trans/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/eye_trans/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/eye_trans/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/eye_trans/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/eye_trans/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/eye_trans/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/eye_trans/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/baseColorSplit.outa"
+            },
+            "alpha_mode": 2,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/eye_trans/mtlx/baseColorRgb.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
         "/Asset/mtl/eye_trans/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -1007,6 +1779,7 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/eye_trans/mtlx.surface",
         "surface": "/Asset/mtl/eye_trans/preview.surface"
       }
     },
@@ -1118,6 +1891,11 @@
     },
     "/Asset/mtl/hair": {
       "graphs": {
+        "/Asset/mtl/hair/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/hair/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/hair/preview": {
           "outputs": {
             "surface": "/Asset/mtl/hair/preview/surface.surface"
@@ -1125,6 +1903,103 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/hair/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/hair/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/hair/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/hair/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/hair/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/hair/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/hair/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/hair/mtlx/baseColorRgb.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
         "/Asset/mtl/hair/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -1187,11 +2062,17 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/hair/mtlx.surface",
         "surface": "/Asset/mtl/hair/preview.surface"
       }
     },
     "/Asset/mtl/huku_bake": {
       "graphs": {
+        "/Asset/mtl/huku_bake/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/huku_bake/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/huku_bake/preview": {
           "outputs": {
             "surface": "/Asset/mtl/huku_bake/preview/surface.surface"
@@ -1199,6 +2080,103 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/huku_bake/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/huku_bake/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/huku_bake/mtlx/baseColorRgb.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
         "/Asset/mtl/huku_bake/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -1261,11 +2239,17 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/huku_bake/mtlx.surface",
         "surface": "/Asset/mtl/huku_bake/preview.surface"
       }
     },
     "/Asset/mtl/robo_face": {
       "graphs": {
+        "/Asset/mtl/robo_face/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/robo_face/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/robo_face/preview": {
           "outputs": {
             "surface": "/Asset/mtl/robo_face/preview/surface.surface"
@@ -1273,6 +2257,103 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/robo_face/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "periodic"
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -0.0,
+              -0.0
+            ],
+            "rotate": -0.0,
+            "scale": [
+              1.0,
+              1.0
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/robo_face/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/robo_face/mtlx/baseColorRgb.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
         "/Asset/mtl/robo_face/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
@@ -1335,6 +2416,7 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/robo_face/mtlx.surface",
         "surface": "/Asset/mtl/robo_face/preview.surface"
       }
     },
@@ -2004,6 +3086,9 @@
       "type": "Scope"
     },
     {
+      "appliedSchemas": [
+        "MaterialXConfigAPI"
+      ],
       "path": "/Asset/mtl/hair",
       "type": "Material"
     },
@@ -2040,6 +3125,62 @@
       "type": "Shader"
     },
     {
+      "path": "/Asset/mtl/hair/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/hair/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialXConfigAPI"
+      ],
       "path": "/Asset/mtl/huku_bake",
       "type": "Material"
     },
@@ -2076,6 +3217,62 @@
       "type": "Shader"
     },
     {
+      "path": "/Asset/mtl/huku_bake/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/huku_bake/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialXConfigAPI"
+      ],
       "path": "/Asset/mtl/body_bake",
       "type": "Material"
     },
@@ -2112,6 +3309,62 @@
       "type": "Shader"
     },
     {
+      "path": "/Asset/mtl/body_bake/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_bake/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialXConfigAPI"
+      ],
       "path": "/Asset/mtl/eye",
       "type": "Material"
     },
@@ -2148,6 +3401,62 @@
       "type": "Shader"
     },
     {
+      "path": "/Asset/mtl/eye/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialXConfigAPI"
+      ],
       "path": "/Asset/mtl/eye_trans",
       "type": "Material"
     },
@@ -2184,6 +3493,62 @@
       "type": "Shader"
     },
     {
+      "path": "/Asset/mtl/eye_trans/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/eye_trans/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialXConfigAPI"
+      ],
       "path": "/Asset/mtl/arm_mat",
       "type": "Material"
     },
@@ -2220,6 +3585,62 @@
       "type": "Shader"
     },
     {
+      "path": "/Asset/mtl/arm_mat/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_mat/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialXConfigAPI"
+      ],
       "path": "/Asset/mtl/arm_plastic",
       "type": "Material"
     },
@@ -2253,6 +3674,59 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/arm_plastic/preview/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/arm_plastic/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/arm_plastic/mtlx/baseColorRgb",
       "type": "Shader"
     },
     {
@@ -2292,6 +3766,9 @@
       "type": "Shader"
     },
     {
+      "appliedSchemas": [
+        "MaterialXConfigAPI"
+      ],
       "path": "/Asset/mtl/body_nm",
       "type": "Material"
     },
@@ -2325,6 +3802,59 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/body_nm/preview/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/body_nm/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/body_nm/mtlx/baseColorRgb",
       "type": "Shader"
     },
     {
@@ -2364,6 +3894,9 @@
       "type": "Shader"
     },
     {
+      "appliedSchemas": [
+        "MaterialXConfigAPI"
+      ],
       "path": "/Asset/mtl/armgear_plastic",
       "type": "Material"
     },
@@ -2400,6 +3933,62 @@
       "type": "Shader"
     },
     {
+      "path": "/Asset/mtl/armgear_plastic/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/armgear_plastic/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialXConfigAPI"
+      ],
       "path": "/Asset/mtl/robo_face",
       "type": "Material"
     },
@@ -2433,6 +4022,59 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/robo_face/preview/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/robo_face/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/robo_face/mtlx/baseColorRgb",
       "type": "Shader"
     },
     {

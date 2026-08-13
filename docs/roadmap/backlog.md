@@ -183,7 +183,14 @@ redesign.
   `/preview` `UsdShadeNodeGraph`, terminals run material → graph → shader, and
   the baseline diff was verified to be a path move and nothing else
   ([material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7.1)
-- ⬜ **Step 2** — MaterialX realization below `/mtlx`, unlit first (§7.2)
+- 🟡 **Step 2 — unlit shipped 2026-08-14.** Unlit materials carry a `/mtlx`
+  `UsdShadeNodeGraph` on `outputs:mtlx:surface`, which is the terminal a
+  MaterialX-aware renderer draws; the baseline diff is additive and `/preview`
+  is untouched (§7.2). The node choice is `gltf_pbr` with the lit response
+  zeroed, because MaterialX's direct unlit terminals do not render on the pinned
+  runtime — §5.2.1 records what was measured and when to revisit it
+- ⬜ **Step 2 (lit)** — the remaining half: glTF PBR materials through the same
+  `gltf_pbr` terminal, so every material carries both realizations (§7.2)
 - ⬜ **Step 3** — `VrmMaterialAPI` / `VrmMToonAPI` / `VrmTextureInfoAPI` as the
   canonical semantics both generators consume (§7.3)
 - ⬜ Renderer adapter, outline, conformance images, transparent-sorting behavior
