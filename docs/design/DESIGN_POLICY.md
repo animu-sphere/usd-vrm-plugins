@@ -160,6 +160,13 @@ The standard prim structure is:
 
 ### `/Asset/mtl`
 
+> **Refined** by
+> [MATERIAL_ARCHITECTURE_POLICY.md](MATERIAL_ARCHITECTURE_POLICY.md) §4
+> (2026-08-13): texture and shader nodes move below per-realization
+> `UsdShadeNodeGraph` children (`/preview`, `/mtlx`), leaving the material prim
+> to carry identity, binding, and canonical semantics. Where the two disagree
+> about the `/Asset/mtl` structure, the material policy wins.
+
 - Material prim
 - Texture nodes
 - Portable approximation
@@ -337,6 +344,13 @@ behavior.
 ---
 
 ## 9. MToon policy
+
+> **Extended** by
+> [MATERIAL_ARCHITECTURE_POLICY.md](MATERIAL_ARCHITECTURE_POLICY.md)
+> (2026-08-13). The three layers below still hold and are the foundation that
+> policy builds on; it fixes the USD hierarchy each layer occupies, the schema
+> surface for Layer 1, and the rule that one realization is never generated from
+> another. Where the two documents disagree, the material policy wins.
 
 MToon is separated into three layers:
 
@@ -918,7 +932,16 @@ Provide, as far as feasible:
 
 ### P5: MToon realization
 
-**Work**
+> **Restructured 2026-08-13.** P5's detail lives in
+> [MATERIAL_ARCHITECTURE_POLICY.md](MATERIAL_ARCHITECTURE_POLICY.md) §7, which
+> orders it as three steps — PreviewSurface hierarchy restructure, MaterialX
+> realization, then the VRM material API schemas. The work list below is the
+> pre-material-policy plan, kept for rationale; it is no longer the plan of
+> record. In particular the schemas come **last**, so the first rendering
+> improvements are not coupled to the schema redesign. The three steps are the
+> internal order of P5 and **not** a fourth phase sequence.
+
+**Work** *(superseded — see material policy §7)*
 
 - `VrmMToonAPI`
 - Source-semantics contract
@@ -928,7 +951,7 @@ Provide, as far as feasible:
 - Conformance images
 - Transparent-sorting behavior
 
-**Done when**
+**Done when** *(restated by material policy §7.1–§7.3)*
 
 - Source parameters are not lost
 - A portable fallback exists
