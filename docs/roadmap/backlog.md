@@ -168,14 +168,22 @@ Always written "Motion Phase X", never a bare "Phase X".
 
 *Goal: source parameters preserved; a portable fallback exists; at least one
 renderer reproduces the main MToon look; an image regression test exists.*
-(design policy §9, §17-P5)
+(design policy §9, §17-P5; the plan of record is
+[material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7)
 
 Today: source data is preserved, `UsdPreviewSurface` is the fallback, and
 `vrm:mtoon:raw` carries the raw block. Renderer-specific realization is **not
 implemented**.
 
-- ⬜ `VrmMToonAPI` + source-semantics contract
-- ⬜ MaterialX / custom-render-context approximation
+The three steps below are P5's internal order, not a phase sequence. The schemas
+come **last** so the first rendering improvements are not coupled to the schema
+redesign.
+
+- ⬜ **Step 1** — restructure the PreviewSurface network below a `/preview`
+  `UsdShadeNodeGraph` ([material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7.1)
+- ⬜ **Step 2** — MaterialX realization below `/mtlx`, unlit first (§7.2)
+- ⬜ **Step 3** — `VrmMaterialAPI` / `VrmMToonAPI` / `VrmTextureInfoAPI` as the
+  canonical semantics both generators consume (§7.3)
 - ⬜ Renderer adapter, outline, conformance images, transparent-sorting behavior
 
 ## Product P6 — round-trip / exporter research

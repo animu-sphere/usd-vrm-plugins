@@ -16,7 +16,7 @@ contract wins — structural changes go there first, in their own PR.
 | [reference/](reference/) | Factual contracts: what is supported, on what. | [CAPABILITY_MATRIX.md](reference/CAPABILITY_MATRIX.md) |
 | [roadmap/](roadmap/) | What is planned next (only incomplete work). | [README.md](roadmap/README.md) |
 | [releases/](releases/) | Immutable per-version release records. | [README.md](releases/README.md) |
-| [design/](design/) | Why significant decisions were made. | [DESIGN_POLICY.md](design/DESIGN_POLICY.md) |
+| [design/](design/) | Why significant decisions were made. | [DESIGN_POLICY.md](design/DESIGN_POLICY.md) · [MATERIAL_ARCHITECTURE_POLICY.md](design/MATERIAL_ARCHITECTURE_POLICY.md) |
 | [reports/](reports/) | Evidence from real runs: the `ost` dogfooding series, OpenUSD release audits, and the delivery log. | [README.md](reports/README.md) |
 | [contributing/](contributing/) | Contributor procedures. | [RELEASE_NOTES_TEMPLATE.md](contributing/RELEASE_NOTES_TEMPLATE.md) |
 
@@ -30,6 +30,12 @@ contract wins — structural changes go there first, in their own PR.
   vendor-neutral motion core, retargeting, and the OpenExec runtime. Source of
   truth for **Motion Phase A–H**. It extends DESIGN_POLICY §10 and restructures
   §17-P4; where the two overlap, the motion policy wins.
+- [design/MATERIAL_ARCHITECTURE_POLICY.md](design/MATERIAL_ARCHITECTURE_POLICY.md)
+  is the policy for the **look** side — the `/Asset/mtl` hierarchy, the split
+  between VRM source semantics and render realizations, and the schema surface
+  that carries MToon. It extends DESIGN_POLICY §9 and restructures §17-P5; where
+  the two overlap, the material policy wins. It adds **no** phase sequence: its
+  three steps are the internal order of Product P5.
 - [architecture/WORKSPACE.md](architecture/WORKSPACE.md) is the binding workspace
   contract — the source of truth for bundle identities, dependency directions,
   artifact naming, and **Workspace Phase 0–8**.
