@@ -2,7 +2,7 @@
   "assets": [
     {
       "assetPath": "${BUNDLE}/tests/fixtures/textures.vrm[images/0198c0f73fbeb889.png]",
-      "attr": "/Asset/mtl/Skin/baseColorTexture.inputs:file",
+      "attr": "/Asset/mtl/Skin/preview/baseColorTexture.inputs:file",
       "resolved": true
     }
   ],
@@ -11,24 +11,15 @@
   "framesPerSecond": 24.0,
   "materials": {
     "/Asset/mtl/Skin": {
-      "shaders": {
-        "/Asset/mtl/Skin/Surface": {
-          "id": "UsdPreviewSurface",
-          "inputs": {
-            "diffuseColor": {
-              "connectedTo": "/Asset/mtl/Skin/baseColorTexture.rgb"
-            },
-            "emissiveColor": [
-              0.0,
-              0.0,
-              0.0
-            ],
-            "metallic": 1.0,
-            "opacity": 0.600000024,
-            "roughness": 1.0
+      "graphs": {
+        "/Asset/mtl/Skin/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/Skin/preview/surface.surface"
           }
-        },
-        "/Asset/mtl/Skin/baseColorTexture": {
+        }
+      },
+      "shaders": {
+        "/Asset/mtl/Skin/preview/baseColorTexture": {
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
@@ -43,18 +34,37 @@
             ],
             "sourceColorSpace": "sRGB",
             "st": {
-              "connectedTo": "/Asset/mtl/Skin/stReader.result"
+              "connectedTo": "/Asset/mtl/Skin/preview/stReader.result"
             },
             "wrapS": "repeat",
             "wrapT": "clamp"
           }
         },
-        "/Asset/mtl/Skin/stReader": {
+        "/Asset/mtl/Skin/preview/stReader": {
           "id": "UsdPrimvarReader_float2",
           "inputs": {
             "varname": "st"
           }
+        },
+        "/Asset/mtl/Skin/preview/surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": {
+              "connectedTo": "/Asset/mtl/Skin/preview/baseColorTexture.rgb"
+            },
+            "emissiveColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "metallic": 1.0,
+            "opacity": 0.600000024,
+            "roughness": 1.0
+          }
         }
+      },
+      "terminals": {
+        "surface": "/Asset/mtl/Skin/preview.surface"
       }
     }
   },
@@ -91,24 +101,28 @@
       "type": "Material"
     },
     {
+      "path": "/Asset/mtl/Skin/preview",
+      "type": "NodeGraph"
+    },
+    {
       "appliedSchemas": [
         "NodeDefAPI"
       ],
-      "path": "/Asset/mtl/Skin/Surface",
+      "path": "/Asset/mtl/Skin/preview/surface",
       "type": "Shader"
     },
     {
       "appliedSchemas": [
         "NodeDefAPI"
       ],
-      "path": "/Asset/mtl/Skin/stReader",
+      "path": "/Asset/mtl/Skin/preview/stReader",
       "type": "Shader"
     },
     {
       "appliedSchemas": [
         "NodeDefAPI"
       ],
-      "path": "/Asset/mtl/Skin/baseColorTexture",
+      "path": "/Asset/mtl/Skin/preview/baseColorTexture",
       "type": "Shader"
     },
     {

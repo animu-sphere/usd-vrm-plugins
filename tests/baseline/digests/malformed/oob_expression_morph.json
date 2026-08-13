@@ -5,8 +5,15 @@
   "framesPerSecond": 24.0,
   "materials": {
     "/Asset/mtl/Face_Mat": {
+      "graphs": {
+        "/Asset/mtl/Face_Mat/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/Face_Mat/preview/surface.surface"
+          }
+        }
+      },
       "shaders": {
-        "/Asset/mtl/Face_Mat/Surface": {
+        "/Asset/mtl/Face_Mat/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
             "diffuseColor": [
@@ -24,6 +31,9 @@
             "roughness": 1.0
           }
         }
+      },
+      "terminals": {
+        "surface": "/Asset/mtl/Face_Mat/preview.surface"
       }
     }
   },
@@ -68,10 +78,14 @@
       "type": "Material"
     },
     {
+      "path": "/Asset/mtl/Face_Mat/preview",
+      "type": "NodeGraph"
+    },
+    {
       "appliedSchemas": [
         "NodeDefAPI"
       ],
-      "path": "/Asset/mtl/Face_Mat/Surface",
+      "path": "/Asset/mtl/Face_Mat/preview/surface",
       "type": "Shader"
     },
     {

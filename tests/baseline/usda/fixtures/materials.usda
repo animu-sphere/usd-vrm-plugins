@@ -37,17 +37,22 @@ def Xform "Asset" (
             }
         )
         {
-            token outputs:surface.connect = </Asset/mtl/Glass/Surface.outputs:surface>
+            token outputs:surface.connect = </Asset/mtl/Glass/preview.outputs:surface>
 
-            def Shader "Surface"
+            def NodeGraph "preview"
             {
-                uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (0.2, 0.4, 0.9)
-                color3f inputs:emissiveColor = (0, 0, 0)
-                float inputs:metallic = 1
-                float inputs:opacity = 0.3
-                float inputs:roughness = 1
-                token outputs:surface
+                token outputs:surface.connect = </Asset/mtl/Glass/preview/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.2, 0.4, 0.9)
+                    color3f inputs:emissiveColor = (0, 0, 0)
+                    float inputs:metallic = 1
+                    float inputs:opacity = 0.3
+                    float inputs:roughness = 1
+                    token outputs:surface
+                }
             }
         }
 
@@ -59,18 +64,23 @@ def Xform "Asset" (
             }
         )
         {
-            token outputs:surface.connect = </Asset/mtl/Leaf/Surface.outputs:surface>
+            token outputs:surface.connect = </Asset/mtl/Leaf/preview.outputs:surface>
 
-            def Shader "Surface"
+            def NodeGraph "preview"
             {
-                uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (0.1, 0.8, 0.2)
-                color3f inputs:emissiveColor = (0, 0, 0)
-                float inputs:metallic = 1
-                float inputs:opacity = 1
-                float inputs:opacityThreshold = 0.3
-                float inputs:roughness = 1
-                token outputs:surface
+                token outputs:surface.connect = </Asset/mtl/Leaf/preview/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.1, 0.8, 0.2)
+                    color3f inputs:emissiveColor = (0, 0, 0)
+                    float inputs:metallic = 1
+                    float inputs:opacity = 1
+                    float inputs:opacityThreshold = 0.3
+                    float inputs:roughness = 1
+                    token outputs:surface
+                }
             }
         }
 
@@ -82,17 +92,22 @@ def Xform "Asset" (
             }
         )
         {
-            token outputs:surface.connect = </Asset/mtl/Unlit/Surface.outputs:surface>
+            token outputs:surface.connect = </Asset/mtl/Unlit/preview.outputs:surface>
 
-            def Shader "Surface"
+            def NodeGraph "preview"
             {
-                uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (0, 0, 0)
-                color3f inputs:emissiveColor = (0.9, 0.1, 0.1)
-                float inputs:metallic = 0
-                float inputs:opacity = 1
-                float inputs:roughness = 1
-                token outputs:surface
+                token outputs:surface.connect = </Asset/mtl/Unlit/preview/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0, 0, 0)
+                    color3f inputs:emissiveColor = (0.9, 0.1, 0.1)
+                    float inputs:metallic = 0
+                    float inputs:opacity = 1
+                    float inputs:roughness = 1
+                    token outputs:surface
+                }
             }
         }
     }
