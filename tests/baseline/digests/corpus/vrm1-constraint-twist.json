@@ -166,6 +166,12 @@
         "/Asset/mtl/Body_00_SKIN/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/f97432cbb6e6aad6.png]",
               "resolved": true
@@ -303,6 +309,12 @@
         "/Asset/mtl/Bottoms_01_CLOTH/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/19dc728dbbc9e62f.png]",
               "resolved": true
@@ -440,6 +452,12 @@
         "/Asset/mtl/EyeHighlight_00_EYE/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/d3832b613ce27fb7.png]",
               "resolved": true
@@ -577,6 +595,12 @@
         "/Asset/mtl/EyeIris_00_EYE/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/5d47600f8dca5484.png]",
               "resolved": true
@@ -714,6 +738,12 @@
         "/Asset/mtl/EyeWhite_00_EYE/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/79cf633bf833ca7c.png]",
               "resolved": true
@@ -851,6 +881,12 @@
         "/Asset/mtl/FaceBrow_00_FACE/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/c2d207c1a3dd8ac7.png]",
               "resolved": true
@@ -988,6 +1024,12 @@
         "/Asset/mtl/FaceEyeline_00_FACE/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/1973a3a5dc0212ba.png]",
               "resolved": true
@@ -1125,6 +1167,12 @@
         "/Asset/mtl/FaceMouth_00_FACE/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/be267f504a0c306c.png]",
               "resolved": true
@@ -1262,6 +1310,12 @@
         "/Asset/mtl/Face_00_SKIN/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/71cf5f96608d7a4a.png]",
               "resolved": true
@@ -1399,6 +1453,12 @@
         "/Asset/mtl/HairBack_00_HAIR/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/293a6685ff331da6.png]",
               "resolved": true
@@ -1536,6 +1596,12 @@
         "/Asset/mtl/Hair_00_HAIR/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/22cd608c6a94e609.png]",
               "resolved": true
@@ -1673,6 +1739,12 @@
         "/Asset/mtl/Shoes_01_CLOTH/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/b5d68c995fdd9391.png]",
               "resolved": true
@@ -1810,6 +1882,12 @@
         "/Asset/mtl/Tops_01_CLOTH/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/constraint-twist/VRM1_Constraint_Twist_Sample.vrm[images/06518c61692d4ba4.png]",
               "resolved": true

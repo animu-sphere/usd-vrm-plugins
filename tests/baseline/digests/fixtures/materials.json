@@ -1,13 +1,23 @@
 {
   "assets": [
     {
-      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/a124872abc5f74c0.png]",
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
       "attr": "/Asset/mtl/UnlitCutout/preview/baseColorTexture.inputs:file",
       "resolved": true
     },
     {
-      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/a124872abc5f74c0.png]",
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
       "attr": "/Asset/mtl/UnlitCutout/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/UnlitPlaced/preview/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+      "attr": "/Asset/mtl/UnlitPlaced/mtlx/baseColorImage.inputs:file",
       "resolved": true
     }
   ],
@@ -169,8 +179,14 @@
         "/Asset/mtl/UnlitCutout/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
-              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/a124872abc5f74c0.png]",
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
               "resolved": true
             },
             "texcoord": {
@@ -233,7 +249,7 @@
           "id": "UsdUVTexture",
           "inputs": {
             "file": {
-              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/a124872abc5f74c0.png]",
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
               "resolved": true
             },
             "scale": [
@@ -280,6 +296,183 @@
         "mtlx:surface": "/Asset/mtl/UnlitCutout/mtlx.surface",
         "surface": "/Asset/mtl/UnlitCutout/preview.surface"
       }
+    },
+    "/Asset/mtl/UnlitPlaced": {
+      "graphs": {
+        "/Asset/mtl/UnlitPlaced/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/UnlitPlaced/mtlx/surface.surface"
+          }
+        },
+        "/Asset/mtl/UnlitPlaced/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/UnlitPlaced/preview/surface.surface"
+          }
+        }
+      },
+      "shaders": {
+        "/Asset/mtl/UnlitPlaced/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/UnlitPlaced/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "/Asset/mtl/UnlitPlaced/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/UnlitPlaced/mtlx/baseColorPlace.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "clamp"
+          }
+        },
+        "/Asset/mtl/UnlitPlaced/mtlx/baseColorPlace": {
+          "id": "ND_place2d_vector2",
+          "inputs": {
+            "offset": [
+              -4.25,
+              -0.874999702
+            ],
+            "rotate": -89.9999924,
+            "scale": [
+              0.5,
+              0.25
+            ],
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/UnlitPlaced/mtlx/st.out"
+            }
+          }
+        },
+        "/Asset/mtl/UnlitPlaced/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/UnlitPlaced/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/UnlitPlaced/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/UnlitPlaced/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/UnlitPlaced/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/UnlitPlaced/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/UnlitPlaced/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/UnlitPlaced/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/UnlitPlaced/mtlx/baseColorRgb.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
+        "/Asset/mtl/UnlitPlaced/preview/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]",
+              "resolved": true
+            },
+            "scale": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/UnlitPlaced/preview/baseColorTexture_xf.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "clamp"
+          }
+        },
+        "/Asset/mtl/UnlitPlaced/preview/baseColorTexture_xf": {
+          "id": "UsdTransform2d",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/UnlitPlaced/preview/stReader.result"
+            },
+            "rotation": 89.9999924,
+            "scale": [
+              2.0,
+              4.0
+            ],
+            "translation": [
+              4.25,
+              0.874999702
+            ]
+          }
+        },
+        "/Asset/mtl/UnlitPlaced/preview/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        },
+        "/Asset/mtl/UnlitPlaced/preview/surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/UnlitPlaced/preview/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": 1.0,
+            "roughness": 1.0
+          }
+        }
+      },
+      "terminals": {
+        "mtlx:surface": "/Asset/mtl/UnlitPlaced/mtlx.surface",
+        "surface": "/Asset/mtl/UnlitPlaced/preview.surface"
+      }
     }
   },
   "meshes": {
@@ -313,6 +506,20 @@
       "faceCount": 1,
       "material": [
         "/Asset/mtl/UnlitCutout"
+      ],
+      "pointCount": 3,
+      "pointsSha256": "20a2f6d94b4d070a75e4ef476db3d8bbb40d00e31da741906b0fa943fd01d947",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:st"
+      ],
+      "skeleton": []
+    },
+    "/Asset/geo/FlatPlaced": {
+      "faceCount": 1,
+      "material": [
+        "/Asset/mtl/UnlitPlaced"
       ],
       "pointCount": 3,
       "pointsSha256": "20a2f6d94b4d070a75e4ef476db3d8bbb40d00e31da741906b0fa943fd01d947",
@@ -487,6 +694,98 @@
       "type": "Shader"
     },
     {
+      "appliedSchemas": [
+        "MaterialXConfigAPI"
+      ],
+      "path": "/Asset/mtl/UnlitPlaced",
+      "type": "Material"
+    },
+    {
+      "path": "/Asset/mtl/UnlitPlaced/preview",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitPlaced/preview/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitPlaced/preview/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitPlaced/preview/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitPlaced/preview/baseColorTexture_xf",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/UnlitPlaced/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitPlaced/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitPlaced/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitPlaced/mtlx/baseColorPlace",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitPlaced/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitPlaced/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitPlaced/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitPlaced/mtlx/baseColorRgb",
+      "type": "Shader"
+    },
+    {
       "path": "/Asset/geo",
       "type": "Scope"
     },
@@ -516,6 +815,13 @@
         "MaterialBindingAPI"
       ],
       "path": "/Asset/geo/FlatCutout",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI"
+      ],
+      "path": "/Asset/geo/FlatPlaced",
       "type": "Mesh"
     },
     {

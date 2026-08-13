@@ -208,6 +208,12 @@
         "/Asset/mtl/arm_mat/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
               "resolved": true
@@ -223,10 +229,10 @@
           "id": "ND_place2d_vector2",
           "inputs": {
             "offset": [
-              0.0,
-              0.0
+              -0.0,
+              -0.0
             ],
-            "rotate": 0.0,
+            "rotate": -0.0,
             "scale": [
               1.0,
               1.0
@@ -379,6 +385,12 @@
         "/Asset/mtl/arm_plastic/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/971f3753fb4d80d0.png]",
               "resolved": true
@@ -394,10 +406,10 @@
           "id": "ND_place2d_vector2",
           "inputs": {
             "offset": [
-              0.0,
-              0.0
+              -0.0,
+              -0.0
             ],
-            "rotate": 0.0,
+            "rotate": -0.0,
             "scale": [
               1.0,
               1.0
@@ -550,6 +562,12 @@
         "/Asset/mtl/armgear_plastic/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
               "resolved": true
@@ -565,10 +583,10 @@
           "id": "ND_place2d_vector2",
           "inputs": {
             "offset": [
-              0.0,
-              0.0
+              -0.0,
+              -0.0
             ],
-            "rotate": 0.0,
+            "rotate": -0.0,
             "scale": [
               1.0,
               1.0
@@ -1084,6 +1102,12 @@
         "/Asset/mtl/body_bake/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
               "resolved": true
@@ -1099,10 +1123,10 @@
           "id": "ND_place2d_vector2",
           "inputs": {
             "offset": [
-              0.0,
-              0.0
+              -0.0,
+              -0.0
             ],
-            "rotate": 0.0,
+            "rotate": -0.0,
             "scale": [
               1.0,
               1.0
@@ -1255,6 +1279,12 @@
         "/Asset/mtl/body_nm/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/cda6dd2c58a209b8.png]",
               "resolved": true
@@ -1270,10 +1300,10 @@
           "id": "ND_place2d_vector2",
           "inputs": {
             "offset": [
-              0.0,
-              0.0
+              -0.0,
+              -0.0
             ],
-            "rotate": 0.0,
+            "rotate": -0.0,
             "scale": [
               1.0,
               1.0
@@ -1426,6 +1456,12 @@
         "/Asset/mtl/eye/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
               "resolved": true
@@ -1441,10 +1477,10 @@
           "id": "ND_place2d_vector2",
           "inputs": {
             "offset": [
-              0.0,
-              0.0
+              -0.0,
+              -0.0
             ],
-            "rotate": 0.0,
+            "rotate": -0.0,
             "scale": [
               1.0,
               1.0
@@ -1597,6 +1633,12 @@
         "/Asset/mtl/eye_trans/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/d0edd650263aae84.png]",
               "resolved": true
@@ -1612,10 +1654,10 @@
           "id": "ND_place2d_vector2",
           "inputs": {
             "offset": [
-              0.0,
-              0.0
+              -0.0,
+              -0.0
             ],
-            "rotate": 0.0,
+            "rotate": -0.0,
             "scale": [
               1.0,
               1.0
@@ -1878,6 +1920,12 @@
         "/Asset/mtl/hair/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/7691885b5ab6a6dd.png]",
               "resolved": true
@@ -1893,10 +1941,10 @@
           "id": "ND_place2d_vector2",
           "inputs": {
             "offset": [
-              0.0,
-              0.0
+              -0.0,
+              -0.0
             ],
-            "rotate": 0.0,
+            "rotate": -0.0,
             "scale": [
               1.0,
               1.0
@@ -2049,6 +2097,12 @@
         "/Asset/mtl/huku_bake/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/48ddc28bd374e12e.png]",
               "resolved": true
@@ -2064,10 +2118,10 @@
           "id": "ND_place2d_vector2",
           "inputs": {
             "offset": [
-              0.0,
-              0.0
+              -0.0,
+              -0.0
             ],
-            "rotate": 0.0,
+            "rotate": -0.0,
             "scale": [
               1.0,
               1.0
@@ -2220,6 +2274,12 @@
         "/Asset/mtl/robo_face/mtlx/baseColorImage": {
           "id": "ND_image_color4",
           "inputs": {
+            "default": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
             "file": {
               "asset": "${BUNDLE}/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm[images/e9ec86d654c71932.png]",
               "resolved": true
@@ -2235,10 +2295,10 @@
           "id": "ND_place2d_vector2",
           "inputs": {
             "offset": [
-              0.0,
-              0.0
+              -0.0,
+              -0.0
             ],
-            "rotate": 0.0,
+            "rotate": -0.0,
             "scale": [
               1.0,
               1.0

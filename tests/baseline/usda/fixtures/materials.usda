@@ -173,7 +173,7 @@ def Xform "Asset" (
                 def Shader "baseColorTexture"
                 {
                     uniform token info:id = "UsdUVTexture"
-                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/a124872abc5f74c0.png]@
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
                     float4 inputs:scale = (0.3, 0.6, 0.9, 0.8)
                     token inputs:sourceColorSpace = "sRGB"
                     float2 inputs:st.connect = </Asset/mtl/UnlitCutout/preview/stReader.outputs:result>
@@ -215,7 +215,8 @@ def Xform "Asset" (
                 def Shader "baseColorImage"
                 {
                     uniform token info:id = "ND_image_color4"
-                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/a124872abc5f74c0.png]@ (
+                    color4f inputs:default = (0, 0, 0, 1)
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@ (
                         colorSpace = "srgb_texture"
                     )
                     float2 inputs:texcoord.connect = </Asset/mtl/UnlitCutout/mtlx/st.outputs:out>
@@ -248,6 +249,145 @@ def Xform "Asset" (
                     float inputs:in1.connect = </Asset/mtl/UnlitCutout/mtlx/baseColorSplit.outputs:outr>
                     float inputs:in2.connect = </Asset/mtl/UnlitCutout/mtlx/baseColorSplit.outputs:outg>
                     float inputs:in3.connect = </Asset/mtl/UnlitCutout/mtlx/baseColorSplit.outputs:outb>
+                    color3f outputs:out
+                }
+            }
+        }
+
+        def Material "UnlitPlaced" (
+            apiSchemas = ["MaterialXConfigAPI"]
+            customData = {
+                dictionary vrm = {
+                    int sourceMaterialIndex = 4
+                }
+            }
+        )
+        {
+            string config:mtlx:version = "1.39"
+            token outputs:mtlx:surface.connect = </Asset/mtl/UnlitPlaced/mtlx.outputs:surface>
+            token outputs:surface.connect = </Asset/mtl/UnlitPlaced/preview.outputs:surface>
+
+            def NodeGraph "preview"
+            {
+                token outputs:surface.connect = </Asset/mtl/UnlitPlaced/preview/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0, 0, 0)
+                    color3f inputs:emissiveColor = (1, 1, 1)
+                    color3f inputs:emissiveColor.connect = </Asset/mtl/UnlitPlaced/preview/baseColorTexture.outputs:rgb>
+                    float inputs:metallic = 0
+                    float inputs:opacity = 1
+                    float inputs:roughness = 1
+                    token outputs:surface
+                }
+
+                def Shader "stReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname = "st"
+                    float2 outputs:result
+                }
+
+                def Shader "baseColorTexture"
+                {
+                    uniform token info:id = "UsdUVTexture"
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@
+                    float4 inputs:scale = (1, 1, 1, 1)
+                    token inputs:sourceColorSpace = "sRGB"
+                    float2 inputs:st.connect = </Asset/mtl/UnlitPlaced/preview/baseColorTexture_xf.outputs:result>
+                    token inputs:wrapS = "repeat"
+                    token inputs:wrapT = "clamp"
+                    float outputs:a
+                    float outputs:b
+                    float outputs:g
+                    float outputs:r
+                    float3 outputs:rgb
+                }
+
+                def Shader "baseColorTexture_xf"
+                {
+                    uniform token info:id = "UsdTransform2d"
+                    float2 inputs:in.connect = </Asset/mtl/UnlitPlaced/preview/stReader.outputs:result>
+                    float inputs:rotation = 89.99999
+                    float2 inputs:scale = (2, 4)
+                    float2 inputs:translation = (4.25, 0.8749997)
+                    float2 outputs:result
+                }
+            }
+
+            def NodeGraph "mtlx"
+            {
+                token outputs:surface.connect = </Asset/mtl/UnlitPlaced/mtlx/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "ND_gltf_pbr_surfaceshader"
+                    float inputs:alpha = 1
+                    int inputs:alpha_mode = 0
+                    color3f inputs:base_color = (0, 0, 0)
+                    color3f inputs:emissive.connect = </Asset/mtl/UnlitPlaced/mtlx/baseColorRgb.outputs:out>
+                    float inputs:metallic = 0
+                    float inputs:roughness = 1
+                    float inputs:specular = 0
+                    token outputs:surface
+                }
+
+                def Shader "st"
+                {
+                    uniform token info:id = "ND_texcoord_vector2"
+                    int inputs:index = 0
+                    float2 outputs:out
+                }
+
+                def Shader "baseColorPlace"
+                {
+                    uniform token info:id = "ND_place2d_vector2"
+                    float2 inputs:offset = (-4.25, -0.8749997)
+                    float inputs:rotate = -89.99999
+                    float2 inputs:scale = (0.5, 0.25)
+                    float2 inputs:texcoord.connect = </Asset/mtl/UnlitPlaced/mtlx/st.outputs:out>
+                    float2 outputs:out
+                }
+
+                def Shader "baseColorImage"
+                {
+                    uniform token info:id = "ND_image_color4"
+                    color4f inputs:default = (0, 0, 0, 1)
+                    asset inputs:file = @${BUNDLE}/tests/fixtures/materials.vrm[images/f7c8b8691550db80.png]@ (
+                        colorSpace = "srgb_texture"
+                    )
+                    float2 inputs:texcoord.connect = </Asset/mtl/UnlitPlaced/mtlx/baseColorPlace.outputs:out>
+                    string inputs:uaddressmode = "periodic"
+                    string inputs:vaddressmode = "clamp"
+                    color4f outputs:out
+                }
+
+                def Shader "baseColorFactor"
+                {
+                    uniform token info:id = "ND_multiply_color4"
+                    color4f inputs:in1.connect = </Asset/mtl/UnlitPlaced/mtlx/baseColorImage.outputs:out>
+                    color4f inputs:in2 = (1, 1, 1, 1)
+                    color4f outputs:out
+                }
+
+                def Shader "baseColorSplit"
+                {
+                    uniform token info:id = "ND_separate4_color4"
+                    color4f inputs:in.connect = </Asset/mtl/UnlitPlaced/mtlx/baseColorFactor.outputs:out>
+                    float outputs:outa
+                    float outputs:outb
+                    float outputs:outg
+                    float outputs:outr
+                }
+
+                def Shader "baseColorRgb"
+                {
+                    uniform token info:id = "ND_combine3_color3"
+                    float inputs:in1.connect = </Asset/mtl/UnlitPlaced/mtlx/baseColorSplit.outputs:outr>
+                    float inputs:in2.connect = </Asset/mtl/UnlitPlaced/mtlx/baseColorSplit.outputs:outg>
+                    float inputs:in3.connect = </Asset/mtl/UnlitPlaced/mtlx/baseColorSplit.outputs:outb>
                     color3f outputs:out
                 }
             }
@@ -332,6 +472,29 @@ def Xform "Asset" (
             int[] faceVertexCounts = [3]
             int[] faceVertexIndices = [0, 1, 2]
             rel material:binding = </Asset/mtl/UnlitCutout>
+            point3f[] points = [(-0.5, 0, 0), (0.5, 0, 0), (0, 1, 0)]
+            texCoord2f[] primvars:st = [(0, 1), (1, 1), (0.5, 0)] (
+                interpolation = "vertex"
+            )
+            uniform token subdivisionScheme = "none"
+        }
+
+        def Mesh "FlatPlaced" (
+            apiSchemas = ["MaterialBindingAPI"]
+            customData = {
+                dictionary vrm = {
+                    int sourceMeshIndex = 4
+                    int sourceNodeIndex = 4
+                    string sourceNodeName = "FlatPlaced"
+                    int sourcePrimitiveIndex = 0
+                }
+            }
+        )
+        {
+            float3[] extent = [(-0.5, 0, 0), (0.5, 1, 0)]
+            int[] faceVertexCounts = [3]
+            int[] faceVertexIndices = [0, 1, 2]
+            rel material:binding = </Asset/mtl/UnlitPlaced>
             point3f[] points = [(-0.5, 0, 0), (0.5, 0, 0), (0, 1, 0)]
             texCoord2f[] primvars:st = [(0, 1), (1, 1), (0.5, 0)] (
                 interpolation = "vertex"

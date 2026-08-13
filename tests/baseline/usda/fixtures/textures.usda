@@ -54,7 +54,7 @@ def Xform "Asset" (
                     color3f inputs:diffuseColor.connect = </Asset/mtl/Skin/preview/baseColorTexture.outputs:rgb>
                     color3f inputs:emissiveColor = (0, 0, 0)
                     float inputs:metallic = 1
-                    float inputs:opacity = 0.6
+                    float inputs:opacity = 1
                     float inputs:roughness = 1
                     token outputs:surface
                 }
