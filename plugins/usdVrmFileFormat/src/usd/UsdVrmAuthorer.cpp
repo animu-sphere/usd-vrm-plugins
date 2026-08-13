@@ -42,6 +42,7 @@
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/materialBindingAPI.h"
+#include "pxr/usd/usdShade/nodeGraph.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdSkel/animation.h"
 #include "pxr/usd/usdSkel/bindingAPI.h"
@@ -241,8 +242,19 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         materialPaths[i] = matPath;
 
         UsdShadeMaterial mat = UsdShadeMaterial::Define(stage, matPath);
-        UsdShadeShader shader =
-            UsdShadeShader::Define(stage, matPath.AppendChild(TfToken("Surface")));
+
+        // Material policy §4: the Material prim is identity, binding and (from
+        // P5 step 3) canonical VRM semantics; each rendering realization is one
+        // material-local UsdShadeNodeGraph. `preview` holds the UsdPreviewSurface
+        // fallback. The graph name and its surface output are the authored
+        // contract; the node names *inside* it are realization-local and are
+        // deliberately not (§4.3), so the graph can be rewritten without a
+        // fixture migration.
+        const SdfPath previewPath = matPath.AppendChild(TfToken("preview"));
+        UsdShadeNodeGraph preview = UsdShadeNodeGraph::Define(stage, previewPath);
+
+        UsdShadeShader shader = UsdShadeShader::Define(
+            stage, previewPath.AppendChild(TfToken("surface")));
         shader.CreateIdAttr(VtValue(TfToken("UsdPreviewSurface")));
         // VRM materials are unlit (KHR_materials_unlit) / toon. Render unlit as
         // base color through emissive with no lit response, so scene lights
@@ -262,9 +274,15 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             shader.CreateInput(TfToken("opacityThreshold"), SdfValueTypeNames->Float)
                 .Set(vm.alphaCutoff);
         }
+        // Terminals connect material -> graph -> internal shader, never material
+        // -> an internal shader (material policy §4.1). Material *bindings* keep
+        // targeting the material prim and nothing below it.
         UsdShadeOutput surfaceOut =
             shader.CreateOutput(TfToken("surface"), SdfValueTypeNames->Token);
-        mat.CreateSurfaceOutput().ConnectToSource(surfaceOut);
+        UsdShadeOutput previewOut =
+            preview.CreateOutput(TfToken("surface"), SdfValueTypeNames->Token);
+        previewOut.ConnectToSource(surfaceOut);
+        mat.CreateSurfaceOutput().ConnectToSource(previewOut);
 
         // Textures. A single UsdPrimvarReader_float2 feeds every UsdUVTexture's
         // st; each glTF texture slot becomes one UsdUVTexture wired into the
@@ -276,7 +294,7 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         UsdShadeShader stReader;
         if (anyTex) {
             stReader = UsdShadeShader::Define(
-                stage, matPath.AppendChild(TfToken("stReader")));
+                stage, previewPath.AppendChild(TfToken("stReader")));
             stReader.CreateIdAttr(VtValue(TfToken("UsdPrimvarReader_float2")));
             stReader.CreateInput(TfToken("varname"), SdfValueTypeNames->Token)
                 .Set(TfToken("st"));
@@ -286,7 +304,7 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         auto makeTexture = [&](const VrmTextureRef& ref, const char* nodeName,
                                bool color) -> UsdShadeShader {
             UsdShadeShader tex = UsdShadeShader::Define(
-                stage, matPath.AppendChild(TfToken(nodeName)));
+                stage, previewPath.AppendChild(TfToken(nodeName)));
             tex.CreateIdAttr(VtValue(TfToken("UsdUVTexture")));
             tex.CreateInput(TfToken("file"), SdfValueTypeNames->Asset)
                 .Set(SdfAssetPath(ref.filePath));
@@ -301,7 +319,7 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             // KHR_texture_transform -> UsdTransform2d between the reader and st.
             if (ref.hasTransform) {
                 UsdShadeShader xf = UsdShadeShader::Define(stage,
-                    matPath.AppendChild(TfToken(std::string(nodeName) + "_xf")));
+                    previewPath.AppendChild(TfToken(std::string(nodeName) + "_xf")));
                 xf.CreateIdAttr(VtValue(TfToken("UsdTransform2d")));
                 xf.CreateInput(TfToken("in"), SdfValueTypeNames->Float2)
                     .ConnectToSource(stReader.GetOutput(TfToken("result")));

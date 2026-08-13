@@ -162,13 +162,14 @@ The standard prim structure is:
 
 > **Refined** by
 > [MATERIAL_ARCHITECTURE_POLICY.md](MATERIAL_ARCHITECTURE_POLICY.md) §4
-> (2026-08-13): texture and shader nodes move below per-realization
-> `UsdShadeNodeGraph` children (`/preview`, `/mtlx`), leaving the material prim
-> to carry identity, binding, and canonical semantics. Where the two disagree
-> about the `/Asset/mtl` structure, the material policy wins.
+> (2026-08-13): texture and shader nodes live below per-realization
+> `UsdShadeNodeGraph` children (`/preview` shipped, `/mtlx` planned), leaving
+> the material prim to carry identity, binding, and canonical semantics. Where
+> the two disagree about the `/Asset/mtl` structure, the material policy wins.
 
-- Material prim
-- Texture nodes
+- Material prim — identity and binding target; nothing binds below it
+- One `UsdShadeNodeGraph` child per rendering realization
+- Texture and shader nodes, inside a realization
 - Portable approximation
 - References to the source VRM MToon semantics
 

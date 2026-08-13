@@ -152,7 +152,8 @@ absorbed into a canonical model before any USD is authored — into:
   geo/                     Scope of UsdGeomMesh (one per glTF primitive)
     <Mesh>                 points/normals/st, material binding; skel binding when
                            skinned, else the glTF node transform as xformOp
-  mtl/                     Scope of UsdShadeMaterial (UsdPreviewSurface)
+  mtl/<Material>           UsdShadeMaterial: identity, binding target, VRM semantics
+    preview/               UsdShadeNodeGraph holding the UsdPreviewSurface network
   skel/Skeleton            single UsdSkelSkeleton unified across all glTF skins
                            (bind transforms from the inverse bind matrices)
   rig/Humanoid             vrm:humanBones:<bone> joint tokens, typed VrmHumanoidAPI

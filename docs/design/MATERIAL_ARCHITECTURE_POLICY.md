@@ -56,22 +56,28 @@ It maps one-to-one onto the three layers DESIGN_POLICY §9 already names:
 
 ## 2. Current state
 
-Every shader node is a direct child of the material
+**Step 1 has landed (2026-08-13).** Every shader node now lives inside the
+`/preview` realization graph
 ([UsdVrmAuthorer.cpp](../../plugins/usdVrmFileFormat/src/usd/UsdVrmAuthorer.cpp)):
 
 ```text
 /Asset/mtl/<Name>                       UsdShadeMaterial
-    /Surface                            UsdPreviewSurface
-    /stReader                           UsdPrimvarReader_float2
-    /baseColorTexture                   UsdUVTexture
-    /baseColorTexture_xf                UsdTransform2d   (KHR_texture_transform only)
-    /metallicRoughnessTexture           UsdUVTexture
-    /emissiveTexture                    UsdUVTexture
-    /occlusionTexture                   UsdUVTexture
-    /normalTexture                      UsdUVTexture
+    outputs:surface  → preview.outputs:surface
+    /preview                            UsdShadeNodeGraph
+        outputs:surface  → surface.outputs:surface
+        /surface                        UsdPreviewSurface
+        /stReader                       UsdPrimvarReader_float2
+        /baseColorTexture               UsdUVTexture
+        /baseColorTexture_xf            UsdTransform2d   (KHR_texture_transform only)
+        /metallicRoughnessTexture       UsdUVTexture
+        /emissiveTexture                UsdUVTexture
+        /occlusionTexture               UsdUVTexture
+        /normalTexture                  UsdUVTexture
 ```
 
-Behavior that must survive the restructure unchanged:
+The behavior below is what the restructure had to leave unchanged, and did —
+the baseline diff is a path move (§7.1). It is still the behavior any later
+change to the `/preview` graph has to account for:
 
 - **Unlit** routes base color to `emissiveColor`, with `diffuseColor = 0`,
   `metallic = 0`, `roughness = 1`, so scene lights do not carve facets into a
@@ -91,11 +97,13 @@ Two facts about this state shape everything below.
 ([schema contract](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)). Nothing can
 read a shading-shift factor without re-parsing JSON, which is precisely the
 "typed data first, raw as fallback" rule that every other `Vrm*API` already
-follows.
+follows. Step 1 moved nodes; it did not make MToon queryable. That is Step 3.
 
-**Shader prim paths are load-bearing for tests.** `tests/baseline/digests/**`
-keys materials by shader path (`"/Asset/mtl/Glass/Surface"`), and the golden
-layers spell the paths out. Any rename churns all of them — see §7.1.
+**Shader prim paths are load-bearing for the baseline.**
+`tests/baseline/digests/**` keys materials by shader path (now
+`"/Asset/mtl/Glass/preview/surface"`), and the golden layers spell the paths
+out. Step 1 churned all of them once; §4.3 is what keeps a *later* graph
+rewrite from churning the behavior tests as well.
 
 ---
 
@@ -198,10 +206,24 @@ default.
 `preview` and `mtlx` are part of the authored contract. The shader node names
 *inside* a realization are realization-local and deliberately are **not**.
 
-Tests assert on the graph boundary and its outputs, not on interior node names,
-so a graph can be rewritten without a fixture migration. This is the difference
-between the restructure being paid for once and being paid for at every
-approximation improvement.
+Structural and connection tests assert on the graph boundary and its outputs,
+not on interior node names, so a graph can be rewritten without a fixture
+migration. This is the difference between the restructure being paid for once
+and being paid for at every approximation improvement.
+
+**What that does not cover** (recorded when Step 1 landed, so the claim is not
+read wider than it is). Two kinds of test legitimately name interior nodes,
+because a *value* is what they assert:
+
+- the baseline freeze (`tests/baseline/**`), which keys the shader network by
+  path — its whole purpose is that nothing changes silently;
+- value tests such as "the base-color factor is folded into
+  `UsdUVTexture.scale`", which cannot be written against the boundary alone.
+
+So an interior rename is cheap in the test suite and not free in the baseline:
+it regenerates as a path move and is reviewed as one. What §4.3 buys is that no
+*structural* test has to be rewritten, and that the boundary is asserted
+independently of whatever the graph does inside.
 
 ---
 
@@ -385,6 +407,14 @@ rendering improvements are not coupled to the schema redesign. It is the interna
 order of Product P5 and not a phase sequence (see the header).
 
 ### 7.1 Step 1 — restructure the PreviewSurface hierarchy
+
+> **Shipped 2026-08-13** (unreleased; see the changelog's `[Unreleased]`
+> entry). Every "done when" below is met. The one thing worth carrying
+> forward: the digest diff is a *mechanically* verified path move — the
+> committed digests, with the rename applied and nothing else, equal the
+> regenerated ones for all 28 inputs including both corpus avatars — rather than
+> a reviewed-by-eye one. Doing that check by hand across 44 baseline files would
+> not have been believable.
 
 **Objective.** Contain PreviewSurface implementation details below
 `/Asset/mtl/<MaterialName>/preview`, a `UsdShadeNodeGraph`.
@@ -570,8 +600,8 @@ their own PRs:
 
 | Change | Owner | Needed by |
 | --- | --- | --- |
-| `/Asset/mtl` gains the `/preview` and `/mtlx` NodeGraph structure | [DESIGN_POLICY.md](DESIGN_POLICY.md) §4 | Step 1 |
-| Confirm whether moving shader prims under `/preview` requires a schema contract bump — the v1 path table covers `/Asset/rig/*` and the MToon raw blob stays on the material, so probably not | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 1 |
+| ✅ `/Asset/mtl` gains the `/preview` and `/mtlx` NodeGraph structure | [DESIGN_POLICY.md](DESIGN_POLICY.md) §4 | Step 1 |
+| ✅ Confirm whether moving shader prims under `/preview` requires a schema contract bump — **it does not**, and the contract now says so rather than leaving it inferable (§11 q3) | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 1 |
 | `VrmMaterialAPI`, `VrmMToonAPI`, `VrmTextureInfoAPI` added to the typed API table, with their raw fallbacks | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 3 |
 | The MToon row (`vrm:shaderModel` + PreviewSurface fallback) restated in terms of the typed schemas | [SCHEMA_CONTRACT.md](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) | Step 3 |
 
@@ -583,7 +613,7 @@ their own PRs:
 | --- | --- | --- |
 | 1 | Exact `VRMC_materials_mtoon` field names against the VRM 1.0 specification. | Step 3 |
 | 2 | Render-context terminal naming (`outputs:mtlx:surface`) for the pinned OpenUSD version. | Step 2 |
-| 3 | Does the Step 1 path move need a schema contract bump? (§10) | Step 1 |
+| ~~3~~ | ~~Does the Step 1 path move need a schema contract bump?~~ **No** (settled 2026-08-13). Contract v1 freezes control-prim paths under `/Asset/rig`, the material prim path, and `vrm:mtoon:raw` on that prim — none of which moved. The shader network below a material was never a contract path, and the contract now states that explicitly instead of leaving it to inference. | — |
 | 4 | Restrict `VrmTextureInfoAPI` instance names via schema metadata, or allow arbitrary instances? | Step 3 |
 | 5 | Does `vrm:shaderModel` remain once `VrmMToonAPI` exists, or become redundant? | Step 3 |
 | 6 | MaterialX availability across the supported runtime matrix — 26.08 ships MaterialX 1.39.5, which has already constrained the Linux runtime builds. Confirm the plugin path is clean before the Step 2 CI lane. | Step 2 |

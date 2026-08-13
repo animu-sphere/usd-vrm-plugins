@@ -5,8 +5,15 @@
   "framesPerSecond": 24.0,
   "materials": {
     "/Asset/mtl/Glass": {
+      "graphs": {
+        "/Asset/mtl/Glass/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/Glass/preview/surface.surface"
+          }
+        }
+      },
       "shaders": {
-        "/Asset/mtl/Glass/Surface": {
+        "/Asset/mtl/Glass/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
             "diffuseColor": [
@@ -24,11 +31,21 @@
             "roughness": 1.0
           }
         }
+      },
+      "terminals": {
+        "surface": "/Asset/mtl/Glass/preview.surface"
       }
     },
     "/Asset/mtl/Leaf": {
+      "graphs": {
+        "/Asset/mtl/Leaf/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/Leaf/preview/surface.surface"
+          }
+        }
+      },
       "shaders": {
-        "/Asset/mtl/Leaf/Surface": {
+        "/Asset/mtl/Leaf/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
             "diffuseColor": [
@@ -47,11 +64,21 @@
             "roughness": 1.0
           }
         }
+      },
+      "terminals": {
+        "surface": "/Asset/mtl/Leaf/preview.surface"
       }
     },
     "/Asset/mtl/Unlit": {
+      "graphs": {
+        "/Asset/mtl/Unlit/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/Unlit/preview/surface.surface"
+          }
+        }
+      },
       "shaders": {
-        "/Asset/mtl/Unlit/Surface": {
+        "/Asset/mtl/Unlit/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
             "diffuseColor": [
@@ -69,6 +96,9 @@
             "roughness": 1.0
           }
         }
+      },
+      "terminals": {
+        "surface": "/Asset/mtl/Unlit/preview.surface"
       }
     }
   },
@@ -130,10 +160,14 @@
       "type": "Material"
     },
     {
+      "path": "/Asset/mtl/Glass/preview",
+      "type": "NodeGraph"
+    },
+    {
       "appliedSchemas": [
         "NodeDefAPI"
       ],
-      "path": "/Asset/mtl/Glass/Surface",
+      "path": "/Asset/mtl/Glass/preview/surface",
       "type": "Shader"
     },
     {
@@ -141,10 +175,14 @@
       "type": "Material"
     },
     {
+      "path": "/Asset/mtl/Leaf/preview",
+      "type": "NodeGraph"
+    },
+    {
       "appliedSchemas": [
         "NodeDefAPI"
       ],
-      "path": "/Asset/mtl/Leaf/Surface",
+      "path": "/Asset/mtl/Leaf/preview/surface",
       "type": "Shader"
     },
     {
@@ -152,10 +190,14 @@
       "type": "Material"
     },
     {
+      "path": "/Asset/mtl/Unlit/preview",
+      "type": "NodeGraph"
+    },
+    {
       "appliedSchemas": [
         "NodeDefAPI"
       ],
-      "path": "/Asset/mtl/Unlit/Surface",
+      "path": "/Asset/mtl/Unlit/preview/surface",
       "type": "Shader"
     },
     {

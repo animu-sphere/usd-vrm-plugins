@@ -214,6 +214,22 @@ def _jsonable(value):
             else _array_hash(items, str)}
 
 
+def _source_ref(src) -> str:
+    """`"<prim path>.<name>"` for a `GetConnectedSource()` result."""
+    return src[0].GetPrim().GetPath().pathString + "." + src[1]
+
+
+def _connected_outputs(container) -> dict:
+    """`{output base name: "<source prim>.<source name>"}` for a Material or
+    NodeGraph, i.e. the terminals that make a realization reachable."""
+    out = {}
+    for o in container.GetOutputs():
+        src = o.GetConnectedSource()
+        if src:
+            out[o.GetBaseName()] = _source_ref(src)
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Workspace bundle enumeration
 # ---------------------------------------------------------------------------
@@ -414,26 +430,39 @@ def _digest_stage(stage) -> dict:
             skeletons[pth] = s
 
         if prim.IsA(UsdShade.Material):
-            mat = {"shaders": {}}
-            for child in prim.GetChildren():
-                shader = UsdShade.Shader(child)
-                if not shader:
+            # Shader nodes are no longer the material's immediate children:
+            # each rendering realization is a material-local UsdShadeNodeGraph
+            # (material policy §4.1), so the whole subtree is walked and the
+            # graph boundary — material terminal -> graph output -> internal
+            # shader — is frozen alongside the network itself.
+            mat = {"terminals": _connected_outputs(UsdShade.Material(prim)),
+                   "graphs": {},
+                   "shaders": {}}
+            for desc in Usd.PrimRange(prim):
+                if desc == prim:
+                    continue  # a Material is itself a NodeGraph; skip the root
+                dpth = desc.GetPath().pathString
+                shader = UsdShade.Shader(desc)
+                if shader:
+                    inputs = {}
+                    for inp in shader.GetInputs():
+                        src = inp.GetConnectedSource()
+                        if src:
+                            inputs[inp.GetBaseName()] = {
+                                "connectedTo": _source_ref(src)}
+                        else:
+                            v = inp.Get()
+                            if v is not None:
+                                inputs[inp.GetBaseName()] = _jsonable(v)
+                    mat["shaders"][dpth] = {
+                        "id": shader.GetIdAttr().Get(),
+                        "inputs": inputs,
+                    }
                     continue
-                inputs = {}
-                for inp in shader.GetInputs():
-                    src = inp.GetConnectedSource()
-                    if src:
-                        inputs[inp.GetBaseName()] = {
-                            "connectedTo": src[0].GetPrim().GetPath().pathString
-                            + "." + src[1]}
-                    else:
-                        v = inp.Get()
-                        if v is not None:
-                            inputs[inp.GetBaseName()] = _jsonable(v)
-                mat["shaders"][child.GetPath().pathString] = {
-                    "id": shader.GetIdAttr().Get(),
-                    "inputs": inputs,
-                }
+                graph = UsdShade.NodeGraph(desc)
+                if graph:
+                    mat["graphs"][dpth] = {
+                        "outputs": _connected_outputs(graph)}
             materials[pth] = mat
 
     d["prims"] = prims

@@ -4,7 +4,7 @@
     doc = """Generated from Composed Stage of root layer 
 
 
-Generated from Composed Stage of root layer C:\\dev\\usd-vrm-plugins\\plugins\\usdVrm\\tests\\fixtures\\minimal.vrm
+Generated from Composed Stage of root layer C:\\dev\\usd-vrm-plugins\\plugins\\usdVrmFileFormat\\tests\\fixtures\\minimal.vrm
 """
     metersPerUnit = 1
     upAxis = "Y"
@@ -42,17 +42,22 @@ def SkelRoot "Asset" (
             }
         )
         {
-            token outputs:surface.connect = </Asset/mtl/Body_Mat/Surface.outputs:surface>
+            token outputs:surface.connect = </Asset/mtl/Body_Mat/preview.outputs:surface>
 
-            def Shader "Surface"
+            def NodeGraph "preview"
             {
-                uniform token info:id = "UsdPreviewSurface"
-                color3f inputs:diffuseColor = (0.8, 0.6, 0.5)
-                color3f inputs:emissiveColor = (0, 0, 0)
-                float inputs:metallic = 0
-                float inputs:opacity = 1
-                float inputs:roughness = 0.7
-                token outputs:surface
+                token outputs:surface.connect = </Asset/mtl/Body_Mat/preview/surface.outputs:surface>
+
+                def Shader "surface"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (0.8, 0.6, 0.5)
+                    color3f inputs:emissiveColor = (0, 0, 0)
+                    float inputs:metallic = 0
+                    float inputs:opacity = 1
+                    float inputs:roughness = 0.7
+                    token outputs:surface
+                }
             }
         }
     }

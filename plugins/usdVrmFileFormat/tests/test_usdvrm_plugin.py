@@ -235,20 +235,74 @@ def check_names():
 def check_materials():
     """Alpha BLEND/opacity and alpha MASK -> opacityThreshold."""
     stage = _open("materials.vrm")
-    leaf = stage.GetPrimAtPath("/Asset/mtl/Leaf/Surface")
+    leaf = stage.GetPrimAtPath("/Asset/mtl/Leaf/preview/surface")
     assert leaf.IsValid(), "expected MASK material Leaf"
     thr = leaf.GetAttribute("inputs:opacityThreshold").Get()
     assert thr is not None and abs(thr - 0.3) < 1e-6, f"MASK opacityThreshold: {thr}"
-    glass = stage.GetPrimAtPath("/Asset/mtl/Glass/Surface")
+    glass = stage.GetPrimAtPath("/Asset/mtl/Glass/preview/surface")
     assert abs(glass.GetAttribute("inputs:opacity").Get() - 0.3) < 1e-6
     # KHR_materials_unlit: base color via emissive, diffuse/lit response killed,
     # so scene lights don't facet the low-poly surface.
-    flat = stage.GetPrimAtPath("/Asset/mtl/Unlit/Surface")
+    flat = stage.GetPrimAtPath("/Asset/mtl/Unlit/preview/surface")
     assert flat.IsValid(), "expected unlit material Unlit"
     assert flat.GetAttribute("inputs:diffuseColor").Get() == Gf.Vec3f(0, 0, 0)
     em = flat.GetAttribute("inputs:emissiveColor").Get()
     assert abs(em[0] - 0.9) < 1e-6 and abs(em[2] - 0.1) < 1e-6, em
     assert abs(flat.GetAttribute("inputs:metallic").Get()) < 1e-6
+
+
+def check_material_hierarchy():
+    """Material policy §4: the material prim carries identity and binding only;
+    every shading node lives inside a per-realization NodeGraph, and the surface
+    terminal reaches the network through that graph's output.
+
+    Asserted on the graph *boundary*, never on interior node names (§4.3): a
+    realization must stay rewritable without a fixture migration.
+    """
+    for fixture in ("materials.vrm", "textures.vrm"):
+        stage = _open(fixture)
+        mtl = stage.GetPrimAtPath("/Asset/mtl")
+        assert mtl.IsValid() and mtl.GetChildren(), f"{fixture}: no /Asset/mtl"
+
+        for prim in mtl.GetChildren():
+            where = f"{fixture} {prim.GetPath()}"
+            mat = UsdShade.Material(prim)
+            assert mat, f"{where}: not a Material"
+
+            # Only realization graphs directly below the material: an authored
+            # Shader here would be an implementation detail leaking into the
+            # material's public shape.
+            kids = {c.GetName(): c.GetTypeName() for c in prim.GetChildren()}
+            assert kids == {"preview": "NodeGraph"}, f"{where}: children {kids}"
+
+            preview = UsdShade.NodeGraph(prim.GetChild("preview"))
+            src = mat.GetSurfaceOutput().GetConnectedSource()
+            assert src, f"{where}: surface terminal not connected"
+            assert src[0].GetPrim() == preview.GetPrim() and src[1] == "surface", \
+                f"{where}: terminal -> {src[0].GetPrim().GetPath()}.{src[1]}"
+
+            gsrc = preview.GetOutput("surface").GetConnectedSource()
+            assert gsrc, f"{where}: /preview exposes no connected surface output"
+            inner = gsrc[0].GetPrim()
+            assert inner.GetPath().HasPrefix(preview.GetPath()), \
+                f"{where}: /preview output leaves the graph: {inner.GetPath()}"
+
+            # The indirection has to stay resolvable: this is what a renderer
+            # actually walks, and what a broken terminal would silently cost.
+            shader, name, _ = mat.ComputeSurfaceSource()
+            assert shader and shader.GetPrim() == inner, \
+                f"{where}: surface source resolves to {shader and shader.GetPath()}"
+            assert shader.GetIdAttr().Get() == "UsdPreviewSurface", where
+            assert name == "surface", f"{where}: surface source name {name}"
+
+        # Bindings target the material prim itself, never a node inside it.
+        for prim in stage.Traverse():
+            if not prim.IsA(UsdGeom.Mesh):
+                continue
+            for target in UsdShade.MaterialBindingAPI(
+                    prim).GetDirectBindingRel().GetTargets():
+                assert UsdShade.Material(stage.GetPrimAtPath(target)), \
+                    f"{fixture}: {prim.GetPath()} binds non-material {target}"
 
 
 def check_springbone():
@@ -335,8 +389,8 @@ def check_textures():
     """Embedded base-color texture -> UsdUVTexture + st reader; MToon metadata."""
     stage = _open("textures.vrm")
     mat = stage.GetPrimAtPath("/Asset/mtl/Skin")
-    surf = stage.GetPrimAtPath("/Asset/mtl/Skin/Surface")
-    tex = stage.GetPrimAtPath("/Asset/mtl/Skin/baseColorTexture")
+    surf = stage.GetPrimAtPath("/Asset/mtl/Skin/preview/surface")
+    tex = stage.GetPrimAtPath("/Asset/mtl/Skin/preview/baseColorTexture")
     assert mat.IsValid() and surf.IsValid() and tex.IsValid()
 
     assert tex.GetAttribute("info:id").Get() == "UsdUVTexture"
@@ -353,10 +407,12 @@ def check_textures():
 
     # diffuseColor <- texture.rgb, and st <- stReader.result.
     conn = surf.GetAttribute("inputs:diffuseColor").GetConnections()
-    assert conn == [Sdf.Path("/Asset/mtl/Skin/baseColorTexture.outputs:rgb")], conn
-    assert stage.GetPrimAtPath("/Asset/mtl/Skin/stReader").IsValid()
+    assert conn == [
+        Sdf.Path("/Asset/mtl/Skin/preview/baseColorTexture.outputs:rgb")], conn
+    assert stage.GetPrimAtPath("/Asset/mtl/Skin/preview/stReader").IsValid()
     stc = tex.GetAttribute("inputs:st").GetConnections()
-    assert stc == [Sdf.Path("/Asset/mtl/Skin/stReader.outputs:result")], stc
+    assert stc == [
+        Sdf.Path("/Asset/mtl/Skin/preview/stReader.outputs:result")], stc
 
     # MToon preserved as metadata.
     assert mat.GetAttribute("vrm:shaderModel").Get() == "MToon"
@@ -390,7 +446,8 @@ def check_portable_package():
 
         packaged_stage = Usd.Stage.Open(str(stage_path))
         assert packaged_stage, f"failed to open packaged stage: {stage_path}"
-        tex = packaged_stage.GetPrimAtPath("/Asset/mtl/Skin/baseColorTexture")
+        tex = packaged_stage.GetPrimAtPath(
+            "/Asset/mtl/Skin/preview/baseColorTexture")
         asset = tex.GetAttribute("inputs:file").Get()
         assert asset.path.startswith("textures/"), asset
         assert not pathlib.Path(asset.path).is_absolute(), asset
@@ -499,7 +556,8 @@ def main() -> int:
                   check_vrm0_expressions, check_vrm0_frontbake,
                   check_textures, check_portable_package, check_animation,
                   check_lookat, check_springbone, check_names, check_materials,
-                  check_constraints, check_shared_accessor, check_badext):
+                  check_material_hierarchy, check_constraints,
+                  check_shared_accessor, check_badext):
         check()
         print(f"  {check.__name__}: OK")
     print("usdVrm smoke tests: OK")

@@ -5,8 +5,15 @@
   "framesPerSecond": 24.0,
   "materials": {
     "/Asset/mtl/Mat": {
+      "graphs": {
+        "/Asset/mtl/Mat/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/Mat/preview/surface.surface"
+          }
+        }
+      },
       "shaders": {
-        "/Asset/mtl/Mat/Surface": {
+        "/Asset/mtl/Mat/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
             "diffuseColor": [
@@ -24,11 +31,21 @@
             "roughness": 0.699999988
           }
         }
+      },
+      "terminals": {
+        "surface": "/Asset/mtl/Mat/preview.surface"
       }
     },
     "/Asset/mtl/Mat_2": {
+      "graphs": {
+        "/Asset/mtl/Mat_2/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/Mat_2/preview/surface.surface"
+          }
+        }
+      },
       "shaders": {
-        "/Asset/mtl/Mat_2/Surface": {
+        "/Asset/mtl/Mat_2/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
             "diffuseColor": [
@@ -46,6 +63,9 @@
             "roughness": 0.699999988
           }
         }
+      },
+      "terminals": {
+        "surface": "/Asset/mtl/Mat_2/preview.surface"
       }
     }
   },
@@ -120,10 +140,14 @@
       "type": "Material"
     },
     {
+      "path": "/Asset/mtl/Mat/preview",
+      "type": "NodeGraph"
+    },
+    {
       "appliedSchemas": [
         "NodeDefAPI"
       ],
-      "path": "/Asset/mtl/Mat/Surface",
+      "path": "/Asset/mtl/Mat/preview/surface",
       "type": "Shader"
     },
     {
@@ -131,10 +155,14 @@
       "type": "Material"
     },
     {
+      "path": "/Asset/mtl/Mat_2/preview",
+      "type": "NodeGraph"
+    },
+    {
       "appliedSchemas": [
         "NodeDefAPI"
       ],
-      "path": "/Asset/mtl/Mat_2/Surface",
+      "path": "/Asset/mtl/Mat_2/preview/surface",
       "type": "Shader"
     },
     {
