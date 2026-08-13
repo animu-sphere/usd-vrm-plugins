@@ -675,6 +675,13 @@ Two additions Step 2 made, for failure modes the layers above do not reach:
   *and* alpha-masked in one material, which nothing else covered: sampled alpha,
   the factor multiply, and the sampler wrap-mode translation are only reachable
   along that path.
+- **A non-identity `KHR_texture_transform`, asserted against glTF's matrix.**
+  Not against the other realization: the two nodes divide where the other
+  multiplies, subtract where it adds, and disagree about whether to negate the
+  rotation, so "both realizations agree" is a weaker claim than it sounds and
+  "the triple was passed through unchanged" passes it. Every transform in the
+  vendored corpus is the identity, where each wrong answer coincides with the
+  right one, so this is a case the corpus structurally cannot cover.
 
 ### 8.2 First regression target — issue #119
 

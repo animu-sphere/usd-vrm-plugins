@@ -45,9 +45,37 @@ Current schema contract version: **1**.
   when the runtime moves.
 
   Lit materials are unchanged and keep `/preview` alone; they are the follow-up
-  half of Step 2. Nothing `/preview` already produced moved or changed value:
-  across all 28 baseline inputs the diff is additive, verified mechanically
-  rather than by eye.
+  half of Step 2. Apart from the two corrections listed under Fixed, nothing
+  `/preview` already produced moved or changed value: across all 28 baseline
+  inputs the diff is additive, verified mechanically rather than by eye.
+
+### Fixed
+
+- **`KHR_texture_transform` was authored as though USD sampled glTF's UVs.**
+  Two changes of variable were missing, and both are invisible on an identity
+  transform — which is every transform in the vendored corpus, so no amount of
+  regenerating baselines would have shown it. The importer flips V when it reads
+  UVs, so a transform glTF states against its own top-left-origin coordinates
+  has to be conjugated by that flip before it applies to `st`; and glTF states
+  the rotation in **radians** while both `UsdTransform2d.rotation` and
+  MaterialX's `place2d.rotate` are declared in **degrees**, so a 90-degree
+  rotation was being authored as 1.57 degrees — visually unrotated.
+
+  Both realizations now derive one affine map in `st` space and each spells it
+  in its own vocabulary, which is not the same spelling twice:
+  `UsdTransform2d` multiplies by its scale, adds its translation and negates its
+  rotation, while `place2d` divides, subtracts and does not negate. Passing the
+  glTF triple to both — which is what the MaterialX side did when it first
+  landed — makes them sample different regions of the same texture. A fixture
+  with every term non-identity now pins both against glTF's own matrix.
+
+- **`alphaMode: OPAQUE` no longer lets the base-colour factor's alpha through.**
+  glTF is explicit that OPAQUE ignores alpha entirely, so a material with
+  `baseColorFactor[3] = 0.6` is opaque, not 40% transparent.
+  `UsdPreviewSurface.opacity` was taking the factor unconditionally. MaterialX's
+  `gltf_pbr` enforces the rule inside its own graph, so leaving this would have
+  made the two realizations disagree about the same source material — visible in
+  the baseline as `textures.vrm`'s `Skin` going from `0.6` to `1.0`.
 
 ### Changed
 
