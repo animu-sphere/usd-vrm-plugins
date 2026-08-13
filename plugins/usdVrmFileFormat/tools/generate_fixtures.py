@@ -18,7 +18,9 @@ specific import behavior the smoke test then asserts:
   unordered_skel.vrm skin joints listed child-before-parent (topology reorder)
   expressions.vrm    a morph target + a VRM 1.0 preset expression binding it
   names.vrm          duplicate / Japanese / empty mesh & material names
-  materials.vrm      alpha BLEND + double-sided, and alpha MASK with a cutoff
+  materials.vrm      alpha BLEND + double-sided, alpha MASK with a cutoff, and
+                     the unlit cases the MaterialX realization is built on:
+                     unlit, unlit + texture + MASK, unlit + KHR_texture_transform
   constraints.vrm    a VRMC_node_constraint (roll) driving one node from another
   badext.vrm         semantically broken VRM humanoid (must warn, not crash)
 
@@ -256,13 +258,18 @@ def build_materials():
     # other fixture covers -- the MaterialX realization reaches its sampled
     # alpha, its factor multiply and its wrap modes only along this path.
     uv = b.add(FLOAT, "VEC2", [(0.0, 0.0), (1.0, 0.0), (0.5, 1.0)], ARRAY_BUFFER)
-    img_bv = b.add_bytes(solid_png(40, 200, 40))
+    # Half-transparent on purpose: with a=255 the sampled alpha is 1.0 and no
+    # cutoff, blend or factor-alpha regression can move the result. 128/255 =
+    # 0.502, times the 0.8 factor alpha, sits just above UnlitCutout's 0.4
+    # cutoff -- close enough that dropping either term crosses it.
+    img_bv = b.add_bytes(solid_png(40, 200, 40, 128))
     tex_attrs = {"POSITION": pos, "TEXCOORD_0": uv}
     gltf = {
         "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
-        "scene": 0, "scenes": [{"nodes": [0, 1]}],
+        "scene": 0, "scenes": [{"nodes": [0, 1, 2, 3, 4]}],
         "nodes": [{"name": "Blended", "mesh": 0}, {"name": "Masked", "mesh": 1},
-                  {"name": "Flat", "mesh": 2}, {"name": "FlatCutout", "mesh": 3}],
+                  {"name": "Flat", "mesh": 2}, {"name": "FlatCutout", "mesh": 3},
+                  {"name": "FlatPlaced", "mesh": 4}],
         "meshes": [
             {"name": "Blended", "primitives": [
                 {"attributes": attrs, "indices": idx, "material": 0}]},
@@ -272,6 +279,8 @@ def build_materials():
                 {"attributes": attrs, "indices": idx, "material": 2}]},
             {"name": "FlatCutout", "primitives": [
                 {"attributes": tex_attrs, "indices": idx, "material": 3}]},
+            {"name": "FlatPlaced", "primitives": [
+                {"attributes": tex_attrs, "indices": idx, "material": 4}]},
         ],
         "images": [{"name": "green", "bufferView": img_bv, "mimeType": "image/png"}],
         "samplers": [{"wrapS": 10497, "wrapT": 33071}],  # repeat / clamp
@@ -289,8 +298,25 @@ def build_materials():
                  "baseColorFactor": [0.3, 0.6, 0.9, 0.8],
                  "baseColorTexture": {"index": 0},
              }},
+            # KHR_texture_transform with every term non-identity, which is the
+            # only way the UV-flip conjugation and the radians/degrees
+            # conversion are visible: on an identity transform (all the corpus
+            # has) every wrong answer coincides with the right one.
+            {"name": "UnlitPlaced", "extensions": {"KHR_materials_unlit": {}},
+             "pbrMetallicRoughness": {
+                 "baseColorFactor": [1.0, 1.0, 1.0, 1.0],
+                 "baseColorTexture": {
+                     "index": 0,
+                     "extensions": {"KHR_texture_transform": {
+                         "offset": [0.25, 0.125],
+                         "scale": [2.0, 4.0],
+                         "rotation": 1.5707963,  # pi/2 radians = 90 degrees
+                     }},
+                 },
+             }},
         ],
-        "extensionsUsed": ["VRMC_vrm", "KHR_materials_unlit"],
+        "extensionsUsed": ["VRMC_vrm", "KHR_materials_unlit",
+                           "KHR_texture_transform"],
         "extensions": {"VRMC_vrm": vrm1_extension({})},
     }
     return b.build(gltf)

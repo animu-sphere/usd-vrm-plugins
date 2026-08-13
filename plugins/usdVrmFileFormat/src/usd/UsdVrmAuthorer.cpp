@@ -13,6 +13,7 @@
 #include <vrmSchema/vrmLookAtAPI.h>
 #include <vrmSchema/vrmSpringBoneAPI.h>
 
+#include "pxr/base/gf/math.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/range3f.h"
@@ -50,6 +51,7 @@
 #include "pxr/usd/usdSkel/root.h"
 #include "pxr/usd/usdSkel/skeleton.h"
 
+#include <cmath>
 #include <functional>
 #include <set>
 
@@ -90,12 +92,66 @@ const char* const _kMtlxVersion = "1.39";
 
 // glTF sampler wrap -> MaterialX addressmode. The vocabularies differ by one
 // word and the enum is not validated at author time, so "repeat" would sail
-// through and mean nothing.
-TfToken _MtlxAddressMode(const std::string& wrap)
+// through and mean nothing. The input is typed `string`, not `token`, so this
+// never needs to become a TfToken.
+const char* _MtlxAddressMode(const std::string& wrap)
 {
-    if (wrap == "clamp") return TfToken("clamp");
-    if (wrap == "mirror") return TfToken("mirror");
-    return TfToken("periodic");  // glTF "repeat"
+    if (wrap == "clamp") return "clamp";
+    if (wrap == "mirror") return "mirror";
+    return "periodic";  // glTF "repeat"
+}
+
+// The base colour factor's alpha, under glTF's alpha-coverage rule: OPAQUE
+// "the alpha value is ignored and the rendered output is fully opaque", so a
+// material with alphaMode OPAQUE and a factor alpha of 0.3 is opaque, not 30%
+// transparent. Shared by both realizations because MaterialX's gltf_pbr
+// enforces it inside its own graph — leaving /preview to apply the factor
+// would make the two disagree about the same source material.
+float _GltfOpacity(const VrmMaterial& vm)
+{
+    return vm.alphaMode == "OPAQUE" ? 1.0f : vm.opacity;
+}
+
+// KHR_texture_transform, resolved into the UV space USD actually samples.
+//
+// Two changes of variable sit between glTF's statement of the transform and
+// what either realization should author, and neither is visible on an identity
+// transform — which is every transform in the corpus, so regenerating baselines
+// proves nothing about this:
+//
+//   * The importer already flipped V (`VrmConvertUv`), so a transform glTF
+//     defines against its own top-left-origin UVs has to be conjugated by that
+//     flip before it applies to `st`.
+//   * glTF states the rotation in radians; both `UsdTransform2d.rotation` and
+//     MaterialX's `place2d.rotate` are declared in degrees.
+//
+// Conjugating glTF's T*R*S by (u, v) -> (u, 1-v) leaves the scale alone, flips
+// the sense of the rotation, and lands the translation on the value below. What
+// comes out is one affine map in st space, written with MaterialX's `rotate2d`
+// (which turns clockwise and takes degrees — both realizations are built on it):
+//
+//     st' = rotate2d(scale * st, -rotationDegrees) + translation
+//
+// Each realization then spells that in its own vocabulary, and the two spellings
+// share nothing but this: UsdTransform2d multiplies by its scale, adds its
+// translation and negates its rotation, while place2d divides, subtracts and
+// does not negate. Deriving the map once is what stops them drifting apart --
+// verified against glTF's own matrix in check_texture_transform, since on an
+// identity transform (which is every transform in the corpus) every wrong
+// answer coincides with the right one.
+struct _UvTransform {
+    GfVec2f scale;
+    float rotationDegrees;
+    GfVec2f translation;
+};
+
+_UvTransform _GltfUvTransform(const VrmTextureRef& ref)
+{
+    const float r = ref.uvRotation;  // radians, per KHR_texture_transform
+    return {ref.uvScale,
+            static_cast<float>(GfRadiansToDegrees(r)),
+            GfVec2f(ref.uvOffset[0] + ref.uvScale[1] * std::sin(r),
+                    1.0f - ref.uvOffset[1] - ref.uvScale[1] * std::cos(r))};
 }
 
 // Author /Asset/mtl/<name>/mtlx: the MaterialX realization of an unlit VRM
@@ -174,22 +230,31 @@ void _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat,
         const VrmTextureRef& ref = vm.baseColorTex;
 
         UsdShadeShader st = node("st", "ND_texcoord_vector2");
-        st.CreateInput(TfToken("index"), SdfValueTypeNames->Int).Set(ref.uvSet);
+        // Index 0, not ref.uvSet: the importer authors exactly one UV primvar,
+        // `st` from TEXCOORD_0, and warns when a material asked for another
+        // (VRM121). Naming a set the geometry does not carry would turn that
+        // warning into a renderer sampling an undefined stream.
+        st.CreateInput(TfToken("index"), SdfValueTypeNames->Int).Set(0);
         UsdShadeOutput uv =
             st.CreateOutput(TfToken("out"), SdfValueTypeNames->Float2);
 
-        // KHR_texture_transform. MaterialX's place2d applies the same
-        // scale/rotate/offset triple UsdTransform2d does in /preview.
+        // KHR_texture_transform. place2d is not UsdTransform2d spelled
+        // differently: its SRT form computes rotate2d(uv / scale, rotate) -
+        // offset, dividing where UsdTransform2d multiplies, subtracting where
+        // it adds, and not negating the rotation the way UsdTransform2d does.
+        // The shared st-space map is therefore inverted into this node's
+        // vocabulary rather than passed through.
         if (ref.hasTransform) {
+            const _UvTransform t = _GltfUvTransform(ref);
             UsdShadeShader place = node("baseColorPlace", "ND_place2d_vector2");
             place.CreateInput(TfToken("texcoord"), SdfValueTypeNames->Float2)
                 .ConnectToSource(uv);
             place.CreateInput(TfToken("scale"), SdfValueTypeNames->Float2)
-                .Set(ref.uvScale);
+                .Set(GfVec2f(1.0f / t.scale[0], 1.0f / t.scale[1]));
             place.CreateInput(TfToken("rotate"), SdfValueTypeNames->Float)
-                .Set(ref.uvRotation);
+                .Set(-t.rotationDegrees);
             place.CreateInput(TfToken("offset"), SdfValueTypeNames->Float2)
-                .Set(ref.uvOffset);
+                .Set(-t.translation);
             uv = place.CreateOutput(TfToken("out"), SdfValueTypeNames->Float2);
         }
 
@@ -201,12 +266,18 @@ void _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat,
         file.Set(SdfAssetPath(ref.filePath));
         // sRGB is metadata on the asset here, not an input as in /preview.
         file.GetAttr().SetColorSpace(TfToken("srgb_texture"));
+        // The node's own default is transparent black, so a texture that fails
+        // to resolve would take the alpha to zero and erase the material
+        // instead of drawing it flat. Match UsdUVTexture's opaque black, which
+        // is what /preview falls back to and what reads as a texture problem.
+        image.CreateInput(TfToken("default"), SdfValueTypeNames->Color4f)
+            .Set(GfVec4f(0.0f, 0.0f, 0.0f, 1.0f));
         image.CreateInput(TfToken("texcoord"), SdfValueTypeNames->Float2)
             .ConnectToSource(uv);
         image.CreateInput(TfToken("uaddressmode"), SdfValueTypeNames->String)
-            .Set(_MtlxAddressMode(ref.wrapS).GetString());
+            .Set(std::string(_MtlxAddressMode(ref.wrapS)));
         image.CreateInput(TfToken("vaddressmode"), SdfValueTypeNames->String)
-            .Set(_MtlxAddressMode(ref.wrapT).GetString());
+            .Set(std::string(_MtlxAddressMode(ref.wrapT)));
 
         UsdShadeShader factor = node("baseColorFactor", "ND_multiply_color4");
         factor.CreateInput(TfToken("in1"), SdfValueTypeNames->Color4f)
@@ -239,13 +310,13 @@ void _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat,
         // The sampled alpha only reaches the surface where glTF says it counts;
         // OPAQUE ignores it, exactly as /preview leaves opacity unconnected.
         if (alphaMode == 0) {
-            opacity.Set(vm.opacity);
+            opacity.Set(_GltfOpacity(vm));
         } else {
             opacity.ConnectToSource(a);
         }
     } else {
         emissionColor.Set(vm.baseColor);
-        opacity.Set(vm.opacity);
+        opacity.Set(_GltfOpacity(vm));
     }
 
     // Terminal: material -> graph -> internal shader, as for /preview (§4.1).
@@ -258,12 +329,16 @@ void _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat,
     mat.CreateSurfaceOutput(TfToken("mtlx")).ConnectToSource(graphOut);
 
     // Say which MaterialX the graph was written against, the way UsdMtlx does
-    // for documents it reads.
-    mat.GetPrim().ApplyAPI(TfToken("MaterialXConfigAPI"));
-    mat.GetPrim()
-        .CreateAttribute(TfToken("config:mtlx:version"),
-                         SdfValueTypeNames->String, /*custom=*/false)
-        .Set(std::string(_kMtlxVersion));
+    // for documents it reads. The schema comes from the usdMtlx plugin rather
+    // than from anything this bundle links, so an apply that fails means the
+    // runtime is missing it — author nothing rather than leave an undeclared
+    // builtin behind on a prim that has no such schema.
+    if (mat.GetPrim().ApplyAPI(TfToken("MaterialXConfigAPI"))) {
+        mat.GetPrim()
+            .CreateAttribute(TfToken("config:mtlx:version"),
+                             SdfValueTypeNames->String, /*custom=*/false)
+            .Set(std::string(_kMtlxVersion));
+    }
 }
 
 // Build the relative joint path (e.g. "Hips/Spine/Chest") for every joint, in
@@ -453,7 +528,7 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         shader.CreateInput(TfToken("roughness"), SdfValueTypeNames->Float)
             .Set(unlit ? 1.0f : vm.roughness);
         shader.CreateInput(TfToken("opacity"), SdfValueTypeNames->Float)
-            .Set(vm.opacity);
+            .Set(_GltfOpacity(vm));
         if (vm.alphaMode == "MASK") {
             shader.CreateInput(TfToken("opacityThreshold"), SdfValueTypeNames->Float)
                 .Set(vm.alphaCutoff);
@@ -501,18 +576,22 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             UsdShadeInput st =
                 tex.CreateInput(TfToken("st"), SdfValueTypeNames->Float2);
             // KHR_texture_transform -> UsdTransform2d between the reader and st.
+            // The node computes rotate2d(in * scale, -rotation) + translation,
+            // and rotate2d turns clockwise, so the two negations cancel and the
+            // shared st-space rotation is authored as-is.
             if (ref.hasTransform) {
+                const _UvTransform uv = _GltfUvTransform(ref);
                 UsdShadeShader xf = UsdShadeShader::Define(stage,
                     previewPath.AppendChild(TfToken(std::string(nodeName) + "_xf")));
                 xf.CreateIdAttr(VtValue(TfToken("UsdTransform2d")));
                 xf.CreateInput(TfToken("in"), SdfValueTypeNames->Float2)
                     .ConnectToSource(stReader.GetOutput(TfToken("result")));
                 xf.CreateInput(TfToken("translation"), SdfValueTypeNames->Float2)
-                    .Set(ref.uvOffset);
+                    .Set(uv.translation);
                 xf.CreateInput(TfToken("scale"), SdfValueTypeNames->Float2)
-                    .Set(ref.uvScale);
+                    .Set(uv.scale);
                 xf.CreateInput(TfToken("rotation"), SdfValueTypeNames->Float)
-                    .Set(ref.uvRotation);
+                    .Set(uv.rotationDegrees);
                 st.ConnectToSource(
                     xf.CreateOutput(TfToken("result"), SdfValueTypeNames->Float2));
             } else {

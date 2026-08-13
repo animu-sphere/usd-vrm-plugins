@@ -348,6 +348,19 @@ def check_material_hierarchy():
                             {"preview": "NodeGraph", "mtlx": "NodeGraph"}), \
                 f"{where}: children {kids}"
 
+            # ...and which of the two it is has to follow from the material, or
+            # the assertion above degrades into "either shape is fine" and the
+            # unlit-only scope stops being tested at all. /preview's unlit
+            # branch is the readable witness: diffuse killed, base colour moved
+            # to emissive, no lit response.
+            preview_surface = prim.GetPrimAtPath("preview/surface")
+            unlit = (preview_surface.GetAttribute("inputs:diffuseColor").Get()
+                     == Gf.Vec3f(0, 0, 0)
+                     and preview_surface.GetAttribute("inputs:metallic").Get() == 0.0
+                     and preview_surface.GetAttribute("inputs:roughness").Get() == 1.0)
+            assert ("mtlx" in kids) == unlit, \
+                f"{where}: /mtlx present={'mtlx' in kids} but unlit={unlit}"
+
             preview = UsdShade.NodeGraph(prim.GetChild("preview"))
             src = mat.GetSurfaceOutput().GetConnectedSource()
             assert src, f"{where}: surface terminal not connected"
@@ -408,6 +421,80 @@ def check_material_hierarchy():
                     f"{fixture}: {prim.GetPath()} binds non-material {target}"
 
 
+def check_texture_transform():
+    """KHR_texture_transform lands on the same texel in both realizations, and
+    that texel is the one glTF names.
+
+    Asserted by evaluating the two node definitions against glTF's own matrix
+    rather than against each other: `UsdTransform2d` computes
+    `rotate2d(in * scale, -rotation) + translation` while MaterialX's `place2d`
+    computes `rotate2d((uv - pivot) / scale, rotate) - offset + pivot`, so they
+    divide where the other multiplies and subtract where it adds. Nothing about
+    passing the glTF triple to both is safe, and an identity transform -- which
+    is every transform in the vendored corpus -- hides all of it.
+    """
+    import math
+
+    # The values authored into the fixture.
+    rot = 1.5707963
+    scale = (2.0, 4.0)
+    offset = (0.25, 0.125)
+    cos_r, sin_r = math.cos(rot), math.sin(rot)
+
+    def rotate2d(v, degrees):
+        """MaterialX's rotate2d: clockwise, and it takes degrees."""
+        a = math.radians(degrees)
+        ca, sa = math.cos(a), math.sin(a)
+        return (ca * v[0] + sa * v[1], -sa * v[0] + ca * v[1])
+
+    def gltf_sample(uv):
+        """Where glTF says to sample, given its T*R*S matrix on glTF UVs."""
+        u, v = uv
+        return (scale[0] * cos_r * u + scale[1] * sin_r * v + offset[0],
+                -scale[0] * sin_r * u + scale[1] * cos_r * v + offset[1])
+
+    def flip(p):
+        return (p[0], 1.0 - p[1])
+
+    stage = _open("materials.vrm")
+
+    xf = stage.GetPrimAtPath("/Asset/mtl/UnlitPlaced/preview/baseColorTexture_xf")
+    assert xf.IsValid(), "expected a UsdTransform2d on the placed material"
+    p_scale = xf.GetAttribute("inputs:scale").Get()
+    p_rot = xf.GetAttribute("inputs:rotation").Get()
+    p_trans = xf.GetAttribute("inputs:translation").Get()
+
+    place = stage.GetPrimAtPath("/Asset/mtl/UnlitPlaced/mtlx/baseColorPlace")
+    assert place.IsValid(), "expected a place2d on the placed material"
+    m_scale = place.GetAttribute("inputs:scale").Get()
+    m_rot = place.GetAttribute("inputs:rotate").Get()
+    m_offset = place.GetAttribute("inputs:offset").Get()
+    assert place.GetAttribute("inputs:operationorder").Get() in (None, 0), \
+        "the maths below assumes place2d's default SRT order"
+
+    def preview_sample(st):
+        v = rotate2d((st[0] * p_scale[0], st[1] * p_scale[1]), -p_rot)
+        return (v[0] + p_trans[0], v[1] + p_trans[1])
+
+    def mtlx_sample(st):
+        v = rotate2d((st[0] / m_scale[0], st[1] / m_scale[1]), m_rot)
+        return (v[0] - m_offset[0], v[1] - m_offset[1])
+
+    for uv in ((0.0, 0.0), (1.0, 1.0), (0.3, 0.7), (0.25, 0.9)):
+        st = flip(uv)                 # what the importer wrote into primvars:st
+        want = flip(gltf_sample(uv))  # what USD must sample to match glTF
+        assert _vclose(preview_sample(st), want, 1e-4), \
+            f"/preview samples {preview_sample(st)} for uv {uv}, want {want}"
+        assert _vclose(mtlx_sample(st), want, 1e-4), \
+            f"/mtlx samples {mtlx_sample(st)} for uv {uv}, want {want}"
+
+    # The rotation is stated in degrees by both nodes; glTF states it in
+    # radians. Passing 1.5708 through unconverted is a 90-degree rotation
+    # authored as 1.57 degrees, which looks like no rotation at all.
+    assert abs(abs(p_rot) - 90.0) < 1e-3, f"preview rotation {p_rot} is not in degrees"
+    assert abs(abs(m_rot) - 90.0) < 1e-3, f"mtlx rotate {m_rot} is not in degrees"
+
+
 def check_mtlx_node_ids():
     """Every `info:id` inside /mtlx names a real MaterialX node definition.
 
@@ -434,8 +521,25 @@ def check_mtlx_node_ids():
                 continue
             node_id = shader.GetIdAttr().Get()
             assert node_id, f"{fixture} {prim.GetPath()}: no info:id"
-            assert registry.GetShaderNodeByIdentifier(node_id), \
+            node = registry.GetShaderNodeByIdentifier(node_id)
+            assert node, \
                 f"{fixture} {prim.GetPath()}: unknown MaterialX node '{node_id}'"
+
+            # A wrong input name fails even more quietly than a wrong node id:
+            # nothing rejects it, the node keeps its default, and the material
+            # renders as though the value had never been authored. Rename
+            # `emissive` to `emissiveColor` and every unlit avatar goes black.
+            declared_in = set(node.GetShaderInputNames())
+            for inp in shader.GetInputs():
+                assert inp.GetBaseName() in declared_in, \
+                    (f"{fixture} {prim.GetPath()}: '{node_id}' has no input "
+                     f"'{inp.GetBaseName()}' ({sorted(declared_in)})")
+            declared_out = set(node.GetShaderOutputNames())
+            for out in shader.GetOutputs():
+                # A surfaceshader output is spelled `surface` in USD.
+                assert out.GetBaseName() in declared_out | {"surface"}, \
+                    (f"{fixture} {prim.GetPath()}: '{node_id}' has no output "
+                     f"'{out.GetBaseName()}' ({sorted(declared_out)})")
             seen += 1
     assert seen, "no /mtlx shader nodes found to verify"
 
@@ -692,7 +796,8 @@ def main() -> int:
                   check_textures, check_portable_package, check_animation,
                   check_lookat, check_springbone, check_names, check_materials,
                   check_material_hierarchy, check_mtlx_textured_unlit,
-                  check_mtlx_node_ids, check_constraints,
+                  check_texture_transform, check_mtlx_node_ids,
+                  check_constraints,
                   check_shared_accessor, check_badext):
         check()
         print(f"  {check.__name__}: OK")
