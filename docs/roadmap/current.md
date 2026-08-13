@@ -48,10 +48,12 @@ reaching a **rig** still is: that is Motion Phase G.
       corpus from and the **socket** had to come first (2026-08-11) rather than
       last. Then the corpus, measured off five real device sessions; then the
       **decoder**; then the **joint map and the basis change** (2026-08-12),
-      which is the first layer here that names a bone. What does not exist is
-      frame assembly and the `LiveCaptureSource` bridge — nothing yet decides
-      whether a frame missing three bones is a frame, or whether the source
-      restarted ([Milestone D](adapters-mocopi-vmc-ardy.md))*;
+      which is the first layer here that names a bone; then **frame assembly**
+      (2026-08-14), which is the layer that decides — a frame missing three bones
+      is now a frame, reported and passed on, and a source that restarted is
+      detected from the stream clock **and** the frame counter, neither of which
+      suffices alone. What is left in this line is the `LiveCaptureSource`
+      bridge ([Milestone D](adapters-mocopi-vmc-ardy.md))*;
 - [ ] recorded packet fixtures decode deterministically with no socket, and a
       loopback test proves the socket path agrees with them — *the first half is
       done and the second is done at the wrong altitude. Seven committed
@@ -59,8 +61,9 @@ reaching a **rig** still is: that is Motion Phase G.
       socket anywhere; the recorder's loopback test proves what comes off a
       socket is byte-identical to what a capture file keeps. What is missing is
       the sibling's arrangement, where the corpus is replayed **through** a
-      socket and the poses compared — and it is missing because nothing in this
-      adapter produces a pose yet. The corpus's own limit is separate and stays
+      socket and the poses compared. That was blocked until 2026-08-14 because
+      nothing in this adapter produced a pose; frame assembly closed that, so it
+      is now merely unwritten. The corpus's own limit is separate and stays
       whatever this line says: **these fixtures pin the decoder, not the
       protocol**, because the grammar that wrote them is the grammar they are
       read with*;
