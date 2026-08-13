@@ -32,7 +32,7 @@ Aligned with the design policy's §11 fidelity vocabulary:
 | LookAt (data) | supported | supported | `VrmLookAtAPI` | Yes |
 | SpringBone / SecondaryAnimation (data) | supported | supported | `VrmSpringBoneAPI` + `VrmColliderAPI` | Yes |
 | Node constraint (data) | preserved¹ | supported | `VrmConstraintAPI` | Yes |
-| PBR material | supported | supported | `UsdShadeMaterial` / `UsdPreviewSurface` | Yes |
+| PBR material | supported | supported | `UsdShadeMaterial` + a `/preview` `UsdShadeNodeGraph` holding the `UsdPreviewSurface` network | Yes |
 | Textures (base/MR/normal/emissive/occlusion) | supported | supported | `UsdUVTexture` + wrap modes | Yes |
 | `KHR_texture_transform` | supported | supported | `UsdTransform2d` | Yes |
 | MToon shading | approximated | approximated | `UsdPreviewSurface` fallback + `vrm:mtoon:raw` | Partial |

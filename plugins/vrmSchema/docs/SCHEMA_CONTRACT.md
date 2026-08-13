@@ -53,6 +53,26 @@ already covered by fixtures, reports, and downstream-facing docs. A future
 physics-oriented adapter may publish `/Asset/physics/*` as an additive view, but
 v1 readers should treat `/Asset/rig/SecondaryMotion/*` as authoritative.
 
+### Shading networks are not contract paths
+
+Under `/Asset/mtl` the contract covers the **material prim** — its path, its
+`vrm:shaderModel` attribute, and its `customData.vrm:mtoon:raw` fallback — and
+nothing below it. The generated shader network is a rendering *realization*, so
+its internal layout may change within v1:
+
+| In the contract | Not in the contract |
+| --- | --- |
+| `/Asset/mtl/<material>` as the binding target | the shader prims below it |
+| `vrm:shaderModel`, `customData.vrm:mtoon:raw` on that prim | node names, node count, graph nesting |
+
+Consumers should reach the surface through `UsdShadeMaterial`'s terminal
+(`ComputeSurfaceSource()`), never by assuming a prim path inside the material.
+Since 2026-08-13 the UsdPreviewSurface network lives one level down, in a
+`/preview` `UsdShadeNodeGraph`, and a MaterialX `/mtlx` sibling is planned
+([material policy](../../../docs/design/MATERIAL_ARCHITECTURE_POLICY.md) §4);
+neither is a contract-version change, because no v1 path moved and no v1
+property changed meaning.
+
 ## Humanoid representation decision
 
 The v1 contract uses one token attribute per human bone:

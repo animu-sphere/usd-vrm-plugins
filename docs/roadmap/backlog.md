@@ -179,8 +179,10 @@ The three steps below are P5's internal order, not a phase sequence. The schemas
 come **last** so the first rendering improvements are not coupled to the schema
 redesign.
 
-- ⬜ **Step 1** — restructure the PreviewSurface network below a `/preview`
-  `UsdShadeNodeGraph` ([material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7.1)
+- ✅ **Step 1 — shipped 2026-08-13.** The PreviewSurface network moved below a
+  `/preview` `UsdShadeNodeGraph`, terminals run material → graph → shader, and
+  the baseline diff was verified to be a path move and nothing else
+  ([material policy](../design/MATERIAL_ARCHITECTURE_POLICY.md) §7.1)
 - ⬜ **Step 2** — MaterialX realization below `/mtlx`, unlit first (§7.2)
 - ⬜ **Step 3** — `VrmMaterialAPI` / `VrmMToonAPI` / `VrmTextureInfoAPI` as the
   canonical semantics both generators consume (§7.3)

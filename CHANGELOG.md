@@ -15,6 +15,31 @@ Current schema contract version: **1**.
 
 ### Changed
 
+- **A material is no longer a pile of shader nodes.** The UsdPreviewSurface
+  network moved from the material's immediate children into a `/preview`
+  `UsdShadeNodeGraph`, so `/Asset/mtl/Hair` now reads as one child in `usdview`
+  instead of eight, and the surface terminal runs material → graph → shader
+  rather than material → shader
+  ([material policy](docs/design/MATERIAL_ARCHITECTURE_POLICY.md) §4, Product P5
+  Step 1). Material **bindings** are unchanged: they still target
+  `/Asset/mtl/<name>` and nothing below it.
+
+  Consumers that hard-code `/Asset/mtl/<name>/Surface` must change — the surface
+  shader is at `/Asset/mtl/<name>/preview/surface`, and textures at
+  `/Asset/mtl/<name>/preview/<slot>Texture` — but consumers that ask
+  `UsdShadeMaterial` for its terminal (`ComputeSurfaceSource()`) need no change,
+  which is why the schema contract stays at v1: no contract path moved and no
+  property changed meaning. The
+  [contract](plugins/vrmSchema/docs/SCHEMA_CONTRACT.md) now says outright that
+  the shader network below a material was never contract, rather than leaving it
+  to be inferred from a path table that never mentioned it.
+
+  Nothing about the rendered result changed, and that claim is mechanical rather
+  than reviewed by eye: the committed baseline digests, with the path rename
+  applied and no other edit, equal the regenerated ones for all 28 inputs —
+  including both vendored corpus avatars, 17 and 13 materials. 44 baseline
+  artifacts moved paths; none moved a value.
+
 - **The roadmap is rebased on what v0.6.0 actually shipped.** It still said
   "Next: v0.6.0 — the OpenExec foundation" after v0.6.0 shipped VMC input, so the
   sequence was rebuilt rather than renumbered by one: v0.7.0 is the mocopi native
