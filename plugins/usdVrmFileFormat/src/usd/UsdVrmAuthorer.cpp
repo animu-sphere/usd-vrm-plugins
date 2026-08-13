@@ -82,6 +82,190 @@ const std::set<TfToken>& _VrmHumanoidSchemaBones()
 const TfToken _kAssetName("Asset");
 constexpr int _kSchemaContractVersion = 1;
 
+// The MaterialX version whose node semantics this authorer targets. A literal,
+// not the linked MaterialX version: the graph we write must mean the same thing
+// on every runtime, and deriving it would make the frozen baselines depend on
+// whichever MaterialX a platform happens to ship.
+const char* const _kMtlxVersion = "1.39";
+
+// glTF sampler wrap -> MaterialX addressmode. The vocabularies differ by one
+// word and the enum is not validated at author time, so "repeat" would sail
+// through and mean nothing.
+TfToken _MtlxAddressMode(const std::string& wrap)
+{
+    if (wrap == "clamp") return TfToken("clamp");
+    if (wrap == "mirror") return TfToken("mirror");
+    return TfToken("periodic");  // glTF "repeat"
+}
+
+// Author /Asset/mtl/<name>/mtlx: the MaterialX realization of an unlit VRM
+// material (material policy §5.2).
+//
+// The terminal is `gltf_pbr` with every lit response zeroed — base colour black,
+// specular off — and the material's colour carried on `emissive`. That reads
+// like the PreviewSurface workaround §5.2 forbids propagating here, so the
+// reason it is not is worth recording: MaterialX's two direct ways to say unlit
+// do not survive hdSt in OpenUSD 26.08. Measured against the pinned runtime:
+//
+//   ND_surface_unlit               fails to compile (GLSL references undeclared
+//   ND_convert_color4_surfaceshader  `u_env*` uniforms); the prim then draws as
+//                                    hdSt's flat grey fallback
+//   ND_surface + EDF, no BSDF      compiles, renders, but `opacity` has no
+//                                    effect at all — VRM hair and eyelashes
+//                                    come out solid
+//   ND_surface + EDF + black BSDF  works, including opacity
+//   ND_gltf_pbr_surfaceshader      works, and is the only one whose alpha the
+//                                    renderer reads as glTF defines it
+//
+// The common factor in the broken cases is a surface with no BSDF. Between the
+// two that work, glTF's own model wins: `alpha_mode` and `alpha_cutoff` are
+// native, so MASK becomes a real cutout rather than an `ifgreater` emulated
+// against a translucent draw, and Step 2's lit materials will want the same
+// terminal. There is also no fallback to lean on — a material carrying an
+// unrenderable `outputs:mtlx:surface` does not revert to the universal
+// terminal, it renders as an untextured grey.
+//
+// Base colour follows glTF: factor * texture, multiplied after the sRGB decode
+// that the file's `colorSpace` metadata requests — the same order /preview gets
+// from folding the factor into UsdUVTexture.scale, so the two realizations
+// agree on the value while disagreeing on the shading model.
+void _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat,
+                      const VrmMaterial& vm)
+{
+    const SdfPath mtlxPath = mat.GetPath().AppendChild(TfToken("mtlx"));
+    UsdShadeNodeGraph graph = UsdShadeNodeGraph::Define(stage, mtlxPath);
+
+    auto node = [&](const char* name, const char* id) {
+        UsdShadeShader s =
+            UsdShadeShader::Define(stage, mtlxPath.AppendChild(TfToken(name)));
+        s.CreateIdAttr(VtValue(TfToken(id)));
+        return s;
+    };
+
+    UsdShadeShader surface = node("surface", "ND_gltf_pbr_surfaceshader");
+    // No lit response: no diffuse albedo and no specular lobe. Leaving specular
+    // at its default puts a highlight on a toon face.
+    surface.CreateInput(TfToken("base_color"), SdfValueTypeNames->Color3f)
+        .Set(GfVec3f(0.0f));
+    surface.CreateInput(TfToken("metallic"), SdfValueTypeNames->Float).Set(0.0f);
+    surface.CreateInput(TfToken("roughness"), SdfValueTypeNames->Float).Set(1.0f);
+    surface.CreateInput(TfToken("specular"), SdfValueTypeNames->Float).Set(0.0f);
+
+    // Emitted colour and alpha, resolved below to either a constant or the tail
+    // of the texture chain.
+    UsdShadeInput emissionColor =
+        surface.CreateInput(TfToken("emissive"), SdfValueTypeNames->Color3f);
+    UsdShadeInput opacity =
+        surface.CreateInput(TfToken("alpha"), SdfValueTypeNames->Float);
+
+    // glTF alpha coverage, verbatim: 0 OPAQUE, 1 MASK, 2 BLEND. The renderer
+    // reads this to choose opaque / cutout / blended drawing, so it is authored
+    // even when it is the default.
+    const int alphaMode =
+        vm.alphaMode == "MASK" ? 1 : (vm.alphaMode == "BLEND" ? 2 : 0);
+    surface.CreateInput(TfToken("alpha_mode"), SdfValueTypeNames->Int)
+        .Set(alphaMode);
+    if (alphaMode == 1) {
+        surface.CreateInput(TfToken("alpha_cutoff"), SdfValueTypeNames->Float)
+            .Set(vm.alphaCutoff);
+    }
+
+    if (vm.baseColorTex.present) {
+        const VrmTextureRef& ref = vm.baseColorTex;
+
+        UsdShadeShader st = node("st", "ND_texcoord_vector2");
+        st.CreateInput(TfToken("index"), SdfValueTypeNames->Int).Set(ref.uvSet);
+        UsdShadeOutput uv =
+            st.CreateOutput(TfToken("out"), SdfValueTypeNames->Float2);
+
+        // KHR_texture_transform. MaterialX's place2d applies the same
+        // scale/rotate/offset triple UsdTransform2d does in /preview.
+        if (ref.hasTransform) {
+            UsdShadeShader place = node("baseColorPlace", "ND_place2d_vector2");
+            place.CreateInput(TfToken("texcoord"), SdfValueTypeNames->Float2)
+                .ConnectToSource(uv);
+            place.CreateInput(TfToken("scale"), SdfValueTypeNames->Float2)
+                .Set(ref.uvScale);
+            place.CreateInput(TfToken("rotate"), SdfValueTypeNames->Float)
+                .Set(ref.uvRotation);
+            place.CreateInput(TfToken("offset"), SdfValueTypeNames->Float2)
+                .Set(ref.uvOffset);
+            uv = place.CreateOutput(TfToken("out"), SdfValueTypeNames->Float2);
+        }
+
+        // color4 in one fetch: the alpha has to come from the same sample as
+        // the colour, and MaterialX has no multi-output image node.
+        UsdShadeShader image = node("baseColorImage", "ND_image_color4");
+        UsdShadeInput file =
+            image.CreateInput(TfToken("file"), SdfValueTypeNames->Asset);
+        file.Set(SdfAssetPath(ref.filePath));
+        // sRGB is metadata on the asset here, not an input as in /preview.
+        file.GetAttr().SetColorSpace(TfToken("srgb_texture"));
+        image.CreateInput(TfToken("texcoord"), SdfValueTypeNames->Float2)
+            .ConnectToSource(uv);
+        image.CreateInput(TfToken("uaddressmode"), SdfValueTypeNames->String)
+            .Set(_MtlxAddressMode(ref.wrapS).GetString());
+        image.CreateInput(TfToken("vaddressmode"), SdfValueTypeNames->String)
+            .Set(_MtlxAddressMode(ref.wrapT).GetString());
+
+        UsdShadeShader factor = node("baseColorFactor", "ND_multiply_color4");
+        factor.CreateInput(TfToken("in1"), SdfValueTypeNames->Color4f)
+            .ConnectToSource(
+                image.CreateOutput(TfToken("out"), SdfValueTypeNames->Color4f));
+        factor.CreateInput(TfToken("in2"), SdfValueTypeNames->Color4f)
+            .Set(GfVec4f(vm.baseColor[0], vm.baseColor[1], vm.baseColor[2],
+                         vm.opacity));
+
+        UsdShadeShader split = node("baseColorSplit", "ND_separate4_color4");
+        split.CreateInput(TfToken("in"), SdfValueTypeNames->Color4f)
+            .ConnectToSource(factor.CreateOutput(TfToken("out"),
+                                                 SdfValueTypeNames->Color4f));
+        UsdShadeOutput r =
+            split.CreateOutput(TfToken("outr"), SdfValueTypeNames->Float);
+        UsdShadeOutput g =
+            split.CreateOutput(TfToken("outg"), SdfValueTypeNames->Float);
+        UsdShadeOutput b =
+            split.CreateOutput(TfToken("outb"), SdfValueTypeNames->Float);
+        UsdShadeOutput a =
+            split.CreateOutput(TfToken("outa"), SdfValueTypeNames->Float);
+
+        UsdShadeShader rgb = node("baseColorRgb", "ND_combine3_color3");
+        rgb.CreateInput(TfToken("in1"), SdfValueTypeNames->Float).ConnectToSource(r);
+        rgb.CreateInput(TfToken("in2"), SdfValueTypeNames->Float).ConnectToSource(g);
+        rgb.CreateInput(TfToken("in3"), SdfValueTypeNames->Float).ConnectToSource(b);
+        emissionColor.ConnectToSource(
+            rgb.CreateOutput(TfToken("out"), SdfValueTypeNames->Color3f));
+
+        // The sampled alpha only reaches the surface where glTF says it counts;
+        // OPAQUE ignores it, exactly as /preview leaves opacity unconnected.
+        if (alphaMode == 0) {
+            opacity.Set(vm.opacity);
+        } else {
+            opacity.ConnectToSource(a);
+        }
+    } else {
+        emissionColor.Set(vm.baseColor);
+        opacity.Set(vm.opacity);
+    }
+
+    // Terminal: material -> graph -> internal shader, as for /preview (§4.1).
+    // The render-context name is what a MaterialX-aware renderer looks for, and
+    // it wins over the universal terminal wherever both exist.
+    UsdShadeOutput graphOut =
+        graph.CreateOutput(TfToken("surface"), SdfValueTypeNames->Token);
+    graphOut.ConnectToSource(
+        surface.CreateOutput(TfToken("surface"), SdfValueTypeNames->Token));
+    mat.CreateSurfaceOutput(TfToken("mtlx")).ConnectToSource(graphOut);
+
+    // Say which MaterialX the graph was written against, the way UsdMtlx does
+    // for documents it reads.
+    mat.GetPrim().ApplyAPI(TfToken("MaterialXConfigAPI"));
+    mat.GetPrim()
+        .CreateAttribute(TfToken("config:mtlx:version"),
+                         SdfValueTypeNames->String, /*custom=*/false)
+        .Set(std::string(_kMtlxVersion));
+}
+
 // Build the relative joint path (e.g. "Hips/Spine/Chest") for every joint, in
 // canonical (skin) order, resolving parents via memoized recursion so the input
 // order need not be parents-first.
@@ -401,6 +585,17 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             shader.CreateInput(TfToken("normal"), SdfValueTypeNames->Normal3f)
                 .ConnectToSource(t.GetOutput(TfToken("rgb")));
         }
+
+        // -------------------------------------------------------------------
+        // MaterialX realization (material policy §5.2, P5 step 2).
+        //
+        // The portable approximation, generated from the same source material
+        // as /preview and never from /preview itself (§3). Unlit only for now:
+        // that is where MaterialX says something PreviewSurface cannot, and
+        // where every VRM character material lands.
+        // -------------------------------------------------------------------
+        if (unlit)
+            _AuthorMtlxUnlit(stage, mat, vm);
 
         // MToon: keep the glTF/UsdPreviewSurface approximation, tag the shader
         // model, and preserve the raw extension block for a later MaterialX /

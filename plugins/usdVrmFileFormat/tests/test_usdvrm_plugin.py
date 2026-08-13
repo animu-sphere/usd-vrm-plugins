@@ -250,6 +250,76 @@ def check_materials():
     assert abs(em[0] - 0.9) < 1e-6 and abs(em[2] - 0.1) < 1e-6, em
     assert abs(flat.GetAttribute("inputs:metallic").Get()) < 1e-6
 
+    # The same material in MaterialX: the colour agrees with /preview, but it is
+    # reached as glTF emission with the lit response switched off rather than
+    # through a PreviewSurface emissive workaround, and glTF alpha coverage is
+    # stated in the terminal's own vocabulary (material policy §5.2).
+    mx = stage.GetPrimAtPath("/Asset/mtl/Unlit/mtlx/surface")
+    assert mx.IsValid(), "expected a MaterialX realization on the unlit material"
+    assert mx.GetAttribute("info:id").Get() == "ND_gltf_pbr_surfaceshader"
+    assert mx.GetAttribute("inputs:base_color").Get() == Gf.Vec3f(0, 0, 0)
+    assert abs(mx.GetAttribute("inputs:specular").Get()) < 1e-6, \
+        "a specular lobe would put a highlight on a toon surface"
+    assert _vclose(mx.GetAttribute("inputs:emissive").Get(), em), \
+        "unlit colour must match the /preview realization"
+    assert mx.GetAttribute("inputs:alpha_mode").Get() == 0, "Unlit is OPAQUE"
+
+    # Lit materials carry no MaterialX realization yet (step 2 is unlit-first),
+    # so they resolve through the universal terminal.
+    assert not stage.GetPrimAtPath("/Asset/mtl/Glass/mtlx").IsValid()
+
+
+def check_mtlx_textured_unlit():
+    """The unlit + textured + alpha-masked path, which is what a VRM avatar is
+    actually made of: sampled alpha, the factor multiply, and the sampler wrap
+    modes all reach the MaterialX surface only along this route.
+    """
+    stage = _open("materials.vrm")
+    g = "/Asset/mtl/UnlitCutout/mtlx"
+    surface = stage.GetPrimAtPath(f"{g}/surface")
+    assert surface.IsValid(), "expected a MaterialX realization on UnlitCutout"
+
+    # glTF alpha coverage stated natively: MASK is a cutout the renderer
+    # performs, not an ifgreater comparison drawn as a blended surface.
+    assert surface.GetAttribute("inputs:alpha_mode").Get() == 1
+    cut = surface.GetAttribute("inputs:alpha_cutoff").Get()
+    assert abs(cut - 0.4) < 1e-6, f"alpha_cutoff: {cut}"
+
+    # base colour = factor * texture, with the factor's alpha in the 4th
+    # channel so the sampled alpha carries it too.
+    image = stage.GetPrimAtPath(f"{g}/baseColorImage")
+    assert image.GetAttribute("info:id").Get() == "ND_image_color4"
+    fattr = image.GetAttribute("inputs:file")
+    assert fattr.GetColorSpace() == "srgb_texture", \
+        "base colour must be decoded from sRGB"
+    # glTF's "repeat" is MaterialX's "periodic"; passing the glTF word through
+    # would author an unknown enum that nothing rejects.
+    assert image.GetAttribute("inputs:uaddressmode").Get() == "periodic"
+    assert image.GetAttribute("inputs:vaddressmode").Get() == "clamp"
+
+    factor = stage.GetPrimAtPath(f"{g}/baseColorFactor")
+    assert factor.GetAttribute("info:id").Get() == "ND_multiply_color4"
+    assert _vclose(factor.GetAttribute("inputs:in2").Get(),
+                   Gf.Vec4f(0.3, 0.6, 0.9, 0.8)), "base colour factor"
+
+    # The /preview realization folds the same factor into UsdUVTexture.scale.
+    # Both realizations multiply after the sRGB decode, so the colour agrees
+    # even though the shading models do not (material policy §5.4).
+    scale = stage.GetPrimAtPath(
+        "/Asset/mtl/UnlitCutout/preview/baseColorTexture"
+    ).GetAttribute("inputs:scale").Get()
+    assert _vclose(scale, factor.GetAttribute("inputs:in2").Get()), \
+        f"preview scale {scale} disagrees with the MaterialX factor"
+
+    # Alpha reaches the surface, colour reaches emission: the graph is wired
+    # end to end, not merely present.
+    alpha_src = UsdShade.Shader(surface).GetInput("alpha").GetConnectedSource()
+    assert alpha_src and alpha_src[1] == "outa", f"alpha source {alpha_src}"
+    emissive_src = UsdShade.Shader(surface).GetInput("emissive").GetConnectedSource()
+    assert emissive_src, "emissive is not driven by the texture chain"
+    assert emissive_src[0].GetPrim().GetPath().pathString == f"{g}/baseColorRgb"
+
+
 
 def check_material_hierarchy():
     """Material policy §4: the material prim carries identity and binding only;
@@ -271,9 +341,12 @@ def check_material_hierarchy():
 
             # Only realization graphs directly below the material: an authored
             # Shader here would be an implementation detail leaking into the
-            # material's public shape.
+            # material's public shape. /mtlx is present on unlit materials only
+            # (P5 step 2 scope), so the set is one of two.
             kids = {c.GetName(): c.GetTypeName() for c in prim.GetChildren()}
-            assert kids == {"preview": "NodeGraph"}, f"{where}: children {kids}"
+            assert kids in ({"preview": "NodeGraph"},
+                            {"preview": "NodeGraph", "mtlx": "NodeGraph"}), \
+                f"{where}: children {kids}"
 
             preview = UsdShade.NodeGraph(prim.GetChild("preview"))
             src = mat.GetSurfaceOutput().GetConnectedSource()
@@ -295,6 +368,36 @@ def check_material_hierarchy():
             assert shader.GetIdAttr().Get() == "UsdPreviewSurface", where
             assert name == "surface", f"{where}: surface source name {name}"
 
+            if "mtlx" not in kids:
+                continue
+
+            # The MaterialX realization: same boundary shape, reached through
+            # the mtlx render context rather than the universal terminal. A
+            # renderer that understands MaterialX takes this one in preference,
+            # so a broken terminal here does not fall back to /preview — it
+            # fails to draw.
+            mtlx = UsdShade.NodeGraph(prim.GetChild("mtlx"))
+            msrc = mat.GetSurfaceOutput("mtlx").GetConnectedSource()
+            assert msrc, f"{where}: mtlx terminal not connected"
+            assert msrc[0].GetPrim() == mtlx.GetPrim() and msrc[1] == "surface", \
+                f"{where}: mtlx terminal -> {msrc[0].GetPrim().GetPath()}.{msrc[1]}"
+
+            mgsrc = mtlx.GetOutput("surface").GetConnectedSource()
+            assert mgsrc, f"{where}: /mtlx exposes no connected surface output"
+            minner = mgsrc[0].GetPrim()
+            assert minner.GetPath().HasPrefix(mtlx.GetPath()), \
+                f"{where}: /mtlx output leaves the graph: {minner.GetPath()}"
+
+            mshader, mname, _ = mat.ComputeSurfaceSource("mtlx")
+            assert mshader and mshader.GetPrim() == minner, \
+                f"{where}: mtlx source resolves to {mshader and mshader.GetPath()}"
+            assert mname == "surface", f"{where}: mtlx source name {mname}"
+
+            # The MaterialX version the graph was written against is declared,
+            # so a consumer is not left inferring which node semantics apply.
+            assert "MaterialXConfigAPI" in prim.GetAppliedSchemas(), where
+            assert prim.GetAttribute("config:mtlx:version").Get() == "1.39", where
+
         # Bindings target the material prim itself, never a node inside it.
         for prim in stage.Traverse():
             if not prim.IsA(UsdGeom.Mesh):
@@ -303,6 +406,38 @@ def check_material_hierarchy():
                     prim).GetDirectBindingRel().GetTargets():
                 assert UsdShade.Material(stage.GetPrimAtPath(target)), \
                     f"{fixture}: {prim.GetPath()} binds non-material {target}"
+
+
+def check_mtlx_node_ids():
+    """Every `info:id` inside /mtlx names a real MaterialX node definition.
+
+    A misspelled `ND_*` id is the cheapest mistake to make here and the most
+    expensive to notice: nothing rejects it at author time, the stage opens, and
+    the material simply fails to draw in a MaterialX-aware renderer. Sdr is the
+    same registry the renderer consults, so asking it is the check.
+    """
+    from pxr import Sdr
+
+    registry = Sdr.Registry()
+    if not registry.GetShaderNodeByIdentifier("ND_gltf_pbr_surfaceshader"):
+        print("    (MaterialX node definitions unavailable; skipped)")
+        return
+
+    seen = 0
+    for fixture in ("materials.vrm", "textures.vrm"):
+        stage = _open(fixture)
+        for prim in stage.Traverse():
+            if "mtlx" not in prim.GetPath().pathString.split("/"):
+                continue
+            shader = UsdShade.Shader(prim)
+            if not shader:
+                continue
+            node_id = shader.GetIdAttr().Get()
+            assert node_id, f"{fixture} {prim.GetPath()}: no info:id"
+            assert registry.GetShaderNodeByIdentifier(node_id), \
+                f"{fixture} {prim.GetPath()}: unknown MaterialX node '{node_id}'"
+            seen += 1
+    assert seen, "no /mtlx shader nodes found to verify"
 
 
 def check_springbone():
@@ -556,7 +691,8 @@ def main() -> int:
                   check_vrm0_expressions, check_vrm0_frontbake,
                   check_textures, check_portable_package, check_animation,
                   check_lookat, check_springbone, check_names, check_materials,
-                  check_material_hierarchy, check_constraints,
+                  check_material_hierarchy, check_mtlx_textured_unlit,
+                  check_mtlx_node_ids, check_constraints,
                   check_shared_accessor, check_badext):
         check()
         print(f"  {check.__name__}: OK")

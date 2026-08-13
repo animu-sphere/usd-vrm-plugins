@@ -251,11 +251,18 @@ def build_materials():
     pos = b.add(FLOAT, "VEC3", TRI_POSITIONS, ARRAY_BUFFER, minmax=True)
     idx = _idx(b)
     attrs = {"POSITION": pos}
+    # UnlitCutout's own accessors: an unlit material that is *also* textured and
+    # alpha-masked is the combination a VRM avatar is made of, and the one no
+    # other fixture covers -- the MaterialX realization reaches its sampled
+    # alpha, its factor multiply and its wrap modes only along this path.
+    uv = b.add(FLOAT, "VEC2", [(0.0, 0.0), (1.0, 0.0), (0.5, 1.0)], ARRAY_BUFFER)
+    img_bv = b.add_bytes(solid_png(40, 200, 40))
+    tex_attrs = {"POSITION": pos, "TEXCOORD_0": uv}
     gltf = {
         "asset": {"version": "2.0", "generator": "usdVrm fixtures"},
         "scene": 0, "scenes": [{"nodes": [0, 1]}],
         "nodes": [{"name": "Blended", "mesh": 0}, {"name": "Masked", "mesh": 1},
-                  {"name": "Flat", "mesh": 2}],
+                  {"name": "Flat", "mesh": 2}, {"name": "FlatCutout", "mesh": 3}],
         "meshes": [
             {"name": "Blended", "primitives": [
                 {"attributes": attrs, "indices": idx, "material": 0}]},
@@ -263,7 +270,12 @@ def build_materials():
                 {"attributes": attrs, "indices": idx, "material": 1}]},
             {"name": "Flat", "primitives": [
                 {"attributes": attrs, "indices": idx, "material": 2}]},
+            {"name": "FlatCutout", "primitives": [
+                {"attributes": tex_attrs, "indices": idx, "material": 3}]},
         ],
+        "images": [{"name": "green", "bufferView": img_bv, "mimeType": "image/png"}],
+        "samplers": [{"wrapS": 10497, "wrapT": 33071}],  # repeat / clamp
+        "textures": [{"source": 0, "sampler": 0}],
         "materials": [
             {"name": "Glass", "doubleSided": True, "alphaMode": "BLEND",
              "pbrMetallicRoughness": {"baseColorFactor": [0.2, 0.4, 0.9, 0.3]}},
@@ -271,6 +283,12 @@ def build_materials():
              "pbrMetallicRoughness": {"baseColorFactor": [0.1, 0.8, 0.2, 1.0]}},
             {"name": "Unlit", "extensions": {"KHR_materials_unlit": {}},
              "pbrMetallicRoughness": {"baseColorFactor": [0.9, 0.1, 0.1, 1.0]}},
+            {"name": "UnlitCutout", "alphaMode": "MASK", "alphaCutoff": 0.4,
+             "extensions": {"KHR_materials_unlit": {}},
+             "pbrMetallicRoughness": {
+                 "baseColorFactor": [0.3, 0.6, 0.9, 0.8],
+                 "baseColorTexture": {"index": 0},
+             }},
         ],
         "extensionsUsed": ["VRMC_vrm", "KHR_materials_unlit"],
         "extensions": {"VRMC_vrm": vrm1_extension({})},
