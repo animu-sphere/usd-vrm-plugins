@@ -13,6 +13,42 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+### Added
+
+- **Unlit VRM materials now carry a MaterialX network, and it is the one that
+  renders.** Each `KHR_materials_unlit` material gains a second realization at
+  `/Asset/mtl/<name>/mtlx`, reached through `outputs:mtlx:surface`
+  ([material policy](docs/design/MATERIAL_ARCHITECTURE_POLICY.md) §5.2, Product
+  P5 Step 2). It is generated from the source material, never by translating the
+  PreviewSurface graph, and it keeps glTF's semantics rather than approximating
+  them: base colour is `factor * texture` decoded from sRGB, and alpha coverage
+  is stated as `alpha_mode` / `alpha_cutoff` so MASK is a cutout the renderer
+  performs instead of a comparison emulated inside the graph.
+
+  **This changes what you see.** A renderer picks one terminal, and Storm asks
+  for `mtlx` before the universal one, so `usdview` now draws the MaterialX
+  network and `/preview` becomes the path for consumers that do not speak
+  MaterialX. The visible difference on a real avatar is alpha: hair strands and
+  eyelashes that `/preview` draws as opaque quads — the flat blocks across the
+  forehead in issue #119 — composite correctly.
+
+  The terminal is `gltf_pbr` with its lit response zeroed rather than
+  MaterialX's own `surface_unlit`, which reads backwards until you try the
+  alternatives on the pinned runtime: on OpenUSD 26.08, `surface_unlit` and
+  `convert_color4_surfaceshader` fail to compile in hdSt (their generated GLSL
+  references undeclared `u_env*` uniforms) and a bare `surface` with an EDF and
+  no BSDF renders but ignores `opacity` entirely, which would put VRM hair back
+  to solid. There is no fallback to catch any of that — a material whose
+  MaterialX terminal cannot be built does not revert to `/preview`, it draws as
+  a flat grey default surface — so the whole table of what does and does not
+  work is recorded in material policy §5.2.1, along with the note to revisit it
+  when the runtime moves.
+
+  Lit materials are unchanged and keep `/preview` alone; they are the follow-up
+  half of Step 2. Nothing `/preview` already produced moved or changed value:
+  across all 28 baseline inputs the diff is additive, verified mechanically
+  rather than by eye.
+
 ### Changed
 
 - **A material is no longer a pile of shader nodes.** The UsdPreviewSurface

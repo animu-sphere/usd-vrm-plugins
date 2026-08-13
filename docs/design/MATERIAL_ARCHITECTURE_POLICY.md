@@ -56,13 +56,15 @@ It maps one-to-one onto the three layers DESIGN_POLICY §9 already names:
 
 ## 2. Current state
 
-**Step 1 has landed (2026-08-13).** Every shader node now lives inside the
-`/preview` realization graph
+**Steps 1 and 2 have landed (2026-08-13, 2026-08-14).** Every shader node lives
+inside a realization graph, and unlit materials carry a second one
 ([UsdVrmAuthorer.cpp](../../plugins/usdVrmFileFormat/src/usd/UsdVrmAuthorer.cpp)):
 
 ```text
 /Asset/mtl/<Name>                       UsdShadeMaterial
-    outputs:surface  → preview.outputs:surface
+    outputs:surface       → preview.outputs:surface
+    outputs:mtlx:surface  → mtlx.outputs:surface        (unlit materials only)
+    + MaterialXConfigAPI, config:mtlx:version = "1.39"  (with /mtlx)
     /preview                            UsdShadeNodeGraph
         outputs:surface  → surface.outputs:surface
         /surface                        UsdPreviewSurface
@@ -73,7 +75,23 @@ It maps one-to-one onto the three layers DESIGN_POLICY §9 already names:
         /emissiveTexture                UsdUVTexture
         /occlusionTexture               UsdUVTexture
         /normalTexture                  UsdUVTexture
+    /mtlx                               UsdShadeNodeGraph
+        outputs:surface  → surface.outputs:surface
+        /surface                        ND_gltf_pbr_surfaceshader
+        /st                             ND_texcoord_vector2      (textured only)
+        /baseColorPlace                 ND_place2d_vector2       (KHR_texture_transform only)
+        /baseColorImage                 ND_image_color4          (textured only)
+        /baseColorFactor                ND_multiply_color4       (textured only)
+        /baseColorSplit                 ND_separate4_color4      (textured only)
+        /baseColorRgb                   ND_combine3_color3       (textured only)
 ```
+
+Which materials get a `/mtlx` graph is decided by `KHR_materials_unlit`, the
+same flag `/preview`'s unlit branch reads, so the two realizations never
+disagree about what "unlit" means. On the vendored corpus that is 13 of 13
+materials for one avatar and 10 of 17 for the other — the remaining 7 are
+ordinary glTF PBR accessories (a backpack, glass, a logo), which is the lit
+follow-up in §7.2, not an oversight.
 
 The behavior below is what the restructure had to leave unchanged, and did —
 the baseline diff is a path move (§7.1). It is still the behavior any later
@@ -265,6 +283,61 @@ expressing unlit appearance by driving `UsdPreviewSurface.emissiveColor`. That
 routing (§2) is a PreviewSurface workaround, not a semantic, and must not
 propagate into a second realization.
 
+### 5.2.1 What the pinned runtime can actually render
+
+**Measured on OpenUSD 26.08 / MaterialX 1.39.5 when Step 2 landed
+(2026-08-14).** The preference above survives as an ordering rule but not as a
+node choice: MaterialX's two direct ways to say *unlit* do not reach the screen
+through hdSt.
+
+| Terminal | Result in Storm |
+| --- | --- |
+| `ND_surface_unlit` | fails to compile — generated GLSL references undeclared `u_envRadianceMips` / `u_envLightIntensity` / `u_envMatrix`; the prim then draws as hdSt's flat grey fallback |
+| `ND_convert_color4_surfaceshader` | fails to compile, same undeclared uniforms |
+| `ND_surface` with an EDF and no BSDF | compiles and renders, but `opacity` has **no effect** — a VRM's alpha-blended hair and eyelashes come out solid |
+| `ND_surface` with an EDF *and* a BSDF | works, opacity included |
+| `ND_gltf_pbr_surfaceshader` | works, and is the only one whose alpha the renderer reads as glTF defines it |
+
+The common factor in the failures is a surface with no BSDF. A dome light does
+not help, and there is **no fallback**: a material carrying an unrenderable
+`outputs:mtlx:surface` does not quietly fall back to the universal terminal — it
+draws as hdSt's default surface, a flat grey, so the failure looks like an
+untextured asset rather than an error (§5.5).
+
+`hdSt`'s material tag — opaque, masked, or translucent — is chosen from the
+*terminal node's family*, with dedicated rules for `UsdPreviewSurface`,
+`standard_surface`, `open_pbr_surface` and `gltf_pbr` and a generic fallback for
+everything else. That is why `standard_surface` handles opacity correctly even
+though its own implementation graph ends in the same `surface` node that fails
+here: the decision never looks inside the graph.
+
+So the shipped choice is `gltf_pbr` with the lit response zeroed
+(`base_color = 0`, `specular = 0` — leaving specular at its default puts a
+highlight on a toon face) and colour carried on `emissive`. It resembles the
+PreviewSurface workaround and is not one: it is the glTF material model applied
+to a glTF source, `alpha_mode` and `alpha_cutoff` are native so MASK is a real
+cutout rather than an `ifgreater` emulated against a blended draw, and §7.2's
+lit follow-up wants the same terminal.
+
+Revisit this table when the runtime moves. If a later OpenUSD renders
+`surface_unlit`, that is the better statement of intent and the graph should
+change — which §4.3 already makes cheap.
+
+### 5.2.2 Colour space
+
+The base-colour texture is sRGB, declared as `colorSpace = "srgb_texture"`
+metadata on the MaterialX image node's `file` attribute (`/preview` says the
+same thing through `UsdUVTexture.sourceColorSpace`, which is an input rather
+than metadata).
+
+**Alpha is not decoded with the colour**, verified rather than assumed, because
+a silently gamma-decoded alpha would weaken every cutout and blend in a way that
+reads as an art problem: a texture whose alpha is 128/255 = 0.502 masks at a
+0.45 cutoff and is discarded at 0.55, and the `srgb_texture` and `raw` renders
+are identical for both MASK and BLEND. MaterialX's own
+`srgb_texture_to_lin_rec709_color4` agrees — it converts the RGB and passes the
+fourth channel through untouched.
+
 Later iterations can explore portable approximations for shade color, shading
 shift, shading toony, GI equalization, rim, and MatCap. Features that are
 inherently renderer- or multi-pass-dependent — outline above all — stay canonical
@@ -296,6 +369,27 @@ file-format plugin.
 This split is stated in code comments and asserted in tests. PreviewSurface and
 MaterialX get **separate** expected-fidelity criteria and are never required to
 produce identical images.
+
+### 5.5 A realization is chosen, not merged
+
+A renderer picks **one** terminal. `UsdShadeMaterial::ComputeSurfaceSource`
+walks the render contexts the delegate advertises, in order, and takes the first
+that is connected; the universal terminal is consulted last. Storm advertises
+`mtlx`, so from the moment `outputs:mtlx:surface` exists it is the network that
+draws, and `/preview` becomes the path for consumers that do *not* understand
+MaterialX.
+
+Two consequences worth stating rather than rediscovering:
+
+- **`/mtlx` is not a quiet addition to a material.** Authoring it changes what
+  `usdview` shows, which is the point — and also why §8.2's regression target
+  has to be re-checked against whichever realization the renderer selects
+  rather than against the one that used to draw.
+- **A broken MaterialX graph is not survivable.** There is no automatic
+  fallback to `/preview`; the prim draws as a flat grey default surface, which
+  is worse than an error because it reads as an untextured asset. That is what
+  makes §8.1's "every `info:id` resolves in Sdr" check worth its cost: a
+  misspelled `ND_*` id is silent at author time and grey at render time.
 
 ---
 
@@ -450,6 +544,18 @@ before                          after
 
 ### 7.2 Step 2 — add the MaterialX realization
 
+> **Unlit shipped 2026-08-14** (unreleased; see the changelog's `[Unreleased]`
+> entry). The node choice is not the one this section originally assumed — see
+> §5.2.1, which is the measurement that changed it. Lit materials are the
+> remaining half and keep `/preview` alone until then.
+>
+> Two things are worth carrying forward. The baseline diff is *additive*: no
+> `/preview` shader, `/preview` graph output, or universal terminal moved or
+> changed value across all 28 inputs, verified mechanically rather than by eye,
+> so anything §7.1 froze still says what it said. And the visible win landed
+> where §8.2 predicted — alpha-blended hair and eyelashes that `/preview` draws
+> as opaque quads composite correctly through `/mtlx`.
+
 **Objective.** Add `/Asset/mtl/<MaterialName>/mtlx` as a `UsdShadeNodeGraph` and
 make MaterialX the preferred portable representation, with PreviewSurface
 remaining the fallback.
@@ -558,6 +664,18 @@ Each step is independently testable.
 Structural and connection tests assert the graph boundary, not interior node
 names (§4.3).
 
+Two additions Step 2 made, for failure modes the layers above do not reach:
+
+- **Node-id resolution.** Every `info:id` inside `/mtlx` must resolve in the Sdr
+  registry. A misspelled `ND_*` is accepted at author time, opens fine, and then
+  fails to draw with no fallback (§5.5) — the registry is the same one the
+  renderer consults, so asking it is the check. It skips where MaterialX node
+  definitions are unavailable rather than failing (§11 q6a).
+- **A fixture for the combination avatars are made of.** Unlit *and* textured
+  *and* alpha-masked in one material, which nothing else covered: sampled alpha,
+  the factor multiply, and the sampler wrap-mode translation are only reachable
+  along that path.
+
 ### 8.2 First regression target — issue #119
 
 The blown-out MToon/unlit investigation — front bangs clipping to near-white in
@@ -565,11 +683,20 @@ The blown-out MToon/unlit investigation — front bangs clipping to near-white i
 Base-color factor preservation has already landed, so the remaining candidates
 must be isolated one at a time:
 
-1. source base-color texture/factor semantics;
-2. the current emissive/unlit approximation behavior (§2);
-3. MaterialX unlit behavior;
-4. color-management / render-context differences;
-5. asset-specific source data actually consumed by the VRM renderer.
+1. ~~source base-color texture/factor semantics~~ — landed;
+2. ~~the current emissive/unlit approximation behavior (§2)~~ — **a real
+   contributor, and fixed by Step 2 for unlit materials.** `/preview` draws the
+   asset's alpha-blended hair as opaque quads, so the bang strands read as flat
+   blocks over the forehead; `/mtlx` composites them. What remains blown out
+   after that is the *shade* path, not the alpha path;
+3. ~~MaterialX unlit behavior~~ — characterized in §5.2.1;
+4. ~~color-management differences~~ — the sRGB decode is confined to RGB and
+   leaves alpha alone in both realizations (§5.2.2). Render-context selection is
+   now understood rather than suspected (§5.5);
+5. asset-specific source data actually consumed by the VRM renderer — **the
+   remaining candidate.** The asset's hair carries `_ShadeTexture` and
+   `_ShadeColor`, which no realization reads yet; that is Step 3 plus the
+   MToon follow-up in §7.2, not an alpha or colour-space problem.
 
 Do not assume `COLOR_0` must be multiplied into MToon appearance without checking
 the source material and the applicable VRM/MToon specification behavior. That
@@ -612,10 +739,11 @@ their own PRs:
 | # | Question | Blocks |
 | --- | --- | --- |
 | 1 | Exact `VRMC_materials_mtoon` field names against the VRM 1.0 specification. | Step 3 |
-| 2 | Render-context terminal naming (`outputs:mtlx:surface`) for the pinned OpenUSD version. | Step 2 |
+| ~~2~~ | ~~Render-context terminal naming for the pinned OpenUSD version.~~ **`outputs:mtlx:surface`** (settled 2026-08-14). `UsdShadeMaterial::CreateSurfaceOutput("mtlx")` authors exactly that on 26.08, and Storm advertises the `mtlx` context, so it is also the terminal that draws (§5.5). | — |
 | ~~3~~ | ~~Does the Step 1 path move need a schema contract bump?~~ **No** (settled 2026-08-13). Contract v1 freezes control-prim paths under `/Asset/rig`, the material prim path, and `vrm:mtoon:raw` on that prim — none of which moved. The shader network below a material was never a contract path, and the contract now states that explicitly instead of leaving it to inference. | — |
 | 4 | Restrict `VrmTextureInfoAPI` instance names via schema metadata, or allow arbitrary instances? | Step 3 |
 | 5 | Does `vrm:shaderModel` remain once `VrmMToonAPI` exists, or become redundant? | Step 3 |
-| 6 | MaterialX availability across the supported runtime matrix — 26.08 ships MaterialX 1.39.5, which has already constrained the Linux runtime builds. Confirm the plugin path is clean before the Step 2 CI lane. | Step 2 |
+| ~~6~~ | ~~MaterialX availability across the supported runtime matrix.~~ **The plugin path is clean** (settled 2026-08-14): authoring `/mtlx` is `UsdShade` prim writing and nothing else — no MaterialX link, no `usdMtlx` dependency, no build-system change on any platform. MaterialX is needed only to *resolve* the node ids, which is why §8.1's Sdr check skips rather than fails where the definitions are absent. `MaterialXConfigAPI` applies from the schema registry without linking. | — |
+| 6a | Confirm the non-Windows runtimes ship the MaterialX `libraries/` tree, so the Sdr check runs rather than skips in the Linux and macOS CI cells. | — |
 | 7 | Is `/Asset/mtl/_shared` ever needed, or do per-material graphs suffice? | deferred |
-| 8 | Does `COLOR_0` participate in MToon appearance for the issue #119 asset? | #119 |
+| ~~8~~ | ~~Does `COLOR_0` participate in MToon appearance for the issue #119 asset?~~ **No** — the asset has no `COLOR_0` on any primitive (settled on the issue, 2026-08-12). Kept as a question for other assets, not this one. | — |
