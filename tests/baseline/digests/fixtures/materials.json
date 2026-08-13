@@ -1,5 +1,16 @@
 {
-  "assets": [],
+  "assets": [
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/a124872abc5f74c0.png]",
+      "attr": "/Asset/mtl/UnlitCutout/preview/baseColorTexture.inputs:file",
+      "resolved": true
+    },
+    {
+      "assetPath": "${BUNDLE}/tests/fixtures/materials.vrm[images/a124872abc5f74c0.png]",
+      "attr": "/Asset/mtl/UnlitCutout/mtlx/baseColorImage.inputs:file",
+      "resolved": true
+    }
+  ],
   "baselineSchemaVersion": 1,
   "defaultPrim": "/Asset",
   "framesPerSecond": 24.0,
@@ -71,6 +82,11 @@
     },
     "/Asset/mtl/Unlit": {
       "graphs": {
+        "/Asset/mtl/Unlit/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/Unlit/mtlx/surface.surface"
+          }
+        },
         "/Asset/mtl/Unlit/preview": {
           "outputs": {
             "surface": "/Asset/mtl/Unlit/preview/surface.surface"
@@ -78,6 +94,26 @@
         }
       },
       "shaders": {
+        "/Asset/mtl/Unlit/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": 1.0,
+            "alpha_mode": 0,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": [
+              0.899999976,
+              0.100000001,
+              0.100000001
+            ],
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
         "/Asset/mtl/Unlit/preview/surface": {
           "id": "UsdPreviewSurface",
           "inputs": {
@@ -98,7 +134,151 @@
         }
       },
       "terminals": {
+        "mtlx:surface": "/Asset/mtl/Unlit/mtlx.surface",
         "surface": "/Asset/mtl/Unlit/preview.surface"
+      }
+    },
+    "/Asset/mtl/UnlitCutout": {
+      "graphs": {
+        "/Asset/mtl/UnlitCutout/mtlx": {
+          "outputs": {
+            "surface": "/Asset/mtl/UnlitCutout/mtlx/surface.surface"
+          }
+        },
+        "/Asset/mtl/UnlitCutout/preview": {
+          "outputs": {
+            "surface": "/Asset/mtl/UnlitCutout/preview/surface.surface"
+          }
+        }
+      },
+      "shaders": {
+        "/Asset/mtl/UnlitCutout/mtlx/baseColorFactor": {
+          "id": "ND_multiply_color4",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/UnlitCutout/mtlx/baseColorImage.out"
+            },
+            "in2": [
+              0.300000012,
+              0.600000024,
+              0.899999976,
+              0.800000012
+            ]
+          }
+        },
+        "/Asset/mtl/UnlitCutout/mtlx/baseColorImage": {
+          "id": "ND_image_color4",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/a124872abc5f74c0.png]",
+              "resolved": true
+            },
+            "texcoord": {
+              "connectedTo": "/Asset/mtl/UnlitCutout/mtlx/st.out"
+            },
+            "uaddressmode": "periodic",
+            "vaddressmode": "clamp"
+          }
+        },
+        "/Asset/mtl/UnlitCutout/mtlx/baseColorRgb": {
+          "id": "ND_combine3_color3",
+          "inputs": {
+            "in1": {
+              "connectedTo": "/Asset/mtl/UnlitCutout/mtlx/baseColorSplit.outr"
+            },
+            "in2": {
+              "connectedTo": "/Asset/mtl/UnlitCutout/mtlx/baseColorSplit.outg"
+            },
+            "in3": {
+              "connectedTo": "/Asset/mtl/UnlitCutout/mtlx/baseColorSplit.outb"
+            }
+          }
+        },
+        "/Asset/mtl/UnlitCutout/mtlx/baseColorSplit": {
+          "id": "ND_separate4_color4",
+          "inputs": {
+            "in": {
+              "connectedTo": "/Asset/mtl/UnlitCutout/mtlx/baseColorFactor.out"
+            }
+          }
+        },
+        "/Asset/mtl/UnlitCutout/mtlx/st": {
+          "id": "ND_texcoord_vector2",
+          "inputs": {
+            "index": 0
+          }
+        },
+        "/Asset/mtl/UnlitCutout/mtlx/surface": {
+          "id": "ND_gltf_pbr_surfaceshader",
+          "inputs": {
+            "alpha": {
+              "connectedTo": "/Asset/mtl/UnlitCutout/mtlx/baseColorSplit.outa"
+            },
+            "alpha_cutoff": 0.400000006,
+            "alpha_mode": 1,
+            "base_color": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissive": {
+              "connectedTo": "/Asset/mtl/UnlitCutout/mtlx/baseColorRgb.out"
+            },
+            "metallic": 0.0,
+            "roughness": 1.0,
+            "specular": 0.0
+          }
+        },
+        "/Asset/mtl/UnlitCutout/preview/baseColorTexture": {
+          "id": "UsdUVTexture",
+          "inputs": {
+            "file": {
+              "asset": "${BUNDLE}/tests/fixtures/materials.vrm[images/a124872abc5f74c0.png]",
+              "resolved": true
+            },
+            "scale": [
+              0.300000012,
+              0.600000024,
+              0.899999976,
+              0.800000012
+            ],
+            "sourceColorSpace": "sRGB",
+            "st": {
+              "connectedTo": "/Asset/mtl/UnlitCutout/preview/stReader.result"
+            },
+            "wrapS": "repeat",
+            "wrapT": "clamp"
+          }
+        },
+        "/Asset/mtl/UnlitCutout/preview/stReader": {
+          "id": "UsdPrimvarReader_float2",
+          "inputs": {
+            "varname": "st"
+          }
+        },
+        "/Asset/mtl/UnlitCutout/preview/surface": {
+          "id": "UsdPreviewSurface",
+          "inputs": {
+            "diffuseColor": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "emissiveColor": {
+              "connectedTo": "/Asset/mtl/UnlitCutout/preview/baseColorTexture.rgb"
+            },
+            "metallic": 0.0,
+            "opacity": {
+              "connectedTo": "/Asset/mtl/UnlitCutout/preview/baseColorTexture.a"
+            },
+            "opacityThreshold": 0.400000006,
+            "roughness": 1.0
+          }
+        }
+      },
+      "terminals": {
+        "mtlx:surface": "/Asset/mtl/UnlitCutout/mtlx.surface",
+        "surface": "/Asset/mtl/UnlitCutout/preview.surface"
       }
     }
   },
@@ -126,6 +306,20 @@
       "primvars": [
         "primvars:displayColor",
         "primvars:displayOpacity"
+      ],
+      "skeleton": []
+    },
+    "/Asset/geo/FlatCutout": {
+      "faceCount": 1,
+      "material": [
+        "/Asset/mtl/UnlitCutout"
+      ],
+      "pointCount": 3,
+      "pointsSha256": "20a2f6d94b4d070a75e4ef476db3d8bbb40d00e31da741906b0fa943fd01d947",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity",
+        "primvars:st"
       ],
       "skeleton": []
     },
@@ -186,6 +380,9 @@
       "type": "Shader"
     },
     {
+      "appliedSchemas": [
+        "MaterialXConfigAPI"
+      ],
       "path": "/Asset/mtl/Unlit",
       "type": "Material"
     },
@@ -198,6 +395,95 @@
         "NodeDefAPI"
       ],
       "path": "/Asset/mtl/Unlit/preview/surface",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/Unlit/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/Unlit/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialXConfigAPI"
+      ],
+      "path": "/Asset/mtl/UnlitCutout",
+      "type": "Material"
+    },
+    {
+      "path": "/Asset/mtl/UnlitCutout/preview",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitCutout/preview/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitCutout/preview/stReader",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitCutout/preview/baseColorTexture",
+      "type": "Shader"
+    },
+    {
+      "path": "/Asset/mtl/UnlitCutout/mtlx",
+      "type": "NodeGraph"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitCutout/mtlx/surface",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitCutout/mtlx/st",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitCutout/mtlx/baseColorImage",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitCutout/mtlx/baseColorFactor",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitCutout/mtlx/baseColorSplit",
+      "type": "Shader"
+    },
+    {
+      "appliedSchemas": [
+        "NodeDefAPI"
+      ],
+      "path": "/Asset/mtl/UnlitCutout/mtlx/baseColorRgb",
       "type": "Shader"
     },
     {
@@ -223,6 +509,13 @@
         "MaterialBindingAPI"
       ],
       "path": "/Asset/geo/Flat",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI"
+      ],
+      "path": "/Asset/geo/FlatCutout",
       "type": "Mesh"
     },
     {
