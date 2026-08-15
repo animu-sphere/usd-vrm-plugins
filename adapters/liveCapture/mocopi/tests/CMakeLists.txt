@@ -120,11 +120,15 @@ set(_vrm_adapter_mocopi_tests
 # The corpus exists as of the decoder, and the guard stays: a standalone
 # configure of a source tree without it must still generate.
 #
-# Two names run over the same directory and they check different things.
-# `_corpus` is the format's: every capture parses and re-emits byte-identically,
-# so a fixture can never drift from the C++ writer. `_motionPacketCorpus` is the
-# decoder's: every capture decodes to what its `sourceId` claims it pins, or is
-# refused with the code, per datagram, that it exists to be refused with.
+# Five names run over the same directory and they check different things, one
+# per layer that consumes the bytes -- which is the arrangement rather than an
+# accumulation: a capture is asked a different question by each component, so a
+# fixture is never merely parsed by the layer it was written for. `_corpus` is
+# the format's: every capture parses and re-emits byte-identically, so a fixture
+# can never drift from the C++ writer. `_motionPacketCorpus` is the decoder's:
+# every capture decodes to what its `sourceId` claims it pins, or is refused with
+# the code, per datagram, that it exists to be refused with. The three below it
+# are named at their own `add_test` calls.
 #
 # Neither reads `manifest.json` — that is `_packetGen`'s, which compares the
 # manifest's derived fields against the *generator*. So the manifest is pinned to

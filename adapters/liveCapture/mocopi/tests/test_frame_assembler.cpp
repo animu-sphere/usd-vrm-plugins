@@ -43,6 +43,8 @@
 #include "vrmAdapterMocopi/PacketCapture.h"
 #include "vrmAdapterMocopi/SkeletonMap.h"
 
+#include "fixtures.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -55,6 +57,8 @@
 
 namespace
 {
+
+using namespace vrmAdapterMocopiTests;
 
 using motion::HumanBone;
 using vrmAdapterMocopi::BoneDefinition;
@@ -71,104 +75,10 @@ using vrmAdapterMocopi::MotionPacket;
 using vrmAdapterMocopi::MotionPacketKind;
 using vrmAdapterMocopi::MotionSkeleton;
 
-// The generator's invented offsets, kept in the same order and for the same
-// reason `test_skeleton_map.cpp` keeps them: what a frame is compared against is
-// a stated table rather than a fixture agreeing with itself.
-const float kRestOffsets[MeasuredBoneCount][3] = {
-    {0.0f, 0.90f, 0.0f},     {0.0f, 0.06f, 0.0f},  {0.0f, 0.06f, 0.0f},
-    {0.0f, 0.06f, 0.0f},     {0.0f, 0.06f, 0.0f},  {0.0f, 0.06f, 0.0f},
-    {0.0f, 0.06f, 0.0f},     {0.0f, 0.10f, 0.0f},  {0.0f, 0.05f, 0.0f},
-    {0.0f, 0.05f, 0.0f},     {0.0f, 0.05f, 0.0f},  {0.02f, -0.08f, 0.08f},
-    {0.14f, 0.0f, 0.0f},     {0.30f, 0.0f, 0.0f},  {0.25f, 0.0f, 0.0f},
-    {-0.02f, -0.08f, 0.08f}, {-0.14f, 0.0f, 0.0f}, {-0.30f, 0.0f, 0.0f},
-    {-0.25f, 0.0f, 0.0f},    {0.09f, -0.05f, 0.0f}, {0.0f, -0.40f, 0.0f},
-    {0.0f, -0.42f, 0.0f},    {0.0f, -0.10f, 0.13f}, {-0.09f, -0.05f, 0.0f},
-    {0.0f, -0.40f, 0.0f},    {0.0f, -0.42f, 0.0f}, {0.0f, -0.10f, 0.13f},
-};
-
-constexpr std::size_t kCanonicalBoneCount = 22;
-constexpr double kFrameRate = 60.0;
-
-// The generator's epoch, so a drift assertion is made against the same absolute
-// clock the corpus carries rather than against zero.
-constexpr double kEpoch = 1786492800.0;
-
 // The measured agreement between the two clocks: under 2 µs over 33 s
 // (MotionPacket.h). Used as the bound for "these two clocks still agree", which
 // makes the assertion the measurement rather than a number picked here.
 constexpr double kClockAgreement = 2e-6;
-
-std::array<float, 4>
-WireIdentity()
-{
-    return {{0.0f, 0.0f, 0.0f, 1.0f}};
-}
-
-std::array<float, 3>
-RestOffset(std::size_t jointId)
-{
-    return {{kRestOffsets[jointId][0], kRestOffsets[jointId][1],
-             kRestOffsets[jointId][2]}};
-}
-
-MotionPacket
-SkeletonPacket()
-{
-    MotionSkeleton skeleton;
-    for (std::size_t jointId = 0; jointId < MeasuredBoneCount; ++jointId) {
-        BoneDefinition joint;
-        joint.boneId = static_cast<std::uint16_t>(jointId);
-        joint.parentBoneId = MeasuredParentColumn[jointId];
-        joint.restTransform.rotation = WireIdentity();
-        joint.restTransform.translation = RestOffset(jointId);
-        skeleton.bones.push_back(joint);
-    }
-    MotionPacket packet;
-    packet.kind = MotionPacketKind::Skeleton;
-    packet.skeleton = std::move(skeleton);
-    return packet;
-}
-
-// A frame that restates the rest pose, which is what every measured frame does
-// for every joint but the root.
-MotionPacket
-FramePacket(std::uint32_t frameNumber, double streamSeconds,
-            double senderUnixSeconds)
-{
-    MotionFrame frame;
-    frame.frameNumber = frameNumber;
-    frame.streamSeconds = static_cast<float>(streamSeconds);
-    frame.senderUnixSeconds = senderUnixSeconds;
-    for (std::size_t jointId = 0; jointId < MeasuredBoneCount; ++jointId) {
-        BoneFrame bone;
-        bone.boneId = static_cast<std::uint16_t>(jointId);
-        bone.transform.rotation = WireIdentity();
-        bone.transform.translation = RestOffset(jointId);
-        frame.bones.push_back(bone);
-    }
-    MotionPacket packet;
-    packet.kind = MotionPacketKind::Frame;
-    packet.frame = std::move(frame);
-    return packet;
-}
-
-// A frame at 60 Hz whose two clocks agree, which is what the device sends.
-MotionPacket
-FrameAt(std::uint32_t frameNumber, double streamSeconds)
-{
-    return FramePacket(frameNumber, streamSeconds, kEpoch + streamSeconds);
-}
-
-void
-DropJoint(MotionPacket* packet, std::uint16_t boneId)
-{
-    std::vector<BoneFrame>& bones = packet->frame->bones;
-    bones.erase(std::remove_if(bones.begin(), bones.end(),
-                               [boneId](const BoneFrame& bone) {
-                                   return bone.boneId == boneId;
-                               }),
-                bones.end());
-}
 
 std::size_t
 Count(const std::vector<Diagnostic>& diagnostics, DiagnosticCode code)
@@ -874,7 +784,11 @@ CheckCorpus(const std::filesystem::path& directory)
     std::vector<std::filesystem::path> files;
     for (const std::filesystem::directory_entry& entry :
          std::filesystem::directory_iterator(directory)) {
-        if (entry.path().extension() == ".mocopipackets") {
+        // `is_regular_file` as well as the extension, so a directory that
+        // happens to be named like a capture is not read as one — the guard the
+        // other passes over this directory already use.
+        if (entry.is_regular_file()
+            && entry.path().extension() == ".mocopipackets") {
             files.push_back(entry.path());
         }
     }

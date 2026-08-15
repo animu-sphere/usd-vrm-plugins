@@ -23,7 +23,7 @@
     "license": "Apache-2.0",
     "redistributionAllowed": true,
     "capturedFromRealDevice": false,
-    "generatedAt": "2026-08-12"
+    "generatedAt": "2026-08-15"
   },
   "limitations": [
     "These pin the decoder, not the protocol: the grammar that wrote them is the grammar they are decoded with, so no fixture here can be surprised by the wire format.",
