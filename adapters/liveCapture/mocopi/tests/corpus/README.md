@@ -133,7 +133,10 @@ itself the boundary being drawn.
 python adapters/liveCapture/mocopi/tools/generate_packets.py
 ```
 
-Four CTest names guard the result, and they check different things:
+Six CTest names guard the result, and they check different things. Five of them
+are readings of this same directory at successive layers, which is the point:
+one set of bytes, asked a different question by each component that consumes it,
+so a fixture is never merely parsed by the layer it was written for.
 
 - `vrmAdapterMocopi_corpus` — every capture parses and re-emits byte-identically
   through the **C++ writer**, so a fixture cannot drift from the format.
@@ -152,6 +155,19 @@ Four CTest names guard the result, and they check different things:
   costs, and which rigs get no map at all. Registered per `sourceId` like the
   pass above, including for the two `malformed-*` captures, whose assertion is
   that nothing reaches this layer from them — a claim that can stop being true.
+- `vrmAdapterMocopi_frameAssemblerCorpus` — the sequence questions, which every
+  layer below answers one datagram at a time and so cannot: a gap, a duplicate
+  delivery, a restart, and whether a frame short of the declared rig is emitted
+  or refused.
+- `vrmAdapterMocopi_liveSourceCorpus` — the first reading whose subject is a
+  **pose a consumer sampled** rather than something a layer produced. It makes
+  the one cross-layer claim: every frame the assembler emitted was admitted by
+  the intake, because the assembler emits strictly advancing frames within a
+  session and that is exactly the ordering `LiveCaptureSource::Push` requires.
+  It replays each capture through a single reused buffer, so "a datagram need not
+  outlive the call" is checked by the poses matching rather than by an assertion
+  about pointers, and it is the only place the two restart policies are run over
+  the same bytes.
 - `vrmAdapterMocopi_packetGen` — the committed bytes still match the
   **generator** that authored them. This matters more here than for the sibling
   adapter: regenerating is the only way this corpus can be extended, because the

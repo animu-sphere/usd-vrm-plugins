@@ -90,10 +90,25 @@ target_compile_options(vrmAdapterMocopi_frameAssembler_tests
 add_test(NAME vrmAdapterMocopi_frameAssembler
          COMMAND vrmAdapterMocopi_frameAssembler_tests)
 
+# The bridge into the runtime, on its own name for the same reason once more: a
+# session whose restart was mishandled and a session whose restart went
+# undetected are different failures one layer apart, and one red name would not
+# say which. It is also the only name here that links the intake's behaviour into
+# its claims, so a `motionRuntime` change that altered what `Push` accepts turns
+# this red and leaves the four below it green -- which is the division working
+# rather than a flaky boundary.
+add_executable(vrmAdapterMocopi_liveSource_tests test_live_source.cpp)
+target_link_libraries(vrmAdapterMocopi_liveSource_tests
+    PRIVATE vrmAdapterMocopi::vrmAdapterMocopi)
+target_compile_options(vrmAdapterMocopi_liveSource_tests
+    PRIVATE ${_vrm_adapter_mocopi_assertions})
+add_test(NAME vrmAdapterMocopi_liveSource
+         COMMAND vrmAdapterMocopi_liveSource_tests)
+
 set(_vrm_adapter_mocopi_tests
     vrmAdapterMocopi_unit vrmAdapterMocopi_packetCapture
     vrmAdapterMocopi_motionPacket vrmAdapterMocopi_skeletonMap
-    vrmAdapterMocopi_frameAssembler
+    vrmAdapterMocopi_frameAssembler vrmAdapterMocopi_liveSource
     vrmAdapterMocopi_udpReceiver vrmAdapterMocopi_udpReceiverTruncation)
 
 # Every committed capture parses and re-emits byte-identically, or every
@@ -139,10 +154,20 @@ if(EXISTS "${_vrm_adapter_mocopi_corpus}")
     add_test(NAME vrmAdapterMocopi_frameAssemblerCorpus
         COMMAND vrmAdapterMocopi_frameAssembler_tests
                 "${_vrm_adapter_mocopi_corpus}")
+    # And a fifth reading, which is the first one whose subject is a *pose a
+    # consumer sampled* rather than something a layer produced. It replays every
+    # capture through one reused buffer -- so the claim that a datagram need not
+    # outlive the call is checked by the poses matching rather than by an
+    # assertion about pointers -- and it is the only place the two restart
+    # policies are run over the same bytes.
+    add_test(NAME vrmAdapterMocopi_liveSourceCorpus
+        COMMAND vrmAdapterMocopi_liveSource_tests
+                "${_vrm_adapter_mocopi_corpus}")
     list(APPEND _vrm_adapter_mocopi_tests
          vrmAdapterMocopi_corpus vrmAdapterMocopi_motionPacketCorpus
          vrmAdapterMocopi_skeletonMapCorpus
-         vrmAdapterMocopi_frameAssemblerCorpus)
+         vrmAdapterMocopi_frameAssemblerCorpus
+         vrmAdapterMocopi_liveSourceCorpus)
 endif()
 
 if(WIN32)
