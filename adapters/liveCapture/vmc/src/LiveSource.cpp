@@ -92,6 +92,12 @@ VmcLiveSource::PushDatagram(const std::uint8_t* bytes, std::size_t size,
     Diagnostic refusal;
     if (!DecodeOscPacket(bytes, size, &osc, &refusal)) {
         ++_stats.datagramsRefused;
+        // The previous push's frames must not survive a datagram this one
+        // refused. `GetFramesFromLastPush()` is a window on the delivery that
+        // just happened, and a caller reading it after a refusal would be handed
+        // the frame before last as though it had just arrived — which is exactly
+        // the evidence path this window exists to serve.
+        _frames.clear();
         if (diagnostics) {
             diagnostics->push_back(std::move(refusal));
             _StampDatagram(diagnostics, before);

@@ -216,6 +216,33 @@ No `adapters/common/`. It gets extracted when two adapters demonstrably
 duplicate code that carries no vendor semantics — after both exist, not in
 anticipation.
 
+> **That condition is now met, and the measurement is on the table** (2026-08-15,
+> from the review of the mocopi bridge). `MocopiLiveSource` and `VmcLiveSource`
+> are the same class apart from three stated differences: the restart-policy
+> enumeration, the delivery loop, the diagnostic stamping, `ConsumeSessionRestart`,
+> the `IMotionSource` forwarding and `Reset` are the same code with the same
+> comments in both. Roughly 120 of 149 lines are shared behaviour maintained
+> twice — and the two copies **had already diverged accidentally**: a datagram
+> the decoder refused left the stale evidence window standing in the sibling and
+> not in the new one, which is a bug that existed for eleven days in one copy and
+> zero days in the other. That is the failure mode this rule was written to catch,
+> arriving exactly on schedule.
+>
+> **It is deliberately not fixed in the change that found it.** `adapters/common/`
+> is the wrong shape — [WORKSPACE.md §2](../architecture/WORKSPACE.md) forbids an
+> adapter→adapter edge, and a shared leaf between two leaves is that edge wearing
+> a hat. The candidate is a protocol-agnostic bridge beside `LiveCaptureSource`
+> in `motionRuntime`, parameterised on the frame type, which is a **contract
+> change**: it moves the restart-policy vocabulary into the motion layer, and
+> [docs/README.md](../README.md) requires those to land in their own change before
+> a plan depends on them. §11 carries it as such.
+>
+> Deciding it before `vrmAdapterArdy` is written is cheaper than after — but ARDY
+> is a *generator* and may not have a datagram, a restart, or a session clock at
+> all, so the third instance that would settle the shape may never arrive. Two
+> instances and one measured divergence is the evidence available, and it is
+> enough to schedule the question rather than enough to answer it here.
+
 ## 5. Phase 1 — the VMC Protocol adapter
 
 **Goal:** one generic real-time input, so any sender application drives the
@@ -1656,6 +1683,16 @@ depends on them ([docs/README.md](../README.md)).
   ([current.md](current.md#done-when)). A `--source vmc` inside `motion_capture`
   would have made that condition unsatisfiable by the change meant to satisfy
   it.
+- ⬜ **The two live-source bridges are one class, and where the shared one lives
+  is a contract question.** Measured 2026-08-15 (§4): `MocopiLiveSource` and
+  `VmcLiveSource` differ in three stated places and are otherwise the same code,
+  and the two copies had already diverged accidentally. The candidate is a
+  frame-type-parameterised bridge beside `LiveCaptureSource` in `motionRuntime`,
+  which moves the restart-policy vocabulary — `Reset` versus `Refuse`, and the
+  rule that splicing the two sessions is offered nowhere — out of the adapters
+  and into the motion contract. That is [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md)'s
+  to state and [WORKSPACE.md §2](../architecture/WORKSPACE.md)'s to permit, in
+  its own change, before either adapter is rewritten against it.
 - ⬜ **The generator contract has no home yet.** `IMotionGenerator` and
   `MotionGenerationRequest` are named in motion policy §16 Phase F as
   deliverables, but the interface itself will need a contract document before

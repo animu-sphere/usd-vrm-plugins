@@ -539,6 +539,16 @@ TestARefusedDatagramCostsItselfAndIsCounted()
     assert(source.Flush(&diagnostics) == 1);
     assert(source.GetStats().datagramsDecoded == 2);
     assert(source.GetStats().framesAdmitted == 1);
+
+    // And it clears the evidence window rather than leaving the previous push's
+    // frame in it. `GetFramesFromLastPush()` is a view on the delivery that just
+    // happened, so a recording tool reading it after every push must not be
+    // handed the frame before last as though it had just arrived. Found by the
+    // review of the mocopi bridge, which took the same shape and had the same
+    // gap; both are fixed with the same one line.
+    assert(source.GetFramesFromLastPush().size() == 1);
+    assert(source.PushDatagram(junk, 0.004, &diagnostics) == 0);
+    assert(source.GetFramesFromLastPush().empty());
 }
 
 void
