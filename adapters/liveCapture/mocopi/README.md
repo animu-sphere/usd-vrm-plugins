@@ -264,7 +264,21 @@ It costs nothing the original order was protecting, either.
 fixture: it binds loopback on an OS-assigned port and sends itself a dozen bytes.
 It is its own CTest name so a runner that forbids sockets excludes a name rather
 than a claim, and it never touches port 12351 — a developer with a real device
-aimed at this machine does not lose it to the test suite.
+aimed at this machine does not lose it to the test suite. Three names in this
+adapter bind a socket and a lane that forbids binds must exclude all three:
+`vrmAdapterMocopi_udpReceiver`, `vrmAdapterMocopi_udpReceiverTruncation`, and
+`vrmAdapterMocopi_loopbackCorpus` below — which reads like a corpus pass and
+behaves like a socket test, so it is the one such a list would miss.
+
+And once every layer above it existed, the same binary took on the one claim the
+inverted order left open: `vrmAdapterMocopi_loopbackCorpus` sends all nine
+committed captures — 54 datagrams — to a bound port, reads them back off it, and
+requires the frames, the sampled poses, the diagnostics and all three tallies to
+be **identical** to what the same bytes produce with no socket in the path. Every
+other name here reaches the decoder from a file; this is the only place the two
+meet, and it is what says the receiver added nothing and lost nothing. The
+comparison needs no clock exemption, unlike the sibling's, because a receive time
+reaches nothing on this protocol — every frame carries the sender's own `time`.
 
 What the receiver may do is bounded by what it knows. It hands back every
 datagram exactly as it arrived, including the ones a decoder would refuse,
@@ -387,7 +401,7 @@ Composed with the rest of the workspace:
 ```sh
 cmake -S . -B build -DCMAKE_PREFIX_PATH=<usd-install>
 cmake --build build --config Release
-# Both halves: the library's eleven names and the CLI's three. `-R vrmAdapterMocopi`
+# Both halves: the library's sixteen names and the CLI's three. `-R vrmAdapterMocopi`
 # alone silently misses the tool, whose names begin with `mocopi_record`.
 ctest --test-dir build -R "vrmAdapterMocopi|mocopi_record"
 ```

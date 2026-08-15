@@ -133,7 +133,7 @@ itself the boundary being drawn.
 python adapters/liveCapture/mocopi/tools/generate_packets.py
 ```
 
-Six CTest names guard the result, and they check different things. Five of them
+Seven CTest names guard the result, and they check different things. Six of them
 are readings of this same directory at successive layers, which is the point:
 one set of bytes, asked a different question by each component that consumes it,
 so a fixture is never merely parsed by the layer it was written for.
@@ -168,6 +168,20 @@ so a fixture is never merely parsed by the layer it was written for.
   outlive the call" is checked by the poses matching rather than by an assertion
   about pointers, and it is the only place the two restart policies are run over
   the same bytes.
+- `vrmAdapterMocopi_loopbackCorpus` — the same bytes once more, **through a real
+  socket**: every capture is sent to a bound loopback port, read back off it, and
+  checked to produce the same frames, the same sampled poses, the same
+  diagnostics and the same tallies as the file path. It is the only reading whose
+  subject is the transport, and it runs on the receiver's binary for that reason
+  — a red name here is a socket that changed its input, where a red
+  `_liveSourceCorpus` is a decode path that changed.
+
+  The comparison has **no clock exemption**, unlike the sibling's: a receive time
+  reaches nothing on this protocol, because every frame carries the sender's own
+  `time`. So the wire and the file must agree exactly, down to each diagnostic's
+  subject and sequence — the one field allowed to differ is `source`, which names
+  the endpoint rather than the fixture, and that difference is asserted rather
+  than merely tolerated.
 - `vrmAdapterMocopi_packetGen` — the committed bytes still match the
   **generator** that authored them. This matters more here than for the sibling
   adapter: regenerating is the only way this corpus can be extended, because the

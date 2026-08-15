@@ -527,8 +527,15 @@ def check_refusals(failures: Failures, tool: str, bvh: pathlib.Path,
 
     # A profile that does not describe this rig. The generated corpus is format
     # shapes rather than a producer's export, so no shipped profile matches one.
+    #
+    # Required rather than skipped-if-absent. It used to be optional here and
+    # mandatory in `check_a_profile_this_repository_did_not_ship`, so the same
+    # missing file made one check report success having verified nothing and the
+    # other report a failure -- and "is the generated corpus required?" had two
+    # answers in one suite. It is committed, so the answer is yes.
     mismatched = corpus / "generated" / "valid-nested-joints.bvh"
-    if mismatched.exists():
+    if failures.check(mismatched.exists(),
+                      f"the generated fixture is not at {mismatched}"):
         result = run_tool(tool, str(mismatched), "--profile", PROFILE_ID,
                           "--profile-dir", str(profile_dir), "--output",
                           str(output))
@@ -605,6 +612,166 @@ def check_refusals(failures: Failures, tool: str, bvh: pathlib.Path,
                    f"recorded file: {result.stderr}")
 
 
+# A profile nobody here ships, for a rig no shipped profile describes. Written
+# out in full rather than derived from one of the shipped files: a fixture built
+# by editing `mocopi-mobile-bvh-default-v1.yaml` would inherit whatever that file
+# happens to do, and the claim is about somebody starting from the documented
+# keys with a rig of their own.
+#
+# The rig is `valid-nested-joints.bvh` from the *generated* corpus — four joints,
+# a torso and one leg — which `check_refusals` above already uses as the file no
+# shipped profile matches. That it is a format shape rather than an export is the
+# point here: this profile describes a skeleton that exists nowhere but in this
+# repository's fixtures, so nothing in the conversion can be reaching for a
+# producer it recognises.
+USER_PROFILE_ID = "studio-custom-bvh-v1"
+USER_PROFILE_PRODUCER = "A studio that is not in this repository"
+USER_PROFILE = f"""\
+schemaVersion: 1
+id: {USER_PROFILE_ID}
+producer: {USER_PROFILE_PRODUCER}
+
+coordinates:
+  handedness: right
+  upAxis: +Y
+  forwardAxis: +Z
+  translationUnit: centimeters
+
+root:
+  joint: Hips
+  translation: absolute-position
+  rotation: body-orientation
+
+restPose: rest-offsets
+unmappedJoints: refuse
+
+joints:
+  Hips:       {{ bone: hips,         required: true }}
+  Spine:      {{ bone: spine,        required: true }}
+  Head:       {{ bone: head,         required: true }}
+  LeftUpLeg:  {{ bone: leftUpperLeg, required: true }}
+"""
+
+
+def check_a_profile_this_repository_did_not_ship(
+        failures: Failures, tool: str, corpus: pathlib.Path,
+        recorded: pathlib.Path, work: pathlib.Path) -> None:
+    """A user-defined profile, by path, for a rig neither producer wrote.
+
+    This is the release condition that says the profile contract is *usable from
+    outside* rather than merely documented. Everything else in this suite drives
+    a file this repository measured through a profile this repository wrote, and
+    two artifacts by the same hand agreeing proves less than it looks like.
+
+    Three things have to hold at once for the claim to be worth anything, so all
+    three are checked here rather than assumed from the exit code:
+
+    * the profile is read **from a path outside any search directory** — no
+      `--profile-dir` is passed, and the file is in a temporary directory that
+      does not exist when the tool is built;
+    * it describes a rig neither shipped profile matches, so a conversion that
+      succeeded by recognising a producer would fail here; and
+    * what the clip records as its provenance is the *user's* id and producer,
+      because a profile that converted a file and then labelled the result with
+      something else would make "which profile was used" unanswerable.
+    """
+    bvh = corpus / "generated" / "valid-nested-joints.bvh"
+    if not failures.check(bvh.exists(),
+                          f"the generated fixture is not at {bvh}"):
+        return
+
+    profile = work / "not-shipped-anywhere.yaml"
+    profile.write_text(USER_PROFILE, encoding="utf-8")
+
+    output = work / "user-defined.usda"
+    # No `--profile-dir`: the file is named by path, which is the whole of what
+    # a user outside this repository has.
+    result = run_tool(tool, str(bvh), "--profile", str(profile), "--output",
+                      str(output))
+    if not failures.check(
+            result.returncode == 0,
+            f"a user-defined profile was refused: {result.stderr}"):
+        return
+
+    stage = Usd.Stage.Open(str(output))
+    if not failures.check(stage is not None,
+                          "the user-defined conversion wrote no openable "
+                          "stage"):
+        return
+
+    animation = next((UsdSkel.Animation(prim) for prim in stage.Traverse()
+                      if prim.IsA(UsdSkel.Animation)), None)
+    if not failures.check(animation is not None,
+                          "the user-defined clip has no SkelAnimation"):
+        return
+
+    document = read_bvh(bvh)
+    joints = list(animation.GetJointsAttr().Get())
+    bones = sorted(token.split("/")[-1] for token in joints)
+    expected = sorted(["hips", "spine", "head", "leftUpperLeg"])
+    failures.check(bones == expected,
+                   f"the user-defined clip's bones are {bones}, and the "
+                   f"profile maps {expected}")
+
+    # The **paths**, not the leaves. Sorted leaf tokens are identical for every
+    # possible parenting, so a converter that mis-parented a rig it had no
+    # shipped profile for -- head and spine swapped, say -- passed the check
+    # above unchanged. This is the only test that drives a user-authored
+    # profile, so it is the only place that mistake could be caught.
+    paths = {token.split("/")[-1]: token for token in joints}
+    for bone, parent in (("spine", "hips"), ("head", "spine"),
+                         ("leftUpperLeg", "hips")):
+        expected_path = f"{paths.get(parent, '?')}/{bone}"
+        failures.check(
+            paths.get(bone) == expected_path,
+            f"the user-defined clip puts {bone} at {paths.get(bone)!r}, and "
+            f"the file's hierarchy puts it at {expected_path!r}")
+
+    rotations = animation.GetRotationsAttr()
+    failures.check(
+        len(rotations.GetTimeSamples()) == len(document.rows),
+        f"the clip carries {len(rotations.GetTimeSamples())} sample(s) for the "
+        f"file's {len(document.rows)} row(s)")
+
+    # A converted **value**, so that reading the file for its identity and its
+    # joint list is not all this proves. The profile declares
+    # `translationUnit: centimeters` and `root.translation: absolute-position`;
+    # the file's first row puts the root at Y=90. A converter that honoured the
+    # `joints:` map and then fell back to a built-in default for the unit would
+    # satisfy every other check here and author 90 metres.
+    translations = animation.GetTranslationsAttr()
+    hips_index = joints.index(paths["hips"])
+    first = translations.Get(translations.GetTimeSamples()[0])
+    root_y = first[hips_index][1] if first else None
+    failures.check(
+        root_y is not None and abs(root_y - 0.90) < 1e-5,
+        f"the user-defined clip puts the root at Y={root_y}, and the profile's "
+        f"centimetres put the file's 90.0 at 0.90 m")
+
+    root = stage.GetDefaultPrim()
+    custom = root.GetCustomData().get("source", {}) if root else {}
+    failures.check(custom.get("profileId") == USER_PROFILE_ID,
+                   f"the clip records profileId {custom.get('profileId')!r}, "
+                   f"and the user's profile says {USER_PROFILE_ID!r}")
+    failures.check(custom.get("producer") == USER_PROFILE_PRODUCER,
+                   f"the clip records producer {custom.get('producer')!r}, and "
+                   f"the user's profile says {USER_PROFILE_PRODUCER!r}")
+
+    # And the same profile against a rig it does not describe is still refused,
+    # so what passed above is this profile matching this rig rather than a file
+    # named by path being trusted. Unguarded, and `recorded` is the path `main`
+    # already resolved and already exits on: the guard that used to be here read
+    # as "this half is optional" while being unable to take its false branch,
+    # which is the opposite of what this half is for.
+    result = run_tool(tool, str(recorded), "--profile", str(profile),
+                      "--output", str(work / "user-defined-mismatch.usda"))
+    failures.check(
+        result.returncode == 1
+        and "VRM_BVH_PROFILE_MISMATCH" in result.stderr,
+        f"a user-defined profile was accepted for a rig it does not "
+        f"describe: exit {result.returncode}, {result.stderr}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tool", required=True)
@@ -632,6 +799,8 @@ def main() -> int:
                           work)
         check_refusals(failures, arguments.tool, bvh, arguments.corpus,
                        arguments.profiles, work)
+        check_a_profile_this_repository_did_not_ship(
+            failures, arguments.tool, arguments.corpus, bvh, work)
     return failures.report()
 
 
