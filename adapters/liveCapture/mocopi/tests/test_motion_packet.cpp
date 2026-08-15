@@ -1092,7 +1092,10 @@ CheckCorpus(const std::filesystem::path& directory)
         // a diagnostic, and `extended-form` is the capture that would catch a
         // decoder that started treating it as one.
         const std::size_t expectedDiagnostics =
-            capture.sourceId == "refused-bones-01" ? 3 : 0;
+            (capture.sourceId == "refused-bones-01"
+             || capture.sourceId == "incomplete-frame-01")
+                ? 3
+                : 0;
         if (diagnostics.size() != expectedDiagnostics) {
             failures += Failed(name, std::to_string(diagnostics.size())
                                          + " diagnostic(s), expected "
@@ -1117,6 +1120,22 @@ CheckCorpus(const std::filesystem::path& directory)
                 result = Failed(name,
                                 "the bone-not-frame rule does not hold on this "
                                 "capture");
+            }
+        } else if (capture.sourceId == "incomplete-frame-01") {
+            // The same damage as above with a rig declared in front of it. To
+            // this layer the skeleton packet changes nothing — the bone-not-frame
+            // rule is the decoder's and a rest table is not part of it — and
+            // asserting that here is what keeps the two captures' *decoded*
+            // shapes identical, so any difference the assembler reports between
+            // them is the rig and nothing else.
+            if (decoded.size() != 3 || !decoded[0].skeleton
+                || decoded[1].refusedBones != 3
+                || decoded[1].frame->bones.size() != 24
+                || decoded[2].refusedBones != 0
+                || decoded[2].frame->bones.size() != 27) {
+                result = Failed(name,
+                                "a declared rig changed what the decoder did "
+                                "with a damaged frame");
             }
         } else {
             // A capture nothing asserts against is a capture that pins nothing,

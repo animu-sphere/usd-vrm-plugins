@@ -79,9 +79,21 @@ target_compile_options(vrmAdapterMocopi_skeletonMap_tests
 add_test(NAME vrmAdapterMocopi_skeletonMap
          COMMAND vrmAdapterMocopi_skeletonMap_tests)
 
+# The layer that decides, on its own name for the same reason again: a session
+# whose restart went undetected and a joint that mapped to the wrong bone are
+# different failures, and one red name would not say which.
+add_executable(vrmAdapterMocopi_frameAssembler_tests test_frame_assembler.cpp)
+target_link_libraries(vrmAdapterMocopi_frameAssembler_tests
+    PRIVATE vrmAdapterMocopi::vrmAdapterMocopi)
+target_compile_options(vrmAdapterMocopi_frameAssembler_tests
+    PRIVATE ${_vrm_adapter_mocopi_assertions})
+add_test(NAME vrmAdapterMocopi_frameAssembler
+         COMMAND vrmAdapterMocopi_frameAssembler_tests)
+
 set(_vrm_adapter_mocopi_tests
     vrmAdapterMocopi_unit vrmAdapterMocopi_packetCapture
     vrmAdapterMocopi_motionPacket vrmAdapterMocopi_skeletonMap
+    vrmAdapterMocopi_frameAssembler
     vrmAdapterMocopi_udpReceiver vrmAdapterMocopi_udpReceiverTruncation)
 
 # Every committed capture parses and re-emits byte-identically, or every
@@ -120,9 +132,17 @@ if(EXISTS "${_vrm_adapter_mocopi_corpus}")
     add_test(NAME vrmAdapterMocopi_skeletonMapCorpus
         COMMAND vrmAdapterMocopi_skeletonMap_tests
                 "${_vrm_adapter_mocopi_corpus}")
+    # And a fourth reading, which is the one `frame-loss-60hz` was written for:
+    # a gap, a duplicate delivery and a restart are sequence questions, and every
+    # layer below sees one datagram at a time. Until this name existed the only
+    # thing any test could say about that capture was that its frames map.
+    add_test(NAME vrmAdapterMocopi_frameAssemblerCorpus
+        COMMAND vrmAdapterMocopi_frameAssembler_tests
+                "${_vrm_adapter_mocopi_corpus}")
     list(APPEND _vrm_adapter_mocopi_tests
          vrmAdapterMocopi_corpus vrmAdapterMocopi_motionPacketCorpus
-         vrmAdapterMocopi_skeletonMapCorpus)
+         vrmAdapterMocopi_skeletonMapCorpus
+         vrmAdapterMocopi_frameAssemblerCorpus)
 endif()
 
 if(WIN32)

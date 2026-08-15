@@ -427,6 +427,53 @@ def refused_bones() -> Capture:
     return capture
 
 
+def incomplete_frame() -> Capture:
+    """The same damage as `refused_bones`, in front of a rig that was declared.
+
+    The two captures differ in exactly one datagram and that is the point. A
+    frame short of some bones is only *incomplete* relative to a rig, and
+    `refused-bones-60hz` deliberately declares none -- the skeleton map's corpus
+    assertion needs a capture whose rig is undeclared, so to the frame assembler
+    that file is two frames refused for having no rig rather than one incomplete
+    frame. This is the capture that lets `VRM_MOCOPI_FRAME_INCOMPLETE` be pinned
+    by bytes instead of by a unit test holding structs.
+
+    The clean frame after it is what makes the claim a frame's and not a
+    session's: the same twenty-two bones arrive, so the incompleteness is a
+    property of the damaged datagram and the session recovers from it.
+    """
+    capture = base_capture("incomplete-frame-01")
+    capture.add(skeleton_packet(), 0.0)
+    # Bones 5, 9 and 20, damaged the three ways a transform can name no
+    # orientation -- the same three `refused_bones` uses, so the two captures can
+    # be compared. Their cost to the humanoid is not three arbitrary bones: 5 and
+    # 9 are unmapped segments on the paths to the upper chest and the head, so a
+    # path rule that dropped a bone whose ancestor went missing is what turns
+    # three refused records into three absent bones.
+    records = []
+    for index in range(len(PARENTS)):
+        translation = REST_OFFSETS[index]
+        rotation = IDENTITY
+        if index == 5:
+            rotation = (NAN32, 0.0, 0.0, 1.0)      # not finite
+        elif index == 9:
+            rotation = (0.0, 0.0, 0.0, 0.0)        # names no orientation
+        elif index == 20:
+            translation = (0.0, INF32, 0.0)        # not finite
+        records.append(btdt(index, rotation, translation))
+    payload = (chunk("fnum", struct.pack("<I", 6000))
+               + chunk("time", struct.pack("<f", 0.0))
+               + chunk("uttm", struct.pack("<d", EPOCH))
+               + chunk("tmcd", NO_TIMECODE)
+               + chunk("btrs", b"".join(records)))
+    capture.add(head() + sndf() + chunk("fram", payload),
+                round(1.0 / FRAME_RATE, PRECISION))
+    seconds = 1.0 / FRAME_RATE
+    capture.add(frame_packet(6001, seconds, EPOCH + seconds),
+                round(2.0 / FRAME_RATE, PRECISION))
+    return capture
+
+
 def extended_form() -> Capture:
     capture = base_capture("extended-form-01")
     seconds = 0.0
@@ -469,6 +516,7 @@ CAPTURES = {
     "malformed-container.mocopipackets": malformed_container,
     "malformed-packets.mocopipackets": malformed_packets,
     "refused-bones-60hz.mocopipackets": refused_bones,
+    "incomplete-frame-60hz.mocopipackets": incomplete_frame,
     "extended-form.mocopipackets": extended_form,
 }
 

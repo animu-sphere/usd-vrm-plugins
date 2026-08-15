@@ -1122,7 +1122,7 @@ line-oriented format can carry is refused before the first byte.
 
 ~~`adapters/liveCapture/mocopi` scaffold~~ · ~~packet-capture fixture format~~ ·
 ~~thin UDP receiver~~ · ~~packet decoder~~ · ~~joint mapping~~ · ~~coordinate
-conversion~~ · tracking state and confidence · frame assembly ·
+conversion~~ · ~~frame assembly~~ · tracking state and confidence ·
 `LiveCaptureSource` bridge · reconnection · opt-in real-device test ·
 **the cross-source comparison of §9.6**
 
@@ -1370,6 +1370,97 @@ original order that was never about the transport.
   arms went down" assertion passing, because the rest direction and the rotation
   swap together — verified by doing it, not reasoned about. What catches the swap
   is asking which arm is *where*, and that is a question about the basis.
+
+- ✅ **Frame assembly, and the layer that finally decides** (2026-08-14). Every
+  layer below this one was allowed to defer a question about a *session* and
+  each of them named this component when it did — the decoder refuses a bone and
+  never a frame, the map reports a bone whose path did not arrive and stops. This
+  is where those land, and it answers four things: whether a frame can be
+  interpreted at all, whether it is complete, whether it orders against the frame
+  before it, and whether the source restarted.
+
+  **Most of the sibling's assembler turned out not to apply, and that is a
+  measurement rather than a simplification.** `VmcFrameAssembler` spends its
+  design on where a frame *begins*, because two real VMC sender shapes disagree
+  about which end of a frame the clock arrives at. Here one datagram is one frame
+  — 7964 measured frame datagrams, one shape, the whole rig in each — so this
+  class holds no open frame, accumulates nothing, and has **no `Flush()`**. A
+  reader arriving from the sibling will look for one; its absence is the
+  finding. The staleness horizon went the same way: the sibling has to *learn*
+  its rig from the stream, where a skeleton packet **states** this one, so
+  "this bone stopped arriving" and "this rig never had it" are distinct from the
+  first frame and `VRM_MOCOPI_STALE_JOINT` is a code the frozen set correctly
+  never had.
+
+  **What the native path detects that the relay provably cannot.** A restart is
+  read from the stream clock *and* the frame counter, and neither alone is
+  sufficient — which the corpus made concrete rather than the plan predicting it.
+  `fnum` counts the *application's* frames, so it keeps rising through a stream
+  restart (measured: four sessions began at 1928, 4495, 10231 and 21414 with
+  `time` at 0.0); and `frame-loss-60hz`'s restart takes the clock backwards by
+  only 0.1 s, which is inside any jitter threshold worth having. A clock-only
+  rule of the sibling's kind reads that as a regression and refuses the new
+  session until its clock passes the old one's. **A VMC sender's clock going back
+  0.1 s carries no second signal to disambiguate it**, so this is the first thing
+  §9.6 can record that the relay cannot carry — and it was found rather than
+  designed for.
+
+  **A restart drops the rig, and the argument for it is narrower than it looks.**
+  Joint *identity* would survive — `MakeSkeletonMap` refuses any rig disagreeing
+  with the measured column, so every map this adapter can hold carries the same
+  id → bone table. What would not survive is the **rest pose**: a skeleton packet
+  is a body measurement, a restart is exactly when a recalibration happens, and
+  carrying the old proportions forward would attach a new body's motion to a
+  previous body's silently. The cost is bounded and reported — the device repeats
+  the table about every 3.5 s, and every frame in the gap is refused and counted.
+
+  Three decisions the layer declines to take. An `fnum` gap is **counted, never
+  diagnosed**: the measurement calls transport loss ordinary, none of the nine
+  frozen codes describes it, and inventing a tenth for a phenomenon the evidence
+  calls unremarkable would be the wrong way to earn one. An **incomplete frame is
+  emitted**, not refused — whether nineteen of twenty-two bones is usable is
+  `MissingBonePolicy`'s answer one layer up, and an adapter that dropped the frame
+  would have taken it. And the **hips translation stays out of `RootMotion`**,
+  because whether the body's placement is root motion is the record this release
+  exists to write.
+
+  `FRAME_INCOMPLETE` and `SOURCE_RESTARTED` are raised here for the first time,
+  and `TIMESTAMP_INVALID` for the second — the decoder already refused an
+  unusable clock, and this layer refuses one that does not *order*. That brings
+  the set to **eight of nine paid for by a real caller**. The ninth is
+  `TRACKING_LOST`, and it stays frozen and unraised everywhere — asserted as such
+  over the whole corpus rather than merely left alone — because the measured
+  grammar carries no per-joint confidence to decode into it.
+
+  Two new CTest names, 88 green in the workspace, and a fourth reading of the
+  same corpus — `frame-loss-60hz` was written for this layer and until now the
+  only claim any test could make about it was that its seven frames map. Both
+  names were verified **negatively**: disabling the counter half of the restart
+  rule turns the unit test and the corpus red, and so does dropping the missing-
+  bone computation.
+
+  ✅ **The corpus gap this opened is closed, with the fixture the pairing
+  needed** (2026-08-14). `VRM_MOCOPI_FRAME_INCOMPLETE` is only meaningful against
+  a rig, and the corpus had no capture that declared one and then damaged a
+  frame: `refused-bones-60hz` has the damage but deliberately carries **no**
+  skeleton packet, because the map's own corpus assertion needs a rig that is
+  undeclared. `incomplete-frame-60hz` is that file's three damaged records with a
+  skeleton packet in front and a clean frame behind.
+
+  **The pair is worth more than the capture.** The decoder's and the map's corpus
+  passes now assert that the two files behave *identically* at their layers — 24
+  usable bones, three diagnostics, three canonical bones lost to the path rule —
+  so the only thing that differs between them is the declared rig, and this is
+  the layer where that difference turns two frames refused into one incomplete
+  frame **emitted**. The clean frame behind it is what makes the incompleteness
+  the datagram's property rather than the session's.
+
+  Adding it touched three corpus-reading tests, which is the corpus convention
+  working as intended: a capture no test asserts against fails as "no assertion
+  is registered", so a fixture cannot be added and left pinning nothing. The
+  other seven captures are byte-identical, and the claim was verified negatively
+  — making the assembler refuse an incomplete frame instead of emitting one turns
+  this capture red **by name**.
 
 **The wire format is not documented, and the evidence path is a sender rather
 than a device** (established 2026-08-09). The vendor states the transport and

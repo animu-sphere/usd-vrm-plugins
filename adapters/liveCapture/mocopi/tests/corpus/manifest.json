@@ -174,6 +174,51 @@
       "id": "frame-loss-60hz"
     },
     {
+      "file": "incomplete-frame-60hz.mocopipackets",
+      "pins": "VRM_MOCOPI_FRAME_INCOMPLETE, which is only meaningful against a rig: a skeleton packet, then the same three damaged bone records refused-bones-60hz carries, then a clean frame. The damaged frame is emitted rather than refused - whether 19 of 22 bones is usable is the intake policy's question one layer up - and the clean frame is what makes the incompleteness the datagram's property rather than the session's.",
+      "tags": [
+        "partial-frame",
+        "declared-rig",
+        "assembler-input"
+      ],
+      "id": "incomplete-frame-60hz",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "incomplete-frame-01",
+      "datagrams": 3,
+      "payloadBytes": 5031,
+      "durationSeconds": 0.033333,
+      "packetKinds": {
+        "fram": 2,
+        "skdf": 1
+      },
+      "chunkTags": [
+        "bndt",
+        "bnid",
+        "bons",
+        "btdt",
+        "btrs",
+        "fnum",
+        "fram",
+        "ftyp",
+        "head",
+        "ipad",
+        "pbid",
+        "rcvp",
+        "skdf",
+        "sndf",
+        "time",
+        "tmcd",
+        "tran",
+        "uttm",
+        "vrsn"
+      ],
+      "boneCounts": [
+        27
+      ],
+      "sha256": "7ee2f5bf198e874efaf4ababd3b532edd22d19483efce552cec800d66ab03910"
+    },
+    {
       "file": "malformed-container.mocopipackets",
       "pins": "One datagram per container-level refusal: empty, a header that does not fit, a payload longer than the datagram, a walk that ends between chunks, and a datagram of the sibling protocol - which dies in the container rather than at a field, which is what having two magic lines is for.",
       "tags": [
