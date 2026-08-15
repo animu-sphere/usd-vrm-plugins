@@ -4,10 +4,17 @@
 //
 // Every test here opens a real socket, on loopback and on an OS-assigned port —
 // never 12351, because a developer with a real source running would otherwise
-// find this suite fighting it for the port. That is also why this is its own
-// CTest name: it is the only test in this adapter that a runner forbidding
-// sockets would have to exclude, and excluding a name is cheaper than excluding
-// a claim (roadmap §9.5).
+// find this suite fighting it for the port. That is also why these are their own
+// CTest names: excluding a name is cheaper than excluding a claim
+// (roadmap §9.5).
+//
+// This binary carries **three** such names, and a runner forbidding sockets must
+// exclude all three: `vrmAdapterMocopi_udpReceiver`,
+// `vrmAdapterMocopi_udpReceiverTruncation`, and `vrmAdapterMocopi_loopbackCorpus`
+// — the corpus replay at the bottom of this file, which binds a loopback socket
+// like everything else here. It is listed in CMake beside the other corpus
+// passes, none of which bind anything, so it is the one an operator building an
+// exclusion list would miss.
 //
 // The sender is in this file rather than in the library. §9.3 asks for a "test
 // sender", and that is what it is: the adapter receives, and a `UdpSender` in
@@ -77,6 +84,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <system_error>
 #include <vector>
 
 #if defined(_WIN32)
@@ -878,6 +886,14 @@ Collect(MocopiLiveSource* source, std::size_t admitted, Replayed* out)
     if (admitted == 0 || frames.empty()) {
         return;
     }
+    // `GetFramesFromLastPush()` is a vector because the sibling adapter can emit
+    // several frames from one push. This protocol cannot — one datagram is one
+    // frame, measured — and the sampling below relies on it: it attributes the
+    // sampled pose to `frames.back()`, which is only the admitted frame while
+    // there is exactly one. Asserted rather than assumed, so an assembler that
+    // ever emitted two would fail loudly here instead of silently dropping the
+    // earlier frame out of the sampled-pose half of the comparison.
+    assert(frames.size() == 1);
 
     // Sampled at the pose's **stored** timestamp rather than at one recomputed
     // from the frame rate. `time` is binary32 on the wire, so a recomputed
@@ -945,9 +961,7 @@ ReplayFromWire(const PacketCapture& capture, Replayed* out,
     source.SetSource(*endpoint);
 
     // One datagram record for the whole session, reused by every `Receive` —
-    // which is the shape the bridge says a receiver should have, and is checked
-    // here by the poses coming out identical rather than by an assertion about
-    // pointers.
+    // which is the shape the bridge says a receiver should have.
     ReceivedDatagram received;
     for (const RecordedDatagram& datagram : capture.datagrams) {
         if (!sender.Send(datagram.bytes)) {
@@ -962,6 +976,15 @@ ReplayFromWire(const PacketCapture& capture, Replayed* out,
         }
         const std::size_t admitted = source.PushDatagram(
             received.bytes, received.receiveTime, &out->diagnostics);
+        // Poisoned the moment the push returns, before anything reads what it
+        // produced — the sibling suite's arrangement
+        // (`test_live_source.cpp`), and it is the only thing here that can
+        // actually fail. Letting the next `Receive` overwrite the buffer proves
+        // nothing, because `PushDatagram` has already completed by then; a
+        // decoder that retained a `string_view` into the caller's bytes would
+        // survive that shape and produce garbage under this one.
+        std::fill(received.bytes.begin(), received.bytes.end(),
+                  std::uint8_t{0xcd});
         if (source.ConsumeSessionRestart()) {
             ++out->restartsLatched;
         }
@@ -971,7 +994,19 @@ ReplayFromWire(const PacketCapture& capture, Replayed* out,
     out->stats = source.GetStats();
     out->frameStats = source.GetAssembler().GetStats();
     out->intakeStats = source.GetIntake().GetStats();
-    return receiver.GetStats().datagramsReceived == capture.datagrams.size();
+    // Named separately from the four failures above, which all return `false`
+    // with their own line. This one fires after every datagram round-tripped and
+    // every pose was collected, so reporting it as "the replay did not complete"
+    // would give a bind failure and a miscounting receiver the same message.
+    if (receiver.GetStats().datagramsReceived != capture.datagrams.size()) {
+        std::fprintf(stderr,
+                     "the receiver counted %llu datagram(s), %zu were sent\n",
+                     static_cast<unsigned long long>(
+                         receiver.GetStats().datagramsReceived),
+                     capture.datagrams.size());
+        return false;
+    }
+    return true;
 }
 
 // Every field, and exact rather than tolerant. `NearlyEqual` is the comparison
@@ -1013,10 +1048,17 @@ struct ComparedStat
     std::uint64_t wire;
 };
 
-// Named rather than summed, so a failure says which tally moved. All three
-// layers' are compared: four of the nine captures deliver no frame at all, and
-// for those the counters and the diagnostics are the *only* evidence a socket
-// changed nothing.
+// Named rather than summed, so a failure says which tally moved. **Every field
+// of all three structs** is here, and that is a maintenance claim as much as a
+// comparison: a tally left out is a way for the two paths to disagree and the
+// test to stay green, and the fields most worth having are the ones that record
+// *why* something was refused. A frame counted as `framesRejectedStale` on one
+// path and `framesRejectedEmpty` on the other leaves `framesAccepted`,
+// `framesAdmitted` and `framesRefused` identical.
+//
+// It matters most where there is nothing else: four of the nine captures deliver
+// no frame at all, so for those the counters and the diagnostics are the only
+// evidence a socket changed nothing.
 const char*
 FirstStatThatDiffers(const Replayed& file, const Replayed& wire)
 {
@@ -1050,14 +1092,30 @@ FirstStatThatDiffers(const Replayed& file, const Replayed& wire)
          wire.frameStats.skeletonsAccepted},
         {"skeletonsRefused", file.frameStats.skeletonsRefused,
          wire.frameStats.skeletonsRefused},
+        {"unusedJoints", file.frameStats.unusedJoints,
+         wire.frameStats.unusedJoints},
+        {"droppedTranslations", file.frameStats.droppedTranslations,
+         wire.frameStats.droppedTranslations},
 
         {"framesAccepted", file.intakeStats.framesAccepted,
          wire.intakeStats.framesAccepted},
+        {"framesRejectedOutOfOrder", file.intakeStats.framesRejectedOutOfOrder,
+         wire.intakeStats.framesRejectedOutOfOrder},
+        {"framesRejectedStale", file.intakeStats.framesRejectedStale,
+         wire.intakeStats.framesRejectedStale},
+        {"framesRejectedEmpty", file.intakeStats.framesRejectedEmpty,
+         wire.intakeStats.framesRejectedEmpty},
         {"bonesObserved", file.intakeStats.bonesObserved,
          wire.intakeStats.bonesObserved},
+        {"bonesGatedByConfidence", file.intakeStats.bonesGatedByConfidence,
+         wire.intakeStats.bonesGatedByConfidence},
         {"bonesHeld", file.intakeStats.bonesHeld, wire.intakeStats.bonesHeld},
         {"bonesUnbound", file.intakeStats.bonesUnbound,
          wire.intakeStats.bonesUnbound},
+        {"rootSamplesObserved", file.intakeStats.rootSamplesObserved,
+         wire.intakeStats.rootSamplesObserved},
+        {"rootVelocitiesDerived", file.intakeStats.rootVelocitiesDerived,
+         wire.intakeStats.rootVelocitiesDerived},
         {"samplesSampled", file.intakeStats.samplesSampled,
          wire.intakeStats.samplesSampled},
         {"samplesHeld", file.intakeStats.samplesHeld,
@@ -1073,6 +1131,13 @@ FirstStatThatDiffers(const Replayed& file, const Replayed& wire)
         if (stat.file != stat.wire) {
             return stat.name;
         }
+    }
+    // The one field of the three structs that is not a counter. Compared
+    // exactly, like everything else here: lag is derived from the timestamps a
+    // frame carried, and every one of those came off the same bytes. A tolerance
+    // would be admitting the socket may change it a little.
+    if (file.intakeStats.peakLagSeconds != wire.intakeStats.peakLagSeconds) {
+        return "peakLagSeconds";
     }
     return nullptr;
 }
@@ -1101,16 +1166,24 @@ CheckTheWireChangesNothing(const std::filesystem::path& path)
         return 1;
     }
 
+    // A frame-count mismatch is recorded and does **not** return: the
+    // diagnostics and the tallies below are two of the three kinds of evidence
+    // this comparison exists to give, and a lost frame is the most likely real
+    // transport regression — exactly the case where "which tally moved" and
+    // "which diagnostic changed" are worth having. Returning here would leave
+    // the failure that matters most described by one line out of three.
+    int failures = 0;
     if (fromFile.frames.size() != fromWire.frames.size()) {
         std::fprintf(stderr, "%s: %zu frame(s) from the file, %zu from the "
                              "wire\n",
                      name.c_str(), fromFile.frames.size(),
                      fromWire.frames.size());
-        return 1;
+        ++failures;
     }
 
-    int failures = 0;
-    for (std::size_t index = 0; index != fromFile.frames.size(); ++index) {
+    const std::size_t common =
+        std::min(fromFile.frames.size(), fromWire.frames.size());
+    for (std::size_t index = 0; index != common; ++index) {
         if (!SameDelivery(fromFile.frames[index], fromWire.frames[index])) {
             std::fprintf(stderr,
                          "%s: frame %zu is not the frame the file produced\n",
@@ -1137,14 +1210,38 @@ CheckTheWireChangesNothing(const std::filesystem::path& path)
                 ++failures;
                 continue;
             }
-            // And the field that was excluded is exactly the two session names,
-            // rather than anything the comparison above would have tolerated.
-            if (file.source != capture.sourceId || wire.source != endpoint) {
-                std::fprintf(stderr,
-                             "%s: diagnostic %zu does not name its session\n",
-                             name.c_str(), index);
-                ++failures;
-            }
+        }
+    }
+
+    // The field the comparison above excludes, checked rather than merely
+    // excluded — and checked **outside** that loop, because it used to sit
+    // inside it: a capture that raises no diagnostic at all (neutral-standing
+    // and arms-lowered raise none) never reached it, and a diagnostic that
+    // failed the comparison `continue`d past it.
+    //
+    // What it establishes is narrow and worth stating as such: that the name
+    // each session was given reaches every line it stamped, and that the wire
+    // path's name is the endpoint the receiver actually bound rather than
+    // anything this test chose. `endpoint` comes back from
+    // `UdpReceiver::GetBoundEndpoint` on an OS-assigned port, so it is not a
+    // string the test could have predicted.
+    for (const Diagnostic& diagnostic : fromFile.diagnostics) {
+        if (diagnostic.source != capture.sourceId) {
+            std::fprintf(stderr, "%s: a file-path diagnostic names '%s', not "
+                                 "the fixture\n",
+                         name.c_str(), diagnostic.source.c_str());
+            ++failures;
+            break;
+        }
+    }
+    for (const Diagnostic& diagnostic : fromWire.diagnostics) {
+        if (diagnostic.source != endpoint) {
+            std::fprintf(stderr, "%s: a wire-path diagnostic names '%s', not "
+                                 "the bound endpoint '%s'\n",
+                         name.c_str(), diagnostic.source.c_str(),
+                         endpoint.c_str());
+            ++failures;
+            break;
         }
     }
 
@@ -1165,6 +1262,19 @@ CheckTheWireChangesNothing(const std::filesystem::path& path)
 int
 CheckCorpus(const std::filesystem::path& directory)
 {
+    // Checked rather than assumed: `directory_iterator` *throws* on a path that
+    // is not one, nothing here catches it, and the process would call
+    // `std::terminate` — on Windows an abort with no message at all. Since any
+    // unrecognised argument reaches this function, that turns a typo, or a
+    // corpus that is absent at test time in a relocated build tree, into a crash
+    // where the line below is what the code plainly intends to say.
+    std::error_code failed;
+    if (!std::filesystem::is_directory(directory, failed)) {
+        std::fprintf(stderr, "not a corpus directory: %s\n",
+                     directory.string().c_str());
+        return 1;
+    }
+
     std::vector<std::filesystem::path> files;
     for (const std::filesystem::directory_entry& entry :
          std::filesystem::directory_iterator(directory)) {

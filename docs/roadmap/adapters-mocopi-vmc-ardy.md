@@ -1573,8 +1573,11 @@ original order that was never about the transport.
   red `_liveSourceCorpus` is a decode path that changed — and excluding sockets
   therefore still excludes names rather than claims (§9.5). With it, the
   `adapter-integration-loopback` lane covers this adapter as well as the sibling,
-  by the same route: it is the two socket names inside the `kind: workspace`
-  cells and needs no cell of its own.
+  by the same route: it is the socket names inside the `kind: workspace` cells
+  and needs no cell of its own. **That set is now three names rather than two** —
+  this one binds a loopback socket like the two `_udpReceiver` names do, while
+  being listed beside corpus passes that bind nothing, so an exclusion list built
+  from the CMake grouping would miss exactly this one.
 
   **The comparison has no clock exemption, and that is this protocol's
   inversion of the sibling's.** `vrmAdapterVmc_loopbackCorpus` must exempt the

@@ -527,8 +527,15 @@ def check_refusals(failures: Failures, tool: str, bvh: pathlib.Path,
 
     # A profile that does not describe this rig. The generated corpus is format
     # shapes rather than a producer's export, so no shipped profile matches one.
+    #
+    # Required rather than skipped-if-absent. It used to be optional here and
+    # mandatory in `check_a_profile_this_repository_did_not_ship`, so the same
+    # missing file made one check report success having verified nothing and the
+    # other report a failure -- and "is the generated corpus required?" had two
+    # answers in one suite. It is committed, so the answer is yes.
     mismatched = corpus / "generated" / "valid-nested-joints.bvh"
-    if mismatched.exists():
+    if failures.check(mismatched.exists(),
+                      f"the generated fixture is not at {mismatched}"):
         result = run_tool(tool, str(mismatched), "--profile", PROFILE_ID,
                           "--profile-dir", str(profile_dir), "--output",
                           str(output))
@@ -648,7 +655,7 @@ joints:
 
 def check_a_profile_this_repository_did_not_ship(
         failures: Failures, tool: str, corpus: pathlib.Path,
-        work: pathlib.Path) -> None:
+        recorded: pathlib.Path, work: pathlib.Path) -> None:
     """A user-defined profile, by path, for a rig neither producer wrote.
 
     This is the release condition that says the profile contract is *usable from
@@ -706,11 +713,40 @@ def check_a_profile_this_repository_did_not_ship(
                    f"the user-defined clip's bones are {bones}, and the "
                    f"profile maps {expected}")
 
+    # The **paths**, not the leaves. Sorted leaf tokens are identical for every
+    # possible parenting, so a converter that mis-parented a rig it had no
+    # shipped profile for -- head and spine swapped, say -- passed the check
+    # above unchanged. This is the only test that drives a user-authored
+    # profile, so it is the only place that mistake could be caught.
+    paths = {token.split("/")[-1]: token for token in joints}
+    for bone, parent in (("spine", "hips"), ("head", "spine"),
+                         ("leftUpperLeg", "hips")):
+        expected_path = f"{paths.get(parent, '?')}/{bone}"
+        failures.check(
+            paths.get(bone) == expected_path,
+            f"the user-defined clip puts {bone} at {paths.get(bone)!r}, and "
+            f"the file's hierarchy puts it at {expected_path!r}")
+
     rotations = animation.GetRotationsAttr()
     failures.check(
         len(rotations.GetTimeSamples()) == len(document.rows),
         f"the clip carries {len(rotations.GetTimeSamples())} sample(s) for the "
         f"file's {len(document.rows)} row(s)")
+
+    # A converted **value**, so that reading the file for its identity and its
+    # joint list is not all this proves. The profile declares
+    # `translationUnit: centimeters` and `root.translation: absolute-position`;
+    # the file's first row puts the root at Y=90. A converter that honoured the
+    # `joints:` map and then fell back to a built-in default for the unit would
+    # satisfy every other check here and author 90 metres.
+    translations = animation.GetTranslationsAttr()
+    hips_index = joints.index(paths["hips"])
+    first = translations.Get(translations.GetTimeSamples()[0])
+    root_y = first[hips_index][1] if first else None
+    failures.check(
+        root_y is not None and abs(root_y - 0.90) < 1e-5,
+        f"the user-defined clip puts the root at Y={root_y}, and the profile's "
+        f"centimetres put the file's 90.0 at 0.90 m")
 
     root = stage.GetDefaultPrim()
     custom = root.GetCustomData().get("source", {}) if root else {}
@@ -723,16 +759,17 @@ def check_a_profile_this_repository_did_not_ship(
 
     # And the same profile against a rig it does not describe is still refused,
     # so what passed above is this profile matching this rig rather than a file
-    # named by path being trusted.
-    recorded = corpus / "recorded" / "redistributable" / RECORDED
-    if recorded.exists():
-        result = run_tool(tool, str(recorded), "--profile", str(profile),
-                          "--output", str(work / "user-defined-mismatch.usda"))
-        failures.check(
-            result.returncode == 1
-            and "VRM_BVH_PROFILE_MISMATCH" in result.stderr,
-            f"a user-defined profile was accepted for a rig it does not "
-            f"describe: exit {result.returncode}, {result.stderr}")
+    # named by path being trusted. Unguarded, and `recorded` is the path `main`
+    # already resolved and already exits on: the guard that used to be here read
+    # as "this half is optional" while being unable to take its false branch,
+    # which is the opposite of what this half is for.
+    result = run_tool(tool, str(recorded), "--profile", str(profile),
+                      "--output", str(work / "user-defined-mismatch.usda"))
+    failures.check(
+        result.returncode == 1
+        and "VRM_BVH_PROFILE_MISMATCH" in result.stderr,
+        f"a user-defined profile was accepted for a rig it does not "
+        f"describe: exit {result.returncode}, {result.stderr}")
 
 
 def main() -> int:
@@ -763,7 +800,7 @@ def main() -> int:
         check_refusals(failures, arguments.tool, bvh, arguments.corpus,
                        arguments.profiles, work)
         check_a_profile_this_repository_did_not_ship(
-            failures, arguments.tool, arguments.corpus, work)
+            failures, arguments.tool, arguments.corpus, bvh, work)
     return failures.report()
 
 

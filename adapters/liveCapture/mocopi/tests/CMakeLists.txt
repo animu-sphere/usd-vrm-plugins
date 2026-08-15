@@ -25,9 +25,11 @@ target_compile_options(vrmAdapterMocopi_packetCapture_tests
 add_test(NAME vrmAdapterMocopi_packetCapture
          COMMAND vrmAdapterMocopi_packetCapture_tests)
 
-# The socket, on its own CTest name. It is the only test in this adapter that
-# binds one, so a runner that forbids sockets excludes a name rather than a
-# claim (roadmap §9.5) -- and the sibling adapter's two socket tests have
+# The socket, on its own CTest name, so a runner that forbids sockets excludes a
+# name rather than a claim (roadmap §9.5). This binary now carries **three** such
+# names: the two below and `vrmAdapterMocopi_loopbackCorpus` further down, which
+# binds a loopback socket of its own. A lane that forbids binds must exclude all
+# three -- and the sibling adapter's two socket tests have
 # already run green in all three `kind: workspace` cells, so this is a measured
 # arrangement rather than a hopeful one. It never touches port 12351: every bind
 # here is loopback on an OS-assigned port, so a developer with a real source
@@ -176,8 +178,14 @@ if(EXISTS "${_vrm_adapter_mocopi_corpus}")
     #
     # It runs on the socket binary rather than the bridge's, because the socket
     # is the subject: a red name here is a transport that changed its input,
-    # where a red `_liveSourceCorpus` is a decode path that changed. Excluding
-    # sockets therefore still excludes exactly the two names above.
+    # where a red `_liveSourceCorpus` is a decode path that changed.
+    #
+    # It **binds a socket**, so it belongs to the excluded set with the two
+    # `_udpReceiver` names rather than beside the other corpus names it is listed
+    # with: a lane that forbids binds must exclude all three. That is stated here
+    # and in the three places that enumerate the set, because a name that looks
+    # like a corpus pass and behaves like a socket test is exactly the one an
+    # operator would miss.
     add_test(NAME vrmAdapterMocopi_loopbackCorpus
         COMMAND vrmAdapterMocopi_udpReceiver_tests
                 "${_vrm_adapter_mocopi_corpus}")
