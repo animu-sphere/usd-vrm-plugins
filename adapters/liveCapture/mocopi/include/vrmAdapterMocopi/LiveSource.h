@@ -105,7 +105,7 @@
 // latched here and handed back rather than repaired:
 //
 //     if (source.ConsumeSessionRestart()) {
-//         source.GetIntake().AlignClock(now);
+//         source.GetIntake().AlignClock(now);   // under Reset only — see below
 //     }
 //
 // **The latch fires when the new session's first pose exists, not when the
@@ -120,6 +120,36 @@
 //
 // A consumer that ignores the latch sees a source that has fallen the length of
 // the old session behind, which is a visible fault rather than a silent one.
+//
+// ### The align belongs to `Reset`, and under `Refuse` it is actively wrong
+//
+// The latch fires under **both** policies, because a consumer that chose
+// `Refuse` still needs to know why its source stopped advancing. What it must do
+// with that knowledge is the opposite:
+//
+//     Reset    align — the buffer now holds the new session, and its clock is
+//              the one evaluation has to be pinned to
+//     Refuse   do not align — the buffer still holds only the *old* session,
+//              because every frame of the new one was refused
+//
+// Aligning under `Refuse` pins the dead session's last frame to the evaluation
+// time, so `Sample` starts answering `Sampled` with `lag == 0` and
+// `peakLagSeconds` stops growing: a stream that has stopped reports itself
+// healthy. That is precisely the failure `Refuse` exists to avoid, arrived at by
+// following the recipe for the other policy — so the two are written out rather
+// than left to a reader to derive from what `AlignClock` happens to do.
+//
+// ### `Reset()` does not latch, because the caller is the one who called it
+//
+// The latch is for a restart the *source* performed. `Reset()` is the consumer's
+// own action, so it clears the latch rather than raising one — an object does not
+// need to tell a caller something the caller just did.
+//
+// The consequence is real and is the caller's to handle: `LiveCaptureSource::Reset`
+// deliberately keeps its clock offset, so a caller replaying a second capture
+// into the same object **must re-align it itself**, unprompted. Inheriting the
+// first capture's offset is the same fault the latch exists to make visible, and
+// it is the one case where nothing here will make it visible for you.
 //
 // ## What a pose cannot carry, and where it is still readable
 //
@@ -215,11 +245,26 @@ struct MocopiLiveSourceStats
     // Datagrams that decoded into a packet, and datagrams the decoder refused
     // whole. The second is the one number nothing else holds: a refused datagram
     // never reaches the assembler, so a session drowning in malformed traffic is
-    // invisible in every other tally. A datagram whose *bone records* were
-    // refused still counts as decoded — `MotionPacket::refusedBones` says so,
-    // and saying it twice differently would be worse than not saying it here.
+    // invisible in every other tally.
     std::uint64_t datagramsDecoded = 0;
     std::uint64_t datagramsRefused = 0;
+
+    // Bone records the decoder dropped for naming no orientation, summed over
+    // the session. A datagram whose bone records were refused still counts as
+    // decoded above, so this is what separates "the frame arrived" from "the
+    // frame arrived whole".
+    //
+    // It is carried here because the decoded packet is otherwise a local of
+    // `PushDatagram` and dies with the call. `MotionPacket::refusedBones` exists
+    // so that a caller passing no diagnostics can still see that data was lost;
+    // a bridge that dropped it would make that guarantee reachable only by
+    // bypassing this class and calling `DecodeMotionPacket` directly.
+    //
+    // Not the same number as a frame's `missing` count, and deliberately beside
+    // it rather than folded in: a record the decoder refused and a bone whose
+    // path did not arrive are different failures, and only the first says the
+    // bytes were bad.
+    std::uint64_t bonesRefused = 0;
 
     // Frames handed to the intake, and what it did with them. Under the default
     // restart policy `framesRefused` is expected to stay 0: the assembler emits
@@ -312,6 +357,13 @@ public:
     // and clears the latch. True at most once per restart, whatever the policy
     // did with the frame — a consumer that chose `Refuse` still needs to know why
     // its source stopped advancing.
+    //
+    // **What to do with it differs by policy**: under `Reset`, re-align the
+    // intake's clock; under `Refuse`, do not, because the buffer still holds the
+    // dead session and aligning to it reports a stopped stream as a healthy one.
+    // The header sets out both. `Reset()` clears this rather than raising it —
+    // the caller does not need telling about its own action, and is then
+    // responsible for the clock offset itself.
     bool ConsumeSessionRestart() noexcept;
 
     // IMotionSource, entirely by delegation. A pose sampled from here is a pose

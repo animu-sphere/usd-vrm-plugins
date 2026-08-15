@@ -88,6 +88,10 @@ MocopiLiveSource::PushDatagram(const std::uint8_t* bytes, std::size_t size,
         return 0;
     }
     ++_stats.datagramsDecoded;
+    // Read off the packet before it goes out of scope at the end of this call.
+    // It is the only place the tally is reachable from: a caller that passed no
+    // diagnostics has no other way to learn that records were dropped.
+    _stats.bonesRefused += packet.refusedBones;
 
     const std::size_t admitted = PushPacket(packet, receiveTime, diagnostics);
     // After the assembler rather than before it, so one datagram's diagnostics

@@ -45,11 +45,13 @@
 #include "vrmAdapterMocopi/PacketCapture.h"
 #include "vrmAdapterMocopi/SkeletonMap.h"
 
+#include "fixtures.h"
+
 #include "motionCore/Compare.h"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -59,6 +61,8 @@
 
 namespace
 {
+
+using namespace vrmAdapterMocopiTests;
 
 using motion::HumanBone;
 using vrmAdapterMocopi::BoneDefinition;
@@ -76,97 +80,16 @@ using vrmAdapterMocopi::MotionPacketKind;
 using vrmAdapterMocopi::MotionSkeleton;
 using vrmAdapterMocopi::SessionRestartPolicy;
 
-// The generator's invented offsets, in the same order and for the same reason
-// the two tests below this one keep them: what a pose is compared against is a
-// stated table rather than a fixture agreeing with itself.
-const float kRestOffsets[MeasuredBoneCount][3] = {
-    {0.0f, 0.90f, 0.0f},     {0.0f, 0.06f, 0.0f},   {0.0f, 0.06f, 0.0f},
-    {0.0f, 0.06f, 0.0f},     {0.0f, 0.06f, 0.0f},   {0.0f, 0.06f, 0.0f},
-    {0.0f, 0.06f, 0.0f},     {0.0f, 0.10f, 0.0f},   {0.0f, 0.05f, 0.0f},
-    {0.0f, 0.05f, 0.0f},     {0.0f, 0.05f, 0.0f},   {0.02f, -0.08f, 0.08f},
-    {0.14f, 0.0f, 0.0f},     {0.30f, 0.0f, 0.0f},   {0.25f, 0.0f, 0.0f},
-    {-0.02f, -0.08f, 0.08f}, {-0.14f, 0.0f, 0.0f},  {-0.30f, 0.0f, 0.0f},
-    {-0.25f, 0.0f, 0.0f},    {0.09f, -0.05f, 0.0f}, {0.0f, -0.40f, 0.0f},
-    {0.0f, -0.42f, 0.0f},    {0.0f, -0.10f, 0.13f}, {-0.09f, -0.05f, 0.0f},
-    {0.0f, -0.40f, 0.0f},    {0.0f, -0.42f, 0.0f},  {0.0f, -0.10f, 0.13f},
-};
-
-constexpr std::size_t kCanonicalBoneCount = 22;
-constexpr double kFrameRate = 60.0;
-constexpr double kEpoch = 1786492800.0;
+// The restart fixtures below match the committed capture's shape: a session
+// recorded twenty seconds into its stream, which is what makes the new stream's
+// clock behind *all* of it rather than overtaking it within two frames. The
+// wall clock keeps running across the restart — it is the stream that begins
+// again, not the day.
+constexpr double kSessionStart = 20.0;
+constexpr double kResumedUnix = kEpoch + kSessionStart + 0.1;
 
 // `motionCore`'s, never a number picked here (Compare.h).
 constexpr motion::MotionTolerance kTolerance{};
-
-std::array<float, 4>
-WireIdentity()
-{
-    return {{0.0f, 0.0f, 0.0f, 1.0f}};
-}
-
-std::array<float, 3>
-RestOffset(std::size_t jointId)
-{
-    return {{kRestOffsets[jointId][0], kRestOffsets[jointId][1],
-             kRestOffsets[jointId][2]}};
-}
-
-MotionPacket
-SkeletonPacket()
-{
-    MotionSkeleton skeleton;
-    for (std::size_t jointId = 0; jointId < MeasuredBoneCount; ++jointId) {
-        BoneDefinition joint;
-        joint.boneId = static_cast<std::uint16_t>(jointId);
-        joint.parentBoneId = MeasuredParentColumn[jointId];
-        joint.restTransform.rotation = WireIdentity();
-        joint.restTransform.translation = RestOffset(jointId);
-        skeleton.bones.push_back(joint);
-    }
-    MotionPacket packet;
-    packet.kind = MotionPacketKind::Skeleton;
-    packet.skeleton = std::move(skeleton);
-    return packet;
-}
-
-MotionPacket
-FramePacket(std::uint32_t frameNumber, double streamSeconds,
-            double senderUnixSeconds)
-{
-    MotionFrame frame;
-    frame.frameNumber = frameNumber;
-    frame.streamSeconds = static_cast<float>(streamSeconds);
-    frame.senderUnixSeconds = senderUnixSeconds;
-    for (std::size_t jointId = 0; jointId < MeasuredBoneCount; ++jointId) {
-        BoneFrame bone;
-        bone.boneId = static_cast<std::uint16_t>(jointId);
-        bone.transform.rotation = WireIdentity();
-        bone.transform.translation = RestOffset(jointId);
-        frame.bones.push_back(bone);
-    }
-    MotionPacket packet;
-    packet.kind = MotionPacketKind::Frame;
-    packet.frame = std::move(frame);
-    return packet;
-}
-
-MotionPacket
-FrameAt(std::uint32_t frameNumber, double streamSeconds)
-{
-    return FramePacket(frameNumber, streamSeconds, kEpoch + streamSeconds);
-}
-
-// Removes a joint's record, so the bones on its path cannot be formed.
-void
-DropJoint(MotionPacket* packet, std::uint16_t boneId)
-{
-    std::vector<BoneFrame>& bones = packet->frame->bones;
-    bones.erase(std::remove_if(bones.begin(), bones.end(),
-                               [boneId](const BoneFrame& bone) {
-                                   return bone.boneId == boneId;
-                               }),
-                bones.end());
-}
 
 // ---------------------------------------------------------------------------
 // The path, end to end
@@ -298,6 +221,14 @@ TestProvenanceIsToldOnceAndNeverChanges()
 // A session, a restart, and a rig re-declared — the shape `session-restart-01`
 // records, driven here from packets so the policies can be compared without a
 // file.
+//
+// The new session's frames are built with `FramePacket` rather than `FrameAt`,
+// so that `uttm` keeps running across the restart. `FrameAt` derives the
+// absolute clock from the stream clock, which after a restart would send the
+// wall clock twenty seconds into the past — a stream this protocol cannot
+// produce, and the one thing the committed capture is explicit about not doing.
+// A unit test that drove impossible input would pass on it while the corpus
+// caught nothing.
 std::size_t
 RunRestart(SessionRestartPolicy policy, MocopiLiveSource* source)
 {
@@ -305,17 +236,20 @@ RunRestart(SessionRestartPolicy policy, MocopiLiveSource* source)
     std::size_t admitted = 0;
     source->PushPacket(SkeletonPacket(), 0.0);
     for (std::uint32_t index = 0; index < 3; ++index) {
-        const double seconds = 20.0 + index / kFrameRate;
+        const double seconds = kSessionStart + index / kFrameRate;
         admitted += source->PushPacket(FrameAt(4000 + index, seconds), seconds);
     }
-    // The restart: the counter goes back and the clock returns to zero.
-    admitted += source->PushPacket(FrameAt(1, 0.0), 0.0);
-    admitted += source->PushPacket(FrameAt(2, 1.0 / kFrameRate), 0.0);
+    // The restart: the counter goes back and the stream clock returns to zero,
+    // while `uttm` carries on from where the old session left it.
+    admitted += source->PushPacket(FramePacket(1, 0.0, kResumedUnix), 0.0);
+    admitted += source->PushPacket(
+        FramePacket(2, 1.0 / kFrameRate, kResumedUnix + 1.0 / kFrameRate), 0.0);
     // The new session declares its rig, and is a session again.
     source->PushPacket(SkeletonPacket(), 0.0);
     for (std::uint32_t index = 2; index < 4; ++index) {
         const double seconds = index / kFrameRate;
-        admitted += source->PushPacket(FrameAt(1 + index, seconds), seconds);
+        admitted += source->PushPacket(
+            FramePacket(1 + index, seconds, kResumedUnix + seconds), seconds);
     }
     return admitted;
 }
@@ -364,22 +298,25 @@ TestTheRestartLatchFiresOnTheFrameAndNotOnTheDetection()
     // *buffered* frame: firing at detection would pin the dead session's head.
     MocopiLiveSource source;
     source.PushPacket(SkeletonPacket(), 0.0);
-    source.PushPacket(FrameAt(4000, 20.0), 20.0);
+    source.PushPacket(FrameAt(4000, kSessionStart), kSessionStart);
     assert(!source.ConsumeSessionRestart());
 
-    // Detected here — the assembler says so — and no frame came of it.
-    source.PushPacket(FrameAt(1, 0.0), 0.0);
+    // Detected here — the assembler says so — and no frame came of it. `uttm`
+    // carries on across the restart; only the stream clock begins again.
+    source.PushPacket(FramePacket(1, 0.0, kResumedUnix), 0.0);
     assert(source.GetAssembler().GetStats().sessionRestarts == 1);
     assert(source.GetFramesFromLastPush().empty());
     assert(!source.ConsumeSessionRestart());
 
     // Still nothing: the rig has not been re-declared.
-    source.PushPacket(FrameAt(2, 1.0 / kFrameRate), 0.0);
+    source.PushPacket(
+        FramePacket(2, 1.0 / kFrameRate, kResumedUnix + 1.0 / kFrameRate), 0.0);
     assert(!source.ConsumeSessionRestart());
 
     // The rig arrives, the next frame is emitted, and the flag lands on it.
     source.PushPacket(SkeletonPacket(), 0.0);
-    source.PushPacket(FrameAt(3, 2.0 / kFrameRate), 0.0);
+    source.PushPacket(
+        FramePacket(3, 2.0 / kFrameRate, kResumedUnix + 2.0 / kFrameRate), 0.0);
     assert(source.GetFramesFromLastPush().size() == 1);
     assert(source.GetFramesFromLastPush()[0].beginsNewSession);
     assert(source.ConsumeSessionRestart());
@@ -396,14 +333,15 @@ TestTheClockOffsetIsHandedBackRatherThanRepaired()
     // the evaluation time to re-align to.
     MocopiLiveSource source;
     source.PushPacket(SkeletonPacket(), 0.0);
-    source.PushPacket(FrameAt(4000, 20.0), 20.0);
+    source.PushPacket(FrameAt(4000, kSessionStart), kSessionStart);
     // A consumer whose own clock reads zero when the stream reads 20.
     source.GetIntake().AlignClock(0.0);
     assert(source.Sample(0.0).status == motion::PoseSampleStatus::Sampled);
 
-    source.PushPacket(FrameAt(1, 0.0), 0.0);
+    source.PushPacket(FramePacket(1, 0.0, kResumedUnix), 0.0);
     source.PushPacket(SkeletonPacket(), 0.0);
-    source.PushPacket(FrameAt(2, 1.0 / kFrameRate), 0.0);
+    source.PushPacket(
+        FramePacket(2, 1.0 / kFrameRate, kResumedUnix + 1.0 / kFrameRate), 0.0);
 
     // Nothing repaired the offset, so the source now reads as far ahead of its
     // data: the stale offset is still adding twenty seconds.
@@ -414,6 +352,40 @@ TestTheClockOffsetIsHandedBackRatherThanRepaired()
     assert(source.ConsumeSessionRestart());
     assert(source.GetIntake().AlignClock(0.0));
     assert(source.Sample(0.0).status == motion::PoseSampleStatus::Sampled);
+}
+
+void
+TestUnderRefuseTheAlignWouldHideTheStallItExistsToShow()
+{
+    // The same latch, the opposite action. Under `Refuse` the new session's
+    // frames are refused, so the buffer still holds only the *old* session —
+    // and aligning to it pins a dead stream's last frame to the evaluation
+    // time, which is worse than doing nothing.
+    MocopiLiveSource source;
+    source.SetRestartPolicy(SessionRestartPolicy::Refuse);
+    RunRestart(SessionRestartPolicy::Refuse, &source);
+
+    // The stall is visible: the source is behind and falling further behind.
+    const motion::PoseSampleResult stalled =
+        source.Sample(kSessionStart + 10.0);
+    assert(stalled.status != motion::PoseSampleStatus::Sampled);
+    assert(stalled.lag > 0.0);
+
+    // The latch still fires, because a consumer that chose `Refuse` needs to
+    // know why its source stopped.
+    assert(source.ConsumeSessionRestart());
+
+    // And this is the step the header tells that consumer not to take. Aligning
+    // makes a stopped stream answer `Sampled` with no lag at all — the stall
+    // `Refuse` exists to show, hidden by following the other policy's recipe.
+    source.GetIntake().AlignClock(kSessionStart + 10.0);
+    const motion::PoseSampleResult hidden = source.Sample(kSessionStart + 10.0);
+    assert(hidden.status == motion::PoseSampleStatus::Sampled);
+    assert(hidden.lag == 0.0);
+    // Pinned as a characterisation: the behaviour is `AlignClock`'s and is
+    // correct there, so what this asserts is that the *advice* is load-bearing.
+    // If a later change made aligning harmless here, this test says so by
+    // failing and the header paragraph comes out with it.
 }
 
 // ---------------------------------------------------------------------------
@@ -518,6 +490,8 @@ TestResetForgetsTheStreamAndKeepsTheStats()
     assert(!source.GetSkeletonMap());
     assert(source.Sample(0.0).status == motion::PoseSampleStatus::Unavailable);
     assert(source.GetFramesFromLastPush().empty());
+    // No latch: `Reset()` is the caller's own action and an object does not
+    // report back something the caller just did.
     assert(!source.ConsumeSessionRestart());
     // Stats survive, because they describe the session the caller is judging.
     assert(source.GetStats().framesAdmitted == 1);
@@ -527,6 +501,35 @@ TestResetForgetsTheStreamAndKeepsTheStats()
     // The same object takes a second stream, from the beginning.
     source.PushPacket(SkeletonPacket(), 0.0);
     assert(source.PushPacket(FrameAt(1, 0.0), 0.0) == 1);
+}
+
+void
+TestASecondCaptureInheritsTheClockOffsetAndNothingSaysSo()
+{
+    // The cost of the line above, stated so it is a documented requirement
+    // rather than a surprise. `LiveCaptureSource::Reset` deliberately keeps its
+    // clock offset, and `Reset()` raises no latch — so a caller replaying a
+    // second capture into the same object must re-align it *unprompted*.
+    MocopiLiveSource source;
+    source.PushPacket(SkeletonPacket(), 0.0);
+    source.PushPacket(FrameAt(4000, kSessionStart), kSessionStart);
+    source.GetIntake().AlignClock(0.0);
+    assert(source.Sample(0.0).status == motion::PoseSampleStatus::Sampled);
+
+    // A second capture, whose stream clock starts at zero like every stream's.
+    source.Reset();
+    source.PushPacket(SkeletonPacket(), 0.0);
+    source.PushPacket(FrameAt(1, 0.0), 0.0);
+
+    // The offset from the first capture is still adding twenty seconds, so the
+    // source reads as far ahead of its data — and no latch fired to say why.
+    assert(!source.ConsumeSessionRestart());
+    assert(source.Sample(0.0).status != motion::PoseSampleStatus::Sampled);
+
+    // The caller re-aligns because it knows it started a new stream, which is
+    // the whole of the contract here.
+    assert(source.GetIntake().AlignClock(0.0));
+    assert(source.Sample(0.0).status == motion::PoseSampleStatus::Sampled);
 }
 
 // ---------------------------------------------------------------------------
@@ -642,6 +645,12 @@ CheckNeutralStanding(const ReplayedCapture& replayed, const std::string& name)
     if (!replayed.diagnostics.empty()) {
         return Failed(name, "a clean session produced a diagnostic");
     }
+    // The counterpart to the incomplete-frame assertion: a clean session refuses
+    // no bone record, so the tally distinguishes the two captures rather than
+    // merely being non-zero somewhere.
+    if (replayed.stats.bonesRefused != 0) {
+        return Failed(name, "a clean session reported a refused bone record");
+    }
     return 0;
 }
 
@@ -737,6 +746,15 @@ CheckIncompleteFrame(const ReplayedCapture& replayed, const std::string& name)
         return Failed(name, "the damaged frame did not arrive as an incomplete "
                             "pose followed by a whole one");
     }
+    // The three refused records are visible in this layer's own tally, which is
+    // the only place a caller passing no diagnostics can read them: the decoded
+    // packet is a local of `PushDatagram` and dies with the call, so a bridge
+    // that did not carry the count forward would make `MotionPacket::refusedBones`
+    // reachable only by bypassing this class.
+    if (replayed.stats.bonesRefused != 3) {
+        return Failed(name, "the decoder's refused bone records did not reach "
+                            "this layer's statistics");
+    }
     // And nothing was held into it — under `HoldLast`, which is the default.
     // That is not a contradiction: this capture's damaged frame is its
     // **first**, so the intake has no previous value for those bones and
@@ -765,7 +783,11 @@ CheckCorpus(const std::filesystem::path& directory)
     std::vector<std::filesystem::path> files;
     for (const std::filesystem::directory_entry& entry :
          std::filesystem::directory_iterator(directory)) {
-        if (entry.path().extension() == ".mocopipackets") {
+        // `is_regular_file` as well as the extension, so a directory that
+        // happens to be named like a capture is not read as one — the guard the
+        // other passes over this directory already use.
+        if (entry.is_regular_file()
+            && entry.path().extension() == ".mocopipackets") {
             files.push_back(entry.path());
         }
     }
@@ -867,10 +889,12 @@ main(int argc, char** argv)
     TestARestartUnderRefuseStopsTheStream();
     TestTheRestartLatchFiresOnTheFrameAndNotOnTheDetection();
     TestTheClockOffsetIsHandedBackRatherThanRepaired();
+    TestUnderRefuseTheAlignWouldHideTheStallItExistsToShow();
     TestNoRootMotionReachesThePoseWhateverTheIntakeIsToldToDo();
     TestTheEvidenceWindowShowsWhatThePoseDropped();
     TestARefusedDatagramIsCountedAndClearsTheWindow();
     TestResetForgetsTheStreamAndKeepsTheStats();
+    TestASecondCaptureInheritsTheClockOffsetAndNothingSaysSo();
     std::puts("vrmAdapterMocopi live source tests passed");
     return 0;
 }
