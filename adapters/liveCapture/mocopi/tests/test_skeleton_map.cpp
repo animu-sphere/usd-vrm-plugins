@@ -898,6 +898,38 @@ CheckRefusedBones(const MappedCapture& capture, const std::string& name)
 }
 
 int
+CheckIncompleteFrame(const MappedCapture& capture, const std::string& name)
+{
+    // `refused-bones-60hz`'s damage with a rig declared in front of it, and the
+    // interesting part is that this layer's answer is *identical* to the one it
+    // gives there. The rig is what the assembler needs to call a frame
+    // incomplete; the mapping does not consult it, because which bones a frame
+    // formed is a fact about the frame.
+    if (!capture.declaredRig || capture.frames.size() != 2
+        || capture.poselessFrames != 0) {
+        return Failed(name, "a declared rig and two frames were expected");
+    }
+    const FrameMapping& damaged = capture.frames[0];
+    const HumanBone missing[] = {HumanBone::UpperChest, HumanBone::Head,
+                                 HumanBone::LeftLowerLeg};
+    for (const HumanBone bone : missing) {
+        if (damaged.present.test(static_cast<std::size_t>(bone))) {
+            return Failed(name, "a bone whose path lost a joint is present");
+        }
+    }
+    if (damaged.missingBones != 3
+        || damaged.present.count() != kCanonicalBoneCount - 3) {
+        return Failed(name, "three refused records did not cost three bones");
+    }
+    // The session recovers, which is what makes the incompleteness the damaged
+    // datagram's property rather than the capture's.
+    if (capture.frames[1].present.count() != kCanonicalBoneCount) {
+        return Failed(name, "the clean frame did not map the whole rig");
+    }
+    return 0;
+}
+
+int
 CheckExtendedForm(const MappedCapture& capture, const std::string& name)
 {
     // The eleven-bone rig. A different rig is not a malformed packet — the
@@ -1016,6 +1048,8 @@ CheckCorpus(const std::filesystem::path& directory)
             result = CheckFrameLoss(mapped, name);
         } else if (capture.sourceId == "refused-bones-01") {
             result = CheckRefusedBones(mapped, name);
+        } else if (capture.sourceId == "incomplete-frame-01") {
+            result = CheckIncompleteFrame(mapped, name);
         } else if (capture.sourceId == "extended-form-01") {
             result = CheckExtendedForm(mapped, name);
         } else if (capture.sourceId == "malformed-container-01"

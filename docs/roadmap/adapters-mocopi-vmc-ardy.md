@@ -1439,14 +1439,28 @@ original order that was never about the transport.
   rule turns the unit test and the corpus red, and so does dropping the missing-
   bone computation.
 
-  ⬜ **One corpus gap, recorded rather than approximated.**
-  `VRM_MOCOPI_FRAME_INCOMPLETE` on a frame short of its rig has no capture behind
-  it. `refused-bones-60hz` is the near miss — it has the damaged frames — but it
-  deliberately carries no skeleton packet, because the map's own corpus assertion
-  needs a capture whose rig is undeclared, so to this layer it is two frames
-  refused for having no rig. Closing it is a **new fixture** (a skeleton packet
-  then a damaged frame) and therefore a corpus change rather than an assembler
-  one; the path is covered by unit tests until then.
+  ✅ **The corpus gap this opened is closed, with the fixture the pairing
+  needed** (2026-08-14). `VRM_MOCOPI_FRAME_INCOMPLETE` is only meaningful against
+  a rig, and the corpus had no capture that declared one and then damaged a
+  frame: `refused-bones-60hz` has the damage but deliberately carries **no**
+  skeleton packet, because the map's own corpus assertion needs a rig that is
+  undeclared. `incomplete-frame-60hz` is that file's three damaged records with a
+  skeleton packet in front and a clean frame behind.
+
+  **The pair is worth more than the capture.** The decoder's and the map's corpus
+  passes now assert that the two files behave *identically* at their layers — 24
+  usable bones, three diagnostics, three canonical bones lost to the path rule —
+  so the only thing that differs between them is the declared rig, and this is
+  the layer where that difference turns two frames refused into one incomplete
+  frame **emitted**. The clean frame behind it is what makes the incompleteness
+  the datagram's property rather than the session's.
+
+  Adding it touched three corpus-reading tests, which is the corpus convention
+  working as intended: a capture no test asserts against fails as "no assertion
+  is registered", so a fixture cannot be added and left pinning nothing. The
+  other seven captures are byte-identical, and the claim was verified negatively
+  — making the assembler refuse an incomplete frame instead of emitting one turns
+  this capture red **by name**.
 
 **The wire format is not documented, and the evidence path is a sender rather
 than a device** (established 2026-08-09). The vendor states the transport and

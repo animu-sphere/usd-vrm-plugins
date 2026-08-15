@@ -21,21 +21,22 @@
 // test that went through the wire format would be re-testing the decoder and
 // could not state a session the corpus does not contain.
 //
-// ## One thing the corpus cannot pin, stated rather than worked around
+// ## The two captures that differ by a rig
 //
-// `VRM_MOCOPI_FRAME_INCOMPLETE` on a frame short of its rig's bones has **no
-// corpus capture behind it**, and the near miss is worth naming so a later reader
-// does not go looking for one. `refused-bones-60hz` has the damaged frames — the
-// decoder drops three bone records and the map loses three canonical bones to
-// them — but it deliberately carries **no skeleton packet**, because
+// `VRM_MOCOPI_FRAME_INCOMPLETE` is only meaningful against a rig, so pinning it
+// took a capture the corpus did not have. `refused-bones-60hz` has the damaged
+// frames — the decoder drops three bone records and the map loses three canonical
+// bones to them — but it deliberately carries **no skeleton packet**, because
 // `CheckRefusedBones` in the map's own corpus test needs a capture whose rig is
-// not declared. To this layer that makes it two frames refused for having no rig,
-// which is what the corpus assertion below states.
+// undeclared. To this layer that file is two frames refused for having no rig,
+// and the assertion below says exactly that rather than approximating.
 //
-// So the incomplete-frame path is covered by unit tests only. Closing it properly
-// means a new fixture — a skeleton packet followed by a damaged frame — and that
-// is a corpus change rather than an assembler change, so it is recorded here and
-// in the roadmap instead of being quietly approximated.
+// `incomplete-frame-60hz` is the same three damaged records with a skeleton
+// packet in front and a clean frame behind. The pair is worth more than either
+// alone: the decoder's and the map's corpus passes assert that the two captures
+// decode and map **identically**, so the only thing that differs between them is
+// the declared rig — and this is the layer where that difference becomes an
+// incomplete frame rather than a refused one.
 #include "vrmAdapterMocopi/FrameAssembler.h"
 
 #include "vrmAdapterMocopi/MotionPacket.h"
@@ -90,7 +91,7 @@ constexpr double kFrameRate = 60.0;
 
 // The generator's epoch, so a drift assertion is made against the same absolute
 // clock the corpus carries rather than against zero.
-constexpr double kEpoch = 1786467493.0;
+constexpr double kEpoch = 1786492800.0;
 
 // The measured agreement between the two clocks: under 2 µs over 33 s
 // (MotionPacket.h). Used as the bound for "these two clocks still agree", which
@@ -733,6 +734,58 @@ CheckRefusedBones(const AssembledCapture& capture, const std::string& name)
 }
 
 int
+CheckIncompleteFrame(const AssembledCapture& capture, const std::string& name)
+{
+    // The capture this layer's `FRAME_INCOMPLETE` was missing. It is
+    // `refused-bones-60hz`'s damage with a rig declared in front of it, and the
+    // whole assertion is the difference that rig makes: the decoder and the map
+    // treat the two identically (their corpus passes say so), and only here do
+    // they diverge.
+    if (capture.stats.skeletonsAccepted != 1 || capture.frames.size() != 2) {
+        return Failed(name, "a rig and two assembled frames were expected");
+    }
+
+    // Emitted, not refused. Whether nineteen of twenty-two bones is usable is
+    // `MissingBonePolicy`'s answer one layer up.
+    const MocopiFrame& damaged = capture.frames[0];
+    if (damaged.missing.count() != 3
+        || damaged.pose.validRotations.count() != kCanonicalBoneCount - 3) {
+        return Failed(name, "three refused records did not cost three bones");
+    }
+    const HumanBone missing[] = {HumanBone::UpperChest, HumanBone::Head,
+                                 HumanBone::LeftLowerLeg};
+    for (const HumanBone bone : missing) {
+        if (!damaged.missing.test(static_cast<std::size_t>(bone))) {
+            return Failed(name, "a bone whose path lost a joint is not "
+                                "reported missing");
+        }
+    }
+    if (capture.stats.framesIncomplete != 1
+        || Count(capture.diagnostics, DiagnosticCode::FrameIncomplete) != 1) {
+        return Failed(name, "the incomplete frame was not reported exactly "
+                            "once");
+    }
+
+    // And the session recovers: the incompleteness belongs to the damaged
+    // datagram rather than to the session, which is what the clean frame after
+    // it is for. `missing` is measured against the declared rig, so a rig-wide
+    // fault and a one-frame fault could not otherwise be told apart.
+    if (capture.frames[1].missing.any()
+        || capture.frames[1].pose.validRotations.count()
+               != kCanonicalBoneCount) {
+        return Failed(name, "the session did not recover on the clean frame");
+    }
+    // Nothing here is out of order or lost — the damage is inside a frame, not
+    // between two.
+    if (capture.stats.framesRefusedOutOfOrder != 0
+        || capture.stats.framesRefusedEmpty != 0
+        || capture.stats.framesLost != 0) {
+        return Failed(name, "a bone-scoped fault was read as a sequence fault");
+    }
+    return 0;
+}
+
+int
 CheckExtendedForm(const AssembledCapture& capture, const std::string& name)
 {
     // The eleven-bone rig is refused, and no other skeleton packet arrives — so
@@ -819,6 +872,8 @@ CheckCorpus(const std::filesystem::path& directory)
             result = CheckFrameLoss(assembled, name);
         } else if (capture.sourceId == "refused-bones-01") {
             result = CheckRefusedBones(assembled, name);
+        } else if (capture.sourceId == "incomplete-frame-01") {
+            result = CheckIncompleteFrame(assembled, name);
         } else if (capture.sourceId == "extended-form-01") {
             result = CheckExtendedForm(assembled, name);
         } else if (capture.sourceId == "malformed-container-01"
