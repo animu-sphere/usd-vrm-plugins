@@ -1636,7 +1636,13 @@ original order that was never about the transport.
   `motion-capture-trace` has three provenance keys, none of them that — so the
   native path's claim to keep device state a relay drops holds as far as the
   capture and stops at the trace, which is one line for §9.6's "what each path
-  cannot carry". And `motion_retarget` names `upperChest` on stderr for
+  cannot carry". **The export now measures the larger loss and prints it**: the
+  hips path and its net displacement, in metres, said at the point they are
+  dropped rather than left discoverable as an absence. Both numbers, because a
+  walk out and back makes them disagree — a real session travelled 4.8 m and
+  displaced 0.69 m, and the second alone would have called it stationary. It is
+  a measurement and not a decision; nothing composes a `RootMotion`, and the day
+  §5.2 is answered this is the number that stops being dropped. And `motion_retarget` names `upperChest` on stderr for
   `Seed-san.vrm`, the incomplete-humanoid finding the recorded track hit in
   August, now reached from the live side by a different producer and pinned by
   this test in both directions — the fixture rig binds all 22 bones and must

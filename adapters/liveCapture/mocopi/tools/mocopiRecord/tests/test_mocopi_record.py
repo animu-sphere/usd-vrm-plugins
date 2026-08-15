@@ -1148,6 +1148,35 @@ def check_export(tool: pathlib.Path, workspace: pathlib.Path,
              f"{thinned_header.get('frameRate')} Hz, which is the protocol's "
              f"nominal rate rather than this recording's")
 
+    # The hips path, reported where it is dropped. This is the largest thing the
+    # trace does not carry and the one the release is arguing about, so an
+    # export that stayed silent about it would leave the loss discoverable only
+    # as an absence. Checked on two captures that must disagree: an all-identity
+    # rig has nowhere to travel, and the one carrying a root move does.
+    for name, moves in (("neutral-standing-60hz", False),
+                        ("arms-lowered-60hz", True)):
+        result = subprocess.run(
+            [str(tool), "--inspect", capture(name), "--export-trace",
+             str(workspace / f"hips-{name}.trace")],
+            text=True, encoding="utf-8", errors="replace",
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode != 0:
+            fail(f"exporting {name} exited {result.returncode}\n{result.stderr}")
+        line = [l for l in result.stderr.splitlines() if "hips path" in l]
+        if len(line) != 1:
+            fail(f"{name}: expected one hips line on stderr, got {line}")
+        # Parsed rather than pattern-matched, because the claim is about the
+        # number: "0 m of hips path" and "4.8 m" are the same string shape.
+        metres = float(line[0].split(" so ")[1].split(" m of")[0])
+        if moves and metres <= 0.0:
+            fail(f"{name} carries a root move and reported {metres} m of path")
+        if not moves and metres != 0.0:
+            fail(f"{name} is identity throughout and reported {metres} m of "
+                 f"path; that capture cannot travel")
+        if "carries no root motion" not in line[0]:
+            fail(f"{name}: the line does not say why the number is being "
+                 f"reported here: {line[0]}")
+
     # And it needs no session flag, although it *does* restart: its new session
     # never declares a rig, so no frame of it is ever emitted and there is only
     # one session to write. The capture below is the same event with the

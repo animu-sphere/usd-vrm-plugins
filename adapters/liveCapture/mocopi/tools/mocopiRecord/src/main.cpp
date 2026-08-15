@@ -263,6 +263,23 @@ ExportTrace(const mocopiRecordTool::Options& options,
         std::cerr << " over " << (session.endTime - session.startTime)
                   << " s at " << session.nominalFrameRate << " Hz to "
                   << options.traceExportPath << "\n";
+
+        // The largest thing the trace does not carry, said where it is dropped
+        // rather than left for a reader to discover as an absence. Printed for
+        // every export, including the ones that stayed put: "0.02 m of hips
+        // path" is the useful answer for a session that did not travel, and a
+        // line that appeared only above some threshold would leave a reader
+        // unable to tell a still session from an unmeasured one.
+        const mocopiRecordTool::HipsMotion& hips = trace.GetHipsMotion()[index];
+        std::cerr << "mocopi_record: the trace carries no root motion, so "
+                  << hips.pathMetres << " m of hips path (" << hips.netMetres
+                  << " m net) stays in the capture";
+        if (hips.framesWithoutHips != 0) {
+            std::cerr << "; " << hips.framesWithoutHips
+                      << " frame(s) carried no hips record and are not in that "
+                         "sum";
+        }
+        std::cerr << "\n";
     }
     return true;
 }

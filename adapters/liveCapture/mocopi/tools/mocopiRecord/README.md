@@ -148,6 +148,25 @@ as the trace's `provider` and `sourceId`: the adapter itself leaves both empty
 because nothing on this wire may be published, and the operator's own words are
 not a guess.
 
+**The biggest of those losses is measured on the way past and printed:**
+
+```text
+mocopi_record: the trace carries no root motion, so 4.81282 m of hips path
+               (0.690738 m net) stays in the capture
+```
+
+The hips joint is the only one this rig translates, and while
+[§5.2](../../../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) is open no layer
+on the live path will call it root motion — so it reaches no pose and no trace,
+and until this line existed nothing here could say how much movement that was. A
+real 36-second session drops **4.8 m** of it.
+
+Both numbers, because a walk out and back makes them disagree: that session's
+*net* displacement is 0.69 m, so reporting only the second would call a session
+that travelled 4.8 m nearly stationary. A session that genuinely stood still
+reads 0.0125 m over 17.6 s, which is the measurement's own noise floor. It is a
+measurement and not a decision — nothing here composes a `RootMotion`.
+
 ## A device that is not there yet is the ordinary state
 
 `--silence-timeout` is this tool's own flag, and it is why

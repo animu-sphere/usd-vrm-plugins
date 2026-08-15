@@ -26,11 +26,35 @@ TraceCollector::Observe(
         if (_sessions.empty()
             || (frame.beginsNewSession && !_sessions.back().samples.empty())) {
             _sessions.emplace_back();
+            _hips.emplace_back();
+            _hipsFirst.emplace_back();
+            _hipsLast.emplace_back();
         }
         motion::HumanoidAnimation& session = _sessions.back();
         session.samples.push_back(frame.pose);
         session.source = metadata;
         ++_frames;
+
+        // Measured on the way past, because this is the last place it exists.
+        // The pose being appended above has nowhere to put it and the trace
+        // has no line for it, so a caller reading the file back can never
+        // recover what follows (see the header).
+        HipsMotion& hips = _hips.back();
+        if (!frame.hipsPosition) {
+            ++hips.framesWithoutHips;
+            continue;
+        }
+        const pxr::GfVec3f& position = *frame.hipsPosition;
+        if (!_hipsFirst.back()) {
+            _hipsFirst.back() = position;
+        } else {
+            // Summed step by step rather than measured end to end: a session
+            // that walks out and back travels twice the distance it displaces,
+            // and the second number alone would call it stationary.
+            hips.pathMetres += (position - *_hipsLast.back()).GetLength();
+        }
+        _hipsLast.back() = position;
+        hips.netMetres = (position - *_hipsFirst.back()).GetLength();
     }
 }
 
@@ -45,10 +69,16 @@ TraceCollector::Close()
     // A capture whose every datagram was refused — one recorded before its
     // device declared a rig, for instance — leaves one opened and never filled
     // session. An empty animation is not a recording.
+    //
+    // The hips row goes with it, in the same pass: the two vectors are indexed
+    // together by every caller, and pruning one of them alone would report the
+    // wrong session's travel against the right session's frames — a defect that
+    // shows up as a plausible number rather than as a crash.
     for (std::size_t i = _sessions.size(); i-- != 0;) {
         if (_sessions[i].samples.empty()) {
-            _sessions.erase(_sessions.begin()
-                            + static_cast<std::ptrdiff_t>(i));
+            const auto offset = static_cast<std::ptrdiff_t>(i);
+            _sessions.erase(_sessions.begin() + offset);
+            _hips.erase(_hips.begin() + offset);
         }
     }
 

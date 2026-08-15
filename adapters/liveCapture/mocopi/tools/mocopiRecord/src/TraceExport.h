@@ -70,17 +70,57 @@
 // `motion-capture-trace` has exactly three provenance keys, none of them that.
 // So the native path's claim to keep device state a relay drops holds as far as
 // the capture and stops at the trace.
+//
+// ## The hips translation is measured on the way past, and said out loud
+//
+// The largest loss is the one the whole release is arguing about, and until now
+// nothing in this repository could put a number on it. The device sends the
+// hips joint's absolute position in every frame -- the only translating joint on
+// this rig -- and no layer on the live path is willing to call it root motion
+// while §5.2 is open, so it reaches no `HumanoidPose` and therefore no trace.
+// The bytes keep it; nothing could read it back out.
+//
+// So the collector measures it here, in the one place that has both the frames
+// and the reason they are being narrowed, and the tool prints it beside the
+// export. A cross-source session made the case concrete: 1.17 m of walk arrived
+// through the BVH path and nothing at all through this one, which is a fact
+// about a *policy* and reads as a fact about the *device* unless something says
+// otherwise at the point it happens.
+//
+// It is a measurement and not a decision. Nothing here composes a `RootMotion`,
+// and the day §5.2 is answered this number becomes the thing that stopped being
+// dropped rather than a line that has to be deleted.
 #pragma once
 
 #include "vrmAdapterMocopi/FrameAssembler.h"
 
 #include "motionCore/Humanoid.h"
 
+#include "pxr/base/gf/vec3f.h"
+
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 namespace mocopiRecordTool
 {
+
+// What one session's hips did, in metres, for the export to report as the thing
+// the trace does not carry.
+//
+// `path` is the distance actually travelled -- the sum of the steps between
+// consecutive frames -- and `net` is how far the body ended up from where it
+// started. Both, because they answer different questions and disagree in the
+// way that matters: a session that walks out and back has a large path and a
+// small net, and reporting only the second would call it stationary.
+struct HipsMotion
+{
+    double pathMetres = 0.0;
+    double netMetres = 0.0;
+    // Frames whose hips record did not arrive, so the path is a sum over the
+    // rest. Zero in every session measured off a device; not assumed to be.
+    std::size_t framesWithoutHips = 0;
+};
 
 // Accumulates delivered frames into one animation per session, in the order the
 // sessions occurred.
@@ -128,8 +168,22 @@ public:
         return _sessions;
     }
 
+    // The hips motion of the session at the same index, which is the part of
+    // that session the trace does not carry. Indices match `GetSessions()`
+    // after `Close`, including the empty-session pruning.
+    const std::vector<HipsMotion>& GetHipsMotion() const noexcept
+    {
+        return _hips;
+    }
+
 private:
     std::vector<motion::HumanoidAnimation> _sessions;
+    std::vector<HipsMotion> _hips;
+    // Per open session, carried alongside rather than inside `HipsMotion`: the
+    // first and last positions seen, which is what `net` is measured from and
+    // what the running `path` steps away from.
+    std::vector<std::optional<pxr::GfVec3f>> _hipsFirst;
+    std::vector<std::optional<pxr::GfVec3f>> _hipsLast;
     std::size_t _frames = 0;
     bool _closed = false;
 };
