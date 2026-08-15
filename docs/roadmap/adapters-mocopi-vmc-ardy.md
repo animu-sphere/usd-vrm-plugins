@@ -1600,6 +1600,53 @@ original order that was never about the transport.
   root translates" arrived at from the other direction, by a probe that expected
   to fail.
 
+- ✅ **The way out of the adapter, and the chain closing on a rig**
+  (2026-08-15). `mocopi_record --export-trace` writes what the adapter
+  delivered as a `motion-capture-trace`, and `mocopi_record_endToEnd` drives two
+  committed captures through **unchanged** `motion_capture` and
+  `motion_retarget` onto a fixture rig and onto `Seed-san.vrm` — 2 of 128 joints
+  differing on the released model, checked through a `UsdSkelSkeletonQuery` by
+  name. What is left in the release's live line is now the word **device** alone:
+  the path exists and is exercised, by bytes that never met a sensor.
+
+  **The export runs against a file, and that is this tool's inversion of the
+  sibling's.** `vmc_record` exports from a live session as well; this one
+  accepts `--export-trace` with `--inspect` only, because a recording here runs
+  no decoder at all and that property is what everything above it was ordered
+  by. It also keeps `Options.h`'s statement true — there is no `--max-frames`
+  here "and there cannot be", since this tool accumulates datagrams alone, where
+  a live export would accumulate a 1320-byte pose per frame beside the capture
+  the datagram bound was sized for. The cost is one extra command; what it buys
+  is that an exported trace is a pure function of committed bytes.
+
+  **The end-to-end asks a different question from the sibling's, and the corpus
+  is why.** No committed mocopi capture moves — they were generated to pin a
+  decode path, so each is a held pose — so where `vmc_record_endToEnd` asks
+  which joints moved during a session, this bakes *two* sessions onto one rig
+  and asks which joints they differ by. That turned out to need a second
+  assertion nobody would have written from the plan: `arms-lowered-60hz` rotates
+  **both** upper arms, so a side swap anywhere in the path leaves the differing
+  set identical, and only the sign of the rotation tells the two apart. It is
+  `SkeletonMap.h`'s "a bilaterally symmetric rig cannot be asked which arm
+  moved" reaching the end of the chain, and it was found by writing the check
+  and then crossing the fixture's own bindings to watch it fail.
+
+  Two things the run measured rather than predicted. A trace **cannot carry the
+  device**: `mocopi-packet-capture` has a `device` header key and
+  `motion-capture-trace` has three provenance keys, none of them that — so the
+  native path's claim to keep device state a relay drops holds as far as the
+  capture and stops at the trace, which is one line for §9.6's "what each path
+  cannot carry". And `motion_retarget` names `upperChest` on stderr for
+  `Seed-san.vrm`, the incomplete-humanoid finding the recorded track hit in
+  August, now reached from the live side by a different producer and pinned by
+  this test in both directions — the fixture rig binds all 22 bones and must
+  *not* warn.
+
+  Two new CTest names, 93 green in the workspace, and both verified negatively:
+  disabling the provenance copy or the session split turns `_export` red, and
+  crossing the fixture avatar's two arm bindings turns `_endToEnd` red on the
+  sign check while the joint-set comparison it runs first stays green.
+
 **The wire format is not documented, and the evidence path is a sender rather
 than a device** (established 2026-08-09). The vendor states the transport and
 stops: UDP, port 12351 by default, IPv4 only (`localhost` and IPv6 unsupported),

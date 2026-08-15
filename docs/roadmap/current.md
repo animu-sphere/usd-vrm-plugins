@@ -89,9 +89,13 @@ reaching a **rig** still is: that is Motion Phase G.
       avatar** are closed too (2026-08-11): `vmc_record_endToEnd` now drives the
       same session onto `Seed-san.vrm` as well as onto its fixture rig — three
       joints of a hundred and twenty-eight move, so the claim is no longer
-      "three moved" but "three moved and the hair did not". What is left in this
-      line is the word **mocopi**: no session from that device has taken the
-      path at all, and it cannot until the native decoder exists
+      "three moved" but "three moved and the hair did not". The word **mocopi**
+      closed on 2026-08-15, for **committed bytes**: `mocopi_record
+      --export-trace` writes the same canonical file (from `--inspect` only, so
+      a recording still runs no decoder) and `mocopi_record_endToEnd` drives two
+      captures through both product tools onto the same released avatar, 2 of
+      128 joints differing by name **and by side**. What is left is a session a
+      device produced, which is this line's remaining word and not a code item
       ([Milestone D](adapters-mocopi-vmc-ardy.md)).*
 
 **Recorded**

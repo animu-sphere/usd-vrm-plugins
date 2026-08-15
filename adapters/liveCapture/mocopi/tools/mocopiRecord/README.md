@@ -102,6 +102,52 @@ recorded months ago — which is why it prints the capture's own `provenance` li
 and a live session does not. On a live run the operator typed those values a
 moment ago.
 
+## Where a session leaves this adapter: `--export-trace`
+
+```text
+session.mocopipackets → mocopi_record --inspect --export-trace → session.trace
+                      → motion_capture → motion_retarget → an avatar
+```
+
+A `motion-capture-trace` is what an adapter *delivered* — after protocol decode
+and coordinate conversion, before any intake policy — and the product's own
+`motion_capture` replays one knowing nothing about mocopi. That file is the only
+thing that passes between this adapter and the product, which is what
+[WORKSPACE.md §2](../../../../../docs/architecture/WORKSPACE.md) requires and
+what lets the release condition say **unchanged** about both tools downstream.
+
+**It goes with `--inspect`, and only there.** The sibling tool exports from a
+live session too; this one refuses to, and the refusal is the tool's own design
+rather than a missing feature:
+
+- a recording here runs **no decoder at all**, which is the property everything
+  above is built on. A live export would spend it to save a command.
+- this tool accumulates datagrams and nothing else. A live export accumulates a
+  1320-byte pose per frame beside the capture the datagram bound was sized for,
+  which is the second bound in a second unit the sibling had to grow.
+- an exported trace is then a pure function of committed bytes: the same capture
+  exports the same trace on any machine, with no device.
+
+**One trace is one session.** A capture the source restarted during holds two,
+their stream clocks overlap, and splicing them would invent a continuity the
+device denies — so the export is refused until `--source-session` names a half.
+A capture that restarts and never recovers needs no flag: its new session
+declares no rig, so no frame of it was ever delivered.
+
+The declared `frameRate` is **measured from the samples**, not this device's
+nominal 60 Hz. A capture the transport thinned exports at the rate it actually
+holds, because a file that declared 60 would be denying its own contents.
+
+What a trace cannot carry, and the capture keeps: the hips translation, which
+bones the rig declared and a frame did not form, the transport's losses, the two
+clocks' drift — and the **device**. `mocopi-packet-capture` has a `device`
+header key and `motion-capture-trace` has three provenance keys, none of them
+that. So the native path's claim to keep device state a relay drops holds as far
+as the capture and stops at the trace. `--sender` and `--source-id` do cross,
+as the trace's `provider` and `sourceId`: the adapter itself leaves both empty
+because nothing on this wire may be published, and the operator's own words are
+not a guess.
+
 ## A device that is not there yet is the ordinary state
 
 `--silence-timeout` is this tool's own flag, and it is why
@@ -152,6 +198,9 @@ mocopi_record --output session.mocopipackets \
 
 # And what a committed capture holds, months later, with no device present.
 mocopi_record --inspect session.mocopipackets
+
+# The same session as canonical motion, on its way to the product's tools.
+mocopi_record --inspect session.mocopipackets --export-trace session.trace
 ```
 
 **Provenance values carry no spaces**, and that is enforced at the prompt. A
@@ -199,18 +248,32 @@ the decoder.
 
 ## Tests
 
-Three CTest names, split the way every claim in this adapter is split:
+Five CTest names, split the way every claim in this adapter is split:
 
 | name | needs | what it checks |
 | --- | --- | --- |
 | `mocopi_record_inspect` | nothing | five captures authored in Python, every report line, six malformed captures refused with a line number, the CLI's refusals, and the four `--listen` forms that must keep working |
 | `mocopi_record_loopback` | a socket | bytes recorded verbatim, the stop reasons, the two-peer warning, six peers counted as six while four are named, and the silence report firing once with the session continuing through it |
 | `mocopi_record_ipv6` | IPv6 loopback | the socket takes the address and the tool warns; `Skipped` where the runner has no `::1` |
+| `mocopi_record_export` | the corpus | the frames, the operator's provenance, the measured rate, the two refusals a restarted capture earns, and a capture that decodes into no frame writing nothing |
+| `mocopi_record_endToEnd` | the product's tools | the whole chain onto a rig, resolved through a `UsdSkelSkeletonQuery` — and onto `Seed-san.vrm` where the tree has the importer |
 
-The fixtures are authored beside the tests rather than read from a corpus, and
-that absence is the point: there is no mocopi corpus yet, and obtaining the first
-one is what this tool is for. Authoring them in Python also makes the check
-independent of the writer under test.
+The envelope fixtures are authored beside the tests rather than read from a
+corpus, and that is the point: this tool has no opinion about what a datagram
+means, so a check of its report should not either. Authoring them in Python also
+makes the reader independent of the writer under test. `--export-trace` is the
+exception and says why: an export decodes, so its fixtures have to be things the
+decoder can decode.
+
+**What `mocopi_record_endToEnd` asks, and why it is not the sibling's
+question.** No committed mocopi capture *moves* — every one is a held pose,
+because they were generated to pin a decode path — so the test bakes two
+sessions onto one rig and requires the joints that differ between them to be the
+joints the sessions differ by. Both upper arms rotate in `arms-lowered-60hz`, so
+a set of joint names cannot tell a side swap from a correct map; the sides are
+therefore checked by sign as well, which is `SkeletonMap.h`'s measurement
+carried to the end of the chain. A capture that moves needs a device, and the
+day one is committed this test says so by failing.
 
 ## What it does not do
 

@@ -48,6 +48,7 @@ endif()
 add_executable(mocopi_record
     src/Options.cpp
     src/SessionReport.cpp
+    src/TraceExport.cpp
     src/main.cpp)
 
 target_compile_features(mocopi_record PRIVATE cxx_std_17)

@@ -356,6 +356,22 @@ GetUsage()
         "                         Opens no socket, records nothing, and prints\n"
         "                         the same report a live session prints minus\n"
         "                         the lines that describe a socket.\n"
+        "\n"
+        "Exporting (with --inspect, and only there):\n"
+        "  --export-trace PATH    Write what the adapter delivered as a\n"
+        "                         motion-capture-trace, which the product's own\n"
+        "                         motion_capture replays knowing nothing about\n"
+        "                         mocopi. This is the one thing here that\n"
+        "                         decodes, and it is why it runs against a file:\n"
+        "                         a recording stays decoder-free, and a trace\n"
+        "                         exported from committed bytes is the same\n"
+        "                         trace on any machine.\n"
+        "  --source-session N     Which of the capture's sessions to export,\n"
+        "                         counting from 1. One trace is one session, so\n"
+        "                         a capture the source restarted during is\n"
+        "                         refused until this names a half - the two\n"
+        "                         clocks overlap and splicing them would invent\n"
+        "                         a continuity the device denies.\n"
         "  --quiet                Suppress the progress line and the warnings\n"
         "                         on stderr. The report is what this tool\n"
         "                         produces and always goes to stdout.\n"
@@ -484,6 +500,19 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
                            &options->maxDatagrams, error)) {
                 return false;
             }
+        } else if (argument == "--export-trace") {
+            if (!TakeValue(arguments, &i, argument, &options->traceExportPath,
+                           error)) {
+                return false;
+            }
+        } else if (argument == "--source-session") {
+            // The count's own minimum, so the range in the message is the range
+            // enforced: a capture cannot hold a zeroth session, and the sibling
+            // had to refuse 0 in a second check below its range check.
+            if (!TakeCount(arguments, &i, argument, 1.0, 1000000.0,
+                           &options->sourceSession, error)) {
+                return false;
+            }
         } else if (argument == "--dry-run") {
             session("--dry-run");
             options->dryRun = true;
@@ -499,17 +528,25 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
         options->maxDatagrams = kDefaultMaxDatagrams;
     }
 
+    if (options->sourceSession != 0 && options->traceExportPath.empty()) {
+        *error = "--source-session says which session to export, so it needs "
+                 "--export-trace";
+        return false;
+    }
+
     if (!options->inspectPath.empty()) {
         // --inspect opens no socket and records nothing, so every flag about
         // either is a mistake worth naming rather than a setting that silently
         // does nothing.
         //
-        // *Every* one of them, here. The sibling tool lets three flags through
-        // because they change how a capture is read or what is written out of
-        // it; this tool reads bytes and writes nothing, so there is no such
-        // flag to let through and the exception list is empty rather than
-        // short. `--quiet` is not in this class at all: it is about the two
-        // output streams, which both modes have.
+        // The two export flags are deliberately outside that class and are the
+        // only ones that ever will be: they change what is written *out of* a
+        // capture rather than how one is recorded, which is the same exception
+        // the sibling tool makes. Until they landed this list was empty rather
+        // than short, and the reason is worth keeping — this mode reads bytes,
+        // so a flag only earns an exception by having a file to act on.
+        // `--quiet` is not in this class at all: it is about the two output
+        // streams, which both modes have.
         if (sessionFlag) {
             *error = std::string("--inspect reads a recorded capture and opens "
                                  "no socket, so ")
@@ -517,6 +554,20 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
             return false;
         }
         return true;
+    }
+
+    if (!options->traceExportPath.empty()) {
+        // The line this tool is built on, enforced at the prompt rather than
+        // explained afterwards: a recording runs no decoder, so there is
+        // nothing in a live session for this flag to read (TraceExport.h). The
+        // message names the two commands rather than only refusing, because the
+        // operator asking for this has a device strapped on and the recording
+        // they want is still the right first step.
+        *error = "--export-trace derives a trace from a recorded capture, so it "
+                 "goes with --inspect: record the session first, then export "
+                 "from the file. Nothing decodes during a recording here, and "
+                 "that is what makes the capture the evidence";
+        return false;
     }
 
     if (options->outputPath.empty() && !options->dryRun) {

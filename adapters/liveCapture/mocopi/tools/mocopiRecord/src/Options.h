@@ -37,6 +37,15 @@ struct Options
     std::string device;
     std::string sourceId;
 
+    // The canonical `motion-capture-trace` to derive from a capture, and which
+    // of its sessions to write. Both go with `--inspect` and are refused
+    // otherwise: a recording here runs no decoder at all, and keeping that true
+    // is what this tool is for (TraceExport.h). `sourceSession` counts from 1
+    // and 0 means unset, which every capture the source did not restart during
+    // leaves it at.
+    std::string traceExportPath;
+    std::size_t sourceSession = 0;
+
     // Stop conditions. A recorder with none is a process that never exits, so
     // there is always at least one: `maxDatagrams` has a default and the other
     // two are off until asked for.
