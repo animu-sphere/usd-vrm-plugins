@@ -714,6 +714,56 @@ CheckFrameLoss(const AssembledCapture& capture, const std::string& name)
 }
 
 int
+CheckSessionRestart(const AssembledCapture& capture, const std::string& name)
+{
+    // `frame-loss-01` restarts and stops; this one restarts and recovers, which
+    // is the half of a restart that capture cannot show. Three frames, two
+    // refused for want of a rig, then a rig again and two more.
+    if (capture.stats.skeletonsAccepted != 2 || capture.frames.size() != 5) {
+        return Failed(name, "two rigs and five assembled frames were expected");
+    }
+    if (capture.stats.sessionRestarts != 1
+        || Count(capture.diagnostics, DiagnosticCode::SourceRestarted) != 1) {
+        return Failed(name, "the restart was not detected exactly once");
+    }
+    // The cost, measured: the rig went with the old session and both frames
+    // that arrived before the new one was declared were refused. Reported once
+    // per episode, not twice.
+    if (capture.stats.framesRefusedNoRig != 2
+        || Count(capture.diagnostics, DiagnosticCode::FrameIncomplete) != 1) {
+        return Failed(name, "the rig's loss was not counted twice and reported "
+                            "once");
+    }
+    // The flag outlives the frames it was refused on and lands on the first
+    // frame the new session actually emits — which is the frame a consumer can
+    // act on, and the only one it could.
+    if (capture.frames[3].beginsNewSession != true
+        || capture.frames[2].beginsNewSession
+        || capture.frames[4].beginsNewSession) {
+        return Failed(name, "the new session's flag did not land on its first "
+                            "emitted frame");
+    }
+    // The two streams are ordered against each other only by their own clocks,
+    // and the new one is behind: that is what the layer above has to decide
+    // about, and it is a property of these bytes rather than of the assembler.
+    if (!(capture.frames[2].pose.timestamp > capture.frames[3].pose.timestamp)) {
+        return Failed(name, "the new session's clock is not behind the old "
+                            "session's");
+    }
+    // A restart is not a gap: the counter's difference across one means nothing
+    // and is not counted as loss.
+    if (capture.stats.framesLost != 0 || capture.frames[3].lostFrames != 0) {
+        return Failed(name, "a restart was counted as transport loss");
+    }
+    // And the new session fixes its own clock offset, so drift is measured
+    // within a session rather than across the discontinuity.
+    if (std::fabs(capture.frames[3].clockDrift) >= kClockAgreement) {
+        return Failed(name, "the new session did not re-fix its clock offset");
+    }
+    return 0;
+}
+
+int
 CheckRefusedBones(const AssembledCapture& capture, const std::string& name)
 {
     // The corpus's near miss, stated as an assertion so it stops being true
@@ -870,6 +920,8 @@ CheckCorpus(const std::filesystem::path& directory)
             result = CheckArmsLowered(assembled, name);
         } else if (capture.sourceId == "frame-loss-01") {
             result = CheckFrameLoss(assembled, name);
+        } else if (capture.sourceId == "session-restart-01") {
+            result = CheckSessionRestart(assembled, name);
         } else if (capture.sourceId == "refused-bones-01") {
             result = CheckRefusedBones(assembled, name);
         } else if (capture.sourceId == "incomplete-frame-01") {

@@ -174,6 +174,52 @@
       "id": "frame-loss-60hz"
     },
     {
+      "file": "session-restart-60hz.mocopipackets",
+      "pins": "A restart the session recovers from. frame-loss-01 ends on the restart's own frame, so its new session never declares a rig and never emits a frame - which fully exercises the assembler and leaves the bridge above it unable to act at all. Here the rig is dropped, two frames are refused for want of one, a second skeleton packet re-declares it, and the session resumes: the ordering MocopiLiveSource's restart policy is the only layer that can be asked about.",
+      "tags": [
+        "restart",
+        "recovery",
+        "rig-redeclared",
+        "live-source-input"
+      ],
+      "id": "session-restart-60hz",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "session-restart-01",
+      "datagrams": 9,
+      "payloadBytes": 14877,
+      "durationSeconds": 0.133335,
+      "packetKinds": {
+        "fram": 7,
+        "skdf": 2
+      },
+      "chunkTags": [
+        "bndt",
+        "bnid",
+        "bons",
+        "btdt",
+        "btrs",
+        "fnum",
+        "fram",
+        "ftyp",
+        "head",
+        "ipad",
+        "pbid",
+        "rcvp",
+        "skdf",
+        "sndf",
+        "time",
+        "tmcd",
+        "tran",
+        "uttm",
+        "vrsn"
+      ],
+      "boneCounts": [
+        27
+      ],
+      "sha256": "d5816bbdcbfc998b584bc8a8fb1123eba0e50be325fbc2392b7126a38f3c7162"
+    },
+    {
       "file": "incomplete-frame-60hz.mocopipackets",
       "pins": "VRM_MOCOPI_FRAME_INCOMPLETE, which is only meaningful against a rig: a skeleton packet, then the same three damaged bone records refused-bones-60hz carries, then a clean frame. The damaged frame is emitted rather than refused - whether 19 of 22 bones is usable is the intake policy's question one layer up - and the clean frame is what makes the incompleteness the datagram's property rather than the session's.",
       "tags": [

@@ -291,6 +291,63 @@ def frame_loss() -> Capture:
     return capture
 
 
+def session_restart() -> Capture:
+    """A restart the session *recovers* from, which `frame-loss-01` does not.
+
+    That capture ends on the restart's own frame, so its new session never
+    declares a rig and never emits a frame. Every layer up to the assembler is
+    fully exercised by it — the restart is detected, the rig is dropped, the
+    frame is refused — but the bridge above them can only act on a restart that
+    reaches a frame, so against `frame-loss-01` alone `MocopiLiveSource`'s
+    restart policy is unreachable and its two settings are indistinguishable.
+
+    This is the device's real shape rather than a contrivance for the test: the
+    rest table is repeated about every 3.5 s, so a restarted session goes dark
+    and then comes back. Shortened to two frame times here, because what is
+    being pinned is the ordering — refused, re-declared, admitted — and not the
+    length of the gap.
+    """
+    capture = base_capture("session-restart-01")
+    capture.add(skeleton_packet(), 0.0)
+    arrival = 1.0 / FRAME_RATE
+
+    # The old session is recorded twenty seconds into its stream, which is what
+    # `fnum` 4000 already implies and what a capture started against a running
+    # source looks like. It also makes the two restart policies tell each other
+    # apart: the new stream's clock begins at 0.0, so under `Refuse` every frame
+    # of it is behind the head the intake already holds and the session visibly
+    # stops, where under `Reset` it continues. With both sessions near zero the
+    # new one would overtake the old within two frames and the policies would
+    # differ by a single frame, which is not a claim worth committing bytes for.
+    started = 20.0
+    for index in range(3):
+        seconds = started + index / FRAME_RATE
+        capture.add(frame_packet(4000 + index, seconds, EPOCH + seconds), arrival)
+        arrival = round(arrival + 1.0 / FRAME_RATE, PRECISION)
+
+    # The restart. The counter goes back and the stream clock returns to 0.0,
+    # which is what the measured sessions do; `uttm` keeps running, because the
+    # wall clock does not restart with the stream.
+    resumed = EPOCH + started + 0.1
+    capture.add(frame_packet(1, 0.0, resumed), arrival)
+    arrival = round(arrival + 1.0 / FRAME_RATE, PRECISION)
+    # Refused too, and deliberately: the rig went with the old session, and one
+    # frame is not enough to show that the refusal lasts until a rig arrives
+    # rather than exactly one frame.
+    capture.add(frame_packet(2, 1.0 / FRAME_RATE, resumed + 1.0 / FRAME_RATE),
+                arrival)
+    arrival = round(arrival + 1.0 / FRAME_RATE, PRECISION)
+
+    # The new session declares its rig, and is a session again.
+    capture.add(skeleton_packet(), arrival)
+    arrival = round(arrival + 1.0 / FRAME_RATE, PRECISION)
+    for index in range(2, 4):
+        seconds = index / FRAME_RATE
+        capture.add(frame_packet(1 + index, seconds, resumed + seconds), arrival)
+        arrival = round(arrival + 1.0 / FRAME_RATE, PRECISION)
+    return capture
+
+
 def malformed_container() -> Capture:
     capture = base_capture("malformed-container-01")
     # A zero-length datagram is receivable, and is the smallest thing a decoder
@@ -513,6 +570,7 @@ CAPTURES = {
     "neutral-standing-60hz.mocopipackets": neutral_standing,
     "arms-lowered-60hz.mocopipackets": arms_lowered,
     "frame-loss-60hz.mocopipackets": frame_loss,
+    "session-restart-60hz.mocopipackets": session_restart,
     "malformed-container.mocopipackets": malformed_container,
     "malformed-packets.mocopipackets": malformed_packets,
     "refused-bones-60hz.mocopipackets": refused_bones,
