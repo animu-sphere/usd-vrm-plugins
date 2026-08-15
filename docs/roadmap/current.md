@@ -52,13 +52,19 @@ reaching a **rig** still is: that is Motion Phase G.
       (2026-08-14), which is the layer that decides — a frame missing three bones
       is now a frame, reported and passed on, and a source that restarted is
       detected from the stream clock **and** the frame counter, neither of which
-      suffices alone. What is left in this line is the `LiveCaptureSource`
-      bridge ([Milestone D](adapters-mocopi-vmc-ardy.md))*;
+      suffices alone. Then the **`LiveCaptureSource` bridge** (2026-08-15), which
+      closes the code half of this line: a recorded capture now samples like any
+      clip through the unchanged runtime, and what a source restart costs is a
+      recorded choice rather than a described one. What is left is not code — it
+      is the word **device**. Every layer from the socket to the pose is
+      exercised, and by committed bytes that never met a sensor
+      ([Milestone D](adapters-mocopi-vmc-ardy.md))*;
 - [ ] recorded packet fixtures decode deterministically with no socket, and a
       loopback test proves the socket path agrees with them — *the first half is
-      done and the second is done at the wrong altitude. Seven committed
-      captures decode, and as of 2026-08-12 map onto canonical bones, with no
-      socket anywhere; the recorder's loopback test proves what comes off a
+      done and the second is done at the wrong altitude. Nine committed
+      captures decode, and as of 2026-08-12 map onto canonical bones — and as of
+      2026-08-15 become poses a consumer samples — with no socket anywhere; the
+      recorder's loopback test proves what comes off a
       socket is byte-identical to what a capture file keeps. What is missing is
       the sibling's arrangement, where the corpus is replayed **through** a
       socket and the poses compared. That was blocked until 2026-08-14 because
