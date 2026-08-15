@@ -605,6 +605,136 @@ def check_refusals(failures: Failures, tool: str, bvh: pathlib.Path,
                    f"recorded file: {result.stderr}")
 
 
+# A profile nobody here ships, for a rig no shipped profile describes. Written
+# out in full rather than derived from one of the shipped files: a fixture built
+# by editing `mocopi-mobile-bvh-default-v1.yaml` would inherit whatever that file
+# happens to do, and the claim is about somebody starting from the documented
+# keys with a rig of their own.
+#
+# The rig is `valid-nested-joints.bvh` from the *generated* corpus — four joints,
+# a torso and one leg — which `check_refusals` above already uses as the file no
+# shipped profile matches. That it is a format shape rather than an export is the
+# point here: this profile describes a skeleton that exists nowhere but in this
+# repository's fixtures, so nothing in the conversion can be reaching for a
+# producer it recognises.
+USER_PROFILE_ID = "studio-custom-bvh-v1"
+USER_PROFILE_PRODUCER = "A studio that is not in this repository"
+USER_PROFILE = f"""\
+schemaVersion: 1
+id: {USER_PROFILE_ID}
+producer: {USER_PROFILE_PRODUCER}
+
+coordinates:
+  handedness: right
+  upAxis: +Y
+  forwardAxis: +Z
+  translationUnit: centimeters
+
+root:
+  joint: Hips
+  translation: absolute-position
+  rotation: body-orientation
+
+restPose: rest-offsets
+unmappedJoints: refuse
+
+joints:
+  Hips:       {{ bone: hips,         required: true }}
+  Spine:      {{ bone: spine,        required: true }}
+  Head:       {{ bone: head,         required: true }}
+  LeftUpLeg:  {{ bone: leftUpperLeg, required: true }}
+"""
+
+
+def check_a_profile_this_repository_did_not_ship(
+        failures: Failures, tool: str, corpus: pathlib.Path,
+        work: pathlib.Path) -> None:
+    """A user-defined profile, by path, for a rig neither producer wrote.
+
+    This is the release condition that says the profile contract is *usable from
+    outside* rather than merely documented. Everything else in this suite drives
+    a file this repository measured through a profile this repository wrote, and
+    two artifacts by the same hand agreeing proves less than it looks like.
+
+    Three things have to hold at once for the claim to be worth anything, so all
+    three are checked here rather than assumed from the exit code:
+
+    * the profile is read **from a path outside any search directory** — no
+      `--profile-dir` is passed, and the file is in a temporary directory that
+      does not exist when the tool is built;
+    * it describes a rig neither shipped profile matches, so a conversion that
+      succeeded by recognising a producer would fail here; and
+    * what the clip records as its provenance is the *user's* id and producer,
+      because a profile that converted a file and then labelled the result with
+      something else would make "which profile was used" unanswerable.
+    """
+    bvh = corpus / "generated" / "valid-nested-joints.bvh"
+    if not failures.check(bvh.exists(),
+                          f"the generated fixture is not at {bvh}"):
+        return
+
+    profile = work / "not-shipped-anywhere.yaml"
+    profile.write_text(USER_PROFILE, encoding="utf-8")
+
+    output = work / "user-defined.usda"
+    # No `--profile-dir`: the file is named by path, which is the whole of what
+    # a user outside this repository has.
+    result = run_tool(tool, str(bvh), "--profile", str(profile), "--output",
+                      str(output))
+    if not failures.check(
+            result.returncode == 0,
+            f"a user-defined profile was refused: {result.stderr}"):
+        return
+
+    stage = Usd.Stage.Open(str(output))
+    if not failures.check(stage is not None,
+                          "the user-defined conversion wrote no openable "
+                          "stage"):
+        return
+
+    animation = next((UsdSkel.Animation(prim) for prim in stage.Traverse()
+                      if prim.IsA(UsdSkel.Animation)), None)
+    if not failures.check(animation is not None,
+                          "the user-defined clip has no SkelAnimation"):
+        return
+
+    document = read_bvh(bvh)
+    joints = list(animation.GetJointsAttr().Get())
+    bones = sorted(token.split("/")[-1] for token in joints)
+    expected = sorted(["hips", "spine", "head", "leftUpperLeg"])
+    failures.check(bones == expected,
+                   f"the user-defined clip's bones are {bones}, and the "
+                   f"profile maps {expected}")
+
+    rotations = animation.GetRotationsAttr()
+    failures.check(
+        len(rotations.GetTimeSamples()) == len(document.rows),
+        f"the clip carries {len(rotations.GetTimeSamples())} sample(s) for the "
+        f"file's {len(document.rows)} row(s)")
+
+    root = stage.GetDefaultPrim()
+    custom = root.GetCustomData().get("source", {}) if root else {}
+    failures.check(custom.get("profileId") == USER_PROFILE_ID,
+                   f"the clip records profileId {custom.get('profileId')!r}, "
+                   f"and the user's profile says {USER_PROFILE_ID!r}")
+    failures.check(custom.get("producer") == USER_PROFILE_PRODUCER,
+                   f"the clip records producer {custom.get('producer')!r}, and "
+                   f"the user's profile says {USER_PROFILE_PRODUCER!r}")
+
+    # And the same profile against a rig it does not describe is still refused,
+    # so what passed above is this profile matching this rig rather than a file
+    # named by path being trusted.
+    recorded = corpus / "recorded" / "redistributable" / RECORDED
+    if recorded.exists():
+        result = run_tool(tool, str(recorded), "--profile", str(profile),
+                          "--output", str(work / "user-defined-mismatch.usda"))
+        failures.check(
+            result.returncode == 1
+            and "VRM_BVH_PROFILE_MISMATCH" in result.stderr,
+            f"a user-defined profile was accepted for a rig it does not "
+            f"describe: exit {result.returncode}, {result.stderr}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tool", required=True)
@@ -632,6 +762,8 @@ def main() -> int:
                           work)
         check_refusals(failures, arguments.tool, bvh, arguments.corpus,
                        arguments.profiles, work)
+        check_a_profile_this_repository_did_not_ship(
+            failures, arguments.tool, arguments.corpus, work)
     return failures.report()
 
 

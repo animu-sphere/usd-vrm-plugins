@@ -55,24 +55,30 @@ reaching a **rig** still is: that is Motion Phase G.
       suffices alone. Then the **`LiveCaptureSource` bridge** (2026-08-15), which
       closes the code half of this line: a recorded capture now samples like any
       clip through the unchanged runtime, and what a source restart costs is a
-      recorded choice rather than a described one. What is left is not code — it
-      is the word **device**. Every layer from the socket to the pose is
+      recorded choice rather than a described one. The **loopback corpus** landed
+      behind it the same day and closed the one claim the inverted build order
+      had left open — the same committed bytes through a bound socket, compared
+      all the way to the pose (next line). What is left is not code — it is the
+      word **device**. Every layer from the socket to the pose is
       exercised, and by committed bytes that never met a sensor
       ([Milestone D](adapters-mocopi-vmc-ardy.md))*;
-- [ ] recorded packet fixtures decode deterministically with no socket, and a
-      loopback test proves the socket path agrees with them — *the first half is
-      done and the second is done at the wrong altitude. Nine committed
-      captures decode, and as of 2026-08-12 map onto canonical bones — and as of
-      2026-08-15 become poses a consumer samples — with no socket anywhere; the
-      recorder's loopback test proves what comes off a
-      socket is byte-identical to what a capture file keeps. What is missing is
-      the sibling's arrangement, where the corpus is replayed **through** a
-      socket and the poses compared. That was blocked until 2026-08-14 because
-      nothing in this adapter produced a pose; frame assembly closed that, so it
-      is now merely unwritten. The corpus's own limit is separate and stays
-      whatever this line says: **these fixtures pin the decoder, not the
-      protocol**, because the grammar that wrote them is the grammar they are
-      read with*;
+- [x] recorded packet fixtures decode deterministically with no socket, and a
+      loopback test proves the socket path agrees with them — *both halves are
+      closed (2026-08-15). Nine committed captures decode, and as of 2026-08-12
+      map onto canonical bones — and as of 2026-08-15 become poses a consumer
+      samples — with no socket anywhere; the recorder's loopback test proves what
+      comes off a socket is byte-identical to what a capture file keeps. The
+      sibling's arrangement landed last: `vrmAdapterMocopi_loopbackCorpus`
+      replays all nine captures **through a bound socket** — 54 datagrams — and
+      requires the frames, the sampled poses, the diagnostics and all three
+      tallies to be identical to the file path's. It needs **no clock
+      exemption**, where the sibling must exempt the pose timestamp when a sender
+      omits `/VMC/Ext/T`: a receive time reaches nothing on this protocol, so
+      the equality is exact everywhere. Verified negatively — one byte dropped
+      from every datagram turns all nine red in all three kinds of evidence. The
+      corpus's own limit is separate and stays whatever this line says: **these
+      fixtures pin the decoder, not the protocol**, because the grammar that
+      wrote them is the grammar they are read with*;
 - [ ] tracking loss, recovery, and source restart are recorded rather than
       described;
 - [ ] the session reaches a real VRM avatar through **unchanged**
@@ -111,9 +117,17 @@ reaching a **rig** still is: that is Motion Phase G.
       user-defined profile proving the contract is usable from outside — *the
       first landed 2026-08-05 (`profiles/motion/`), written from the one export
       BVH-0 measured and checked against it by root, joint set, ignore list and
-      hierarchy. The second producer is the half of this line that no amount of
-      code closes, and a user-defined profile is now a file of the same shape
-      rather than a mechanism still to build*;
+      hierarchy. The third closed 2026-08-15: `motion_bvh_convert_clip` writes a
+      profile this repository does not ship, for the four-joint generated rig no
+      shipped profile describes, names it **by path with no search directory**,
+      and requires the clip to carry the user's own id and producer — then
+      requires that same profile to be **refused** against a rig it does not
+      describe, so what passed is a match rather than a path being trusted. That
+      is the half that says the contract is usable from outside, and it is the
+      only one code could close. **The second producer is what this line still
+      waits on**, and no amount of code closes it: two artifacts by the same hand
+      agreeing proves less than it looks like, which is the whole reason the
+      milestone asks for a producer nobody here wrote*;
 - [x] BVH → `HumanoidAnimation` → the same avatar-independent semantic clip
       `motion_capture` and `usdVrmaFileFormat` already author — *both arrows
       landed 2026-08-05. The first is two layers: the extractor (`motionBvh`)

@@ -604,7 +604,7 @@ authoring · `motion_retarget` · plugin discovery · embedded resource resoluti
 | `adapter-unit` | every PR | no |
 | `adapter-generated-corpus` | every PR | no |
 | `adapter-recorded-public-corpus` | every PR | no |
-| `adapter-integration-loopback` | every PR (VMC) | no |
+| `adapter-integration-loopback` | every PR (both adapters) | no |
 | `adapter-hardware-opt-in` | manual / scheduled | **yes** |
 | `artifact-only-adapter-smoke` | release, and PRs where practical | no |
 
@@ -1557,6 +1557,45 @@ original order that was never about the transport.
   this layer raises none of its own, which is the correct outcome for a bridge —
   everything it could complain about has already been reported by the component
   that saw it.
+- ✅ **The loopback corpus, which is what the inverted order was owed**
+  (2026-08-15). Every other name in this adapter reaches the decoder from a
+  *file*; `vrmAdapterMocopi_loopbackCorpus` sends all nine committed captures —
+  54 datagrams — to a bound loopback port, reads them back off it, and requires
+  the frames, the sampled poses, the diagnostics and all three tallies to be
+  identical to what the same bytes produce with no socket in the path. That
+  equality is what says the receiver added nothing and lost nothing, and it is a
+  claim about the *composition* that neither half's own tests can make: the
+  socket tests send bytes they chose themselves, and every decoder test above
+  them has never seen a socket.
+
+  It runs on the receiver's binary rather than the bridge's, because the socket
+  is the subject — a red name here is a transport that changed its input, where a
+  red `_liveSourceCorpus` is a decode path that changed — and excluding sockets
+  therefore still excludes names rather than claims (§9.5). With it, the
+  `adapter-integration-loopback` lane covers this adapter as well as the sibling,
+  by the same route: it is the two socket names inside the `kind: workspace`
+  cells and needs no cell of its own.
+
+  **The comparison has no clock exemption, and that is this protocol's
+  inversion of the sibling's.** `vrmAdapterVmc_loopbackCorpus` must exempt the
+  pose timestamp when a sender sent no `/VMC/Ext/T`, because the receive clock
+  then reaches the pose. Here it reaches nothing at all — every frame carries the
+  sender's own `time`, and `MocopiFrameAssembler::Push` deliberately does not
+  read `receiveTime` — so the equality is exact in every observable, down to each
+  diagnostic's subject and sequence. The one field allowed to differ is a
+  diagnostic's `source`, which names the endpoint where a replay names the
+  fixture, and the check asserts both names rather than merely skipping the
+  field.
+
+  **Verified negatively, and the failed attempt is the more interesting half.**
+  Dropping one byte from every datagram before it is sent turns all nine captures
+  red in all three kinds of evidence at once. Flipping the *last* byte changes
+  nothing observable — and that is the protocol rather than a hole in the check:
+  the final bytes of every datagram are the last bone's `tran`, the mapping drops
+  every translation but the root's, and perturbing the skeleton packet
+  identically leaves that bone still agreeing with its own rest offset. "Only the
+  root translates" arrived at from the other direction, by a probe that expected
+  to fail.
 
 **The wire format is not documented, and the evidence path is a sender rather
 than a device** (established 2026-08-09). The vendor states the transport and

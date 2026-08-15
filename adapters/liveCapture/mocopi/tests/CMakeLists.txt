@@ -167,11 +167,26 @@ if(EXISTS "${_vrm_adapter_mocopi_corpus}")
     add_test(NAME vrmAdapterMocopi_liveSourceCorpus
         COMMAND vrmAdapterMocopi_liveSource_tests
                 "${_vrm_adapter_mocopi_corpus}")
+    # And a sixth reading, over a real socket: the same bytes sent to a bound
+    # port and read back off it, checked to produce the *same* frames, poses,
+    # diagnostics and tallies the file path produces. That equality is what says
+    # the receiver added nothing and lost nothing — a claim no amount of socket
+    # unit testing can make, because every other name here reaches the decoder
+    # with no socket and this one is the only place the two meet.
+    #
+    # It runs on the socket binary rather than the bridge's, because the socket
+    # is the subject: a red name here is a transport that changed its input,
+    # where a red `_liveSourceCorpus` is a decode path that changed. Excluding
+    # sockets therefore still excludes exactly the two names above.
+    add_test(NAME vrmAdapterMocopi_loopbackCorpus
+        COMMAND vrmAdapterMocopi_udpReceiver_tests
+                "${_vrm_adapter_mocopi_corpus}")
     list(APPEND _vrm_adapter_mocopi_tests
          vrmAdapterMocopi_corpus vrmAdapterMocopi_motionPacketCorpus
          vrmAdapterMocopi_skeletonMapCorpus
          vrmAdapterMocopi_frameAssemblerCorpus
-         vrmAdapterMocopi_liveSourceCorpus)
+         vrmAdapterMocopi_liveSourceCorpus
+         vrmAdapterMocopi_loopbackCorpus)
 endif()
 
 if(WIN32)

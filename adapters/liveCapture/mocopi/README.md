@@ -266,6 +266,16 @@ It is its own CTest name so a runner that forbids sockets excludes a name rather
 than a claim, and it never touches port 12351 — a developer with a real device
 aimed at this machine does not lose it to the test suite.
 
+And once every layer above it existed, the same binary took on the one claim the
+inverted order left open: `vrmAdapterMocopi_loopbackCorpus` sends all nine
+committed captures — 54 datagrams — to a bound port, reads them back off it, and
+requires the frames, the sampled poses, the diagnostics and all three tallies to
+be **identical** to what the same bytes produce with no socket in the path. Every
+other name here reaches the decoder from a file; this is the only place the two
+meet, and it is what says the receiver added nothing and lost nothing. The
+comparison needs no clock exemption, unlike the sibling's, because a receive time
+reaches nothing on this protocol — every frame carries the sender's own `time`.
+
 What the receiver may do is bounded by what it knows. It hands back every
 datagram exactly as it arrived, including the ones a decoder would refuse,
 because a receiver that filtered its own input would make a corpus a description
@@ -387,7 +397,7 @@ Composed with the rest of the workspace:
 ```sh
 cmake -S . -B build -DCMAKE_PREFIX_PATH=<usd-install>
 cmake --build build --config Release
-# Both halves: the library's eleven names and the CLI's three. `-R vrmAdapterMocopi`
+# Both halves: the library's sixteen names and the CLI's three. `-R vrmAdapterMocopi`
 # alone silently misses the tool, whose names begin with `mocopi_record`.
 ctest --test-dir build -R "vrmAdapterMocopi|mocopi_record"
 ```

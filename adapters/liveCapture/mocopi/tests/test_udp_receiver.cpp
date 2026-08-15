@@ -23,15 +23,58 @@
 // instant it arrived — and that it survives the trip to a capture file
 // unchanged, which is the one claim that has to hold before a corpus recorded
 // with this can be trusted to mean anything.
+//
+// ## The one pass that does read the format, and why it lives here
+//
+// Given a corpus directory this binary runs a different check
+// (`vrmAdapterMocopi_loopbackCorpus`): every committed capture is replayed
+// **through a real socket**, all the way to a pose a consumer sampled, and
+// compared against the same bytes read straight from the file. That is the one
+// claim no amount of socket unit testing can make — the tests above prove the
+// bytes this suite chose survive the trip, and this proves the bytes a *decoder*
+// cares about do, which is a statement about the composition rather than about
+// either half.
+//
+// It is in this file because the socket is the subject: what is under test is
+// the receiver, and the decode path is the instrument that makes a difference
+// visible. Nothing here shapes a payload — every byte sent comes off a committed
+// capture — so the header's rule stands.
+//
+// **What it takes to make this fail was measured rather than assumed.**
+// Dropping one byte from every datagram before it is sent turns all nine
+// captures red in all three kinds of evidence at once — the frames, the
+// diagnostics and the tallies — so the comparison bites at every layer it
+// claims to. Flipping the *last* byte instead changes nothing observable, and
+// that is the protocol rather than a hole here: the final bytes of every
+// datagram, frame and skeleton alike, are the last bone's `tran`, the mapping
+// drops every translation but the root's, and perturbing the skeleton packet
+// identically leaves that bone still agreeing with its own rest offset — so not
+// even `droppedTranslations` moves (MotionPacket.h's "only the root
+// translates", arrived at from the other direction).
+//
+// **The comparison is exact, and it has no clock exemption**, which is the
+// sibling adapter's arrangement inverted. `vrmAdapterVmc_loopbackCorpus` must
+// exempt the pose timestamp when a sender sent no `/VMC/Ext/T`, because the
+// receive clock then reaches the pose. Here it reaches nothing at all: every
+// frame carries the sender's own `time`, and `MocopiFrameAssembler::Push`
+// deliberately does not read `receiveTime`. So a wire replay and a file replay
+// must agree in every observable — the poses, the frame window beside them, the
+// three tallies, and every field of every diagnostic except the one that names
+// where the bytes came from.
 #include "vrmAdapterMocopi/UdpReceiver.h"
 
 #include "vrmAdapterMocopi/Diagnostics.h"
+#include "vrmAdapterMocopi/LiveSource.h"
 #include "vrmAdapterMocopi/PacketCapture.h"
 
+#include <algorithm>
+#include <bitset>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <filesystem>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -58,6 +101,8 @@ namespace
 using vrmAdapterMocopi::Diagnostic;
 using vrmAdapterMocopi::DiagnosticCode;
 using vrmAdapterMocopi::DiagnosticSeverity;
+using vrmAdapterMocopi::MocopiFrame;
+using vrmAdapterMocopi::MocopiLiveSource;
 using vrmAdapterMocopi::PacketCapture;
 using vrmAdapterMocopi::ReceivedDatagram;
 using vrmAdapterMocopi::ReceiveStatus;
@@ -777,6 +822,378 @@ TestWhatCameOffTheSocketIsWhatACaptureKeeps()
     assert(again.str() == written.str());
 }
 
+// ---------------------------------------------------------------------------
+// Corpus: the socket adds nothing and loses nothing
+// ---------------------------------------------------------------------------
+
+// One delivered frame, as both a producer and a consumer saw it. Both, because
+// they fail differently: a frame window that differs means the bytes were
+// decoded differently, and a sampled pose that differs when the frame did not
+// means the hand-off into the runtime did.
+struct Delivered
+{
+    motion::HumanoidPose framePose;
+    motion::HumanoidPose sampledPose;
+    bool sampled = false;
+
+    std::uint32_t frameNumber = 0;
+    double senderUnixSeconds = 0.0;
+    double clockDrift = 0.0;
+    bool beginsNewSession = false;
+    std::uint32_t lostFrames = 0;
+    std::bitset<motion::HumanBoneCount> missing;
+    std::optional<pxr::GfVec3f> hipsPosition;
+    std::size_t unusedJoints = 0;
+    std::size_t droppedTranslations = 0;
+};
+
+struct Replayed
+{
+    std::vector<Delivered> frames;
+    std::vector<Diagnostic> diagnostics;
+    vrmAdapterMocopi::MocopiLiveSourceStats stats;
+    vrmAdapterMocopi::MocopiFrameStats frameStats;
+    motion::LiveCaptureStats intakeStats;
+    std::size_t restartsLatched = 0;
+};
+
+void
+Collect(MocopiLiveSource* source, std::size_t admitted, Replayed* out)
+{
+    const std::vector<MocopiFrame>& frames = source->GetFramesFromLastPush();
+    for (const MocopiFrame& frame : frames) {
+        Delivered delivered;
+        delivered.framePose = frame.pose;
+        delivered.frameNumber = frame.frameNumber;
+        delivered.senderUnixSeconds = frame.senderUnixSeconds;
+        delivered.clockDrift = frame.clockDrift;
+        delivered.beginsNewSession = frame.beginsNewSession;
+        delivered.lostFrames = frame.lostFrames;
+        delivered.missing = frame.missing;
+        delivered.hipsPosition = frame.hipsPosition;
+        delivered.unusedJoints = frame.unusedJoints;
+        delivered.droppedTranslations = frame.droppedTranslations;
+        out->frames.push_back(std::move(delivered));
+    }
+    if (admitted == 0 || frames.empty()) {
+        return;
+    }
+
+    // Sampled at the pose's **stored** timestamp rather than at one recomputed
+    // from the frame rate. `time` is binary32 on the wire, so a recomputed
+    // instant falls *between* two stored ones and the buffer interpolates —
+    // which would compare one interpolation against another and measure the
+    // arithmetic rather than the socket (MOTION_CONTRACT.md, and the same
+    // request `test_live_source.cpp`'s corpus pass makes).
+    const motion::PoseSampleResult result =
+        source->Sample(frames.back().pose.timestamp);
+    if (result.pose) {
+        out->frames.back().sampledPose = *result.pose;
+        out->frames.back().sampled = true;
+    }
+}
+
+// Replays a capture straight from the file, which is what every other corpus
+// pass in this adapter does.
+Replayed
+ReplayFromFile(const PacketCapture& capture)
+{
+    MocopiLiveSource source;
+    source.SetSource(capture.sourceId);
+
+    Replayed out;
+    for (const RecordedDatagram& datagram : capture.datagrams) {
+        const std::size_t admitted = source.PushDatagram(
+            datagram.bytes, datagram.receiveTime, &out.diagnostics);
+        if (source.ConsumeSessionRestart()) {
+            ++out.restartsLatched;
+        }
+        Collect(&source, admitted, &out);
+    }
+
+    out.stats = source.GetStats();
+    out.frameStats = source.GetAssembler().GetStats();
+    out.intakeStats = source.GetIntake().GetStats();
+    return out;
+}
+
+// The same capture through a real socket, one datagram at a time and one buffer
+// throughout. Sending the whole capture first and draining afterwards would put
+// the loss behaviour of a kernel receive buffer inside the assertion, which is
+// not what this is about.
+bool
+ReplayFromWire(const PacketCapture& capture, Replayed* out,
+               std::string* endpoint)
+{
+    UdpReceiver receiver;
+    if (!receiver.Open(LoopbackConfig())) {
+        std::fprintf(stderr, "could not bind loopback: %s\n",
+                     receiver.GetLastErrorText().c_str());
+        return false;
+    }
+    LoopbackSender sender;
+    if (!sender.Open(receiver.GetBoundEndpoint())) {
+        std::fprintf(stderr, "could not open the test sender\n");
+        return false;
+    }
+
+    *endpoint = receiver.GetBoundEndpoint();
+    MocopiLiveSource source;
+    // What a live session names itself: the endpoint it is listening on, where
+    // a replay names the fixture. It is the one field below that is *expected*
+    // to differ, and it is checked rather than merely excluded.
+    source.SetSource(*endpoint);
+
+    // One datagram record for the whole session, reused by every `Receive` —
+    // which is the shape the bridge says a receiver should have, and is checked
+    // here by the poses coming out identical rather than by an assertion about
+    // pointers.
+    ReceivedDatagram received;
+    for (const RecordedDatagram& datagram : capture.datagrams) {
+        if (!sender.Send(datagram.bytes)) {
+            std::fprintf(stderr, "the test sender could not send %zu bytes\n",
+                         datagram.bytes.size());
+            return false;
+        }
+        if (receiver.Receive(&received, kLoopbackTimeout)
+            != ReceiveStatus::Received) {
+            std::fprintf(stderr, "a loopback datagram never arrived\n");
+            return false;
+        }
+        const std::size_t admitted = source.PushDatagram(
+            received.bytes, received.receiveTime, &out->diagnostics);
+        if (source.ConsumeSessionRestart()) {
+            ++out->restartsLatched;
+        }
+        Collect(&source, admitted, out);
+    }
+
+    out->stats = source.GetStats();
+    out->frameStats = source.GetAssembler().GetStats();
+    out->intakeStats = source.GetIntake().GetStats();
+    return receiver.GetStats().datagramsReceived == capture.datagrams.size();
+}
+
+// Every field, and exact rather than tolerant. `NearlyEqual` is the comparison
+// for two values that were *computed* differently; these two decoded the same
+// bytes with the same code, so anything short of equality is a socket that
+// changed the input (MOTION_CONTRACT.md).
+bool
+SameDelivery(const Delivered& file, const Delivered& wire)
+{
+    return file.frameNumber == wire.frameNumber
+           && file.senderUnixSeconds == wire.senderUnixSeconds
+           && file.clockDrift == wire.clockDrift
+           && file.beginsNewSession == wire.beginsNewSession
+           && file.lostFrames == wire.lostFrames && file.missing == wire.missing
+           && file.hipsPosition == wire.hipsPosition
+           && file.unusedJoints == wire.unusedJoints
+           && file.droppedTranslations == wire.droppedTranslations
+           && file.sampled == wire.sampled && file.framePose == wire.framePose
+           && (!file.sampled || file.sampledPose == wire.sampledPose);
+}
+
+// `source` is excluded and everything else is not — the timestamp included,
+// because a diagnostic's timestamp is the *sender's* clock and no diagnostic on
+// this path is stamped from the receiver's.
+bool
+SameDiagnosticApartFromWhereItCameFrom(const Diagnostic& file,
+                                       const Diagnostic& wire)
+{
+    return file.code == wire.code && file.severity == wire.severity
+           && file.recoverable == wire.recoverable
+           && file.timestamp == wire.timestamp && file.subject == wire.subject
+           && file.sequence == wire.sequence && file.detail == wire.detail;
+}
+
+struct ComparedStat
+{
+    const char* name;
+    std::uint64_t file;
+    std::uint64_t wire;
+};
+
+// Named rather than summed, so a failure says which tally moved. All three
+// layers' are compared: four of the nine captures deliver no frame at all, and
+// for those the counters and the diagnostics are the *only* evidence a socket
+// changed nothing.
+const char*
+FirstStatThatDiffers(const Replayed& file, const Replayed& wire)
+{
+    const ComparedStat compared[] = {
+        {"datagramsDecoded", file.stats.datagramsDecoded,
+         wire.stats.datagramsDecoded},
+        {"datagramsRefused", file.stats.datagramsRefused,
+         wire.stats.datagramsRefused},
+        {"bonesRefused", file.stats.bonesRefused, wire.stats.bonesRefused},
+        {"framesDelivered", file.stats.framesDelivered,
+         wire.stats.framesDelivered},
+        {"framesAdmitted", file.stats.framesAdmitted,
+         wire.stats.framesAdmitted},
+        {"framesRefused", file.stats.framesRefused, wire.stats.framesRefused},
+        {"sessionsReset", file.stats.sessionsReset, wire.stats.sessionsReset},
+
+        {"framesEmitted", file.frameStats.framesEmitted,
+         wire.frameStats.framesEmitted},
+        {"framesIncomplete", file.frameStats.framesIncomplete,
+         wire.frameStats.framesIncomplete},
+        {"framesRefusedOutOfOrder", file.frameStats.framesRefusedOutOfOrder,
+         wire.frameStats.framesRefusedOutOfOrder},
+        {"framesRefusedNoRig", file.frameStats.framesRefusedNoRig,
+         wire.frameStats.framesRefusedNoRig},
+        {"framesRefusedEmpty", file.frameStats.framesRefusedEmpty,
+         wire.frameStats.framesRefusedEmpty},
+        {"sessionRestarts", file.frameStats.sessionRestarts,
+         wire.frameStats.sessionRestarts},
+        {"framesLost", file.frameStats.framesLost, wire.frameStats.framesLost},
+        {"skeletonsAccepted", file.frameStats.skeletonsAccepted,
+         wire.frameStats.skeletonsAccepted},
+        {"skeletonsRefused", file.frameStats.skeletonsRefused,
+         wire.frameStats.skeletonsRefused},
+
+        {"framesAccepted", file.intakeStats.framesAccepted,
+         wire.intakeStats.framesAccepted},
+        {"bonesObserved", file.intakeStats.bonesObserved,
+         wire.intakeStats.bonesObserved},
+        {"bonesHeld", file.intakeStats.bonesHeld, wire.intakeStats.bonesHeld},
+        {"bonesUnbound", file.intakeStats.bonesUnbound,
+         wire.intakeStats.bonesUnbound},
+        {"samplesSampled", file.intakeStats.samplesSampled,
+         wire.intakeStats.samplesSampled},
+        {"samplesHeld", file.intakeStats.samplesHeld,
+         wire.intakeStats.samplesHeld},
+        {"samplesExtrapolated", file.intakeStats.samplesExtrapolated,
+         wire.intakeStats.samplesExtrapolated},
+        {"samplesUnavailable", file.intakeStats.samplesUnavailable,
+         wire.intakeStats.samplesUnavailable},
+
+        {"restartsLatched", file.restartsLatched, wire.restartsLatched},
+    };
+    for (const ComparedStat& stat : compared) {
+        if (stat.file != stat.wire) {
+            return stat.name;
+        }
+    }
+    return nullptr;
+}
+
+int
+CheckTheWireChangesNothing(const std::filesystem::path& path)
+{
+    const std::string name = path.filename().string();
+
+    PacketCapture capture;
+    vrmAdapterMocopi::PacketCaptureError error;
+    if (!vrmAdapterMocopi::ReadPacketCaptureFile(path.string(), &capture,
+                                                 &error)) {
+        std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line,
+                     error.message.c_str());
+        return 1;
+    }
+
+    const Replayed fromFile = ReplayFromFile(capture);
+
+    Replayed fromWire;
+    std::string endpoint;
+    if (!ReplayFromWire(capture, &fromWire, &endpoint)) {
+        std::fprintf(stderr, "%s: the loopback replay did not complete\n",
+                     name.c_str());
+        return 1;
+    }
+
+    if (fromFile.frames.size() != fromWire.frames.size()) {
+        std::fprintf(stderr, "%s: %zu frame(s) from the file, %zu from the "
+                             "wire\n",
+                     name.c_str(), fromFile.frames.size(),
+                     fromWire.frames.size());
+        return 1;
+    }
+
+    int failures = 0;
+    for (std::size_t index = 0; index != fromFile.frames.size(); ++index) {
+        if (!SameDelivery(fromFile.frames[index], fromWire.frames[index])) {
+            std::fprintf(stderr,
+                         "%s: frame %zu is not the frame the file produced\n",
+                         name.c_str(), index);
+            ++failures;
+        }
+    }
+
+    if (fromFile.diagnostics.size() != fromWire.diagnostics.size()) {
+        std::fprintf(stderr,
+                     "%s: %zu diagnostic(s) from the file, %zu from the wire\n",
+                     name.c_str(), fromFile.diagnostics.size(),
+                     fromWire.diagnostics.size());
+        ++failures;
+    } else {
+        for (std::size_t index = 0; index != fromFile.diagnostics.size();
+             ++index) {
+            const Diagnostic& file = fromFile.diagnostics[index];
+            const Diagnostic& wire = fromWire.diagnostics[index];
+            if (!SameDiagnosticApartFromWhereItCameFrom(file, wire)) {
+                std::fprintf(stderr, "%s: diagnostic %zu differs: %s\n",
+                             name.c_str(), index,
+                             vrmAdapterMocopi::FormatDiagnostic(wire).c_str());
+                ++failures;
+                continue;
+            }
+            // And the field that was excluded is exactly the two session names,
+            // rather than anything the comparison above would have tolerated.
+            if (file.source != capture.sourceId || wire.source != endpoint) {
+                std::fprintf(stderr,
+                             "%s: diagnostic %zu does not name its session\n",
+                             name.c_str(), index);
+                ++failures;
+            }
+        }
+    }
+
+    if (const char* differs = FirstStatThatDiffers(fromFile, fromWire)) {
+        std::fprintf(stderr, "%s: the wire changed %s\n", name.c_str(),
+                     differs);
+        ++failures;
+    }
+
+    if (failures != 0) {
+        return 1;
+    }
+    std::printf("%s: %zu datagram(s) over a socket, %zu identical frame(s)\n",
+                name.c_str(), capture.datagrams.size(), fromWire.frames.size());
+    return 0;
+}
+
+int
+CheckCorpus(const std::filesystem::path& directory)
+{
+    std::vector<std::filesystem::path> files;
+    for (const std::filesystem::directory_entry& entry :
+         std::filesystem::directory_iterator(directory)) {
+        if (entry.is_regular_file()
+            && entry.path().extension() == ".mocopipackets") {
+            files.push_back(entry.path());
+        }
+    }
+    std::sort(files.begin(), files.end());
+    if (files.empty()) {
+        std::fprintf(stderr, "no captures in %s\n", directory.string().c_str());
+        return 1;
+    }
+
+    int failures = 0;
+    for (const std::filesystem::path& file : files) {
+        failures += CheckTheWireChangesNothing(file);
+    }
+    if (failures != 0) {
+        std::fprintf(stderr, "%d capture(s) failed the loopback replay\n",
+                     failures);
+        return 1;
+    }
+    std::printf("mocopi loopback: %zu capture(s) replayed through a socket, "
+                "every frame and every pose identical to the file's\n",
+                files.size());
+    return 0;
+}
+
 void
 StartSockets()
 {
@@ -800,6 +1217,11 @@ main(int argc, char** argv)
     // unconditional.
     if (argc > 1 && std::string(argv[1]) == "truncation") {
         return CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole();
+    }
+    // Any other argument is a corpus directory, which is the convention every
+    // other test binary in this adapter already follows.
+    if (argc > 1) {
+        return CheckCorpus(std::filesystem::path(argv[1]));
     }
 
     TestAnAddressThatIsNotOneIsRefusedBeforeTheNetworkIsTouched();

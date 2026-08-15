@@ -315,6 +315,14 @@ large-frame-count limits.
 second producer's · a custom YAML profile · a missing required joint · a profile
 mismatch · an unmapped optional joint · an ambiguous auto-detection.
 
+The **custom YAML profile** is the one on that list whose subject is not this
+repository's own work, so it is checked where a user actually stands rather than
+in the library: `motion_bvh_convert_clip` writes a profile nobody here ships for
+the generated four-joint rig no shipped profile matches, names it **by path with
+no search directory**, and requires the clip to record the user's own id and
+producer — then requires the same profile to be refused against a rig it does not
+describe, so what passed is a match and not a path being trusted (2026-08-15).
+
 **Converter** — Euler order from the declaration order · basis conversion · unit
 conversion · rest-pose construction · root translation · root orientation ·
 missing bone · unsupported joint · exact frame timing · deterministic output ·
