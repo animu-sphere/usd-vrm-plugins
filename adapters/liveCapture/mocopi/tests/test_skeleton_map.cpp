@@ -861,6 +861,32 @@ CheckFrameLoss(const MappedCapture& capture, const std::string& name)
 }
 
 int
+CheckSessionRestart(const MappedCapture& capture, const std::string& name)
+{
+    // The same answer as `frame-loss-01`'s, and that is the assertion. This
+    // capture declares its rig twice and every frame of it maps the whole rig,
+    // because a restart is invisible here: this layer is handed one frame and a
+    // map, and neither carries the session either belongs to. The two skeleton
+    // packets are byte-identical, so the second builds the same rig the first
+    // did — which is exactly why dropping the rig on a restart costs nothing
+    // *here* and is still correct one layer up, where the packet that arrives
+    // after a real recalibration would not be identical.
+    if (!capture.declaredRig || capture.skeletons != 2
+        || capture.refusedSkeletons != 0) {
+        return Failed(name, "the rig was not declared twice and accepted twice");
+    }
+    if (capture.frames.size() != 7 || capture.poselessFrames != 0) {
+        return Failed(name, "seven frames of motion were expected");
+    }
+    for (const FrameMapping& frame : capture.frames) {
+        if (frame.present.count() != kCanonicalBoneCount) {
+            return Failed(name, "a frame did not map the whole rig");
+        }
+    }
+    return 0;
+}
+
+int
 CheckRefusedBones(const MappedCapture& capture, const std::string& name)
 {
     // The one capture in the corpus with no skeleton packet in it, so the rig is
@@ -1046,6 +1072,8 @@ CheckCorpus(const std::filesystem::path& directory)
             result = CheckArmsLowered(mapped, name);
         } else if (capture.sourceId == "frame-loss-01") {
             result = CheckFrameLoss(mapped, name);
+        } else if (capture.sourceId == "session-restart-01") {
+            result = CheckSessionRestart(mapped, name);
         } else if (capture.sourceId == "refused-bones-01") {
             result = CheckRefusedBones(mapped, name);
         } else if (capture.sourceId == "incomplete-frame-01") {

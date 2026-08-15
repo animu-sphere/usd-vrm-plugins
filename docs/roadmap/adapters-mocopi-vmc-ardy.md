@@ -216,6 +216,33 @@ No `adapters/common/`. It gets extracted when two adapters demonstrably
 duplicate code that carries no vendor semantics — after both exist, not in
 anticipation.
 
+> **That condition is now met, and the measurement is on the table** (2026-08-15,
+> from the review of the mocopi bridge). `MocopiLiveSource` and `VmcLiveSource`
+> are the same class apart from three stated differences: the restart-policy
+> enumeration, the delivery loop, the diagnostic stamping, `ConsumeSessionRestart`,
+> the `IMotionSource` forwarding and `Reset` are the same code with the same
+> comments in both. Roughly 120 of 149 lines are shared behaviour maintained
+> twice — and the two copies **had already diverged accidentally**: a datagram
+> the decoder refused left the stale evidence window standing in the sibling and
+> not in the new one, which is a bug that existed for eleven days in one copy and
+> zero days in the other. That is the failure mode this rule was written to catch,
+> arriving exactly on schedule.
+>
+> **It is deliberately not fixed in the change that found it.** `adapters/common/`
+> is the wrong shape — [WORKSPACE.md §2](../architecture/WORKSPACE.md) forbids an
+> adapter→adapter edge, and a shared leaf between two leaves is that edge wearing
+> a hat. The candidate is a protocol-agnostic bridge beside `LiveCaptureSource`
+> in `motionRuntime`, parameterised on the frame type, which is a **contract
+> change**: it moves the restart-policy vocabulary into the motion layer, and
+> [docs/README.md](../README.md) requires those to land in their own change before
+> a plan depends on them. §11 carries it as such.
+>
+> Deciding it before `vrmAdapterArdy` is written is cheaper than after — but ARDY
+> is a *generator* and may not have a datagram, a restart, or a session clock at
+> all, so the third instance that would settle the shape may never arrive. Two
+> instances and one measured divergence is the evidence available, and it is
+> enough to schedule the question rather than enough to answer it here.
+
 ## 5. Phase 1 — the VMC Protocol adapter
 
 **Goal:** one generic real-time input, so any sender application drives the
@@ -1122,8 +1149,8 @@ line-oriented format can carry is refused before the first byte.
 
 ~~`adapters/liveCapture/mocopi` scaffold~~ · ~~packet-capture fixture format~~ ·
 ~~thin UDP receiver~~ · ~~packet decoder~~ · ~~joint mapping~~ · ~~coordinate
-conversion~~ · ~~frame assembly~~ · tracking state and confidence ·
-`LiveCaptureSource` bridge · reconnection · opt-in real-device test ·
+conversion~~ · ~~frame assembly~~ · ~~`LiveCaptureSource` bridge~~ · tracking
+state and confidence · reconnection · opt-in real-device test ·
 **the cross-source comparison of §9.6**
 
 **The build order was Milestone A's and is not** — amended 2026-08-11, after the
@@ -1462,6 +1489,75 @@ original order that was never about the transport.
   — making the assembler refuse an incomplete frame instead of emitting one turns
   this capture red **by name**.
 
+- ✅ **The bridge into the runtime** (2026-08-15). `LiveSource.h` is the last
+  layer that is still this adapter's and deliberately the thinnest: it hands
+  assembled frames to `LiveCaptureSource` and answers `IMotionSource` by
+  forwarding, so a recorded capture now samples like any clip and the whole
+  native path is verifiable in CI from committed bytes. What it contributes to a
+  pose is nothing — buffering, interpolation, smoothing, missing-bone resolution
+  and root-motion intake exist once, in `motionRuntime`, and the tests run the
+  same input under both `MissingBonePolicy` settings so the answer visibly
+  changes with the runtime's configuration rather than with the adapter.
+
+  **Three things the sibling has that this does not, each a measurement.** There
+  is **no `Flush()`**: one datagram is one frame here, so the assembler holds no
+  open frame and there is nothing to forward. **Provenance is fixed at
+  construction**, because this protocol has no `/VMC/Ext/VRM`-shaped handshake to
+  teach a session anything mid-stream — the sibling's per-frame metadata
+  comparison has no work to do, and its absence is asserted rather than left as a
+  missing line. And **a restart costs the rig as well as the history**, which is
+  the one that changes what a consumer sees: the device repeats its rest table
+  about every 3.5 s, so the new session produces nothing at all until it does.
+
+  **The finding is where the restart latch fires.** A consumer re-aligns the
+  intake's clock on `ConsumeSessionRestart()`, and here the restart is *detected*
+  up to 3.5 s before the new session has a pose — where on the sibling the two
+  are the same instant. The latch therefore fires on the frame and not on the
+  detection, and that ordering is required rather than incidental: `AlignClock`
+  pins the newest *buffered* frame, so firing at detection would pin the dead
+  session's head and firing on an emptied buffer would do nothing. The gap
+  itself is left to the runtime — the old session's last pose is `Held`,
+  `peakLagSeconds` grows, and `maxExtrapolationSeconds` bounds what is invented —
+  because held-versus-unavailable during a dropout is `PoseBuffer`'s question and
+  a restart is not entitled to a third state only this adapter can produce.
+
+  **The hips translation still reaches no `RootMotion`**, and this was the last
+  layer that could have quietly composed one. It does not, so `RootMotionIntake`
+  is inert for this adapter whatever it is set to — asserted over all three
+  settings, because "no root motion arrives" is a claim any single setting could
+  hide. That keeps [§5.2](#52-frame-assembly-is-a-stated-policy-not-an-emergent-one)'s
+  record open for evidence rather than closing it by writing code.
+
+  ✅ **And the corpus gap this opened is closed, again by the fixture the claim
+  needed.** `frame-loss-60hz` restarts and *stops*: its new session never
+  declares a rig, so no frame of it is emitted and this layer has nothing to act
+  on — replayed under both policies it produces identical numbers, which is a
+  true statement about that capture and a useless one about the policy.
+  `session-restart-60hz` is the same event with the recovery attached, and it is
+  the device's real shape rather than a contrivance. Under `Reset` the stream
+  continues (five poses), under `Refuse` it visibly stops (three), on the same
+  bytes — so what a restart costs is recorded as a choice. The old session is
+  recorded twenty seconds into its stream so the new one's clock is behind *all*
+  of it; with both near zero the policies would have differed by a single frame.
+  `frame-loss-60hz` keeps its own assertion that it *cannot* tell them apart, so
+  the new capture cannot quietly become redundant.
+
+  Two new CTest names, 90 green in the workspace, and a fifth reading of the same
+  corpus — the first whose subject is a pose a consumer sampled rather than
+  something a layer produced. Its cross-layer claim is the one neither half could
+  make alone: **every frame the assembler emitted was admitted by the intake**,
+  because the assembler emits strictly advancing frames within a session and that
+  is exactly the ordering `LiveCaptureSource::Push` requires. Each replay runs
+  through one reused buffer, so the datagram-lifetime claim is checked by the
+  poses matching rather than by an assertion about pointers. All three decisions
+  were verified **negatively**: dropping the intake reset, the restart latch, or
+  the window clear turns the new names red and leaves the four below them green.
+
+  No new diagnostic code. The frozen nine were fully paid for one layer down and
+  this layer raises none of its own, which is the correct outcome for a bridge —
+  everything it could complain about has already been reported by the component
+  that saw it.
+
 **The wire format is not documented, and the evidence path is a sender rather
 than a device** (established 2026-08-09). The vendor states the transport and
 stops: UDP, port 12351 by default, IPv4 only (`localhost` and IPv6 unsupported),
@@ -1587,6 +1683,16 @@ depends on them ([docs/README.md](../README.md)).
   ([current.md](current.md#done-when)). A `--source vmc` inside `motion_capture`
   would have made that condition unsatisfiable by the change meant to satisfy
   it.
+- ⬜ **The two live-source bridges are one class, and where the shared one lives
+  is a contract question.** Measured 2026-08-15 (§4): `MocopiLiveSource` and
+  `VmcLiveSource` differ in three stated places and are otherwise the same code,
+  and the two copies had already diverged accidentally. The candidate is a
+  frame-type-parameterised bridge beside `LiveCaptureSource` in `motionRuntime`,
+  which moves the restart-policy vocabulary — `Reset` versus `Refuse`, and the
+  rule that splicing the two sessions is offered nowhere — out of the adapters
+  and into the motion contract. That is [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md)'s
+  to state and [WORKSPACE.md §2](../architecture/WORKSPACE.md)'s to permit, in
+  its own change, before either adapter is rewritten against it.
 - ⬜ **The generator contract has no home yet.** `IMotionGenerator` and
   `MotionGenerationRequest` are named in motion policy §16 Phase F as
   deliverables, but the interface itself will need a contract document before

@@ -43,6 +43,8 @@
 #include "vrmAdapterMocopi/PacketCapture.h"
 #include "vrmAdapterMocopi/SkeletonMap.h"
 
+#include "fixtures.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -55,6 +57,8 @@
 
 namespace
 {
+
+using namespace vrmAdapterMocopiTests;
 
 using motion::HumanBone;
 using vrmAdapterMocopi::BoneDefinition;
@@ -71,104 +75,10 @@ using vrmAdapterMocopi::MotionPacket;
 using vrmAdapterMocopi::MotionPacketKind;
 using vrmAdapterMocopi::MotionSkeleton;
 
-// The generator's invented offsets, kept in the same order and for the same
-// reason `test_skeleton_map.cpp` keeps them: what a frame is compared against is
-// a stated table rather than a fixture agreeing with itself.
-const float kRestOffsets[MeasuredBoneCount][3] = {
-    {0.0f, 0.90f, 0.0f},     {0.0f, 0.06f, 0.0f},  {0.0f, 0.06f, 0.0f},
-    {0.0f, 0.06f, 0.0f},     {0.0f, 0.06f, 0.0f},  {0.0f, 0.06f, 0.0f},
-    {0.0f, 0.06f, 0.0f},     {0.0f, 0.10f, 0.0f},  {0.0f, 0.05f, 0.0f},
-    {0.0f, 0.05f, 0.0f},     {0.0f, 0.05f, 0.0f},  {0.02f, -0.08f, 0.08f},
-    {0.14f, 0.0f, 0.0f},     {0.30f, 0.0f, 0.0f},  {0.25f, 0.0f, 0.0f},
-    {-0.02f, -0.08f, 0.08f}, {-0.14f, 0.0f, 0.0f}, {-0.30f, 0.0f, 0.0f},
-    {-0.25f, 0.0f, 0.0f},    {0.09f, -0.05f, 0.0f}, {0.0f, -0.40f, 0.0f},
-    {0.0f, -0.42f, 0.0f},    {0.0f, -0.10f, 0.13f}, {-0.09f, -0.05f, 0.0f},
-    {0.0f, -0.40f, 0.0f},    {0.0f, -0.42f, 0.0f}, {0.0f, -0.10f, 0.13f},
-};
-
-constexpr std::size_t kCanonicalBoneCount = 22;
-constexpr double kFrameRate = 60.0;
-
-// The generator's epoch, so a drift assertion is made against the same absolute
-// clock the corpus carries rather than against zero.
-constexpr double kEpoch = 1786492800.0;
-
 // The measured agreement between the two clocks: under 2 µs over 33 s
 // (MotionPacket.h). Used as the bound for "these two clocks still agree", which
 // makes the assertion the measurement rather than a number picked here.
 constexpr double kClockAgreement = 2e-6;
-
-std::array<float, 4>
-WireIdentity()
-{
-    return {{0.0f, 0.0f, 0.0f, 1.0f}};
-}
-
-std::array<float, 3>
-RestOffset(std::size_t jointId)
-{
-    return {{kRestOffsets[jointId][0], kRestOffsets[jointId][1],
-             kRestOffsets[jointId][2]}};
-}
-
-MotionPacket
-SkeletonPacket()
-{
-    MotionSkeleton skeleton;
-    for (std::size_t jointId = 0; jointId < MeasuredBoneCount; ++jointId) {
-        BoneDefinition joint;
-        joint.boneId = static_cast<std::uint16_t>(jointId);
-        joint.parentBoneId = MeasuredParentColumn[jointId];
-        joint.restTransform.rotation = WireIdentity();
-        joint.restTransform.translation = RestOffset(jointId);
-        skeleton.bones.push_back(joint);
-    }
-    MotionPacket packet;
-    packet.kind = MotionPacketKind::Skeleton;
-    packet.skeleton = std::move(skeleton);
-    return packet;
-}
-
-// A frame that restates the rest pose, which is what every measured frame does
-// for every joint but the root.
-MotionPacket
-FramePacket(std::uint32_t frameNumber, double streamSeconds,
-            double senderUnixSeconds)
-{
-    MotionFrame frame;
-    frame.frameNumber = frameNumber;
-    frame.streamSeconds = static_cast<float>(streamSeconds);
-    frame.senderUnixSeconds = senderUnixSeconds;
-    for (std::size_t jointId = 0; jointId < MeasuredBoneCount; ++jointId) {
-        BoneFrame bone;
-        bone.boneId = static_cast<std::uint16_t>(jointId);
-        bone.transform.rotation = WireIdentity();
-        bone.transform.translation = RestOffset(jointId);
-        frame.bones.push_back(bone);
-    }
-    MotionPacket packet;
-    packet.kind = MotionPacketKind::Frame;
-    packet.frame = std::move(frame);
-    return packet;
-}
-
-// A frame at 60 Hz whose two clocks agree, which is what the device sends.
-MotionPacket
-FrameAt(std::uint32_t frameNumber, double streamSeconds)
-{
-    return FramePacket(frameNumber, streamSeconds, kEpoch + streamSeconds);
-}
-
-void
-DropJoint(MotionPacket* packet, std::uint16_t boneId)
-{
-    std::vector<BoneFrame>& bones = packet->frame->bones;
-    bones.erase(std::remove_if(bones.begin(), bones.end(),
-                               [boneId](const BoneFrame& bone) {
-                                   return bone.boneId == boneId;
-                               }),
-                bones.end());
-}
 
 std::size_t
 Count(const std::vector<Diagnostic>& diagnostics, DiagnosticCode code)
@@ -714,6 +624,56 @@ CheckFrameLoss(const AssembledCapture& capture, const std::string& name)
 }
 
 int
+CheckSessionRestart(const AssembledCapture& capture, const std::string& name)
+{
+    // `frame-loss-01` restarts and stops; this one restarts and recovers, which
+    // is the half of a restart that capture cannot show. Three frames, two
+    // refused for want of a rig, then a rig again and two more.
+    if (capture.stats.skeletonsAccepted != 2 || capture.frames.size() != 5) {
+        return Failed(name, "two rigs and five assembled frames were expected");
+    }
+    if (capture.stats.sessionRestarts != 1
+        || Count(capture.diagnostics, DiagnosticCode::SourceRestarted) != 1) {
+        return Failed(name, "the restart was not detected exactly once");
+    }
+    // The cost, measured: the rig went with the old session and both frames
+    // that arrived before the new one was declared were refused. Reported once
+    // per episode, not twice.
+    if (capture.stats.framesRefusedNoRig != 2
+        || Count(capture.diagnostics, DiagnosticCode::FrameIncomplete) != 1) {
+        return Failed(name, "the rig's loss was not counted twice and reported "
+                            "once");
+    }
+    // The flag outlives the frames it was refused on and lands on the first
+    // frame the new session actually emits — which is the frame a consumer can
+    // act on, and the only one it could.
+    if (capture.frames[3].beginsNewSession != true
+        || capture.frames[2].beginsNewSession
+        || capture.frames[4].beginsNewSession) {
+        return Failed(name, "the new session's flag did not land on its first "
+                            "emitted frame");
+    }
+    // The two streams are ordered against each other only by their own clocks,
+    // and the new one is behind: that is what the layer above has to decide
+    // about, and it is a property of these bytes rather than of the assembler.
+    if (!(capture.frames[2].pose.timestamp > capture.frames[3].pose.timestamp)) {
+        return Failed(name, "the new session's clock is not behind the old "
+                            "session's");
+    }
+    // A restart is not a gap: the counter's difference across one means nothing
+    // and is not counted as loss.
+    if (capture.stats.framesLost != 0 || capture.frames[3].lostFrames != 0) {
+        return Failed(name, "a restart was counted as transport loss");
+    }
+    // And the new session fixes its own clock offset, so drift is measured
+    // within a session rather than across the discontinuity.
+    if (std::fabs(capture.frames[3].clockDrift) >= kClockAgreement) {
+        return Failed(name, "the new session did not re-fix its clock offset");
+    }
+    return 0;
+}
+
+int
 CheckRefusedBones(const AssembledCapture& capture, const std::string& name)
 {
     // The corpus's near miss, stated as an assertion so it stops being true
@@ -824,7 +784,11 @@ CheckCorpus(const std::filesystem::path& directory)
     std::vector<std::filesystem::path> files;
     for (const std::filesystem::directory_entry& entry :
          std::filesystem::directory_iterator(directory)) {
-        if (entry.path().extension() == ".mocopipackets") {
+        // `is_regular_file` as well as the extension, so a directory that
+        // happens to be named like a capture is not read as one — the guard the
+        // other passes over this directory already use.
+        if (entry.is_regular_file()
+            && entry.path().extension() == ".mocopipackets") {
             files.push_back(entry.path());
         }
     }
@@ -870,6 +834,8 @@ CheckCorpus(const std::filesystem::path& directory)
             result = CheckArmsLowered(assembled, name);
         } else if (capture.sourceId == "frame-loss-01") {
             result = CheckFrameLoss(assembled, name);
+        } else if (capture.sourceId == "session-restart-01") {
+            result = CheckSessionRestart(assembled, name);
         } else if (capture.sourceId == "refused-bones-01") {
             result = CheckRefusedBones(assembled, name);
         } else if (capture.sourceId == "incomplete-frame-01") {

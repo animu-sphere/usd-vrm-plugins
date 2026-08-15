@@ -58,6 +58,7 @@ endif()
 add_library(vrmAdapterMocopi STATIC
     src/Diagnostics.cpp
     src/FrameAssembler.cpp
+    src/LiveSource.cpp
     src/MotionPacket.cpp
     src/PacketCapture.cpp
     src/PacketChunk.cpp

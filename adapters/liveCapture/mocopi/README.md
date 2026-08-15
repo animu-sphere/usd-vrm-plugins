@@ -9,7 +9,8 @@ UDP datagram → packet decode → joint mapping → coordinate conversion
              → frame assembly → HumanoidPose → LiveCaptureSource
 ```
 
-**Status: through the semantic mapping.** What exists is the library's identity
+**Status: through the runtime bridge — the library is code-complete.** What
+exists is the library's identity
 and its two edges, the frozen diagnostic set, the recorded-packet format, the
 **UDP receiver**, [**`mocopi_record`**](tools/mocopiRecord/README.md) — the CLI
 that turns a source aimed at this machine into a capture file — the **packet
@@ -17,10 +18,18 @@ decoder** ([container](include/vrmAdapterMocopi/PacketChunk.h) and
 [two packet kinds](include/vrmAdapterMocopi/MotionPacket.h), with a
 [corpus](tests/corpus/README.md) behind them) — and now the
 [**joint map and the basis change**](include/vrmAdapterMocopi/SkeletonMap.h),
-which is the first layer here that knows a humanoid exists. What does not exist
-is **frame assembly** and the **live-source bridge**: nothing yet decides whether
-a frame missing three bones is a frame, whether the source restarted, or what a
-`HumanoidPose` timestamp is.
+which is the first layer here that knows a humanoid exists, then
+[**frame assembly**](include/vrmAdapterMocopi/FrameAssembler.h) — the layer that
+decides whether a datagram is a frame, whether it is complete, and whether the
+source restarted — and finally the
+[**live-source bridge**](include/vrmAdapterMocopi/LiveSource.h), where a frame
+becomes a pose a consumer samples through the unchanged `motionRuntime`.
+
+**What does not exist is a session that met a device.** Every layer above is
+exercised, and by committed bytes that never met a sensor. Tracking state and
+confidence have nothing to decode into — the measured grammar carries neither —
+and reconnection, the opt-in hardware run, and the cross-source comparison of
+§9.6 all need an operator rather than a commit.
 See [the plan](../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) §6 and
 Milestone D for the implementation order, and
 [below](#transport-arrives-first-here-and-that-is-the-finding) for why this
@@ -313,10 +322,10 @@ d 0.000000 16
 It is not a `motion-capture-trace`, and the difference is the adapter's two
 ends: a trace records what an adapter *produced*, a capture what it was *given*.
 Only the second can represent a truncated datagram, a duplicate delivery, or a
-restart mid-frame — which is to say, only the second can test a decoder. Seven of
+restart mid-frame — which is to say, only the second can test a decoder. Nine of
 them now do, in [`tests/corpus/`](tests/corpus/README.md); the two
-`malformed-*` captures and `frame-loss-60hz` are the three that make the sentence
-above concrete.
+`malformed-*` captures, `frame-loss-60hz` and `session-restart-60hz` are the four
+that make the sentence above concrete.
 
 **It is a second format rather than the sibling's, and that is a decision.** The
 header file argues it in full; the short version is that reaching the sibling's

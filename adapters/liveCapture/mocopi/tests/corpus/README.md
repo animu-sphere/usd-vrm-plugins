@@ -111,7 +111,8 @@ about the basis, and only the basis can be asked about them.
 | --- | --- | --- |
 | `neutral-standing-60hz.mocopipackets` | 6 | The happy path, and both packet kinds in one file: a skeleton then five 60 Hz frames, every rotation identity. Also the measured invariant that **only the root translates** — every non-root frame translation equals its rest offset bit for bit. |
 | `arms-lowered-60hz.mocopipackets` | 4 | A non-identity rotation on the two upper arms (bones 12 and 16 — the left and the right, now that handedness is settled), in opposite directions: ~85° carried in the **third** imaginary component, which is what the measured standing sessions showed against a T-pose rest. A decoder that reordered the quaternion cannot pass this and the baseline at once. The assertion is still on the component and the antisymmetry, not on a side. |
-| `frame-loss-60hz.mocopipackets` | 8 | What the transport does and the decoder refuses none of: an `fnum` gap of 3 whose `time` delta is exactly 3/60 s — the measured Wi-Fi loss shape, where the sender's clock never skipped — then a duplicate delivery, then a restart. |
+| `frame-loss-60hz.mocopipackets` | 8 | What the transport does and the decoder refuses none of: an `fnum` gap of 3 whose `time` delta is exactly 3/60 s — the measured Wi-Fi loss shape, where the sender's clock never skipped — then a duplicate delivery, then a restart. Its restart goes backwards by only 0.1 s, which is inside any jitter threshold worth having, so it is also the capture that proves the counter and not the clock is what catches one. |
+| `session-restart-60hz.mocopipackets` | 9 | A restart the session **recovers** from, which is the half `frame-loss-60hz` cannot show: that file ends on the restart's own frame, so its new session never declares a rig and never emits one. Here the rig is dropped, two frames are refused for want of one, a second skeleton packet re-declares it, and the session resumes — the device's real shape, since the rest table is repeated about every 3.5 s. It is the only capture that can tell `MocopiLiveSource`'s two restart policies apart, and its old session is recorded twenty seconds into its stream so that the new one's clock is behind *all* of it rather than overtaking it within two frames. |
 | `malformed-container.mocopipackets` | 5 | One datagram per **container**-level refusal: empty, a header that does not fit, a payload longer than the datagram, a walk that ends between chunks, and a datagram of the sibling protocol. |
 | `malformed-packets.mocopipackets` | 13 | One datagram per **packet**-level refusal, and the row adds up: the wrong magic, an unmeasured version, a missing `head`, both payload kinds, neither, a duplicated field (1+1+1+1+1+1), three bad field widths — `fnum`, `tran`, `tmcd` — three unusable clocks, and a **skeleton** with one unusable rest transform. |
 | `refused-bones-60hz.mocopipackets` | 2 | The bone-not-frame rule: three unusable bone records decode to **24 usable bones and three diagnostics**, not to a refused datagram — followed by the same frame with nothing wrong with it. Its mirror image is the last datagram of `malformed-packets`: the same defect in a *skeleton* refuses the packet whole, because a rest table with a hole in it has bones whose `pbid` names an id that is not there. |
@@ -132,7 +133,10 @@ itself the boundary being drawn.
 python adapters/liveCapture/mocopi/tools/generate_packets.py
 ```
 
-Four CTest names guard the result, and they check different things:
+Six CTest names guard the result, and they check different things. Five of them
+are readings of this same directory at successive layers, which is the point:
+one set of bytes, asked a different question by each component that consumes it,
+so a fixture is never merely parsed by the layer it was written for.
 
 - `vrmAdapterMocopi_corpus` — every capture parses and re-emits byte-identically
   through the **C++ writer**, so a fixture cannot drift from the format.
@@ -151,6 +155,19 @@ Four CTest names guard the result, and they check different things:
   costs, and which rigs get no map at all. Registered per `sourceId` like the
   pass above, including for the two `malformed-*` captures, whose assertion is
   that nothing reaches this layer from them — a claim that can stop being true.
+- `vrmAdapterMocopi_frameAssemblerCorpus` — the sequence questions, which every
+  layer below answers one datagram at a time and so cannot: a gap, a duplicate
+  delivery, a restart, and whether a frame short of the declared rig is emitted
+  or refused.
+- `vrmAdapterMocopi_liveSourceCorpus` — the first reading whose subject is a
+  **pose a consumer sampled** rather than something a layer produced. It makes
+  the one cross-layer claim: every frame the assembler emitted was admitted by
+  the intake, because the assembler emits strictly advancing frames within a
+  session and that is exactly the ordering `LiveCaptureSource::Push` requires.
+  It replays each capture through a single reused buffer, so "a datagram need not
+  outlive the call" is checked by the poses matching rather than by an assertion
+  about pointers, and it is the only place the two restart policies are run over
+  the same bytes.
 - `vrmAdapterMocopi_packetGen` — the committed bytes still match the
   **generator** that authored them. This matters more here than for the sibling
   adapter: regenerating is the only way this corpus can be extended, because the

@@ -932,6 +932,45 @@ CheckFrameLoss(const std::vector<MotionPacket>& packets,
 }
 
 int
+CheckSessionRestart(const std::vector<MotionPacket>& packets,
+                    const std::string& name)
+{
+    // Two skeleton packets and seven frames, which is the whole difference from
+    // `frame-loss-01`: that capture restarts and stops, this one restarts and is
+    // told a rig again. To this layer the second `skdf` is simply another
+    // skeleton packet — a restart is not visible in one datagram and neither is
+    // a recovery — so what is pinned here is that the bytes carry the shape the
+    // layers above are asked about.
+    std::vector<std::uint32_t> numbers;
+    std::vector<float> seconds;
+    std::size_t skeletons = 0;
+    for (const MotionPacket& packet : packets) {
+        if (packet.kind == MotionPacketKind::Skeleton) {
+            ++skeletons;
+        } else if (packet.kind == MotionPacketKind::Frame) {
+            numbers.push_back(packet.frame->frameNumber);
+            seconds.push_back(packet.frame->streamSeconds);
+        }
+    }
+    if (skeletons != 2) {
+        return Failed(name, "the rig was not declared twice");
+    }
+    const std::vector<std::uint32_t> expected = {4000, 4001, 4002, 1, 2, 3, 4};
+    if (numbers != expected) {
+        return Failed(name, "the counter sequence is not the recorded one");
+    }
+    // The old session is recorded twenty seconds into its stream and the new one
+    // begins at zero, so every frame after the restart is behind every frame
+    // before it. That ordering is what makes the two restart policies one layer
+    // up distinguishable rather than differing by a single frame.
+    if (!(seconds[2] > 20.0f) || seconds[3] != 0.0f) {
+        return Failed(name, "the restart did not take the stream clock back "
+                            "behind the whole of the old session");
+    }
+    return 0;
+}
+
+int
 CheckExtendedForm(const std::vector<MotionPacket>& packets,
                   const std::string& name)
 {
@@ -1110,6 +1149,8 @@ CheckCorpus(const std::filesystem::path& directory)
             result = CheckArmsLowered(decoded, name);
         } else if (capture.sourceId == "frame-loss-01") {
             result = CheckFrameLoss(decoded, name);
+        } else if (capture.sourceId == "session-restart-01") {
+            result = CheckSessionRestart(decoded, name);
         } else if (capture.sourceId == "extended-form-01") {
             result = CheckExtendedForm(decoded, name);
         } else if (capture.sourceId == "refused-bones-01") {
