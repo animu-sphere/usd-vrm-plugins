@@ -656,9 +656,32 @@ here as the first data point this section has.
 It is also the *weakest* form of the comparison, and calling it more would be a
 mistake. A rest pose is a calibration the application computes once; agreeing
 about it says nothing about whether the two paths agree about a session's
-movement, its timing, or what each drops. The comparison this section is for
-still needs **one physical session captured both ways at once**, and still owes
-the list of what each path cannot carry.
+movement, its timing, or what each drops.
+
+**The real comparison happened on 2026-08-15, on two of the three paths**
+([report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.md)). One
+physical session was recorded as UDP and exported as BVH over the same window,
+and both halves were driven to a canonical clip and compared there.
+
+- **They agree.** Both reach the same 22 canonical bones with neither carrying
+  one the other lacks; the median of the per-bone median differences is
+  **0.084°**, and no bone's median exceeds 0.13°.
+- **The residual is timing, shown rather than asserted** — which is what this
+  section asks for. Over 19759 bone-samples where the bone was turning slower
+  than 0.05°/frame the median difference is **0.0000°**; the twenty worst
+  samples in the whole comparison are all in the first 13 frames and each
+  implies the same 3.7–4.4 frame lag. A residual that vanishes when the body is
+  still and grows with speed is a sampling instant, not a decode.
+- **The two clocks are not one clock**, which the alignment had to discover
+  before it could say anything else: 3 frames of slip over 1800, about
+  **1667 ppm**, between one application's two outputs of one session.
+- **The list this section exists for is written**, in that report's §4. The
+  entry that matters is the body's travel: **4.81 m of hips path** reaches the
+  recorded path and nothing at all reaches the live one, because no layer there
+  composes a `RootMotion` while §5.2 is open.
+
+**A VMC relay was not recorded**, so the third path is still unobserved and this
+comparison is two of three.
 
 ## 10. Milestones
 

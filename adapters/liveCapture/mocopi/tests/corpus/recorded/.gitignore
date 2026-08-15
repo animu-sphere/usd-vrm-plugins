@@ -1,0 +1,15 @@
+# Recorded device sessions are NEVER committed, and unlike the BVH corpus's
+# fetched half there is no upstream to pull them from either: a mocopi session
+# is a real person's motion, and a skeleton packet is a body measurement of that
+# person. What survives is manifest.json beside this file — the hashes and the
+# measurements — which is what the corpus splits on: redistribution, never worth
+# (docs/roadmap/adapters-mocopi-vmc-ardy.md §9.2).
+#
+# Everything, not a list of extensions. What could land here is a capture, a
+# trace exported from one, a clip baked from that, or an analysis dump — and an
+# extension list fails open, on exactly the bytes that must not be committed.
+# manifest.json is the one file this directory carries, so it is the one
+# exception.
+*
+!.gitignore
+!manifest.json

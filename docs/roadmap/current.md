@@ -58,10 +58,14 @@ reaching a **rig** still is: that is Motion Phase G.
       recorded choice rather than a described one. The **loopback corpus** landed
       behind it the same day and closed the one claim the inverted build order
       had left open — the same committed bytes through a bound socket, compared
-      all the way to the pose (next line). What is left is not code — it is the
-      word **device**. Every layer from the socket to the pose is
-      exercised, and by committed bytes that never met a sensor
-      ([Milestone D](adapters-mocopi-vmc-ardy.md))*;
+      all the way to the pose (next line). **A device drove it on 2026-08-15**:
+      five sessions off a mocopi app 2.7.2 rig reached this host over UDP 12351,
+      and the first one decoded with **zero diagnostics** — 2190 frames, the
+      sender's clock at 59.9453 Hz, every layer from the socket to the pose
+      consuming hardware that no fixture had prepared it for. One of them was
+      then baked onto a real avatar through the unchanged product tools and
+      looked at. What is left in this line is a **release artifact** running the
+      same path, not a device ([Milestone D](adapters-mocopi-vmc-ardy.md))*;
 - [x] recorded packet fixtures decode deterministically with no socket, and a
       loopback test proves the socket path agrees with them — *both halves are
       closed (2026-08-15). Nine committed captures decode, and as of 2026-08-12
@@ -80,7 +84,20 @@ reaching a **rig** still is: that is Motion Phase G.
       fixtures pin the decoder, not the protocol**, because the grammar that
       wrote them is the grammar they are read with*;
 - [ ] tracking loss, recovery, and source restart are recorded rather than
-      described;
+      described — *the **restart** is recorded (2026-08-15): a real
+      stop-and-start raised `VRM_MOCOPI_SOURCE_RESTARTED` from the clock branch,
+      and the new session was dark for **233 frames = 3.8833 s** until the
+      device repeated its rest table — the refusal count and the new session's
+      first emitted timestamp agreeing exactly, which cross-checks the
+      assembler's accounting against the hardware. The roadmap's "about 3.5 s"
+      was optimistic. `VRM_MOCOPI_DEVICE_UNAVAILABLE` was raised by a device for
+      the first time in the same gap. **Tracking loss was dropped as a take, and
+      why is the finding**: removing a sensor puts the product into re-tracking,
+      so "a stream carrying a lost sensor" is a state this application's UX does
+      not produce — a second reason `VRM_MOCOPI_TRACKING_LOST` stays frozen and
+      unraised, beside having no field in the measured grammar. What this line
+      still waits on is therefore a **recovery** that a device can actually
+      produce, or a decision that this product cannot produce one*;
 - [ ] the session reaches a real VRM avatar through **unchanged**
       `motion_capture` and `motion_retarget` — *the chain closes for VMC
       (2026-08-04): `vmc_record --export-trace` hands the product a
@@ -165,14 +182,48 @@ reaching a **rig** still is: that is Motion Phase G.
 **Cross-source and evidence**
 
 - [ ] one physical session observed as mocopi UDP *and* mocopi BVH, compared at
-      the canonical layer, with a VMC relay added if one is available;
-- [ ] what each path cannot carry is written down, from evidence;
+      the canonical layer, with a VMC relay added if one is available — *the two
+      mocopi paths were compared on 2026-08-15
+      ([report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.md)): one
+      session recorded both ways over the same window, driven to a canonical
+      clip on each side, agreeing to a median **0.084°** per bone with the
+      residual shown to be timing rather than value — 0.0000° median wherever a
+      bone was still, and every one of the twenty worst samples in the first 13
+      frames implying the same lag. It also found what the alignment had to
+      handle first: **the two outputs of one application do not share a clock**,
+      slipping about 1667 ppm. **A VMC relay is what this line still waits on**,
+      and it is two of three rather than one of three*;
+- [x] what each path cannot carry is written down, from evidence — *[report 01
+      §4](../reports/motion/01-2026-08-15-mocopi-cross-source.md), five entries,
+      each a measurement from a real session rather than a prediction. The one
+      that matters: **the body's travel**. 4.81 m of hips path reaches the
+      recorded path and nothing at all reaches the live one. The others are the
+      device identity (kept by a capture, no key in a trace), a second peer
+      (seen live, unrepresentable in a capture header — found by the restart
+      session arriving from two source ports), the transport facts a file has
+      none of, and tracking state, which **neither** path carries*;
 - [ ] the root / hips observation is written down, and the canonical answer
-      chosen or explicitly left open with its downstream cost stated;
+      chosen or explicitly left open with its downstream cost stated — *the
+      mocopi half is measured and its cost is now a number rather than a
+      worry: `mocopi_record --export-trace` reports the hips path it is
+      dropping, and a 36-second session drops **4.81 m** of it (0.69 m net —
+      both, because a walk out and back makes them disagree). What is left is
+      the VMC half, which is where the question originally came from: `/VMC/Ext/Root/Pos`
+      against the hips local position is an ambiguity the native path does not
+      have, because this rig has exactly one translating joint*;
 - [ ] redistributable captures and BVH files are committed; the rest survive as
       measured manifests with no bytes — *the first BVH file is in
-      (`libs/motionBvh/tests/corpus/recorded/`, 2026-08-04); no live capture
-      is*;
+      (`libs/motionBvh/tests/corpus/recorded/`, 2026-08-04). **The live half is
+      done as of 2026-08-15 and done as the second clause**: five device
+      sessions exist as
+      [`recorded/manifest.json`](../../adapters/liveCapture/mocopi/tests/corpus/recorded/manifest.json)
+      with hashes, every measured statistic, the diagnostics each raises and
+      what each settled — and **no bytes**, since a session is a real person's
+      motion and a skeleton packet is a body measurement of that person. Unlike
+      the BVH corpus's licensed half there is not even an upstream to fetch
+      from, so the directory's `.gitignore` refuses everything but the manifest.
+      What is left in this line is a **redistributable** capture, which needs
+      the vendor's `BVH Sender` rather than a device*;
 - [ ] both paths run from release artifacts alone, profiles included;
 - [ ] a v0.7.0 release record exists.
 

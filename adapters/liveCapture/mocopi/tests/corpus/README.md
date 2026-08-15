@@ -56,6 +56,28 @@ This is the same split the BVH track already runs on
 with a wrinkle the plan names: a `BVH Sender` capture is neither of those two
 things, because its bytes are the vendor's and its motion never met a sensor.
 
+**Half of that gap closed on 2026-08-15, and it closed as measurements rather
+than as files.** Five real device sessions were recorded, and
+[`recorded/manifest.json`](recorded/manifest.json) is what this repository keeps
+of them: hashes, every measured statistic, the diagnostics each one raises, and
+what each settled. **No bytes** — a mocopi session is a real person's motion and
+a skeleton packet is a body measurement of that person, so unlike the BVH
+corpus's licensed half there is not even an upstream to fetch from. The
+directory's `.gitignore` refuses everything but the manifest, because an
+extension list would fail open on exactly the files that must not be committed.
+
+What those sessions settled, and what stayed open, is in the manifest row by row
+and in [the §9.6 report](../../../../../docs/reports/motion/01-2026-08-15-mocopi-cross-source.md).
+The short version: one session observed both ways agrees to a median 0.084° per
+bone, the residual is timing rather than value, and the live path drops 4.81 m
+of hips travel that the recorded path keeps.
+
+The directory layout here stays flat where the BVH track's is split. Six test
+binaries scan this directory with a non-recursive `directory_iterator`, so
+moving the generated captures into a `generated/` subdirectory would rewrite
+every one of those paths for no gain to the manifest that prompted the question.
+The split is expressed by `recorded/` existing and by what it refuses.
+
 ## Why packets and not traces
 
 A [`motion-capture-trace`](../../../../../libs/motionRuntime/include/motionRuntime/CaptureTrace.h)

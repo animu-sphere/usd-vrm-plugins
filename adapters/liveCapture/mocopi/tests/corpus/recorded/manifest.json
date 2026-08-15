@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "description": "Real device sessions, and what was measured from them. None of their bytes are in this repository and none ever will be: a mocopi session is a real person's motion, and a skeleton packet is a body measurement of that person. This file is what survives instead, and it is written to be enough for a later reader to tell whether a claim still holds without the bytes. Separate from the generated manifest one directory up because it is a separate kind of claim: a generated capture pins a shape of the protocol and its counts are a property of what was written here, where a recorded session pins what a device actually sends and its counts are a measurement of somebody else's product that nobody here may adjust.",
+  "format": {
+    "name": "mocopi-packet-capture",
+    "version": 1,
+    "spec": "adapters/liveCapture/mocopi/include/vrmAdapterMocopi/PacketCapture.h"
+  },
+  "recordedWith": {
+    "tool": "mocopi_record",
+    "toolVersion": "0.6.0",
+    "repositoryCommit": "43a5fe2",
+    "note": "The recording path -- UdpReceiver and WritePacketCapture -- was unchanged at that commit and decodes nothing, so a capture is the datagrams as they arrived. `--export-trace` landed after these sessions were recorded and does not touch that path; it is how the decoded fields below were obtained."
+  },
+  "measuredWith": {
+    "repositoryCommit": "3a9fe0a",
+    "date": "2026-08-15",
+    "how": "`mocopi_record --inspect <capture> --export-trace <trace>`, parsed. Every numeric field below is a reading of the committed-nowhere bytes by the shipped tool, not a note taken during the session. The prose fields are hand-written."
+  },
+  "session": {
+    "date": "2026-08-15",
+    "operator": "the repository owner, recording their own motion",
+    "sender": "mocopi-app-2.7.2",
+    "device": "mocopi-6sensor-iphone16",
+    "network": "IPv4 LAN, device to this host over Wi-Fi, UDP 12351",
+    "redistributionAllowed": false,
+    "redistribution": "NOT carried here, and not fetchable either -- unlike a licensed public dataset there is no upstream to pull from. The bytes exist on the operator's machine outside the repository; where they are kept is the operator's business and is deliberately not recorded here (roadmap section 9.2)."
+  },
+  "limitations": [
+    "These rows are measurements, not fixtures. Nothing in CI runs against them, no test asserts them, and the hardware lane that produced them is opt-in and is never a required gate (roadmap section 9.5).",
+    "A row can be re-derived only by whoever holds the bytes. The sha256 is what says whether the file a later reader has is the file these numbers came from.",
+    "The generated corpus one directory up is flat rather than split into `generated/` and `recorded/` as roadmap section 9.2 draws it. Restructuring it would move every path six test binaries scan, for no gain to this file; the split is expressed here by this directory existing and by its .gitignore, which refuses bytes rather than sorting them.",
+    "`framesDelivered` counts what the assembler emitted, which is not the frame datagrams the capture holds: a capture that begins before its device declares a rig refuses every frame until the first skeleton packet, and those frames are real datagrams that became no pose."
+  ],
+  "sessions": [
+    {
+      "file": "cross-source.mocopipackets",
+      "sha256": "b3a0d1601000895fed6636abaeffc7177e78899bdfc88890a0f0c580507a3edc",
+      "bytes": 15578727,
+      "recordedAt": "2026-08-15T21:47:09+09:00",
+      "sourceId": "cross-source",
+      "pins": "The release's distinguishing check (roadmap section 9.6): one physical session observed as mocopi UDP *and* as this application's own BVH export, recorded over the same window. The BVH half is `libs/motionBvh` territory and carries its own row; what this file is for is being the other half of a comparison that nothing before it could make, because two recordings of two different sessions can only be similar. Sequence: 5 s still, head turn left then right, LEFT arm raised and lowered, 4 steps forward, return.",
+      "measured": {
+        "datagrams": 2200,
+        "payloadBytes": 3533160,
+        "receiveSeconds": 36.5296,
+        "peers": 1,
+        "arrivalHzMean": 60.1977,
+        "arrivalIntervalSeconds": [2e-06, 0.16628],
+        "distinctLengths": 2,
+        "lengthCensus": "2190 of 1605 byte(s), 10 of 1821",
+        "framesDelivered": 2190,
+        "sessionsInCapture": 1,
+        "senderHz": 59.9453,
+        "exportSpanSeconds": 36.5166,
+        "hipsPathMetres": 4.81282,
+        "hipsNetMetres": 0.690738
+      },
+      "expectedDiagnostics": [],
+      "observations": {
+        "crossSource": "Compared against the BVH export at the canonical layer -- both reach the same 22 canonical bones, and neither carries a bone the other lacks. Median of the per-bone median differences 0.084 degrees; every bone's median at or under 0.13 degrees. The residual is timing and not value: over 19759 samples where a bone was turning slower than 0.05 deg/frame the median difference is 0.0000 degrees and the 99.9th percentile is 0.376, while the twenty worst samples in the whole comparison are all in the first 13 frames and every one of them implies the same 3.7-4.4 frame lag.",
+        "twoClocks": "The two outputs of one application do not share a clock. Aligning in windows shows 3 frames of slip over 1800, about 1667 ppm; the stream clock measures 59.9453 Hz here and the BVH header declares 59.9988.",
+        "whatEachPathDropped": "The walk reaches the recorded path and not the live one. The hips path above is 4.81 m and the UDP clip authors no translations at all, because no layer on the live path composes a RootMotion while section 5.2 is open. The BVH clip carries the same walk as a hips translation with a 1.17 m maximum excursion.",
+        "handedness": "Confirmed from labelled motion for the first time, independently of the rest-offset comparison that settled it on 2026-08-12. The operator raised their LEFT arm and said so before the take; `leftUpperArm` moves 108.75 degrees at t=14.1 s where `rightUpperArm`'s peak is 29.77 degrees and falls at t=34.6 s, in a different part of the session.",
+        "firstFrameIsAnOutlier": "Frame 0 is the operator's hand on the phone starting the recording: `rightLowerArm` sits about 65 degrees away from its frame-0 value for the whole rest of the take. Analysis that uses frame 0 as a reference pose measures that instead of the motion."
+      },
+      "relatedFiles": [
+        "The BVH export of the same session, exported from the application afterwards and measured beside this capture. It is a candidate for `libs/motionBvh/tests/corpus/recorded/` and is not committed either: it is the same person's motion in a different encoding."
+      ]
+    },
+    {
+      "file": "session-restart.mocopipackets",
+      "sha256": "ed1f3c3188f5aa11172c46cc87cc2fedf575e64e83062cfb750678d013bf7c8d",
+      "bytes": 14163330,
+      "recordedAt": "2026-08-15T21:58:53+09:00",
+      "sourceId": "session-restart",
+      "pins": "A restart the device really performed, against a corpus fixture that could only imitate one. Streaming was stopped in the application mid-recording and started again; the recorder ran through the gap.",
+      "measured": {
+        "datagrams": 2000,
+        "payloadBytes": 3212160,
+        "receiveSeconds": 49.4512,
+        "peersLive": 2,
+        "peersOnReplay": 1,
+        "arrivalHzMean": 40.4237,
+        "arrivalIntervalSeconds": [2e-06, 16.4284],
+        "distinctLengths": 2,
+        "lengthCensus": "1990 of 1605 byte(s), 10 of 1821",
+        "sessionsInCapture": 2,
+        "framesDelivered": 1757,
+        "framesRefusedForNoRig": 233,
+        "perSession": [
+          {
+            "session": 1,
+            "frames": 1281,
+            "streamSeconds": [0.0, 21.3333],
+            "senderHz": 60.0001,
+            "hipsPathMetres": 1.30286,
+            "hipsNetMetres": 0.0560632
+          },
+          {
+            "session": 2,
+            "frames": 476,
+            "streamSeconds": [3.8833, 11.8],
+            "senderHz": 60.0001,
+            "hipsPathMetres": 0.541427,
+            "hipsNetMetres": 0.0529908
+          }
+        ]
+      },
+      "expectedDiagnostics": [
+        "VRM_MOCOPI_SOURCE_RESTARTED",
+        "VRM_MOCOPI_FRAME_INCOMPLETE"
+      ],
+      "observations": {
+        "darkWindow": "A restarted session is dark until the device repeats its rest table, and this is the first measurement of how long that is on real hardware: 233 frames refused, and the new session's first *emitted* frame stamped 3.8833 s into its own stream clock. The two agree exactly -- 233/60 = 3.8833 -- which cross-checks the assembler's accounting against the device. The roadmap's estimate of 'about 3.5 s' is therefore a little optimistic; 3.88 s is the measured cost of a restart on this application.",
+        "whichBranchFired": "The clock branch. `VRM_MOCOPI_SOURCE_RESTARTED` reports the stream clock beginning again 21.333313 s before the last accepted frame, which is far past any threshold. The counter branch that the corpus's `frame-loss-60hz` exists for -- a restart 0.1 s in, which no clock rule can see -- is still a shape only a generated capture has produced.",
+        "sourcePortChanges": "The restart came from a new ephemeral port: the live report names 192.168.1.23:64949 and :59931, so the two sessions are distinguishable at the transport as well as by the stream clock.",
+        "aPeerIsLostByTheFormat": "The capture header names one peer, so this file replays as a one-peer session and the live report's `peers: 2` exists nowhere in it. That is a limitation of `mocopi-packet-capture` rather than of this session, and the sibling format has it identically. A recording that spans a restart is exactly when it bites.",
+        "silenceWasReported": "`VRM_MOCOPI_DEVICE_UNAVAILABLE` fired during the gap -- 'the source stopped sending 8.2 s ago' -- which is the first time that code has been raised by a device rather than by a unit test. It is a receiver-level diagnostic and so is not in `expectedDiagnostics` above, which lists what a decode of the file raises."
+      }
+    },
+    {
+      "file": "neutral-standing.mocopipackets",
+      "sha256": "fe17c2d98f9e5dd28ebae3a940c7cc32acad6378a71db5354fe9788d29b473b6",
+      "bytes": 8496535,
+      "recordedAt": "2026-08-15T22:03:15+09:00",
+      "sourceId": "neutral-standing",
+      "pins": "The floor. What this device reports when nothing is happening, which is the number every other measurement here is read against.",
+      "measured": {
+        "datagrams": 1200,
+        "payloadBytes": 1927080,
+        "receiveSeconds": 19.7976,
+        "peers": 1,
+        "arrivalHzMean": 60.563,
+        "arrivalIntervalSeconds": [3e-06, 0.136163],
+        "distinctLengths": 2,
+        "lengthCensus": "1195 of 1605 byte(s), 5 of 1821",
+        "framesDelivered": 1056,
+        "framesRefusedForNoRig": 139,
+        "sessionsInCapture": 1,
+        "senderHz": 60.0001,
+        "exportSpanSeconds": 17.5833,
+        "hipsPathMetres": 0.0125371,
+        "hipsNetMetres": 0.00301416
+      },
+      "expectedDiagnostics": ["VRM_MOCOPI_FRAME_INCOMPLETE"],
+      "observations": {
+        "noiseFloor": "Over 17.58 s of standing still the median per-frame change is 0.0183 degrees across all bones, and the largest excursion from the first pose is 3.68 degrees on `leftUpperArm` -- slow drift rather than per-frame noise. Several bones report a median per-frame change of exactly 0.0000 degrees, so the solver holds a still bone bit-identical from frame to frame more often than not.",
+        "whyItMattersToTheCrossSourceResult": "The two paths of the cross-source session differ by a median 0.084 degrees, which is smaller than this device's disagreement with itself over the same seconds. Agreement between the paths is therefore tighter than the device's own repeatability.",
+        "toesNeverMove": "`leftToes` and `rightToes` report exactly zero drift, zero jitter and zero peak. The rig declares them and the solver never rotates them, which is also why both paths agreed about them exactly in the cross-source comparison -- they agreed about an absence.",
+        "theOpeningIsDark": "139 frame datagrams were refused because the capture starts with the session and the first skeleton packet had not arrived: 2.32 s at 60 Hz. The same phenomenon as the restart's dark window, seen at the start of a stream instead."
+      }
+    },
+    {
+      "file": "arm-raise-left.mocopipackets",
+      "sha256": "618267d191ba7937b22609669d4106466ac8aa5fd94ecd845f134d9e3aa2eb4d",
+      "bytes": 8498025,
+      "recordedAt": "2026-08-15T22:05:57+09:00",
+      "sourceId": "arm-raise-left",
+      "pins": "The labelled asymmetric session this project has wanted since 2026-08-11 and could not obtain: the side is stated before the take rather than remembered after it. LEFT arm only, raised to horizontal, held, lowered; the right arm stays down.",
+      "measured": {
+        "datagrams": 1200,
+        "payloadBytes": 1927296,
+        "receiveSeconds": 19.8802,
+        "peers": 1,
+        "arrivalHzMean": 60.3112,
+        "arrivalIntervalSeconds": [2e-06, 0.180592],
+        "distinctLengths": 2,
+        "lengthCensus": "1194 of 1605 byte(s), 6 of 1821",
+        "framesDelivered": 1194,
+        "sessionsInCapture": 1,
+        "senderHz": 59.8496,
+        "exportSpanSeconds": 19.9333,
+        "hipsPathMetres": 0.0683359,
+        "hipsNetMetres": 0.0236433
+      },
+      "expectedDiagnostics": [],
+      "observations": {
+        "whichArm": "Measured against the pose at t=2.5 s: `leftUpperArm` 77.26 degrees, `rightUpperArm` 15.06; `leftShoulder` 19.27 against `rightShoulder` 2.84; `leftHand` 55.31 against `rightHand` 10.10. The declared side's chain moves 5.1x the other's at the upper arm and 6.8x at the shoulder.",
+        "whatItSettles": "Handedness was closed on 2026-08-12 by comparing the UDP rest skeleton against this application's BVH export -- 27 offsets agreeing sign for sign. That was an argument about rest poses. This is the same conclusion from motion, with the side written down before the bytes existed, which is the evidence the five sessions of 2026-08-11 could not supply because all four of their motions were bilateral.",
+        "theRightArmIsNotStill": "15 degrees on the right upper arm is above this session's noise floor and is counterbalance, not a mapping error. It peaks in a different part of the take from the raise.",
+        "everyFrameLanded": "All 1194 frame datagrams became frames: the capture's first datagram is a skeleton packet, so this session has no dark opening at all. Whether a capture begins dark is a property of when the recorder was started relative to the device's 3.3-3.7 s rest-table interval, and not of the session."
+      }
+    },
+    {
+      "file": "walk-root-motion.mocopipackets",
+      "sha256": "aabe8b5f13314d1a5b99843514921e717d2fb74a3f0ea7d8cbe322af716f81cc",
+      "bytes": 10622027,
+      "recordedAt": "2026-08-15T22:09:06+09:00",
+      "sourceId": "walk-root-motion",
+      "pins": "The only translating joint, on its own: five steps forward, stop, return. Recorded for the release's root/hips record, which is one of the three questions v0.7.0 exists to answer.",
+      "measured": {
+        "datagrams": 1500,
+        "payloadBytes": 2409012,
+        "receiveSeconds": 24.8044,
+        "peers": 1,
+        "arrivalHzMean": 60.4329,
+        "arrivalIntervalSeconds": [2e-06, 0.140416],
+        "distinctLengths": 2,
+        "lengthCensus": "1493 of 1605 byte(s), 7 of 1821",
+        "framesDelivered": 1493,
+        "sessionsInCapture": 1,
+        "senderHz": 60.0001,
+        "exportSpanSeconds": 24.8666,
+        "hipsPathMetres": 4.39234,
+        "hipsNetMetres": 0.299742
+      },
+      "expectedDiagnostics": [],
+      "observations": {
+        "whatTheCanonicalClipKeeps": "The legs and the body's facing. `rightLowerLeg` 56.52 degrees, `leftLowerLeg` 50.29, and `hips` 28.70 degrees of *rotation*.",
+        "whatItDoesNotKeep": "The walk itself. The exported trace carries no `root` line at all, so 4.39 m of hips path and 0.30 m of net displacement stay in the capture. Retargeted onto an avatar this session walks on the spot -- the legs step, the body turns, and nothing travels.",
+        "pathAgainstNet": "This session is why the export reports both numbers. Walking out and back gives 4.39 m of path against 0.30 m of net, and a report of the second alone would describe a session that crossed a room as nearly stationary.",
+        "onlyTheRootTranslates": "Consistent with the invariant measured on 2026-08-12 across 207064 bone-frames and restated by the BVH converter on this session's export -- 26 joints restating rest geometry. A frame is rotations plus one position, and this session is the one where that position matters most."
+      }
+    }
+  ]
+}
