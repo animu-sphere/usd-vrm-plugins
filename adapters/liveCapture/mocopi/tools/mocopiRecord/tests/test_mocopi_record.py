@@ -1177,10 +1177,11 @@ def check_export(tool: pathlib.Path, workspace: pathlib.Path,
             fail(f"{name}: the line does not say why the number is being "
                  f"reported here: {line[0]}")
 
-    # And it needs no session flag, although it *does* restart: its new session
-    # never declares a rig, so no frame of it is ever emitted and there is only
-    # one session to write. The capture below is the same event with the
-    # recovery attached, and the two must not behave alike.
+    # `frame-loss-60hz` above needed no session flag although it *does* restart:
+    # its new session never declares a rig, so no frame of it is emitted and
+    # there is only one session to write. This capture is the same event with
+    # the recovery attached, and the two must not behave alike — so where that
+    # one exported, this one is refused until a half is named.
     restart = workspace / "restart.trace"
     refused = expect_exit(tool, 1, "--inspect", capture("session-restart-60hz"),
                           "--export-trace", str(restart))
@@ -1247,6 +1248,35 @@ def check_export(tool: pathlib.Path, workspace: pathlib.Path,
     if "--export-trace" not in orphan.stderr:
         fail(f"--source-session without an export did not name what it needs: "
              f"{orphan.stderr}")
+
+    empty = expect_exit(tool, 2, "--inspect", capture("neutral-standing-60hz"),
+                        "--export-trace", "")
+    if "empty path" not in empty.stderr:
+        fail(f"an empty --export-trace was not refused as one: {empty.stderr}")
+
+    # The export must not be pointed at the capture it is reading. A recorded
+    # session cannot be re-recorded and has no upstream to fetch it back from,
+    # so this is the one mistake here that destroys something irreplaceable --
+    # and it exits 0 while printing a report about the datagrams unless
+    # something refuses it. Checked on a *copy*, and by comparing the bytes
+    # afterwards rather than by trusting the exit code: a refusal that still
+    # truncated the file would pass an exit-code-only check.
+    victim = workspace / "victim.mocopipackets"
+    original = pathlib.Path(capture("neutral-standing-60hz")).read_bytes()
+    for spelling in (str(victim), f"./{victim.name}"):
+        victim.write_bytes(original)
+        result = subprocess.run(
+            [str(tool), "--inspect", str(victim), "--export-trace", spelling],
+            text=True, encoding="utf-8", errors="replace", cwd=str(workspace),
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode == 0:
+            fail(f"exporting onto the capture ({spelling}) exited 0")
+        if victim.read_bytes() != original:
+            fail(f"exporting onto the capture ({spelling}) changed it: "
+                 f"{len(original)} bytes became {len(victim.read_bytes())}")
+        if "destroy" not in result.stderr:
+            fail(f"the refusal did not say what was at stake ({spelling}): "
+                 f"{result.stderr}")
 
     print("mocopi_record: a capture exports as a canonical trace, one trace per "
           "session, with the operator's provenance and a measured rate")

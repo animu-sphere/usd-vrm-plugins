@@ -83,9 +83,11 @@
 #include <csignal>
 #include <cstddef>
 #include <cstdio>
+#include <filesystem>
 #include <iostream>
 #include <map>
 #include <string>
+#include <system_error>
 #include <vector>
 
 namespace
@@ -155,6 +157,23 @@ bool
 ExportTrace(const mocopiRecordTool::Options& options,
             const vrmAdapterMocopi::PacketCapture& capture)
 {
+    // The second half of the refusal `ParseOptions` makes on the spelling. That
+    // one catches `--inspect x --export-trace x`; this catches the same file
+    // named two ways — `./x`, an absolute path, a symlink, a hard link — which
+    // no comparison of strings can see. `equivalent` answers only when both
+    // paths exist, and a trace path that does not exist yet cannot be the
+    // capture, so the error code is discarded rather than reported: "these are
+    // not the same file" and "one of them is not there" are the same answer
+    // here.
+    std::error_code aliased;
+    if (std::filesystem::equivalent(options.inspectPath,
+                                    options.traceExportPath, aliased)) {
+        std::cerr << "mocopi_record: " << options.traceExportPath
+                  << " is the capture being read, named differently; writing "
+                     "the trace there would destroy it\n";
+        return false;
+    }
+
     vrmAdapterMocopi::MocopiLiveSource source;
     // The capture's own peer, so a replayed session's diagnostics name what the
     // live one's would have named. A capture that recorded none falls back to

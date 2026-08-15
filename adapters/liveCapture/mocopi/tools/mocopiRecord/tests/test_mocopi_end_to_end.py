@@ -302,11 +302,15 @@ def drive(options, avatar: pathlib.Path, expected: set[str],
     # clip.
     said_unmapped = VRM_UNMAPPED_BONE in warnings
     if said_unmapped != expect_unmapped:
-        fail(f"{avatar.name}: motion_retarget "
-             f"{'warned about' if said_unmapped else 'did not warn about'} "
-             f"an unmapped {VRM_UNMAPPED_BONE}, and this rig "
-             f"{'has no such bone' if expect_unmapped else 'binds every bone '
-                'this device sends'}\n{warnings}")
+        # Built before the f-string rather than inside it: a replacement field
+        # that spans a line needs PEP 701 and so Python 3.12, and this file is
+        # run by whatever interpreter a developer's build tree found. CI pins
+        # 3.13 and would never have caught it.
+        said = "warned about" if said_unmapped else "did not warn about"
+        rig = ("has no such bone" if expect_unmapped
+               else "binds every bone this device sends")
+        fail(f"{avatar.name}: motion_retarget {said} an unmapped "
+             f"{VRM_UNMAPPED_BONE}, and this rig {rig}\n{warnings}")
 
     print(f"mocopi_record -> motion_capture -> motion_retarget: the two "
           f"committed sessions reach {avatar.name} and differ at "

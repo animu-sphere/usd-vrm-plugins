@@ -11,6 +11,13 @@ TraceCollector::Observe(
     const std::vector<vrmAdapterMocopi::MocopiFrame>& frames,
     const motion::MotionSourceMetadata& metadata)
 {
+    // Observing after `Close` re-opens it, so the derived fields are recomputed
+    // rather than left describing the frames this call did not know about. The
+    // tool observes then closes once and never comes back, so this costs
+    // nothing; what it buys is that the only way to read a stale `startTime` is
+    // to not call `Close` at all, which `GetSessions` already documents.
+    _closed = false;
+
     for (const vrmAdapterMocopi::MocopiFrame& frame : frames) {
         // A restart opens a session only when there is one to close. The
         // assembler never marks the first frame of a capture, but a collector
@@ -18,11 +25,13 @@ TraceCollector::Observe(
         // that changed.
         //
         // On this protocol a restart's flag lands on the first frame the new
-        // session *emits*, which can be up to 3.5 s after the restart was
-        // detected — the new session is dark until a skeleton packet declares
-        // its rig (FrameAssembler.h). That gap belongs to neither session and
-        // reaches no trace: the frames in it were refused, so nothing was
-        // delivered to observe.
+        // session *emits*, which is seconds after the restart was detected —
+        // the new session is dark until a skeleton packet declares its rig
+        // (FrameAssembler.h). **Measured at 3.8833 s on a real restart**
+        // (2026-08-15): 233 frames refused, and the new session's first emitted
+        // frame stamped exactly 233/60 s into its own stream clock. That gap
+        // belongs to neither session and reaches no trace: the frames in it
+        // were refused, so nothing was delivered to observe.
         if (_sessions.empty()
             || (frame.beginsNewSession && !_sessions.back().samples.empty())) {
             _sessions.emplace_back();
@@ -66,21 +75,20 @@ TraceCollector::Close()
     }
     _closed = true;
 
-    // A capture whose every datagram was refused — one recorded before its
-    // device declared a rig, for instance — leaves one opened and never filled
-    // session. An empty animation is not a recording.
+    // **No session here can be empty, so nothing is pruned.** The sibling
+    // collector opens with a prune and a sentence about a push that delivered
+    // nothing; this class cannot reach that state, because a session is created
+    // only in the iteration that immediately appends a sample to it. A capture
+    // whose every datagram was refused therefore produces no session at all
+    // rather than an empty one, which is the same outcome by a shorter route --
+    // and `GetSessions()` being empty is what `ExportTrace` already refuses on.
     //
-    // The hips row goes with it, in the same pass: the two vectors are indexed
-    // together by every caller, and pruning one of them alone would report the
-    // wrong session's travel against the right session's frames — a defect that
-    // shows up as a plausible number rather than as a crash.
-    for (std::size_t i = _sessions.size(); i-- != 0;) {
-        if (_sessions[i].samples.empty()) {
-            const auto offset = static_cast<std::ptrdiff_t>(i);
-            _sessions.erase(_sessions.begin() + offset);
-            _hips.erase(_hips.begin() + offset);
-        }
-    }
+    // Keeping the loop anyway would have cost more than the lines. The four
+    // vectors below are indexed together by every caller, and an erase that
+    // pruned two of them would leave the other two describing a different
+    // session -- a defect that shows up as a plausible travel distance against
+    // the wrong frames rather than as a crash. Unreachable code that has to
+    // stay correct in four places is worse than no code.
 
     for (motion::HumanoidAnimation& session : _sessions) {
         session.startTime = session.samples.front().timestamp;

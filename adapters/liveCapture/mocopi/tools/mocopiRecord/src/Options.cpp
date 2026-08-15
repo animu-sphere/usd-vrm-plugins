@@ -505,6 +505,18 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
                            error)) {
                 return false;
             }
+            // Present-but-empty is refused rather than ignored, which is the
+            // correction `SplitEndpoint` already carries for `--listen` and for
+            // the same reason. An empty path leaves this field
+            // indistinguishable from the flag never having been given, so the
+            // tool would read the capture, write nothing, and exit 0 — a silent
+            // default, which is the one outcome an argument parser must not
+            // reach because it cannot be told apart from being obeyed.
+            if (options->traceExportPath.empty()) {
+                *error = "--export-trace names the trace to write and was "
+                         "given an empty path";
+                return false;
+            }
         } else if (argument == "--source-session") {
             // The count's own minimum, so the range in the message is the range
             // enforced: a capture cannot hold a zeroth session, and the sibling
@@ -531,6 +543,30 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
     if (options->sourceSession != 0 && options->traceExportPath.empty()) {
         *error = "--source-session says which session to export, so it needs "
                  "--export-trace";
+        return false;
+    }
+
+    // The export must not be pointed at the capture it is reading, and what is
+    // at stake is why it is refused in two places rather than one. A capture
+    // recorded off a device is a session that cannot be re-recorded and, unlike
+    // every other corpus here, has no upstream to fetch it back from; the trace
+    // is derived from it and can be rebuilt from nothing else. Writing one over
+    // the other destroys the irreplaceable half to produce the reproducible
+    // half — and measured before it was fixed, it exited 0 and printed a report
+    // describing 43,499 bytes of datagrams that no longer existed.
+    //
+    // **This check is not sufficient on its own, and that was verified rather
+    // than assumed**: with only this one in place, `--export-trace
+    // ./capture.mocopipackets` against `--inspect capture.mocopipackets` still
+    // destroyed the file. Two spellings of one path are not one string.
+    // `ExportTrace` therefore asks the filesystem, which is the check that
+    // catches every spelling. This one stays because it is the one that can
+    // refuse at the prompt, before a byte is read, naming both flags.
+    if (!options->traceExportPath.empty()
+        && options->traceExportPath == options->inspectPath) {
+        *error = "--export-trace names the same path as --inspect, and writing "
+                 "the trace there would destroy the capture it was derived "
+                 "from";
         return false;
     }
 
