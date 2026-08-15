@@ -70,16 +70,24 @@
 // closing the socket underneath it, and that races the descriptor's reuse.
 #include "Options.h"
 #include "SessionReport.h"
+#include "TraceExport.h"
 
 #include "vrmAdapterMocopi/Diagnostics.h"
+#include "vrmAdapterMocopi/LiveSource.h"
 #include "vrmAdapterMocopi/PacketCapture.h"
 #include "vrmAdapterMocopi/UdpReceiver.h"
 
+#include "motionRuntime/CaptureTrace.h"
+
 #include <algorithm>
 #include <csignal>
+#include <cstddef>
 #include <cstdio>
+#include <filesystem>
 #include <iostream>
+#include <map>
 #include <string>
+#include <system_error>
 #include <vector>
 
 namespace
@@ -135,6 +143,166 @@ EndpointIsIpv6(const std::string& endpoint)
     return std::count(endpoint.begin(), endpoint.end(), ':') > 1;
 }
 
+// Decodes a capture and writes the canonical trace `--export-trace` asked for.
+// Returns false when nothing could be written, having said why; the caller
+// prints its report either way, for the reason `RunRecord` gives about the
+// capture file.
+//
+// **This runs a second pass over the same datagrams, and the repetition is the
+// point.** The report is derived from bytes alone, so nothing a decoder makes of
+// a packet can move a number in it — the rule this tool is built on, kept in the
+// one mode that decodes at all (TraceExport.h). Folding the two passes together
+// would save a loop and cost the only claim `--inspect` has.
+bool
+ExportTrace(const mocopiRecordTool::Options& options,
+            const vrmAdapterMocopi::PacketCapture& capture)
+{
+    // The second half of the refusal `ParseOptions` makes on the spelling. That
+    // one catches `--inspect x --export-trace x`; this catches the same file
+    // named two ways — `./x`, an absolute path, a symlink, a hard link — which
+    // no comparison of strings can see. `equivalent` answers only when both
+    // paths exist, and a trace path that does not exist yet cannot be the
+    // capture, so the error code is discarded rather than reported: "these are
+    // not the same file" and "one of them is not there" are the same answer
+    // here.
+    std::error_code aliased;
+    if (std::filesystem::equivalent(options.inspectPath,
+                                    options.traceExportPath, aliased)) {
+        std::cerr << "mocopi_record: " << options.traceExportPath
+                  << " is the capture being read, named differently; writing "
+                     "the trace there would destroy it\n";
+        return false;
+    }
+
+    vrmAdapterMocopi::MocopiLiveSource source;
+    // The capture's own peer, so a replayed session's diagnostics name what the
+    // live one's would have named. A capture that recorded none falls back to
+    // its path, which is what the corpus tests use.
+    source.SetSource(capture.peerEndpoint.empty() ? options.inspectPath
+                                                  : capture.peerEndpoint);
+
+    // The provenance the adapter refuses to invent, and the operator already
+    // stated. `MocopiFrameAssembler::GetSourceMetadata` leaves `provider` and
+    // `sourceId` empty because the only per-session identifier on this wire is
+    // `sndf/ipad`, which is unidentified and possibly device-identifying — and
+    // the sibling's header gives the general form of the rule: the application
+    // that filled the datagrams "is a thing only its operator knows", so
+    // guessing it would be provenance that reads as measured and is not. Here
+    // the operator did say, on the command line, and the capture header kept it.
+    // Copying it forward is not a guess; leaving the trace anonymous when the
+    // file beside it is not would be a loss for nothing.
+    motion::MotionSourceMetadata metadata = source.GetSourceMetadata();
+    metadata.provider = capture.sender;
+    metadata.sourceId = capture.sourceId;
+
+    mocopiRecordTool::TraceCollector trace;
+    std::vector<vrmAdapterMocopi::Diagnostic> log;
+    // First of each code, and how many there were. A frame short of one bone
+    // raises one diagnostic per frame, so a 2000-frame session with a sensor off
+    // would otherwise write 2000 lines over the report an operator ran this for.
+    std::map<vrmAdapterMocopi::DiagnosticCode, std::pair<std::string, std::size_t>>
+        seen;
+    for (const vrmAdapterMocopi::RecordedDatagram& datagram :
+         capture.datagrams) {
+        source.PushDatagram(datagram.bytes, datagram.receiveTime, &log);
+        trace.Observe(source.GetFramesFromLastPush(), metadata);
+        for (const vrmAdapterMocopi::Diagnostic& diagnostic : log) {
+            auto& entry = seen[diagnostic.code];
+            if (entry.second == 0) {
+                entry.first = vrmAdapterMocopi::FormatDiagnostic(diagnostic);
+            }
+            ++entry.second;
+        }
+        log.clear();
+    }
+    // There is no `Flush()` on this path and its absence is a measurement: one
+    // datagram is one frame, so a capture that ends holds no frame open
+    // (FrameAssembler.h). A reader arriving from `vmc_record` will look for the
+    // line that would go here.
+
+    trace.Close();
+    const std::vector<motion::HumanoidAnimation>& sessions = trace.GetSessions();
+
+    if (!options.quiet) {
+        for (const auto& entry : seen) {
+            std::cerr << "mocopi_record: " << entry.second.first;
+            if (entry.second.second > 1) {
+                std::cerr << " (and " << (entry.second.second - 1)
+                          << " more of "
+                          << vrmAdapterMocopi::DiagnosticCodeString(entry.first)
+                          << ")";
+            }
+            std::cerr << "\n";
+        }
+    }
+
+    if (sessions.empty()) {
+        std::cerr << "mocopi_record: nothing decoded into a frame, so there is "
+                     "no trace to write\n";
+        return false;
+    }
+
+    std::size_t index = 0;
+    if (options.sourceSession != 0) {
+        if (options.sourceSession > sessions.size()) {
+            std::cerr << "mocopi_record: --source-session "
+                      << options.sourceSession << ": this capture holds "
+                      << sessions.size() << " session(s)\n";
+            return false;
+        }
+        index = options.sourceSession - 1;
+    } else if (sessions.size() > 1) {
+        // Refused rather than resolved. Picking the first would silently discard
+        // a recording, and concatenating them would manufacture a continuity the
+        // device's own clock denies (TraceExport.h).
+        std::cerr << "mocopi_record: the source restarted, so this capture "
+                     "holds " << sessions.size()
+                  << " sessions whose stream clocks overlap; one trace is one "
+                     "session, so name the one to export with --source-session "
+                     "1.." << sessions.size() << "\n";
+        return false;
+    }
+
+    const motion::HumanoidAnimation& session = sessions[index];
+    if (!motion::WriteCaptureTraceFile(options.traceExportPath, session)) {
+        // The writer refuses before its first byte when a value cannot be
+        // spelled in that format, so a refusal here leaves the path untouched
+        // rather than half-written.
+        std::cerr << "mocopi_record: could not write " << options.traceExportPath
+                  << "\n";
+        return false;
+    }
+    if (!options.quiet) {
+        std::cerr << "mocopi_record: wrote " << session.samples.size()
+                  << " delivered frame(s)";
+        if (sessions.size() > 1) {
+            std::cerr << " of session " << (index + 1) << " of "
+                      << sessions.size();
+        }
+        std::cerr << " over " << (session.endTime - session.startTime)
+                  << " s at " << session.nominalFrameRate << " Hz to "
+                  << options.traceExportPath << "\n";
+
+        // The largest thing the trace does not carry, said where it is dropped
+        // rather than left for a reader to discover as an absence. Printed for
+        // every export, including the ones that stayed put: "0.02 m of hips
+        // path" is the useful answer for a session that did not travel, and a
+        // line that appeared only above some threshold would leave a reader
+        // unable to tell a still session from an unmeasured one.
+        const mocopiRecordTool::HipsMotion& hips = trace.GetHipsMotion()[index];
+        std::cerr << "mocopi_record: the trace carries no root motion, so "
+                  << hips.pathMetres << " m of hips path (" << hips.netMetres
+                  << " m net) stays in the capture";
+        if (hips.framesWithoutHips != 0) {
+            std::cerr << "; " << hips.framesWithoutHips
+                      << " frame(s) carried no hips record and are not in that "
+                         "sum";
+        }
+        std::cerr << "\n";
+    }
+    return true;
+}
+
 int
 RunInspect(const mocopiRecordTool::Options& options)
 {
@@ -157,12 +325,17 @@ RunInspect(const mocopiRecordTool::Options& options)
                                datagram.bytes.size(), datagram.receiveTime);
     }
 
+    bool exported = true;
+    if (!options.traceExportPath.empty()) {
+        exported = ExportTrace(options, capture);
+    }
+
     // A file has already stopped, and it stopped by ending. None of the live
     // reasons can be true of a replay, so this is not a default being left in
     // place — it is the only reason there is.
     report.SetStopReason(mocopiRecordTool::StopReason::EndOfCapture);
     report.Print(stdout, nullptr, &capture);
-    return 0;
+    return exported ? 0 : 1;
 }
 
 int

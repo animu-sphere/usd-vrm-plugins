@@ -1,0 +1,160 @@
+#usda 1.0
+(
+    doc = """A target rig for the mocopi end-to-end leg, and nothing else.
+
+    It is a *different* rig from the sibling adapter's fixture and from the
+    design fixture, for two reasons that are both about the source. The design
+    fixture at docs/design/fixtures/motion/avatar.usda carries four joints and
+    drives a spine; the VMC fixture carries one arm, because the committed VMC
+    session that moves is a left arm raise. This device sends **both sides of a
+    whole body** in every frame -- 27 joints, mapping onto 22 canonical bones --
+    and the committed capture that carries a rotation carries it on both upper
+    arms in opposite directions. A one-armed rig would bind half of it and
+    report the rest unbound, which is a true statement about the rig and no
+    statement at all about the adapter.
+
+    So this rig names every bone this device's map produces, and the bilateral
+    half is the point rather than symmetry for its own sake. `SkeletonMap.h`
+    records that a bilaterally symmetric rig cannot be asked which arm moved --
+    swapping the two sides in the map's table leaves every "both arms went down"
+    assertion passing, because the rest direction and the rotation swap
+    together. What catches a swap is asking which arm is *where*, so the two
+    arms below sit at +X and -X and the test names them apart.
+
+    +X is the body's left, which is this device's basis and this repository's
+    canonical one alike (measured 2026-08-12; MotionPacket.h).
+
+    The joint names disagree with the humanoid vocabulary on purpose, the way
+    the design fixture's do. A binding comes from the `vrm:humanBones:*`
+    attributes below and never from a name, so a rig whose joints happened to be
+    called `hips` and `leftUpperArm` would let a name heuristic pass this test
+    without anyone noticing one had appeared.
+
+    The mapping lives on the stage rather than in a --humanoid-map file because
+    that is the path a real VRM takes: the importer authors these attributes,
+    and motion_retarget reads them as plain attributes without linking the
+    vrmSchema bundle.
+    """
+    defaultPrim = "Avatar"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Scope "Avatar"
+{
+    # One per canonical bone `MocopiSkeletonMap` produces from the measured
+    # 27-joint rig. Whole joint paths, because that is what a UsdSkel joint token
+    # is.
+    custom token vrm:humanBones:hips = "Root/Hip"
+    custom token vrm:humanBones:spine = "Root/Hip/Spine1"
+    custom token vrm:humanBones:chest = "Root/Hip/Spine1/Chest1"
+    custom token vrm:humanBones:upperChest = "Root/Hip/Spine1/Chest1/ChestUp"
+    custom token vrm:humanBones:neck = "Root/Hip/Spine1/Chest1/ChestUp/NeckJ"
+    custom token vrm:humanBones:head = "Root/Hip/Spine1/Chest1/ChestUp/NeckJ/Skull"
+    custom token vrm:humanBones:leftShoulder = "Root/Hip/Spine1/Chest1/ChestUp/ClavL"
+    custom token vrm:humanBones:leftUpperArm = "Root/Hip/Spine1/Chest1/ChestUp/ClavL/ArmUpL"
+    custom token vrm:humanBones:leftLowerArm = "Root/Hip/Spine1/Chest1/ChestUp/ClavL/ArmUpL/ArmLoL"
+    custom token vrm:humanBones:leftHand = "Root/Hip/Spine1/Chest1/ChestUp/ClavL/ArmUpL/ArmLoL/PalmL"
+    custom token vrm:humanBones:rightShoulder = "Root/Hip/Spine1/Chest1/ChestUp/ClavR"
+    custom token vrm:humanBones:rightUpperArm = "Root/Hip/Spine1/Chest1/ChestUp/ClavR/ArmUpR"
+    custom token vrm:humanBones:rightLowerArm = "Root/Hip/Spine1/Chest1/ChestUp/ClavR/ArmUpR/ArmLoR"
+    custom token vrm:humanBones:rightHand = "Root/Hip/Spine1/Chest1/ChestUp/ClavR/ArmUpR/ArmLoR/PalmR"
+    custom token vrm:humanBones:leftUpperLeg = "Root/Hip/LegUpL"
+    custom token vrm:humanBones:leftLowerLeg = "Root/Hip/LegUpL/LegLoL"
+    custom token vrm:humanBones:leftFoot = "Root/Hip/LegUpL/LegLoL/FootL"
+    custom token vrm:humanBones:leftToes = "Root/Hip/LegUpL/LegLoL/FootL/ToeL"
+    custom token vrm:humanBones:rightUpperLeg = "Root/Hip/LegUpR"
+    custom token vrm:humanBones:rightLowerLeg = "Root/Hip/LegUpR/LegLoR"
+    custom token vrm:humanBones:rightFoot = "Root/Hip/LegUpR/LegLoR/FootR"
+    custom token vrm:humanBones:rightToes = "Root/Hip/LegUpR/LegLoR/FootR/ToeR"
+    rel vrm:skeleton = </Avatar/TargetSkeleton>
+
+    def Skeleton "TargetSkeleton" (
+        apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        uniform token[] joints = [
+            "Root",
+            "Root/Hip",
+            "Root/Hip/Spine1",
+            "Root/Hip/Spine1/Chest1",
+            "Root/Hip/Spine1/Chest1/ChestUp",
+            "Root/Hip/Spine1/Chest1/ChestUp/NeckJ",
+            "Root/Hip/Spine1/Chest1/ChestUp/NeckJ/Skull",
+            "Root/Hip/Spine1/Chest1/ChestUp/ClavL",
+            "Root/Hip/Spine1/Chest1/ChestUp/ClavL/ArmUpL",
+            "Root/Hip/Spine1/Chest1/ChestUp/ClavL/ArmUpL/ArmLoL",
+            "Root/Hip/Spine1/Chest1/ChestUp/ClavL/ArmUpL/ArmLoL/PalmL",
+            "Root/Hip/Spine1/Chest1/ChestUp/ClavR",
+            "Root/Hip/Spine1/Chest1/ChestUp/ClavR/ArmUpR",
+            "Root/Hip/Spine1/Chest1/ChestUp/ClavR/ArmUpR/ArmLoR",
+            "Root/Hip/Spine1/Chest1/ChestUp/ClavR/ArmUpR/ArmLoR/PalmR",
+            "Root/Hip/LegUpL",
+            "Root/Hip/LegUpL/LegLoL",
+            "Root/Hip/LegUpL/LegLoL/FootL",
+            "Root/Hip/LegUpL/LegLoL/FootL/ToeL",
+            "Root/Hip/LegUpR",
+            "Root/Hip/LegUpR/LegLoR",
+            "Root/Hip/LegUpR/LegLoR/FootR",
+            "Root/Hip/LegUpR/LegLoR/FootR/ToeR"]
+
+        # The same chain accumulated into world space. UsdSkel warns without it
+        # and resolves anyway, which is how the design fixture gets away with
+        # omitting it -- but a warning printed by every run of this test is a
+        # line a reader has to learn to ignore, and those are expensive.
+        uniform matrix4d[] bindTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.95, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.05, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.18, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.3, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.45, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.55, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.05, 1.4, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.18, 1.4, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.45, 1.4, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.7, 1.4, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.05, 1.4, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.18, 1.4, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.45, 1.4, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.7, 1.4, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.09, 0.92, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.09, 0.5, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.09, 0.08, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.09, 0.02, 0.12, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.09, 0.92, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.09, 0.5, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.09, 0.08, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.09, 0.02, 0.12, 1))]
+
+        # A rest pose with real offsets rather than a stack of identities: the
+        # root-motion delta is applied relative to each rig's own rest, so a rig
+        # whose hips sit at the origin would not exercise it. Parent-relative,
+        # which is what makes the two arms mirror images in this list and not
+        # merely in the world one above.
+        uniform matrix4d[] restTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.95, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.13, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.12, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.15, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.05, 0.1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.13, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.27, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.25, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.05, 0.1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.13, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.27, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.25, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.09, -0.03, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.42, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.42, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.06, 0.12, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.09, -0.03, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.42, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.42, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.06, 0.12, 1))]
+    }
+}

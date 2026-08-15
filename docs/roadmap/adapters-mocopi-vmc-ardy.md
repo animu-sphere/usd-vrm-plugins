@@ -656,9 +656,32 @@ here as the first data point this section has.
 It is also the *weakest* form of the comparison, and calling it more would be a
 mistake. A rest pose is a calibration the application computes once; agreeing
 about it says nothing about whether the two paths agree about a session's
-movement, its timing, or what each drops. The comparison this section is for
-still needs **one physical session captured both ways at once**, and still owes
-the list of what each path cannot carry.
+movement, its timing, or what each drops.
+
+**The real comparison happened on 2026-08-15, on two of the three paths**
+([report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.md)). One
+physical session was recorded as UDP and exported as BVH over the same window,
+and both halves were driven to a canonical clip and compared there.
+
+- **They agree.** Both reach the same 22 canonical bones with neither carrying
+  one the other lacks; the median of the per-bone median differences is
+  **0.084°**, and no bone's median exceeds 0.13°.
+- **The residual is timing, shown rather than asserted** — which is what this
+  section asks for. Over 19759 bone-samples where the bone was turning slower
+  than 0.05°/frame the median difference is **0.0000°**; the twenty worst
+  samples in the whole comparison are all in the first 13 frames and each
+  implies the same 3.7–4.4 frame lag. A residual that vanishes when the body is
+  still and grows with speed is a sampling instant, not a decode.
+- **The two clocks are not one clock**, which the alignment had to discover
+  before it could say anything else: 3 frames of slip over 1800, about
+  **1667 ppm**, between one application's two outputs of one session.
+- **The list this section exists for is written**, in that report's §4. The
+  entry that matters is the body's travel: **4.81 m of hips path** reaches the
+  recorded path and nothing at all reaches the live one, because no layer there
+  composes a `RootMotion` while §5.2 is open.
+
+**A VMC relay was not recorded**, so the third path is still unobserved and this
+comparison is two of three.
 
 ## 10. Milestones
 
@@ -1599,6 +1622,59 @@ original order that was never about the transport.
   identically leaves that bone still agreeing with its own rest offset. "Only the
   root translates" arrived at from the other direction, by a probe that expected
   to fail.
+
+- ✅ **The way out of the adapter, and the chain closing on a rig**
+  (2026-08-15). `mocopi_record --export-trace` writes what the adapter
+  delivered as a `motion-capture-trace`, and `mocopi_record_endToEnd` drives two
+  committed captures through **unchanged** `motion_capture` and
+  `motion_retarget` onto a fixture rig and onto `Seed-san.vrm` — 2 of 128 joints
+  differing on the released model, checked through a `UsdSkelSkeletonQuery` by
+  name. What is left in the release's live line is now the word **device** alone:
+  the path exists and is exercised, by bytes that never met a sensor.
+
+  **The export runs against a file, and that is this tool's inversion of the
+  sibling's.** `vmc_record` exports from a live session as well; this one
+  accepts `--export-trace` with `--inspect` only, because a recording here runs
+  no decoder at all and that property is what everything above it was ordered
+  by. It also keeps `Options.h`'s statement true — there is no `--max-frames`
+  here "and there cannot be", since this tool accumulates datagrams alone, where
+  a live export would accumulate a 1320-byte pose per frame beside the capture
+  the datagram bound was sized for. The cost is one extra command; what it buys
+  is that an exported trace is a pure function of committed bytes.
+
+  **The end-to-end asks a different question from the sibling's, and the corpus
+  is why.** No committed mocopi capture moves — they were generated to pin a
+  decode path, so each is a held pose — so where `vmc_record_endToEnd` asks
+  which joints moved during a session, this bakes *two* sessions onto one rig
+  and asks which joints they differ by. That turned out to need a second
+  assertion nobody would have written from the plan: `arms-lowered-60hz` rotates
+  **both** upper arms, so a side swap anywhere in the path leaves the differing
+  set identical, and only the sign of the rotation tells the two apart. It is
+  `SkeletonMap.h`'s "a bilaterally symmetric rig cannot be asked which arm
+  moved" reaching the end of the chain, and it was found by writing the check
+  and then crossing the fixture's own bindings to watch it fail.
+
+  Two things the run measured rather than predicted. A trace **cannot carry the
+  device**: `mocopi-packet-capture` has a `device` header key and
+  `motion-capture-trace` has three provenance keys, none of them that — so the
+  native path's claim to keep device state a relay drops holds as far as the
+  capture and stops at the trace, which is one line for §9.6's "what each path
+  cannot carry". **The export now measures the larger loss and prints it**: the
+  hips path and its net displacement, in metres, said at the point they are
+  dropped rather than left discoverable as an absence. Both numbers, because a
+  walk out and back makes them disagree — a real session travelled 4.8 m and
+  displaced 0.69 m, and the second alone would have called it stationary. It is
+  a measurement and not a decision; nothing composes a `RootMotion`, and the day
+  §5.2 is answered this is the number that stops being dropped. And `motion_retarget` names `upperChest` on stderr for
+  `Seed-san.vrm`, the incomplete-humanoid finding the recorded track hit in
+  August, now reached from the live side by a different producer and pinned by
+  this test in both directions — the fixture rig binds all 22 bones and must
+  *not* warn.
+
+  Two new CTest names, 93 green in the workspace, and both verified negatively:
+  disabling the provenance copy or the session split turns `_export` red, and
+  crossing the fixture avatar's two arm bindings turns `_endToEnd` red on the
+  sign check while the joint-set comparison it runs first stays green.
 
 **The wire format is not documented, and the evidence path is a sender rather
 than a device** (established 2026-08-09). The vendor states the transport and

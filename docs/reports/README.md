@@ -11,6 +11,7 @@ record of adopting it in public is worth as much as the plugins.
 | --- | --- |
 | [ost/](ost/) | The `ost` dogfooding series — one report per version exercised, from pre-0.3 onward. Append-only; the newest report carries the live upstream ask list. |
 | [openusd/](openusd/) | Audits of a specific OpenUSD release, written when this project has to build on a new or unstable part of it. |
+| [motion/](motion/) | Sessions in front of real hardware, and what they measured. A device is needed once per behavior rather than once per run, so what a session produces is a capture, a manifest and a report — never a green tick, since the hardware lane never gates a pull request. |
 | [delivery-history.md](delivery-history.md) | The granular pre-`v0.1.0` delivery log: what shipped, retained from the original roadmap. |
 
 ## What belongs where

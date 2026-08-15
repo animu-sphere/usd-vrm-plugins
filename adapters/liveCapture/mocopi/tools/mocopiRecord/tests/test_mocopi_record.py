@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-"""`mocopi_record` end to end, in three parts the adapter already splits things into.
+"""`mocopi_record` end to end, in four parts the adapter already splits things into.
 
 **inspect** reads captures this file authors and checks the report against counts
 it states. The captures are written here rather than taken from a corpus for a
@@ -25,6 +25,12 @@ recorder this adapter must not have.
 **ipv6** checks the one warning that needs an address family a runner may not
 have. It exits 77 -- ctest's skip code -- rather than passing quietly, so
 "could not check this here" is a word in the summary.
+
+**export** reads the committed captures and checks what comes out of
+`--export-trace`: the frames, the provenance, the measured rate, and the two
+refusals a restarted capture earns. It is the only mode with a corpus, and the
+only one that decodes anything -- the other three describe an envelope, and this
+one is where the adapter's whole stack runs against bytes it did not choose.
 """
 
 from __future__ import annotations
@@ -1017,11 +1023,273 @@ def check_ipv6(tool: pathlib.Path, workspace: pathlib.Path) -> int:
     return 0
 
 
+def read_trace(path: pathlib.Path) -> tuple[dict[str, str],
+                                            list[tuple[float, dict]]]:
+    """A `motion-capture-trace`, parsed here rather than by the library.
+
+    The same arrangement as `read_capture` above and for the same reason: the
+    format is line-oriented text so that a second implementation is thirty lines
+    long, and a check that used the writer's own reader would agree with it
+    about a file neither of them should have produced.
+    """
+    header: dict[str, str] = {}
+    frames: list[tuple[float, dict]] = []
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines or not lines[0].startswith("!motion-capture-trace"):
+        fail(f"{path.name} does not open with the format's magic: "
+             f"'{lines[0] if lines else ''}'")
+    for line in lines[1:]:
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        key, _, rest = line.partition(" ")
+        rest = rest.strip()
+        if key == "t":
+            frames.append((float(rest), {}))
+        elif key == "b":
+            if not frames:
+                fail(f"{path.name}: a bone line before any frame")
+            name, *numbers = rest.split()
+            frames[-1][1][name] = tuple(float(n) for n in numbers[:4])
+        elif key in ("root", "e", "contacts"):
+            continue
+        elif not frames:
+            # The three provenance keys and `frameRate`, which take the rest of
+            # the line.
+            header[key] = rest
+        else:
+            fail(f"{path.name}: unexpected line '{line}'")
+    return header, frames
+
+
+def check_export(tool: pathlib.Path, workspace: pathlib.Path,
+                 corpus: pathlib.Path) -> None:
+    """`--export-trace`, against the committed captures.
+
+    This is the one mode that reads the corpus, and the one that needs to.
+    Every other check in this file authors its own bytes because the tool has no
+    opinion about them; an export decodes, so its fixtures have to be things the
+    decoder can decode, and inventing those in Python would be a second packet
+    generator disagreeing with `tools/generate_packets.py` at some point nobody
+    would notice.
+    """
+    def capture(name: str) -> str:
+        return str(corpus / f"{name}.mocopipackets")
+
+    # A capture of one session exports without being asked which, which is every
+    # capture the source did not restart during.
+    neutral = workspace / "neutral.trace"
+    run_tool(tool, "--inspect", capture("neutral-standing-60hz"),
+             "--export-trace", str(neutral))
+    header, frames = read_trace(neutral)
+    if len(frames) != 5:
+        fail(f"neutral-standing-60hz exported {len(frames)} frame(s) of 5")
+    if header.get("protocol") != "mocopi":
+        fail(f"the trace does not name this protocol: {header}")
+    # Provenance the *adapter* leaves empty — this protocol carries no publishable
+    # per-session identifier — filled from the capture header, where an operator
+    # put it. A trace that went out anonymous beside a capture that is not would
+    # be a loss for nothing.
+    if header.get("sourceId") != "neutral-standing-01":
+        fail(f"the capture's --source-id did not reach the trace: {header}")
+    if header.get("provider") != "example.synthetic":
+        fail(f"the capture's --sender did not reach the trace: {header}")
+    # Every frame this device sends carries the sender's own clock, so the trace
+    # starts where the stream did rather than where the recording did.
+    if frames[0][0] != 0.0:
+        fail(f"the first exported frame is stamped {frames[0][0]}, not the "
+             f"stream clock's own origin")
+
+    # Rotation survives the crossing. A frame count says a file was written;
+    # this says the file is not a rest pose, which is what a mapping that lost
+    # its rotations would write and what a count would pass. The claim is the
+    # capture's own — the two upper arms about 85 degrees apart in the third
+    # imaginary component, in *opposite* directions — so a component reorder or
+    # a mirrored basis fails here as well as at the decoder.
+    lowered = workspace / "arms-lowered.trace"
+    run_tool(tool, "--inspect", capture("arms-lowered-60hz"),
+             "--export-trace", str(lowered))
+    _, lowered_frames = read_trace(lowered)
+    if len(lowered_frames) != 3:
+        fail(f"arms-lowered-60hz exported {len(lowered_frames)} frame(s) of 3")
+    left = lowered_frames[0][1].get("leftUpperArm")
+    right = lowered_frames[0][1].get("rightUpperArm")
+    if left is None or right is None:
+        fail(f"the exported pose carries no upper arms: "
+             f"{sorted(lowered_frames[0][1])}")
+    if abs(left[3]) < 0.5:
+        fail(f"leftUpperArm reached the trace as {left}, which is not the "
+             f"lowered arm this capture pins")
+    if abs(left[3] + right[3]) > 1e-6 or abs(left[0] - right[0]) > 1e-6:
+        fail(f"the two upper arms are not mirrored in the trace: {left} and "
+             f"{right}")
+
+    # And the one thing that deliberately does *not* cross. The hips
+    # translation is the only one this rig sends and no layer has been willing
+    # to call it root motion, so the release's open record reaches the artifact:
+    # a trace with a `root` line in it would mean some layer answered §5.2 by
+    # writing code.
+    if any(line.startswith("root ")
+           for line in lowered.read_text(encoding="utf-8").splitlines()):
+        fail("the exported trace carries root motion, which no layer on this "
+             "path is entitled to compose (roadmap §5.2)")
+
+    # The declared rate is **measured**, not this device's constant 60 Hz. This
+    # capture is one the transport thinned, so a writer that declared what the
+    # protocol usually does would publish a rate its own samples deny.
+    thinned = workspace / "frame-loss.trace"
+    run_tool(tool, "--inspect", capture("frame-loss-60hz"),
+             "--export-trace", str(thinned))
+    thinned_header, thinned_frames = read_trace(thinned)
+    if len(thinned_frames) != 5:
+        fail(f"frame-loss-60hz exported {len(thinned_frames)} frame(s) of 5")
+    if abs(float(thinned_header.get("frameRate", "0")) - 60.0) < 1.0:
+        fail(f"a capture the transport thinned declared "
+             f"{thinned_header.get('frameRate')} Hz, which is the protocol's "
+             f"nominal rate rather than this recording's")
+
+    # The hips path, reported where it is dropped. This is the largest thing the
+    # trace does not carry and the one the release is arguing about, so an
+    # export that stayed silent about it would leave the loss discoverable only
+    # as an absence. Checked on two captures that must disagree: an all-identity
+    # rig has nowhere to travel, and the one carrying a root move does.
+    for name, moves in (("neutral-standing-60hz", False),
+                        ("arms-lowered-60hz", True)):
+        result = subprocess.run(
+            [str(tool), "--inspect", capture(name), "--export-trace",
+             str(workspace / f"hips-{name}.trace")],
+            text=True, encoding="utf-8", errors="replace",
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode != 0:
+            fail(f"exporting {name} exited {result.returncode}\n{result.stderr}")
+        line = [l for l in result.stderr.splitlines() if "hips path" in l]
+        if len(line) != 1:
+            fail(f"{name}: expected one hips line on stderr, got {line}")
+        # Parsed rather than pattern-matched, because the claim is about the
+        # number: "0 m of hips path" and "4.8 m" are the same string shape.
+        metres = float(line[0].split(" so ")[1].split(" m of")[0])
+        if moves and metres <= 0.0:
+            fail(f"{name} carries a root move and reported {metres} m of path")
+        if not moves and metres != 0.0:
+            fail(f"{name} is identity throughout and reported {metres} m of "
+                 f"path; that capture cannot travel")
+        if "carries no root motion" not in line[0]:
+            fail(f"{name}: the line does not say why the number is being "
+                 f"reported here: {line[0]}")
+
+    # `frame-loss-60hz` above needed no session flag although it *does* restart:
+    # its new session never declares a rig, so no frame of it is emitted and
+    # there is only one session to write. This capture is the same event with
+    # the recovery attached, and the two must not behave alike — so where that
+    # one exported, this one is refused until a half is named.
+    restart = workspace / "restart.trace"
+    refused = expect_exit(tool, 1, "--inspect", capture("session-restart-60hz"),
+                          "--export-trace", str(restart))
+    if restart.exists():
+        fail("a refused export left a file behind")
+    if "--source-session 1..2" not in refused.stderr:
+        fail(f"the refusal did not name the sessions to choose between: "
+             f"{refused.stderr}")
+
+    run_tool(tool, "--inspect", capture("session-restart-60hz"),
+             "--export-trace", str(restart), "--source-session", "1")
+    _, first = read_trace(restart)
+    second_path = workspace / "restart-2.trace"
+    run_tool(tool, "--inspect", capture("session-restart-60hz"),
+             "--export-trace", str(second_path), "--source-session", "2")
+    _, second = read_trace(second_path)
+    if (len(first), len(second)) != (3, 2):
+        fail(f"the restarted capture's sessions exported "
+             f"{len(first)} and {len(second)} frame(s), not 3 and 2")
+    # The reason one trace is one session, as a measurement rather than as a
+    # sentence: the second session's clock starts *inside* the first's, so a
+    # spliced file would go backwards in the middle and replay as a session that
+    # stalls at the discontinuity.
+    if second[0][0] >= first[-1][0]:
+        fail(f"the second session starts at {second[0][0]} and the first ends "
+             f"at {first[-1][0]}; these do not overlap, so this capture no "
+             f"longer demonstrates why one trace is one session")
+
+    out_of_range = expect_exit(tool, 1, "--inspect",
+                               capture("session-restart-60hz"),
+                               "--export-trace", str(workspace / "no.trace"),
+                               "--source-session", "3")
+    if "holds 2 session(s)" not in out_of_range.stderr:
+        fail(f"asking for a session that is not there did not say how many "
+             f"there are: {out_of_range.stderr}")
+
+    # A capture whose every frame was refused decodes into no session at all,
+    # and writes nothing rather than an empty trace. `refused-bones-60hz`
+    # carries no skeleton packet on purpose, so nothing in it can be mapped.
+    empty = workspace / "empty.trace"
+    nothing = expect_exit(tool, 1, "--inspect", capture("refused-bones-60hz"),
+                          "--export-trace", str(empty))
+    if empty.exists():
+        fail("a capture that decoded into no frame still wrote a trace")
+    if "nothing decoded into a frame" not in nothing.stderr:
+        fail(f"a capture that decoded into no frame did not say so: "
+             f"{nothing.stderr}")
+
+    # The line this tool is built on, enforced at the prompt. A recording runs no
+    # decoder, so there is nothing live for this flag to read — and the refusal
+    # is a parse failure (2) rather than a session that starts and then declines.
+    live = expect_exit(tool, 2, "--output",
+                       str(workspace / "never.mocopipackets"),
+                       "--export-trace", str(workspace / "never.trace"))
+    if "--inspect" not in live.stderr:
+        fail(f"the live refusal did not say where the flag belongs: "
+             f"{live.stderr}")
+    if (workspace / "never.mocopipackets").exists():
+        fail("a refused live export opened a session anyway")
+
+    orphan = expect_exit(tool, 2, "--inspect",
+                         capture("neutral-standing-60hz"),
+                         "--source-session", "1")
+    if "--export-trace" not in orphan.stderr:
+        fail(f"--source-session without an export did not name what it needs: "
+             f"{orphan.stderr}")
+
+    empty = expect_exit(tool, 2, "--inspect", capture("neutral-standing-60hz"),
+                        "--export-trace", "")
+    if "empty path" not in empty.stderr:
+        fail(f"an empty --export-trace was not refused as one: {empty.stderr}")
+
+    # The export must not be pointed at the capture it is reading. A recorded
+    # session cannot be re-recorded and has no upstream to fetch it back from,
+    # so this is the one mistake here that destroys something irreplaceable --
+    # and it exits 0 while printing a report about the datagrams unless
+    # something refuses it. Checked on a *copy*, and by comparing the bytes
+    # afterwards rather than by trusting the exit code: a refusal that still
+    # truncated the file would pass an exit-code-only check.
+    victim = workspace / "victim.mocopipackets"
+    original = pathlib.Path(capture("neutral-standing-60hz")).read_bytes()
+    for spelling in (str(victim), f"./{victim.name}"):
+        victim.write_bytes(original)
+        result = subprocess.run(
+            [str(tool), "--inspect", str(victim), "--export-trace", spelling],
+            text=True, encoding="utf-8", errors="replace", cwd=str(workspace),
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode == 0:
+            fail(f"exporting onto the capture ({spelling}) exited 0")
+        if victim.read_bytes() != original:
+            fail(f"exporting onto the capture ({spelling}) changed it: "
+                 f"{len(original)} bytes became {len(victim.read_bytes())}")
+        if "destroy" not in result.stderr:
+            fail(f"the refusal did not say what was at stake ({spelling}): "
+                 f"{result.stderr}")
+
+    print("mocopi_record: a capture exports as a canonical trace, one trace per "
+          "session, with the operator's provenance and a measured rate")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tool", required=True, type=pathlib.Path)
     parser.add_argument("--mode", required=True,
-                        choices=("inspect", "loopback", "ipv6"))
+                        choices=("inspect", "loopback", "ipv6", "export"))
+    parser.add_argument("--corpus", type=pathlib.Path,
+                        help="the adapter's committed captures; --mode export "
+                             "reads them and no other mode has one")
     arguments = parser.parse_args()
 
     # Every file this test writes lands here and leaves with it, including the
@@ -1038,6 +1306,11 @@ def main() -> int:
             check_stop_reasons(arguments.tool, workspace)
             check_peer_count(arguments.tool, workspace)
             check_silence(arguments.tool, workspace)
+        elif arguments.mode == "export":
+            if arguments.corpus is None:
+                fail("--mode export reads the adapter's committed captures and "
+                     "needs --corpus")
+            check_export(arguments.tool, workspace, arguments.corpus)
         else:
             return check_ipv6(arguments.tool, workspace)
     return 0
