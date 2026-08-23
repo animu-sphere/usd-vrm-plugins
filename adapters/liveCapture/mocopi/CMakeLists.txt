@@ -14,7 +14,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../../VERSION")
          _vrm_adapter_mocopi_version LIMIT_COUNT 1)
     string(STRIP "${_vrm_adapter_mocopi_version}" _vrm_adapter_mocopi_version)
 else()
-    set(_vrm_adapter_mocopi_version "0.6.0")
+    set(_vrm_adapter_mocopi_version "0.7.0")
 endif()
 
 project(vrmAdapterMocopi

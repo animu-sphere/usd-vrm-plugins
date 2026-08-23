@@ -13,6 +13,8 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-08-24
+
 ### Added
 
 - **A `.vrma` clip's expressions now reach the stage.** VRMA declares an
@@ -675,16 +677,43 @@ Current schema contract version: **1**.
 ### Known issues
 
 - **A packaged product carries no producer profiles, so a converter unpacked
-  from one refuses every file it is given.** Measured, not suspected: the
-  `motion_bvh` member of a `--workspace --product` archive is exactly
+  from one refuses every file it is given.** Measured, not suspected, and
+  re-measured against `ost` 0.22.2 during release preparation: the `motion_bvh`
+  member of a `--workspace --product` archive is exactly
   `bin/motion_bvh_inspect.exe`, `bin/motion_bvh_convert.exe` and
-  `openstrata.tool.yaml`. `ost` 0.21.0 packages a tool member out of the
-  `directories:` its descriptor declares and has no notion of a data-only
-  member, so `share/usd-vrm-plugins/profiles/motion/` has no way into the
-  product. A plain `cmake --install` places them correctly and is unaffected.
-  This blocks BVH-3's artifact-only smoke and is an `ost` ask rather than
-  something a `--profile-dir` flag closes — "works if you pass a flag naming a
-  directory the artifact does not contain" is not an artifact-only smoke.
+  `openstrata.tool.yaml`, and the packaged converter refuses a real capture by
+  naming the two directories it looked in — the first of which is the
+  `share/usd-vrm-plugins/profiles/motion/` an installed prefix would have. A
+  plain `cmake --install` places them correctly and is unaffected. This is why
+  *"both paths run from release artifacts alone, profiles included"* is recorded
+  as unmet in [v0.7.0](docs/releases/v0.7.0.md) rather than worked around.
+
+  **The workaround exists and was rejected on ownership.**
+  `directories: [bin, share]` does stage a member-root `share/` tree into the
+  archive — measured, then reverted — but `directories:` names subdirectories of
+  the *member root*, so it only works by copying `profiles/motion/` under
+  `tools/motionBvh/`. The profiles are the layer's data, not that tool's: a
+  second consumer means a second copy, and the copy that ships stops being the
+  file `scripts/check_motion_profiles.py` validates. The ask is a data-only
+  member, filed as
+  [ost report 35](docs/reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md)
+  §4. A `--profile-dir` flag does not close it either — "works if you pass a
+  flag naming a directory the artifact does not contain" is not an
+  artifact-only smoke.
+
+- **The aggregate product now contains both adapters' CLIs, which
+  [WORKSPACE.md §5](docs/architecture/WORKSPACE.md) says it never should.**
+  `ost` 0.22.2 discovers a tool descriptor under
+  `adapters/<group>/<name>/tools/<tool>/`, so a `--workspace --product` run
+  reports **9** members where v0.6.0 shipped 7: `mocopi_record` and
+  `vmc_record` joined without any descriptor in this repository changing. The
+  practical effect is welcome — it is what puts the live path's recorder in an
+  artifact at all — but it is a boundary decided by a discovery rule rather than
+  declared by either side, and nothing in `openstrata.tool.yaml` or
+  `openstrata.toml` can currently say "not a product member". §5 records the
+  measurement; the ask is
+  [ost report 35](docs/reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md)
+  §3.
 
 - **A root-scope test guarded on `Python3_Interpreter_FOUND` after
   `find_package(pxr)` silently never registers.** `pxrConfig.cmake` runs in the

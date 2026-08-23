@@ -8,6 +8,7 @@ rewritten; new work goes to a new record. Active, incomplete work lives in the
 
 | Version | Record | Theme |
 | --- | --- | --- |
+| v0.7.0 | [v0.7.0.md](v0.7.0.md) | mocopi live input and generic BVH recorded-motion ingestion: two surfaces of one capture product reach a retargeted `UsdSkelAnimation` through an unchanged `motion_retarget` |
 | v0.6.0 | [v0.6.0.md](v0.6.0.md) | VMC input: OSC-over-UDP packets flow through a bounded, recorded, testable adapter into the existing live-capture path |
 | v0.5.0 | [v0.5.0.md](v0.5.0.md) | Live capture: a generic `LiveCaptureSource` + the `motion_capture` CLI feed the unchanged retarget core; the motion layer gets its first CI lane |
 | v0.4.0 | [v0.4.0.md](v0.4.0.md) | Offline retarget: `motionRuntime` + `vrmRetarget` + the `motion_retarget` CLI; a `.vrma` clip finally plays back on a real avatar |

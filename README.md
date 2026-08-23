@@ -5,8 +5,9 @@ OpenUSD plugins for [VRM](https://vrm.dev/en/) avatars.
 This repository is an OpenUSD plugin **workspace**: it separates schema
 definitions, file-format import, package resolution, and shared GLB container
 parsing into independently buildable, independently testable components. The
-v0.6.0 release adds the VMC input adapter and its `vmc_record` CLI to the
-workspace's four plugin bundles, five shared libraries, and three CLIs.
+v0.7.0 release adds the mocopi live-input adapter and a generic BVH
+recorded-motion pipeline, bringing the workspace to four plugin bundles, eight
+shared libraries, and six CLIs.
 
 The importer reads VRM 0.x and 1.0, normalizes the differences away, and authors
 a static USD stage. It **never evaluates or simulates** — that boundary is the
@@ -15,7 +16,7 @@ project's central design decision, and it is described below.
 > **Built with [OpenStrata](https://github.com/animu-sphere/open-strata).**
 > `usd-vrm-plugins` is OpenStrata's first external adopter, and the `ost` CLI is
 > how this workspace is built, tested, packaged, and released. The record of
-> adopting it — every version from pre-0.3 to 0.19.0, including what broke — is
+> adopting it — every version from pre-0.3 to 0.22.2, including what broke — is
 > published in [docs/reports/ost/](docs/reports/ost/). The repo is
 > **dual-mode**: everything also builds with plain CMake against any OpenUSD
 > install, with no `ost` involved.
@@ -36,11 +37,12 @@ project's central design decision, and it is described below.
 | [`motion_capture`](tools/motionCapture) | CLI executable | Replays a recorded capture session into a semantic clip the above consumes unchanged | v0.5.0 |
 | [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | VMC Protocol input: OSC-over-UDP datagrams → canonical humanoid motion | v0.6.0 |
 | [`vmc_record`](adapters/liveCapture/vmc/tools/vmcRecord) | CLI executable | Records and inspects VMC packet captures with a decode report, and exports what the adapter delivered as a capture trace the tools above replay unchanged | v0.6.0 |
-| [`vrmAdapterMocopi`](adapters/liveCapture/mocopi) | Plain static CMake library | Native live UDP input for one capture product, kept strictly separate from the relay path above | Scaffold, frozen diagnostics and the recorded packet format landed; decoder planned |
-| [`motionSource`](libs/motionSource) | Plain static CMake library | Format-neutral source skeleton / animation model, the producer-profile contract, and the converter to canonical humanoid motion | Model landed; profile and converter planned |
-| [`motionBvh`](libs/motionBvh) | Plain static CMake library | BVH syntax and extraction only — no producer semantics, no default profile | Syntax landed; extraction planned |
-| [`motion_bvh_inspect`](tools/motionBvh) | CLI executable | Reports what a BVH file contains — hierarchy, channels in declaration order, frames, and per-column value ranges | Reporting landed; profile candidates planned |
-| `motion_bvh_convert` | CLI executable | Converts a BVH file to the avatar-independent semantic clip under an explicitly named profile | Planned |
+| [`vrmAdapterMocopi`](adapters/liveCapture/mocopi) | Plain static CMake library | Native live UDP input for one capture product, kept strictly separate from the relay path above | v0.7.0 |
+| [`mocopi_record`](adapters/liveCapture/mocopi/tools/mocopiRecord) | CLI executable | Records and inspects mocopi UDP captures, and exports a capture trace `motion_capture` replays unchanged | v0.7.0 |
+| [`motionSource`](libs/motionSource) | Plain static CMake library | Format-neutral source skeleton / animation model, the producer-profile contract, and the converter to canonical humanoid motion | v0.7.0 |
+| [`motionBvh`](libs/motionBvh) | Plain static CMake library | BVH syntax and extraction only — no producer semantics, no default profile | v0.7.0 |
+| [`motion_bvh_inspect`](tools/motionBvh) | CLI executable | Reports what a BVH file contains — hierarchy, channels in declaration order, frames, and per-column value ranges | v0.7.0 |
+| [`motion_bvh_convert`](tools/motionBvh) | CLI executable | Converts a BVH file to the avatar-independent semantic clip under an explicitly named profile | v0.7.0 |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
 
 `usdVrm` is not a bundle id — it names the product as a whole. It *was* the
@@ -63,14 +65,19 @@ the existing `LiveCaptureSource`; `vmc_record` records the same wire input for
 inspection and corpus work, and `--export-trace` hands what the adapter
 delivered to `motion_capture` as a plain capture trace — the product's tools
 consume a live VMC session without linking the adapter, or knowing it exists.
+v0.7.0 adds `vrmAdapterMocopi` and `mocopi_record` on that same shape, and a
+body that travels: a rig whose only translating joint is the hips now composes
+`RootMotion`, so a live session no longer retargets in place.
 
-Every corpus behind that is **generated** — the motion traces from closed-form
-maths, the VMC captures from the protocol's shapes — so nothing here has yet met
-a real sender or a real device. Recording that evidence is the next release,
-along with the other half of the input layer: a capture product sends packets
-*and* writes files, and reading the files is a generic BVH pipeline
-(`motionBvh` + `motionSource` + a declarative producer profile) rather than that
-product's importer. The two halves meet at `motionCore` and nowhere earlier.
+v0.7.0 supplies the other half of the input layer, and the first evidence off
+real hardware. A capture product sends packets *and* writes files: the packets
+go through `vrmAdapterMocopi`, a native UDP path for a wire grammar with no
+published specification, and the files go through a **generic** BVH pipeline
+(`motionBvh` + `motionSource` + a declarative producer profile) that is
+deliberately not that product's importer. The two halves meet at `motionCore`
+and nowhere earlier — and when one physical session is observed both ways, they
+agree to a median **0.084°** per bone
+([report 01](docs/reports/motion/01-2026-08-15-mocopi-cross-source.md)).
 OpenExec evaluation follows, and uses those recordings as its parity input.
 Schedule: [docs/roadmap/](docs/roadmap/README.md#status-at-a-glance).
 
@@ -87,6 +94,7 @@ Schedule: [docs/roadmap/](docs/roadmap/README.md#status-at-a-glance).
 | `motionSource` · `motionBvh` | Plain static CMake libraries | **Recorded-file** input: BVH syntax, a format-neutral source model, and conversion to canonical humanoid motion under an explicit producer profile |
 | `profiles/motion/` | Package data | One declarative file per producer *and export preset*. Product names live here rather than in the libraries that read them |
 | [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | The first input leaf: VMC Protocol from OSC-over-UDP datagrams through frame assembly and VRM bone mapping to canonical humanoid semantics; includes a recorded-packet corpus and the `vmc_record` CLI |
+| [`vrmAdapterMocopi`](adapters/liveCapture/mocopi) | Plain static CMake library | The second: a capture product's own UDP grammar, measured off five device sessions rather than read from a specification, through the same frame assembly and bridge; includes the `mocopi_record` CLI |
 
 `.vrm` and `.vrma` are deliberately **separate** file-format plugins with
 symmetric structure, and they compose by **reference**, not `subLayer` — a
@@ -111,10 +119,11 @@ motion_retarget (CLI) ──> vrmRetarget + OpenUSD stage APIs
 vrmAdapterVmc ──────────> motionCore, motionRuntime
 vrmAdapterMocopi ───────> motionCore, motionRuntime
 
-                          (planned)
 motionSource ───────────> motionCore
 motionBvh ──────────────> motionSource
 motion_bvh_convert ─────> motionBvh, motionSource, OpenUSD stage
+
+                          (planned)
 execMotion ─────────────> motionCore, motionRuntime
 execVrm ────────────────> vrmSchema, vrmRetarget
 ```

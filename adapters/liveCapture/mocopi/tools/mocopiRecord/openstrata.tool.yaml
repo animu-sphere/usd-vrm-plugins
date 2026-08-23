@@ -20,11 +20,11 @@ schema: openstrata.tool/v1alpha1
 tool:
   id: mocopi_record
   # Mirrors VERSION; release preparation updates this in lockstep.
-  version: 0.6.0
+  version: 0.7.0
   license: Apache-2.0
 executables: [mocopi_record]
 directories: [bin]
 requires:
   libraries:
     - id: vrmAdapterMocopi
-      version: ">=0.6,<0.7"
+      version: ">=0.7,<0.8"
