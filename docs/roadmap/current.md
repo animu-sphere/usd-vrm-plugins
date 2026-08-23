@@ -129,11 +129,13 @@ test completes with nothing installed.
   anything with an edge. Both adapters have two, so
   `vrmAdapter<Name>-<version>-<target>.tar.zst` is still a naming rule. In the
   same version tool discovery widened to reach
-  `adapters/<group>/<name>/tools/<tool>/`, so `mocopi_record` and `vmc_record`
-  are now **members of the aggregate product** — 9 where v0.6.0 shipped 7 —
-  which [WORKSPACE.md §5](../architecture/WORKSPACE.md) says they never should
-  be, and which no descriptor here can decline. §5 records the measurement; the
-  asks are
+  `adapters/<group>/<name>/tools/<tool>/`, which on a 0.22.2 workstation makes
+  `mocopi_record` and `vmc_record` **members of the aggregate product** — 9,
+  where the 0.21.0-pinned release lane packages 7. v0.7.0 ships the 7, so
+  [WORKSPACE.md §5](../architecture/WORKSPACE.md) holds, **but it is held by a
+  version pin and not by anything this repository can declare**. `release.yml`
+  now counts the `tools/` descriptors and fails if packaging exceeds them, so
+  bumping the pin forces the decision. The asks are
   [report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md)
   §2 and §3.
 - ⬜ **Profiles are data that has to reach an artifact, and it is one `ost` ask

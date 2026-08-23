@@ -701,17 +701,18 @@ Current schema contract version: **1**.
   flag naming a directory the artifact does not contain" is not an
   artifact-only smoke.
 
-- **The aggregate product now contains both adapters' CLIs, which
-  [WORKSPACE.md §5](docs/architecture/WORKSPACE.md) says it never should.**
+- **Whether the aggregate product contains the adapters' CLIs depends on the
+  `ost` version, and nothing in this repository can state the answer.**
   `ost` 0.22.2 discovers a tool descriptor under
-  `adapters/<group>/<name>/tools/<tool>/`, so a `--workspace --product` run
-  reports **9** members where v0.6.0 shipped 7: `mocopi_record` and
-  `vmc_record` joined without any descriptor in this repository changing. The
-  practical effect is welcome — it is what puts the live path's recorder in an
-  artifact at all — but it is a boundary decided by a discovery rule rather than
-  declared by either side, and nothing in `openstrata.tool.yaml` or
-  `openstrata.toml` can currently say "not a product member". §5 records the
-  measurement; the ask is
+  `adapters/<group>/<name>/tools/<tool>/`; `ost` 0.21.0, which the release lane
+  pins, does not. So the same `--workspace --product` command produces **9**
+  members on a 0.22.2 workstation and **7** on the release runners, with no
+  descriptor changing in between —
+  [WORKSPACE.md §5](docs/architecture/WORKSPACE.md) requires the 7. **v0.7.0
+  ships the 7**, and the release lane now counts the `tools/` descriptors and
+  fails if packaging exceeds them, so the next pin bump is a decision rather
+  than a silent shipment. Nothing in `openstrata.tool.yaml` or
+  `openstrata.toml` can say "not a product member"; the ask is
   [ost report 35](docs/reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md)
   §3.
 

@@ -16,13 +16,20 @@
 # from CHANGELOG.md via docs/contributing/RELEASE_NOTES_TEMPLATE.md. Publishing
 # the draft is a human decision.
 #
-# The tool set is NOT a constant here, and that is deliberate: it was `4 + 2`
-# hard-coded until v0.7.0, when `ost` 0.22.2 widened tool discovery to reach
-# `adapters/<group>/<name>/tools/<tool>/` and the product went to nine members
-# without a descriptor changing. The staging step below therefore counts the
-# descriptors in the tree and requires the packager to agree with them, so the
-# next widening is reported rather than silently accepted -- and a tool
-# dropping out is still a failure. See ost report 35.
+# The member set is NOT a constant here, and that is deliberate. It was `4 + 2`
+# hard-coded and was wrong by v0.7.0, which ships `4 + 3`: `motion_bvh` joined
+# as a tool member. The staging step below counts the descriptors in the tree
+# instead and requires the packager to agree with them.
+#
+# It counts `tools/` and NOT `adapters/`, and that is the contract rather than
+# an omission. WORKSPACE.md §5 keeps every adapter out of the aggregate product,
+# and the pinned `ost` 0.21.0 agrees by not discovering
+# `adapters/<group>/<name>/tools/<tool>/` at all. `ost` 0.22.x DOES discover
+# them -- a workstation on 0.22.2 packages nine members, including
+# `mocopi_record` and `vmc_record` (ost report 35 §3). So if the bootstrap pin
+# below ever moves, this assertion fires, which is the point: putting an
+# adapter CLI in the aggregate is a contract decision, not a side effect of an
+# upgrade.
 #
 # The three VRM bundles ship together because they must: an usdVrmFileFormat package
 # on its own registers the `.vrm` format but cannot open a stage (see the
@@ -307,15 +314,15 @@ jobs:
           tools="$(jq -r '[.data.packages[] | select(.member == "tool")] | length' .ost-ci/package.json)"
           # What the workspace declares, from the tree rather than from a
           # constant -- `.strata/` holds packaging copies of both descriptor
-          # kinds and must not be counted. Asserted by member KIND so a tool
-          # silently dropping out cannot be masked by a bundle count that still
-          # adds up, and so a widened discovery rule (ost report 35 §3) is
-          # reported here instead of arriving in a published archive.
+          # kinds and must not be counted. `tools/` only, never `adapters/`:
+          # see the header comment for why that is the contract being enforced.
+          # Asserted by member KIND so a tool silently dropping out cannot be
+          # masked by a bundle count that still adds up.
           want_bundles="$(find plugins -name openstrata.plugin.yaml -not -path '*/.strata/*' | wc -l | tr -d ' ')"
-          want_tools="$(find tools adapters -name openstrata.tool.yaml -not -path '*/.strata/*' | wc -l | tr -d ' ')"
-          echo "declared: $want_bundles bundle(s), $want_tools tool(s); packaged: $bundles + $tools"
+          want_tools="$(find tools -name openstrata.tool.yaml -not -path '*/.strata/*' | wc -l | tr -d ' ')"
+          echo "declared: $want_bundles bundle(s), $want_tools product tool(s); packaged: $bundles + $tools"
           if [ "$bundles" -ne "$want_bundles" ] || [ "$tools" -ne "$want_tools" ]; then
-            echo "::error title=release packaging::the workspace declares $want_bundles bundle + $want_tools tool descriptor(s), but packaging produced $bundles + $tools" ; exit 1
+            echo "::error title=release packaging::the workspace declares $want_bundles bundle + $want_tools product tool descriptor(s), but packaging produced $bundles + $tools -- if the extra members are adapter CLIs, the ost pin moved and WORKSPACE.md section 5 needs a decision, not a bigger number" ; exit 1
           fi
           for i in $(seq 0 $((count - 1))); do
             archive="$(jq -r ".data.packages[$i].archive" .ost-ci/package.json)"
