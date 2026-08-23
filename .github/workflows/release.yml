@@ -7,14 +7,22 @@
 #
 # Pushing a tag `vX.Y.Z` (which must equal the repo VERSION file and have a
 # finalized CHANGELOG section) builds the whole workspace -- the four bundles
-# vrmSchema, usdVrmFileFormat, usdVrmPackageResolver, usdVrmaFileFormat plus the
-# two CLI tools motion_retarget and motion_capture -- on the same three OS cells
-# and digest-pinned runtimes as the PR lane, proves the *packaged* artifacts
+# vrmSchema, usdVrmFileFormat, usdVrmPackageResolver, usdVrmaFileFormat plus
+# every CLI tool the workspace declares -- on the same three OS cells and
+# digest-pinned runtimes as the PR lane, proves the *packaged* artifacts
 # (composed clean-install smoke + digest reproducibility), then assembles a
 # DRAFT GitHub release: per-target lean bundles and tool packages with manifest
-# sidecars for all six, a source archive, SHA256SUMS, and notes rendered from
-# CHANGELOG.md via docs/contributing/RELEASE_NOTES_TEMPLATE.md. Publishing the
-# draft is a human decision.
+# sidecars for all of them, a source archive, SHA256SUMS, and notes rendered
+# from CHANGELOG.md via docs/contributing/RELEASE_NOTES_TEMPLATE.md. Publishing
+# the draft is a human decision.
+#
+# The tool set is NOT a constant here, and that is deliberate: it was `4 + 2`
+# hard-coded until v0.7.0, when `ost` 0.22.2 widened tool discovery to reach
+# `adapters/<group>/<name>/tools/<tool>/` and the product went to nine members
+# without a descriptor changing. The staging step below therefore counts the
+# descriptors in the tree and requires the packager to agree with them, so the
+# next widening is reported rather than silently accepted -- and a tool
+# dropping out is still a failure. See ost report 35.
 #
 # The three VRM bundles ship together because they must: an usdVrmFileFormat package
 # on its own registers the `.vrm` format but cannot open a stage (see the
@@ -297,11 +305,17 @@ jobs:
           count="$(jq -r '.data.packages | length' .ost-ci/package.json)"
           bundles="$(jq -r '[.data.packages[] | select(.member == "bundle")] | length' .ost-ci/package.json)"
           tools="$(jq -r '[.data.packages[] | select(.member == "tool")] | length' .ost-ci/package.json)"
-          # 4 bundles + the 2 workspace tools (ost 0.21.0 tool members). Asserted
-          # by member kind so a tool silently dropping out cannot be masked by a
-          # bundle count that still adds up.
-          if [ "$bundles" -ne 4 ] || [ "$tools" -ne 2 ]; then
-            echo "::error title=release packaging::expected 4 bundle + 2 tool packages, got $bundles + $tools" ; exit 1
+          # What the workspace declares, from the tree rather than from a
+          # constant -- `.strata/` holds packaging copies of both descriptor
+          # kinds and must not be counted. Asserted by member KIND so a tool
+          # silently dropping out cannot be masked by a bundle count that still
+          # adds up, and so a widened discovery rule (ost report 35 §3) is
+          # reported here instead of arriving in a published archive.
+          want_bundles="$(find plugins -name openstrata.plugin.yaml -not -path '*/.strata/*' | wc -l | tr -d ' ')"
+          want_tools="$(find tools adapters -name openstrata.tool.yaml -not -path '*/.strata/*' | wc -l | tr -d ' ')"
+          echo "declared: $want_bundles bundle(s), $want_tools tool(s); packaged: $bundles + $tools"
+          if [ "$bundles" -ne "$want_bundles" ] || [ "$tools" -ne "$want_tools" ]; then
+            echo "::error title=release packaging::the workspace declares $want_bundles bundle + $want_tools tool descriptor(s), but packaging produced $bundles + $tools" ; exit 1
           fi
           for i in $(seq 0 $((count - 1))); do
             archive="$(jq -r ".data.packages[$i].archive" .ost-ci/package.json)"
