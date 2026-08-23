@@ -1633,12 +1633,23 @@ original order that was never about the transport.
   because held-versus-unavailable during a dropout is `PoseBuffer`'s question and
   a restart is not entitled to a third state only this adapter can produce.
 
-  **The hips translation still reaches no `RootMotion`**, and this was the last
-  layer that could have quietly composed one. It does not, so `RootMotionIntake`
-  is inert for this adapter whatever it is set to — asserted over all three
-  settings, because "no root motion arrives" is a claim any single setting could
-  hide. That keeps [§5.2](#52-frame-assembly-is-a-stated-policy-not-an-emergent-one)'s
-  record open for evidence rather than closing it by writing code.
+  **The hips translation reached no `RootMotion` here, and this was the last
+  layer that could have quietly composed one.** It did not, so
+  `RootMotionIntake` was inert for this adapter whatever it was set to —
+  asserted over all three settings, because "no root motion arrives" is a claim
+  any single setting could hide. That kept
+  [§5.2](#52-frame-assembly-is-a-stated-policy-not-an-emergent-one)'s record
+  open for evidence rather than closing it by writing code.
+
+  Three of those sentences stopped being true on 2026-08-23, when the record
+  closed (Milestone B's entry). The bridge still composes nothing — the property
+  described here is the one it kept — but the assembler below it does, so a pose
+  arriving here carries root motion and the intake's three settings now select
+  between three different outcomes. `DeriveVelocity` is the only thing on this
+  path that will ever fill `linearVelocity`, since the device reports none. The
+  test named above was rewritten to assert that difference, for the same reason
+  it originally asserted the sameness: the claim is about the policy being live,
+  and any single setting could hide a path that had quietly stopped composing.
 
   ✅ **And the corpus gap this opened is closed, again by the fixture the claim
   needed.** `frame-loss-60hz` restarts and *stops*: its new session never

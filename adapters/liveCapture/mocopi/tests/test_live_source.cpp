@@ -687,20 +687,37 @@ CheckTheTwoHalvesMeet(const ReplayedCapture& replayed, const std::string& name)
     if (replayed.delivered.size() != replayed.stats.framesAdmitted) {
         return Failed(name, "an admitted pose could not be sampled back");
     }
-    // And every one of them carries the body's placement, anywhere in the
-    // corpus: the position from the hips record and the orientation from the
-    // hips bone, which is what the record chose.
+    // The two halves of a placement are composed from one hips record, so they
+    // may never disagree. This is the invariant; whether a pose has a placement
+    // at all is the next paragraph's question, and conflating the two would let
+    // a half-composed root pass as a missing one.
     for (const motion::HumanoidPose& pose : replayed.delivered) {
-        if (!pose.root.hasPosition || !pose.root.hasOrientation) {
-            return Failed(name, "the hips translation reached no RootMotion");
+        if (pose.root.hasPosition != pose.root.hasOrientation) {
+            return Failed(name, "a pose carries half a RootMotion, so the "
+                                "position and the orientation stopped reading "
+                                "one hips record");
         }
     }
-    // A velocity is present on every pose but the first, and it belongs to the
-    // *runtime* rather than to the device: `LiveCaptureConfig` defaults to
-    // `DeriveVelocity`, which differences consecutive samples. The device
-    // reports none, so the first pose of a session has nothing to difference
-    // against and carries none — which is the shape that says the value was
-    // derived here rather than decoded.
+    // Every pose in this corpus does have one, and that is a fact about these
+    // captures rather than about the contract: all nine send a complete bone
+    // table in every frame datagram, so no frame here loses its hips record.
+    // A frame that composes none is a shape `vrmAdapterMocopi_frameAssembler`
+    // has to construct deliberately, by dropping joint 0. So an absence here
+    // means the composition stopped, not that a record went missing.
+    for (const motion::HumanoidPose& pose : replayed.delivered) {
+        if (!pose.root.hasPosition) {
+            return Failed(name, "a pose carries no placement, and every frame "
+                                "in this corpus sends a hips record");
+        }
+    }
+    // A velocity belongs to the *runtime* rather than to the device:
+    // `LiveCaptureConfig` defaults to `DeriveVelocity`, which differences
+    // consecutive samples, and the device reports none. So the first pose of a
+    // session carries none -- it has nothing to difference against -- and a
+    // later one does. Asserted over "some pose after the first" rather than
+    // over the last: a capture that restarts can end on a new session's first
+    // pose, which legitimately has no predecessor either.
+    //
     // Four of the nine captures deliver nothing by design -- they are the
     // malformed ones -- so this is a claim about the sessions that produced
     // poses, and the counter checks above are what cover the rest.
@@ -710,10 +727,15 @@ CheckTheTwoHalvesMeet(const ReplayedCapture& replayed, const std::string& name)
                                 "velocity, which nothing had two samples to "
                                 "derive");
         }
-        if (replayed.delivered.size() > 1
-            && !replayed.delivered.back().root.hasLinearVelocity) {
-            return Failed(name, "no velocity was derived from the poses that "
-                                "followed it");
+        const bool derived =
+            std::any_of(replayed.delivered.begin() + 1,
+                        replayed.delivered.end(),
+                        [](const motion::HumanoidPose& pose) {
+                            return pose.root.hasLinearVelocity;
+                        });
+        if (replayed.delivered.size() > 1 && !derived) {
+            return Failed(name, "no velocity was derived from any of the poses "
+                                "that followed it");
         }
     }
     return 0;

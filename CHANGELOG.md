@@ -51,6 +51,25 @@ Current schema contract version: **1**.
 
 ### Fixed
 
+- **A capture frame that reported no root sent the body back to where the
+  session started.** `motion_capture` has to author a hips translation at every
+  time sample, and it authored the *rest* — the session's first observed root
+  position — for a frame whose root was absent. That is correct for a clip where
+  no frame reports a root and wrong the moment one does: a single rootless frame
+  between two that travelled teleported the avatar to the session's origin and
+  back, in one frame. It now holds the last placement it authored.
+
+  A missing root is not a missing bone, and the two fallbacks are not
+  symmetric — which is why the rotation beside it still authors rest rather than
+  holding. An unobserved bone has a neutral value, so the rest rotation states an
+  absence; a root position has none, so the rest translation states a trip that
+  never happened.
+
+  Reachable from either live adapter — a VMC frame closes with bones and no
+  `/VMC/Ext/Root/Pos` — and invisible until now because no live path composed a
+  root at all, which left the substituted value at the origin and equal to every
+  other frame's.
+
 - **`KHR_texture_transform` was authored as though USD sampled glTF's UVs.**
   Two changes of variable were missing, and both are invisible on an identity
   transform — which is every transform in the vendored corpus, so no amount of

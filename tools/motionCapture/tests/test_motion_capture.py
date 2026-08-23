@@ -302,6 +302,71 @@ def check_root_motion_survives_without_a_hips_rotation(
         "dropped because no hips rotation was ever observed")
 
 
+def check_a_frame_without_a_root_holds_the_placement(
+        tool: str, directory: pathlib.Path, failures: Failures) -> None:
+    """A frame that reports no root must not send the body back to the start.
+
+    UsdSkel needs a translation for the hips at every time sample, so this
+    writer has to author something for a frame whose root is absent. It used to
+    author the *rest* -- the session's first observed position -- which is
+    correct for a clip where no frame reports a root and wrong the moment one
+    does: a single rootless frame between two that travelled teleported the body
+    to wherever the session began and back, in one frame.
+
+    A missing root is not a missing bone. The rest rotation is neutral, so
+    authoring it for an unobserved bone states an absence; the rest translation
+    is a *place*, so authoring it states a trip that never happened.
+
+    Reachable from either live adapter: a VMC frame closes with bones and no
+    `/VMC/Ext/Root/Pos`, and a mocopi frame whose hips record did not arrive
+    composes no position.
+    """
+    trace = directory / "root_gap.trace"
+    lines = ["!motion-capture-trace 1", "provider example.test",
+             "protocol replay", "sourceId root-gap-01",
+             "frameRate 30.000000"]
+    # Six frames walking along +Z, with the fourth reporting no root at all.
+    for index in range(6):
+        lines += ["", f"t {index / 30.0:.6f}"]
+        if index != 3:
+            lines.append(f"root pos 0.000000 0.900000 {index * 0.10:.6f}")
+        lines.append("b spine 1.000000 0.000000 0.000000 0.000000")
+    trace.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+
+    output = directory / "root_gap.usda"
+    result = capture(tool, trace, output)
+    if not failures.check(
+            result.returncode == 0,
+            f"motion_capture rejected a trace with a root gap: "
+            f"{result.stderr.strip()}"):
+        return
+
+    stage = Usd.Stage.Open(str(output))
+    animation = find_animation(stage)
+    joints = list(animation.GetJointsAttr().Get() or [])
+    translations = animation.GetTranslationsAttr()
+    times = translations.GetTimeSamples()
+    depths = [translations.Get(time)[joints.index("hips")][2] for time in times]
+    if not failures.check(len(depths) == 6,
+                          f"the clip carries {len(depths)} sample(s) of 6"):
+        return
+
+    # The rootless frame holds its predecessor's 0.20 rather than dropping to
+    # the session's first position, 0.00. Asserted as the *value* and not as
+    # "did not decrease", because the sequence is monotonic and a hold is the
+    # only thing that keeps it so.
+    failures.check(
+        abs(depths[3] - depths[2]) < 1e-6,
+        f"the frame reporting no root authored {depths[3]:.6f} where the frame "
+        f"before it reported {depths[2]:.6f}; a rootless frame is an absence to "
+        f"hold, not a return to the session's origin")
+    # And the frames on either side are untouched, so the hold did not become a
+    # smoothing that flattens the walk.
+    failures.check(
+        abs(depths[4] - 0.40) < 1e-6 and abs(depths[2] - 0.20) < 1e-6,
+        f"holding the rootless frame changed its neighbours: {depths}")
+
+
 def check_malformed_trace_is_rejected(tool: str, directory: pathlib.Path,
                                       failures: Failures) -> None:
     bad = directory / "bad.trace"
@@ -414,6 +479,8 @@ def main() -> int:
                                              failures)
         check_normalize_is_idempotent(options.tool, corpus, directory, failures)
         check_root_motion_survives_without_a_hips_rotation(
+            options.tool, directory, failures)
+        check_a_frame_without_a_root_holds_the_placement(
             options.tool, directory, failures)
         check_malformed_trace_is_rejected(options.tool, directory, failures)
 

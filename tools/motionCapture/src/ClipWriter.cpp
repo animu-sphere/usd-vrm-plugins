@@ -167,17 +167,39 @@ WriteSemanticClip(const std::string& outputPath,
     const pxr::VtVec3hArray identityScales(bones.size(), pxr::GfVec3h(1.0f));
     clip.CreateScalesAttr(pxr::VtValue(identityScales));
 
+    // The last placement this clip authored, so a frame that reports none does
+    // not send the body somewhere. It starts at the rest, which is where a clip
+    // whose *first* frames report no root has to begin.
+    //
+    // A missing root is not a missing bone and the fallbacks are not
+    // symmetric, which is why this is held where the rotation below is not. An
+    // unobserved bone has a neutral value -- the rest rotation says "this joint
+    // is not turned" -- so authoring it states an absence. A root position has
+    // no neutral value: the rest is *a place*, and authoring it for one frame
+    // between two that reported their own teleports the body to wherever the
+    // session started and back. Holding states the same absence without
+    // inventing the trip.
+    //
+    // Reachable from any adapter whose frame can carry bones and no root, which
+    // is both of them -- `VmcFrameAssembler` emits a frame that closed with
+    // bones and no `/VMC/Ext/Root/Pos`, and since the root/hips record
+    // `MocopiFrameAssembler` composes no position for a frame whose hips record
+    // did not arrive. It was invisible while no live path composed a root at
+    // all: `hipsRest` stayed at the origin and every frame authored it.
+    pxr::GfVec3f hipsHeld = hipsRest;
     for (const motion::HumanoidPose& pose : animation.samples) {
         pxr::VtVec3fArray valuesT;
         pxr::VtQuatfArray valuesR;
         valuesT.reserve(bones.size());
         valuesR.reserve(bones.size());
+        if (pose.root.hasPosition) {
+            hipsHeld = pose.root.worldPosition;
+        }
         for (const motion::HumanBone bone : bones) {
             const auto slot = static_cast<std::size_t>(bone);
             pxr::GfVec3f translation(0.0f);
             if (bone == motion::HumanBone::Hips) {
-                translation =
-                    pose.root.hasPosition ? pose.root.worldPosition : hipsRest;
+                translation = hipsHeld;
             }
             valuesT.push_back(translation);
             // A frame that did not observe a bone authors the rest rotation
