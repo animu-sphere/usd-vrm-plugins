@@ -197,6 +197,50 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
         return fail("[VRMA005] no valid humanoid bone mappings");
     }
 
+    // Expressions. VRMA names an expression and points it at a node whose
+    // translation carries the weight; the vocabulary is open, so nothing here
+    // validates the *name* -- a preset this build has never heard of is still a
+    // name a producer used, and motionCore carries it verbatim
+    // (MOTION_CONTRACT.md, "Expression semantics"). Only the node is checked.
+    std::map<int, std::size_t> expressionByNodeIndex;
+    std::set<std::string> expressionNames;
+    if (const JsObject* expressions = AsObject(Find(*root, "expressions"))) {
+        for (const char* group : {"preset", "custom"}) {
+            const JsObject* declared = AsObject(Find(*expressions, group));
+            if (!declared) continue;
+            for (const auto& entry : *declared) {
+                const JsObject* nodeObject = AsObject(&entry.second);
+                const int node = nodeObject ? AsInt(Find(*nodeObject, "node")) : -1;
+                if (node < 0 || node >= static_cast<int>(data->nodes_count)) {
+                    outDocument->warnings.push_back(
+                        "[VRMA105] ignored expression '" + entry.first +
+                        "' with no usable node");
+                    continue;
+                }
+                bool isBone = false;
+                for (const auto& mapping : boneNodes) {
+                    if (mapping.second == node) { isBone = true; break; }
+                }
+                if (isBone || expressionByNodeIndex.count(node) != 0) {
+                    outDocument->warnings.push_back(
+                        "[VRMA106] ignored expression '" + entry.first +
+                        "' whose node is already driven");
+                    continue;
+                }
+                if (!expressionNames.insert(entry.first).second) {
+                    outDocument->warnings.push_back(
+                        "[VRMA107] ignored duplicate expression '" + entry.first + "'");
+                    continue;
+                }
+                expressionByNodeIndex.emplace(node, outDocument->expressions.size());
+                VrmaExpression expression;
+                expression.name = entry.first;
+                expression.isPreset = std::strcmp(group, "preset") == 0;
+                outDocument->expressions.push_back(std::move(expression));
+            }
+        }
+    }
+
     // The semantic hierarchy comes from motionCore, not from a private table
     // here: the live-capture path authors the same skeleton, and two humanoid
     // taxonomies that can disagree would produce two skeletons that look alike
@@ -243,23 +287,61 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
             jointByNode[&data->nodes[mapping.second]] = jointIt->second;
         }
     }
+    std::unordered_map<const cgltf_node*, std::size_t> expressionByNode;
+    for (const auto& mapping : expressionByNodeIndex) {
+        expressionByNode[&data->nodes[mapping.first]] = mapping.second;
+    }
 
     std::map<std::size_t, const cgltf_animation_sampler*> rotations;
     std::map<std::size_t, const cgltf_animation_sampler*> translations;
+    std::map<std::size_t, const cgltf_animation_sampler*> weights;
     std::unordered_map<const cgltf_animation_sampler*, std::vector<float>> samplerKeys;
     std::set<float> timeSet;
     bool warnedCubic = false;
+    // Every accepted channel contributes its key times to one union and every
+    // sample is evaluated there. An expression that keys on its own beats is
+    // therefore not resampled onto the body's -- it adds instants the body is
+    // evaluated at too, which is the rule the body channels already followed and
+    // the reason expressions can ride on the pose (MOTION_CONTRACT.md).
+    const auto keepKeys = [&](const cgltf_animation_sampler* sampler) {
+        std::vector<float>& keys = samplerKeys[sampler];
+        if (keys.empty()) {
+            keys.resize(sampler->input->count);
+            for (cgltf_size key = 0; key != sampler->input->count; ++key) {
+                cgltf_accessor_read_float(sampler->input, key, &keys[key], 1);
+            }
+        }
+        timeSet.insert(keys.begin(), keys.end());
+    };
     for (cgltf_size channelIndex = 0; channelIndex != animation.channels_count; ++channelIndex) {
         const cgltf_animation_channel& channel = animation.channels[channelIndex];
         if (!channel.target_node || !channel.sampler || !channel.sampler->input ||
             !channel.sampler->output) continue;
         const auto jointIt = jointByNode.find(channel.target_node);
-        if (jointIt == jointByNode.end()) continue;
+        const auto expressionIt = expressionByNode.find(channel.target_node);
+        if (jointIt == jointByNode.end() && expressionIt == expressionByNode.end()) {
+            continue;
+        }
         if (channel.sampler->interpolation == cgltf_interpolation_type_cubic_spline &&
             !warnedCubic) {
             outDocument->warnings.push_back(
                 "[VRMA102] CUBICSPLINE interpolation is approximated as linear");
             warnedCubic = true;
+        }
+
+        if (expressionIt != expressionByNode.end()) {
+            // VRMA animates an expression weight as the X component of its
+            // node's translation. No other path on that node carries anything.
+            if (channel.target_path != cgltf_animation_path_type_translation) {
+                outDocument->warnings.push_back(
+                    "[VRMA108] ignored non-translation channel on expression '" +
+                    outDocument->expressions[expressionIt->second].name + "'");
+                continue;
+            }
+            weights[expressionIt->second] = channel.sampler;
+            outDocument->expressions[expressionIt->second].isAnimated = true;
+            keepKeys(channel.sampler);
+            continue;
         }
 
         if (channel.target_path == cgltf_animation_path_type_rotation) {
@@ -278,21 +360,14 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
         } else {
             continue;
         }
-
-        std::vector<float>& keys = samplerKeys[channel.sampler];
-        if (keys.empty()) {
-            keys.resize(channel.sampler->input->count);
-            for (cgltf_size key = 0; key != channel.sampler->input->count; ++key) {
-                cgltf_accessor_read_float(channel.sampler->input, key, &keys[key], 1);
-            }
-        }
-        timeSet.insert(keys.begin(), keys.end());
+        keepKeys(channel.sampler);
     }
     if (timeSet.empty()) {
         release();
-        return fail("[VRMA007] first animation has no humanoid rotation or hips translation");
+        return fail("[VRMA007] first animation has no humanoid or expression channel");
     }
 
+    bool warnedWeightRange = false;
     outDocument->animation.samples.reserve(timeSet.size());
     for (const float time : timeSet) {
         motion::HumanoidPose pose;
@@ -315,6 +390,23 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
                 pose.root.worldPosition = GfVec3f(value[0], value[1], value[2]);
                 pose.root.hasPosition = true;
             }
+        }
+        for (const auto& weight : weights) {
+            float value[3] = {0.0f, 0.0f, 0.0f};
+            Sample(weight.second, samplerKeys[weight.second], time, 3, value);
+            // The specification says a weight outside [0, 1] is clamped. It is
+            // carried verbatim here and the clamp is left to whoever applies it
+            // to a rig: a file that said 1.5 said 1.5, and correcting it in the
+            // reader would hide the authoring tool from the operator reading the
+            // clip. The warning is what keeps that choice visible.
+            if ((value[0] < 0.0f || value[0] > 1.0f) && !warnedWeightRange) {
+                outDocument->warnings.push_back(
+                    "[VRMA109] expression '" +
+                    outDocument->expressions[weight.first].name +
+                    "' has a weight outside [0, 1]; carried unclamped");
+                warnedWeightRange = true;
+            }
+            pose.expressions.Set(outDocument->expressions[weight.first].name, value[0]);
         }
         outDocument->animation.samples.push_back(std::move(pose));
     }

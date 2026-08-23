@@ -75,6 +75,7 @@ as of v0.6.0. Its own status:
 | Component | Since | Status |
 | --- | --- | --- |
 | `usdVrmaFileFormat` | v0.3.0 | GLB/glTF animation read, humanoid rotation, hips translation, canonical `HumanoidSkeleton`, `UsdSkelAnimation`, time range, provenance (Motion Phase B) |
+| `usdVrmaFileFormat` | v0.7.0 | Expression animation read: declared expressions become `/Animation/Expressions/<name>` prims carrying a time-sampled weight, unexpanded and unclamped (Motion Phase G, first half) |
 | `motionCore` | v0.3.0 | Vendor-neutral pose/animation types (Motion Phase A contract) |
 | `motionRuntime` | v0.4.0 | `PoseBuffer`, interpolation/extrapolation, resample, filter, blend |
 | `motionRuntime` | v0.5.0 | `IMotionSource` / `ClipSource` / `LiveCaptureSource`, the `motion-capture-trace` format, `ReplaySender`, `CaptureRecorder` (Motion Phase D) |
@@ -123,8 +124,11 @@ uninterpreted until a profile says what they mean, so nothing yet reaches
 `motion::HumanoidAnimation` from a file. FBX is not planned; the layering exists
 so that a second reader can be added without changing anything above it.
 
-Not yet in that layer: expression and look-at animation, motion generation,
-OpenExec evaluation, blending beyond the primitive, IK, and foot locking. See
+Not yet in that layer: look-at animation, motion generation, OpenExec
+evaluation, blending beyond the primitive, IK, and foot locking. Expression
+animation is read from a `.vrma` clip and carried on the pose, but it is not
+*resolved*: turning a named weight into the morph targets of a particular
+avatar is `ExpressionResolve`, still ahead. See
 [MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md) and the
 Motion Phase ladder in the [backlog](../roadmap/backlog.md).
 

@@ -33,8 +33,9 @@ surprise it. The items that close the rest do not close by writing more code.
 Not in this boundary: OpenExec evaluation of any kind (that is v0.8.0), realtime
 skinned display, an FBX reader, an `SdfFileFormat` bundle for `.bvh`, the ARDY
 generator, and look-at. Expression *animation* is no longer on that list — the
-`motionCore` addition it was waiting on landed (below) — but expressions
-reaching a **rig** still is: that is Motion Phase G.
+`motionCore` addition it was waiting on landed, and the `.vrma` reader now
+produces it (below) — but expressions reaching a **rig** still is: that is
+Motion Phase G.
 
 **A third live adapter is also not in this boundary, and the reason is the state
 of the release rather than the value of the work.** VRChat OSC Trackers input,
@@ -367,20 +368,41 @@ name and value and threw them away, naming this exact gap as the reason;
 `usdVrmaFileFormat` has no `expressions` parsing at all and no fixture to verify
 one against. One was a contract addition away, the other is a milestone.
 
+### The clip reader is the second producer
+
+- ✅ **`usdVrmaFileFormat` reads the `expressions` channel** (2026-08-23).
+  VRMA points an expression at a node and animates its **translation X** as the
+  weight; the reader carries the name verbatim onto `HumanoidPose::expressions`
+  and authors one prim per declared expression under `/Animation/Expressions`
+  with `vrm:expressionName` / `vrm:expressionType` and a time-sampled
+  `vrm:expressionWeight`. Expression key times join the same union every other
+  channel is evaluated at, so nothing is resampled onto the body's timeline.
+
+  Three behaviours are decisions rather than details, and each has a fixture
+  case in `expressive_face.vrma`: a weight outside `[0, 1]` is **carried
+  unclamped** with a `VRMA109` warning where the specification would clamp it;
+  an expression the clip declares and never drives is authored as a prim with
+  **no weight at all**, because an unreported weight is not a weight of zero;
+  and the prims are **namespaced attributes, not a typed schema**, which leaves
+  the open question below open and costs nothing to reverse — a
+  `VrmAnimationExpressionAPI` applies to exactly these prims with exactly these
+  attribute names.
+
+  The fixture is generated, as the milestone anticipated: all seven
+  `VRMA_MotionPack` clips carry `humanBones` and **no** `expressions`, so there
+  was no vendor file to read this against.
+
 ### Still Motion Phase G, and unchanged by the above
 
-Expressions now travel from a sender to a canonical pose and back out of a
-trace. They do not yet reach a **rig**, which is what #88 is actually about:
+Expressions now travel from a sender *and from a clip* to a canonical pose and
+back out of a trace. They do not yet reach a **rig**, which is what #88 is
+actually about:
 
-- ⬜ **`usdVrmaFileFormat` reads no `expressions` channel.** The reader already
-  evaluates every glTF channel at the union of their key times, so the timing
-  machinery exists; what is missing is the channel and a fixture. All seven
-  `VRMA_MotionPack` clips carry `humanBones` and **no** `expressions`, so the
-  fixture has to be generated the way the other motion corpora are.
 - ⬜ **`ExpressionResolve`.** A VRM expression binds N morph targets across M
   meshes plus material colours — it is *not* one blend shape — so expanding a
   named weight onto a rig needs `VrmExpressionAPI`, which is why `motionCore`
-  carries the name verbatim and resolves nothing.
+  carries the name verbatim, the clip reader authors a name and a number, and
+  neither resolves anything.
 - ⬜ **`motion_retarget` authors no `blendShapeWeights`**, and no
   `skel:blendShapes` / `skel:blendShapeTargets` binding on its output.
 - ⬜ **Look-at is untouched**, in every layer.

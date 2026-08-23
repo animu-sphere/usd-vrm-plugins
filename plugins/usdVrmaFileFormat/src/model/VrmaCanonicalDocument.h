@@ -23,11 +23,29 @@ struct VrmaJoint {
     GfQuatf restRotation = GfQuatf(1.0f, GfVec3f(0.0f));
 };
 
+// One expression the clip declares, in the order VRMA named it under
+// `expressions.preset` and then `expressions.custom`.
+//
+// The declaration is separate from the weights on the poses because the two say
+// different things: this is the set of expressions the clip is *about*, while
+// `HumanoidPose::expressions` is what a given instant reported. A clip may
+// declare an expression and animate nothing on it, and that is not a weight of
+// zero (MOTION_CONTRACT.md, "Expression semantics").
+struct VrmaExpression {
+    std::string name;
+    bool isPreset = true;
+
+    // Whether any glTF channel drives this expression's node. False means the
+    // clip declared the expression and reported no weight for it.
+    bool isAnimated = false;
+};
+
 struct VrmaCanonicalDocument {
     std::string specVersion;
     std::string clipName;
     std::string rawExtensionJson;
     std::vector<VrmaJoint> joints;
+    std::vector<VrmaExpression> expressions;
     motion::HumanoidAnimation animation;
     std::vector<std::string> warnings;
 };
