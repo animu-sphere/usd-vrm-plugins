@@ -10,7 +10,7 @@ work.
 bundle. The workspace split (§D, §E) landed in
 [v0.2.0](../releases/v0.2.0.md) and the negative corpus (§G) in
 [v0.3.0](../releases/v0.3.0.md); everything logged here is released as of
-[v0.6.0](../releases/v0.6.0.md).
+[v0.7.0](../releases/v0.7.0.md).
 
 This is not a description of current behavior — see [architecture/](../architecture/)
 and [reference/](../reference/) for that — nor of planned work, which is in the
@@ -240,3 +240,61 @@ IK/foot-locking) are in the [roadmap](../roadmap/).
   retaining bytes before decode and reporting transport, decoding, frame, and
   intake results together. It reports hips-offset and root movement without
   assigning semantics the adapter cannot establish.
+
+## J. mocopi live input (v0.7.0)
+
+- ✅ **`vrmAdapterMocopi`**: a plain static library carrying a capture
+  product's own UDP grammar from socket to canonical pose — bounded receiver,
+  packet-capture format, decoder, joint map and basis change, frame assembly,
+  and the `LiveCaptureSource` bridge. Built **receiver-first**, because the wire
+  format has no published specification and there was nothing to write a corpus
+  from; the inversion is the finding rather than a shortcut.
+- ✅ **Nine committed captures and a loopback corpus**: the captures decode,
+  map onto canonical bones and become sampled poses with no socket anywhere, and
+  `vrmAdapterMocopi_loopbackCorpus` replays all nine **through a bound socket**
+  — 54 datagrams — requiring frames, poses, diagnostics and all three tallies
+  to be identical to the file path's, with no clock exemption. One byte dropped
+  from every datagram turns all nine red.
+- ✅ **`mocopi_record` CLI**: records a bounded live session or inspects a
+  capture, and `--export-trace` (from `--inspect` only, so a recording still
+  runs no decoder) writes a canonical `motion-capture-trace` that
+  `motion_capture` and `motion_retarget` consume unmodified onto `Seed-san.vrm`.
+- ✅ **Body placement**: `BodyPlacementPolicy` (default `HipsOnly`) composes
+  `RootMotion::worldPosition` / `worldOrientation` from a rig whose only
+  translating joint is the hips, which is the motion contract's §5.2 record.
+  Before it the live path dropped 4.81 m of hips travel the recorded path
+  carried. `None` keeps the old shape reachable.
+- ✅ **Device evidence, no bytes**: five sessions off a mocopi app 2.7.2 rig
+  (2026-08-15) survive as `tests/corpus/recorded/manifest.json` — hashes,
+  measured statistics, and the diagnostics each raised. The first decoded with
+  zero diagnostics; a real restart was dark for 233 frames = 3.8833 s; tracking
+  loss proved unproducible on this product, so `VRM_MOCOPI_TRACKING_LOST` stays
+  frozen and unraised.
+
+## K. Generic BVH recorded-motion ingestion (v0.7.0)
+
+- ✅ **`motionBvh`**: a generic BVH parser with a frozen diagnostic set and a
+  format-shape corpus. It carries no producer semantics and no default profile,
+  pinned by boundary tests rather than by review.
+- ✅ **`motionSource`**: the format-neutral model above it — source rig,
+  source animation in the source's own angle order and unit, provenance, and one
+  declared crossing into canonical humanoid motion — plus the producer-profile
+  contract: the vocabulary a profile states by name, its invariants, and the
+  typed refusals.
+- ✅ **`motion_bvh_inspect` and `motion_bvh_convert`**: the first links no
+  OpenUSD, because the layer under it has no value type to borrow from Gf. The
+  second refuses every file until a profile is named, and its output reaches a
+  target VRM through **unchanged** `motion_retarget`.
+- ✅ **Two shipped producer profiles and a user-defined third**: Sony mocopi's
+  mobile export and Bandai Namco Research's Motiondataset — written from two
+  measured exports, because read alone either file states something about itself
+  that is not true of the export. The two producers disagree about what a root
+  joint is, which is why the condition was two rather than one. The third is a
+  profile this repository does not ship, named by path with no search directory,
+  required to match and then required to be refused against a rig it does not
+  describe.
+- ✅ **Cross-source comparison**: one physical session recorded as UDP *and* as
+  the app's BVH export, driven to a canonical clip on each side, agreeing to a
+  median 0.084° per bone with the residual shown to be timing rather than value
+  ([report 01](motion/01-2026-08-15-mocopi-cross-source.md)). What each path
+  cannot carry is written down there, five measured entries.

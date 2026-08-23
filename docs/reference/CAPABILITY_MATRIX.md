@@ -69,8 +69,9 @@ This table covers the `.vrm` importer only. Skeletal animation *embedded in a
 `.vrm`* is listed above; a standalone reusable `.vrma` clip is a different thing
 and is handled by a different bundle.
 
-**The `.vrma` motion layer ships as of v0.5.0**, and the first live-input adapter
-as of v0.6.0. Its own status:
+**The `.vrma` motion layer ships as of v0.5.0**, the first live-input adapter as
+of v0.6.0, and as of v0.7.0 both a second live adapter and a recorded-file path.
+Its own status:
 
 | Component | Since | Status |
 | --- | --- | --- |
@@ -84,16 +85,25 @@ as of v0.6.0. Its own status:
 | `motion_capture` | v0.5.0 | CLI: replays a recorded capture session into a semantic humanoid clip the retarget tool consumes unchanged (Motion Phase D) |
 | `vrmAdapterVmc` | v0.6.0 | VMC Protocol input: OSC and VMC decode, frame assembly, Unity `HumanBodyBones` → `motion::HumanBone` mapping, `LiveCaptureSource` bridge, UDP receiver |
 | `vmc_record` | v0.6.0 | CLI: records a bounded live VMC session to a `vmc-packet-capture` file, or inspects one, with a decode report; `--export-trace` writes what the adapter delivered as a `motion-capture-trace`, which is the adapter's whole hand-off to the product's tools |
+| `vrmAdapterMocopi` | v0.7.0 | Native UDP input for one capture product: bounded receiver, packet capture, decoder for an unpublished wire grammar, joint map and basis change, frame assembly with restart detection, `LiveCaptureSource` bridge, and `BodyPlacementPolicy` composing `RootMotion` from a hips-only translating rig |
+| `mocopi_record` | v0.7.0 | CLI: records a bounded live mocopi session or inspects a capture; `--export-trace` (from `--inspect` only) writes the same `motion-capture-trace` the product's tools replay unchanged, and reports the hips travel a path carries |
+| `motionSource` | v0.7.0 | Format-neutral source rig and animation in the source's own angle order and unit, provenance, the producer-profile contract, and one declared crossing into canonical humanoid motion |
+| `motionBvh` | v0.7.0 | BVH syntax, extraction and a frozen diagnostic set — no producer semantics and no default profile |
+| `motion_bvh_inspect` · `motion_bvh_convert` | v0.7.0 | CLIs: report what a BVH file contains, and convert one to the avatar-independent semantic clip under an explicitly named producer profile |
 
-**Nothing in the table above has been validated against a real sender or a real
-capture rig.** Every corpus behind it is generated: the
+**One row of the table above has met real hardware, and the rest have not.** A
+mocopi device drove `vrmAdapterMocopi` end to end on 2026-08-15 — five sessions,
+the first decoding with zero diagnostics — and one of them reached a released
+avatar through the unchanged product tools. Those sessions are committed as
+measured manifests with **no bytes**, since a session is a real person's motion.
+Everything else behind this table is still generated: the
 [motion traces](../../libs/motionRuntime/tests/corpus/README.md) are closed-form
 maths, and the VMC captures reproduce the protocol's shapes. That is deliberate —
 a corpus recorded from a commercial SDK could not be redistributed and CI could
-not run it — but it bounds what the table claims. Recording real sessions
-from a device and from several sender applications, with the redistributable ones
-committed and the rest kept as measured manifests, is v0.7.0
-([adapter plan](../roadmap/adapters-mocopi-vmc-ardy.md)).
+not run it — but it bounds what the table claims. **No VMC sender application or
+relay has been recorded**, which is why the cross-source comparison covers two
+paths of three ([report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.md))
+and why the VMC half of the root/hips decision is still open.
 
 The one exception is not in that table because it produces no motion: `motionBvh`
 reads a **real** producer export, committed at
@@ -103,9 +113,10 @@ which is a different claim from a runtime meeting a real device, and it is the
 only one of the two this repository can currently make.
 
 Protocol and SDK decode belong under `adapters/` (motion policy §8.1).
-`vrmAdapterMocopi` — the first native capture-device adapter — is v0.7.0 and its
-library is written; what that release still owes is evidence, not code
-([current.md](../roadmap/current.md)). A **third** live adapter is planned
+`vrmAdapterMocopi` — the first native capture-device adapter — shipped in v0.7.0
+and has been driven by a device; what that release did **not** close is further
+operator evidence, not code ([current.md](../roadmap/current.md)). A **third**
+live adapter is planned
 behind it: VRChat OSC Trackers input over a protocol-neutral OSC decoder
 ([the OSC track](../roadmap/osc-and-vrchat-trackers.md), and the
 [roadmap status table](../roadmap/README.md#status-at-a-glance) for the version).
@@ -113,16 +124,17 @@ It is the first input here that would carry **tracker observations** rather than
 humanoid bone transforms — pre-IK data, where a tracker index is not a body role
 — so nothing in it maps onto a row of this table until a solve boundary exists.
 
-**No recorded motion file format other than `.vrma` becomes motion.** BVH — the
-format most capture applications export — is v0.7.0, as a generic pipeline
-(`motionBvh` + `motionSource`) whose producer semantics live in declarative
-profiles rather than in the parser
-([plan](../roadmap/recorded-motion-sources.md)). Its **syntax** half is
-implemented: `motionBvh` reads a BVH document and `motion_bvh_inspect` reports
-what one contains. Neither produces a pose — a joint's name, unit and axes stay
-uninterpreted until a profile says what they mean, so nothing yet reaches
-`motion::HumanoidAnimation` from a file. FBX is not planned; the layering exists
-so that a second reader can be added without changing anything above it.
+**One recorded motion file format other than `.vrma` becomes motion, as of
+v0.7.0.** BVH — the format most capture applications export — is a generic
+pipeline (`motionBvh` + `motionSource`) whose producer semantics live in
+declarative profiles rather than in the parser
+([plan](../roadmap/recorded-motion-sources.md)). A joint's name, unit and axes
+stay uninterpreted until a profile says what they mean, so
+`motion_bvh_convert` **refuses every file until one is named** and there is no
+default profile anywhere. Two producers' profiles ship in
+[`profiles/motion/`](../../profiles/motion/); a profile the repository does not
+ship works the same way, by path. FBX is not planned; the layering exists so
+that a second reader can be added without changing anything above it.
 
 Not yet in that layer: look-at animation, motion generation, OpenExec
 evaluation, blending beyond the primitive, IK, and foot locking. Expression

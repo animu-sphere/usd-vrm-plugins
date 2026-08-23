@@ -6,477 +6,7 @@ The next milestone and active carry-over work. Shipped detail is in the
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
-## Next: v0.7.0 — mocopi live input and generic BVH recorded-motion ingestion ⬜
-
-**Release boundary:** a capture product's **two** surfaces both reach a
-retargeted `UsdSkelAnimation` through the **unchanged** `motion_retarget` — the
-live one over UDP through `vrmAdapterMocopi`, and the recorded one through a
-generic BVH pipeline that is not that product's importer. Planned in
-[adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) (Milestones B–D) and
-[recorded-motion-sources.md](recorded-motion-sources.md) (BVH-0 to BVH-4).
-
-Two decisions shape the whole release. **A recording is not a mode of the live
-adapter** — a BVH file argues about a hierarchy, channel order, a frame time and
-a rest pose, where a socket argues about packets, timestamps, restarts and
-tracking loss — so they are separate code meeting at `motionCore`
-([motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md)). And **the BVH
-pipeline's centre is not mocopi**: joint names, units, axes and root conventions
-are facts about the *writer*, so they live in a declarative producer profile and
-a second producer's profile lands while the first is still being written.
-
-It is also measured in **evidence, not code volume**. The live half's corpora
-are still generated — closed-form traces and protocol-shaped captures — so
-nothing on that side has met a device. The recorded half now has one real file
-(2026-08-04, below), which is the first fixture in this repository that could
-surprise it. The items that close the rest do not close by writing more code.
-
-Not in this boundary: OpenExec evaluation of any kind (that is v0.8.0), realtime
-skinned display, an FBX reader, an `SdfFileFormat` bundle for `.bvh`, the ARDY
-generator, and look-at. Expression *animation* is no longer on that list — the
-`motionCore` addition it was waiting on landed, and the `.vrma` reader now
-produces it (below) — but expressions reaching a **rig** still is: that is
-Motion Phase G.
-
-**A third live adapter is also not in this boundary, and the reason is the state
-of the release rather than the value of the work.** VRChat OSC Trackers input,
-and the shared OSC and transport libraries it forces, are
-[their own track](osc-and-vrchat-trackers.md) in the release below. Everything
-still unchecked here is evidence an operator produces — a relay session, a
-release artifact running the path a workspace build already runs — and adding an
-adapter, two library extractions and a solve boundary underneath those would
-reopen a code milestone under a release that has finished having one.
-
-### Done when
-
-**Live**
-
-- [ ] a mocopi device drives the pipeline **natively** over UDP, through
-      `vrmAdapterMocopi` — *the adapter reaches the humanoid as of 2026-08-12,
-      and what is left in this line is the two layers above it. The order it was
-      built in is not the order it was planned in, and the inversion is the
-      finding: the wire format is undocumented, so there was nothing to write a
-      corpus from and the **socket** had to come first (2026-08-11) rather than
-      last. Then the corpus, measured off five real device sessions; then the
-      **decoder**; then the **joint map and the basis change** (2026-08-12),
-      which is the first layer here that names a bone; then **frame assembly**
-      (2026-08-14), which is the layer that decides — a frame missing three bones
-      is now a frame, reported and passed on, and a source that restarted is
-      detected from the stream clock **and** the frame counter, neither of which
-      suffices alone. Then the **`LiveCaptureSource` bridge** (2026-08-15), which
-      closes the code half of this line: a recorded capture now samples like any
-      clip through the unchanged runtime, and what a source restart costs is a
-      recorded choice rather than a described one. The **loopback corpus** landed
-      behind it the same day and closed the one claim the inverted build order
-      had left open — the same committed bytes through a bound socket, compared
-      all the way to the pose (next line). **A device drove it on 2026-08-15**:
-      five sessions off a mocopi app 2.7.2 rig reached this host over UDP 12351,
-      and the first one decoded with **zero diagnostics** — 2190 frames, the
-      sender's clock at 59.9453 Hz, every layer from the socket to the pose
-      consuming hardware that no fixture had prepared it for. One of them was
-      then baked onto a real avatar through the unchanged product tools and
-      looked at. What is left in this line is a **release artifact** running the
-      same path, not a device ([Milestone D](adapters-mocopi-vmc-ardy.md))*;
-- [x] recorded packet fixtures decode deterministically with no socket, and a
-      loopback test proves the socket path agrees with them — *both halves are
-      closed (2026-08-15). Nine committed captures decode, and as of 2026-08-12
-      map onto canonical bones — and as of 2026-08-15 become poses a consumer
-      samples — with no socket anywhere; the recorder's loopback test proves what
-      comes off a socket is byte-identical to what a capture file keeps. The
-      sibling's arrangement landed last: `vrmAdapterMocopi_loopbackCorpus`
-      replays all nine captures **through a bound socket** — 54 datagrams — and
-      requires the frames, the sampled poses, the diagnostics and all three
-      tallies to be identical to the file path's. It needs **no clock
-      exemption**, where the sibling must exempt the pose timestamp when a sender
-      omits `/VMC/Ext/T`: a receive time reaches nothing on this protocol, so
-      the equality is exact everywhere. Verified negatively — one byte dropped
-      from every datagram turns all nine red in all three kinds of evidence. The
-      corpus's own limit is separate and stays whatever this line says: **these
-      fixtures pin the decoder, not the protocol**, because the grammar that
-      wrote them is the grammar they are read with*;
-- [ ] tracking loss, recovery, and source restart are recorded rather than
-      described — *the **restart** is recorded (2026-08-15): a real
-      stop-and-start raised `VRM_MOCOPI_SOURCE_RESTARTED` from the clock branch,
-      and the new session was dark for **233 frames = 3.8833 s** until the
-      device repeated its rest table — the refusal count and the new session's
-      first emitted timestamp agreeing exactly, which cross-checks the
-      assembler's accounting against the hardware. The roadmap's "about 3.5 s"
-      was optimistic. `VRM_MOCOPI_DEVICE_UNAVAILABLE` was raised by a device for
-      the first time in the same gap. **Tracking loss was dropped as a take, and
-      why is the finding**: removing a sensor puts the product into re-tracking,
-      so "a stream carrying a lost sensor" is a state this application's UX does
-      not produce — a second reason `VRM_MOCOPI_TRACKING_LOST` stays frozen and
-      unraised, beside having no field in the measured grammar. What this line
-      still waits on is therefore a **recovery** that a device can actually
-      produce, or a decision that this product cannot produce one*;
-- [ ] the session reaches a real VRM avatar through **unchanged**
-      `motion_capture` and `motion_retarget` — *the chain closes for VMC
-      (2026-08-04): `vmc_record --export-trace` hands the product a
-      `motion-capture-trace` and both tools consume it unmodified, checked
-      through a `UsdSkelSkeletonQuery` by joint name. The words **real VRM
-      avatar** are closed too (2026-08-11): `vmc_record_endToEnd` now drives the
-      same session onto `Seed-san.vrm` as well as onto its fixture rig — three
-      joints of a hundred and twenty-eight move, so the claim is no longer
-      "three moved" but "three moved and the hair did not". The word **mocopi**
-      closed on 2026-08-15, for **committed bytes**: `mocopi_record
-      --export-trace` writes the same canonical file (from `--inspect` only, so
-      a recording still runs no decoder) and `mocopi_record_endToEnd` drives two
-      captures through both product tools onto the same released avatar, 2 of
-      128 joints differing by name **and by side**. What is left is a session a
-      device produced, which is this line's remaining word and not a code item
-      ([Milestone D](adapters-mocopi-vmc-ardy.md)).*
-
-**Recorded**
-
-- [ ] a generic BVH parser, with `motion_bvh_inspect` over it — *both landed
-      2026-08-04: the parser, its frozen diagnostic set and its format-shape
-      corpus (`libs/motionBvh`), then the CLI over it (`tools/motionBvh`),
-      which links no OpenUSD because the layer under it has no value type to
-      borrow from Gf*;
-- [x] the format-neutral `motionSource` model and the profile contract — *the
-      model landed 2026-08-04 (`libs/motionSource`): the source rig, the source
-      animation in the source's own angle order and unit, provenance, and one
-      declared crossing into canonical motion. The contract followed on
-      2026-08-05 — the vocabulary a profile states by name, its invariants, the
-      typed refusals that settled where the six semantic `VRM_BVH_*` codes are
-      raised, and matching a profile against a rig as a hierarchy embedding
-      returning facts rather than a score — and the **file** with it: the keys,
-      and an unknown one refused rather than dropped. A recorded file's
-      provenance was settled with the model as a **neighbour** of
-      `MotionSourceMetadata` with a narrowing derivation
-      ([contract](../design/MOTION_CONTRACT.md#recorded-source-provenance-v070))*;
-- [ ] the mocopi profile **and one independent mocap producer's**, plus a
-      user-defined profile proving the contract is usable from outside — *the
-      first landed 2026-08-05 (`profiles/motion/`), written from the one export
-      BVH-0 measured and checked against it by root, joint set, ignore list and
-      hierarchy. The third closed 2026-08-15: `motion_bvh_convert_clip` writes a
-      profile this repository does not ship, for the four-joint generated rig no
-      shipped profile describes, names it **by path with no search directory**,
-      and requires the clip to carry the user's own id and producer — then
-      requires that same profile to be **refused** against a rig it does not
-      describe, so what passed is a match rather than a path being trusted. That
-      is the half that says the contract is usable from outside, and it is the
-      only one code could close. **The second producer is what this line still
-      waits on**, and no amount of code closes it: two artifacts by the same hand
-      agreeing proves less than it looks like, which is the whole reason the
-      milestone asks for a producer nobody here wrote*;
-- [x] BVH → `HumanoidAnimation` → the same avatar-independent semantic clip
-      `motion_capture` and `usdVrmaFileFormat` already author — *both arrows
-      landed 2026-08-05. The first is two layers: the extractor (`motionBvh`)
-      that turns a document into `motionSource` values and took the declared
-      edge, and the converter (`motionSource`) that reads those under a
-      profile — the change of basis as one signed permutation whose determinant
-      is the handedness question, the intrinsic Euler composition, the path rule
-      so a joint no profile maps is not a rotation thrown away, the rest pose
-      built by that same walk, and the two root policies. The second is the clip
-      **writer** in `motion_bvh_convert`, which made three callers of one
-      authoring shape and settled that question as a repeated shape with the
-      condition that would change it, because the one field they differ in is
-      the rest pose and it is the field that matters most
-      ([§10](recorded-motion-sources.md))*;
-- [x] `motion_bvh_convert` → **unchanged** `motion_retarget` → a target VRM,
-      verified through a `UsdSkelSkeletonQuery` — *the pipeline landed
-      2026-08-05 and the retargeter needed no change, which is the claim that
-      makes stopping at the avatar-independent clip worth anything. The last two
-      words closed 2026-08-11: `workspace_real_avatar_bake` bakes the recorded
-      session onto `Seed-san.vrm`, a released VRM 1.0 sample, and the fixture
-      test stays because the two rigs answer different questions. The real one
-      found what a fixture could not — **a released avatar's humanoid is
-      incomplete**: this model has no `upperChest`, the mocopi profile maps a
-      source joint to one, and the rotation is dropped whole rather than
-      redistributed. Measured, reported by name on stderr, and now pinned by a
-      characterisation test; the contract question it raises is
-      [§10](recorded-motion-sources.md#10-contract-changes-this-plan-requires)*;
-- [ ] no producer name in `motionBvh` or `motionSource` code, and no default
-      profile anywhere.
-
-**Cross-source and evidence**
-
-- [ ] one physical session observed as mocopi UDP *and* mocopi BVH, compared at
-      the canonical layer, with a VMC relay added if one is available — *the two
-      mocopi paths were compared on 2026-08-15
-      ([report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.md)): one
-      session recorded both ways over the same window, driven to a canonical
-      clip on each side, agreeing to a median **0.084°** per bone with the
-      residual shown to be timing rather than value — 0.0000° median wherever a
-      bone was still, and every one of the twenty worst samples in the first 13
-      frames implying the same lag. It also found what the alignment had to
-      handle first: **the two outputs of one application do not share a clock**,
-      slipping about 1667 ppm. **A VMC relay is what this line still waits on**,
-      and it is two of three rather than one of three*;
-- [x] what each path cannot carry is written down, from evidence — *[report 01
-      §4](../reports/motion/01-2026-08-15-mocopi-cross-source.md), five entries,
-      each a measurement from a real session rather than a prediction. The one
-      that matters: **the body's travel**. 4.81 m of hips path reaches the
-      recorded path and nothing at all reaches the live one. The others are the
-      device identity (kept by a capture, no key in a trace), a second peer
-      (seen live, unrepresentable in a capture header — found by the restart
-      session arriving from two source ports), the transport facts a file has
-      none of, and tracking state, which **neither** path carries*;
-- [x] the root / hips observation is written down, and the canonical answer
-      chosen or explicitly left open with its downstream cost stated — *written
-      2026-08-23 as
-      [the contract's own section](../design/MOTION_CONTRACT.md#root-and-hips-v070),
-      and it closes as **both** halves of the condition rather than one: chosen
-      where the evidence decided it, left open where it did not, with the cost
-      of the open part stated. Canonical today: a hips translation that is a
-      rig's only translating joint **is** body translation and is
-      `RootMotion::worldPosition`, absolute in the source's own space, with the
-      hips rotation as the root's orientation. That was already what the
-      recorded path authored; the native path now authors it too, under
-      `BodyPlacementPolicy::HipsOnly` — the only one of §5.2's four words this
-      protocol can express, since there is no root channel for the other three
-      to compose with. **The 4.81 m stops being dropped**: a session recorded
-      over UDP now travels on the avatar instead of walking on the spot, checked
-      end to end through unchanged `motion_capture` and `motion_retarget` onto
-      the fixture rig **and** onto `Seed-san.vrm`, both moving their hips by the
-      same (0, −0.02, +0.04) the generator wrote. Verified negatively: the
-      default set back to `None` turns six tests red across four layers. The
-      **VMC half stays open and says so** — two channels, no real sender
-      recorded, and a session that retargets in place until one is; deciding it
-      by analogy with the native rig would be composing a value from a guess
-      about a product, which §2 forbids*;
-- [ ] redistributable captures and BVH files are committed; the rest survive as
-      measured manifests with no bytes — *the first BVH file is in
-      (`libs/motionBvh/tests/corpus/recorded/`, 2026-08-04). **The live half is
-      done as of 2026-08-15 and done as the second clause**: five device
-      sessions exist as
-      [`recorded/manifest.json`](../../adapters/liveCapture/mocopi/tests/corpus/recorded/manifest.json)
-      with hashes, every measured statistic, the diagnostics each raises and
-      what each settled — and **no bytes**, since a session is a real person's
-      motion and a skeleton packet is a body measurement of that person. Unlike
-      the BVH corpus's licensed half there is not even an upstream to fetch
-      from, so the directory's `.gitignore` refuses everything but the manifest.
-      What is left in this line is a **redistributable** capture, which needs
-      the vendor's `BVH Sender` rather than a device*;
-- [ ] both paths run from release artifacts alone, profiles included;
-- [ ] a v0.7.0 release record exists.
-
-**Best-effort, no longer a gate.** Recording two or more real VMC sender
-applications and publishing an interoperability matrix was a numbered condition
-here until the BVH axis joined this release. It is still the right work and any
-sender available during v0.7.0 gets recorded — but the release no longer waits on
-lining up other people's applications, because the cross-source comparison above
-needs only the device.
-
-### The three questions this release exists to answer
-
-Each is open in the tree today, each is named at the layer that declined to
-guess, and none of them is answerable from generated bytes:
-
-- **What a sender means by hips offset and root.** `/VMC/Ext/Root/Pos` and the
-  hips local position are both reachable and deliberately **not composed** — a
-  `HumanoidPose` has one `RootMotion` and nowhere to put the other. `vmc_record`
-  already reports how far each moved, and reports it as movement rather than as
-  meaning, because the tool is in no better position to decide than the layer
-  below it. The decision record is a v0.7.0 deliverable whether or not a policy
-  is chosen: what was observed, what differed between senders, which value is
-  canonical today, what stays open, and what that costs downstream.
-- **What each path drops.** The mocopi native adapter is a committed deliverable
-  rather than something gated on this measurement — but the measurement still has
-  to happen, because it is the release's distinguishing check. One physical
-  session, observed live over UDP and exported to a file, gives motion that is
-  genuinely the same rather than merely similar; a VMC relay makes it three. The
-  results must differ only within a stated tolerance, and each difference outside
-  it must name the field responsible rather than widen the tolerance. Latency is
-  a live-path number only — a file has none, and reporting one would be inventing
-  it.
-- **What a real sender's bone set does.** Three refusal paths are unit-tested
-  with no capture behind them — an unknown bone name, the receive-clock fallback
-  when a frame carries no `/VMC/Ext/T`, and a leading bone that disappears and
-  returns (which the frame assembler's repeat rule hands back one frame early).
-  Inventing captures for them would be guessing at what a sender emits.
-
-### Corpus policy — recorded evidence is not the generated corpus
-
-The generated corpora stay. Real-session evidence goes beside them, never mixed
-in, and the same shape serves both halves of the release:
-
-```text
-<adapter or library>/tests/corpus/
-├─ generated/     protocol or format shapes, committed, CI-runnable, no hardware
-└─ recorded/
-   ├─ manifest.json      every recorded file, with or without its bytes
-   └─ redistributable/   real sessions and files cleared for publication
-```
-
-*Amended 2026-08-04, when the first recorded file landed.* This block used to
-show a second `manifests/` directory for everything not redistributable. One
-manifest per half is what was built instead: whether a file's bytes are
-committed is a **field**, not a location, because a row that changed directory
-when its redistribution status changed would break every reference to it for a
-reason that has nothing to do with the file.
-
-A capture or a file that cannot be redistributed leaves **no bytes** in the
-repository. It leaves a manifest: hash, recording or exporting tool version,
-sender or producer identity and version, device or relay identity, the measured
-statistics, the expected diagnostics, expected frame and pose counts, the
-validation date, and the redistribution status. A BVH manifest additionally
-carries the profile id, frame time, joint and channel counts, coordinate
-convention, unit, root policy, and the bones it is expected to map. That is
-enough for a later reader to tell whether a claim still holds without the bytes,
-and it is the same convention the VRM corpus already uses for models it cannot
-ship.
-
-Public CI runs the redistributable half. Hardware validation is an **opt-in
-lane** that never gates a pull request — its output is a capture and a manifest,
-not a green tick. A device is needed once per behavior, not once per run.
-
-### The first real file, and what it settled
-
-- ✅ **One vendor's phone export is committed** (2026-08-04) — 17 seconds, 27
-  joints, 162 channels, 853 rows at 50 Hz, cleared for publication by the
-  capture's owner. It is the first fixture the **motion layer** can be
-  *surprised* by: every corpus under `libs/` and `adapters/` was written here,
-  and a file written here can only confirm what was already believed. The
-  importer has had third-party files since the vendored
-  [spec samples](../../plugins/usdVrmFileFormat/tests/corpus/CORPUS.md) — this
-  is the same practice reaching the motion side, not a new one.
-- The measurements — the basis, the unit, the root convention, the seven-segment
-  spine, the position channels that restate the rest pose every frame — are in
-  [recorded-motion-sources.md §9](recorded-motion-sources.md#9-milestones) and in
-  the corpus manifest beside the file. They are recorded as **observations**,
-  because BVH declares none of them and this layer may act on none of them.
-- BVH-0 is therefore **started, not finished**. Its release condition is two
-  producers, and one file settles the shape of the evidence rather than the
-  profile schema — which is the whole reason the milestone asks for two.
-
-### Landed early: the expression sample and its first producer
-
-Not a v0.7.0 deliverable and not scope creep either — the contract owed this to
-two consumers, and the ordering question it left open
-([#88](https://github.com/animu-sphere/usd-vrm-plugins/issues/88)) turned out to
-be answerable by measurement rather than preference.
-
-- ✅ **`ExpressionWeights` on `HumanoidPose`**, plus `motion-capture-trace`
-  format 2 (2026-08-03, [#91](https://github.com/animu-sphere/usd-vrm-plugins/pull/91)).
-  The semantics and the one departure from what the contract asked for — on the
-  pose rather than in a parallel track — are in
-  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#expression-semantics-v070).
-- ✅ **`vrmAdapterVmc` carries `/VMC/Ext/Blend/Val`** instead of decoding and
-  dropping it ([#92](https://github.com/animu-sphere/usd-vrm-plugins/pull/92)).
-
-**Why the format change happened now rather than in Phase G.** The contract
-requires that a value-type addition reach the trace format in the same change,
-and v0.7.0 is the release that starts committing *recorded sessions*. Changing
-the format after real captures accumulate means re-recording them or carrying a
-compatibility story; before, it costs one regenerated corpus. That timing was
-the deciding argument, not the feature.
-
-**Why VMC and not `.vrma`.** The contract said whichever producer arrived first
-should author the type publicly. `vrmAdapterVmc` already decoded blend values to
-name and value and threw them away, naming this exact gap as the reason;
-`usdVrmaFileFormat` has no `expressions` parsing at all and no fixture to verify
-one against. One was a contract addition away, the other is a milestone.
-
-### The clip reader is the second producer
-
-- ✅ **`usdVrmaFileFormat` reads the `expressions` channel** (2026-08-23).
-  VRMA points an expression at a node and animates its **translation X** as the
-  weight; the reader carries the name verbatim onto `HumanoidPose::expressions`
-  and authors one prim per declared expression under `/Animation/Expressions`
-  with `vrm:expressionName` / `vrm:expressionType` and a time-sampled
-  `vrm:expressionWeight`. Expression key times join the same union every other
-  channel is evaluated at, so nothing is resampled onto the body's timeline.
-
-  Three behaviours are decisions rather than details, and each has a fixture
-  case in `expressive_face.vrma`: a weight outside `[0, 1]` is **carried
-  unclamped** with a `VRMA109` warning where the specification would clamp it;
-  an expression with no channel is read from its node — a stated transform is a
-  constant weight, because glTF leaves an un-animated node at its own TRS, while
-  a node stating nothing yields **no weight at all**, an unreported weight being
-  not a weight of zero; and the prims are **namespaced attributes, not a typed
-  schema**, which leaves the open question below open and costs nothing to
-  reverse — a `VrmAnimationExpressionAPI` applies to exactly these prims with
-  exactly these attribute names.
-
-  **What it does not yet give `ExpressionResolve` is a join key.** The layout
-  mirrors `/Asset/rig/Expressions/<name>`, but the importer sanitizes names
-  through its own private table that this bundle cannot link, so a non-ASCII
-  name lands on a different prim name on each side, and the avatar side authors
-  no `vrm:expressionName` to fall back on. The clip side carries the verbatim
-  name; the avatar side owes the same attribute.
-
-  The fixture is generated, as the milestone anticipated: all seven
-  `VRMA_MotionPack` clips carry `humanBones` and **no** `expressions`, so there
-  was no vendor file to read this against.
-
-### Still Motion Phase G, and unchanged by the above
-
-Expressions now travel from a sender *and from a clip* to a canonical pose and
-back out of a trace. They do not yet reach a **rig**, which is what #88 is
-actually about:
-
-- ⬜ **`ExpressionResolve`.** A VRM expression binds N morph targets across M
-  meshes plus material colours — it is *not* one blend shape — so expanding a
-  named weight onto a rig needs `VrmExpressionAPI`, which is why `motionCore`
-  carries the name verbatim, the clip reader authors a name and a number, and
-  neither resolves anything.
-- ⬜ **`motion_retarget` authors no `blendShapeWeights`**, and no
-  `skel:blendShapes` / `skel:blendShapeTargets` binding on its output.
-- ⬜ **Look-at is untouched**, in every layer.
-
-### Carried into v0.7.0
-
-- ⬜ **Freeze the Linux and macOS symbol baselines.** `tests/baseline/symbols/`
-  holds `windows-x86_64.txt` only, because until the workspace cells landed no
-  lane ran the Phase 0 gate anywhere else. `--check` skips a platform with no
-  committed file (it has nothing to regress against) and every other baseline
-  artifact is verified on all three OS, so the gap is symbols alone. Closing it
-  means running `tools/baseline_freeze.py --update` on a Linux and a macOS host
-  and committing the result.
-- ⛔ **The scheduled lane's `plugin_artifact` is still a 26.05 build.**
-  `usdvrmfileformat-support-windows-cy2026` pairs a 26.05-built plugin with a
-  26.08 runtime. OpenUSD guarantees no ABI stability across versions, so that
-  artifact must be republished before the lane's result means anything.
-  Untouched by v0.5.0 and v0.6.0. It is also the reason `ost ci validate` exits
-  non-zero on a workstation that holds the artifact (the evidence gate); hosted
-  runners do not hold it, so the generated lanes stay green.
-- ⚠️ **`release.yml` stays hand-authored, and hand-mirrors what the contract now
-  expresses.** Its X11 step, its `ost` pin and its runtime digests are copies of
-  `openstrata.ci.yaml` values; regeneration never touches them and a green PR
-  lane proves nothing about it. The `ost` release contract (`release:` in the
-  matrix) is the eventual fix; adopting it is not scoped yet.
-- ⬜ **The workspace graph gate does not reach an adapter.** `ost` 0.21.0
-  discovers plain libraries in the project root's immediate subdirectories and
-  under `libs/`, so `adapters/liveCapture/*/openstrata.library.yaml` is never
-  loaded and its declared edges are never validated — silently, since the gate
-  still reports "valid". Until
-  [report 34](../reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md)
-  is answered, the per-adapter binary link check is the enforcement — and
-  `vrmAdapterMocopi` landed with its own in its first commit (2026-08-09). That
-  commit also measured the gap rather than restating it: the gate reports the
-  same `6 libraries, 9 library edge(s), valid` with the new adapter present and
-  absent, so a second adapter is discovered as nothing exactly as the first one
-  is.
-- ⬜ **`vrmAdapterMocopi`'s standalone build is unverified since it grew a
-  platform link**
-  ([#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)). The
-  scaffold commit measured it; the receiver added `ws2_32` and an edit to the
-  installed package config without re-running the check, which is the one thing
-  a composed build cannot exercise. Low risk — `ws2_32` is a raw library name
-  rather than an imported target — and a prediction belongs in an issue rather
-  than in a claim. A POSIX run of the same check is worth more than the Windows
-  one, since there it verifies the *absence* of a threading link.
-- ⬜ **An adapter cannot be packaged separately.** `ost` 0.21.0 has no
-  per-library packaging command, and adapters are deliberately not part of the
-  aggregate product ([WORKSPACE.md §5](../architecture/WORKSPACE.md)). This does
-  not block v0.7.0 — the release boundary ends at a retargeted
-  `UsdSkelAnimation` from the workspace build — but it does block shipping an
-  adapter on its own.
-- ⬜ **Profiles are data that has to reach an artifact.** `motionSource` and
-  `motionBvh` *are* in the aggregate product (their libraries carry no product
-  name, only the data beside them does), so the BVH path's artifact-only smoke
-  needs `share/usd-vrm-plugins/profiles/motion/` staged with the tools. `ost`
-  0.21.0 has no notion of a data-only member and how the files get there is
-  unverified. A converter with no profile available refuses every file it is
-  given, so this is the difference between the smoke test passing and being
-  impossible to write. **`profiles/motion/` now exists** with one file in it, and
-  the plain-CMake half is closed: the root project installs it to that exact
-  destination and a scratch-prefix install proves it (2026-08-05). What is left
-  is the `ost` half, which is now a question about a real directory rather than a
-  hypothetical one.
-
-## Then: v0.7.5 — shared OSC foundation and VRChat OSC Trackers input ⬜
+## Next: v0.7.5 — shared OSC foundation and VRChat OSC Trackers input ⬜
 
 **Release boundary:** one physical session reaches the **unchanged** canonical
 motion and retarget pipeline through a **third** independently modelled live
@@ -563,6 +93,106 @@ test completes with nothing installed.
       by widening a tolerance;
 - [ ] what each path cannot carry is written down from evidence.
 
+### Carried into v0.7.5
+
+- ⬜ **Freeze the Linux and macOS symbol baselines.** `tests/baseline/symbols/`
+  holds `windows-x86_64.txt` only, because until the workspace cells landed no
+  lane ran the Phase 0 gate anywhere else. `--check` skips a platform with no
+  committed file (it has nothing to regress against) and every other baseline
+  artifact is verified on all three OS, so the gap is symbols alone. Closing it
+  means running `tools/baseline_freeze.py --update` on a Linux and a macOS host
+  and committing the result.
+- ⛔ **The scheduled lane's `plugin_artifact` is still a 26.05 build.**
+  `usdvrmfileformat-support-windows-cy2026` pairs a 26.05-built plugin with a
+  26.08 runtime. OpenUSD guarantees no ABI stability across versions, so that
+  artifact must be republished before the lane's result means anything.
+  Untouched by v0.5.0 and v0.6.0. It is also the reason `ost ci validate` exits
+  non-zero on a workstation that holds the artifact (the evidence gate); hosted
+  runners do not hold it, so the generated lanes stay green.
+- ⚠️ **`release.yml` stays hand-authored, and hand-mirrors what the contract now
+  expresses.** Its X11 step, its `ost` pin and its runtime digests are copies of
+  `openstrata.ci.yaml` values; regeneration never touches them and a green PR
+  lane proves nothing about it. The `ost` release contract (`release:` in the
+  matrix) is the eventual fix; adopting it is not scoped yet.
+- ⬜ **`vrmAdapterMocopi`'s standalone build is unverified since it grew a
+  platform link**
+  ([#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)). The
+  scaffold commit measured it; the receiver added `ws2_32` and an edit to the
+  installed package config without re-running the check, which is the one thing
+  a composed build cannot exercise. Low risk — `ws2_32` is a raw library name
+  rather than an imported target — and a prediction belongs in an issue rather
+  than in a claim. A POSIX run of the same check is worth more than the Windows
+  one, since there it verifies the *absence* of a threading link.
+- ⬜ **An adapter cannot be packaged separately, and half of one ships anyway.**
+  `ost` 0.22.2 has the verb report 34 asked for — `ost library build|test|package`
+  — and it composes no `requires.libraries`, so it configures a leaf and refuses
+  anything with an edge. Both adapters have two, so
+  `vrmAdapter<Name>-<version>-<target>.tar.zst` is still a naming rule. In the
+  same version tool discovery widened to reach
+  `adapters/<group>/<name>/tools/<tool>/`, so `mocopi_record` and `vmc_record`
+  are now **members of the aggregate product** — 9 where v0.6.0 shipped 7 —
+  which [WORKSPACE.md §5](../architecture/WORKSPACE.md) says they never should
+  be, and which no descriptor here can decline. §5 records the measurement; the
+  asks are
+  [report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md)
+  §2 and §3.
+- ⬜ **Profiles are data that has to reach an artifact, and it is one `ost` ask
+  wide.** `motionSource` and `motionBvh` *are* in the aggregate product (their
+  libraries carry no product name, only the data beside them does), so the BVH
+  path's artifact-only smoke needs `share/usd-vrm-plugins/profiles/motion/`
+  staged with the tools. The plain-CMake half closed 2026-08-05: the root
+  project installs the profiles to that exact destination and a scratch-prefix
+  install proves it. The packaged half is measured and still open — a
+  `motion_bvh` member is exactly its two executables and its descriptor, and the
+  unpacked converter refuses a real capture while naming
+  `<prefix>/share/usd-vrm-plugins/profiles/motion` as the first place it looked.
+  `directories: [bin, share]` **does** stage it and was rejected: it only works
+  by copying the layer's data under one tool's member root, so the copy that
+  ships stops being the file `scripts/check_motion_profiles.py` validates. The
+  ask is a data-only member
+  ([report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §4).
+
+### Carried out of v0.7.0 — evidence an operator produces
+
+None of these closes by writing code, and each is stated with what it costs.
+
+- ⬜ **A VMC relay session, compared at the canonical layer.** Two paths of
+  three were compared on 2026-08-15 (median 0.084° per bone,
+  [report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.md)); a relay
+  makes it three. Until one is recorded, the **VMC half of the root/hips
+  decision stays open** — a VMC session retargets in place, and that cost is
+  stated rather than hedged.
+- ⬜ **A recovery a device can actually produce, or a decision that this
+  product cannot.** The source *restart* is recorded from hardware — dark for
+  233 frames = 3.8833 s, the refusal count and the new session's first timestamp
+  agreeing exactly. Tracking loss was dropped as a take and the reason is the
+  finding: removing a sensor puts the app into re-tracking, so the stream never
+  carries a lost sensor. `VRM_MOCOPI_TRACKING_LOST` stays frozen and unraised.
+- ⬜ **A redistributable mocopi capture.** The five device sessions survive as
+  [`recorded/manifest.json`](../../adapters/liveCapture/mocopi/tests/corpus/recorded/manifest.json)
+  with hashes, every measured statistic and no bytes — a session is a real
+  person's motion and a skeleton packet is a body measurement of that person.
+  Getting a publishable one needs the vendor's `BVH Sender`, not a device.
+- ⬜ **Both paths running from release artifacts alone, profiles included.**
+  Blocked on the entry two above rather than on the paths: every other member
+  the two paths need is in the product as of `ost` 0.22.2, `mocopi_record`
+  included.
+
+### Still Motion Phase G
+
+Expressions now travel from a sender *and from a clip* to a canonical pose and
+back out of a trace — v0.7.0 closed the clip half. They do not yet reach a
+**rig**, which is what #88 is actually about:
+
+- ⬜ **`ExpressionResolve`.** A VRM expression binds N morph targets across M
+  meshes plus material colours — it is *not* one blend shape — so expanding a
+  named weight onto a rig needs `VrmExpressionAPI`, which is why `motionCore`
+  carries the name verbatim, the clip reader authors a name and a number, and
+  neither resolves anything.
+- ⬜ **`motion_retarget` authors no `blendShapeWeights`**, and no
+  `skel:blendShapes` / `skel:blendShapeTargets` binding on its output.
+- ⬜ **Look-at is untouched**, in every layer.
+
 ## Then: v0.8.0 — the OpenExec foundation (Workspace Phase 8 + Motion Phase E) ⬜
 
 **Release boundary:** `execMotion` and `execVrm` bundles exist and evaluate a
@@ -631,6 +261,115 @@ Three of this milestone's blockers cleared early — two in v0.5.0, one in v0.6.
   optional experimental adapter rather than a foundation. All three are in the
   [plan](openexec-foundation.md) §1, §7.0 and P0-7, and the two structural ones
   in [WORKSPACE.md §2](../architecture/WORKSPACE.md).
+
+## Standing: corpus policy — recorded evidence is not the generated corpus
+
+The generated corpora stay. Real-session evidence goes beside them, never mixed
+in, and the same shape serves both halves of the release:
+
+```text
+<adapter or library>/tests/corpus/
+├─ generated/     protocol or format shapes, committed, CI-runnable, no hardware
+└─ recorded/
+   ├─ manifest.json      every recorded file, with or without its bytes
+   └─ redistributable/   real sessions and files cleared for publication
+```
+
+*Amended 2026-08-04, when the first recorded file landed.* This block used to
+show a second `manifests/` directory for everything not redistributable. One
+manifest per half is what was built instead: whether a file's bytes are
+committed is a **field**, not a location, because a row that changed directory
+when its redistribution status changed would break every reference to it for a
+reason that has nothing to do with the file.
+
+A capture or a file that cannot be redistributed leaves **no bytes** in the
+repository. It leaves a manifest: hash, recording or exporting tool version,
+sender or producer identity and version, device or relay identity, the measured
+statistics, the expected diagnostics, expected frame and pose counts, the
+validation date, and the redistribution status. A BVH manifest additionally
+carries the profile id, frame time, joint and channel counts, coordinate
+convention, unit, root policy, and the bones it is expected to map. That is
+enough for a later reader to tell whether a claim still holds without the bytes,
+and it is the same convention the VRM corpus already uses for models it cannot
+ship.
+
+Public CI runs the redistributable half. Hardware validation is an **opt-in
+lane** that never gates a pull request — its output is a capture and a manifest,
+not a green tick. A device is needed once per behavior, not once per run.
+
+## Shipped: v0.7.0 — mocopi live input and generic BVH recorded-motion ingestion
+
+[v0.7.0](../releases/v0.7.0.md) is **prepared** — 2026-08-24.
+
+**Release boundary:** a capture product's **two** surfaces both reach a
+retargeted `UsdSkelAnimation` through the **unchanged** `motion_retarget` — the
+live one over UDP through `vrmAdapterMocopi`, and the recorded one through a
+generic BVH pipeline that is not that product's importer. Two decisions shaped
+all of it. **A recording is not a mode of the live adapter** — a BVH file argues
+about a hierarchy, a channel order, a frame time and a rest pose where a socket
+argues about packets, timestamps, restarts and tracking loss — so they are
+separate code meeting at `motionCore`
+([motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md)). And **the BVH
+pipeline's centre is not mocopi**: joint names, units, axes and root conventions
+are facts about the *writer*, so they live in a declarative producer profile.
+
+- ✅ **`vrmAdapterMocopi`, built receiver-first.** The inversion is the finding,
+  not a shortcut: the wire format is undocumented, so there was nothing to write
+  a corpus *from* and the socket had to come first. Then the corpus, measured
+  off real sessions; the decoder; the joint map and basis change, the first
+  layer here that names a bone; frame assembly, the layer that decides — a frame
+  missing three bones is still a frame, reported and passed on, and a source that
+  restarted is detected from the stream clock **and** the frame counter, neither
+  of which suffices alone; then the `LiveCaptureSource` bridge, after which a
+  recorded capture samples like any clip through the unchanged runtime.
+- ✅ **A device drove every layer of it** (2026-08-15, five sessions, mocopi app
+  2.7.2 over UDP 12351). The first capture decoded with **zero diagnostics** —
+  2190 frames, the sender's clock at 59.9453 Hz. A real restart was dark for
+  **233 frames = 3.8833 s**, where the roadmap had guessed "about 3.5 s".
+- ✅ **The body travels.** `BodyPlacementPolicy` (default `HipsOnly`) composes
+  `RootMotion` from a rig whose only translating joint is the hips, which is the
+  §5.2 record this release owed. Before it the live path silently dropped
+  **4.81 m** of hips travel that the recorded path carried.
+- ✅ **`mocopi_record`, and the way out of the adapter.** `--export-trace`
+  writes a canonical `motion-capture-trace` from `--inspect` only, so a
+  *recording* still runs no decoder; `mocopi_record_endToEnd` drives two
+  captures through unchanged `motion_capture` / `motion_retarget` onto
+  `Seed-san.vrm`, 2 of 128 joints differing by name **and by side**.
+- ✅ **The loopback corpus.** All nine captures replayed **through a bound
+  socket** produce frames, poses, diagnostics and all three tallies identical to
+  the file path's — with no clock exemption, because a receive time reaches
+  nothing on this protocol. Verified negatively: one byte dropped from every
+  datagram turns all nine red in all three kinds of evidence.
+- ✅ **A generic BVH pipeline** — `motionBvh` (syntax, a frozen diagnostic set,
+  a format-shape corpus), `motionSource` (the format-neutral model and the
+  profile contract), `motion_bvh_inspect` and `motion_bvh_convert`.
+- ✅ **Two producer profiles and a user-defined third.** Sony mocopi's mobile
+  export, and Bandai Namco Research's Motiondataset written from two measured
+  exports of a rig nobody here wrote — the two disagree about what a root joint
+  is, which is exactly why the condition was two producers rather than one. The
+  third is proven by test: named by path with no search directory, required to
+  match, and required to be **refused** against a rig it does not describe.
+- ✅ **One physical session observed two ways**, agreeing to a median **0.084°**
+  per bone with the residual shown to be *timing* rather than value
+  ([report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.md)) — and
+  what each path cannot carry written down from evidence, five measured entries.
+- ✅ **No producer name in `motionBvh` or `motionSource`, and no default profile
+  anywhere**, pinned by two boundary CTest names and positive-controlled by
+  injecting a product name into a copied tree.
+
+Also landed with v0.7.0, outside the motion boundary: a `.vrma` clip's
+**expressions** reach the stage as prims under `/Animation/Expressions`; unlit
+VRM materials gained a **MaterialX** network that is the one that renders; and
+three material-import corrections (`KHR_texture_transform` sampling,
+`alphaMode: OPAQUE` alpha, and a UsdPreviewSurface network that was a pile of
+shader nodes rather than a material).
+
+**The three questions this release existed to answer** are answered on two of
+three. What a sender means by hips offset and root is decided for the native
+path and open for VMC. What each path drops is measured. What a real sender's
+bone set does was answered by five sessions that raised no unknown-bone refusal
+at all — and by a tracking-loss take that turned out to be unproducible on this
+product. The remaining operator evidence is carried into v0.7.5 above.
 
 ## Shipped: v0.6.0 — VMC input
 

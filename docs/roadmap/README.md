@@ -60,9 +60,9 @@ must repeat one, `scripts/check_docs.py` checks it against this table.
 | Track | Status | Target |
 | --- | --- | --- |
 | VMC input | Shipped | v0.6.0 |
-| mocopi live input | Next | v0.7.0 |
-| generic BVH recorded-motion ingestion | Next | v0.7.0 |
-| shared OSC foundation + VRChat OSC Trackers input | Planned | v0.7.5 |
+| mocopi live input | Shipped | v0.7.0 |
+| generic BVH recorded-motion ingestion | Shipped | v0.7.0 |
+| shared OSC foundation + VRChat OSC Trackers input | Next | v0.7.5 |
 | OpenExec foundation | Planned | v0.8.0 |
 | `ExecIr` invertible VRM humanoid rig | Planned | after v0.8.0 |
 
@@ -77,24 +77,31 @@ carrying a version number is drift waiting to be re-litigated.
 
 - The workspace covers **Workspace Phase 6b and 7**: `motionCore`,
   `motionRuntime`, `vrmRetarget`, and `usdVrmaFileFormat` implement Motion
-  Phases A–D, and `vrmAdapterVmc` is the first vendor leaf over them. Only
-  Workspace Phase 8 (`execMotion` / `execVrm`) is unbuilt.
-- **v0.6.0 is released** (VMC input). Every lane is pinned to OpenUSD 26.08 —
-  and since v0.6.0, no other OpenUSD will configure at all.
+  Phases A–D; `vrmAdapterVmc` and `vrmAdapterMocopi` are the vendor leaves over
+  them, and `motionSource` / `motionBvh` are the recorded-file half beside them.
+  Only Workspace Phase 8 (`execMotion` / `execVrm`) is unbuilt.
+- **v0.7.0 is prepared** (mocopi live input and generic BVH ingestion), after
+  v0.6.0's VMC input. Every lane is pinned to OpenUSD 26.08 — and since v0.6.0,
+  no other OpenUSD will configure at all.
 - **The motion layer has CI.** `ost` 0.21.0's `kind: workspace` cells build the
   root tree and run its whole CTest suite on all three OS; the v0.5.0
   hand-written lane is deleted. They picked the adapter's tests up — including
   the two that bind a socket — with no CI edit.
-- **Input has two halves, and v0.7.0 builds both.** Live input is
+- **Input has two halves, and v0.7.0 built both.** Live input is
   [the adapter track](adapters-mocopi-vmc-ardy.md); recorded files are
   [the BVH track](recorded-motion-sources.md), which is a generic pipeline with
   producer semantics in data rather than a capture product's importer. They meet
   at `motionCore` and nowhere earlier
-  ([motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md)).
+  ([motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md)). One physical
+  session observed both ways agrees to a median **0.084°** per bone
+  ([report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.md)); what
+  v0.7.0 did **not** close is operator evidence — a VMC relay, a device recovery
+  take, a redistributable capture, and an artifact-only run that needs the
+  profiles to reach an artifact first.
 - **The live half gains a third leaf in v0.7.5, and a shared floor under all
-  three** ([the OSC track](osc-and-vrchat-trackers.md)). It is deliberately not
+  three** ([the OSC track](osc-and-vrchat-trackers.md)). It was deliberately not
   in v0.7.0: that release's remaining items are evidence an operator produces,
-  and a third adapter would reopen a code milestone underneath them. It is
+  and a third adapter would have reopened a code milestone underneath them. It is
   deliberately not v0.8.0 either, because OpenExec is meant to evaluate a
   finished canonical pipeline rather than share a release with one being
   extended. The duplication it resolves is **measured, not anticipated** — the

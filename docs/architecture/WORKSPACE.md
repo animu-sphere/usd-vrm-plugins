@@ -463,9 +463,22 @@ vrmAdapterArdy-<version>-<target>.tar.zst      (when it exists)
 ```
 
 Those three are a naming rule for when the artifacts exist, not a description of
-what the release lane emits: `ost` 0.21.0 packages a plugin bundle or a
-workspace of them, and has no per-library command, so an adapter reaches a
-consumer through the workspace build until one arrives.
+what the release lane emits. `ost` 0.22.2 grew `ost library build|test|package`,
+but it composes no `requires.libraries`, so it configures a leaf and refuses
+anything with an edge — and both adapters have two. An adapter library therefore
+still reaches a consumer through the workspace build
+([report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §2).
+
+**The "never" above is no longer true of an adapter's CLI, as of v0.7.0.**
+`ost` 0.22.2 discovers a tool descriptor under
+`adapters/<group>/<name>/tools/<tool>/`, so `mocopi_record` and `vmc_record`
+are members of the aggregate product — 9 members, where v0.6.0 shipped 7 —
+without any descriptor here changing. The exclusion this section states is
+therefore currently enforced for the adapter *libraries* and not for their
+tools. That is recorded rather than corrected: the widening is what puts the
+live path's recorder into an artifact at all, and nothing in either descriptor
+can yet declare a member out of the product (§3 of the same report). The
+reasoning below still says which way it should be declared once it can be.
 
 `motionSource` and `motionBvh` are **not** adapters and take the opposite
 decision: they carry no product name in code, so they belong in the aggregate
@@ -476,14 +489,22 @@ members of it. The profile files ship as package data beside them —
 available refuses every file it is given, which would make an artifact-only
 smoke test of the BVH path impossible to pass.
 
-**That last sentence is the requirement, and as of 2026-08-05 only `cmake
---install` meets it.** A packaged product does not: `ost` 0.21.0 packages a tool
-member out of the `directories:` its descriptor declares, has no notion of a
-data-only member, and the measured `motion_bvh` archive is exactly its two
-executables and its descriptor. So the smoke test the paragraph above exists to
-make possible is currently impossible for the reason it names, which is stated
-here rather than left for whoever writes that test to rediscover
-([recorded-motion-sources.md §10](../roadmap/recorded-motion-sources.md)).
+**That last sentence is the requirement, and as of 2026-08-24 only `cmake
+--install` meets it.** A packaged product does not: `ost` packages a tool member
+out of the `directories:` its descriptor declares, has no notion of a data-only
+member, and the measured `motion_bvh` archive is exactly its two executables and
+its descriptor. Unpacked and run, the converter refuses a real capture and names
+`<prefix>/share/usd-vrm-plugins/profiles/motion` as the first directory it
+looked in — so the layout is agreed and only the staging is missing. Declaring
+`directories: [bin, share]` does stage it, and was rejected: `directories:`
+names subdirectories of the *member root*, so it would put the layer's data
+inside one tool's directory and the copy that ships would stop being the file
+`scripts/check_motion_profiles.py` validates. The smoke test the paragraph above
+exists to make possible is therefore still impossible, for a reason that is now
+one `ost` ask wide rather than an open question — stated here rather than left
+for whoever writes that test to rediscover
+([recorded-motion-sources.md §10](../roadmap/recorded-motion-sources.md),
+[report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §4).
 
 That split is the one to check when a future reader arrives: a reader is in the
 product if the *library* is producer-neutral, whatever the data beside it is
