@@ -130,6 +130,21 @@ FrameAt(std::uint32_t frameNumber, double streamSeconds)
     return FramePacket(frameNumber, streamSeconds, kEpoch + streamSeconds);
 }
 
+// Puts the root joint's translation somewhere other than its rest offset, which
+// is the one thing every measured frame does and `FramePacket` does not: the
+// builder restates rest for all 27 joints, so a session built from it stands
+// still. A test about the body's placement needs a body that moved.
+inline void
+MoveHips(vrmAdapterMocopi::MotionPacket* packet, float x, float y, float z)
+{
+    for (vrmAdapterMocopi::BoneFrame& bone : packet->frame->bones) {
+        if (bone.boneId == 0) {
+            bone.transform.translation = {x, y, z};
+            return;
+        }
+    }
+}
+
 // Removes a joint's record, so the bones on its path cannot be formed.
 inline void
 DropJoint(vrmAdapterMocopi::MotionPacket* packet, std::uint16_t boneId)

@@ -61,6 +61,7 @@ namespace
 using namespace vrmAdapterMocopiTests;
 
 using motion::HumanBone;
+using vrmAdapterMocopi::BodyPlacementPolicy;
 using vrmAdapterMocopi::BoneDefinition;
 using vrmAdapterMocopi::BoneFrame;
 using vrmAdapterMocopi::Diagnostic;
@@ -408,21 +409,87 @@ TestAFrameThatFormsNoBoneIsRefused()
 // ---------------------------------------------------------------------------
 
 void
-TestTheHipsTranslationIsNotRootMotion()
+TestTheHipsTranslationIsTheBodysRootMotion()
 {
     MocopiFrameAssembler assembler;
     std::vector<MocopiFrame> frames;
     std::vector<Diagnostic> diagnostics;
     assembler.Push(SkeletonPacket(), 0.0, &frames, &diagnostics);
-    assembler.Push(FrameAt(3000, 0.0), 0.0, &frames, &diagnostics);
+    MotionPacket moved = FrameAt(3000, 0.0);
+    MoveHips(&moved, 0.25f, 0.90f, -1.50f);
+    assembler.Push(moved, 0.0, &frames, &diagnostics);
 
-    // Reachable, and deliberately not composed. Whether the body's placement is
-    // root motion is the open record this release exists to close, and an
-    // assembler that filled in a `RootMotion` would have answered it silently.
+    // The record, executed (MOTION_CONTRACT.md, "Root and hips"). The hips
+    // translation is still on the frame — that is what the device sent — and it
+    // is now also the pose's root, which is what was decided about it.
     assert(frames[0].hipsPosition.has_value());
-    assert(std::fabs((*frames[0].hipsPosition)[1] - 0.90f) < 1e-6f);
+    assert(std::fabs((*frames[0].hipsPosition)[0] - 0.25f) < 1e-6f);
+    assert(std::fabs((*frames[0].hipsPosition)[2] + 1.50f) < 1e-6f);
+    assert(frames[0].pose.root.hasPosition);
+    // The same value and not a derived one: absolute, in the sender's space.
+    assert(frames[0].pose.root.worldPosition == *frames[0].hipsPosition);
+
+    // And the body's orientation, from the hips bone's own rotation. It stays
+    // on the bone as well, which is what the recorded half does for a rig that
+    // roots at its hips — the root path is one joint, so the composition down
+    // it is that joint.
+    assert(frames[0].pose.root.hasOrientation);
+    assert(frames[0].pose.root.worldOrientation
+           == frames[0].pose.localRotations[static_cast<std::size_t>(
+               HumanBone::Hips)]);
+
+    // The device reports no velocity and this layer derives none: that is the
+    // intake's policy, and an assembler that did it would be a second runtime.
+    assert(!frames[0].pose.root.hasLinearVelocity);
+    assert(!frames[0].pose.root.hasAngularVelocity);
+}
+
+void
+TestTheBodyPlacementPolicyIsWhatDecidesThat()
+{
+    // `None` is the shape every version of this adapter had before the record
+    // was written, and it is reachable rather than historical: the sibling's
+    // half of the record is still open, so a caller comparing this path against
+    // one that composes nothing has to be able to ask for it.
+    MocopiFrameConfig config;
+    config.bodyPlacement = BodyPlacementPolicy::None;
+    MocopiFrameAssembler assembler(config);
+    std::vector<MocopiFrame> frames;
+    std::vector<Diagnostic> diagnostics;
+    assembler.Push(SkeletonPacket(), 0.0, &frames, &diagnostics);
+    MotionPacket moved = FrameAt(3000, 0.0);
+    MoveHips(&moved, 0.25f, 0.90f, -1.50f);
+    assembler.Push(moved, 0.0, &frames, &diagnostics);
+
     assert(!frames[0].pose.root.hasPosition);
     assert(!frames[0].pose.root.hasOrientation);
+    // The narrowing is of the pose and never of the measurement. A setting that
+    // also dropped this would make the two policies differ in what the device
+    // said rather than in what was decided about it.
+    assert(frames[0].hipsPosition.has_value());
+    assert(std::fabs((*frames[0].hipsPosition)[0] - 0.25f) < 1e-6f);
+}
+
+void
+TestAFrameWithNoHipsRecordComposesNoRootPosition()
+{
+    // The hips record is what the position is read from, so a frame that lost
+    // it has no placement to state — and stating one from the previous frame
+    // would be the repair this assembler refuses to make everywhere else.
+    MocopiFrameAssembler assembler;
+    std::vector<MocopiFrame> frames;
+    std::vector<Diagnostic> diagnostics;
+    assembler.Push(SkeletonPacket(), 0.0, &frames, &diagnostics);
+    assembler.Push(FrameAt(1, 0.0), 0.0, &frames, &diagnostics);
+    frames.clear();
+
+    MotionPacket rootless = FrameAt(2, 1.0 / kFrameRate);
+    DropJoint(&rootless, 0);
+    assembler.Push(rootless, 1.0 / kFrameRate, &frames, &diagnostics);
+
+    assert(frames.size() == 1);
+    assert(!frames[0].hipsPosition.has_value());
+    assert(!frames[0].pose.root.hasPosition);
 }
 
 void
@@ -569,16 +636,32 @@ CheckArmsLowered(const AssembledCapture& capture, const std::string& name)
         return Failed(name, "a rig and three assembled frames were expected");
     }
     // The generator moves the root every frame, which is the one translation
-    // this rig sends. It reaches the caller as the body's placement and not as
-    // root motion.
+    // this rig sends. It reaches the caller twice: as the body's placement on
+    // the frame, and as the pose's root motion, which is the same value under
+    // the policy the record chose.
     for (const MocopiFrame& frame : capture.frames) {
-        if (!frame.hipsPosition || frame.pose.root.hasPosition) {
-            return Failed(name, "the hips translation was read as root motion");
+        if (!frame.hipsPosition || !frame.pose.root.hasPosition) {
+            return Failed(name, "the hips translation did not reach a "
+                                "RootMotion");
+        }
+        if (frame.pose.root.worldPosition != *frame.hipsPosition) {
+            return Failed(name, "the root position was not the hips "
+                                "translation");
+        }
+        if (!frame.pose.root.hasOrientation) {
+            return Failed(name, "the hips rotation did not reach the root's "
+                                "orientation");
         }
     }
     if (!((*capture.frames[0].hipsPosition)[1]
           > (*capture.frames[2].hipsPosition)[1])) {
         return Failed(name, "the body's placement did not move");
+    }
+    // And the movement survives the composition. Comparing the frame against
+    // itself would pass on a root that was authored once and then held.
+    if (!(capture.frames[0].pose.root.worldPosition[1]
+          > capture.frames[2].pose.root.worldPosition[1])) {
+        return Failed(name, "the root motion did not move");
     }
     return 0;
 }
@@ -897,7 +980,9 @@ main(int argc, char** argv)
     TestAnIncompleteFrameIsEmittedAndReported();
     TestMissingIsMeasuredAgainstTheDeclaredRigAndNotTheHumanoid();
     TestAFrameThatFormsNoBoneIsRefused();
-    TestTheHipsTranslationIsNotRootMotion();
+    TestTheHipsTranslationIsTheBodysRootMotion();
+    TestTheBodyPlacementPolicyIsWhatDecidesThat();
+    TestAFrameWithNoHipsRecordComposesNoRootPosition();
     TestTheGrammarCarriesNoTrackingStateAndNoneIsInvented();
     TestTheTwoClocksGiveADriftCheck();
     TestResetDropsTheSessionAndKeepsTheStats();

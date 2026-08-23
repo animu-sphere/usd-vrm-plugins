@@ -237,6 +237,30 @@ MocopiFrameAssembler::_PushFrame(const MotionFrame& frame,
 
     if (mapping.hasHipsPosition) {
         out.hipsPosition = mapping.hipsPosition;
+        if (_config.bodyPlacement == BodyPlacementPolicy::HipsOnly) {
+            // The record, executed. Absolute and in the sender's own space,
+            // which is the same canonical thing the recorded path authors for
+            // this rig -- `motion_capture` seeds the hips rest from the
+            // session's first root position, so what reaches an avatar is a
+            // delta either way (MOTION_CONTRACT.md, Phase C).
+            out.pose.root.worldPosition = mapping.hipsPosition;
+            out.pose.root.hasPosition = true;
+        }
+    }
+    if (_config.bodyPlacement == BodyPlacementPolicy::HipsOnly
+        && mapping.present.test(
+            static_cast<std::size_t>(motion::HumanBone::Hips))) {
+        // The body's orientation, from the same joint and the same frame. It is
+        // the hips bone's rotation and stays there too: the recorded half
+        // duplicates it identically, because a rig that roots at its hips has a
+        // root path of one joint and the composition down it is that joint.
+        // Nothing downstream applies it twice -- `vrmRetarget` reads position
+        // alone -- and the duplication is what makes the two paths' poses
+        // comparable field for field.
+        out.pose.root.worldOrientation =
+            out.pose.localRotations[static_cast<std::size_t>(
+                motion::HumanBone::Hips)];
+        out.pose.root.hasOrientation = true;
     }
     out.unusedJoints = mapping.unusedJoints;
     out.droppedTranslations = mapping.droppedTranslations;
