@@ -17,13 +17,13 @@ schema: openstrata.library/v1alpha1
 library:
   id: vrmAdapterMocopi
   # Mirrors VERSION; release preparation updates this in lockstep.
-  version: 0.6.0
+  version: 0.7.0
 requires:
   libraries:
     - id: motionCore
-      version: ">=0.5,<0.6"
+      version: ">=0.7,<0.8"
     - id: motionRuntime
-      version: ">=0.5,<0.6"
+      version: ">=0.7,<0.8"
 cmake:
   package: vrmAdapterMocopi
   target: vrmAdapterMocopi::vrmAdapterMocopi

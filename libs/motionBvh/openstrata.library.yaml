@@ -16,11 +16,11 @@ schema: openstrata.library/v1alpha1
 library:
   id: motionBvh
   # Mirrors VERSION; release preparation updates this in lockstep.
-  version: 0.6.0
+  version: 0.7.0
 requires:
   libraries:
     - id: motionSource
-      version: ">=0.6,<0.7"
+      version: ">=0.7,<0.8"
 cmake:
   package: motionBvh
   target: motionBvh::motionBvh

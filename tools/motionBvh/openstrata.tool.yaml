@@ -25,13 +25,13 @@ schema: openstrata.tool/v1alpha1
 tool:
   id: motion_bvh
   # Mirrors VERSION; release preparation updates this in lockstep.
-  version: 0.6.0
+  version: 0.7.0
   license: Apache-2.0
 executables: [motion_bvh_inspect, motion_bvh_convert]
 directories: [bin]
 requires:
   libraries:
     - id: motionBvh
-      version: ">=0.6,<0.7"
+      version: ">=0.7,<0.8"
     - id: motionSource
-      version: ">=0.6,<0.7"
+      version: ">=0.7,<0.8"

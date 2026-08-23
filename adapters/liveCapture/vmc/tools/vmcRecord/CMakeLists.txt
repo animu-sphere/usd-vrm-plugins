@@ -15,7 +15,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../VERSION")
          _vmc_record_version LIMIT_COUNT 1)
     string(STRIP "${_vmc_record_version}" _vmc_record_version)
 else()
-    set(_vmc_record_version "0.5.0")
+    set(_vmc_record_version "0.7.0")
 endif()
 
 project(vmcRecordTool
