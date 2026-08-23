@@ -27,7 +27,7 @@ def _check_expression_clip() -> None:
     assert expressions, "no /Animation/Expressions scope"
     names = sorted(child.GetName() for child in expressions.GetChildren())
     # `angry` points at a node index the file does not have, so it is dropped.
-    assert names == ["happy", "myWink", "surprised"], names
+    assert names == ["happy", "myWink", "relaxed", "surprised"], names
 
     happy = stage.GetPrimAtPath("/Animation/Expressions/happy")
     assert happy.GetAttribute("vrm:expressionName").Get() == "happy"
@@ -52,12 +52,25 @@ def _check_expression_clip() -> None:
     # file said and leaves the clamp to whoever applies it to a rig.
     assert abs(wink_weight.Get(30.0) - 1.5) < 1e-6, wink_weight.Get(30.0)
 
+    # Two expressions the clip never animates, saying two different things.
+    relaxed = stage.GetPrimAtPath("/Animation/Expressions/relaxed")
+    relaxed_weight = relaxed.GetAttribute("vrm:expressionWeight")
+    # Its node states translation = [0.3, 0, 0] and nothing animates it. glTF
+    # leaves an un-animated node at its own TRS, so the clip did give a weight:
+    # one value for the whole clip, authored as a default rather than as a run
+    # of identical time samples.
+    assert relaxed_weight.IsValid(), (
+        "a weight the node states is a weight the file gave, not an absence")
+    assert relaxed_weight.GetTimeSamples() == [], relaxed_weight.GetTimeSamples()
+    assert abs(relaxed_weight.Get() - 0.3) < 1e-6, relaxed_weight.Get()
+
     surprised = stage.GetPrimAtPath("/Animation/Expressions/surprised")
     assert surprised.GetAttribute("vrm:expressionType").Get() == "preset"
-    # Declared and driven by nothing. An unreported weight is not a weight of
-    # zero, so there is no value here to mistake for one.
+    # Declared, and the file gave no weight anywhere: no channel, and no
+    # transform on the node to read one out of. An unreported weight is not a
+    # weight of zero, so there is no value here to mistake for one.
     assert not surprised.GetAttribute("vrm:expressionWeight").IsValid(), (
-        "an expression the clip never drives must not be authored as a weight")
+        "an expression the clip never states must not be authored as a weight")
 
     # Expressions must not have been expanded into a blend-shape binding: which
     # morph targets an expression drives is the avatar's property, and this clip

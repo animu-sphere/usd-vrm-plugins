@@ -126,8 +126,11 @@ def _expressive_face_bytes() -> bytes:
     * `myWink` (custom) keys on 0.5 and 1.0 only, so its key times widen the
       union the whole clip is sampled at, and its last value is 1.5 -- out of
       the specification's [0, 1] and carried verbatim rather than clamped.
-    * `surprised` (preset) is declared and driven by nothing: a weight that was
-      never reported, which is not a weight of zero.
+    * `relaxed` (preset) has no channel and a node that states
+      `translation = [0.3, 0, 0]`. glTF leaves an un-animated node at its own
+      TRS, so that is a constant weight the clip really did give.
+    * `surprised` (preset) has no channel and a node that states no transform at
+      all: a weight that was never reported, which is not a weight of zero.
     * `angry` points at a node that does not exist and is dropped with a
       warning.
     """
@@ -167,6 +170,7 @@ def _expressive_face_bytes() -> bytes:
                     "preset": {
                         "happy": {"node": 3},
                         "surprised": {"node": 5},
+                        "relaxed": {"node": 6},
                         "angry": {"node": 99},
                     },
                     "custom": {
@@ -182,6 +186,7 @@ def _expressive_face_bytes() -> bytes:
             {"name": "expression_happy"},
             {"name": "expression_myWink"},
             {"name": "expression_surprised"},
+            {"name": "expression_relaxed", "translation": [0.3, 0.0, 0.0]},
         ],
         "animations": [{
             "name": "expressive_face",

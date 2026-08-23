@@ -147,6 +147,14 @@ Always written "Motion Phase X", never a bare "Phase X".
   verbatim onto the pose and never expanded); what remains is VRMA look-at
   animation, `ExpressionResolve`, `LookAtEvaluate`, live recording, bake, and
   the VRMA export investigation.
+  - ⬜ **`ExpressionResolve` has no join key yet.** The clip authors
+    `vrm:expressionName` verbatim; the VRM importer authors none, and each side
+    sanitizes prim names with its own private table, so a non-ASCII expression
+    name lands on a different path on each side. The avatar side gaining the
+    same verbatim attribute is a prerequisite, not a detail of the resolve
+    step. (The importer's `VrmMakeUniqueNames` also uniquifies by counting
+    bases, which can hand two entries the same name — the bug fixed on the
+    clip side in the same change.)
 - ⬜ **Motion Phase H — advanced.** Blending, IK / foot locking, contact
   handling, latency compensation, multi-performer sync, simulation bridge,
   generated-motion cache, publish pipeline.

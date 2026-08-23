@@ -381,12 +381,20 @@ one against. One was a contract addition away, the other is a milestone.
   Three behaviours are decisions rather than details, and each has a fixture
   case in `expressive_face.vrma`: a weight outside `[0, 1]` is **carried
   unclamped** with a `VRMA109` warning where the specification would clamp it;
-  an expression the clip declares and never drives is authored as a prim with
-  **no weight at all**, because an unreported weight is not a weight of zero;
-  and the prims are **namespaced attributes, not a typed schema**, which leaves
-  the open question below open and costs nothing to reverse — a
-  `VrmAnimationExpressionAPI` applies to exactly these prims with exactly these
-  attribute names.
+  an expression with no channel is read from its node — a stated transform is a
+  constant weight, because glTF leaves an un-animated node at its own TRS, while
+  a node stating nothing yields **no weight at all**, an unreported weight being
+  not a weight of zero; and the prims are **namespaced attributes, not a typed
+  schema**, which leaves the open question below open and costs nothing to
+  reverse — a `VrmAnimationExpressionAPI` applies to exactly these prims with
+  exactly these attribute names.
+
+  **What it does not yet give `ExpressionResolve` is a join key.** The layout
+  mirrors `/Asset/rig/Expressions/<name>`, but the importer sanitizes names
+  through its own private table that this bundle cannot link, so a non-ASCII
+  name lands on a different prim name on each side, and the avatar side authors
+  no `vrm:expressionName` to fall back on. The clip side carries the verbatim
+  name; the avatar side owes the same attribute.
 
   The fixture is generated, as the milestone anticipated: all seven
   `VRMA_MotionPack` clips carry `humanBones` and **no** `expressions`, so there

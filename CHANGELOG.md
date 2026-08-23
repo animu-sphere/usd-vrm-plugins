@@ -30,9 +30,12 @@ Current schema contract version: **1**.
   specification would clamp it — a file that said `1.5` said `1.5`, and
   correcting it in the reader would hide the authoring tool from whoever reads
   the clip; the clamp belongs to whoever applies the weight to a rig. An
-  expression the clip declares and never drives gets a prim and **no** weight
-  attribute, because an unreported weight is not a weight of zero. And nothing
-  is expanded: a VRM expression drives N morph targets across M meshes plus
+  expression the clip declares and never drives is read from its node instead:
+  glTF leaves an un-animated node at its own TRS, so a node that states a
+  transform states a constant weight, authored as a default value — while a node
+  that states none gets a prim with **no** weight attribute, because an
+  unreported weight is not a weight of zero. What separates those two is what
+  the file wrote, not whether the number is zero. And nothing is expanded: a VRM expression drives N morph targets across M meshes plus
   material colours, which is the *avatar's* property, so no `blendShapes`
   binding is authored and `ExpressionResolve` stays ahead
   ([motion policy](docs/design/MOTION_ARCHITECTURE_POLICY.md) §4.3).
@@ -42,8 +45,12 @@ Current schema contract version: **1**.
   rather than having its face resampled. The attributes are namespaced rather
   than a typed schema, which leaves the `VrmAnimationExpressionAPI` ownership
   question open at no cost: such a schema applies to exactly these prims with
-  exactly these attribute names. Verified by `expressive_face.vrma`, a generated
-  fixture with one case per behaviour above — all seven `VRMA_MotionPack` clips
+  exactly these attribute names. The prim *name* is not a join key yet — the VRM
+  importer sanitizes through its own private table, so a non-ASCII name lands
+  differently on each side, and the avatar side does not author
+  `vrm:expressionName`; that is the first thing `ExpressionResolve` has to
+  settle. Verified by `expressive_face.vrma`, a generated fixture with one case
+  per behaviour above — all seven `VRMA_MotionPack` clips
   carry `humanBones` and no `expressions`, so there was no vendor file to read
   this against.
 

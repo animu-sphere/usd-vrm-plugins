@@ -367,6 +367,23 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
         return fail("[VRMA007] first animation has no humanoid or expression channel");
     }
 
+    // An expression the clip declares and never animates can still be saying
+    // something. glTF leaves an un-animated node at its own TRS, and VRMA reads
+    // the weight out of that node's translation X -- so a node that authored a
+    // transform states a constant weight for the whole clip, and dropping it
+    // would lose a value the file gave. A node that authored none gave no
+    // weight at all. What separates the two is what the file wrote, never
+    // whether the number happens to be zero: a stated 0 is a weight, and an
+    // absent transform is not.
+    for (const auto& mapping : expressionByNodeIndex) {
+        VrmaExpression& expression = outDocument->expressions[mapping.second];
+        if (expression.isAnimated) continue;
+        const cgltf_node& node = data->nodes[mapping.first];
+        if (!node.has_translation && !node.has_matrix) continue;
+        expression.constantWeight =
+            static_cast<float>(NodeLocal(node).ExtractTranslation()[0]);
+    }
+
     bool warnedWeightRange = false;
     outDocument->animation.samples.reserve(timeSet.size());
     for (const float time : timeSet) {
@@ -391,22 +408,29 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
                 pose.root.hasPosition = true;
             }
         }
-        for (const auto& weight : weights) {
-            float value[3] = {0.0f, 0.0f, 0.0f};
-            Sample(weight.second, samplerKeys[weight.second], time, 3, value);
-            // The specification says a weight outside [0, 1] is clamped. It is
-            // carried verbatim here and the clamp is left to whoever applies it
-            // to a rig: a file that said 1.5 said 1.5, and correcting it in the
-            // reader would hide the authoring tool from the operator reading the
-            // clip. The warning is what keeps that choice visible.
-            if ((value[0] < 0.0f || value[0] > 1.0f) && !warnedWeightRange) {
+        // The specification says a weight outside [0, 1] is clamped. It is
+        // carried verbatim here and the clamp is left to whoever applies it to a
+        // rig: a file that said 1.5 said 1.5, and correcting it in the reader
+        // would hide the authoring tool from the operator reading the clip. The
+        // warning is what keeps that choice visible.
+        const auto report = [&](const std::string& name, float value) {
+            if ((value < 0.0f || value > 1.0f) && !warnedWeightRange) {
                 outDocument->warnings.push_back(
-                    "[VRMA109] expression '" +
-                    outDocument->expressions[weight.first].name +
+                    "[VRMA109] expression '" + name +
                     "' has a weight outside [0, 1]; carried unclamped");
                 warnedWeightRange = true;
             }
-            pose.expressions.Set(outDocument->expressions[weight.first].name, value[0]);
+            pose.expressions.Set(name, value);
+        };
+        for (const auto& weight : weights) {
+            float value[3] = {0.0f, 0.0f, 0.0f};
+            Sample(weight.second, samplerKeys[weight.second], time, 3, value);
+            report(outDocument->expressions[weight.first].name, value[0]);
+        }
+        for (const VrmaExpression& expression : outDocument->expressions) {
+            if (expression.constantWeight) {
+                report(expression.name, *expression.constantWeight);
+            }
         }
         outDocument->animation.samples.push_back(std::move(pose));
     }
