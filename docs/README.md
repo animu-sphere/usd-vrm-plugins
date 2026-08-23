@@ -40,21 +40,31 @@ contract wins — structural changes go there first, in their own PR.
   contract — the source of truth for bundle identities, dependency directions,
   artifact naming, and **Workspace Phase 0–8**.
 
-Three milestone plans sit in [roadmap/](roadmap/) rather than here, because they
+Four milestone plans sit in [roadmap/](roadmap/) rather than here, because they
 are plans and not policy: the [live input adapters](roadmap/adapters-mocopi-vmc-ardy.md),
-the [recorded motion sources](roadmap/recorded-motion-sources.md), and the
-[OpenExec foundation](roadmap/openexec-foundation.md). All three defer every
-structural claim to WORKSPACE.md and every motion claim to the motion policy,
-and **none states its own release version** — that is the
+the [recorded motion sources](roadmap/recorded-motion-sources.md), the
+[shared OSC foundation and VRChat OSC Trackers input](roadmap/osc-and-vrchat-trackers.md),
+and the [OpenExec foundation](roadmap/openexec-foundation.md). All four defer
+every structural claim to WORKSPACE.md and every motion claim to the motion
+policy, and **none states its own release version** — that is the
 [roadmap status table](roadmap/README.md#status-at-a-glance), which exists
 because two of them traded places once already.
 
-The two input tracks are the **live** and **recorded** halves of the same layer,
-and they are separate plans because they share a vendor and almost nothing else —
-one argues about packets and restarts, the other about a hierarchy and a rest
-pose. Both complete to a retargeted `UsdSkelAnimation` with no OpenExec
-dependency, and both converge at `motionCore` and nowhere earlier
+The three input tracks split the layer twice, and each split is a difference in
+what the code argues about rather than an organisational preference. **Live
+versus recorded**: one argues about packets and restarts, the other about a
+hierarchy and a rest pose. **Pose versus tracker**, within live: VMC and mocopi
+transport humanoid bone transforms, where VRChat OSC carries numbered tracker
+observations that are pre-IK, and a tracker index is not a body role. All three
+complete to a retargeted `UsdSkelAnimation` with no OpenExec dependency, and all
+three converge at `motionCore` and nowhere earlier
 ([motion policy §8.3](design/MOTION_ARCHITECTURE_POLICY.md)).
+
+The OSC track is also the one that owns *sharing*. It carries the extraction of
+the OSC decoder and of the transport code the first two live adapters already
+duplicate, which is a structural change and therefore reaches
+[WORKSPACE.md](architecture/WORKSPACE.md) §1 and §2 before it reaches any
+adapter.
 
 The OpenExec track attaches to that finished pipeline afterwards, and since
 2026-08-03 it is also *scheduled* afterwards, so its parity comparison runs on

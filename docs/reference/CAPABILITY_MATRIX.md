@@ -101,8 +101,16 @@ reads a **real** producer export, committed at
 which is a different claim from a runtime meeting a real device, and it is the
 only one of the two this repository can currently make.
 
-There is no native capture-device adapter yet. Protocol and SDK decode belong
-under `adapters/` (motion policy §8.1) and `vrmAdapterMocopi` is the next one.
+Protocol and SDK decode belong under `adapters/` (motion policy §8.1).
+`vrmAdapterMocopi` — the first native capture-device adapter — is v0.7.0 and its
+library is written; what that release still owes is evidence, not code
+([current.md](../roadmap/current.md)). A **third** live adapter is planned
+behind it: VRChat OSC Trackers input over a protocol-neutral OSC decoder
+([the OSC track](../roadmap/osc-and-vrchat-trackers.md), and the
+[roadmap status table](../roadmap/README.md#status-at-a-glance) for the version).
+It is the first input here that would carry **tracker observations** rather than
+humanoid bone transforms — pre-IK data, where a tracker index is not a body role
+— so nothing in it maps onto a row of this table until a solve boundary exists.
 
 **No recorded motion file format other than `.vrma` becomes motion.** BVH — the
 format most capture applications export — is v0.7.0, as a generic pipeline

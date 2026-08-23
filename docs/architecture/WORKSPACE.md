@@ -142,6 +142,38 @@ them are shown to duplicate code that carries no vendor semantics. Their plan,
 including the implementation order and per-adapter acceptance criteria, is
 [roadmap/adapters-mocopi-vmc-ardy.md](../roadmap/adapters-mocopi-vmc-ardy.md).
 
+> **That condition is met, and `adapters/common/` is still not the answer**
+> (measured 2026-08-23,
+> [the census](../roadmap/osc-and-vrchat-trackers.md#2-the-duplication-census)).
+> With vendor identifiers erased and comments stripped, `vrmAdapterVmc` and
+> `vrmAdapterMocopi` hold one packet-capture implementation twice — 6 changed
+> lines across 800 — one UDP receiver twice, and one live-source bridge twice.
+> The receiver pair is the one that has already cost something: the mocopi
+> header records four defects the sibling has identically because they were
+> copied, fixed all four on 2026-08-11, and noted that they remain in
+> `vrmAdapterVmc` — where they still are. The sibling rule above is what forbids
+> the obvious fix: a shared leaf between two leaves is the adapter → adapter
+> edge wearing a hat.
+>
+> **The candidates are new libraries, and each takes a different side of an
+> existing split.** The live-source bridge holds poses and belongs beside
+> `LiveCaptureSource` in `motionRuntime`. The transport ring — socket, capture
+> file format, diagnostic vehicle — **cannot**, and the refusal is already
+> executable rather than a matter of taste:
+> `libs/motionRuntime/tests/check_boundaries.py` rejects `winsock`,
+> `sys/socket.h`, `asio`, `curl` and `websocket` in that library's sources,
+> because `motion_capture` is a member of the aggregate product and links it,
+> and no tool in the product opens a transport. So it needs a leaf of its own that the product does not link, which
+> takes the *adapter* side of §5's aggregate split even though it carries no
+> product name — the exclusion is about what the product may depend on, not only
+> about what a name says. An OSC decoder shared by two protocol adapters is a
+> second such library on the same terms.
+>
+> Neither identity is added to the tables above yet. They arrive with the change
+> that creates them, in the order
+> [the OSC track](../roadmap/osc-and-vrchat-trackers.md) sets: measured first,
+> reconciled second, moved third.
+
 > **A runtime route is not a build edge.** A capture application may act as a
 > VMC sender, so a user's data can travel `mocopi app → VMC packet →
 > vrmAdapterVmc`. That is a path assembled at runtime and creates no dependency:
@@ -230,6 +262,20 @@ That is the shape this repository already had — `vmc_record` exists because an
 operator keeps a session as a file — and the intermediate is a canonical trace
 carrying no VMC vocabulary at all, so the second command is the same one a
 `.vrma` clip or a generated fixture goes through.
+
+**That rule binds libraries, not only tools, and the difference is about to
+matter.** `motion_capture` links `motionRuntime`, so a transport placed *there*
+puts a socket in the product's link closure — the same property, lost through
+the library rather than through the `--source vmc` flag that was already
+refused. `libs/motionRuntime/tests/check_boundaries.py` already enforces it by
+refusing socket headers in that library. It is worth stating as a *contract*
+rather than leaving it to the check, because the two adapters duplicate a UDP
+receiver and a packet-capture format today (§1), and `motionRuntime` is the
+first place a reader looks for their shared home — a reader who finds only the
+check may read it as an oversight to be amended. The shared transport is a leaf
+the product does not link; the shared *pose* bridge, which holds no socket, is
+`motionRuntime`'s and is the one piece of that duplication this rule permits to
+move there.
 
 The four `motionSource` / `motionBvh` lines are a chain and are meant to be read
 as one: a **reader** knows a file format and no semantics, `motionSource` knows
