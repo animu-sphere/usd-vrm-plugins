@@ -180,13 +180,18 @@
 //
 // **The hips translation.** `FrameMapping::hipsPosition` is the body's
 // placement — absolute, metres, and the only translation the rig sends
-// (SkeletonMap.h). It is carried on `MocopiFrame` and deliberately **not**
-// written into `pose.root`. Whether the body's placement is root motion is the
-// open record this release exists to close
-// ([§5.2](../../../../../docs/roadmap/adapters-mocopi-vmc-ardy.md)), and an
+// (SkeletonMap.h). It is carried on `MocopiFrame` **and**, since the record was
+// written, composed into `pose.root` under `BodyPlacementPolicy::HipsOnly`.
+//
+// It was carried and not composed until 2026-08-23, because whether the body's
+// placement is root motion was the open record this release existed to close
+// ([§5.2](../../../../../docs/roadmap/adapters-mocopi-vmc-ardy.md)) and an
 // assembler that filled in a `RootMotion` would have answered it silently, in
-// the layer with the least standing to. `pose.root` is therefore left absent,
-// and a tool that decides the question composes it.
+// the layer with the least standing to. What changed is the record and not this
+// layer's standing: `MOTION_CONTRACT.md`'s "Root and hips" states the answer,
+// this field executes it, and `BodyPlacementPolicy::None` is still how a caller
+// asks for the shape that preceded it. The measurement stays on the frame under
+// either setting, so nothing that could read the placement before has lost it.
 //
 // **Tracking state.** `VRM_MOCOPI_TRACKING_LOST` is in the frozen set and is
 // **not raised anywhere in this adapter**. The measured grammar carries no
@@ -230,8 +235,54 @@
 namespace vrmAdapterMocopi
 {
 
+// Where the device's one translation goes.
+//
+// [§5.2](../../../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) gives four
+// words to a sender with two candidate root channels -- `RootOnly`, `HipsOnly`,
+// `RootPlusHipsOffset`, and a per-sender profile -- and this protocol can
+// express exactly one of them. There is no root channel here, so the other
+// three are *absent* rather than unchosen, and the choice this enum offers is
+// not between compositions but between composing and not
+// (`MOTION_CONTRACT.md`, "Root and hips").
+enum class BodyPlacementPolicy : std::uint8_t
+{
+    // The hips joint's translation is the body's placement, and it reaches
+    // `pose.root`: the position from the hips record, the orientation from the
+    // hips bone's own rotation, both absolute in the sender's space. This is
+    // what the recorded half of the same application already authors -- its
+    // profile roots at the hips, calls its samples `absolute-position` and its
+    // rotation `body-orientation` -- so one session observed both ways now
+    // produces the same `RootMotion` on both, which is the comparison this
+    // release exists to be able to make.
+    //
+    // The two velocity fields stay absent. Deriving one is
+    // `LiveCaptureSource`'s intake policy, and an assembler that did it here
+    // would be a second motion runtime (§2).
+    HipsOnly,
+
+    // Nothing composes a root: `pose.root` stays absent and the placement is
+    // readable on `MocopiFrame::hipsPosition` alone. That field carries the
+    // device's translation under *both* settings -- the frame reports what
+    // arrived, the pose reports what was decided about it -- so this is a
+    // narrowing of the pose and never a loss of the measurement.
+    //
+    // It is kept because the sibling's half of the record is still open: a
+    // caller comparing this path against one that composes nothing needs to be
+    // able to ask for the shape every version of this adapter had before
+    // 2026-08-23, and a behaviour that can only be obtained by editing the
+    // source is not a behaviour a comparison can use.
+    None,
+};
+
 struct MocopiFrameConfig
 {
+    // Where the hips translation lands. Stated rather than inferred, like every
+    // other setting here -- but unlike the rest it has a *contract* behind its
+    // default rather than a threshold: `MOTION_CONTRACT.md`'s "Root and hips"
+    // section is the record that chose it, and this field is where that record
+    // is executable.
+    BodyPlacementPolicy bodyPlacement = BodyPlacementPolicy::HipsOnly;
+
     // A stream clock going backwards by more than this is a restart on its own,
     // without help from the counter. One second is far longer than any jitter a
     // sender's clock produces and far shorter than the gap the measured restarts
@@ -260,10 +311,14 @@ struct MocopiFrame
     // the stream — and carrying exactly the bones this frame formed.
     //
     // `confidence` and `contacts` are absent because the grammar carries
-    // neither, `expressions` because this protocol has none, `root` because the
-    // hips translation is reported below instead of being read as root motion,
-    // and `source` because the session's metadata belongs on the source once
-    // rather than on sixty poses a second (see `GetSourceMetadata`).
+    // neither, `expressions` because this protocol has none, and `source`
+    // because the session's metadata belongs on the source once rather than on
+    // sixty poses a second (see `GetSourceMetadata`).
+    //
+    // `root` carries the body's placement under
+    // `BodyPlacementPolicy::HipsOnly` and is absent under `None`. Its two
+    // velocity fields are absent under both: the device reports no velocity and
+    // deriving one is the intake's policy, not this layer's.
     motion::HumanoidPose pose;
 
     // The device's frame counter, verbatim. Not an index into anything: it counts
@@ -295,8 +350,14 @@ struct MocopiFrame
     std::bitset<motion::HumanBoneCount> missing;
 
     // The body's placement: the hips joint's own translation, absolute, in
-    // metres. Absent when the hips record did not arrive. Deliberately not
-    // composed into `pose.root` — see the header.
+    // metres. Absent when the hips record did not arrive.
+    //
+    // Reported here under *both* body-placement policies, and it is what
+    // `pose.root.worldPosition` is composed from under `HipsOnly` — so this
+    // field says what the device sent and the pose says what was decided about
+    // it. A reader wanting the second answer should read the pose, because the
+    // two stop being the same value the moment a policy other than `HipsOnly`
+    // becomes expressible on this protocol.
     std::optional<pxr::GfVec3f> hipsPosition;
 
     // Carried up from `FrameMapping` so a caller reading frames never has to

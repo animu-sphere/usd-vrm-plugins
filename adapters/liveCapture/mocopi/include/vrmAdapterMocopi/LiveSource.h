@@ -153,26 +153,36 @@
 //
 // ## What a pose cannot carry, and where it is still readable
 //
-// A frame knows things a `HumanoidPose` has nowhere to put: the hips
-// translation, which bones the rig declared and this frame did not form, whether
-// it began a session, how many datagrams the transport lost before it, and how
-// far the sender's two clocks have drifted apart. The statistics structs carry
-// the aggregates and the per-frame detail would otherwise stop here — which
-// would close the evidence path v0.7.0 needs, since whether the body's placement
-// is root motion is the record this release exists to write
-// (roadmap §5.2, FrameAssembler.h). So `GetFramesFromLastPush()` opens a window
-// on exactly what was just delivered, and a recording tool does not have to
-// drive the assembler separately to look through it.
+// A frame knows things a `HumanoidPose` has nowhere to put: which bones the rig
+// declared and this frame did not form, whether it began a session, how many
+// datagrams the transport lost before it, and how far the sender's two clocks
+// have drifted apart. The statistics structs carry the aggregates and the
+// per-frame detail would otherwise stop here. So `GetFramesFromLastPush()` opens
+// a window on exactly what was just delivered, and a recording tool does not
+// have to drive the assembler separately to look through it.
 //
-// **The hips translation reaches no `RootMotion` here either**, and this class
-// is the last one that could have quietly composed it. It does not, for the
-// reason the assembler does not: the question is open, this layer is in no
-// better position to answer it than the one below, and a bridge that filled in a
-// `RootMotion` would have closed the release's own record by writing code. One
-// consequence is worth stating so it is not read as a defect — `RootMotionIntake`
-// is inert for this adapter, whatever it is configured to, because no pose that
-// passes through here carries root motion for it to pass through, ignore, or
-// derive a velocity from.
+// The hips translation was the first entry on that list and is no longer on it:
+// under `BodyPlacementPolicy::HipsOnly` a pose carries it as `root`. The window
+// stayed anyway, and the reason is worth keeping — it was opened so that the
+// evidence for the root/hips record could be gathered without a second decoder
+// pass, and the same window is what a session report reads to say what the
+// device sent *before* a policy narrowed it. An accessor that existed only until
+// the question it served was answered would have taken the comparison with it.
+//
+// **The hips translation reaches a `RootMotion` before it gets here**, and this
+// class still composes nothing. The record was written on 2026-08-23
+// (`MOTION_CONTRACT.md`, "Root and hips") and the layer that executes it is the
+// assembler, which is where a frame and a `MocopiFrameConfig` both exist; this
+// one keeps the property it had when the question was open, that a bridge does
+// not decide what a pose means.
+//
+// What changed for a caller is that `RootMotionIntake` is no longer inert. It
+// was, for as long as no pose passing through here carried root motion — so a
+// configuration of `Passthrough`, `Ignore` or `DeriveVelocity` selected between
+// three identical outcomes. Under `BodyPlacementPolicy::HipsOnly` the three now
+// differ, `DeriveVelocity` is the only thing on this path that will ever fill
+// `linearVelocity` (the device reports none), and `Ignore` is how a caller asks
+// for a session that animates in place without giving up the measurement.
 //
 // ## One thread
 //

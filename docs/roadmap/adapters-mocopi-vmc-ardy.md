@@ -725,9 +725,14 @@ and both halves were driven to a canonical clip and compared there.
   before it could say anything else: 3 frames of slip over 1800, about
   **1667 ppm**, between one application's two outputs of one session.
 - **The list this section exists for is written**, in that report's §4. The
-  entry that matters is the body's travel: **4.81 m of hips path** reaches the
-  recorded path and nothing at all reaches the live one, because no layer there
-  composes a `RootMotion` while §5.2 is open.
+  entry that mattered was the body's travel: **4.81 m of hips path** reached the
+  recorded path and nothing at all reached the live one, because no layer there
+  composed a `RootMotion` while §5.2 was open. That entry was a fact about the
+  open record rather than about the protocol, and it stopped being true on
+  2026-08-23 when the record closed and `BodyPlacementPolicy::HipsOnly` became
+  the assembler's default. The other four entries stand, and the comparison this
+  section asks for gains a row it could not have had: the two paths' root
+  motion, which are now the same canonical value.
 
 **A VMC relay was not recorded**, so the third path is still unobserved and this
 comparison is two of three.
@@ -1143,15 +1148,37 @@ capture device validated through a VMC relay
   rule, and the staleness horizon it is measured against), root update frequency
   (untested for want of a sender that varies it), and the unsupported message set
   (`VRM_VMC_UNSUPPORTED_MESSAGE` has no recorded capture behind it at all).
-- ⬜ **The root and hips decision record.** §5.2 left it open twice — the
-  skeleton map handed it to the assembler, the assembler handed it to a real
-  sender — and `vmc_record` already reports both values as movement without
-  interpreting either. v0.7.0 closes it as a record whether or not it closes it
-  as a policy. If a policy is chosen it is one of `RootOnly`, `HipsOnly`,
-  `RootPlusHipsOffset`, or an explicit per-sender profile, and it is **never**
-  synthesised from a sender-specific guess (§2). If none is chosen, the record
-  still states: what was observed, what differed between senders, which value is
-  canonical today, what stays open, and what the open part costs downstream.
+- ✅ **The root and hips decision record** (2026-08-23), in
+  [`MOTION_CONTRACT.md`](../design/MOTION_CONTRACT.md#root-and-hips-v070). §5.2
+  left it open twice — the skeleton map handed it to the assembler, the
+  assembler handed it to a real sender — and it closes as **both** halves of the
+  condition rather than one: a policy where the evidence decided it, a record
+  where it did not.
+
+  **Chosen.** A hips translation that is a rig's only translating joint is body
+  translation and is `RootMotion::worldPosition`, absolute in the source's own
+  space; the rotation at that joint is the root's orientation. That is what the
+  recorded path already authored, and `vrmAdapterMocopi` now authors it too
+  under `BodyPlacementPolicy::HipsOnly` — the only one of the four words this
+  protocol can express, since with no root channel `RootOnly` and
+  `RootPlusHipsOffset` are absent rather than unchosen. Nothing downstream
+  changed to accept it: `motion_capture` already seeds the hips rest from the
+  session's first root position, so what reaches an avatar is a delta.
+
+  **Left open, and said so.** The VMC half. Both channels stay reachable and
+  uncomposed because choosing between them needs a measurement of a real sender
+  that nobody here can supply, and applying the native answer by analogy would
+  be synthesising a value from a sender-specific guess (§2). Its cost is stated
+  rather than hedged: a VMC session retargets in place until a sender is
+  recorded, and a **per-sender profile** is the word this repository would reach
+  for first, because the recorded track already built one.
+
+  What the closing was worth is a number the release had already measured: the
+  4.81 m of hips path that reached the recorded path and nothing at all on the
+  live one now reaches an avatar, checked end to end onto the fixture rig and
+  onto `Seed-san.vrm` through unchanged `motion_capture` and `motion_retarget`.
+  Verified negatively — the default set back to `None` turns six tests red
+  across four layers.
 - ⬜ **The three unit-tested paths with no capture behind them** close here or
   are stated as unclosable: an unknown bone name, the receive-clock fallback when
   a frame carries no `/VMC/Ext/T`, and the leading-bone reordering the repeat
@@ -1462,10 +1489,12 @@ original order that was never about the transport.
   which the sibling's header names as the thing an adapter must not do and, with
   VMC, cannot avoid. And there is exactly one translating joint and it is the
   hips, so §5.2's root/hips ambiguity does not arise natively at all: there is no
-  second channel to compose with. That is evidence for the release's root/hips
-  record and not a resolution of it — the hips translation is reported as the
-  body's placement and deliberately **not** as a `motion::RootMotion`, because
-  whether it is root motion is the question the record exists to answer.
+  second channel to compose with. That was evidence for the release's root/hips
+  record and not a resolution of it, so this layer reported the hips translation
+  as the body's placement and deliberately **not** as a `motion::RootMotion`.
+  The record answered it on 2026-08-23 and this layer still reports it that way:
+  the composition is the assembler's, because a mapping has no configuration to
+  be asked with (Milestone B's entry, and `SkeletonMap.h`).
 
   `VRM_MOCOPI_UNSUPPORTED_JOINT` is raised here and brings the set to six paid
   for by a real caller. `FRAME_INCOMPLETE` is deliberately *not*: whether 19 of 22
@@ -1604,12 +1633,23 @@ original order that was never about the transport.
   because held-versus-unavailable during a dropout is `PoseBuffer`'s question and
   a restart is not entitled to a third state only this adapter can produce.
 
-  **The hips translation still reaches no `RootMotion`**, and this was the last
-  layer that could have quietly composed one. It does not, so `RootMotionIntake`
-  is inert for this adapter whatever it is set to — asserted over all three
-  settings, because "no root motion arrives" is a claim any single setting could
-  hide. That keeps [§5.2](#52-frame-assembly-is-a-stated-policy-not-an-emergent-one)'s
-  record open for evidence rather than closing it by writing code.
+  **The hips translation reached no `RootMotion` here, and this was the last
+  layer that could have quietly composed one.** It did not, so
+  `RootMotionIntake` was inert for this adapter whatever it was set to —
+  asserted over all three settings, because "no root motion arrives" is a claim
+  any single setting could hide. That kept
+  [§5.2](#52-frame-assembly-is-a-stated-policy-not-an-emergent-one)'s record
+  open for evidence rather than closing it by writing code.
+
+  Three of those sentences stopped being true on 2026-08-23, when the record
+  closed (Milestone B's entry). The bridge still composes nothing — the property
+  described here is the one it kept — but the assembler below it does, so a pose
+  arriving here carries root motion and the intake's three settings now select
+  between three different outcomes. `DeriveVelocity` is the only thing on this
+  path that will ever fill `linearVelocity`, since the device reports none. The
+  test named above was rewritten to assert that difference, for the same reason
+  it originally asserted the sameness: the claim is about the policy being live,
+  and any single setting could hide a path that had quietly stopped composing.
 
   ✅ **And the corpus gap this opened is closed, again by the fixture the claim
   needed.** `frame-loss-60hz` restarts and *stops*: its new session never
@@ -1724,8 +1764,10 @@ original order that was never about the transport.
   dropped rather than left discoverable as an absence. Both numbers, because a
   walk out and back makes them disagree — a real session travelled 4.8 m and
   displaced 0.69 m, and the second alone would have called it stationary. It is
-  a measurement and not a decision; nothing composes a `RootMotion`, and the day
-  §5.2 is answered this is the number that stops being dropped. And `motion_retarget` names `upperChest` on stderr for
+  a measurement and not a decision; nothing composed a `RootMotion` then, and on
+  2026-08-23 §5.2 was answered and this became the number that stopped being
+  dropped. The export prints the same quantity with its verb changed, so a trace
+  from either side of the record reports one thing. And `motion_retarget` names `upperChest` on stderr for
   `Seed-san.vrm`, the incomplete-humanoid finding the recorded track hit in
   August, now reached from the live side by a different producer and pinned by
   this test in both directions — the fixture rig binds all 22 bones and must

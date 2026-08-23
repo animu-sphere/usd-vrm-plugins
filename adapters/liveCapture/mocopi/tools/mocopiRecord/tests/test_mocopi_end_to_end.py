@@ -204,14 +204,45 @@ def resolve(baked: pathlib.Path, frames: int,
              f"changed, so the sets below have to be re-measured rather than "
              f"re-tuned")
 
-    def rotations(time) -> list:
+    def transforms_at(time) -> list:
         transforms = query.ComputeJointLocalTransforms(Usd.TimeCode(time))
         if not transforms:
             fail(f"UsdSkel resolved no joint transforms at {time}: the "
                  f"animation is bound but does not drive the rig")
-        return [transform.ExtractRotationQuat() for transform in transforms]
+        return transforms
+
+    def rotations(time) -> list:
+        return [transform.ExtractRotationQuat()
+                for transform in transforms_at(time)]
 
     first = rotations(times[0])
+
+    # Where the body went, resolved off the same query as the rotations. The
+    # retargeter was given `--root-motion hips`, so the clip's root motion lands
+    # on the joint bound to `HumanBone::Hips` and this is the only joint whose
+    # translation a session can change. It is the end of the path the root/hips
+    # record opened: a hips translation the device sent, composed into a
+    # `RootMotion` by the assembler, written to a trace, replayed by a product
+    # tool that knows no protocol, and baked onto a rig by one that knows no
+    # adapter (MOTION_CONTRACT.md, "Root and hips").
+    # The joint is found the way the retargeter found it -- through the
+    # avatar's own `vrm:humanBones:hips` -- and not as "the rig's root". This
+    # rig has a `Root` above its `Hip`, which is the arrangement that makes the
+    # distinction matter: a test that read index 0 would resolve an identity
+    # transform for every session and report that nothing ever travels.
+    bindings = [prim.GetAttribute("vrm:humanBones:hips")
+                for prim in stage.Traverse()
+                if prim.HasAttribute("vrm:humanBones:hips")]
+    if len(bindings) != 1:
+        fail(f"{baked.name} carries {len(bindings)} hips binding(s); the bake "
+             f"references the avatar, so exactly one should compose through")
+    hips_path = str(bindings[0].Get())
+    if hips_path not in joints:
+        fail(f"{baked.name} binds hips to {hips_path!r}, which the resolved "
+             f"joint order does not contain")
+    hips_index = joints.index(hips_path)
+    travel = [transforms_at(time)[hips_index].ExtractTranslation()
+              for time in times]
 
     # Every committed mocopi capture is a *held* pose, so nothing may move
     # within a session. This is asserted rather than assumed because the whole
@@ -228,7 +259,7 @@ def resolve(baked: pathlib.Path, frames: int,
             fail(f"{baked.name} moves within the session, at {time}: {moved}. "
                  f"No committed mocopi capture moves, so this test compares two "
                  f"sessions; a capture that moves wants the sibling's check.")
-    return joints, first
+    return joints, first, travel
 
 
 def check_sides(joints: list[str], lowered: list, signs: dict[str, float],
@@ -279,11 +310,30 @@ def drive(options, avatar: pathlib.Path, expected: set[str],
             warnings += said
             baked[name] = resolve(stage, frames, minimum_joints)
 
-    (joints, lowered), (other, neutral) = (baked["arms-lowered-60hz"],
-                                           baked["neutral-standing-60hz"])
+    (joints, lowered, travelled), (other, neutral, held) = (
+        baked["arms-lowered-60hz"], baked["neutral-standing-60hz"])
     if joints != other:
         fail("the two bakes resolved different joint orders, so they cannot be "
              "compared joint by joint")
+
+    # The body's placement, reaching the avatar. The two sessions must disagree
+    # about this and they are built to: one moves its root every frame and the
+    # other restates rest, so a check that passed on both would be measuring
+    # neither. `arms-lowered-60hz` steps 0.01 down and 0.02 along +Z per frame,
+    # which is the generator's number rather than one measured off this bake.
+    #
+    # It is asserted as *movement* rather than against those figures: the
+    # retargeter maps a source delta onto this rig, so the metres depend on the
+    # avatar and pinning them here would make one rig's proportions a property
+    # of the pipeline.
+    if travelled[0] == travelled[-1]:
+        fail(f"{avatar.name}: the hips did not move across a session that "
+             f"translates its root every frame, so the body's placement stopped "
+             f"somewhere between the trace and the bake: {travelled[0]}")
+    if held[0] != held[-1]:
+        fail(f"{avatar.name}: the hips moved across a session that restates its "
+             f"root every frame, so something downstream is manufacturing "
+             f"travel: {held[0]} -> {held[-1]}")
 
     differing = {joints[index]
                  for index, (a, b) in enumerate(zip(lowered, neutral))
@@ -312,10 +362,12 @@ def drive(options, avatar: pathlib.Path, expected: set[str],
         fail(f"{avatar.name}: motion_retarget {said} an unmapped "
              f"{VRM_UNMAPPED_BONE}, and this rig {rig}\n{warnings}")
 
+    step = travelled[-1] - travelled[0]
     print(f"mocopi_record -> motion_capture -> motion_retarget: the two "
           f"committed sessions reach {avatar.name} and differ at "
           f"{len(differing)} of {len(joints)} joint(s), on the bones they were "
-          f"recorded to differ by")
+          f"recorded to differ by; the travelling session moves its hips by "
+          f"{step} and the held one does not move at all")
     return len(joints), warnings
 
 

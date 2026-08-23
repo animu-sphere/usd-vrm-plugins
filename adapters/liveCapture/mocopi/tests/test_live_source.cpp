@@ -65,6 +65,7 @@ namespace
 using namespace vrmAdapterMocopiTests;
 
 using motion::HumanBone;
+using vrmAdapterMocopi::BodyPlacementPolicy;
 using vrmAdapterMocopi::BoneDefinition;
 using vrmAdapterMocopi::BoneFrame;
 using vrmAdapterMocopi::Diagnostic;
@@ -392,39 +393,100 @@ TestUnderRefuseTheAlignWouldHideTheStallItExistsToShow()
 // What a pose cannot carry
 // ---------------------------------------------------------------------------
 
-void
-TestNoRootMotionReachesThePoseWhateverTheIntakeIsToldToDo()
+// A two-frame session whose body moved half a metre along +Z between them,
+// pushed into a source configured with one intake policy. The moving hips is
+// the point: `FramePacket` restates rest for every joint, so a session built
+// from it stands still and a root-motion test on it would measure nothing.
+motion::PoseSampleResult
+WalkOneStep(MocopiLiveSource* source, double* step)
 {
-    // The hips translation is the body's placement and the release's open
-    // record; this class is the last one that could have quietly composed it
-    // into a `RootMotion`, and it does not. So `RootMotionIntake` is inert here
-    // — asserted over all three settings rather than over the default, because
-    // "no root motion arrives" is the claim and any one setting could hide it.
-    for (const motion::RootMotionIntake intake :
-         {motion::RootMotionIntake::Passthrough,
-          motion::RootMotionIntake::Ignore,
-          motion::RootMotionIntake::DeriveVelocity}) {
-        MocopiLiveSourceConfig config;
-        config.intake.rootMotion = intake;
-        MocopiLiveSource source(config);
-        source.PushPacket(SkeletonPacket(), 0.0);
-        source.PushPacket(FrameAt(1, 0.0), 0.0);
-        source.PushPacket(FrameAt(2, 1.0 / kFrameRate), 1.0 / kFrameRate);
+    MotionPacket first = FrameAt(1, 0.0);
+    MoveHips(&first, 0.0f, 0.90f, 0.0f);
+    MotionPacket second = FrameAt(2, 1.0 / kFrameRate);
+    MoveHips(&second, 0.0f, 0.90f, 0.5f);
 
-        const motion::PoseSampleResult result = source.Sample(1.0 / kFrameRate);
+    source->PushPacket(SkeletonPacket(), 0.0);
+    source->PushPacket(first, 0.0);
+    source->PushPacket(second, 1.0 / kFrameRate);
+    *step = 1.0 / kFrameRate;
+    return source->Sample(1.0 / kFrameRate);
+}
+
+void
+TestTheIntakesRootPolicyIsNoLongerInert()
+{
+    // It was, for as long as no pose on this path carried root motion: all
+    // three settings selected between three identical outcomes. The record made
+    // them differ, and this asserts the difference rather than the default,
+    // because "the policy is live" is the claim and any one setting could hide
+    // a path that had quietly stopped composing.
+    {
+        MocopiLiveSourceConfig config;
+        config.intake.rootMotion = motion::RootMotionIntake::Passthrough;
+        MocopiLiveSource source(config);
+        double step = 0.0;
+        const motion::PoseSampleResult result = WalkOneStep(&source, &step);
         assert(result.pose);
-        assert(!result.pose->root.hasPosition);
+        assert(result.pose->root.hasPosition);
+        assert(std::fabs(result.pose->root.worldPosition[2] - 0.5f) < 1e-6f);
+        // What arrived, unchanged: the device reports no velocity and
+        // `Passthrough` invents none.
         assert(!result.pose->root.hasLinearVelocity);
-        // And it is readable where it was put: on the frame, not in the pose.
+        assert(source.GetIntake().GetStats().rootSamplesObserved != 0);
+    }
+    {
+        MocopiLiveSourceConfig config;
+        config.intake.rootMotion = motion::RootMotionIntake::Ignore;
+        MocopiLiveSource source(config);
+        double step = 0.0;
+        const motion::PoseSampleResult result = WalkOneStep(&source, &step);
+        assert(result.pose);
+        // A session that animates in place, asked for rather than imposed —
+        // and the measurement is still on the frame, so what was given up is
+        // the pose's claim and not the evidence.
+        assert(!result.pose->root.hasPosition);
         assert(source.GetFramesFromLastPush()[0].hipsPosition);
     }
-    // Nothing anywhere on this path derived a velocity, which is the statistic
-    // that would have caught a root sneaking in through the intake.
-    MocopiLiveSource source;
-    source.PushPacket(SkeletonPacket(), 0.0);
-    source.PushPacket(FrameAt(1, 0.0), 0.0);
+    {
+        MocopiLiveSourceConfig config;
+        config.intake.rootMotion = motion::RootMotionIntake::DeriveVelocity;
+        MocopiLiveSource source(config);
+        double step = 0.0;
+        const motion::PoseSampleResult result = WalkOneStep(&source, &step);
+        assert(result.pose);
+        assert(result.pose->root.hasPosition);
+        // The only thing on this path that will ever fill `linearVelocity`.
+        // Half a metre in one frame at 60 Hz is 30 m/s, which is what the two
+        // samples say rather than a number this test chose.
+        assert(result.pose->root.hasLinearVelocity);
+        assert(std::fabs(result.pose->root.linearVelocity[2]
+                         - static_cast<float>(0.5 / step))
+               < 1e-3f);
+        assert(source.GetIntake().GetStats().rootVelocitiesDerived != 0);
+    }
+}
+
+void
+TestTheBodyPlacementPolicyReachesTheAssemblerFromTheConfig()
+{
+    // `None` is the assembler's setting and it is reachable through this
+    // class's config, which is the whole of what this layer does with it. With
+    // no root on the poses the intake is inert again — the state this path was
+    // in before the record — so this is also the negative control for the test
+    // above.
+    MocopiLiveSourceConfig config;
+    config.frame.bodyPlacement = BodyPlacementPolicy::None;
+    config.intake.rootMotion = motion::RootMotionIntake::DeriveVelocity;
+    MocopiLiveSource source(config);
+    double step = 0.0;
+    const motion::PoseSampleResult result = WalkOneStep(&source, &step);
+    assert(result.pose);
+    assert(!result.pose->root.hasPosition);
+    assert(!result.pose->root.hasLinearVelocity);
     assert(source.GetIntake().GetStats().rootSamplesObserved == 0);
     assert(source.GetIntake().GetStats().rootVelocitiesDerived == 0);
+    // Readable where it always was.
+    assert(source.GetFramesFromLastPush()[0].hipsPosition);
 }
 
 void
@@ -444,10 +506,13 @@ TestTheEvidenceWindowShowsWhatThePoseDropped()
     assert(frame.lostFrames == 2);
     assert(frame.missing.test(static_cast<std::size_t>(HumanBone::Head)));
     assert(frame.hipsPosition);
-    // None of the four reached the pose, which is the point of the window.
+    // Three of the four reached no pose, which is the point of the window. The
+    // fourth, the hips translation, now does — and the window kept it because
+    // what the device sent and what a policy decided about it are two readings
+    // rather than one.
     const motion::PoseSampleResult result = source.Sample(3.0 / kFrameRate);
     assert(result.pose);
-    assert(!result.pose->root.hasPosition);
+    assert(result.pose->root.hasPosition);
 }
 
 void
@@ -622,10 +687,55 @@ CheckTheTwoHalvesMeet(const ReplayedCapture& replayed, const std::string& name)
     if (replayed.delivered.size() != replayed.stats.framesAdmitted) {
         return Failed(name, "an admitted pose could not be sampled back");
     }
-    // And no root motion reached any of them, anywhere in the corpus.
+    // The two halves of a placement are composed from one hips record, so they
+    // may never disagree. This is the invariant; whether a pose has a placement
+    // at all is the next paragraph's question, and conflating the two would let
+    // a half-composed root pass as a missing one.
     for (const motion::HumanoidPose& pose : replayed.delivered) {
-        if (pose.root.hasPosition || pose.root.hasLinearVelocity) {
-            return Failed(name, "the hips translation reached a RootMotion");
+        if (pose.root.hasPosition != pose.root.hasOrientation) {
+            return Failed(name, "a pose carries half a RootMotion, so the "
+                                "position and the orientation stopped reading "
+                                "one hips record");
+        }
+    }
+    // Every pose in this corpus does have one, and that is a fact about these
+    // captures rather than about the contract: all nine send a complete bone
+    // table in every frame datagram, so no frame here loses its hips record.
+    // A frame that composes none is a shape `vrmAdapterMocopi_frameAssembler`
+    // has to construct deliberately, by dropping joint 0. So an absence here
+    // means the composition stopped, not that a record went missing.
+    for (const motion::HumanoidPose& pose : replayed.delivered) {
+        if (!pose.root.hasPosition) {
+            return Failed(name, "a pose carries no placement, and every frame "
+                                "in this corpus sends a hips record");
+        }
+    }
+    // A velocity belongs to the *runtime* rather than to the device:
+    // `LiveCaptureConfig` defaults to `DeriveVelocity`, which differences
+    // consecutive samples, and the device reports none. So the first pose of a
+    // session carries none -- it has nothing to difference against -- and a
+    // later one does. Asserted over "some pose after the first" rather than
+    // over the last: a capture that restarts can end on a new session's first
+    // pose, which legitimately has no predecessor either.
+    //
+    // Four of the nine captures deliver nothing by design -- they are the
+    // malformed ones -- so this is a claim about the sessions that produced
+    // poses, and the counter checks above are what cover the rest.
+    if (!replayed.delivered.empty()) {
+        if (replayed.delivered.front().root.hasLinearVelocity) {
+            return Failed(name, "the first pose of the session carries a "
+                                "velocity, which nothing had two samples to "
+                                "derive");
+        }
+        const bool derived =
+            std::any_of(replayed.delivered.begin() + 1,
+                        replayed.delivered.end(),
+                        [](const motion::HumanoidPose& pose) {
+                            return pose.root.hasLinearVelocity;
+                        });
+        if (replayed.delivered.size() > 1 && !derived) {
+            return Failed(name, "no velocity was derived from any of the poses "
+                                "that followed it");
         }
     }
     return 0;
@@ -890,7 +1000,8 @@ main(int argc, char** argv)
     TestTheRestartLatchFiresOnTheFrameAndNotOnTheDetection();
     TestTheClockOffsetIsHandedBackRatherThanRepaired();
     TestUnderRefuseTheAlignWouldHideTheStallItExistsToShow();
-    TestNoRootMotionReachesThePoseWhateverTheIntakeIsToldToDo();
+    TestTheIntakesRootPolicyIsNoLongerInert();
+    TestTheBodyPlacementPolicyReachesTheAssemblerFromTheConfig();
     TestTheEvidenceWindowShowsWhatThePoseDropped();
     TestARefusedDatagramIsCountedAndClearsTheWindow();
     TestResetForgetsTheStreamAndKeepsTheStats();

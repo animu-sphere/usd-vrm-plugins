@@ -44,10 +44,12 @@ TraceCollector::Observe(
         session.source = metadata;
         ++_frames;
 
-        // Measured on the way past, because this is the last place it exists.
-        // The pose being appended above has nowhere to put it and the trace
-        // has no line for it, so a caller reading the file back can never
-        // recover what follows (see the header).
+        // Measured on the way past, because this is the place that has both the
+        // frames and the reason to care. The pose being appended above now
+        // carries the same translation as its root, so a reader can recover the
+        // positions -- but not this summary of them, which is the number the
+        // export prints and the one that stayed identical across the root/hips
+        // record (see the header).
         HipsMotion& hips = _hips.back();
         if (!frame.hipsPosition) {
             ++hips.framesWithoutHips;

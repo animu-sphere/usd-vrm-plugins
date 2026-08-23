@@ -123,11 +123,15 @@
 // joint's own translation, absolute and in metres, and this layer reports it as
 // that.
 //
-// It is reported beside the bones rather than as a `motion::RootMotion`, which
-// keeps one decision where it belongs: whether the body's placement is root
-// motion, and whether the hips rotation is also the root's orientation, is a
-// policy question with an open record in this release, and a converter that
-// answered it by filling in a `RootMotion` would have taken it silently.
+// It is reported beside the bones rather than as a `motion::RootMotion`, and
+// that is still true of *this* layer after the record was written. Whether the
+// body's placement is root motion, and whether the hips rotation is also the
+// root's orientation, were the two open policy questions this release owed;
+// both are answered yes for this producer in `MOTION_CONTRACT.md`'s "Root and
+// hips", and the answer is executed one layer up, where a frame exists and a
+// `MocopiFrameConfig` says which policy is in force. A converter that answered
+// it here would still be taking the decision silently — a mapping has no
+// configuration and no frame, so it would have no way to be asked.
 //
 // A non-hips joint whose translation leaves its rest offset is **counted**, not
 // carried and not refused. The canonical pose has nowhere to put it — only hips

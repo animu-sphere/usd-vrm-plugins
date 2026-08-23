@@ -1124,15 +1124,33 @@ def check_export(tool: pathlib.Path, workspace: pathlib.Path,
         fail(f"the two upper arms are not mirrored in the trace: {left} and "
              f"{right}")
 
-    # And the one thing that deliberately does *not* cross. The hips
-    # translation is the only one this rig sends and no layer has been willing
-    # to call it root motion, so the release's open record reaches the artifact:
-    # a trace with a `root` line in it would mean some layer answered §5.2 by
-    # writing code.
-    if any(line.startswith("root ")
-           for line in lowered.read_text(encoding="utf-8").splitlines()):
-        fail("the exported trace carries root motion, which no layer on this "
-             "path is entitled to compose (roadmap §5.2)")
+    # And the thing that started crossing when the record was written. The hips
+    # translation is the only one this rig sends, `BodyPlacementPolicy::HipsOnly`
+    # makes it the pose's root, and the artifact is where that becomes visible
+    # to a tool that links no adapter: a trace with no `root` line in it would
+    # mean the composition stopped somewhere between the assembler and the file.
+    trace_lines = lowered.read_text(encoding="utf-8").splitlines()
+    positions = [line for line in trace_lines if line.startswith("root pos ")]
+    rotations = [line for line in trace_lines if line.startswith("root rot ")]
+    if len(positions) != len(lowered_frames) or len(rotations) != len(lowered_frames):
+        fail(f"{len(positions)} position(s) and {len(rotations)} orientation(s) "
+             f"reached the trace for {len(lowered_frames)} frame(s); the body's "
+             f"placement is on every frame this rig sends (MOTION_CONTRACT.md, "
+             f"Root and hips)")
+    # And it moved. A root authored once and then held would satisfy the count
+    # above and describe a session that stood still, which is the exact reading
+    # the record exists to have stopped producing.
+    if positions[0] == positions[-1]:
+        fail(f"every frame's root is the same value, so the trace describes a "
+             f"session that did not travel: {positions[0]}")
+    # No velocity, and that is the trace's definition rather than a policy
+    # choice: it records what the *adapter delivered*, before any intake, and
+    # `DeriveVelocity` is the runtime's. A `root vel` line here would mean the
+    # export had read the intake's poses instead of the assembler's frames.
+    if any(line.startswith("root vel ") for line in trace_lines):
+        fail("the trace carries a derived velocity, so the export read poses "
+             "from after the intake rather than the frames the adapter "
+             "delivered")
 
     # The declared rate is **measured**, not this device's constant 60 Hz. This
     # capture is one the transport thinned, so a writer that declared what the
@@ -1148,11 +1166,11 @@ def check_export(tool: pathlib.Path, workspace: pathlib.Path,
              f"{thinned_header.get('frameRate')} Hz, which is the protocol's "
              f"nominal rate rather than this recording's")
 
-    # The hips path, reported where it is dropped. This is the largest thing the
-    # trace does not carry and the one the release is arguing about, so an
-    # export that stayed silent about it would leave the loss discoverable only
-    # as an absence. Checked on two captures that must disagree: an all-identity
-    # rig has nowhere to travel, and the one carrying a root move does.
+    # The hips path, reported where it crosses. It was printed as a loss until
+    # the record was written and the number did not change when the policy did,
+    # so the same assertion covers both sides of it. Checked on two captures
+    # that must disagree: an all-identity rig has nowhere to travel, and the one
+    # carrying a root move does.
     for name, moves in (("neutral-standing-60hz", False),
                         ("arms-lowered-60hz", True)):
         result = subprocess.run(
@@ -1167,15 +1185,15 @@ def check_export(tool: pathlib.Path, workspace: pathlib.Path,
             fail(f"{name}: expected one hips line on stderr, got {line}")
         # Parsed rather than pattern-matched, because the claim is about the
         # number: "0 m of hips path" and "4.8 m" are the same string shape.
-        metres = float(line[0].split(" so ")[1].split(" m of")[0])
+        metres = float(line[0].split("carries ")[1].split(" m of")[0])
         if moves and metres <= 0.0:
             fail(f"{name} carries a root move and reported {metres} m of path")
         if not moves and metres != 0.0:
             fail(f"{name} is identity throughout and reported {metres} m of "
                  f"path; that capture cannot travel")
-        if "carries no root motion" not in line[0]:
-            fail(f"{name}: the line does not say why the number is being "
-                 f"reported here: {line[0]}")
+        if "as root motion" not in line[0]:
+            fail(f"{name}: the line does not say what the number is being "
+                 f"reported as: {line[0]}")
 
     # `frame-loss-60hz` above needed no session flag although it *does* restart:
     # its new session never declares a rig, so no frame of it is emitted and

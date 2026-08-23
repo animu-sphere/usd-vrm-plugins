@@ -8,8 +8,8 @@ silently reinterpret these fields.
 
 v0.4.0 extends it with the **Motion Phase C retarget semantics**, v0.5.0 with
 the **Motion Phase D live-capture semantics**, v0.6.0 with **comparison
-semantics**, and v0.7.0 with **expression semantics** and **recorded-source
-provenance**, all below. Nothing above those sections changed: the v0.3.0 fields
+semantics**, and v0.7.0 with **expression semantics**, **recorded-source
+provenance** and the **root and hips record**, all below. Nothing above those sections changed: the v0.3.0 fields
 mean exactly what they meant, and each later phase is a new consumer of them
 rather than a reinterpretation.
 
@@ -607,3 +607,90 @@ repository invented. The alternative recorded in
 [§10](../roadmap/recorded-motion-sources.md) — a synthetic fixture, said in the
 corpus to be synthetic — stays open and is what a reader producing quaternions
 would arrive with.
+
+## Root and hips (v0.7.0)
+
+The record [§5.2](../roadmap/adapters-mocopi-vmc-ardy.md#52-frame-assembly-is-a-stated-policy-not-an-emergent-one)
+left open twice and v0.7.0 owed: **what a sender means by hips offset and root**,
+what each path does with it today, and what the parts still open cost. It is
+written as a record first and a policy second, in that order, because two of the
+three paths had the evidence to decide and one did not.
+
+### What was observed
+
+| Path | Channels that could be body translation | What the producer says | Evidence |
+| --- | --- | --- | --- |
+| **mocopi, native UDP** | the hips joint's translation, and nothing else | absolute, metres, every frame | 207,064 measured bone-frames in which **every non-root translation equalled its rest offset bit for bit**, over five device sessions |
+| **mocopi, BVH export** | the root joint's translation, which is that rig's hips | `absolute-position` and `body-orientation`, declared in [`mocopi-mobile-bvh-default-v1`](../../profiles/motion/mocopi-mobile-bvh-default-v1.yaml), centimetres | one 17-second export, measured 2026-08-04 |
+| **VMC Protocol** | `/VMC/Ext/Root/Pos` **and** the hips local position, both reachable | nothing: the protocol defines both and composes neither | generated corpus only — **no real sender has been recorded** |
+
+Two of those rows are the same application, and their rest offsets agree sign
+for sign to a worst component difference of **4.4e-7 m** once the
+centimetre/metre factor is removed. So they are not two producers agreeing; they
+are one producer observed twice, which is weaker evidence than it looks and is
+exactly why the third row is not decided by analogy with them.
+
+### What is canonical today
+
+**A hips translation that is the rig's only translating joint is body
+translation, and it is `RootMotion::worldPosition` — absolute, in the source's
+own space.** The rig's rotation at that joint is the body's orientation and is
+`RootMotion::worldOrientation`, while remaining the `HumanBone::Hips` local
+rotation: a rig that roots at its hips has a root path of one joint, so the
+composition down that path *is* that joint, and the duplication is what makes
+two observations of one session comparable field for field.
+
+That was already what the recorded path authored — `motionSource`'s converter
+composes down the root path and both `RootTranslationPolicy` values land on the
+same canonical thing. As of **2026-08-23** the native path authors it too, under
+`vrmAdapterMocopi::BodyPlacementPolicy::HipsOnly`, which is the assembler's
+default and the only one of §5.2's four words this protocol can express: there
+is no root channel here, so `RootOnly` and `RootPlusHipsOffset` are absent rather
+than unchosen.
+
+Nothing downstream changed to accept it. `motion_capture` seeds the hips rest
+translation with the session's first observed root position, so what reaches an
+avatar is a **delta** exactly as the Phase C rule requires; `vrmRetarget` reads
+`hasPosition` and `worldPosition` and applies the delta under whichever
+`RootMotionMode` the caller named. `worldOrientation` is authored by both paths
+and consumed by neither retarget mode — it is carried because a trace that
+dropped it could not be compared against one that kept it.
+
+**What it cost to leave open, now measured rather than described.** A 36-second
+device session walks 4.81 m of hips path (0.69 m net; a walk out and back makes
+those disagree). Until the record was written that reached the recorded path and
+*nothing at all* reached the live one, so a session retargeted from UDP walked on
+the spot — legs stepping, body turning, nothing travelling
+([report 01 §4](../reports/motion/01-2026-08-15-mocopi-cross-source.md)). The
+same measurement is still printed by `mocopi_record --export-trace`, with its
+verb changed from what is being dropped to what is being kept, so an export from
+either side of this record reports one quantity.
+
+### What stays open, and what that costs
+
+**The VMC half.** `/VMC/Ext/Root/Pos` and the hips local position are both
+reachable in `vrmAdapterVmc`, both converted, and deliberately not composed —
+`VmcFrameAssembler::hipsOffset` is reachable and unread. No policy is chosen,
+because choosing one needs a measurement nobody here can supply: what a real
+sender puts in each field, and whether senders differ. Inventing a capture for it
+would be guessing at a sender's behaviour, which
+[§2](../roadmap/adapters-mocopi-vmc-ardy.md#2-what-an-adapter-is-allowed-to-be)
+forbids for the reason this record exists.
+
+The cost is stated rather than hedged: **a VMC session retargets in place**, the
+same way a native one did until this record, and the four words are still the
+four available when a sender is recorded — `RootOnly`, `HipsOnly`,
+`RootPlusHipsOffset`, or a per-sender profile. The last is the one the recorded
+track already built and the one this repository would reach for first, since a
+sender's convention is a fact about the sender.
+
+**Why the native answer does not settle it.** The mocopi rig has one translating
+joint, so its ambiguity does not arise; VMC's has two channels that a sender may
+use in at least three ways. Applying `HipsOnly` there by analogy would be
+composing a value from a guess about a product, which is what §2 refuses and what
+a per-sender profile exists to do properly.
+
+**What would close it.** One recorded session from each of two VMC senders, with
+both channels' movement reported separately — which `vmc_record` already does,
+because it reports them as movement rather than as meaning. That is an operator's
+work and not a code milestone.

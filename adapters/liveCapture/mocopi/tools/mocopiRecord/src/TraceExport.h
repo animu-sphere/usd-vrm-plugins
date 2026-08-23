@@ -55,13 +55,18 @@
 //
 // ## What the trace cannot carry, and why that is not a loss
 //
-// A `MocopiFrame` knows things a trace has nowhere to put: the hips translation
-// that no layer has been willing to call root motion, which of the rig's bones
-// this frame did not form, how many datagrams the transport lost before it, and
-// how far the sender's two clocks have drifted apart. The capture keeps all of
-// it, which is the verbatim record and the thing an operator keeps. A trace is
-// the canonical half, and a canonical half that carried protocol residue would
-// be a mocopi file with a neutral extension.
+// A `MocopiFrame` knows things a trace has nowhere to put: which of the rig's
+// bones this frame did not form, how many datagrams the transport lost before
+// it, and how far the sender's two clocks have drifted apart. The capture keeps
+// all of it, which is the verbatim record and the thing an operator keeps. A
+// trace is the canonical half, and a canonical half that carried protocol
+// residue would be a mocopi file with a neutral extension.
+//
+// The hips translation was the first entry on that list until 2026-08-23 and is
+// no longer on it: `BodyPlacementPolicy::HipsOnly` makes it the pose's root, so
+// it is canonical rather than residual and it crosses like any other canonical
+// value. Nothing here decides that — a transcription that composed a root would
+// be exactly the layer this file says it is not.
 //
 // One loss is worth naming for the release rather than for a reader, because it
 // is a measurement this milestone owes: **a trace cannot carry the device**.
@@ -73,23 +78,25 @@
 //
 // ## The hips translation is measured on the way past, and said out loud
 //
-// The largest loss is the one the whole release is arguing about, and until now
-// nothing in this repository could put a number on it. The device sends the
-// hips joint's absolute position in every frame -- the only translating joint on
-// this rig -- and no layer on the live path is willing to call it root motion
-// while §5.2 is open, so it reaches no `HumanoidPose` and therefore no trace.
-// The bytes keep it; nothing could read it back out.
+// The device sends the hips joint's absolute position in every frame -- the only
+// translating joint on this rig -- and the collector measures how far it went,
+// in the one place that has both the frames and the reason to care.
 //
-// So the collector measures it here, in the one place that has both the frames
-// and the reason they are being narrowed, and the tool prints it beside the
-// export. A cross-source session made the case concrete: 1.17 m of walk arrived
-// through the BVH path and nothing at all through this one, which is a fact
-// about a *policy* and reads as a fact about the *device* unless something says
+// It was added while §5.2 was open, when no layer on the live path was willing
+// to call that translation root motion: it reached no `HumanoidPose` and
+// therefore no trace, the bytes kept it, and nothing could read it back out. A
+// cross-source session made the case concrete -- 1.17 m of walk arrived through
+// the BVH path and nothing at all through this one, which is a fact about a
+// *policy* and reads as a fact about the *device* unless something says
 // otherwise at the point it happens.
 //
-// It is a measurement and not a decision. Nothing here composes a `RootMotion`,
-// and the day §5.2 is answered this number becomes the thing that stopped being
-// dropped rather than a line that has to be deleted.
+// The record answered it on 2026-08-23 and this measurement is what survived
+// unchanged, which is what the entry above predicted: the number that said what
+// was being dropped now says what is being kept, and the line the tool prints
+// changed its verb rather than being deleted. It is still a measurement and not
+// a decision -- nothing here composes a `RootMotion`, the assembler does -- and
+// keeping it is how an export from either side of the record stays comparable
+// with the other.
 #pragma once
 
 #include "vrmAdapterMocopi/FrameAssembler.h"

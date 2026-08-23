@@ -51,6 +51,25 @@ Current schema contract version: **1**.
 
 ### Fixed
 
+- **A capture frame that reported no root sent the body back to where the
+  session started.** `motion_capture` has to author a hips translation at every
+  time sample, and it authored the *rest* — the session's first observed root
+  position — for a frame whose root was absent. That is correct for a clip where
+  no frame reports a root and wrong the moment one does: a single rootless frame
+  between two that travelled teleported the avatar to the session's origin and
+  back, in one frame. It now holds the last placement it authored.
+
+  A missing root is not a missing bone, and the two fallbacks are not
+  symmetric — which is why the rotation beside it still authors rest rather than
+  holding. An unobserved bone has a neutral value, so the rest rotation states an
+  absence; a root position has none, so the rest translation states a trip that
+  never happened.
+
+  Reachable from either live adapter — a VMC frame closes with bones and no
+  `/VMC/Ext/Root/Pos` — and invisible until now because no live path composed a
+  root at all, which left the substituted value at the origin and equal to every
+  other frame's.
+
 - **`KHR_texture_transform` was authored as though USD sampled glTF's UVs.**
   Two changes of variable were missing, and both are invisible on an identity
   transform — which is every transform in the vendored corpus, so no amount of
@@ -78,6 +97,42 @@ Current schema contract version: **1**.
   the baseline as `textures.vrm`'s `Skin` going from `0.6` to `1.0`.
 
 ### Changed
+
+- **A mocopi session now travels.** The root and hips question v0.7.0 owed is
+  answered and written down as
+  [the motion contract's own section](docs/design/MOTION_CONTRACT.md#root-and-hips-v070):
+  a hips translation that is a rig's only translating joint **is** body
+  translation, so it reaches `RootMotion::worldPosition` as an absolute position
+  in the source's own space, with the rotation at that joint as the root's
+  orientation.
+
+  `vrmAdapterMocopi` composes it in `MocopiFrameAssembler`, under the new
+  explicit `BodyPlacementPolicy` whose default is `HipsOnly` — the only one of
+  the four policies this protocol can express, because the device sends no
+  second root channel to compose with. `BodyPlacementPolicy::None` is the
+  previous behaviour and stays reachable.
+
+  **What changes for a consumer.** A trace exported by `mocopi_record
+  --export-trace` now carries `root pos` and `root rot` on every frame, and a
+  clip retargeted from one moves the avatar instead of animating it in place: a
+  36-second device session was measured dropping **4.81 m** of hips path
+  ([report 01](docs/reports/motion/01-2026-08-15-mocopi-cross-source.md)), and
+  that is the travel that now arrives. Nothing downstream changed to accept it —
+  `motion_capture` already seeds the hips rest from the session's first root
+  position, so what reaches an avatar is a delta, and `motion_retarget` takes
+  the identical command line. `RootMotionIntake` also stops being inert on this
+  path: its three settings previously selected between three identical outcomes.
+
+  The tool's hips-path line changed its verb rather than disappearing — it now
+  reports what the trace **carries** rather than what it drops, so an export from
+  either side of this record reports one quantity.
+
+  **The VMC half stays open, and says why.** `vrmAdapterVmc` still reaches both
+  `/VMC/Ext/Root/Pos` and the hips local position and still composes neither: a
+  sender's convention is a measurement, no real VMC sender has been recorded, and
+  applying the native answer by analogy would synthesise a value from a guess
+  about a product. A VMC session therefore still retargets in place, which the
+  record states as a cost rather than leaving to be discovered.
 
 - **A material is no longer a pile of shader nodes.** The UsdPreviewSurface
   network moved from the material's immediate children into a `/preview`
