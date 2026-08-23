@@ -83,7 +83,8 @@ data keys into a namespace dictionary.
 Expressions, look-at, multiple clips, interpolation fidelity beyond the rule
 above, live capture, motion generation, binding/assembly, retargeting, IK, and
 foot locking are intentionally outside v0.3.0. Retargeting landed in v0.4.0
-(below); the rest remain Motion Phases D–H.
+(below) and expression *reading* in v0.7.0 — `/Animation/Expressions`, described
+under "Expression semantics" — while the rest remain Motion Phases D–H.
 
 ## Retarget semantics (Motion Phase C, v0.4.0)
 
@@ -327,6 +328,16 @@ table here that would guess for every producer at once.
 the two cannot be confused, and `LerpPose` holds a weight only one endpoint
 reported rather than fading it toward zero — fading would invent a channel
 closing that no producer described.
+
+**Both producers exist as of 2026-08-23.** `vrmAdapterVmc` carries
+`/VMC/Ext/Blend/Val`, and `usdVrmaFileFormat` reads the `expressions` channel of
+a `.vrma` clip — VRMA points an expression at a node and animates its
+translation X as the weight. The clip reader is where the open-vocabulary rule
+first costs something: VRMA's specification says a weight outside `[0, 1]` is
+clamped, and the reader carries `1.5` as `1.5` with a warning instead. The rule
+that decided it is the one above — a value type that quietly corrects a producer
+hides that producer from the operator — and the clamp belongs to whoever applies
+the weight to a rig, which is the same layer that will resolve the name.
 
 ### The one departure: on the pose, not beside it
 

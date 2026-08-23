@@ -2,6 +2,7 @@
 #include "usd/UsdVrmaAuthorer.h"
 
 #include "pxr/base/gf/vec3h.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
@@ -14,6 +15,9 @@
 #include "pxr/usd/usdSkel/animation.h"
 #include "pxr/usd/usdSkel/bindingAPI.h"
 #include "pxr/usd/usdSkel/skeleton.h"
+
+#include <set>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -91,6 +95,82 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document,
     UsdSkelBindingAPI::Apply(skeleton.GetPrim())
         .CreateAnimationSourceRel()
         .SetTargets({bodyPath});
+
+    // Expressions are named weights over time and nothing more here. A VRM
+    // expression drives N morph targets across M meshes plus material colours,
+    // and which ones is a property of the *avatar*, which a clip that binds to
+    // no avatar cannot know -- so this authors no `blendShapes` binding and
+    // expands nothing (motion policy §4.3).
+    //
+    // One prim per expression, laid out like the importer's
+    // `/Asset/rig/Expressions/<name>`. The two are **not** joinable by path yet:
+    // the importer sanitizes a name through its own private table and this
+    // bundle cannot link it, so any name outside ASCII lands on a different prim
+    // name on each side. `vrm:expressionName` is the key that survives that, and
+    // the avatar side owes the same attribute before `ExpressionResolve` can
+    // rely on it.
+    if (!document.expressions.empty()) {
+        const SdfPath expressionsPath =
+            animationPath.AppendChild(TfToken("Expressions"));
+        UsdGeomScope::Define(stage, expressionsPath);
+        std::set<std::string> claimedNames;
+        for (const VrmaExpression& expression : document.expressions) {
+            // USD prim names are identifiers and expression names are not: the
+            // preset vocabulary happens to be safe, and a custom name is
+            // whatever an author typed. `vrm:expressionName` carries the name
+            // the file used, so sanitizing here loses nothing.
+            const std::string base = TfMakeValidIdentifier(expression.name);
+            // Uniquify against the names already *claimed*, not against the
+            // bases seen. `<base>_2` can be another expression's own sanitized
+            // base, and `UsdGeomScope::Define` on a path that already exists
+            // returns the existing prim instead of failing -- so counting bases
+            // lets two declared expressions collapse into one, the second
+            // silently overwriting the first's weights.
+            std::string primName = base;
+            for (int suffix = 2; !claimedNames.insert(primName).second; ++suffix) {
+                primName = base + "_" + std::to_string(suffix);
+            }
+
+            const UsdPrim prim = UsdGeomScope::Define(
+                stage, expressionsPath.AppendChild(TfToken(primName))).GetPrim();
+            prim.CreateAttribute(TfToken("vrm:expressionName"),
+                                 SdfValueTypeNames->Token, false,
+                                 SdfVariabilityUniform)
+                .Set(TfToken(expression.name));
+            prim.CreateAttribute(TfToken("vrm:expressionType"),
+                                 SdfValueTypeNames->Token, false,
+                                 SdfVariabilityUniform)
+                .Set(TfToken(expression.isPreset ? "preset" : "custom"));
+
+            if (expression.constantWeight) {
+                // The node stated a weight and nothing animates it. That is one
+                // value for the whole clip, so it is authored as a default --
+                // a run of identical time samples would claim the file keyed
+                // something it did not.
+                prim.CreateAttribute(TfToken("vrm:expressionWeight"),
+                                     SdfValueTypeNames->Float, false)
+                    .Set(*expression.constantWeight);
+                continue;
+            }
+            if (!expression.isAnimated) {
+                // Declared, and the file gave no weight anywhere: no channel and
+                // no transform on the node to read one out of. The attribute
+                // stays unauthored rather than being written as zero, because an
+                // unreported weight is not a weight of zero (MOTION_CONTRACT.md)
+                // and a zero here would be this importer saying what the file
+                // did not.
+                continue;
+            }
+            UsdAttribute weight = prim.CreateAttribute(
+                TfToken("vrm:expressionWeight"), SdfValueTypeNames->Float, false);
+            for (const motion::HumanoidPose& pose : document.animation.samples) {
+                if (const float* value = pose.expressions.Find(expression.name)) {
+                    weight.Set(*value,
+                               pose.timestamp * document.animation.nominalFrameRate);
+                }
+            }
+        }
+    }
 
     return stage->GetRootLayer()->ExportToString(outUsda);
 }

@@ -218,6 +218,18 @@ look-at
 → VrmAnimationLookAtAPI (equivalent)
 ```
 
+The expression half of that shipped on 2026-08-23 as the *equivalent* rather
+than the typed schema: `/Animation/Expressions/<name>` prims carrying
+`vrm:expressionName`, `vrm:expressionType` and a time-sampled
+`vrm:expressionWeight`. Who owns a `VrmAnimationExpressionAPI` is still the
+open question in the [backlog](../roadmap/backlog.md), and applying one to those
+prims later changes no path and no attribute name. The shape mirrors the
+importer's `/Asset/rig/Expressions/<name>` deliberately, but the two are not
+joinable by path: each side sanitizes a name with its own private table, so any
+name outside ASCII differs between them. `vrm:expressionName` on the clip side
+is the verbatim key; the avatar side owes the same attribute before
+`ExpressionResolve` can join on it.
+
 ### 4.2 HumanoidSkeleton is a canonical semantic skeleton
 
 `HumanoidSkeleton.joints` does **not** carry the target VRM's real joint paths.

@@ -142,9 +142,19 @@ Always written "Motion Phase X", never a bare "Phase X".
   first generator adapter is written, not derived from it
   ([adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) §6, Milestones
   E–F).
-- ⬜ **Motion Phase G — expression / look-at / recording.** VRMA expression and
-  look-at animation, `ExpressionResolve`, `LookAtEvaluate`, live recording,
-  bake, VRMA export investigation.
+- ⬜ **Motion Phase G — expression / look-at / recording.** VRMA **expression**
+  animation landed 2026-08-23 (`/Animation/Expressions`, weights carried
+  verbatim onto the pose and never expanded); what remains is VRMA look-at
+  animation, `ExpressionResolve`, `LookAtEvaluate`, live recording, bake, and
+  the VRMA export investigation.
+  - ⬜ **`ExpressionResolve` has no join key yet.** The clip authors
+    `vrm:expressionName` verbatim; the VRM importer authors none, and each side
+    sanitizes prim names with its own private table, so a non-ASCII expression
+    name lands on a different path on each side. The avatar side gaining the
+    same verbatim attribute is a prerequisite, not a detail of the resolve
+    step. (The importer's `VrmMakeUniqueNames` also uniquifies by counting
+    bases, which can hand two entries the same name — the bug fixed on the
+    clip side in the same change.)
 - ⬜ **Motion Phase H — advanced.** Blending, IK / foot locking, contact
   handling, latency compensation, multi-performer sync, simulation bridge,
   generated-motion cache, publish pipeline.
@@ -155,8 +165,13 @@ Always written "Motion Phase X", never a bare "Phase X".
   names `VrmAnimationExpressionAPI` and `VrmAnimationLookAtAPI` as
   "equivalents" without fixing an owner. Adding them to `vrmSchema` is a schema
   contract change ([WORKSPACE.md](../architecture/WORKSPACE.md) §3); a separate
-  `vrmaSchema` bundle avoids that but splits the contract. **Decide before
-  Motion Phase B.**
+  `vrmaSchema` bundle avoids that but splits the contract. The expression half
+  shipped ahead of the answer as **namespaced attributes on plain prims** —
+  `vrm:expressionName`, `vrm:expressionType`, `vrm:expressionWeight` under
+  `/Animation/Expressions/<name>` — which is what a typed API would carry
+  anyway, so applying one later moves nothing and reverses nothing. That buys
+  time; it does not answer the question, and the answer is owed before the
+  look-at half repeats the pattern.
 - ⬜ **Is the `motion:` USD namespace (motion policy §13) a typed schema or
   namespaced attributes?** Motion Plans are the one place the policy authors USD
   outside a file-format plugin.

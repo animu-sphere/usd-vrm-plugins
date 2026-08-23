@@ -15,6 +15,45 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **A `.vrma` clip's expressions now reach the stage.** VRMA declares an
+  expression under `expressions.preset` or `expressions.custom` and animates its
+  weight as the **X component of a node's translation**; `usdVrmaFileFormat`
+  read neither, so a face-capture clip imported as a body and nothing else. Each
+  declared expression is now a prim under `/Animation/Expressions` carrying
+  `vrm:expressionName` (the name the file used, verbatim), `vrm:expressionType`,
+  and a time-sampled `vrm:expressionWeight`. The weights ride on
+  `HumanoidPose::expressions`, so a clip and a VMC sender now produce the same
+  value type ([MOTION_CONTRACT.md](docs/design/MOTION_CONTRACT.md#expression-semantics-v070)).
+
+  **Three of those behaviours are decisions, not details.** A weight outside
+  `[0, 1]` is carried unclamped with a `VRMA109` warning, where the
+  specification would clamp it — a file that said `1.5` said `1.5`, and
+  correcting it in the reader would hide the authoring tool from whoever reads
+  the clip; the clamp belongs to whoever applies the weight to a rig. An
+  expression the clip declares and never drives is read from its node instead:
+  glTF leaves an un-animated node at its own TRS, so a node that states a
+  transform states a constant weight, authored as a default value — while a node
+  that states none gets a prim with **no** weight attribute, because an
+  unreported weight is not a weight of zero. What separates those two is what
+  the file wrote, not whether the number is zero. And nothing is expanded: a VRM expression drives N morph targets across M meshes plus
+  material colours, which is the *avatar's* property, so no `blendShapes`
+  binding is authored and `ExpressionResolve` stays ahead
+  ([motion policy](docs/design/MOTION_ARCHITECTURE_POLICY.md) §4.3).
+
+  Expression key times join the same union every other channel is evaluated at,
+  so a clip whose face keys off the body's beats gains samples on the body too
+  rather than having its face resampled. The attributes are namespaced rather
+  than a typed schema, which leaves the `VrmAnimationExpressionAPI` ownership
+  question open at no cost: such a schema applies to exactly these prims with
+  exactly these attribute names. The prim *name* is not a join key yet — the VRM
+  importer sanitizes through its own private table, so a non-ASCII name lands
+  differently on each side, and the avatar side does not author
+  `vrm:expressionName`; that is the first thing `ExpressionResolve` has to
+  settle. Verified by `expressive_face.vrma`, a generated fixture with one case
+  per behaviour above — all seven `VRMA_MotionPack` clips
+  carry `humanBones` and no `expressions`, so there was no vendor file to read
+  this against.
+
 - **Unlit VRM materials now carry a MaterialX network, and it is the one that
   renders.** Each `KHR_materials_unlit` material gains a second realization at
   `/Asset/mtl/<name>/mtlx`, reached through `outputs:mtlx:surface`

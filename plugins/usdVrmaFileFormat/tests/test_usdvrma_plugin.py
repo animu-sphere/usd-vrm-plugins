@@ -12,6 +12,83 @@ from pxr import Gf, Plug, Sdf, Usd, UsdGeom, UsdSkel
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 
 
+def _check_expression_clip() -> None:
+    """The expression half: named weights over time, and what is *not* said.
+
+    VRMA drives an expression weight with the X component of its node's
+    translation. What the reader has to get right around that rule is the
+    interesting part, so each assertion below stands for one case the fixture
+    was built to separate.
+    """
+    stage = Usd.Stage.Open(str(FIXTURES / "expressive_face.vrma"))
+    assert stage, "could not open the expression VRMA fixture"
+
+    expressions = stage.GetPrimAtPath("/Animation/Expressions")
+    assert expressions, "no /Animation/Expressions scope"
+    names = sorted(child.GetName() for child in expressions.GetChildren())
+    # `angry` points at a node index the file does not have, so it is dropped.
+    assert names == ["happy", "myWink", "relaxed", "surprised"], names
+
+    happy = stage.GetPrimAtPath("/Animation/Expressions/happy")
+    assert happy.GetAttribute("vrm:expressionName").Get() == "happy"
+    assert happy.GetAttribute("vrm:expressionType").Get() == "preset"
+    weight = happy.GetAttribute("vrm:expressionWeight")
+    # The custom expression keys on 0.5s and 1.0s and the body keys on 0s and
+    # 1.0s: every channel is evaluated at the union, so 15 is a real sample and
+    # not an interpolation a consumer has to perform.
+    assert weight.GetTimeSamples() == [0.0, 15.0, 30.0], weight.GetTimeSamples()
+    assert abs(weight.Get(0.0) - 0.0) < 1e-6
+    assert abs(weight.Get(15.0) - 0.5) < 1e-6
+    assert abs(weight.Get(30.0) - 1.0) < 1e-6
+
+    wink = stage.GetPrimAtPath("/Animation/Expressions/myWink")
+    assert wink.GetAttribute("vrm:expressionType").Get() == "custom"
+    wink_weight = wink.GetAttribute("vrm:expressionWeight")
+    assert wink_weight.GetTimeSamples() == [0.0, 15.0, 30.0]
+    # Before its first key the channel holds, exactly as a body channel does.
+    assert abs(wink_weight.Get(0.0) - 0.25) < 1e-6
+    assert abs(wink_weight.Get(15.0) - 0.25) < 1e-6
+    # The specification clamps a weight to [0, 1]; the importer carries what the
+    # file said and leaves the clamp to whoever applies it to a rig.
+    assert abs(wink_weight.Get(30.0) - 1.5) < 1e-6, wink_weight.Get(30.0)
+
+    # Two expressions the clip never animates, saying two different things.
+    relaxed = stage.GetPrimAtPath("/Animation/Expressions/relaxed")
+    relaxed_weight = relaxed.GetAttribute("vrm:expressionWeight")
+    # Its node states translation = [0.3, 0, 0] and nothing animates it. glTF
+    # leaves an un-animated node at its own TRS, so the clip did give a weight:
+    # one value for the whole clip, authored as a default rather than as a run
+    # of identical time samples.
+    assert relaxed_weight.IsValid(), (
+        "a weight the node states is a weight the file gave, not an absence")
+    assert relaxed_weight.GetTimeSamples() == [], relaxed_weight.GetTimeSamples()
+    assert abs(relaxed_weight.Get() - 0.3) < 1e-6, relaxed_weight.Get()
+
+    surprised = stage.GetPrimAtPath("/Animation/Expressions/surprised")
+    assert surprised.GetAttribute("vrm:expressionType").Get() == "preset"
+    # Declared, and the file gave no weight anywhere: no channel, and no
+    # transform on the node to read one out of. An unreported weight is not a
+    # weight of zero, so there is no value here to mistake for one.
+    assert not surprised.GetAttribute("vrm:expressionWeight").IsValid(), (
+        "an expression the clip never states must not be authored as a weight")
+
+    # Expressions must not have been expanded into a blend-shape binding: which
+    # morph targets an expression drives is the avatar's property, and this clip
+    # binds to no avatar (motion policy 4.3).
+    body = UsdSkel.Animation(stage.GetPrimAtPath("/Animation/BodyAnimation"))
+    assert body, "missing body animation"
+    assert not body.GetBlendShapesAttr().HasAuthoredValue()
+    assert not body.GetBlendShapeWeightsAttr().HasAuthoredValue()
+
+    # The body is sampled at the union too: 15 exists because an expression
+    # keyed there, and the rotation on it is the interpolated body pose.
+    rotations = body.GetRotationsAttr()
+    assert rotations.GetTimeSamples() == [0.0, 15.0, 30.0], rotations.GetTimeSamples()
+    midway = rotations.Get(15.0)[0]
+    assert abs(midway.GetReal() - 0.9238795) < 1e-5, midway
+    assert abs(midway.GetImaginary()[1] - 0.3826834) < 1e-5, midway
+
+
 def main() -> int:
     plugin_path = os.environ.get("PXR_PLUGINPATH_NAME")
     if plugin_path:
@@ -91,6 +168,8 @@ def main() -> int:
     hips_rotation = hips.ExtractRotationQuat()
     assert abs(hips_rotation.GetReal() - 0.70710677) < 1e-5, hips_rotation
     assert abs(hips_rotation.GetImaginary()[1] - 0.70710677) < 1e-5, hips_rotation
+
+    _check_expression_clip()
 
     print("usdVrmaFileFormat smoke tests: OK")
     return 0
