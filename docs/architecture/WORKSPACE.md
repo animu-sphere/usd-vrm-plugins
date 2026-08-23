@@ -469,16 +469,18 @@ anything with an edge — and both adapters have two. An adapter library therefo
 still reaches a consumer through the workspace build
 ([report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §2).
 
-**The "never" above is no longer true of an adapter's CLI, as of v0.7.0.**
-`ost` 0.22.2 discovers a tool descriptor under
-`adapters/<group>/<name>/tools/<tool>/`, so `mocopi_record` and `vmc_record`
-are members of the aggregate product — 9 members, where v0.6.0 shipped 7 —
-without any descriptor here changing. The exclusion this section states is
-therefore currently enforced for the adapter *libraries* and not for their
-tools. That is recorded rather than corrected: the widening is what puts the
-live path's recorder into an artifact at all, and nothing in either descriptor
-can yet declare a member out of the product (§3 of the same report). The
-reasoning below still says which way it should be declared once it can be.
+**The "never" above holds in what v0.7.0 ships, and it is held by a version
+pin rather than by a declaration.** `ost` 0.21.0 — what the release lane
+bootstraps — does not discover a tool descriptor under
+`adapters/<group>/<name>/tools/<tool>/`, so the product has **7** members: the
+four bundles and the three `tools/` CLIs. `ost` 0.22.2 *does* discover them, and
+the same command on such a workstation packages **9**, adding `mocopi_record`
+and `vmc_record` with no descriptor here changing (§3 of the same report).
+Nothing in `openstrata.tool.yaml` or `openstrata.toml` can declare a member out
+of the product, so this exclusion is currently a property of the toolchain
+version. `release.yml`'s staging step therefore counts the `tools/` descriptors
+and fails when packaging exceeds them — the next pin bump has to be decided
+here rather than discovered in a published archive.
 
 `motionSource` and `motionBvh` are **not** adapters and take the opposite
 decision: they carry no product name in code, so they belong in the aggregate
