@@ -79,6 +79,42 @@ Current schema contract version: **1**.
 
 ### Changed
 
+- **A mocopi session now travels.** The root and hips question v0.7.0 owed is
+  answered and written down as
+  [the motion contract's own section](docs/design/MOTION_CONTRACT.md#root-and-hips-v070):
+  a hips translation that is a rig's only translating joint **is** body
+  translation, so it reaches `RootMotion::worldPosition` as an absolute position
+  in the source's own space, with the rotation at that joint as the root's
+  orientation.
+
+  `vrmAdapterMocopi` composes it in `MocopiFrameAssembler`, under the new
+  explicit `BodyPlacementPolicy` whose default is `HipsOnly` — the only one of
+  the four policies this protocol can express, because the device sends no
+  second root channel to compose with. `BodyPlacementPolicy::None` is the
+  previous behaviour and stays reachable.
+
+  **What changes for a consumer.** A trace exported by `mocopi_record
+  --export-trace` now carries `root pos` and `root rot` on every frame, and a
+  clip retargeted from one moves the avatar instead of animating it in place: a
+  36-second device session was measured dropping **4.81 m** of hips path
+  ([report 01](docs/reports/motion/01-2026-08-15-mocopi-cross-source.md)), and
+  that is the travel that now arrives. Nothing downstream changed to accept it —
+  `motion_capture` already seeds the hips rest from the session's first root
+  position, so what reaches an avatar is a delta, and `motion_retarget` takes
+  the identical command line. `RootMotionIntake` also stops being inert on this
+  path: its three settings previously selected between three identical outcomes.
+
+  The tool's hips-path line changed its verb rather than disappearing — it now
+  reports what the trace **carries** rather than what it drops, so an export from
+  either side of this record reports one quantity.
+
+  **The VMC half stays open, and says why.** `vrmAdapterVmc` still reaches both
+  `/VMC/Ext/Root/Pos` and the hips local position and still composes neither: a
+  sender's convention is a measurement, no real VMC sender has been recorded, and
+  applying the native answer by analogy would synthesise a value from a guess
+  about a product. A VMC session therefore still retargets in place, which the
+  record states as a cost rather than leaving to be discovered.
+
 - **A material is no longer a pile of shader nodes.** The UsdPreviewSurface
   network moved from the material's immediate children into a `/preview`
   `UsdShadeNodeGraph`, so `/Asset/mtl/Hair` now reads as one child in `usdview`

@@ -211,15 +211,29 @@ reopen a code milestone under a release that has finished having one.
       (seen live, unrepresentable in a capture header — found by the restart
       session arriving from two source ports), the transport facts a file has
       none of, and tracking state, which **neither** path carries*;
-- [ ] the root / hips observation is written down, and the canonical answer
-      chosen or explicitly left open with its downstream cost stated — *the
-      mocopi half is measured and its cost is now a number rather than a
-      worry: `mocopi_record --export-trace` reports the hips path it is
-      dropping, and a 36-second session drops **4.81 m** of it (0.69 m net —
-      both, because a walk out and back makes them disagree). What is left is
-      the VMC half, which is where the question originally came from: `/VMC/Ext/Root/Pos`
-      against the hips local position is an ambiguity the native path does not
-      have, because this rig has exactly one translating joint*;
+- [x] the root / hips observation is written down, and the canonical answer
+      chosen or explicitly left open with its downstream cost stated — *written
+      2026-08-23 as
+      [the contract's own section](../design/MOTION_CONTRACT.md#root-and-hips-v070),
+      and it closes as **both** halves of the condition rather than one: chosen
+      where the evidence decided it, left open where it did not, with the cost
+      of the open part stated. Canonical today: a hips translation that is a
+      rig's only translating joint **is** body translation and is
+      `RootMotion::worldPosition`, absolute in the source's own space, with the
+      hips rotation as the root's orientation. That was already what the
+      recorded path authored; the native path now authors it too, under
+      `BodyPlacementPolicy::HipsOnly` — the only one of §5.2's four words this
+      protocol can express, since there is no root channel for the other three
+      to compose with. **The 4.81 m stops being dropped**: a session recorded
+      over UDP now travels on the avatar instead of walking on the spot, checked
+      end to end through unchanged `motion_capture` and `motion_retarget` onto
+      the fixture rig **and** onto `Seed-san.vrm`, both moving their hips by the
+      same (0, −0.02, +0.04) the generator wrote. Verified negatively: the
+      default set back to `None` turns six tests red across four layers. The
+      **VMC half stays open and says so** — two channels, no real sender
+      recorded, and a session that retargets in place until one is; deciding it
+      by analogy with the native rig would be composing a value from a guess
+      about a product, which §2 forbids*;
 - [ ] redistributable captures and BVH files are committed; the rest survive as
       measured manifests with no bytes — *the first BVH file is in
       (`libs/motionBvh/tests/corpus/recorded/`, 2026-08-04). **The live half is

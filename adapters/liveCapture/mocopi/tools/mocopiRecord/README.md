@@ -148,24 +148,31 @@ as the trace's `provider` and `sourceId`: the adapter itself leaves both empty
 because nothing on this wire may be published, and the operator's own words are
 not a guess.
 
-**The biggest of those losses is measured on the way past and printed:**
+**The body's travel is measured on the way past and printed:**
 
 ```text
-mocopi_record: the trace carries no root motion, so 4.81282 m of hips path
-               (0.690738 m net) stays in the capture
+mocopi_record: the trace carries 4.81282 m of hips path (0.690738 m net) as
+               root motion
 ```
 
-The hips joint is the only one this rig translates, and while
-[§5.2](../../../../../docs/roadmap/adapters-mocopi-vmc-ardy.md) is open no layer
-on the live path will call it root motion — so it reaches no pose and no trace,
-and until this line existed nothing here could say how much movement that was. A
-real 36-second session drops **4.8 m** of it.
+The hips joint is the only one this rig translates, and since the
+[root/hips record](../../../../../docs/design/MOTION_CONTRACT.md#root-and-hips-v070)
+was written it is the body's placement: the assembler composes it into
+`RootMotion::worldPosition`, so it reaches the pose, the trace, and an avatar.
+A real 36-second session carries **4.8 m** of it.
 
 Both numbers, because a walk out and back makes them disagree: that session's
 *net* displacement is 0.69 m, so reporting only the second would call a session
 that travelled 4.8 m nearly stationary. A session that genuinely stood still
-reads 0.0125 m over 17.6 s, which is the measurement's own noise floor. It is a
-measurement and not a decision — nothing here composes a `RootMotion`.
+reads 0.0125 m over 17.6 s, which is the measurement's own noise floor.
+
+This line was printed as a **loss** until 2026-08-23 — while §5.2 was open no
+layer on the live path would call the translation root motion, so it reached no
+pose and no trace, and this measurement existed to say how much movement that
+was. The number did not change when the policy did; only the verb did. So an
+export from either side of the record reports one quantity, and it is still a
+measurement rather than a decision: nothing in this tool composes a
+`RootMotion`, the assembler does.
 
 ## A device that is not there yet is the ordinary state
 

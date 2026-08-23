@@ -168,9 +168,15 @@ measured on, and fails when the three stop describing one rig.
 **One joint translates, and it is the hips.** The sibling has two candidate root
 translations and cannot compose them; natively there is no second channel, and in
 207,064 measured bone-frames every other translation restated its rest offset bit
-for bit. So the body's placement is the hips joint's own translation — reported
-as that, and deliberately not as a `motion::RootMotion`, because whether it *is*
-root motion is a policy question this release still owes a record of.
+for bit. So the body's placement is the hips joint's own translation — and since
+the [root/hips record](../../../docs/design/MOTION_CONTRACT.md#root-and-hips-v070)
+was written it is also a `motion::RootMotion`, absolute and in the sender's own
+space, composed by `MocopiFrameAssembler` under
+`BodyPlacementPolicy::HipsOnly`. That is the only one of the record's four
+policies this protocol can express, and it is why a mocopi session retargets onto
+an avatar that travels rather than one that walks on the spot. The mapping still
+reports the translation and composes nothing: it has no configuration to be asked
+with, so the decision lives in the layer that has one.
 
 A native session also brings something a relay cannot: a **real rest pose**. A
 skeleton packet is one, repeated about every 3.5 s, so nothing here has to
