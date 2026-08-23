@@ -13,6 +13,7 @@ Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 | [backlog.md](backlog.md) | Ordered but unscheduled work: the milestone ladder beyond next, the motion layer, future phases, and cross-cutting open items. |
 | [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) | The **live** input-adapter direction: a VMC Protocol adapter (shipped), then a direct capture-product adapter, then a generation adapter — completing end to end with no OpenExec dependency. The filename keeps the original triple; the order inside was reversed on 2026-07-29. |
 | [recorded-motion-sources.md](recorded-motion-sources.md) | The **recorded-file** direction: a generic BVH pipeline over a format-neutral `motionSource` layer, with producer semantics in declarative profiles. Deliberately not any one capture product's importer. Added 2026-08-03. |
+| [osc-and-vrchat-trackers.md](osc-and-vrchat-trackers.md) | The **third live input** and the sharing it forces: a VRChat OSC Trackers adapter over a protocol-neutral OSC decoder, plus the transport code the first two adapters already duplicate. A tracker source is not a pose source, and that difference is the reason it is its own plan. Added 2026-08-23. |
 | [openexec-foundation.md](openexec-foundation.md) | The OpenExec direction: the OpenUSD 26.08 exact pin, the `execMotion` / `execVrm` foundation, and the `ExecIr` invertible rig. Kept separate because it is a plan, not a status list. Renamed from `openexec-v0.6.0-v0.7.0.md` on 2026-08-03, when its target moved. |
 
 ## Three sequences, deliberately separate
@@ -61,6 +62,7 @@ must repeat one, `scripts/check_docs.py` checks it against this table.
 | VMC input | Shipped | v0.6.0 |
 | mocopi live input | Next | v0.7.0 |
 | generic BVH recorded-motion ingestion | Next | v0.7.0 |
+| shared OSC foundation + VRChat OSC Trackers input | Planned | v0.7.5 |
 | OpenExec foundation | Planned | v0.8.0 |
 | `ExecIr` invertible VRM humanoid rig | Planned | after v0.8.0 |
 
@@ -89,6 +91,16 @@ carrying a version number is drift waiting to be re-litigated.
   producer semantics in data rather than a capture product's importer. They meet
   at `motionCore` and nowhere earlier
   ([motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md)).
+- **The live half gains a third leaf in v0.7.5, and a shared floor under all
+  three** ([the OSC track](osc-and-vrchat-trackers.md)). It is deliberately not
+  in v0.7.0: that release's remaining items are evidence an operator produces,
+  and a third adapter would reopen a code milestone underneath them. It is
+  deliberately not v0.8.0 either, because OpenExec is meant to evaluate a
+  finished canonical pipeline rather than share a release with one being
+  extended. The duplication it resolves is **measured, not anticipated** — the
+  two existing adapters carry one packet-capture implementation twice, six lines
+  apart across 800, and one UDP receiver twice carrying four copied defects that
+  were found and fixed in one copy on 2026-08-11 and are still in the other.
 - Current priorities: **real device evidence** across both halves, closing the
   remaining **Workspace Phase 5** packaging P0, and widening runtime
   verification. The [OpenExec foundation](openexec-foundation.md) follows in

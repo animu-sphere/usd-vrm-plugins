@@ -36,6 +36,15 @@ generator, and look-at. Expression *animation* is no longer on that list — the
 `motionCore` addition it was waiting on landed (below) — but expressions
 reaching a **rig** still is: that is Motion Phase G.
 
+**A third live adapter is also not in this boundary, and the reason is the state
+of the release rather than the value of the work.** VRChat OSC Trackers input,
+and the shared OSC and transport libraries it forces, are
+[their own track](osc-and-vrchat-trackers.md) in the release below. Everything
+still unchecked here is evidence an operator produces — a relay session, a
+release artifact running the path a workspace build already runs — and adding an
+adapter, two library extractions and a solve boundary underneath those would
+reopen a code milestone under a release that has finished having one.
+
 ### Done when
 
 **Live**
@@ -422,6 +431,93 @@ trace. They do not yet reach a **rig**, which is what #88 is actually about:
   destination and a scratch-prefix install proves it (2026-08-05). What is left
   is the `ost` half, which is now a question about a real directory rather than a
   hypothetical one.
+
+## Then: v0.7.5 — shared OSC foundation and VRChat OSC Trackers input ⬜
+
+**Release boundary:** one physical session reaches the **unchanged** canonical
+motion and retarget pipeline through a **third** independently modelled live
+surface — VRChat OSC tracking input — over a protocol-neutral OSC decoder and a
+shared transport layer that no adapter maintains a private copy of. Planned in
+[osc-and-vrchat-trackers.md](osc-and-vrchat-trackers.md).
+
+Two things shape it, and only one of them is the new adapter.
+
+**The sharing is overdue, it is documented in the tree, and this release is the
+trigger the tree already named.**
+[`vrmAdapterMocopi`'s `UdpReceiver.h`](../../adapters/liveCapture/mocopi/include/vrmAdapterMocopi/UdpReceiver.h)
+records that a review on 2026-08-11 found **four defects `vrmAdapterVmc` has
+identically, because they were copied along with everything else** — a silently
+truncated oversize datagram, a large finite timeout mapped onto "wait forever",
+an uninspected `revents`, and idle accounting charged to a call that had
+received something. It fixed all four, wrote down that they remain in the
+sibling, and named the condition for turning the repetition into a library: *a
+**third** recorder — a third live adapter, or a tool that must drive both*. All
+four are still in the VMC copy as of 2026-08-23, and this release is that third
+adapter.
+
+The census behind it is
+[§2](osc-and-vrchat-trackers.md#2-the-duplication-census) (2026-08-23): with
+vendor identifiers erased and comments stripped, `PacketCapture` is **one file
+written twice** — 6 changed lines across 800 — while `FrameAssembler` and
+`SkeletonMap` differ by more lines than either copy contains and are correctly
+duplicated. A third adapter's first deliverable is a packet recorder, so the
+extraction comes *before* it rather than after.
+
+**A tracker source is not a pose source.** VMC and mocopi carry humanoid bone
+transforms; VRChat OSC carries numbered tracker observations, which are pre-IK,
+and a tracker index is not a body role. The adapter therefore stops at a
+`TrackerFrame` and the humanoid solve is a separate, generic boundary — the one
+place this track could push a VRChat-shaped type into `motionCore`, which it
+does not do under any outcome
+([§5](osc-and-vrchat-trackers.md#5-a-tracker-source-is-not-a-pose-source)).
+
+Not in this boundary: Avatar Parameters, OSC eye tracking, OSCQuery discovery,
+an OSC sender or router, two-way VRChat client integration, realtime display,
+and OpenExec. A VRChat client is never a test dependency — the generated corpus
+and a recorded mocopi `VRChat (OSC)` session are the evidence, and every replay
+test completes with nothing installed.
+
+### Done when
+
+**Foundation**
+
+- [ ] the existing OSC decoder's public behaviour is frozen by characterisation
+      tests before any source moves;
+- [ ] the four `UdpReceiver` defects are fixed in `vrmAdapterVmc`, each with a
+      test, in a change that moves no file — they are live-session defects in
+      shipped code and this line closes with or without the rest of the release;
+- [ ] the transport ring — receiver, queue, capture format, diagnostic vehicle —
+      lives once, in a leaf outside the aggregate product's link closure, and
+      every committed capture in both existing corpora still reads unchanged;
+- [ ] two adapters decode OSC through one library that contains no VMC and no
+      VRChat address literal, enforced by a boundary check rather than by
+      review;
+- [ ] no adapter imports a sibling adapter, checked in the binary.
+
+**VRChat OSC**
+
+- [ ] a real mocopi `VRChat (OSC)` session is captured and its addresses, type
+      tags and cadence are inventoried **before** a decoder is written;
+- [ ] generated fixtures fix the protocol's shapes with no hardware, and
+      recorded fixtures replay deterministically with no client;
+- [ ] tracker position and rotation reach the canonical tracking space, verified
+      against a recorded rest pose rather than the documentation alone;
+- [ ] partial sets, timeouts, restarts and calibration discontinuity are stated
+      policy with a fixture each, not emergent behaviour;
+- [ ] unknown VRChat OSC traffic is recoverable;
+- [ ] a real session reaches a VRM avatar through **unchanged** `motion_capture`
+      and `motion_retarget`, or the solve boundary is documented as the stated
+      stopping point and the release claims tracker *input* rather than
+      tracker-driven motion.
+
+**Cross-source**
+
+- [ ] the same physical session is observed on native UDP, VRChat OSC and the
+      BVH export, and compared at the canonical layer;
+- [ ] every difference is classified — including a *solve difference*, which is
+      a category no previous comparison could attribute — rather than absorbed
+      by widening a tolerance;
+- [ ] what each path cannot carry is written down from evidence.
 
 ## Then: v0.8.0 — the OpenExec foundation (Workspace Phase 8 + Motion Phase E) ⬜
 

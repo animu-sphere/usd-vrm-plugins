@@ -34,6 +34,16 @@ semantics in
 > not a mocopi importer. This document keeps sockets; that one keeps files; they
 > meet at `motionCore`. The one place they are compared is
 > [§9.6](#96-cross-source-comparison), on a single session observed both ways.
+>
+> **Narrowed again on 2026-08-23: this plan is *pose* input.** A third live
+> adapter is scheduled — VRChat OSC Trackers — and it is
+> [osc-and-vrchat-trackers.md](osc-and-vrchat-trackers.md) rather than a fourth
+> milestone here, for two reasons. It carries *tracker observations*, which are
+> pre-IK, where every adapter in this document carries humanoid bone transforms;
+> and it is the plan that owns the extraction of the OSC decoder and the
+> transport code the two adapters here already duplicate (§4). This document
+> keeps the two vendor pose leaves and the generator; that one keeps the shared
+> floor under all of them.
 
 Sequence context: the generic live-capture surface these adapters plug into
 shipped in v0.5.0 (Motion Phase D). This plan is the vendor half of Motion
@@ -242,6 +252,45 @@ anticipation.
 > all, so the third instance that would settle the shape may never arrive. Two
 > instances and one measured divergence is the evidence available, and it is
 > enough to schedule the question rather than enough to answer it here.
+>
+> **The third instance does arrive, and it is not ARDY** (2026-08-23). A VRChat
+> OSC Trackers adapter has a datagram, a restart and a session clock, and it is
+> [its own plan](osc-and-vrchat-trackers.md). It also arrives with a useful
+> stress: a tracker stream's restart is not a sender's restart, so the
+> parameterisation is settled by a third case that *disagrees* with the two
+> existing ones rather than by one that copies them.
+>
+> **And the bridge is not the largest duplicate.** Widening the same measurement
+> across the whole adapter pair
+> ([the census](osc-and-vrchat-trackers.md#2-the-duplication-census), 2026-08-23:
+> vendor identifiers erased, comments and blank lines stripped, then diffed)
+> puts `PacketCapture` at **6 changed lines across 800** — one file written
+> twice — and `UdpReceiver` at 161. The same measurement clears `FrameAssembler`
+> and `SkeletonMap` completely — they differ by more lines than either copy
+> contains, because assembling a frame *is* the protocol — so the census
+> separates without a judgement call anywhere.
+>
+> **The receiver's divergence was documented before it was counted, and so was
+> the trigger.** `vrmAdapterMocopi`'s `UdpReceiver.h` records that a review on
+> 2026-08-11 found **four defects the sibling has identically, because they were
+> copied along with everything else** — a silently truncated oversize datagram,
+> a large finite timeout mapped onto "wait forever", an uninspected `revents`,
+> and idle accounting charged to a call that had received something — fixed all
+> four in the younger copy, and stated that they remain in the older one. All
+> four are still in `vrmAdapterVmc` as of 2026-08-23. That file also names its
+> own trigger, and names it exactly: *a **third** recorder — a third live
+> adapter, or a tool that must drive both — is what turns the repetition into a
+> library*. The OSC track is that third adapter arriving.
+>
+> That reorders the extraction rather than adding to it. The transport ring is
+> duplicated **now**, and a third adapter's first deliverable is a packet
+> recorder, so it is extracted *before* that adapter rather than after; the OSC
+> decoder has only one consumer and keeps the rule as written, extracted after
+> the second one proves the surface neutral. Where the shared transport can live
+> is a narrower question than it looks: not `motionRuntime`, because
+> `motion_capture` is in the aggregate product and §2 keeps a transport out of
+> every product tool, and not `adapters/common/` for the reason above
+> ([§3.2](osc-and-vrchat-trackers.md#32-the-transport-ring--extract-before-the-third-consumer)).
 
 ## 5. Phase 1 — the VMC Protocol adapter
 
@@ -682,6 +731,17 @@ and both halves were driven to a canonical clip and compared there.
 
 **A VMC relay was not recorded**, so the third path is still unobserved and this
 comparison is two of three.
+
+**A fourth path is planned**, and it changes what the comparison can attribute
+rather than only how many rows it has. The same capture product also emits
+VRChat OSC, and that path is the only one of the four where the pose is
+*solved* from tracker observations rather than transported as bone transforms —
+so a difference there is attributable to the solve, which no difference between
+the native and BVH paths ever was. It adds one classification category and one
+plan: [osc-and-vrchat-trackers.md §11](osc-and-vrchat-trackers.md#11-the-fourth-observation-of-one-session).
+The requirement it inherits from this section is the one that is easy to lose in
+a device session: all four observations have to come off the **same physical
+take**, or the comparison is between two performances.
 
 ## 10. Milestones
 
@@ -1810,7 +1870,24 @@ depends on them ([docs/README.md](../README.md)).
   rule that splicing the two sessions is offered nowhere — out of the adapters
   and into the motion contract. That is [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md)'s
   to state and [WORKSPACE.md §2](../architecture/WORKSPACE.md)'s to permit, in
-  its own change, before either adapter is rewritten against it.
+  its own change, before either adapter is rewritten against it. **Its third
+  instance is scheduled** — a VRChat OSC adapter has the datagram, restart and
+  session clock ARDY may not
+  ([the OSC track §3.3](osc-and-vrchat-trackers.md#33-the-live-source-bridge--already-scheduled-and-the-third-instance-settles-it)).
+- ⬜ **The transport ring is duplicated too, and it has no home either.**
+  Measured 2026-08-23 (§4): `PacketCapture` is one file written twice, and
+  `UdpReceiver` is one class written twice carrying four copied defects that
+  the mocopi header named on 2026-08-11 and that are still in `vrmAdapterVmc`.
+  This is a wider version of the item above and a more urgent one, since a
+  third adapter's first deliverable is a packet recorder — and the receiver
+  headers already name that third recorder as their own trigger. The candidate is a new
+  leaf library outside the aggregate product's link closure — **not**
+  `motionRuntime`, because `motion_capture` links it and §2 keeps a transport
+  out of every product tool. That needs an identity row in
+  [WORKSPACE.md §1](../architecture/WORKSPACE.md), edges in §2, and an
+  aggregate-exclusion decision in §5, in its own change. Carried in full by
+  [the OSC track](osc-and-vrchat-trackers.md#10-contract-changes-this-plan-requires);
+  listed here because it is this plan's two adapters that are duplicating it.
 - ⬜ **The generator contract has no home yet.** `IMotionGenerator` and
   `MotionGenerationRequest` are named in motion policy §16 Phase F as
   deliverables, but the interface itself will need a contract document before
@@ -1895,6 +1972,12 @@ generator       ->  vrmAdapterArdy ───┘         ↓
                                                 ↓
                                             VRM avatar
 ```
+
+A fourth leaf joins the left-hand column from
+[the OSC track](osc-and-vrchat-trackers.md) — `vrmAdapterVrchatOsc`, over shared
+OSC and transport libraries that all the live leaves stand on. It changes
+nothing to the right of the first arrow, which is the property this section is
+about.
 
 Three siblings converging on one motion contract. The property being bought is
 narrow and worth stating plainly: an input device, a relay application, or a
