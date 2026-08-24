@@ -13,11 +13,13 @@ endif()
 if(NOT TARGET motionRuntime::motionRuntime)
     find_dependency(motionRuntime CONFIG REQUIRED)
 endif()
-# The exported target names Threads::Threads on every non-Windows platform (the
-# receiver's hand-off queue holds a mutex), and an imported target a consumer
-# cannot resolve is a configure error rather than a link one.
-if(NOT WIN32 AND NOT TARGET Threads::Threads)
-    find_dependency(Threads REQUIRED)
+# The live half's shared leaf, which now carries the socket, the capture format
+# and the diagnostic vehicle (WORKSPACE.md §2). Its own config brings the
+# platform's threading primitive with it, so there is no `find_dependency(Threads)`
+# on this line any more: the mutex belongs to that library's queue and so does
+# the dependency that resolves it.
+if(NOT TARGET liveTransport::liveTransport)
+    find_dependency(liveTransport CONFIG REQUIRED)
 endif()
 include("${CMAKE_CURRENT_LIST_DIR}/vrmAdapterVmcTargets.cmake")
 check_required_components(vrmAdapterVmc)

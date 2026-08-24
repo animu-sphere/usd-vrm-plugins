@@ -20,9 +20,27 @@
 // `recoverable` is load-bearing rather than decorative in a live session: a
 // dropped packet the receiver continues through must not be reported the same
 // way as a socket that never bound.
+//
+// ## What is this adapter's, and what is `liveTransport`'s
+//
+// The code set is the only half of this file that is still written here, and
+// that split is the contract rather than a tidy-up (WORKSPACE.md §2). A code
+// set is frozen per protocol — this one can say a frame boundary arrived
+// incomplete and cannot express a device that is present and cannot solve —
+// so a shared enum would have to contain every adapter's and mean none of
+// them. The **vehicle** carries no such commitment: `Diagnostic`, the severity
+// scale, the code table's lookups and the formatted line were written
+// identically twice, and now they are written once.
+//
+// The names below are unchanged, and their absence from this file's own text
+// is why: `Diagnostic` and `DiagnosticSeverity` are the same types they always
+// were, reached through a `using` rather than redeclared, so nothing that
+// spelled `vrmAdapterVmc::Diagnostic` has to learn a second spelling.
 #pragma once
 
 #include "vrmAdapterVmc/api.h"
+
+#include "liveTransport/Diagnostics.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -63,12 +81,10 @@ enum class DiagnosticCode : std::uint8_t
 inline constexpr std::size_t DiagnosticCodeCount =
     static_cast<std::size_t>(DiagnosticCode::Count);
 
-enum class DiagnosticSeverity : std::uint8_t
-{
-    Info,
-    Warning,
-    Error,
-};
+// The severity scale is shared, because "info / warning / error" is not a
+// statement about VMC.
+using DiagnosticSeverity = liveTransport::DiagnosticSeverity;
+using liveTransport::DiagnosticSeverityString;
 
 // The stable string, e.g. "VRM_VMC_PACKET_MALFORMED". This is the contract;
 // the enumerator spelling is not.
@@ -86,33 +102,19 @@ VRMADAPTERVMC_API DiagnosticSeverity DiagnosticDefaultSeverity(
 // it never has to guess which class a code belongs to.
 VRMADAPTERVMC_API bool DiagnosticIsRecoverable(DiagnosticCode code) noexcept;
 
-VRMADAPTERVMC_API std::string_view DiagnosticSeverityString(
-    DiagnosticSeverity severity) noexcept;
-
-// One reported diagnostic. Every optional field is optional because the layer
-// that raises the diagnostic genuinely may not have it: a bind failure has no
-// frame timestamp and no packet sequence.
-struct Diagnostic
-{
-    DiagnosticCode code = DiagnosticCode::PacketMalformed;
-    DiagnosticSeverity severity = DiagnosticSeverity::Error;
-    bool recoverable = false;
-
-    // Where the input came from — a sender endpoint, or a recorded fixture's
-    // name when the packets were replayed rather than received.
-    std::string source;
-    // Seconds in the source's own clock, when the diagnostic is tied to a
-    // frame.
-    std::optional<double> timestamp;
-    // The humanoid bone name or the OSC address pattern, whichever the code is
-    // about. Plain text; the adapter never resolves a target joint (§5.1).
-    std::string subject;
-    std::optional<std::uint64_t> sequence;
-    std::string detail;
-};
+// One reported diagnostic: this adapter's code, in the shared vehicle.
+//
+// Every optional field is optional because the layer that raises the
+// diagnostic genuinely may not have it: a bind failure has no frame timestamp
+// and no packet sequence. The default code is named rather than left to the
+// enum's zero, because it is `PacketMalformed` in both adapters and that is
+// enumerator 0 in this set and 6 in the sibling's — a default-constructed
+// diagnostic has to keep meaning what it meant.
+using Diagnostic =
+    liveTransport::Diagnostic<DiagnosticCode, DiagnosticCode::PacketMalformed>;
 
 // Fills `severity` and `recoverable` from the code's defaults, so the two
-// cannot silently disagree with the table above.
+// cannot silently disagree with the table.
 VRMADAPTERVMC_API Diagnostic MakeDiagnostic(
     DiagnosticCode code, std::string detail = {});
 
