@@ -558,6 +558,20 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds)
             return ReceiveStatus::Failed;
         }
 
+        // `revents` is checked rather than assumed, and the reason is a spin
+        // rather than tidiness. `POLLERR`, `POLLHUP` and `POLLNVAL` are reported
+        // whether or not they were requested, so a poll can return ready with no
+        // datagram to read; `recvfrom` then answers "would block", and a caller
+        // that asked to wait indefinitely has a budget that never runs out — so
+        // the loop returns to a poll that is still ready, forever, at 100% of a
+        // core. Since `POLLIN` is the only event this asks for, a ready
+        // descriptor without it is an error condition and is reported as one.
+        if ((descriptor.revents & POLLIN) == 0) {
+            _lastError = "the socket reported an error condition rather than a "
+                         "readable datagram";
+            return ReceiveStatus::Failed;
+        }
+
         sockaddr_storage from = {};
         socklen_t fromLength = sizeof(from);
         const auto received = ::recvfrom(
