@@ -71,8 +71,15 @@ def _find_dumpbin() -> str | None:
         pathlib.Path(os.environ.get("ProgramFiles(x86)", r"C:\\Program Files (x86)")),
     ]
     for root in roots:
+        # The release year is a wildcard rather than "2022", and the reason is a
+        # measurement: this machine's VS 2022 was replaced by VS 18 in place on
+        # 2026-08-25, leaving an empty `2022/` beside a populated `18/`. Every
+        # boundary check in the tree then reported "dumpbin was not found" and
+        # failed -- nine red names for an editor upgrade, none of them about a
+        # boundary. A locator that names one release of a tool it only needs
+        # `/dependents` from is a version pin with no reason to exist.
         matches = sorted(root.glob(
-            "Microsoft Visual Studio/2022/*/VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe"),
+            "Microsoft Visual Studio/*/*/VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe"),
             reverse=True)
         if matches:
             return str(matches[0])
@@ -174,9 +181,17 @@ def main() -> int:
     # -- a runtime data path through one is not a build edge on it (§2.1). `osc`
     # is named alongside them because the sibling's protocol layer is the piece
     # this adapter would be tempted to borrow rather than its library name.
+    #
+    # `vrmAdapterVrchatOsc` and `vrchat` joined the list with the third
+    # adapter, and the first of the two is not redundant with `osc`: that
+    # token has word boundaries on both sides, so it refuses a bare `osc`
+    # and matches nothing inside `vrmAdapterVrchatOsc`. The three checks
+    # each name the other two on purpose, so no pair can grow an edge
+    # quietly.
     forbidden_neighbours = re.compile(
         r"\b(?:vrmSchema|vrmContainer|vrmRetarget|usdVrm\w*|execMotion|execVrm|"
-        r"vrmAdapterVmc|vrmAdapterArdy|cgltf|vmc|osc|ardy)\b",
+        r"vrmAdapterVmc|vrmAdapterVrchatOsc|vrmAdapterArdy|cgltf|vmc|osc|"
+        r"vrchat|ardy)\b",
         re.IGNORECASE)
     for area in (source / "include", source / "src"):
         for path in area.rglob("*"):
@@ -255,7 +270,8 @@ def main() -> int:
 
     forbidden_binary = re.compile(
         r"\b(?:vrmSchema|vrmContainer|vrmRetarget|vrmAdapterVmc|"
-        r"vrmAdapterArdy|UsdVrm\w*)\b", re.IGNORECASE)
+        r"vrmAdapterVrchatOsc|vrmAdapterArdy|UsdVrm\w*)\b",
+        re.IGNORECASE)
     imported = forbidden_binary.search(dependencies)
     if imported:
         errors.append(

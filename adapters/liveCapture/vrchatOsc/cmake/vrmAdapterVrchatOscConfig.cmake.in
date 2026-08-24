@@ -1,0 +1,16 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+# The live half's shared leaf: the socket, the capture format and the diagnostic
+# vehicle (WORKSPACE.md §2). Its own config brings the platform's threading
+# primitive with it, so this file does not ask for one.
+#
+# There is no `pxr`, no `motionCore` and no `motionRuntime` here, and their
+# absence is this adapter's current shape rather than an omission: VRC-0 ships
+# no semantic decoder, so nothing in this library holds a canonical value. They
+# arrive with the code that produces one.
+if(NOT TARGET liveTransport::liveTransport)
+    find_dependency(liveTransport CONFIG REQUIRED)
+endif()
+include("${CMAKE_CURRENT_LIST_DIR}/vrmAdapterVrchatOscTargets.cmake")
+check_required_components(vrmAdapterVrchatOsc)

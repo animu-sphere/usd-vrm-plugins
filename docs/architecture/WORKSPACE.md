@@ -44,6 +44,25 @@ held: the edge set is empty in fact as well as in prose, the diagnostic split
 survived contact with two code enums that disagree about their own default, and
 the exclusion's second clause is what kept the library out.
 
+`vrmAdapterVrchatOsc` was added on 2026-08-24, ahead of its first directory, from
+the same plan's §5 and §9. It is the **fourth** input-adapter identity, and it
+needed a row for a reason the other three did not: those were named together in
+2026-07-28's change, so a fourth scaffold landing without one would be the first
+adapter whose identity the tree asserted and this document did not. §2 needed
+nothing — `adapters/*` is already the rule, and this adapter needs no edge that
+rule does not already permit — so what the row adds is the one claim §2 cannot
+make: **it is not a pose source**, and the humanoid solve is deliberately outside
+it.
+
+It declares **one** of the three edges §2 allows, and that is a fact about the
+adapter rather than about the permission. `motionCore` and `motionRuntime` are
+what an adapter takes when it produces canonical values, and its first milestone
+produces none — it is a scaffold and a recorder, with no decoder — so declaring
+them would have claimed a dependency the library does not have. They arrive with
+the code that produces a pose. A permission is not a requirement, and this is the
+first row here where the two are visibly different.
+§5 gains its artifact name on the terms every adapter artifact already has.
+
 ## 1. Bundles and libraries
 
 Shipped through Workspace Phase 7:
@@ -72,6 +91,7 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `liveTransport` | plain static CMake library (`libs/liveTransport/`) | The live half's shared leaf: the UDP receiver, the optional datagram queue, the packet-capture file format, and the diagnostic **vehicle** — the struct, its severity and recoverability defaults, and its formatted form — that every live adapter raises through. It knows no protocol: no OSC, no vendor grammar, no address literal, no product name. It holds no diagnostic **code** either; a code enum is frozen per adapter and stays there (§2). Its edge set is **empty**, and that is a measurement rather than an intention — the six files it is extracted from include their own headers and the standard library and nothing else (measured 2026-08-24). Outside the aggregate product, on the *adapter* side of §5's split though it carries no product name. |
 | `vrmAdapterVmc` | optional plain static CMake library (reserved, `adapters/liveCapture/vmc/`) | The generic real-time input: OSC-over-UDP decode, frame assembly, VRM humanoid bone names → canonical semantics. One adapter serves every sender application, including capture products relayed through it. **First adapter implemented.** |
 | `vrmAdapterMocopi` | optional plain static CMake library (`adapters/liveCapture/mocopi/`, v0.7.0) | **Live UDP only.** Decodes one capture product's native packets into canonical humanoid semantics and pushes them at `LiveCaptureSource`. Direct path: keeps the SDK-specific confidence and device diagnostics a protocol relay drops. Does **not** wrap `vrmAdapterVmc`, and does **not** read that product's recorded files — a recording is a file format, and file formats are `motionBvh`'s (below). |
+| `vrmAdapterVrchatOsc` | optional plain static CMake library (`adapters/liveCapture/vrchatOsc/`) | **A tracker source, not a pose source.** Decodes the VRChat OSC Trackers surface — numbered tracker observations, which are pre-IK — off OSC over UDP, and stops at a tracker frame: a tracker index is not a body role, so turning one into humanoid semantics is a separate and generic boundary rather than this adapter's ([the OSC track](../roadmap/osc-and-vrchat-trackers.md) §5). The third live adapter, and the one whose arrival turned the transport ring into a library rather than a third copy of it. A sibling of the other two and never a stack: it holds no VMC decoder and reaches OSC through a shared one when there is one. |
 | `vrmAdapterArdy` | optional plain static CMake library (reserved, `adapters/generators/ardy/`) | One generator behind the vendor-neutral `IMotionGenerator` contract, producing canonical humanoid motion that `vrmRetarget` maps onto a target rig. |
 | `vmc_record` | CLI executable (`adapters/liveCapture/vmc/tools/vmcRecord/`, v0.5.0) | Records a live VMC session to a `vmc-packet-capture` file and reports what it decoded to; `--inspect` reports on a recorded capture with no socket; `--export-trace` writes what the adapter delivered as a `motion-capture-trace`, which is the whole of this adapter's hand-off to the product's tools (§2). Links `vrmAdapterVmc` and nothing else: it neither retargets nor authors a stage, though §2 would permit both. |
 
@@ -513,13 +533,16 @@ aggregate:
 ```text
 vrmAdapterMocopi-<version>-<target>.tar.zst    (when it exists)
 vrmAdapterVmc-<version>-<target>.tar.zst       (when it exists)
+vrmAdapterVrchatOsc-<version>-<target>.tar.zst (when it exists)
 vrmAdapterArdy-<version>-<target>.tar.zst      (when it exists)
 ```
 
-Those three are a naming rule for when the artifacts exist, not a description of
+Those four are a naming rule for when the artifacts exist, not a description of
 what the release lane emits. `ost` 0.22.2 grew `ost library build|test|package`,
 but it composes no `requires.libraries`, so it configures a leaf and refuses
-anything with an edge — and both adapters have two. An adapter library therefore
+anything with an edge — and every adapter has at least one: three for the two
+that produce canonical values, one for `vrmAdapterVrchatOsc` while it has no
+decoder. An adapter library therefore
 still reaches a consumer through the workspace build
 ([report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §2).
 
@@ -529,7 +552,9 @@ bootstraps — does not discover a tool descriptor under
 `adapters/<group>/<name>/tools/<tool>/`, so the product has **7** members: the
 four bundles and the three `tools/` CLIs. `ost` 0.22.2 *does* discover them, and
 the same command on such a workstation packages **9**, adding `mocopi_record`
-and `vmc_record` with no descriptor here changing (§3 of the same report).
+and `vmc_record` with no descriptor here changing (§3 of the same report) — and
+**10** once the third adapter above carries a CLI, which is the number to expect
+rather than a new symptom.
 Nothing in `openstrata.tool.yaml` or `openstrata.toml` can declare a member out
 of the product, so this exclusion is currently a property of the toolchain
 version. `release.yml`'s staging step therefore counts the `tools/` descriptors

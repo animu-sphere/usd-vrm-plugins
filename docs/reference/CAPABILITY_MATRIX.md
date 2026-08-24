@@ -116,13 +116,22 @@ Protocol and SDK decode belong under `adapters/` (motion policy §8.1).
 `vrmAdapterMocopi` — the first native capture-device adapter — shipped in v0.7.0
 and has been driven by a device; what that release did **not** close is further
 operator evidence, not code ([current.md](../roadmap/current.md)). A **third**
-live adapter is planned
-behind it: VRChat OSC Trackers input over a protocol-neutral OSC decoder
+live adapter is in progress behind it: VRChat OSC Trackers input over a
+protocol-neutral OSC decoder
 ([the OSC track](../roadmap/osc-and-vrchat-trackers.md), and the
 [roadmap status table](../roadmap/README.md#status-at-a-glance) for the version).
-It is the first input here that would carry **tracker observations** rather than
+It is the first input here that carries **tracker observations** rather than
 humanoid bone transforms — pre-IK data, where a tracker index is not a body role
 — so nothing in it maps onto a row of this table until a solve boundary exists.
+
+`vrmAdapterVrchatOsc` exists as of 2026-08-25 and **decodes nothing**: it is a
+scaffold, a frozen diagnostic set, and `vrchat_osc_record`, which turns a live
+sender into a packet capture and reports the datagram envelope. That distinction
+is the one this table is for. A recorder is not a capability of the pipeline —
+no row moves — and the reason the decoder is not here yet is deliberate rather
+than pending: VRChat's OSC surface is published, and a specification says what a
+*receiver* must accept where what a sender sends is a measurement, so the
+inventory is taken from real datagrams before a decoder is designed from it.
 
 **One recorded motion file format other than `.vrma` becomes motion, as of
 v0.7.0.** BVH — the format most capture applications export — is a generic
