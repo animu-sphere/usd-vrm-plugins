@@ -288,6 +288,18 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
     endif()
 endif()
 
+# The live half's shared leaf, before the adapters that link it and after
+# everything else — which is the whole of its position argument. It reaches no
+# workspace library at all (WORKSPACE.md §2 gives it an empty edge set), so it
+# could sit anywhere above the adapters; it sits here, immediately above them,
+# because the only targets that may name it are the ones added next. Nothing in
+# the aggregate product links a transport, and a reader scanning this file for
+# where that stops being true finds the boundary in one place.
+#
+# No OpenUSD, not even Gf: it holds a socket, a text file format, and a
+# diagnostic line, and names no value type.
+add_subdirectory("libs/liveTransport")
+
 # Input adapters (WORKSPACE.md §1, §2). Each adapters/<group>/<name>/ carrying
 # both an openstrata.library.yaml and a CMakeLists.txt is added here — plain
 # libraries, not plugin bundles: an adapter registers nothing with OpenUSD.
