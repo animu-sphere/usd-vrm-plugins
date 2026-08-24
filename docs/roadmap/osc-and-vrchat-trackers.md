@@ -800,6 +800,20 @@ depends on them ([docs/README.md](../README.md)).
   library and its *code* is still per adapter, so it is in one adapter and not
   the other — which is neither of the two answers the question offered, and is
   the one the diagnostic split forces.
+- ✅ **The adapter itself had no identity row, and this plan did not notice.**
+  This section listed the two libraries it was about to create and none of the
+  three rows the *adapter* needs, because §1's three reserved adapter identities
+  read as covering a fourth. They do not: they are three named rows, and a
+  scaffold landing under `adapters/liveCapture/vrchatOsc/` without one would have
+  been the first adapter whose identity the tree asserted and the contract did
+  not. Found on 2026-08-24 while starting VRC-0, and paid the same way
+  `liveTransport` was — **in its own change, ahead of any code**. §2 needed
+  nothing, which is the measurement worth keeping: `adapters/*` is already the
+  rule, and this adapter takes exactly the three edges it permits, so the row
+  carries the one claim §2 cannot make — it is not a pose source. §5 gains an
+  artifact name and the aggregate exclusion on the terms every adapter already
+  has, plus the member count a 0.22.x workstation will report once this
+  adapter's CLI exists. Blocked VRC-0.
 - ⬜ **`libs/osc` is a second new identity**, with the same three rows and one
   addition: the boundary check in [§4](#4-what-libsosc-owns) is what makes its
   neutrality enforced rather than asserted. Blocks OSC-3.
