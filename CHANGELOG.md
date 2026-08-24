@@ -28,7 +28,9 @@ Current schema contract version: **1**.
     was refused there as `VRM_VMC_PACKET_MALFORMED`, blaming a sender for this
     adapter's own truncation. The buffer is now one byte above the bound, and an
     over-long datagram is counted in `datagramsTruncated` and dropped. Reachable
-    over IPv6, which `listenAddress` has always accepted.
+    over IPv6, which `listenAddress` has always accepted — and reached for real
+    on the Linux lane, where `vrmAdapterVmc_udpReceiverTruncation` runs rather
+    than skipping.
   - **A long finite `Receive` timeout waited forever.** 2147483.647 seconds or
     more converted to `-1`, which is not a large number of milliseconds but the
     sentinel meaning "block until something arrives" — so the one caller that

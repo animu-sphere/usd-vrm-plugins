@@ -542,12 +542,24 @@ either adapter growing an API.
 
 The other two are tested. `vrmAdapterVmc_udpReceiverTruncation` mirrors the
 mocopi test it derives from, on its own CTest name with `SKIP_RETURN_CODE 77`
-because it needs an IPv6 loopback — and it **passes on Windows with or without
-the buffer fix**, since `WSAEMSGSIZE` catches the case there either way, so the
-POSIX lanes are what make it evidence. The idle-accounting assertion rides on
-the same case with a zero timeout, which is the only way to narrow the window to
-the one call whose accounting is in question; putting the increment back fails
-it.
+because it needs an IPv6 loopback.
+
+**Exactly one lane of three proves the buffer fix, and it is worth knowing
+which.** Windows passes it with or without the fix, since `WSAEMSGSIZE` catches
+the case there either way. **macOS arm64 skips it** — the hosted runner will not
+carry the datagram, and it skips `vrmAdapterMocopi_udpReceiverTruncation` for
+the same reason and has since v0.7.0, so this is the runner rather than the
+change. **Linux runs it**, and on Linux the defect is what the assertion sees:
+a buffer of exactly `MaxDatagramBytes` makes `recvfrom` return that length, the
+drop branch is never entered, and the first assertion fails on `Received`
+instead of `Idle`. That is the whole of the POSIX evidence, and calling it "the
+POSIX lanes" would overstate it by one.
+
+The idle-accounting assertion rides on the same case with a zero timeout, which
+is the only way to narrow the window to the one call whose accounting is in
+question; putting the increment back fails it. That path is reachable on
+Windows through `WSAEMSGSIZE`, so unlike the buffer fix it is verified on all
+three.
 
 **The two non-defect differences, decided rather than inherited:**
 

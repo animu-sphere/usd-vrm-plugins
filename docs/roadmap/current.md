@@ -68,7 +68,9 @@ test completes with nothing installed.
       wake-up is not producible from a suite that owns only its own sockets, so
       a test there would pass against the defect. The seam belongs to the
       extracted library and OSC-2 carries the ask. The other two are tested,
-      and the buffer one passes on Windows either way — POSIX is its lane)*;
+      and **one lane of three proves the buffer one**: Windows passes it either
+      way, macOS arm64 skips it as it has skipped mocopi's since v0.7.0, and
+      Linux is where the defect fails the assertion)*;
 - [ ] the transport ring — receiver, queue, capture format, diagnostic vehicle —
       lives once, in a leaf outside the aggregate product's link closure, and
       every committed capture in both existing corpora still reads unchanged;

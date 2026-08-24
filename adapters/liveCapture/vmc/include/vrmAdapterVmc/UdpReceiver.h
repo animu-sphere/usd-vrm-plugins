@@ -367,10 +367,11 @@ private:
     std::int64_t _epoch = 0;
 
     // Where a datagram is read before its real length is known. Sized once at
-    // `Open` and never resized, which is the point: resizing the *caller's*
-    // vector up to `MaxDatagramBytes` and back on every call would value-
-    // initialise ~64 KB per datagram — a memset on the hot path of a class
-    // whose whole shape exists to avoid one.
+    // `Open`, never resized in between, and released at `Close` — which is the
+    // point: resizing the *caller's* vector up to `MaxDatagramBytes` and back on
+    // every call would value-initialise ~64 KB per datagram, a memset on the hot
+    // path of a class whose whole shape exists to avoid one. One byte above the
+    // bound, for the reason the header gives.
     std::vector<std::uint8_t> _buffer;
 
     UdpReceiverStats _stats;

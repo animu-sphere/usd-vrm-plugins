@@ -882,7 +882,10 @@ CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
     // that call.
     assert(sender.Send(overlong));
     bool dropped = false;
-    for (int attempt = 0; attempt != 200 && !dropped; ++attempt) {
+    // A second of attempts rather than a fixed few: a loopback datagram is
+    // readable almost immediately, but a loaded runner is exactly where a
+    // tight bound turns a correct test into an intermittent one.
+    for (int attempt = 0; attempt != 1000 && !dropped; ++attempt) {
         receiver.ResetStats();
         receiver.Receive(&datagram, 0.0);
         dropped = receiver.GetStats().datagramsTruncated == 1;
