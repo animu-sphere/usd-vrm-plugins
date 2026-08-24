@@ -310,12 +310,40 @@ class Session:
         return self.endpoint
 
     def finish(self, timeout: float = 30.0) -> tuple[int, str]:
+        """Waits for the session to end, and collects both streams.
+
+        Deliberately **not** `communicate()`: the drain thread above is already
+        reading stderr, and `communicate()` reads and closes it too. The two race
+        for the same bytes, and the loser is whichever lines are nearest EOF --
+        which is exactly where the end-of-session warnings are, and where
+        `check_silence` reads the diagnostic it asserts. The closed pipe also
+        raises `ValueError` in the drain thread, on a daemon thread nobody is
+        watching. The mocopi tool's suite carries the same note for the same
+        reason; this one had the defect anyway, which is a fair argument that
+        the note belongs in both files rather than one.
+
+        **It did not reproduce here in eight runs with `communicate()` back**,
+        and that is the reason to fix it by construction rather than to wait for
+        a red run: a loser-takes-the-last-lines race is decided by scheduling, so
+        a workstation that wins it every time says nothing about a loaded CI
+        runner. What *is* checked is the consequence -- `check_loopback` asserts
+        the write line the tool emits immediately before exiting, which is
+        precisely the line this race would eat.
+
+        The watchdog replaces `communicate(timeout=)`, which is the only thing
+        that call was still buying: a hung tool must fail this test, not park the
+        runner on a blocking read.
+        """
+        watchdog = threading.Timer(timeout, self._process.kill)
+        watchdog.start()
         try:
-            stdout, _ = self._process.communicate(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            self.kill()
-            fail("the recorder did not stop on its own")
-        self._thread.join(timeout=5.0)
+            assert self._process.stdout is not None
+            stdout = self._process.stdout.read()
+            self._process.wait()
+        finally:
+            watchdog.cancel()
+        # Only after stderr has reached EOF is `self.stderr` the whole session.
+        self._thread.join(timeout=10.0)
         return self._process.returncode, stdout
 
     def kill(self) -> None:
@@ -376,6 +404,15 @@ def check_loopback(tool: pathlib.Path, workspace: pathlib.Path) -> None:
     if not header.get("peer", "").startswith("127.0.0.1:"):
         fail(f"the capture header lost its peer: {header}")
 
+    # The last line the tool writes before it exits, asserted because it is the
+    # one a stderr race loses. `finish()` reads stdout on this thread and lets
+    # the drain thread reach EOF on its own for exactly this reason; a
+    # `communicate()` here would eat whichever lines are nearest the end, and
+    # every end-of-session warning this tool has is there.
+    if not any("wrote 5 datagram(s) to " in line for line in session.stderr):
+        fail("the end-of-session write line never reached stderr:\n"
+             + "\n".join(session.stderr))
+
     lines = report_lines(stdout)
     if lines.get("stopped") != "--max-datagrams reached":
         fail(f"stopped line was '{lines.get('stopped')}'")
@@ -427,6 +464,14 @@ def check_stop_reasons(tool: pathlib.Path, workspace: pathlib.Path) -> None:
 
     # --dry-run listens, reports, and writes nothing -- including when datagrams
     # do arrive, which is the case that tells it apart from the one above.
+    #
+    # "Wrote nothing" is checked against a snapshot of the whole directory taken
+    # before the run, and that is the second attempt at this assertion. The first
+    # looked for a file whose name began with `dry`, which could never exist:
+    # the session is launched with no `--output`, so there is no path for the
+    # tool to have written to and the check could not fail whatever the tool did.
+    # A vacuous assertion is worse than none, because it reads as coverage.
+    before = {entry.name for entry in workspace.iterdir()}
     session = Session(tool, "--dry-run",
                       "--listen", "127.0.0.1", "--port", "0",
                       "--duration", "0.4")
@@ -440,9 +485,9 @@ def check_stop_reasons(tool: pathlib.Path, workspace: pathlib.Path) -> None:
         fail(f"--dry-run stopped line was '{lines.get('stopped')}'")
     if not lines.get("received", "").startswith("1 datagram(s)"):
         fail(f"--dry-run did not report the datagram: '{lines.get('received')}'")
-    for entry in workspace.iterdir():
-        if entry.name.startswith("dry"):
-            fail(f"--dry-run wrote {entry}")
+    written = {entry.name for entry in workspace.iterdir()} - before
+    if written:
+        fail(f"--dry-run wrote {sorted(written)}")
 
 
 def check_silence(tool: pathlib.Path, workspace: pathlib.Path) -> None:

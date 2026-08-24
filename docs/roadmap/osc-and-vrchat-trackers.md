@@ -870,8 +870,11 @@ depends on them ([docs/README.md](../README.md)).
   not. Found on 2026-08-24 while starting VRC-0, and paid the same way
   `liveTransport` was — **in its own change, ahead of any code**. §2 needed
   nothing, which is the measurement worth keeping: `adapters/*` is already the
-  rule, and this adapter takes exactly the three edges it permits, so the row
-  carries the one claim §2 cannot make — it is not a pose source. §5 gains an
+  rule, and this adapter needs no edge that rule does not already permit, so the
+  row carries the one claim §2 cannot make — it is not a pose source. What the
+  code then declared is *one* of the three, because VRC-0 produces no canonical
+  value; that is the adapter's shape rather than the contract's, and it belongs
+  in VRC-0's record below rather than here. §5 gains an
   artifact name and the aggregate exclusion on the terms every adapter already
   has, plus the member count a 0.22.x workstation will report once this
   adapter's CLI exists. Blocked VRC-0.

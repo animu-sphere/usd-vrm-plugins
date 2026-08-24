@@ -49,9 +49,18 @@ the same plan's §5 and §9. It is the **fourth** input-adapter identity, and it
 needed a row for a reason the other three did not: those were named together in
 2026-07-28's change, so a fourth scaffold landing without one would be the first
 adapter whose identity the tree asserted and this document did not. §2 needed
-nothing — `adapters/*` is already the rule, and this adapter takes exactly the
-three edges it permits — so what the row adds is the one claim §2 cannot make:
-**it is not a pose source**, and the humanoid solve is deliberately outside it.
+nothing — `adapters/*` is already the rule, and this adapter needs no edge that
+rule does not already permit — so what the row adds is the one claim §2 cannot
+make: **it is not a pose source**, and the humanoid solve is deliberately outside
+it.
+
+It declares **one** of the three edges §2 allows, and that is a fact about the
+adapter rather than about the permission. `motionCore` and `motionRuntime` are
+what an adapter takes when it produces canonical values, and its first milestone
+produces none — it is a scaffold and a recorder, with no decoder — so declaring
+them would have claimed a dependency the library does not have. They arrive with
+the code that produces a pose. A permission is not a requirement, and this is the
+first row here where the two are visibly different.
 §5 gains its artifact name on the terms every adapter artifact already has.
 
 ## 1. Bundles and libraries
@@ -531,7 +540,9 @@ vrmAdapterArdy-<version>-<target>.tar.zst      (when it exists)
 Those four are a naming rule for when the artifacts exist, not a description of
 what the release lane emits. `ost` 0.22.2 grew `ost library build|test|package`,
 but it composes no `requires.libraries`, so it configures a leaf and refuses
-anything with an edge — and all three adapters have three. An adapter library therefore
+anything with an edge — and every adapter has at least one: three for the two
+that produce canonical values, one for `vrmAdapterVrchatOsc` while it has no
+decoder. An adapter library therefore
 still reaches a consumer through the workspace build
 ([report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §2).
 
