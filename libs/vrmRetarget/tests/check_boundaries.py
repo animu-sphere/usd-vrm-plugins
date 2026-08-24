@@ -92,7 +92,7 @@ def main() -> int:
         re.IGNORECASE)
     forbidden_neighbours = re.compile(
         r"\b(?:vrmSchema|vrmContainer|usdVrm\w*|execMotion|execVrm|cgltf|"
-        r"mocopi|ardy)\b|"
+        r"mocopi|ardy|liveTransport)\b|"
         r"\b(?:winsock|sys/socket\.h|asio|curl|websocket)\b",
         re.IGNORECASE)
     for area in (source / "include", source / "src"):

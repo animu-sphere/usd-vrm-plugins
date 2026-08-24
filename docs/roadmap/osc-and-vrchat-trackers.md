@@ -211,10 +211,19 @@ edge wearing a hat.
 **The candidate is therefore a new leaf library outside the product's closure**
 — `libs/liveTransport`, holding the socket, the capture format, and the
 diagnostic vehicle, depended on by adapter libraries and by nothing in the
-aggregate. It is named here as a candidate and not as a decision: adding a
+aggregate. It was named here as a candidate and not as a decision: adding a
 library changes WORKSPACE.md §1's identity table, §2's dependency directions,
 and §5's artifact and aggregate-exclusion rules, and those land in their own
 change before this plan depends on them ([§10](#10-contract-changes-this-plan-requires)).
+
+**That change landed on 2026-08-24 and the candidate is now the contract's**
+([§10](#10-contract-changes-this-plan-requires)). Two things it settled are
+worth reading back here, because they narrow what OSC-2 may do. `liveTransport`
+is contracted with an **empty edge set** — not "few edges", none — so the first
+`motionCore` value the move drags along is a contract violation rather than a
+design discussion. And its exclusion from the product is written on the second
+of two clauses rather than the first: it is producer-neutral, as `motionSource`
+and `motionBvh` are, and it is out because the product would acquire I/O.
 
 Three questions the extraction has to answer rather than assume:
 
@@ -580,7 +589,11 @@ three.
 ### OSC-2 — extract the transport ring
 
 The move, with no behaviour change: receiver, queue, capture format, diagnostic
-vehicle. Blocked on the contract change in [§10](#10-contract-changes-this-plan-requires).
+vehicle. **Unblocked 2026-08-24** — the contract change in
+[§10](#10-contract-changes-this-plan-requires) landed, so `liveTransport` has a
+destination to be reviewed against. Its empty edge set and its no-code rule are
+the two lines a reviewer can check the move against without reading the diff
+twice.
 
 It also inherits two asks from OSC-1, both of which exist because a shared
 library can hold what an adapter cannot: an internal header, and unit tests
@@ -667,17 +680,50 @@ with three implementations to measure instead of two.
 Structural claims land in the contracts, in their own change, before this plan
 depends on them ([docs/README.md](../README.md)).
 
-- ⬜ **A shared transport library has no home in the current contract.**
+- ✅ **A shared transport library had no home in the current contract.**
   [§3.2](#32-the-transport-ring--extract-before-the-third-consumer) rules out
   both obvious ones — `motionRuntime` would put a socket in the aggregate
   product's link closure, and `adapters/common/` is the forbidden sibling edge.
-  A new leaf under `libs/` needs an identity row in
+  A new leaf under `libs/` needed an identity row in
   [WORKSPACE.md §1](../architecture/WORKSPACE.md), edges in §2
   (`adapters/* -> libs/liveTransport`, and the prohibition that keeps it out of
   every product tool), and an aggregate-exclusion decision in §5 — where it
   takes the *adapter* side of the split, not `motionSource`'s, because a library
   the product must not link is excluded for the same reason an adapter is even
-  though it carries no product name. Blocks OSC-2.
+  though it carries no product name. **Done 2026-08-24**, in its own change
+  ahead of any code: `liveTransport` has a §1 row, `adapters/* ->
+  liveTransport` in §2, and a §5 artifact name and exclusion.
+
+  Three things were decided rather than transcribed, and each narrows OSC-2.
+  Its **edge set is empty** — the contract says none, not few, and that is a
+  measurement: the six files being extracted include their own headers and the
+  standard library and nothing else. Its exclusion is written on the **second of
+  two clauses**, so §5's reader test now reads *producer-neutral **and** opens
+  nothing* — `liveTransport` satisfies the first clause exactly as `motionBvh`
+  does and is still out. And the diagnostic ring is split in the contract rather
+  than in the extraction: the library owns the **vehicle**, an adapter's code
+  enum stays frozen where it is, and a `liveTransport` holding one is a
+  violation. What that leaves open is mechanical rather than structural, and it
+  is OSC-2's to solve — `Diagnostic::code` is a per-adapter enum *by value*
+  today, so a shared struct cannot carry it unchanged.
+
+  Two of the three are now **executable rather than asserted**, in the four
+  checks that already hold §2's neighbour prohibitions: `motionRuntime`,
+  `vrmRetarget`, `motionSource` and `motionBvh` refuse the name
+  `liveTransport` in their sources. Verified in both directions rather than by
+  the token's presence — an injected `#include "liveTransport/UdpReceiver.h"`
+  in `motionRuntime` fails the check with the token and **passes without it**,
+  so the token is what fires. `liveTransport` needs naming where an adapter
+  does not, and that asymmetry is the point: an adapter carries a product name
+  those checks already refuse, while a shared transport carries none by
+  contract.
+
+  Not decided, deliberately: whether the capture format keeps per-adapter magic
+  ([§3.2](#32-the-transport-ring--extract-before-the-third-consumer)), and
+  whether the silence timeout ends up in both adapters or neither
+  ([§8](#8-diagnostics)). Both are behaviour, both have committed fixtures or a
+  frozen code set as their constraint, and a contract that pre-empted them would
+  be deciding an extraction it cannot see.
 - ⬜ **`libs/osc` is a second new identity**, with the same three rows and one
   addition: the boundary check in [§4](#4-what-libsosc-owns) is what makes its
   neutrality enforced rather than asserted. Blocks OSC-3.
@@ -794,9 +840,9 @@ two rules the census adds to
   extraction is what is missing, not the copy.
 
 ```text
-1  OSC-0  characterisation tests, nothing moves
-2  OSC-1  transport divergences merged, one behaviour per commit
-3  ——     contract change: libs/liveTransport identity and edges
+1  OSC-0  characterisation tests, nothing moves                     ✅
+2  OSC-1  transport divergences merged, one behaviour per commit    ✅
+3  ——     contract change: libs/liveTransport identity and edges    ✅
 4  OSC-2  transport extraction, no behaviour change
 5  VRC-0  adapter scaffold, manifest, diagnostics, recorder
 6  VRC-1  real capture + address inventory report        ← decoder design input

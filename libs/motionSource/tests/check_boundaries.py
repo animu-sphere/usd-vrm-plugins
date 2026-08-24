@@ -151,7 +151,7 @@ def main() -> int:
     # input at `motionCore` and nowhere earlier.
     forbidden_api = re.compile(
         r"\bUsd[A-Z]|\bSdf[A-Z]|TF_REGISTRY_FUNCTION|"
-        r"vrmRetarget|vrmSchema|vrmContainer|motionRuntime|vrmAdapter|"
+        r"vrmRetarget|vrmSchema|vrmContainer|motionRuntime|vrmAdapter|liveTransport|"
         r"\bTargetSkeleton\b")
     # OpenUSD's value types, and canonical motion itself. Both are permitted
     # only where the crossing is declared, and they are one rule rather than two

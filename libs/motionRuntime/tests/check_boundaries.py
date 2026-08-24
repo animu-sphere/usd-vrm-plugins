@@ -90,7 +90,7 @@ def main() -> int:
     # OpenExec, a network protocol, or adapters/* is forbidden.
     forbidden_neighbours = re.compile(
         r"\b(?:vrmSchema|vrmContainer|vrmRetarget|usdVrm\w*|execMotion|execVrm|"
-        r"cgltf|mocopi|ardy)\b|"
+        r"cgltf|mocopi|ardy|liveTransport)\b|"
         r"\b(?:winsock|sys/socket\.h|asio|curl|websocket)\b",
         re.IGNORECASE)
     for area in (source / "include", source / "src"):

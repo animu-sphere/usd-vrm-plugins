@@ -31,6 +31,15 @@ corrected those three identities from *bundle* to *plain library plus CLI tool* 
 the kind they had to be all along, for the reason stated under §1's identity
 table.
 
+`liveTransport` was added on 2026-08-24, ahead of the code it will hold, from
+[roadmap/osc-and-vrchat-trackers.md](../roadmap/osc-and-vrchat-trackers.md) §3.2
+and §10. It exists to hold code two shipped adapters maintain separately today,
+and it is the first library here that is neither a member of the aggregate
+product nor an adapter — so it needs a row in §1, edges in §2, and an exclusion
+in §5 before the extraction that fills it may be reviewed. Nothing moves into it
+in the same change that names it: that is §6's second invariant, and the roadmap
+plan restates it as a rule of its own.
+
 ## 1. Bundles and libraries
 
 Shipped through Workspace Phase 7:
@@ -56,6 +65,7 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `vrmRetarget` | plain static CMake library (v0.4.0) | Humanoid map, rest pose, pose retargeter, root-motion policy. **Completed before OpenExec** (motion policy §18.12). Expression resolution stays with Motion Phase G. |
 | `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig and the semantic clip off stages, drives `vrmRetarget` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
 | `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `vrmRetarget`: it stops at the clip. Not a bundle. **It gains no adapter source, and that is the settled answer rather than a deferral** — a live session reaches it as a trace written by the adapter's own tool, so this row is the same after the first adapter as before it (§2). |
+| `liveTransport` | plain static CMake library (`libs/liveTransport/`, reserved) | The live half's shared leaf: the UDP receiver, the optional datagram queue, the packet-capture file format, and the diagnostic **vehicle** — the struct, its severity and recoverability defaults, and its formatted form — that every live adapter raises through. It knows no protocol: no OSC, no vendor grammar, no address literal, no product name. It holds no diagnostic **code** either; a code enum is frozen per adapter and stays there (§2). Its edge set is **empty**, and that is a measurement rather than an intention — the six files it is extracted from include their own headers and the standard library and nothing else (measured 2026-08-24). Outside the aggregate product, on the *adapter* side of §5's split though it carries no product name. |
 | `vrmAdapterVmc` | optional plain static CMake library (reserved, `adapters/liveCapture/vmc/`) | The generic real-time input: OSC-over-UDP decode, frame assembly, VRM humanoid bone names → canonical semantics. One adapter serves every sender application, including capture products relayed through it. **First adapter implemented.** |
 | `vrmAdapterMocopi` | optional plain static CMake library (`adapters/liveCapture/mocopi/`, v0.7.0) | **Live UDP only.** Decodes one capture product's native packets into canonical humanoid semantics and pushes them at `LiveCaptureSource`. Direct path: keeps the SDK-specific confidence and device diagnostics a protocol relay drops. Does **not** wrap `vrmAdapterVmc`, and does **not** read that product's recorded files — a recording is a file format, and file formats are `motionBvh`'s (below). |
 | `vrmAdapterArdy` | optional plain static CMake library (reserved, `adapters/generators/ardy/`) | One generator behind the vendor-neutral `IMotionGenerator` contract, producing canonical humanoid motion that `vrmRetarget` maps onto a target rig. |
@@ -155,7 +165,7 @@ including the implementation order and per-adapter acceptance criteria, is
 > the obvious fix: a shared leaf between two leaves is the adapter → adapter
 > edge wearing a hat.
 >
-> **The candidates are new libraries, and each takes a different side of an
+> **They are new libraries, and each takes a different side of an
 > existing split.** The live-source bridge holds poses and belongs beside
 > `LiveCaptureSource` in `motionRuntime`. The transport ring — socket, capture
 > file format, diagnostic vehicle — **cannot**, and the refusal is already
@@ -169,10 +179,17 @@ including the implementation order and per-adapter acceptance criteria, is
 > about what a name says. An OSC decoder shared by two protocol adapters is a
 > second such library on the same terms.
 >
-> Neither identity is added to the tables above yet. They arrive with the change
-> that creates them, in the order
-> [the OSC track](../roadmap/osc-and-vrchat-trackers.md) sets: measured first,
-> reconciled second, moved third.
+> **The transport one is now above; the OSC one is not, and the asymmetry is
+> the rule working.** `liveTransport` is in the table because its extraction is
+> the next change to be reviewed and a reviewer cannot check a move against a
+> contract that does not name its destination. The shared OSC decoder is not,
+> because it still has one consumer: the evidence that its surface is neutral is
+> a caller that never says `VMC`, and it does not exist yet
+> ([the OSC track](../roadmap/osc-and-vrchat-trackers.md) §3.1). Naming it here
+> would settle a boundary on the only caller there is, which is the failure the
+> second-consumer rule exists to prevent — so it arrives in its own contract
+> change, after that caller decodes a real datagram, in the order the same
+> document sets: measured first, reconciled second, moved third.
 
 > **A runtime route is not a build edge.** A capture application may act as a
 > VMC sender, so a user's data can travel `mocopi app → VMC packet →
@@ -221,8 +238,9 @@ motion_capture        -> motionRuntime, motionCore, OpenUSD stage
 execMotion            -> motionCore, motionRuntime
 execVrm               -> vrmSchema
 execVrm               -> motionCore, motionRuntime, vrmRetarget
-adapters/*            -> motionCore, motionRuntime
+adapters/*            -> motionCore, motionRuntime, liveTransport
 adapters/*/tools/*    -> vrmRetarget, OpenUSD stage authoring
+liveTransport         -> nothing — its allowed edge set is empty, not short
 
 motionSource          -> motionCore
 motionBvh             -> motionSource
@@ -272,10 +290,31 @@ refusing socket headers in that library. It is worth stating as a *contract*
 rather than leaving it to the check, because the two adapters duplicate a UDP
 receiver and a packet-capture format today (§1), and `motionRuntime` is the
 first place a reader looks for their shared home — a reader who finds only the
-check may read it as an oversight to be amended. The shared transport is a leaf
-the product does not link; the shared *pose* bridge, which holds no socket, is
-`motionRuntime`'s and is the one piece of that duplication this rule permits to
-move there.
+check may read it as an oversight to be amended. The shared transport is
+`liveTransport`, a leaf the product does not link; the shared *pose* bridge,
+which holds no socket, is `motionRuntime`'s and is the one piece of that
+duplication this rule permits to move there.
+
+**`liveTransport`'s prohibitions are the same rule read from the other end, and
+one of them is not about the product at all.** Two say what may not depend on
+it, and they are what keep a socket out of the aggregate's link closure however
+it is reached — through a tool, through `motionRuntime`, or through a reader.
+The rest say what *it* may not depend on, and they exist because a shared leaf
+fails by growing rather than by being misplaced: the first `motionCore` value in
+it makes it a motion library, the first address literal makes it a protocol
+decoder, and the first adapter's code enum makes one adapter's frozen
+diagnostics into every adapter's. Its empty edge set is what makes all three
+checkable at a glance rather than by argument — a library with no permitted edge
+has no ambiguous one, and any edge at all is a contract change.
+
+**And the enforcement runs the wrong way round here, which is worth knowing
+before the green result is read as coverage.** `liveTransport` lives under
+`libs/`, so the workspace graph discovers it and validates its (empty) edges,
+while the adapters that link it are invisible to the same gate for the reason
+below. The shared half of this extraction is gated and the consuming half is
+not — so the binary link check each adapter already carries is what proves the
+edge in the direction that matters, exactly as it does for the two core
+libraries today.
 
 The four `motionSource` / `motionBvh` lines are a chain and are meant to be read
 as one: a **reader** knows a file format and no semantics, `motionSource` knows
@@ -313,6 +352,17 @@ adapters/<a>          -> adapters/<b>  (adapters are siblings, never a stack)
 adapters/*            -> vrmSchema, any USD file-format bundle, vrmRetarget
                          (the *library*; its tool may — see above)
 adapters/*            -> OpenExec, ExecIr, or emitting ExecIr values
+
+liveTransport         -> motionCore, motionRuntime, vrmRetarget, motionSource,
+                         motionBvh, vrmContainer, vrmSchema, any USD
+                         file-format bundle, OpenExec, ExecIr, adapters/*
+liveTransport         -> a protocol grammar, an OSC or vendor address literal,
+                         a product or SDK name, or any adapter's diagnostic code
+motionCore/motionRuntime/vrmRetarget/motionSource/motionBvh -> liveTransport
+execMotion/execVrm    -> liveTransport
+motion_capture/motion_retarget/motion_bvh_inspect/motion_bvh_convert
+                      -> liveTransport  (no member of the aggregate product
+                         links a transport, §5)
 
 motionCore            -> ExecIr
 vrmRetarget           -> ExecIr
@@ -482,6 +532,35 @@ version. `release.yml`'s staging step therefore counts the `tools/` descriptors
 and fails when packaging exceeds them — the next pin bump has to be decided
 here rather than discovered in a published archive.
 
+`liveTransport` is excluded from the aggregate on the same terms and carries no
+CLI, so its artifact is named for the library alone:
+
+```text
+liveTransport-<version>-<target>.tar.zst       (when it exists)
+```
+
+**It is excluded for what the product would link, not for what its name says** —
+the distinction §1 states, made concrete here by the first identity that needs
+it. `motionSource` and `motionBvh` are in the product because a producer-neutral
+library is safe to ship there; `liveTransport` is producer-neutral too and is
+still out, because `motion_capture` linking it would put a socket in the
+aggregate's closure and end the property that makes every clip in this
+repository reproducible by construction (§2). So a new library's side is
+decided by both questions rather than either: *does it name a product* is what
+keeps a reader in, *would the product acquire I/O* is what keeps a transport
+out, and failing one is enough to be excluded.
+
+One thing about it is expected to differ from the three adapter artifacts, and
+it is written here as a prediction to be checked at extraction rather than as a
+fact.
+`liveTransport` has an empty edge set, and `ost library package` is measured
+working on exactly that case — `libs/motionCore`, first try, 8 files
+([report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §2).
+So it would be the first artifact on this excluded side that the current
+toolchain can actually emit, where an adapter's cannot. Untested until the
+library exists; if it turns out otherwise, the finding belongs in the next
+dogfooding report and this paragraph is what it corrects.
+
 `motionSource` and `motionBvh` are **not** adapters and take the opposite
 decision: they carry no product name in code, so they belong in the aggregate
 product exactly as `motionCore` and `motionRuntime` do, and `motion_bvh_inspect`
@@ -510,8 +589,10 @@ for whoever writes that test to rediscover
 
 That split is the one to check when a future reader arrives: a reader is in the
 product if the *library* is producer-neutral, whatever the data beside it is
-named. `vrmAdapterMocopi` stays out because the library itself decodes one
-product's packets.
+named, **and it opens nothing**. `vrmAdapterMocopi` stays out because the
+library itself decodes one product's packets; `liveTransport` stays out on the
+second clause with the first one satisfied, which is why the sentence now has
+two.
 
 The adapter exclusion keeps the aggregate free of product names (motion policy §8.1),
 but it also keeps optional SDK, network, and model dependencies — and their
