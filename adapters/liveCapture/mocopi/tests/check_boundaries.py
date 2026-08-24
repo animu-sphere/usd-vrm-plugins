@@ -181,9 +181,17 @@ def main() -> int:
     # -- a runtime data path through one is not a build edge on it (§2.1). `osc`
     # is named alongside them because the sibling's protocol layer is the piece
     # this adapter would be tempted to borrow rather than its library name.
+    #
+    # `vrmAdapterVrchatOsc` and `vrchat` joined the list with the third
+    # adapter, and the first of the two is not redundant with `osc`: that
+    # token has word boundaries on both sides, so it refuses a bare `osc`
+    # and matches nothing inside `vrmAdapterVrchatOsc`. The three checks
+    # each name the other two on purpose, so no pair can grow an edge
+    # quietly.
     forbidden_neighbours = re.compile(
         r"\b(?:vrmSchema|vrmContainer|vrmRetarget|usdVrm\w*|execMotion|execVrm|"
-        r"vrmAdapterVmc|vrmAdapterArdy|cgltf|vmc|osc|ardy)\b",
+        r"vrmAdapterVmc|vrmAdapterVrchatOsc|vrmAdapterArdy|cgltf|vmc|osc|"
+        r"vrchat|ardy)\b",
         re.IGNORECASE)
     for area in (source / "include", source / "src"):
         for path in area.rglob("*"):
@@ -262,7 +270,8 @@ def main() -> int:
 
     forbidden_binary = re.compile(
         r"\b(?:vrmSchema|vrmContainer|vrmRetarget|vrmAdapterVmc|"
-        r"vrmAdapterArdy|UsdVrm\w*)\b", re.IGNORECASE)
+        r"vrmAdapterVrchatOsc|vrmAdapterArdy|UsdVrm\w*)\b",
+        re.IGNORECASE)
     imported = forbidden_binary.search(dependencies)
     if imported:
         errors.append(
