@@ -3,12 +3,16 @@
 # motion values and stops there.
 #
 # A library, not a plugin bundle, and deliberately so -- it registers nothing
-# with OpenUSD and has no plugInfo.json (WORKSPACE.md §1). The two edges below
-# are the only ones it is allowed (WORKSPACE.md §2), and the sibling adapter is
-# emphatically not a third: a native decoder that reached `vrmAdapterVmc` would
-# inherit a relay's assumptions about framing, clocks and bone names, which is
-# the one thing this adapter exists to avoid (adapter plan §2.1). The two are
-# siblings, never a stack.
+# with OpenUSD and has no plugInfo.json (WORKSPACE.md §1). The three edges
+# below are the only ones it is allowed (WORKSPACE.md §2), and the sibling
+# adapter is emphatically not among them: a native decoder that reached
+# `vrmAdapterVmc` would inherit a relay's assumptions about framing, clocks and
+# bone names, which is the one thing this adapter exists to avoid (adapter plan
+# §2.1). The two are siblings, never a stack.
+#
+# `liveTransport` is the third and is not that edge wearing a hat: it is a leaf
+# under libs/ with an empty edge set of its own, holding the socket and the
+# capture format the two adapters had written twice, and it knows no protocol.
 #
 # This library is *outside* the aggregate product, unlike motionSource and
 # motionBvh, because it carries a producer's name in the library itself and not
@@ -23,6 +27,8 @@ requires:
     - id: motionCore
       version: ">=0.7,<0.8"
     - id: motionRuntime
+      version: ">=0.7,<0.8"
+    - id: liveTransport
       version: ">=0.7,<0.8"
 cmake:
   package: vrmAdapterMocopi

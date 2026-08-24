@@ -13,16 +13,15 @@ endif()
 if(NOT TARGET motionRuntime::motionRuntime)
     find_dependency(motionRuntime CONFIG REQUIRED)
 endif()
-# Still no find_dependency for the transport, now that the receiver exists, and
-# that is a fact about what it links rather than an omission. The exported target
-# carries `ws2_32` on Windows, which is a raw library name the linker resolves
-# from the SDK — not an imported target — so there is nothing for a consumer to
-# find and a `find_dependency` here would name a package that does not exist.
-#
-# The sibling's config does carry one, because it links `Threads::Threads` for a
-# datagram queue's mutex, and that *is* an imported target: unresolved, it is a
-# configure error rather than a link one. This adapter has no queue, so it needs
-# no threading package. If one is ever linked here, the find_dependency lands in
-# the same change.
+# The live half's shared leaf, which now carries the socket, the capture format
+# and the diagnostic vehicle (WORKSPACE.md §2). Its own config brings the
+# platform's threading primitive with it — an imported target that is a configure
+# error rather than a link one when unresolved — so this file no longer has to
+# decide whether to ask for one. It used to say it did not need to, because this
+# adapter holds no mutex; that is still true, and it is now that library's
+# statement to make instead of this one's.
+if(NOT TARGET liveTransport::liveTransport)
+    find_dependency(liveTransport CONFIG REQUIRED)
+endif()
 include("${CMAKE_CURRENT_LIST_DIR}/vrmAdapterMocopiTargets.cmake")
 check_required_components(vrmAdapterMocopi)

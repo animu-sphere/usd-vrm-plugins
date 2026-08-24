@@ -56,6 +56,57 @@ Current schema contract version: **1**.
   contract change rather than a fix. It arrives when the shared transport
   library does.
 
+### Added
+
+- **`liveTransport`, the live half's shared leaf.** The UDP receiver, the
+  opt-in datagram queue, the `<sender>-packet-capture` file format, and the
+  diagnostic vehicle every live adapter reports through — one copy, where
+  `vrmAdapterVmc` and `vrmAdapterMocopi` had two. Normalised for their vendor
+  identifier and stripped of comments, the two `PacketCapture.cpp` differed by
+  5 lines out of 366 and the two `UdpReceiver.cpp` by 161, and that second gap
+  was the four defects above. Both receivers had named the trigger for turning
+  the repetition into a library and named it exactly — a **third** recorder —
+  and a third live adapter is what made it arrive.
+
+  Its allowed edge set is **empty**, which is a measurement rather than an
+  aspiration: the six files it was extracted from include their own headers and
+  the standard library and nothing else. It is outside the aggregate product,
+  because no tool in the product opens a transport, which is what makes every
+  clip in this repository reproducible by construction. `liveTransport_boundaries`
+  checks both halves of that on every build, in source and against a built
+  binary, and the binary half needs no OpenUSD allowlist because nothing here
+  can drag one in.
+
+  It holds no diagnostic **code**. A code set is frozen per adapter, before its
+  decoder exists, so the receiver reports a `TransportEvent` — `BindFailed`,
+  `Silence` — and each adapter maps it onto its own frozen code.
+
+### Changed
+
+- **The silence timeout arrived, on the terms the fix above promised.** The
+  shared receiver has one unconditionally; `vrmAdapterMocopi` exposes it and
+  `vrmAdapterVmc` does not, because `VRM_VMC_*` still has no code for silence
+  and inventing a second spelling of `VRM_MOCOPI_DEVICE_UNAVAILABLE` remains a
+  contract change. What changed is that the difference is now one configuration
+  field and one `switch` arm rather than thirty lines of receiver present in one
+  copy and missing from the other.
+
+- **A packet capture may carry a `device` header key whatever wrote it.** The
+  key was `mocopi-packet-capture`'s alone; the two formats now share one header
+  vocabulary, so a `vmc-packet-capture` carrying `device` parses instead of
+  being refused as an unknown key. The magic line stays per adapter — a capture
+  of one protocol handed to the other protocol's decoder should fail at the
+  first line rather than at the first field — and no committed fixture changes
+  a byte, because the writer emits only the fields a capture actually carries.
+
+- **Both adapters link `liveTransport` and neither links `ws2_32` directly.**
+  The platform's transport and threading primitives arrive through that
+  library's exported target now. Each adapter's public headers keep every name
+  they had: `Diagnostic`, `ReceivedDatagram`, `PacketCapture` and the rest are
+  the same types, reached through a `using`. One call site in one VMC test
+  needed qualifying, because it had been reaching the adapter by
+  argument-dependent lookup on a type that now lives elsewhere.
+
 ## [0.7.0] — 2026-08-24
 
 ### Added

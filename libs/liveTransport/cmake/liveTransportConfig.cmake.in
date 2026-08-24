@@ -1,0 +1,13 @@
+@PACKAGE_INIT@
+
+# No `find_dependency` at all, and that is the contract rather than an
+# omission: this library's allowed edge set is empty (WORKSPACE.md §2). The
+# platform's socket and threading primitives are not workspace edges and travel
+# with the exported target's INTERFACE_LINK_LIBRARIES.
+include(CMakeFindDependencyMacro)
+if(NOT WIN32)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    find_dependency(Threads)
+endif()
+include("${CMAKE_CURRENT_LIST_DIR}/liveTransportTargets.cmake")
+check_required_components(liveTransport)

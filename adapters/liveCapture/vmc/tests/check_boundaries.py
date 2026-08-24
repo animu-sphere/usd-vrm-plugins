@@ -2,18 +2,20 @@
 # SPDX-License-Identifier: Apache-2.0
 """Enforce vrmAdapterVmc's leaf boundary.
 
-WORKSPACE.md §2 gives an adapter library exactly two edges — motionCore and
-motionRuntime — and forbids the rest: vrmSchema, every USD file-format bundle,
-`vrmRetarget` (the library), OpenExec, `ExecIr`, and every sibling adapter. It
-also may not be a plugin bundle (§1), so a plugin manifest or a plugInfo.json
-anywhere under the adapter is a failure by itself.
+WORKSPACE.md §2 gives an adapter library exactly three edges — motionCore,
+motionRuntime and liveTransport — and forbids the rest: vrmSchema, every USD
+file-format bundle, `vrmRetarget` (the library), OpenExec, `ExecIr`, and every
+sibling adapter. It also may not be a plugin bundle (§1), so a plugin manifest
+or a plugInfo.json anywhere under the adapter is a failure by itself.
 
 Two differences from the equivalent check on `libs/motionRuntime` are
 deliberate, and both come straight from the contract:
 
 * **Transport is allowed here.** A socket in `motionRuntime` is a violation; a
   socket in an adapter is the adapter's job (motion policy §8.2). This script
-  therefore does not scan for one.
+  therefore does not scan for one. Since OSC-2 the adapter reaches one through
+  `liveTransport` rather than opening it here, which narrows what this file
+  contains but not what it is permitted to contain.
 * **Only `include/` and `src/` are scanned.** The adapter's CLI under `tools/`
   is a workspace *tool*, and a tool may drive `vrmRetarget` and author a stage
   exactly as `motion_retarget` does. Scanning it would flag the one place the
@@ -162,19 +164,23 @@ def main() -> int:
 
     # An allowlist, not a denylist. A pattern hunting for forbidden names has to
     # anticipate the spelling of every library nobody has linked yet, and it
-    # misses a multi-line call outright; naming the four tokens that *are*
-    # permitted cannot.
+    # misses a multi-line call outright; naming the tokens that *are* permitted
+    # cannot.
     cmake = re.sub(r"#[^\n]*", "",
                    (source / "CMakeLists.txt").read_text(encoding="utf-8"))
     # `ws2_32` and `Threads::Threads` are the platform's own transport and
     # threading primitives, and neither is a dependency direction: §2 constrains
     # which *workspace* libraries an adapter may reach, and motion policy §8.2
-    # puts the socket inside the adapter deliberately. They are named
-    # individually rather than by a pattern, so a third platform library still
-    # has to be argued for here before it can be linked.
+    # puts the socket inside the adapter layer deliberately. They stay on this
+    # list although OSC-2 removed both link lines -- they now arrive through
+    # `liveTransport`'s exported target -- because the permission is the
+    # contract's and not this file's to withdraw. They are named individually
+    # rather than by a pattern, so a third platform library still has to be
+    # argued for here before it can be linked.
     allowed_link = {
         "vrmadaptervmc", "public", "private", "interface",
         "motioncore::motioncore", "motionruntime::motionruntime",
+        "livetransport::livetransport",
         "ws2_32", "threads::threads",
     }
     for arguments in re.findall(r"target_link_libraries\s*\((.*?)\)", cmake,
@@ -182,8 +188,8 @@ def main() -> int:
         for token in arguments.split():
             if token.lower() not in allowed_link:
                 errors.append(
-                    "vrmAdapterVmc may link only motionCore and motionRuntime; "
-                    f"CMakeLists.txt links `{token}`")
+                    "vrmAdapterVmc may link only motionCore, motionRuntime and "
+                    f"liveTransport; CMakeLists.txt links `{token}`")
 
     # Refuse a static archive outright rather than inspecting one and finding
     # nothing. An archive records no imports, so this check would pass on any

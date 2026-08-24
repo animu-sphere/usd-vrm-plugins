@@ -43,6 +43,7 @@ project's central design decision, and it is described below.
 | [`motionBvh`](libs/motionBvh) | Plain static CMake library | BVH syntax and extraction only — no producer semantics, no default profile | v0.7.0 |
 | [`motion_bvh_inspect`](tools/motionBvh) | CLI executable | Reports what a BVH file contains — hierarchy, channels in declaration order, frames, and per-column value ranges | v0.7.0 |
 | [`motion_bvh_convert`](tools/motionBvh) | CLI executable | Converts a BVH file to the avatar-independent semantic clip under an explicitly named profile | v0.7.0 |
+| [`liveTransport`](libs/liveTransport) | Plain static CMake library | The live half's shared leaf: UDP receiver, opt-in datagram queue, packet-capture file format, and the diagnostic vehicle every live adapter reports through — no protocol, no product name, no diagnostic code | Unreleased |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
 
 `usdVrm` is not a bundle id — it names the product as a whole. It *was* the
@@ -95,6 +96,7 @@ Schedule: [docs/roadmap/](docs/roadmap/README.md#status-at-a-glance).
 | `profiles/motion/` | Package data | One declarative file per producer *and export preset*. Product names live here rather than in the libraries that read them |
 | [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | The first input leaf: VMC Protocol from OSC-over-UDP datagrams through frame assembly and VRM bone mapping to canonical humanoid semantics; includes a recorded-packet corpus and the `vmc_record` CLI |
 | [`vrmAdapterMocopi`](adapters/liveCapture/mocopi) | Plain static CMake library | The second: a capture product's own UDP grammar, measured off five device sessions rather than read from a specification, through the same frame assembly and bridge; includes the `mocopi_record` CLI |
+| [`liveTransport`](libs/liveTransport) | Plain static CMake library | What the live leaves stopped writing twice: the socket, the packet-capture format and the diagnostic vehicle. It is under `libs/` and still **outside** the aggregate product — no tool in the product opens a transport — and its allowed edge set is empty |
 
 `.vrm` and `.vrma` are deliberately **separate** file-format plugins with
 symmetric structure, and they compose by **reference**, not `subLayer` — a
@@ -116,8 +118,9 @@ motionRuntime ──────────> motionCore
 vrmRetarget ────────────> motionCore, motionRuntime
 motion_retarget (CLI) ──> vrmRetarget + OpenUSD stage APIs
 
-vrmAdapterVmc ──────────> motionCore, motionRuntime
-vrmAdapterMocopi ───────> motionCore, motionRuntime
+vrmAdapterVmc ──────────> motionCore, motionRuntime, liveTransport
+vrmAdapterMocopi ───────> motionCore, motionRuntime, liveTransport
+liveTransport ──────────> nothing — its allowed edge set is empty, not short
 
 motionSource ───────────> motionCore
 motionBvh ──────────────> motionSource

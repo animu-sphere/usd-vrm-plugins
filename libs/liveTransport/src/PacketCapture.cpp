@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-#include "vrmAdapterVmc/PacketCapture.h"
+#include "liveTransport/PacketCapture.h"
 
 #include <algorithm>
 #include <cmath>
@@ -13,15 +13,15 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
-namespace vrmAdapterVmc
+namespace liveTransport
 {
 
 namespace
 {
 
-constexpr const char* kMagic = "!vmc-packet-capture";
 constexpr int kPrecision = 6;
 
 // Two spaces of indent, the hex column padded to a fixed width, two spaces, the
@@ -171,8 +171,8 @@ PacketCaptureGutter(const std::uint8_t* bytes, std::size_t count)
 }
 
 bool
-ReadPacketCapture(std::istream& input, PacketCapture* capture,
-                  PacketCaptureError* error)
+ReadPacketCapture(std::string_view magic, std::istream& input,
+                  PacketCapture* capture, PacketCaptureError* error)
 {
     if (!capture) {
         return Fail(error, 0, "no output capture was provided");
@@ -205,10 +205,10 @@ ReadPacketCapture(std::istream& input, PacketCapture* capture,
         stream >> keyword;
 
         if (!sawMagic) {
-            if (keyword != kMagic) {
+            if (keyword != magic) {
                 return Fail(error, lineNumber,
-                            std::string("expected the capture magic '") + kMagic
-                                + "'");
+                            std::string("expected the capture magic '")
+                                + std::string(magic) + "'");
             }
             int version = 0;
             if (!(stream >> version)) {
@@ -312,6 +312,8 @@ ReadPacketCapture(std::istream& input, PacketCapture* capture,
             std::string* field = nullptr;
             if (keyword == "sender") {
                 field = &result.sender;
+            } else if (keyword == "device") {
+                field = &result.device;
             } else if (keyword == "sourceId") {
                 field = &result.sourceId;
             } else if (keyword == "listen") {
@@ -346,8 +348,8 @@ ReadPacketCapture(std::istream& input, PacketCapture* capture,
 
     if (!sawMagic) {
         return Fail(error, lineNumber,
-                    std::string("the capture is empty or has no '") + kMagic
-                        + "' line");
+                    std::string("the capture is empty or has no '")
+                        + std::string(magic) + "' line");
     }
     if (open) {
         return Fail(error, lineNumber,
@@ -364,25 +366,29 @@ ReadPacketCapture(std::istream& input, PacketCapture* capture,
 }
 
 bool
-ReadPacketCaptureFile(const std::string& path, PacketCapture* capture,
-                      PacketCaptureError* error)
+ReadPacketCaptureFile(std::string_view magic, const std::string& path,
+                      PacketCapture* capture, PacketCaptureError* error)
 {
     std::ifstream input(path, std::ios::binary);
     if (!input) {
         return Fail(error, 0, "could not open packet capture '" + path + "'");
     }
-    return ReadPacketCapture(input, capture, error);
+    return ReadPacketCapture(magic, input, capture, error);
 }
 
 bool
-WritePacketCapture(std::ostream& output, const PacketCapture& capture)
+WritePacketCapture(std::string_view magic, std::ostream& output,
+                   const PacketCapture& capture)
 {
     output.imbue(std::locale::classic());
     output << std::fixed << std::setprecision(kPrecision);
 
-    output << kMagic << ' ' << PacketCaptureFormatVersion << '\n';
+    output << magic << ' ' << PacketCaptureFormatVersion << '\n';
     if (!capture.sender.empty()) {
         output << "sender " << capture.sender << '\n';
+    }
+    if (!capture.device.empty()) {
+        output << "device " << capture.device << '\n';
     }
     if (!capture.sourceId.empty()) {
         output << "sourceId " << capture.sourceId << '\n';
@@ -427,7 +433,8 @@ WritePacketCapture(std::ostream& output, const PacketCapture& capture)
 }
 
 bool
-WritePacketCaptureFile(const std::string& path, const PacketCapture& capture)
+WritePacketCaptureFile(std::string_view magic, const std::string& path,
+                       const PacketCapture& capture)
 {
     // Binary mode with explicit '\n': a capture written on Windows must be byte
     // identical to one written on Linux, or a golden fixture cannot be shared
@@ -436,7 +443,8 @@ WritePacketCaptureFile(const std::string& path, const PacketCapture& capture)
     if (!output) {
         return false;
     }
-    return WritePacketCapture(output, capture) && output.flush().good();
+    return WritePacketCapture(magic, output, capture)
+           && output.flush().good();
 }
 
-} // namespace vrmAdapterVmc
+} // namespace liveTransport

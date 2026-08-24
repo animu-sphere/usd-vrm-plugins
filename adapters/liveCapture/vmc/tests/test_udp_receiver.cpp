@@ -647,7 +647,12 @@ CheckTheWireChangesNothing(const std::filesystem::path& path)
 
     vrmAdapterVmc::PacketCapture capture;
     vrmAdapterVmc::PacketCaptureError error;
-    if (!ReadPacketCaptureFile(path.string(), &capture, &error)) {
+    // Qualified, as the other 27 packet-capture call sites in this tree already
+    // are. It used to reach this adapter by argument-dependent lookup, because
+    // `PacketCapture` was declared in this namespace; the type is now
+    // `liveTransport`'s and ADL follows it there, where the reader takes a magic
+    // line as its first argument.
+    if (!vrmAdapterVmc::ReadPacketCaptureFile(path.string(), &capture, &error)) {
         std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line,
                      error.message.c_str());
         return 1;

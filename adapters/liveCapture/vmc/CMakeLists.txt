@@ -3,9 +3,9 @@
 # vrmAdapterVmc — the generic real-time input leaf.
 #
 # A plain static library, not a plugin bundle: it registers nothing with
-# OpenUSD and ships no plugInfo.json (WORKSPACE.md §1). It links motionCore and
-# motionRuntime and nothing else; the CLI that may retarget and author a stage
-# is a separate tool under tools/, added when it is written.
+# OpenUSD and ships no plugInfo.json (WORKSPACE.md §1). It links motionCore,
+# motionRuntime and liveTransport and nothing else; the CLI that may retarget
+# and author a stage is a separate tool under tools/.
 
 cmake_minimum_required(VERSION 3.22)
 
@@ -54,13 +54,25 @@ endif()
 if(NOT TARGET motionRuntime::motionRuntime)
     find_package(motionRuntime REQUIRED CONFIG)
 endif()
+# The live half's shared leaf: the socket, the packet-capture format and the
+# diagnostic vehicle, which this adapter and its sibling had written twice
+# (WORKSPACE.md §2, osc-and-vrchat-trackers.md §3.2). Not a sibling edge and not
+# a route to one -- it is a leaf under libs/ with an empty edge set of its own,
+# and it is outside the aggregate product for the same reason an adapter is.
+if(NOT TARGET liveTransport::liveTransport)
+    find_package(liveTransport REQUIRED CONFIG)
+endif()
 
+# PacketCapture.cpp is gone rather than shrunk: the format's reader and writer
+# are liveTransport's now, and what this adapter contributes to them is one
+# string in a header. Diagnostics.cpp and UdpReceiver.cpp are what is left of
+# two files that moved -- a code table and an event-to-code map, which are the
+# two things a shared library may not hold.
 add_library(vrmAdapterVmc STATIC
     src/Diagnostics.cpp
     src/FrameAssembler.cpp
     src/LiveSource.cpp
     src/OscPacket.cpp
-    src/PacketCapture.cpp
     src/SkeletonMap.cpp
     src/UdpReceiver.cpp
     src/VmcMessage.cpp)
@@ -78,27 +90,15 @@ target_include_directories(vrmAdapterVmc
 target_link_libraries(vrmAdapterVmc
     PUBLIC
         motionCore::motionCore
-        motionRuntime::motionRuntime)
+        motionRuntime::motionRuntime
+        liveTransport::liveTransport)
 
-# The platform's own transport and threading primitives, which are not a
-# dependency direction: WORKSPACE.md §2 constrains which *workspace* libraries an
-# adapter may reach, and motion policy §8.2 puts the socket inside the adapter on
-# purpose. `tests/check_boundaries.py` allows exactly these two names and nothing
-# else, so the gate still fails on a workspace edge.
-#
-# Threads arrives with `DatagramQueue`, whose mutex is the whole of this
-# adapter's answer to motion policy §11.4 (UdpReceiver.h). libstdc++ needs the
-# link even for a std::mutex that is never contended.
-if(WIN32)
-    target_link_libraries(vrmAdapterVmc PUBLIC ws2_32)
-else()
-    # Ask for `-pthread` rather than a bare `-lpthread`: on GCC the flag also
-    # affects code generation, and a target that only gets the library links but
-    # is not built for threads.
-    set(THREADS_PREFER_PTHREAD_FLAG ON)
-    find_package(Threads REQUIRED)
-    target_link_libraries(vrmAdapterVmc PUBLIC Threads::Threads)
-endif()
+# No `ws2_32` and no `Threads::Threads` here any more, and their absence is the
+# clearest single measurement of what OSC-2 moved. Motion policy §8.2 still puts
+# the socket inside the adapter *layer*; this adapter no longer opens one itself,
+# so the platform's transport and threading primitives travel with
+# liveTransport's exported target instead. `tests/check_boundaries.py` allows
+# them by name either way, so a future direct link still has to be argued for.
 
 if(MSVC)
     # PUBLIC for the same reason motionRuntime uses it: the installed headers

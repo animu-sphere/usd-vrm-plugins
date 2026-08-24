@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Enforce vrmAdapterMocopi's leaf boundary.
 
-WORKSPACE.md §2 gives an adapter library exactly two edges — motionCore and
-motionRuntime — and forbids the rest: vrmSchema, every USD file-format bundle,
+WORKSPACE.md §2 gives an adapter library exactly three edges — motionCore,
+motionRuntime and liveTransport — and forbids the rest: vrmSchema, every USD file-format bundle,
 `vrmRetarget` (the library), OpenExec, `ExecIr`, and every sibling adapter. It
 also may not be a plugin bundle (§1), so a plugin manifest or a plugInfo.json
 anywhere under the adapter is a failure by itself.
@@ -26,9 +26,11 @@ deliberate, and both come straight from the contract:
 
 * **Transport is allowed here.** A socket in `motionRuntime` is a violation; a
   socket in an adapter is the adapter's job (motion policy §8.2). This script
-  therefore does not scan for one. It does not *link* one yet either — the
-  allowlist below names only what this library links today, so the receiver's
-  platform libraries have to be argued for in the change that adds them.
+  therefore does not scan for one. Since OSC-2 the adapter reaches one through
+  `liveTransport` rather than opening it here, which narrows what this library
+  contains but not what it is permitted to contain — the allowlist keeps the
+  platform's own primitives on it, because the permission is the contract's and
+  not this file's to withdraw.
 * **Only `include/` and `src/` are scanned.** An adapter's CLI under `tools/`
   is a workspace *tool*, and a tool may drive `vrmRetarget` and author a stage
   exactly as `motion_retarget` does. Scanning it would flag the one place the
@@ -40,8 +42,8 @@ a section summary and nothing else — so pointing this check at the library wou
 make it a gate that cannot fail, which is worse than no gate. The linked test
 executable is the first artifact in which the adapter's real transitive imports
 exist, so it is the first one worth inspecting. It links the adapter plus
-`motionCore` and `motionRuntime` and nothing else, which is exactly the closure
-this boundary is about.
+`motionCore`, `motionRuntime` and `liveTransport` and nothing else, which is
+exactly the closure this boundary is about.
 
 This is also the only enforcement there is. `ost` 0.21.0 discovers plain
 libraries in the project root's immediate subdirectories and under `libs/`, so
@@ -86,9 +88,10 @@ def _code_only(text: str) -> str:
 
     These headers document the boundary in situ, so the prose names the very
     libraries the code may not depend on — this adapter's `PacketCapture.h`
-    spends a section on why it does not share the sibling's format. Scanning the
-    comments too would make an accurate explanation indistinguishable from a
-    violation.
+    quotes the condition under which it *would* share a format, and then the
+    change that met it, and `UdpReceiver.h` does the same for the socket.
+    Scanning the comments too would make an accurate explanation
+    indistinguishable from a violation.
     """
     return _LINE_COMMENT.sub("", _BLOCK_COMMENT.sub("", text))
 
@@ -190,32 +193,43 @@ def main() -> int:
     # misses a multi-line call outright; naming the tokens that *are* permitted
     # cannot.
     #
-    # `ws2_32` joined the list with the receiver, which is the arrangement the
-    # previous revision of this comment asked for: a platform library is argued
-    # for by the change that needs it rather than reserved in advance. It is not
-    # a dependency direction — WORKSPACE.md §2 constrains which *workspace*
-    # libraries an adapter may reach, and motion policy §8.2 puts the socket
-    # inside the adapter deliberately.
+    # `ws2_32` joined the list with the receiver, which is the arrangement an
+    # earlier revision of this comment asked for: a platform library is argued
+    # for by the change that needs it rather than reserved in advance. **OSC-2
+    # then removed the link line and `Threads::Threads` arrived in its place**,
+    # and both stay here for a reason that is not the one that put `ws2_32` on
+    # the list. Neither is a dependency direction — WORKSPACE.md §2 constrains
+    # which *workspace* libraries an adapter may reach, and motion policy §8.2
+    # puts the socket inside the adapter *layer* deliberately — so the
+    # permission is the contract's, and not this file's to withdraw because the
+    # adapter stopped exercising it directly.
     #
-    # `Threads::Threads` is still absent, and that is the half of this list
-    # worth reading. The sibling links it for a `DatagramQueue`'s mutex; this
-    # adapter has no queue, so adding the name "because a receiver usually needs
-    # one" would be the reservation this allowlist exists to catch.
+    # `Threads::Threads` used to be the half of this list worth reading, and its
+    # *absence* was the argument: the sibling linked it for a `DatagramQueue`'s
+    # mutex and this adapter had no queue. That is still true of the adapter —
+    # nothing here constructs a queue and nothing here holds a mutex — but the
+    # queue is `liveTransport`'s now, it is opt-in there, and its threading
+    # primitive travels with that library's exported target. A shared library
+    # cannot offer one class its mutex and not another. So what the name means
+    # on this list changed, from "this adapter asked for it" to "this adapter's
+    # transport brings it", and only the first of those was ever a reservation
+    # worth catching.
     cmake = re.sub(r"#[^\n]*", "",
                    (source / "CMakeLists.txt").read_text(encoding="utf-8"))
     allowed_link = {
         "vrmadaptermocopi", "public", "private", "interface",
         "motioncore::motioncore", "motionruntime::motionruntime",
-        "ws2_32",
+        "livetransport::livetransport",
+        "ws2_32", "threads::threads",
     }
     for arguments in re.findall(r"target_link_libraries\s*\((.*?)\)", cmake,
                                 re.DOTALL):
         for token in arguments.split():
             if token.lower() not in allowed_link:
                 errors.append(
-                    "vrmAdapterMocopi may link only motionCore, motionRuntime "
-                    "and the platform's transport; CMakeLists.txt links "
-                    f"`{token}`")
+                    "vrmAdapterMocopi may link only motionCore, motionRuntime, "
+                    "liveTransport and the platform's own primitives; "
+                    f"CMakeLists.txt links `{token}`")
 
     # Refuse a static archive outright rather than inspecting one and finding
     # nothing. An archive records no imports, so this check would pass on any

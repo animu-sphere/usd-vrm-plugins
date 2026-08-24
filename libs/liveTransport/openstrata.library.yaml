@@ -1,0 +1,23 @@
+# OpenStrata plain-library descriptor. liveTransport is the live half's shared
+# leaf: the UDP receiver, the optional datagram queue, the packet-capture file
+# format, and the diagnostic vehicle every live adapter reports through.
+#
+# A library, not a plugin bundle: it registers nothing with OpenUSD and has no
+# plugInfo.json (WORKSPACE.md §1). It is *outside* the aggregate product,
+# unlike motionBvh, and on the adapter side of §5's split though it carries no
+# product name -- the product would acquire I/O.
+#
+# `requires` is absent rather than empty-by-accident. Its allowed edge set is
+# **empty** (WORKSPACE.md §2): the six files it was extracted from include their
+# own headers and the standard library and nothing else, so a first edge here is
+# a contract change and not a commit. It knows no protocol, no vendor grammar,
+# no address literal and no product name, and it holds no diagnostic *code* --
+# a code enum is frozen per adapter and stays there.
+schema: openstrata.library/v1alpha1
+library:
+  id: liveTransport
+  # Mirrors VERSION; release preparation updates this in lockstep.
+  version: 0.7.0
+cmake:
+  package: liveTransport
+  target: liveTransport::liveTransport

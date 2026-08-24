@@ -105,10 +105,14 @@ carrying a version number is drift waiting to be re-litigated.
   deliberately not v0.8.0 either, because OpenExec is meant to evaluate a
   finished canonical pipeline rather than share a release with one being
   extended. The duplication it resolves is **measured, not anticipated** — the
-  two existing adapters carry one packet-capture implementation twice, six lines
-  apart across 800, and one UDP receiver twice carrying four copied defects that
-  were found and fixed in one copy on 2026-08-11 and stayed in the other until
-  OSC-1 closed them on 2026-08-24.
+  two existing adapters carried one packet-capture implementation twice, six
+  lines apart across 800, and one UDP receiver twice carrying four copied
+  defects that were found and fixed in one copy on 2026-08-11 and stayed in the
+  other until OSC-1 closed them on 2026-08-24. **The shared floor landed the
+  same day**: `libs/liveTransport` holds the receiver, the capture format and
+  the diagnostic vehicle once, and both adapters build against it (OSC-2). What
+  remains on this track is the OSC decoder's own extraction, which still waits
+  for a second consumer, and the adapter itself.
 - Current priorities: **real device evidence** across both halves, closing the
   remaining **Workspace Phase 5** packaging P0, and widening runtime
   verification. The [OpenExec foundation](openexec-foundation.md) follows in
