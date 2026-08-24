@@ -120,3 +120,11 @@ if(VRMADAPTERVRCHATOSC_BUILD_TESTS)
     find_package(Python3 COMPONENTS Interpreter QUIET)
     add_subdirectory(tests)
 endif()
+
+# The adapter's CLI, which ships in the same artifact as the library
+# (WORKSPACE.md §5) and is where §2's adapter-tool permissions
+# begin. Added after the library target it links, and unconditionally: an
+# `if(EXISTS ...)` around a file the build requires can only ever mask a rename
+# or a bad checkout, and this repository has already paid once for a test that
+# silently stopped registering.
+add_subdirectory(tools/vrchatOscRecord)
