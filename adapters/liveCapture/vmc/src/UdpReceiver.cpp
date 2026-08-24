@@ -318,15 +318,26 @@ TicksToSeconds(std::int64_t ticks)
            / static_cast<double>(Period::den);
 }
 
+// The two poll timeouts that are not a duration: the sentinel that means "wait
+// until something happens", and the longest finite wait `poll` and `WSAPoll`
+// both accept. Named, because the defect this pair replaced was writing the
+// first where the second was meant.
+constexpr int kPollForever = -1;
+constexpr int kPollMaxMilliseconds = 2147483647;
+
 int
 TimeoutToMilliseconds(double seconds)
 {
     if (seconds < 0.0) {
-        return -1;
+        return kPollForever;
     }
     const double milliseconds = seconds * 1000.0;
-    if (milliseconds >= 2147483647.0) {
-        return -1;
+    // Clamped rather than mapped onto the sentinel. A caller asking to wait
+    // longer than a poll can express is asking for the longest wait there is,
+    // and turning that into "wait forever" takes away the one property it asked
+    // for -- a bound -- from the one caller that cannot be woken any other way.
+    if (milliseconds >= static_cast<double>(kPollMaxMilliseconds)) {
+        return kPollMaxMilliseconds;
     }
     // Rounded up, so a timeout smaller than the platform's resolution waits a
     // tick rather than degenerating into a spin.
