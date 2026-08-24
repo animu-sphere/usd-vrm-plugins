@@ -656,8 +656,12 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds)
             return ReceiveStatus::Failed;
         }
         _lastError = SocketErrorText(code);
+        // Deliberately not counted as idle. Both branches above met
+        // something — an over-long datagram, or an ICMP report about a peer
+        // — and a call that met something is not an empty poll. Counting it
+        // as one lets a session report say a socket was quiet in the same
+        // breath as counting what arrived at it.
         if (!spend()) {
-            ++_stats.idleReceives;
             return ReceiveStatus::Idle;
         }
     }

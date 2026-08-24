@@ -28,6 +28,7 @@
 
 #include <bitset>
 #include <cassert>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -822,7 +823,33 @@ CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
            == ReceiveStatus::Received);
     assert(datagram.bytes == ordinary);
 
-    std::puts("an over-long datagram was dropped rather than recorded");
+    // The fourth defect rides on the same case, because this is the only path
+    // in the class a test can reach it through: the call that drops an
+    // over-long datagram returns `Idle`, and it must not be *counted* as idle.
+    // It met something.
+    //
+    // The zero timeout is what isolates the claim. With a waiting one the drop
+    // is followed by another poll, and that poll's timeout is a genuine idle
+    // receive -- so the count would be 1 either way and the assertion would say
+    // nothing. At zero, `spend()` finds no budget left and the call returns
+    // straight from the drop, which is the one call whose accounting is in
+    // question. `ResetStats` immediately before it makes the window exactly
+    // that call.
+    assert(sender.Send(overlong));
+    bool dropped = false;
+    for (int attempt = 0; attempt != 200 && !dropped; ++attempt) {
+        receiver.ResetStats();
+        receiver.Receive(&datagram, 0.0);
+        dropped = receiver.GetStats().datagramsTruncated == 1;
+        if (!dropped) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    }
+    assert(dropped);
+    assert(receiver.GetStats().idleReceives == 0);
+
+    std::puts("an over-long datagram was dropped rather than recorded, and the "
+              "call that dropped it was not counted as an idle one");
     return 0;
 }
 

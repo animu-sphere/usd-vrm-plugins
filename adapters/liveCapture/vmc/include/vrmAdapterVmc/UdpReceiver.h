@@ -221,7 +221,11 @@ struct UdpReceiverStats
     std::uint64_t bytesReceived = 0;
 
     // Calls that found nothing waiting. A zero-timeout poll that finds an empty
-    // socket counts here too — it is the same fact, asked more often.
+    // socket counts here too — it is the same fact, asked more often. A call
+    // that returned `Idle` after dropping an over-long datagram or meeting a
+    // transient error does **not**: it met something, and a tally that said
+    // otherwise would describe a quiet socket while `datagramsTruncated` and
+    // `receiveErrors` were counting what reached it.
     std::uint64_t idleReceives = 0;
 
     // Transient platform errors retried inside `Receive`. Non-zero is not by
