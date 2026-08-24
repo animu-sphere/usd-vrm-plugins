@@ -218,14 +218,20 @@ def main() -> int:
     producers = re.compile(
         r"\b(?:" + "|".join(re.escape(n) for n in PRODUCER_NAMES) + r")\b",
         re.IGNORECASE)
-    # OpenUSD in any form, the humanoid vocabulary, and the retarget layer.
-    # `motionSource` is absent because the extractor is the declared edge; every
-    # other name here stays forbidden with it in the tree, and `motionCore` most
-    # of all: the edge is to one library, not through it to another.
+    # OpenUSD in any form, the humanoid vocabulary, the retarget layer, and the
+    # live half's shared transport. `motionSource` is absent because the
+    # extractor is the declared edge; every other name here stays forbidden with
+    # it in the tree, and `motionCore` most of all: the edge is to one library,
+    # not through it to another.
+    #
+    # `liveTransport` needs naming here where an adapter does not: an adapter
+    # carries a product name and the producer check above already refuses it,
+    # while a shared transport carries none by contract and would otherwise
+    # cross this boundary unremarked (WORKSPACE.md §2).
     forbidden_api = re.compile(
         r"pxr/|PXR_NAMESPACE|\bGf(?:Vec|Quat|Matrix)|\bUsd[A-Z]|\bSdf[A-Z]|"
         r"TF_REGISTRY_FUNCTION|\bHumanBone\b|\bmotion::|motionCore|"
-        r"vrmRetarget|vrmSchema")
+        r"vrmRetarget|vrmSchema|liveTransport")
     semantic = re.compile(r"DiagnosticCode::(?:" + "|".join(SEMANTIC_CODES) + r")\b")
     extraction_only = re.compile(
         r"DiagnosticCode::(?:"
