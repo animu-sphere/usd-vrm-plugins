@@ -54,13 +54,25 @@ endif()
 if(NOT TARGET motionRuntime::motionRuntime)
     find_package(motionRuntime REQUIRED CONFIG)
 endif()
+# The live half's shared leaf: the socket, the packet-capture format and the
+# diagnostic vehicle, which this adapter and its sibling had written twice
+# (WORKSPACE.md §2, osc-and-vrchat-trackers.md §3.2). Not a sibling edge and not
+# a route to one -- it is a leaf under libs/ with an empty edge set of its own,
+# and it is outside the aggregate product for the same reason an adapter is.
+if(NOT TARGET liveTransport::liveTransport)
+    find_package(liveTransport REQUIRED CONFIG)
+endif()
 
+# PacketCapture.cpp is gone rather than shrunk: the format's reader and writer
+# are liveTransport's now, and what this adapter contributes to them is one
+# string in a header. Diagnostics.cpp and UdpReceiver.cpp are what is left of
+# two files that moved -- a code table and an event-to-code map, which are the
+# two things a shared library may not hold.
 add_library(vrmAdapterMocopi STATIC
     src/Diagnostics.cpp
     src/FrameAssembler.cpp
     src/LiveSource.cpp
     src/MotionPacket.cpp
-    src/PacketCapture.cpp
     src/PacketChunk.cpp
     src/SkeletonMap.cpp
     src/UdpReceiver.cpp)
@@ -75,30 +87,26 @@ target_include_directories(vrmAdapterMocopi
     PUBLIC
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
         "$<INSTALL_INTERFACE:include>")
-# The two edges WORKSPACE.md §2 permits.
+# The three edges WORKSPACE.md §2 permits.
 target_link_libraries(vrmAdapterMocopi
     PUBLIC
         motionCore::motionCore
-        motionRuntime::motionRuntime)
+        motionRuntime::motionRuntime
+        liveTransport::liveTransport)
 
-# The platform's own transport, which is not a dependency direction:
-# WORKSPACE.md §2 constrains which *workspace* libraries an adapter may reach,
-# and motion policy §8.2 puts the socket inside the adapter on purpose.
-# `tests/check_boundaries.py` allows exactly this one extra name, so the gate
-# still fails on a workspace edge.
+# No `ws2_32` here any more, and its absence is the clearest single measurement
+# of what OSC-2 moved. Motion policy §8.2 still puts the socket inside the
+# adapter *layer*; this adapter no longer opens one itself, so the platform's
+# transport arrives through liveTransport's exported target instead.
+# `tests/check_boundaries.py` keeps allowing it by name, because the permission
+# is the contract's and not that file's to withdraw.
 #
-# This is the change that argues for it, which is what the previous revision of
-# this comment asked for — the receiver landed here rather than last because
-# this protocol has no published specification, so a socket is the only way to
-# obtain the bytes every layer above it would be built from (UdpReceiver.h).
-#
-# One name and not the sibling's two: `Threads` arrives there with a
-# `DatagramQueue` this adapter deliberately does not have, and asking for a
-# threading primitive no source file uses would reserve exactly what this
-# allowlist exists to prevent.
-if(WIN32)
-    target_link_libraries(vrmAdapterMocopi PUBLIC ws2_32)
-endif()
+# `Threads::Threads` now arrives the same way, and that is a change in what this
+# adapter *reserves* rather than in what it uses. The previous revision of this
+# comment declined to ask for it because `DatagramQueue` is the sibling's and no
+# source file here holds a mutex; that is still true, and the queue is still
+# opt-in, but a shared library cannot offer one class its threading primitive and
+# not another. Nothing here constructs a queue, so nothing here pays for one.
 
 if(MSVC)
     # PUBLIC for the same reason motionRuntime uses it: the installed headers

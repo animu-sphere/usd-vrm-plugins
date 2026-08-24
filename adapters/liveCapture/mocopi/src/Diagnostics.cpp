@@ -3,10 +3,6 @@
 #include "vrmAdapterMocopi/Diagnostics.h"
 
 #include <array>
-#include <iomanip>
-#include <ios>
-#include <locale>
-#include <sstream>
 
 namespace vrmAdapterMocopi
 {
@@ -14,16 +10,15 @@ namespace vrmAdapterMocopi
 namespace
 {
 
-struct CodeEntry
-{
-    std::string_view name;
-    DiagnosticSeverity severity;
-    bool recoverable;
-};
+using liveTransport::DiagnosticCodeEntry;
 
 // One table, in enum order. Severity and recoverability live here rather than
 // at each raise site so that two call sites cannot report the same code two
 // ways -- which is the failure mode a code table exists to prevent.
+//
+// The table is what stayed in this adapter when everything around it moved. Its
+// rows are this protocol's failure modes and nothing else's, which is exactly
+// why a shared library may not hold one (liveTransport/Diagnostics.h).
 //
 // Exactly one code is fatal, and it is the same one the sibling adapter makes
 // fatal: a receiver that never bound has nothing to recover into. Everything
@@ -34,7 +29,7 @@ struct CodeEntry
 // unusable. And tracking loss is the device reporting on itself accurately --
 // it is warned about rather than errored on for the same reason the sibling
 // warns rather than errors when a bone goes stale.
-constexpr std::array<CodeEntry, DiagnosticCodeCount> kCodes{{
+constexpr std::array<DiagnosticCodeEntry, DiagnosticCodeCount> kCodes{{
     {"VRM_MOCOPI_SOCKET_BIND_FAILED", DiagnosticSeverity::Error, false},
     {"VRM_MOCOPI_TRACKING_LOST", DiagnosticSeverity::Warning, true},
     {"VRM_MOCOPI_DEVICE_UNAVAILABLE", DiagnosticSeverity::Warning, true},
@@ -46,77 +41,37 @@ constexpr std::array<CodeEntry, DiagnosticCodeCount> kCodes{{
     {"VRM_MOCOPI_NON_FINITE_TRANSFORM", DiagnosticSeverity::Warning, true},
 }};
 
-const CodeEntry* Entry(DiagnosticCode code) noexcept
-{
-    const auto index = static_cast<std::size_t>(code);
-    return index < kCodes.size() ? &kCodes[index] : nullptr;
-}
-
-// Six decimals, matching the recorded-trace format's quantum
-// (motionRuntime/CaptureTrace.h), so a diagnostic line and the trace it refers
-// to spell the same instant the same way.
-//
-// The classic locale is not decoration. `printf("%.6f")` and a default-imbued
-// stream both take their decimal point from the *host's* locale, and a DCC that
-// calls setlocale(LC_ALL, "") turns 1.500000 into 1,500000 — which would make a
-// diagnostic and the trace it refers to disagree in exactly the environment
-// where a live session is being debugged.
-std::string FormatSeconds(double seconds)
-{
-    std::ostringstream out;
-    out.imbue(std::locale::classic());
-    out << std::fixed << std::setprecision(6) << seconds;
-    return out.str();
-}
+constexpr liveTransport::DiagnosticCodeTable<DiagnosticCode> kTable{
+    kCodes.data(), kCodes.size()};
 
 } // namespace
 
-std::string_view DiagnosticCodeString(DiagnosticCode code) noexcept
+std::string_view
+DiagnosticCodeString(DiagnosticCode code) noexcept
 {
-    const CodeEntry* entry = Entry(code);
-    return entry ? entry->name : std::string_view();
+    return kTable.Name(code);
 }
 
-std::optional<DiagnosticCode> FindDiagnosticCode(std::string_view name) noexcept
+std::optional<DiagnosticCode>
+FindDiagnosticCode(std::string_view name) noexcept
 {
-    for (std::size_t i = 0; i < kCodes.size(); ++i)
-    {
-        if (kCodes[i].name == name)
-        {
-            return static_cast<DiagnosticCode>(i);
-        }
-    }
-    return std::nullopt;
+    return kTable.Find(name);
 }
 
-DiagnosticSeverity DiagnosticDefaultSeverity(DiagnosticCode code) noexcept
+DiagnosticSeverity
+DiagnosticDefaultSeverity(DiagnosticCode code) noexcept
 {
-    const CodeEntry* entry = Entry(code);
-    return entry ? entry->severity : DiagnosticSeverity::Error;
+    return kTable.Severity(code);
 }
 
-bool DiagnosticIsRecoverable(DiagnosticCode code) noexcept
+bool
+DiagnosticIsRecoverable(DiagnosticCode code) noexcept
 {
-    const CodeEntry* entry = Entry(code);
-    return entry ? entry->recoverable : false;
+    return kTable.Recoverable(code);
 }
 
-std::string_view DiagnosticSeverityString(
-    DiagnosticSeverity severity) noexcept
-{
-    switch (severity)
-    {
-    case DiagnosticSeverity::Info:
-        return "info";
-    case DiagnosticSeverity::Warning:
-        return "warning";
-    case DiagnosticSeverity::Error:
-        return "error";
-    }
-    return "error";
-}
-
-Diagnostic MakeDiagnostic(DiagnosticCode code, std::string detail)
+Diagnostic
+MakeDiagnostic(DiagnosticCode code, std::string detail)
 {
     Diagnostic diagnostic;
     diagnostic.code = code;
@@ -126,43 +81,17 @@ Diagnostic MakeDiagnostic(DiagnosticCode code, std::string detail)
     return diagnostic;
 }
 
-std::string FormatDiagnostic(const Diagnostic& diagnostic)
+std::string
+FormatDiagnostic(const Diagnostic& diagnostic)
 {
-    std::string line;
-    line.reserve(128);
-
-    line += '[';
-    line += DiagnosticCodeString(diagnostic.code);
-    line += "] ";
-    line += DiagnosticSeverityString(diagnostic.severity);
-    line += diagnostic.recoverable ? " recoverable" : " fatal";
-
-    if (!diagnostic.source.empty())
-    {
-        line += " source=";
-        line += diagnostic.source;
-    }
-    if (diagnostic.timestamp)
-    {
-        line += " t=";
-        line += FormatSeconds(*diagnostic.timestamp);
-    }
-    if (!diagnostic.subject.empty())
-    {
-        line += " subject=";
-        line += diagnostic.subject;
-    }
-    if (diagnostic.sequence)
-    {
-        line += " seq=";
-        line += std::to_string(*diagnostic.sequence);
-    }
-    if (!diagnostic.detail.empty())
-    {
-        line += ": ";
-        line += diagnostic.detail;
-    }
-    return line;
+    // Resolving the code is the one step only this adapter can take, so it is
+    // the one argument the shared formatter cannot supply itself. The grammar
+    // is the sibling adapter's, deliberately -- and now unavoidably, which is
+    // an improvement on "deliberately": an operator reading a session log with
+    // both adapters in it does not have to learn a second line format to find
+    // out which one complained.
+    return liveTransport::FormatDiagnostic(
+        DiagnosticCodeString(diagnostic.code), diagnostic);
 }
 
 } // namespace vrmAdapterMocopi

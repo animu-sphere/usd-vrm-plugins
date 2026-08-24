@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Enforce vrmAdapterMocopi's leaf boundary.
 
-WORKSPACE.md §2 gives an adapter library exactly two edges — motionCore and
-motionRuntime — and forbids the rest: vrmSchema, every USD file-format bundle,
+WORKSPACE.md §2 gives an adapter library exactly three edges — motionCore,
+motionRuntime and liveTransport — and forbids the rest: vrmSchema, every USD file-format bundle,
 `vrmRetarget` (the library), OpenExec, `ExecIr`, and every sibling adapter. It
 also may not be a plugin bundle (§1), so a plugin manifest or a plugInfo.json
 anywhere under the adapter is a failure by itself.
@@ -26,9 +26,11 @@ deliberate, and both come straight from the contract:
 
 * **Transport is allowed here.** A socket in `motionRuntime` is a violation; a
   socket in an adapter is the adapter's job (motion policy §8.2). This script
-  therefore does not scan for one. It does not *link* one yet either — the
-  allowlist below names only what this library links today, so the receiver's
-  platform libraries have to be argued for in the change that adds them.
+  therefore does not scan for one. Since OSC-2 the adapter reaches one through
+  `liveTransport` rather than opening it here, which narrows what this library
+  contains but not what it is permitted to contain — the allowlist keeps the
+  platform's own primitives on it, because the permission is the contract's and
+  not this file's to withdraw.
 * **Only `include/` and `src/` are scanned.** An adapter's CLI under `tools/`
   is a workspace *tool*, and a tool may drive `vrmRetarget` and author a stage
   exactly as `motion_retarget` does. Scanning it would flag the one place the
@@ -40,8 +42,8 @@ a section summary and nothing else — so pointing this check at the library wou
 make it a gate that cannot fail, which is worse than no gate. The linked test
 executable is the first artifact in which the adapter's real transitive imports
 exist, so it is the first one worth inspecting. It links the adapter plus
-`motionCore` and `motionRuntime` and nothing else, which is exactly the closure
-this boundary is about.
+`motionCore`, `motionRuntime` and `liveTransport` and nothing else, which is
+exactly the closure this boundary is about.
 
 This is also the only enforcement there is. `ost` 0.21.0 discovers plain
 libraries in the project root's immediate subdirectories and under `libs/`, so
@@ -203,19 +205,26 @@ def main() -> int:
     # one" would be the reservation this allowlist exists to catch.
     cmake = re.sub(r"#[^\n]*", "",
                    (source / "CMakeLists.txt").read_text(encoding="utf-8"))
+    # `ws2_32` and `Threads::Threads` stay on this list although OSC-2 removed
+    # both link lines -- they now arrive through `liveTransport`'s exported
+    # target -- because the permission is the contract's and not this file's to
+    # withdraw. Neither is a dependency direction: §2 constrains which
+    # *workspace* libraries an adapter may reach, and motion policy §8.2 puts
+    # the socket inside the adapter layer deliberately.
     allowed_link = {
         "vrmadaptermocopi", "public", "private", "interface",
         "motioncore::motioncore", "motionruntime::motionruntime",
-        "ws2_32",
+        "livetransport::livetransport",
+        "ws2_32", "threads::threads",
     }
     for arguments in re.findall(r"target_link_libraries\s*\((.*?)\)", cmake,
                                 re.DOTALL):
         for token in arguments.split():
             if token.lower() not in allowed_link:
                 errors.append(
-                    "vrmAdapterMocopi may link only motionCore, motionRuntime "
-                    "and the platform's transport; CMakeLists.txt links "
-                    f"`{token}`")
+                    "vrmAdapterMocopi may link only motionCore, motionRuntime, "
+                    "liveTransport and the platform's own primitives; "
+                    f"CMakeLists.txt links `{token}`")
 
     # Refuse a static archive outright rather than inspecting one and finding
     # nothing. An archive records no imports, so this check would pass on any
