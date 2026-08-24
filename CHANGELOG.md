@@ -15,6 +15,15 @@ Current schema contract version: **1**.
 
 ### Fixed
 
+- **Every boundary check located `dumpbin` under a glob naming one Visual Studio
+  release.** `dumpbin` is not on `PATH` outside an MSVC developer shell, so each
+  `check_boundaries.py` falls back to searching Program Files — for
+  `Microsoft Visual Studio/2022/...` literally. A Visual Studio upgraded in place
+  leaves that directory empty beside a populated one for the new release, and all
+  nine checks then fail with "dumpbin was not found": nine red names, none of
+  them about a boundary. The release is a wildcard now, since the locator only
+  ever needed `/dependents`.
+
 - **Four defects in `vrmAdapterVmc`'s UDP receiver, all four of them copies.**
   They were found in `vrmAdapterMocopi`'s receiver on 2026-08-11 — which was
   written by copying this one — fixed there, and recorded in that file as
@@ -80,6 +89,52 @@ Current schema contract version: **1**.
   It holds no diagnostic **code**. A code set is frozen per adapter, before its
   decoder exists, so the receiver reports a `TransportEvent` — `BindFailed`,
   `Silence` — and each adapter maps it onto its own frozen code.
+
+- **`vrmAdapterVrchatOsc`, the third live input adapter — its scaffold, its
+  frozen diagnostic set and a recorder.** VRChat OSC tracking data in; nothing
+  out yet, because this change ships **no semantic decoder**. `vrchat_osc_record`
+  turns a sender aimed at this machine into a `vrchat-osc-packet-capture` file
+  and reports what a socket can see; `--inspect` reports on a recorded capture
+  with no socket at all.
+
+  **It is the first adapter written on the near side of the extraction above,
+  and the sizes are the receipt.** The packet-capture format is one magic string
+  and four forwarding calls where each sibling carries ~400 lines of it; the UDP
+  receiver is a `switch` over two transport events where each sibling carried
+  ~550. What is left is precisely what a shared library may not hold — a code
+  table, and the map from a transport event to one of its rows. The four
+  receiver defects fixed above arrive fixed here rather than copied a third
+  time, which is what extracting *before* the third consumer bought.
+
+  **A tracker source is not a pose source.** This wire carries numbered tracker
+  observations, which are pre-IK, and a tracker index is not a body role — so
+  the adapter will stop at a tracker frame and the humanoid solve is a separate,
+  generic boundary. No VRChat-shaped type enters `motionCore` under any outcome.
+  Two of the ten frozen `VRM_VRCHAT_OSC_*` codes describe states neither
+  sibling's set can express: a tracker that reported half of itself, because
+  position and rotation arrive on separate addresses, and a stream that is
+  well-formed and unusable because it has not been calibrated.
+
+  **The decoder is absent on purpose, and the published specification is the
+  reason rather than an excuse.** A specification says what a *receiver* must
+  accept; what a sender sends is a measurement. So the recorder lands first, the
+  address inventory is measured from real datagrams next, and the decoder is
+  designed from the inventory — the order `vrmAdapterMocopi` was forced into by
+  an undocumented grammar, adopted here by choice. Every payload in every test
+  is a counting pattern, and the session report deliberately declines to group
+  datagrams by address.
+
+  **One edge where the contract permits three**, and it is measurable rather
+  than asserted: `motionCore` and `motionRuntime` are what an adapter takes when
+  it produces canonical values, and this one produces none, so its test binaries
+  import no OpenUSD at all — unlike both siblings, they need no Gf DLL directory
+  on `PATH` to run.
+
+  Bytes off the socket and bytes in the capture file are identical, asserted end
+  to end through a real socket and a real file against an **independent** capture
+  parser written in the test. The corpus directory is created empty, and its two
+  CTest names are registered by globbing for a capture rather than for the
+  directory, so they arrive with the first fixture instead of failing from today.
 
 ### Changed
 

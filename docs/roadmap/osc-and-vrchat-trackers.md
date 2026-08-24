@@ -458,7 +458,7 @@ they are a frozen surface with golden tests over their formatted form.
 | OSC-0 — characterise the existing decoder | foundation | ✅ |
 | OSC-1 — merge the transport divergences | foundation | ✅ |
 | OSC-2 — extract the transport ring | foundation | ✅ |
-| VRC-0 — adapter scaffold and raw capture | adapter | ⬜ |
+| VRC-0 — adapter scaffold and raw capture | adapter | ✅ |
 | VRC-1 — real mocopi capture and address inventory | adapter | ⬜ |
 | OSC-3 — second OSC consumer, then extract `libs/osc` | foundation | ⬜ |
 | VRC-2 — tracker semantic decode | adapter | ⬜ |
@@ -684,6 +684,67 @@ set, and a recorder over the shared transport. **No semantic decoder.**
 
 Done when: bytes off the socket and bytes in the capture file are identical;
 a capture replays deterministically; the manifest records sender and version.
+
+**Done 2026-08-25**, in three changes: the contract row, the library, the CLI.
+105/105 green, of which eight names are new.
+
+**The extraction paid, and the receipt is the file sizes.** The census
+([§2](#2-the-duplication-census)) measured the capture format written twice at
+~400 lines and the receiver written twice at ~550. In this adapter the format is
+one magic string and four forwarding calls, and the receiver is a `switch` over
+two transport events. What is left is exactly what a shared library may not hold
+— a code table, and the map from an event to one of its rows — which is
+[WORKSPACE.md](../architecture/WORKSPACE.md) §2's diagnostic split seen from the
+first adapter written on the near side of it. The four receiver defects arrive
+fixed rather than copied a third time.
+
+**One edge where the contract permits three, and it is measurable.**
+`motionCore` and `motionRuntime` are what an adapter takes when it produces
+canonical values, and this milestone produces none — so declaring them would
+claim a dependency the library does not have. The consequence is visible rather
+than asserted: this adapter's test binaries import **no OpenUSD at all** (checked
+with `dumpbin`), so unlike both siblings they need no Gf DLL directory on `PATH`
+to run. The day a decoder produces a pose, that changes as a link line growing.
+
+**The published specification changed nothing about the order, which was the
+open question this milestone actually answered.** `vrmAdapterMocopi` records
+before it decodes because its protocol is documented nowhere; this one had the
+option of writing a decoder from VRChat's own documentation first. It did not,
+and the reason is [§6](#6-the-adapter-capture-precedes-decoder) applied rather
+than restated: a specification says what a *receiver* must accept, and what a
+sender sends is a measurement. Every payload in every test here is a counting
+pattern, and the one place a plausible OSC message would have been most welcome
+— the recorder's report — deliberately has none: it reports the datagram
+envelope and refuses to group by address, because that grouping would be the
+first thing anybody read off a real session with every number conditional on an
+untested assumption. The address inventory is VRC-1's, measured from bytes.
+
+**The done-condition is asserted end to end and against an independent reader.**
+`vrchat_osc_record_loopback` sends deliberately awkward payloads — empty,
+unaligned, spanning the printable range and out of it — through a real socket
+into a real capture file, and a capture parser written in Python reads it back
+and compares byte for byte. A writer and a reader that agreed with each other
+and with nothing else would fail it. A second name,
+`vrmAdapterVrchatOsc_loopbackCorpus`, does the same for committed fixtures and
+is registered by globbing for a capture rather than for the corpus directory — so it appears on
+the commit that adds the first one instead of failing red from today.
+
+**Two things were measured rather than assumed, and both are worth carrying
+forward.** A replayed report's duration differs from the live one's in the last
+digit, because a capture stores receive times to six decimal places — so the
+counts are compared and the duration is not. And the boundary check was verified
+by injection in every direction rather than by its green result: an added
+`vrmAdapterVmc/OscPacket.h` include fails this adapter's check, an added
+`vrmAdapterVrchatOsc` include fails each sibling's, and each file passes without
+it. That trio is the point at which the sibling rule stops being a formality —
+`vrmAdapterVmc` holds the only OSC decoder here and this adapter reads the same
+wire format, so reaching across would *work*.
+
+**One unrelated defect surfaced and was fixed in its own change.** Every
+`check_boundaries.py` in the tree located `dumpbin` under a glob naming
+`2022` literally; this machine's Visual Studio was upgraded in place, and all
+nine boundary checks went red at once with "dumpbin was not found". The release
+year is a wildcard now.
 
 ### VRC-1 — real mocopi capture and address inventory
 
@@ -942,7 +1003,7 @@ two rules the census adds to
 2  OSC-1  transport divergences merged, one behaviour per commit    ✅
 3  ——     contract change: libs/liveTransport identity and edges    ✅
 4  OSC-2  transport extraction, no behaviour change                 ✅
-5  VRC-0  adapter scaffold, manifest, diagnostics, recorder
+5  VRC-0  adapter scaffold, manifest, diagnostics, recorder         ✅
 6  VRC-1  real capture + address inventory report        ← decoder design input
 7  ——     contract change: libs/osc identity, edges, boundary check
 8  OSC-3  second consumer proven, then the OSC move

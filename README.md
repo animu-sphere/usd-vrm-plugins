@@ -44,6 +44,8 @@ project's central design decision, and it is described below.
 | [`motion_bvh_inspect`](tools/motionBvh) | CLI executable | Reports what a BVH file contains — hierarchy, channels in declaration order, frames, and per-column value ranges | v0.7.0 |
 | [`motion_bvh_convert`](tools/motionBvh) | CLI executable | Converts a BVH file to the avatar-independent semantic clip under an explicitly named profile | v0.7.0 |
 | [`liveTransport`](libs/liveTransport) | Plain static CMake library | The live half's shared leaf: UDP receiver, opt-in datagram queue, packet-capture file format, and the diagnostic vehicle every live adapter reports through — no protocol, no product name, no diagnostic code | Unreleased |
+| [`vrmAdapterVrchatOsc`](adapters/liveCapture/vrchatOsc) | Plain static CMake library | VRChat OSC tracker input: numbered tracker observations, which are pre-IK, so it stops at a tracker frame and the humanoid solve stays outside it. Scaffold and recorder only — no semantic decoder | Unreleased |
+| [`vrchat_osc_record`](adapters/liveCapture/vrchatOsc/tools/vrchatOscRecord) | CLI executable | Records and inspects VRChat OSC packet captures. Reports the datagram envelope and nothing about a payload: the surface is published, and what a sender sends is still a measurement | Unreleased |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
 
 `usdVrm` is not a bundle id — it names the product as a whole. It *was* the
@@ -97,6 +99,7 @@ Schedule: [docs/roadmap/](docs/roadmap/README.md#status-at-a-glance).
 | [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | The first input leaf: VMC Protocol from OSC-over-UDP datagrams through frame assembly and VRM bone mapping to canonical humanoid semantics; includes a recorded-packet corpus and the `vmc_record` CLI |
 | [`vrmAdapterMocopi`](adapters/liveCapture/mocopi) | Plain static CMake library | The second: a capture product's own UDP grammar, measured off five device sessions rather than read from a specification, through the same frame assembly and bridge; includes the `mocopi_record` CLI |
 | [`liveTransport`](libs/liveTransport) | Plain static CMake library | What the live leaves stopped writing twice: the socket, the packet-capture format and the diagnostic vehicle. It is under `libs/` and still **outside** the aggregate product — no tool in the product opens a transport — and its allowed edge set is empty |
+| [`vrmAdapterVrchatOsc`](adapters/liveCapture/vrchatOsc) | Plain static CMake library | The third, and the first that is not a pose source: this wire carries numbered tracker observations, and a tracker index is not a body role. Written on the near side of the extraction above, so its capture format is one magic string and its receiver is a `switch` over two transport events |
 
 `.vrm` and `.vrma` are deliberately **separate** file-format plugins with
 symmetric structure, and they compose by **reference**, not `subLayer` — a
@@ -120,6 +123,7 @@ motion_retarget (CLI) ──> vrmRetarget + OpenUSD stage APIs
 
 vrmAdapterVmc ──────────> motionCore, motionRuntime, liveTransport
 vrmAdapterMocopi ───────> motionCore, motionRuntime, liveTransport
+vrmAdapterVrchatOsc ────> liveTransport (the other two arrive with a decoder)
 liveTransport ──────────> nothing — its allowed edge set is empty, not short
 
 motionSource ───────────> motionCore

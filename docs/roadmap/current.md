@@ -71,18 +71,37 @@ test completes with nothing installed.
       and **one lane of three proves the buffer one**: Windows passes it either
       way, macOS arm64 skips it as it has skipped mocopi's since v0.7.0, and
       Linux is where the defect fails the assertion)*;
-- [ ] the transport ring — receiver, queue, capture format, diagnostic vehicle —
+- [x] the transport ring — receiver, queue, capture format, diagnostic vehicle —
       lives once, in a leaf outside the aggregate product's link closure, and
-      every committed capture in both existing corpora still reads unchanged;
+      every committed capture in both existing corpora still reads unchanged
+      *(OSC-2, 2026-08-24: `libs/liveTransport`, in three changes. 1485 lines
+      left `vrmAdapterVmc` and 337 arrived; 1781 left `vrmAdapterMocopi` and 359
+      arrived, and what arrives in each is the part a shared library may not hold
+      — a code table and a map from a transport event to one of its rows. The
+      corpus round-trips compare bytes rather than parse trees, so a writer that
+      changed one character would be red)*;
 - [ ] two adapters decode OSC through one library that contains no VMC and no
       VRChat address literal, enforced by a boundary check rather than by
       review;
-- [ ] no adapter imports a sibling adapter, checked in the binary.
+- [x] no adapter imports a sibling adapter, checked in the binary *(VRC-0,
+      2026-08-25: with a third adapter the trio is symmetric — each
+      `check_boundaries.py` now refuses the other two by name, in the sources and
+      in the linked test executable's imports. Verified by injection in every
+      direction rather than by the green result: an added sibling include fails
+      each of the three, and the same file passes without it. The third adapter
+      is where this stops being a formality — `vrmAdapterVmc` holds the only OSC
+      decoder here and `vrmAdapterVrchatOsc` reads the same wire format, so
+      reaching across would work)*.
 
 **VRChat OSC**
 
 - [ ] a real mocopi `VRChat (OSC)` session is captured and its addresses, type
-      tags and cadence are inventoried **before** a decoder is written;
+      tags and cadence are inventoried **before** a decoder is written *(VRC-0,
+      2026-08-25: the recorder half exists — `adapters/liveCapture/vrchatOsc/`
+      with its frozen ten-code set, a capture format that is one magic string
+      over the shared one, and `vrchat_osc_record`. Bytes off the socket and
+      bytes in the file are identical, asserted end to end against an independent
+      parser. The session and the inventory need an operator and a device)*;
 - [ ] generated fixtures fix the protocol's shapes with no hardware, and
       recorded fixtures replay deterministically with no client;
 - [ ] tracker position and rotation reach the canonical tracking space, verified
