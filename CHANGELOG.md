@@ -13,6 +13,47 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Four defects in `vrmAdapterVmc`'s UDP receiver, all four of them copies.**
+  They were found in `vrmAdapterMocopi`'s receiver on 2026-08-11 — which was
+  written by copying this one — fixed there, and recorded in that file as
+  still present in the sibling. They were.
+
+  - **An over-long datagram was handed on half-read.** The receive buffer was
+    exactly `MaxDatagramBytes`, and the header claimed that made truncation
+    impossible. On POSIX it does the opposite: `recvfrom` truncates silently and
+    returns the buffer's length, which is indistinguishable from a datagram that
+    was exactly that long — so the half-read datagram reached the decoder and
+    was refused there as `VRM_VMC_PACKET_MALFORMED`, blaming a sender for this
+    adapter's own truncation. The buffer is now one byte above the bound, and an
+    over-long datagram is counted in `datagramsTruncated` and dropped. Reachable
+    over IPv6, which `listenAddress` has always accepted.
+  - **A long finite `Receive` timeout waited forever.** 2147483.647 seconds or
+    more converted to `-1`, which is not a large number of milliseconds but the
+    sentinel meaning "block until something arrives" — so the one caller that
+    asked for a bound got the unbounded wait a bound exists to avoid. Now
+    clamped to the longest wait a poll can express.
+  - **A poll wake-up was treated as traffic without inspecting `revents`.**
+    `POLLERR`, `POLLHUP` and `POLLNVAL` are reported whether or not they were
+    requested, so a ready descriptor with nothing to read sent a caller waiting
+    indefinitely into a tight loop at 100% of a core. A ready descriptor without
+    `POLLIN` is now `ReceiveStatus::Failed`.
+  - **`idleReceives` counted calls that met something.** The retry tail is
+    reached after an over-long datagram or a transient platform error, and
+    charged both to the counter whose meaning is "found nothing waiting" — so a
+    session report could describe a quiet socket while `datagramsTruncated` and
+    `receiveErrors` counted what reached it.
+
+  Two long-standing differences from the sibling receiver were decided in the
+  same change rather than left to drift further. `Open` now resets the receive
+  statistics, because it restarts the clock they are stamped against either way;
+  `Close` releases the receive buffer. The silence timeout
+  (`VRM_MOCOPI_DEVICE_UNAVAILABLE`) stays mocopi-only on purpose — this
+  adapter's frozen diagnostic set has no code for it, and adding one is a
+  contract change rather than a fix. It arrives when the shared transport
+  library does.
+
 ## [0.7.0] — 2026-08-24
 
 ### Added

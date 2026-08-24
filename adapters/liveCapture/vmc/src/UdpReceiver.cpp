@@ -335,7 +335,8 @@ TimeoutToMilliseconds(double seconds)
     // Clamped rather than mapped onto the sentinel. A caller asking to wait
     // longer than a poll can express is asking for the longest wait there is,
     // and turning that into "wait forever" takes away the one property it asked
-    // for -- a bound -- from the one caller that cannot be woken any other way.
+    // for — a bound — from the one caller that cannot be woken any other
+    // way.
     if (milliseconds >= static_cast<double>(kPollMaxMilliseconds)) {
         return kPollMaxMilliseconds;
     }
@@ -492,6 +493,11 @@ UdpReceiver::Open(const UdpReceiverConfig& config,
 
     _epoch = SteadyTicks();
     _lastError.clear();
+    // The counters start over with the clock they are stamped against. Keeping
+    // them would put one session's `datagramsReceived` beside the next
+    // session's `firstReceiveTime`, since `_epoch` restarts here either way —
+    // a tally spanning two sessions on a timeline belonging to one.
+    _stats = UdpReceiverStats();
     return true;
 }
 
@@ -505,6 +511,9 @@ UdpReceiver::Close() noexcept
     _boundEndpoint.clear();
     _loopbackOnly = false;
     _receiveBufferBytes = 0;
+    // Released rather than kept: a closed receiver holding 64 KB is a receiver
+    // that costs what an open one costs. `Open` sizes it again.
+    std::vector<std::uint8_t>().swap(_buffer);
 }
 
 double

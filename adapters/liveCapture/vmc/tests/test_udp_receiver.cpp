@@ -751,6 +751,51 @@ CheckCorpus(const std::filesystem::path& directory)
     return 0;
 }
 
+void
+TestAReopenedReceiverCountsTheNewSessionAndNotTheLastOne()
+{
+    // `Open` restarts `_epoch`, so every time in the stats is measured from the
+    // new session. If the counters carried over, `datagramsReceived` would span
+    // two sessions while `firstReceiveTime` described one -- a report whose two
+    // halves disagree, with nothing in it saying so.
+    UdpReceiver receiver;
+    assert(receiver.Open(LoopbackConfig()));
+
+    LoopbackSender sender;
+    assert(sender.Open(receiver.GetBoundEndpoint()));
+    const std::vector<std::uint8_t> payload = Payload(16, 0x20);
+    assert(sender.Send(payload));
+
+    ReceivedDatagram datagram;
+    assert(receiver.Receive(&datagram, kLoopbackTimeout)
+           == ReceiveStatus::Received);
+    assert(receiver.GetStats().datagramsReceived == 1);
+    assert(receiver.GetStats().bytesReceived == payload.size());
+
+    // A second session on the same object, which is what a caller that lost a
+    // sender and re-bound has.
+    receiver.Close();
+    assert(receiver.Open(LoopbackConfig()));
+    const vrmAdapterVmc::UdpReceiverStats& stats = receiver.GetStats();
+    assert(stats.datagramsReceived == 0);
+    assert(stats.bytesReceived == 0);
+    assert(stats.idleReceives == 0);
+    assert(stats.datagramsTruncated == 0);
+    assert(stats.receiveErrors == 0);
+    assert(stats.firstReceiveTime == 0.0);
+    assert(stats.lastReceiveTime == 0.0);
+    assert(stats.lastPeer.empty());
+
+    // The receiver still works, and the new session's first datagram is its
+    // first -- not its second.
+    LoopbackSender second;
+    assert(second.Open(receiver.GetBoundEndpoint()));
+    assert(second.Send(payload));
+    assert(receiver.Receive(&datagram, kLoopbackTimeout)
+           == ReceiveStatus::Received);
+    assert(stats.datagramsReceived == 1);
+}
+
 // ---------------------------------------------------------------------------
 // The over-long datagram
 // ---------------------------------------------------------------------------
@@ -890,6 +935,7 @@ main(int argc, char** argv)
     TestAReceiverCountsFromItselfBeforeItIsEverOpened();
     TestAQuietSocketIsIdleAndAClosedOneSaysSo();
     TestADatagramArrivesWholeWithItsSenderAndItsInstant();
+    TestAReopenedReceiverCountsTheNewSessionAndNotTheLastOne();
     TestTheQueueCarriesEveryDatagramAcrossAThreadInOrder();
     TestAFullQueueDropsTheOldestAndCountsIt();
     TestTheQueueIsBoundedByBytesAsWellAsByCount();

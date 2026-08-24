@@ -116,7 +116,10 @@ repetition into a library, and names it exactly:
 > needs is argued in its own change rather than smuggled into this one.
 
 This plan is that third adapter. The four defects, re-verified against the tree
-on 2026-08-23 and all four still present in `vrmAdapterVmc`:
+on 2026-08-23 and all four still present in `vrmAdapterVmc` then. **All four are
+closed as of 2026-08-24** ([OSC-1](#osc-1--merge-the-transport-divergences));
+the table is kept as the census that justified the extraction, not as a
+description of the tree:
 
 | Defect | `vmc` | `mocopi` |
 | --- | --- | --- |
@@ -441,7 +444,7 @@ they are a frozen surface with golden tests over their formatted form.
 | Milestone | Half | State |
 | --- | --- | --- |
 | OSC-0 — characterise the existing decoder | foundation | ✅ |
-| OSC-1 — merge the transport divergences | foundation | ⬜ |
+| OSC-1 — merge the transport divergences | foundation | ✅ |
 | OSC-2 — extract the transport ring | foundation | ⬜ |
 | VRC-0 — adapter scaffold and raw capture | adapter | ⬜ |
 | VRC-1 — real mocopi capture and address inventory | adapter | ⬜ |
@@ -516,10 +519,63 @@ are held together by their tests rather than by their source*. After this step
 they are held together by their behaviour, which is what makes the next step a
 move rather than a merge.
 
+**Done 2026-08-24.** Four fixes, one behaviour per commit, no file moved. The
+buffer is one byte above the bound so an over-long datagram is detectable on
+POSIX; a timeout past what a poll can express is clamped rather than mapped onto
+"wait forever"; `revents` is inspected before a wake-up is treated as traffic;
+and the retry tail no longer charges `idleReceives` for a call that met
+something.
+
+**Two of the four ship without a test, and the reason is the same for both: no
+test could tell the fix from the defect.** A poll timeout of `-1` and one of
+`INT_MAX` differ only after 24.8 days, and a wake-up reporting `POLLERR` instead
+of a datagram is not producible on three platforms from a suite that owns only
+its own sockets — an unconnected UDP socket collects no ICMP error, and
+`POLLNVAL` needs a descriptor closed underneath a poll already running, which is
+the race this class documents as unsupported. A test that passed against the
+defect would be worse than none. The honest seam is a unit test of the mapping
+and of the wake-up predicate, and putting one in `vrmAdapterVmc` alone means
+giving it a public function or an internal header the sibling does not have —
+divergence, in the step whose purpose is convergence. **OSC-2 carries that ask**:
+the extracted library can hold an internal header and its own unit tests without
+either adapter growing an API.
+
+The other two are tested. `vrmAdapterVmc_udpReceiverTruncation` mirrors the
+mocopi test it derives from, on its own CTest name with `SKIP_RETURN_CODE 77`
+because it needs an IPv6 loopback — and it **passes on Windows with or without
+the buffer fix**, since `WSAEMSGSIZE` catches the case there either way, so the
+POSIX lanes are what make it evidence. The idle-accounting assertion rides on
+the same case with a zero timeout, which is the only way to narrow the window to
+the one call whose accounting is in question; putting the increment back fails
+it.
+
+**The two non-defect differences, decided rather than inherited:**
+
+- **`Open`/`Close` now leave the same state in both.** `Open` resets the stats,
+  because it restarts `_epoch` either way — carrying the counters over produced
+  a `datagramsReceived` spanning two sessions beside a `firstReceiveTime`
+  describing one. `Close` releases the receive buffer instead of holding 64 KB
+  on a closed receiver.
+- **The silence timeout stays mocopi-only, and the difference now carries its
+  reason in the VMC header.** Not because silence matters less to a VMC session:
+  because this adapter's frozen diagnostic set has no code for it and its own
+  documentation argues it did not need a ninth, so adding one is a contract
+  change — which [§13](#13-pr-splitting) forbids inside a fix. Inventing a
+  second spelling of `VRM_MOCOPI_DEVICE_UNAVAILABLE` would also make the shared
+  library choose between two names for one event, which is exactly the question
+  [§8](#8-diagnostics) exists to answer once. It arrives with the extraction.
+
 ### OSC-2 — extract the transport ring
 
 The move, with no behaviour change: receiver, queue, capture format, diagnostic
 vehicle. Blocked on the contract change in [§10](#10-contract-changes-this-plan-requires).
+
+It also inherits two asks from OSC-1, both of which exist because a shared
+library can hold what an adapter cannot: an internal header, and unit tests
+against it. The timeout mapping and the poll-wake-up predicate go there and get
+the tests OSC-1 could not write without making the two adapters diverge. The
+silence timeout arrives with them, once [§8](#8-diagnostics) has answered whose
+code a shared receiver raises.
 
 Done when: both adapters build against the shared library, every committed
 capture in both corpora still reads without being rewritten, both adapters'

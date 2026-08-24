@@ -92,6 +92,29 @@
 // unreachable. Found in the sibling adapter's copy of this file on 2026-08-11,
 // fixed here on 2026-08-24 (OSC-1).
 //
+// ## What this one does not have: a silence timeout
+//
+// `vrmAdapterMocopi`'s receiver reports `VRM_MOCOPI_DEVICE_UNAVAILABLE` after a
+// caller-stated span with no datagram. This one has no equivalent, and OSC-1
+// decided that deliberately rather than inheriting it: the two copies of this
+// class were brought together on the four defects that separated them, and this
+// is one of the two differences that survived, so it survives with a reason.
+//
+// The reason is not that silence matters less to a VMC session. It is that this
+// adapter's frozen diagnostic set has no code for it (Diagnostics.h), and
+// adding one is a contract change rather than a fix — the set is published,
+// and the paragraph below argues explicitly that it did not need a ninth code.
+// A fix and a contract change in one commit is what
+// roadmap/osc-and-vrchat-trackers.md §13 forbids, and inventing a second
+// spelling of the sibling's code would make the shared library that is coming
+// choose between two names for one event.
+//
+// So the silence timeout arrives here when the transport ring is extracted and
+// the question "whose diagnostic codes does shared transport raise" is
+// answered once, for both adapters, in its own change (that plan's §8 and
+// §10). Until then, a VMC session diagnoses silence from `GetStats()` and
+// `Now()`, which is what the paragraph on diagnosing a quiet session describes.
+//
 // ## One transport code, because one transport failure is fatal
 //
 // `VRM_VMC_SOCKET_BIND_FAILED` is the only socket diagnostic in the frozen set
