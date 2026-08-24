@@ -225,7 +225,10 @@ design discussion. And its exclusion from the product is written on the second
 of two clauses rather than the first: it is producer-neutral, as `motionSource`
 and `motionBvh` are, and it is out because the product would acquire I/O.
 
-Three questions the extraction has to answer rather than assume:
+Three questions the extraction had to answer rather than assume. **All three
+are answered as of 2026-08-24** ([OSC-2](#osc-2--extract-the-transport-ring));
+they are kept in their original form here because the reasoning that framed them
+is what the answers were checked against:
 
 - **Is the capture format one format or three?** The two on disk differ by one
   optional header key (`device`) and their magic string. A single
@@ -454,7 +457,7 @@ they are a frozen surface with golden tests over their formatted form.
 | --- | --- | --- |
 | OSC-0 — characterise the existing decoder | foundation | ✅ |
 | OSC-1 — merge the transport divergences | foundation | ✅ |
-| OSC-2 — extract the transport ring | foundation | ⬜ |
+| OSC-2 — extract the transport ring | foundation | ✅ |
 | VRC-0 — adapter scaffold and raw capture | adapter | ⬜ |
 | VRC-1 — real mocopi capture and address inventory | adapter | ⬜ |
 | OSC-3 — second OSC consumer, then extract `libs/osc` | foundation | ⬜ |
@@ -606,6 +609,74 @@ Done when: both adapters build against the shared library, every committed
 capture in both corpora still reads without being rewritten, both adapters'
 tests pass unchanged, and the binary link check shows neither imports the other.
 
+**Done 2026-08-24.** `libs/liveTransport`, in three changes: the library, then
+each adapter pointed at it. 1485 lines left `vrmAdapterVmc` and 337 arrived;
+1781 left `vrmAdapterMocopi` and 359 arrived. What arrives in each is the part
+a shared library may not hold — a code table, and a map from a transport event
+to one of its rows. 97/97 green, both corpora round-tripping, and
+`ost library build` / `ost library test` measured working on the new leaf first
+try.
+
+**The three questions [§3.2](#32-the-transport-ring--extract-before-the-third-consumer)
+said the extraction had to answer rather than assume, answered:**
+
+- **The capture format is one format with a per-adapter magic**, and the
+  committed corpora were the constraint exactly as predicted. The magic is a
+  parameter; the header *vocabulary* converged, so `device` is now everyone's.
+  That widens a VMC capture by one accepted key and changes no fixture byte,
+  because the writer emits only the fields a capture carries. The alternative —
+  a per-adapter key list in the shared reader — is a knob for one optional field,
+  which is the per-caller difference the library exists to stop carrying.
+- **The four defects arrived as merged behaviour**, because OSC-1 merged them
+  first. No fix rode inside the move.
+- **`DatagramQueue` came along and stayed opt-in.** A tracker recorder is a
+  polling loop like the mocopi one, so the third consumer did not change the
+  answer, and `vrmAdapterMocopi` still names it nowhere.
+
+**The mechanical problem [§10](#10-contract-changes-this-plan-requires) left
+open is solved by a template parameter, and the reason is worth a line.**
+`Diagnostic::code` was a per-adapter enum *by value*, so the vehicle is now
+`Diagnostic<Code, DefaultCode>` over the adapter's own enum. `DefaultCode` is a
+parameter rather than `Code{}` because the two adapters disagree and **both are
+right**: each defaults to its own `PacketMalformed`, which is enumerator 0 in
+one set and 6 in the other. A shared struct that defaulted to zero would have
+silently changed what a default-constructed mocopi diagnostic meant — the one
+behaviour change this step could have shipped without noticing.
+
+**The silence timeout arrived, and §8's question is untouched.** The shared
+receiver raises no code: it reports a `TransportEvent` — `BindFailed`,
+`Silence` — and each adapter maps it onto its own frozen set. That is §8's
+option (1) applied to the transport ring, and it does not pre-empt the same
+question for the decoder, where the answer has to survive `VRM_VMC_*` being a
+golden surface. So the capability is unconditional in the library and the *code*
+is still the adapter's problem: `vrmAdapterMocopi` exposes the threshold,
+`vrmAdapterVmc` leaves it at 0 because `VRM_VMC_*` has no code for silence. The
+difference used to be thirty lines of receiver in one copy and none in the
+other; it is now one configuration field and one `switch` arm.
+
+**OSC-1's two asks are paid.** `src/PollTimeout.h` is the internal header an
+adapter could not hold without diverging from its sibling, and
+`tests/test_poll_timeout.cpp` exercises the timeout mapping and the wake-up
+predicate with synthetic bits rather than a platform's `POLLIN` — which is what
+makes the `POLLERR` / `POLLHUP` / `POLLNVAL` combinations no socket produces on
+demand testable at all.
+
+**"No behaviour change" is checkable, and it was checked in the two places it
+could have failed silently.** The corpus round-trip tests compare bytes rather
+than parse trees, so a writer that changed one character would be red; and the
+boundary check was verified by injection rather than by its green result — an
+added workspace include, adapter code, address literal, producer-prefixed
+identifier and `pxr/` include each fail it. The producer pattern has no trailing
+word boundary because with one, an injected `mocopiThing` passed.
+
+**One test line changed, and it is the whole of the source-compatibility cost.**
+`vrmAdapterVmc`'s `test_udp_receiver.cpp` called `ReadPacketCaptureFile`
+unqualified, reaching the adapter by argument-dependent lookup because
+`PacketCapture` was declared in its namespace; the type is the library's now and
+ADL follows it there. It is qualified, as the other 27 packet-capture call sites
+in the tree already were. Every other name both adapters exported is unchanged,
+because the shared types arrive through a `using` rather than a rename.
+
 ### VRC-0 — adapter scaffold and raw capture
 
 `adapters/liveCapture/vrchatOsc/`: manifest, build scaffold, frozen diagnostic
@@ -703,9 +774,12 @@ depends on them ([docs/README.md](../README.md)).
   does and is still out. And the diagnostic ring is split in the contract rather
   than in the extraction: the library owns the **vehicle**, an adapter's code
   enum stays frozen where it is, and a `liveTransport` holding one is a
-  violation. What that leaves open is mechanical rather than structural, and it
-  is OSC-2's to solve — `Diagnostic::code` is a per-adapter enum *by value*
-  today, so a shared struct cannot carry it unchanged.
+  violation. What that left open was mechanical rather than structural, and
+  OSC-2 solved it — `Diagnostic::code` was a per-adapter enum *by value*, and
+  the vehicle is now `Diagnostic<Code, DefaultCode>` over the adapter's own
+  enum. The default is a parameter because the two adapters disagree about it
+  and both are right: each defaults to its own `PacketMalformed`, enumerator 0
+  in one set and 6 in the other.
 
   Two of the three are now **executable rather than asserted**, in the four
   checks that already hold §2's neighbour prohibitions: `motionRuntime`,
@@ -718,12 +792,14 @@ depends on them ([docs/README.md](../README.md)).
   those checks already refuse, while a shared transport carries none by
   contract.
 
-  Not decided, deliberately: whether the capture format keeps per-adapter magic
-  ([§3.2](#32-the-transport-ring--extract-before-the-third-consumer)), and
-  whether the silence timeout ends up in both adapters or neither
-  ([§8](#8-diagnostics)). Both are behaviour, both have committed fixtures or a
-  frozen code set as their constraint, and a contract that pre-empted them would
-  be deciding an extraction it cannot see.
+  Not decided in the contract, deliberately — both are behaviour, both had
+  committed fixtures or a frozen code set as their constraint, and a contract
+  that pre-empted them would have been deciding an extraction it could not see.
+  **The extraction decided both on 2026-08-24.** The magic stays per adapter and
+  the header vocabulary converged. The silence timeout is unconditional in the
+  library and its *code* is still per adapter, so it is in one adapter and not
+  the other — which is neither of the two answers the question offered, and is
+  the one the diagnostic split forces.
 - ⬜ **`libs/osc` is a second new identity**, with the same three rows and one
   addition: the boundary check in [§4](#4-what-libsosc-owns) is what makes its
   neutrality enforced rather than asserted. Blocks OSC-3.
@@ -732,6 +808,14 @@ depends on them ([docs/README.md](../README.md)).
   [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md)-adjacent but not its —
   adapter diagnostics are the adapter plan's §8 and this decision amends it.
   Blocks OSC-3.
+
+  **The transport ring answered it for itself on 2026-08-24, and that is
+  precedent rather than decision.** `liveTransport` took option (1): a neutral
+  `TransportEvent`, mapped by each adapter onto its frozen set. It was cheap
+  there because the receiver raised two codes and neither is golden. The
+  decoder's version is not cheap in the same way — `VRM_VMC_PACKET_MALFORMED`
+  has golden tests over its formatted line, so whatever the shared decoder does
+  has to leave that string standing.
 - ⬜ **What an OSC `t` argument reads as.** OSC-0 froze the current answer and
   found it wrong for real senders: `t` shares `h`'s signed 64-bit path, so an
   NTP time tag — high bit set since 1968 — arrives as a negative `integer`.
@@ -843,7 +927,7 @@ two rules the census adds to
 1  OSC-0  characterisation tests, nothing moves                     ✅
 2  OSC-1  transport divergences merged, one behaviour per commit    ✅
 3  ——     contract change: libs/liveTransport identity and edges    ✅
-4  OSC-2  transport extraction, no behaviour change
+4  OSC-2  transport extraction, no behaviour change                 ✅
 5  VRC-0  adapter scaffold, manifest, diagnostics, recorder
 6  VRC-1  real capture + address inventory report        ← decoder design input
 7  ——     contract change: libs/osc identity, edges, boundary check
