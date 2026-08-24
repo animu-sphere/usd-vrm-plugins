@@ -71,8 +71,15 @@ def _find_dumpbin() -> str | None:
         pathlib.Path(os.environ.get("ProgramFiles(x86)", r"C:\\Program Files (x86)")),
     ]
     for root in roots:
+        # The release year is a wildcard rather than "2022", and the reason is a
+        # measurement: this machine's VS 2022 was replaced by VS 18 in place on
+        # 2026-08-25, leaving an empty `2022/` beside a populated `18/`. Every
+        # boundary check in the tree then reported "dumpbin was not found" and
+        # failed -- nine red names for an editor upgrade, none of them about a
+        # boundary. A locator that names one release of a tool it only needs
+        # `/dependents` from is a version pin with no reason to exist.
         matches = sorted(root.glob(
-            "Microsoft Visual Studio/2022/*/VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe"),
+            "Microsoft Visual Studio/*/*/VC/Tools/MSVC/*/bin/Hostx64/x64/dumpbin.exe"),
             reverse=True)
         if matches:
             return str(matches[0])
