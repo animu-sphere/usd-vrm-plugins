@@ -66,16 +66,31 @@
 // and the wakeup, and the blocked call then reports about a socket somebody else
 // owns. A bounded wait turns stopping into a flag the loop already checks.
 //
-// ## Nothing arrives truncated
+// ## Nothing is passed on half-read, and that needs one byte more than it looks
 //
-// The receive buffer is `MaxDatagramBytes` — the largest payload UDP over IPv4
-// can deliver — so truncation is impossible rather than configurable. That is a
+// The bound is `MaxDatagramBytes` — the largest payload UDP over IPv4 can
+// deliver, and the same bound the capture format enforces — but the *buffer*
+// is one byte larger, and the extra byte is the whole mechanism. That is a
 // decision about blame: a truncated datagram is indistinguishable at the OSC
-// layer from a malformed one, so a smaller buffer would let the receiver
+// layer from a malformed one, so a receiver that handed one on would
 // manufacture `VRM_VMC_PACKET_MALFORMED` against a sender that did nothing
-// wrong. If a transport ever does deliver more than the buffer holds, the
-// datagram is counted in `datagramsTruncated` and dropped — never passed on
-// half-read.
+// wrong.
+//
+// A buffer of exactly `MaxDatagramBytes` cannot prevent that, which is what an
+// earlier version of this file claimed it could. A datagram longer than the
+// buffer is truncated **silently** on POSIX: `recvfrom` returns the buffer's
+// length, and nothing in the result distinguishes that from a datagram which
+// happened to be exactly that long. With one spare byte an over-long datagram
+// comes back as `MaxDatagramBytes + 1`, is counted in `datagramsTruncated`, and
+// is dropped. Windows says so directly with `WSAEMSGSIZE`; both paths lead to
+// the same counter.
+//
+// The claim that no transport could deliver one was wrong in this class's own
+// terms: `listenAddress` documents "::" below, and IPv6's 20 additional payload
+// bytes are the one way `datagramsTruncated` is reachable at all — which is
+// exactly why it has to be reachable *correctly* rather than assumed
+// unreachable. Found in the sibling adapter's copy of this file on 2026-08-11,
+// fixed here on 2026-08-24 (OSC-1).
 //
 // ## One transport code, because one transport failure is fatal
 //
@@ -215,10 +230,10 @@ struct UdpReceiverStats
 
     // Datagrams the transport delivered larger than `MaxDatagramBytes`, dropped
     // rather than passed on half-read. Unreachable over UDP/IPv4, where the
-    // buffer *is* the maximum — and only Windows would report it if a transport
-    // ever managed one, because POSIX truncates silently and a short read is
-    // indistinguishable from a whole datagram. Which is the reason the buffer is
-    // the protocol's maximum rather than a tunable.
+    // bound *is* the maximum, and reachable over IPv6, which carries 20 bytes
+    // more — so it is reached by two different mechanisms: Windows reports
+    // `WSAEMSGSIZE`, and POSIX truncates silently and is caught by the buffer's
+    // one spare byte (see the header).
     std::uint64_t datagramsTruncated = 0;
 
     // The receive clock at the first and last accepted datagram. Both stay 0 on

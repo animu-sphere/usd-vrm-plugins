@@ -750,6 +750,82 @@ CheckCorpus(const std::filesystem::path& directory)
     return 0;
 }
 
+// ---------------------------------------------------------------------------
+// The over-long datagram
+// ---------------------------------------------------------------------------
+
+// Split off behind an argument, with `SKIP_RETURN_CODE` on its own CTest name,
+// because it is the one case here that may legitimately not run: reaching it
+// needs IPv6, the only transport that can carry more than the IPv4 payload
+// maximum this adapter bounds itself by. Inside the suite that would have been
+// invisible -- ctest hides a passing test's output, so a lane that checked the
+// claim and a lane that quietly declined to would print the same line.
+constexpr int kSkipExitCode = 77;
+
+int
+CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
+{
+    // The defect this pins fails *quietly and plausibly*, which is what makes
+    // it the worst of the four: POSIX truncates a too-long datagram and reports
+    // the buffer's length, and that is indistinguishable from a datagram which
+    // happened to be exactly that long. A receiver whose buffer was the bound
+    // itself would hand the half-read one to the decoder, which would refuse it
+    // as `VRM_VMC_PACKET_MALFORMED` -- this adapter blaming a sender for its own
+    // truncation, in the one diagnostic an operator has no way to check.
+    UdpReceiverConfig config;
+    config.listenAddress = "::1";
+    config.listenPort = 0;
+
+    UdpReceiver receiver;
+    if (!receiver.Open(config)) {
+        std::puts("skipped: no IPv6 loopback on this host");
+        return kSkipExitCode;
+    }
+
+    LoopbackSender sender;
+    if (!sender.Open(receiver.GetBoundEndpoint())) {
+        std::puts("skipped: could not reach the IPv6 loopback endpoint");
+        return kSkipExitCode;
+    }
+
+    // Above the IPv4 bound the capture format enforces, below IPv6's own 65527
+    // maximum. One byte over would do; a handful makes the intent legible.
+    const std::vector<std::uint8_t> overlong =
+        Payload(vrmAdapterVmc::MaxDatagramBytes + 8, 0x00);
+    if (!sender.Send(overlong)) {
+        std::puts("skipped: this host will not send an over-long datagram");
+        return kSkipExitCode;
+    }
+
+    ReceivedDatagram datagram;
+    const ReceiveStatus status = receiver.Receive(&datagram, 0.25);
+
+    // Dropped, counted, and never presented as a datagram -- on both platforms
+    // and by two different mechanisms: Windows says WSAEMSGSIZE, POSIX says
+    // nothing and is caught by the buffer's one spare byte.
+    //
+    // Which means **this test cannot fail on Windows for the defect it was
+    // written about**: WSAEMSGSIZE catches it there with or without the spare
+    // byte. The lane that proves the fix is a POSIX one, where without it
+    // `recvfrom` returns the buffer's length, the code below sees an ordinary
+    // datagram, and the first assertion fails on `Received`. Worth knowing
+    // before reading a green Windows run as evidence.
+    assert(status == ReceiveStatus::Idle);
+    assert(receiver.GetStats().datagramsTruncated == 1);
+    assert(receiver.GetStats().datagramsReceived == 0);
+    assert(receiver.GetStats().bytesReceived == 0);
+
+    // And the socket still works afterwards: a refusal is not a shutdown.
+    const std::vector<std::uint8_t> ordinary = Payload(24, 0x61);
+    assert(sender.Send(ordinary));
+    assert(receiver.Receive(&datagram, kLoopbackTimeout)
+           == ReceiveStatus::Received);
+    assert(datagram.bytes == ordinary);
+
+    std::puts("an over-long datagram was dropped rather than recorded");
+    return 0;
+}
+
 void
 StartSockets()
 {
@@ -768,6 +844,14 @@ main(int argc, char** argv)
 {
     StartSockets();
 
+    // One case is split off behind an argument because it is the one that may
+    // legitimately not run here (see `kSkipExitCode`). Everything else is
+    // unconditional.
+    if (argc > 1 && std::string(argv[1]) == "truncation") {
+        return CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole();
+    }
+    // Any other argument is a corpus directory, which is the convention every
+    // other test binary in this adapter already follows.
     if (argc > 1) {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }

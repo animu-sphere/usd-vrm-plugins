@@ -471,8 +471,10 @@ UdpReceiver::Open(const UdpReceiverConfig& config,
     }
 
     // Sized once, and never resized again: this is where a datagram is read
-    // before its real length is known.
-    _buffer.resize(MaxDatagramBytes);
+    // before its real length is known. One byte above the bound, so that a
+    // platform which truncates silently still yields a length this class can
+    // recognise as too long (UdpReceiver.h).
+    _buffer.resize(MaxDatagramBytes + 1);
     _receiveBufferBytes = ReadReceiveBuffer(ToHandle(_socket));
 
     sockaddr_storage bound = {};
@@ -587,16 +589,27 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds)
         socklen_t fromLength = sizeof(from);
         const auto received = ::recvfrom(
             ToHandle(_socket), reinterpret_cast<char*>(_buffer.data()),
-            static_cast<int>(MaxDatagramBytes), 0,
+            static_cast<int>(_buffer.size()), 0,
             reinterpret_cast<sockaddr*>(&from), &fromLength);
 
         if (received >= 0) {
-            // No truncation check on this path, and none is possible: POSIX
-            // truncates silently, so a short read and a whole datagram are the
-            // same return value — which is exactly why the buffer is the
-            // protocol's own maximum rather than a tunable. Windows is the one
-            // platform that says so, with WSAEMSGSIZE below.
             const std::size_t size = static_cast<std::size_t>(received);
+            // The buffer holds one byte more than the bound precisely so this
+            // comparison can exist. POSIX truncates silently — a short read
+            // and a whole datagram are the same return value — so on that spare
+            // byte rests the difference between refusing an over-long datagram
+            // and handing a half-read one to a decoder that would blame the
+            // sender for it. Windows reaches the same counter through
+            // WSAEMSGSIZE below.
+            if (size > MaxDatagramBytes) {
+                ++_stats.datagramsTruncated;
+                _lastError = "a datagram larger than the protocol's maximum was "
+                             "dropped rather than passed on half-read";
+                if (!spend()) {
+                    return ReceiveStatus::Idle;
+                }
+                continue;
+            }
             // Assigned rather than read into directly: growing the caller's
             // vector to `MaxDatagramBytes` and shrinking it back would value-
             // initialise ~64 KB per datagram, which at a per-message sender's

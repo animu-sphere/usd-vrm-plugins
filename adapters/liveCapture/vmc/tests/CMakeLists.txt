@@ -82,11 +82,27 @@ target_compile_options(vrmAdapterVmc_udpReceiver_tests
 add_test(NAME vrmAdapterVmc_udpReceiver
          COMMAND vrmAdapterVmc_udpReceiver_tests)
 
+# The over-long datagram case, on its own name so that "could not check this
+# here" is a word in the ctest summary rather than a line nobody sees.
+#
+# It needs IPv6 to reach at all -- that is the only transport carrying more than
+# the IPv4 payload maximum the capture format bounds itself by -- and a runner
+# without IPv6 loopback cannot run it. Inside the suite above that would have
+# been invisible: ctest hides a passing test's output, so a lane that checked
+# the claim and a lane that quietly declined would print the same line. With
+# SKIP_RETURN_CODE the summary says `Skipped`, and "was this actually verified
+# on POSIX" is answered by reading the log rather than by re-running anything.
+# Mirrors vrmAdapterMocopi_udpReceiverTruncation, deliberately.
+add_test(NAME vrmAdapterVmc_udpReceiverTruncation
+         COMMAND vrmAdapterVmc_udpReceiver_tests truncation)
+set_tests_properties(vrmAdapterVmc_udpReceiverTruncation PROPERTIES
+    SKIP_RETURN_CODE 77)
+
 set(_vrm_adapter_vmc_tests
     vrmAdapterVmc_unit vrmAdapterVmc_packetCapture vrmAdapterVmc_oscPacket
     vrmAdapterVmc_vmcMessage vrmAdapterVmc_skeletonMap
     vrmAdapterVmc_frameAssembler vrmAdapterVmc_liveSource
-    vrmAdapterVmc_udpReceiver)
+    vrmAdapterVmc_udpReceiver vrmAdapterVmc_udpReceiverTruncation)
 
 # Every committed capture parses and re-emits byte-identically, or every
 # decoder test downstream of it compares against a fixture that has drifted from
