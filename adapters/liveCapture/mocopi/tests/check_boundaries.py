@@ -88,9 +88,10 @@ def _code_only(text: str) -> str:
 
     These headers document the boundary in situ, so the prose names the very
     libraries the code may not depend on — this adapter's `PacketCapture.h`
-    spends a section on why it does not share the sibling's format. Scanning the
-    comments too would make an accurate explanation indistinguishable from a
-    violation.
+    quotes the condition under which it *would* share a format, and then the
+    change that met it, and `UdpReceiver.h` does the same for the socket.
+    Scanning the comments too would make an accurate explanation
+    indistinguishable from a violation.
     """
     return _LINE_COMMENT.sub("", _BLOCK_COMMENT.sub("", text))
 
@@ -192,25 +193,29 @@ def main() -> int:
     # misses a multi-line call outright; naming the tokens that *are* permitted
     # cannot.
     #
-    # `ws2_32` joined the list with the receiver, which is the arrangement the
-    # previous revision of this comment asked for: a platform library is argued
-    # for by the change that needs it rather than reserved in advance. It is not
-    # a dependency direction — WORKSPACE.md §2 constrains which *workspace*
-    # libraries an adapter may reach, and motion policy §8.2 puts the socket
-    # inside the adapter deliberately.
+    # `ws2_32` joined the list with the receiver, which is the arrangement an
+    # earlier revision of this comment asked for: a platform library is argued
+    # for by the change that needs it rather than reserved in advance. **OSC-2
+    # then removed the link line and `Threads::Threads` arrived in its place**,
+    # and both stay here for a reason that is not the one that put `ws2_32` on
+    # the list. Neither is a dependency direction — WORKSPACE.md §2 constrains
+    # which *workspace* libraries an adapter may reach, and motion policy §8.2
+    # puts the socket inside the adapter *layer* deliberately — so the
+    # permission is the contract's, and not this file's to withdraw because the
+    # adapter stopped exercising it directly.
     #
-    # `Threads::Threads` is still absent, and that is the half of this list
-    # worth reading. The sibling links it for a `DatagramQueue`'s mutex; this
-    # adapter has no queue, so adding the name "because a receiver usually needs
-    # one" would be the reservation this allowlist exists to catch.
+    # `Threads::Threads` used to be the half of this list worth reading, and its
+    # *absence* was the argument: the sibling linked it for a `DatagramQueue`'s
+    # mutex and this adapter had no queue. That is still true of the adapter —
+    # nothing here constructs a queue and nothing here holds a mutex — but the
+    # queue is `liveTransport`'s now, it is opt-in there, and its threading
+    # primitive travels with that library's exported target. A shared library
+    # cannot offer one class its mutex and not another. So what the name means
+    # on this list changed, from "this adapter asked for it" to "this adapter's
+    # transport brings it", and only the first of those was ever a reservation
+    # worth catching.
     cmake = re.sub(r"#[^\n]*", "",
                    (source / "CMakeLists.txt").read_text(encoding="utf-8"))
-    # `ws2_32` and `Threads::Threads` stay on this list although OSC-2 removed
-    # both link lines -- they now arrive through `liveTransport`'s exported
-    # target -- because the permission is the contract's and not this file's to
-    # withdraw. Neither is a dependency direction: §2 constrains which
-    # *workspace* libraries an adapter may reach, and motion policy §8.2 puts
-    # the socket inside the adapter layer deliberately.
     allowed_link = {
         "vrmadaptermocopi", "public", "private", "interface",
         "motioncore::motioncore", "motionruntime::motionruntime",

@@ -6,8 +6,12 @@
 # and ships no plugInfo.json (WORKSPACE.md §1). Its edge set is **empty** — not
 # short, none — and that is a measurement rather than an intention: the six
 # files it was extracted from include their own headers and the standard library
-# and nothing else. `find_package` therefore appears nowhere below, and its
-# arrival would be a contract change (WORKSPACE.md §2).
+# and nothing else. No `find_package` below names a workspace library, and the
+# first one that does is a contract change rather than a commit (WORKSPACE.md
+# §2). The two that are here ask for the platform's threading primitive and for
+# an interpreter to run the boundary check with, neither of which is a
+# dependency direction — and `tests/check_boundaries.py` enforces exactly that
+# reading, refusing every other package by name.
 #
 # It is outside the aggregate product, on the *adapter* side of §5's split
 # though it carries no product name. §5's reader test is producer-neutral **and**

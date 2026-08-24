@@ -164,8 +164,8 @@ def main() -> int:
 
     # An allowlist, not a denylist. A pattern hunting for forbidden names has to
     # anticipate the spelling of every library nobody has linked yet, and it
-    # misses a multi-line call outright; naming the four tokens that *are*
-    # permitted cannot.
+    # misses a multi-line call outright; naming the tokens that *are* permitted
+    # cannot.
     cmake = re.sub(r"#[^\n]*", "",
                    (source / "CMakeLists.txt").read_text(encoding="utf-8"))
     # `ws2_32` and `Threads::Threads` are the platform's own transport and
