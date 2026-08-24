@@ -55,8 +55,10 @@ test completes with nothing installed.
 
 **Foundation**
 
-- [ ] the existing OSC decoder's public behaviour is frozen by characterisation
-      tests before any source moves;
+- [x] the existing OSC decoder's public behaviour is frozen by characterisation
+      tests before any source moves *(OSC-0, 2026-08-24: seven tests, `src/`
+      untouched, six mutations of `OscPacket.cpp` each caught by a test named
+      for the behaviour they break)*;
 - [ ] the four `UdpReceiver` defects are fixed in `vrmAdapterVmc`, each with a
       test, in a change that moves no file — they are live-session defects in
       shipped code and this line closes with or without the rest of the release;

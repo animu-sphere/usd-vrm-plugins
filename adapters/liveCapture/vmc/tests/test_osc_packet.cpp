@@ -450,6 +450,330 @@ TestTheArgumentGuardsRefuseRatherThanDereference()
     assert(!vrmAdapterVmc::DecodeOscPacket(nullptr, 4, &packet));
 }
 
+// ---------------------------------------------------------------------------
+// OSC-0 characterisation
+//
+// Everything above was written beside the decoder. These were written to
+// freeze what it does *before* it moves into a shared library
+// (roadmap/osc-and-vrchat-trackers.md §9, OSC-0), and each names a behaviour
+// the header promises that no test above would have caught the loss of. The
+// step's acceptance criterion is that a change to `OscPacket.cpp` altering
+// observable behaviour fails a test named for the behaviour, so the subject of
+// each is the promise rather than the code path that keeps it.
+// ---------------------------------------------------------------------------
+
+void
+TestARefusedBundleYieldsNoMessagesAtAll()
+{
+    // The header's first rule: "a bundle whose third element is malformed
+    // yields no messages, not two". Every malformed case above puts the bad
+    // bytes in the first element, so a decoder that appended messages as it
+    // went would satisfy all of them -- it would refuse, and hand back the two
+    // messages it had already accepted. Here that is the difference between
+    // zero messages and two.
+    Bytes time;
+    time.F32(12.5f);
+    Bytes oneFloat;
+    oneFloat.F32(0.5f);
+
+    const std::vector<std::uint8_t> datagram = Bundle(
+        vrmAdapterVmc::OscTimeTagImmediate,
+        {Message("/VMC/Ext/T", "f", time.data),
+         Message("/VMC/Ext/Blend/Apply", ""),
+         // Two floats promised, one delivered.
+         Message("/VMC/Ext/Bone/Pos", "ff", oneFloat.data)});
+
+    OscPacket packet;
+    Diagnostic diagnostic;
+    assert(!Decode(datagram, &packet, &diagnostic));
+    assert(diagnostic.code == DiagnosticCode::PacketMalformed);
+    assert(packet.messages.empty());
+    // Not only the messages: the packaging the first two elements established
+    // is not left behind either.
+    assert(!packet.bundled);
+    assert(packet.timeTag == vrmAdapterVmc::OscTimeTagImmediate);
+}
+
+void
+TestADecodeReplacesWhateverTheCallerHandedIn()
+{
+    // A receive loop decodes datagram after datagram into one `OscPacket`.
+    // Everything here is about that reuse: a decode overwrites all three
+    // fields, and a refusal touches none of them.
+    Bytes time;
+    time.F32(12.5f);
+    const std::vector<std::uint8_t> bundled =
+        Bundle(7, {Message("/VMC/Ext/T", "f", time.data),
+                   Message("/VMC/Ext/Blend/Apply", "")});
+    const std::vector<std::uint8_t> lone = Message("/VMC/Ext/Blend/Apply", "");
+
+    OscPacket packet;
+    assert(Decode(bundled, &packet));
+    assert(packet.messages.size() == 2);
+    assert(packet.bundled);
+    // A time tag that is not "immediately" survives verbatim; the flattening
+    // discards the packaging, not the provenance.
+    assert(packet.timeTag == 7);
+
+    // The same packet, now given an unbundled single message: two messages
+    // become one, `bundled` goes back to false, and the previous datagram's
+    // time tag does not survive as this one's.
+    assert(Decode(lone, &packet));
+    assert(packet.messages.size() == 1);
+    assert(!packet.bundled);
+    assert(packet.timeTag == vrmAdapterVmc::OscTimeTagImmediate);
+
+    // And a refusal leaves the last good decode intact, which is what lets a
+    // caller keep using the packet it already has.
+    const std::vector<std::uint8_t> refused = {0xde, 0xad, 0xbe, 0xef};
+    assert(!Decode(refused, &packet));
+    assert(packet.messages.size() == 1);
+    assert(packet.messages.front().address == "/VMC/Ext/Blend/Apply");
+    assert(!packet.bundled);
+}
+
+struct Refusal
+{
+    const char* name;
+    std::vector<std::uint8_t> bytes;
+    // The byte the diagnostic must name, and the address it must carry as its
+    // subject -- empty where the refusal happened before one was read.
+    std::size_t offset;
+    const char* subject;
+};
+
+void
+TestARefusalNamesTheByteAndTheAddress()
+{
+    // Two promises the header makes and the malformed suite above checks only
+    // the shape of: the diagnostic carries "the offending address as its
+    // subject where one was read, and a byte offset in its detail". That suite
+    // asserts the substring "at byte" and never the number, so every offset
+    // computation in the decoder -- and in particular the `base` a nested
+    // decode carries -- could be wrong without failing anything.
+    Bytes oneFloat;
+    oneFloat.F32(0.5f);
+
+    // A bad message one level down inside a bundle inside a bundle. Its offset
+    // is the whole point: 60 is where those four extra bytes sit in *this
+    // datagram*, and a decoder that reported an offset within the innermost
+    // element would say 20.
+    const std::vector<std::uint8_t> nested = Bundle(
+        1, {Bundle(1, {Concatenated(Message("/VMC/Ext/T", "f", oneFloat.data),
+                                    {0, 0, 0, 0})})});
+
+    const Refusal cases[] = {
+        {"an unaligned datagram", {'/', 'a', 'b'}, 0, ""},
+        {"an address with no terminator", {'/', 'V', 'M', 'C'}, 0, ""},
+        // The address was read, so from here on the subject is set even though
+        // the message never decoded.
+        {"a message with no type tag string", Bytes().Str("/VMC/Ext/T").data,
+         12, "/VMC/Ext/T"},
+        {"an argument the type tags promised",
+         Message("/VMC/Ext/T", "ff", oneFloat.data), 20, "/VMC/Ext/T"},
+        {"an unknown type tag", Message("/VMC/Ext/T", "q"), 16, "/VMC/Ext/T"},
+        {"bytes after the arguments",
+         Concatenated(Message("/VMC/Ext/T", "f", oneFloat.data), {0, 0, 0, 0}),
+         20, "/VMC/Ext/T"},
+        // Inside a bundle: the element starts at byte 20 of the datagram, and
+        // that is the byte named rather than 0.
+        {"a bundle element that is not a multiple of four",
+         Bytes().Str("#bundle").U64(1).U32(3).Raw({'/', 'a', 'b', 0}).data, 20,
+         ""},
+        {"a message two bundles deep", nested, 60, "/VMC/Ext/T"},
+    };
+
+    for (const Refusal& testCase : cases) {
+        const std::vector<std::uint8_t>& bytes = testCase.bytes;
+
+        OscPacket packet;
+        Diagnostic diagnostic;
+        if (Decode(bytes, &packet, &diagnostic)) {
+            std::fprintf(stderr, "malformed datagram was accepted: %s\n",
+                         testCase.name);
+            assert(false);
+        }
+
+        const std::string expected =
+            "(at byte " + std::to_string(testCase.offset) + ")";
+        if (diagnostic.detail.find(expected) == std::string::npos) {
+            std::fprintf(stderr, "%s: detail was \"%s\", expected %s\n",
+                         testCase.name, diagnostic.detail.c_str(),
+                         expected.c_str());
+            assert(false);
+        }
+        if (diagnostic.subject != testCase.subject) {
+            std::fprintf(stderr, "%s: subject was \"%s\", expected \"%s\"\n",
+                         testCase.name, diagnostic.subject.c_str(),
+                         testCase.subject);
+            assert(false);
+        }
+    }
+}
+
+void
+TestDecodedViewsPointIntoTheCallersDatagram()
+{
+    // "The decoder copies no payload, because a live receiver would otherwise
+    // allocate a string per bone per frame." The observable form of that
+    // promise is that every view lies inside the caller's buffer -- which is
+    // also the reason `DecodeOscPacket` refuses an rvalue, and a decoder that
+    // started copying would turn that deleted overload into an inconvenience
+    // rather than a guard.
+    const std::vector<std::uint8_t> blob = {1, 2, 3, 4};
+    Bytes body;
+    body.Str("Hips");
+    body.U32(static_cast<std::uint32_t>(blob.size()));
+    body.Append(blob);
+    const std::vector<std::uint8_t> datagram =
+        Bundle(vrmAdapterVmc::OscTimeTagImmediate,
+               {Message("/VMC/Ext/Bone/Pos", "sb", body.data)});
+
+    OscPacket packet;
+    assert(Decode(datagram, &packet));
+
+    const std::uint8_t* first = datagram.data();
+    const std::uint8_t* last = first + datagram.size();
+    const auto inside = [first, last](const void* pointer) {
+        const std::uint8_t* byte = static_cast<const std::uint8_t*>(pointer);
+        return byte >= first && byte < last;
+    };
+
+    // A bundled datagram on purpose: the flattening is of the message list and
+    // not of the bytes, so a bundled message's views point at the datagram too
+    // rather than at some staging buffer the bundle walk allocated.
+    assert(packet.bundled);
+    const auto& message = packet.messages.front();
+    assert(inside(message.address.data()));
+    assert(inside(message.typeTags.data()));
+    assert(inside(message.arguments[0].text.data()));
+    assert(inside(message.arguments[1].blob.bytes));
+}
+
+void
+TestArgumentSignednessFollowsTheWire()
+{
+    // The tag table sends five different tags into `integer` and they do not
+    // agree about the sign bit: 'i' and 'h' are signed, 'c', 'r' and 'm' are
+    // the raw bits. Every value used above is positive, which is exactly where
+    // the two paths are indistinguishable.
+    Bytes body;
+    body.U32(0xffffffffu);           // i
+    body.U64(0xffffffffffffffffULL); // h
+    body.U32(0xffffffffu);           // c
+    body.U32(0xffffffffu);           // r
+    body.U32(0xffffffffu);           // m
+    body.U64(0xe9a1000000000000ULL); // t
+    const std::vector<std::uint8_t> datagram =
+        Message("/signs", "ihcrmt", body.data);
+
+    OscPacket packet;
+    Diagnostic diagnostic;
+    if (!Decode(datagram, &packet, &diagnostic)) {
+        std::fprintf(stderr, "%s\n",
+                     vrmAdapterVmc::FormatDiagnostic(diagnostic).c_str());
+        assert(false);
+    }
+
+    const auto& arguments = packet.messages.front().arguments;
+    assert(arguments[0].integer == -1);
+    assert(arguments[1].integer == -1);
+    // Not -1: a character code, a colour and a MIDI message are four bytes of
+    // payload rather than a number with a sign.
+    assert(arguments[2].integer == 0xffffffffLL);
+    assert(arguments[3].integer == 0xffffffffLL);
+    assert(arguments[4].integer == 0xffffffffLL);
+
+    // 't' is a 64-bit NTP time tag and it shares 'h''s signed path, so a real
+    // one reads as a negative integer -- NTP seconds have had their high bit
+    // set since 1968, so that is every time tag a sender would emit today
+    // rather than a far-future edge. Recorded rather than endorsed:
+    // `OscArgument` has no unsigned field to widen into, nothing in VMC sends a
+    // 't' argument, and OSC-0 changes no behaviour by construction. It is a
+    // question the shared decoder owes an answer to (plan §10), written down
+    // here so that answer is a decision rather than a rediscovery.
+    assert(arguments[5].integer
+           == static_cast<std::int64_t>(0xe9a1000000000000ULL));
+    assert(arguments[5].integer < 0);
+    // A *bundle's* time tag is unaffected: it lands in `OscPacket::timeTag`,
+    // which is a `std::uint64_t`.
+}
+
+void
+TestStringPaddingIsAlwaysAtLeastOneNul()
+{
+    // A string whose length is already a multiple of four is followed by
+    // *four* NULs, not none. A decoder that rounded up instead would read
+    // every following argument four bytes early -- so this surfaces as a
+    // refusal rather than as a wrong number, and no test above uses a string
+    // whose length would show it.
+    Bytes body;
+    body.Str("abcd"); // four characters, eight bytes on the wire
+    body.F32(0.5f);
+    const std::vector<std::uint8_t> aligned = Message("/pad", "sf", body.data);
+
+    OscPacket packet;
+    Diagnostic diagnostic;
+    if (!Decode(aligned, &packet, &diagnostic)) {
+        std::fprintf(stderr, "%s\n",
+                     vrmAdapterVmc::FormatDiagnostic(diagnostic).c_str());
+        assert(false);
+    }
+    // "/pad" is four characters too, so the address and the argument exercise
+    // the same rule at both ends of the message.
+    assert(packet.messages.front().address == "/pad");
+    assert(packet.messages.front().arguments[0].text == "abcd");
+    assert(packet.messages.front().arguments[1].real == 0.5f);
+
+    // The other end of the same rule: an empty string is one NUL and three pad
+    // bytes, and it is a valid argument rather than a missing one.
+    Bytes emptyBody;
+    emptyBody.Str("");
+    emptyBody.F32(0.5f);
+    const std::vector<std::uint8_t> empty =
+        Message("/pad", "sf", emptyBody.data);
+    assert(Decode(empty, &packet));
+    assert(packet.messages.front().arguments[0].text.empty());
+    assert(packet.messages.front().arguments[1].real == 0.5f);
+
+    // A blob is padded by a different rule -- its declared size is not padded,
+    // its data is -- so a zero-length blob is a size field and nothing else.
+    // Applying the string rule here would demand four bytes a sender is right
+    // not to have sent.
+    Bytes blobBody;
+    blobBody.U32(0);
+    const std::vector<std::uint8_t> hollow =
+        Message("/pad", "b", blobBody.data);
+    assert(Decode(hollow, &packet));
+    assert(packet.messages.front().arguments[0].blob.size == 0);
+}
+
+void
+TestNestingUpToTheCapIsAccepted()
+{
+    // The refusal above proves a cap exists; this proves where it is. Nothing
+    // else in this file nests at all, so an off-by-one that refused one level
+    // early would leave every other test green while turning a legal datagram
+    // into the sender's fault.
+    std::vector<std::uint8_t> nested = Message("/deep", "");
+    for (std::size_t depth = 0; depth < vrmAdapterVmc::MaxOscBundleDepth;
+         ++depth) {
+        nested = Bundle(1, {nested});
+    }
+
+    OscPacket packet;
+    Diagnostic diagnostic;
+    if (!Decode(nested, &packet, &diagnostic)) {
+        std::fprintf(stderr, "%s\n",
+                     vrmAdapterVmc::FormatDiagnostic(diagnostic).c_str());
+        assert(false);
+    }
+    assert(packet.messages.size() == 1);
+    assert(packet.messages.front().address == "/deep");
+    assert(packet.bundled);
+    assert(packet.timeTag == 1);
+}
+
 // Corpus mode: the decoder against every committed capture.
 int
 CheckCorpus(const std::filesystem::path& directory)
@@ -628,6 +952,13 @@ main(int argc, char** argv)
     TestValidButUnimplementedAddressesDecodeCleanly();
     TestMalformedDatagramsAreRefusedAndSayWhy();
     TestTheArgumentGuardsRefuseRatherThanDereference();
+    TestARefusedBundleYieldsNoMessagesAtAll();
+    TestADecodeReplacesWhateverTheCallerHandedIn();
+    TestARefusalNamesTheByteAndTheAddress();
+    TestDecodedViewsPointIntoTheCallersDatagram();
+    TestArgumentSignednessFollowsTheWire();
+    TestStringPaddingIsAlwaysAtLeastOneNul();
+    TestNestingUpToTheCapIsAccepted();
     std::puts("vrmAdapterVmc OSC packet tests passed");
     return 0;
 }

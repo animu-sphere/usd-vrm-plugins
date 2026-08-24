@@ -440,7 +440,7 @@ they are a frozen surface with golden tests over their formatted form.
 
 | Milestone | Half | State |
 | --- | --- | --- |
-| OSC-0 — characterise the existing decoder | foundation | ⬜ |
+| OSC-0 — characterise the existing decoder | foundation | ✅ |
 | OSC-1 — merge the transport divergences | foundation | ⬜ |
 | OSC-2 — extract the transport ring | foundation | ⬜ |
 | VRC-0 — adapter scaffold and raw capture | adapter | ⬜ |
@@ -468,6 +468,30 @@ messages · bundles · every supported type tag · malformed rejection · offset
 diagnostics · atomic packet decode. No source moves in this step. Done when a
 change to `OscPacket.cpp` that alters observable behaviour fails a test that
 names the behaviour rather than the implementation.
+
+**Done 2026-08-24.** Seven characterisation tests in
+[`test_osc_packet.cpp`](../../adapters/liveCapture/vmc/tests/test_osc_packet.cpp),
+`src/` untouched. They name what the suite written beside the decoder left
+implicit: a bundle refused *after* two good elements yields nothing; a decode
+overwrites all three `OscPacket` fields and a refusal overwrites none; a
+diagnostic's byte offset is an exact number — including for a message two
+bundles deep, where a lost `base` reports 40 instead of 60 — and its subject is
+the offending address; every decoded view points into the caller's datagram;
+`i`/`h` are signed where `c`/`r`/`m` are raw bits; a string whose length is
+already a multiple of four is padded by four; and the bundle depth cap accepts
+exactly `MaxOscBundleDepth`. The acceptance criterion was checked rather than
+assumed: six mutations of `OscPacket.cpp` — decode in place, a nested offset
+without its base, a refusal that drops the address, `c`/`r`/`m` sign-extended,
+padding rounded up, and the depth cap off by one — each fail a test named for
+the behaviour they break.
+
+One finding, recorded and not fixed: a `t` *argument* shares `h`'s signed
+64-bit path, so a real NTP time tag — whose high bit has been set since 1968 —
+reads as a negative `integer`. Nothing in VMC sends one and `OscArgument` has no
+unsigned field to widen into, so it is a question `libs/osc`'s API owes an
+answer to ([§10](#10-contract-changes-this-plan-requires)) rather than a defect
+OSC-0 may repair: this step changes no behaviour by construction. A *bundle's*
+time tag is unaffected — it lands in `OscPacket::timeTag`, which is unsigned.
 
 ### OSC-1 — merge the transport divergences
 
@@ -594,6 +618,15 @@ depends on them ([docs/README.md](../README.md)).
   [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md)-adjacent but not its —
   adapter diagnostics are the adapter plan's §8 and this decision amends it.
   Blocks OSC-3.
+- ⬜ **What an OSC `t` argument reads as.** OSC-0 froze the current answer and
+  found it wrong for real senders: `t` shares `h`'s signed 64-bit path, so an
+  NTP time tag — high bit set since 1968 — arrives as a negative `integer`.
+  Whether the shared decoder widens `OscArgument` with an unsigned field, keeps
+  the raw bits and documents the reinterpretation, or splits `t` out as its own
+  member is an API decision, and it is cheaper before two adapters depend on
+  the answer than after. Nothing in VMC or in the VRChat tracker surface sends a
+  `t` argument, so it blocks nothing; it is here so the extraction decides it
+  rather than inherits it. Belongs with OSC-3.
 - ⬜ **A tracker observation has no representation in the motion contract.**
   `motionCore` carries `HumanoidPose`, which is post-solve. Whether a
   pre-IK tracker sample needs a contract there — a generic `TrackingSource` or
