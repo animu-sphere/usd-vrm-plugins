@@ -28,6 +28,7 @@
 
 #include <bitset>
 #include <cassert>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -751,6 +752,156 @@ CheckCorpus(const std::filesystem::path& directory)
 }
 
 void
+TestAReopenedReceiverCountsTheNewSessionAndNotTheLastOne()
+{
+    // `Open` restarts `_epoch`, so every time in the stats is measured from the
+    // new session. If the counters carried over, `datagramsReceived` would span
+    // two sessions while `firstReceiveTime` described one -- a report whose two
+    // halves disagree, with nothing in it saying so.
+    UdpReceiver receiver;
+    assert(receiver.Open(LoopbackConfig()));
+
+    LoopbackSender sender;
+    assert(sender.Open(receiver.GetBoundEndpoint()));
+    const std::vector<std::uint8_t> payload = Payload(16, 0x20);
+    assert(sender.Send(payload));
+
+    ReceivedDatagram datagram;
+    assert(receiver.Receive(&datagram, kLoopbackTimeout)
+           == ReceiveStatus::Received);
+    assert(receiver.GetStats().datagramsReceived == 1);
+    assert(receiver.GetStats().bytesReceived == payload.size());
+
+    // A second session on the same object, which is what a caller that lost a
+    // sender and re-bound has.
+    receiver.Close();
+    assert(receiver.Open(LoopbackConfig()));
+    const vrmAdapterVmc::UdpReceiverStats& stats = receiver.GetStats();
+    assert(stats.datagramsReceived == 0);
+    assert(stats.bytesReceived == 0);
+    assert(stats.idleReceives == 0);
+    assert(stats.datagramsTruncated == 0);
+    assert(stats.receiveErrors == 0);
+    assert(stats.firstReceiveTime == 0.0);
+    assert(stats.lastReceiveTime == 0.0);
+    assert(stats.lastPeer.empty());
+
+    // The receiver still works, and the new session's first datagram is its
+    // first -- not its second.
+    LoopbackSender second;
+    assert(second.Open(receiver.GetBoundEndpoint()));
+    assert(second.Send(payload));
+    assert(receiver.Receive(&datagram, kLoopbackTimeout)
+           == ReceiveStatus::Received);
+    assert(stats.datagramsReceived == 1);
+}
+
+// ---------------------------------------------------------------------------
+// The over-long datagram
+// ---------------------------------------------------------------------------
+
+// Split off behind an argument, with `SKIP_RETURN_CODE` on its own CTest name,
+// because it is the one case here that may legitimately not run: reaching it
+// needs IPv6, the only transport that can carry more than the IPv4 payload
+// maximum this adapter bounds itself by. Inside the suite that would have been
+// invisible -- ctest hides a passing test's output, so a lane that checked the
+// claim and a lane that quietly declined to would print the same line.
+constexpr int kSkipExitCode = 77;
+
+int
+CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
+{
+    // The defect this pins fails *quietly and plausibly*, which is what makes
+    // it the worst of the four: POSIX truncates a too-long datagram and reports
+    // the buffer's length, and that is indistinguishable from a datagram which
+    // happened to be exactly that long. A receiver whose buffer was the bound
+    // itself would hand the half-read one to the decoder, which would refuse it
+    // as `VRM_VMC_PACKET_MALFORMED` -- this adapter blaming a sender for its own
+    // truncation, in the one diagnostic an operator has no way to check.
+    UdpReceiverConfig config;
+    config.listenAddress = "::1";
+    config.listenPort = 0;
+
+    UdpReceiver receiver;
+    if (!receiver.Open(config)) {
+        std::puts("skipped: no IPv6 loopback on this host");
+        return kSkipExitCode;
+    }
+
+    LoopbackSender sender;
+    if (!sender.Open(receiver.GetBoundEndpoint())) {
+        std::puts("skipped: could not reach the IPv6 loopback endpoint");
+        return kSkipExitCode;
+    }
+
+    // Above the IPv4 bound the capture format enforces, below IPv6's own 65527
+    // maximum. One byte over would do; a handful makes the intent legible.
+    const std::vector<std::uint8_t> overlong =
+        Payload(vrmAdapterVmc::MaxDatagramBytes + 8, 0x00);
+    if (!sender.Send(overlong)) {
+        std::puts("skipped: this host will not send an over-long datagram");
+        return kSkipExitCode;
+    }
+
+    ReceivedDatagram datagram;
+    const ReceiveStatus status = receiver.Receive(&datagram, 0.25);
+
+    // Dropped, counted, and never presented as a datagram -- on both platforms
+    // and by two different mechanisms: Windows says WSAEMSGSIZE, POSIX says
+    // nothing and is caught by the buffer's one spare byte.
+    //
+    // Which means **this test cannot fail on Windows for the defect it was
+    // written about**: WSAEMSGSIZE catches it there with or without the spare
+    // byte. The lane that proves the fix is a POSIX one, where without it
+    // `recvfrom` returns the buffer's length, the code below sees an ordinary
+    // datagram, and the first assertion fails on `Received`. Worth knowing
+    // before reading a green Windows run as evidence.
+    assert(status == ReceiveStatus::Idle);
+    assert(receiver.GetStats().datagramsTruncated == 1);
+    assert(receiver.GetStats().datagramsReceived == 0);
+    assert(receiver.GetStats().bytesReceived == 0);
+
+    // And the socket still works afterwards: a refusal is not a shutdown.
+    const std::vector<std::uint8_t> ordinary = Payload(24, 0x61);
+    assert(sender.Send(ordinary));
+    assert(receiver.Receive(&datagram, kLoopbackTimeout)
+           == ReceiveStatus::Received);
+    assert(datagram.bytes == ordinary);
+
+    // The fourth defect rides on the same case, because this is the only path
+    // in the class a test can reach it through: the call that drops an
+    // over-long datagram returns `Idle`, and it must not be *counted* as idle.
+    // It met something.
+    //
+    // The zero timeout is what isolates the claim. With a waiting one the drop
+    // is followed by another poll, and that poll's timeout is a genuine idle
+    // receive -- so the count would be 1 either way and the assertion would say
+    // nothing. At zero, `spend()` finds no budget left and the call returns
+    // straight from the drop, which is the one call whose accounting is in
+    // question. `ResetStats` immediately before it makes the window exactly
+    // that call.
+    assert(sender.Send(overlong));
+    bool dropped = false;
+    // A second of attempts rather than a fixed few: a loopback datagram is
+    // readable almost immediately, but a loaded runner is exactly where a
+    // tight bound turns a correct test into an intermittent one.
+    for (int attempt = 0; attempt != 1000 && !dropped; ++attempt) {
+        receiver.ResetStats();
+        receiver.Receive(&datagram, 0.0);
+        dropped = receiver.GetStats().datagramsTruncated == 1;
+        if (!dropped) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    }
+    assert(dropped);
+    assert(receiver.GetStats().idleReceives == 0);
+
+    std::puts("an over-long datagram was dropped rather than recorded, and the "
+              "call that dropped it was not counted as an idle one");
+    return 0;
+}
+
+void
 StartSockets()
 {
 #if defined(_WIN32)
@@ -768,6 +919,14 @@ main(int argc, char** argv)
 {
     StartSockets();
 
+    // One case is split off behind an argument because it is the one that may
+    // legitimately not run here (see `kSkipExitCode`). Everything else is
+    // unconditional.
+    if (argc > 1 && std::string(argv[1]) == "truncation") {
+        return CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole();
+    }
+    // Any other argument is a corpus directory, which is the convention every
+    // other test binary in this adapter already follows.
     if (argc > 1) {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
@@ -779,6 +938,7 @@ main(int argc, char** argv)
     TestAReceiverCountsFromItselfBeforeItIsEverOpened();
     TestAQuietSocketIsIdleAndAClosedOneSaysSo();
     TestADatagramArrivesWholeWithItsSenderAndItsInstant();
+    TestAReopenedReceiverCountsTheNewSessionAndNotTheLastOne();
     TestTheQueueCarriesEveryDatagramAcrossAThreadInOrder();
     TestAFullQueueDropsTheOldestAndCountsIt();
     TestTheQueueIsBoundedByBytesAsWellAsByCount();

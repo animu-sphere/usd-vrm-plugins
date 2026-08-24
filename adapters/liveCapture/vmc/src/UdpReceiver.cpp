@@ -318,15 +318,27 @@ TicksToSeconds(std::int64_t ticks)
            / static_cast<double>(Period::den);
 }
 
+// The two poll timeouts that are not a duration: the sentinel that means "wait
+// until something happens", and the longest finite wait `poll` and `WSAPoll`
+// both accept. Named, because the defect this pair replaced was writing the
+// first where the second was meant.
+constexpr int kPollForever = -1;
+constexpr int kPollMaxMilliseconds = 2147483647;
+
 int
 TimeoutToMilliseconds(double seconds)
 {
     if (seconds < 0.0) {
-        return -1;
+        return kPollForever;
     }
     const double milliseconds = seconds * 1000.0;
-    if (milliseconds >= 2147483647.0) {
-        return -1;
+    // Clamped rather than mapped onto the sentinel. A caller asking to wait
+    // longer than a poll can express is asking for the longest wait there is,
+    // and turning that into "wait forever" takes away the one property it asked
+    // for — a bound — from the one caller that cannot be woken any other
+    // way.
+    if (milliseconds >= static_cast<double>(kPollMaxMilliseconds)) {
+        return kPollMaxMilliseconds;
     }
     // Rounded up, so a timeout smaller than the platform's resolution waits a
     // tick rather than degenerating into a spin.
@@ -460,8 +472,10 @@ UdpReceiver::Open(const UdpReceiverConfig& config,
     }
 
     // Sized once, and never resized again: this is where a datagram is read
-    // before its real length is known.
-    _buffer.resize(MaxDatagramBytes);
+    // before its real length is known. One byte above the bound, so that a
+    // platform which truncates silently still yields a length this class can
+    // recognise as too long (UdpReceiver.h).
+    _buffer.resize(MaxDatagramBytes + 1);
     _receiveBufferBytes = ReadReceiveBuffer(ToHandle(_socket));
 
     sockaddr_storage bound = {};
@@ -479,6 +493,11 @@ UdpReceiver::Open(const UdpReceiverConfig& config,
 
     _epoch = SteadyTicks();
     _lastError.clear();
+    // The counters start over with the clock they are stamped against. Keeping
+    // them would put one session's `datagramsReceived` beside the next
+    // session's `firstReceiveTime`, since `_epoch` restarts here either way —
+    // a tally spanning two sessions on a timeline belonging to one.
+    _stats = UdpReceiverStats();
     return true;
 }
 
@@ -492,6 +511,9 @@ UdpReceiver::Close() noexcept
     _boundEndpoint.clear();
     _loopbackOnly = false;
     _receiveBufferBytes = 0;
+    // Released rather than kept: a closed receiver holding 64 KB is a receiver
+    // that costs what an open one costs. `Open` sizes it again.
+    std::vector<std::uint8_t>().swap(_buffer);
 }
 
 double
@@ -558,20 +580,45 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds)
             return ReceiveStatus::Failed;
         }
 
+        // `revents` is checked rather than assumed, and the reason is a spin
+        // rather than tidiness. `POLLERR`, `POLLHUP` and `POLLNVAL` are reported
+        // whether or not they were requested, so a poll can return ready with no
+        // datagram to read; `recvfrom` then answers "would block", and a caller
+        // that asked to wait indefinitely has a budget that never runs out — so
+        // the loop returns to a poll that is still ready, forever, at 100% of a
+        // core. Since `POLLIN` is the only event this asks for, a ready
+        // descriptor without it is an error condition and is reported as one.
+        if ((descriptor.revents & POLLIN) == 0) {
+            _lastError = "the socket reported an error condition rather than a "
+                         "readable datagram";
+            return ReceiveStatus::Failed;
+        }
+
         sockaddr_storage from = {};
         socklen_t fromLength = sizeof(from);
         const auto received = ::recvfrom(
             ToHandle(_socket), reinterpret_cast<char*>(_buffer.data()),
-            static_cast<int>(MaxDatagramBytes), 0,
+            static_cast<int>(_buffer.size()), 0,
             reinterpret_cast<sockaddr*>(&from), &fromLength);
 
         if (received >= 0) {
-            // No truncation check on this path, and none is possible: POSIX
-            // truncates silently, so a short read and a whole datagram are the
-            // same return value — which is exactly why the buffer is the
-            // protocol's own maximum rather than a tunable. Windows is the one
-            // platform that says so, with WSAEMSGSIZE below.
             const std::size_t size = static_cast<std::size_t>(received);
+            // The buffer holds one byte more than the bound precisely so this
+            // comparison can exist. POSIX truncates silently — a short read
+            // and a whole datagram are the same return value — so on that spare
+            // byte rests the difference between refusing an over-long datagram
+            // and handing a half-read one to a decoder that would blame the
+            // sender for it. Windows reaches the same counter through
+            // WSAEMSGSIZE below.
+            if (size > MaxDatagramBytes) {
+                ++_stats.datagramsTruncated;
+                _lastError = "a datagram larger than the protocol's maximum was "
+                             "dropped rather than passed on half-read";
+                if (!spend()) {
+                    return ReceiveStatus::Idle;
+                }
+                continue;
+            }
             // Assigned rather than read into directly: growing the caller's
             // vector to `MaxDatagramBytes` and shrinking it back would value-
             // initialise ~64 KB per datagram, which at a per-message sender's
@@ -618,8 +665,12 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds)
             return ReceiveStatus::Failed;
         }
         _lastError = SocketErrorText(code);
+        // Deliberately not counted as idle. Both branches above met
+        // something — an over-long datagram, or an ICMP report about a peer
+        // — and a call that met something is not an empty poll. Counting it
+        // as one lets a session report say a socket was quiet in the same
+        // breath as counting what arrived at it.
         if (!spend()) {
-            ++_stats.idleReceives;
             return ReceiveStatus::Idle;
         }
     }

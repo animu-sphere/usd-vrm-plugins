@@ -59,9 +59,18 @@ test completes with nothing installed.
       tests before any source moves *(OSC-0, 2026-08-24: seven tests, `src/`
       untouched, six mutations of `OscPacket.cpp` each caught by a test named
       for the behaviour they break)*;
-- [ ] the four `UdpReceiver` defects are fixed in `vrmAdapterVmc`, each with a
-      test, in a change that moves no file — they are live-session defects in
-      shipped code and this line closes with or without the rest of the release;
+- [x] the four `UdpReceiver` defects are fixed in `vrmAdapterVmc`, ~~each with a
+      test~~, in a change that moves no file — they are live-session defects in
+      shipped code and this line closes with or without the rest of the release
+      *(OSC-1, 2026-08-24: four fixes, one behaviour per commit, no file moved.
+      **Two of the four ship untested and it is deliberate** — a `-1` and an
+      `INT_MAX` poll timeout differ only after 24.8 days, and a `POLLERR`
+      wake-up is not producible from a suite that owns only its own sockets, so
+      a test there would pass against the defect. The seam belongs to the
+      extracted library and OSC-2 carries the ask. The other two are tested,
+      and **one lane of three proves the buffer one**: Windows passes it either
+      way, macOS arm64 skips it as it has skipped mocopi's since v0.7.0, and
+      Linux is where the defect fails the assertion)*;
 - [ ] the transport ring — receiver, queue, capture format, diagnostic vehicle —
       lives once, in a leaf outside the aggregate product's link closure, and
       every committed capture in both existing corpora still reads unchanged;
