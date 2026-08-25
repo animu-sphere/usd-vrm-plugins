@@ -37,7 +37,7 @@ jobs:
         include:
           - name: usdvrmfileformat-support-windows-cy2026
             lane: scheduled
-            runtime_artifact: sha256:e3368364f8f4661a7c34371e907f2e5ddcdec4e680b76f5e9e1c1ed656022f48
+            runtime_artifact: sha256:ebb0c7da509ee14ada19ee5b461de6996aad0024b5c9640f12dde76912e849b5
             target_trust: local
             minimum_trust: local
             require_evidence: all

@@ -22,14 +22,23 @@
 # instead and requires the packager to agree with them.
 #
 # It counts `tools/` and NOT `adapters/`, and that is the contract rather than
-# an omission. WORKSPACE.md §5 keeps every adapter out of the aggregate product,
-# and the pinned `ost` 0.21.0 agrees by not discovering
-# `adapters/<group>/<name>/tools/<tool>/` at all. `ost` 0.22.x DOES discover
-# them -- a workstation on 0.22.2 packages nine members, including
-# `mocopi_record` and `vmc_record` (ost report 35 §3). So if the bootstrap pin
-# below ever moves, this assertion fires, which is the point: putting an
-# adapter CLI in the aggregate is a contract decision, not a side effect of an
-# upgrade.
+# an omission. WORKSPACE.md §5 keeps every adapter out of the aggregate product.
+# Under the 0.21.0 pin this workflow used to carry, that exclusion held only
+# because `ost` did not discover `adapters/<group>/<name>/tools/<tool>/` at all;
+# 0.22.x does discover them, and the bootstrap pin below is 0.22.3 now. What
+# keeps the product at seven members is therefore no longer the toolchain
+# version but `[workspace].release_exclude` in openstrata.toml, which names the
+# three adapter CLIs and makes `ost` itself fail with
+# AGGREGATE_MEMBERSHIP_MISMATCH before this step runs.
+#
+# The count below stays anyway, and it is not a duplicate of that check. `ost`
+# compares the packaged set against a declaration, and this step compares it
+# against the tree. The declaration is what would be edited to make a mistake
+# permanent: move `motion_bvh` into `release_exclude` and `ost` goes green --
+# the packaged set equals the declared set, both simply missing a CLI the
+# repository still builds -- while this step still finds three `tools/`
+# descriptors and two packaged tools, and fails. Keeping both means the product
+# is checked against something nobody can edit in the same commit.
 #
 # The three VRM bundles ship together because they must: an usdVrmFileFormat package
 # on its own registers the `.vrm` format but cannot open a stage (see the
@@ -99,8 +108,8 @@ jobs:
         include:
           - name: release-windows
             cache_cell: usdvrmfileformat-pr-windows
-            runtime_artifact: sha256:e3368364f8f4661a7c34371e907f2e5ddcdec4e680b76f5e9e1c1ed656022f48
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1"
+            runtime_artifact: sha256:ebb0c7da509ee14ada19ee5b461de6996aad0024b5c9640f12dde76912e849b5
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf"
             platform: cy2026
             profile: usd
             runs_on: ["windows-2022"]
@@ -111,16 +120,16 @@ jobs:
             host_python: "3.13"
           - name: release-macos-arm64
             cache_cell: usdvrmfileformat-pr-macos-arm64
-            runtime_artifact: sha256:b2cb7b68e72b05e486d57e96cde2ec7a8dc5a17b02b774af923aa58ee31d6d21
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:f8de29a4176d02ffbcf50a2205bb6b23d9a3cd9463e0d58a28a3c1c6ee5cb82c"
+            runtime_artifact: sha256:8d1322126b8f3aa4dd1791184603d7e1b4571bd4d6d89dd80bb75bdf5eef397c
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6"
             platform: cy2026
             profile: usd
             runs_on: ["macos-15"]
             host_python: "3.13"
           - name: release-linux
             cache_cell: usdvrmfileformat-pr-linux
-            runtime_artifact: sha256:70b47d1b1a337b71d6c6fd63898e3295c0f91dc4b2ad2f5c09d14d6ac0ff2e1d
-            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af"
+            runtime_artifact: sha256:3bf31789daa60ef650df35ab276bd67d0c0ee44a960311f78835cc0962efe261
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f"
             platform: cy2026
             profile: usd
             runs_on: ["ubuntu-24.04"]
@@ -155,7 +164,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libx11-dev libxt-dev
-      - name: Bootstrap ost 0.21.0 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.22.3 (pinned release asset, checksum-verified)
         shell: bash
         run: |
           set -euo pipefail
@@ -168,7 +177,7 @@ jobs:
             *) echo "::error title=ost bootstrap::no ost release asset for ${RUNNER_OS}-${RUNNER_ARCH}" ; exit 1 ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.21.0"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.22.3"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$( (command -v sha256sum > /dev/null && sha256sum "$asset" || shasum -a 256 "$asset") | cut -d' ' -f1 )"
@@ -197,15 +206,15 @@ jobs:
           set -euo pipefail
           version="$(ost --version)"
           echo "$version"
-          if [ "$version" != "ost 0.21.0" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.21.0', got '$version'" ; exit 1
+          if [ "$version" != "ost 0.22.3" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.22.3', got '$version'" ; exit 1
           fi
       - name: Restore the artifact registry cache (speed only, never correctness)
         if: ${{ vars.OST_CI_DISABLE_CACHE != 'true' }}
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ost-ci-home/artifacts
-          key: ost-registry-0.21.0-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
+          key: ost-registry-0.22.3-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
       - name: Pull the pinned runtime SDK from its remote reference
         shell: bash
         run: |
@@ -309,26 +318,56 @@ jobs:
           set -euo pipefail
           version="${{ needs.preflight.outputs.version }}"
           mkdir -p release-stage
-          count="$(jq -r '.data.packages | length' .ost-ci/package.json)"
-          bundles="$(jq -r '[.data.packages[] | select(.member == "bundle")] | length' .ost-ci/package.json)"
-          tools="$(jq -r '[.data.packages[] | select(.member == "tool")] | length' .ost-ci/package.json)"
+          # `.data.packages` is EVERY member `ost` packaged, and since 0.22.x
+          # that includes the adapter CLIs: ten archives here, seven of them the
+          # release. `.data.release_members` is the aggregate's own membership,
+          # resolved from openstrata.toml's `[workspace].release_members` minus
+          # `release_exclude`, and it is the list both the assertion and the
+          # staging loop below work from. Reading `.data.packages` directly is
+          # what made this step count six tools against three descriptors.
+          release_members="$(jq -c '.data.release_members // empty' .ost-ci/package.json)"
+          if [ -z "$release_members" ] || [ "$release_members" = "null" ]; then
+            echo "::error title=release packaging::this ost reports no .data.release_members -- the aggregate's membership would then be whatever the toolchain discovered, which is exactly what openstrata.toml [workspace].release_members exists to stop" ; exit 1
+          fi
+          jq --argjson rel "$release_members" '[.data.packages[] | select($rel | index(.name))]'              .ost-ci/package.json > .ost-ci/release-packages.json
+          count="$(jq -r 'length' .ost-ci/release-packages.json)"
+          bundles="$(jq -r '[.[] | select(.member == "bundle")] | length' .ost-ci/release-packages.json)"
+          tools="$(jq -r '[.[] | select(.member == "tool")] | length' .ost-ci/release-packages.json)"
+          product_members="$(jq -r '.data.product.members' .ost-ci/package.json)"
           # What the workspace declares, from the tree rather than from a
           # constant -- `.strata/` holds packaging copies of both descriptor
           # kinds and must not be counted. `tools/` only, never `adapters/`:
-          # see the header comment for why that is the contract being enforced.
+          # see the header comment for why that is the contract being enforced,
+          # and why this stays beside openstrata.toml's `release_members`
+          # instead of being replaced by it.
           # Asserted by member KIND so a tool silently dropping out cannot be
           # masked by a bundle count that still adds up.
           want_bundles="$(find plugins -name openstrata.plugin.yaml -not -path '*/.strata/*' | wc -l | tr -d ' ')"
           want_tools="$(find tools -name openstrata.tool.yaml -not -path '*/.strata/*' | wc -l | tr -d ' ')"
-          echo "declared: $want_bundles bundle(s), $want_tools product tool(s); packaged: $bundles + $tools"
+          echo "declared: $want_bundles bundle(s), $want_tools product tool(s); release members: $bundles + $tools; product: $product_members"
           if [ "$bundles" -ne "$want_bundles" ] || [ "$tools" -ne "$want_tools" ]; then
-            echo "::error title=release packaging::the workspace declares $want_bundles bundle + $want_tools product tool descriptor(s), but packaging produced $bundles + $tools -- if the extra members are adapter CLIs, the ost pin moved and WORKSPACE.md section 5 needs a decision, not a bigger number" ; exit 1
+            echo "::error title=release packaging::the workspace declares $want_bundles bundle + $want_tools product tool descriptor(s), but the release set is $bundles + $tools -- reconcile openstrata.toml [workspace].release_members/release_exclude with the tree; if the difference is adapter CLIs, WORKSPACE.md section 5 needs a decision, not a bigger number" ; exit 1
           fi
+          # The aggregate must contain that set and nothing else. `ost` fails on
+          # its own before reaching here, so this catches only the case where it
+          # does not: a version whose product and whose reported membership
+          # disagree.
+          if [ "$product_members" -ne "$count" ]; then
+            echo "::error title=release packaging::the product carries $product_members member(s) but the release set has $count" ; exit 1
+          fi
+          # Only the release members are staged. Packaging also emits an
+          # archive for each adapter CLI on its own -- every discovered member is
+          # packaged whether or not it joins the aggregate -- and those are
+          # deliberately not published. WORKSPACE.md section 5 ships an adapter
+          # as `vrmAdapter<Name>-<version>-<target>` carrying its library WITH
+          # its CLI, which `ost library package` can now produce and this lane
+          # does not yet build; a bare `mocopi_record` archive is not that
+          # artifact and must not be published in its place.
           for i in $(seq 0 $((count - 1))); do
-            archive="$(jq -r ".data.packages[$i].archive" .ost-ci/package.json)"
-            name="$(jq -r ".data.packages[$i].name" .ost-ci/package.json)"
-            target="$(jq -r ".data.packages[$i].target" .ost-ci/package.json)"
-            debug="$(jq -r ".data.packages[$i].debug_archive // empty" .ost-ci/package.json)"
+            archive="$(jq -r ".[$i].archive" .ost-ci/release-packages.json)"
+            name="$(jq -r ".[$i].name" .ost-ci/release-packages.json)"
+            target="$(jq -r ".[$i].target" .ost-ci/release-packages.json)"
+            debug="$(jq -r ".[$i].debug_archive // empty" .ost-ci/release-packages.json)"
             if command -v cygpath > /dev/null; then archive="$(cygpath -u "$archive")"; fi
             dist_dir="$(dirname "$archive")"
             cp "$archive" release-stage/

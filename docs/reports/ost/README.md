@@ -2,7 +2,7 @@
 
 This repository is built end to end with [OpenStrata](https://github.com/animu-sphere/open-strata)
 (`ost`), and these are the dated records of what that was actually like — every
-`ost` version from the pre-0.3 builds through 0.22.2, on Windows, macOS arm64,
+`ost` version from the pre-0.3 builds through 0.22.3, on Windows, macOS arm64,
 and Linux. They are upstream feedback first and our own status trail second.
 
 **They are append-only historical evidence.** A report is never rewritten to
@@ -17,11 +17,13 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 35 carries
-the live v0.23.0 asks — report 34's two adapter asks are delivered in `ost
-0.22.2`, and what release preparation found in their place is a per-library verb
-that composes nothing and an artifact that carries no data. Report 33 is still
-the record that every ask reports 28–32 raised was delivered in `ost 0.21.0`.
+The current `ost` ask list is always in the **newest** report. Report 36 carries
+the live v0.23.0 asks — four of report 35's five are delivered in `ost 0.22.3`
+(the per-library verb composes its closure, a workspace declares its aggregate's
+membership and owns shared data, and the unmanaged-provenance warnings are gone),
+and what replaced them came out of a forced re-pin: the runtimes every lane
+carried were deleted upstream. Report 33 is still the record that every ask
+reports 28–32 raised was delivered in `ost 0.21.0`.
 
 Numbering is the series' own: reports 1–8 call themselves "report #N" in their
 bodies, so the filenames preserve those numbers rather than renumbering history.
@@ -31,6 +33,7 @@ each sorts immediately after the report it follows.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
+| 36 | 2026-08-25 | [The runtimes we pinned were deleted, and four asks landed in the same release](36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md) | 0.22.3 | `ost` republishes the CY2026 runtimes as 16 canonical leaves and removes the ones this repository pinned, so every digest in both lanes was dangling — and `core` cannot replace them, because it is built `--no-imaging` and the OpenExec probe wants `usdExecImaging`. In the same release four of report 35's asks land: `ost library build\|test\|package` composes its closure (the mocopi adapter builds, tests 20/20 and packages), `[workspace].release_members`/`release_exclude` make the aggregate's membership a declaration, `[[workspace.install_data]]` puts the motion profiles in the product, and all ten members package as ost-managed. **Live v0.23.0 asks** |
 | 35 | 2026-08-24 | [The verb that ships an adapter reaches only a leaf](35-2026-08-24-v0.22.2-release-artifact-membership.md) | 0.22.2 | v0.7.0 release preparation. Report 34's asks land: `--workspace` discovers adapters (8 libraries, 13 edges) and `ost library build|test|package` exists — but it composes no `requires.libraries`, so it reaches 2 of 8 libraries and neither adapter. The aggregate product silently gained both adapters' tools (9 members, not 7), and no member carries data, so the BVH path's producer profiles reach no artifact and a packaged converter refuses every file. **Live v0.23.0 asks** |
 | 34 | 2026-07-29 | [A plain library two directories down is invisible](34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md) | 0.21.0 | The first input adapter lands outside `libs/`, and `--workspace` never sees its descriptor: plain-library discovery is the root's immediate children plus `libs/*`, and a skipped descriptor is indistinguishable from a validated one. Also: there is no per-library verb at all, so an adapter cannot be packaged outside the aggregate. Coverage is fine — the `kind: workspace` cells picked the new tests up with no CI edit. **Live v0.22.0 asks** |
 | 33 | 2026-07-28 | [Six asks delivered, and what the workspace build costs](33-2026-07-28-v0.21.0-workspace-ci-adoption.md) | 0.21.0 | All six of report 32's asks land and are exercised: `kind: workspace` cells, `host_packages`, `ci matrix`, `--graph-only`, tool members, and the configure contract (`plugin run` exports `CMAKE_TOOLCHAIN_FILE`). `motion-ci.yml` deleted. Two new findings about the *root* build: an upgrade re-identifies an unchanged runtime, and `ost build` invalidates per-bundle packaging provenance. Asks restated in 34 |
