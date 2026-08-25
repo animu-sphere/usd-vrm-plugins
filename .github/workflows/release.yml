@@ -25,7 +25,7 @@
 # an omission. WORKSPACE.md §5 keeps every adapter out of the aggregate product.
 # Under the 0.21.0 pin this workflow used to carry, that exclusion held only
 # because `ost` did not discover `adapters/<group>/<name>/tools/<tool>/` at all;
-# 0.22.x does discover them, and the bootstrap pin below is 0.22.3 now. What
+# 0.22.x does discover them, and the bootstrap pin below is 0.22.4 now. What
 # keeps the product at seven members is therefore no longer the toolchain
 # version but `[workspace].release_exclude` in openstrata.toml, which names the
 # three adapter CLIs and makes `ost` itself fail with
@@ -164,7 +164,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libx11-dev libxt-dev
-      - name: Bootstrap ost 0.22.3 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.22.4 (pinned release asset, checksum-verified)
         shell: bash
         run: |
           set -euo pipefail
@@ -177,7 +177,7 @@ jobs:
             *) echo "::error title=ost bootstrap::no ost release asset for ${RUNNER_OS}-${RUNNER_ARCH}" ; exit 1 ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.22.3"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.22.4"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$( (command -v sha256sum > /dev/null && sha256sum "$asset" || shasum -a 256 "$asset") | cut -d' ' -f1 )"
@@ -206,15 +206,15 @@ jobs:
           set -euo pipefail
           version="$(ost --version)"
           echo "$version"
-          if [ "$version" != "ost 0.22.3" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.22.3', got '$version'" ; exit 1
+          if [ "$version" != "ost 0.22.4" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.22.4', got '$version'" ; exit 1
           fi
       - name: Restore the artifact registry cache (speed only, never correctness)
         if: ${{ vars.OST_CI_DISABLE_CACHE != 'true' }}
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ost-ci-home/artifacts
-          key: ost-registry-0.22.3-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
+          key: ost-registry-0.22.4-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
       - name: Pull the pinned runtime SDK from its remote reference
         shell: bash
         run: |
