@@ -2,7 +2,7 @@
 #
 # Policy: this file is the CI contract; .github/workflows/ost-*.yml are
 # renderer output from `ost ci generate github`. Do not hand-edit CI
-# semantics in the generated workflow YAML. As of ost 0.22.4 there is no
+# semantics in the generated workflow YAML. As of ost 0.22.5 there is no
 # standing exception to that policy: every Linux cell's X11 requirement is
 # declared below as `host_packages`, so regeneration re-renders the step
 # instead of deleting a hand-added one.
@@ -33,12 +33,17 @@
 #   (`support/openusd-runtime-matrix.json` in open-strata), published by
 #   `support/publish-openusd-runtimes.ps1` under ost 0.22.3.
 #
-#   CONSUMING THEM NEEDS 0.22.4, and 0.22.3 is the version that proved it: the
-#   macOS leaf failed `artifact pull` with ARTIFACT_MANIFEST_INVALID and every
-#   Windows cell failed `runtime validate` with ten checks ok, two skipped and
-#   zero failures. Both were consumer defects, both are fixed in 0.22.4, and
-#   neither artifact was ever republished. That is why `bootstrap.ost.version`
-#   below is not the version that produced these leaves. That matrix expands
+#   CONSUMING THEM NEEDS 0.22.5, and the two releases before it are why. Under
+#   0.22.3 the macOS leaf failed `artifact pull` with ARTIFACT_MANIFEST_INVALID
+#   and every Windows cell failed `runtime validate` with ten checks ok, two
+#   skipped and zero failures. 0.22.4 fixed both and moved the failure: its new
+#   Windows/macOS device probing made the render check run for real, and the
+#   check ran `usdrecord` against whatever `python` was first on PATH -- 3.12 on
+#   a hosted runner, against a py313 runtime. 0.22.5 resolves the interpreter
+#   from the runtime's own contract. All three were consumer defects; no
+#   artifact was ever wrong and none was republished, which is why
+#   `bootstrap.ost.version` below is not the version that produced these leaves.
+#   Diagnosis: docs/reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md That matrix expands
 #   to sixteen immutable leaves -- OpenUSD 26.05 and 26.08 x
 #   linux/windows `core`/`gl`/`vulkan` and macOS arm64 `core`/`metal` -- each
 #   tagged `<openusd-version>-<variant>-<os>-<arch>` in one repository. The three
@@ -99,7 +104,7 @@ schema: 1
 
 bootstrap:
   ost:
-    version: "0.22.4"
+    version: "0.22.5"
     repository: animu-sphere/open-strata
 
 runners:

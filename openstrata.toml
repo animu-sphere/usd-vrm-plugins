@@ -12,13 +12,17 @@ profile = "usd"
 # tree and refuses any descriptor no pattern covers, so a new adapter or library
 # cannot join the graph by existing.
 #
-# Every member is named in full rather than matched by `plugins/*`-style globs,
-# and that is not verbosity for its own sake: a wildcard selects DIRECTORIES, and
-# a directory with no descriptor is a hard error, so one `tools/__pycache__` left
-# by a test run makes the whole graph refuse to resolve
-# (WORKSPACE_MEMBER_DESCRIPTOR_MISSING). Build residue must not be able to break
-# the member set, and an explicit list also makes adding a member a visible edit
-# here rather than a side effect of creating a directory.
+# Every member is named in full rather than matched by `plugins/*`-style globs.
+# That began as a workaround and is kept as a choice. Under `ost` 0.22.3 and
+# 0.22.4 a wildcard selected DIRECTORIES and a matched directory with no
+# descriptor was a hard error, so one `tools/__pycache__` left by a test run made
+# the whole graph refuse to resolve (WORKSPACE_MEMBER_DESCRIPTOR_MISSING).
+# 0.22.5 treats a wildcard as a filter -- verified here: `tools/*` sweeps past the
+# same `__pycache__` and reports the same 10 libraries and 16 edges this list
+# does. What keeps the list is the second reason rather than the first: adding a
+# member is a visible edit here rather than a side effect of creating a
+# directory, which is the same demand `release_members` below makes and the same
+# one WORKSPACE.md section 5 makes of the product.
 #
 # `release_members` is the aggregate product, and it is the reason this table
 # exists at all. Until 0.22.3 nothing in any descriptor could decline membership:
