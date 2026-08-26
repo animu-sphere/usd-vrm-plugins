@@ -183,11 +183,11 @@ Current schema contract version: **1**.
   deployment target with them (`macos-arm64-macos130-py313`), and its toolchain
   moved to Apple clang 17 on the macOS 15.5 SDK.
 
-- **Both CI lanes bootstrap `ost` 0.22.5.** The generated workflows and the
+- **Both CI lanes bootstrap `ost` 0.22.6.** The generated workflows and the
   hand-authored `release.yml` move together, which they have not always: the
   generated lanes were on 0.21.0 and the release lane pinned it deliberately.
 
-  **0.22.5 rather than 0.22.3, and the two releases in between are the whole
+  **0.22.6 rather than 0.22.3, and the three releases in between are the whole
   reason the pin is worth reading.** 0.22.3 published these runtimes and could
   not consume two of them: the macOS leaf failed `ost artifact pull` on a
   wildcard floor constraint its own producer had written (`libcxx >=17.x`), and
@@ -196,9 +196,14 @@ Current schema contract version: **1**.
   Windows and macOS device probing made the render check run for real, and that
   check ran `usdrecord` against whatever `python` was first on `PATH`, which on
   a hosted runner is 3.12 against a py313 runtime. 0.22.5 resolves the
-  interpreter from the runtime's own contract. All three were defects in the
-  tool, not in the artifacts: no digest below changed and nothing was
-  republished.
+  interpreter from the runtime's own contract, and moved the failure once more:
+  `usdrecord` builds its GL context through PySide6/PySide2, which an OpenUSD
+  built without `--usdview` does not ship and which no lane can install.
+  0.22.6 preflights those imports and reports the check `skip` rather than
+  `fail` when they are absent, and stops counting a software rasterizer
+  (`GDI Generic` on a GPU-less runner) as a physical device. All four were
+  defects in the tool, not in the artifacts: no digest below changed and
+  nothing was republished.
   Regeneration also splits the runtime cache into `actions/cache/restore` and
   `actions/cache/save` and drops resumable transfer state before saving, both of
   which are 0.22.3 renderer output rather than edits here.
