@@ -52,6 +52,19 @@ def is_history(rel: str) -> bool:
     return any(rel.startswith(h) or rel == h for h in HISTORY)
 
 
+# Generated trees that contain COPIES of authored files. Nothing here is
+# authored, so nothing here is checked: a copy's relative links resolve against
+# its original's directory and are broken by construction wherever it was
+# staged. `.strata/` began carrying one when openstrata.toml grew
+# `[[workspace.install_data]]` -- packaging stages `profiles/motion/` whole, and
+# its README.md links five files by repository-relative path.
+GENERATED = ("build/", "scratch/", ".strata/", "dist/", ".ost-ci/")
+
+
+def is_generated(rel: str) -> bool:
+    return rel.replace("\\", "/").startswith(GENERATED)
+
+
 def read(rel: str) -> str:
     return (REPO_ROOT / rel).read_text(encoding="utf-8")
 
@@ -113,7 +126,7 @@ def check_no_stale_paths(failures: list[str]) -> None:
     stale = re.compile(r"plugins/usdVrm(?![A-Za-z])")
     for p in sorted(REPO_ROOT.glob("**/*.md")):
         rel = str(p.relative_to(REPO_ROOT)).replace("\\", "/")
-        if rel.startswith(("build/", "scratch/")) or is_history(rel):
+        if is_generated(rel) or is_history(rel):
             continue
         for i, line in enumerate(p.read_text(encoding="utf-8",
                                              errors="replace").splitlines(), 1):
@@ -392,7 +405,7 @@ def check_retired_doc_names(failures: list[str]) -> None:
     for name, allowed in RETIRED_DOC_NAMES.items():
         for p in sorted(REPO_ROOT.glob("**/*.md")):
             rel = str(p.relative_to(REPO_ROOT)).replace("\\", "/")
-            if rel.startswith(("build/", "scratch/")) or rel in allowed:
+            if is_generated(rel) or rel in allowed:
                 continue
             if is_history(rel):
                 continue  # history keeps its own words; links are checked below
@@ -438,7 +451,7 @@ def prose_only(text: str) -> str:
 def check_links(failures: list[str]) -> None:
     for p in sorted(REPO_ROOT.glob("**/*.md")):
         rel = str(p.relative_to(REPO_ROOT)).replace("\\", "/")
-        if rel.startswith(("build/", "scratch/")):
+        if is_generated(rel):
             continue
         for target in LINK.findall(prose_only(p.read_text(encoding="utf-8",
                                                           errors="replace"))):

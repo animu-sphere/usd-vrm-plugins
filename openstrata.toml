@@ -5,3 +5,88 @@ version = "0.7.0"
 [requires]
 platform = "cy2026"
 profile = "usd"
+
+# The member set, declared rather than discovered (ost 0.22.3).
+#
+# `members` only controls SOURCE discovery, and it is fail-closed: ost scans the
+# tree and refuses any descriptor no pattern covers, so a new adapter or library
+# cannot join the graph by existing.
+#
+# Every member is named in full rather than matched by `plugins/*`-style globs.
+# That began as a workaround and is kept as a choice. Under `ost` 0.22.3 and
+# 0.22.4 a wildcard selected DIRECTORIES and a matched directory with no
+# descriptor was a hard error, so one `tools/__pycache__` left by a test run made
+# the whole graph refuse to resolve (WORKSPACE_MEMBER_DESCRIPTOR_MISSING).
+# 0.22.5 treats a wildcard as a filter -- verified here: `tools/*` sweeps past the
+# same `__pycache__` and reports the same 10 libraries and 16 edges this list
+# does. What keeps the list is the second reason rather than the first: adding a
+# member is a visible edit here rather than a side effect of creating a
+# directory, which is the same demand `release_members` below makes and the same
+# one WORKSPACE.md section 5 makes of the product.
+#
+# `release_members` is the aggregate product, and it is the reason this table
+# exists at all. Until 0.22.3 nothing in any descriptor could decline membership:
+# 0.21.0 kept the adapter CLIs out of the product only by failing to discover
+# `adapters/<group>/<name>/tools/<tool>/`, and 0.22.x discovers them, so the
+# exclusion WORKSPACE.md §5 states as a rule was in fact a property of the pinned
+# toolchain version -- one that would have been discovered in a published
+# archive. It is a declaration now: packaging subtracts `release_exclude` from
+# the discovered bundle/tool ids and fails with AGGREGATE_MEMBERSHIP_MISMATCH if
+# the result is not exactly this list. A new tool under `tools/` fails the lane
+# until it is named here, which is the same demand release.yml's staging step
+# makes and the reason both are kept.
+[workspace]
+members = [
+  "plugins/usdVrmFileFormat",
+  "plugins/usdVrmaFileFormat",
+  "plugins/usdVrmPackageResolver",
+  "plugins/vrmSchema",
+  "libs/liveTransport",
+  "libs/motionBvh",
+  "libs/motionCore",
+  "libs/motionRuntime",
+  "libs/motionSource",
+  "libs/vrmContainer",
+  "libs/vrmRetarget",
+  "tools/motionBvh",
+  "tools/motionCapture",
+  "tools/motionRetarget",
+  "adapters/liveCapture/mocopi",
+  "adapters/liveCapture/mocopi/tools/mocopiRecord",
+  "adapters/liveCapture/vmc",
+  "adapters/liveCapture/vmc/tools/vmcRecord",
+  "adapters/liveCapture/vrchatOsc",
+  "adapters/liveCapture/vrchatOsc/tools/vrchatOscRecord",
+]
+release_members = [
+  "vrmSchema",
+  "usdVrmFileFormat",
+  "usdVrmaFileFormat",
+  "usdVrmPackageResolver",
+  "motion_bvh",
+  "motion_capture",
+  "motion_retarget",
+]
+release_exclude = [
+  # Every adapter CLI. WORKSPACE.md §5: an adapter ships as its own artifact
+  # with its library, never inside the aggregate.
+  "mocopi_record",
+  "vmc_record",
+  "vrchat_osc_record",
+]
+
+# The motion profiles, installed once into the product's shared tree.
+#
+# `share/usd-vrm-plugins/profiles/motion` is a contract, not a packaging
+# preference: the root CMakeLists installs there, tools/motionBvh's standalone
+# rule installs there, and ProfileLocator names it as the first directory it
+# searches. A packaged `motion_bvh_convert` that finds no profile refuses every
+# BVH file it is given, which is what made v0.7.0's artifact-only run of the BVH
+# path impossible to pass: no member archive carried data, and no member could,
+# because `directories:` names subdirectories of the MEMBER root and the profiles
+# are owned by the workspace. 0.22.3's project-owned data mapping is the shape
+# that ask needed -- one copy, owned by the product, digest-verified before
+# install, and still the same file scripts/check_motion_profiles.py validates.
+[[workspace.install_data]]
+source = "profiles/motion"
+destination = "share/usd-vrm-plugins/profiles/motion"

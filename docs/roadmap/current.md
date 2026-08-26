@@ -153,36 +153,34 @@ test completes with nothing installed.
   rather than an imported target — and a prediction belongs in an issue rather
   than in a claim. A POSIX run of the same check is worth more than the Windows
   one, since there it verifies the *absence* of a threading link.
-- ⬜ **An adapter cannot be packaged separately, and half of one ships anyway.**
-  `ost` 0.22.2 has the verb report 34 asked for — `ost library build|test|package`
-  — and it composes no `requires.libraries`, so it configures a leaf and refuses
-  anything with an edge. Both adapters have two, so
-  `vrmAdapter<Name>-<version>-<target>.tar.zst` is still a naming rule. In the
-  same version tool discovery widened to reach
-  `adapters/<group>/<name>/tools/<tool>/`, which on a 0.22.2 workstation makes
-  `mocopi_record` and `vmc_record` **members of the aggregate product** — 9,
-  where the 0.21.0-pinned release lane packages 7. v0.7.0 ships the 7, so
-  [WORKSPACE.md §5](../architecture/WORKSPACE.md) holds, **but it is held by a
-  version pin and not by anything this repository can declare**. `release.yml`
-  now counts the `tools/` descriptors and fails if packaging exceeds them, so
-  bumping the pin forces the decision. The asks are
-  [report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md)
-  §2 and §3.
-- ⬜ **Profiles are data that has to reach an artifact, and it is one `ost` ask
-  wide.** `motionSource` and `motionBvh` *are* in the aggregate product (their
-  libraries carry no product name, only the data beside them does), so the BVH
-  path's artifact-only smoke needs `share/usd-vrm-plugins/profiles/motion/`
-  staged with the tools. The plain-CMake half closed 2026-08-05: the root
-  project installs the profiles to that exact destination and a scratch-prefix
-  install proves it. The packaged half is measured and still open — a
-  `motion_bvh` member is exactly its two executables and its descriptor, and the
-  unpacked converter refuses a real capture while naming
-  `<prefix>/share/usd-vrm-plugins/profiles/motion` as the first place it looked.
-  `directories: [bin, share]` **does** stage it and was rejected: it only works
-  by copying the layer's data under one tool's member root, so the copy that
-  ships stops being the file `scripts/check_motion_profiles.py` validates. The
-  ask is a data-only member
-  ([report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §4).
+- ⬜ **An adapter artifact exists now, and no lane publishes one.** `ost` 0.22.3
+  composes `requires.libraries` in the per-library verb, so
+  `ost library package adapters/liveCapture/mocopi` produces
+  `vrmAdapterMocopi-0.7.0-<target>.tar.zst` — the library and `mocopi_record.exe`
+  together, 15 files, the shape
+  [WORKSPACE.md §5](../architecture/WORKSPACE.md) has named since before anything
+  could emit it. `liveTransport` packages too. **What is left is a decision, not
+  a tool**: `release.yml` builds and stages the aggregate's seven members and
+  nothing produces an adapter artifact in CI, so whether a release carries them
+  is open. The membership half of this entry closed with it — the aggregate's
+  members are declared in `openstrata.toml` (`[workspace].release_members` /
+  `release_exclude`) and packaging fails on drift, where through v0.7.0 the
+  exclusion was held by the pinned `ost` version alone
+  ([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md)
+  §2, §3).
+- ⬜ **The profiles reach the product; the smoke that would prove it does not
+  exist.** Both halves of the staging are closed. The plain-CMake half closed
+  2026-08-05 (the root project installs the profiles to
+  `share/usd-vrm-plugins/profiles/motion` and a scratch-prefix install proves
+  it), and the packaged half closed 2026-08-25: `ost` 0.22.3's
+  `[[workspace.install_data]]` gives the mapping a product-level owner, and the
+  aggregate now reports `data_files: 3` with the destination recorded in
+  `openstrata.product.json` rather than copied under any member root — which is
+  what made `directories: [bin, share]` unacceptable. **What remains is the
+  test.** Nothing here has extracted the product to a prefix and driven
+  `motion_bvh_convert` from it, so the entry stays open on a written smoke
+  rather than on a missing mechanism
+  ([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md) §4).
 
 ### Carried out of v0.7.0 — evidence an operator produces
 
@@ -206,9 +204,12 @@ None of these closes by writing code, and each is stated with what it costs.
   person's motion and a skeleton packet is a body measurement of that person.
   Getting a publishable one needs the vendor's `BVH Sender`, not a device.
 - ⬜ **Both paths running from release artifacts alone, profiles included.**
-  Blocked on the entry two above rather than on the paths: every other member
-  the two paths need is in the product as of `ost` 0.22.2, `mocopi_record`
-  included.
+  No longer blocked on the toolchain. Every member the two paths need is in the
+  product, and as of `ost` 0.22.3 so are the profiles. `mocopi_record` is not —
+  it left the aggregate by declaration when the exclusion stopped being a
+  version pin — so this run composes the product with the adapter's own artifact,
+  which `ost library package` can now produce. It stays open because the run has
+  not been performed.
 
 ### Still Motion Phase G
 

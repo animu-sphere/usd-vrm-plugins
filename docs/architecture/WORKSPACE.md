@@ -453,19 +453,19 @@ import the other bundles' libraries (`usdVrmPackageResolver` proves it links
 neither `usdVrmFileFormat` nor `vrmSchema`).
 
 Adapters declare through that same door (§1): an adapter library states
-`adapters/* -> motionCore, motionRuntime` in its `openstrata.library.yaml`.
-**The graph gate does not yet walk those edges**, and the difference is
-measured rather than assumed — `ost` 0.21.0 discovers plain libraries in the
-project root's immediate subdirectories and under `libs/`, so a descriptor at
-`adapters/<group>/<name>/` is invisible to it and the reported library count
-does not move when one is added. An adapter's declared edges are therefore
-accurate documentation and a standing `ost` ask, not an enforced gate, until
-discovery widens. An adapter's CLI inherits that: adding `vmc_record` under
-`adapters/liveCapture/vmc/tools/` left `ost plugin test --workspace
---graph-only` reporting the same 4 bundles and 4 libraries it reported before,
-so its `openstrata.tool.yaml` is not walked either. Whether a per-adapter
-package would find it is untested for the reason §5 gives — there is no
-per-library packaging command to try it with.
+`adapters/* -> motionCore, motionRuntime` in its `openstrata.library.yaml`, and
+**the graph gate walks those edges**. It did not always: under `ost` 0.21.0,
+plain-library discovery was the project root's immediate subdirectories plus
+`libs/`, so a descriptor at `adapters/<group>/<name>/` was invisible and the
+reported library count did not move when one was added — an adapter's declared
+edges were accurate documentation rather than an enforced gate
+([report 34](../reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md)).
+0.22.x widened discovery, and this repository declares the member set outright:
+`openstrata.toml`'s `[workspace].members` names all twenty descriptors, and a
+descriptor no pattern covers is a hard error rather than a silent omission.
+Measured on 0.22.3 — `4 bundle(s), 1 bundle edge(s), 10 libraries, 16 library
+edge(s), valid`, where the ten are the seven under `libs/` and the three
+adapters.
 
 Two things carry the enforcement in the meantime, and both are required of every
 adapter. The workspace CMake tree builds it, so a link against something it may
@@ -537,29 +537,57 @@ vrmAdapterVrchatOsc-<version>-<target>.tar.zst (when it exists)
 vrmAdapterArdy-<version>-<target>.tar.zst      (when it exists)
 ```
 
-Those four are a naming rule for when the artifacts exist, not a description of
-what the release lane emits. `ost` 0.22.2 grew `ost library build|test|package`,
-but it composes no `requires.libraries`, so it configures a leaf and refuses
-anything with an edge — and every adapter has at least one: three for the two
-that produce canonical values, one for `vrmAdapterVrchatOsc` while it has no
-decoder. An adapter library therefore
-still reaches a consumer through the workspace build
+Those four were a naming rule for artifacts nothing could emit, and as of
+2026-08-25 the first of them exists. `ost` 0.22.2 grew
+`ost library build|test|package` but composed no `requires.libraries`, so it
+configured a leaf and refused anything with an edge — and every adapter has at
+least one: three for the two that produce canonical values, one for
+`vrmAdapterVrchatOsc` while it has no decoder
 ([report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §2).
+0.22.3 composes the closure, and
+`ost library package adapters/liveCapture/mocopi` produces
+`vrmAdapterMocopi-0.7.0-<target>.tar.zst`: 15 files, the adapter library and
+`mocopi_record.exe` together, exactly the shape named above. `liveTransport`
+packages too, at 9 files, which is what the prediction later in this section
+asked to have checked.
 
-**The "never" above holds in what v0.7.0 ships, and it is held by a version
-pin rather than by a declaration.** `ost` 0.21.0 — what the release lane
-bootstraps — does not discover a tool descriptor under
-`adapters/<group>/<name>/tools/<tool>/`, so the product has **7** members: the
-four bundles and the three `tools/` CLIs. `ost` 0.22.2 *does* discover them, and
-the same command on such a workstation packages **9**, adding `mocopi_record`
-and `vmc_record` with no descriptor here changing (§3 of the same report) — and
-**10** once the third adapter above carries a CLI, which is the number to expect
-rather than a new symptom.
-Nothing in `openstrata.tool.yaml` or `openstrata.toml` can declare a member out
-of the product, so this exclusion is currently a property of the toolchain
-version. `release.yml`'s staging step therefore counts the `tools/` descriptors
-and fails when packaging exceeds them — the next pin bump has to be decided
-here rather than discovered in a published archive.
+**No lane publishes them.** `release.yml` builds and stages the aggregate's
+seven members; producing an adapter artifact is a command someone runs, not
+something CI emits, and whether a release should carry them is an open decision
+rather than an omission ([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md) §3).
+
+**The "never" above is a declaration as of 2026-08-25, and for one release it
+was not.** `ost` 0.21.0 — what the release lane bootstrapped through v0.7.0 —
+does not discover a tool descriptor under
+`adapters/<group>/<name>/tools/<tool>/`, so the product had **7** members: the
+four bundles and the three `tools/` CLIs. `ost` 0.22.x *does* discover them, and
+the same command on such a workstation packaged **9** (§3 of the same report),
+**10** once the third adapter grew a CLI. Nothing in `openstrata.tool.yaml` or
+`openstrata.toml` could decline membership, so for that release the exclusion
+this section states as a rule was in fact a property of a pinned version — one
+that a pin bump would have turned into a published archive.
+
+`ost` 0.22.3 closes it. `openstrata.toml` now carries a `[workspace]` table
+whose `release_members` names the seven and whose `release_exclude` names the
+three adapter CLIs, and packaging fails with `AGGREGATE_MEMBERSHIP_MISMATCH`
+when the discovered set minus the exclusions is not exactly that list. Measured
+on 0.22.3: ten member archives, a seven-member product
+([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md)
+§3).
+
+**An adapter CLI's own archive exists and is not published.** Packaging emits
+`mocopi_record-<version>-<target>.tar.zst` beside the seven, because every
+discovered member is packaged whether or not it joins the aggregate. That is not
+the adapter artifact named at the top of this section — that one carries the
+adapter library *with* its CLI, and `ost` still cannot produce it — so
+`release.yml` stages only the release members. What ships is unchanged from
+v0.7.0; what changed is that a bare tool archive now exists locally and could be
+mistaken for the artifact this section promises.
+
+`release.yml`'s staging step keeps its own count against the tree beside `ost`'s
+check, because the declaration is the thing a mistaken commit would edit: moving
+`motion_bvh` into `release_exclude` satisfies `ost` and leaves the product a CLI
+short.
 
 `liveTransport` is excluded from the aggregate on the same terms and carries no
 CLI, so its artifact is named for the library alone:
@@ -579,18 +607,14 @@ decided by both questions rather than either: *does it name a product* is what
 keeps a reader in, *would the product acquire I/O* is what keeps a transport
 out, and failing one is enough to be excluded.
 
-One thing about it is expected to differ from the three adapter artifacts, and
-it is written here as a prediction to be checked at extraction rather than as a
-fact.
-`liveTransport` has an empty edge set, and `ost library package` is measured
-working on exactly that case — `libs/motionCore`, first try, 8 files
-([report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §2).
-So it would be the first artifact on this excluded side that the current
-toolchain can actually emit, where an adapter's cannot. The library exists as of
-2026-08-24 and `ost library build` and `ost library test` were both measured
-working on it first try; **packaging it is still untested**, and if it turns out
-otherwise the finding belongs in the next dogfooding report and this paragraph
-is what it corrects.
+That prediction has been checked. It said `liveTransport` would be the first
+artifact on this excluded side the toolchain could actually emit, because its
+edge set is empty where an adapter's is not — and the premise stopped holding
+before the prediction was tested: `ost` 0.22.3 composes an adapter's closure
+too, so both sides package now. `ost library package libs/liveTransport`
+produces a 9-file archive, and the adapter it was contrasted against produces a
+15-file one. The prediction was right about the outcome and wrong about the
+reason, which is the half worth recording.
 
 `motionSource` and `motionBvh` are **not** adapters and take the opposite
 decision: they carry no product name in code, so they belong in the aggregate
@@ -601,22 +625,43 @@ members of it. The profile files ship as package data beside them —
 available refuses every file it is given, which would make an artifact-only
 smoke test of the BVH path impossible to pass.
 
-**That last sentence is the requirement, and as of 2026-08-24 only `cmake
---install` meets it.** A packaged product does not: `ost` packages a tool member
-out of the `directories:` its descriptor declares, has no notion of a data-only
-member, and the measured `motion_bvh` archive is exactly its two executables and
-its descriptor. Unpacked and run, the converter refuses a real capture and names
-`<prefix>/share/usd-vrm-plugins/profiles/motion` as the first directory it
-looked in — so the layout is agreed and only the staging is missing. Declaring
-`directories: [bin, share]` does stage it, and was rejected: `directories:`
-names subdirectories of the *member root*, so it would put the layer's data
-inside one tool's directory and the copy that ships would stop being the file
-`scripts/check_motion_profiles.py` validates. The smoke test the paragraph above
-exists to make possible is therefore still impossible, for a reason that is now
-one `ost` ask wide rather than an open question — stated here rather than left
-for whoever writes that test to rediscover
+**That last sentence is the requirement, and through v0.7.0 only `cmake
+--install` met it.** A packaged product did not: `ost` packaged a tool member
+out of the `directories:` its descriptor declared, had no notion of a data-only
+member, and the measured `motion_bvh` archive was exactly its two executables
+and its descriptor. Unpacked and run, the converter refused a real capture and
+named `<prefix>/share/usd-vrm-plugins/profiles/motion` as the first directory it
+looked in — so the layout was agreed and only the staging was missing. Declaring
+`directories: [bin, share]` did stage it, and was rejected: `directories:` names
+subdirectories of the *member root*, so it would have put the layer's data inside
+one tool's directory and the copy that shipped would have stopped being the file
+`scripts/check_motion_profiles.py` validates
 ([recorded-motion-sources.md §10](../roadmap/recorded-motion-sources.md),
 [report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §4).
+
+`ost` 0.22.3 supplies the missing owner. `openstrata.toml` declares
+
+```toml
+[[workspace.install_data]]
+source = "profiles/motion"
+destination = "share/usd-vrm-plugins/profiles/motion"
+```
+
+and the aggregate carries the mapping as product-owned data: measured on
+0.22.3, the product manifest reports `data_files: 3` and the archive stages the
+directory verbatim, with the destination recorded in `openstrata.product.json`
+rather than copied under any member root. The file that ships is the file
+`scripts/check_motion_profiles.py` validates, which is what
+`directories: [bin, share]` could not promise.
+
+**What is proven is the staging, not yet the run.** The product archive carries
+the profiles; nothing in this repository has yet extracted that product to a
+prefix and driven `motion_bvh_convert` from it, so the artifact-only smoke this
+paragraph exists to make possible is now *possible* rather than *passing*. That
+distinction is the one to keep: v0.7.0 recorded the condition unmet because the
+mechanism was missing, and the mechanism arriving is not the same thing as the
+test existing
+([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md) §4).
 
 That split is the one to check when a future reader arrives: a reader is in the
 product if the *library* is producer-neutral, whatever the data beside it is

@@ -422,7 +422,7 @@ to make small.
 | **BVH-2** — semantics | the `motionSource` API, the profile API, the mocopi profile, the second producer's, basis and unit conversion, source rest pose, root policy, `HumanoidAnimation`, the semantic clip writer | ✅ |
 | ↳ how BVH-2 closed | the **second producer's profile** landed 2026-08-05 and cost two contract changes on the way, which is the milestone paying for itself: the first export had made "the root joint is the hips" and "the offsets are the rest" look like properties of the format. The semantic clip writer landed the same day with `motion_bvh_convert`, as a third repeated shape rather than shared code and with the condition that would change that written down ([§10](#10-contract-changes-this-plan-requires)), along with the value model, the profile contract and file, the extractor and the converter | ✅ |
 | **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, artifact-only smoke, the recorded corpus | 🚧 |
-| ↳ what remains of BVH-3 | the **artifact-only smoke**, which is **blocked and diagnosed** rather than merely unwritten: a packaged product carries no profiles, so a converter unpacked from one refuses every file it is given ([§10](#10-contract-changes-this-plan-requires)). The tool, the unchanged retargeter and the bake landed 2026-08-05 ([§12](#12-pr-splitting) items 10 and 11), and the **target VRM** landed 2026-08-11 — the fixture bake stays beside it rather than being replaced, because a rig shaped so a broken rest-pose correction cannot pass it and a rig somebody shipped are not the same test | 🚧 |
+| ↳ what remains of BVH-3 | the **artifact-only smoke**, **unblocked 2026-08-25 and still unwritten**: the packaged product carries the profiles now, because `ost` 0.22.3's `[[workspace.install_data]]` gives the mapping a product-level owner ([§10](#10-contract-changes-this-plan-requires)). Through v0.7.0 it was blocked instead — a converter unpacked from a product refused every file it was given. The tool, the unchanged retargeter and the bake landed 2026-08-05 ([§12](#12-pr-splitting) items 10 and 11), and the **target VRM** landed 2026-08-11 — the fixture bake stays beside it rather than being replaced, because a rig shaped so a broken rest-pose correction cannot pass it and a rig somebody shipped are not the same test | 🚧 |
 | **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | ⬜ |
 
 BVH-0 is a measurement milestone, and skipping it is the failure mode this whole
@@ -777,20 +777,26 @@ depends on them ([docs/README.md](../README.md)).
   first tried, and the shape held: re-measured 2026-08-05 with the second
   executable actually present, the archive carries **both** and the member
   count does not move.
-- ⬜ **A packaged product carries no profiles, and that blocks the artifact-only
-  smoke** (measured 2026-08-05). The same archive is exactly
-  `bin/motion_bvh_inspect.exe`, `bin/motion_bvh_convert.exe` and
-  `openstrata.tool.yaml` — no `share/usd-vrm-plugins/profiles/motion/` anywhere
-  in the product. A tool member packages the `directories:` it declares, and
-  `ost` 0.21.0 has no notion of a data-only member, so a data directory outside
-  the member has no way in. The consequence is the specific one
+- ⬜ **The packaged product carries the profiles as of `ost` 0.22.3; the smoke
+  itself is what is left.** Through v0.7.0 it did not, and the diagnosis stands
+  as the reason this entry existed (measured 2026-08-05): the `motion_bvh`
+  archive was exactly `bin/motion_bvh_inspect.exe`, `bin/motion_bvh_convert.exe`
+  and `openstrata.tool.yaml`, with no `share/usd-vrm-plugins/profiles/motion/`
+  anywhere in the product, because a tool member packages the `directories:` it
+  declares and `ost` had no notion of a data directory owned by the workspace.
+  The consequence was the specific one
   [WORKSPACE.md §5](../architecture/WORKSPACE.md) put the profiles beside the
-  tools to prevent: a converter unpacked from a product finds nothing on its
-  executable-relative search path and refuses every file it is given. A plain
-  `cmake --install` is unaffected and does place them. This is BVH-3's remaining
-  blocker and a v0.7.0 carry-over — it is an `ost` ask, not something a
-  `--profile-dir` flag closes, because "works if you pass a flag naming a
-  directory the artifact does not contain" is not an artifact-only smoke.
+  tools to prevent: a converter unpacked from a product found nothing on its
+  executable-relative search path and refused every file it was given. It was an
+  `ost` ask rather than something a `--profile-dir` flag closes, because "works
+  if you pass a flag naming a directory the artifact does not contain" is not an
+  artifact-only smoke — and the ask was answered.
+  `openstrata.toml`'s `[[workspace.install_data]]` maps `profiles/motion` to
+  that destination and the aggregate reports `data_files: 3`
+  ([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md) §4).
+  **BVH-3's remaining blocker is therefore no longer a blocker**: what stops the
+  smoke passing is that nobody has extracted the product and run the converter
+  from it.
 - The graph gate has nothing to say about any of that, and that is by design
   rather than a discovery gap like the adapter's: `--graph-only --json` names no
   tool at all, not even `motion_capture` or `motion_retarget`. Only packaging

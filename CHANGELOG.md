@@ -162,6 +162,88 @@ Current schema contract version: **1**.
   needed qualifying, because it had been reaching the adapter by
   argument-dependent lookup on a type that now lives elsewhere.
 
+- **Every runtime pin moved, because the runtimes they named were deleted.**
+  `ost` 0.22.3 publishes the CY2026 OpenUSD runtimes as sixteen canonical leaves
+  of one declared matrix — 26.05 and 26.08 x `core`/`gl`/`vulkan` per Linux and
+  Windows, `core`/`metal` on macOS arm64, each tagged
+  `<version>-<variant>-<os>-<arch>` — and the hand-driven runtimes this
+  repository pinned from v0.5.0 onward are gone from the registry. Every digest
+  the CI contract and `release.yml` carried before this change now resolves to
+  `MANIFEST_UNKNOWN`, so this is a re-pin rather than an upgrade anyone chose.
+  The three replacements are `26.08-gl-windows-x86_64`, `26.08-gl-linux-x86_64`
+  and `26.08-metal-macos-arm64`, on the same OpenUSD source revision as before.
+
+  **The imaging variants are the floor, not a preference.** `core` is built
+  `--no-imaging`, and `cmake/UsdVrmOpenUsd.cmake` refuses any runtime without
+  `usdExecImaging` — one of the six OpenExec components it probes, and the only
+  one under `pxr/usdImaging` — so a `core` leaf cannot configure this workspace
+  at all. What the imaging leaves add on top is evidence: their producer
+  verified loader, physical device and render, where the three runtimes they
+  replace recorded `not-run` for all three. The macOS target id gained its
+  deployment target with them (`macos-arm64-macos130-py313`), and its toolchain
+  moved to Apple clang 17 on the macOS 15.5 SDK.
+
+- **Both CI lanes bootstrap `ost` 0.22.6.** The generated workflows and the
+  hand-authored `release.yml` move together, which they have not always: the
+  generated lanes were on 0.21.0 and the release lane pinned it deliberately.
+
+  **0.22.6 rather than 0.22.3, and the three releases in between are the whole
+  reason the pin is worth reading.** 0.22.3 published these runtimes and could
+  not consume two of them: the macOS leaf failed `ost artifact pull` on a
+  wildcard floor constraint its own producer had written (`libcxx >=17.x`), and
+  every Windows cell failed `ost runtime validate` with ten checks ok, two
+  skipped and zero failures. 0.22.4 fixed both and moved the failure — its new
+  Windows and macOS device probing made the render check run for real, and that
+  check ran `usdrecord` against whatever `python` was first on `PATH`, which on
+  a hosted runner is 3.12 against a py313 runtime. 0.22.5 resolves the
+  interpreter from the runtime's own contract, and moved the failure once more:
+  `usdrecord` builds its GL context through PySide6/PySide2, which an OpenUSD
+  built without `--usdview` does not ship and which no lane can install.
+  0.22.6 preflights those imports and reports the check `skip` rather than
+  `fail` when they are absent, and stops counting a software rasterizer
+  (`GDI Generic` on a GPU-less runner) as a physical device. All four were
+  defects in the tool, not in the artifacts: no digest below changed and
+  nothing was republished.
+  Regeneration also splits the runtime cache into `actions/cache/restore` and
+  `actions/cache/save` and drops resumable transfer state before saving, both of
+  which are 0.22.3 renderer output rather than edits here.
+
+- **The aggregate product's member set is a declaration now.** `openstrata.toml`
+  grew a `[workspace]` table naming all twenty source members explicitly, the
+  seven `release_members` the product ships, and the three adapter CLIs in
+  `release_exclude`. That closes a hole this repository has documented since
+  v0.7.0 and could not fix: WORKSPACE.md §5 says an adapter is never part of the
+  aggregate, but under `ost` 0.21.0 that held only because the tool did not
+  discover `adapters/<group>/<name>/tools/<tool>/`, and 0.22.x does. Bumping the
+  release lane's pin would have silently published ten members. `ost` fails with
+  `AGGREGATE_MEMBERSHIP_MISMATCH` before packaging now, and `release.yml`'s
+  count against the tree stays beside it, because the declaration is the thing a
+  mistaken commit would edit.
+
+  Members are named one per line rather than matched by `plugins/*`: a wildcard
+  selects directories, a directory without a descriptor is a hard error, and one
+  `tools/__pycache__` left by a test run was enough to make the whole graph
+  refuse to resolve.
+
+- **`scripts/check_docs.py` skips generated trees.** It walked
+  `.strata/` and `dist/`, which was harmless while nothing there was a Markdown
+  file; product staging puts a copy of `profiles/motion/README.md` under
+  `.strata/` and every one of that README's five repository-relative links then
+  resolved from the wrong directory. Nothing in a generated tree is authored, so
+  nothing in one is checked.
+
+- **The motion profiles reach the product as product-owned data.**
+  `[[workspace.install_data]]` maps `profiles/motion` to
+  `share/usd-vrm-plugins/profiles/motion` in the aggregate, installed once and
+  digest-verified before install. v0.7.0 shipped with this recorded as a known
+  limitation — no member archive carried data and none could, because a member
+  descriptor's `directories:` names subdirectories of the *member* root and
+  these profiles are owned by the workspace, so the only way to ship them was to
+  copy the layer's data under one tool's directory. A packaged
+  `motion_bvh_convert` that finds no profile refuses every BVH file it is given,
+  which is why one of that release's conditions was left open rather than
+  worked around.
+
 ## [0.7.0] — 2026-08-24
 
 ### Added

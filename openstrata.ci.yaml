@@ -2,7 +2,7 @@
 #
 # Policy: this file is the CI contract; .github/workflows/ost-*.yml are
 # renderer output from `ost ci generate github`. Do not hand-edit CI
-# semantics in the generated workflow YAML. As of ost 0.21.0 there is no
+# semantics in the generated workflow YAML. As of ost 0.22.6 there is no
 # standing exception to that policy: every Linux cell's X11 requirement is
 # declared below as `host_packages`, so regeneration re-renders the step
 # instead of deleting a hand-added one.
@@ -29,46 +29,75 @@
 #                      runtime + plugin artifacts (air-gapped local import).
 #
 # Digest provenance:
-#   All three runtimes are OpenUSD 26.08, built from tag v26.08
-#   (ee47c679abde5b467a7b6a41f3b2285564a4222e) with Python 3.13 and
-#   `--examples`, so the OpenExec/ExecIr sample material ships inside the
-#   runtime. All three were exported with the `full` layout profile: 26.08 puts
-#   every example under `share/`, and `--slim` does not carry `share/`. Each
-#   carries an SPDX SBOM and SLSA/in-toto provenance and verifies
-#   `trust: attested`, which is what the `--require-sbom --require-provenance`
-#   gate `ost ci generate` renders demands.
+#   All three runtimes are canonical leaves of ost's own OpenUSD runtime matrix
+#   (`support/openusd-runtime-matrix.json` in open-strata), published by
+#   `support/publish-openusd-runtimes.ps1` under ost 0.22.3.
 #
-#   None of the three was produced by `ost runtime pull --build`: that path
-#   hardcodes `--no-examples` and `--build-arg` is appended rather than
-#   substituted, so `--examples` is unreachable through it. All three were built
-#   by driving `build_usd.py` directly and adopting with `--from-usd`, which
-#   costs the `build` provenance — they are recorded `source: local`.
-#   Windows and Linux: docs/reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md
-#   macOS arm64:       docs/reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md
+#   CONSUMING THEM NEEDS 0.22.6, and the three releases before it are why. Under
+#   0.22.3 the macOS leaf failed `artifact pull` with ARTIFACT_MANIFEST_INVALID
+#   and every Windows cell failed `runtime validate` with ten checks ok, two
+#   skipped and zero failures. 0.22.4 fixed both and moved the failure: its new
+#   Windows/macOS device probing made the render check run for real, and the
+#   check ran `usdrecord` against whatever `python` was first on PATH -- 3.12 on
+#   a hosted runner, against a py313 runtime. 0.22.5 resolves the interpreter
+#   from the runtime's own contract -- and moved it again, onto `usdrecord`'s Qt
+#   bindings, which an OpenUSD built without `--usdview` does not ship and no
+#   lane can install (`host_packages` is apt and brew only). 0.22.6 preflights
+#   those imports and reports the render check `skip` when they are absent, and
+#   stops treating a software rasterizer as a physical device. All four were
+#   consumer defects; no
+#   artifact was ever wrong and none was republished, which is why
+#   `bootstrap.ost.version` below is not the version that produced these leaves.
+#   Diagnosis: docs/reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md That matrix expands
+#   to sixteen immutable leaves -- OpenUSD 26.05 and 26.08 x
+#   linux/windows `core`/`gl`/`vulkan` and macOS arm64 `core`/`metal` -- each
+#   tagged `<openusd-version>-<variant>-<os>-<arch>` in one repository. The three
+#   pinned below are the 26.08 imaging leaves. They replace the hand-driven
+#   runtimes of v0.5.0-v0.7.0, whose tags and manifests upstream has since
+#   removed: every digest this file carried before 2026-08-25 now resolves to
+#   MANIFEST_UNKNOWN, so this is a re-pin, not an upgrade of choice.
+#
+#   NOT `core`. A `core` leaf is built `--no-imaging --no-examples`, and
+#   cmake/UsdVrmOpenUsd.cmake fails configure on any runtime missing
+#   `usdExecImaging` -- one of the six OpenExec components it probes, and the one
+#   that lives under pxr/usdImaging. `core` therefore cannot configure this
+#   workspace at all. `gl` (Linux, Windows) and `metal` (macOS arm64) build
+#   imaging and the OpenExec/ExecIr examples, and each was verified by its
+#   producer through loader, physical device and render -- where the runtimes
+#   these replace recorded `not-run` for all three.
+#
+#   All three are the same OpenUSD 26.08 source as before, tag v26.08
+#   (ee47c679abde5b467a7b6a41f3b2285564a4222e), with Python 3.13, and are
+#   exported with the `sdk` layout profile (`full` is retired). Each carries an
+#   SPDX SBOM and SLSA/in-toto provenance and verifies `trust: attested`, which
+#   is what the `--require-sbom --require-provenance` gate `ost ci generate`
+#   renders demands. Unlike their predecessors they are recorded
+#   `source: build`: the canonical producer keeps the build provenance that
+#   adopting a hand-built tree with `--from-usd` used to cost.
 #
 #   The OCI manifest digest is NOT stable across republishes (provenance embeds
-#   the producing commit), so `expected_oci_digest` below must be re-pinned from
-#   the push output every time, while `runtime_artifact` stays put.
-#   Windows runtime: OpenUSD 26.08, validated, with top-level resources/ and
-#            lib/python schema-gen deps.
-#            OST artifact sha256:e3368364... / OCI sha256:184cdbb4...
-#            4267 files / 109,651,464 B
-#   macOS arm64 runtime: OpenUSD 26.08, validated, with executable tool modes
-#            preserved, and published publicly to GHCR.
-#            OST artifact sha256:b2cb7b68... / OCI sha256:f8de29a4...
-#            4398 files / 117,272,452 B
-#            Requires ost 0.12.0+ for executable-bit preserving macOS
-#            archive export/import. Built with Apple clang 16 against the
-#            macOS 15.2 SDK: 26.08's Hd data sources rely on
-#            `allocate_shared` routing through the allocator, which the
-#            macOS 14.5 SDK's libc++ only does under C++20.
-#   Linux x86_64 runtime: OpenUSD 26.08 built inside a ubuntu:24.04 (glibc 2.39)
-#            container so the runtime's real glibc floor is 2.38 -- loadable on
-#            the github-hosted ubuntu-24.04 runner. ost 0.12.0 measures the
-#            floor and stamps the honest target linux-x86_64-glibc238-py313.
-#            OST artifact sha256:70b47d1b... / OCI sha256:1a873111...
-#            4162 files / 125,696,921 B
-#            Published publicly to GHCR.
+#   the producing commit), and as the deleted tags above show `runtime_artifact`
+#   does not stay put either. Re-pin both from the producer's push output.
+#   Windows runtime: leaf 26.08-gl-windows-x86_64, target
+#            windows-x86_64-msvc143-py313, MSVC 19.40 / runtime >=14.40.
+#            OST artifact sha256:ebb0c7da... / OCI sha256:d3ff79a6...
+#            4171 files / 106,349,942 B
+#   macOS arm64 runtime: leaf 26.08-metal-macos-arm64, target
+#            macos-arm64-macos130-py313 -- the deployment target is part of the
+#            target id now. Apple clang 17 against the macOS 15.5 SDK,
+#            deployment target 13.0; Metal device observed and HgiMetal render
+#            verified by the producer.
+#            OST artifact sha256:8d132212... / OCI sha256:8486d942...
+#            4296 files / 111,218,486 B
+#   Linux x86_64 runtime: leaf 26.08-gl-linux-x86_64, target
+#            linux-x86_64-glibc238-py313 -- gcc 14.2, glibc floor 2.38 measured
+#            from ELF symbol versions, loadable on the github-hosted
+#            ubuntu-24.04 runner.
+#            OST artifact sha256:3bf31789... / OCI sha256:8d2d5994...
+#            4096 files / 123,438,525 B
+#   All three are published publicly to GHCR; a fork PR needs no registry
+#   credential to pull them. Re-pin measured and recorded in
+#   docs/reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md
 #   plugin:  ost plugin publish plugins/usdVrmFileFormat  (usdVrmFileFormat 0.1.0, ost 0.13.0 lean
 #            package — reproducible digest, debug symbols split into *-debug)
 #            NOTE: this artifact was built against the 26.05 runtime. The
@@ -80,7 +109,7 @@ schema: 1
 
 bootstrap:
   ost:
-    version: "0.21.0"
+    version: "0.22.6"
     repository: animu-sphere/open-strata
 
 runners:
@@ -123,10 +152,10 @@ cells:
   - name: usdvrmfileformat-pr-windows
     lane: pull_request
     runner: windows-hosted
-    runtime_artifact: sha256:e3368364f8f4661a7c34371e907f2e5ddcdec4e680b76f5e9e1c1ed656022f48
+    runtime_artifact: sha256:ebb0c7da509ee14ada19ee5b461de6996aad0024b5c9640f12dde76912e849b5
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1
-      expected_oci_digest: sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
+      expected_oci_digest: sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
     bundle: plugins/usdVrmFileFormat
     platform: cy2026
     profile: usd
@@ -135,10 +164,10 @@ cells:
   - name: usdvrmfileformat-pr-macos-arm64
     lane: pull_request
     runner: macos-arm64-hosted
-    runtime_artifact: sha256:b2cb7b68e72b05e486d57e96cde2ec7a8dc5a17b02b774af923aa58ee31d6d21
+    runtime_artifact: sha256:8d1322126b8f3aa4dd1791184603d7e1b4571bd4d6d89dd80bb75bdf5eef397c
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:f8de29a4176d02ffbcf50a2205bb6b23d9a3cd9463e0d58a28a3c1c6ee5cb82c
-      expected_oci_digest: sha256:f8de29a4176d02ffbcf50a2205bb6b23d9a3cd9463e0d58a28a3c1c6ee5cb82c
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
+      expected_oci_digest: sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
     bundle: plugins/usdVrmFileFormat
     platform: cy2026
     profile: usd
@@ -148,10 +177,10 @@ cells:
   - name: usdvrmfileformat-pr-linux
     lane: pull_request
     runner: linux-hosted
-    runtime_artifact: sha256:70b47d1b1a337b71d6c6fd63898e3295c0f91dc4b2ad2f5c09d14d6ac0ff2e1d
+    runtime_artifact: sha256:3bf31789daa60ef650df35ab276bd67d0c0ee44a960311f78835cc0962efe261
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
-      expected_oci_digest: sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
+      expected_oci_digest: sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
     bundle: plugins/usdVrmFileFormat
     platform: cy2026
     profile: usd
@@ -164,10 +193,10 @@ cells:
   - name: usdvrmafileformat-pr-windows
     lane: pull_request
     runner: windows-hosted
-    runtime_artifact: sha256:e3368364f8f4661a7c34371e907f2e5ddcdec4e680b76f5e9e1c1ed656022f48
+    runtime_artifact: sha256:ebb0c7da509ee14ada19ee5b461de6996aad0024b5c9640f12dde76912e849b5
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1
-      expected_oci_digest: sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
+      expected_oci_digest: sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
     bundle: plugins/usdVrmaFileFormat
     platform: cy2026
     profile: usd
@@ -176,10 +205,10 @@ cells:
   - name: usdvrmafileformat-pr-macos-arm64
     lane: pull_request
     runner: macos-arm64-hosted
-    runtime_artifact: sha256:b2cb7b68e72b05e486d57e96cde2ec7a8dc5a17b02b774af923aa58ee31d6d21
+    runtime_artifact: sha256:8d1322126b8f3aa4dd1791184603d7e1b4571bd4d6d89dd80bb75bdf5eef397c
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:f8de29a4176d02ffbcf50a2205bb6b23d9a3cd9463e0d58a28a3c1c6ee5cb82c
-      expected_oci_digest: sha256:f8de29a4176d02ffbcf50a2205bb6b23d9a3cd9463e0d58a28a3c1c6ee5cb82c
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
+      expected_oci_digest: sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
     bundle: plugins/usdVrmaFileFormat
     platform: cy2026
     profile: usd
@@ -189,10 +218,10 @@ cells:
   - name: usdvrmafileformat-pr-linux
     lane: pull_request
     runner: linux-hosted
-    runtime_artifact: sha256:70b47d1b1a337b71d6c6fd63898e3295c0f91dc4b2ad2f5c09d14d6ac0ff2e1d
+    runtime_artifact: sha256:3bf31789daa60ef650df35ab276bd67d0c0ee44a960311f78835cc0962efe261
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
-      expected_oci_digest: sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
+      expected_oci_digest: sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
     bundle: plugins/usdVrmaFileFormat
     platform: cy2026
     profile: usd
@@ -205,10 +234,10 @@ cells:
   - name: vrmschema-pr-windows
     lane: pull_request
     runner: windows-hosted
-    runtime_artifact: sha256:e3368364f8f4661a7c34371e907f2e5ddcdec4e680b76f5e9e1c1ed656022f48
+    runtime_artifact: sha256:ebb0c7da509ee14ada19ee5b461de6996aad0024b5c9640f12dde76912e849b5
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1
-      expected_oci_digest: sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
+      expected_oci_digest: sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
     bundle: plugins/vrmSchema
     platform: cy2026
     profile: usd
@@ -217,10 +246,10 @@ cells:
   - name: vrmschema-pr-macos-arm64
     lane: pull_request
     runner: macos-arm64-hosted
-    runtime_artifact: sha256:b2cb7b68e72b05e486d57e96cde2ec7a8dc5a17b02b774af923aa58ee31d6d21
+    runtime_artifact: sha256:8d1322126b8f3aa4dd1791184603d7e1b4571bd4d6d89dd80bb75bdf5eef397c
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:f8de29a4176d02ffbcf50a2205bb6b23d9a3cd9463e0d58a28a3c1c6ee5cb82c
-      expected_oci_digest: sha256:f8de29a4176d02ffbcf50a2205bb6b23d9a3cd9463e0d58a28a3c1c6ee5cb82c
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
+      expected_oci_digest: sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
     bundle: plugins/vrmSchema
     platform: cy2026
     profile: usd
@@ -230,10 +259,10 @@ cells:
   - name: vrmschema-pr-linux
     lane: pull_request
     runner: linux-hosted
-    runtime_artifact: sha256:70b47d1b1a337b71d6c6fd63898e3295c0f91dc4b2ad2f5c09d14d6ac0ff2e1d
+    runtime_artifact: sha256:3bf31789daa60ef650df35ab276bd67d0c0ee44a960311f78835cc0962efe261
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
-      expected_oci_digest: sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
+      expected_oci_digest: sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
     bundle: plugins/vrmSchema
     platform: cy2026
     profile: usd
@@ -246,10 +275,10 @@ cells:
   - name: usdvrmresolver-pr-windows
     lane: pull_request
     runner: windows-hosted
-    runtime_artifact: sha256:e3368364f8f4661a7c34371e907f2e5ddcdec4e680b76f5e9e1c1ed656022f48
+    runtime_artifact: sha256:ebb0c7da509ee14ada19ee5b461de6996aad0024b5c9640f12dde76912e849b5
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1
-      expected_oci_digest: sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
+      expected_oci_digest: sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
     bundle: plugins/usdVrmPackageResolver
     platform: cy2026
     profile: usd
@@ -258,10 +287,10 @@ cells:
   - name: usdvrmresolver-pr-macos-arm64
     lane: pull_request
     runner: macos-arm64-hosted
-    runtime_artifact: sha256:b2cb7b68e72b05e486d57e96cde2ec7a8dc5a17b02b774af923aa58ee31d6d21
+    runtime_artifact: sha256:8d1322126b8f3aa4dd1791184603d7e1b4571bd4d6d89dd80bb75bdf5eef397c
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:f8de29a4176d02ffbcf50a2205bb6b23d9a3cd9463e0d58a28a3c1c6ee5cb82c
-      expected_oci_digest: sha256:f8de29a4176d02ffbcf50a2205bb6b23d9a3cd9463e0d58a28a3c1c6ee5cb82c
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
+      expected_oci_digest: sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
     bundle: plugins/usdVrmPackageResolver
     platform: cy2026
     profile: usd
@@ -271,10 +300,10 @@ cells:
   - name: usdvrmresolver-pr-linux
     lane: pull_request
     runner: linux-hosted
-    runtime_artifact: sha256:70b47d1b1a337b71d6c6fd63898e3295c0f91dc4b2ad2f5c09d14d6ac0ff2e1d
+    runtime_artifact: sha256:3bf31789daa60ef650df35ab276bd67d0c0ee44a960311f78835cc0962efe261
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
-      expected_oci_digest: sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
+      expected_oci_digest: sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
     bundle: plugins/usdVrmPackageResolver
     platform: cy2026
     profile: usd
@@ -310,10 +339,10 @@ cells:
     runner: linux-hosted
     # A graph cell never materializes a runtime -- the rendered job stops after
     # the checkout -- but the contract still wants the pin on record.
-    runtime_artifact: sha256:70b47d1b1a337b71d6c6fd63898e3295c0f91dc4b2ad2f5c09d14d6ac0ff2e1d
+    runtime_artifact: sha256:3bf31789daa60ef650df35ab276bd67d0c0ee44a960311f78835cc0962efe261
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
-      expected_oci_digest: sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
+      expected_oci_digest: sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
     platform: cy2026
     profile: usd
     # The WORKSPACE.md §2 dependency-direction gate, in milliseconds, before
@@ -325,10 +354,10 @@ cells:
     kind: workspace
     lane: pull_request
     runner: windows-hosted
-    runtime_artifact: sha256:e3368364f8f4661a7c34371e907f2e5ddcdec4e680b76f5e9e1c1ed656022f48
+    runtime_artifact: sha256:ebb0c7da509ee14ada19ee5b461de6996aad0024b5c9640f12dde76912e849b5
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1
-      expected_oci_digest: sha256:184cdbb42e9f01d4587429f6bfb3e3700f1cdbe3a6505e966edfec90a2f617f1
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
+      expected_oci_digest: sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
     platform: cy2026
     profile: usd
     # Required here even though the Windows *bundle* cells do without it. This
@@ -346,10 +375,10 @@ cells:
     kind: workspace
     lane: pull_request
     runner: macos-arm64-hosted
-    runtime_artifact: sha256:b2cb7b68e72b05e486d57e96cde2ec7a8dc5a17b02b774af923aa58ee31d6d21
+    runtime_artifact: sha256:8d1322126b8f3aa4dd1791184603d7e1b4571bd4d6d89dd80bb75bdf5eef397c
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:f8de29a4176d02ffbcf50a2205bb6b23d9a3cd9463e0d58a28a3c1c6ee5cb82c
-      expected_oci_digest: sha256:f8de29a4176d02ffbcf50a2205bb6b23d9a3cd9463e0d58a28a3c1c6ee5cb82c
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
+      expected_oci_digest: sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
     platform: cy2026
     profile: usd
     host_python: "3.13"
@@ -359,10 +388,10 @@ cells:
     kind: workspace
     lane: pull_request
     runner: linux-hosted
-    runtime_artifact: sha256:70b47d1b1a337b71d6c6fd63898e3295c0f91dc4b2ad2f5c09d14d6ac0ff2e1d
+    runtime_artifact: sha256:3bf31789daa60ef650df35ab276bd67d0c0ee44a960311f78835cc0962efe261
     runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
-      expected_oci_digest: sha256:1a873111e4edf0cec7fdcf03e7bd2bbdf9723e1019cadcbcab9280c3229ac3af
+      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
+      expected_oci_digest: sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
     platform: cy2026
     profile: usd
     host_python: "3.13"
@@ -374,7 +403,7 @@ cells:
   - name: usdvrmfileformat-support-windows-cy2026
     lane: scheduled
     runner: usd-windows-real
-    runtime_artifact: sha256:e3368364f8f4661a7c34371e907f2e5ddcdec4e680b76f5e9e1c1ed656022f48
+    runtime_artifact: sha256:ebb0c7da509ee14ada19ee5b461de6996aad0024b5c9640f12dde76912e849b5
     plugin_artifact: sha256:87ee36e45f4b62693f7fe060c2236de938bcc63997cd3007e07d090af2c58b8d
     platform: cy2026
     profile: usd

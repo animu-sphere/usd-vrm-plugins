@@ -60,12 +60,26 @@ Workspace Phase 0 baseline artifact is byte-identical across the two versions
 except the exported symbol names, which differ only by OpenUSD's internal
 `pxrInternal_v0_26_5` → `_26_8` namespace.
 
-All three 26.08 runtimes are published — `26.08-windows-x86_64` and
-`26.08-linux-x86_64`
-([report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md))
-and `26.08-macos-arm64`
-([report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md))
-— and every lane pins them by digest.
+All three 26.08 runtimes are published and every lane pins them by digest.
+Since 2026-08-25 they are leaves of `ost`'s own canonical OpenUSD runtime
+matrix rather than runtimes this repository's maintainer built by hand:
+`26.08-gl-windows-x86_64`, `26.08-gl-linux-x86_64` and
+`26.08-metal-macos-arm64`
+([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md);
+the hand-built ones they replace are
+[report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md)
+and
+[report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md)).
+
+**The variant in those names is a requirement, not a preference.** The same
+matrix publishes a `core` leaf per platform, built `--no-imaging`, and
+`cmake/UsdVrmOpenUsd.cmake` refuses any runtime without `usdExecImaging` — one
+of the six OpenExec components it probes, and the one that lives under
+`pxr/usdImaging`. A `core` runtime therefore cannot configure this workspace at
+all, and `gl`/`metal` is the floor rather than an upgrade. What the imaging
+leaves add beyond that is evidence: their producer verified loader, physical
+device and render, where the runtimes they replace recorded `not-run` for all
+three.
 
 ## Toolchain
 
@@ -94,12 +108,11 @@ These match the per-PR CI matrix in `.github/workflows/ost-source-ci.yml`
 Other host OS versions / architectures (e.g. Linux arm64, x86_64 macOS) are not
 part of the verified matrix.
 
-These cells cover the four plugin bundles. `motionCore`, `motionRuntime`,
-`vrmRetarget`, `vrmContainer` and both CLIs (`motion_retarget`,
-`motion_capture`) are covered by the three `kind: workspace` cells that `ost`
-0.21.0 made expressible — they build the root CMake tree, which is the only
-configuration in which `libs/` and `tools/` targets exist, and run its whole
-CTest suite on the same three runners
+These cells cover the four plugin bundles. Every plain library under `libs/`,
+every adapter under `adapters/`, and every CLI are covered by the three
+`kind: workspace` cells that `ost` 0.21.0 made expressible — they build the root
+CMake tree, which is the only configuration in which those targets exist, and
+run its whole CTest suite on the same three runners
 ([report 33](../reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md)). A
 fourth workspace cell, `workspace-graph-pr`, runs the WORKSPACE.md §2
 dependency-direction gate before anything is built.
