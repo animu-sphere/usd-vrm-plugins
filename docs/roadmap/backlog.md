@@ -14,13 +14,57 @@ not the schedule.
 
 | Release | Theme | Sequences | Plan |
 | --- | --- | --- | --- |
-| v0.8.0 | OpenExec VRM runtime foundation | Workspace Phase 8, Motion Phase E | [openexec-foundation.md](openexec-foundation.md) §6 |
-| after v0.8.0 | `ExecIr` invertible VRM humanoid rig | Motion Phase E cont. | [openexec-foundation.md](openexec-foundation.md) §7 |
+| after v0.8.0 | NPZ / AMASS recorded sources | — | [recorded-motion-sources.md](recorded-motion-sources.md) §13 |
+| after v0.8.0 | canonical motion producer contract | — | [below](#canonical-motion-producer-contract) |
+| after those | OpenExec VRM runtime foundation | Workspace Phase 8, Motion Phase E | [openexec-foundation.md](openexec-foundation.md) §6 |
+| after the foundation | `ExecIr` invertible VRM humanoid rig | Motion Phase E cont. | [openexec-foundation.md](openexec-foundation.md) §7 |
+
+**Re-ordered 2026-08-29.** Two producer-side tracks moved in front of the
+compute layer, and OpenExec lost its version with the move
+([the status table](README.md#status-at-a-glance) has the argument). Neither new
+row carries a phase number, and that is the §8 rule rather than an oversight:
+the Workspace ladder tracks the migration out of the single `usdVrm` bundle, and
+a greenfield reader takes its identity and edges from
+[WORKSPACE.md](../architecture/WORKSPACE.md) §1 and §2 exactly as `motionSource`
+and `motionBvh` did.
 
 - ⬜ **Workspace Phase 8 — `execMotion` + `execVrm` bootstrap**, then **Motion
   Phase E** inside it. The OpenUSD 26.08 exact pin that was part of this
   milestone landed early, in v0.6.0, along with the `motionCore` `operator==`
   that OpenExec type registration requires.
+
+### Canonical motion producer contract
+
+*Freeze what a motion producer hands over, before the number of producers grows
+again.* Four categories exist and each was designed on its own terms: recorded
+sources (`motionSource` + a profile), live pose sources (`vrmAdapterVmc`,
+`vrmAdapterMocopi`), tracker sources (`vrmAdapterVrchatOsc`), and generated
+sources (none yet). They already agree in practice; nothing states the agreement,
+so the fifth producer restates it.
+
+**What is unified is the canonical value boundary, not an I/O API.** How a
+producer gets its bytes is its own business — a socket, a file, a model — and
+every attempt to unify *that* would put a transport shape into a library that
+must not have one. The boundary is what crosses into canonical motion:
+
+```text
+Recorded:   SourceAnimation                  -> motion::HumanoidAnimation
+Live:       timestamp + HumanoidPose
+Tracker:    timestamp + TrackerFrame
+Generator:  request/context                  -> HumanoidAnimation or a pose stream
+```
+
+- ⬜ State each of the four crossings as a contract, from the code that already
+  implements three of them.
+- ⬜ **Generation sits behind a vendor-neutral `IMotionGenerator`.** A research
+  model or a commercial generator is an adapter under `adapters/generators/`,
+  reaching canonical motion through this contract and never through a fifth
+  shape of its own — which is the same rule
+  [WORKSPACE.md §1](../architecture/WORKSPACE.md) already applies to
+  `vrmAdapterArdy`.
+- ⬜ Say what a tracker source may **not** do, once, rather than per adapter:
+  the solve from tracker observations to humanoid bones is generic and outside
+  every adapter ([the OSC track](osc-and-vrchat-trackers.md) §5).
 
 Workspace phases establish boundaries; Motion phases fill them. They are never
 the same milestone. Workspace Phase 6b and Motion Phase C both landed in v0.4.0
