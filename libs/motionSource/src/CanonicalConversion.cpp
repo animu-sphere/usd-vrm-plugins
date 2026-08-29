@@ -338,15 +338,35 @@ ConvertRotation(const CanonicalBasis& basis, const SourceQuat& value)
     if (basis.determinant < 0) {
         imaginary = -imaginary;
     }
-    pxr::GfQuatf out(value.w, imaginary);
-    const float length = out.GetLength();
+    // The length is formed in double and the division is done in it too, then
+    // narrowed. That is load-bearing rather than tidy: `GfQuatf::GetLength()`
+    // squares in float, so a quaternion whose components sit near the denormal
+    // floor -- and the validators only ask that they are not all exactly zero,
+    // so they admit every one of them -- underflows to a length of
+    // exactly zero and comes back un-normalised, collapsing every composition it
+    // then enters. Narrowing after the divide instead of before it keeps that
+    // whole range representable. This project has already paid once for two
+    // magnitudes formed in different precisions (motionCore/Compare.h).
+    const double parts[4] = {static_cast<double>(imaginary[0]),
+                             static_cast<double>(imaginary[1]),
+                             static_cast<double>(imaginary[2]),
+                             static_cast<double>(value.w)};
+    double lengthSquared = 0.0;
+    for (const double part : parts) {
+        lengthSquared += part * part;
+    }
+    const double length = std::sqrt(lengthSquared);
     // Left alone when there is nothing to divide by: the validators this
     // conversion runs first have already refused a zero-magnitude rotation, and
     // repairing one here would put an identity where a refusal belongs.
-    if (std::isfinite(length) && length > 0.0f) {
-        out /= length;
+    if (!std::isfinite(length) || length <= 0.0) {
+        return pxr::GfQuatf(value.w, imaginary);
     }
-    return out;
+    const double inverse = 1.0 / length;
+    return pxr::GfQuatf(static_cast<float>(parts[3] * inverse),
+                        pxr::GfVec3f(static_cast<float>(parts[0] * inverse),
+                                     static_cast<float>(parts[1] * inverse),
+                                     static_cast<float>(parts[2] * inverse)));
 }
 
 SourceQuat

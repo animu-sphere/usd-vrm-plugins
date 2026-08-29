@@ -15,6 +15,31 @@ Current schema contract version: **1**.
 
 ### Fixed
 
+- **A rotation too small to square came back un-normalised, in the two
+  conversions that had not been fixed.** `GfQuatf::GetLength()` squares in
+  float, and both `vrmAdapterVmc::ToCanonicalRotation` and
+  `motionSource::ConvertRotation` divided by it while the check that admitted
+  the rotation was made in another precision: `CheckTransform` sums its squares
+  in double, and `ValidateSourceAnimation` asks only that the four components
+  are not *exactly* zero. So a quaternion whose components sit below roughly
+  `1.9e-23` passes the check, underflows the length to exactly `0.0f`, takes the
+  "nothing to divide by" branch that exists for a genuinely zero rotation, and
+  is returned unchanged — after which it multiplies into every composition along
+  its path and collapses the chain, with `AngleBetween` reading the result as
+  garbage rather than as an error. Both sites now form the length in double and
+  narrow after the divide rather than before it, which keeps the whole
+  representable range. `vrmAdapterMocopi` was fixed in the same shape on
+  2026-08-12 and named these two as still open; they were.
+
+  The likelihood is low and stated as such — a real sender's and a real file's
+  components are O(1), and no capture in any corpus here comes near this range.
+  What earns it a fix is that it fails **silently**, and that this project has
+  already paid once for two magnitudes formed in different precisions (the note
+  on `AngleBetween` in `libs/motionCore/src/Compare.cpp`, which cost a red
+  macOS-arm64 lane that was green on x86-64). Each site has a test at a
+  magnitude no session will produce, verified negatively: restoring
+  `GetLength()` turns both red.
+
 - **An adapter could export an imported target its package config never
   resolved.** A `PUBLIC` dependency lands in the exported target's
   `INTERFACE_LINK_LIBRARIES`, so a consumer doing `find_package` on the
