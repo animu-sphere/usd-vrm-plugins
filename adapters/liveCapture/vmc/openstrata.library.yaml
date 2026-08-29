@@ -2,7 +2,7 @@
 # one real-time protocol into canonical motion values and stops there.
 #
 # A library, not a plugin bundle, and deliberately so -- it registers nothing
-# with OpenUSD and has no plugInfo.json (WORKSPACE.md §1). The three edges below
+# with OpenUSD and has no plugInfo.json (WORKSPACE.md §1). The four edges below
 # are the *only* ones it is allowed (WORKSPACE.md §2); its CLI has its own
 # openstrata.tool.yaml under tools/, which is where retarget and stage authoring
 # become permissible.
@@ -10,7 +10,11 @@
 # `liveTransport` is the third, and it is not a sibling edge wearing a hat: it
 # is a leaf under libs/ with an empty edge set of its own, outside the aggregate
 # product for the same reason an adapter is, holding the socket and the capture
-# format this adapter and its sibling had written twice.
+# format this adapter and its sibling had written twice. `osc` is the fourth, on
+# the same terms and from the same section, holding the wire format this adapter
+# wrote alone until a second consumer proved the surface neutral. The two are
+# siblings of each other rather than a stack, and this adapter is where they
+# meet: WORKSPACE.md §2 forbids an edge between them in both directions.
 schema: openstrata.library/v1alpha1
 library:
   id: vrmAdapterVmc
@@ -23,6 +27,8 @@ requires:
     - id: motionRuntime
       version: ">=0.7,<0.8"
     - id: liveTransport
+      version: ">=0.7,<0.8"
+    - id: osc
       version: ">=0.7,<0.8"
 cmake:
   package: vrmAdapterVmc
