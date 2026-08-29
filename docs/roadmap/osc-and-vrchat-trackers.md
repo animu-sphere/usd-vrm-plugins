@@ -117,7 +117,7 @@ repetition into a library, and names it exactly:
 
 This plan is that third adapter. The four defects, re-verified against the tree
 on 2026-08-23 and all four still present in `vrmAdapterVmc` then. **All four are
-closed as of 2026-08-24** ([OSC-1](#osc-1--merge-the-transport-divergences));
+closed as of 2026-08-24** ([OSC-1](#the-foundation-half-shipped));
 the table is kept as the census that justified the extraction, not as a
 description of the tree:
 
@@ -237,7 +237,7 @@ of two clauses rather than the first: it is producer-neutral, as `motionSource`
 and `motionBvh` are, and it is out because the product would acquire I/O.
 
 Three questions the extraction had to answer rather than assume. **All three
-are answered as of 2026-08-24** ([OSC-2](#osc-2--extract-the-transport-ring));
+are answered as of 2026-08-24** ([OSC-2](#the-foundation-half-shipped));
 they are kept in their original form here because the reasoning that framed them
 is what the answers were checked against:
 
@@ -251,7 +251,7 @@ is what the answers were checked against:
   behaviour change to the VMC path — a receiver that clamps where it used to
   block, and that detects an oversize datagram where it used to hand one back as
   whole. That belongs in its own change with its own tests, ahead of the move,
-  so that a file move never carries a fix inside it ([OSC-1](#osc-1--merge-the-transport-divergences)).
+  so that a file move never carries a fix inside it ([OSC-1](#the-foundation-half-shipped)).
 - **What does *not* come along?** `DatagramQueue` is `vrmAdapterVmc`'s and
   deliberately absent from `vrmAdapterMocopi`, whose header argues the case: a
   queue exists for a consumer that cannot poll often enough to keep a kernel
@@ -533,275 +533,62 @@ that evidence, and VRC-1 is open on the session alone. Written down because the
 alternative was to mark VRC-1 done on a tool, which would have hidden the one
 thing it exists to produce.
 
-### OSC-0 — characterise the existing decoder
+### The foundation half shipped
 
-Freeze `OscPacket`'s public behaviour in tests before anything moves: valid
-messages · bundles · every supported type tag · malformed rejection · offset
-diagnostics · atomic packet decode. No source moves in this step. Done when a
-change to `OscPacket.cpp` that alters observable behaviour fails a test that
-names the behaviour rather than the implementation.
+OSC-0 (2026-08-24) froze `OscPacket`'s public behaviour in seven
+characterisation tests with `src/` untouched, checked by six mutations that each
+fail a test named for the behaviour they break. OSC-1 (2026-08-24) merged the
+four transport divergences into `vrmAdapterVmc`, one behaviour per commit and no
+file moved. OSC-2 (2026-08-24) extracted `libs/liveTransport` — 1485 lines left
+`vrmAdapterVmc` and 337 arrived; 1781 left `vrmAdapterMocopi` and 359 arrived —
+and every committed capture in both corpora still round-trips byte for byte.
+VRC-0 (2026-08-25) added `adapters/liveCapture/vrchatOsc/` with its frozen
+ten-code set and `vrchat_osc_record`, where the extraction's receipt is the file
+sizes: a capture format that was ~400 lines written twice is one magic string
+and four forwarding calls here, and the receiver is a `switch` over two
+transport events. OSC-3 (2026-08-29) moved the decoder to `libs/osc` on
+measured evidence rather than belief — an address inventory written in
+`vrmAdapterVrchatOsc` decoded real bytes through the VMC-owned decoder first and
+needed five VMC tokens, every one of them the name, exactly the three couplings
+[§3.1](#31-libsosc--extract-after-the-second-consumer) predicted and nothing
+else.
 
-**Done 2026-08-24.** Seven characterisation tests in
-[`test_osc_packet.cpp`](../../adapters/liveCapture/vmc/tests/test_osc_packet.cpp),
-`src/` untouched. They name what the suite written beside the decoder left
-implicit: a bundle refused *after* two good elements yields nothing; a decode
-overwrites all three `OscPacket` fields and a refusal overwrites none; a
-diagnostic's byte offset is an exact number — including for a message two
-bundles deep, where a lost `base` reports 40 instead of 60 — and its subject is
-the offending address; every decoded view points into the caller's datagram;
-`i`/`h` are signed where `c`/`r`/`m` are raw bits; a string whose length is
-already a multiple of four is padded by four; and the bundle depth cap accepts
-exactly `MaxOscBundleDepth`. The acceptance criterion was checked rather than
-assumed: six mutations of `OscPacket.cpp` — decode in place, a nested offset
-without its base, a refusal that drops the address, `c`/`r`/`m` sign-extended,
-padding rounded up, and the depth cap off by one — each fail a test named for
-the behaviour they break.
+Five decisions from those milestones constrain the work still ahead, so they are
+kept here rather than left in the changelog:
 
-One finding, recorded and not fixed: a `t` *argument* shares `h`'s signed
-64-bit path, so a real NTP time tag — whose high bit has been set since 1968 —
-reads as a negative `integer`. Nothing in VMC sends one and `OscArgument` has no
-unsigned field to widen into, so it is a question `libs/osc`'s API owes an
-answer to ([§10](#10-contract-changes-this-plan-requires)) rather than a defect
-OSC-0 may repair: this step changes no behaviour by construction. A *bundle's*
-time tag is unaffected — it lands in `OscPacket::timeTag`, which is unsigned.
+- **A refusal carries no code.** `OscDecodeError` has a subject and a detail,
+  and each adapter supplies its own code — the same refusal reads
+  `VRM_VMC_PACKET_MALFORMED` in one adapter and `VRM_VRCHAT_OSC_PACKET_MALFORMED`
+  in the other. `liveTransport` enumerates events because its receiver raises two
+  a caller must tell apart; the decoder makes one distinction, so three neutral
+  names would have been a classification invented at the boundary and mapped
+  straight back onto one adapter code by every caller. VRC-2 inherits this.
+- **A `t` argument has its own unsigned `timeTag` field**, so an argument's time
+  tag and a bundle's are spelled and read the same way. OSC-0 found the defect
+  and could not fix it; OSC-3 was the last moment before two adapters depended
+  on the answer. NTP seconds have had their high bit set since 1968, so the
+  signed path was wrong for every time tag any sender emits today.
+- **`tests/` is inside this library's boundary check** and outside
+  `liveTransport`'s, because a decoder's payloads are where a vendor address
+  arrives — without the rule, replacing them is a convention the next author has
+  not read.
+- **The sibling rule is verified by injection in every direction**, not by its
+  green result: an added `vrmAdapterVmc/OscPacket.h` include fails this
+  adapter's check, an added `vrmAdapterVrchatOsc` include fails each sibling's,
+  and each file passes without it. This is where that rule stops being a
+  formality — `vrmAdapterVmc` held the only OSC decoder here and this adapter
+  reads the same wire format, so reaching across would *work*.
+- **VRC-0 predicted that this adapter's binaries import no OpenUSD "until a
+  decoder produces a pose", and half of that was wrong.** The link line grew at
+  OSC-3 and the closure did not, because `osc` links nothing at all — not even a
+  socket. The prediction still holds for a decoder that produces a *pose*, which
+  is VRC-2's, and the comments that stated it the old way are corrected rather
+  than deleted.
 
-### OSC-1 — merge the transport divergences
-
-Bring the older copy up to the four fixes the younger one already carries
-([§2.1](#21-the-divergences-which-the-tree-already-documents)), each with a
-test, **before** either copy moves. A fix inside a file move is a fix nobody
-reviews.
-
-This step has value even if the rest of this plan is abandoned: `vrmAdapterVmc`
-is shipped, and the four are live-session defects in shipped code.
-
-Done when: the VMC receiver clamps a large finite timeout instead of blocking
-indefinitely; sizes its buffer so an oversize datagram is detectable and
-counted; inspects `revents` before treating a wake-up as traffic; and stops
-charging idle accounting to a call that received something. The two non-defect
-differences are decided in the same change rather than inherited: the silence
-timeout exists in both or in neither, and `Open`/`Close` leave the same state in
-both.
-
-The mocopi header's own framing is the acceptance criterion — *the two copies
-are held together by their tests rather than by their source*. After this step
-they are held together by their behaviour, which is what makes the next step a
-move rather than a merge.
-
-**Done 2026-08-24.** Four fixes, one behaviour per commit, no file moved. The
-buffer is one byte above the bound so an over-long datagram is detectable on
-POSIX; a timeout past what a poll can express is clamped rather than mapped onto
-"wait forever"; `revents` is inspected before a wake-up is treated as traffic;
-and the retry tail no longer charges `idleReceives` for a call that met
-something.
-
-**Two of the four ship without a test, and the reason is the same for both: no
-test could tell the fix from the defect.** A poll timeout of `-1` and one of
-`INT_MAX` differ only after 24.8 days, and a wake-up reporting `POLLERR` instead
-of a datagram is not producible on three platforms from a suite that owns only
-its own sockets — an unconnected UDP socket collects no ICMP error, and
-`POLLNVAL` needs a descriptor closed underneath a poll already running, which is
-the race this class documents as unsupported. A test that passed against the
-defect would be worse than none. The honest seam is a unit test of the mapping
-and of the wake-up predicate, and putting one in `vrmAdapterVmc` alone means
-giving it a public function or an internal header the sibling does not have —
-divergence, in the step whose purpose is convergence. **OSC-2 carries that ask**:
-the extracted library can hold an internal header and its own unit tests without
-either adapter growing an API.
-
-The other two are tested. `vrmAdapterVmc_udpReceiverTruncation` mirrors the
-mocopi test it derives from, on its own CTest name with `SKIP_RETURN_CODE 77`
-because it needs an IPv6 loopback.
-
-**Exactly one lane of three proves the buffer fix, and it is worth knowing
-which.** Windows passes it with or without the fix, since `WSAEMSGSIZE` catches
-the case there either way. **macOS arm64 skips it** — the hosted runner will not
-carry the datagram, and it skips `vrmAdapterMocopi_udpReceiverTruncation` for
-the same reason and has since v0.7.0, so this is the runner rather than the
-change. **Linux runs it**, and on Linux the defect is what the assertion sees:
-a buffer of exactly `MaxDatagramBytes` makes `recvfrom` return that length, the
-drop branch is never entered, and the first assertion fails on `Received`
-instead of `Idle`. That is the whole of the POSIX evidence, and calling it "the
-POSIX lanes" would overstate it by one.
-
-The idle-accounting assertion rides on the same case with a zero timeout, which
-is the only way to narrow the window to the one call whose accounting is in
-question; putting the increment back fails it. That path is reachable on
-Windows through `WSAEMSGSIZE`, so unlike the buffer fix it is verified on all
-three.
-
-**The two non-defect differences, decided rather than inherited:**
-
-- **`Open`/`Close` now leave the same state in both.** `Open` resets the stats,
-  because it restarts `_epoch` either way — carrying the counters over produced
-  a `datagramsReceived` spanning two sessions beside a `firstReceiveTime`
-  describing one. `Close` releases the receive buffer instead of holding 64 KB
-  on a closed receiver.
-- **The silence timeout stays mocopi-only, and the difference now carries its
-  reason in the VMC header.** Not because silence matters less to a VMC session:
-  because this adapter's frozen diagnostic set has no code for it and its own
-  documentation argues it did not need a ninth, so adding one is a contract
-  change — which [§13](#13-pr-splitting) forbids inside a fix. Inventing a
-  second spelling of `VRM_MOCOPI_DEVICE_UNAVAILABLE` would also make the shared
-  library choose between two names for one event, which is exactly the question
-  [§8](#8-diagnostics) exists to answer once. It arrives with the extraction.
-
-### OSC-2 — extract the transport ring
-
-The move, with no behaviour change: receiver, queue, capture format, diagnostic
-vehicle. **Unblocked 2026-08-24** — the contract change in
-[§10](#10-contract-changes-this-plan-requires) landed, so `liveTransport` has a
-destination to be reviewed against. Its empty edge set and its no-code rule are
-the two lines a reviewer can check the move against without reading the diff
-twice.
-
-It also inherits two asks from OSC-1, both of which exist because a shared
-library can hold what an adapter cannot: an internal header, and unit tests
-against it. The timeout mapping and the poll-wake-up predicate go there and get
-the tests OSC-1 could not write without making the two adapters diverge. The
-silence timeout arrives with them, once [§8](#8-diagnostics) has answered whose
-code a shared receiver raises.
-
-Done when: both adapters build against the shared library, every committed
-capture in both corpora still reads without being rewritten, both adapters'
-tests pass unchanged, and the binary link check shows neither imports the other.
-
-**Done 2026-08-24.** `libs/liveTransport`, in three changes: the library, then
-each adapter pointed at it. 1485 lines left `vrmAdapterVmc` and 337 arrived;
-1781 left `vrmAdapterMocopi` and 359 arrived. What arrives in each is the part
-a shared library may not hold — a code table, and a map from a transport event
-to one of its rows. 97/97 green, both corpora round-tripping, and
-`ost library build` / `ost library test` measured working on the new leaf first
-try.
-
-**The three questions [§3.2](#32-the-transport-ring--extract-before-the-third-consumer)
-said the extraction had to answer rather than assume, answered:**
-
-- **The capture format is one format with a per-adapter magic**, and the
-  committed corpora were the constraint exactly as predicted. The magic is a
-  parameter; the header *vocabulary* converged, so `device` is now everyone's.
-  That widens a VMC capture by one accepted key and changes no fixture byte,
-  because the writer emits only the fields a capture carries. The alternative —
-  a per-adapter key list in the shared reader — is a knob for one optional field,
-  which is the per-caller difference the library exists to stop carrying.
-- **The four defects arrived as merged behaviour**, because OSC-1 merged them
-  first. No fix rode inside the move.
-- **`DatagramQueue` came along and stayed opt-in.** A tracker recorder is a
-  polling loop like the mocopi one, so the third consumer did not change the
-  answer, and `vrmAdapterMocopi` still names it nowhere.
-
-**The mechanical problem [§10](#10-contract-changes-this-plan-requires) left
-open is solved by a template parameter, and the reason is worth a line.**
-`Diagnostic::code` was a per-adapter enum *by value*, so the vehicle is now
-`Diagnostic<Code, DefaultCode>` over the adapter's own enum. `DefaultCode` is a
-parameter rather than `Code{}` because the two adapters disagree and **both are
-right**: each defaults to its own `PacketMalformed`, which is enumerator 0 in
-one set and 6 in the other. A shared struct that defaulted to zero would have
-silently changed what a default-constructed mocopi diagnostic meant — the one
-behaviour change this step could have shipped without noticing.
-
-**The silence timeout arrived, and §8's question is untouched.** The shared
-receiver raises no code: it reports a `TransportEvent` — `BindFailed`,
-`Silence` — and each adapter maps it onto its own frozen set. That is §8's
-option (1) applied to the transport ring, and it does not pre-empt the same
-question for the decoder, where the answer has to survive `VRM_VMC_*` being a
-golden surface. So the capability is unconditional in the library and the *code*
-is still the adapter's problem: `vrmAdapterMocopi` exposes the threshold,
-`vrmAdapterVmc` leaves it at 0 because `VRM_VMC_*` has no code for silence. The
-difference used to be thirty lines of receiver in one copy and none in the
-other; it is now one configuration field and one `switch` arm.
-
-**OSC-1's two asks are paid.** `src/PollTimeout.h` is the internal header an
-adapter could not hold without diverging from its sibling, and
-`tests/test_poll_timeout.cpp` exercises the timeout mapping and the wake-up
-predicate with synthetic bits rather than a platform's `POLLIN` — which is what
-makes the `POLLERR` / `POLLHUP` / `POLLNVAL` combinations no socket produces on
-demand testable at all.
-
-**"No behaviour change" is checkable, and it was checked in the two places it
-could have failed silently.** The corpus round-trip tests compare bytes rather
-than parse trees, so a writer that changed one character would be red; and the
-boundary check was verified by injection rather than by its green result — an
-added workspace include, adapter code, address literal, producer-prefixed
-identifier and `pxr/` include each fail it. The producer pattern has no trailing
-word boundary because with one, an injected `mocopiThing` passed.
-
-**One test line changed, and it is the whole of the source-compatibility cost.**
-`vrmAdapterVmc`'s `test_udp_receiver.cpp` called `ReadPacketCaptureFile`
-unqualified, reaching the adapter by argument-dependent lookup because
-`PacketCapture` was declared in its namespace; the type is the library's now and
-ADL follows it there. It is qualified, as the other 27 packet-capture call sites
-in the tree already were. Every other name both adapters exported is unchanged,
-because the shared types arrive through a `using` rather than a rename.
-
-### VRC-0 — adapter scaffold and raw capture
-
-`adapters/liveCapture/vrchatOsc/`: manifest, build scaffold, frozen diagnostic
-set, and a recorder over the shared transport. **No semantic decoder.**
-
-Done when: bytes off the socket and bytes in the capture file are identical;
-a capture replays deterministically; the manifest records sender and version.
-
-**Done 2026-08-25**, in three changes: the contract row, the library, the CLI.
-105/105 green, of which eight names are new.
-
-**The extraction paid, and the receipt is the file sizes.** The census
-([§2](#2-the-duplication-census)) measured the capture format written twice at
-~400 lines and the receiver written twice at ~550. In this adapter the format is
-one magic string and four forwarding calls, and the receiver is a `switch` over
-two transport events. What is left is exactly what a shared library may not hold
-— a code table, and the map from an event to one of its rows — which is
-[WORKSPACE.md](../architecture/WORKSPACE.md) §2's diagnostic split seen from the
-first adapter written on the near side of it. The four receiver defects arrive
-fixed rather than copied a third time.
-
-**One edge where the contract permits three, and it is measurable.**
-`motionCore` and `motionRuntime` are what an adapter takes when it produces
-canonical values, and this milestone produces none — so declaring them would
-claim a dependency the library does not have. The consequence is visible rather
-than asserted: this adapter's test binaries import **no OpenUSD at all** (checked
-with `dumpbin`), so unlike both siblings they need no Gf DLL directory on `PATH`
-to run. The day a decoder produces a pose, that changes as a link line growing.
-
-**The published specification changed nothing about the order, which was the
-open question this milestone actually answered.** `vrmAdapterMocopi` records
-before it decodes because its protocol is documented nowhere; this one had the
-option of writing a decoder from VRChat's own documentation first. It did not,
-and the reason is [§6](#6-the-adapter-capture-precedes-decoder) applied rather
-than restated: a specification says what a *receiver* must accept, and what a
-sender sends is a measurement. Every payload in every test here is a counting
-pattern, and the one place a plausible OSC message would have been most welcome
-— the recorder's report — deliberately has none: it reports the datagram
-envelope and refuses to group by address, because that grouping would be the
-first thing anybody read off a real session with every number conditional on an
-untested assumption. The address inventory is VRC-1's, measured from bytes.
-
-**The done-condition is asserted end to end and against an independent reader.**
-`vrchat_osc_record_loopback` sends deliberately awkward payloads — empty,
-unaligned, spanning the printable range and out of it — through a real socket
-into a real capture file, and a capture parser written in Python reads it back
-and compares byte for byte. A writer and a reader that agreed with each other
-and with nothing else would fail it. A second name,
-`vrmAdapterVrchatOsc_loopbackCorpus`, does the same for committed fixtures and
-is registered by globbing for a capture rather than for the corpus directory — so it appears on
-the commit that adds the first one instead of failing red from today.
-
-**Two things were measured rather than assumed, and both are worth carrying
-forward.** A replayed report's duration differs from the live one's in the last
-digit, because a capture stores receive times to six decimal places — so the
-counts are compared and the duration is not. And the boundary check was verified
-by injection in every direction rather than by its green result: an added
-`vrmAdapterVmc/OscPacket.h` include fails this adapter's check, an added
-`vrmAdapterVrchatOsc` include fails each sibling's, and each file passes without
-it. That trio is the point at which the sibling rule stops being a formality —
-`vrmAdapterVmc` holds the only OSC decoder here and this adapter reads the same
-wire format, so reaching across would *work*.
-
-**One unrelated defect surfaced and was fixed in its own change.** Every
-`check_boundaries.py` in the tree located `dumpbin` under a glob naming
-`2022` literally; this machine's Visual Studio was upgraded in place, and all
-nine boundary checks went red at once with "dumpbin was not found". The release
-year is a wildcard now.
+The recorder's own report deliberately refuses to group by address: that
+grouping is the first thing anybody would read off a real session, with every
+number conditional on an untested assumption. The address inventory is VRC-1's,
+measured from bytes.
 
 ### VRC-1 — real mocopi capture and address inventory
 
@@ -830,64 +617,6 @@ agreed with this repository's own encoder and with nothing else fails it.
 
 What remains is an operator and a device, on the same terms as VRC-0's
 done-condition: this milestone closes on a session, not on a tool.
-
-### OSC-3 — second consumer, then extract `libs/osc`
-
-VRC-1's inventory tool decodes through the existing decoder first, from
-`vrmAdapterVrchatOsc`, without moving it. If that requires no VMC vocabulary,
-the surface is neutral and the move follows in its own change, with the
-diagnostic decision from [§8](#8-diagnostics) made explicitly.
-
-**Done 2026-08-29**, in five changes: the contract, the move, the `t` decision,
-`vrmAdapterVmc`, and the second consumer. 108/108 green, three names more than
-VRC-0 left and none lost.
-
-**The measurement came first and it is the whole of the argument.** An address
-inventory of a VRChat OSC session, decoding through `vrmAdapterVmc`'s decoder
-without moving it, needed **five VMC tokens** and every one was the *name*: one
-include path and four namespace qualifications. It needed `VRMADAPTERVMC_STATIC`
-on its compile line. And its report on a VRChat session printed
-`VRM_VMC_PACKET_MALFORMED`. [§3.1](#31-libsosc--extract-after-the-second-consumer)
-predicted exactly three couplings — the namespace, the export macro, the
-diagnostic code — and the measurement found exactly those three and nothing
-else: no VMC address literal, no bone name, no `VmcMessage`, no `SkeletonMap`.
-
-**The diagnostic decision is option (2), and the transport ring's precedent is
-what argues against (1) rather than for it.** `liveTransport` enumerates events
-because its receiver raises two a caller must tell apart; the decoder makes one
-distinction. Three neutral code names would have been a classification invented
-at the boundary and mapped straight back onto one adapter code by every caller.
-So a refusal is an `OscDecodeError` with a subject and a detail and no code, and
-each adapter supplies its own — which is now *demonstrated* rather than
-asserted: the same refusal reads `VRM_VMC_PACKET_MALFORMED` in one adapter and
-`VRM_VRCHAT_OSC_PACKET_MALFORMED` in the other.
-
-**The `t` argument was answered here rather than inherited.** It gets its own
-unsigned `timeTag` field, so an argument's time tag and a bundle's are spelled
-the same way and read the same way. OSC-0 found the defect and could not fix it;
-this is the last moment before two adapters depend on the answer. Its size is
-worth being plain about: NTP seconds have had their high bit set since 1968, so
-the signed path was wrong for every time tag any sender emits today, not for a
-far-future edge.
-
-**Three things were paid for that the plan did not predict.** The sample
-addresses in the moved suite were all `/VMC/...`, so they were replaced at
-**identical length** — the suite asserts exact byte offsets, and a shorter name
-would have rewritten every one of them while staying green. `tests/` is inside
-this library's boundary check and outside `liveTransport`'s, because a decoder's
-payloads are where a vendor address arrives and without the rule that
-replacement is a convention the next author has not read. And the two
-caller-bug guards now clear the refusal's subject: they used to overwrite a
-whole `Diagnostic` by assignment, and a reused error left holding the previous
-datagram's address would attribute a caller's mistake to a sender that sent
-nothing wrong.
-
-**One prediction VRC-0 made was wrong and the tree says so.** It recorded that
-this adapter's binaries import no OpenUSD, and that this would change "the day a
-decoder produces a pose … as a link line growing". The link line grew and the
-closure did not, because `osc` links nothing at all — not even a socket. The
-prediction still holds for a decoder that produces a *pose*; three comments that
-stated it the old way are corrected rather than deleted.
 
 ### VRC-2 — tracker semantic decode
 

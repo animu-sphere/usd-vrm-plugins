@@ -34,9 +34,9 @@ Items this plan needs from those contracts are listed in
 [§9](#9-contract-changes-this-plan-requires) rather than asserted here.
 
 Sequence context: the canonical pipeline this plan attaches to is already
-finished. v0.5.0 shipped **Motion Phase D** (live capture) and v0.6.0 shipped the
-**VMC adapter** over it; v0.7.0 adds the mocopi native adapter and the real
-sender evidence. This plan re-evaluates that pipeline through OpenExec — it does
+finished. v0.5.0 shipped **Motion Phase D** (live capture), v0.6.0 the
+**VMC adapter** over it, and v0.7.0 the mocopi native adapter and the generic
+BVH pipeline beside it. This plan re-evaluates that pipeline through OpenExec — it does
 not extend it, and nothing in it is a prerequisite for anything in
 [the adapter track](adapters-mocopi-vmc-ardy.md). The dependency runs the other
 way, and only for evidence: v0.7.0's recorded corpus is this plan's parity input.
@@ -145,70 +145,38 @@ execVrm  -X-> GLB / VRM JSON reparse
 `execVrm`'s only input contract is what is on the stage: typed schemas,
 attributes, relationships, and `UsdSkel` data.
 
-## 4. OpenUSD 26.08 adoption
+## 4. OpenUSD 26.08 adoption — done
 
-### 4.1 Exact pin
-
-- ✅ Reject any OpenUSD other than 26.08 at configure time. Not through
-  `find_package(pxr 26.08 EXACT ...)`: OpenUSD installs no
-  `pxrConfigVersion.cmake`, so a version argument makes `find_package` fail
-  with "no config version file" whatever OpenUSD is present. `pxrConfig.cmake`
-  does publish `PXR_VERSION`, and `cmake/UsdVrmOpenUsd.cmake` tests that,
-  included by every entry point that resolves OpenUSD — a bundle built
-  standalone by `ost plugin build` never composes the root project, so the pin
-  travels with the `find_package` call rather than with the root.
-- ✅ Bring the bundle manifests (`openusd: "==26.08"`) and the reference docs
-  into agreement. `openstrata.ci.yaml` and the release workflow already pinned
-  26.08 runtimes by digest; `VERSION` moves at release prep.
-- ✅ Record OpenUSD release, `PXR_VERSION`, and OpenExec availability in
-  `buildInfo.json` (`buildInfoSchema` 2). Commit, compiler, and build type were
-  already stamped. `openusdVersion` is now the release name (`26.08`) rather
-  than `pxrConfig.cmake`'s `PXR_MAJOR.MINOR.PATCH`, which reads `0.26.8`
-  because OpenUSD's major version is 0.
-
-### 4.2 Runtime artifacts
-
-Digest-pinned 26.08 runtimes on all three OS, fixing the OpenUSD source commit,
-compiler / standard library ABI, Python, TBB, MaterialX, and the artifact digest.
-
-- ✅ **Windows x86_64** — published 2026-07-26.
-- ✅ **Linux x86_64** — published 2026-07-26.
-- ✅ **macOS arm64** — published 2026-07-26. "All three OS on one OpenUSD
-  version" is met. It required Apple clang 16 and the macOS 15.2 SDK; the
-  macOS 14.5 SDK cannot compile 26.08's Hd data sources under C++17.
-
-Digests and verification evidence are in
+The exact pin, the three digest-pinned runtimes and the migration report all
+landed before this plan starts, and each is recorded where it belongs:
+`cmake/UsdVrmOpenUsd.cmake` and the bundle manifests' `==26.08` carry the pin
+(the mechanism, and why `find_package(pxr 26.08 EXACT)` can never work, is in
+[SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md), kept
+from drifting by `scripts/check_docs.py`); `buildInfo.json` schema 2 stamps the
+release, `PXR_VERSION` and OpenExec availability; the Windows, Linux and macOS
+arm64 runtimes were published 2026-07-26 with digests and evidence in
 [report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md)
-(Windows, Linux) and
-[report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md)
-(macOS arm64).
+and
+[report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md);
+and the audit is
+[reports/openusd/26.08-openexec-migration.md](../reports/openusd/26.08-openexec-migration.md),
+read off the published runtime and the `v26.08` sources with nothing compiled or
+run.
 
-One correction to the original plan is worth stating: **`build_usd.py` has no
-OpenExec toggle.** It ships `exec`, `execGeom`, `execIr`, `execUsd`,
-`usdExecImaging`, and `vdf` unconditionally, so every runtime we publish carries
-them. The CMake build *does* have one — `PXR_BUILD_EXEC`, default `ON`, forced
-off only for Emscripten — so the gate "the build fails on an OpenExec-less
-runtime" stays a *detection* requirement, and now defends a configuration a
-third party can actually produce. `usdExecImaging` is built either way and is
-therefore not evidence of OpenExec; see the migration report
-[§1](../reports/openusd/26.08-openexec-migration.md#1-what-2608-actually-ships).
+Two results of that work shape the tasks below rather than merely recording
+them.
 
-### 4.3 26.08 OpenExec migration report
+**`build_usd.py` has no OpenExec toggle.** It ships `exec`, `execGeom`,
+`execIr`, `execUsd`, `usdExecImaging` and `vdf` unconditionally, so every
+runtime we publish carries them; the CMake build *does* have one
+(`PXR_BUILD_EXEC`, default `ON`). So the gate "the build fails on an
+OpenExec-less runtime" stays a *detection* requirement, and `usdExecImaging` is
+not evidence of OpenExec because it is built either way.
 
-✅ Done: [reports/openusd/26.08-openexec-migration.md](../reports/openusd/26.08-openexec-migration.md).
-It reads the published runtime — the same artifact every CI cell pins — plus the
-`v26.08` sources, and covers the whole list this section asked for: `exec`,
-`execUsd`, `execIr`, `vdf`, `usdExecImaging`, computation registration,
-callable/capturing-lambda callbacks, USD-connection dataflow, cache and
-invalidation, batch requests, and Hydra scene-index integration. The published
-runtimes were deliberately built with `--examples`, and that sample code
-(`share/exec/examples/…/irExampleAuthoringCode`, `pxr.IrExampleAuthoringCode`,
-`pxr.IrExampleUsdviewPlugin`) is read in
-[§7.4](../reports/openusd/26.08-openexec-migration.md#74-what-the-shipped-example-demonstrates).
-
-The plan's core bet survives: a computation really can be a thin wrapper, because
-the registration language is declarative and a callback is a pure function of
-resolved inputs. Five findings change scope, each carried into the task below it:
+**The plan's core bet survives — a computation really can be a thin wrapper,
+because the registration language is declarative and a callback is a pure
+function of resolved inputs — and five findings change scope**, each carried
+into the task below it:
 
 1. **`VtArray` is not an execution value type**, so a pose crosses a computation
    boundary as a registered aggregate — this decides every P0-4 and P0-5
@@ -216,18 +184,17 @@ resolved inputs. Five findings change scope, each carried into the task below it
 2. **`usdExecImaging`'s adapter registry is hard-coded** to `UsdGeomXformable`
    and `ExecIrXformable`, so no `UsdSkel` adapter can be registered — P0-7 is
    re-scoped.
-3. **`PXR_BUILD_EXEC` exists** (§4.2 above, corrected), and `usdExecImaging` is
-   not evidence of OpenExec — the probe's component list needs amending.
+3. **`PXR_BUILD_EXEC` exists** and `usdExecImaging` is not evidence of OpenExec
+   — the probe's component list needs amending.
 4. **`ExecIr` is per-prim scalar avars in world space**, against `UsdSkel`'s
    joint arrays in joint-local space — an `ExecIr`-track design item, not an
-   integration
-   item.
+   integration item.
 5. **Inversion is a plugin-level construct in 26.08**, with an in-source TODO
    saying it moves into the core later.
 
 The report's [§9](../reports/openusd/26.08-openexec-migration.md#9-what-this-changes-in-the-plan)
 lists all nine consequences; [§10](../reports/openusd/26.08-openexec-migration.md#10-what-this-audit-did-not-do)
-is what it did *not* verify — nothing was compiled or run.
+is what it did *not* verify.
 
 ## 5. 26.08 features this plan leans on
 
@@ -297,19 +264,14 @@ probe; write the migration report.
 OS; a runtime without the OpenExec libraries fails the build explicitly; and
 `buildInfo.json` reports OpenExec availability.
 
-- ✅ **The pin and the probe are in the tree** (§4.1). One module,
-  `cmake/UsdVrmOpenUsd.cmake`, included by the root project and by each bundle,
-  library, and tool that resolves OpenUSD.
-- ✅ **The refusals are tested.** Every runtime this repo builds against
-  satisfies the contract, so on a normal build the pin and the probe are code
-  that never fires. `workspace_openusd_contract` drives the module against
-  fixture OpenUSD installs — too old, too new, an exec library with no imported
-  target, an exec component with no headers — and asserts both that it refuses
-  and *why*. A gate nothing exercises is a gate nobody can trust.
-- ✅ **Three OS, one OpenUSD, one digest each** (§4.2), since v0.5.0.
-- ✅ **The 26.08 OpenExec migration report** (§4.3) —
-  [reports/openusd/26.08-openexec-migration.md](../reports/openusd/26.08-openexec-migration.md).
-  P0-4 and P0-5 have the input they were waiting on.
+The pin, the probe, the three runtimes and the migration report are done (§4).
+The refusals are *tested* rather than merely present: every runtime this repo
+builds against satisfies the contract, so on a normal build both are code that
+never fires — `workspace_openusd_contract` drives the module against fixture
+OpenUSD installs (too old, too new, an exec library with no imported target, an
+exec component with no headers) and asserts both that it refuses and why. What
+is left:
+
 - ⬜ **Amend the capability probe** with what the audit found
   ([report §9.1](../reports/openusd/26.08-openexec-migration.md#9-what-this-changes-in-the-plan)):
   `esf`, `esfUsd` and `ef` are unprobed but are transitively required by the
@@ -335,15 +297,11 @@ humanoid mapping, invalid mapping, output/input path collision, resolved
 `UsdSkel` transforms, Windows Unicode paths, packaged CLI execution, and
 OpenExec/offline parity.
 
-✅ **Unblocked and largely delivered by `ost` 0.21.0.** The lane shape existed
-nowhere: `ci generate` emitted one job per bundle cell and had no cell for a
-library or a workspace, filed as the P0 ask in
-[report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md). Four
-`kind: workspace` cells now build the root tree and run its whole CTest suite on
-all three OS
+**The lane shape is delivered**: four `ost` 0.21.0 `kind: workspace` cells build
+the root tree and run its whole CTest suite on all three OS
 ([report 33](../reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md)).
-What remains of this task is coverage, not lane shape: the CTest labels above and
-the OpenExec/offline parity case, which needs P0-4 and P0-5 first.
+What remains of this task is coverage, not lane shape — the CTest labels above
+and the OpenExec/offline parity case, which needs P0-4 and P0-5 first.
 
 ### P0-3 — `motion_retarget` distribution ⬜
 
@@ -362,10 +320,8 @@ Artifact-only smoke: `motion_retarget --avatar avatar.vrm --animation walk.vrma
 resolution, humanoid map loading, retarget execution, animation binding,
 evaluated joint transforms, and the absence of any build-tree dependency.
 
-✅ **Unblocked by `ost` 0.21.0** — no member archive could carry an executable
-([report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md),
-ask 5). `tools/*/openstrata.tool.yaml` now makes `motion_retarget` and
-`motion_capture` tool members of the aggregate product, and `release.yml` stages
+**The CLIs ship**: `tools/*/openstrata.tool.yaml` makes `motion_retarget` and
+`motion_capture` tool members of the aggregate product and `release.yml` stages
 them with the bundles. Still open here: the artifact-only smoke above, and two
 existing carry-overs — the unverified non-`ost` Windows install path and the
 DLL-discovery question in [INSTALL.md](../guides/INSTALL.md).
@@ -772,18 +728,11 @@ depends on them ([docs/README.md](../README.md)). Open:
   §11.4 now states it, but nothing enforces it. The obvious enforcement is a
   `execMotion`/`execVrm` link check for socket, clock, and threading symbols,
   in the way each bundle already proves what it links.
-- ✅ **`operator==` on the `motionCore` aggregates** (P0-4), landed 2026-08-02 in
-  v0.6.0 — and as *two* comparisons, because the three callers did not want the
-  same answer. `ExecTypeRegistry::RegisterType` needs the exact one; P0-6 parity
-  and the adapter corpus compare two float paths that will never agree bit for
-  bit, so `NearlyEqual` carries a tolerance derived from the recorded-trace
-  format's six decimals rather than picked per test. Both are stated properties
-  of the value types in
-  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060),
-  not implementation details discovered at registration time.
-- ✅ **The OpenUSD version contract was stated as a range.**
-  [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md) now
-  records one supported version and the two mechanisms that enforce it (the
-  manifests' `==26.08` and the configure-time module), which is what §4.1
-  landed. `scripts/check_docs.py` keeps the doc, the module, and the four
-  manifests from drifting apart.
+Two of this plan's contract asks have landed and are stated in the contracts
+rather than here: the `motionCore` aggregates carry **two** comparisons — the
+exact `operator==` that `ExecTypeRegistry::RegisterType` requires and the
+tolerant `NearlyEqual` that P0-6 parity needs
+([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060)) —
+and the OpenUSD version contract is one supported version with two enforcing
+mechanisms
+([SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md)).

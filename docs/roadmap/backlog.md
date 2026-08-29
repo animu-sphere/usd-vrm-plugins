@@ -130,46 +130,28 @@ Source of truth:
 [MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md) §16.
 Always written "Motion Phase X", never a bare "Phase X".
 
-- ✅ **Motion Phase A — frozen in v0.3.0.** The hand-authored contract and
-  `motionCore` type surface are in
-  [`MOTION_CONTRACT.md`](../design/MOTION_CONTRACT.md).
-- ✅ **Motion Phase B — shipped in v0.3.0.** GLB/glTF animation read,
-  humanoid rotation, hips translation, canonical `HumanoidSkeleton`,
-  `UsdSkelAnimation`, time range, provenance. Not expression, not look-at, not
-  retarget, not live.
-- ✅ **Motion Phase C — shipped in v0.4.0.** `vrmRetarget` + the
-  `motion_retarget` CLI: humanoid mapping from the target VRM, rest-pose
-  correction, expansion to target joint order, `UsdSkelAnimation` output,
-  `skel:animationSource` binding. **The first end-to-end evaluation point** —
-  the Motion Phase A design triplet is now reproduced by a test.
-- 🚧 **Motion Phase D — the core shipped in v0.5.0, the vendor half is in
-  progress.** `IMotionSource` / `ClipSource` / `LiveCaptureSource`, the
-  `motion-capture-trace` format, `ReplaySender`, `CaptureRecorder`, and the
-  `motion_capture` CLI: confidence gating, missing-bone policy, root-motion
-  intake, and a synthetic corpus that makes the tests reproducible. A captured
-  session is baked onto an avatar by the **unchanged** Phase C tool. The vendor
-  half is [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md): the VMC
-  Protocol adapter shipped in v0.6.0, and the mocopi native **live** adapter is
-  v0.7.0 — because both the v0.5.0 traces and the v0.6.0 captures are
-  *generated*, and answer no question about timestamp jitter, tracking loss, or
-  reconnection as a real device produces them. **The track needs no OpenExec:**
-  it ends at a retargeted `UsdSkelAnimation`.
-- ⬜ **Recorded-file ingestion — `motionSource` + `motionBvh`** (v0.7.0, with the
-  above). A generic BVH pipeline whose semantics live in declarative producer
-  profiles, planned in
-  [recorded-motion-sources.md](recorded-motion-sources.md) and contracted in
-  [motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md). It is the *other*
-  surface of the same capture product, and deliberately not a mode of the live
-  adapter.
+**Motion Phases A–D have shipped** and are not restated here: the frozen
+contract and `motionCore` (v0.3.0), `.vrma` import (v0.3.0), `vrmRetarget` and
+`motion_retarget` (v0.4.0), and the live-capture surface (v0.5.0) with its
+vendor half — the VMC adapter (v0.6.0) and the mocopi native live adapter
+(v0.7.0). See [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md), the
+[delivery history](../reports/delivery-history.md) §H–§K and the
+[release records](../releases/). The ladder needs no OpenExec up to here: it
+ends at a retargeted `UsdSkelAnimation`.
 
-  **It does not extend the Motion Phase ladder.** In kind it is Phase B's
-  territory — a recorded clip becoming a canonical semantic clip — with a
-  different container and an explicit producer profile where `.vrma` has a
-  specification. Adding "Motion Phase I" for it would make the string
-  "Motion Phase A–H", which four documents repeat, mean something different this
-  release for no gain in what anyone can check; the same argument
-  [WORKSPACE.md §8](../architecture/WORKSPACE.md) makes about the workspace
-  ladder and greenfield libraries.
+**Recorded-file ingestion shipped with v0.7.0 and does not extend the ladder.**
+`motionSource` + `motionBvh` is the *other* surface of the same capture product,
+and in kind it is Phase B's territory — a recorded clip becoming a canonical
+semantic clip — with a different container and an explicit producer profile
+where `.vrma` has a specification. Adding "Motion Phase I" for it would make the
+string "Motion Phase A–H", which four documents repeat, mean something different
+for no gain in what anyone can check; the same argument
+[WORKSPACE.md §8](../architecture/WORKSPACE.md) makes about the workspace ladder
+and greenfield libraries. The second format family is
+[the recorded track](recorded-motion-sources.md) §13.
+
+Still ahead:
+
 - ⬜ **Motion Phase E — `execMotion` / `execVrm`.** ClipSample, PoseBuffer,
   HumanoidRetarget, RootMotionResolve, AvatarApply. Nodes are thin wrappers over
   `motionRuntime` and `vrmRetarget`, and each evaluates an immutable snapshot
