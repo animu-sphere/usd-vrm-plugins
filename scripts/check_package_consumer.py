@@ -279,13 +279,54 @@ def check_fixture(package: str, row: dict, fixture: pathlib.Path) -> list:
         if not path.exists():
             fail_setup(f"fixture {fixture} cannot be checked: {path} is missing")
 
-    identities = set(contract_rows()) - {package}
-    for path in (cmakelists, main, shared):
+    rows = contract_rows()
+    identities = set(rows) - {package}
+
+    # A CMake file is where an identity becomes an *edge*: `find_package` and
+    # `target_link_libraries` are the two ways a fixture can quietly consume a
+    # sibling, and both spell the identity out. So any mention of another one
+    # there is the violation -- in the fixture's own file and in the shared
+    # module, which is copied beside every fixture and included by all of them.
+    for path in (cmakelists, shared):
         body = strip_comments(path)
         for other in sorted(identities):
             if re.search(rf"\b{re.escape(other)}\b", body):
                 reasons.append(f"{path.name} names the workspace identity "
                                f"`{other}`, which is not the package under test")
+
+    # `main.cpp` cannot create an edge, and applying the CMake rule to it was
+    # too coarse for the first package whose public API hands back a lower
+    # layer's type. `ExtractBvhSource` takes a `motionSource::SourceSkeleton*`,
+    # so every consumer of `motionBvh` writes that namespace whether or not it
+    # has ever heard of the package: the type arrives through *this* package's
+    # own public header, which is what a `find_dependency` is for. Refusing the
+    # spelling would mean no fixture could exercise such a package at all,
+    # leaving the row with the most interesting closure in the table measured by
+    # the weakest fixture in it.
+    #
+    # What a `.cpp` *can* do wrong is reach a sibling's header root directly.
+    # That makes the fixture depend on whatever else the prefix happens to hold
+    # rather than on this package's contract -- criterion 5's own failure, in
+    # the one form this file can express it. So the check here is on the include
+    # list rather than on the whole body, and the roots come from the contract's
+    # `Public headers` cells rather than from the identity names.
+    main_includes = re.findall(r'#\s*include\s*[<"]([^>"]+)[>"]',
+                               main.read_text(encoding="utf-8"))
+    foreign_roots = {}
+    for other in sorted(identities):
+        cell = rows[other]["headers"].rstrip("/")
+        if cell in ("-", "—", "reserved", ""):
+            continue
+        foreign_roots[cell.split("/")[-1]] = other
+    for include in main_includes:
+        root = include.split("/")[0]
+        if root in foreign_roots:
+            reasons.append(f"main.cpp includes <{include}>, whose header root "
+                           f"belongs to `{foreign_roots[root]}` rather than to "
+                           f"the package under test")
+
+    for path in (cmakelists, main, shared):
+        body = strip_comments(path)
         for pattern, what in ((r"add_subdirectory", "add_subdirectory()"),
                               (r"\.\./\.\./", "a path out of the fixture tree"),
                               (r"CMAKE_SOURCE_DIR", "CMAKE_SOURCE_DIR")):
@@ -294,9 +335,7 @@ def check_fixture(package: str, row: dict, fixture: pathlib.Path) -> list:
                                f"workspace source tree")
 
     header_root = row["headers"].rstrip("/").split("/")[-1]
-    includes = re.findall(r'#\s*include\s*[<"]([^>"]+)[>"]',
-                          main.read_text(encoding="utf-8"))
-    if not any(i.startswith(f"{header_root}/") for i in includes):
+    if not any(i.startswith(f"{header_root}/") for i in main_includes):
         reasons.append(f"main.cpp includes no header under `{header_root}/`, "
                        f"so it would build against a package that installed "
                        f"none")

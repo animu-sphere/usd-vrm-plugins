@@ -116,10 +116,20 @@ fixture's own two files, because an identity added to the shared module would
 otherwise leak into every fixture while all of them reported criterion 5 met —
 and all of them verified by mutating a fixture until each was caught:
 
-- **Name no workspace identity but your own.** A fixture that links a sibling
-  package is testing the prefix's contents, not the package's contract.
+- **Name no workspace identity but your own, in CMake.** A fixture that
+  `find_package`s or links a sibling is testing the prefix's contents, not the
+  package's contract. This applies to `CMakeLists.txt` and to the shared module,
+  which are the only two files that can create an edge.
+- **Include no sibling's header root, in C++.** `main.cpp` creates no edge, so
+  the rule there is about includes rather than names. A *name* is often
+  unavoidable and always fine: `motionBvh` hands back a
+  `motionSource::SourceSkeleton`, so every consumer of it writes that namespace,
+  and the type arrives through `motionBvh`'s own public header — which is what
+  its `find_dependency` exists for. Reaching `<motionSource/…>` directly is the
+  violation, because that is the fixture depending on what else the prefix holds.
 - **Reach no path out of this directory.** `add_subdirectory`, `../../`, and
-  `CMAKE_SOURCE_DIR` are all refused; each of them can find the source tree.
+  `CMAKE_SOURCE_DIR` are all refused in every file; each of them can find the
+  source tree.
 - **Include a public header and call something.** A fixture that only links
   proves the config file and not the header install, and it keeps proving it
   after the headers stop being installed.

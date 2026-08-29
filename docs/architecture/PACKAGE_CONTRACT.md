@@ -283,6 +283,22 @@ before configuring it, so the accident is not available to be made. That driver
 reports 1–5 for one named package on one host; 6 is the criterion that needs
 three, and PKG-4's lane is where the closure this one records gets compared.
 
+**It is a rule about edges, and the two files a fixture is built from can create
+different ones.** A `CMakeLists.txt` is where an identity becomes a link edge —
+`find_package` and `target_link_libraries` are the two ways to consume a
+sibling — so naming any package but the one under test is the violation there,
+in the fixture's own file and in the shared module it includes. A `.cpp` cannot
+create an edge at all. What it can do is `#include` a sibling's header root,
+which makes the fixture depend on whatever else the prefix happens to hold
+rather than on this package's contract, so that is what is refused there.
+
+The distinction is not a loosening for its own sake: `motionBvh` hands back
+`motionSource::SourceSkeleton`, so *every* consumer of it writes that namespace
+whether or not it has ever heard of the package — the type arrives through
+`motionBvh`'s own public header, which is exactly what its `find_dependency` is
+for. Refusing the spelling would have left the row with the most interesting
+closure in this document measured by the weakest fixture in it.
+
 **Each of the six is verified by having been seen to fail.** A criterion that
 has only ever printed *met* is indistinguishable from one that is not checked,
 so 1–4 were each broken in the installed prefix — the config deleted, its
