@@ -32,6 +32,8 @@ something to compare.
     python scripts/check_package_consumer.py osc --prefix-source ost-package
     python scripts/check_package_consumer.py osc --mutate no-targets-include
     python scripts/check_package_consumer.py osc --json report.json
+    python scripts/check_package_consumer.py vrmAdapterVmc \\
+        --mutate no-dependency --dependency osc
 
 **The negative verification.** A green consumer proves nothing until the same
 consumer has been shown to go red for the right reason. `--mutate` breaks the
@@ -41,6 +43,16 @@ exit 0 means the mutation was caught, and exit 1 means the fixture passed
 against a package it should not have. Every mutation asserts that it actually
 changed a byte, because a mutation that matched nothing and reported a catch is
 the same lie in a smaller package.
+
+**Changing a byte is not the same as breaking something**, and only exit 1 says
+the fixture is at fault, so the two are kept apart. `--dependency` removes one
+`find_dependency` line, and that line is inert whenever something else resolves
+the same package -- `motionRuntime` requires `motionCore`, and a conditional
+edge is not reached at all on a host where its condition is false. The first is
+refused before anything is installed, from the contract; the second cannot be
+predicted here and ends as **exit 2, inconclusive**. Neither is exit 1: an
+accusation against the one file in this loop that was not changed is the
+failure mode this driver exists to avoid, not one it may produce itself.
 """
 from __future__ import annotations
 
@@ -138,6 +150,44 @@ def required_packages(row: dict) -> list:
     how a config resolves it, not part of the name."""
     cell = re.sub(r"\([^)]*\)", " ", row["requires"])
     return [n.strip("`") for n in re.findall(r"`[^`]+`", cell)]
+
+
+def dependency_qualification(row: dict, dependency: str) -> str:
+    """The condition the cell attaches to one required package, if any --
+    `(non-Windows)`, `(guarded on pxr_FOUND)`. Stripped by the function above
+    because it is not part of the name; read here because it is the difference
+    between an edge that resolves on this host and one that does not, and this
+    driver evaluates neither."""
+    m = re.search(rf"`{re.escape(dependency)}`\s*\(([^)]*)\)", row["requires"])
+    return m.group(1).strip() if m else ""
+
+
+def exported_target(package: str, rows: dict) -> str:
+    """The target the contract says a package defines, or empty for one that
+    defines none this document knows about.
+
+    `<name>::<name>` is a promise this workspace makes about its own packages
+    (PACKAGE_CONTRACT.md section 2) and about nothing else. Assuming it of an
+    external one predicts `pxr::pxr`, which exists nowhere -- `pxr` brings
+    `gf`, `tf` and `arch`."""
+    row = rows.get(package)
+    if not row or row["target"] in ("-", "—", "reserved"):
+        return ""
+    return row["target"]
+
+
+def other_resolvers(package: str, dependency: str, rows: dict) -> list:
+    """The packages in this prefix, other than the one under test, whose own
+    config resolves `dependency` too.
+
+    A `find_dependency` line is only this config's to lose when nothing else in
+    the prefix brings the same package. `motionRuntime` requires `motionCore`,
+    so removing `motionCore` from `vrmAdapterVmc`'s config breaks nothing: the
+    consumer still configures, and a run that met every criterion would report
+    the *fixture* as untrustworthy -- an accusation against the one file in this
+    loop that was not changed."""
+    return [name for name in workspace_closure(package, rows)
+            if dependency in required_packages(rows[name])]
 
 
 def workspace_closure(package: str, rows: dict) -> list:
@@ -332,7 +382,8 @@ def locate_config(package: str, prefix: pathlib.Path) -> pathlib.Path:
     return found[0]
 
 
-def mutate(name: str, package: str, row: dict, prefix: pathlib.Path) -> str:
+def mutate(name: str, package: str, row: dict, prefix: pathlib.Path,
+           dependency: str = "") -> str:
     config = locate_config(package, prefix)
 
     if name == "no-config":
@@ -353,6 +404,38 @@ def mutate(name: str, package: str, row: dict, prefix: pathlib.Path) -> str:
 
     if name == "no-dependency":
         text = config.read_text(encoding="utf-8")
+        # `--dependency` narrows this to one edge, and for a package with more
+        # than one it is the sharper instrument. Stripping every line is caught
+        # by whichever edge the closure walk reaches first -- for
+        # `vrmAdapterVmc` that is `motionCore`, and a catch there says nothing
+        # about whether the walk would have reached the fifth. The defect this
+        # track exists for was one missing line and it was the last one
+        # (PACKAGE_CONTRACT.md section 1), so reproducing it means naming it.
+        if dependency:
+            # Whether this edge is this config's to lose is settled before
+            # anything is installed -- see `check_dependency_mutation`, which is
+            # where the two ways it is not are refused.
+            stripped = re.sub(
+                rf"^\s*find_dependency\(\s*{re.escape(dependency)}\b.*\)\s*$",
+                "", text, flags=re.M)
+            if stripped == text:
+                fail_setup(
+                    f"{config} declares `{dependency}` as a required package "
+                    f"in PACKAGE_CONTRACT.md section 4 and calls no "
+                    f"find_dependency for it. That is the defect itself rather "
+                    f"than a mutation of it -- run without --mutate")
+            config.write_text(stripped, encoding="utf-8")
+            # The target the closure walk should now refuse is the contract's,
+            # not `<name>::<name>` assumed. That shape is a promise this
+            # workspace makes about its own packages (PACKAGE_CONTRACT.md
+            # section 2) and about nothing else: `pxr` brings `gf`, `tf` and
+            # `arch`, and a message predicting `pxr::pxr` would send a reader
+            # looking for a target that exists nowhere.
+            predicted = exported_target(dependency, contract_rows())
+            return (f"removed find_dependency({dependency}) from "
+                    f"{config.relative_to(prefix)}, leaving the other edges "
+                    f"in place - criterion 3 must fail"
+                    + (f", naming {predicted}" if predicted else ""))
         stripped = re.sub(r"^\s*find_dependency\(.*\)\s*$", "",
                           text, flags=re.M)
         if stripped == text:
@@ -469,10 +552,18 @@ def main() -> int:
     ap.add_argument("--mutate", choices=MUTATIONS,
                     help="break the installed prefix and require the consumer "
                          "to fail - the negative verification")
+    ap.add_argument("--dependency", metavar="PACKAGE",
+                    help="with --mutate no-dependency, remove only this "
+                         "package's find_dependency and leave the others - "
+                         "the shape the OSC-3 defect actually had. Refused for "
+                         "an edge another package in the prefix also resolves")
     ap.add_argument("--json", metavar="PATH", help="write the report here")
     ap.add_argument("--keep", action="store_true",
                     help="keep the scratch prefix and build trees")
     args = ap.parse_args()
+    if args.dependency and args.mutate != "no-dependency":
+        fail_setup("--dependency narrows `--mutate no-dependency` and means "
+                   "nothing beside another mutation")
 
     rows = contract_rows()
     if args.package not in rows:
@@ -497,6 +588,40 @@ def main() -> int:
             f"by design (PACKAGE_CONTRACT.md 4.1). Its consumer contract is "
             f"plugin load, which scripts/clean_install_smoke.py gates")
 
+    # Whether `--dependency` names an edge this config can lose is a fact about
+    # the contract, so it is settled here rather than after a five-package
+    # install: a typo, or an edge something else in the prefix also brings,
+    # should cost a second and not a build.
+    if args.dependency:
+        declared = required_packages(row)
+        if args.dependency not in declared:
+            fail_setup(
+                f"`{args.dependency}` is not a required package of "
+                f"`{args.package}` (PACKAGE_CONTRACT.md section 4 lists "
+                f"{', '.join(declared) or 'none'}), so removing its "
+                f"find_dependency would remove nothing and report a catch it "
+                f"did not make")
+        masking = other_resolvers(args.package, args.dependency, rows)
+        if masking:
+            exclusive = [d for d in declared
+                         if not other_resolvers(args.package, d, rows)]
+            fail_setup(
+                f"`{args.dependency}` is also a required package of "
+                f"{', '.join('`' + m + '`' for m in masking)}, whose config "
+                f"resolves it from the same prefix. Removing this line breaks "
+                f"nothing, and a run that then met every criterion would be "
+                f"reported as a fixture that cannot be trusted -- which would "
+                f"be an accusation against the one file in this loop that was "
+                f"not changed. Edges only `{args.package}` declares: "
+                f"{', '.join(exclusive) or 'none'}")
+        qualification = dependency_qualification(row, args.dependency)
+        if qualification:
+            print(f"note: PACKAGE_CONTRACT.md qualifies `{args.dependency}` as "
+                  f"{qualification}, and this driver does not evaluate that "
+                  f"condition. If it does not hold on this host the removed "
+                  f"line was never reached, and the run below reports an "
+                  f"inconclusive mutation rather than a caught one.")
+
     fixture_src = FIXTURE_ROOT / args.package
     if not fixture_src.is_dir():
         fail_setup(f"no consumer fixture at "
@@ -513,6 +638,7 @@ def main() -> int:
         "package": args.package,
         "prefix_source": args.prefix_source,
         "mutation": args.mutate,
+        "mutation_dependency": args.dependency,
         "host": {"system": platform.system(), "machine": platform.machine()},
         "criteria": {},
         "closure": [],
@@ -556,8 +682,9 @@ def main() -> int:
                     f"the fixture already fails criterion 5 "
                     f"({report['criteria']['5']['detail']}), so a mutation run "
                     f"could only confirm that. Fix the fixture first")
-            print(f"--- mutation: "
-                  f"{mutate(args.mutate, args.package, row, prefix)} ---")
+            applied = mutate(args.mutate, args.package, row, prefix,
+                             args.dependency or "")
+            print(f"--- mutation: {applied} ---")
 
         # --- the consumer, outside the repository ---------------------------
         consumer_root = work / "consumer"
@@ -697,6 +824,26 @@ def main() -> int:
                 print(f"  note: criterion {expected} was predicted and "
                       f"criterion {caught[0]} answered first")
             return 0
+        if args.dependency:
+            # A verdict this run has not earned. Removing one `find_dependency`
+            # is inert whenever the line was never reached -- a conditional edge
+            # whose condition is false on this host is the case the contract
+            # states (`Threads (non-Windows)`), and this driver evaluates no
+            # such condition. The masking case is refused before the install;
+            # what is left here is a measurement about the *edge*, and calling
+            # it a fixture failure would be the same false accusation arriving
+            # by a slower route.
+            qualification = dependency_qualification(row, args.dependency)
+            print(f"\nINCONCLUSIVE: find_dependency({args.dependency}) was "
+                  f"removed from the installed config and every criterion the "
+                  f"prefix can break was still met, so that line is not what "
+                  f"resolves the edge on this host"
+                  + (f" -- PACKAGE_CONTRACT.md qualifies it as {qualification}, "
+                     f"which is the likely reason" if qualification else "")
+                  + ". This says nothing for or against the fixture; run the "
+                    "mutation where the condition holds, or name an edge this "
+                    "config resolves unconditionally.")
+            return 2
         print(f"\nFAIL (negative): the mutation `{args.mutate}` broke the "
               f"installed package and the consumer met every criterion the "
               f"prefix can break - this fixture cannot be trusted to report a "

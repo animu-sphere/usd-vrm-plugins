@@ -156,10 +156,46 @@ An adapter is a plain library under `adapters/`, never in the aggregate product
 
 | Package | Exported target | Public headers | Required packages | Platform deps | In product | Standalone |
 | --- | --- | --- | --- | --- | --- | --- |
-| `vrmAdapterVmc` | `vrmAdapterVmc::vrmAdapterVmc` | `include/vrmAdapterVmc/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport`, `osc` | inherited from `liveTransport` | no | unmeasured |
+| `vrmAdapterVmc` | `vrmAdapterVmc::vrmAdapterVmc` | `include/vrmAdapterVmc/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport`, `osc` | inherited from `liveTransport` | no | **measured** |
 | `vrmAdapterMocopi` | `vrmAdapterMocopi::vrmAdapterMocopi` | `include/vrmAdapterMocopi/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport` | inherited from `liveTransport` | no | **stale** — measured before the receiver added a platform link ([#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)) |
 | `vrmAdapterVrchatOsc` | `vrmAdapterVrchatOsc::vrmAdapterVrchatOsc` | `include/vrmAdapterVrchatOsc/` | `liveTransport`, `osc` | inherited from `liveTransport` | no | unmeasured |
 | `vrmAdapterArdy` | reserved | reserved | reserved | — | no | not applicable |
+
+`vrmAdapterVmc` is the second row to say **measured**, on 2026-08-29, and it is
+the first one measured with edges: five packages must resolve before its target
+links, and the consumer names none of them (`tests/consumer/vrmAdapterVmc/`).
+Three things that run said, none of which `osc` could have.
+
+**The closure a consumer inherits is fifteen entries, and four of them are this
+package's.** On Windows: `motionCore::motionCore`, `motionRuntime::motionRuntime`,
+`liveTransport::liveTransport`, `osc::osc`, OpenUSD's `arch`, `gf`, `tf`,
+`boost`, `python`, `TBB::tbb` and `Python3::Python`, and the platform names
+`Dbghelp.lib`, `Shlwapi.lib`, `Ws2_32.lib` and `ws2_32`. The last two are the
+same library spelled by two different providers — OpenUSD's `arch` writes it
+capitalised, `liveTransport` in lower case — and that pair is the clearest
+statement of what criterion 6 is for: on a POSIX host the second becomes
+`$<LINK_ONLY:Threads::Threads>` (§3 rule 4) and the first disappears with the
+rest of the Windows set, so this is a difference a lane must expect rather than
+a defect it should report. Nothing here reaches `vrmContainer`, `vrmSchema` or a
+sibling adapter, which is WORKSPACE.md §2 observed from outside the workspace
+for the first time.
+
+**Criterion 4 exercises three include roots, not one.** The header the fixture
+includes carries `motionCore/Humanoid.h` and two OpenUSD `Gf` headers into the
+consumer's translation unit, so a config that resolved this package's target and
+left a required package unresolved fails at the first `#include` rather than at
+link time. That is a property of *this* package's public headers rather than a
+rule, and it is why the fixture includes that header and not a self-contained
+one.
+
+**The §1 defect was reproduced in its own shape and caught.** Removing every
+`find_dependency` from the installed config is caught by whichever edge the
+closure walk reaches first — `motionCore`, here — which says nothing about the
+fifth. `--mutate no-dependency --dependency osc` removes exactly the block the
+OSC-3 fix added and leaves the other four, and criterion 3 refuses it by name:
+*`osc::osc` is on the link closure of `vrmAdapterVmc::vrmAdapterVmc` and no
+package has defined it*. That is the failure every one of the 17 lanes was
+structurally unable to produce.
 
 **`vrmAdapterVrchatOsc` requires no `pxr`, `motionCore` or `motionRuntime`, and
 that is its current shape rather than an omission.** It ships no semantic
@@ -171,9 +207,13 @@ should notice they are missing when it does.
 
 **Unmeasured** in the tables above is a statement about evidence, not a
 prediction of failure. Each of those configs is written to the rules in §3 and
-was reviewed against them; as of 2026-08-29 one of them — `osc` — has also been
-configured from a clean prefix by a project that names no workspace target, and
-the rest have not.
+was reviewed against them; as of 2026-08-29 two of them — `osc` and
+`vrmAdapterVmc` — have also been configured from a clean prefix by a project
+that names no workspace target, and the rest have not. The two were chosen for
+opposite reasons: `osc` has no edge, so a failure there could only be its own
+config file, and `vrmAdapterVmc` has five, so it is the first package where the
+rule in §3 that a config declares its whole `PUBLIC` interface is a claim with
+something behind it.
 
 That distinction is the whole reason this document is not the deliverable.
 Seventeen green lanes did not catch a package naming an unresolvable target, and
@@ -205,8 +245,11 @@ three, and PKG-4's lane is where the closure this one records gets compared.
 has only ever printed *met* is indistinguishable from one that is not checked,
 so 1–4 were each broken in the installed prefix — the config deleted, its
 targets include removed, its `find_dependency` lines stripped, its header root
-deleted — and 5 by three edits to the fixture itself, with every mutation
-asserting it changed a byte before the run it justifies. The mutations are
+deleted — and 5 by edits to the fixture itself, with every mutation asserting it
+changed a byte before the run it justifies. For a package with more than one
+edge the `find_dependency` mutation also takes the *name* of the edge to remove,
+because stripping all of them is caught by the first one resolved and a package
+whose fifth edge was missing would pass a mutation aimed at its first. The mutations are
 `--mutate` in that driver, and they break the *prefix* rather than the source
 tree, so nothing in this loop depends on a `git stash` that might be a silent
 no-op.
