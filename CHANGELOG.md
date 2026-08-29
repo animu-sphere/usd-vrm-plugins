@@ -67,6 +67,67 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`osc`, the OSC wire format once instead of once per adapter.** Packets,
+  bundles and their flattening, addresses, type tags, arguments, and a refusal
+  that names the byte and the address it refused at. It knows no address
+  *semantics*: `/VMC/...`, `/tracking/...` and `/avatar/...` are all just
+  addresses here.
+
+  **It waited for a second consumer, and that wait is the whole of why it is a
+  library now rather than in v0.7.0.** A decoder extracted on the strength of
+  one caller is a decoder shaped like that caller, so the evidence had to be a
+  caller that never says `VMC`. An address inventory written in
+  `vrmAdapterVrchatOsc`, decoding real bytes through the VMC-owned decoder
+  without moving it, needed **five VMC tokens** — one include path and four
+  namespace qualifications — plus the export macro on its compile line, and its
+  report on a VRChat session printed `VRM_VMC_PACKET_MALFORMED`. The plan had
+  predicted three couplings: the namespace, the export macro, the diagnostic
+  code. The measurement found exactly those three and nothing else.
+
+  **A refusal carries no diagnostic code, and no neutral event enum either.**
+  `liveTransport` has `TransportEvent` because its receiver raises two events a
+  caller must tell apart; this decoder makes one distinction — a datagram is
+  decodable OSC or it is not. Three invented neutral names would have been
+  mapped straight back onto one adapter code by every caller and believed by the
+  next reader. So `OscDecodeError` carries a subject and a detail, and each
+  adapter supplies its own code: the same refusal reads
+  `VRM_VMC_PACKET_MALFORMED` in one adapter and
+  `VRM_VRCHAT_OSC_PACKET_MALFORMED` in the other, which is demonstrated rather
+  than promised.
+
+  Its allowed edge set is **empty**, and emptier than `liveTransport`'s in a way
+  a reader would not predict: it links no *platform* library either. A transport
+  needs a socket and a mutex; a decoder is handed a byte range. It is outside
+  the aggregate product for a reason §5 of the workspace contract had not needed
+  before — it names no product and opens nothing, so both of that section's
+  existing clauses pass, and what keeps it out is that no member of the product
+  links it or can.
+
+  `osc_boundaries` reads `tests/` as well as `include/` and `src/`, which
+  `liveTransport`'s check does not. A decoder's payloads all need *some*
+  address, and the shortest path is to paste one off a real session: the suite
+  that moved here had done exactly that, and every sample address was replaced
+  on the way at identical length, so the byte offsets it asserts are the same
+  numbers they were.
+
+- **An address inventory for `vrmAdapterVrchatOsc`.** What a recorded session
+  actually contains, counted from bytes: one row per address *and type tag
+  string*, with message and datagram counts and the span each row covers.
+  `vrchat_osc_record --inspect` prints it; the recording path still decodes
+  nothing.
+
+  The row key is the pair rather than the address, because a sender that spells
+  one address `,fff` in most frames and `,f` in some is a sender a decoder has
+  to be built around, and a table keyed on the address alone would average the
+  two and hide it. `messages` and `datagrams` are counted separately for the
+  same reason: they disagree exactly when a bundle repeats an address.
+
+  It carries **no list of addresses it expects**, which is the property the
+  milestone needs rather than a simplification. The risk being tested is that
+  mocopi's `VRChat (OSC)` output is not the tracker subset anyone assumes, and
+  an inventory that reported absences of expected rows would answer a different
+  question. An address nobody predicted appears as a row.
+
 - **`liveTransport`, the live half's shared leaf.** The UDP receiver, the
   opt-in datagram queue, the `<sender>-packet-capture` file format, and the
   diagnostic vehicle every live adapter reports through — one copy, where
@@ -153,6 +214,27 @@ Current schema contract version: **1**.
   of one protocol handed to the other protocol's decoder should fail at the
   first line rather than at the first field — and no committed fixture changes
   a byte, because the writer emits only the fields a capture actually carries.
+
+- **An OSC `t` argument reads as an unsigned time tag, in its own field.** It
+  used to share `h`'s signed 64-bit path, so an NTP time tag arrived as a
+  negative `integer` — and NTP seconds have had their high bit set since 1968,
+  so that was every time tag any sender emits today rather than a far-future
+  edge. `OscArgument` has a `timeTag` now, spelled and typed like the packet's
+  own, and `integer` stays at zero for a `t` on the rule the rest of the table
+  follows. Found and recorded by the characterisation step that could not change
+  behaviour; decided at the extraction, before two adapters could depend on the
+  answer. Nothing in VMC or in the VRChat tracker surface sends a `t`.
+
+- **`vrmAdapterVmc` decodes OSC through `osc` and keeps only its code.** 887
+  lines leave the adapter and 37 arrive, and what arrives is the part a shared
+  library may not hold: the map from *this datagram was not decodable OSC* onto
+  `VRM_VMC_PACKET_MALFORMED`. Every public name keeps its spelling —
+  `vrmAdapterVmc::OscPacket` and the rest are the same types reached through a
+  `using` — and the refusal still arrives with that code, its table's severity
+  and recoverability, the offending address as its subject and the byte in its
+  detail, which is what the adapter's own suite now checks. The fourteen tests
+  that describe the wire format moved with it; the corpus, which reads this
+  adapter's capture format over this adapter's fixtures, did not.
 
 - **Both adapters link `liveTransport` and neither links `ws2_32` directly.**
   The platform's transport and threading primitives arrive through that
