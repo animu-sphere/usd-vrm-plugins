@@ -120,12 +120,12 @@ standalone bundle build in CI is exactly that consumer.
 
 | Package | Exported target | Public headers | Required packages | Platform deps | In product | Standalone |
 | --- | --- | --- | --- | --- | --- | --- |
-| `vrmContainer` | `vrmContainer::vrmContainer` | `include/vrmContainer/` | — | — | yes | measured |
-| `motionCore` | `motionCore::motionCore` | `include/motionCore/` | `pxr` | — | yes | unmeasured |
-| `motionRuntime` | `motionRuntime::motionRuntime` | `include/motionRuntime/` | `pxr`, `motionCore` | — | yes | unmeasured |
-| `vrmRetarget` | `vrmRetarget::vrmRetarget` | `include/vrmRetarget/` | `pxr`, `motionCore`, `motionRuntime` | — | yes | unmeasured |
-| `motionSource` | `motionSource::motionSource` | `include/motionSource/` | `pxr`, `motionCore` | — | yes | unmeasured |
-| `motionBvh` | `motionBvh::motionBvh` | `include/motionBvh/` | `motionSource` | — | yes | unmeasured |
+| `vrmContainer` | `vrmContainer::vrmContainer` | `include/vrmContainer/` | — | — | yes | **measured** |
+| `motionCore` | `motionCore::motionCore` | `include/motionCore/` | `pxr` | — | yes | **measured** |
+| `motionRuntime` | `motionRuntime::motionRuntime` | `include/motionRuntime/` | `pxr`, `motionCore` | — | yes | **measured** |
+| `vrmRetarget` | `vrmRetarget::vrmRetarget` | `include/vrmRetarget/` | `pxr`, `motionCore`, `motionRuntime` | — | yes | **measured** |
+| `motionSource` | `motionSource::motionSource` | `include/motionSource/` | `pxr`, `motionCore` | — | yes | **measured** |
+| `motionBvh` | `motionBvh::motionBvh` | `include/motionBvh/` | `motionSource` | — | yes | **measured** |
 | `liveTransport` | `liveTransport::liveTransport` | `include/liveTransport/` | `Threads` (non-Windows) | `ws2_32` (Windows), `Threads::Threads` (elsewhere) | **no** | **measured** (Windows) |
 | `osc` | `osc::osc` | `include/osc/` | — | — | **no** | **measured** |
 
@@ -186,6 +186,38 @@ calls into `UdpReceiver`, and it calls the one thing there that needs no socket:
 and no port is named, because a packaging fixture that took a port would go red
 on a host where something else already held it, which is a fact about the
 machine rather than about the package.
+
+**The motion layer's five packages are measured, and the chain matters more
+than the count.** `motionCore`, `motionRuntime`, `vrmRetarget`, `motionSource`
+and `motionBvh` each configured, built, linked and ran from a prefix holding
+their own transitive closure and nothing else, with OpenUSD arriving through the
+driver's `--extra-prefix` the way it arrives for anyone else. Three things came
+out of it.
+
+*Criterion 3 is blind to an external package, and only criterion 4 catches one.*
+Removing `find_dependency(pxr)` from `motionCore`'s installed config was
+answered by the **build**, not by the closure walk: OpenUSD's imported targets
+are unnamespaced — `arch`, `gf`, `tf` — and a walk that refuses an undefined
+`::`-qualified entry has nothing to refuse in a bare name, because a raw library
+name is the linker's to resolve rather than CMake's. So for the five rows whose
+only external edge is `pxr`, the fixture's `#include` of a header that carries a
+`Gf` type into the consumer's translation unit is not a nicety: it is the only
+thing standing between a missing `find_dependency(pxr)` and a passing run. A
+fixture that included a self-contained header would meet all five criteria a
+host can check against a package no clean consumer could build.
+
+*A config may not reach past its own edges, so the closure is the installer's to
+compute.* `motionBvh` declares `motionSource` and nothing further (§3 rule 3),
+and installing that cell literally leaves `motionSource`'s own configure with
+nothing to resolve. It is the one row where the difference shows, because the
+rest of the table happens to be listed in topological order — and it is now the
+one row measured through a three-package closure the consumer never names.
+
+*Two of the five hold their C++ namespace in common, and the package name is not
+it.* `motionCore` and `motionRuntime` are both `namespace motion`: the identity
+is the artifact's name and the namespace is the layer. A consumer finds that out
+from the header, which is one more reason criterion 4 requires including one
+rather than only linking.
 
 ### 4.3 Adapters
 
