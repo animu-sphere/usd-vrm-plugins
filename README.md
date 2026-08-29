@@ -44,8 +44,9 @@ project's central design decision, and it is described below.
 | [`motion_bvh_inspect`](tools/motionBvh) | CLI executable | Reports what a BVH file contains — hierarchy, channels in declaration order, frames, and per-column value ranges | v0.7.0 |
 | [`motion_bvh_convert`](tools/motionBvh) | CLI executable | Converts a BVH file to the avatar-independent semantic clip under an explicitly named profile | v0.7.0 |
 | [`liveTransport`](libs/liveTransport) | Plain static CMake library | The live half's shared leaf: UDP receiver, opt-in datagram queue, packet-capture file format, and the diagnostic vehicle every live adapter reports through — no protocol, no product name, no diagnostic code | Unreleased |
-| [`vrmAdapterVrchatOsc`](adapters/liveCapture/vrchatOsc) | Plain static CMake library | VRChat OSC tracker input: numbered tracker observations, which are pre-IK, so it stops at a tracker frame and the humanoid solve stays outside it. Scaffold and recorder only — no semantic decoder | Unreleased |
-| [`vrchat_osc_record`](adapters/liveCapture/vrchatOsc/tools/vrchatOscRecord) | CLI executable | Records and inspects VRChat OSC packet captures. Reports the datagram envelope and nothing about a payload: the surface is published, and what a sender sends is still a measurement | Unreleased |
+| [`osc`](libs/osc) | Plain static CMake library | The OSC 1.0 wire format, shared by every adapter that speaks it: packets, bundles, addresses, type tags, arguments, and a refusal that carries no diagnostic code — no address semantics, no product name, and an empty link line | Unreleased |
+| [`vrmAdapterVrchatOsc`](adapters/liveCapture/vrchatOsc) | Plain static CMake library | VRChat OSC tracker input: numbered tracker observations, which are pre-IK, so it stops at a tracker frame and the humanoid solve stays outside it. Recorder and address inventory — no semantic decoder yet | Unreleased |
+| [`vrchat_osc_record`](adapters/liveCapture/vrchatOsc/tools/vrchatOscRecord) | CLI executable | Records and inspects VRChat OSC packet captures. Recording reports the datagram envelope and nothing about a payload; `--inspect` adds the address inventory, read out of the bytes rather than out of the specification | Unreleased |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
 
 `usdVrm` is not a bundle id — it names the product as a whole. It *was* the
@@ -99,7 +100,8 @@ Schedule: [docs/roadmap/](docs/roadmap/README.md#status-at-a-glance).
 | [`vrmAdapterVmc`](adapters/liveCapture/vmc) | Plain static CMake library | The first input leaf: VMC Protocol from OSC-over-UDP datagrams through frame assembly and VRM bone mapping to canonical humanoid semantics; includes a recorded-packet corpus and the `vmc_record` CLI |
 | [`vrmAdapterMocopi`](adapters/liveCapture/mocopi) | Plain static CMake library | The second: a capture product's own UDP grammar, measured off five device sessions rather than read from a specification, through the same frame assembly and bridge; includes the `mocopi_record` CLI |
 | [`liveTransport`](libs/liveTransport) | Plain static CMake library | What the live leaves stopped writing twice: the socket, the packet-capture format and the diagnostic vehicle. It is under `libs/` and still **outside** the aggregate product — no tool in the product opens a transport — and its allowed edge set is empty |
-| [`vrmAdapterVrchatOsc`](adapters/liveCapture/vrchatOsc) | Plain static CMake library | The third, and the first that is not a pose source: this wire carries numbered tracker observations, and a tracker index is not a body role. Written on the near side of the extraction above, so its capture format is one magic string and its receiver is a `switch` over two transport events |
+| [`osc`](libs/osc) | Plain static CMake library | The other thing the live leaves stopped writing twice, and the one that had to wait: an OSC decoder extracted on the strength of one caller is a decoder shaped like that caller, so it moved when a second consumer had decoded through it. Also outside the aggregate product, and its link line is empty of `liveTransport` too — the two are siblings, not a stack |
+| [`vrmAdapterVrchatOsc`](adapters/liveCapture/vrchatOsc) | Plain static CMake library | The third, and the first that is not a pose source: this wire carries numbered tracker observations, and a tracker index is not a body role. Written on the near side of both extractions, so its capture format is one magic string, its receiver is a `switch` over two transport events, and its address inventory is a loop over a decoder it does not own |
 
 `.vrm` and `.vrma` are deliberately **separate** file-format plugins with
 symmetric structure, and they compose by **reference**, not `subLayer` — a
@@ -121,10 +123,11 @@ motionRuntime ──────────> motionCore
 vrmRetarget ────────────> motionCore, motionRuntime
 motion_retarget (CLI) ──> vrmRetarget + OpenUSD stage APIs
 
-vrmAdapterVmc ──────────> motionCore, motionRuntime, liveTransport
+vrmAdapterVmc ──────────> motionCore, motionRuntime, liveTransport, osc
 vrmAdapterMocopi ───────> motionCore, motionRuntime, liveTransport
-vrmAdapterVrchatOsc ────> liveTransport (the other two arrive with a decoder)
+vrmAdapterVrchatOsc ────> liveTransport, osc (the core two arrive with a pose)
 liveTransport ──────────> nothing — its allowed edge set is empty, not short
+osc ────────────────────> nothing — the same, `liveTransport` included
 
 motionSource ───────────> motionCore
 motionBvh ──────────────> motionSource

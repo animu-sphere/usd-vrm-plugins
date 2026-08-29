@@ -2,28 +2,28 @@
 # SPDX-License-Identifier: Apache-2.0
 """Enforce vrmAdapterVrchatOsc's leaf boundary.
 
-WORKSPACE.md §2 gives an adapter library at most three edges — motionCore,
-motionRuntime and liveTransport — and forbids the rest: vrmSchema, every USD
+WORKSPACE.md §2 gives an adapter library at most four edges — motionCore,
+motionRuntime, liveTransport and osc — and forbids the rest: vrmSchema, every USD
 file-format bundle, `vrmRetarget` (the library), OpenExec, `ExecIr`, and every
 sibling adapter. It also may not be a plugin bundle (§1), so a plugin manifest or
 a plugInfo.json anywhere under the adapter is a failure by itself.
 
-**The sibling rule is what this check is for, and here it guards something the
-other two adapters' checks do not have to.** `vrmAdapterVmc` holds the only OSC
-decoder in this repository, and this adapter reads the same wire format. So
-reaching across is not an implausible mistake made by somebody who misread the
-layout — it is the *correct-looking* thing to do the first time a datagram starts
-with a '/', and it would even work. The plan's answer is a shared decoder with
-two consumers, extracted after a real datagram has been measured
-(osc-and-vrchat-trackers.md §3.1, OSC-3); until that library exists, an include
-of `vrmAdapterVmc/OscPacket.h` from here is the adapter → adapter edge the
-contract forbids, and it is this script that says so.
+**The sibling rule is what this check is for, and the thing it guarded has
+been removed rather than the rule.** Through VRC-0 `vrmAdapterVmc` held the only
+OSC decoder in this repository and this adapter read the same wire format, so
+reaching across was not an implausible mistake by somebody who misread the
+layout — it was the *correct-looking* thing to do the first time a datagram
+started with a '/', and it would have worked. OSC-3 answered it the way the plan
+said: `libs/osc` has two consumers, this adapter is the second, and an include of
+`vrmAdapterVmc/OscPacket.h` from here now buys nothing at all. The line below
+still refuses it, because a sibling edge is forbidden by the contract and not by
+whether it would pay (osc-and-vrchat-trackers.md §3.1).
 
 `mocopi` is refused on the same line for symmetry: all three adapters' checks now
 name the other two, so no pair can grow an edge quietly.
 
-Two differences from the equivalent check on `libs/motionRuntime` are deliberate,
-and both come straight from the contract:
+Three differences from the equivalent check on `libs/motionRuntime` are
+deliberate, and all three come straight from the contract:
 
 * **Transport is allowed here.** A socket in `motionRuntime` is a violation; a
   socket in an adapter is the adapter's job (motion policy §8.2). This script
@@ -31,6 +31,12 @@ and both come straight from the contract:
   `liveTransport` rather than opening it directly — this adapter never opened one
   at all — which narrows what the library contains but not what it is permitted
   to contain, so the platform's own primitives stay on the link allowlist.
+* **An address literal is allowed here, and refused in `libs/osc`.** That
+  library may not carry one anywhere, tests included, because a decoder that
+  knows one address is special has stopped being a wire-format decoder. An
+  adapter is the layer whose job is knowing which addresses are special — and
+  this one does not know yet either, because VRC-1 counts addresses rather than
+  naming them. The permission is the contract's; the emptiness is the milestone.
 * **Only `include/` and `src/` are scanned.** An adapter's CLI under `tools/` is
   a workspace *tool*, and a tool may drive `vrmRetarget` and author a stage
   exactly as `motion_retarget` does. Scanning it would flag the one place the
@@ -177,9 +183,10 @@ def main() -> int:
     # library name.
     #
     # `osc` is deliberately NOT a forbidden token here, where it is one in the
-    # mocopi adapter's check: this adapter's own identifiers contain it. That is
-    # the cost of naming a leaf after a protocol, and it is paid by naming the
-    # sibling's spellings precisely instead.
+    # mocopi adapter's check: this adapter's own identifiers contain it, and
+    # since OSC-3 it is a permitted edge as well. That is the cost of naming a
+    # leaf after a protocol, and it is paid by naming the sibling's spellings
+    # precisely instead.
     forbidden_neighbours = re.compile(
         r"\b(?:vrmSchema|vrmContainer|vrmRetarget|usdVrm\w*|execMotion|execVrm|"
         r"vrmAdapterVmc|vrmAdapterMocopi|vrmAdapterArdy|cgltf|vmc|mocopi|ardy)\b",
@@ -215,7 +222,7 @@ def main() -> int:
     allowed_link = {
         "vrmadaptervrchatosc", "public", "private", "interface",
         "motioncore::motioncore", "motionruntime::motionruntime",
-        "livetransport::livetransport",
+        "livetransport::livetransport", "osc::osc",
         "ws2_32", "threads::threads",
     }
     for arguments in re.findall(r"target_link_libraries\s*\((.*?)\)", cmake,
@@ -224,7 +231,7 @@ def main() -> int:
             if token.lower() not in allowed_link:
                 errors.append(
                     "vrmAdapterVrchatOsc may link only motionCore, "
-                    "motionRuntime, liveTransport and the platform's own "
+                    "motionRuntime, liveTransport, osc and the platform's own "
                     f"primitives; CMakeLists.txt links `{token}`")
 
     # Refuse a static archive outright rather than inspecting one and finding
