@@ -674,6 +674,11 @@ produces a 9-file archive, and the adapter it was contrasted against produces a
 15-file one. The prediction was right about the outcome and wrong about the
 reason, which is the half worth recording.
 
+`ost library package libs/osc` produces a **7-file** archive, measured
+2026-08-29 — the smallest thing on this side, and smaller than the transport
+leaf's nine for the reason its identity row gives: one source file, two headers,
+and no platform dependency for a config file to re-find.
+
 `motionSource` and `motionBvh` are **not** adapters and take the opposite
 decision: they carry no product name in code, so they belong in the aggregate
 product exactly as `motionCore` and `motionRuntime` do, and `motion_bvh_inspect`
