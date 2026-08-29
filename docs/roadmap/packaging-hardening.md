@@ -182,6 +182,41 @@ to resolve. The driver walks the rows depth-first instead. The rest of the table
 happens to be listed in topological order, which is why only `motionBvh`
 exposed it.
 
+**Done 2026-08-29 for `vrmAdapterVmc`, and this is the half the milestone was
+written for.** `tests/consumer/vrmAdapterVmc/` configures, builds, links and
+runs against a prefix holding `motionCore`, `motionRuntime`, `liveTransport`,
+`osc` and the adapter, with OpenUSD arriving through `--extra-prefix` the way it
+arrives for anyone else. It passed on the first run, which is worth stating
+plainly: the package was correct, and it was correct because the OSC-3 fix had
+already landed. What this adds is that the correctness is now measured rather
+than reviewed, and the measurement has been shown to fail.
+
+*The pre-fix config was reproduced in its own shape, not approximated.* The
+existing `no-dependency` mutation strips every `find_dependency` in the config,
+and against a package with five edges it is caught by the first the closure walk
+reaches — `motionCore` — which is a real catch that proves nothing about the
+fifth. The §1 defect was one missing line and it was the last one, so the driver
+grew `--dependency`: `--mutate no-dependency --dependency osc` removes exactly
+the block the OSC-3 fix added, leaves the other four, and criterion 3 refuses it
+by name. Both of its refusals were run rather than asserted — a `--dependency`
+beside another mutation, and one naming a package the row does not declare, each
+exiting 2 as a setup error rather than reporting a catch it did not make. All
+four original mutations were run too, and each was answered first by the
+criterion it was aimed at.
+
+*Criterion 5 was verified against this fixture rather than inherited from the
+last one.* A `motionCore::motionCore` added to the fixture's link line is caught
+by name — **with criteria 1–4 still met**, which is the whole argument for
+checking the fixture statically: a leaking consumer builds and runs and reports
+a pass. The file was restored byte-exact afterwards, and the mutation was to the
+fixture rather than to a tracked source file of the package.
+
+*This fixture is also the first whose sources name other identities at all.* Its
+comments name four sibling packages, in a criterion whose rule is that a fixture
+must not name them — and it reads met, because the check strips comments before
+it looks. `osc`'s fixture had nothing to say about a sibling, so that half of
+the check had never been exercised by anything but its own unit of proof.
+
 ### PKG-2 — the driver ✅
 
 A script that, for a named package: installs the workspace to a scratch prefix,

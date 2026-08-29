@@ -38,6 +38,42 @@ it, runs it, and reports the six criteria. `--prefix-source ost-package` asks
 the same question of an `ost`-produced prefix instead of a `cmake --install`
 one. See [roadmap/packaging-hardening.md](../../docs/roadmap/packaging-hardening.md).
 
+A package with edges needs the packages it does *not* produce to come from
+somewhere, and they arrive the way they arrive for any other consumer:
+
+```sh
+python scripts/check_package_consumer.py vrmAdapterVmc \
+    --extra-prefix ~/.ost/runtimes/openstrata-cy2026-<platform>-py313-usd
+```
+
+That prefix is the OpenUSD runtime, and the reliable way to spell it is to read
+it rather than to remember it: `.strata/targets/<target>/toolchain.cmake` names
+the same directory in its `CMAKE_PREFIX_PATH` line, which is where the run
+recorded above took it from.
+
+`--extra-prefix` is never the workspace build tree. It holds the packages this
+workspace does not produce, and the driver keeps it out of the resolution of the
+package under test: criterion 1 fails if the package answers from anywhere but
+the scratch prefix.
+
+## Making one fail on purpose
+
+A fixture that has only ever printed a pass is indistinguishable from one that
+is not checked, so `--mutate` breaks the *installed prefix* and requires the run
+to go red — a pass against a broken package is reported as the fixture being
+untrustworthy. For a package with more than one edge, `--dependency` names the
+one to remove:
+
+```sh
+python scripts/check_package_consumer.py vrmAdapterVmc \
+    --mutate no-dependency --dependency osc --extra-prefix ...
+```
+
+That is the shape the defect above actually had — one missing line, and it was
+the last one. Stripping every `find_dependency` instead is caught by whichever
+edge the closure walk reaches first, which is a real catch that proves nothing
+about the fifth.
+
 ## Adding one
 
 Copy `osc/` and change three things: the `project()` name, the `PACKAGE` and
@@ -66,9 +102,17 @@ and all of them verified by mutating a fixture until each was caught:
 
 These are packaging fixtures, not tests of the library. `main.cpp` asks the
 smallest question the package can answer — for `osc`, whether an address comes
-back — because anything larger makes a packaging failure look like a decoder
-failure the first time it goes red. The decoder's own suite lives in
-[`libs/osc/tests/`](../../libs/osc/tests/).
+back; for `vrmAdapterVmc`, whether a bone name goes in and the same name comes
+out — because anything larger makes a packaging failure look like a decoder
+failure the first time it goes red. Those suites live with their code, in
+[`libs/osc/tests/`](../../libs/osc/tests/) and
+[`adapters/liveCapture/vmc/tests/`](../../adapters/liveCapture/vmc/tests/).
+
+*Which* header a fixture includes is a packaging decision, though. A package
+with edges is best asked through the header that carries them: `SkeletonMap.h`
+pulls a canonical humanoid header and two OpenUSD value-type headers into the
+consumer's translation unit, so a config that forgot a required package fails at
+the first `#include` rather than at link time.
 
 Three bundles have no fixture here and never will: `usdVrmFileFormat`,
 `usdVrmPackageResolver` and `usdVrmaFileFormat` export no target and install no

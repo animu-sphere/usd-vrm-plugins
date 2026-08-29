@@ -94,7 +94,7 @@ test completes with nothing installed.
       `scripts/clean_install_smoke.py` already gates. That correction to the
       original fourteen-package list is
       [the track](packaging-hardening.md) §3)*;
-- [ ] one consumer fixture configures and links against one package from a
+- [x] one consumer fixture configures and links against one package from a
       clean prefix, and is shown to **fail against the pre-fix config** before it
       is trusted — `osc` first, because its edge set is empty and a failure can
       only be the config file itself, then `vrmAdapterVmc`, because that is the
@@ -105,10 +105,19 @@ test completes with nothing installed.
       installed prefix and three edits to the fixture, every one of them
       asserting it changed a byte first. The mutations break the prefix rather
       than the source tree, so none of them is a `git stash` that might be a
-      silent no-op. **This line stays open for `vrmAdapterVmc`**, which is the
-      package the defect was actually in and the first fixture with a
-      `find_dependency` to strip — `osc` has none, and its driver refuses that
-      mutation by name rather than reporting a catch it did not make)*;
+      silent no-op. **The `vrmAdapterVmc` half closed the same day** —
+      `tests/consumer/vrmAdapterVmc/` resolves five packages it never names and
+      passed on the first run, because the OSC-3 fix had already landed, so what
+      it adds is evidence rather than a repair. The pre-fix config was
+      reproduced in **its own shape**: stripping every `find_dependency` is
+      caught by the first edge the closure walk reaches and says nothing about
+      the fifth, so the driver grew `--dependency`, which removes exactly the
+      block the fix added and leaves the other four. Criterion 3 then refuses
+      `osc::osc` by name — the failure all 17 lanes were structurally unable to
+      produce. Criterion 5 is verified against *this* fixture too, and the catch
+      is the interesting half: a sibling identity on its link line is caught
+      **while criteria 1–4 stay met**, which is what a statically checked
+      fixture is for)*;
 - [x] the driver runs by hand on a workstation before any lane exists, and
       answers which prefix a consumer actually gets: `cmake --install` and an
       extracted `ost` package are not the same artifact *(PKG-2, 2026-08-29:
