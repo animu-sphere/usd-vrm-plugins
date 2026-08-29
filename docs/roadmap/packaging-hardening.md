@@ -1,6 +1,7 @@
 # Packaging hardening — the installed-package consumer lane
 
-**Status:** planned, and the top-priority track · **Target:** v0.8.0 ·
+**Status:** in progress — PKG-0, PKG-1 and PKG-2 done; one of twelve packages
+measured · **Target:** v0.8.0 ·
 **Contract:** [architecture/PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md)
 
 The workspace has finished splitting. `vrmSchema`, `usdVrmFileFormat`,
@@ -99,7 +100,7 @@ standalone installability has been *measured* or only *reviewed*. Written
 2026-08-29, from the CMake sources rather than from intent — which is what makes
 the `unmeasured` column honest instead of aspirational.
 
-### PKG-1 — one consumer fixture, one package ⬜
+### PKG-1 — one consumer fixture, one package ✅
 
 The smallest thing that can fail correctly. `tests/consumer/` holds one CMake
 project per package under test:
@@ -123,7 +124,43 @@ package the §1 defect was actually in — and the fixture must be shown to **fa
 against the pre-fix config** before it is trusted, in the way every negative
 verification here is trusted or not.
 
-### PKG-2 — the driver ⬜
+**Done 2026-08-29 for `osc`.** `tests/consumer/osc/` configures, builds, links
+and runs against a prefix holding the package's seven files and nothing else,
+and `osc`'s row in PACKAGE_CONTRACT.md §4.2 now reads *measured*. Three things
+came out of it that the plan above did not predict.
+
+*The criteria are shared rather than copied.* `tests/consumer/ConsumerCriteria.cmake`
+holds the `find_package`, the target and archive resolution, and the transitive
+closure walk, and each fixture passes it a package name. Twelve fixtures each
+writing their own would be twelve chances for one to check less than the others
+and still print a pass — and a check that was never run is the failure mode this
+whole track exists for, not a check that ran and said no. The module names no
+workspace target, so the only identity that appears in a fixture is the one the
+fixture is for, which is what makes criterion 5 mechanical.
+
+*The negative verification is four mutations of the prefix, not of the source.*
+`--mutate` deletes the config (criterion 1 fails), removes its targets include
+(2), strips its `find_dependency` lines (3), or deletes its header root (4), and
+requires the run to go red — a pass against a broken package is reported as the
+fixture being untrustworthy rather than as a success. Nothing stashes or reverts
+a tracked file, so the silent-no-op trap that class of verification usually
+carries does not apply. `no-dependency` **refuses to run against `osc`** and
+says why: an empty required-package set has nothing to strip, and a mutation
+that matched nothing and reported a catch is the same lie in a smaller package.
+Criterion 5 was verified the same way, by three edits to the fixture — a sibling
+identity on the link line, an `add_subdirectory` into the source tree, and a
+`main.cpp` that stopped including a public header — each caught, with the files
+restored byte-exact afterwards.
+
+*The driver reads the contract rather than a copy of it.* Package name, exported
+target, header root and required packages all come out of PACKAGE_CONTRACT.md
+§4, so a row that is wrong about a package fails this check instead of quietly
+not being used, and there is no second table to drift. Parsing it also confirmed
+the §3 correction from the outside: twelve rows carry a `find_package` contract,
+and the six that do not are refused by name with the reason — reserved, or
+plugin-load-not-`find_package`.
+
+### PKG-2 — the driver ✅
 
 A script that, for a named package: installs the workspace to a scratch prefix,
 configures the fixture against that prefix alone, builds it, and reports which
@@ -137,6 +174,35 @@ comes from `cmake --install` or from an extracted `ost` package. They are not
 the same artifact — `ost` stages a dependency's link half under
 `runtime/libraries/{lib,bin}` — and a consumer contract that holds for one and
 not the other is a finding, not a configuration error.
+
+**Done 2026-08-29: `scripts/check_package_consumer.py`, and for a plain library
+the two prefixes are the same artifact.** `--prefix-source` takes both, and both
+were run by hand against `osc`. The two prefixes hold the **same seven files
+under the same names**, and `oscConfig.cmake` and `oscTargets-release.cmake` are
+byte-identical between them; the archive itself is not, because `ost` built it
+with the runtime's toolchain (`msvc143`) and the workstation's `cmake --install`
+used the local one (MSVC 19.51). That difference is the one a consumer contract
+should be insensitive to, and it was: the same fixture linked either archive.
+
+The staging difference the question anticipated is real but belongs to a
+*bundle*, whose package carries its dependencies' link halves. A plain library's
+`ost` package stages only its own install rules — so this answer is about a
+*shape* rather than about eleven packages. The eight library rows and the three
+adapters all have that shape and `vrmSchema` does not, which makes it the one
+row in §3's first group where the two prefixes could still diverge; and only
+`osc` has actually been run either way.
+
+It also runs the criterion-5 pass before it builds anything, which is the cheap
+half and the half that guards the other five.
+
+One defect the milestone found in itself, worth recording because it is a
+this-machine class rather than a this-script one: the driver captures the
+consumer's configure output, and a captured toolchain speaks the host's
+language. MSBuild on a Japanese Windows emits cp932, and one stray byte raised
+`UnicodeDecodeError` inside subprocess's reader thread, surfacing several frames
+later as `stdout is None`. A criterion the driver cannot parse must read as
+unmet, never as a traceback, so every captured run now decodes with
+`errors="replace"`.
 
 ### PKG-3 — all twelve ⬜
 
