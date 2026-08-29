@@ -2,13 +2,12 @@
 #
 # A consumer of the installed `vrmAdapterMocopi` package, and nothing else.
 #
-# This is the package with a standing platform gap. Its standalone build has
+# This is the package with a standing platform gap. Its standalone build had
 # been unverified since the receiver added a platform link and the installed
 # config was edited without the check being re-run
-# ([#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)), which is
-# why its `Standalone` cell says **stale** rather than **unmeasured**: the
-# difference is a measurement that was true about an older package, and the two
-# are not the same claim.
+# ([#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)) -- a
+# measurement that was true about an older package, which is not the same claim
+# as no measurement at all. This fixture is what replaces it.
 #
 # Four packages must resolve before its target links and the consumer names none
 # of them (PACKAGE_CONTRACT.md §4.3). One of the four carries the platform link

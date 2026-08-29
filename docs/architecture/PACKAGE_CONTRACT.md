@@ -51,7 +51,7 @@ Seven fields, and each of them is something a consumer can be wrong about:
 | **Required packages** | What the config must `find_dependency` before its targets file is included. This is exactly the set of `PUBLIC`/`INTERFACE` workspace edges, and the rule in §3 makes it derivable rather than remembered. |
 | **Platform dependencies** | Non-workspace libraries that travel with the target's `INTERFACE_LINK_LIBRARIES`. These are not workspace edges (WORKSPACE.md §2 does not govern them) but a consumer's link line fails without them. |
 | **In the aggregate product** | Whether the identity is a member of `usd-vrm-plugins-<version>-<target>-plugin-product.tar.zst`. The rule and its reasoning are WORKSPACE.md §5; this column only records the answer. |
-| **Standalone installability** | Whether an external consumer has been shown to configure and link against the installed package alone. Three values: **measured**, **unmeasured**, **not applicable** (the identity ships no CMake package). |
+| **Standalone installability** | Whether an external consumer has been shown to configure and link against the installed package alone. Three values: **measured**, **unmeasured**, **not applicable** (the identity ships no CMake package). A platform in parentheses — **measured (Windows)** — narrows the first: the run was made, and the row is one whose closure differs by platform, so one host's answer is knowingly half of it. Nothing else may qualify a cell; a measurement that was true about an older package is not a fourth value, it is `unmeasured` with a note. |
 
 ## 3. The rules a config file follows
 
@@ -327,19 +327,27 @@ PKG-5).
 
 ## 5. What "standalone" is worth without a lane
 
-**Unmeasured** in the tables above is a statement about evidence, not a
-prediction of failure. Each of those configs is written to the rules in §3 and
-was reviewed against them; as of 2026-08-29 four of them — `osc`,
-`vrmAdapterVmc`, `vrmContainer` and `liveTransport` — have also been configured
-from a clean prefix by a project that names no workspace target, and the rest
-have not. The first two were chosen for opposite reasons: `osc` has no edge, so
-a failure there could only be its own config file, and `vrmAdapterVmc` has five,
-so it is the first package where the rule in §3 that a config declares its whole
-`PUBLIC` interface is a claim with something behind it. The next two are the
-two *shapes* neither of those has: `vrmContainer` is the only `SHARED` package,
-whose contract is not finished at the link, and `liveTransport` is the only one
-whose closure differs by platform, which is the one row where a single host's
-answer is knowingly half of the measurement.
+**Measured** in the tables above is a statement about evidence, and as of
+2026-08-30 every row that carries a `find_package` contract has it: all twelve
+have been configured, built, linked and *run* from a clean prefix by a project
+that names no workspace target, and no config file failed. There is no
+`unmeasured` cell left in §4.
+
+The order they were taken in is the argument for believing them. `osc` came
+first because it has no edge, so a failure there could only be its own config
+file; `vrmAdapterVmc` second because it has five, which is where §3's rule that a
+config declares its whole `PUBLIC` interface first has something behind it.
+After those came the *shapes* neither of them has — the only `SHARED` package,
+whose contract is not finished at the link; the only package whose closure
+differs by platform; the one whose declared edges are not its closure; the one
+whose edges are not all visible from its headers; and the one bundle that ships
+a CMake package. A twelfth fixture that looked like the first would have
+measured one shape twelve times.
+
+What is still unmeasured is not a package but a *platform*. Every run above was
+made on one host, so criterion 6 is unanswered everywhere, and the four cells
+that say **measured (Windows)** are the rows where that matters: `liveTransport`
+and the three adapters that inherit its platform dependency.
 
 That distinction is the whole reason this document is not the deliverable.
 Seventeen green lanes did not catch a package naming an unresolvable target, and
@@ -392,12 +400,14 @@ changed a byte before the run it justifies. For a package with more than one
 edge the `find_dependency` mutation also takes the *name* of the edge to remove,
 because stripping all of them is caught by the first one resolved and a package
 whose fifth edge was missing would pass a mutation aimed at its first. Stripping
-all of them is also *refused* when none of the lines is this config's to lose on
-this host: `liveTransport`'s one edge is conditional, so on Windows the blanket
-mutation deletes a line inside an `if(NOT WIN32)` that was never reached, and a
-run that then passed would have reported the fixture as untrustworthy — the same
-false accusation the named form already refuses, arriving through the form that
-had no guard. The mutations are
+all of them is *refused* only when every edge is one another package in the
+prefix also declares, which is a fact about the prefix and true on any host.
+When the edges carry **conditions** instead, the run is made and a pass ends
+inconclusive rather than blaming the fixture: `liveTransport`'s one edge is
+inside `if(NOT WIN32)` and is not reached on Windows, while `vrmSchema`'s is
+inside `if(NOT pxr_FOUND)` and is reached by every clean consumer — the contract
+cell says a condition exists and not which way it falls, so refusing both would
+have thrown away a real catch, and `vrmSchema`'s is caught by criterion 4. The mutations are
 `--mutate` in that driver, and they break the *prefix* rather than the source
 tree, so nothing in this loop depends on a `git stash` that might be a silent
 no-op.

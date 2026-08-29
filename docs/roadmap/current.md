@@ -145,7 +145,9 @@ test completes with nothing installed.
       mutation could **accuse a fixture of an edit that changed nothing** (every
       edge of `liveTransport`'s config is conditional, so on Windows it deletes
       a line inside an `if(NOT WIN32)` and then blames the one file that was not
-      changed — now refused before anything is installed); criterion 5 refused a
+      changed — now **inconclusive** for a conditional edge and refused up front
+      only where masking makes the mutation inert on every host, which is the
+      distinction that keeps `vrmSchema`'s real catch); criterion 5 refused a
       **namespace no consumer can avoid writing** (`motionBvh` hands back a
       `motionSource::SourceSkeleton`, so the check now asks per file — an
       identity in CMake is an edge, an `#include` of a sibling's header root in
@@ -154,8 +156,11 @@ test completes with nothing installed.
       targets are unnamespaced and a closure walk has nothing to refuse in a
       bare `gf` — which makes the header each fixture includes the only thing
       between a missing external edge and a passing run, and a rule PKG-4's lane
-      inherits. Forty-eight mutations of the installed prefix: thirty-nine
-      caught, seven refused up front, one inconclusive by construction. Two
+      inherits. Forty-eight mutations of the installed prefix: forty-one
+      caught, five refused up front where masking makes them inert on any host,
+      and two inconclusive where the only edge carries a condition this host
+      does not meet. Six fixture edits were caught statically by criterion 5,
+      before a build. Two
       shapes measured for the first time — the only `SHARED` package, whose
       contract is not finished at the link, and the one *bundle* with a package,
       which stages its shared object in `lib/` where a library stages it in
@@ -168,11 +173,13 @@ test completes with nothing installed.
       (`ws2_32` vs `Threads::Threads` is the one expected);
 - [x] `scripts/check_docs.py` refuses a `*Config.cmake.in` with no row in
       PACKAGE_CONTRACT.md, and a row naming a package that does not exist
-      *(2026-08-30: four ways to fail it, each made to fail before the check was
+      *(2026-08-30: five ways to fail it, each made to fail before the check was
       believed — a config template with no row, a row claiming its package
       exports no target beside that package's own config, a row naming an
-      identity no manifest declares, and a row promising a target nothing
-      installs. Reserved rows are exempt from the existence half by design.
+      identity no manifest declares, a row promising a target nothing installs,
+      and a row marked **reserved** beside its own config, which without a case
+      of its own falls through both halves. Reserved rows are exempt from the
+      existence half by design.
       Landed **before** the CI cell rather than after it: the document it checks
       is five days old, so the drift has had no time to happen, which is the
       moment to add such a check rather than the moment after)*.

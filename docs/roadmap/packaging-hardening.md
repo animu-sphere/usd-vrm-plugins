@@ -317,11 +317,18 @@ changed nothing.* The narrowed form learned that lesson a day earlier and grew
 two refusals; the form with no name kept none of them. `liveTransport`'s only
 edge is conditional, so on Windows that mutation deletes a line inside an
 `if(NOT WIN32)` which is never reached — and the run then met every criterion
-and exited 1 with *this fixture cannot be trusted*. It is now refused before
-anything is installed whenever no declared edge is this config's to lose, and
-the refusal names each inert edge and why. `vrmSchema` is refused for the other
-reason in the same guard, and its message points at the run that answers
-sharply: `--dependency pxr`.
+and exited 1 with *this fixture cannot be trusted*.
+
+The fix separates two facts the first attempt at it collapsed into one refusal.
+**Masking is a property of the prefix**, readable from the contract and true on
+every host, so a package whose every edge is also declared by a package beside
+it is refused before anything is installed. **A condition is a question about
+the host**, and this driver evaluates none — so a conditional edge is a reason
+not to blame the fixture, and not evidence that the mutation is inert. Those
+runs are made, and a pass ends **inconclusive**. Refusing them instead threw
+away a real catch: `vrmSchema`'s `find_dependency(pxr)` is inside
+`if(NOT pxr_FOUND)`, which every clean consumer reaches, and its blanket
+mutation is caught by criterion 4.
 
 *Criterion 5 was too coarse for a package whose API hands back a lower layer's
 type.* `ExtractBvhSource` takes a `motionSource::SourceSkeleton*`, so a
@@ -363,15 +370,19 @@ Two shapes the earlier milestones had not measured, both of which behaved:
   rather than predicted. The raw-library half is what PKG-5 keeps.
 
 The arithmetic: ten packages measured green here, on top of PKG-1's two, and
-**forty-eight mutations of the installed prefix** across them — thirty-nine
-caught, seven refused before anything was installed, one inconclusive by
-construction, and one that exposed the driver defect above. Four more edits went
-to the *fixtures* rather than the prefix, and criterion 5 caught each statically,
-before a build. Every package with more than one edge was also mutated by
-*name*, because stripping every `find_dependency` is caught by whichever edge
-the closure walk reaches first and says nothing about the last one — which is
-the shape the §1 defect actually had, and `vrmAdapterVrchatOsc` is where that
-shape was reproduced for the second of the two packages that shipped it.
+**forty-eight mutations of the installed prefix** across them — forty-one
+caught, five refused before anything was installed because masking makes them
+inert on any host, and two inconclusive because `liveTransport`'s one edge is
+conditional and unreached here. The blanket mutation that exposed the driver
+defect above was reproduced before the fix and re-run after it. Six more edits
+went to the *fixtures* rather than the prefix, and criterion 5 caught each
+statically, before a build.
+
+Every package with more than one edge was also mutated by *name*, because
+stripping every `find_dependency` is caught by whichever edge the closure walk
+reaches first and says nothing about the last one — which is the shape the §1
+defect actually had, and `vrmAdapterVrchatOsc` is where that shape was
+reproduced for the second of the two packages that shipped it.
 
 ### PKG-4 — the CI lane ⬜
 
@@ -427,12 +438,14 @@ moves here from the carry-over list rather than being tracked twice.
 - **`scripts/check_docs.py`** gains a check that every identity with a
   `*Config.cmake.in` has a row in PACKAGE_CONTRACT.md, and that every row names
   a package that exists. That is the same class of check as the bundle-inventory
-  one it already runs. ✅ **Done 2026-08-30**, with four ways to fail it, each
+  one it already runs. ✅ **Done 2026-08-30**, with five ways to fail it, each
   one made to fail before the check was believed: a config template with no
   row, a row claiming its package exports no target beside that package's own
-  config, a row naming an identity no manifest declares, and a row promising a
-  target that nothing installs. Reserved rows are exempt from the existence
-  half by design (PACKAGE_CONTRACT.md §6).
+  config, a row naming an identity no manifest declares, a row promising a
+  target that nothing installs, and a row marked **reserved** beside its own
+  config. The last is there because reserved rows are exempt from the existence
+  half by design (PACKAGE_CONTRACT.md §6) — without a case of its own it would
+  fall through both halves, which is the drift the check is for.
 
 ## 7. PR splitting
 

@@ -97,13 +97,15 @@ something else already resolves that package, so:
   accusation against the one file in the loop that was not changed, so it is
   never the answer to an inert edit.
 
-Without `--dependency` the mutation strips **every** `find_dependency`, and that
-form is refused up front when none of the lines is this config's to lose. On
-Windows `liveTransport`'s only edge is the conditional one, so the blanket
-mutation there could delete a byte, break nothing, and reach exit 1 — the same
-false accusation the named form refuses, arriving through the form that had no
-guard. The refusal names each inert edge and why it is inert, and it costs a
-second rather than an install.
+Without `--dependency` the mutation strips **every** `find_dependency`, and the
+same three outcomes apply to it — decided by which kind of inertness is in play.
+An edge every other package in the prefix also declares is inert on any host, so
+a package with nothing but those is refused before anything is installed. An
+edge with a *condition* on it is a question this driver does not answer: those
+runs are made, and a pass ends inconclusive. That distinction is not academic —
+`liveTransport`'s only edge is inside `if(NOT WIN32)` and is unreached on
+Windows, while `vrmSchema`'s is inside `if(NOT pxr_FOUND)` and is reached by
+every clean consumer, so its blanket mutation is a real catch.
 
 ## Adding one
 

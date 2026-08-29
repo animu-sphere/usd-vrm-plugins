@@ -504,6 +504,15 @@ def check_package_contract(failures: list[str]) -> None:
                 f"{path} installs a CMake package `{name}` with no row in "
                 f"{CONTRACT} §4. A package a consumer can find is a promise, "
                 f"and this document is where the promise is written")
+        elif "reserved" in (rows[name]["target"], rows[name]["product"]):
+            # The exemption below is for an identity with no package yet. One
+            # that installs a config has a package, so the row is out of date
+            # rather than reserved -- and without this it would fall through
+            # both halves of the check, which is the drift this exists to catch.
+            failures.append(
+                f"{CONTRACT} §4 marks `{name}` reserved, but {path} installs a "
+                f"CMake package for it. A reserved identity is one with no "
+                f"package yet (§6); fill the row in")
         elif rows[name]["target"] in DASH:
             failures.append(
                 f"{CONTRACT} §4 says `{name}` exports no target, but {path} "
