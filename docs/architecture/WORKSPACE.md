@@ -558,6 +558,16 @@ must also build standalone against installed packages
 
 ## 5. Artifact naming and versioning
 
+> **What a consumer writes to use one of these is
+> [PACKAGE_CONTRACT.md](PACKAGE_CONTRACT.md), not this section.** This section
+> names artifacts and decides aggregate membership; it has never stated the
+> package name, exported target, header root or required packages that a project
+> outside this repository needs, and readers kept arriving here for them. That
+> split was made on 2026-08-29, after two installed packages named an imported
+> target no consumer could resolve while every lane was green — a defect neither
+> document would have caught, because nothing in this workspace had ever opened a
+> package config file. Nothing in this section changed with the split.
+
 Per-bundle artifacts plus one aggregate:
 
 ```text

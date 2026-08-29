@@ -358,6 +358,42 @@ Euler rotations. It is written down, which makes it a claim to verify against a
 capture rather than a grammar to measure from scratch; that is the one respect
 in which this adapter starts ahead of `vrmAdapterMocopi`.
 
+### 5.1 Assignment is a third thing, and it belongs to neither end
+
+*Stated explicitly 2026-08-29, because the near-term plan named it as its own
+task and the pipeline above had it hiding inside "solve".*
+
+Three separable decisions sit between a tracker index and a bone, and collapsing
+any two of them is how VRChat semantics leak upward:
+
+| Decision | Owner | What it may know |
+| --- | --- | --- |
+| **Decode** — bytes to `TrackerSample` | the adapter | addresses, type tags, argument order. No body roles, no basis. |
+| **Assignment** — which tracker is which body region | a **generic** policy, outside the adapter | tracker count, relative rest geometry, an operator's explicit statement. **Never a VRChat address literal.** |
+| **Solve** — assigned observations to `HumanoidPose` | the motion layer | canonical bones, target-independent. Never an avatar. |
+
+**Assignment is not a lookup and it is not IK either.** A three-point setup, a
+six-point setup and a full-body setup differ in what is observable, not in what
+is solvable, so the policy has to state what it does with a set it cannot place:
+refuse, place partially, or hold. That is the same class of stated-policy
+question `vrmAdapterMocopi` answered for a frame missing three bones, and it
+gets the same treatment — a decision with a fixture, not emergent behaviour.
+
+The default this plan expects to start from is **explicit assignment**: an
+operator names which tracker is which region, exactly as `motion_bvh_convert`
+requires a named profile rather than detecting one. Automatic assignment from
+rest geometry is a later aid over the same contract, never the only path — a
+detector written first would settle the contract on whichever calibration
+happened to be recorded first, which is the failure this repository has now
+avoided twice by the same argument (`libs/osc`'s second consumer, the BVH
+corpus's second producer).
+
+Where the assignment policy *lives* is open, and it is the one question VRC-5
+cannot defer: it is generic, so it is not the adapter's, and it names tracker
+regions, which `motionCore` has no vocabulary for. Naming it is a contract
+change ([§10](#10-contract-changes-this-plan-requires)) and it happens before an
+implementation, not with one.
+
 ## 6. The adapter: capture precedes decoder
 
 Sony's help pages list `VRChat (OSC)` as a mocopi transfer format and name
@@ -874,6 +910,20 @@ emergent ([adapter plan §5.2](adapters-mocopi-vmc-ardy.md#52-frame-assembly-is-
 repeated updates for one tracker · partial tracker sets · timeout · stale
 samples · the head reference · source reset · calibration discontinuity. Each is
 a test, and each has a recorded or generated fixture that produces it.
+
+### VRC-4a — tracker assignment policy
+
+Which tracker is which body region, as a **generic** contract with an explicit
+operator statement as its first and only required path
+([§5.1](#51-assignment-is-a-third-thing-and-it-belongs-to-neither-end)). Its
+home is named in the contracts before it is implemented, its behaviour on a set
+it cannot place is stated with a fixture per outcome, and it contains no VRChat
+address literal — a policy that did would have made "generic" a claim about
+where a file sits.
+
+Automatic assignment from rest geometry is **not** in this milestone. It is an
+aid over this contract once the contract exists, in the same relationship
+`motion_bvh_inspect`'s candidate profiles have to `--profile`.
 
 ### VRC-5 — the humanoid solve boundary
 

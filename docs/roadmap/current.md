@@ -6,15 +6,42 @@ The next milestone and active carry-over work. Shipped detail is in the
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
-## Next: v0.7.5 — shared OSC foundation and VRChat OSC Trackers input ⬜
+## Next: v0.8.0 — installed-package consumer lane, shared OSC foundation and VRChat OSC Trackers input ⬜
 
-**Release boundary:** one physical session reaches the **unchanged** canonical
-motion and retarget pipeline through a **third** independently modelled live
-surface — VRChat OSC tracking input — over a protocol-neutral OSC decoder and a
-shared transport layer that no adapter maintains a private copy of. Planned in
+**Renumbered from v0.7.5 on 2026-08-29**, when packaging hardening became the
+first item of the near-term plan. The two halves ship together rather than as a
+point release and the one after it: they are one boundary — a third adapter
+*and* the proof that every package this workspace produces can be consumed from
+outside it — and splitting them across two tags would have meant tagging a
+release whose own packages were unverified. The label `v0.7.5` survives only in
+[the roadmap's re-ordering note](README.md#status-at-a-glance).
+
+**Release boundary, first half — distribution.** Every package this workspace
+installs configures, resolves and links from a **clean prefix**, driven by a
+consumer project that names no target from this source tree, on all three OS.
+Planned in [packaging-hardening.md](packaging-hardening.md); the per-package
+promise is [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md).
+
+**Release boundary, second half — input.** One physical session reaches the
+**unchanged** canonical motion and retarget pipeline through a **third**
+independently modelled live surface — VRChat OSC tracking input — over a
+protocol-neutral OSC decoder and a shared transport layer that no adapter
+maintains a private copy of. Planned in
 [osc-and-vrchat-trackers.md](osc-and-vrchat-trackers.md).
 
-Two things shape it, and only one of them is the new adapter.
+**Why distribution goes first, and why it is not a chore.** The workspace has
+spent five phases creating boundaries and checks every one of them *from
+inside*: the graph gate, the per-library boundary scripts, the workspace cells.
+None of that opens a package config file, because a composed build and
+`ost library build` both resolve every target in-tree. On 2026-08-29 that gap
+produced a defect rather than a hypothesis — the OSC-3 extraction put
+`PUBLIC osc::osc` on two adapters and neither package config gained a
+`find_dependency(osc)`, so both installed packages named a target no consumer
+could resolve, **with all 17 lanes green**. The fix that landed cross-checks a
+link line against a config template in three adapter directories. The general
+fix is a consumer that is not us, and that is what this half builds.
+
+Three things shape this release, and only one of them is the new adapter.
 
 **The sharing is overdue, it is documented in the tree, and this release is the
 trigger the tree already named.**
@@ -52,6 +79,37 @@ and a recorded mocopi `VRChat (OSC)` session are the evidence, and every replay
 test completes with nothing installed.
 
 ### Done when
+
+**Packaging**
+
+- [x] every distributable package's consumer contract is written down — package
+      name, exported target, header root, required packages, platform
+      dependencies, aggregate membership, and whether standalone installability
+      has been **measured** or only reviewed *(PKG-0, 2026-08-29:
+      [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md), derived from
+      the CMake sources rather than from intent. Twelve packages take a
+      `find_package` contract; three plugin bundles export no target and install
+      no config **by design** — nothing links them, OpenUSD discovers them — so
+      their consumer contract is "the plugin registers and a stage opens", which
+      `scripts/clean_install_smoke.py` already gates. That correction to the
+      original fourteen-package list is
+      [the track](packaging-hardening.md) §3)*;
+- [ ] one consumer fixture configures and links against one package from a
+      clean prefix, and is shown to **fail against the pre-fix config** before it
+      is trusted — `osc` first, because its edge set is empty and a failure can
+      only be the config file itself, then `vrmAdapterVmc`, because that is the
+      package the defect was in;
+- [ ] the driver runs by hand on a workstation before any lane exists, and
+      answers which prefix a consumer actually gets: `cmake --install` and an
+      extracted `ost` package are not the same artifact;
+- [ ] all twelve `find_package` packages pass, with each failure fixed in the
+      **config** and never in the fixture;
+- [ ] a PR-gating cell on all three OS builds the consumers from a prefix that
+      holds no build tree, and the three platforms agree about the package
+      closure except where a documented difference says why not
+      (`ws2_32` vs `Threads::Threads` is the one expected);
+- [ ] `scripts/check_docs.py` refuses a `*Config.cmake.in` with no row in
+      PACKAGE_CONTRACT.md, and a row naming a package that does not exist.
 
 **Foundation**
 
@@ -145,7 +203,36 @@ test completes with nothing installed.
       by widening a tolerance;
 - [ ] what each path cannot carry is written down from evidence.
 
-### Carried into v0.7.5
+### Before the tag
+
+The v0.7.0 preparation cost five wrong documents because a member count was
+written from a workstation and the lane ran a different `ost`
+([report 35](../reports/ost/35-2026-08-24-v0.22.2-release-artifact-membership.md) §6).
+This release adds a second class of the same risk — packaging claims — so the
+checks are listed rather than remembered:
+
+- [ ] the installed-package consumer lane is green on all three OS, and its
+      result is what the release's packaging claims cite;
+- [ ] every bundle, library and adapter manifest agrees with
+      [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md), and no row
+      still says `unmeasured`;
+- [ ] the aggregate product's closure is measured against
+      `[workspace].release_members` on the **pinned** `ost`, not the
+      workstation's — check `bootstrap.ost.version` in `openstrata.ci.yaml`
+      against `ost --version` before writing any count;
+- [ ] each adapter's standalone package closure is measured, including
+      `vrmAdapterMocopi`'s raw `ws2_32` on a POSIX host (PKG-5);
+- [ ] `liveTransport` and `osc` artifact contents are recorded — 9 files and 7
+      as of 2026-08-29, and a change in either is a change in what the excluded
+      side ships;
+- [ ] the CHANGELOG names the **architecture** changes, not only the features:
+      two shared libraries extracted, a third adapter, and every adapter's
+      package config gaining a dependency it was missing;
+- [ ] `scripts/check_docs.py`, `check_motion_profiles.py` and `verify_corpus.py`
+      are green, and `release.yml` is dry-run with `workflow_dispatch --ref`
+      before the tag — a green PR lane proves nothing about it.
+
+### Carried into v0.8.0
 
 - ⬜ **Freeze the Linux and macOS symbol baselines.** `tests/baseline/symbols/`
   holds `windows-x86_64.txt` only, because until the workspace cells landed no
@@ -188,6 +275,13 @@ test completes with nothing installed.
   directions. What that closes is the *imported-target* half; the raw-library
   half this entry is actually about — `ws2_32` on a POSIX host — is unchanged and
   still needs the run.
+
+  **This entry is now PKG-5 of [the packaging track](packaging-hardening.md)**,
+  and it closes there by construction rather than by someone remembering to run
+  a check: a three-OS consumer lane resolves this package from a clean prefix on
+  a POSIX host every time it runs. It stays listed here because it is carried
+  work with an issue behind it, not because it is tracked twice — the track owns
+  the closing.
 - ⬜ **An adapter artifact exists now, and no lane publishes one.** `ost` 0.22.3
   composes `requires.libraries` in the per-library verb, so
   `ost library package adapters/liveCapture/mocopi` produces
@@ -261,7 +355,39 @@ back out of a trace — v0.7.0 closed the clip half. They do not yet reach a
   `skel:blendShapes` / `skel:blendShapeTargets` binding on its output.
 - ⬜ **Look-at is untouched**, in every layer.
 
-## Then: v0.8.0 — the OpenExec foundation (Workspace Phase 8 + Motion Phase E) ⬜
+## Then: the recorded-source and producer-contract tracks ⬜
+
+**No version yet, deliberately** — it takes one when v0.8.0 is cut. Two pieces
+of work that belong together because the second is what stops the first from
+being answered once per input:
+
+- ⬜ **NPZ / AMASS through the existing `motionSource` boundary.** The recorded
+  half gains a second format family, and the boundary is already built for it: a
+  reader is allowed format syntax and storage interpretation, and never the VRM
+  target rig, the target rest pose, the retarget policy, stage authoring, an
+  OpenExec graph, or a vendor runtime. Whether that is one identity
+  (`motionNpz`) or two (`motionNpz` + `motionAmass`) is settled by **measuring a
+  few files of the real corpus first** — an AMASS-shaped contract that a
+  format-neutral reader cannot absorb is the only thing that justifies the
+  second identity, and deciding before the measurement is how a boundary ends up
+  shaped like whichever file arrived first.
+  [The recorded track](recorded-motion-sources.md) §13.
+- ⬜ **The canonical producer contract, frozen before the inputs multiply.**
+  Four categories now produce motion — recorded source, live pose source,
+  tracker source, generated source — and each was designed on its own. What is
+  unified is the **canonical value boundary**, not an I/O API:
+  `SourceAnimation → HumanoidAnimation` for recorded, `timestamp +
+  HumanoidPose` for live, `timestamp + TrackerFrame` for trackers, and
+  `request/context → HumanoidAnimation or a pose stream` for generators. A
+  generation product reaches the workspace behind a vendor-neutral
+  `IMotionGenerator`, never as a fifth shape.
+  [The backlog](backlog.md#canonical-motion-producer-contract) carries it.
+
+Both are producer-side, and both are in front of OpenExec on purpose: a compute
+layer over contracts that are still moving buys a second implementation of a
+boundary rather than a second evaluation of one.
+
+## After those: the OpenExec foundation (Workspace Phase 8 + Motion Phase E) ⬜
 
 **Release boundary:** `execMotion` and `execVrm` bundles exist and evaluate a
 humanoid through OpenExec, proven equal to the offline result on the same input.
@@ -276,6 +402,16 @@ that either one matches what a device or a sender emits. Ordering the adapter
 release first makes v0.7.0's recorded sessions the parity input, so OpenExec
 arrives as a second evaluation surface over a pipeline already validated against
 real hardware, rather than as a new path validated against itself.
+
+**Why it moved again on 2026-08-29, and lost its version.** The same argument,
+applied twice more. Parity is worth what its input is worth, and the input is
+now two things that are not finished: a package closure no external consumer has
+ever resolved, and a producer contract that four input categories each answered
+separately. So the order is packaging → tracker path → recorded corpus →
+producer contracts → OpenExec, and this milestone takes a number when the
+release before it is cut rather than carrying one that has now moved three
+times. **Nothing in the plan below is withdrawn** — the prerequisites it
+already met stay met, and the re-order changes when it starts, not what it is.
 
 Not in this boundary: realtime skinned display (bounded upstream — see the P0-7
 decision below), any `ExecIr` dependency, and network I/O inside a computation,
@@ -437,7 +573,7 @@ three. What a sender means by hips offset and root is decided for the native
 path and open for VMC. What each path drops is measured. What a real sender's
 bone set does was answered by five sessions that raised no unknown-bone refusal
 at all — and by a tracking-loss take that turned out to be unproducible on this
-product. The remaining operator evidence is carried into v0.7.5 above.
+product. The remaining operator evidence is carried into v0.8.0 above.
 
 ## Shipped: v0.6.0 — VMC input
 
@@ -705,6 +841,24 @@ schemas. Since Workspace Phase 4 that is wrong in every particular.
 - 🚧 Align build / test / install examples with what CI actually runs.
 - 🚧 Adopt the house documentation taxonomy shared with `open-strata` and
   `hydra-merlin`.
+- ⬜ **Finish separating the workspace contract from its history.** The
+  near-term plan of 2026-08-29 proposed splitting
+  [WORKSPACE.md](../architecture/WORKSPACE.md) three ways — a slim contract
+  (identities, kind, dependency direction, forbidden edges, aggregate
+  membership, migration invariants), a `DEPENDENCY_RULES.md`, and a
+  `PACKAGE_CONTRACT.md` — plus a `docs/decisions/` directory of ADRs for the
+  decisions currently narrated inside the contract. **Only the package half was
+  taken** (2026-08-29): §5 now defers the consumer contract to
+  [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md), and no claim in
+  WORKSPACE.md moved. The other two are deliberately open, for one reason each.
+  The dependency split is a change to a document five others cite by section
+  number, so it is worth doing once, with the citations updated in the same PR.
+  And `docs/decisions/` would be **this repository leaving the taxonomy it
+  shares with `open-strata` and `hydra-merlin`** — a decision for all three
+  repositories rather than for this one, which is what the house rule exists to
+  prevent. Until then, rationale keeps landing where it does now: measurements
+  in [reports/](../reports/), plans in this directory, and per-release records
+  in [releases/](../releases/).
 - ✅ **Version drift between the roadmap and the release records is checked**
   (2026-08-03). `scripts/check_docs.py` asserts that `VERSION` has a release
   record, that a `Next:` / `Then:` milestone is not an already-released version,

@@ -14,6 +14,11 @@ semantics in
 §8.3, §14, §15. Items this plan needs from those contracts are listed in
 [§10](#10-contract-changes-this-plan-requires) rather than asserted here.
 
+**The second reader is now named, and it is NPZ / AMASS** ([§13](#13-the-next-format-family--npz--amass),
+added 2026-08-29). It is the first real test of the claim this document's second
+sentence makes, and it is scheduled after v0.8.0 — the format-neutral layer was
+built for a second reader and has never had one.
+
 The version this targets is in the
 [roadmap status table](README.md#status-at-a-glance), not here.
 
@@ -923,3 +928,86 @@ One PR never introduces a boundary and a large feature together:
 Every one of them checks: standalone build · dependency direction · no reverse
 dependency · **no producer name in library code** · deterministic fixture tests ·
 diagnostic stability · clean install.
+
+## 13. The next format family — NPZ / AMASS
+
+*Added 2026-08-29, from the near-term plan. Not started, and deliberately not
+designed yet.*
+
+BVH proved the layering. The next recorded format family is NPZ / AMASS, and it
+enters through the boundary that already exists rather than beside it:
+
+```text
+NPZ / AMASS
+    │
+ format reader          syntax and storage interpretation, and nothing else
+    │
+SourceSkeleton
+SourceAnimation
+SourceProvenance
+    │
+SourceProfile          producer semantics, declarative, data not code
+    │
+CanonicalConversion
+    │
+motion::HumanoidAnimation
+```
+
+### 13.1 What a reader is allowed to decide
+
+The same list §2 gives `motionBvh`, restated because a new format is where it
+gets tested: array layout, dtype, shape, key naming, chunking, and whatever a
+container says about its own contents. Nothing else. **A reader does not
+decide** the VRM target rig, the target rest pose, the retarget policy, USD
+stage authoring, an OpenExec graph, or anything a vendor runtime would supply.
+
+That list is what makes this a §13 rather than a new plan. If it holds, NPZ is a
+reader and a profile; if it does not, the finding is more interesting than the
+format.
+
+### 13.2 One identity or two, decided by measurement
+
+```text
+motionNpz              — if a format-neutral boundary absorbs the AMASS contract
+motionNpz + motionAmass — if it does not
+```
+
+`.npz` is a container (a zip of `.npy` arrays), and AMASS is a *convention* over
+one — body model, shape parameters, pose parameters in an axis-angle
+parameterisation, a frame rate, a gender field. Those are not the same kind of
+thing, which is why the split is plausible; whether it is *necessary* depends on
+how much of the AMASS convention survives being expressed as a `SourceProfile`
+rather than as reader code.
+
+**Measure a few real files first, then name the identity.** This is the same
+rule that put `libs/osc`'s extraction after its second consumer, and the same
+one that made the BVH corpus require two producers from the start: a boundary
+settled before the measurement is a boundary shaped like whichever file happened
+to arrive first. The BVH half already paid for this lesson in the other
+direction — two producers disagreed about what a root joint is, which is exactly
+what one producer could not have shown.
+
+### 13.3 What has to be answered before any code
+
+- Does a `SourceSkeleton` describe an AMASS body model at all, or does the model
+  belong in a profile as a named rest-pose convention?
+- Is the pose parameterisation a *storage* question (the reader's) or a
+  *producer semantic* (the profile's)? BVH's answer was Euler-order-in-the-file
+  → reader, basis-and-handedness → profile; AMASS's axis-angle rotations need
+  the same line drawn explicitly rather than by analogy.
+- Do shape parameters cross into canonical motion at all? A canonical
+  `HumanoidAnimation` is avatar-independent, so a per-subject body shape is
+  either provenance or it is out.
+- What is the corpus, and what is redistributable? AMASS datasets carry research
+  licences that differ per sub-dataset — the same gate the VRM corpus hit, and
+  the [corpus policy](current.md#standing-corpus-policy--recorded-evidence-is-not-the-generated-corpus)
+  already has the shape for it: a manifest with no bytes.
+
+### 13.4 Non-goals, added to §11
+
+- an SMPL / SMPL-X body model implementation, or any mesh deformation from shape
+  parameters — this layer produces humanoid *motion*;
+- a Python dependency at build or run time, for a format whose ecosystem is
+  Python's;
+- treating AMASS as the definition of the boundary, which is the failure mode
+  the two-producer rule exists to prevent.
