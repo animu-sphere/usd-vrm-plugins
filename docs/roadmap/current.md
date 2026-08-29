@@ -1,20 +1,22 @@
 # Current
 
-The next milestone and active carry-over work. Shipped detail is in the
-[delivery history](../reports/delivery-history.md) and the per-version
-[release records](../releases/).
+The next milestone and active carry-over work. **Shipped work is not repeated
+here** — it lives in the [delivery history](../reports/delivery-history.md) and
+the per-version [release records](../releases/). A milestone's own detail lives
+in its track document; this file carries the boundary, the completion
+conditions, and what is still open.
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
 ## Next: v0.8.0 — installed-package consumer lane, shared OSC foundation and VRChat OSC Trackers input ⬜
 
 **Renumbered from v0.7.5 on 2026-08-29**, when packaging hardening became the
-first item of the near-term plan. The two halves ship together rather than as a
-point release and the one after it: they are one boundary — a third adapter
-*and* the proof that every package this workspace produces can be consumed from
-outside it — and splitting them across two tags would have meant tagging a
-release whose own packages were unverified. The label `v0.7.5` survives only in
-[the roadmap's re-ordering note](README.md#status-at-a-glance).
+first item of the near-term plan. The two halves ship on one tag because they
+are one boundary — a third adapter *and* the proof that every package this
+workspace produces can be consumed from outside it — and tagging a release whose
+own packages are unverified is the thing this release exists to stop. The
+re-ordering is recorded in
+[the roadmap's status table](README.md#status-at-a-glance).
 
 **Release boundary, first half — distribution.** Every package this workspace
 installs configures, resolves and links from a **clean prefix**, driven by a
@@ -29,40 +31,13 @@ protocol-neutral OSC decoder and a shared transport layer that no adapter
 maintains a private copy of. Planned in
 [osc-and-vrchat-trackers.md](osc-and-vrchat-trackers.md).
 
-**Why distribution goes first, and why it is not a chore.** The workspace has
-spent five phases creating boundaries and checks every one of them *from
-inside*: the graph gate, the per-library boundary scripts, the workspace cells.
-None of that opens a package config file, because a composed build and
-`ost library build` both resolve every target in-tree. On 2026-08-29 that gap
-produced a defect rather than a hypothesis — the OSC-3 extraction put
-`PUBLIC osc::osc` on two adapters and neither package config gained a
-`find_dependency(osc)`, so both installed packages named a target no consumer
-could resolve, **with all 17 lanes green**. The fix that landed cross-checks a
-link line against a config template in three adapter directories. The general
-fix is a consumer that is not us, and that is what this half builds.
-
-Three things shape this release, and only one of them is the new adapter.
-
-**The sharing is overdue, it is documented in the tree, and this release is the
-trigger the tree already named.**
-[`vrmAdapterMocopi`'s `UdpReceiver.h`](../../adapters/liveCapture/mocopi/include/vrmAdapterMocopi/UdpReceiver.h)
-records that a review on 2026-08-11 found **four defects `vrmAdapterVmc` has
-identically, because they were copied along with everything else** — a silently
-truncated oversize datagram, a large finite timeout mapped onto "wait forever",
-an uninspected `revents`, and idle accounting charged to a call that had
-received something. It fixed all four, wrote down that they remain in the
-sibling, and named the condition for turning the repetition into a library: *a
-**third** recorder — a third live adapter, or a tool that must drive both*. All
-four are still in the VMC copy as of 2026-08-23, and this release is that third
-adapter.
-
-The census behind it is
-[§2](osc-and-vrchat-trackers.md#2-the-duplication-census) (2026-08-23): with
-vendor identifiers erased and comments stripped, `PacketCapture` is **one file
-written twice** — 6 changed lines across 800 — while `FrameAssembler` and
-`SkeletonMap` differ by more lines than either copy contains and are correctly
-duplicated. A third adapter's first deliverable is a packet recorder, so the
-extraction comes *before* it rather than after.
+**Why distribution goes first.** Five phases of splitting checked every boundary
+they created *from inside*, and neither a composed build nor `ost library build`
+ever opens a package config file. On 2026-08-29 that gap produced a defect
+rather than a hypothesis — two installed packages named a target no consumer
+could resolve, with all 17 lanes green
+([the track](packaging-hardening.md) §1). The fix that landed is per-adapter;
+the general one is a consumer that is not us, and that is what this half builds.
 
 **A tracker source is not a pose source.** VMC and mocopi carry humanoid bone
 transforms; VRChat OSC carries numbered tracker observations, which are pre-IK,
@@ -80,93 +55,36 @@ test completes with nothing installed.
 
 ### Done when
 
-**Packaging**
+**Packaging** — the milestones and their evidence are
+[packaging-hardening.md](packaging-hardening.md) §4.
 
 - [x] every distributable package's consumer contract is written down — package
       name, exported target, header root, required packages, platform
       dependencies, aggregate membership, and whether standalone installability
       has been **measured** or only reviewed *(PKG-0, 2026-08-29:
       [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md), derived from
-      the CMake sources rather than from intent. Twelve packages take a
-      `find_package` contract; three plugin bundles export no target and install
-      no config **by design** — nothing links them, OpenUSD discovers them — so
-      their consumer contract is "the plugin registers and a stage opens", which
-      `scripts/clean_install_smoke.py` already gates. That correction to the
-      original fourteen-package list is
-      [the track](packaging-hardening.md) §3)*;
+      the CMake sources. Twelve packages take a `find_package` contract; three
+      plugin bundles export no target and install no config **by design**)*;
 - [x] one consumer fixture configures and links against one package from a
       clean prefix, and is shown to **fail against the pre-fix config** before it
-      is trusted — `osc` first, because its edge set is empty and a failure can
-      only be the config file itself, then `vrmAdapterVmc`, because that is the
-      package the defect was in *(PKG-1, 2026-08-29: the `osc` half is done —
-      `tests/consumer/osc/` configures, links and runs against a prefix holding
-      that package's seven files and nothing else, and each of the five criteria
-      a single host can answer has been seen to **fail**: four mutations of the
-      installed prefix and three edits to the fixture, every one of them
-      asserting it changed a byte first. The mutations break the prefix rather
-      than the source tree, so none of them is a `git stash` that might be a
-      silent no-op. **The `vrmAdapterVmc` half closed the same day** —
-      `tests/consumer/vrmAdapterVmc/` resolves five packages it never names and
-      passed on the first run, because the OSC-3 fix had already landed, so what
-      it adds is evidence rather than a repair. The pre-fix config was
-      reproduced in **its own shape**: stripping every `find_dependency` is
-      caught by the first edge the closure walk reaches and says nothing about
-      the fifth, so the driver grew `--dependency`, which removes exactly the
-      block the fix added and leaves the other four. Criterion 3 then refuses
-      `osc::osc` by name — the failure all 17 lanes were structurally unable to
-      produce. Criterion 5 is verified against *this* fixture too, and the catch
-      is the interesting half: a sibling identity on its link line is caught
-      **while criteria 1–4 stay met**, which is what a statically checked
-      fixture is for)*;
+      is trusted *(PKG-1, 2026-08-29: `osc` first, because its edge set is empty
+      and a failure can only be the config file itself, then `vrmAdapterVmc`,
+      because that is the package the defect was in)*;
 - [x] the driver runs by hand on a workstation before any lane exists, and
-      answers which prefix a consumer actually gets: `cmake --install` and an
-      extracted `ost` package are not the same artifact *(PKG-2, 2026-08-29:
-      `scripts/check_package_consumer.py`, and **for a plain library they are**
-      — the two prefixes hold the same seven files under the same names, with
-      `oscConfig.cmake` and `oscTargets-release.cmake` byte-identical between
-      them. Only the archive differs, because `ost` built it with the runtime's
-      toolchain and the workstation used the local one, and the same fixture
-      linked either. The staging difference the question anticipated belongs to
-      a **bundle**, which carries its dependencies' link halves — so `vrmSchema`
-      is the one row where the two prefixes could still diverge, and it has not
-      been run. The driver reads PACKAGE_CONTRACT.md §4 for every package fact
-      it needs rather than keeping a second table, which is also how the twelve
-      `find_package` rows and the six refusals were confirmed from outside the
-      document)*;
+      answers which prefix a consumer actually gets *(PKG-2, 2026-08-29:
+      `scripts/check_package_consumer.py`. For a plain library `cmake --install`
+      and an extracted `ost` package are the same seven files; `vrmSchema` is
+      the one row where the two prefixes could still diverge, and it has not
+      been run)*;
 - [x] all twelve `find_package` packages pass, with each failure fixed in the
       **config** and never in the fixture *(PKG-3, 2026-08-30: twelve of twelve
       configure, build, link and **run** from a prefix holding their own
-      transitive closure and nothing else, and **no config file failed** — a
-      prediction the track got wrong, for a reason worth keeping: the §1 defect
-      had already been fixed in both packages that shipped it, and the other
-      eleven configs were written to §3's rules. The compliance is now measured
-      rather than reviewed. What did fail was the harness, three times, and each
-      one would have made a later run lie: the blanket `find_dependency`
-      mutation could **accuse a fixture of an edit that changed nothing** (every
-      edge of `liveTransport`'s config is conditional, so on Windows it deletes
-      a line inside an `if(NOT WIN32)` and then blames the one file that was not
-      changed — now **inconclusive** for a conditional edge and refused up front
-      only where masking makes the mutation inert on every host, which is the
-      distinction that keeps `vrmSchema`'s real catch); criterion 5 refused a
-      **namespace no consumer can avoid writing** (`motionBvh` hands back a
-      `motionSource::SourceSkeleton`, so the check now asks per file — an
-      identity in CMake is an edge, an `#include` of a sibling's header root in
-      C++ is the violation, and a name is neither); and **criterion 3 cannot see
-      a missing `find_dependency(pxr)`** at all, because OpenUSD's imported
-      targets are unnamespaced and a closure walk has nothing to refuse in a
-      bare `gf` — which makes the header each fixture includes the only thing
-      between a missing external edge and a passing run, and a rule PKG-4's lane
-      inherits. Forty-eight mutations of the installed prefix: forty-one
-      caught, five refused up front where masking makes them inert on any host,
-      and two inconclusive where the only edge carries a condition this host
-      does not meet. Six fixture edits were caught statically by criterion 5,
-      before a build. Two
-      shapes measured for the first time — the only `SHARED` package, whose
-      contract is not finished at the link, and the one *bundle* with a package,
-      which stages its shared object in `lib/` where a library stages it in
-      `bin/`. Half of [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)
-      closes with it: `vrmAdapterMocopi`'s imported-target half is measured, and
-      the raw-library half needs a POSIX host)*;
+      transitive closure and nothing else, and **no config file failed** — the
+      compliance is now measured rather than reviewed. What did fail was the
+      harness, three times; the fixes and the rule PKG-4's lane inherits from
+      them are in the track. Half of
+      [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113) closes
+      with it)*;
 - [ ] a PR-gating cell on all three OS builds the consumers from a prefix that
       holds no build tree, and the three platforms agree about the package
       closure except where a documented difference says why not
@@ -174,87 +92,46 @@ test completes with nothing installed.
 - [x] `scripts/check_docs.py` refuses a `*Config.cmake.in` with no row in
       PACKAGE_CONTRACT.md, and a row naming a package that does not exist
       *(2026-08-30: five ways to fail it, each made to fail before the check was
-      believed — a config template with no row, a row claiming its package
-      exports no target beside that package's own config, a row naming an
-      identity no manifest declares, a row promising a target nothing installs,
-      and a row marked **reserved** beside its own config, which without a case
-      of its own falls through both halves. Reserved rows are exempt from the
-      existence half by design.
-      Landed **before** the CI cell rather than after it: the document it checks
-      is five days old, so the drift has had no time to happen, which is the
-      moment to add such a check rather than the moment after)*.
+      believed. Landed **before** the CI cell rather than after it — the
+      document it checks is five days old, so the drift has had no time to
+      happen, which is the moment to add such a check)*.
 
-**Foundation**
+**Foundation** — the milestones and their evidence are
+[osc-and-vrchat-trackers.md](osc-and-vrchat-trackers.md) §9.
 
 - [x] the existing OSC decoder's public behaviour is frozen by characterisation
-      tests before any source moves *(OSC-0, 2026-08-24: seven tests, `src/`
-      untouched, six mutations of `OscPacket.cpp` each caught by a test named
-      for the behaviour they break)*;
+      tests before any source moves *(OSC-0, 2026-08-24)*;
 - [x] the four `UdpReceiver` defects are fixed in `vrmAdapterVmc`, ~~each with a
-      test~~, in a change that moves no file — they are live-session defects in
-      shipped code and this line closes with or without the rest of the release
-      *(OSC-1, 2026-08-24: four fixes, one behaviour per commit, no file moved.
-      **Two of the four ship untested and it is deliberate** — a `-1` and an
-      `INT_MAX` poll timeout differ only after 24.8 days, and a `POLLERR`
-      wake-up is not producible from a suite that owns only its own sockets, so
-      a test there would pass against the defect. The seam belongs to the
-      extracted library and OSC-2 carries the ask. The other two are tested,
-      and **one lane of three proves the buffer one**: Windows passes it either
-      way, macOS arm64 skips it as it has skipped mocopi's since v0.7.0, and
-      Linux is where the defect fails the assertion)*;
+      test~~, in a change that moves no file *(OSC-1, 2026-08-24. **Two of the
+      four ship untested and it is deliberate** — a `-1` and an `INT_MAX` poll
+      timeout differ only after 24.8 days, and a `POLLERR` wake-up is not
+      producible from a suite that owns only its own sockets, so a test there
+      would pass against the defect. The seam belongs to the extracted library
+      and OSC-2 carries the ask)*;
 - [x] the transport ring — receiver, queue, capture format, diagnostic vehicle —
       lives once, in a leaf outside the aggregate product's link closure, and
       every committed capture in both existing corpora still reads unchanged
-      *(OSC-2, 2026-08-24: `libs/liveTransport`, in three changes. 1485 lines
-      left `vrmAdapterVmc` and 337 arrived; 1781 left `vrmAdapterMocopi` and 359
-      arrived, and what arrives in each is the part a shared library may not hold
-      — a code table and a map from a transport event to one of its rows. The
-      corpus round-trips compare bytes rather than parse trees, so a writer that
-      changed one character would be red)*;
+      *(OSC-2, 2026-08-24: `libs/liveTransport`)*;
 - [x] two adapters decode OSC through one library that contains no VMC and no
       VRChat address literal, enforced by a boundary check rather than by
-      review *(OSC-3, 2026-08-29: `libs/osc`, in five changes — the contract,
-      the move, one API decision, and one adapter each. The evidence came before
-      the contract row, which is the one respect in which this could not follow
-      `liveTransport`'s procedure: an address inventory written in
-      `vrmAdapterVrchatOsc` decoded real bytes through the VMC-owned decoder
-      first and needed **five VMC tokens**, every one of them the name — one
-      include path, four namespace qualifications — plus the export macro on its
-      compile line. §3.1 predicted three couplings and the measurement found
-      exactly those three. The refusal carries **no code**, not even a neutral
-      event enum: the decoder makes one distinction, so three invented names
-      would have been mapped straight back onto one adapter code by every
-      caller. That is now demonstrated rather than asserted — one refusal reads
-      `VRM_VMC_PACKET_MALFORMED` in one adapter and
-      `VRM_VRCHAT_OSC_PACKET_MALFORMED` in the other. The boundary check reads
-      `tests/` as well as `include/` and `src/`, which `liveTransport`'s does
-      not, because a decoder's payloads are where a vendor address arrives)*;
+      review *(OSC-3, 2026-08-29: `libs/osc`. The evidence came before the
+      contract row — an address inventory written in `vrmAdapterVrchatOsc`
+      decoded real bytes through the VMC-owned decoder first and needed five VMC
+      tokens, every one of them the name)*;
 - [x] no adapter imports a sibling adapter, checked in the binary *(VRC-0,
-      2026-08-25: with a third adapter the trio is symmetric — each
-      `check_boundaries.py` now refuses the other two by name, in the sources and
-      in the linked test executable's imports. Verified by injection in every
-      direction rather than by the green result: an added sibling include fails
-      each of the three, and the same file passes without it. The third adapter
-      is where this stops being a formality — `vrmAdapterVmc` holds the only OSC
-      decoder here and `vrmAdapterVrchatOsc` reads the same wire format, so
-      reaching across would work)*.
+      2026-08-25: with a third adapter the trio is symmetric, and it is verified
+      by injection in every direction rather than by the green result)*.
 
 **VRChat OSC**
 
 - [ ] a real mocopi `VRChat (OSC)` session is captured and its addresses, type
-      tags and cadence are inventoried **before** a decoder is written *(VRC-0,
-      2026-08-25: the recorder half exists — `adapters/liveCapture/vrchatOsc/`
-      with its frozen ten-code set, a capture format that is one magic string
-      over the shared one, and `vrchat_osc_record`. Bytes off the socket and
-      bytes in the file are identical, asserted end to end against an independent
-      parser. **The inventory half exists as of 2026-08-29** — one row per
-      address *and type tag string*, with message and datagram counts and the
-      span each covers, printed by `vrchat_osc_record --inspect` and carrying no
-      list of addresses it expects, which is the property this line needs: the
-      risk is that this sender's surface is not the tracker subset anyone
-      assumes, and an inventory reporting absences would answer a different
-      question. **The session needs an operator and a device**, and this line
-      closes on the session rather than on the tool)*;
+      tags and cadence are inventoried **before** a decoder is written *(VRC-0 /
+      VRC-1: the recorder and the inventory both exist —
+      `adapters/liveCapture/vrchatOsc/`, and `vrchat_osc_record --inspect`
+      prints one row per address *and type tag string*, carrying no list of
+      addresses it expects, which is the property this line needs. **The session
+      needs an operator and a device**, and this line closes on the session
+      rather than on the tool)*;
 - [ ] generated fixtures fix the protocol's shapes with no hardware, and
       recorded fixtures replay deterministically with no client;
 - [ ] tracker position and rotation reach the canonical tracking space, verified
@@ -317,10 +194,10 @@ checks are listed rather than remembered:
 - ⛔ **The scheduled lane's `plugin_artifact` is still a 26.05 build.**
   `usdvrmfileformat-support-windows-cy2026` pairs a 26.05-built plugin with a
   26.08 runtime. OpenUSD guarantees no ABI stability across versions, so that
-  artifact must be republished before the lane's result means anything.
-  Untouched by v0.5.0 and v0.6.0. It is also the reason `ost ci validate` exits
-  non-zero on a workstation that holds the artifact (the evidence gate); hosted
-  runners do not hold it, so the generated lanes stay green.
+  artifact must be republished before the lane's result means anything. It is
+  also the reason `ost ci validate` exits non-zero on a workstation that holds
+  the artifact (the evidence gate); hosted runners do not hold it, so the
+  generated lanes stay green.
 - ⚠️ **`release.yml` stays hand-authored, and hand-mirrors what the contract now
   expresses.** Its X11 step, its `ost` pin and its runtime digests are copies of
   `openstrata.ci.yaml` values; regeneration never touches them and a green PR
@@ -330,58 +207,30 @@ checks are listed rather than remembered:
   platform link**
   ([#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)). The
   scaffold commit measured it; the receiver added `ws2_32` and an edit to the
-  installed package config without re-running the check, which is the one thing
-  a composed build cannot exercise. Low risk — `ws2_32` is a raw library name
-  rather than an imported target — and a prediction belongs in an issue rather
-  than in a claim. A POSIX run of the same check is worth more than the Windows
-  one, since there it verifies the *absence* of a threading link.
-
-  **The imported-target half of this stopped being a prediction on 2026-08-29,
-  and is now a check rather than a habit.** OSC-3 gave `vrmAdapterVmc` and
-  `vrmAdapterVrchatOsc` a `PUBLIC osc::osc` and neither package config gained a
-  `find_dependency(osc)` — so both installed packages named a target no consumer
-  could resolve, and CMake does not search for it even with that package's own
-  config sitting in the same prefix. **All 17 lanes were green**, because a
-  composed build and `ost library build` both resolve every target in-tree and
-  never open a config file. Each adapter's `check_boundaries.py` now cross-checks
-  its link line against its config template, verified by injection in both
-  directions. What that closes is the *imported-target* half; the raw-library
-  half this entry is actually about — `ws2_32` on a POSIX host — is unchanged and
-  still needs the run.
-
-  **This entry is now PKG-5 of [the packaging track](packaging-hardening.md)**,
-  and it closes there by construction rather than by someone remembering to run
-  a check: a three-OS consumer lane resolves this package from a clean prefix on
-  a POSIX host every time it runs. It stays listed here because it is carried
-  work with an issue behind it, not because it is tracked twice — the track owns
-  the closing.
+  installed package config without re-running the check. The **imported-target
+  half closed on 2026-08-30** with PKG-3's measurement; the raw-library half
+  this entry is actually about — `ws2_32` on a POSIX host, where the check
+  verifies the *absence* of a threading link — still needs the run. It is
+  **PKG-5 of [the packaging track](packaging-hardening.md)**, which closes it by
+  construction rather than by someone remembering to run a check; it stays
+  listed here because it is carried work with an issue behind it.
 - ⬜ **An adapter artifact exists now, and no lane publishes one.** `ost` 0.22.3
   composes `requires.libraries` in the per-library verb, so
   `ost library package adapters/liveCapture/mocopi` produces
   `vrmAdapterMocopi-0.7.0-<target>.tar.zst` — the library and `mocopi_record.exe`
-  together, 15 files, the shape
-  [WORKSPACE.md §5](../architecture/WORKSPACE.md) has named since before anything
-  could emit it. `liveTransport` packages too. **What is left is a decision, not
-  a tool**: `release.yml` builds and stages the aggregate's seven members and
-  nothing produces an adapter artifact in CI, so whether a release carries them
-  is open. The membership half of this entry closed with it — the aggregate's
-  members are declared in `openstrata.toml` (`[workspace].release_members` /
-  `release_exclude`) and packaging fails on drift, where through v0.7.0 the
-  exclusion was held by the pinned `ost` version alone
+  together, the shape [WORKSPACE.md §5](../architecture/WORKSPACE.md) has named
+  since before anything could emit it. **What is left is a decision, not a
+  tool**: `release.yml` stages the aggregate's members and nothing produces an
+  adapter artifact in CI, so whether a release carries them is open
   ([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md)
   §2, §3).
 - ⬜ **The profiles reach the product; the smoke that would prove it does not
-  exist.** Both halves of the staging are closed. The plain-CMake half closed
-  2026-08-05 (the root project installs the profiles to
-  `share/usd-vrm-plugins/profiles/motion` and a scratch-prefix install proves
-  it), and the packaged half closed 2026-08-25: `ost` 0.22.3's
-  `[[workspace.install_data]]` gives the mapping a product-level owner, and the
-  aggregate now reports `data_files: 3` with the destination recorded in
-  `openstrata.product.json` rather than copied under any member root — which is
-  what made `directories: [bin, share]` unacceptable. **What remains is the
-  test.** Nothing here has extracted the product to a prefix and driven
-  `motion_bvh_convert` from it, so the entry stays open on a written smoke
-  rather than on a missing mechanism
+  exist.** Both halves of the staging are closed — the plain-CMake install
+  (2026-08-05) and the packaged one (2026-08-25, `ost` 0.22.3's
+  `[[workspace.install_data]]`, `data_files: 3`). **What remains is the test**:
+  nothing has extracted the product to a prefix and driven `motion_bvh_convert`
+  from it, so the entry stays open on a written smoke rather than on a missing
+  mechanism
   ([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md) §4).
 
 ### Carried out of v0.7.0 — evidence an operator produces
@@ -468,51 +317,28 @@ Nodes are thin wrappers over `motionRuntime` and `vrmRetarget`, never a second
 implementation, and each evaluates an immutable snapshot rather than a live
 source. Planned in [openexec-foundation.md](openexec-foundation.md).
 
-**Why it moved behind v0.7.0.** It was scoped as v0.6.0 and could have been built
-there: parity is structurally implementable against generated fixtures alone. But
-what that proves is that two implementations agree about generated data — not
-that either one matches what a device or a sender emits. Ordering the adapter
-release first makes v0.7.0's recorded sessions the parity input, so OpenExec
-arrives as a second evaluation surface over a pipeline already validated against
-real hardware, rather than as a new path validated against itself.
+**Why it has moved twice, and why it now carries no version.** Parity is worth
+what its input is worth. Scoping it as v0.6.0 would have proved that two
+implementations agree about *generated* data; ordering the adapter releases
+first made v0.7.0's recorded sessions the parity input. The 2026-08-29 re-order
+applied the same argument twice more — the input is now also a package closure
+no external consumer has ever resolved and a producer contract that four input
+categories each answered separately — so the order is packaging → tracker path →
+recorded corpus → producer contracts → OpenExec. **Nothing in the plan is
+withdrawn**: the re-order changes when it starts, not what it is.
 
-**Why it moved again on 2026-08-29, and lost its version.** The same argument,
-applied twice more. Parity is worth what its input is worth, and the input is
-now two things that are not finished: a package closure no external consumer has
-ever resolved, and a producer contract that four input categories each answered
-separately. So the order is packaging → tracker path → recorded corpus →
-producer contracts → OpenExec, and this milestone takes a number when the
-release before it is cut rather than carrying one that has now moved three
-times. **Nothing in the plan below is withdrawn** — the prerequisites it
-already met stay met, and the re-order changes when it starts, not what it is.
+Not in this boundary: realtime skinned display, any `ExecIr` dependency, and
+network I/O inside a computation, which is a permanent non-goal rather than a
+deferral. Skinned display is bounded upstream — OpenUSD 26.08 resolves exec prim
+adapters from a hard-coded list — so P0-7 ships an exec-computed
+`UsdGeomXformable` instead and realtime skinned display becomes its own
+milestone after the `ExecIr` track ([the plan](openexec-foundation.md) P0-7).
 
-Not in this boundary: realtime skinned display (bounded upstream — see the P0-7
-decision below), any `ExecIr` dependency, and network I/O inside a computation,
-which is a permanent non-goal rather than a deferral.
-
-### Prerequisites already met
-
-Three of this milestone's blockers cleared early — two in v0.5.0, one in v0.6.0:
-
-- ✅ **One OpenUSD across three OS.** All three 26.08 runtimes are published to
-  `ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd` and every lane is pinned
-  to them, including the workspace cells and the release workflow. They carry
-  OpenExec (`exec`, `execGeom`, `execIr`, `execUsd`, `usdExecImaging`, `vdf` —
-  198 headers under `include/pxr/exec`) and were built `--examples`, so the
-  26.08 `ExecIr` samples ship inside the runtime. Digests and evidence:
-  [report 29](../reports/ost/29-2026-07-26-v0.20.0-openusd-2608-runtime-publish.md)
-  (Windows, Linux),
-  [report 30](../reports/ost/30-2026-07-26-v0.20.0-macos-2608-runtime-publish.md)
-  (macOS arm64).
-- ✅ **The motion layer has CI.** The named P0-2 blocker is cleared, not by the
-  v0.5.0 workaround but by `ost 0.21.0`: four `kind: workspace` cells in
-  `openstrata.ci.yaml` build the root tree and run its whole CTest suite, and
-  `motion-ci.yml` is deleted. See
-  [report 33](../reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md).
-  What remains is coverage, not lane shape.
-- ✅ **The `motionCore` aggregates can be compared** (v0.6.0, below).
-  `ExecTypeRegistry::RegisterType` needs exact equality before a pose type can be
-  registered at all; that was P0-4's stated blocker and it is gone.
+**Prerequisites already met.** One OpenUSD across three OS (all three 26.08
+runtimes published and pinned, OpenExec included and built `--examples`); the
+motion layer has CI (`ost` 0.21.0's `kind: workspace` cells, so what remains is
+coverage rather than lane shape); and the `motionCore` aggregates can be
+compared, which was P0-4's stated blocker.
 
 ### Still open
 
@@ -525,19 +351,6 @@ Three of this milestone's blockers cleared early — two in v0.5.0, one in v0.6.
   P0-7 of the [plan](openexec-foundation.md#6-foundation-tasks). Mechanism before
   behavior: the first spike registers no real computation, so a failure is
   attributable.
-- ✅ **P0-7's re-scope is decided** (2026-07-29). The `usdExecImaging` slice
-  ships as an **exec-computed `UsdGeomXformable`** shown through the exec scene
-  index — time and motion inputs recompute, an unrelated material change does
-  not, and it runs from packaged plugins. Everything except the prim adapter is
-  exercised for real, so the plumbing risk is retired on the half we control.
-  Realtime **skinned** display becomes its own milestone after the `ExecIr`
-  track, and the upstream ask for plugin-registered exec imaging adapters is
-  tracked separately — a custom Hydra scene index is deliberately *not* the first
-  fallback. Two further decisions landed with it: an OpenExec computation
-  evaluates an immutable snapshot and performs no I/O, and `ExecIr` is an
-  optional experimental adapter rather than a foundation. All three are in the
-  [plan](openexec-foundation.md) §1, §7.0 and P0-7, and the two structural ones
-  in [WORKSPACE.md §2](../architecture/WORKSPACE.md).
 
 ## Standing: corpus policy — recorded evidence is not the generated corpus
 
@@ -552,12 +365,9 @@ in, and the same shape serves both halves of the release:
    └─ redistributable/   real sessions and files cleared for publication
 ```
 
-*Amended 2026-08-04, when the first recorded file landed.* This block used to
-show a second `manifests/` directory for everything not redistributable. One
-manifest per half is what was built instead: whether a file's bytes are
-committed is a **field**, not a location, because a row that changed directory
-when its redistribution status changed would break every reference to it for a
-reason that has nothing to do with the file.
+Whether a file's bytes are committed is a **field**, not a location: a row that
+changed directory when its redistribution status changed would break every
+reference to it for a reason that has nothing to do with the file.
 
 A capture or a file that cannot be redistributed leaves **no bytes** in the
 repository. It leaves a manifest: hash, recording or exporting tool version,
@@ -574,326 +384,11 @@ Public CI runs the redistributable half. Hardware validation is an **opt-in
 lane** that never gates a pull request — its output is a capture and a manifest,
 not a green tick. A device is needed once per behavior, not once per run.
 
-## Shipped: v0.7.0 — mocopi live input and generic BVH recorded-motion ingestion
+## Standing: product tracks with work still open
 
-[v0.7.0](../releases/v0.7.0.md) is **prepared** — 2026-08-24.
-
-**Release boundary:** a capture product's **two** surfaces both reach a
-retargeted `UsdSkelAnimation` through the **unchanged** `motion_retarget` — the
-live one over UDP through `vrmAdapterMocopi`, and the recorded one through a
-generic BVH pipeline that is not that product's importer. Two decisions shaped
-all of it. **A recording is not a mode of the live adapter** — a BVH file argues
-about a hierarchy, a channel order, a frame time and a rest pose where a socket
-argues about packets, timestamps, restarts and tracking loss — so they are
-separate code meeting at `motionCore`
-([motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md)). And **the BVH
-pipeline's centre is not mocopi**: joint names, units, axes and root conventions
-are facts about the *writer*, so they live in a declarative producer profile.
-
-- ✅ **`vrmAdapterMocopi`, built receiver-first.** The inversion is the finding,
-  not a shortcut: the wire format is undocumented, so there was nothing to write
-  a corpus *from* and the socket had to come first. Then the corpus, measured
-  off real sessions; the decoder; the joint map and basis change, the first
-  layer here that names a bone; frame assembly, the layer that decides — a frame
-  missing three bones is still a frame, reported and passed on, and a source that
-  restarted is detected from the stream clock **and** the frame counter, neither
-  of which suffices alone; then the `LiveCaptureSource` bridge, after which a
-  recorded capture samples like any clip through the unchanged runtime.
-- ✅ **A device drove every layer of it** (2026-08-15, five sessions, mocopi app
-  2.7.2 over UDP 12351). The first capture decoded with **zero diagnostics** —
-  2190 frames, the sender's clock at 59.9453 Hz. A real restart was dark for
-  **233 frames = 3.8833 s**, where the roadmap had guessed "about 3.5 s".
-- ✅ **The body travels.** `BodyPlacementPolicy` (default `HipsOnly`) composes
-  `RootMotion` from a rig whose only translating joint is the hips, which is the
-  §5.2 record this release owed. Before it the live path silently dropped
-  **4.81 m** of hips travel that the recorded path carried.
-- ✅ **`mocopi_record`, and the way out of the adapter.** `--export-trace`
-  writes a canonical `motion-capture-trace` from `--inspect` only, so a
-  *recording* still runs no decoder; `mocopi_record_endToEnd` drives two
-  captures through unchanged `motion_capture` / `motion_retarget` onto
-  `Seed-san.vrm`, 2 of 128 joints differing by name **and by side**.
-- ✅ **The loopback corpus.** All nine captures replayed **through a bound
-  socket** produce frames, poses, diagnostics and all three tallies identical to
-  the file path's — with no clock exemption, because a receive time reaches
-  nothing on this protocol. Verified negatively: one byte dropped from every
-  datagram turns all nine red in all three kinds of evidence.
-- ✅ **A generic BVH pipeline** — `motionBvh` (syntax, a frozen diagnostic set,
-  a format-shape corpus), `motionSource` (the format-neutral model and the
-  profile contract), `motion_bvh_inspect` and `motion_bvh_convert`.
-- ✅ **Two producer profiles and a user-defined third.** Sony mocopi's mobile
-  export, and Bandai Namco Research's Motiondataset written from two measured
-  exports of a rig nobody here wrote — the two disagree about what a root joint
-  is, which is exactly why the condition was two producers rather than one. The
-  third is proven by test: named by path with no search directory, required to
-  match, and required to be **refused** against a rig it does not describe.
-- ✅ **One physical session observed two ways**, agreeing to a median **0.084°**
-  per bone with the residual shown to be *timing* rather than value
-  ([report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.md)) — and
-  what each path cannot carry written down from evidence, five measured entries.
-- ✅ **No producer name in `motionBvh` or `motionSource`, and no default profile
-  anywhere**, pinned by two boundary CTest names and positive-controlled by
-  injecting a product name into a copied tree.
-
-Also landed with v0.7.0, outside the motion boundary: a `.vrma` clip's
-**expressions** reach the stage as prims under `/Animation/Expressions`; unlit
-VRM materials gained a **MaterialX** network that is the one that renders; and
-three material-import corrections (`KHR_texture_transform` sampling,
-`alphaMode: OPAQUE` alpha, and a UsdPreviewSurface network that was a pile of
-shader nodes rather than a material).
-
-**The three questions this release existed to answer** are answered on two of
-three. What a sender means by hips offset and root is decided for the native
-path and open for VMC. What each path drops is measured. What a real sender's
-bone set does was answered by five sessions that raised no unknown-bone refusal
-at all — and by a tracking-loss take that turned out to be unproducible on this
-product. The remaining operator evidence is carried into v0.8.0 above.
-
-## Shipped: v0.6.0 — VMC input
-
-[v0.6.0](../releases/v0.6.0.md) is **released** — tagged 2026-08-03.
-
-**Release boundary:** VMC Protocol arrives as OSC-over-UDP and becomes canonical
-humanoid motion, recorded and replayable. It does **not** begin OpenExec — that
-is v0.8.0 — and it validates against generated bytes rather than a real sender,
-which is v0.7.0.
-
-- ✅ **`vrmAdapterVmc`, built transport-last.** `UdpReceiver`,
-  `OscPacketDecoder`, `VmcMessageDecoder`, `VmcFrameAssembler`, `SkeletonMap`,
-  and the `LiveSource` bridge — five layers verifiable from committed bytes
-  before a socket exists, which is what keeps the corpus a record of what a
-  sender sent rather than of what the receiver let through.
-- ✅ **A packet capture format, not a trace.** `vmc-packet-capture` v1 records
-  the datagrams a session delivered, verbatim, with the instant each arrived.
-  A `motion-capture-trace` records what an adapter *produced*; only a capture can
-  represent a truncated datagram, a duplicate delivery, or a restart mid-frame.
-- ✅ **Seven generated captures, replayed through every layer.** Bundled and
-  unbundled sender shapes, ignorable traffic, ten packet-level refusals, a
-  duplicate, a backwards clock, a restart, valid-OSC-refused-one-layer-up, and
-  nine arguments counted but never interpreted. The loopback corpus replays all
-  seven **through a real socket** and gets `operator==`-identical poses.
-- ✅ **`vmc_record`.** Records a bounded live session or inspects a capture, and
-  reports receive, decode, frame, and intake statistics in one block — plus hips
-  offset and root movement as evidence for the two open questions, and the
-  condition that stopped the recording.
-- ✅ **Exact and tolerant motion comparison** — `operator==` and `NearlyEqual`
-  on the `motionCore` aggregates, differing in three stated places: a quaternion
-  and its negation, provenance, and a tolerance derived from the recorded-trace
-  format's six decimals rather than picked per test.
-  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060)
-  carries the semantics. This also unblocked the OpenExec plan's P0-4.
-- ✅ **The thread question, answered by moving the boundary.** Motion policy
-  §11.4 assumed a thread-safe pose buffer that does not exist. The hand-off is a
-  bounded queue of **raw datagrams** instead, so `DatagramQueue` is the only
-  synchronised object anywhere in the path and `motionRuntime` keeps the
-  single-threaded contract its tests are written against.
-
-Also landed with v0.6.0, ahead of the OpenExec plan that needed them:
-
-- ✅ **OpenUSD is pinned to 26.08, and the pin is enforced rather than
-  declared.** The `>=25.05,<27.0` tolerated range is retired in all four bundle
-  manifests, and `cmake/UsdVrmOpenUsd.cmake` refuses anything else at configure
-  time — from the root project, from a standalone `ost plugin build`, and from a
-  plain-CMake build that never sees `ost`. The same module probes the six
-  OpenExec libraries and refuses a 26.08 without them, which is a *detection*
-  check: 26.08 has no OpenExec build toggle. `buildInfo.json` (schema 2) records
-  the release, `PXR_VERSION`, and the OpenExec components.
-  `workspace_openusd_contract` drives the module against fixture installs so the
-  refusals are tested — no runtime we own takes that path — and
-  `scripts/check_docs.py` keeps the manifests, the module, and
-  [SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md) from
-  drifting apart.
-- ✅ **The 26.08 OpenExec migration audit is written**:
-  [reports/openusd/26.08-openexec-migration.md](../reports/openusd/26.08-openexec-migration.md).
-  It reads the published runtime's own headers and plugInfo files plus the
-  `v26.08` sources — nothing was compiled or run, and the report says so. The
-  plan's core bet holds: a computation can be a thin wrapper, because
-  registration is declarative and a callback is a pure function of resolved
-  inputs. Five findings changed the foundation's scope, two of them structural:
-  **`VtArray` is not an execution value type**, so a pose crosses a computation
-  boundary as a registered `motionCore` aggregate rather than as an array — this
-  decides every `execMotion`/`execVrm` signature; and **`usdExecImaging`'s prim
-  adapter registry is hard-coded** to `UsdGeomXformable` and `ExecIrXformable`,
-  so the planned `UsdSkel` display slice cannot be registered in 26.08.
-
-## Shipped: v0.5.0 — live capture
-
-[v0.5.0](../releases/v0.5.0.md) is **released** — tagged 2026-07-26.
-
-**Release boundary:** a generic `LiveCaptureSource` feeding the same retarget
-core v0.4.0 shipped. It does **not** ship a vendor adapter — that is v0.6.0.
-
-- ✅ **Motion Phase D — the live-capture surface.** `IMotionSource` with an
-  explicit `PoseSampleStatus`, `ClipSource`, and `LiveCaptureSource`:
-  timestamped intake into the `PoseBuffer` Phase 6b built for it, confidence
-  gating, a missing-bone policy (hold vs unbound), root-motion intake
-  (passthrough / ignore / derive-velocity), clock alignment, and statistics that
-  say what was refused and why.
-- ✅ **Reproducible by construction.** Nothing in the intake path opens a
-  transport or reads a wall clock: an adapter decodes a frame and calls `Push`,
-  and the caller drives the tick. So a recorded session replays exactly, on
-  every run and every OS — which is what makes the tests real rather than mocks.
-- ✅ **A recorded-trace format and a corpus.** `motion-capture-trace` v1 is
-  line-oriented text that round-trips byte-identically, so a fixture is compared
-  rather than merely parsed. The
-  [six committed traces](../../libs/motionRuntime/tests/corpus/README.md) are
-  generated by closed-form maths — deliberately synthetic, because a corpus
-  recorded from a commercial SDK would inherit the VRM corpus's redistribution
-  gate and CI could not run it.
-- ✅ **The claim is falsifiable.** `motion_capture` authors the same
-  avatar-independent semantic clip `usdVrmaFileFormat` produces, and the
-  end-to-end test bakes it onto a real avatar with the **unchanged** Phase C
-  tool, then resolves the result through a `UsdSkelSkeletonQuery`.
-- ✅ **One humanoid taxonomy.** `HumanBoneParent` / `NearestPresentAncestor` /
-  `HumanBoneJointPath` moved into `motionCore`; the `.vrma` reader's private
-  copy is gone.
-
-Explicitly deferred: any product-specific adapter, validation against a real
-capture rig, and OpenExec evaluation.
-
-### Attempted in v0.5.0 — the motion-layer CI lane 🚧
-
-> **Superseded 2026-07-28.** `ost 0.21.0` made this expressible in the CI
-> contract (`kind: workspace` cells), and `motion-ci.yml` was deleted with the
-> adoption. The record below is what v0.5.0 actually shipped; the resolution is
-> [report 33](../reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md).
-
-`ost ci generate` emits one job per *bundle* cell, so `motionCore`,
-`motionRuntime`, `vrmRetarget`, `vrmContainer` and both CLIs get no lane.
-v0.5.0 wrote `.github/workflows/motion-ci.yml` (deleted 2026-07-28) to cover
-them by building the whole workspace with plain CMake — the only configuration
-in which `libs/` and `tools/` targets exist.
-
-**It is not wired.** It ships on `workflow_dispatch` only and does not gate pull
-requests, so the layer's coverage is unchanged from v0.4.0. Shipping it red on
-every PR would have been worse than shipping it off.
-
-- ✅ **The parts that work**, verified green on all three OS: `ost` bootstrap,
-  artifact pull, runtime materialisation, and the **WORKSPACE.md §2
-  dependency-graph gate**. The gate has to be read out of
-  `ost plugin test --workspace --up-to 0 --json`, because that verb couples
-  graph validation to testing every bundle and so exits non-zero on a fresh
-  checkout where nothing is built yet.
-- ⛔ **What blocks it.** Configuring against the pulled runtime fails on all
-  three OS: `pxrConfig.cmake` does
-  `find_dependency(Python3 COMPONENTS Development ...)` and resolves to the
-  paths of the Python the runtime was *built* against
-  (`/usr/include/python3.13`), which do not exist on a hosted runner.
-  `actions/setup-python` provides a dev-complete 3.13 and exports
-  `Python3_ROOT_DIR`; passing it again as `-DPython3_ROOT_DIR` changed nothing.
-  The generated lane never meets this because `ost plugin build` resolves
-  Python itself.
-- ⬜ **Untried next step:** `-DPython3_EXECUTABLE=$pythonLocation/bin/python3`,
-  a stronger hint than `ROOT_DIR`; failing that, find out what
-  `ost plugin build` passes that a bare `cmake` does not.
-
-Diagnosis and the upstream asks:
-[report 32](../reports/ost/32-2026-07-26-v0.20.0-motion-layer-ci-workaround.md).
-
-### Closed in v0.5.0 anyway
-
-- ✅ **The Phase 0 baseline is no longer stale.** It is registered only from the
-  plain-CMake root build, which no lane runs, so nobody noticed the committed
-  symbol baseline was still frozen against OpenUSD 26.05 after the 26.08 bump.
-  Refreezing changed all 220 symbols by `pxrInternal_v0_26_5` → `_26_8` **and
-  nothing else**; every other baseline artifact is byte-identical across the two
-  OpenUSD versions. Found only because the lane work made someone run it — and
-  it still runs nowhere automatically.
-- ✅ **The baseline gate needs an explicit full-workspace session** (v0.4.0
-  carry-over). The lane names every bundle with `--with`; when the lane is
-  finished, the recurrence the v0.4.0 record predicted is handled.
-
-## Shipped: v0.4.0 — offline retarget
-
-[v0.4.0](../releases/v0.4.0.md) is **released** — tagged 2026-07-26.
-
-**Release boundary:** Workspace Phase 6b + Motion Phase C. It ends at a `.vrma`
-clip playing back on a real avatar; it does **not** begin live capture or
-OpenExec.
-
-This is the motion layer's **first end-to-end evaluation point** (motion policy
-§16-C). Everything before it authored data that nothing consumed; from here a
-clip and an avatar produce a bound, playable result.
-
-- ✅ **Workspace Phase 6b — `motionRuntime`.** A plain static CMake library over
-  `motionCore`: `PoseBuffer` (bounded, strictly ordered history with bracketed
-  sampling and capped position-only extrapolation), `SlerpShortest` / `LerpPose`
-  / `LerpRootMotion`, `Resample` / `SampleAnimation`, `PoseFilter`
-  (frame-rate-independent exponential smoothing), and two- and N-pose
-  `BlendPoses`. Two invariants hold throughout: a missing sample is held, never
-  faded toward identity; and every orientation stays a unit quaternion on the
-  short arc.
-- ✅ **Workspace Phase 6b — `vrmRetarget`.** `TargetSkeleton`, `HumanoidMap`,
-  `SourceRestPose` / `RestPoseCorrection`, `RootMotionPolicy`, and
-  `PoseRetargeter`. It never opens a stage — the rig arrives as plain values —
-  and it never depends on OpenExec, so `execVrm`'s future `HumanoidRetarget`
-  node is a wrapper over it rather than a second implementation.
-- ✅ **Motion Phase C — `motion_retarget`.** The CLI reads the target rig and
-  the semantic clip off stages, retargets, authors the `UsdSkelAnimation`, and
-  binds `skel:animationSource` on an override of the referenced skeleton, so the
-  avatar keeps owning its rig. `--root-motion hips|root|ignore`,
-  `--translation-scale`, `--preserve-target-height`, `--resample`, and
-  `--humanoid-map` are covered by tests.
-- ✅ **The design triplet is now executable.** `canonical_walk.usda` +
-  `avatar.usda` → `expected_retargeted.usda` is checked at the value level
-  through USD composition on both sides, rather than by byte-comparing a layer.
-  The hand-off Motion Phase A froze is met, not just described.
-
-Three decisions worth carrying forward:
-
-- **Joint names are never guessed.** A binding comes from the avatar's
-  `vrm:humanBones:<bone>` attributes or from an explicit `--humanoid-map`; an
-  unbound bone is reported, never inferred from a name.
-- **Root motion carries a delta, not a height.** The hips translation is applied
-  relative to each rig's own rest, so a clip authored on a 1.0 m rig drives a
-  1.6 m one without the avatar snapping to the source's hip height.
-- **The tool reads `vrm:humanBones:*` as plain attributes**, not through
-  `VrmHumanoidAPI`, so the motion layer needs no link against the `vrmSchema`
-  bundle.
-
-Explicitly deferred: live capture, generation, expression, look-at, OpenExec
-evaluation, blending beyond the primitive, IK, and foot locking.
-
-Shipped with the tag, after the retarget work: the `.vrma` importer and the bake
-both authored a `UsdSkelAnimation` without `scales`, which UsdSkel resolves as a
-unit with translations and rotations. Both bound cleanly and then held every
-joint at its rest pose — the clip did not move
-([#64](https://github.com/animu-sphere/usd-vrm-plugins/issues/64)). Both halves
-now author a constant identity array, and the tests drive a
-`UsdSkelSkeletonQuery` rather than comparing authored values.
-
-### Carried out of v0.4.0 — both now closed
-
-- ✅ **No CI lane covers the motion layer.** Closed by the `ost` 0.21.0
-  adoption; filed as the P0 ask in
-  [report 28](../reports/ost/28-2026-07-26-v0.20.0-motion-layer-ci-gap.md).
-- ✅ **The baseline gate needs an explicit full-workspace session.**
-  `discovery.json` freezes the union across every bundle, but a bundle that
-  registers a type without being a dependency (`usdVrmaFileFormat`) has to be
-  named with `--with`. v0.4.0 wired that into the CTest env; the same gap will
-  recur for the next bundle that is nobody's dependency. A generator that
-  derives the session from the workspace graph would close it for good.
-
-## Shipped: v0.3.0 — the VRMA motion foundation
-
-[v0.3.0](../releases/v0.3.0.md) is **released** — tagged and published
-2026-07-23 (`68a5d32`). It froze the motion contract (Motion Phase A), shipped
-`motionCore` (Workspace Phase 6a) and `usdVrmaFileFormat` (Workspace Phase 7 /
-Motion Phase B), and vendored `cgltf` v1.15 so no configure-time fetch is
-needed. Its release lane required `ost` 0.20.0 for the aggregate-product
-reproducibility gate.
-
-Carried out of the v0.2.0/v0.3.0 releases as open work:
-
-- ⬜ **Verify the non-`ost` install path on Windows.** The published bundles are
-  only exercised through `ost`; a user composing them by hand against a plain
-  OpenUSD environment is uncovered. `libUsdVrmFileFormat` links against
-  `libvrmSchema` and `vrmContainer`, which are staged under
-  `runtime/libraries/{lib,bin}` rather than beside the plugin — and Python 3.8+
-  dropped `PATH` from the DLL search for dynamically loaded modules, so the
-  correct mechanism (`PATH` / `os.add_dll_directory` / co-location) is
-  **unestablished**. [INSTALL.md](../guides/INSTALL.md) names the directories
-  and the failure signature but deliberately prescribes no recipe. Closing this
-  needs a non-`ost` install lane, not a docs edit.
+Only the open items are listed. What each track has already delivered is in the
+[delivery history](../reports/delivery-history.md) and the
+[release records](../releases/).
 
 ### Product P0 — documentation & implementation sync 🚧
 
@@ -901,14 +396,12 @@ Carried out of the v0.2.0/v0.3.0 releases as open work:
 the workspace layout, the output structure, and the import/runtime boundary.*
 (design policy §15, §17-P0)
 
-The importer-era docs described a single `usdVrm` bundle with co-located
-schemas. Since Workspace Phase 4 that is wrong in every particular.
-
 - 🚧 Describe `vrmSchema`, `usdVrmFileFormat`, `usdVrmPackageResolver`, and
   `usdVrmaFileFormat` as separate bundles; `vrmContainer`, `motionCore`,
-  `motionRuntime`, `vrmRetarget`, and `vrmAdapterVmc` as plain libraries;
-  `motion_retarget`, `motion_capture`, and `vmc_record` as CLIs; and `usdVrm` as
-  the aggregate product name only.
+  `motionRuntime`, `vrmRetarget`, `motionSource`, `motionBvh`, `liveTransport`,
+  `osc` and the three `vrmAdapter*` leaves as plain libraries; `motion_retarget`,
+  `motion_capture`, `motion_bvh_convert` and the `*_record` tools as CLIs; and
+  `usdVrm` as the aggregate product name only.
 - 🚧 Unify phase notation to **Product P0–P6**, **Workspace Phase 0–8**, and
   **Motion Phase A–H** — three sequences, never a bare "Phase N".
 - 🚧 Align build / test / install examples with what CI actually runs.
@@ -916,28 +409,19 @@ schemas. Since Workspace Phase 4 that is wrong in every particular.
   `hydra-merlin`.
 - ⬜ **Finish separating the workspace contract from its history.** The
   near-term plan of 2026-08-29 proposed splitting
-  [WORKSPACE.md](../architecture/WORKSPACE.md) three ways — a slim contract
-  (identities, kind, dependency direction, forbidden edges, aggregate
-  membership, migration invariants), a `DEPENDENCY_RULES.md`, and a
-  `PACKAGE_CONTRACT.md` — plus a `docs/decisions/` directory of ADRs for the
-  decisions currently narrated inside the contract. **Only the package half was
-  taken** (2026-08-29): §5 now defers the consumer contract to
+  [WORKSPACE.md](../architecture/WORKSPACE.md) three ways — a slim contract, a
+  `DEPENDENCY_RULES.md`, and a `PACKAGE_CONTRACT.md` — plus a `docs/decisions/`
+  directory of ADRs. **Only the package half was taken** (2026-08-29): §5 now
+  defers the consumer contract to
   [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md), and no claim in
   WORKSPACE.md moved. The other two are deliberately open, for one reason each.
   The dependency split is a change to a document five others cite by section
   number, so it is worth doing once, with the citations updated in the same PR.
   And `docs/decisions/` would be **this repository leaving the taxonomy it
   shares with `open-strata` and `hydra-merlin`** — a decision for all three
-  repositories rather than for this one, which is what the house rule exists to
-  prevent. Until then, rationale keeps landing where it does now: measurements
-  in [reports/](../reports/), plans in this directory, and per-release records
-  in [releases/](../releases/).
-- ✅ **Version drift between the roadmap and the release records is checked**
-  (2026-08-03). `scripts/check_docs.py` asserts that `VERSION` has a release
-  record, that a `Next:` / `Then:` milestone is not an already-released version,
-  that a `Shipped:` one is, that the roadmap status table agrees with the
-  headings, and that no document references a retired roadmap filename. The
-  v0.6.0→v0.8.0 re-ordering is exactly the drift it exists to catch.
+  repositories rather than for this one. Until then, rationale keeps landing
+  where it does now: measurements in [reports/](../reports/), plans in this
+  directory, and per-release records in [releases/](../releases/).
 
 Done when: the component table matches the manifests, no document describes
 `usdVrm` as a bundle id, every local link resolves, and a consistency check
@@ -945,85 +429,52 @@ guards all of it in CI.
 
 ### Product P1 — release stabilization 🚧
 
-- ✅ **Decided: the release ships all four bundles.** `release.yml` builds,
-  tests, packages (`ost plugin package --workspace`), and publishes `vrmSchema`,
-  `usdVrmFileFormat`, `usdVrmPackageResolver`, and `usdVrmaFileFormat` per
-  target. The three VRM bundles ship together because that was forced, not
-  preferred: an `usdVrmFileFormat` package alone registers the `.vrm` format and
-  then **fails to open a stage** (L3/L4, `Used null prim`), because ost stages a
-  dependency bundle's link half without its USD registration half. Measured in
-  [report 23 §2.1](../reports/ost/23-2026-07-18-v0.18.0-workspace-packaging-v0.19.0-asks.md).
-- ✅ **Replaced the packaged-artifact gate.** A bare per-bundle
-  `ost plugin test --from-package` tests the one configuration that provably
-  fails (L3/L4 above). The lane gates on the composed
-  `scripts/clean_install_smoke.py`, which opens and validates real models from
-  the packaged artifacts. `--from-package --workspace` *does* compose and is
-  green (see [report 25](../reports/ost/25-2026-07-18-v0.18.0-from-package-workspace-correction.md));
-  it covers `minimal.vrm` per bundle, so it joins the smoke script rather than
-  replacing it.
-- ✅ **The CLIs ship in the release artifacts.** `tools/*/openstrata.tool.yaml`
-  makes `motion_retarget` and `motion_capture` tool members of the aggregate
-  product, and `release.yml` stages them with the bundles. `vmc_record` is an
-  adapter tool and stays outside the product by
-  [WORKSPACE.md §5](../architecture/WORKSPACE.md).
 - ⛔ **A second OpenUSD version cell** (min vs latest) in the compatibility
   matrix. Today CI runs cy2026 / OpenUSD 26.08 only. **Blocked externally:**
   GHCR has no published min-version (e.g. OpenUSD 25.05 / cy2025) runtime
   artifact yet — this needs an open-strata runtime build + publish per OS, then
   a fourth cell in `openstrata.ci.yaml`. The OS axis already runs three cells.
 
-### Product P3 — runtime verification (carry-over) ⬜
+### Product P3 — runtime verification 🚧
 
 *Goal: builds and opens are continuously verified on all three OS; textured real
 models resolve; schema registration succeeds.* (design policy §14, §17-P3)
 
-The OS axis is shipped. Remaining:
+The OS axis and the workspace graph gate are shipped. Remaining:
 
-- ✅ **The workspace graph gate is wired.** [WORKSPACE.md §2](../architecture/WORKSPACE.md)
-  specifies `ost plugin test --workspace` as the enforcement for the dependency
-  directions, and §8 called for it to be a required PR-lane gate from Workspace
-  Phase 1 on. The `workspace-graph-pr` cell runs `--graph-only` on every PR.
-  *(It does not yet reach an adapter — see the v0.7.0 carry-over above.)*
 - ⬜ Explicit **UTF-8 / Unicode path** and **DLL dependency discovery** coverage
   on the Windows cell.
 - ⬜ **Real VRM smoke test** (open + texture resolve) exercised in CI, not just
   fixtures.
+- ⬜ **Verify the non-`ost` install path on Windows** *(carried from v0.2.0 /
+  v0.3.0)*. The published bundles are only exercised through `ost`; a user
+  composing them by hand against a plain OpenUSD environment is uncovered.
+  `libUsdVrmFileFormat` links against `libvrmSchema` and `vrmContainer`, which
+  are staged under `runtime/libraries/{lib,bin}` rather than beside the plugin —
+  and Python 3.8+ dropped `PATH` from the DLL search for dynamically loaded
+  modules, so the correct mechanism (`PATH` / `os.add_dll_directory` /
+  co-location) is **unestablished**. [INSTALL.md](../guides/INSTALL.md) names the
+  directories and the failure signature but deliberately prescribes no recipe.
+  Closing this needs a non-`ost` install lane, not a docs edit.
 
 ## Workspace Phase 5 — per-bundle + aggregate packaging 🚧
 
-**Status:** aggregate product shipped; standalone dependency-registration P0 is
-blocked on `ost` · **Contract:**
+**Status:** aggregate product shipped; the standalone dependency-registration P0
+is blocked on `ost` · **Contract:**
 [WORKSPACE.md](../architecture/WORKSPACE.md) §5
 
-`ost` 0.19.0 moved this forward but did not unblock it. What landed:
-`ost plugin package --workspace` (adopted by the release lane), and a `bundles`
-key in `dependencies.json`. What did not:
-
-- **A dependency bundle's USD registration half is never staged.** ost stages
-  `libvrmSchema` + its CMake package into `runtime/libraries/`, but not
-  `plugInfo.json` or `generatedSchema.usda` — so the packaged importer links
-  against the schemas it can no longer register, and `--from-package` fails at
-  L3/L4. This is the **P0 upstream ask**; it is also why the release must ship
-  all three VRM bundles.
-
-The aggregate product artifact is emitted by `--workspace --product` and is
-adopted by the release lane. `--from-package` **does** compose with
-`--workspace` — the shipped help text saying otherwise was stale, and this
-roadmap repeated it. That verb verifies the composed configuration and is green;
-it does not close the P0, because it works by putting the dependency's
-*separate package* on the path rather than by making any one package
-self-closed.
-[Report 25](../reports/ost/25-2026-07-18-v0.18.0-from-package-workspace-correction.md)
-measures both.
-
-`scripts/clean_install_smoke.py` remains the release lane's packaged-artifact
-gate: it extracts outside the repo and drives textured avatars end to end, where
-the ost verb covers `minimal.vrm` per bundle.
-
-- ✅ Adopt `ost plugin package --workspace`.
-- ✅ Gate the composed packaged configuration with `--from-package --workspace`.
-- ✅ Emit the aggregate artifact. `ost plugin package --workspace --product`
-  is adopted by the release lane and ships one product archive containing the
-  exact member archives, manifests, checksums, and evidence.
-- ⬜ Retire the hand-rolled closure in `clean_install_smoke.py` (needs the P0
-  above; the composed verb narrows but does not remove the need).
+- ⛔ **A dependency bundle's USD registration half is never staged.** `ost`
+  stages `libvrmSchema` + its CMake package into `runtime/libraries/`, but not
+  `plugInfo.json` or `generatedSchema.usda` — so a packaged importer links
+  against schemas it can no longer register, and a bare per-bundle
+  `--from-package` fails at L3/L4. This is the **P0 upstream ask**, and it is
+  why the release must ship all three VRM bundles. `--from-package --workspace`
+  *does* compose and is green, but it works by putting the dependency's separate
+  package on the path rather than by making any one package self-closed
+  ([report 25](../reports/ost/25-2026-07-18-v0.18.0-from-package-workspace-correction.md)
+  measures both).
+- ⬜ **Retire the hand-rolled closure in `scripts/clean_install_smoke.py`.**
+  It remains the release lane's packaged-artifact gate — it extracts outside the
+  repo and drives textured avatars end to end, where the composed `ost` verb
+  covers `minimal.vrm` per bundle. Needs the P0 above; the composed verb narrows
+  but does not remove the need.

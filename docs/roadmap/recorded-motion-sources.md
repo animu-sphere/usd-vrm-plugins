@@ -422,17 +422,15 @@ to make small.
 
 | Milestone | Contents | State |
 | --- | --- | --- |
-| **BVH-0** — contract and fixtures | real samples from mocopi and a second producer; joints, hierarchy, channels, unit, axis measured; the `motionSource` model and profile schema settled; the diagnostic set frozen | 🚧 |
+| **BVH-0** — contract and fixtures | real samples from mocopi and a second producer; joints, hierarchy, channels, unit, axis measured; the `motionSource` model and profile schema settled; the diagnostic set frozen | ✅ |
 | **BVH-1** — syntax | `BvhDocument`, the parser, `motion_bvh_inspect`, malformed fixtures, deterministic tests | ✅ |
-| **BVH-2** — semantics | the `motionSource` API, the profile API, the mocopi profile, the second producer's, basis and unit conversion, source rest pose, root policy, `HumanoidAnimation`, the semantic clip writer | ✅ |
-| ↳ how BVH-2 closed | the **second producer's profile** landed 2026-08-05 and cost two contract changes on the way, which is the milestone paying for itself: the first export had made "the root joint is the hips" and "the offsets are the rest" look like properties of the format. The semantic clip writer landed the same day with `motion_bvh_convert`, as a third repeated shape rather than shared code and with the condition that would change that written down ([§10](#10-contract-changes-this-plan-requires)), along with the value model, the profile contract and file, the extractor and the converter | ✅ |
-| **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, artifact-only smoke, the recorded corpus | 🚧 |
-| ↳ what remains of BVH-3 | the **artifact-only smoke**, **unblocked 2026-08-25 and still unwritten**: the packaged product carries the profiles now, because `ost` 0.22.3's `[[workspace.install_data]]` gives the mapping a product-level owner ([§10](#10-contract-changes-this-plan-requires)). Through v0.7.0 it was blocked instead — a converter unpacked from a product refused every file it was given. The tool, the unchanged retargeter and the bake landed 2026-08-05 ([§12](#12-pr-splitting) items 10 and 11), and the **target VRM** landed 2026-08-11 — the fixture bake stays beside it rather than being replaced, because a rig shaped so a broken rest-pose correction cannot pass it and a rig somebody shipped are not the same test | 🚧 |
-| **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | ⬜ |
+| **BVH-2** — semantics | the `motionSource` API, the profile API, two producers' profiles, basis and unit conversion, source rest pose, root policy, `HumanoidAnimation`, the semantic clip writer | ✅ |
+| **BVH-3** — end to end | `motion_bvh_convert`, the **unchanged** `motion_retarget`, the target VRM bake, the recorded corpus | 🚧 — only the **artifact-only smoke** is left, and it is unblocked ([§10](#10-contract-changes-this-plan-requires)) |
+| **BVH-4** — cross-source | the same motion through UDP and BVH, compared at the canonical layer; the VMC relay added where available; a decision record | 🚧 — two paths of three compared ([report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.md)); the relay is [current.md](current.md#carried-out-of-v070--evidence-an-operator-produces)'s |
 
-BVH-0 is a measurement milestone, and skipping it is the failure mode this whole
-plan is shaped around: writing the profile schema from one producer's file makes
-that producer's export the schema.
+The measurements below are what BVH-0 bought, and they are kept because the two
+shipped profiles were written from them: a profile schema written from one
+producer's file makes that producer's export the schema.
 
 **The first real sample landed 2026-08-04**: a 17-second session exported from
 one vendor's phone application, committed at
@@ -546,165 +544,24 @@ into.
 Structural claims belong in the contracts, in their own change, before this plan
 depends on them ([docs/README.md](../README.md)).
 
-- ✅ **`motionSource`, `motionBvh`, and the two CLIs have identities and edges.**
-  [WORKSPACE.md §1](../architecture/WORKSPACE.md) names them and states what each
-  layer may know; §2 carries the chain and its reversals; §5 puts them **inside**
-  the aggregate product — unlike an adapter — because the libraries carry no
-  product name even though the data beside them does. Landed 2026-08-03 with this
-  document.
-- ✅ **A producer profile is data, and product names in data are permitted.**
-  WORKSPACE.md §1 states the exception and its test: ship every profile and the
-  libraries are byte-identical. Motion policy §8.3 carries the recorded-input
-  path itself.
-- ✅ **The semantic clip has one writer, three callers, and stays a repeated
-  shape** (2026-08-05, with the converter). `motion_capture`,
-  `usdVrmaFileFormat` and now `motion_bvh_convert` all author the
-  avatar-independent clip. The decision is *not* to share the code yet, and the
-  reason is that the writers differ in the field that matters most:
-  `motion_capture` authors **identity** rest transforms because a capture stream
-  reports rotations relative to the humanoid rest and never the rest itself,
-  while this one authors a **real** rest pose because a recorded file states one
-  and a profile says how to read it ([§4](#4-rest-pose-and-who-corrects-it)).
-  Sharing them today means parameterising over exactly that difference, and
-  [§12](#12-pr-splitting)'s rule is that one PR never introduces a boundary and
-  a large feature together. What *would* change the answer is a fourth caller,
-  or a third needing neither variant — at that point the difference is a
-  parameter and the shape is a function. In the meantime the risk is the two
-  drifting on the parts that are not a choice, so those are pinned by test
-  rather than by intention: the joint set is in `HumanBone` order, the time
-  codes are frames, and `scales` is authored. That last one is the scar —
-  `UsdSkel` fetches translations, rotations and scales as a unit and `scales`
-  has no schema fallback, so a clip missing it does not animate without scale,
-  it silently resolves to the rest pose.
-- ✅ **`SourceProvenance` versus `MotionSourceMetadata`** — a **neighbour**, with
-  a one-way narrowing derivation (2026-08-04, with the model). Two independent
-  arguments give the same answer: the canonical type rides on every pose and is
-  serialised with it, so a per-clip fact has no business on it; and everything in
-  `SourceProvenance` is known *before* any motion exists, which the canonical
-  type describes. `CanonicalMetadata` maps producer → `provider`, format →
-  `protocol`, and always `kind = Clip`, dropping the producer version and the
-  profile id — the narrowing is pinned by a test rather than by a sentence.
-  Semantics: [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#recorded-source-provenance-v070).
-- ✅ **The quaternion rotation form has no producer, and the converter decided
-  what that costs** (2026-08-05, with the converter). `SourceJointTrack` carries
-  angles-with-an-order *or* quaternions, because composing three angles needs the
-  handedness a profile supplies and decomposing a quaternion would invent an
-  order the writer never declared — so neither converts into the other before a
-  profile is in hand. Of the two honest answers, the **first** was taken: a
-  quaternion track is refused as `UnsupportedRotationForm`, naming the joint and
-  saying that no reader writes this form yet. The second — a synthetic fixture,
-  said in the corpus to be synthetic — stays open and is what a reader producing
-  quaternions arrives with. What settled it is that the refused path costs one
-  branch and the implemented one would cost a code path tested only against a
-  value this repository invented.
-- ✅ **The canonical basis had a forward axis nobody had written down**
-  (2026-08-05, with the converter). Three of the four canonical conventions were
-  in [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md) already; the forward axis
-  was not, and a converter that has to map a profile's `forwardAxis` onto
-  canonical cannot proceed without it. It is recorded as **+Z**, which is a
-  reading of the tree rather than a new decision — the VMC adapter's existing
-  conversion leaves a +Z-forward sender's forward untouched, and the avatars this
-  is retargeted onto face +Z by specification. Two things now depend on it in
-  code: `CanonicalBasis`, whose determinant is the handedness question, and the
-  rule that angles are composed by the right-hand rule *always*, leaving the
-  mirror to that determinant. Handling handedness in both places is the failure
-  the contract section spells out, because it is correct in every axis-aligned
-  test pose.
-- ✅ **The six semantic diagnostics are raised by the caller, from typed refusals
-  the profile API returns** (2026-08-05, with the profile contract). The frozen
-  set ([§6](#6-diagnostics)) lives in the reader, named for the format it reads,
-  and its semantic half is raised "where a document meets a profile" — which is
-  `motionSource`, the one library forbidden to know that reader exists
-  ([WORKSPACE.md §2](../architecture/WORKSPACE.md)). Of the three answers that
-  were open, the third won: `MatchSourceProfile` returns a
-  `SourceProfileRefusal` naming the *event* in terms no format supplies —
-  `root-joint-mismatch`, `ambiguous-joint-name`, `required-joint-missing`,
-  `hierarchy-mismatch`, `unmapped-joint-refused` — and the caller holding both a
-  reader and a profile maps it onto that reader's codes. The two rejected
-  answers are worth keeping: plain text alone (which is right for a structural
-  invariant, and is what
-  [`SourceSkeleton.h`](../../libs/motionSource/include/motionSource/SourceSkeleton.h)
-  still does) would make that caller parse prose to pick a code, and a second
-  `VRM_MOTION_SOURCE_*` namespace would give one event two spellings and
-  duplicate a set whose whole value is being frozen and closed. The mapping is
-  not one-to-one and does not need to be — an ambiguous joint name has no code
-  of its own and is a profile mismatch — which is exactly why the refusal names
-  the event rather than the code.
-- ✅ **A mapped bone's local rotation is the composition of the path above it,
-  and the converter implements it** (2026-08-05). A profile maps a rig's joints
-  onto the canonical humanoid, which has fewer of them: the first real one leaves
-  four spine segments and a neck segment mapped to nothing
-  ([§9](#9-milestones)). Those are not joints to drop — each sits *between* two
-  mapped ones, so a converter that took a mapped joint's local rotation verbatim
-  would lose every rotation above it and place the arms and head wrong, which
-  reads as a subtly misassembled body rather than as a failure. The rule is one
-  sentence — a bound bone's local rotation is the composition of the source local
-  rotations from just below its nearest bound ancestor down to it — and it
-  belongs to the converter rather than to a profile, because a profile that could
-  state it would be stating an algorithm. Written here before the converter
-  existed, it arrived as a decision already taken rather than as a bug in a
-  retarget nobody could localise. Two things landed with it that the sentence did
-  not say: the **rest pose is built by the same walk**, so one composition serves
-  both and cannot disagree with itself, and *which* bones absorbed a chain is
-  reported (`ConversionReport::composedBones`) because a cross-source comparison
-  will want to know. Over the one real export it is four: `spine`, `chest`,
-  `upperChest` and `head`.
-- ✅ **A root is two joints in the second producer's export, and the answer is
-  the path rule again** (raised, decided and implemented 2026-08-05).
-  `joint_Root` carries the locomotion and never rotates; `Hips`, its only child,
-  carries the body's orientation and a translation of its own
-  ([§9](#9-milestones)). A profile states one `root.joint`, and the converter
-  read root translation and rotation from joint index 0 — so naming `joint_Root`
-  lost the orientation and naming `Hips` was not expressible. The decision, in
-  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#recorded-source-rest-pose-and-the-path-rule-v070):
-  **both root policies describe the composition of the source path from the
-  rig's root down to the joint bound to `hips`.** It costs no new vocabulary,
-  the path is always defined because `ValidateSourceProfile` already refuses a
-  profile that does not bind `hips` and one that binds them optionally, and a
-  rig whose root *is* its hips has a path of one joint and reads identically —
-  which is what makes it safe to state after a producer had already shipped.
-  `root.joint` keeps naming the rig's root, because that field is what a profile
-  is *matched* by and matching is a question about shape.
-- ✅ **A first-frame rest was half a rest, and the second producer is the export
-  that shows it** (raised, decided and implemented 2026-08-05). Its
-  `OFFSET`s are bone-local — every one along +X down its own bone — so composing
-  them at identity puts the spine and both legs the same way and makes no figure
-  at all; the rest is not recoverable from the rest translations, and
-  `rest-offsets` is not available to it. `FirstFrame` is, and it was
-  taking rotations from frame 0 and translations from the `OFFSET`s: one rest
-  built out of two poses, invisible for any producer whose offsets are its rest
-  and wrong for the only kind of producer that picks the setting. The decision:
-  **under `first-frame`, a joint's rest translation is its first sampled
-  translation where it has one.** This producer's `Hips` `OFFSET` is capture
-  bookkeeping — 427 cm of Z in one file, near zero in another from the same rig
-  — so the old reading put an artefact of the capture volume into a rest pose,
-  and `vrmRetarget` would have subtracted it from every frame. What the setting
-  *claims* is narrowed in the same change: not that the writer's first frame is
-  neutral, but that the source states no rest and the profile elects frame 0 to
-  measure motion away from. The limitation that follows is written down rather
-  than discovered — two clips from one dataset are each anchored to their own
-  first frame.
-- ✅ **A first-frame rest does not survive contact with a real avatar, and the
-  second producer's rig has a real one** (raised, decided and implemented
-  2026-08-05, by baking onto a VRM). `first-frame` maps the source's frame 0
-  onto the target's rest, so the avatar never leaves its own rest pose's
-  neighbourhood: a T-posed avatar walked with a clip whose arms hang at its
-  sides holds its arms straight out for the whole clip, and the leg frame 0
-  caught mid-stride carries that bend forever while the other looks right. Both
-  were visible on the first bake, and the asymmetry is what identified the
-  cause: 122.5° at one knee against 162.4° at the other, so the 40° between
-  them became a permanent offset on one leg and nothing on the other.
-  The fix is not a better default — it is that **this producer's rest exists**.
-  Its own paper says the capture was retargeted to the proportions of a
-  published character model, and the six bone lengths that claim implies agree
-  with the export's own offsets to five significant figures, so the rig is that
-  rig and its neutral is a T-pose. `restPose: t-pose` says exactly that, and the
-  rest is built from canonical T-pose directions and the rig's *own* offsets —
-  no number from that character model enters this repository, which matters
-  because its licence forbids redistribution outright.
-  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#recorded-source-rest-pose-and-the-path-rule-v070)
-  carries the one weakness: offsets pin a bone's direction and not its roll, so
-  the roll is taken from frame 0 and only the aim from the canonical pose.
+**What this track has already asked for is in the contracts, not repeated here.**
+[WORKSPACE.md](../architecture/WORKSPACE.md) §1, §2 and §5 carry the
+`motionSource` / `motionBvh` / CLI identities, the chain and its reversals, the
+aggregate membership, and the profile destination; a producer profile being data
+in which product names are permitted; and `tools/motionBvh/` as one member with
+two executables. [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md) carries
+`SourceProvenance` beside `MotionSourceMetadata`, the quaternion rotation form,
+the canonical forward axis that nobody had written down until this track needed
+it, the six semantic diagnostics being the caller's to raise from typed
+refusals, a mapped bone's local rotation being the composition of the path above
+it, a root that is two joints in one producer's export, and the rest-pose rules
+that a first-frame rest failed twice — once against a second producer and once
+against a real avatar. Each landed in its contract before the code that depends
+on it, and the measurement behind each is in [§9](#9-milestones) or the report it
+cites.
+
+Still open:
+
 - ⬜ **A released avatar's humanoid is incomplete, and what a bone it cannot
   bind costs is measured but not decided** (raised 2026-08-11, by baking onto a
   real VRM). VRM 1.0 makes `upperChest` optional; `Seed-san.vrm` leaves it out;
@@ -730,82 +587,33 @@ depends on them ([docs/README.md](../README.md)).
   characterisation, so a later rule has to change that test before it changes
   the behaviour, and `motion_retarget` names the bone on stderr rather than
   losing it in silence.
-- 🚧 **Profiles need a packaging answer.** They are data that must reach an
-  artifact-only smoke test, so `share/usd-vrm-plugins/profiles/motion/` is named
-  in WORKSPACE.md §5. **The plain-CMake half is done and measured**
-  (2026-08-05): the root project installs `profiles/motion/*.yaml` to exactly
-  that destination, verified by installing to a scratch prefix. The `ost` half is
-  not — 0.21.0 has no notion of a data-only member, and whether a packaged
-  product carries these files is untested. This is the same shape as the adapter
-  packaging gap ([report 34](../reports/ost/34-2026-07-29-v0.21.0-adapter-library-discovery-gap.md)).
-- ✅ **A binary import check cannot survive this chain, and that is measured**
-  (2026-08-05, with the converter). `motionBvh` refused any OpenUSD library in a
-  built artifact's imports, which was the strongest form its "no OpenUSD" claim
-  could take. Once the extractor took the edge to `motionSource` — and through it
-  to `motionCore`'s `Gf` value types — what that check reports became the
-  *linker's* answer rather than the library's: MSVC pulls only the archive
-  members that resolve a symbol, GNU ld with `--as-needed` drops the resulting
-  unused entries, and Apple's ld64 records every library on the link line whether
-  or not one is used. All three are right about their own artifact, so one source
-  tree produces two answers. **It cost a red macOS lane to establish**, on a
-  claim verified on Windows and generalised in the same change — the same failure
-  shape as the quaternion-precision one, and the reason this entry exists rather
-  than a quieter fix. The check is removed rather than narrowed on both
-  `motionBvh` and `motion_bvh_inspect`; the source rule, which forbids every
-  OpenUSD name in every file of the library, is platform independent and carries
-  the claim. Two consequences are stated where somebody meets them rather than
-  discovered: a standalone configure of `tools/motionBvh` now needs OpenUSD on
-  the prefix path, because `find_package(motionBvh)` resolves `motionSource` and
-  through it `pxr`; and on macOS `motion_bvh_inspect` records those dylibs.
-- 🚧 **The workspace graph gate reaches both libraries, measured rather than
-  assumed.** `ost plugin test --workspace --graph-only` reported `5 libraries, 7
-  library edge(s)` with `motionBvh` committed and `6 libraries, 8 library
-  edge(s), valid` with `motionSource` beside it (`ost` 0.21.0, 2026-08-04) — one
-  more library and one more edge, so the new descriptor is discovered and its
-  declared `motionCore` edge is validated rather than assumed. With
-  `profiles/motion/` committed the gate reports **the same** `6 libraries, 8
-  library edge(s), valid` (2026-08-05): a directory of data is discovered as
-  nothing and perturbs no edge, which is the right answer and now a measured one.
-  What it does **not** cover is whether those files reach an artifact — that is
-  the packaging item above, and this gate is as silent about it as it is about
-  every tool.
-- ✅ **`tools/motionBvh/` is one member carrying two executables, and `ost`
-  0.21.0 packages it.** Every workspace tool before it was one directory, one
-  executable, and an id equal to that executable's name; this member is
-  `motion_bvh` with both `motion_bvh_inspect` and `motion_bvh_convert` inside
-  it. `ost plugin package --workspace --product` reports
-  `== motion_bvh 0.6.0 (tool) ==`, `build: matched (ost-managed)`, and a
-  product of **7 exact members** (4 bundles + 3 tools); the archive carries
-  `bin/motion_bvh_inspect.exe`, so an id that is not an executable name costs
-  nothing. Measured 2026-08-04, deliberately *before* release preparation —
-  deferring it would have made release prep the place a new member shape is
-  first tried, and the shape held: re-measured 2026-08-05 with the second
-  executable actually present, the archive carries **both** and the member
-  count does not move.
-- ⬜ **The packaged product carries the profiles as of `ost` 0.22.3; the smoke
-  itself is what is left.** Through v0.7.0 it did not, and the diagnosis stands
-  as the reason this entry existed (measured 2026-08-05): the `motion_bvh`
-  archive was exactly `bin/motion_bvh_inspect.exe`, `bin/motion_bvh_convert.exe`
-  and `openstrata.tool.yaml`, with no `share/usd-vrm-plugins/profiles/motion/`
-  anywhere in the product, because a tool member packages the `directories:` it
-  declares and `ost` had no notion of a data directory owned by the workspace.
-  The consequence was the specific one
-  [WORKSPACE.md §5](../architecture/WORKSPACE.md) put the profiles beside the
-  tools to prevent: a converter unpacked from a product found nothing on its
-  executable-relative search path and refused every file it was given. It was an
-  `ost` ask rather than something a `--profile-dir` flag closes, because "works
-  if you pass a flag naming a directory the artifact does not contain" is not an
-  artifact-only smoke — and the ask was answered.
-  `openstrata.toml`'s `[[workspace.install_data]]` maps `profiles/motion` to
-  that destination and the aggregate reports `data_files: 3`
+- ⬜ **The profiles reach a packaged product; the artifact-only smoke does not
+  exist.** Both halves of the staging are closed — the root project installs
+  `profiles/motion/*.yaml` to `share/usd-vrm-plugins/profiles/motion/`
+  (2026-08-05, verified against a scratch prefix), and `ost` 0.22.3's
+  `[[workspace.install_data]]` gives the mapping a product-level owner, with the
+  aggregate reporting `data_files: 3`
   ([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md) §4).
-  **BVH-3's remaining blocker is therefore no longer a blocker**: what stops the
-  smoke passing is that nobody has extracted the product and run the converter
-  from it.
-- The graph gate has nothing to say about any of that, and that is by design
-  rather than a discovery gap like the adapter's: `--graph-only --json` names no
-  tool at all, not even `motion_capture` or `motion_retarget`. Only packaging
-  walks a tool descriptor.
+  Through v0.7.0 it did not: a `motion_bvh` archive was its two executables and
+  its descriptor, so a converter unpacked from a product found nothing on its
+  executable-relative search path and refused every file it was given — the
+  specific consequence [WORKSPACE.md §5](../architecture/WORKSPACE.md) put the
+  profiles beside the tools to prevent, and an `ost` ask rather than something a
+  `--profile-dir` flag closes, because "works if you pass a flag naming a
+  directory the artifact does not contain" is not an artifact-only smoke.
+  **What stops BVH-3 closing is now only that nobody has extracted the product
+  and run the converter from it.**
+
+Two measured facts worth keeping, because both are easy to assume the other way:
+
+- **The graph gate reaches both libraries and says nothing about data or tools.**
+  `--graph-only` reported one more library and one more edge as each of
+  `motionBvh` and `motionSource` was committed (`ost` 0.21.0, 2026-08-04/05), so
+  a declared edge is validated rather than assumed — and with `profiles/motion/`
+  committed it reports **the same** counts, because a directory of data is
+  discovered as nothing. `--graph-only --json` names no tool at all, not even
+  `motion_capture`; only packaging walks a tool descriptor. So whether these
+  files reach an artifact is the item above's, not the gate's.
 - **The packaging order is load-bearing and easy to get backwards.** A root
   `ost build` rebuilds every bundle's library and invalidates the per-bundle
   managed-build provenance, so packaging straight after one fails closed with
