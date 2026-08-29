@@ -128,17 +128,36 @@ ToCanonicalPosition(const std::array<float, 3>& position) noexcept
 pxr::GfQuatf
 ToCanonicalRotation(const std::array<float, 4>& rotation) noexcept
 {
-    // The wire order is (x, y, z, w); GfQuatf takes the real part first.
-    pxr::GfQuatf converted(rotation[3], pxr::GfVec3f(rotation[0], -rotation[1],
-                                                     -rotation[2]));
-    const float length = converted.GetLength();
+    // The wire order is (x, y, z, w); GfQuatf takes the real part first. The
+    // two sign flips are the basis change and nothing else touches them.
+    // The length is formed in the precision the boundary check uses, and the
+    // division is done in it too. That is load-bearing rather than tidy:
+    // `GfQuatf::GetLength()` squares in float, so a quaternion whose components
+    // sit near the denormal floor -- accepted by `CheckTransform`, which sums
+    // its squares in double -- underflows to a length of exactly zero and comes
+    // back un-normalised, collapsing every composition it then enters.
+    // Narrowing after the divide instead of before it keeps that whole range
+    // representable. This project has already paid once for two magnitudes
+    // formed in different precisions (motionCore/Compare.h).
+    double lengthSquared = 0.0;
+    for (const float component : rotation) {
+        lengthSquared += static_cast<double>(component) * component;
+    }
+    const double length = std::sqrt(lengthSquared);
     // Left alone when there is nothing to divide by: the caller's boundary
     // check has already refused a zero or non-finite rotation, and repairing
     // one here would put an identity where a refusal belongs.
-    if (std::isfinite(length) && length > 0.0f) {
-        converted /= length;
+    if (!std::isfinite(length) || length <= 0.0) {
+        return pxr::GfQuatf(
+            rotation[3],
+            pxr::GfVec3f(rotation[0], -rotation[1], -rotation[2]));
     }
-    return converted;
+    const double inverse = 1.0 / length;
+    return pxr::GfQuatf(
+        static_cast<float>(rotation[3] * inverse),
+        pxr::GfVec3f(static_cast<float>(rotation[0] * inverse),
+                     static_cast<float>(-rotation[1] * inverse),
+                     static_cast<float>(-rotation[2] * inverse)));
 }
 
 bool

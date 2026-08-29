@@ -387,6 +387,44 @@ TestRightHandedRotationKeepsItsAngle()
     assert(NearRotation(ConvertRotation(basis, turn), AboutY(90.0f)));
 }
 
+// The normalisation and the check that admits a rotation have to agree about
+// precision. `ValidateSourceAnimation` and `ValidateSourceSkeleton` refuse only
+// a quaternion whose four components are *exactly* zero, so they admit every
+// magnitude below the float denormal floor -- and a length formed with
+// `GfQuatf::GetLength()` squares in float and underflows those to exactly zero,
+// returning the rotation un-normalised to collapse every composition it enters.
+// The value arrives looking like data rather than like an error, which is what
+// makes it worth a test at a magnitude no capture will ever carry.
+void
+TestARotationTooSmallToSquareIsStillNormalised()
+{
+    const CanonicalBasis basis = *MakeCanonicalBasis(BaseProfile());
+    const float half = static_cast<float>(3.14159265358979323846 / 8.0);
+    SourceQuat tiny;
+    tiny.w = std::cos(half) * 1e-23f;
+    tiny.y = std::sin(half) * 1e-23f;
+
+    const pxr::GfQuatf converted = ConvertRotation(basis, tiny);
+    assert(std::abs(converted.GetLength() - 1.0f) <= kTolerance.angle);
+    assert(NearRotation(converted, AboutY(45.0f)));
+
+    // And it survives the layer, rather than only the arithmetic: a stated rest
+    // rotation is the route by which a source-supplied `SourceQuat` reaches
+    // `ConvertRotation`, and the composition below it multiplies whatever came
+    // back.
+    SourceSkeleton skeleton = BaseSkeleton();
+    skeleton.joints[1].restRotation = tiny;
+    SourceProfile profile = BaseProfile();
+    profile.restPose = RestPoseSource::StatedRestRotations;
+    const SourceConversion result =
+        ConvertSourceToCanonical(skeleton, BaseAnimation(), profile);
+    assert(result.Converted());
+    const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
+    assert(NearRotation(result.rest.localRotations[spine], AboutY(45.0f)));
+    assert(std::abs(result.rest.localRotations[spine].GetLength() - 1.0f)
+           <= kTolerance.angle);
+}
+
 // --- angle composition -----------------------------------------------------
 
 void
@@ -1218,6 +1256,7 @@ main()
     TestBasisOfAnUpsideDownSource();
     TestBasisOfALeftHandedSource();
     TestRightHandedRotationKeepsItsAngle();
+    TestARotationTooSmallToSquareIsStillNormalised();
     TestComposeUsesTheDeclaredOrder();
     TestCompositionOrderIsLastFirst();
     TestAngleUnitIsTheTracksAnswer();

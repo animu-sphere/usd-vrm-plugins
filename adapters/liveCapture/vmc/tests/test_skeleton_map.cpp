@@ -255,6 +255,43 @@ TestRotationsAreNormalised()
     assert(motion::AngleBetween(a, b) < motion::MotionTolerance{}.angle);
 }
 
+void
+TestARotationTooSmallToSquareIsStillNormalised()
+{
+    // `CheckTransform` sums the squares in double and the normalisation used to
+    // divide by a float length. A quaternion whose components sit near the
+    // denormal floor passes the first and underflows the second to exactly
+    // zero, which returns it un-normalised and collapses every composition it
+    // enters -- the same two-precisions trap `motionCore/Compare.h` records
+    // paying for once already.
+    const float tiny = 1e-23f;
+    const pxr::GfQuatf converted = ToCanonicalRotation({tiny, tiny, tiny,
+                                                        tiny});
+    assert(Near(converted.GetLength(), 1.0f));
+    assert(motion::AngleBetween(converted,
+                                ToCanonicalRotation({1.0f, 1.0f, 1.0f, 1.0f}))
+           < motion::MotionTolerance{}.angle);
+
+    // And it survives the layer, rather than only the arithmetic: this is the
+    // magnitude `CheckTransform` admits, so the mapping is where an
+    // un-normalised rotation would leave for the retargeter.
+    Diagnostic diagnostic;
+    VmcBoneSample sample;
+    assert(MapVmcBoneTransform(
+        BoneMessage("LeftUpperArm", {0.0f, 0.0f, 0.0f},
+                    {0.0f, 0.0f, tiny, tiny}),
+        &sample, &diagnostic));
+    assert(Near(sample.localRotation.GetLength(), 1.0f));
+
+    // The root goes through the same conversion and is worth naming, because it
+    // is the one whose orientation multiplies into every bone below it.
+    motion::RootMotion root;
+    assert(MapVmcRootTransform(
+        RootMessage({0.0f, 0.0f, 0.0f}, {0.0f, tiny, 0.0f, tiny}), &root,
+        &diagnostic));
+    assert(Near(root.worldOrientation.GetLength(), 1.0f));
+}
+
 // ---------------------------------------------------------------------------
 // Mapping a message
 // ---------------------------------------------------------------------------
@@ -638,6 +675,7 @@ main(int argc, char** argv)
     TestPositionsReflectThroughX();
     TestRotationsReflectThroughXAndReverseSense();
     TestRotationsAreNormalised();
+    TestARotationTooSmallToSquareIsStillNormalised();
     TestABoneTransformBecomesCanonical();
     TestAnUnknownBoneIsUnsupportedNotMalformed();
     TestAValueThatIsNotATransformIsRefused();
