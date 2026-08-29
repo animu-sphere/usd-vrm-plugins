@@ -1,17 +1,29 @@
 # The OpenExec foundation
 
-> **Target: v0.8.0** — the OpenExec foundation, with the `ExecIr` invertible rig
-> on its own track after it. The one place a track carries a version is the
+> **Target: no version — it follows the producer tracks.** The one place a track
+> carries a version is the
 > [roadmap status table](README.md#status-at-a-glance); this block mirrors it and
-> nothing else in this document states a release number for its own work.
+> nothing else in this document states a release number for its own work. The
+> `ExecIr` invertible rig is on its own track after this one.
+>
+> **Re-ordered 2026-08-29**, and this is the third time this plan's position has
+> moved. It was v0.6.0, then v0.8.0, and now it sits behind packaging hardening,
+> the tracker path, the NPZ/AMASS reader and the canonical producer contract. The
+> argument is the same one that moved it the first two times, applied to what is
+> now unfinished: a compute layer is worth what the contracts under it are worth,
+> and two of those contracts are open — no external consumer has ever resolved
+> this workspace's package closure, and four input categories each answered the
+> producer question separately. **Nothing here is withdrawn.** The prerequisites
+> §6 records as met stay met, and the re-order changes when this plan starts, not
+> what it is. It takes a version number when the release before it is cut.
 >
 > **Renamed 2026-08-03**, from `openexec-v0.6.0-v0.7.0.md`. The filename carried
 > two version numbers and both moved: v0.6.0 shipped
-> [VMC input](../releases/v0.6.0.md) instead, and this plan moved back to v0.8.0
-> so that [v0.7.0](adapters-mocopi-vmc-ardy.md)'s recorded sessions from a real
+> [VMC input](../releases/v0.6.0.md) instead, and this plan moved back so that
+> [v0.7.0](adapters-mocopi-vmc-ardy.md)'s recorded sessions from a real
 > device and real senders exist *before* they are used as parity input (§4.6). A
 > version-free name is what stops the next re-ordering from leaving a filename
-> behind.
+> behind — and it has now saved two renames rather than one.
 
 This document holds the **boundaries, priorities, and completion conditions**
 only. Where it touches structure it defers: bundle identities and dependency
