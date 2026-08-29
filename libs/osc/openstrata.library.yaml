@@ -1,0 +1,22 @@
+# OpenStrata plain-library descriptor. osc is the OSC 1.0 wire format, shared by
+# every adapter here that speaks it.
+#
+# A library, not a plugin bundle: it registers nothing with OpenUSD and has no
+# plugInfo.json (WORKSPACE.md §1). It is *outside* the aggregate product, and
+# §5 needed a third question to say why -- it names no product and opens
+# nothing, so both existing clauses pass; what keeps it out is that no member of
+# the product links it or can.
+#
+# `requires` is absent rather than empty-by-accident. Its allowed edge set is
+# **empty** (WORKSPACE.md §2), and empty of `liveTransport` too: a decoder that
+# reads no socket needs nothing a transport owns. It knows no address
+# semantics, no vendor grammar and no product name, and it holds no diagnostic
+# *code* -- a code enum is frozen per adapter and stays there.
+schema: openstrata.library/v1alpha1
+library:
+  id: osc
+  # Mirrors VERSION; release preparation updates this in lockstep.
+  version: 0.7.0
+cmake:
+  package: osc
+  target: osc::osc

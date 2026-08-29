@@ -300,6 +300,16 @@ endif()
 # diagnostic line, and names no value type.
 add_subdirectory("libs/liveTransport")
 
+# The other shared live leaf, and a sibling of the one above rather than a layer
+# of it: `osc` decodes a byte range and `liveTransport` delivers one, and
+# WORKSPACE.md §2 forbids an edge between them in **both** directions. The order
+# of these two lines therefore carries no meaning at all, which is worth saying
+# because every other pair of `add_subdirectory` lines in this file does.
+#
+# No OpenUSD and no platform library either -- not a socket, not a mutex. It is
+# the only leaf here whose link line is empty.
+add_subdirectory("libs/osc")
+
 # Input adapters (WORKSPACE.md §1, §2). Each adapters/<group>/<name>/ carrying
 # both an openstrata.library.yaml and a CMakeLists.txt is added here — plain
 # libraries, not plugin bundles: an adapter registers nothing with OpenUSD.
