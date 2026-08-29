@@ -32,6 +32,8 @@ something to compare.
     python scripts/check_package_consumer.py osc --prefix-source ost-package
     python scripts/check_package_consumer.py osc --mutate no-targets-include
     python scripts/check_package_consumer.py osc --json report.json
+    python scripts/check_package_consumer.py vrmAdapterVmc \\
+        --mutate no-dependency --dependency osc
 
 **The negative verification.** A green consumer proves nothing until the same
 consumer has been shown to go red for the right reason. `--mutate` breaks the
@@ -332,7 +334,8 @@ def locate_config(package: str, prefix: pathlib.Path) -> pathlib.Path:
     return found[0]
 
 
-def mutate(name: str, package: str, row: dict, prefix: pathlib.Path) -> str:
+def mutate(name: str, package: str, row: dict, prefix: pathlib.Path,
+           dependency: str = "") -> str:
     config = locate_config(package, prefix)
 
     if name == "no-config":
@@ -353,6 +356,36 @@ def mutate(name: str, package: str, row: dict, prefix: pathlib.Path) -> str:
 
     if name == "no-dependency":
         text = config.read_text(encoding="utf-8")
+        # `--dependency` narrows this to one edge, and for a package with more
+        # than one it is the sharper instrument. Stripping every line is caught
+        # by whichever edge the closure walk reaches first -- for
+        # `vrmAdapterVmc` that is `motionCore`, and a catch there says nothing
+        # about whether the walk would have reached the fifth. The defect this
+        # track exists for was one missing line and it was the last one
+        # (PACKAGE_CONTRACT.md section 1), so reproducing it means naming it.
+        if dependency:
+            declared = required_packages(row)
+            if dependency not in declared:
+                fail_setup(
+                    f"`{dependency}` is not a required package of "
+                    f"`{package}` (PACKAGE_CONTRACT.md section 4 lists "
+                    f"{', '.join(declared) or 'none'}), so removing its "
+                    f"find_dependency would remove nothing and report a catch "
+                    f"it did not make")
+            stripped = re.sub(
+                rf"^\s*find_dependency\(\s*{re.escape(dependency)}\b.*\)\s*$",
+                "", text, flags=re.M)
+            if stripped == text:
+                fail_setup(
+                    f"{config} declares `{dependency}` as a required package "
+                    f"in PACKAGE_CONTRACT.md section 4 and calls no "
+                    f"find_dependency for it. That is the defect itself rather "
+                    f"than a mutation of it -- run without --mutate")
+            config.write_text(stripped, encoding="utf-8")
+            return (f"removed find_dependency({dependency}) from "
+                    f"{config.relative_to(prefix)}, leaving the other edges "
+                    f"in place - criterion 3 must fail, naming "
+                    f"{dependency}::{dependency}")
         stripped = re.sub(r"^\s*find_dependency\(.*\)\s*$", "",
                           text, flags=re.M)
         if stripped == text:
@@ -469,10 +502,17 @@ def main() -> int:
     ap.add_argument("--mutate", choices=MUTATIONS,
                     help="break the installed prefix and require the consumer "
                          "to fail - the negative verification")
+    ap.add_argument("--dependency", metavar="PACKAGE",
+                    help="with --mutate no-dependency, remove only this "
+                         "package's find_dependency and leave the others - "
+                         "the shape the OSC-3 defect actually had")
     ap.add_argument("--json", metavar="PATH", help="write the report here")
     ap.add_argument("--keep", action="store_true",
                     help="keep the scratch prefix and build trees")
     args = ap.parse_args()
+    if args.dependency and args.mutate != "no-dependency":
+        fail_setup("--dependency narrows `--mutate no-dependency` and means "
+                   "nothing beside another mutation")
 
     rows = contract_rows()
     if args.package not in rows:
@@ -513,6 +553,7 @@ def main() -> int:
         "package": args.package,
         "prefix_source": args.prefix_source,
         "mutation": args.mutate,
+        "mutation_dependency": args.dependency,
         "host": {"system": platform.system(), "machine": platform.machine()},
         "criteria": {},
         "closure": [],
@@ -556,8 +597,9 @@ def main() -> int:
                     f"the fixture already fails criterion 5 "
                     f"({report['criteria']['5']['detail']}), so a mutation run "
                     f"could only confirm that. Fix the fixture first")
-            print(f"--- mutation: "
-                  f"{mutate(args.mutate, args.package, row, prefix)} ---")
+            applied = mutate(args.mutate, args.package, row, prefix,
+                             args.dependency or "")
+            print(f"--- mutation: {applied} ---")
 
         # --- the consumer, outside the repository ---------------------------
         consumer_root = work / "consumer"
