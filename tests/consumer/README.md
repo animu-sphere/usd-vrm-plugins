@@ -74,6 +74,24 @@ the last one. Stripping every `find_dependency` instead is caught by whichever
 edge the closure walk reaches first, which is a real catch that proves nothing
 about the fifth.
 
+**Removing a line is not the same as breaking something, and only one of the
+three outcomes blames the fixture.** A `find_dependency` is inert whenever
+something else already resolves that package, so:
+
+- an edge another package in the prefix also declares is **refused before
+  anything is installed** — `motionCore` is required by `motionRuntime`, so
+  removing it from `vrmAdapterVmc`'s config breaks nothing. The refusal names
+  the packages that mask it and the edges only this config resolves;
+- an edge whose *condition* does not hold on this host ends **inconclusive**
+  (exit 2). `liveTransport`'s `find_dependency(Threads)` sits inside
+  `if(NOT WIN32)`, so on Windows the removed line was never reached. The driver
+  evaluates no such condition and says so up front, from the qualification in
+  the contract's own cell;
+- exit 1 — *this fixture cannot be trusted* — is reserved for a mutation that
+  really did break the prefix and was met with a pass anyway. It is an
+  accusation against the one file in the loop that was not changed, so it is
+  never the answer to an inert edit.
+
 ## Adding one
 
 Copy `osc/` and change three things: the `project()` name, the `PACKAGE` and

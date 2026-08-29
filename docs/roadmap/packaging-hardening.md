@@ -198,11 +198,23 @@ reaches — `motionCore` — which is a real catch that proves nothing about the
 fifth. The §1 defect was one missing line and it was the last one, so the driver
 grew `--dependency`: `--mutate no-dependency --dependency osc` removes exactly
 the block the OSC-3 fix added, leaves the other four, and criterion 3 refuses it
-by name. Both of its refusals were run rather than asserted — a `--dependency`
-beside another mutation, and one naming a package the row does not declare, each
-exiting 2 as a setup error rather than reporting a catch it did not make. All
-four original mutations were run too, and each was answered first by the
-criterion it was aimed at.
+by name. All four original mutations were run too, and each was answered first
+by the criterion it was aimed at.
+
+*The narrowed mutation has three outcomes, and only one of them blames the
+fixture.* Removing a `find_dependency` is inert whenever something else resolves
+that package, and a run that then met every criterion would have exited 1 with
+*this fixture cannot be trusted* — an accusation against the one file in the
+loop that was not changed. Two shapes of that were found by review and are now
+refused rather than reported: an edge another package in the prefix also
+declares is refused **before anything is installed**, from the contract table
+(`motionCore` is required by `motionRuntime`), and an edge whose condition does
+not hold on this host ends **inconclusive** (`liveTransport`'s
+`find_dependency(Threads)` is inside `if(NOT WIN32)`; the driver evaluates no
+such condition and says so from the qualification in the cell). Both were run:
+three refusals in under a second each, and the inconclusive one against a
+scratch `liveTransport` fixture that was removed afterwards — PKG-3 is where
+that package acquires a real one.
 
 *Criterion 5 was verified against this fixture rather than inherited from the
 last one.* A `motionCore::motionCore` added to the fixture's link line is caught
