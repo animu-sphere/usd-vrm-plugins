@@ -186,6 +186,17 @@ That is also why it must still wait for the second consumer: a surface that
 costs three edits to move is a surface nobody will fight to keep neutral, and
 the only evidence that it *is* neutral is a caller that never says `VMC`.
 
+**That caller was written and measured on 2026-08-29, and the three couplings
+above are exactly the three it paid.** An address inventory of a VRChat OSC
+session — VRC-1's tool, decoding through this decoder without moving it — needed
+five VMC tokens in its source, and every one of them is the *name*: one include
+path and four namespace qualifications. It needed the export macro on its
+compile line, which is the second coupling. And its report on a VRChat session
+printed `VRM_VMC_PACKET_MALFORMED`, which is the third, arriving as an
+observation rather than as the prediction §8 wrote it down as. Nothing else
+crossed: no VMC address literal, no bone name, no `VmcMessage`, no
+`SkeletonMap`. The count that matters is the one that stayed at zero.
+
 ### 3.2 The transport ring — extract before the third consumer
 
 `UdpReceiver`, the `<adapter>-packet-capture` file format, and the `Diagnostic`
@@ -878,9 +889,38 @@ depends on them ([docs/README.md](../README.md)).
   artifact name and the aggregate exclusion on the terms every adapter already
   has, plus the member count a 0.22.x workstation will report once this
   adapter's CLI exists. Blocked VRC-0.
-- ⬜ **`libs/osc` is a second new identity**, with the same three rows and one
+- ✅ **`libs/osc` is a second new identity**, with the same three rows and one
   addition: the boundary check in [§4](#4-what-libsosc-owns) is what makes its
-  neutrality enforced rather than asserted. Blocks OSC-3.
+  neutrality enforced rather than asserted. **Done 2026-08-29**, in its own
+  change ahead of the move, and after the second consumer rather than before it
+  ([§3.1](#31-libsosc--extract-after-the-second-consumer)) — which is the one
+  respect in which this row could not follow `liveTransport`'s procedure.
+
+  Three things were decided rather than transcribed. Its **edge set is empty
+  and includes `liveTransport` in the prohibitions**, in both directions: every
+  other shared-leaf rule in [WORKSPACE.md §2](../architecture/WORKSPACE.md) is
+  asymmetric because one side is a layer and the other is what may reach it,
+  and these two are the same layer twice — a decoder that can open a socket has
+  become a receiver, and a receiver that can decode has become an adapter with
+  no adapter around it. Its **exclusion from the aggregate needed a third
+  question**: §5's two clauses are *does it name a product* and *would the
+  product acquire I/O*, and an OSC decoder fails neither — it is out because no
+  member of the product links it or can, since nothing in the product reads a
+  datagram. That is a weaker reason than the transport's and §5 now says so, so
+  that a product member with a reason to decode OSC re-argues the paragraph
+  instead of quietly outgrowing it. And the **refusal type** is settled in the
+  identity row rather than left to the extraction, because the row cannot state
+  what the library holds without stating what it does not: see the next item.
+
+  Two of the three are executable rather than asserted, in the four checks that
+  already hold §2's neighbour prohibitions: `motionRuntime`, `vrmRetarget`,
+  `motionSource` and `motionBvh` refuse `osc` in their sources. The token is
+  `osc::` or `osc/` rather than the bare word, and that is not fastidiousness —
+  `motionBvh`'s own parser header names the OSC decoder in a comment about a
+  rule the two share, and a check that fired on prose would be answered by
+  deleting the sentence. Verified in both directions in a copied tree: an
+  injected include fails all four, a `osc::` call fails all four, and each
+  passes without them.
 - ⬜ **Whose diagnostic codes does a shared decoder raise?**
   [§8](#8-diagnostics) states the three options and the precedent. This is
   [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md)-adjacent but not its —
@@ -894,6 +934,21 @@ depends on them ([docs/README.md](../README.md)).
   decoder's version is not cheap in the same way — `VRM_VMC_PACKET_MALFORMED`
   has golden tests over its formatted line, so whatever the shared decoder does
   has to leave that string standing.
+
+  **Decided 2026-08-29: option (2), and the precedent is what argues against
+  (1) rather than for it.** `liveTransport` enumerates its events because its
+  receiver genuinely raises two that a caller must tell apart — one adapter maps
+  `BindFailed` and drops `Silence`, and that difference is real. The decoder
+  makes **one** distinction: a datagram is decodable OSC or it is not. Every
+  refusal in `OscPacket.cpp` today raises the same code, and the three neutral
+  names §8 offered — `OSC_PACKET_MALFORMED`, `OSC_TYPE_TAG_INVALID`,
+  `OSC_BUNDLE_INVALID` — would be a classification invented at the move,
+  mapped straight back onto one adapter code by every caller, and trusted by
+  the next reader as though the decoder could tell them apart. So the refusal
+  is a typed value with no code in it: the offending address as its subject,
+  and the byte offset in its detail, which are the two things the decoder
+  actually knows. The adapter supplies the code, and `VRM_VMC_PACKET_MALFORMED`
+  is spelled in exactly the place it was before.
 - ⬜ **What an OSC `t` argument reads as.** OSC-0 froze the current answer and
   found it wrong for real senders: `t` shares `h`'s signed 64-bit path, so an
   NTP time tag — high bit set since 1968 — arrives as a negative `integer`.

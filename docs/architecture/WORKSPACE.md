@@ -63,6 +63,25 @@ the code that produces a pose. A permission is not a requirement, and this is th
 first row here where the two are visibly different.
 §5 gains its artifact name on the terms every adapter artifact already has.
 
+`osc` was added on 2026-08-29, ahead of the decoder it now holds, from the same
+plan's §3.1, §4 and §10. It is the second library here that is neither a member
+of the aggregate product nor an adapter, and it arrives on the schedule §2's own
+note below set for it rather than beside `liveTransport`: a shared decoder needed
+a **second consumer** first, because the only evidence that a surface is neutral
+is a caller that never says `VMC`. That caller was measured before this row was
+written — an address inventory of a VRChat session, decoding through
+`vrmAdapterVmc`'s decoder without moving it, needed five VMC tokens and every one
+of them was the *name*: the include path and four namespace qualifications. No
+VMC address literal, no bone, no `VmcMessage`, no `SkeletonMap`. What it did emit
+was `VRM_VMC_PACKET_MALFORMED`, in a report about a session VMC has nothing to do
+with, which is §8's open question arriving as a measurement rather than as a
+prediction.
+
+So this row is narrower than `liveTransport`'s in the one way that matters. That
+library was named before anyone knew what would fit through the seam; this one is
+named after a caller went through it, so §4's ownership list is a description
+rather than an intention.
+
 ## 1. Bundles and libraries
 
 Shipped through Workspace Phase 7:
@@ -89,6 +108,7 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig and the semantic clip off stages, drives `vrmRetarget` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
 | `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `vrmRetarget`: it stops at the clip. Not a bundle. **It gains no adapter source, and that is the settled answer rather than a deferral** — a live session reaches it as a trace written by the adapter's own tool, so this row is the same after the first adapter as before it (§2). |
 | `liveTransport` | plain static CMake library (`libs/liveTransport/`) | The live half's shared leaf: the UDP receiver, the optional datagram queue, the packet-capture file format, and the diagnostic **vehicle** — the struct, its severity and recoverability defaults, and its formatted form — that every live adapter raises through. It knows no protocol: no OSC, no vendor grammar, no address literal, no product name. It holds no diagnostic **code** either; a code enum is frozen per adapter and stays there (§2). Its edge set is **empty**, and that is a measurement rather than an intention — the six files it is extracted from include their own headers and the standard library and nothing else (measured 2026-08-24). Outside the aggregate product, on the *adapter* side of §5's split though it carries no product name. |
+| `osc` | plain static CMake library (`libs/osc/`) | The OSC 1.0 wire format, and nothing that uses it: packet and bundle decoding, bundle flattening, address extraction, type-tag validation, argument access, and a refusal that names the byte and the address it refused at. It knows no address *semantics* — `/VMC/...`, `/tracking/...` and `/avatar/...` are all just addresses here — no bone name, no tracker role, no coordinate convention and no product name. Like `liveTransport` it holds no diagnostic **code**, and unlike `liveTransport` it holds no enum in place of one either: the decoder makes exactly one distinction — decodable or not — so its refusal is a typed value carrying a subject and a detail, and the caller that knows which adapter it is supplies the code (§2). Its edge set is **empty**, `liveTransport` included: a decoder that never reads a socket needs nothing a transport owns, and the two are siblings rather than a stack. Outside the aggregate product, for a reason §5 had not needed until this row. |
 | `vrmAdapterVmc` | optional plain static CMake library (reserved, `adapters/liveCapture/vmc/`) | The generic real-time input: OSC-over-UDP decode, frame assembly, VRM humanoid bone names → canonical semantics. One adapter serves every sender application, including capture products relayed through it. **First adapter implemented.** |
 | `vrmAdapterMocopi` | optional plain static CMake library (`adapters/liveCapture/mocopi/`, v0.7.0) | **Live UDP only.** Decodes one capture product's native packets into canonical humanoid semantics and pushes them at `LiveCaptureSource`. Direct path: keeps the SDK-specific confidence and device diagnostics a protocol relay drops. Does **not** wrap `vrmAdapterVmc`, and does **not** read that product's recorded files — a recording is a file format, and file formats are `motionBvh`'s (below). |
 | `vrmAdapterVrchatOsc` | optional plain static CMake library (`adapters/liveCapture/vrchatOsc/`) | **A tracker source, not a pose source.** Decodes the VRChat OSC Trackers surface — numbered tracker observations, which are pre-IK — off OSC over UDP, and stops at a tracker frame: a tracker index is not a body role, so turning one into humanoid semantics is a separate and generic boundary rather than this adapter's ([the OSC track](../roadmap/osc-and-vrchat-trackers.md) §5). The third live adapter, and the one whose arrival turned the transport ring into a library rather than a third copy of it. A sibling of the other two and never a stack: it holds no VMC decoder and reaches OSC through a shared one when there is one. |
@@ -203,17 +223,17 @@ including the implementation order and per-adapter acceptance criteria, is
 > about what a name says. An OSC decoder shared by two protocol adapters is a
 > second such library on the same terms.
 >
-> **The transport one is now above; the OSC one is not, and the asymmetry is
-> the rule working.** `liveTransport` is in the table because its extraction was
-> the next change to be reviewed and a reviewer cannot check a move against a
-> contract that does not name its destination. It has since been filled. The shared OSC decoder is not,
-> because it still has one consumer: the evidence that its surface is neutral is
-> a caller that never says `VMC`, and it does not exist yet
-> ([the OSC track](../roadmap/osc-and-vrchat-trackers.md) §3.1). Naming it here
-> would settle a boundary on the only caller there is, which is the failure the
-> second-consumer rule exists to prevent — so it arrives in its own contract
-> change, after that caller decodes a real datagram, in the order the same
-> document sets: measured first, reconciled second, moved third.
+> **Both are now above, and they were named eleven weeks apart for a reason
+> worth keeping.** `liveTransport` went in first because its extraction was the
+> next change to be reviewed and a reviewer cannot check a move against a
+> contract that does not name its destination. The OSC decoder waited, because
+> it had one consumer and the evidence that a surface is neutral is a caller
+> that never says `VMC` ([the OSC track](../roadmap/osc-and-vrchat-trackers.md)
+> §3.1). Naming it then would have settled a boundary on the only caller there
+> was, which is the failure the second-consumer rule exists to prevent. `osc`
+> is in the table as of 2026-08-29, after that caller was written and measured,
+> in the order the same document sets: measured first, reconciled second, moved
+> third.
 
 > **A runtime route is not a build edge.** A capture application may act as a
 > VMC sender, so a user's data can travel `mocopi app → VMC packet →
@@ -262,9 +282,11 @@ motion_capture        -> motionRuntime, motionCore, OpenUSD stage
 execMotion            -> motionCore, motionRuntime
 execVrm               -> vrmSchema
 execVrm               -> motionCore, motionRuntime, vrmRetarget
-adapters/*            -> motionCore, motionRuntime, liveTransport
+adapters/*            -> motionCore, motionRuntime, liveTransport, osc
 adapters/*/tools/*    -> vrmRetarget, OpenUSD stage authoring
 liveTransport         -> nothing — its allowed edge set is empty, not short
+osc                   -> nothing — the same, and `liveTransport` is in the
+                         prohibitions below rather than absent from here
 
 motionSource          -> motionCore
 motionBvh             -> motionSource
@@ -331,6 +353,15 @@ diagnostics into every adapter's. Its empty edge set is what makes all three
 checkable at a glance rather than by argument — a library with no permitted edge
 has no ambiguous one, and any edge at all is a contract change.
 
+**`osc`'s prohibitions are `liveTransport`'s with one line that is not a copy,
+and it is the `<->`.** Every other shared-leaf rule here is asymmetric, because
+one side is a layer and the other is what may reach it. These two are the same
+layer twice, and the day one of them acquires the other is the day the pair
+stops being two libraries: a decoder that can open a socket has become a
+receiver, and a receiver that can decode has become an adapter with no adapter
+around it. Neither direction is more plausible than the other, so neither gets
+to be the one nobody wrote down.
+
 **And the enforcement runs the wrong way round here, which is worth knowing
 before the green result is read as coverage.** `liveTransport` lives under
 `libs/`, so the workspace graph discovers it and validates its (empty) edges,
@@ -387,6 +418,19 @@ execMotion/execVrm    -> liveTransport
 motion_capture/motion_retarget/motion_bvh_inspect/motion_bvh_convert
                       -> liveTransport  (no member of the aggregate product
                          links a transport, §5)
+
+osc                   -> motionCore, motionRuntime, vrmRetarget, motionSource,
+                         motionBvh, vrmContainer, vrmSchema, any USD
+                         file-format bundle, OpenExec, ExecIr, adapters/*
+osc                   -> a VMC, VRChat or vendor address literal, a bone or
+                         tracker name, a coordinate convention, a product or
+                         SDK name, or any adapter's diagnostic code
+osc                   <-> liveTransport  (both directions: a decoder that reads
+                         no socket and a transport that knows no grammar are
+                         siblings, and either edge would make one of them the
+                         place the other's rules stop applying)
+motionCore/motionRuntime/vrmRetarget/motionSource/motionBvh -> osc
+execMotion/execVrm    -> osc
 
 motionCore            -> ExecIr
 vrmRetarget           -> ExecIr
@@ -594,6 +638,7 @@ CLI, so its artifact is named for the library alone:
 
 ```text
 liveTransport-<version>-<target>.tar.zst
+osc-<version>-<target>.tar.zst
 ```
 
 **It is excluded for what the product would link, not for what its name says** —
@@ -606,6 +651,19 @@ repository reproducible by construction (§2). So a new library's side is
 decided by both questions rather than either: *does it name a product* is what
 keeps a reader in, *would the product acquire I/O* is what keeps a transport
 out, and failing one is enough to be excluded.
+
+**`osc` fails neither, and is out anyway — which is the third question this
+section had not needed to ask.** An OSC decoder names no product, and it opens
+nothing: it is handed a byte range and returns messages, so a `motion_capture`
+that linked it would acquire no transport, no clock and no vendor. Both clauses
+above pass. What decides it is the one they take for granted: **no member of the
+aggregate product links it, and none can** — nothing in the product reads a
+datagram, so the only callers an OSC decoder can have are adapters, which are
+excluded by name. That is a weaker reason than `liveTransport`'s and it is
+deliberately written as one. `liveTransport` is out because including it would
+*break* a property; `osc` is out because including it would ship a library no
+member reaches, and the day a product member has a reason to decode OSC this
+paragraph is what has to be re-argued rather than quietly outgrown.
 
 That prediction has been checked. It said `liveTransport` would be the first
 artifact on this excluded side the toolchain could actually emit, because its

@@ -95,9 +95,16 @@ def main() -> int:
         re.IGNORECASE)
     # WORKSPACE.md §2: motionRuntime -> vrmSchema, any USD file-format bundle,
     # OpenExec, a network protocol, or adapters/* is forbidden.
+    #
+    # The two shared live leaves are named for the same reason and matched
+    # differently. `liveTransport` is a token nothing else spells. `osc` is
+    # three letters, so it is matched as a namespace qualification or an
+    # include path -- the only two forms a dependency on it can take -- rather
+    # than as a word, which would fire on the first sentence that says OSC.
     forbidden_neighbours = re.compile(
         r"\b(?:vrmSchema|vrmContainer|vrmRetarget|usdVrm\w*|execMotion|execVrm|"
         r"cgltf|mocopi|ardy|liveTransport)\b|"
+        r"\bosc::|\bosc/|"
         r"\b(?:winsock|sys/socket\.h|asio|curl|websocket)\b",
         re.IGNORECASE)
     for area in (source / "include", source / "src"):
