@@ -353,7 +353,11 @@ That distinction is the whole reason this document is not the deliverable.
 Seventeen green lanes did not catch a package naming an unresolvable target, and
 they could not have: no lane opens a config file. So the acceptance criteria
 below belong to a CI lane, and the roadmap track that builds it is
-[packaging-hardening.md](../roadmap/packaging-hardening.md).
+[packaging-hardening.md](../roadmap/packaging-hardening.md). That lane is
+[`.github/workflows/package-consumer.yml`](../../.github/workflows/package-consumer.yml),
+and §5.1 states what it compares — because *which* differences between three
+platforms are this workspace's to answer for is a contract question, and a check
+that decided it on its own would be a second contract.
 
 A package meets this contract when, from an install prefix containing it and its
 required packages **and nothing else**:
