@@ -102,6 +102,32 @@ Current schema contract version: **1**.
   contract change rather than a fix. It arrives when the shared transport
   library does.
 
+- **Four of `vrmAdapterMocopi`'s six corpus binaries aborted with no message
+  on a path that is not a directory.** `std::filesystem::directory_iterator`
+  **throws** on one, nothing in those files caught it, so the process called
+  `std::terminate` — on Windows an abort with exit `0xC0000409` and nothing
+  printed at all, where each binary has a "no captures in …" line it plainly
+  meant to print. Reachable two ways: a mistyped argument, and a corpus present
+  at configure time and absent at test time in a relocated or packaged build
+  tree. Two of the six had the check and four did not, which is what six copies
+  of one scan cost: the copy a review pointed at was fixed and the others were
+  not.
+
+  The scan is now one function in `tests/corpus.h`, and so is the replay step
+  the corpus passes share — push, poison, latch the restart, sample at the
+  delivered frame's stored timestamp. That second half had three copies with
+  **three** buffer disciplines, two of which are the two halves of
+  `vrmAdapterMocopi_loopbackCorpus`'s comparison: if they drift, that test
+  compares one pipeline against another and reports the difference as a
+  statement about the socket. The buffer is no longer a per-copy decision but a
+  property of the shared call, which poisons it the moment the push returns —
+  so the file half now carries the lifetime check the wire half already had.
+
+  Test-only; no library, tool or CTest name changes. The sibling adapter's
+  tests have the same shape and the same duplication, and the arrangement
+  transfers — the types do not, so a VMC copy is the same change one namespace
+  over rather than a second consumer of this header.
+
 ### Added
 
 - **`osc`, the OSC wire format once instead of once per adapter.** Packets,

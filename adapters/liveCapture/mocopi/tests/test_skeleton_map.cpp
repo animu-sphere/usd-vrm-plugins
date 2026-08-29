@@ -32,6 +32,8 @@
 #include "vrmAdapterMocopi/MotionPacket.h"
 #include "vrmAdapterMocopi/PacketCapture.h"
 
+#include "corpus.h"
+
 #include "motionCore/Compare.h"
 
 #include <algorithm>
@@ -994,16 +996,7 @@ int
 CheckCorpus(const std::filesystem::path& directory)
 {
     std::vector<std::filesystem::path> files;
-    for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-        if (entry.is_regular_file()
-            && entry.path().extension() == ".mocopipackets") {
-            files.push_back(entry.path());
-        }
-    }
-    std::sort(files.begin(), files.end());
-    if (files.empty()) {
-        std::fprintf(stderr, "%s: no captures found\n",
-                     directory.string().c_str());
+    if (!vrmAdapterMocopiTests::CollectCaptures(directory, &files)) {
         return 1;
     }
 

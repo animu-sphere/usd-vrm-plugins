@@ -13,6 +13,8 @@
 // and this layer deliberately has none.
 #include "vrmAdapterMocopi/PacketCapture.h"
 
+#include "corpus.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
@@ -342,25 +344,8 @@ TestCommentsAndBlankLinesAreIgnored()
 int
 CheckCorpus(const std::filesystem::path& directory)
 {
-    if (!std::filesystem::is_directory(directory)) {
-        std::fprintf(stderr, "corpus directory not found: %s\n",
-                     directory.string().c_str());
-        return 1;
-    }
-
     std::vector<std::filesystem::path> captures;
-    for (const std::filesystem::directory_entry& entry :
-         std::filesystem::directory_iterator(directory)) {
-        if (entry.is_regular_file()
-            && entry.path().extension() == ".mocopipackets") {
-            captures.push_back(entry.path());
-        }
-    }
-    std::sort(captures.begin(), captures.end());
-
-    if (captures.empty()) {
-        std::fprintf(stderr, "no .mocopipackets fixtures in %s\n",
-                     directory.string().c_str());
+    if (!vrmAdapterMocopiTests::CollectCaptures(directory, &captures)) {
         return 1;
     }
 

@@ -45,6 +45,7 @@
 #include "vrmAdapterMocopi/PacketCapture.h"
 #include "vrmAdapterMocopi/SkeletonMap.h"
 
+#include "corpus.h"
 #include "fixtures.h"
 
 #include "motionCore/Compare.h"
@@ -632,34 +633,32 @@ Replay(const vrmAdapterMocopi::PacketCapture& capture,
 
     ReplayedCapture out;
     // One buffer for the whole replay, deliberately: every datagram is copied
-    // into it and the previous one's bytes are gone. If anything the push
-    // produced still pointed into them, the poses compared below would be wrong
-    // — so the lifetime claim is checked by the results rather than by an
-    // assertion about pointers.
+    // into it and `corpus.h`'s push poisons it before anything reads what the
+    // push produced. If anything still pointed into those bytes, the poses
+    // compared below would be wrong — so the lifetime claim is checked by the
+    // results rather than by an assertion about pointers, and the discipline is
+    // the shared call's rather than this loop's to get right.
     std::vector<std::uint8_t> buffer;
     for (const vrmAdapterMocopi::RecordedDatagram& datagram :
          capture.datagrams) {
         buffer.assign(datagram.bytes.begin(), datagram.bytes.end());
-        const std::size_t admitted =
-            source.PushDatagram(buffer, datagram.receiveTime, &out.diagnostics);
-        std::fill(buffer.begin(), buffer.end(), std::uint8_t{0xcd});
-
-        if (source.ConsumeSessionRestart()) {
+        const vrmAdapterMocopiTests::PushedDatagram pushed =
+            vrmAdapterMocopiTests::PushDatagram(&source, &buffer,
+                                                datagram.receiveTime,
+                                                &out.diagnostics);
+        if (pushed.restartLatched) {
             ++out.restartsLatched;
         }
-        if (admitted != 0) {
-            const motion::HumanoidPose& pose =
-                source.GetFramesFromLastPush().back().pose;
-            const motion::PoseSampleResult result = source.Sample(pose.timestamp);
-            if (result.pose) {
-                out.delivered.push_back(*result.pose);
-            }
+        if (pushed.sampled) {
+            out.delivered.push_back(*pushed.sampled);
         }
     }
 
-    out.stats = source.GetStats();
-    out.frameStats = source.GetAssembler().GetStats();
-    out.intakeStats = source.GetIntake().GetStats();
+    const vrmAdapterMocopiTests::ReplayStats stats =
+        vrmAdapterMocopiTests::ReadStats(source);
+    out.stats = stats.source;
+    out.frameStats = stats.frame;
+    out.intakeStats = stats.intake;
     return out;
 }
 
@@ -891,19 +890,7 @@ int
 CheckCorpus(const std::filesystem::path& directory)
 {
     std::vector<std::filesystem::path> files;
-    for (const std::filesystem::directory_entry& entry :
-         std::filesystem::directory_iterator(directory)) {
-        // `is_regular_file` as well as the extension, so a directory that
-        // happens to be named like a capture is not read as one — the guard the
-        // other passes over this directory already use.
-        if (entry.is_regular_file()
-            && entry.path().extension() == ".mocopipackets") {
-            files.push_back(entry.path());
-        }
-    }
-    std::sort(files.begin(), files.end());
-    if (files.empty()) {
-        std::fprintf(stderr, "no captures in %s\n", directory.string().c_str());
+    if (!vrmAdapterMocopiTests::CollectCaptures(directory, &files)) {
         return 1;
     }
 

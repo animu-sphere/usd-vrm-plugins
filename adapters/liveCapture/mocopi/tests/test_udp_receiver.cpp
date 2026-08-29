@@ -74,6 +74,8 @@
 #include "vrmAdapterMocopi/LiveSource.h"
 #include "vrmAdapterMocopi/PacketCapture.h"
 
+#include "corpus.h"
+
 #include <algorithm>
 #include <bitset>
 #include <cassert>
@@ -865,10 +867,15 @@ struct Replayed
     std::size_t restartsLatched = 0;
 };
 
+// What this comparison keeps out of a push. The push itself — the poisoning,
+// the restart latch, the sample at the delivered frame's stored timestamp — is
+// `corpus.h`'s, so the two replays below cannot disagree about it: two
+// pipelines compared against each other would report a difference in this file
+// as a statement about the socket.
 void
-Collect(MocopiLiveSource* source, std::size_t admitted, Replayed* out)
+Collect(const vrmAdapterMocopiTests::PushedDatagram& pushed, Replayed* out)
 {
-    const std::vector<MocopiFrame>& frames = source->GetFramesFromLastPush();
+    const std::vector<MocopiFrame>& frames = pushed.frames;
     for (const MocopiFrame& frame : frames) {
         Delivered delivered;
         delivered.framePose = frame.pose;
@@ -883,34 +890,20 @@ Collect(MocopiLiveSource* source, std::size_t admitted, Replayed* out)
         delivered.droppedTranslations = frame.droppedTranslations;
         out->frames.push_back(std::move(delivered));
     }
-    if (admitted == 0 || frames.empty()) {
+    if (!pushed.sampled) {
         return;
     }
-    // `GetFramesFromLastPush()` is a vector because the sibling adapter can emit
-    // several frames from one push. This protocol cannot — one datagram is one
-    // frame, measured — and the sampling below relies on it: it attributes the
-    // sampled pose to `frames.back()`, which is only the admitted frame while
-    // there is exactly one. Asserted rather than assumed, so an assembler that
-    // ever emitted two would fail loudly here instead of silently dropping the
-    // earlier frame out of the sampled-pose half of the comparison.
-    assert(frames.size() == 1);
-
-    // Sampled at the pose's **stored** timestamp rather than at one recomputed
-    // from the frame rate. `time` is binary32 on the wire, so a recomputed
-    // instant falls *between* two stored ones and the buffer interpolates —
-    // which would compare one interpolation against another and measure the
-    // arithmetic rather than the socket (MOTION_CONTRACT.md, and the same
-    // request `test_live_source.cpp`'s corpus pass makes).
-    const motion::PoseSampleResult result =
-        source->Sample(frames.back().pose.timestamp);
-    if (result.pose) {
-        out->frames.back().sampledPose = *result.pose;
-        out->frames.back().sampled = true;
-    }
+    out->frames.back().sampledPose = *pushed.sampled;
+    out->frames.back().sampled = true;
 }
 
 // Replays a capture straight from the file, which is what every other corpus
 // pass in this adapter does.
+//
+// Through one reused buffer, like the wire half below and like
+// `test_live_source.cpp`. It used to hand each datagram its own vector, which
+// is defensible on its own terms — there is nothing to poison — and left the
+// lifetime property checked on one side of a comparison and not the other.
 Replayed
 ReplayFromFile(const PacketCapture& capture)
 {
@@ -918,18 +911,24 @@ ReplayFromFile(const PacketCapture& capture)
     source.SetSource(capture.sourceId);
 
     Replayed out;
+    std::vector<std::uint8_t> buffer;
     for (const RecordedDatagram& datagram : capture.datagrams) {
-        const std::size_t admitted = source.PushDatagram(
-            datagram.bytes, datagram.receiveTime, &out.diagnostics);
-        if (source.ConsumeSessionRestart()) {
+        buffer.assign(datagram.bytes.begin(), datagram.bytes.end());
+        const vrmAdapterMocopiTests::PushedDatagram pushed =
+            vrmAdapterMocopiTests::PushDatagram(&source, &buffer,
+                                                datagram.receiveTime,
+                                                &out.diagnostics);
+        if (pushed.restartLatched) {
             ++out.restartsLatched;
         }
-        Collect(&source, admitted, &out);
+        Collect(pushed, &out);
     }
 
-    out.stats = source.GetStats();
-    out.frameStats = source.GetAssembler().GetStats();
-    out.intakeStats = source.GetIntake().GetStats();
+    const vrmAdapterMocopiTests::ReplayStats stats =
+        vrmAdapterMocopiTests::ReadStats(source);
+    out.stats = stats.source;
+    out.frameStats = stats.frame;
+    out.intakeStats = stats.intake;
     return out;
 }
 
@@ -974,26 +973,27 @@ ReplayFromWire(const PacketCapture& capture, Replayed* out,
             std::fprintf(stderr, "a loopback datagram never arrived\n");
             return false;
         }
-        const std::size_t admitted = source.PushDatagram(
-            received.bytes, received.receiveTime, &out->diagnostics);
-        // Poisoned the moment the push returns, before anything reads what it
-        // produced — the sibling suite's arrangement
-        // (`test_live_source.cpp`), and it is the only thing here that can
-        // actually fail. Letting the next `Receive` overwrite the buffer proves
-        // nothing, because `PushDatagram` has already completed by then; a
-        // decoder that retained a `string_view` into the caller's bytes would
+        // The push poisons `received.bytes` the moment it returns, before
+        // anything reads what it produced — and it is the only thing here that
+        // can actually fail. Letting the next `Receive` overwrite the buffer
+        // proves nothing, because `PushDatagram` has already completed by then;
+        // a decoder that retained a `string_view` into the caller's bytes would
         // survive that shape and produce garbage under this one.
-        std::fill(received.bytes.begin(), received.bytes.end(),
-                  std::uint8_t{0xcd});
-        if (source.ConsumeSessionRestart()) {
+        const vrmAdapterMocopiTests::PushedDatagram pushed =
+            vrmAdapterMocopiTests::PushDatagram(&source, &received.bytes,
+                                                received.receiveTime,
+                                                &out->diagnostics);
+        if (pushed.restartLatched) {
             ++out->restartsLatched;
         }
-        Collect(&source, admitted, out);
+        Collect(pushed, out);
     }
 
-    out->stats = source.GetStats();
-    out->frameStats = source.GetAssembler().GetStats();
-    out->intakeStats = source.GetIntake().GetStats();
+    const vrmAdapterMocopiTests::ReplayStats stats =
+        vrmAdapterMocopiTests::ReadStats(source);
+    out->stats = stats.source;
+    out->frameStats = stats.frame;
+    out->intakeStats = stats.intake;
     // Named separately from the four failures above, which all return `false`
     // with their own line. This one fires after every datagram round-tripped and
     // every pose was collected, so reporting it as "the replay did not complete"
@@ -1262,30 +1262,8 @@ CheckTheWireChangesNothing(const std::filesystem::path& path)
 int
 CheckCorpus(const std::filesystem::path& directory)
 {
-    // Checked rather than assumed: `directory_iterator` *throws* on a path that
-    // is not one, nothing here catches it, and the process would call
-    // `std::terminate` — on Windows an abort with no message at all. Since any
-    // unrecognised argument reaches this function, that turns a typo, or a
-    // corpus that is absent at test time in a relocated build tree, into a crash
-    // where the line below is what the code plainly intends to say.
-    std::error_code failed;
-    if (!std::filesystem::is_directory(directory, failed)) {
-        std::fprintf(stderr, "not a corpus directory: %s\n",
-                     directory.string().c_str());
-        return 1;
-    }
-
     std::vector<std::filesystem::path> files;
-    for (const std::filesystem::directory_entry& entry :
-         std::filesystem::directory_iterator(directory)) {
-        if (entry.is_regular_file()
-            && entry.path().extension() == ".mocopipackets") {
-            files.push_back(entry.path());
-        }
-    }
-    std::sort(files.begin(), files.end());
-    if (files.empty()) {
-        std::fprintf(stderr, "no captures in %s\n", directory.string().c_str());
+    if (!vrmAdapterMocopiTests::CollectCaptures(directory, &files)) {
         return 1;
     }
 
