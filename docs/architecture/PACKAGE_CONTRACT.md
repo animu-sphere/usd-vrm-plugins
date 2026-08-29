@@ -412,6 +412,49 @@ have thrown away a real catch, and `vrmSchema`'s is caught by criterion 4. The m
 tree, so nothing in this loop depends on a `git stash` that might be a silent
 no-op.
 
+### 5.1 What criterion 6 compares, and what it does not
+
+Criterion 6 says *the three platforms agree about the package closure, or a
+documented platform difference says why not*. Left there, it is unimplementable
+in the strict reading and vacuous in the loose one: the three runtimes are three
+separate builds of OpenUSD, so an entry-for-entry comparison would report a
+difference between two upstream builds as a defect in a config file here — and
+a comparison that shrugged at any difference would have nothing to catch.
+
+So a closure entry is one of three things, and each takes its own rule. This is
+the contract half of `scripts/check_package_closures.py`, which is what the lane
+runs; the script reads the tables in §4 rather than keeping its own copy of them,
+on the same rule the driver follows.
+
+| Class of entry | Example | The rule |
+| --- | --- | --- |
+| A **workspace target** | `motionCore::motionCore` | Present on all three platforms or on none. A workspace package arrives through a config file in this repository, and that is the same file everywhere, so a difference here has no qualifier available to it. |
+| A **declared platform dependency** | `ws2_32`, `Threads::Threads` | The `Platform deps` cell names it and says where it applies. Present exactly on the platforms named, and **absent on the others** — the second half is the check, not a formality. |
+| **Everything else** | `arch`, `gf`, `Dbghelp.lib`, `TBB::tbb` | Attributed, not compared. It arrives from a required package this workspace does not produce, and what a `pxr` build puts on its own link line is not a promise made here. |
+
+The third row would be a hole if the attribution were assumed, so it is checked:
+**a package whose contract closure reaches no external required package must
+carry none of these at all.** That is a strong statement about exactly the four
+rows where it can be strong — `osc`, `vrmContainer`, `liveTransport` and
+`vrmAdapterVrchatOsc` have no `pxr` anywhere in their closure, so a foreign
+entry in one of them is a defect with nothing to blame it on. For the eight rows
+that do reach OpenUSD, the differences are recorded in the lane's output rather
+than failed, and the reason is stated where a reviewer reads it.
+
+Two rules hold for every entry whatever its class, because each is a package
+exporting its build rather than its interface: **no absolute path**, and **no
+workspace identity spelled as anything but its exported target** — a bare
+`motionCore` or a `libmotionCore.a` on a link closure is a package that resolved
+a sibling by file rather than by contract.
+
+The absence half of the second row is where
+[#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113) closes. On
+Windows the socket library is present and `vrmAdapterMocopi`'s Windows run
+proves the imported-target half; what the issue is actually about is a POSIX
+host linking the threading library and *no* socket one, and that is a
+measurement no Windows host can make. It is checked here rather than remembered
+([the track](../roadmap/packaging-hardening.md) PKG-5).
+
 ## 6. Changing this document
 
 A change to a package's name, exported target, header root, or required
