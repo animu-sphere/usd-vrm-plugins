@@ -2,7 +2,8 @@
 
 One CMake project per package, each one an *external consumer*: it calls
 `find_package`, links the exported target, includes a public header, and knows
-nothing else about this workspace.
+nothing else about this workspace. Twelve of them, which is every package this
+workspace installs.
 
 Nothing here is built by the workspace. No `add_subdirectory` reaches this
 directory, no ctest registers it, and `scripts/check_package_consumer.py` copies
@@ -31,6 +32,10 @@ These fixtures are the consumer that is not us.
 ```sh
 python scripts/check_package_consumer.py osc
 ```
+
+Four of the twelve need no OpenUSD and run exactly like that: `osc`,
+`vrmContainer`, `liveTransport` and `vrmAdapterVrchatOsc`. The other eight take
+a `--extra-prefix`.
 
 The driver installs the package and its required packages into a scratch prefix
 holding nothing else, configures the fixture against that prefix alone, builds
@@ -110,6 +115,16 @@ point rather than a convenience: twelve fixtures each writing their own
 `find_package` and their own `if(TARGET)` would be twelve chances for one of
 them to check less than the others and still print a pass.
 
+The third of those three is the one that takes thought, and PKG-3 measured why.
+**Include the header that carries the package's edges**, not the smallest one:
+for every package whose external edge is OpenUSD, the include is the *only*
+thing between a missing `find_dependency(pxr)` and a passing run, because
+OpenUSD's imported targets are unnamespaced and the closure walk has nothing to
+refuse in a bare `gf`. **Call something whose archive member carries the edges
+the headers do not show**: `vrmRetarget` meets the runtime layer only at the
+link, and `vrmAdapterVrchatOsc` meets the decoder only there, so a fixture that
+constructed a value and stopped would compile, link, and never ask.
+
 Three rules, all of them mechanically enforced by the driver's criterion-5 pass
 — which reads [`ConsumerCriteria.cmake`](ConsumerCriteria.cmake) as well as the
 fixture's own two files, because an identity added to the shared module would
@@ -139,7 +154,8 @@ and all of them verified by mutating a fixture until each was caught:
 These are packaging fixtures, not tests of the library. `main.cpp` asks the
 smallest question the package can answer — for `osc`, whether an address comes
 back; for `vrmAdapterVmc`, whether a bone name goes in and the same name comes
-out; for `vrmContainer`, whether a hand-assembled container parses — because
+out; for `vrmContainer`, whether a hand-assembled container parses; for
+`vrmSchema`, whether a generated class knows its own attribute names — because
 anything larger makes a packaging failure look like a decoder failure the first
 time it goes red. Those suites live with their code, in
 [`libs/osc/tests/`](../../libs/osc/tests/) and

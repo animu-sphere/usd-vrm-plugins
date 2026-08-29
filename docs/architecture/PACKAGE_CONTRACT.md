@@ -96,7 +96,7 @@ a CMake package.
 
 | Package | Exported target | Public headers | Required packages | Platform deps | In product | Standalone |
 | --- | --- | --- | --- | --- | --- | --- |
-| `vrmSchema` | `vrmSchema::vrmSchema` | `include/vrmSchema/` | `pxr` (guarded on `pxr_FOUND`) | — | yes | measured |
+| `vrmSchema` | `vrmSchema::vrmSchema` | `include/vrmSchema/` | `pxr` (guarded on `pxr_FOUND`) | — | yes | **measured** |
 | `usdVrmFileFormat` | — | — | — | — | yes | not applicable |
 | `usdVrmPackageResolver` | — | — | — | — | yes | not applicable |
 | `usdVrmaFileFormat` | — | — | — | — | yes | not applicable |
@@ -113,8 +113,27 @@ then fails to open a stage (WORKSPACE.md §5, Workspace Phase 5).
 
 `vrmSchema` is the exception because `usdVrmFileFormat` links it — the
 `find_package(vrmSchema CONFIG REQUIRED)` in that bundle's own CMakeLists is the
-first consumer of this row, and the reason it is *measured* is that the
-standalone bundle build in CI is exactly that consumer.
+first consumer of this row, and the reason it read *measured* before this track
+existed is that the standalone bundle build in CI is exactly that consumer.
+
+**It is now measured from outside as well, and the two prefixes are still the
+same artifact — but for a different reason than a plain library's.**
+`tests/consumer/vrmSchema/` configures, builds, links and runs against a prefix
+holding this package alone, with OpenUSD through `--extra-prefix`. PKG-2 left
+this row as the one where a `cmake --install` prefix and an extracted `ost`
+package could still diverge, because a *bundle* carries its dependencies' link
+halves where a plain library stages only its own install rules. What the run
+shows is that the divergence is not in the `find_package` contract: the shared
+object lands at `lib/libvrmSchema.dll` **beside** the import library rather than
+under `bin/`, which is the bundle layout rather than the library one, and the
+consumer loads it because the prefix's own `lib` is on the loader path. A
+consumer of this package on Windows needs `lib/` there; a consumer of
+`vrmContainer` needs `bin/`. Both are inside the prefix, which is what the
+contract promises, and neither is what the other one does.
+
+The link closure is 22 entries — every OpenUSD library a typed schema is built
+from — against `vrmContainer`'s empty one, which is the clearest statement in
+this document of what `find_dependency(pxr)` is carrying.
 
 ### 4.2 Libraries
 
@@ -226,9 +245,9 @@ An adapter is a plain library under `adapters/`, never in the aggregate product
 
 | Package | Exported target | Public headers | Required packages | Platform deps | In product | Standalone |
 | --- | --- | --- | --- | --- | --- | --- |
-| `vrmAdapterVmc` | `vrmAdapterVmc::vrmAdapterVmc` | `include/vrmAdapterVmc/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport`, `osc` | inherited from `liveTransport` | no | **measured** |
-| `vrmAdapterMocopi` | `vrmAdapterMocopi::vrmAdapterMocopi` | `include/vrmAdapterMocopi/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport` | inherited from `liveTransport` | no | **stale** — measured before the receiver added a platform link ([#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)) |
-| `vrmAdapterVrchatOsc` | `vrmAdapterVrchatOsc::vrmAdapterVrchatOsc` | `include/vrmAdapterVrchatOsc/` | `liveTransport`, `osc` | inherited from `liveTransport` | no | unmeasured |
+| `vrmAdapterVmc` | `vrmAdapterVmc::vrmAdapterVmc` | `include/vrmAdapterVmc/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport`, `osc` | inherited from `liveTransport` | no | **measured** (Windows) |
+| `vrmAdapterMocopi` | `vrmAdapterMocopi::vrmAdapterMocopi` | `include/vrmAdapterMocopi/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport` | inherited from `liveTransport` | no | **measured** (Windows) — the raw-library half of [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113) needs a POSIX host |
+| `vrmAdapterVrchatOsc` | `vrmAdapterVrchatOsc::vrmAdapterVrchatOsc` | `include/vrmAdapterVrchatOsc/` | `liveTransport`, `osc` | inherited from `liveTransport` | no | **measured** (Windows) |
 | `vrmAdapterArdy` | reserved | reserved | reserved | — | no | not applicable |
 
 `vrmAdapterVmc` is the second row to say **measured**, on 2026-08-29, and it is
@@ -272,6 +291,35 @@ that is its current shape rather than an omission.** It ships no semantic
 decoder, so nothing in the library holds a canonical value; those three rows
 arrive with the code that produces one, and this table is where a reviewer
 should notice they are missing when it does.
+
+**All three adapters are measured, and all three cells say *(Windows)*.** Every
+adapter inherits its platform dependency from `liveTransport`, which is the one
+row in this document whose closure differs by platform — so a Windows run of any
+of them is knowingly half of the measurement, and PKG-4's lane is the other
+half. `vrmAdapterVmc`'s cell was written before that qualifier existed and is
+corrected here; nothing about its measurement changed.
+
+**`vrmAdapterVrchatOsc` is the second half of the §1 defect, and it was
+reproduced in its own shape too.** `--mutate no-dependency --dependency osc`
+removes exactly the block the OSC-3 fix added to *this* config and leaves the
+transport edge in place, and criterion 3 refuses it by name. The same defect,
+in the same shape, in the second of the two packages that shipped it — and the
+fixture that catches it needs both of this package's edges, because they are
+answered at different stages: the transport leaf arrives through the public
+header and the decoder only at the link, where `InventoryAddresses` pulls it in.
+A fixture that built a capture and stopped would have measured one of the two.
+
+**`vrmAdapterMocopi`'s cell says *measured* rather than *stale*, and the
+difference is exactly one half of [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113).**
+Its closure is fourteen entries and carries `ws2_32` twice over: once from this
+package's own transport edge and once, capitalised, from OpenUSD's `arch` — the
+same double spelling `vrmAdapterVmc` records, which is what a platform
+difference looks like when two providers name one library. That is the
+imported-target half of the issue, now measured rather than predicted. The
+raw-library half is not, and cannot be here: on Windows the socket library is
+*present*, and what the issue is about is whether a POSIX host links the
+threading library and no socket one ([the track](../roadmap/packaging-hardening.md)
+PKG-5).
 
 ## 5. What "standalone" is worth without a lane
 
