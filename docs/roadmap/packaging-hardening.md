@@ -351,7 +351,11 @@ Two shapes the earlier milestones had not measured, both of which behaved:
   puts `libvrmSchema.dll` in `lib/` instead. Both are inside the prefix, which
   is what the contract promises, and neither is where the other one is — which
   is why the driver puts the prefix's own `bin` and `lib` on the loader path and
-  nothing else.
+  nothing else. **PKG-2's open question is not closed by this**: every run here
+  used a `cmake --install` prefix, so what `vrmSchema` shows is that the
+  contract holds for a bundle's layout, not that an extracted `ost` package
+  produces the same one. `--prefix-source ost-package` against that row is
+  still unrun.
 - **`vrmAdapterMocopi`'s standing platform gap is half closed.** Its closure
   carries `ws2_32` twice over, once from its transport edge and once from
   OpenUSD's `arch`, which is the imported-target half of

@@ -116,20 +116,24 @@ then fails to open a stage (WORKSPACE.md §5, Workspace Phase 5).
 first consumer of this row, and the reason it read *measured* before this track
 existed is that the standalone bundle build in CI is exactly that consumer.
 
-**It is now measured from outside as well, and the two prefixes are still the
-same artifact — but for a different reason than a plain library's.**
+**It is now measured from outside as well, from a `cmake --install` prefix.**
 `tests/consumer/vrmSchema/` configures, builds, links and runs against a prefix
-holding this package alone, with OpenUSD through `--extra-prefix`. PKG-2 left
-this row as the one where a `cmake --install` prefix and an extracted `ost`
-package could still diverge, because a *bundle* carries its dependencies' link
-halves where a plain library stages only its own install rules. What the run
-shows is that the divergence is not in the `find_package` contract: the shared
-object lands at `lib/libvrmSchema.dll` **beside** the import library rather than
-under `bin/`, which is the bundle layout rather than the library one, and the
-consumer loads it because the prefix's own `lib` is on the loader path. A
-consumer of this package on Windows needs `lib/` there; a consumer of
-`vrmContainer` needs `bin/`. Both are inside the prefix, which is what the
-contract promises, and neither is what the other one does.
+holding this package alone, with OpenUSD through `--extra-prefix`. The layout it
+gets is a bundle's rather than a library's: the shared object lands at
+`lib/libvrmSchema.dll` **beside** the import library instead of under `bin/`, so
+a consumer of this package on Windows needs this prefix's `lib` on the loader
+path where a consumer of `vrmContainer` needs its `bin`. Both are inside the
+prefix, which is what the contract promises, and neither is where the other one
+is.
+
+**PKG-2's open question stays open for this row.** It asked whether a
+`cmake --install` prefix and an extracted `ost` package are the same artifact,
+and answered *yes for a plain library* — a bundle is the shape where they could
+still differ, because it carries its dependencies' link halves where a library
+stages only its own install rules. This run used the first prefix only. What it
+establishes is that the `find_package` contract holds for a bundle's layout at
+all; `--prefix-source ost-package` against this row is the measurement that
+would close the question, and it has not been made.
 
 The link closure is 22 entries — every OpenUSD library a typed schema is built
 from — against `vrmContainer`'s empty one, which is the clearest statement in
