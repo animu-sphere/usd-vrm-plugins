@@ -130,7 +130,10 @@ carrying a version number is drift waiting to be re-litigated.
   two adapters on 2026-08-29 and neither package config gained a
   `find_dependency(osc)`. The fix that landed is per-adapter; the general one is
   a consumer that is not us, and its contract is
-  [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md).
+  [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md). **That consumer
+  now exists for all twelve packages** (PKG-3, 2026-08-30) and no config failed
+  it — what it still lacks is a lane, so every measurement is one host's and
+  criterion 6 remains unanswered.
 - **The live half gains a third leaf in v0.8.0, and a shared floor under all
   three** ([the OSC track](osc-and-vrchat-trackers.md)). It was deliberately not
   in v0.7.0: that release's remaining items are evidence an operator produces,

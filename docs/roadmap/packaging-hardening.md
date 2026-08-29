@@ -1,7 +1,7 @@
 # Packaging hardening — the installed-package consumer lane
 
-**Status:** in progress — PKG-0, PKG-1 and PKG-2 done; one of twelve packages
-measured · **Target:** v0.8.0 ·
+**Status:** in progress — PKG-0 through PKG-3 done; **twelve of twelve packages
+measured**, on one host · **Target:** v0.8.0 ·
 **Contract:** [architecture/PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md)
 
 The workspace has finished splitting. `vrmSchema`, `usdVrmFileFormat`,
@@ -290,7 +290,7 @@ what had just been decoded raised `UnicodeEncodeError` on the way back *out*, on
 the same input and past every `try` in the file. Both halves have to be lossy: a
 criterion the driver cannot render must read as unmet, never as a traceback.
 
-### PKG-3 — all twelve ⬜
+### PKG-3 — all twelve ✅
 
 Widen to every row in §3. Expect this to find more than one instance of the §1
 class: no config file in this repository has ever been opened by a consumer, and
@@ -298,6 +298,76 @@ the one that was reviewed most recently was the one that was wrong.
 
 Each failure is fixed in the config, never in the fixture. A fixture edited to
 make a package pass is the workspace check wearing a disguise.
+
+**Done 2026-08-30, and no config file failed.** All twelve configure, build,
+link and run from a prefix holding their own transitive closure and nothing
+else. That is the outcome the paragraph above did not predict, and it is worth
+stating plainly rather than quietly: the prediction was wrong, and the reason it
+was wrong is that the §1 defect had already been fixed in both packages it
+shipped in, and the eleven other configs were written to §3's rules by people
+following them. What this milestone adds is that the compliance is now measured
+instead of reviewed — for the first time, by something that is not this
+workspace.
+
+What it *did* find is in the harness rather than in a package, three times, and
+each one would have made a future run lie.
+
+*The blanket `find_dependency` mutation could accuse a fixture of an edit that
+changed nothing.* The narrowed form learned that lesson a day earlier and grew
+two refusals; the form with no name kept none of them. `liveTransport`'s only
+edge is conditional, so on Windows that mutation deletes a line inside an
+`if(NOT WIN32)` which is never reached — and the run then met every criterion
+and exited 1 with *this fixture cannot be trusted*. It is now refused before
+anything is installed whenever no declared edge is this config's to lose, and
+the refusal names each inert edge and why. `vrmSchema` is refused for the other
+reason in the same guard, and its message points at the run that answers
+sharply: `--dependency pxr`.
+
+*Criterion 5 was too coarse for a package whose API hands back a lower layer's
+type.* `ExtractBvhSource` takes a `motionSource::SourceSkeleton*`, so a
+`motionBvh` fixture that calls it writes a sibling's namespace — and was
+reported as naming one. The check now asks per file: a CMake file is where an
+identity becomes an edge, so any other package named there is still the
+violation; a `.cpp` creates no edge, so what is refused there is an `#include`
+of a sibling's header root. Refusing the spelling instead would have left the
+row with the most interesting closure in the table measured by the weakest
+fixture in it.
+
+*Criterion 3 cannot see a missing `find_dependency(pxr)`.* Removing it from
+`motionCore`'s config was answered by the build rather than by the closure walk,
+because OpenUSD's imported targets are unnamespaced — `arch`, `gf`, `tf` — and a
+walk that refuses an undefined `::`-qualified entry has nothing to refuse in a
+bare name. So for the eight rows whose external edge is OpenUSD, the *header a
+fixture includes* is the only thing between a missing edge and a passing run,
+and each of those fixtures includes the one that carries the edge into its
+translation unit. That is a rule PKG-4's lane inherits rather than a note about
+these eight files.
+
+Two shapes the earlier milestones had not measured, both of which behaved:
+
+- **`vrmContainer` is the only `SHARED` package**, and a shared package's
+  contract is not finished at the link. Its prefix ships `bin/vrmContainer.dll`
+  beside `lib/vrmContainer.lib`; `vrmSchema`, the one *bundle* with a package,
+  puts `libvrmSchema.dll` in `lib/` instead. Both are inside the prefix, which
+  is what the contract promises, and neither is where the other one is — which
+  is why the driver puts the prefix's own `bin` and `lib` on the loader path and
+  nothing else.
+- **`vrmAdapterMocopi`'s standing platform gap is half closed.** Its closure
+  carries `ws2_32` twice over, once from its transport edge and once from
+  OpenUSD's `arch`, which is the imported-target half of
+  [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113) measured
+  rather than predicted. The raw-library half is what PKG-5 keeps.
+
+The arithmetic: ten packages measured green here, on top of PKG-1's two, and
+**forty-eight mutations of the installed prefix** across them — thirty-nine
+caught, seven refused before anything was installed, one inconclusive by
+construction, and one that exposed the driver defect above. Four more edits went
+to the *fixtures* rather than the prefix, and criterion 5 caught each statically,
+before a build. Every package with more than one edge was also mutated by
+*name*, because stripping every `find_dependency` is caught by whichever edge
+the closure walk reaches first and says nothing about the last one — which is
+the shape the §1 defect actually had, and `vrmAdapterVrchatOsc` is where that
+shape was reproduced for the second of the two packages that shipped it.
 
 ### PKG-4 — the CI lane ⬜
 
@@ -353,7 +423,12 @@ moves here from the carry-over list rather than being tracked twice.
 - **`scripts/check_docs.py`** gains a check that every identity with a
   `*Config.cmake.in` has a row in PACKAGE_CONTRACT.md, and that every row names
   a package that exists. That is the same class of check as the bundle-inventory
-  one it already runs.
+  one it already runs. ✅ **Done 2026-08-30**, with four ways to fail it, each
+  one made to fail before the check was believed: a config template with no
+  row, a row claiming its package exports no target beside that package's own
+  config, a row naming an identity no manifest declares, and a row promising a
+  target that nothing installs. Reserved rows are exempt from the existence
+  half by design (PACKAGE_CONTRACT.md §6).
 
 ## 7. PR splitting
 
@@ -362,9 +437,13 @@ moves here from the carry-over list rather than being tracked twice.
    with the negative verification against the broken config recorded.
 3. `vrmAdapterVmc`'s fixture — the package the defect was in.
 4. The remaining ten, in one PR per group of siblings, so a failure is
-   attributable to a group rather than to a batch.
+   attributable to a group rather than to a batch. ✅ — landed as four groups:
+   the two shapes no fixture had (`vrmContainer`, `liveTransport`), the motion
+   layer's five, the two remaining adapters, and the one bundle with a package.
 5. The CI cell (PKG-4).
-6. `check_docs.py`'s row check.
+6. `check_docs.py`'s row check. ✅ — landed before PKG-4 rather than after it,
+   because the document it checks is five days old and the drift it catches has
+   had no time to happen yet. That is the moment to add such a check.
 
 The document comes first because a fixture written before the contract settles
 on whatever the first package happened to need — the same rule the OSC track
