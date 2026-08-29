@@ -21,7 +21,10 @@ the handful of facts that silently rot when the workspace changes shape:
    is not an already-released version, a `Shipped:` one is, the roadmap status
    table agrees with those headings, and no document points at a retired
    roadmap filename;
-7. every local markdown link resolves.
+7. every identity that installs a CMake package has a row in
+   PACKAGE_CONTRACT.md, and every row that is not reserved names an identity
+   the manifests declare;
+8. every local markdown link resolves.
 
 Check 6 exists because the roadmap said "Next: v0.6.0 - the OpenExec
 foundation" for two weeks after v0.6.0 shipped VMC input instead. Nothing was
@@ -432,6 +435,95 @@ def check_component_status(failures: list[str]) -> None:
                     f"the roadmap, not in the component table")
 
 
+CONTRACT = "docs/architecture/PACKAGE_CONTRACT.md"
+
+# A package row: seven cells, the first one backticked. Matching on shape rather
+# than on the header text keeps a future column rename out of this check, the
+# same way scripts/check_package_consumer.py reads the table.
+CONTRACT_ROW = re.compile(r"^\|(?P<cells>.+)\|\s*$")
+DASH = ("-", "\u2014", "")
+
+
+def contract_rows() -> dict[str, dict[str, str]]:
+    rows: dict[str, dict[str, str]] = {}
+    for line in read(CONTRACT).splitlines():
+        m = CONTRACT_ROW.match(line.strip())
+        if not m:
+            continue
+        cells = [c.strip() for c in m.group("cells").split("|")]
+        if len(cells) != 7 or not cells[0].startswith("`"):
+            continue
+        name = cells[0].strip("`")
+        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9]*", name):
+            continue
+        rows[name] = {"target": cells[1].strip("`"), "product": cells[5]}
+    return rows
+
+
+def contract_configs() -> dict[str, str]:
+    """{identity: path} for every installed CMake package template.
+
+    Discovered on the same rule `discover()` uses, because a table of paths here
+    would be the second place the workspace's shape is written down -- and this
+    check exists precisely because a second place drifts."""
+    configs: dict[str, str] = {}
+    for pattern in ("libs/*/cmake/*Config.cmake.in",
+                    "adapters/*/*/cmake/*Config.cmake.in",
+                    "plugins/*/cmake/*Config.cmake.in"):
+        for path in sorted(REPO_ROOT.glob(pattern)):
+            name = path.name[: -len("Config.cmake.in")]
+            configs[name] = str(path.relative_to(REPO_ROOT)).replace("\\", "/")
+    return configs
+
+
+def check_package_contract(failures: list[str]) -> None:
+    """PACKAGE_CONTRACT.md §4 and the CMake sources describe the same packages.
+
+    The document states, per package, what a consumer outside this workspace
+    writes. A package that ships a config file and has no row is a promise
+    nobody wrote down; a row naming a package that does not exist is a promise
+    about nothing. Both are the class of drift check 6 catches between the
+    roadmap and the release records, one directory over.
+
+    A **reserved** row is exempt from the existence half by design: an identity
+    arrives in WORKSPACE.md §1 first and reaches this document when it acquires
+    an installed package, which for a reserved one is later or never
+    (PACKAGE_CONTRACT.md §6)."""
+    rows = contract_rows()
+    if not rows:
+        failures.append(f"{CONTRACT}: no package rows parsed out of §4 -- has "
+                        f"the table's shape changed?")
+        return
+    bundles, libraries = discover()
+    identities = {**bundles, **libraries}
+    configs = contract_configs()
+
+    for name, path in configs.items():
+        if name not in rows:
+            failures.append(
+                f"{path} installs a CMake package `{name}` with no row in "
+                f"{CONTRACT} §4. A package a consumer can find is a promise, "
+                f"and this document is where the promise is written")
+        elif rows[name]["target"] in DASH:
+            failures.append(
+                f"{CONTRACT} §4 says `{name}` exports no target, but {path} "
+                f"installs a config for it")
+
+    for name, row in rows.items():
+        if "reserved" in (row["target"], row["product"]):
+            continue
+        if name not in identities:
+            failures.append(
+                f"{CONTRACT} §4 has a row for `{name}`, which no manifest "
+                f"declares. Retire the row or add the identity to "
+                f"WORKSPACE.md §1 first")
+        if row["target"] not in DASH and name not in configs:
+            failures.append(
+                f"{CONTRACT} §4 says `{name}` exports `{row['target']}`, and "
+                f"no *Config.cmake.in in the workspace installs a package "
+                f"called `{name}`")
+
+
 LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 
 # Code is not prose, and C++ reads as markdown more often than is comfortable:
@@ -475,7 +567,7 @@ def main() -> int:
                   check_openusd_pin,
                   check_release_records, check_roadmap_status,
                   check_retired_doc_names, check_component_status,
-                  check_links):
+                  check_package_contract, check_links):
         check(failures)
 
     if failures:
