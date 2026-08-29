@@ -87,7 +87,14 @@ function(_consumer_walk_closure target out_var)
 
         # A generator expression is not resolvable at configure time. Recording
         # it verbatim is honest; pretending to have checked it is not.
-        if(_item MATCHES "^\$<")
+        #
+        # The character class is load-bearing: `$` is CMake's end-of-line
+        # anchor, so `^\$<` compiles to `^$<` and matches nothing at all. That
+        # spelling let `$<LINK_ONLY:Threads::Threads>` fall through to the `::`
+        # branch below and fail a package whose config is correct -- and `osc`
+        # could never have shown it, because its closure is empty. Every row
+        # with a `pxr` edge would have met it in PKG-3.
+        if(_item MATCHES "^[$]<")
             list(APPEND _closure "${_item}")
             continue()
         endif()
@@ -131,6 +138,11 @@ function(consumer_criteria)
     # 1. The config is found, and CONFIG mode is not negotiable: a MODULE-mode
     #    fallback would let a stray Findosc.cmake answer for the package.
     find_package(${ARG_PACKAGE} CONFIG REQUIRED)
+    # Printed on its own line as well, because *where* the package was found is
+    # a fact the driver has to check rather than read: a stale install
+    # elsewhere on the host satisfies every criterion below without the scratch
+    # prefix ever being opened, and would print exactly this pass.
+    message(STATUS "consumer: package-dir ${${ARG_PACKAGE}_DIR}")
     message(STATUS "consumer: criterion 1 MET find_package(${ARG_PACKAGE} CONFIG REQUIRED) "
                    "resolved ${${ARG_PACKAGE}_DIR}")
 

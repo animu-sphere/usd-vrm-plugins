@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import platform
 import re
@@ -139,6 +140,40 @@ def required_packages(row: dict) -> list:
     return [n.strip("`") for n in re.findall(r"`[^`]+`", cell)]
 
 
+def workspace_closure(package: str, rows: dict) -> list:
+    """Every workspace package that must be installed before `package` can be,
+    in an order that installs each after its own dependencies.
+
+    A depth-first post-order rather than the table's own order. `motionBvh`
+    requires `motionSource`, which requires `motionCore`, and `motionCore` is
+    nowhere in `motionBvh`'s row -- PACKAGE_CONTRACT.md section 3 rule 3 forbids
+    a config from reaching past its own declared edges, so the transitive set is
+    something a consumer's installer has to compute rather than read. Taking the
+    row's list literally worked only for the packages the table happens to list
+    in topological order, and `motionBvh` is the one it does not."""
+    order: list = []
+    seen: set = set()
+
+    def visit(name: str, stack: tuple) -> None:
+        if name in stack:
+            fail_setup("PACKAGE_CONTRACT.md section 4 describes a dependency "
+                       "cycle: " + " -> ".join(stack + (name,)))
+        if name in seen:
+            return
+        if name not in rows:
+            fail_setup(f"`{name}` is required by `{stack[-1]}` and has no row "
+                       f"in PACKAGE_CONTRACT.md section 4")
+        for dep in required_packages(rows[name]):
+            if dep not in EXTERNAL_PACKAGES:
+                visit(dep, stack + (name,))
+        seen.add(name)
+        if name != package:
+            order.append(name)
+
+    visit(package, ())
+    return order
+
+
 def source_dir(package: str) -> pathlib.Path:
     """Where the package's own standalone CMake project lives. Discovered from
     the descriptors rather than from a path table, on the same rule
@@ -158,35 +193,55 @@ def source_dir(package: str) -> pathlib.Path:
 # Criterion 5 -- the one a fixture can lose by being edited
 # --------------------------------------------------------------------------
 
+def strip_comments(path: pathlib.Path) -> str:
+    """The file's code, without what a reader wrote about it. A comment naming
+    a sibling identity is prose; a link line naming one is a leak, and only the
+    second is what this criterion is about."""
+    text = path.read_text(encoding="utf-8")
+    if path.suffix in (".cpp", ".h"):
+        text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
+        text = re.sub(r"//[^\n]*", "", text)
+        return text
+    return "\n".join(line for line in text.splitlines()
+                     if not line.lstrip().startswith("#"))
+
+
 def check_fixture(package: str, row: dict, fixture: pathlib.Path) -> list:
-    """Static properties of the fixture's own sources. Returns the reasons it
-    is not trustworthy, empty when it is.
+    """Static properties of the sources the fixture is built from. Returns the
+    reasons it is not trustworthy, empty when it is.
 
     PACKAGE_CONTRACT.md section 5: *criterion 5 is the one that makes the others
     mean anything*. A fixture that names a workspace target, points at a source
     path, or quietly stopped including a public header still builds -- and a
-    passing build is exactly what it would report."""
+    passing build is exactly what it would report.
+
+    **The shared module is scanned too, and that is not optional.**
+    ConsumerCriteria.cmake is copied beside every fixture and included by all of
+    them, so a workspace identity or a `CMAKE_SOURCE_DIR` added there leaks into
+    twelve fixtures at once while all twelve go on reporting criterion 5 met --
+    which is the failure this criterion exists to make impossible, arriving
+    through the one file the fixtures do not own."""
     reasons = []
     cmakelists = fixture / "CMakeLists.txt"
     main = fixture / "main.cpp"
-    for path in (cmakelists, main):
+    shared = fixture.parent / "ConsumerCriteria.cmake"
+    for path in (cmakelists, main, shared):
         if not path.exists():
-            fail_setup(f"fixture {fixture} has no {path.name}")
+            fail_setup(f"fixture {fixture} cannot be checked: {path} is missing")
 
     identities = set(contract_rows()) - {package}
-    text = cmakelists.read_text(encoding="utf-8")
-    body = "\n".join(line for line in text.splitlines()
-                     if not line.lstrip().startswith("#"))
-    for other in sorted(identities):
-        if re.search(rf"\b{re.escape(other)}\b", body):
-            reasons.append(f"CMakeLists.txt names the workspace identity "
-                           f"`{other}`, which is not the package under test")
-    for pattern, what in ((r"add_subdirectory", "add_subdirectory()"),
-                          (r"\.\./\.\./", "a path out of the fixture tree"),
-                          (r"CMAKE_SOURCE_DIR", "CMAKE_SOURCE_DIR")):
-        if re.search(pattern, body):
-            reasons.append(f"CMakeLists.txt uses {what}, which can reach the "
-                           f"workspace source tree")
+    for path in (cmakelists, main, shared):
+        body = strip_comments(path)
+        for other in sorted(identities):
+            if re.search(rf"\b{re.escape(other)}\b", body):
+                reasons.append(f"{path.name} names the workspace identity "
+                               f"`{other}`, which is not the package under test")
+        for pattern, what in ((r"add_subdirectory", "add_subdirectory()"),
+                              (r"\.\./\.\./", "a path out of the fixture tree"),
+                              (r"CMAKE_SOURCE_DIR", "CMAKE_SOURCE_DIR")):
+            if re.search(pattern, body):
+                reasons.append(f"{path.name} uses {what}, which can reach the "
+                               f"workspace source tree")
 
     header_root = row["headers"].rstrip("/").split("/")[-1]
     includes = re.findall(r'#\s*include\s*[<"]([^>"]+)[>"]',
@@ -257,9 +312,28 @@ def ost_package_install(package: str, prefix: pathlib.Path,
 # same class of false green as a `git stash push` that was a no-op because the
 # fix was already committed.
 
-def mutate(name: str, package: str, prefix: pathlib.Path) -> str:
-    cmake_dir = prefix / "lib" / "cmake" / package
-    config = cmake_dir / f"{package}Config.cmake"
+def locate_config(package: str, prefix: pathlib.Path) -> pathlib.Path:
+    """The installed config file, found rather than assumed.
+
+    `lib/cmake/<pkg>/` is where `${CMAKE_INSTALL_LIBDIR}` lands on this
+    workstation and on Windows, and it is *not* where it lands on a `lib64`
+    distribution -- where hardcoding it turned a mutation that cannot apply
+    into a `FileNotFoundError`, which is the one outcome a negative
+    verification must never produce: an exception is not a refusal, and a
+    disabled check that raises looks like a broken script rather than a
+    missing measurement."""
+    found = sorted(prefix.rglob(f"{package}Config.cmake"))
+    if not found:
+        fail_setup(f"{prefix} holds no {package}Config.cmake, so `{package}` "
+                   f"installed no CMake package to mutate")
+    if len(found) > 1:
+        fail_setup(f"{prefix} holds {len(found)} copies of "
+                   f"{package}Config.cmake: {', '.join(str(f) for f in found)}")
+    return found[0]
+
+
+def mutate(name: str, package: str, row: dict, prefix: pathlib.Path) -> str:
+    config = locate_config(package, prefix)
 
     if name == "no-config":
         if not config.exists():
@@ -293,17 +367,34 @@ def mutate(name: str, package: str, prefix: pathlib.Path) -> str:
                 f"{config.relative_to(prefix)} - criterion 3 must fail")
 
     if name == "no-headers":
-        include = prefix / "include" / package
+        # The header root is a contract value, not a guess: PACKAGE_CONTRACT.md
+        # section 2 says it is always `include/<name>/`, so the row is what
+        # names the directory to delete.
+        include = prefix / row["headers"].rstrip("/")
         if not include.is_dir():
             fail_setup(f"{include} is not there to remove")
         shutil.rmtree(include)
-        return (f"deleted include/{package}/ - criterion 4 must fail, and "
+        return (f"deleted {row['headers']} - criterion 4 must fail, and "
                 f"criteria 1-3 must still pass")
 
     fail_setup(f"unknown mutation `{name}`")
 
 
-MUTATIONS = ("no-config", "no-targets-include", "no-dependency", "no-headers")
+# Which criterion each mutation is aimed at. This is documentation with an
+# assertion behind it rather than a gate: a mutation is *caught* when any of
+# criteria 1-4 fails, because those are the four the prefix can break, and the
+# run says so when the criterion that failed is not the one predicted. That
+# distinction is a measurement PKG-3 will want -- stripping a `find_dependency`
+# may be refused by the exported targets file at `find_package` time, which is
+# criterion 1 catching a criterion 3 defect, and a gate insisting on 3 would
+# have called a correct catch a failure.
+MUTATION_TARGET = {
+    "no-config": "1",
+    "no-targets-include": "2",
+    "no-dependency": "3",
+    "no-headers": "4",
+}
+MUTATIONS = tuple(MUTATION_TARGET)
 
 
 # --------------------------------------------------------------------------
@@ -314,9 +405,53 @@ MET = re.compile(r"consumer: criterion (\d) MET (.*)")
 NOT_MET = re.compile(r"consumer: criterion (\d) NOT MET (.*)")
 CLOSURE = re.compile(r"consumer: closure (.+?)\s*$", re.M)
 PLATFORM = re.compile(r"consumer: platform (\S+) *(\S*)")
+PACKAGE_DIR = re.compile(r"consumer: package-dir (.+?)\s*$", re.M)
+
+
+def make_output_lossy() -> None:
+    """Never let printing a toolchain's own words end this run.
+
+    Decoding the capture with `errors="replace"` moved the cp932 problem rather
+    than removing it: U+FFFD is not encodable in cp932 either, so echoing what
+    was just decoded raised `UnicodeEncodeError` on the way *out* -- on the
+    same Japanese-Windows input, several frames from the cause, and past every
+    `try` in this file. Both halves have to be lossy for the invariant in this
+    module's docstring to hold: a criterion this driver cannot render must read
+    as unmet, never as a traceback."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(errors="replace")
+            except (ValueError, OSError):
+                # A stream that will not be reconfigured is one this process
+                # does not own. Nothing to do, and nothing worth failing over.
+                pass
+
+
+def run_environment(prefix: pathlib.Path, extra_prefixes: list) -> dict:
+    """The environment the built consumer is run in.
+
+    A consumer of a SHARED package -- `vrmContainer` and `vrmSchema` are the two
+    -- links an import library at build time and needs the DLL itself at load
+    time. Without this, those two would exit 0xC0000135 on Windows and this
+    driver would report *the package links but does not work*, which is a
+    harness property filed as a contract failure. The prefix's own `bin` and
+    `lib` are added and nothing else: a run that needed a directory outside the
+    prefix would be telling us something true about the package."""
+    env = dict(os.environ)
+    roots = [prefix] + [pathlib.Path(p) for p in extra_prefixes]
+    entries = [str(root / sub) for root in roots for sub in ("bin", "lib")
+               if (root / sub).is_dir()]
+    if not entries:
+        return env
+    key = "PATH" if sys.platform == "win32" else (
+        "DYLD_LIBRARY_PATH" if sys.platform == "darwin" else "LD_LIBRARY_PATH")
+    env[key] = os.pathsep.join(entries + ([env[key]] if env.get(key) else []))
+    return env
 
 
 def main() -> int:
+    make_output_lossy()
     ap = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -344,7 +479,14 @@ def main() -> int:
         fail_setup(f"`{args.package}` has no row in PACKAGE_CONTRACT.md "
                    f"section 4")
     row = rows[args.package]
-    if row["target"] == "reserved":
+    # Two different reasons a row carries no `find_package` contract, and they
+    # are told apart by two different cells. A reserved identity says so in
+    # `Exported target` (`vrmAdapterArdy`) *or* in `In the aggregate product`
+    # (`execMotion`, `execVrm`, whose target cell is a plain dash like a plugin
+    # bundle's) -- so testing the target cell alone sent both of those away with
+    # the plugin-load reason, which is not true of either and is not a reason a
+    # reader could act on.
+    if "reserved" in (row["target"], row["product"]):
         fail_setup(
             f"`{args.package}` is a reserved identity: it has a row in "
             f"PACKAGE_CONTRACT.md and no package behind it yet. It arrives here "
@@ -387,7 +529,7 @@ def main() -> int:
         }
 
         # --- the prefix -----------------------------------------------------
-        deps = [p for p in required_packages(row) if p not in EXTERNAL_PACKAGES]
+        deps = workspace_closure(args.package, rows)
         for dep in deps:
             print(f"--- installing required package {dep} ---")
             cmake_install(dep, prefix, args.extra_prefix, args.generator, work)
@@ -404,8 +546,18 @@ def main() -> int:
             ost_package_install(args.package, prefix, work)
 
         if args.mutate:
+            # Criterion 5 is a property of the fixture and is settled above,
+            # before the prefix is touched. A mutation run that started from an
+            # already-broken fixture would find criterion 5 failed and report
+            # the mutation as caught, recording a negative verification whose
+            # effect was never observed -- so it is a setup error, not a catch.
+            if not report["criteria"]["5"]["met"]:
+                fail_setup(
+                    f"the fixture already fails criterion 5 "
+                    f"({report['criteria']['5']['detail']}), so a mutation run "
+                    f"could only confirm that. Fix the fixture first")
             print(f"--- mutation: "
-                  f"{mutate(args.mutate, args.package, prefix)} ---")
+                  f"{mutate(args.mutate, args.package, row, prefix)} ---")
 
         # --- the consumer, outside the repository ---------------------------
         consumer_root = work / "consumer"
@@ -435,6 +587,26 @@ def main() -> int:
             report["host"]["cmake_system"] = host.group(1)
             report["host"]["cmake_processor"] = host.group(2)
 
+        # Criterion 1 is *this* prefix answering, or it is not criterion 1.
+        # CMake searches the host as well, so a stale install in /usr/local or
+        # under Program Files satisfies 1-4 and prints PASS without the scratch
+        # prefix ever being opened -- and turns `--mutate no-config` into a
+        # report that the fixture is untrustworthy, which is the opposite of
+        # what happened.
+        found = PACKAGE_DIR.search(text)
+        if found:
+            package_dir = pathlib.Path(found.group(1))
+            report["package_dir"] = str(package_dir)
+            inside = prefix.resolve() in package_dir.resolve().parents
+            if not inside:
+                report["criteria"]["1"] = {
+                    "met": False,
+                    "detail": f"{args.package} resolved from {package_dir}, "
+                              f"which is outside the scratch prefix "
+                              f"{prefix} - this run measured some other "
+                              f"install of the package",
+                }
+
         for n in ("1", "2", "3"):
             if n not in report["criteria"]:
                 # The configure died before that criterion printed anything.
@@ -460,7 +632,9 @@ def main() -> int:
         if built:
             exe = next((p for p in sorted(build.rglob("consumer*"))
                         if p.is_file() and p.suffix in ("", ".exe")), None)
-            ran = exe is not None and run([exe]).returncode == 0
+            ran = exe is not None and run(
+                [exe],
+                env=run_environment(prefix, args.extra_prefix)).returncode == 0
             report["ran"] = bool(ran)
             if not ran:
                 report["criteria"]["4"] = {
@@ -505,13 +679,28 @@ def main() -> int:
 
     if args.mutate:
         # Inverted on purpose: with the prefix broken, a pass is the failure.
-        if failed:
+        #
+        # Only criteria 1-4 count as a catch. Those are the four the *prefix*
+        # can break, and they are the only ones whose failure is evidence that
+        # this mutation did something -- criterion 5 is settled before the
+        # mutation is applied and criterion 6 is never answered here, so
+        # counting either would record a verification whose effect was never
+        # observed.
+        caught = sorted(n for n in failed if n in ("1", "2", "3", "4"))
+        if caught:
+            expected = MUTATION_TARGET[args.mutate]
             print(f"\nPASS (negative): the mutation `{args.mutate}` was caught "
-                  f"by criterion {', '.join(sorted(failed))}")
+                  f"by criterion {', '.join(caught)}")
+            if expected not in caught:
+                # Not a failure -- a measurement. A defect can legitimately be
+                # refused earlier than the criterion it belongs to.
+                print(f"  note: criterion {expected} was predicted and "
+                      f"criterion {caught[0]} answered first")
             return 0
         print(f"\nFAIL (negative): the mutation `{args.mutate}` broke the "
-              f"installed package and the consumer passed anyway - this "
-              f"fixture cannot be trusted to report a real failure")
+              f"installed package and the consumer met every criterion the "
+              f"prefix can break - this fixture cannot be trusted to report a "
+              f"real failure")
         return 1
 
     if failed:

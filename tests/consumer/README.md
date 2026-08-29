@@ -49,7 +49,10 @@ point rather than a convenience: twelve fixtures each writing their own
 them to check less than the others and still print a pass.
 
 Three rules, all of them mechanically enforced by the driver's criterion-5 pass
-and all of them verified by mutating this fixture until each was caught:
+— which reads [`ConsumerCriteria.cmake`](ConsumerCriteria.cmake) as well as the
+fixture's own two files, because an identity added to the shared module would
+otherwise leak into every fixture while all of them reported criterion 5 met —
+and all of them verified by mutating a fixture until each was caught:
 
 - **Name no workspace identity but your own.** A fixture that links a sibling
   package is testing the prefix's contents, not the package's contract.

@@ -152,13 +152,35 @@ identity on the link line, an `add_subdirectory` into the source tree, and a
 `main.cpp` that stopped including a public header — each caught, with the files
 restored byte-exact afterwards.
 
+Only criteria **1–4** count as a catch, because those are the four the prefix
+can break. Criterion 5 is settled before the mutation is applied, so counting it
+would let an already-broken fixture record a verification whose effect was never
+observed; a mutation run that starts from one is refused as a setup error
+instead. The criterion each mutation is *aimed* at is recorded, but a catch by
+an earlier one is reported as a measurement rather than as a failure — stripping
+a `find_dependency` may be refused by the exported targets file at
+`find_package` time, and a gate insisting on criterion 3 would have called that
+correct catch wrong.
+
 *The driver reads the contract rather than a copy of it.* Package name, exported
 target, header root and required packages all come out of PACKAGE_CONTRACT.md
 §4, so a row that is wrong about a package fails this check instead of quietly
 not being used, and there is no second table to drift. Parsing it also confirmed
 the §3 correction from the outside: twelve rows carry a `find_package` contract,
 and the six that do not are refused by name with the reason — reserved, or
-plugin-load-not-`find_package`.
+plugin-load-not-`find_package`. *Which* of the two is decided by two cells
+rather than one: `vrmAdapterArdy` says `reserved` in **Exported target**, while
+`execMotion` and `execVrm` say it in **In the aggregate product** and carry a
+plain dash beside a plugin bundle's. Reading only the target cell sent both of
+those away with the plugin-load reason, which is untrue of either.
+
+*The required-package cell is one level deep, and the installer needs the
+closure.* §3 rule 3 forbids a config from reaching past its own declared edges,
+so `motionBvh`'s row names `motionSource` and never `motionCore` — and
+installing the row literally leaves `motionSource`'s own configure with nothing
+to resolve. The driver walks the rows depth-first instead. The rest of the table
+happens to be listed in topological order, which is why only `motionBvh`
+exposed it.
 
 ### PKG-2 — the driver ✅
 
@@ -193,16 +215,33 @@ row in §3's first group where the two prefixes could still diverge; and only
 `osc` has actually been run either way.
 
 It also runs the criterion-5 pass before it builds anything, which is the cheap
-half and the half that guards the other five.
+half and the half that guards the other five — and that pass reads the shared
+`ConsumerCriteria.cmake` as well as the fixture's own two files. The module is
+copied beside every fixture and included by all of them, so an identity or a
+`CMAKE_SOURCE_DIR` added there would leak into twelve fixtures at once while all
+twelve went on reporting criterion 5 met, which is this criterion's own failure
+mode arriving through the one file the fixtures do not own.
+
+Two more properties are asserted rather than assumed, because each of them
+otherwise turns a harness fact into a contract claim. **Criterion 1 must resolve
+from the scratch prefix**: CMake searches the host too, so a stale install
+elsewhere satisfies 1–4 and prints a pass without the prefix being opened —
+worse, it makes `--mutate no-config` blame the fixture. And **the built consumer
+runs with the prefix's own `bin` and `lib` on the loader path**, which the two
+`SHARED` rows need; without it `vrmContainer` and `vrmSchema` would exit
+`0xC0000135` on Windows and be reported as *the package links but does not
+work*.
 
 One defect the milestone found in itself, worth recording because it is a
 this-machine class rather than a this-script one: the driver captures the
 consumer's configure output, and a captured toolchain speaks the host's
 language. MSBuild on a Japanese Windows emits cp932, and one stray byte raised
 `UnicodeDecodeError` inside subprocess's reader thread, surfacing several frames
-later as `stdout is None`. A criterion the driver cannot parse must read as
-unmet, never as a traceback, so every captured run now decodes with
-`errors="replace"`.
+later as `stdout is None`. **Decoding with `errors="replace"` moved that crash
+rather than removing it** — U+FFFD is not encodable in cp932 either, so echoing
+what had just been decoded raised `UnicodeEncodeError` on the way back *out*, on
+the same input and past every `try` in the file. Both halves have to be lossy: a
+criterion the driver cannot render must read as unmet, never as a traceback.
 
 ### PKG-3 — all twelve ⬜
 
