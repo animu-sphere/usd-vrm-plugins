@@ -291,7 +291,13 @@ deleted — and 5 by edits to the fixture itself, with every mutation asserting 
 changed a byte before the run it justifies. For a package with more than one
 edge the `find_dependency` mutation also takes the *name* of the edge to remove,
 because stripping all of them is caught by the first one resolved and a package
-whose fifth edge was missing would pass a mutation aimed at its first. The mutations are
+whose fifth edge was missing would pass a mutation aimed at its first. Stripping
+all of them is also *refused* when none of the lines is this config's to lose on
+this host: `liveTransport`'s one edge is conditional, so on Windows the blanket
+mutation deletes a line inside an `if(NOT WIN32)` that was never reached, and a
+run that then passed would have reported the fixture as untrustworthy — the same
+false accusation the named form already refuses, arriving through the form that
+had no guard. The mutations are
 `--mutate` in that driver, and they break the *prefix* rather than the source
 tree, so nothing in this loop depends on a `git stash` that might be a silent
 no-op.

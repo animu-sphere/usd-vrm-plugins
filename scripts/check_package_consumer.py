@@ -621,6 +621,47 @@ def main() -> int:
                   f"condition. If it does not hold on this host the removed "
                   f"line was never reached, and the run below reports an "
                   f"inconclusive mutation rather than a caught one.")
+    elif args.mutate == "no-dependency":
+        # The blanket form strips *every* find_dependency, and it is a mutation
+        # only if at least one of those lines is this config's to lose. The two
+        # ways a line is not are already known here, from the same two facts the
+        # narrowed form is checked against: another package in the prefix
+        # resolves the same edge, or the contract qualifies the edge with a
+        # condition this driver does not evaluate.
+        #
+        # `liveTransport` is where that matters, and it is not a corner case:
+        # its one edge is `Threads (non-Windows)`, so on Windows this mutation
+        # deletes a line inside an `if(NOT WIN32)` that was never reached, the
+        # consumer passes, and the blanket branch below -- which has no
+        # `--dependency` to reason about -- reports *this fixture cannot be
+        # trusted*. That is the false accusation this driver's own contract
+        # forbids, arriving through the one form of the mutation that had no
+        # guard. Refusing it before anything is installed keeps the verdict
+        # honest and costs a second instead of a build.
+        declared = required_packages(row)
+        losable = [d for d in declared
+                   if not other_resolvers(args.package, d, rows)
+                   and not dependency_qualification(row, d)]
+        if declared and not losable:
+            why = []
+            for d in declared:
+                masking = other_resolvers(args.package, d, rows)
+                if masking:
+                    why.append(f"`{d}` is also resolved by "
+                               + ", ".join("`" + m + "`" for m in masking))
+                else:
+                    why.append(f"`{d}` is qualified as "
+                               f"{dependency_qualification(row, d)}, which this "
+                               f"driver does not evaluate")
+            fail_setup(
+                f"every find_dependency in `{args.package}`'s config is inert "
+                f"on this host, so stripping them all would change bytes "
+                f"without breaking anything and a passing run would be "
+                f"reported as a fixture that cannot be trusted: "
+                + "; ".join(why)
+                + f". Name one edge with --dependency to get an inconclusive "
+                  f"verdict instead of an accusation, or run this mutation on "
+                  f"a host where a condition holds")
 
     fixture_src = FIXTURE_ROOT / args.package
     if not fixture_src.is_dir():
