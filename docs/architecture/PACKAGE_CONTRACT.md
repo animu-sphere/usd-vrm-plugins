@@ -126,7 +126,7 @@ standalone bundle build in CI is exactly that consumer.
 | `vrmRetarget` | `vrmRetarget::vrmRetarget` | `include/vrmRetarget/` | `pxr`, `motionCore`, `motionRuntime` | — | yes | unmeasured |
 | `motionSource` | `motionSource::motionSource` | `include/motionSource/` | `pxr`, `motionCore` | — | yes | unmeasured |
 | `motionBvh` | `motionBvh::motionBvh` | `include/motionBvh/` | `motionSource` | — | yes | unmeasured |
-| `liveTransport` | `liveTransport::liveTransport` | `include/liveTransport/` | `Threads` (non-Windows) | `ws2_32` (Windows), `Threads::Threads` (elsewhere) | **no** | unmeasured |
+| `liveTransport` | `liveTransport::liveTransport` | `include/liveTransport/` | `Threads` (non-Windows) | `ws2_32` (Windows), `Threads::Threads` (elsewhere) | **no** | **measured** (Windows) |
 | `osc` | `osc::osc` | `include/osc/` | — | — | **no** | **measured** |
 
 `vrmContainer` is the only `SHARED` library here; every other row is `STATIC`
@@ -148,6 +148,44 @@ itself, so the run says something about the fixture as well as about the
 package. What it does *not* say is anything about criterion 6 — one host cannot
 answer whether three agree, and PKG-4's lane is where that column stops being
 about a workstation.
+
+**`vrmContainer` already read *measured*, and now it is measured in the second
+of the two senses that word carries here.** Three bundles call
+`find_package(vrmContainer CONFIG REQUIRED)` in their standalone builds, and CI
+runs them — that is a real consumer, and it is what the column meant for this
+row. What it is not is a consumer *outside* this workspace: those three are
+members of it, built from its tree, and criterion 5 is the one property they
+cannot have. `tests/consumer/vrmContainer/` closes that on 2026-08-29, and it is
+the first fixture for a `SHARED` package — which is a shape the eight static
+rows cannot check, because every criterion up to the link is answered by an
+import library and the shared object itself is not opened until the consumer
+runs. A package that installed a config, a header root and a `.lib` and forgot
+the `.dll` meets criteria 1–4 and exits `0xC0000135` on the line after them.
+This one did not: the prefix ships `bin/vrmContainer.dll` beside
+`lib/vrmContainer.lib`, criterion 2 names both, and the consumer ran with the
+prefix's own `bin` and `lib` on the loader path and nothing else.
+
+**`liveTransport`'s closure is exactly the one entry the table predicts, and a
+Windows run is the weaker half of its measurement.** `tests/consumer/liveTransport/`
+records a closure of `ws2_32` and nothing else — no workspace package, no
+threading target — which is the Windows side of the one documented platform
+difference in this document. The POSIX side is worth more, because there the
+same fixture verifies the *absence* of the socket link as well as the presence
+of the threading one, and no host can check both ([the track](../roadmap/packaging-hardening.md)
+PKG-5). The `Standalone` cell therefore says **measured (Windows)** rather than
+**measured**: an unqualified word there would claim a platform agreement that
+only PKG-4's lane can produce.
+
+*Which* call a fixture makes is a packaging decision for this row in a way it is
+not for the others. This is a static library, so the archive member carrying the
+platform's socket calls is linked only when the consumer needs it — a fixture
+that called the diagnostic vehicle alone would link a package whose platform
+link line was missing entirely and report criterion 4 met. The fixture therefore
+calls into `UdpReceiver`, and it calls the one thing there that needs no socket:
+`Receive` on a receiver that was never opened returns `Closed`. Nothing binds
+and no port is named, because a packaging fixture that took a port would go red
+on a host where something else already held it, which is a fact about the
+machine rather than about the package.
 
 ### 4.3 Adapters
 
@@ -207,13 +245,17 @@ should notice they are missing when it does.
 
 **Unmeasured** in the tables above is a statement about evidence, not a
 prediction of failure. Each of those configs is written to the rules in §3 and
-was reviewed against them; as of 2026-08-29 two of them — `osc` and
-`vrmAdapterVmc` — have also been configured from a clean prefix by a project
-that names no workspace target, and the rest have not. The two were chosen for
-opposite reasons: `osc` has no edge, so a failure there could only be its own
-config file, and `vrmAdapterVmc` has five, so it is the first package where the
-rule in §3 that a config declares its whole `PUBLIC` interface is a claim with
-something behind it.
+was reviewed against them; as of 2026-08-29 four of them — `osc`,
+`vrmAdapterVmc`, `vrmContainer` and `liveTransport` — have also been configured
+from a clean prefix by a project that names no workspace target, and the rest
+have not. The first two were chosen for opposite reasons: `osc` has no edge, so
+a failure there could only be its own config file, and `vrmAdapterVmc` has five,
+so it is the first package where the rule in §3 that a config declares its whole
+`PUBLIC` interface is a claim with something behind it. The next two are the
+two *shapes* neither of those has: `vrmContainer` is the only `SHARED` package,
+whose contract is not finished at the link, and `liveTransport` is the only one
+whose closure differs by platform, which is the one row where a single host's
+answer is knowingly half of the measurement.
 
 That distinction is the whole reason this document is not the deliverable.
 Seventeen green lanes did not catch a package naming an unresolvable target, and

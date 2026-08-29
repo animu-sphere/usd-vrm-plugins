@@ -121,8 +121,9 @@ and all of them verified by mutating a fixture until each was caught:
 These are packaging fixtures, not tests of the library. `main.cpp` asks the
 smallest question the package can answer — for `osc`, whether an address comes
 back; for `vrmAdapterVmc`, whether a bone name goes in and the same name comes
-out — because anything larger makes a packaging failure look like a decoder
-failure the first time it goes red. Those suites live with their code, in
+out; for `vrmContainer`, whether a hand-assembled container parses — because
+anything larger makes a packaging failure look like a decoder failure the first
+time it goes red. Those suites live with their code, in
 [`libs/osc/tests/`](../../libs/osc/tests/) and
 [`adapters/liveCapture/vmc/tests/`](../../adapters/liveCapture/vmc/tests/).
 
@@ -131,6 +132,15 @@ with edges is best asked through the header that carries them: `SkeletonMap.h`
 pulls a canonical humanoid header and two OpenUSD value-type headers into the
 consumer's translation unit, so a config that forgot a required package fails at
 the first `#include` rather than at link time.
+
+So is *which call* it makes, for a static package whose platform link line is
+carried by one archive member. `liveTransport`'s fixture calls into
+`UdpReceiver` — the one call there that needs no socket — because a fixture that
+called only the diagnostic vehicle would never pull the member with the socket
+symbols in, and would link a package whose `ws2_32` had gone missing while
+reporting criterion 4 met. It binds nothing and names no port: a packaging
+fixture that took one would go red on a host where something else already held
+it, which is a fact about the machine and not about the package.
 
 Three bundles have no fixture here and never will: `usdVrmFileFormat`,
 `usdVrmPackageResolver` and `usdVrmaFileFormat` export no target and install no
