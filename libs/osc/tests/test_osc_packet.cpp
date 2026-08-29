@@ -239,7 +239,9 @@ TestEveryOscTypeTagIsSized()
     assert(arguments[4].blob.size == blob.size());
     assert(std::memcmp(arguments[4].blob.bytes, blob.data(), blob.size()) == 0);
     assert(arguments[5].integer == 0x0123456789abcdefLL);
-    assert(arguments[6].integer == 1);
+    // 't' lands in its own field, and leaves `integer` alone.
+    assert(arguments[6].timeTag == 1);
+    assert(arguments[6].integer == 0);
     assert(arguments[7].real == 0.25);
     assert(arguments[8].integer == 'A');
     assert(arguments[9].integer == 0x11223344);
@@ -710,20 +712,21 @@ TestArgumentSignednessFollowsTheWire()
     assert(arguments[3].integer == 0xffffffffLL);
     assert(arguments[4].integer == 0xffffffffLL);
 
-    // 't' is a 64-bit NTP time tag and it shares 'h''s signed path, so a real
-    // one reads as a negative integer -- NTP seconds have had their high bit
-    // set since 1968, so that is every time tag a sender would emit today
-    // rather than a far-future edge. Recorded rather than endorsed:
-    // `OscArgument` has no unsigned field to widen into, no sender either
-    // adapter reads emits a 't' argument, and the move that brought this file
-    // here changes no behaviour by construction. It is a question this decoder
-    // owes an answer to (plan §10), written down here so that answer is a
-    // decision rather than a rediscovery.
-    assert(arguments[5].integer
-           == static_cast<std::int64_t>(0xe9a1000000000000ULL));
-    assert(arguments[5].integer < 0);
-    // A *bundle's* time tag is unaffected: it lands in `OscPacket::timeTag`,
-    // which is a `std::uint64_t`.
+    // 't' is a 64-bit NTP time tag and it does **not** share 'h''s signed path,
+    // which is the one behaviour OSC-0 recorded as wrong and left standing. A
+    // time tag any sender would emit today has its high bit set -- NTP seconds
+    // have since 1968 -- so on the signed path the normal case read as a
+    // negative number rather than a far-future edge reading oddly. It has its
+    // own unsigned field now, spelled the same as the packet's, and `integer`
+    // is left at zero on the same rule every other tag here follows.
+    assert(arguments[5].timeTag == 0xe9a1000000000000ULL);
+    assert(arguments[5].integer == 0);
+    // The value that made this worth fixing: on the old path this was the
+    // assertion, and it is what a caller reading `integer` still gets.
+    assert(static_cast<std::int64_t>(arguments[5].timeTag) < 0);
+    // A *bundle's* time tag was never affected: it lands in
+    // `OscPacket::timeTag`, which has always been a `std::uint64_t`. The two
+    // spellings of one concept agree now.
 }
 
 void

@@ -231,13 +231,22 @@ private:
                 argument.integer = ReadUInt32(data);
                 break;
             case 'h':
-            case 't':
                 if (!Fixed(bytes, size, &offset, 8, base, address, tag,
                            &data)) {
                     return false;
                 }
                 argument.integer =
                     static_cast<std::int64_t>(ReadUInt64(data));
+                break;
+            // Not `h`'s path, though the wire size is the same: an NTP time tag
+            // is unsigned and has had its high bit set since 1968, so sharing
+            // the signed field made the normal case the wrong one.
+            case 't':
+                if (!Fixed(bytes, size, &offset, 8, base, address, tag,
+                           &data)) {
+                    return false;
+                }
+                argument.timeTag = ReadUInt64(data);
                 break;
             case 'd':
                 if (!Fixed(bytes, size, &offset, 8, base, address, tag,

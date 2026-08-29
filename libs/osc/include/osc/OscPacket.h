@@ -10,7 +10,7 @@
 // (roadmap/adapters-mocopi-vmc-ardy.md §5, roadmap/osc-and-vrchat-trackers.md
 // §4).
 //
-// Three rules are worth stating before the API, because each is a decision
+// Four rules are worth stating before the API, because each is a decision
 // rather than a detail.
 //
 // **A datagram decodes entirely or not at all.** A bundle whose third element
@@ -84,13 +84,25 @@ struct OscBlob
 //     f    | 4                    | real
 //     s S  | padded string        | text
 //     b    | 4 + padded blob      | blob
-//     h t  | 8                    | integer
+//     h    | 8                    | integer
+//     t    | 8                    | timeTag
 //     d    | 8                    | real
 //     c    | 4                    | integer (the character code)
 //     r m  | 4                    | integer (the raw 32 bits)
 //     T F  | 0                    | integer (1 / 0)
 //     N I  | 0                    | nothing
 //     [ ]  | 0                    | nothing (array delimiters)
+//
+// **`t` has its own field, and that is a correction rather than a preference.**
+// It used to share `h`'s signed 64-bit path, which made every NTP time tag a
+// real sender emits read as a *negative* `integer`: NTP seconds have had their
+// high bit set since 1968, so the wrong answer was the normal case rather than
+// a far-future edge. Splitting it out rather than widening `integer` is what
+// makes the two spellings of one concept agree — a bundle's time tag has always
+// landed in `OscPacket::timeTag`, unsigned, and an argument's now lands in a
+// field of the same name and the same type. `integer` is left at zero for a
+// `t`, on the same rule the rest of this table follows: nothing is coerced, and
+// a caller reading the wrong field gets zero rather than a plausible number.
 //
 // `text` and `blob` point into the datagram the caller passed in. They are
 // valid exactly as long as it is: the decoder copies no payload, because a live
@@ -99,6 +111,8 @@ struct OscArgument
 {
     char tag = '\0';
     std::int64_t integer = 0;
+    // Set for a `t` argument only. Unsigned, because an NTP time tag is.
+    std::uint64_t timeTag = 0;
     double real = 0.0;
     std::string_view text;
     OscBlob blob;
