@@ -15,6 +15,18 @@ Current schema contract version: **1**.
 
 ### Fixed
 
+- **An adapter could export an imported target its package config never
+  resolved.** A `PUBLIC` dependency lands in the exported target's
+  `INTERFACE_LINK_LIBRARIES`, so a consumer doing `find_package` on the
+  *installed* adapter fails at generate time with "the target was not found" —
+  and CMake does not go looking for it, even when that package's own config is
+  in the same prefix. Nothing in the tree could see it: a composed workspace
+  build and `ost library build` both resolve every target in-tree and never open
+  a config file, so the path that breaks is the standalone configure that
+  roadmap §12 asks for by hand. Each adapter's boundary check now cross-checks
+  its link line against its config template, so an unresolved edge is a red test
+  name.
+
 - **Every boundary check located `dumpbin` under a glob naming one Visual Studio
   release.** `dumpbin` is not on `PATH` outside an MSVC developer shell, so each
   `check_boundaries.py` falls back to searching Program Files — for

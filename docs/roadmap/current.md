@@ -166,7 +166,7 @@ test completes with nothing installed.
   `openstrata.ci.yaml` values; regeneration never touches them and a green PR
   lane proves nothing about it. The `ost` release contract (`release:` in the
   matrix) is the eventual fix; adopting it is not scoped yet.
-- ⬜ **`vrmAdapterMocopi`'s standalone build is unverified since it grew a
+- 🚧 **`vrmAdapterMocopi`'s standalone build is unverified since it grew a
   platform link**
   ([#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)). The
   scaffold commit measured it; the receiver added `ws2_32` and an edit to the
@@ -175,6 +175,19 @@ test completes with nothing installed.
   rather than an imported target — and a prediction belongs in an issue rather
   than in a claim. A POSIX run of the same check is worth more than the Windows
   one, since there it verifies the *absence* of a threading link.
+
+  **The imported-target half of this stopped being a prediction on 2026-08-29,
+  and is now a check rather than a habit.** OSC-3 gave `vrmAdapterVmc` and
+  `vrmAdapterVrchatOsc` a `PUBLIC osc::osc` and neither package config gained a
+  `find_dependency(osc)` — so both installed packages named a target no consumer
+  could resolve, and CMake does not search for it even with that package's own
+  config sitting in the same prefix. **All 17 lanes were green**, because a
+  composed build and `ost library build` both resolve every target in-tree and
+  never open a config file. Each adapter's `check_boundaries.py` now cross-checks
+  its link line against its config template, verified by injection in both
+  directions. What that closes is the *imported-target* half; the raw-library
+  half this entry is actually about — `ws2_32` on a POSIX host — is unchanged and
+  still needs the run.
 - ⬜ **An adapter artifact exists now, and no lane publishes one.** `ost` 0.22.3
   composes `requires.libraries` in the per-library verb, so
   `ost library package adapters/liveCapture/mocopi` produces

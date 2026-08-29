@@ -234,6 +234,47 @@ def main() -> int:
                     "motionRuntime, liveTransport, osc and the platform's own "
                     f"primitives; CMakeLists.txt links `{token}`")
 
+    # An exported edge the package **config** does not resolve.
+    #
+    # The two checks above are about what may be linked; this one is about
+    # whether a consumer of the *installed* package can link it at all. A
+    # `PUBLIC` dependency lands in the exported target's
+    # `INTERFACE_LINK_LIBRARIES`, so `find_package(vrmAdapterVrchatOsc)` re-creates a target
+    # naming `X::Y` — and if the config never called `find_dependency(X)`,
+    # CMake fails at generate time with "the target was not found". It does not
+    # search for it, even when that package's config is sitting in the same
+    # prefix.
+    #
+    # **No other check in this repository can see it**, which is why it is
+    # worth a rule of its own rather than a review habit. A composed workspace
+    # build resolves every target in-tree and never opens a config file; `ost
+    # library build` does the same. The path that breaks is a standalone
+    # configure of this adapter or of its CLI — which is a stated PR
+    # requirement (roadmap §12) and a manual step. Measured 2026-08-29: both
+    # `vrmAdapterVmc` and `vrmAdapterVrchatOsc` grew a `PUBLIC osc::osc` and
+    # neither config gained a `find_dependency(osc)`; all 17 CI lanes were
+    # green and a two-line consumer project could not configure.
+    #
+    # One direction only. Every linked package must be resolved; a resolved
+    # package that is not linked is not an error — `pxr` is exactly that here,
+    # guarded and present because a transitive Gf target needs it.
+    config_path = source / "cmake" / "vrmAdapterVrchatOscConfig.cmake.in"
+    config = config_path.read_text(encoding="utf-8")
+    resolved = set(re.findall(r"find_dependency\s*\(\s*([A-Za-z0-9_]+)", config))
+    for arguments in re.findall(r"target_link_libraries\s*\((.*?)\)", cmake,
+                                re.DOTALL):
+        for token in arguments.split():
+            if "::" not in token:
+                continue
+            package = token.split("::")[0]
+            if package == "vrmAdapterVrchatOsc":
+                continue
+            if package not in resolved:
+                errors.append(
+                    f"{token} is linked but {config_path.name} never calls "
+                    f"find_dependency({package}); the installed package "
+                    "cannot be consumed")
+
     # Refuse a static archive outright rather than inspecting one and finding
     # nothing. An archive records no imports, so this check would pass on any
     # input whatsoever.
