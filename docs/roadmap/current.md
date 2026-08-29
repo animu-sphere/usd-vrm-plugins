@@ -98,10 +98,32 @@ test completes with nothing installed.
       clean prefix, and is shown to **fail against the pre-fix config** before it
       is trusted — `osc` first, because its edge set is empty and a failure can
       only be the config file itself, then `vrmAdapterVmc`, because that is the
-      package the defect was in;
-- [ ] the driver runs by hand on a workstation before any lane exists, and
+      package the defect was in *(PKG-1, 2026-08-29: the `osc` half is done —
+      `tests/consumer/osc/` configures, links and runs against a prefix holding
+      that package's seven files and nothing else, and each of the five criteria
+      a single host can answer has been seen to **fail**: four mutations of the
+      installed prefix and three edits to the fixture, every one of them
+      asserting it changed a byte first. The mutations break the prefix rather
+      than the source tree, so none of them is a `git stash` that might be a
+      silent no-op. **This line stays open for `vrmAdapterVmc`**, which is the
+      package the defect was actually in and the first fixture with a
+      `find_dependency` to strip — `osc` has none, and its driver refuses that
+      mutation by name rather than reporting a catch it did not make)*;
+- [x] the driver runs by hand on a workstation before any lane exists, and
       answers which prefix a consumer actually gets: `cmake --install` and an
-      extracted `ost` package are not the same artifact;
+      extracted `ost` package are not the same artifact *(PKG-2, 2026-08-29:
+      `scripts/check_package_consumer.py`, and **for a plain library they are**
+      — the two prefixes hold the same seven files under the same names, with
+      `oscConfig.cmake` and `oscTargets-release.cmake` byte-identical between
+      them. Only the archive differs, because `ost` built it with the runtime's
+      toolchain and the workstation used the local one, and the same fixture
+      linked either. The staging difference the question anticipated belongs to
+      a **bundle**, which carries its dependencies' link halves — so `vrmSchema`
+      is the one row where the two prefixes could still diverge, and it has not
+      been run. The driver reads PACKAGE_CONTRACT.md §4 for every package fact
+      it needs rather than keeping a second table, which is also how the twelve
+      `find_package` rows and the six refusals were confirmed from outside the
+      document)*;
 - [ ] all twelve `find_package` packages pass, with each failure fixed in the
       **config** and never in the fixture;
 - [ ] a PR-gating cell on all three OS builds the consumers from a prefix that

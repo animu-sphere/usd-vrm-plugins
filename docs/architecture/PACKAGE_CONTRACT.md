@@ -16,7 +16,8 @@ Everything here is a promise to a consumer **outside** the repository. A claim
 in this document is met when a clean prefix and a fixture project that names no
 workspace target can configure, build and link against it — see
 [roadmap/packaging-hardening.md](../roadmap/packaging-hardening.md) for the lane
-that will check it, and §5 below for why prose is not enough.
+that will check every package, `scripts/check_package_consumer.py` for the
+driver that checks one today, and §5 below for why prose is not enough.
 
 ## 1. Why this document exists
 
@@ -126,7 +127,7 @@ standalone bundle build in CI is exactly that consumer.
 | `motionSource` | `motionSource::motionSource` | `include/motionSource/` | `pxr`, `motionCore` | — | yes | unmeasured |
 | `motionBvh` | `motionBvh::motionBvh` | `include/motionBvh/` | `motionSource` | — | yes | unmeasured |
 | `liveTransport` | `liveTransport::liveTransport` | `include/liveTransport/` | `Threads` (non-Windows) | `ws2_32` (Windows), `Threads::Threads` (elsewhere) | **no** | unmeasured |
-| `osc` | `osc::osc` | `include/osc/` | — | — | **no** | unmeasured |
+| `osc` | `osc::osc` | `include/osc/` | — | — | **no** | **measured** |
 
 `vrmContainer` is the only `SHARED` library here; every other row is `STATIC`
 and defines a `<NAME>_STATIC` compile definition `PUBLIC`, which a consumer
@@ -136,6 +137,17 @@ inherits from the imported target and must not set by hand.
 oversight: one source file, two headers, no workspace edge and no platform
 library, which is why its archive is seven files where the transport leaf's is
 nine (WORKSPACE.md §5).
+
+It is also the first row in this document to say **measured**, on 2026-08-29,
+and it says so because an external consumer configured, built, linked and *ran*
+against it from a prefix holding those seven files and nothing else
+(`tests/consumer/osc/`, driven by `scripts/check_package_consumer.py`). Its
+empty edge set is what made it the right one to measure first: with no
+`find_dependency` to resolve, a failure could only have been the config file
+itself, so the run says something about the fixture as well as about the
+package. What it does *not* say is anything about criterion 6 — one host cannot
+answer whether three agree, and PKG-4's lane is where that column stops being
+about a workstation.
 
 ### 4.3 Adapters
 
@@ -159,8 +171,9 @@ should notice they are missing when it does.
 
 **Unmeasured** in the tables above is a statement about evidence, not a
 prediction of failure. Each of those configs is written to the rules in §3 and
-was reviewed against them; none has been configured from a clean prefix by a
-project that names no workspace target.
+was reviewed against them; as of 2026-08-29 one of them — `osc` — has also been
+configured from a clean prefix by a project that names no workspace target, and
+the rest have not.
 
 That distinction is the whole reason this document is not the deliverable.
 Seventeen green lanes did not catch a package naming an unresolvable target, and
@@ -181,7 +194,22 @@ required packages **and nothing else**:
    platform difference says why not.
 
 Criterion 5 is the one that makes the others mean anything, and it is the one a
-fixture inside the workspace loses by accident.
+fixture inside the workspace loses by accident. `tests/consumer/` therefore
+holds fixtures that nothing in the workspace builds, and
+`scripts/check_package_consumer.py` copies the tree outside the repository
+before configuring it, so the accident is not available to be made. That driver
+reports 1–5 for one named package on one host; 6 is the criterion that needs
+three, and PKG-4's lane is where the closure this one records gets compared.
+
+**Each of the six is verified by having been seen to fail.** A criterion that
+has only ever printed *met* is indistinguishable from one that is not checked,
+so 1–4 were each broken in the installed prefix — the config deleted, its
+targets include removed, its `find_dependency` lines stripped, its header root
+deleted — and 5 by three edits to the fixture itself, with every mutation
+asserting it changed a byte before the run it justifies. The mutations are
+`--mutate` in that driver, and they break the *prefix* rather than the source
+tree, so nothing in this loop depends on a `git stash` that might be a silent
+no-op.
 
 ## 6. Changing this document
 
