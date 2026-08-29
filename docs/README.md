@@ -11,7 +11,7 @@ contract wins — structural changes go there first, in their own PR.
 
 | Category | Answers | Start here |
 | --- | --- | --- |
-| [architecture/](architecture/) | How the workspace is structured: bundle identities, dependency directions, artifact naming. | [WORKSPACE.md](architecture/WORKSPACE.md) |
+| [architecture/](architecture/) | How the workspace is structured: bundle identities, dependency directions, artifact naming — and what each installed package promises a consumer. | [WORKSPACE.md](architecture/WORKSPACE.md) · [PACKAGE_CONTRACT.md](architecture/PACKAGE_CONTRACT.md) |
 | [guides/](guides/) | How to accomplish a task. | [INSTALL.md](guides/INSTALL.md) · [VIEWING_MOTION.md](guides/VIEWING_MOTION.md) |
 | [reference/](reference/) | Factual contracts: what is supported, on what. | [CAPABILITY_MATRIX.md](reference/CAPABILITY_MATRIX.md) |
 | [roadmap/](roadmap/) | What is planned next (only incomplete work). | [README.md](roadmap/README.md) |
@@ -39,16 +39,25 @@ contract wins — structural changes go there first, in their own PR.
 - [architecture/WORKSPACE.md](architecture/WORKSPACE.md) is the binding workspace
   contract — the source of truth for bundle identities, dependency directions,
   artifact naming, and **Workspace Phase 0–8**.
+- [architecture/PACKAGE_CONTRACT.md](architecture/PACKAGE_CONTRACT.md) is the
+  binding **distribution** contract — per package, the name a consumer writes in
+  `find_package`, the target it links, the header root, the packages that must
+  resolve first, and whether standalone installability has been *measured* or
+  only reviewed. It answers "what do I write to consume this", which WORKSPACE.md
+  §5 was repeatedly asked and never stated; §5 keeps naming and aggregate
+  membership. Added 2026-08-29.
 
-Four milestone plans sit in [roadmap/](roadmap/) rather than here, because they
-are plans and not policy: the [live input adapters](roadmap/adapters-mocopi-vmc-ardy.md),
+Five milestone plans sit in [roadmap/](roadmap/) rather than here, because they
+are plans and not policy: the [packaging hardening lane](roadmap/packaging-hardening.md),
+the [live input adapters](roadmap/adapters-mocopi-vmc-ardy.md),
 the [recorded motion sources](roadmap/recorded-motion-sources.md), the
 [shared OSC foundation and VRChat OSC Trackers input](roadmap/osc-and-vrchat-trackers.md),
-and the [OpenExec foundation](roadmap/openexec-foundation.md). All four defer
+and the [OpenExec foundation](roadmap/openexec-foundation.md). All five defer
 every structural claim to WORKSPACE.md and every motion claim to the motion
 policy, and **none states its own release version** — that is the
 [roadmap status table](roadmap/README.md#status-at-a-glance), which exists
-because two of them traded places once already.
+because two of them traded places once already, and has since re-ordered twice
+more.
 
 The three input tracks split the layer twice, and each split is a difference in
 what the code argues about rather than an organisational preference. **Live
@@ -66,11 +75,20 @@ duplicate, which is a structural change and therefore reaches
 [WORKSPACE.md](architecture/WORKSPACE.md) §1 and §2 before it reaches any
 adapter.
 
+The packaging track is the odd one out and is deliberately first. It adds no
+input, no format and no node: it checks that the boundaries the other four
+created can be consumed from **outside** this repository, which nothing here has
+ever done — a composed build resolves every target in-tree and never opens a
+package config file, so a package can name an unresolvable target and CI stays
+green. It did, on 2026-08-29.
+
 The OpenExec track attaches to that finished pipeline afterwards, and since
 2026-08-03 it is also *scheduled* afterwards, so its parity comparison runs on
 sessions recorded from a real device rather than on generated fixtures. That is a
 one-way relationship: the input tracks supply evidence, and nothing in them reads
-back.
+back. Since 2026-08-29 it is scheduled behind the *producer* tracks as well, for
+the same reason one step further out: a compute layer over contracts that are
+still moving evaluates a boundary twice instead of once.
 
 The three phase systems are separate and always qualified; see
 [roadmap/README.md](roadmap/README.md#three-sequences-deliberately-separate).
