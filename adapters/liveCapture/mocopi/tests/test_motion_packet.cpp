@@ -25,6 +25,8 @@
 #include "vrmAdapterMocopi/PacketCapture.h"
 #include "vrmAdapterMocopi/PacketChunk.h"
 
+#include "corpus.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -1011,21 +1013,7 @@ int
 CheckCorpus(const std::filesystem::path& directory)
 {
     std::vector<std::filesystem::path> files;
-    for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-        // `is_regular_file` as well as the extension, which is what the format
-        // suite does over this same directory. The corpus README invites an
-        // operator to drop a BVH Sender recording in here, and a directory or a
-        // dangling symlink with the right suffix should read as "that is not a
-        // capture" rather than as a parse failure on line 0.
-        if (entry.is_regular_file()
-            && entry.path().extension() == ".mocopipackets") {
-            files.push_back(entry.path());
-        }
-    }
-    std::sort(files.begin(), files.end());
-    if (files.empty()) {
-        std::fprintf(stderr, "%s: no captures found\n",
-                     directory.string().c_str());
+    if (!vrmAdapterMocopiTests::CollectCaptures(directory, &files)) {
         return 1;
     }
 

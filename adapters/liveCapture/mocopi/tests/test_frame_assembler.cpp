@@ -43,6 +43,7 @@
 #include "vrmAdapterMocopi/PacketCapture.h"
 #include "vrmAdapterMocopi/SkeletonMap.h"
 
+#include "corpus.h"
 #include "fixtures.h"
 
 #include <algorithm>
@@ -865,19 +866,7 @@ int
 CheckCorpus(const std::filesystem::path& directory)
 {
     std::vector<std::filesystem::path> files;
-    for (const std::filesystem::directory_entry& entry :
-         std::filesystem::directory_iterator(directory)) {
-        // `is_regular_file` as well as the extension, so a directory that
-        // happens to be named like a capture is not read as one — the guard the
-        // other passes over this directory already use.
-        if (entry.is_regular_file()
-            && entry.path().extension() == ".mocopipackets") {
-            files.push_back(entry.path());
-        }
-    }
-    std::sort(files.begin(), files.end());
-    if (files.empty()) {
-        std::fprintf(stderr, "no captures in %s\n", directory.string().c_str());
+    if (!vrmAdapterMocopiTests::CollectCaptures(directory, &files)) {
         return 1;
     }
 
