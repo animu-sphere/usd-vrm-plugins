@@ -133,14 +133,56 @@ test completes with nothing installed.
       it needs rather than keeping a second table, which is also how the twelve
       `find_package` rows and the six refusals were confirmed from outside the
       document)*;
-- [ ] all twelve `find_package` packages pass, with each failure fixed in the
-      **config** and never in the fixture;
+- [x] all twelve `find_package` packages pass, with each failure fixed in the
+      **config** and never in the fixture *(PKG-3, 2026-08-30: twelve of twelve
+      configure, build, link and **run** from a prefix holding their own
+      transitive closure and nothing else, and **no config file failed** — a
+      prediction the track got wrong, for a reason worth keeping: the §1 defect
+      had already been fixed in both packages that shipped it, and the other
+      eleven configs were written to §3's rules. The compliance is now measured
+      rather than reviewed. What did fail was the harness, three times, and each
+      one would have made a later run lie: the blanket `find_dependency`
+      mutation could **accuse a fixture of an edit that changed nothing** (every
+      edge of `liveTransport`'s config is conditional, so on Windows it deletes
+      a line inside an `if(NOT WIN32)` and then blames the one file that was not
+      changed — now **inconclusive** for a conditional edge and refused up front
+      only where masking makes the mutation inert on every host, which is the
+      distinction that keeps `vrmSchema`'s real catch); criterion 5 refused a
+      **namespace no consumer can avoid writing** (`motionBvh` hands back a
+      `motionSource::SourceSkeleton`, so the check now asks per file — an
+      identity in CMake is an edge, an `#include` of a sibling's header root in
+      C++ is the violation, and a name is neither); and **criterion 3 cannot see
+      a missing `find_dependency(pxr)`** at all, because OpenUSD's imported
+      targets are unnamespaced and a closure walk has nothing to refuse in a
+      bare `gf` — which makes the header each fixture includes the only thing
+      between a missing external edge and a passing run, and a rule PKG-4's lane
+      inherits. Forty-eight mutations of the installed prefix: forty-one
+      caught, five refused up front where masking makes them inert on any host,
+      and two inconclusive where the only edge carries a condition this host
+      does not meet. Six fixture edits were caught statically by criterion 5,
+      before a build. Two
+      shapes measured for the first time — the only `SHARED` package, whose
+      contract is not finished at the link, and the one *bundle* with a package,
+      which stages its shared object in `lib/` where a library stages it in
+      `bin/`. Half of [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)
+      closes with it: `vrmAdapterMocopi`'s imported-target half is measured, and
+      the raw-library half needs a POSIX host)*;
 - [ ] a PR-gating cell on all three OS builds the consumers from a prefix that
       holds no build tree, and the three platforms agree about the package
       closure except where a documented difference says why not
       (`ws2_32` vs `Threads::Threads` is the one expected);
-- [ ] `scripts/check_docs.py` refuses a `*Config.cmake.in` with no row in
-      PACKAGE_CONTRACT.md, and a row naming a package that does not exist.
+- [x] `scripts/check_docs.py` refuses a `*Config.cmake.in` with no row in
+      PACKAGE_CONTRACT.md, and a row naming a package that does not exist
+      *(2026-08-30: five ways to fail it, each made to fail before the check was
+      believed — a config template with no row, a row claiming its package
+      exports no target beside that package's own config, a row naming an
+      identity no manifest declares, a row promising a target nothing installs,
+      and a row marked **reserved** beside its own config, which without a case
+      of its own falls through both halves. Reserved rows are exempt from the
+      existence half by design.
+      Landed **before** the CI cell rather than after it: the document it checks
+      is five days old, so the drift has had no time to happen, which is the
+      moment to add such a check rather than the moment after)*.
 
 **Foundation**
 

@@ -2,7 +2,8 @@
 
 One CMake project per package, each one an *external consumer*: it calls
 `find_package`, links the exported target, includes a public header, and knows
-nothing else about this workspace.
+nothing else about this workspace. Twelve of them, which is every package this
+workspace installs.
 
 Nothing here is built by the workspace. No `add_subdirectory` reaches this
 directory, no ctest registers it, and `scripts/check_package_consumer.py` copies
@@ -31,6 +32,10 @@ These fixtures are the consumer that is not us.
 ```sh
 python scripts/check_package_consumer.py osc
 ```
+
+Four of the twelve need no OpenUSD and run exactly like that: `osc`,
+`vrmContainer`, `liveTransport` and `vrmAdapterVrchatOsc`. The other eight take
+a `--extra-prefix`.
 
 The driver installs the package and its required packages into a scratch prefix
 holding nothing else, configures the fixture against that prefix alone, builds
@@ -92,6 +97,16 @@ something else already resolves that package, so:
   accusation against the one file in the loop that was not changed, so it is
   never the answer to an inert edit.
 
+Without `--dependency` the mutation strips **every** `find_dependency`, and the
+same three outcomes apply to it — decided by which kind of inertness is in play.
+An edge every other package in the prefix also declares is inert on any host, so
+a package with nothing but those is refused before anything is installed. An
+edge with a *condition* on it is a question this driver does not answer: those
+runs are made, and a pass ends inconclusive. That distinction is not academic —
+`liveTransport`'s only edge is inside `if(NOT WIN32)` and is unreached on
+Windows, while `vrmSchema`'s is inside `if(NOT pxr_FOUND)` and is reached by
+every clean consumer, so its blanket mutation is a real catch.
+
 ## Adding one
 
 Copy `osc/` and change three things: the `project()` name, the `PACKAGE` and
@@ -102,16 +117,36 @@ point rather than a convenience: twelve fixtures each writing their own
 `find_package` and their own `if(TARGET)` would be twelve chances for one of
 them to check less than the others and still print a pass.
 
+The third of those three is the one that takes thought, and PKG-3 measured why.
+**Include the header that carries the package's edges**, not the smallest one:
+for every package whose external edge is OpenUSD, the include is the *only*
+thing between a missing `find_dependency(pxr)` and a passing run, because
+OpenUSD's imported targets are unnamespaced and the closure walk has nothing to
+refuse in a bare `gf`. **Call something whose archive member carries the edges
+the headers do not show**: `vrmRetarget` meets the runtime layer only at the
+link, and `vrmAdapterVrchatOsc` meets the decoder only there, so a fixture that
+constructed a value and stopped would compile, link, and never ask.
+
 Three rules, all of them mechanically enforced by the driver's criterion-5 pass
 — which reads [`ConsumerCriteria.cmake`](ConsumerCriteria.cmake) as well as the
 fixture's own two files, because an identity added to the shared module would
 otherwise leak into every fixture while all of them reported criterion 5 met —
 and all of them verified by mutating a fixture until each was caught:
 
-- **Name no workspace identity but your own.** A fixture that links a sibling
-  package is testing the prefix's contents, not the package's contract.
+- **Name no workspace identity but your own, in CMake.** A fixture that
+  `find_package`s or links a sibling is testing the prefix's contents, not the
+  package's contract. This applies to `CMakeLists.txt` and to the shared module,
+  which are the only two files that can create an edge.
+- **Include no sibling's header root, in C++.** `main.cpp` creates no edge, so
+  the rule there is about includes rather than names. A *name* is often
+  unavoidable and always fine: `motionBvh` hands back a
+  `motionSource::SourceSkeleton`, so every consumer of it writes that namespace,
+  and the type arrives through `motionBvh`'s own public header — which is what
+  its `find_dependency` exists for. Reaching `<motionSource/…>` directly is the
+  violation, because that is the fixture depending on what else the prefix holds.
 - **Reach no path out of this directory.** `add_subdirectory`, `../../`, and
-  `CMAKE_SOURCE_DIR` are all refused; each of them can find the source tree.
+  `CMAKE_SOURCE_DIR` are all refused in every file; each of them can find the
+  source tree.
 - **Include a public header and call something.** A fixture that only links
   proves the config file and not the header install, and it keeps proving it
   after the headers stop being installed.
@@ -121,8 +156,10 @@ and all of them verified by mutating a fixture until each was caught:
 These are packaging fixtures, not tests of the library. `main.cpp` asks the
 smallest question the package can answer — for `osc`, whether an address comes
 back; for `vrmAdapterVmc`, whether a bone name goes in and the same name comes
-out — because anything larger makes a packaging failure look like a decoder
-failure the first time it goes red. Those suites live with their code, in
+out; for `vrmContainer`, whether a hand-assembled container parses; for
+`vrmSchema`, whether a generated class knows its own attribute names — because
+anything larger makes a packaging failure look like a decoder failure the first
+time it goes red. Those suites live with their code, in
 [`libs/osc/tests/`](../../libs/osc/tests/) and
 [`adapters/liveCapture/vmc/tests/`](../../adapters/liveCapture/vmc/tests/).
 
@@ -131,6 +168,15 @@ with edges is best asked through the header that carries them: `SkeletonMap.h`
 pulls a canonical humanoid header and two OpenUSD value-type headers into the
 consumer's translation unit, so a config that forgot a required package fails at
 the first `#include` rather than at link time.
+
+So is *which call* it makes, for a static package whose platform link line is
+carried by one archive member. `liveTransport`'s fixture calls into
+`UdpReceiver` — the one call there that needs no socket — because a fixture that
+called only the diagnostic vehicle would never pull the member with the socket
+symbols in, and would link a package whose `ws2_32` had gone missing while
+reporting criterion 4 met. It binds nothing and names no port: a packaging
+fixture that took one would go red on a host where something else already held
+it, which is a fact about the machine and not about the package.
 
 Three bundles have no fixture here and never will: `usdVrmFileFormat`,
 `usdVrmPackageResolver` and `usdVrmaFileFormat` export no target and install no

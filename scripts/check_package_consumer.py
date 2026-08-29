@@ -45,14 +45,19 @@ changed a byte, because a mutation that matched nothing and reported a catch is
 the same lie in a smaller package.
 
 **Changing a byte is not the same as breaking something**, and only exit 1 says
-the fixture is at fault, so the two are kept apart. `--dependency` removes one
-`find_dependency` line, and that line is inert whenever something else resolves
-the same package -- `motionRuntime` requires `motionCore`, and a conditional
-edge is not reached at all on a host where its condition is false. The first is
-refused before anything is installed, from the contract; the second cannot be
-predicted here and ends as **exit 2, inconclusive**. Neither is exit 1: an
+the fixture is at fault, so the two are kept apart -- for the named form and for
+the blanket one alike. A `find_dependency` is inert whenever something else
+resolves the same package (`motionRuntime` requires `motionCore`), and it may be
+inert because its condition does not hold on this host. Those are different
+kinds of fact and get different answers: masking is readable from the contract
+and true on every host, so it is refused before anything is installed; a
+condition is a question this driver evaluates in neither direction, so the run
+is made and a pass ends as **exit 2, inconclusive**. Neither is exit 1: an
 accusation against the one file in this loop that was not changed is the
-failure mode this driver exists to avoid, not one it may produce itself.
+failure mode this driver exists to avoid, not one it may produce itself. Nor is
+a conditional edge refused -- `vrmSchema`'s `find_dependency(pxr)` is inside
+`if(NOT pxr_FOUND)`, which every clean consumer reaches, and refusing that run
+would have thrown a real catch away.
 """
 from __future__ import annotations
 
@@ -190,6 +195,34 @@ def other_resolvers(package: str, dependency: str, rows: dict) -> list:
             if dependency in required_packages(rows[name])]
 
 
+def blanket_inertness(package: str, row: dict, rows: dict) -> tuple:
+    """How much of `--mutate no-dependency` (with no name) can bite here.
+
+    Returns `(masked, conditional, losable)`: the declared edges another package
+    in the prefix also resolves, the ones the contract attaches a condition to,
+    and the ones that are neither. The three are what tell the mutation's two
+    unhappy outcomes apart, and they are not the same kind of fact.
+
+    **Masking is a fact about the prefix**, readable here and true on every
+    host: if `motionRuntime` requires `motionCore` too, removing `motionCore`
+    from a config beside it breaks nothing, anywhere.
+
+    **A condition is a question about the host**, and this driver evaluates
+    none. `liveTransport`'s `find_dependency(Threads)` is inside `if(NOT WIN32)`
+    and `vrmSchema`'s `find_dependency(pxr)` is inside `if(NOT pxr_FOUND)` --
+    the first is not reached on Windows and the second is reached on every clean
+    consumer, and nothing in the contract's cell says which. So a conditional
+    edge is not evidence that the mutation is inert; it is only a reason not to
+    call a pass the fixture's fault."""
+    declared = required_packages(row)
+    masked = [d for d in declared if other_resolvers(package, d, rows)]
+    conditional = [d for d in declared
+                   if d not in masked and dependency_qualification(row, d)]
+    losable = [d for d in declared
+               if d not in masked and d not in conditional]
+    return masked, conditional, losable
+
+
 def workspace_closure(package: str, rows: dict) -> list:
     """Every workspace package that must be installed before `package` can be,
     in an order that installs each after its own dependencies.
@@ -279,13 +312,62 @@ def check_fixture(package: str, row: dict, fixture: pathlib.Path) -> list:
         if not path.exists():
             fail_setup(f"fixture {fixture} cannot be checked: {path} is missing")
 
-    identities = set(contract_rows()) - {package}
-    for path in (cmakelists, main, shared):
+    rows = contract_rows()
+    identities = set(rows) - {package}
+
+    # A CMake file is where an identity becomes an *edge*: `find_package` and
+    # `target_link_libraries` are the two ways a fixture can quietly consume a
+    # sibling, and both spell the identity out. So any mention of another one
+    # there is the violation -- in the fixture's own file and in the shared
+    # module, which is copied beside every fixture and included by all of them.
+    for path in (cmakelists, shared):
         body = strip_comments(path)
         for other in sorted(identities):
             if re.search(rf"\b{re.escape(other)}\b", body):
                 reasons.append(f"{path.name} names the workspace identity "
                                f"`{other}`, which is not the package under test")
+
+    # `main.cpp` cannot create an edge, and applying the CMake rule to it was
+    # too coarse for the first package whose public API hands back a lower
+    # layer's type. `ExtractBvhSource` takes a `motionSource::SourceSkeleton*`,
+    # so every consumer of `motionBvh` writes that namespace whether or not it
+    # has ever heard of the package: the type arrives through *this* package's
+    # own public header, which is what a `find_dependency` is for. Refusing the
+    # spelling would mean no fixture could exercise such a package at all,
+    # leaving the row with the most interesting closure in the table measured by
+    # the weakest fixture in it.
+    #
+    # What a `.cpp` *can* do wrong is reach a sibling's header root directly.
+    # That makes the fixture depend on whatever else the prefix happens to hold
+    # rather than on this package's contract -- criterion 5's own failure, in
+    # the one form this file can express it. So the check here is on the include
+    # list rather than on the whole body, and the roots come from the contract's
+    # `Public headers` cells rather than from the identity names.
+    #
+    # The include list comes out of the *stripped* body, for the same reason
+    # every other part of this check does: an `#include` inside a comment is
+    # prose. Reading the raw text got both directions wrong at once -- a fixture
+    # quoting `<motionSource/SourceSkeleton.h>` in a comment to explain why it
+    # does not include one was a violation, and a fixture whose own public
+    # header had been commented out still satisfied the include requirement,
+    # which is the half of criterion 4 this check exists to guard.
+    main_includes = re.findall(r'#\s*include\s*[<"]([^>"]+)[>"]',
+                               strip_comments(main))
+    foreign_roots = {}
+    for other in sorted(identities):
+        cell = rows[other]["headers"].rstrip("/")
+        if cell in ("-", "—", "reserved", ""):
+            continue
+        foreign_roots[cell.split("/")[-1]] = other
+    for include in main_includes:
+        root = include.split("/")[0]
+        if root in foreign_roots:
+            reasons.append(f"main.cpp includes <{include}>, whose header root "
+                           f"belongs to `{foreign_roots[root]}` rather than to "
+                           f"the package under test")
+
+    for path in (cmakelists, main, shared):
+        body = strip_comments(path)
         for pattern, what in ((r"add_subdirectory", "add_subdirectory()"),
                               (r"\.\./\.\./", "a path out of the fixture tree"),
                               (r"CMAKE_SOURCE_DIR", "CMAKE_SOURCE_DIR")):
@@ -294,9 +376,7 @@ def check_fixture(package: str, row: dict, fixture: pathlib.Path) -> list:
                                f"workspace source tree")
 
     header_root = row["headers"].rstrip("/").split("/")[-1]
-    includes = re.findall(r'#\s*include\s*[<"]([^>"]+)[>"]',
-                          main.read_text(encoding="utf-8"))
-    if not any(i.startswith(f"{header_root}/") for i in includes):
+    if not any(i.startswith(f"{header_root}/") for i in main_includes):
         reasons.append(f"main.cpp includes no header under `{header_root}/`, "
                        f"so it would build against a package that installed "
                        f"none")
@@ -621,6 +701,52 @@ def main() -> int:
                   f"condition. If it does not hold on this host the removed "
                   f"line was never reached, and the run below reports an "
                   f"inconclusive mutation rather than a caught one.")
+    elif args.mutate == "no-dependency":
+        # The blanket form strips *every* find_dependency, and it is a mutation
+        # only if at least one of those lines is this config's to lose. The two
+        # ways a line is not are already known here, from the same two facts the
+        # narrowed form is checked against: another package in the prefix
+        # resolves the same edge, or the contract qualifies the edge with a
+        # condition this driver does not evaluate.
+        #
+        # The two are not the same answer, and an earlier version of this guard
+        # collapsed them into one refusal that stated a host question as fact.
+        #
+        # **Every edge masked** is knowable here and true on every host, so the
+        # mutation cannot bite anywhere and refusing it costs a second instead
+        # of a build.
+        #
+        # **An edge with a condition on it** is a question this driver does not
+        # answer, in either direction: `liveTransport`'s `find_dependency` is
+        # inside `if(NOT WIN32)` and is not reached on Windows, and
+        # `vrmSchema`'s is inside `if(NOT pxr_FOUND)` and is reached on every
+        # clean consumer -- and the contract's cell says only that a condition
+        # exists. Refusing that run would have thrown away a real catch:
+        # `vrmSchema`'s blanket mutation *is* caught, by criterion 4. So it
+        # runs, and a run that then passes ends inconclusive rather than
+        # blaming the fixture, which is what the named form already does.
+        masked, conditional, losable = blanket_inertness(args.package, row, rows)
+        declared = masked + conditional + losable
+        if declared and not losable and not conditional:
+            fail_setup(
+                f"every find_dependency in `{args.package}`'s config is also "
+                f"declared by another package in the prefix, so stripping them "
+                f"all would change bytes without breaking anything on any host: "
+                + "; ".join(f"`{d}` is also resolved by "
+                            + ", ".join("`" + m + "`" for m in
+                                        other_resolvers(args.package, d, rows))
+                            for d in masked)
+                + ". There is no edge here only this config resolves, so the "
+                  "mutation has nothing to measure")
+        if declared and not losable:
+            print("note: every find_dependency `{}` alone resolves carries a "
+                  "condition this driver does not evaluate ({}). If none of "
+                  "them is reached on this host the mutation is inert, and the "
+                  "run below reports an inconclusive result rather than a "
+                  "caught one.".format(
+                      args.package,
+                      ", ".join(f"`{d}`: {dependency_qualification(row, d)}"
+                                for d in conditional)))
 
     fixture_src = FIXTURE_ROOT / args.package
     if not fixture_src.is_dir():
@@ -843,6 +969,24 @@ def main() -> int:
                   + ". This says nothing for or against the fixture; run the "
                     "mutation where the condition holds, or name an edge this "
                     "config resolves unconditionally.")
+            return 2
+
+        # The blanket form reaches the same verdict for the same reason, when
+        # every line it stripped was one the contract puts a condition on. The
+        # run was worth making -- a condition that *does* hold makes this a real
+        # catch, which is how `vrmSchema` is measured -- but a pass says the
+        # conditions did not hold, not that the fixture is broken.
+        _, conditional, losable = blanket_inertness(args.package, row, rows)
+        if conditional and not losable:
+            print(f"\nINCONCLUSIVE: every find_dependency stripped from "
+                  f"`{args.package}`'s config carries a condition this driver "
+                  f"does not evaluate ("
+                  + ", ".join(f"`{d}`: {dependency_qualification(row, d)}"
+                              for d in conditional)
+                  + "), and every criterion the prefix can break was still met "
+                    "-- so no line that was removed is what resolves an edge on "
+                    "this host. This says nothing for or against the fixture; "
+                    "run it where a condition holds.")
             return 2
         print(f"\nFAIL (negative): the mutation `{args.mutate}` broke the "
               f"installed package and the consumer met every criterion the "
