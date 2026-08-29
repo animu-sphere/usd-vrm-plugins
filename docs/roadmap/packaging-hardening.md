@@ -1,7 +1,8 @@
 # Packaging hardening — the installed-package consumer lane
 
 **Status:** in progress — PKG-0 through PKG-3 done; **twelve of twelve packages
-measured**, on one host · **Target:** v0.8.0 ·
+measured**, on one host; PKG-4's lane written and awaiting its first run ·
+**Target:** v0.8.0 ·
 **Contract:** [architecture/PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md)
 
 The workspace has finished splitting. `vrmSchema`, `usdVrmFileFormat`,
@@ -384,7 +385,7 @@ reaches first and says nothing about the last one — which is the shape the §1
 defect actually had, and `vrmAdapterVrchatOsc` is where that shape was
 reproduced for the second of the two packages that shipped it.
 
-### PKG-4 — the CI lane ⬜
+### PKG-4 — the CI lane 🚧
 
 One cell, on every pull request, on all three OS. It must be a *separate* build
 from the workspace cells: the point is a prefix that contains no build tree.
@@ -396,7 +397,72 @@ lane can check. `liveTransport` is where a difference is expected and permitted:
 `ws2_32` on Windows, `Threads::Threads` elsewhere. A difference anywhere else is
 a defect until documented.
 
-### PKG-5 — close the standing platform gap ⬜
+**The lane is written and has not run** (2026-08-30):
+[`.github/workflows/package-consumer.yml`](../../.github/workflows/package-consumer.yml),
+three jobs — read the pins, consume on each of the three OS, compare the three
+closures. Everything below is a property of the lane's construction, which is
+what can be verified from a workstation; **its first green run is the milestone,
+and it happens on the pull request that adds it**. Until then `Standalone` keeps
+saying **measured (Windows)** in the four rows where the platform matters, and
+the *Done when* line in [current.md](current.md) stays open.
+
+*It is hand-authored because the schema has two cell kinds and neither is this
+one.* `kind: consumer` is refused — `unknown variant `consumer`, expected
+`bundle` or `workspace`` — so `ost ci generate` cannot render it, which is the
+condition `ost ci matrix` exists for: *emit the resolved cells so a workflow
+`ost ci generate` cannot express can consume the same pins instead of copying
+them*. The other hand-authored workflow here is `release.yml`, which copies an
+X11 step, an `ost` pin and three runtime digests and was missed when CI was
+re-pinned to 26.08, failing a tag build while every PR lane stayed green. So
+this one copies nothing: `scripts/ci_pins.py` reads the runners, the digests,
+the host packages and the Python version out of `openstrata.ci.yaml` through
+`ost ci matrix`, and the three OS come from the three `verify: test` workspace
+cells rather than from a list in the YAML. **`--expect 3` is a check rather than
+a formality** — criterion 6 asks whether three platforms agree, and a lane that
+quietly asked it of two would answer a different question and print a pass.
+
+*The one pin that cannot come from `ost` is which `ost`*, so
+`ci_pins.py bootstrap-version` reads it from the contract file with a regex —
+and is then checked by the tool it installed: `lane-matrix` re-reads the same
+value through `ost ci matrix` and refuses to emit anything if the two disagree.
+
+*Criterion 6 needed a contract before it needed a script.* Read strictly it is
+unimplementable and read loosely it is vacuous, because the three runtimes are
+three separate builds of OpenUSD: an entry-for-entry comparison reports an
+upstream difference as a defect here, and a comparison that tolerates any
+difference catches nothing.
+[PACKAGE_CONTRACT.md §5.1](../architecture/PACKAGE_CONTRACT.md) now states the
+partition — a workspace target agrees or it is a defect; a declared platform
+dependency is present exactly where its cell says and **absent elsewhere**;
+everything else is attributed to the external package that brought it, and the
+attribution is what gets checked. `scripts/check_package_closures.py` implements
+that and reads §4's tables through the driver's own parser, so there is no
+second table to drift.
+
+*The comparison is verified by ten cases, each of which was made to happen.* A
+check that has only ever printed a pass is indistinguishable from one that is
+not run — the rule this whole track exists for — and this one has no prefix to
+mutate, so its inputs are the reports. Nine of the ten are the checks firing:
+`ws2_32` surviving on a POSIX host and a POSIX host with no threading link
+(**both halves of PKG-5**, and the first is the one Windows structurally cannot
+see); a workspace target present on one platform and one missing from one; a
+foreign entry in a package with no external edge; an absolute path; a workspace
+identity spelled as a raw archive. The tenth is the answer that is *not* a
+verdict: two platforms end in a setup refusal rather than a pass, because a
+question about three is not answered by two.
+
+**Those ten cases run against synthetic reports, and that is a stated limit
+rather than an oversight.** The Windows halves are real — twelve packages, this
+workstation, criteria 1–5 met — and the macOS and Linux halves are the
+substitution this lane *expects*: `ws2_32` becomes
+`$<LINK_ONLY:Threads::Threads>`, and OpenUSD's Windows platform names give way
+to POSIX ones. That is a prediction, and predicting a measurement is exactly
+what PKG-3 got wrong when it expected to find more instances of the §1 defect
+and found none. What the synthetic inputs establish is that each rule fires on
+the shape it is aimed at; what only the lane can establish is what the shape
+actually is.
+
+### PKG-5 — close the standing platform gap 🚧
 
 `vrmAdapterMocopi`'s standalone build has been unverified since the receiver
 added `ws2_32` and an installed-config edit without re-running the check
@@ -406,6 +472,13 @@ a boundary check; **the raw-library half is what remains**, and a POSIX run is
 worth more than a Windows one because there it verifies the *absence* of a
 threading link. PKG-4's lane closes this by construction, which is why the entry
 moves here from the carry-over list rather than being tracked twice.
+
+**The check now exists and the measurement does not.** The lane's criterion-6
+comparison requires `Threads::Threads` present and `ws2_32` absent on both POSIX
+platforms, from `vrmAdapterMocopi`'s own `Platform deps` cell rather than from a
+rule written for it, and both directions were made to fail before the check was
+believed. What is left is the first run: this closes on a green macOS and Linux
+job, not on the code that would notice.
 
 ## 5. What this track is not
 
@@ -435,6 +508,11 @@ moves here from the carry-over list rather than being tracked twice.
   `measured` package by package, as PKG-3 measures them. That column is the
   track's progress bar, and it is the only place the progress is recorded — a
   second list would drift.
+- **PACKAGE_CONTRACT.md gains §5.1**, stating what criterion 6 compares: which
+  closure entries are this workspace's to answer for and which arrive from a
+  package it does not produce. That was implicit while criterion 6 was
+  unanswered, and it stops being implicit the moment a lane has to decide. ✅
+  **Done 2026-08-30**, with PKG-4.
 - **`scripts/check_docs.py`** gains a check that every identity with a
   `*Config.cmake.in` has a row in PACKAGE_CONTRACT.md, and that every row names
   a package that exists. That is the same class of check as the bundle-inventory
@@ -457,7 +535,10 @@ moves here from the carry-over list rather than being tracked twice.
    attributable to a group rather than to a batch. ✅ — landed as four groups:
    the two shapes no fixture had (`vrmContainer`, `liveTransport`), the motion
    layer's five, the two remaining adapters, and the one bundle with a package.
-5. The CI cell (PKG-4).
+5. The CI cell (PKG-4), which carries PKG-5 with it. Three files that are not
+   the workflow: `scripts/ci_pins.py` so the lane copies no pin,
+   `scripts/run_package_consumer_lane.py` so it can be reproduced by hand, and
+   `scripts/check_package_closures.py` for the criterion no host can answer.
 6. `check_docs.py`'s row check. ✅ — landed before PKG-4 rather than after it,
    because the document it checks is five days old and the drift it catches has
    had no time to happen yet. That is the moment to add such a check.
