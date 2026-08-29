@@ -26,6 +26,21 @@ target_compile_options(vrmAdapterVrchatOsc_packetCapture_tests
 add_test(NAME vrmAdapterVrchatOsc_packetCapture
          COMMAND vrmAdapterVrchatOsc_packetCapture_tests)
 
+# The address inventory: what a session contains, counted from bytes. The first
+# suite here that decodes anything, and the second consumer `libs/osc` was
+# extracted for (osc-and-vrchat-trackers.md §3.1). It opens no socket and reads
+# no file -- every datagram it inventories is built byte by byte in the test,
+# because a fixture written by this repository's own encoder would let the
+# inventory agree with itself.
+add_executable(vrmAdapterVrchatOsc_addressInventory_tests
+    test_address_inventory.cpp)
+target_link_libraries(vrmAdapterVrchatOsc_addressInventory_tests
+    PRIVATE vrmAdapterVrchatOsc::vrmAdapterVrchatOsc)
+target_compile_options(vrmAdapterVrchatOsc_addressInventory_tests
+    PRIVATE ${_vrm_adapter_vrchat_osc_assertions})
+add_test(NAME vrmAdapterVrchatOsc_addressInventory
+         COMMAND vrmAdapterVrchatOsc_addressInventory_tests)
+
 # The socket, on its own CTest name, so a runner that forbids sockets excludes a
 # name rather than a claim (adapter plan §9.5). This binary carries **three**
 # such names: the two below and `vrmAdapterVrchatOsc_loopbackCorpus` further
@@ -72,6 +87,7 @@ file(GLOB _vrm_adapter_vrchat_osc_captures CONFIGURE_DEPENDS
      "${CMAKE_CURRENT_SOURCE_DIR}/corpus/*/*/*.vrchatoscpackets")
 set(_vrm_adapter_vrchat_osc_tests
     vrmAdapterVrchatOsc_unit vrmAdapterVrchatOsc_packetCapture
+    vrmAdapterVrchatOsc_addressInventory
     vrmAdapterVrchatOsc_udpReceiver vrmAdapterVrchatOsc_udpReceiverTruncation)
 
 if(_vrm_adapter_vrchat_osc_captures)
@@ -99,10 +115,16 @@ endif()
 # No ENVIRONMENT_MODIFICATION for OpenUSD's DLL directory, and its absence is a
 # measurement rather than an omission. Both siblings need one because they link
 # motionCore, whose Gf entry points pull usd_gf.dll and its dependencies at run
-# time; this adapter links `liveTransport` alone, so nothing in these binaries
-# loads an OpenUSD library at all. The day a decoder produces a canonical value,
-# that changes -- and it will change here, visibly, rather than silently in a
-# 0xC0000135 exit.
+# time; this adapter links `liveTransport` and `osc`, and neither reaches an
+# OpenUSD library, so nothing in these binaries loads one at all.
+#
+# **The link line grew and this paragraph did not have to change its claim**,
+# which is worth recording because the version of it written at VRC-0 predicted
+# it would: it said "the day a decoder produces a canonical value, that
+# changes". A decoder arrived and the claim held, because `osc` links nothing at
+# all -- the prediction was about a decoder that produces a *pose*, and an
+# address inventory is not one. It still changes when that arrives, visibly,
+# rather than silently in a 0xC0000135 exit.
 
 if(Python3_Interpreter_FOUND)
     # The *test executable*, not $<TARGET_FILE:vrmAdapterVrchatOsc>. The adapter

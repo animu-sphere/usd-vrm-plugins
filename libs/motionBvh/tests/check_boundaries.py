@@ -224,14 +224,18 @@ def main() -> int:
     # it in the tree, and `motionCore` most of all: the edge is to one library,
     # not through it to another.
     #
-    # `liveTransport` needs naming here where an adapter does not: an adapter
-    # carries a product name and the producer check above already refuses it,
-    # while a shared transport carries none by contract and would otherwise
-    # cross this boundary unremarked (WORKSPACE.md §2).
+    # `liveTransport` and `osc` need naming here where an adapter does not: an
+    # adapter carries a product name and the producer check above already
+    # refuses it, while a shared leaf carries none by contract and would
+    # otherwise cross this boundary unremarked (WORKSPACE.md §2). `osc` is
+    # matched as a namespace qualification or an include path, because this
+    # library's own header names the OSC decoder in a comment about a rule the
+    # two share -- and a boundary check that fired on prose would be answered
+    # by deleting the sentence.
     forbidden_api = re.compile(
         r"pxr/|PXR_NAMESPACE|\bGf(?:Vec|Quat|Matrix)|\bUsd[A-Z]|\bSdf[A-Z]|"
         r"TF_REGISTRY_FUNCTION|\bHumanBone\b|\bmotion::|motionCore|"
-        r"vrmRetarget|vrmSchema|liveTransport")
+        r"vrmRetarget|vrmSchema|liveTransport|\bosc::|\bosc/")
     semantic = re.compile(r"DiagnosticCode::(?:" + "|".join(SEMANTIC_CODES) + r")\b")
     extraction_only = re.compile(
         r"DiagnosticCode::(?:"

@@ -80,9 +80,24 @@ test completes with nothing installed.
       — a code table and a map from a transport event to one of its rows. The
       corpus round-trips compare bytes rather than parse trees, so a writer that
       changed one character would be red)*;
-- [ ] two adapters decode OSC through one library that contains no VMC and no
+- [x] two adapters decode OSC through one library that contains no VMC and no
       VRChat address literal, enforced by a boundary check rather than by
-      review;
+      review *(OSC-3, 2026-08-29: `libs/osc`, in five changes — the contract,
+      the move, one API decision, and one adapter each. The evidence came before
+      the contract row, which is the one respect in which this could not follow
+      `liveTransport`'s procedure: an address inventory written in
+      `vrmAdapterVrchatOsc` decoded real bytes through the VMC-owned decoder
+      first and needed **five VMC tokens**, every one of them the name — one
+      include path, four namespace qualifications — plus the export macro on its
+      compile line. §3.1 predicted three couplings and the measurement found
+      exactly those three. The refusal carries **no code**, not even a neutral
+      event enum: the decoder makes one distinction, so three invented names
+      would have been mapped straight back onto one adapter code by every
+      caller. That is now demonstrated rather than asserted — one refusal reads
+      `VRM_VMC_PACKET_MALFORMED` in one adapter and
+      `VRM_VRCHAT_OSC_PACKET_MALFORMED` in the other. The boundary check reads
+      `tests/` as well as `include/` and `src/`, which `liveTransport`'s does
+      not, because a decoder's payloads are where a vendor address arrives)*;
 - [x] no adapter imports a sibling adapter, checked in the binary *(VRC-0,
       2026-08-25: with a third adapter the trio is symmetric — each
       `check_boundaries.py` now refuses the other two by name, in the sources and
@@ -101,7 +116,14 @@ test completes with nothing installed.
       with its frozen ten-code set, a capture format that is one magic string
       over the shared one, and `vrchat_osc_record`. Bytes off the socket and
       bytes in the file are identical, asserted end to end against an independent
-      parser. The session and the inventory need an operator and a device)*;
+      parser. **The inventory half exists as of 2026-08-29** — one row per
+      address *and type tag string*, with message and datagram counts and the
+      span each covers, printed by `vrchat_osc_record --inspect` and carrying no
+      list of addresses it expects, which is the property this line needs: the
+      risk is that this sender's surface is not the tracker subset anyone
+      assumes, and an inventory reporting absences would answer a different
+      question. **The session needs an operator and a device**, and this line
+      closes on the session rather than on the tool)*;
 - [ ] generated fixtures fix the protocol's shapes with no hardware, and
       recorded fixtures replay deterministically with no client;
 - [ ] tracker position and rotation reach the canonical tracking space, verified
@@ -144,7 +166,7 @@ test completes with nothing installed.
   `openstrata.ci.yaml` values; regeneration never touches them and a green PR
   lane proves nothing about it. The `ost` release contract (`release:` in the
   matrix) is the eventual fix; adopting it is not scoped yet.
-- ⬜ **`vrmAdapterMocopi`'s standalone build is unverified since it grew a
+- 🚧 **`vrmAdapterMocopi`'s standalone build is unverified since it grew a
   platform link**
   ([#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)). The
   scaffold commit measured it; the receiver added `ws2_32` and an edit to the
@@ -153,6 +175,19 @@ test completes with nothing installed.
   rather than an imported target — and a prediction belongs in an issue rather
   than in a claim. A POSIX run of the same check is worth more than the Windows
   one, since there it verifies the *absence* of a threading link.
+
+  **The imported-target half of this stopped being a prediction on 2026-08-29,
+  and is now a check rather than a habit.** OSC-3 gave `vrmAdapterVmc` and
+  `vrmAdapterVrchatOsc` a `PUBLIC osc::osc` and neither package config gained a
+  `find_dependency(osc)` — so both installed packages named a target no consumer
+  could resolve, and CMake does not search for it even with that package's own
+  config sitting in the same prefix. **All 17 lanes were green**, because a
+  composed build and `ost library build` both resolve every target in-tree and
+  never open a config file. Each adapter's `check_boundaries.py` now cross-checks
+  its link line against its config template, verified by injection in both
+  directions. What that closes is the *imported-target* half; the raw-library
+  half this entry is actually about — `ws2_32` on a POSIX host — is unchanged and
+  still needs the run.
 - ⬜ **An adapter artifact exists now, and no lane publishes one.** `ost` 0.22.3
   composes `requires.libraries` in the per-library verb, so
   `ost library package adapters/liveCapture/mocopi` produces

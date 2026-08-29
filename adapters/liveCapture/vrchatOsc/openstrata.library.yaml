@@ -5,19 +5,19 @@
 # (osc-and-vrchat-trackers.md §5).
 #
 # A library, not a plugin bundle, and deliberately so -- it registers nothing
-# with OpenUSD and has no plugInfo.json (WORKSPACE.md §1). The three edges below
+# with OpenUSD and has no plugInfo.json (WORKSPACE.md §1). The four edges below
 # are the only ones it is allowed (WORKSPACE.md §2), and neither sibling adapter
-# is among them. That prohibition costs something real here rather than being a
-# formality: `vrmAdapterVmc` holds the only OSC decoder in this repository, and
-# reaching across for it is the convenient thing to do the first time a datagram
-# starts with a '/'. The plan's answer is a shared decoder with two consumers
-# (§3.1), and it arrives in its own change after a real datagram has been
-# measured -- OSC-3, not this one.
+# is among them. That prohibition used to cost something real here: through
+# VRC-0 `vrmAdapterVmc` held the only OSC decoder in this repository, and
+# reaching across for it was the convenient thing to do the first time a datagram
+# started with a '/'. OSC-3 removed the temptation rather than the rule -- the
+# decoder is `libs/osc` and both adapters take it from there (§3.1).
 #
-# `liveTransport` is the third edge and is the reason this adapter's first
-# deliverable is not a third copy of a packet recorder: the socket, the capture
-# format and the diagnostic vehicle were extracted before this directory existed,
-# for exactly this arrival (§3.2).
+# `liveTransport` and `osc` are the two shared leaves, and they are the reason
+# this adapter never copied anything: the socket, the capture format and the
+# diagnostic vehicle were extracted before this directory existed (§3.2), and
+# the wire format was extracted the moment this adapter became its second
+# consumer (§3.1).
 #
 # This library is *outside* the aggregate product, because it carries a
 # product's name in the library itself and not only in data beside it
@@ -28,16 +28,18 @@ library:
   # Mirrors VERSION; release preparation updates this in lockstep.
   version: 0.7.0
 #
-# **One edge, where §2 permits three, and the missing two are the milestone
-# rather than an oversight.** `motionCore` and `motionRuntime` are what an
-# adapter reaches when it has canonical values to produce; this one has none
-# yet, because VRC-0 ships no semantic decoder at all. A manifest declaring
-# them now would claim a dependency the library does not have, and the sibling
-# adapters' own unit tests exercise every edge they declare for exactly that
-# reason. They arrive with the code that produces a pose.
+# **Two edges, where §2 permits four, and the missing two are still the
+# milestone rather than an oversight.** `motionCore` and `motionRuntime` are
+# what an adapter reaches when it has canonical values to produce, and reading a
+# session's addresses is not that: an address and a type tag are facts about a
+# capture, and the layer that turns one into a tracker observation is VRC-2's.
+# A manifest declaring them now would claim a dependency the library does not
+# have. They arrive with the code that produces a pose.
 requires:
   libraries:
     - id: liveTransport
+      version: ">=0.7,<0.8"
+    - id: osc
       version: ">=0.7,<0.8"
 cmake:
   package: vrmAdapterVrchatOsc

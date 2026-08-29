@@ -9,7 +9,7 @@
 //
 //     receive -> append to the capture -> report on the envelope
 //
-// ## Nothing here decodes anything, and the specification is why
+// ## Recording still decodes nothing, and the specification is why
 //
 // The tempting reading is that a published surface makes a decoder cheap enough
 // to write first, and report on addresses from the first session. It does not,
@@ -19,25 +19,32 @@
 // name VRChat's port; that is a menu entry, and this repository does not infer a
 // packet shape from one (osc-and-vrchat-trackers.md §6).
 //
-// So this tool has no decode step at all, and the report says only what a socket
-// can see — how much arrived, from whom, how fast, in how many distinct lengths,
-// and which leading bytes every datagram shares. Every number in it is a
-// property of the datagram envelope, and none of it would change if the payload
-// meant something entirely different. The address inventory is the *next*
-// milestone's, measured from these bytes rather than assumed alongside them.
+// So the *recording* path has no decode step at all, and its report says only
+// what a socket can see — how much arrived, from whom, how fast, in how many
+// distinct lengths, and which leading bytes every datagram shares. Every number
+// in it is a property of the datagram envelope, and none of it would change if
+// the payload meant something entirely different.
 //
-// The failure mode being avoided is specific rather than theoretical: a report
-// that grouped datagrams by address would be the first thing anybody read off a
-// real session, and every number in it would be conditional on an assumption
-// nobody had tested.
-//
-// ## Two modes, one report
+// ## Two modes, and `--inspect` now has one section more
 //
 // `--inspect` reads a recorded capture and prints the same block, opening no
 // socket. It is what makes this tool testable with no sender at all, and it is
 // the answer to "is this fixture still what I thought it was" for a capture
 // recorded months ago — which is why it prints the capture's own provenance and
 // the live path does not.
+//
+// Since OSC-3 it prints one section the live path does not: the **address
+// inventory**, which is VRC-1's measurement (AddressInventory.h). That is not a
+// retreat from the paragraph above. What VRC-0 refused was grouping a session by
+// addresses a *document* predicted; what this prints is the addresses a sender
+// actually sent, read out of the bytes by a decoder that knows OSC's grammar and
+// nothing about VRChat. An address nobody expected appears as a row.
+//
+// It is on the file path and not on the socket path deliberately, and the
+// difference is not squeamishness. A recorder's job is to obtain bytes without
+// having an opinion about them, so that the file is worth the same whatever the
+// decoder later turns out to be wrong about. Reading that file is a separate
+// act, and it is repeatable.
 //
 // ## The sender that is not there yet is the ordinary case
 //
@@ -67,6 +74,7 @@
 #include "Options.h"
 #include "SessionReport.h"
 
+#include "vrmAdapterVrchatOsc/AddressInventory.h"
 #include "vrmAdapterVrchatOsc/Diagnostics.h"
 #include "vrmAdapterVrchatOsc/PacketCapture.h"
 #include "vrmAdapterVrchatOsc/UdpReceiver.h"
@@ -131,6 +139,40 @@ EndpointIsIpv6(const std::string& endpoint)
     return std::count(endpoint.begin(), endpoint.end(), ':') > 1;
 }
 
+// VRC-1's measurement, printed after the envelope block rather than inside it.
+//
+// `SessionReport` is the *live* report and decodes nothing, which is the whole
+// of the recording path's design; this is a second pass over a file that has
+// already been written, so nothing here can change what was recorded.
+//
+// One row per address and type tag pair, because a sender that spells one
+// address two ways is the finding a table keyed on the address alone would hide.
+void
+PrintAddressInventory(std::FILE* out,
+                      const vrmAdapterVrchatOsc::PacketCapture& capture)
+{
+    const vrmAdapterVrchatOsc::AddressInventory inventory =
+        vrmAdapterVrchatOsc::InventoryAddresses(capture);
+
+    std::fprintf(out, "addresses: %zu (%zu message(s), %zu bundled datagram(s), "
+                      "%zu refused)\n",
+                 inventory.rows.size(), inventory.messages, inventory.bundled,
+                 inventory.refused);
+    for (const vrmAdapterVrchatOsc::AddressRow& row : inventory.rows) {
+        std::fprintf(out, "  %s ,%s  %zu message(s) in %zu datagram(s)  "
+                          "%.6f-%.6f s\n",
+                     row.address.c_str(), row.typeTags.c_str(), row.messages,
+                     row.datagrams, row.firstTime, row.lastTime);
+    }
+    // Every refusal, not a count: a session half-refused is one an operator has
+    // to be able to read the reason for, and a capture is a bounded file.
+    for (const vrmAdapterVrchatOsc::Diagnostic& diagnostic :
+         inventory.diagnostics) {
+        std::fprintf(out, "  %s\n",
+                     vrmAdapterVrchatOsc::FormatDiagnostic(diagnostic).c_str());
+    }
+}
+
 int
 RunInspect(const vrchatOscRecordTool::Options& options)
 {
@@ -158,6 +200,7 @@ RunInspect(const vrchatOscRecordTool::Options& options)
     // place — it is the only reason there is.
     report.SetStopReason(vrchatOscRecordTool::StopReason::EndOfCapture);
     report.Print(stdout, nullptr, &capture);
+    PrintAddressInventory(stdout, capture);
     return 0;
 }
 

@@ -1,0 +1,8 @@
+@PACKAGE_INIT@
+
+# No `find_dependency` at all, and no `if(NOT WIN32)` branch either — this
+# library's allowed edge set is empty and it links no platform primitive, which
+# is what makes this file shorter than the transport leaf's beside it
+# (WORKSPACE.md §2).
+include("${CMAKE_CURRENT_LIST_DIR}/oscTargets.cmake")
+check_required_components(osc)

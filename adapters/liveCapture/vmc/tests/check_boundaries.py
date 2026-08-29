@@ -2,20 +2,25 @@
 # SPDX-License-Identifier: Apache-2.0
 """Enforce vrmAdapterVmc's leaf boundary.
 
-WORKSPACE.md §2 gives an adapter library exactly three edges — motionCore,
-motionRuntime and liveTransport — and forbids the rest: vrmSchema, every USD
+WORKSPACE.md §2 gives an adapter library exactly four edges — motionCore,
+motionRuntime, liveTransport and osc — and forbids the rest: vrmSchema, every USD
 file-format bundle, `vrmRetarget` (the library), OpenExec, `ExecIr`, and every
 sibling adapter. It also may not be a plugin bundle (§1), so a plugin manifest
 or a plugInfo.json anywhere under the adapter is a failure by itself.
 
-Two differences from the equivalent check on `libs/motionRuntime` are
-deliberate, and both come straight from the contract:
+Three differences from the equivalent check on `libs/motionRuntime` are
+deliberate, and all three come straight from the contract:
 
 * **Transport is allowed here.** A socket in `motionRuntime` is a violation; a
   socket in an adapter is the adapter's job (motion policy §8.2). This script
   therefore does not scan for one. Since OSC-2 the adapter reaches one through
   `liveTransport` rather than opening it here, which narrows what this file
   contains but not what it is permitted to contain.
+* **An address literal is allowed here, and only here.** `libs/osc` is refused
+  one anywhere in its sources, tests included, because a decoder that knows one
+  address is special has stopped being a wire-format decoder. An adapter is the
+  layer whose whole job is knowing which addresses are special, so `/VMC/...`
+  belongs in this tree and nowhere below it.
 * **Only `include/` and `src/` are scanned.** The adapter's CLI under `tools/`
   is a workspace *tool*, and a tool may drive `vrmRetarget` and author a stage
   exactly as `motion_retarget` does. Scanning it would flag the one place the
@@ -157,13 +162,20 @@ def main() -> int:
     # -- a runtime data path through one is not a build edge on it (§2.1).
     #
     # The third adapter is the edge that would be attempted in the *other*
-    # direction, which is why it is worth naming here as well as there:
-    # this library holds the only OSC decoder in the repository, so
-    # `vrmAdapterVrchatOsc` reaching in is the plausible mistake and this
-    # file is what refuses the return trip. `osc` is deliberately not a
-    # bare token on this list -- an OSC decoder is what this adapter
-    # legitimately contains -- and the shared library with two consumers
-    # arrives in its own change (osc-and-vrchat-trackers.md, OSC-3).
+    # direction, which is why it is worth naming here as well as there.
+    # It used to be the plausible mistake for a concrete reason -- this
+    # library held the only OSC decoder in the repository, so
+    # `vrmAdapterVrchatOsc` reaching in would have *worked*. OSC-3 removed
+    # the reason rather than the rule: the decoder is `libs/osc` now and
+    # both adapters take it from there, so a sibling include here would be
+    # a mistake with nothing to gain. The rule stays because a sibling edge
+    # is refused by the contract and not by whether it would pay.
+    #
+    # `osc` is deliberately not a bare token on this list. It is a
+    # permitted edge now, and it was left off before that for a separate
+    # reason worth keeping: an OSC decoder is what this adapter
+    # legitimately contained, so the token would have matched the thing it
+    # was there to allow.
     forbidden_neighbours = re.compile(
         r"\b(?:vrmSchema|vrmContainer|vrmRetarget|usdVrm\w*|execMotion|execVrm|"
         r"vrmAdapterMocopi|vrmAdapterVrchatOsc|vrmAdapterArdy|cgltf|mocopi|"
@@ -197,7 +209,7 @@ def main() -> int:
     allowed_link = {
         "vrmadaptervmc", "public", "private", "interface",
         "motioncore::motioncore", "motionruntime::motionruntime",
-        "livetransport::livetransport",
+        "livetransport::livetransport", "osc::osc",
         "ws2_32", "threads::threads",
     }
     for arguments in re.findall(r"target_link_libraries\s*\((.*?)\)", cmake,
@@ -205,8 +217,49 @@ def main() -> int:
         for token in arguments.split():
             if token.lower() not in allowed_link:
                 errors.append(
-                    "vrmAdapterVmc may link only motionCore, motionRuntime and "
-                    f"liveTransport; CMakeLists.txt links `{token}`")
+                    "vrmAdapterVmc may link only motionCore, motionRuntime, "
+                    f"liveTransport and osc; CMakeLists.txt links `{token}`")
+
+    # An exported edge the package **config** does not resolve.
+    #
+    # The two checks above are about what may be linked; this one is about
+    # whether a consumer of the *installed* package can link it at all. A
+    # `PUBLIC` dependency lands in the exported target's
+    # `INTERFACE_LINK_LIBRARIES`, so `find_package(vrmAdapterVmc)` re-creates a target
+    # naming `X::Y` — and if the config never called `find_dependency(X)`,
+    # CMake fails at generate time with "the target was not found". It does not
+    # search for it, even when that package's config is sitting in the same
+    # prefix.
+    #
+    # **No other check in this repository can see it**, which is why it is
+    # worth a rule of its own rather than a review habit. A composed workspace
+    # build resolves every target in-tree and never opens a config file; `ost
+    # library build` does the same. The path that breaks is a standalone
+    # configure of this adapter or of its CLI — which is a stated PR
+    # requirement (roadmap §12) and a manual step. Measured 2026-08-29: both
+    # `vrmAdapterVmc` and `vrmAdapterVrchatOsc` grew a `PUBLIC osc::osc` and
+    # neither config gained a `find_dependency(osc)`; all 17 CI lanes were
+    # green and a two-line consumer project could not configure.
+    #
+    # One direction only. Every linked package must be resolved; a resolved
+    # package that is not linked is not an error — `pxr` is exactly that here,
+    # guarded and present because a transitive Gf target needs it.
+    config_path = source / "cmake" / "vrmAdapterVmcConfig.cmake.in"
+    config = config_path.read_text(encoding="utf-8")
+    resolved = set(re.findall(r"find_dependency\s*\(\s*([A-Za-z0-9_]+)", config))
+    for arguments in re.findall(r"target_link_libraries\s*\((.*?)\)", cmake,
+                                re.DOTALL):
+        for token in arguments.split():
+            if "::" not in token:
+                continue
+            package = token.split("::")[0]
+            if package == "vrmAdapterVmc":
+                continue
+            if package not in resolved:
+                errors.append(
+                    f"{token} is linked but {config_path.name} never calls "
+                    f"find_dependency({package}); the installed package "
+                    "cannot be consumed")
 
     # Refuse a static archive outright rather than inspecting one and finding
     # nothing. An archive records no imports, so this check would pass on any

@@ -46,6 +46,7 @@ members = [
   "libs/motionCore",
   "libs/motionRuntime",
   "libs/motionSource",
+  "libs/osc",
   "libs/vrmContainer",
   "libs/vrmRetarget",
   "tools/motionBvh",

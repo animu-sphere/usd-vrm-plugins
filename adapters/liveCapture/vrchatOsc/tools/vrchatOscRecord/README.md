@@ -1,7 +1,8 @@
 # vrchat_osc_record
 
 Records a live VRChat OSC session to a `vrchat-osc-packet-capture` file, and says
-what arrived. `--inspect` reports on a recorded capture with no socket at all.
+what arrived. `--inspect` reports on a recorded capture with no socket at all,
+and adds the address inventory the recording path deliberately does not.
 
 ```text
 vrchat_osc_record --output session.vrchatoscpackets --sender mocopi-app-2.7.2 \
@@ -9,12 +10,12 @@ vrchat_osc_record --output session.vrchatoscpackets --sender mocopi-app-2.7.2 \
 vrchat_osc_record --inspect session.vrchatoscpackets
 ```
 
-## Nothing here decodes anything
+## Recording decodes nothing; reading a file does
 
-The report says what a socket can see — how much arrived, from whom, how fast, in
-how many distinct lengths, and which leading bytes every datagram shares. It does
-not say what any of it means, and that is the tool's design rather than its
-current state.
+The live report says what a socket can see — how much arrived, from whom, how
+fast, in how many distinct lengths, and which leading bytes every datagram
+shares. It does not say what any of it means, and that is the tool's design
+rather than its current state.
 
 The reason is worth stating because this protocol's receiving end is *published*
 and the other recorder in this repository's protocol is not. A specification says
@@ -23,13 +24,24 @@ help pages list `VRChat (OSC)` as a mocopi transfer format and name VRChat's
 port — that is a menu entry, and this repository does not infer a packet shape
 from one.
 
-So a report that grouped datagrams by OSC address could be written today, from
-the document, and it would be the first thing anybody read off a real session
-with every number in it conditional on an assumption nobody had tested. The
-address inventory is [the next milestone](../../../../../docs/roadmap/osc-and-vrchat-trackers.md)'s
-(VRC-1), measured from these bytes.
+So a report that grouped datagrams by the addresses a *document* predicted could
+have been written on day one, and it would have been the first thing anybody read
+off a real session with every number in it conditional on an assumption nobody
+had tested.
 
-What the report *does* say is enough to tell whether a session is worth keeping.
+**`--inspect` groups by address now, and it is not that report.** It decodes OSC's
+grammar — where an address ends, what its type tags are — and counts what it
+finds. It has no list of addresses it expects, so an address nobody predicted
+appears as a row rather than as a zero, and one address sent with two different
+type tag strings appears as two rows rather than as an average. That is VRC-1's
+measurement, and what it still needs is an operator and a device.
+
+It is on the file path and not on the socket path deliberately. A recorder's job
+is to obtain bytes without having an opinion about them, so that the file is
+worth the same whatever the decoder later turns out to be wrong about; reading
+that file is a separate act, and it is repeatable.
+
+What the live report says is enough to tell whether a session is worth keeping.
 "3 distinct lengths, 96 of them 68 bytes" is a statement about the envelope, and
 a capture whose every datagram is the same length recorded one kind of packet —
 a decoder built from it would meet the second kind for the first time in

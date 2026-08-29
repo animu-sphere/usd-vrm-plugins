@@ -152,6 +152,9 @@ def main() -> int:
     forbidden_api = re.compile(
         r"\bUsd[A-Z]|\bSdf[A-Z]|TF_REGISTRY_FUNCTION|"
         r"vrmRetarget|vrmSchema|vrmContainer|motionRuntime|vrmAdapter|liveTransport|"
+        # A namespace qualification or an include path, never the bare word:
+        # `osc` is short enough to appear inside one.
+        r"\bosc::|\bosc/|"
         r"\bTargetSkeleton\b")
     # OpenUSD's value types, and canonical motion itself. Both are permitted
     # only where the crossing is declared, and they are one rule rather than two

@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import pathlib
 import socket
+import struct
 import subprocess
 import sys
 import tempfile
@@ -166,6 +167,53 @@ def payload(size: int, seed: int) -> bytes:
 
 
 # ---------------------------------------------------------------------------
+# OSC, written here rather than by the library under test
+# ---------------------------------------------------------------------------
+
+def osc_string(text: str) -> bytes:
+    """NUL-terminated, padded to four -- always at least one NUL."""
+    raw = text.encode("ascii") + b"\x00"
+    return raw + b"\x00" * (-len(raw) % 4)
+
+
+def osc_message(address: str, values: list[float]) -> bytes:
+    body = b"".join(struct.pack(">f", value) for value in values)
+    return osc_string(address) + osc_string("," + "f" * len(values)) + body
+
+
+def osc_bundle(elements: list[bytes]) -> bytes:
+    out = osc_string("#bundle") + struct.pack(">Q", 1)
+    for element in elements:
+        out += struct.pack(">I", len(element)) + element
+    return out
+
+
+def inventory_rows(text: str) -> dict[tuple[str, str], str]:
+    """The `addresses:` block, one entry per address and type tag pair.
+
+    Read off the raw text rather than through `report_lines`, which joins every
+    indented line into one string. The rows are what this milestone produces, so
+    they are compared individually.
+    """
+    rows: dict[tuple[str, str], str] = {}
+    inside = False
+    for line in text.splitlines():
+        if line.startswith("addresses:"):
+            inside = True
+            continue
+        if not inside:
+            continue
+        if not line.startswith(" "):
+            break
+        fields = line.strip().split()
+        if not fields[0].startswith("/"):
+            # A diagnostic line for a refused datagram, not a row.
+            continue
+        rows[(fields[0], fields[1])] = line.strip()
+    return rows
+
+
+# ---------------------------------------------------------------------------
 # --inspect: no socket anywhere
 # ---------------------------------------------------------------------------
 
@@ -220,6 +268,89 @@ def check_inspect(tool: pathlib.Path, workspace: pathlib.Path) -> None:
     # than zero -- see SessionReport.h.
     if "listen:" in text:
         fail("--inspect: printed a socket line for a session with no socket")
+
+    # These payloads are counting patterns and not OSC, so the inventory has no
+    # rows and three refusals. That is the case worth asserting first: the port
+    # is a well-known one, anything on the network may send to it, and a
+    # capture full of traffic this decoder refuses must read as a finding rather
+    # than as a broken tool.
+    if not lines.get("addresses", "").startswith(
+            "0 (0 message(s), 0 bundled datagram(s), 3 refused)"):
+        fail(f"--inspect: addresses line was '{lines.get('addresses')}'")
+    if text.count("[VRM_VRCHAT_OSC_PACKET_MALFORMED]") != len(records):
+        fail("--inspect: a refused datagram must say why, once each")
+
+
+def check_inspect_inventory(tool: pathlib.Path, workspace: pathlib.Path) -> None:
+    """The address inventory, over OSC this file encoded itself.
+
+    Every datagram here is built by `osc_message` and `osc_bundle` above rather
+    than by anything the tool links, so a decoder that agreed with the
+    repository's own encoder and with nothing else would fail this.
+
+    The addresses are data. Two of them look like the VRChat tracker surface,
+    one looks like a different part of it, and one is deliberately not in any
+    document -- because the claim is that the inventory reports what a sender
+    sent rather than what somebody expected.
+    """
+    frame = osc_bundle([
+        osc_message("/tracking/trackers/1/position", [0.0, 1.0, 0.0]),
+        osc_message("/tracking/trackers/1/rotation", [0.0, 90.0, 0.0]),
+        osc_message("/avatar/parameters/VelocityY", [0.5]),
+        osc_message("/an/address/nobody/documented", [1.0]),
+    ])
+    records = [
+        (0.000000, frame),
+        (0.100000, frame),
+        # Unbundled, and a second type tag string for an address already seen.
+        (0.200000, osc_message("/tracking/trackers/1/position", [2.0])),
+        # And one datagram that is not OSC at all.
+        (0.300000, b"\xde\xad\xbe\xef"),
+    ]
+    capture = workspace / "inventory.vrchatoscpackets"
+    write_capture(capture, {
+        "sender": "example.synthetic",
+        "sourceId": "inventory-01",
+        "peer": "192.168.0.20:52001",
+    }, records)
+
+    text = run_tool(tool, "--inspect", str(capture))
+    lines = report_lines(text)
+
+    if not lines.get("addresses", "").startswith(
+            "5 (9 message(s), 2 bundled datagram(s), 1 refused)"):
+        fail(f"--inspect: addresses line was '{lines.get('addresses')}'")
+
+    rows = inventory_rows(text)
+    expected = {
+        ("/an/address/nobody/documented", ",f"): 2,
+        ("/avatar/parameters/VelocityY", ",f"): 2,
+        ("/tracking/trackers/1/position", ",f"): 1,
+        ("/tracking/trackers/1/rotation", ",fff"): 2,
+        ("/tracking/trackers/1/position", ",fff"): 2,
+    }
+    for key, messages in expected.items():
+        if key not in rows:
+            fail(f"--inspect: the inventory has no row for {key}: {sorted(rows)}")
+        if f"{messages} message(s)" not in rows[key]:
+            fail(f"--inspect: {key} reported '{rows[key]}', expected "
+                 f"{messages} message(s)")
+
+    # One address, two type tag strings, two rows. A table keyed on the address
+    # alone would average them and hide the shape a decoder has to handle.
+    if len([key for key in rows
+            if key[0] == "/tracking/trackers/1/position"]) != 2:
+        fail("--inspect: one address with two type tag strings must be two rows")
+
+    # The rows are sorted, because an operator diffs one session's report
+    # against the next's.
+    if list(rows) != sorted(rows):
+        fail(f"--inspect: the inventory is not sorted: {list(rows)}")
+
+    # The refused datagram is named with this adapter's own code, not the shared
+    # decoder's -- which has none.
+    if text.count("[VRM_VRCHAT_OSC_PACKET_MALFORMED]") != 1:
+        fail("--inspect: the refused datagram was not reported once")
 
 
 def check_inspect_refuses_a_bad_capture(tool: pathlib.Path,
@@ -582,6 +713,7 @@ def main() -> int:
         workspace = pathlib.Path(directory)
         if arguments.mode == "inspect":
             check_inspect(arguments.tool, workspace)
+            check_inspect_inventory(arguments.tool, workspace)
             check_inspect_refuses_a_bad_capture(arguments.tool, workspace)
             check_help_and_refusals(arguments.tool, workspace)
             print("vrchat_osc_record --inspect checks passed")

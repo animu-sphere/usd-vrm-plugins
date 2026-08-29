@@ -110,9 +110,14 @@ carrying a version number is drift waiting to be re-litigated.
   defects that were found and fixed in one copy on 2026-08-11 and stayed in the
   other until OSC-1 closed them on 2026-08-24. **The shared floor landed the
   same day**: `libs/liveTransport` holds the receiver, the capture format and
-  the diagnostic vehicle once, and both adapters build against it (OSC-2). What
-  remains on this track is the OSC decoder's own extraction, which still waits
-  for a second consumer, and the adapter itself.
+  the diagnostic vehicle once, and both adapters build against it (OSC-2). **The
+  second half landed on 2026-08-29**: `libs/osc` holds the wire format once, and
+  it waited for a second consumer rather than a schedule — an address inventory
+  written in `vrmAdapterVrchatOsc` decoded real bytes through the VMC-owned
+  decoder first, and needed five VMC tokens of which every one was the name
+  (OSC-3). What remains on this track is the adapter itself: a recorded session
+  to inventory, then the tracker decode, the tracking space, the frame policy
+  and the solve boundary.
 - Current priorities: **real device evidence** across both halves, closing the
   remaining **Workspace Phase 5** packaging P0, and widening runtime
   verification. The [OpenExec foundation](openexec-foundation.md) follows in

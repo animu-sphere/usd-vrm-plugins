@@ -6,20 +6,22 @@
 # and ships no plugInfo.json (WORKSPACE.md §1). The CLI that may retarget and
 # author a stage is a separate tool under tools/.
 #
-# ## One link line, and what is not on it
+# ## Two link lines, and what is still not on them
 #
-# `liveTransport`, and nothing else. WORKSPACE.md §2 permits an adapter three
-# edges; the other two — motionCore and motionRuntime — are what an adapter
-# takes when it has canonical values to produce, and this milestone produces
-# none: VRC-0 is the scaffold, the frozen code set and a recorder, with no
-# semantic decoder anywhere in it (osc-and-vrchat-trackers.md §9, VRC-0).
+# `liveTransport` and `osc`. WORKSPACE.md §2 permits an adapter four edges; the
+# other two — motionCore and motionRuntime — are what an adapter takes when it
+# has canonical values to produce, and it still produces none. A wire-format
+# decode is not a pose: what this adapter now reads out of a datagram is
+# addresses and type tags, which are facts about a session rather than motion
+# (osc-and-vrchat-trackers.md §5, §9).
 #
-# The consequence is worth stating because it is visible in every test below:
-# this adapter's closure contains no OpenUSD at all, so nothing here needs Gf's
-# DLL directory on PATH and the boundary check's allowlist of value-type
-# libraries is a check that the closure stays empty rather than a check that it
-# stays small. That changes when a decoder arrives, and the change will be
-# legible as a link line growing rather than as a comment being edited.
+# The link line grew and the consequence VRC-0 measured did not change, which is
+# worth stating because that milestone predicted the opposite. It said this
+# adapter's closure holds no OpenUSD, and that this would change when a decoder
+# arrived. It has not: `osc` links nothing at all, not even a socket, so nothing
+# here needs Gf's DLL directory on PATH and the boundary check's allowlist of
+# value-type libraries is still a check that the closure stays *empty*. The
+# prediction was about a decoder that produces a pose, and this is not one yet.
 
 cmake_minimum_required(VERSION 3.22)
 
@@ -58,12 +60,22 @@ endif()
 if(NOT TARGET liveTransport::liveTransport)
     find_package(liveTransport REQUIRED CONFIG)
 endif()
+if(NOT TARGET osc::osc)
+    find_package(osc REQUIRED CONFIG)
+endif()
 
-# Two files, and both of them exist because a shared library may not hold what
-# is in them: a code table, and the map from a transport event to one of its
-# rows (WORKSPACE.md §2's diagnostic split). The capture format contributes a
-# third thing of the same kind and it is one string, so it lives in a header.
+# Three files. Two of them exist because a shared library may not hold what is
+# in them: a code table, and the map from a transport event to one of its rows
+# (WORKSPACE.md §2's diagnostic split). The capture format contributes a third
+# thing of the same kind and it is one string, so it lives in a header.
+#
+# `AddressInventory.cpp` is the first file here that is neither of those: it is
+# this adapter reading a session rather than describing itself, and it is what
+# made `osc` a library — a decoder with one caller is a decoder shaped like that
+# caller (osc-and-vrchat-trackers.md §3.1). It carries the same diagnostic split
+# as the other two, in its one refusal path.
 add_library(vrmAdapterVrchatOsc STATIC
+    src/AddressInventory.cpp
     src/Diagnostics.cpp
     src/UdpReceiver.cpp)
 add_library(vrmAdapterVrchatOsc::vrmAdapterVrchatOsc ALIAS vrmAdapterVrchatOsc)
@@ -77,9 +89,14 @@ target_include_directories(vrmAdapterVrchatOsc
     PUBLIC
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
         "$<INSTALL_INTERFACE:include>")
-# The one edge this library has. The platform's socket and its threading
-# primitive arrive behind it, as they do for both siblings since OSC-2.
-target_link_libraries(vrmAdapterVrchatOsc PUBLIC liveTransport::liveTransport)
+# Both edges this library has. The platform's socket and its threading
+# primitive arrive behind the first, as they do for both siblings since OSC-2;
+# nothing at all arrives behind the second, which is the measurement that keeps
+# this adapter's closure free of OpenUSD.
+target_link_libraries(vrmAdapterVrchatOsc
+    PUBLIC
+        liveTransport::liveTransport
+        osc::osc)
 
 if(MSVC)
     # PUBLIC for the same reason the siblings use it: the installed headers

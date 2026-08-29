@@ -97,9 +97,13 @@ def main() -> int:
         r"\b(?:UsdStage|UsdSkel\w*|SdfLayer|PlugRegistry|EsfStage|VdfNode|"
         r"ExecUsd\w*)\b",
         re.IGNORECASE)
+    # `osc` is matched as a namespace qualification or an include path rather
+    # than as a word: three letters that spell a protocol are also three letters
+    # that appear inside other words (motionRuntime's check says the same).
     forbidden_neighbours = re.compile(
         r"\b(?:vrmSchema|vrmContainer|usdVrm\w*|execMotion|execVrm|cgltf|"
         r"mocopi|ardy|liveTransport)\b|"
+        r"\bosc::|\bosc/|"
         r"\b(?:winsock|sys/socket\.h|asio|curl|websocket)\b",
         re.IGNORECASE)
     for area in (source / "include", source / "src"):

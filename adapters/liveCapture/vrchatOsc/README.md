@@ -9,15 +9,19 @@ UDP datagram → OSC decode → tracker semantics → tracking-space normalisati
              → tracker frame → (a generic humanoid solve) → HumanoidPose
 ```
 
-**Status: scaffold and recorder.** What exists is the library's identity and its
-one real edge, the [frozen diagnostic set](include/vrmAdapterVrchatOsc/Diagnostics.h),
-the [recorded-packet format](include/vrmAdapterVrchatOsc/PacketCapture.h), the
+**Status: recorder, and an inventory of what a session contains.** What exists
+is the library's identity and its two edges, the
+[frozen diagnostic set](include/vrmAdapterVrchatOsc/Diagnostics.h), the
+[recorded-packet format](include/vrmAdapterVrchatOsc/PacketCapture.h), the
 [receiver seam](include/vrmAdapterVrchatOsc/UdpReceiver.h) onto the shared
-transport, and [**`vrchat_osc_record`**](tools/vrchatOscRecord/README.md) — the
-CLI that turns a sender aimed at this machine into a capture file.
+transport, the [address inventory](include/vrmAdapterVrchatOsc/AddressInventory.h),
+and [**`vrchat_osc_record`**](tools/vrchatOscRecord/README.md) — the CLI that
+turns a sender aimed at this machine into a capture file and reads one back.
 
-**There is no decoder, and that is the milestone rather than a gap.** Nothing in
-this library reads a byte of a datagram. See
+**There is no *semantic* decoder, and that is the milestone rather than a gap.**
+Nothing here knows that `/tracking/trackers/1/position` is a tracker or that `1`
+is an index. The inventory reads OSC's grammar — where an address ends, what its
+type tags are — and counts what it finds; giving a row a meaning is VRC-2's. See
 [the plan](../../../docs/roadmap/osc-and-vrchat-trackers.md) §6 and VRC-0 for the
 order, and the two sections below for why an adapter over a *published*
 specification still records before it decodes, and why the humanoid solve is not
@@ -44,12 +48,17 @@ raw UDP capture → recorded corpus → address / type-tag / cadence inventory
                 → decoder → canonical comparison
 ```
 
-The inventory (VRC-1) is the input to the decoder's design, and until it exists
-the decoder has no committed shape. What that buys is stated as a prediction to
-be checked rather than a claim: the risk this adapter was written expecting is
-that mocopi's `VRChat (OSC)` output is **not** the tracker subset anyone expects,
-and the inventory is what will say so before a decoder has been built around the
-assumption.
+The inventory (VRC-1) is the input to the decoder's design, and until a session
+has been through it the decoder has no committed shape. **The tool that produces
+it exists** — `vrchat_osc_record --inspect` prints one address-and-type-tag row
+per pair a capture carried — and what it needs is an operator and a device.
+
+What that buys is stated as a prediction to be checked rather than a claim: the
+risk this adapter was written expecting is that mocopi's `VRChat (OSC)` output is
+**not** the tracker subset anyone expects, and the inventory is what will say so
+before a decoder has been built around the assumption. That is why the inventory
+carries no list of addresses it expects: an address nobody predicted appears as a
+row rather than as a zero.
 
 ## A tracker source is not a pose source
 
@@ -103,29 +112,35 @@ third copy of a file is what that inheritance *is*.
 
 ## Edges
 
-One, today: `liveTransport`.
+Two: `liveTransport` and `osc`.
 
-WORKSPACE.md §2 permits an adapter three — `motionCore`, `motionRuntime` and
-`liveTransport` — and the other two are what an adapter takes when it has
-canonical values to produce. This one has none yet, so declaring them would claim
-a dependency the library does not have, and
-[`tests/test_vrm_adapter_vrchat_osc.cpp`](tests/test_vrm_adapter_vrchat_osc.cpp)
-exercises the edge that is declared for exactly that reason.
+WORKSPACE.md §2 permits an adapter four — `motionCore`, `motionRuntime`,
+`liveTransport` and `osc` — and the two core ones are what an adapter takes when
+it has canonical values to produce. This one has none yet: an address and a type
+tag are facts about a capture, not motion. Declaring them would claim a
+dependency the library does not have.
 
 One consequence worth knowing before reading a build log: **this adapter's test
 binaries load no OpenUSD at all**, because Gf arrives through `motionCore` and
 `motionCore` is not linked. Both siblings need OpenUSD's DLL directory on `PATH`
-for `ctest`; this one does not, until a decoder produces a pose.
+for `ctest`; this one does not.
 
-No adapter may depend on another, and here that rule guards something the other
-two adapters' equivalent does not: `vrmAdapterVmc` holds the only OSC decoder in
-this repository, and this adapter reads the same wire format. Reaching across
-would *work*, which is what makes
-[`tests/check_boundaries.py`](tests/check_boundaries.py) worth having rather than
-a formality. The shared decoder with two consumers is
-[§3.1](../../../docs/roadmap/osc-and-vrchat-trackers.md#31-libsosc--extract-after-the-second-consumer)'s,
-and it is extracted after a real datagram has been decoded through the existing
-one — measured first, reconciled second, moved third.
+That survived the decoder arriving, which the VRC-0 version of this paragraph
+predicted it would not — it said "until a decoder produces a pose". `osc` links
+nothing at all, not even a socket, so the link line grew and the closure did not.
+The prediction was about a decoder that produces a *pose*, and it still holds for
+that one.
+
+No adapter may depend on another. Through VRC-0 that rule guarded something real
+here: `vrmAdapterVmc` held the only OSC decoder in this repository and this
+adapter reads the same wire format, so reaching across would have *worked*.
+OSC-3 removed the temptation rather than the rule — the decoder is
+[`libs/osc`](../../../libs/osc/README.md) and this adapter is the second consumer
+it was extracted for
+([§3.1](../../../docs/roadmap/osc-and-vrchat-trackers.md#31-libsosc--extract-after-the-second-consumer)).
+[`tests/check_boundaries.py`](tests/check_boundaries.py) still refuses a sibling
+include, because a sibling edge is forbidden by the contract and not by whether
+it would pay.
 
 ## Diagnostics
 
@@ -148,20 +163,23 @@ far larger than the tracker subset read here, so traffic this adapter maps to
 nothing is the ordinary case, and warning about it would train an operator to
 ignore the warnings that mean something.
 
-**Whose codes a *shared* OSC decoder will raise is still open.** Today
-`DecodeOscPacket` lives in `vrmAdapterVmc` and raises `VRM_VMC_PACKET_MALFORMED`
-for a failure that is about OSC and not about VMC. The transport ring answered
-the same question for itself — a neutral event, mapped by each adapter onto its
-frozen set — and that is precedent rather than decision: `VRM_VMC_*` has golden
-tests over its formatted line, so whatever the decoder does has to leave those
-strings standing. It is decided in the extraction (OSC-3), not here.
+**Whose codes a shared OSC decoder raises was settled by OSC-3, and the answer
+is neither adapter's.** `libs/osc` refuses a datagram with a subject and a detail
+and *no code at all* — not even a neutral event enum, which is where it differs
+from the transport ring. That library's receiver raises two events a caller must
+tell apart; a decoder makes one distinction, decodable or not. So each adapter
+maps one refusal onto one of its own codes, and here that is
+`VRM_VRCHAT_OSC_PACKET_MALFORMED`, raised from
+[`src/AddressInventory.cpp`](src/AddressInventory.cpp) and nowhere else so far.
 
 ## Layout
 
 ```text
-include/vrmAdapterVrchatOsc/   Diagnostics, the capture magic, the receiver seam
-src/                           the code table, and the event → code map
-tests/                         unit, format, socket, boundary
+include/vrmAdapterVrchatOsc/   Diagnostics, the capture magic, the receiver seam,
+                               the address inventory
+src/                           the code table, the event → code map, and the
+                               inventory (the first file here that reads a byte)
+tests/                         unit, format, inventory, socket, boundary
 tests/corpus/                  empty by design until VRC-1 and VRC-2
 tools/vrchatOscRecord/         the CLI
 ```

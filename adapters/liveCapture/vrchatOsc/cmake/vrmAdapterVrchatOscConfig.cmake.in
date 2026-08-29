@@ -12,5 +12,13 @@ include(CMakeFindDependencyMacro)
 if(NOT TARGET liveTransport::liveTransport)
     find_dependency(liveTransport CONFIG REQUIRED)
 endif()
+# The OSC wire format, the other shared leaf. A sibling of the one above rather
+# than a layer of it, so it is resolved separately: WORKSPACE.md §2 forbids an
+# edge between the two in both directions, which means neither config can bring
+# the other. Its own config asks for nothing at all -- it links no workspace
+# library and no platform library either.
+if(NOT TARGET osc::osc)
+    find_dependency(osc CONFIG REQUIRED)
+endif()
 include("${CMAKE_CURRENT_LIST_DIR}/vrmAdapterVrchatOscTargets.cmake")
 check_required_components(vrmAdapterVrchatOsc)

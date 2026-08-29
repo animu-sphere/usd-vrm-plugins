@@ -62,12 +62,20 @@ endif()
 if(NOT TARGET liveTransport::liveTransport)
     find_package(liveTransport REQUIRED CONFIG)
 endif()
+# The OSC wire format, which this adapter held alone until a second consumer
+# proved the surface neutral (WORKSPACE.md §2, osc-and-vrchat-trackers.md §3.1).
+# A sibling of `liveTransport` rather than a layer of it: §2 forbids an edge
+# between those two in both directions, so this adapter is the place they meet.
+if(NOT TARGET osc::osc)
+    find_package(osc REQUIRED CONFIG)
+endif()
 
 # PacketCapture.cpp is gone rather than shrunk: the format's reader and writer
 # are liveTransport's now, and what this adapter contributes to them is one
-# string in a header. Diagnostics.cpp and UdpReceiver.cpp are what is left of
-# two files that moved -- a code table and an event-to-code map, which are the
-# two things a shared library may not hold.
+# string in a header. Diagnostics.cpp, UdpReceiver.cpp and OscPacket.cpp are
+# what is left of three files that moved -- a code table, an event-to-code map,
+# and a refusal-to-code map, which are the three things a shared library may not
+# hold.
 add_library(vrmAdapterVmc STATIC
     src/Diagnostics.cpp
     src/FrameAssembler.cpp
@@ -91,7 +99,8 @@ target_link_libraries(vrmAdapterVmc
     PUBLIC
         motionCore::motionCore
         motionRuntime::motionRuntime
-        liveTransport::liveTransport)
+        liveTransport::liveTransport
+        osc::osc)
 
 # No `ws2_32` and no `Threads::Threads` here any more, and their absence is the
 # clearest single measurement of what OSC-2 moved. Motion policy §8.2 still puts
