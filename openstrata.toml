@@ -17,9 +17,12 @@ profile = "usd"
 # 0.22.4 a wildcard selected DIRECTORIES and a matched directory with no
 # descriptor was a hard error, so one `tools/__pycache__` left by a test run made
 # the whole graph refuse to resolve (WORKSPACE_MEMBER_DESCRIPTOR_MISSING).
-# 0.22.5 treats a wildcard as a filter -- verified here: `tools/*` sweeps past the
-# same `__pycache__` and reports the same 10 libraries and 16 edges this list
-# does. What keeps the list is the second reason rather than the first: adding a
+# 0.22.5 treats a wildcard as a filter -- verified here on 2026-08-29: `tools/*`
+# swept past the same `__pycache__` and reported the same 10 libraries and 16
+# edges this list did that day. The count moved on 2026-08-31 when
+# `libs/motionTracking` joined and has not been re-measured, which is the kind of
+# number this file should not restate without running the command.
+# What keeps the list is the second reason rather than the first: adding a
 # member is a visible edit here rather than a side effect of creating a
 # directory, which is the same demand `release_members` below makes and the same
 # one WORKSPACE.md section 5 makes of the product.
@@ -46,6 +49,7 @@ members = [
   "libs/motionCore",
   "libs/motionRuntime",
   "libs/motionSource",
+  "libs/motionTracking",
   "libs/osc",
   "libs/vrmContainer",
   "libs/vrmRetarget",

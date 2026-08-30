@@ -177,6 +177,54 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`motionTracking`, a new shared library: which tracker is which body
+  region** (VRC-4a). A tracker index is not a body role, so an adapter that
+  mapped one onto a bone would have invented a calibration and hidden it in a
+  decoder. Assignment is therefore a **third** thing between decode and solve,
+  belonging to neither end, and it now has a home of its own — named in
+  [WORKSPACE.md](docs/architecture/WORKSPACE.md) §1, §2 and §5 in a change of
+  its own **before** any file existed, on the procedure `liveTransport` and
+  `osc` were named by.
+
+  **A region is not a bone, and that is the load-bearing claim.**
+  `TrackerRegion` reads like a short `HumanBone` and is deliberately not one:
+  a knee tracker sits on a strap between two bones and a chest strap observes
+  a ribcage rather than the joint a solve produces. The day the two become
+  aliases, assignment is a lookup and the solve has nothing left to do — so
+  §2 forbids it *by name*, and the boundary check reads the sources rather
+  than the link line, because an enum copied by hand leaves no link line to
+  fail on. Eleven regions cover the three rigs a tracker source can present
+  and nothing beyond them.
+
+  **Explicit statement, exactly as `motion_bvh_convert` requires a named
+  profile** — `t1=head t2=leftHand t3=rightHand`, no default and no name
+  heuristic, because a detector written before the contract settles the
+  contract on whichever rig was recorded first. Automatic assignment from
+  rest geometry stays a later aid *over* this contract.
+
+  **A set it cannot place is three answers with a case each**, and two of
+  them refuse: `Refuse` says the statement is wrong for this rig and will
+  still be wrong next frame, `Hold` says the rig has not finished coming up,
+  `Ignore` says the rig carries more than the solve needs. Collapsing the
+  first two would make a mis-numbered tracker and a device that has not
+  powered on the same event, and only one of those is worth interrupting a
+  session for. The *other* direction — a stated tracker that did not arrive —
+  is data under every policy, on the same rule a missing tracker follows one
+  layer up. An assignment that placed nothing is refused under all three,
+  including `Ignore`, which would otherwise hand a caller an empty binding
+  set and let it drive a solve from nothing.
+
+  Fourteen mutations, each a plausible wrong *policy* rather than a syntax
+  error, each failing a case named for what it breaks; twelve boundary
+  injections, each refused for its own rule rather than for whichever pattern
+  matched first. **The mutation pass found a hole and the fix was a
+  deletion**: a guard refusing a second `=` in a statement could not be
+  reached by any input, because `head=hips` is already not a region this
+  vocabulary carries. It is gone rather than documented. It links nothing at
+  all — no `motionCore`, no OpenUSD, no platform primitive — and carries no
+  diagnostic code: a refusal names the event and the caller supplies the
+  code, as `motionSource` and `osc` already do.
+
 - **The VRChat OSC adapter assembles frames, and the boundary is a
   measurement rather than a convention** (VRC-4). VMC marks a frame with a
   clock message; this wire sends three floats per address and nothing else,

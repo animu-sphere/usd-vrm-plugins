@@ -310,6 +310,20 @@ add_subdirectory("libs/liveTransport")
 # the only leaf here whose link line is empty.
 add_subdirectory("libs/osc")
 
+# The assignment policy: which tracker is which body region (WORKSPACE.md §1).
+# A third leaf with an empty link line, and the first of the three that is on
+# the *product* side of §5's split — nothing here links it yet, and nothing has
+# to change for a product tool to.
+#
+# Its position in this file is not the transport pair's. It sits above the
+# adapters because an adapter's CLI may link it and the adapter library may not
+# (§2), so the target has to exist before those directories are added and be
+# refused inside them by their own boundary checks.
+#
+# No OpenUSD and no `motionCore`: a region is a mount point, and the day it
+# becomes a `HumanBone` alias assignment has become a lookup.
+add_subdirectory("libs/motionTracking")
+
 # Input adapters (WORKSPACE.md §1, §2). Each adapters/<group>/<name>/ carrying
 # both an openstrata.library.yaml and a CMakeLists.txt is added here — plain
 # libraries, not plugin bundles: an adapter registers nothing with OpenUSD.

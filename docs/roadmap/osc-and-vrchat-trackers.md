@@ -545,7 +545,7 @@ they are a frozen surface with golden tests over their formatted form.
 | VRC-2 — tracker semantic decode | adapter | ✅ |
 | VRC-3 — tracking-space normalisation | adapter | ✅ |
 | VRC-4 — tracker frame assembly | adapter | ✅ |
-| VRC-4a — tracker assignment policy | neither end | 🚧 |
+| VRC-4a — tracker assignment policy | neither end | ✅ |
 | VRC-5 — the humanoid solve boundary | adapter | ⬜ |
 | VRC-6 — CLI and record | adapter | ⬜ |
 | VRC-7 — cross-source evidence | both | ⬜ |
@@ -954,6 +954,51 @@ where a file sits.
 Automatic assignment from rest geometry is **not** in this milestone. It is an
 aid over this contract once the contract exists, in the same relationship
 `motion_bvh_inspect`'s candidate profiles have to `--profile`.
+
+**Done 2026-08-31** — [`libs/motionTracking`](../../libs/motionTracking), named
+in the contract first ([§10](#10-contract-changes-this-plan-requires)) and
+implemented second. It is the first library here that holds a *policy* and no
+format at all: nothing in it reads a byte, and its whole surface is two
+vocabularies and the rules relating them.
+
+**A region is not a bone, and the check reads the sources to say so.** Every
+other boundary rule in this repository is about an edge, and an edge is visible
+on a link line; this one is about an **alias**, which leaves no link line to
+fail on — so `TrackerRegion` is refused the `HumanBone` enumerators that are not
+regions, in the sources, while `Head`, `Chest` and `Hips` are deliberately
+absent from that list because a region named `Chest` is the point. The two rigs
+that make the distinction real are the ordinary ones: a knee tracker sits on a
+strap between two bones and there is no knee joint for it to be, and a chest
+strap observes a ribcage rather than the joint a solve produces.
+
+**Three answers, and two of them refuse.** `Refuse` · `Ignore` · `Hold` are
+`§5.1`'s three verbatim, and the outcome worth recording is that `Refuse` and
+`Hold` both refuse and are still two: `UnplacedTracker` will still be true next
+frame, so a caller stops and tells the operator, and `Held` may not be, so a
+caller keeps the assignment it had. One refusal for both would make a
+mis-numbered tracker and a device that has not powered on the same event.
+`NothingPlaced` is raised under **every** policy including `Ignore`, which is
+the one case a policy of ignoring would otherwise turn into success with an
+empty binding set. And the other direction — a stated tracker that did not
+arrive — is data under all three, on the same rule `TrackerFrame::missing`
+follows: a rig coming up one device at a time would otherwise refuse every frame
+for its first second.
+
+**Fourteen mutations and twelve boundary injections, and one finding from each
+pass.** The boundary pass found that the diagnostic-code rule could never fire,
+because every code here is spelled `VRM_…` and the producer-name rule matches
+all of them — a check ordered so that it cannot be verified by injecting what it
+is for. The two are reordered, and each rule is now refused for its own reason.
+The mutation pass found a guard **no input could reach**: a second `=` in a
+statement needed no rule, because `head=hips` is already not a region this
+vocabulary carries. It is deleted rather than documented, on VRC-4's precedent
+with `framesRefusedEmpty`.
+
+Two things this milestone did not do. **It names no adapter and no adapter names
+it** — the CLI that will hold both a tracker frame and an assignment is VRC-6's,
+and `adapters/*/tools/* -> motionTracking` is a permission in the contract with
+no taker yet. And **automatic assignment is still not here**, which is the
+paragraph above holding rather than an omission.
 
 ### VRC-5 — the humanoid solve boundary
 
