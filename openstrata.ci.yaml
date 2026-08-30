@@ -18,15 +18,24 @@
 #   PR lane does not exercise release.yml. When you add a Linux job to a
 #   hand-authored workflow, add the step with it.
 #
-# Lanes:
-#   - pull_request  -> GitHub-hosted source build from checkout. The runner
-#                      bootstraps a pinned `ost` and pulls the runtime SDK from
-#                      its OCI reference (runtime_remote) below. Both cell
-#                      kinds live here: `bundle:` cells run the per-bundle
-#                      verification pyramid, `kind: workspace` cells build the
-#                      root CMake tree (see the workspace cells at the end).
-#   - scheduled     -> self-hosted real compatibility validation from pinned
-#                      runtime + plugin artifacts (air-gapped local import).
+# Lanes: one, `pull_request` -- GitHub-hosted source build from checkout. The
+# runner bootstraps a pinned `ost` and pulls the runtime SDK from its OCI
+# reference (runtime_remote) below. Both cell kinds live here: `kind: workspace`
+# cells build the root CMake tree and run its whole CTest suite, and one
+# `bundle:` cell per platform runs the per-bundle verification pyramid. What
+# each kind is for, and why the count is what it is, is under "Cell inventory"
+# below.
+#
+#   THERE IS NO `scheduled` LANE ANY MORE (2026-08-30). It held one cell,
+#   usdvrmfileformat-support-windows-cy2026, on a self-hosted `usd-windows-real`
+#   runner that does not exist: every weekly firing from 2026-07-27 onward was
+#   cancelled by GitHub after queueing for a runner that never picked it up, and
+#   the newest five were checked before the lane was removed. It also pinned a
+#   plugin artifact built against OpenUSD 26.05 against a 26.08 runtime, which
+#   this file's own note said not to trust until the plugin was republished. A
+#   lane that cannot run cannot answer the compatibility question it was added
+#   to ask. Reinstate it with `ost ci generate` -- and a real runner and a
+#   republished plugin artifact -- when there is one to point at.
 #
 # Digest provenance:
 #   All three runtimes are canonical leaves of ost's own OpenUSD runtime matrix
@@ -111,13 +120,8 @@
 #   All three are published publicly to GHCR; a fork PR needs no registry
 #   credential to pull them. Re-pin measured and recorded in
 #   docs/reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md
-#   plugin:  ost plugin publish plugins/usdVrmFileFormat  (usdVrmFileFormat 0.1.0, ost 0.13.0 lean
-#            package — reproducible digest, debug symbols split into *-debug)
-#            NOTE: this artifact was built against the 26.05 runtime. The
-#            scheduled lane below now pins a 26.08 runtime, so it validates a
-#            26.05-built plugin against 26.08. OpenUSD guarantees no ABI
-#            stability across versions; republish the plugin before trusting
-#            that lane.
+#   No plugin artifact is pinned here any more: the only cell that consumed one
+#   was the scheduled cell removed above.
 schema: 1
 
 bootstrap:
@@ -141,9 +145,10 @@ runners:
     image: ubuntu-24.04
     billing:
       acknowledgement: required
-  usd-windows-real:
-    kind: self-hosted
-    labels: [self-hosted, windows, x64, usd-26]
+  # No self-hosted runner is declared. `usd-windows-real` was removed with the
+  # scheduled lane it served (see the header). Nothing referenced it once that
+  # cell was gone, and a runner definition that renders into no job is a claim
+  # about infrastructure this project does not have.
 
 # ost 0.16+ makes both dependency edges executable: it consumes the
 # `requires.bundles` closure (vrmSchema) AND the `requires.libraries` closure
@@ -153,14 +158,51 @@ runners:
 # installed, and present in the session automatically — no repo-owned bootstrap
 # or cell-local `with:` duplication.
 #
-# The Windows PR cells stay capped at L4: ost's hosted-Windows `usdcat --flatten
+# The Windows PR cell stays capped at L4: ost's hosted-Windows `usdcat --flatten
 # --out` capture still injects semantic CR into multiline USDA string values
 # (authored comments and generated `doc`) even from an LF-pinned fixture/golden,
 # and the golden compare preserves semantic CRLF by design, so L5 mismatches.
 # This is not reproducible on a local worktree; see the Phase 3 dogfood report.
-# macOS and Linux cells run full L5. usdVrmPackageResolver's fixtures are chosen
-# so its own L5 golden is host-independent, but its Windows cell is capped for
-# consistency until the hosted-Windows capture is confirmed fixed.
+# The macOS and Linux cells run full L5.
+#
+# --- Cell inventory ----------------------------------------------------------
+#
+# Seven cells: three workspace, one graph, three bundle. It was sixteen until
+# 2026-08-30, twelve of them bundle cells -- every one of the four bundles on
+# each of the three platforms -- and nine of those were measured redundant
+# against the workspace cells and removed. What the evidence was, so a future
+# reader can re-run it before adding them back:
+#
+#   The workspace cells run the root tree's whole CTest suite on all three
+#   platforms, and that suite already contains each bundle's own tests:
+#   vrmschema_plugin; usdvrm_transform_util, usdvrm_python_smoke (every fixture,
+#   not the pyramid's one), usdvrm_corpus_smoke, usdvrm_negative,
+#   usdvrm_validate and usdvrm_baseline; usdvrmresolver_boundaries and
+#   usdvrmresolver_python. A bundle cell's L2-L5 re-checks discovery, one
+#   usdcat read, one stage open and one golden -- a strict subset, on the same
+#   three platforms.
+#
+#   usdVrmaFileFormat was the exception, and it was a bug, not a design. Its
+#   CMakeLists guarded its tests on USDVRMA_BUILD_TESTS while the root defines
+#   USDVRM_BUILD_TESTS for every bundle, so in a composed build the option
+#   defaulted off and the bundle registered no CTest target: the workspace lane
+#   built the VRMA reader on three platforms and tested none of it, and its
+#   bundle cells were the only place the reader was exercised at all. The
+#   option is renamed as of this change and the suite went 113 -> 115 tests, so
+#   the vrma cells stopped being the exception before they were removed.
+#
+# WHAT THE THREE SURVIVING BUNDLE CELLS ARE FOR, and why they are not four.
+# They are not here for the pyramid. A bundle cell is the only lane that
+# configures a bundle STANDALONE -- `ost plugin build <bundle>` against a
+# pulled runtime with no root CMake tree in scope -- and the only PR lane that
+# runs `ost plugin package`, whose staging is per-platform (on Windows the
+# linked libraries land under runtime/libraries/{lib,bin}). Neither is
+# reachable from a workspace cell, and release.yml proves both only at tag
+# time, which is exactly the gap that has cost this repository a red release
+# lane before. usdVrmFileFormat is the representative because it is the only
+# bundle carrying both a `requires.libraries` and a `requires.bundles` edge, so
+# its package is the one with a dependencies.json and staged siblings to get
+# wrong. One cell per platform, three platforms.
 cells:
   - name: usdvrmfileformat-pr-windows
     lane: pull_request
@@ -203,149 +245,6 @@ cells:
       apt: [libx11-dev, libxt-dev]
     up_to: 5
 
-  - name: usdvrmafileformat-pr-windows
-    lane: pull_request
-    runner: windows-hosted
-    runtime_artifact: sha256:ebb0c7da509ee14ada19ee5b461de6996aad0024b5c9640f12dde76912e849b5
-    runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
-      expected_oci_digest: sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
-    bundle: plugins/usdVrmaFileFormat
-    platform: cy2026
-    profile: usd
-    up_to: 4
-
-  - name: usdvrmafileformat-pr-macos-arm64
-    lane: pull_request
-    runner: macos-arm64-hosted
-    runtime_artifact: sha256:8d1322126b8f3aa4dd1791184603d7e1b4571bd4d6d89dd80bb75bdf5eef397c
-    runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
-      expected_oci_digest: sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
-    bundle: plugins/usdVrmaFileFormat
-    platform: cy2026
-    profile: usd
-    host_python: "3.13"
-    up_to: 5
-
-  - name: usdvrmafileformat-pr-linux
-    lane: pull_request
-    runner: linux-hosted
-    runtime_artifact: sha256:3bf31789daa60ef650df35ab276bd67d0c0ee44a960311f78835cc0962efe261
-    runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
-      expected_oci_digest: sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
-    bundle: plugins/usdVrmaFileFormat
-    platform: cy2026
-    profile: usd
-    host_python: "3.13"
-    # MaterialX 1.39.5 (OpenUSD 26.08) hard-requires X11 on Linux; see header.
-    host_packages:
-      apt: [libx11-dev, libxt-dev]
-    up_to: 5
-
-  - name: vrmschema-pr-windows
-    lane: pull_request
-    runner: windows-hosted
-    runtime_artifact: sha256:ebb0c7da509ee14ada19ee5b461de6996aad0024b5c9640f12dde76912e849b5
-    runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
-      expected_oci_digest: sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
-    bundle: plugins/vrmSchema
-    platform: cy2026
-    profile: usd
-    up_to: 4
-
-  - name: vrmschema-pr-macos-arm64
-    lane: pull_request
-    runner: macos-arm64-hosted
-    runtime_artifact: sha256:8d1322126b8f3aa4dd1791184603d7e1b4571bd4d6d89dd80bb75bdf5eef397c
-    runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
-      expected_oci_digest: sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
-    bundle: plugins/vrmSchema
-    platform: cy2026
-    profile: usd
-    host_python: "3.13"
-    up_to: 5
-
-  - name: vrmschema-pr-linux
-    lane: pull_request
-    runner: linux-hosted
-    runtime_artifact: sha256:3bf31789daa60ef650df35ab276bd67d0c0ee44a960311f78835cc0962efe261
-    runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
-      expected_oci_digest: sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
-    bundle: plugins/vrmSchema
-    platform: cy2026
-    profile: usd
-    host_python: "3.13"
-    # MaterialX 1.39.5 (OpenUSD 26.08) hard-requires X11 on Linux; see header.
-    host_packages:
-      apt: [libx11-dev, libxt-dev]
-    up_to: 5
-
-  - name: usdvrmresolver-pr-windows
-    lane: pull_request
-    runner: windows-hosted
-    runtime_artifact: sha256:ebb0c7da509ee14ada19ee5b461de6996aad0024b5c9640f12dde76912e849b5
-    runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
-      expected_oci_digest: sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf
-    bundle: plugins/usdVrmPackageResolver
-    platform: cy2026
-    profile: usd
-    up_to: 4
-
-  - name: usdvrmresolver-pr-macos-arm64
-    lane: pull_request
-    runner: macos-arm64-hosted
-    runtime_artifact: sha256:8d1322126b8f3aa4dd1791184603d7e1b4571bd4d6d89dd80bb75bdf5eef397c
-    runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
-      expected_oci_digest: sha256:8486d94286b60cc20b53c926757f1802442569f9d9a7eecdadf2c9895b2efeb6
-    bundle: plugins/usdVrmPackageResolver
-    platform: cy2026
-    profile: usd
-    host_python: "3.13"
-    up_to: 5
-
-  - name: usdvrmresolver-pr-linux
-    lane: pull_request
-    runner: linux-hosted
-    runtime_artifact: sha256:3bf31789daa60ef650df35ab276bd67d0c0ee44a960311f78835cc0962efe261
-    runtime_remote:
-      uri: oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
-      expected_oci_digest: sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f
-    bundle: plugins/usdVrmPackageResolver
-    platform: cy2026
-    profile: usd
-    host_python: "3.13"
-    # MaterialX 1.39.5 (OpenUSD 26.08) hard-requires X11 on Linux; see header.
-    host_packages:
-      apt: [libx11-dev, libxt-dev]
-    up_to: 5
-
-  # --- Workspace cells (ost 0.21.0) -------------------------------------
-  #
-  # A `bundle:` cell only ever reaches a plugin bundle. The plain libraries
-  # (libs/*/openstrata.library.yaml), the CLI tools
-  # (tools/*/openstrata.tool.yaml) and the adapters are built by the ROOT CMake
-  # tree and no bundle requires them, so twelve bundle cells leave them
-  # untested. These cells build that tree: `ost build` then `ost test`, which is
-  # the whole CTest suite -- motionCore, motionRuntime (incl. live capture and
-  # the capture corpus), vrmRetarget, vrmContainer, motionBvh (incl. the
-  # recorded corpus), vrmAdapterVmc, every CLI, and usdvrm_baseline, the
-  # whole-workspace behavior gate that no other lane runs (it had been silently
-  # stale for a release before v0.5.0 caught it). The count is deliberately not
-  # written down here: the last one said 22 and was stale by two releases.
-  #
-  # This replaces the hand-authored motion-ci.yml, which was ~210 lines of
-  # which ~120 duplicated generated logic and which could never finish: a bare
-  # `cmake` could not configure against a pulled runtime. 0.21.0's `plugin run`
-  # exports CMAKE_TOOLCHAIN_FILE and `ost build` uses it, so the lane is
-  # expressible in the contract instead. See
-  # docs/reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md
   - name: workspace-graph-pr
     kind: workspace
     lane: pull_request
@@ -413,11 +312,3 @@ cells:
       apt: [libx11-dev, libxt-dev]
     verify: test
 
-  - name: usdvrmfileformat-support-windows-cy2026
-    lane: scheduled
-    runner: usd-windows-real
-    runtime_artifact: sha256:ebb0c7da509ee14ada19ee5b461de6996aad0024b5c9640f12dde76912e849b5
-    plugin_artifact: sha256:87ee36e45f4b62693f7fe060c2236de938bcc63997cd3007e07d090af2c58b8d
-    platform: cy2026
-    profile: usd
-    up_to: 5

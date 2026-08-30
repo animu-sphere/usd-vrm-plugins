@@ -15,6 +15,22 @@ Current schema contract version: **1**.
 
 ### Fixed
 
+- **The VRMA reader was built by every CI lane and tested by almost none of
+  them.** `plugins/usdVrmaFileFormat/CMakeLists.txt` guarded its test
+  subdirectory on `USDVRMA_BUILD_TESTS`, a name nothing outside that file ever
+  set, while the repo root defines `USDVRM_BUILD_TESTS` and the three sibling
+  bundles read it. In a composed root build `PROJECT_IS_TOP_LEVEL` is false in
+  that scope, so the option defaulted **off** and the bundle registered no CTest
+  target at all: the workspace lane compiled and linked
+  `libUsdVrmaFileFormat` on Windows, macOS and Linux and ran zero of its tests,
+  on every PR, since the workspace cells landed. Nothing failed and nothing was
+  skipped — a test that is never registered is not reported anywhere, which is
+  why a 100%-passing suite hid it. The committed build caches say it plainly:
+  `USDVRMA_BUILD_TESTS:BOOL=OFF` in every root cache and `ON` in the standalone
+  bundle cache. Renamed to `USDVRM_BUILD_TESTS`; the workspace suite goes from
+  113 to 115 tests, `usdvrma_python_smoke` and `usdvrma_fixture_deterministic`
+  among them, and the bundle still registers both when configured standalone.
+
 - **A tool member of the installed product could not find the product's own
   data.** `motion_bvh_convert` derives its profile directory from its own
   executable path, and its installed-prefix rule was
@@ -366,6 +382,33 @@ Current schema contract version: **1**.
   directory, so they arrive with the first fixture instead of failing from today.
 
 ### Changed
+
+- **CI is seven cells, not sixteen, and there is no scheduled lane.** The PR
+  matrix carried every one of the four bundles on each of three platforms; the
+  workspace cells that landed alongside them already run the root CTest suite on
+  the same three platforms, and that suite contains each bundle's own tests
+  (`vrmschema_plugin`; the six `usdvrm_*` including `usdvrm_baseline`;
+  `usdvrmresolver_boundaries` and `usdvrmresolver_python`) — a superset of the
+  discovery / one-read / one-open / one-golden a bundle cell's L2–L5 checks.
+  `usdVrmaFileFormat` was the sole exception, and only because of the option-name
+  bug fixed above; with that fixed, nine bundle cells were measured redundant and
+  removed. Three remain, `usdVrmFileFormat` on each platform, and not for the
+  pyramid: a bundle cell is the only lane that configures a bundle **standalone**
+  (no root CMake tree in scope) and the only PR lane that runs `ost plugin
+  package`, whose staging differs per platform. `openstrata.ci.yaml` carries the
+  reasoning and what to re-measure before adding cells back.
+
+  The `scheduled` lane is gone with its one cell,
+  `usdvrmfileformat-support-windows-cy2026`. It targeted a self-hosted
+  `usd-windows-real` runner that does not exist — every weekly firing from
+  2026-07-27 onward was cancelled by GitHub after queueing for a runner that
+  never claimed it — and it pinned a plugin artifact built against OpenUSD 26.05
+  against a 26.08 runtime, which this repository's own note said not to trust.
+  `.github/workflows/ost-support-matrix.yml` is deleted; `ost ci generate` no
+  longer emits it — and does not notice, which is one of the three asks in
+  [report 38](docs/reports/ost/38-2026-08-30-v0.22.8-workspace-cell-verbs-and-orphaned-lanes.md)
+  along with the missing workspace-cell verbs that made a sixteen-cell matrix the
+  only way to say what two commands say.
 
 - **The silence timeout arrived, on the terms the fix above promised.** The
   shared receiver has one unconditionally; `vrmAdapterMocopi` exposes it and
