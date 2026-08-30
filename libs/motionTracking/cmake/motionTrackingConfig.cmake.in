@@ -1,0 +1,7 @@
+@PACKAGE_INIT@
+
+# No `find_dependency` and no platform branch. This library's allowed edge set
+# is empty and it links nothing at all — not a workspace library, not OpenUSD,
+# not a platform primitive (WORKSPACE.md §2).
+include("${CMAKE_CURRENT_LIST_DIR}/motionTrackingTargets.cmake")
+check_required_components(motionTracking)

@@ -1,0 +1,28 @@
+# OpenStrata plain-library descriptor. motionTracking is the middle of the three
+# decisions between a tracker index and a bone: decode is an adapter's,
+# assignment is this library's, and the solve is the motion layer's
+# (osc-and-vrchat-trackers.md §5.1).
+#
+# A library, not a plugin bundle: it registers nothing with OpenUSD and has no
+# plugInfo.json (WORKSPACE.md §1).
+#
+# `requires` is absent rather than empty-by-accident. Its allowed edge set is
+# **empty** (WORKSPACE.md §2), and the edge it most looks like it should have is
+# the one that would end it: a region resolving to a `motion::HumanBone` makes
+# assignment a lookup and leaves the solve nothing to do, so §2 forbids the
+# alias by name and the boundary check reads the sources rather than the link
+# line -- an enum copied by hand leaves no link line to fail on.
+#
+# Unlike `liveTransport` and `osc` this library is on the **product** side of
+# §5's split. It names no product, it opens nothing, and a product tool can
+# reach it -- `motion_bvh_convert` is the shape of the one that eventually
+# will. Nothing in the product links it today, so it is in no artifact yet, and
+# that absence is a statement about which tools exist rather than an exclusion.
+schema: openstrata.library/v1alpha1
+library:
+  id: motionTracking
+  # Mirrors VERSION; release preparation updates this in lockstep.
+  version: 0.7.0
+cmake:
+  package: motionTracking
+  target: motionTracking::motionTracking

@@ -105,6 +105,7 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | `motionCore` | plain static CMake library (v0.3.0) | `motion::HumanoidPose`, `HumanoidAnimation`, `RootMotion`, `MotionConstraintSet`, source metadata. No USD stage authoring, no vendor SDK, no network. |
 | `motionRuntime` | plain static CMake library (v0.4.0) | Timestamped pose buffer, interpolation/extrapolation, resample, filter, blend — the OpenExec-independent runtime |
 | `vrmRetarget` | plain static CMake library (v0.4.0) | Humanoid map, rest pose, pose retargeter, root-motion policy. **Completed before OpenExec** (motion policy §18.12). Expression resolution stays with Motion Phase G. |
+| `motionTracking` | plain static CMake library (`libs/motionTracking/`) | **Which tracker is which body region, and nothing about which bone that is.** A tracker source observes numbered devices that are pre-IK, and a tracker index is not a body role, so this library owns the three things that turn one into the other and are neither the adapter's nor the solve's: the **region** vocabulary — mount points on a body, never `motion::HumanBone` — an operator's explicit statement binding an opaque tracker identity to one, and the stated policy for an observed set it cannot place ([the OSC track](../roadmap/osc-and-vrchat-trackers.md) §5.1). It carries **no address literal and no adapter identity**, enforced by a boundary check rather than by review: a policy that named one would have made "generic" a claim about where a file sits. Its allowed edge set is **empty**, measured rather than intended — assignment maps one vocabulary this library owns onto another, so it names no `motionCore` value and no `Gf` type, and the solve VRC-5 places here is what will take that edge. Like `motionSource` it holds no diagnostic **code**: a refusal is a typed value naming the event, and whoever knows which adapter it is supplies the code. Product-side rather than adapter-side, and nothing in the product links it yet (§5). |
 | `motion_retarget` | CLI executable (`tools/motionRetarget`, v0.4.0) | Reads the target rig and the semantic clip off stages, drives `vrmRetarget` over plain values, authors the retargeted `UsdSkelAnimation` and its `skel:animationSource` binding. Not a bundle — it registers nothing with OpenUSD. |
 | `motion_capture` | CLI executable (`tools/motionCapture`, v0.5.0) | Replays a recorded capture trace through `LiveCaptureSource` and authors the avatar-independent semantic clip — the same shape `usdVrmaFileFormat` produces, so `motion_retarget` consumes it unchanged. Does **not** link `vrmRetarget`: it stops at the clip. Not a bundle. **It gains no adapter source, and that is the settled answer rather than a deferral** — a live session reaches it as a trace written by the adapter's own tool, so this row is the same after the first adapter as before it (§2). |
 | `liveTransport` | plain static CMake library (`libs/liveTransport/`) | The live half's shared leaf: the UDP receiver, the optional datagram queue, the packet-capture file format, and the diagnostic **vehicle** — the struct, its severity and recoverability defaults, and its formatted form — that every live adapter raises through. It knows no protocol: no OSC, no vendor grammar, no address literal, no product name. It holds no diagnostic **code** either; a code enum is frozen per adapter and stays there (§2). Its edge set is **empty**, and that is a measurement rather than an intention — the six files it is extracted from include their own headers and the standard library and nothing else (measured 2026-08-24). Outside the aggregate product, on the *adapter* side of §5's split though it carries no product name. |
@@ -283,7 +284,7 @@ execMotion            -> motionCore, motionRuntime
 execVrm               -> vrmSchema
 execVrm               -> motionCore, motionRuntime, vrmRetarget
 adapters/*            -> motionCore, motionRuntime, liveTransport, osc
-adapters/*/tools/*    -> vrmRetarget, OpenUSD stage authoring
+adapters/*/tools/*    -> vrmRetarget, motionTracking, OpenUSD stage authoring
 liveTransport         -> nothing — its allowed edge set is empty, not short
 osc                   -> nothing — the same, and `liveTransport` is in the
                          prohibitions below rather than absent from here
@@ -292,6 +293,10 @@ motionSource          -> motionCore
 motionBvh             -> motionSource
 motion_bvh_inspect    -> motionBvh
 motion_bvh_convert    -> motionBvh, motionSource, motionCore, OpenUSD stage
+
+motionTracking        -> nothing — a third empty edge set, and the first that is
+                         empty for neither of the other two reasons: it maps one
+                         vocabulary it owns onto another
 ```
 
 The last two lines of the adapter block are not the same permission. An
@@ -300,6 +305,17 @@ values and stops there; an **adapter tool** (its CLI) may go on to retarget and
 author a stage, exactly as `motion_retarget` and `motion_capture` do. The moment
 retarget or USD authoring lives inside an adapter library, that adapter has
 become a second motion pipeline.
+
+**`motionTracking` is on the tool's side of that same line, and it is there for
+a reason the other two entries do not supply.** `vrmRetarget` is a tool's
+because a library that retargeted would be a second pipeline; assignment is a
+tool's because assignment is *not the adapter's decision to make*. Which tracker
+is on which body region is an operator's statement about a rig, and an adapter
+that resolved it would have invented a calibration and hidden it inside a
+decoder — which is the whole argument for a tracker source stopping at an
+observation ([the OSC track](../roadmap/osc-and-vrchat-trackers.md) §5.1). So
+the adapter library may not name this package and its CLI may, and the check
+each adapter already carries is what holds the first half.
 
 **No product tool depends on an adapter, and the arrow that would have said so
 is deliberately absent.** `motion_capture` is a member of the aggregate product
@@ -362,6 +378,18 @@ receiver, and a receiver that can decode has become an adapter with no adapter
 around it. Neither direction is more plausible than the other, so neither gets
 to be the one nobody wrote down.
 
+**`motionTracking`'s last prohibition is the only one here that forbids a
+`typedef`, and it is the one the library exists to make true.** A region is a
+place a strap goes; a `motion::HumanBone` is a joint in a skeleton. They read as
+the same list until the rig has a knee tracker — there is no knee bone, and the
+device sits between two — or a chest strap, which observes a torso rather than a
+`Chest`. The day `TrackerRegion` becomes an alias for `HumanBone`, assignment has
+become a lookup and the solve has nothing left to do, which is exactly the
+collapse [the OSC track](../roadmap/osc-and-vrchat-trackers.md) §5.1 separates
+three decisions to prevent. So the vocabulary is this library's own, `motionCore`
+is not on its allowed edge list, and the check reads the sources rather than the
+link line — an enum copied by hand would leave the link line empty.
+
 **And the enforcement runs the wrong way round here, which is worth knowing
 before the green result is read as coverage.** `liveTransport` lives under
 `libs/`, so the workspace graph discovers it and validates its (empty) edges,
@@ -404,8 +432,9 @@ motionCore/motionRuntime/vrmRetarget -> adapters/*  (adapters depend on the
 execMotion/execVrm    -> adapters/*  (same rule, one layer up: an OpenExec
                          node never reaches for a vendor input)
 adapters/<a>          -> adapters/<b>  (adapters are siblings, never a stack)
-adapters/*            -> vrmSchema, any USD file-format bundle, vrmRetarget
-                         (the *library*; its tool may — see above)
+adapters/*            -> vrmSchema, any USD file-format bundle, vrmRetarget,
+                         motionTracking (the *library*; its tool may — see
+                         above)
 adapters/*            -> OpenExec, ExecIr, or emitting ExecIr values
 
 liveTransport         -> motionCore, motionRuntime, vrmRetarget, motionSource,
@@ -435,6 +464,16 @@ execMotion/execVrm    -> osc
 motionCore            -> ExecIr
 vrmRetarget           -> ExecIr
 usdVrmFileFormat      -> authoring ExecIr prims as a requirement of import
+
+motionTracking        -> motionCore, motionRuntime, vrmRetarget, motionSource,
+                         motionBvh, liveTransport, osc, vrmContainer, vrmSchema,
+                         any USD file-format bundle, OpenExec, ExecIr,
+                         adapters/*
+motionTracking        -> an OSC or vendor address literal, a product or SDK
+                         name, any adapter's diagnostic code, or a
+                         `motion::HumanBone` standing in for a region
+motionCore/motionRuntime/vrmRetarget/motionSource/motionBvh -> motionTracking
+execMotion/execVrm    -> motionTracking
 
 motionSource          -> motionBvh, motionFbx, or any other reader
 motionCore            -> motionSource, motionBvh
@@ -697,6 +736,29 @@ members of it. The profile files ship as package data beside them —
 `share/usd-vrm-plugins/profiles/motion/` — because a converter with no profile
 available refuses every file it is given, which would make an artifact-only
 smoke test of the BVH path impossible to pass.
+
+**`motionTracking` takes that same side, and it is the first row where all three
+questions pass and no product member links it anyway.** It names no product — the
+boundary check refuses one — and it opens nothing, so the two clauses above are
+satisfied the way `motionSource`'s are. The third question, the one `osc` turned
+on, gets the opposite answer: a product member *can* link it, and the shape it
+would take is already in this document. `motion_bvh_convert` holds a reader and a
+profile at once and is a product tool; the tracker path's equivalent holds a
+tracker trace and an assignment, and the day it is written it links this library
+exactly as that one links `motionSource`, with nothing in this section to
+re-argue.
+
+So it is neither excluded nor shipped today, and there is no artifact row for it
+above. **As of 2026-08-31 it has no consumer at all** — the root `CMakeLists.txt`
+configures it and the consumer fixture measures it, and nothing links it: the
+permission §2 grants is `adapters/*/tools/* -> motionTracking`, and no adapter
+CLI has taken it yet (that is VRC-6). A library with no consumer ships in
+nothing, so the absence of a `motionTracking-<version>-<target>.tar.zst` says
+only that, and must not be read as the exclusion `liveTransport` and `osc` carry.
+The first consumer will be an adapter's CLI, which travels in that adapter's own
+artifact rather than in the product — so a library on the product's side of this
+split will first be found on the excluded side of it, and that is still a
+statement about which tools exist rather than about which side it is on.
 
 **That last sentence is the requirement, and through v0.7.0 only `cmake
 --install` met it.** A packaged product did not: `ost` packaged a tool member

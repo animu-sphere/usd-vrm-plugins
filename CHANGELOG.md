@@ -177,6 +177,64 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`motionTracking`, a new shared library: which tracker is which body
+  region** (VRC-4a). A tracker index is not a body role, so an adapter that
+  mapped one onto a bone would have invented a calibration and hidden it in a
+  decoder. Assignment is therefore a **third** thing between decode and solve,
+  belonging to neither end, and it now has a home of its own — named in
+  [WORKSPACE.md](docs/architecture/WORKSPACE.md) §1, §2 and §5 in a change of
+  its own **before** any file existed, on the procedure `liveTransport` and
+  `osc` were named by.
+
+  **A region is not a bone, and that is the load-bearing claim.**
+  `TrackerRegion` reads like a short `HumanBone` and is deliberately not one:
+  a knee tracker sits on a strap between two bones and a chest strap observes
+  a ribcage rather than the joint a solve produces. The day the two become
+  aliases, assignment is a lookup and the solve has nothing left to do — so
+  §2 forbids it *by name*, and the boundary check reads the sources rather
+  than the link line, because an enum copied by hand leaves no link line to
+  fail on. Eleven regions cover the three rigs a tracker source can present
+  and nothing beyond them.
+
+  **Explicit statement, exactly as `motion_bvh_convert` requires a named
+  profile** — `t1=head t2=leftHand t3=rightHand`, no default and no name
+  heuristic, because a detector written before the contract settles the
+  contract on whichever rig was recorded first. Automatic assignment from
+  rest geometry stays a later aid *over* this contract.
+
+  **A set it cannot place is three answers with a case each**, and an
+  observation can miss a statement in two directions: a tracker the statement
+  does not place is *unplaced*, and a stated tracker that did not arrive is
+  *absent*. `Refuse` reads the first, `Ignore` reads neither, and **`Hold`
+  reads both** — which is what makes it the policy its own row describes, a
+  rig coming up one device at a time being short of a stated tracker rather
+  than carrying an extra one. `Refuse` and `Hold` both refuse and the
+  enumerator is the difference a live caller acts on: `UnplacedTracker` will
+  still be true next frame so a caller stops, `Held` may not be so a caller
+  keeps the assignment it had. Under the other two an absence is data and a
+  partial rig still assigns, on the rule a missing tracker already follows one
+  layer up. `NothingPlaced` catches an empty binding set no policy objected
+  to, which is what makes `Ignore` a refusal rather than a success with
+  nothing in it.
+
+  Fourteen mutations, each a plausible wrong *policy* rather than a syntax
+  error, each failing a case named for what it breaks; twelve boundary
+  injections, each refused. **The mutation pass found a hole and the fix was
+  a deletion**: a guard refusing a second `=` in a statement could not be
+  reached by any input, because `head=hips` is already not a region this
+  vocabulary carries. It is gone rather than documented. It links nothing at
+  all — no `motionCore`, no OpenUSD, no platform primitive — and carries no
+  diagnostic code: a refusal names the event and the caller supplies the
+  code, as `motionSource` and `osc` already do.
+
+  **The `adapters/* -> motionTracking` prohibition is enforced in the three
+  adapters' own checks**, and it is the first name on those lists that needed
+  to be. Every other one is also a link edge, so the CMake allowlist would
+  catch it anyway; this package is enums and a policy over them, so an adapter
+  could include its header and name `TrackerRegion` with no link line to fail
+  on — the same argument, read from the other end, that this library's own
+  check makes about the bone enum.
+
 - **The VRChat OSC adapter assembles frames, and the boundary is a
   measurement rather than a convention** (VRC-4). VMC marks a frame with a
   clock message; this wire sends three floats per address and nothing else,
