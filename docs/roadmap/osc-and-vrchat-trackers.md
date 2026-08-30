@@ -539,8 +539,8 @@ they are a frozen surface with golden tests over their formatted form.
 | OSC-3 — second OSC consumer, then extract `libs/osc` | foundation | ✅ |
 | VRC-1 — real mocopi capture and address inventory | adapter | ✅ |
 | VRC-2 — tracker semantic decode | adapter | ✅ |
-| VRC-3 — tracking-space normalisation | adapter | ⬜ |
-| VRC-4 — tracker frame assembly | adapter | ⬜ |
+| VRC-3 — tracking-space normalisation | adapter | ✅ |
+| VRC-4 — tracker frame assembly | adapter | ✅ |
 | VRC-5 — the humanoid solve boundary | adapter | ⬜ |
 | VRC-6 — CLI and record | adapter | ⬜ |
 | VRC-7 — cross-source evidence | both | ⬜ |
@@ -833,6 +833,89 @@ emergent ([adapter plan §5.2](adapters-mocopi-vmc-ardy.md#52-frame-assembly-is-
 repeated updates for one tracker · partial tracker sets · timeout · stale
 samples · the head reference · source reset · calibration discontinuity. Each is
 a test, and each has a recorded or generated fixture that produces it.
+
+**Done 2026-08-30** —
+[`FrameAssembler.h`](../../adapters/liveCapture/vrchatOsc/include/vrmAdapterVrchatOsc/FrameAssembler.h),
+its suite and three new corpus fixtures. This is the first file in this adapter
+that **decides** rather than converts, and the first whose failure mode is
+invisible per value: every sample in a wrongly-cut frame is individually
+correct and only the grouping is wrong.
+
+**The boundary came from report 02 rather than from a convention.** VMC marks
+a frame with a clock message and this wire has none, so what stands in for one
+is the measurement: a frame here is a **burst** — eight datagrams inside a
+median 0.053 ms — with ~17 ms between bursts, three hundred times wider. Two
+rules are stated rather than one, because they fail differently. *A repeat
+closes the frame*, which needs no clock at all and survives loss: the frame
+that lost `/tracking/trackers/1/rotation` — 96 % of this wire's single-address
+loss — is closed by the next `head/rotation` exactly as an intact one is, and
+comes out one sample short rather than merged with its successor. *A gap closes
+the frame*, at a 5 ms window that sits ninety times above the burst and three
+times below the interval. **On the recorded sender the gap gets there first**,
+because the window is checked when a datagram arrives and 17 ms is past it
+before the repeat inside that datagram is read — and the suite measures that
+the two agree by running one stream twice with the window on and off and
+comparing the frames sample for sample.
+
+**A silence is not a restart, and that is the line the format change bought.**
+The measured restart is a new ephemeral source port and nothing else, so the
+policy is split along what is observable: a peer that differs **is** a restart
+(reported, and the old session's trackers forgotten — never repaired), and a
+silence of any length is `SOURCE_TIMEOUT` and nothing more. **A caller that
+supplies no peer therefore never sees a restart**, which is the honest outcome
+rather than a limitation: guessing one from silence would make every fixture
+written before the `p` line report a session boundary nothing observed. The
+corpus carries both halves — `session-restart` and `silent-gap` are the same
+4.8452 s gap, told apart by identity alone.
+
+**A partial sample is emitted and never repaired.** `hasPosition` and
+`hasRotation` say which halves are real and the absent half is left at its
+default, because a defaulted rotation of identity is bit-for-bit what a tracker
+at rest reports — a reader that ignored the flag could not tell the invented
+value from a measured one. `VRM_VRCHAT_OSC_TRACKER_PARTIAL` is raised here and
+nowhere below, which is what the decode layer deliberately left to this one.
+
+**Missing and stale carry no diagnostic code, deliberately.** The ten codes
+were frozen before this directory existed and an eleventh is a contract change,
+so a per-tracker absence is data on the frame where a consumer applies its own
+policy — and both are measured against the trackers the session has *observed*
+rather than the eight the surface defines, or a three-point setup would report
+an incomplete frame fifty-eight times a second forever.
+
+**A recalibration is told from motion by simultaneity, not by size**, and the
+threshold is the one policy here with no measurement under it: no recorded take
+contains a recalibration, so `calibration-jump` is marked `unobserved` and the
+default's safety is arithmetic — 0.5 m in one frame period at 58 Hz is 29 m/s.
+One tracker jumping is a tracking glitch and raises nothing.
+
+Nine mutations, each a plausible wrong *policy* rather than a syntax error,
+each failing a case named for what it breaks, with the restored source green:
+the gap rule removed, the repeat rule removed, a cross-datagram repeat read as
+a duplicate, a long silence read as a restart, a restart that keeps the old
+session's trackers, one jumping tracker read as a recalibration, a single
+tracker allowed to be a simultaneity, staleness reported per frame rather than
+per crossing, and a partial sample reported as complete.
+
+**Eight of the nine were caught on the first run, and the ninth is the one
+worth recording.** "A restart that keeps the old session's trackers" passed
+the suite unchanged, because the restart case ran the *same four trackers*
+either side of the boundary — where an assembler that forgets everything and
+one that forgets nothing produce identical frames. The case now restarts into
+a three-point rig four metres away, which observes both halves of the policy:
+the old rig is gone rather than reported missing, and the old positions go
+with it, so a restart that moved does not raise `CALIBRATION_REQUIRED` for a
+space that ended. The mutation found a hole in the test rather than in the
+code, which is the outcome this repository's mutation passes exist to produce.
+
+Two things this milestone did not do. **No body role is named**, so assignment
+(VRC-4a) is still entirely outside this adapter and the frame carries tracker
+identities rather than regions. And **the corpus expectations moved rather than
+the code**, twice, when a first run disagreed with them: `duplicate-and-reordered`
+assembles to four frames because a repeat in its own datagram is the next turn
+of the cycle by this layer's rule — so the twice-sent address opens a frame of
+its own instead of a keep-first or keep-last policy choosing a value to lose —
+and `tracker-dropout` reports `missing` and nothing stale, because the capture
+is 0.086 s long against a half-second horizon.
 
 ### VRC-4a — tracker assignment policy
 

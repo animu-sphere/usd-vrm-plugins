@@ -177,6 +177,50 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **The VRChat OSC adapter assembles frames, and the boundary is a
+  measurement rather than a convention** (VRC-4). VMC marks a frame with a
+  clock message; this wire sends three floats per address and nothing else,
+  so what stands in for a clock is what a real session was measured doing: a
+  frame is a **burst** of eight datagrams inside a median 0.053 ms, with
+  ~17 ms between bursts. `TrackerFrameAssembler` cuts it with **two** rules,
+  because they fail differently — a repeated tracker and channel closes the
+  frame and needs no clock at all, and a datagram past a 5 ms window closes
+  one that no repeat would. On the recorded sender the window gets there
+  first and the two produce identical frames, which the suite measures by
+  running one stream twice with the window on and off rather than asserting
+  it.
+
+  **Seven policies, each with a case and each with a fixture that produces
+  it**: repeated updates for one tracker, partial tracker sets, timeout,
+  stale samples, the head reference, source reset and calibration
+  discontinuity. Three are worth naming. A **partial** sample — a tracker
+  that reported a position and no rotation, which is about once a second on
+  this wire — is emitted and never repaired, with flags saying which halves
+  are real, because a defaulted rotation of identity is bit-for-bit what a
+  tracker at rest reports. A **silence is not a restart**: a peer that
+  differs is a session boundary and a gap of any length is `SOURCE_TIMEOUT`
+  and nothing more, so a caller that supplies no peer never sees a restart —
+  which is only testable from a file because the capture format grew a
+  per-record peer in the change above. And a **recalibration** is told from
+  motion by simultaneity rather than by size: every observed tracker moving
+  at once, never one of them, because one tracker jumping is a tracking
+  glitch and not a new room.
+
+  Nine mutations, each a plausible wrong *policy* rather than a syntax
+  error, each failing a case named for what it breaks, with the restored
+  source green — and **the ninth did not fail on the first run**: a restart
+  that kept the old session's trackers was invisible to a case that restarted
+  into the same four trackers, so that case now restarts into a three-point
+  rig four metres away and observes both halves of the policy. The mutation
+  found a hole in the test rather than in the code. Three new corpus fixtures
+  — `session-restart`, `silent-gap`
+  and `calibration-jump`, the first two being the same 4.8452 s gap told
+  apart by identity alone — and two new CTest names,
+  `vrmAdapterVrchatOsc_frameAssembler` and
+  `vrmAdapterVrchatOsc_frameCorpus`. **No body role is named anywhere in
+  it**: a frame carries tracker identities, and which tracker is on which
+  body region stays a generic policy outside this adapter.
+
 - **A packet capture can say who sent each datagram, which is the only
   restart marker one of the three wires has.** The `liveTransport` capture
   format gains a `p <endpoint>` line: it names the peer of every record

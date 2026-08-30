@@ -181,8 +181,19 @@ test completes with nothing installed.
       before the test. Closing it costs one labelled *rolled* take, which is
       twenty seconds of hardware and is on the operator-evidence list below.
       This is also where the adapter's binaries first load OpenUSD)*;
-- [ ] partial sets, timeouts, restarts and calibration discontinuity are stated
-      policy with a fixture each, not emergent behaviour;
+- [x] partial sets, timeouts, restarts and calibration discontinuity are stated
+      policy with a fixture each, not emergent behaviour *(VRC-4, 2026-08-30:
+      `FrameAssembler.h`, nine mutations, and three new fixtures. The frame
+      boundary is report 02's measurement rather than a convention — a burst
+      0.053 ms wide against a 17 ms interval — and it is **two** rules,
+      because a repeat needs no clock and a gap catches a frame no repeat
+      would close. **The restart policy is what the packaging half of this
+      release paid for**: a peer that changes is a restart, a silence of any
+      length is a timeout and nothing more, and a caller with no peer never
+      sees a restart at all — which is only testable from a file because the
+      capture format grew a per-record peer the same day. `session-restart`
+      and `silent-gap` are the same 4.8452 s gap told apart by identity
+      alone)*;
 - [x] unknown VRChat OSC traffic is recoverable *(VRC-2, 2026-08-30:
       `VRM_VRCHAT_OSC_UNSUPPORTED_ADDRESS` is info and recoverable, the message
       is dropped and the datagram is not, and the `mixed-traffic` fixture

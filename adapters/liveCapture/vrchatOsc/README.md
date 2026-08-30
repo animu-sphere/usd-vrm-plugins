@@ -109,6 +109,33 @@ Two consequences shape everything above:
   `VRM_VRCHAT_OSC_TRACKER_PARTIAL` and `VRM_VRCHAT_OSC_CALIBRATION_REQUIRED` are
   states this wire has and those wires do not.
 
+## Where a frame begins, on a wire with no clock
+
+VMC marks a frame with a clock message. This wire sends three floats per
+address and nothing else, so the boundary is a **measurement** rather than a
+convention: a frame here is a burst of eight datagrams inside a median
+0.053 ms, with ~17 ms between bursts
+([report 02](../../../docs/reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §2).
+
+Two rules cut it, and having two is the point — they fail differently:
+
+| Rule | What it needs | What it survives |
+| --- | --- | --- |
+| a repeated tracker and channel closes the frame | no clock at all | loss: a frame missing one address is still closed by the next cycle |
+| a datagram past the 5 ms window closes the frame | a receive clock | a sender whose next frame repeats no address the last one carried |
+
+On the recorded sender the window gets there first and the two produce the
+same frames, which `vrmAdapterVrchatOsc_frameAssembler` measures by running
+one stream twice — window on, window off — and comparing sample for sample.
+
+**A silence is not a restart.** This wire marks a restart with a new ephemeral
+source port and with nothing else, so a peer that changes is a session
+boundary and a gap of any length is `SOURCE_TIMEOUT` and no more. A caller
+that supplies no peer never sees a restart, deliberately — and that this is
+testable from a *file* at all is new: the capture format grew a per-record
+peer on 2026-08-30 because the only marker this wire has did not survive into
+one.
+
 ## What this adapter is *not* the second copy of
 
 The census that preceded this directory
@@ -236,12 +263,16 @@ set written after the decoder would contain none of the three.
 
 ```text
 include/vrmAdapterVrchatOsc/   Diagnostics, the capture magic, the receiver seam,
-                               the address inventory, the tracker decoder
+                               the address inventory, the tracker decoder,
+                               the basis, the frame
 src/                           the code table, the event → code map, the
-                               inventory (the first file here that reads a byte)
-                               and the decoder (the first that reads a meaning)
-tests/                         unit, format, inventory, tracker, socket, boundary
-tests/corpus/generated/        twelve captures, written from the measured session
+                               inventory (the first file here that reads a byte),
+                               the decoder (the first that reads a meaning), the
+                               conversion (the first that produces a canonical
+                               value) and the assembler (the first that decides)
+tests/                         unit, format, inventory, tracker, basis, frame,
+                               socket, boundary
+tests/corpus/generated/        fifteen captures, written from the measured session
 tests/corpus/recorded/         a manifest and no bytes, by policy
 tools/generate_packets.py      what writes the generated half
 tools/vrchatOscRecord/         the CLI

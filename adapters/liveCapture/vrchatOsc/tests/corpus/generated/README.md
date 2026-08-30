@@ -26,6 +26,9 @@ loss falling 96 % on `/tracking/trackers/1/rotation`.
 | `position-only` | a position message is complete on its own | derived |
 | `rotation-only` | a rotation is three floats, which is what makes it Euler-shaped | derived |
 | `tracker-dropout` | an identity that stops mid-session, indistinguishable at this layer from a lost packet | derived |
+| `session-restart` | a second session, marked by a new source port and by nothing else | derived |
+| `silent-gap` | the same silence with the same port either side: a pause is not a restart | unobserved |
+| `calibration-jump` | every tracker moving at once, which is what a recalibration looks like and motion does not | unobserved |
 | `duplicate-and-reordered` | the send order reversed, and one address sent twice with different values | unobserved |
 | `bundled-frame` | a whole frame in one OSC bundle, and the `bundled` flag a decoder forwards | unobserved |
 | `mixed-traffic` | VRChat's wider surface beside tracker data, plus four identities this adapter cannot read | unobserved |

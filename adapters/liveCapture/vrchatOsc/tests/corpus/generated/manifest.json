@@ -50,7 +50,8 @@
         "/tracking/trackers/head/rotation"
       ],
       "sha256": "faf0c1e4faf92885c8efb678b2dd25d90675fd5efabc6d302ddeaf92d46d0b01",
-      "bytes": 15768
+      "bytes": 15768,
+      "peers": []
     },
     {
       "file": "one-tracker.vrchatoscpackets",
@@ -72,7 +73,8 @@
         "/tracking/trackers/1/rotation"
       ],
       "sha256": "440ba59ad2a6da6ff9289f30753381980ad461932ce4b2c95ff9d2dad6bfa569",
-      "bytes": 1842
+      "bytes": 1842,
+      "peers": []
     },
     {
       "file": "eight-trackers.vrchatoscpackets",
@@ -110,7 +112,8 @@
         "/tracking/trackers/head/rotation"
       ],
       "sha256": "e10e971401bb7ecc01e27d1e8097eb68126ac38be4b647cd2427841d642b0eed",
-      "bytes": 10351
+      "bytes": 10351,
+      "peers": []
     },
     {
       "file": "head-absent.vrchatoscpackets",
@@ -135,7 +138,8 @@
         "/tracking/trackers/3/rotation"
       ],
       "sha256": "52c359726c8bf229d9989c5bd0276d399218d1c745c730835d00c81f51e794b3",
-      "bytes": 5238
+      "bytes": 5238,
+      "peers": []
     },
     {
       "file": "position-only.vrchatoscpackets",
@@ -158,7 +162,8 @@
         "/tracking/trackers/head/position"
       ],
       "sha256": "d4a8714edab13d64f513d23d08579d770efe1f1c52a41aaba5c5f68c2287e58b",
-      "bytes": 3554
+      "bytes": 3554,
+      "peers": []
     },
     {
       "file": "rotation-only.vrchatoscpackets",
@@ -182,7 +187,8 @@
         "/tracking/trackers/head/rotation"
       ],
       "sha256": "2b402e314232c90cb684825af1e8b38d94febb44376c47fff57ba5155e8fd967",
-      "bytes": 3554
+      "bytes": 3554,
+      "peers": []
     },
     {
       "file": "tracker-dropout.vrchatoscpackets",
@@ -210,7 +216,103 @@
         "/tracking/trackers/head/rotation"
       ],
       "sha256": "eebd6a53cecf1de119215deaaa69d0baeeb986070d5b04c90c2ee30fc333b48c",
-      "bytes": 11516
+      "bytes": 11516,
+      "peers": []
+    },
+    {
+      "file": "session-restart.vrchatoscpackets",
+      "pins": "A session that stops and starts again, marked the only way this wire can mark it: the source port changes. Three frames from 192.168.1.8:51662, the measured 4.8452 s dark window, then three from 192.168.1.8:50035 -- and no session identifier, rest table or handshake anywhere, because the recorded session had none. Both ports and the gap are the 2026-08-30 take's; the payloads are this repository's. It is the fixture that separates a source that paused from a second source that began, and it could not have existed before the capture format could name a peer per record.",
+      "tags": [
+        "restart",
+        "peer-change",
+        "frame-policy-input"
+      ],
+      "observed": "derived",
+      "id": "session-restart",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "session-restart-01",
+      "datagrams": 48,
+      "payloadBytes": 2544,
+      "durationSeconds": 4.914219,
+      "addressPatterns": [
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/1/rotation",
+        "/tracking/trackers/2/position",
+        "/tracking/trackers/2/rotation",
+        "/tracking/trackers/3/position",
+        "/tracking/trackers/3/rotation",
+        "/tracking/trackers/head/position",
+        "/tracking/trackers/head/rotation"
+      ],
+      "sha256": "504f6b1c2e9093266f1933adf790e048ced41af329803e6192949ba248363085",
+      "bytes": 13822,
+      "peers": [
+        "192.168.1.8:51662",
+        "192.168.1.8:50035"
+      ]
+    },
+    {
+      "file": "silent-gap.vrchatoscpackets",
+      "pins": "The same silence to the microsecond, with the same source port either side of it. A pause is not a restart, and an assembler that read a long gap as a new session would split this stream in two and forget a tracker set that never went away. Unobserved as a session -- the operator produced every recorded pause by stopping the application, which is what changes the port -- so what this pins is the policy: SOURCE_TIMEOUT and nothing more, however long the silence lasts.",
+      "tags": [
+        "silence",
+        "timeout",
+        "frame-policy-input"
+      ],
+      "observed": "unobserved",
+      "id": "silent-gap",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "silent-gap-01",
+      "datagrams": 48,
+      "payloadBytes": 2544,
+      "durationSeconds": 4.914219,
+      "addressPatterns": [
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/1/rotation",
+        "/tracking/trackers/2/position",
+        "/tracking/trackers/2/rotation",
+        "/tracking/trackers/3/position",
+        "/tracking/trackers/3/rotation",
+        "/tracking/trackers/head/position",
+        "/tracking/trackers/head/rotation"
+      ],
+      "sha256": "b9ddf5aaaafc856c73c6fb0cc418779c4b80426d5fc7c93e01ec517fd5d5f0f1",
+      "bytes": 13797,
+      "peers": [
+        "192.168.1.8:51662"
+      ]
+    },
+    {
+      "file": "calibration-jump.vrchatoscpackets",
+      "pins": "Every tracker moves 1.2 m in one frame interval, at once. VRChat's tracking space is the player's, established by a calibration the receiving application performs, and redoing it moves everything into a space whose relation to the old one nothing here can compute. What separates that from motion is simultaneity: one tracker jumping is a tracking glitch. Unobserved -- no recorded take contains a recalibration -- so this fixture pins a stated policy and not a measured shape.",
+      "tags": [
+        "calibration",
+        "discontinuity",
+        "frame-policy-input"
+      ],
+      "observed": "unobserved",
+      "id": "calibration-jump",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "calibration-jump-01",
+      "datagrams": 48,
+      "payloadBytes": 2544,
+      "durationSeconds": 0.08626,
+      "addressPatterns": [
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/1/rotation",
+        "/tracking/trackers/2/position",
+        "/tracking/trackers/2/rotation",
+        "/tracking/trackers/3/position",
+        "/tracking/trackers/3/rotation",
+        "/tracking/trackers/head/position",
+        "/tracking/trackers/head/rotation"
+      ],
+      "sha256": "d75ec70a9520bf2b3606d27bf0a7c591a9c5f036e5dd54389362b61d4950adc7",
+      "bytes": 13781,
+      "peers": []
     },
     {
       "file": "duplicate-and-reordered.vrchatoscpackets",
@@ -239,7 +341,8 @@
         "/tracking/trackers/head/rotation"
       ],
       "sha256": "d0abd0d2682edd489d7cd37f9bfa9091b64309c62f5b4d2652eac896ac6e7030",
-      "bytes": 7255
+      "bytes": 7255,
+      "peers": []
     },
     {
       "file": "bundled-frame.vrchatoscpackets",
@@ -267,7 +370,8 @@
         "/tracking/trackers/head/rotation"
       ],
       "sha256": "3421a97d2cb848eb40cd6d44b123ac44c693fca3f8e2f14dd1bc783ffb90989c",
-      "bytes": 6470
+      "bytes": 6470,
+      "peers": []
     },
     {
       "file": "mixed-traffic.vrchatoscpackets",
@@ -308,7 +412,8 @@
         "/tracking/trackers/hip/position"
       ],
       "sha256": "a4db273c3d988c4ee95730200c972a5f78abc3e3e53ae44569fd83b67ac81cc8",
-      "bytes": 7624
+      "bytes": 7624,
+      "peers": []
     },
     {
       "file": "malformed-packets.vrchatoscpackets",
@@ -332,7 +437,8 @@
         "/tracking/trackers/1/position/xx"
       ],
       "sha256": "3ad9e710dc0cd1f92515f97b0f8fbc3d6ab0a20183145fdcfbe82dfc77fd7721",
-      "bytes": 2141
+      "bytes": 2141,
+      "peers": []
     },
     {
       "file": "malformed-forms.vrchatoscpackets",
@@ -362,7 +468,8 @@
         "/tracking/trackers/head/rotation"
       ],
       "sha256": "c9c90d01ed6e856dde4d6c2089067f771b3c07827e613020367eb276b7bf769f",
-      "bytes": 6405
+      "bytes": 6405,
+      "peers": []
     }
   ]
 }
