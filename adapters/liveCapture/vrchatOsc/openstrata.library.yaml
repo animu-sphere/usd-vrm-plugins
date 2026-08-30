@@ -28,15 +28,19 @@ library:
   # Mirrors VERSION; release preparation updates this in lockstep.
   version: 0.7.0
 #
-# **Two edges, where §2 permits four, and the missing two are still the
-# milestone rather than an oversight.** `motionCore` and `motionRuntime` are
-# what an adapter reaches when it has canonical values to produce, and reading a
-# session's addresses is not that: an address and a type tag are facts about a
-# capture, and the layer that turns one into a tracker observation is VRC-2's.
-# A manifest declaring them now would claim a dependency the library does not
-# have. They arrive with the code that produces a pose.
+# **Three edges, where §2 permits four, and the missing one is still the
+# milestone rather than an oversight.** `motionCore` arrived with VRC-3, which
+# is the first code here that produces a canonical value: the sender's axes into
+# the canonical basis, which is a `GfVec3f` and a `GfQuatf` and reaches them
+# through the library §2 routes an adapter's value types through.
+# `motionRuntime` is what an adapter reaches when it produces a *pose*, and a
+# tracker observation is not one — it is pre-IK, and the solve that makes it a
+# pose is VRC-5's and generic. A manifest declaring it now would claim a
+# dependency the library does not have.
 requires:
   libraries:
+    - id: motionCore
+      version: ">=0.7,<0.8"
     - id: liveTransport
       version: ">=0.7,<0.8"
     - id: osc

@@ -45,11 +45,11 @@ deliberate, and all three come straight from the contract:
 The binary argument is the adapter's **test executable**, not its `.lib`/`.a`. A
 static archive records no imports at all — `dumpbin /dependents` on one prints a
 section summary and nothing else — so pointing this check at the library would
-make it a gate that cannot fail. At this milestone the executable's closure is
-the adapter plus `liveTransport` and the platform, and it contains **no OpenUSD
-at all**: the value-type allowlist below is currently a check that the closure
-stays empty rather than that it stays small, and it starts doing the second job
-on the day a decoder produces a canonical value.
+make it a gate that cannot fail. Since VRC-3 the executable's closure reaches
+OpenUSD's value-type layer, because the adapter links motionCore for the types
+its change of basis returns — so the allowlist below is doing the job it was
+written for, which is keeping the closure *small*, rather than the stronger one
+it did while the closure was empty. The day it named is the day it happened.
 
 This is also the only enforcement there is. `ost` 0.22.2 discovers plain
 libraries in the project root's immediate subdirectories and under `libs/`, so
@@ -141,10 +141,11 @@ def _binary_dependencies(binary: pathlib.Path) -> str:
 # differently per platform: Apple's ld64 records every dylib that satisfied a
 # symbol, where Linux's --as-needed and Windows' import libraries drop them.
 #
-# Today this adapter imports **none** of them, because it does not link
-# motionCore. The list is the contract's permission rather than a description of
-# the binary, and keeping it is what makes the transition legible when a decoder
-# arrives: the closure grows to exactly this set, or the check fails.
+# This adapter imported **none** of them until VRC-3, which took the motionCore
+# edge for the value types its change of basis returns. The list was the
+# contract's permission before it was a description of the binary, and that is
+# what made the transition legible rather than silent: the closure grew to
+# exactly this set, and the check was not touched to let it.
 _ALLOWED_USD_LIBRARIES = {"arch", "boost", "gf", "python", "tf", "vt"}
 _USD_LIBRARY = re.compile(r"usd_([A-Za-z0-9]+)")
 
