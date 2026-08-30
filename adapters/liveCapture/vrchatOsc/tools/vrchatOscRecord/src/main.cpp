@@ -194,9 +194,6 @@ RunInspect(const vrchatOscRecordTool::Options& options)
         // The record's own peer where the capture carries one, and the
         // header's where it does not. A capture written before the format
         // could say takes the second path and reports what it always did.
-        // The record's own peer where the capture carries one, and the
-        // header's where it does not. A capture written before the format
-        // could say takes the second path and reports what it always did.
         report.ObserveDatagram(datagram.peer.empty() ? capture.peerEndpoint
                                                      : datagram.peer,
                                datagram.bytes.data(), datagram.bytes.size(),

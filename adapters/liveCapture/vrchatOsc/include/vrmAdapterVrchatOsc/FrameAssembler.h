@@ -300,9 +300,6 @@ struct TrackerFrame
 struct TrackerFrameStats
 {
     std::uint64_t framesEmitted = 0;
-    // Closed carrying no sample at all. Never emitted; a stream producing these
-    // is one whose datagrams are all being refused a layer below.
-    std::uint64_t framesRefusedEmpty = 0;
     // Emitted while at least one observed tracker was absent.
     std::uint64_t framesIncomplete = 0;
     // Emitted carrying at least one half-filled sample.
@@ -311,10 +308,12 @@ struct TrackerFrameStats
     std::uint64_t samplesEmitted = 0;
     std::uint64_t positionsAccepted = 0;
     std::uint64_t rotationsAccepted = 0;
-    // Repeats inside one datagram, and messages the conversion refused as
-    // non-finite. The second cannot happen on the wire path — the decoder
-    // refuses a non-finite component with the same code — and is reachable from
-    // a caller that built a `TrackerPacket` itself.
+    // Repeats inside one datagram, and messages this layer refused: a
+    // component that is not finite, or a channel outside the enum. Neither
+    // can happen on the wire path -- the decoder refuses the first with the
+    // same code and cannot produce the second -- and both are reachable from
+    // a caller that built a `TrackerPacket` itself, which is a supported way
+    // to drive this class.
     std::uint64_t messagesDuplicated = 0;
     std::uint64_t messagesRefused = 0;
 
@@ -433,7 +432,9 @@ private:
         std::vector<std::array<bool, TrackerChannelCount>> channelSet;
     };
 
-    void _Open(double receiveTime, std::string peer, bool beginsNewSession);
+    // Opens a frame and consumes `_pendingNewSession`, which is the only
+    // place that flag is read.
+    void _Open(double receiveTime, std::string peer);
     bool _Close(std::vector<TrackerFrame>* frames,
                 std::vector<Diagnostic>* diagnostics, const char* reason);
     void _Report(std::vector<Diagnostic>* diagnostics, DiagnosticCode code,
@@ -448,6 +449,14 @@ private:
 
     OpenFrame _frame;
     std::uint64_t _packetSerial = 0;
+    // A restart has been seen and the frame that begins the new session has
+    // not opened yet. It is a member rather than a local of `Push` because
+    // the datagram that carries the new peer need not carry a message this
+    // layer accepts -- port 9000 is a well-known one and anything on the
+    // network may send to it, so the first datagram of a new session can be
+    // an avatar parameter. A local was lost in exactly that case, and the
+    // session began on a frame that did not say so.
+    bool _pendingNewSession = false;
 
     // First-seen order, and the last receive time each was reported at.
     std::vector<std::string> _observed;

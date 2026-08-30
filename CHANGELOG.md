@@ -206,13 +206,22 @@ Current schema contract version: **1**.
   at once, never one of them, because one tracker jumping is a tracking
   glitch and not a new room.
 
-  Nine mutations, each a plausible wrong *policy* rather than a syntax
+  Eleven mutations, each a plausible wrong *policy* rather than a syntax
   error, each failing a case named for what it breaks, with the restored
-  source green — and **the ninth did not fail on the first run**: a restart
+  source green — and **one did not fail on the first run**: a restart
   that kept the old session's trackers was invisible to a case that restarted
   into the same four trackers, so that case now restarts into a three-point
   rig four metres away and observes both halves of the policy. The mutation
-  found a hole in the test rather than in the code. Three new corpus fixtures
+  found a hole in the test rather than in the code. **A review then found two
+  more of the same kind**, and the last two mutations are them: the
+  new-session flag was a local of `Push` and was dropped whenever the datagram
+  carrying the new peer contributed no message this layer accepts — ordinary
+  on a well-known port — so the diagnostics said a session restarted while no
+  frame said one began; and a `TrackerChannel::Count` from a caller-built
+  packet indexed two fixed-width arrays out of range before the conversion's
+  own guard could refuse it. Neither is reachable from a fixture. A third
+  finding was a counter that could only ever be zero, and it is gone rather
+  than documented. Three new corpus fixtures
   — `session-restart`, `silent-gap`
   and `calibration-jump`, the first two being the same 4.8452 s gap told
   apart by identity alone — and two new CTest names,

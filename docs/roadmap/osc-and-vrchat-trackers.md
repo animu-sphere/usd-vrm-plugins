@@ -888,13 +888,14 @@ contains a recalibration, so `calibration-jump` is marked `unobserved` and the
 default's safety is arithmetic — 0.5 m in one frame period at 58 Hz is 29 m/s.
 One tracker jumping is a tracking glitch and raises nothing.
 
-Nine mutations, each a plausible wrong *policy* rather than a syntax error,
+Eleven mutations, each a plausible wrong *policy* rather than a syntax error,
 each failing a case named for what it breaks, with the restored source green:
 the gap rule removed, the repeat rule removed, a cross-datagram repeat read as
 a duplicate, a long silence read as a restart, a restart that keeps the old
 session's trackers, one jumping tracker read as a recalibration, a single
 tracker allowed to be a simultaneity, staleness reported per frame rather than
-per crossing, and a partial sample reported as complete.
+per crossing, a partial sample reported as complete, the new-session flag
+scoped to one `Push`, and the channel guard removed.
 
 **Eight of the nine were caught on the first run, and the ninth is the one
 worth recording.** "A restart that keeps the old session's trackers" passed
@@ -906,6 +907,24 @@ the old rig is gone rather than reported missing, and the old positions go
 with it, so a restart that moved does not raise `CALIBRATION_REQUIRED` for a
 space that ended. The mutation found a hole in the test rather than in the
 code, which is the outcome this repository's mutation passes exist to produce.
+
+**A review found two more of the same kind, and the last two mutations are
+them.** `beginsNewSession` was a local of `Push`, so it was *dropped* whenever
+the datagram carrying the new peer contributed no message this layer accepts —
+which port 9000 makes ordinary, since anything on the network may send to it
+and `mixed-traffic` is a whole fixture of that shape. The diagnostics said the
+session restarted and no frame said it began. It is now held on the assembler
+until a frame opens. The second was memory rather than policy: the channel
+indexes two fixed-width arrays, and a `TrackerChannel::Count` from a
+caller-built packet — a supported way to drive this class — read and then wrote
+past the end of both before the conversion's own guard could refuse it. It is
+refused first now, as every caller-precondition failure in this adapter is.
+**Neither is observable from a fixture**: both take a hand-built packet, so the
+corpus could not have found them and the cases covering them are unit cases by
+necessity. A third finding was a counter that could only ever be zero —
+`framesRefusedEmpty`, for a state no code path reaches, since the only thing
+that opens a frame is a message that has already converted — and it is gone
+rather than documented.
 
 Two things this milestone did not do. **No body role is named**, so assignment
 (VRC-4a) is still entirely outside this adapter and the frame carries tracker

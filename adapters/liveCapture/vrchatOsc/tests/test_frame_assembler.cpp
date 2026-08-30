@@ -547,6 +547,80 @@ TestAnEmptyFrameIsNeverEmitted()
     assert(session.assembler.GetStats().framesEmitted == 0);
 }
 
+void
+TestARestartSurvivesADatagramThisLayerReadsNothingIn()
+{
+    // Port 9000 is a well-known one and anything on the network may send to
+    // it, so the datagram that carries a new peer need not carry a message
+    // this adapter accepts -- `mixed-traffic` is a whole fixture of that
+    // shape. The session boundary has to survive it and reach the frame that
+    // does open, or a caller reading `beginsNewSession` sees a stream that
+    // restarted according to the diagnostics and never began a session
+    // according to the frames.
+    Session session;
+    session.Burst(0.000, "192.168.1.8:51662");
+
+    // The new peer's first datagram: an avatar parameter, which reaches this
+    // layer as a packet with no messages in it.
+    TrackerPacket foreign;
+    foreign.messagesSeen = 1;
+    foreign.unsupported = 1;
+    session.assembler.Push(foreign, 5.000, "192.168.1.8:50035",
+                           &session.frames, &session.diagnostics);
+    session.Burst(5.017, "192.168.1.8:50035");
+    session.assembler.Flush(&session.frames, &session.diagnostics);
+
+    assert(session.assembler.GetStats().sessionRestarts == 1);
+    assert(session.frames.size() == 2);
+    assert(!session.frames[0].beginsNewSession);
+    // The frame that actually opened the new session, one datagram later.
+    assert(session.frames[1].beginsNewSession);
+    assert(session.frames[1].peer == "192.168.1.8:50035");
+}
+
+void
+TestACallerBuiltMessageWithNoChannelIsRefused()
+{
+    // `TrackerChannel::Count` is the enum's terminator rather than an
+    // address, so no decoded message carries it -- but a `TrackerPacket` is
+    // an aggregate and building one is a supported way to drive this class,
+    // which the partial and empty cases above both do. The channel indexes
+    // two fixed-width arrays, so without the guard this reads and then
+    // writes past the end of both.
+    TrackerMessage broken =
+        Message("1", TrackerChannel::Position, 0.0f, 1.0f, 0.0f);
+    broken.channel = TrackerChannel::Count;
+
+    // The frame is opened first, and carrying *that tracker*, because that is
+    // where the indexing happens: the duplicate-and-repeat scan reads
+    // `channelSet[index][channel]` for every sample whose identity matches,
+    // so the out-of-range read needs a sample to match against.
+    Session session;
+    session.Send("1", TrackerChannel::Position, 0.0, {}, 0.5f, 1.5f, 0.25f);
+    session.assembler.Push(Datagram(broken), 0.000008, {}, &session.frames,
+                           &session.diagnostics);
+    session.assembler.Flush(&session.frames, &session.diagnostics);
+
+    // Refused as a caller's mistake, which is what every caller-precondition
+    // failure in this adapter raises, and the open frame is untouched.
+    assert(session.frames.size() == 1);
+    assert(session.frames[0].samples.size() == 1);
+    assert(session.frames[0].samples[0].hasPosition);
+    assert(!session.frames[0].samples[0].hasRotation);
+    assert(session.Count(DiagnosticCode::PacketMalformed) == 1);
+    assert(session.assembler.GetStats().messagesRefused == 1);
+
+    // The *detail* is asserted, not just the code, and that is what makes this
+    // a test of the guard rather than of the conversion: `MapTrackerPosition`
+    // refuses a wrong channel too, with the same code and a different sentence
+    // -- and it does so one statement *after* the scan that would already have
+    // read out of range. Memory safety is not observable from a portable test;
+    // which layer refused is.
+    const Diagnostic& refusal = session.diagnostics.front();
+    assert(refusal.detail == "a message carries no readable channel");
+    assert(refusal.subject == "/tracking/trackers/1");
+}
+
 // ---------------------------------------------------------------------------
 // Corpus mode: the same policies, against bytes
 // ---------------------------------------------------------------------------
@@ -770,10 +844,12 @@ main(int argc, char** argv)
     TestTheHeadIsATrackerWhoseNameIsNotANumber();
     TestMissingBecomesStaleOnceAndComesBack();
     TestASilenceIsNotARestart();
+    TestARestartSurvivesADatagramThisLayerReadsNothingIn();
     TestAPeerlessSessionNeverSeesARestart();
     TestSimultaneityIsWhatMakesItACalibration();
     TestAFrameCarriesCanonicalValuesAndNotWireOnes();
     TestAnEmptyFrameIsNeverEmitted();
+    TestACallerBuiltMessageWithNoChannelIsRefused();
     std::puts("vrmAdapterVrchatOsc frame assembler tests passed");
     return 0;
 }

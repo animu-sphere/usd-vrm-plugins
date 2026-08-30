@@ -52,6 +52,7 @@ TrackerFrameAssembler::Reset()
     _lastPosition.clear();
     _lastArrival.reset();
     _peer.clear();
+    _pendingNewSession = false;
 }
 
 void
@@ -72,14 +73,16 @@ TrackerFrameAssembler::_Report(std::vector<Diagnostic>* diagnostics,
 }
 
 void
-TrackerFrameAssembler::_Open(double receiveTime, std::string peer,
-                             bool beginsNewSession)
+TrackerFrameAssembler::_Open(double receiveTime, std::string peer)
 {
     _frame = OpenFrame();
     _frame.open = true;
     _frame.receiveTime = receiveTime;
     _frame.peer = std::move(peer);
-    _frame.beginsNewSession = beginsNewSession;
+    // Consumed here and nowhere else, so the flag reaches the first frame a
+    // new session actually opens however many datagrams that takes.
+    _frame.beginsNewSession = _pendingNewSession;
+    _pendingNewSession = false;
 }
 
 std::size_t
@@ -118,13 +121,11 @@ TrackerFrameAssembler::_Close(std::vector<TrackerFrame>* frames,
     OpenFrame closing = std::move(_frame);
     _frame = OpenFrame();
 
-    if (closing.samples.empty()) {
-        // A boundary was met and nothing had reached the frame. It is not
-        // emitted: an empty frame would say a tracker set was observed, and
-        // none was.
-        ++_stats.framesRefusedEmpty;
-        return false;
-    }
+    // An open frame always carries at least one sample, and there is no
+    // empty-frame branch here because there is no way to reach one: the only
+    // thing that opens a frame is a message that has already converted, and
+    // it takes its sample with it in the next statement. A counter for that
+    // state would be a number that can only ever be zero.
 
     if (reason == kClosedByRepeat) {
         ++_stats.framesClosedByRepeat;
@@ -277,7 +278,6 @@ TrackerFrameAssembler::Push(const TrackerPacket& packet, double receiveTime,
     // A restart is an identity change and nothing else. A silence is a source
     // that paused, however long it lasts -- see the header on why guessing the
     // stronger claim is the one thing this layer must not do.
-    bool beginsNewSession = false;
     if (!peer.empty() && !_peer.empty() && peer != _peer) {
         _Close(frames, diagnostics, kClosedByRestart);
         const std::string previous = _peer;
@@ -289,7 +289,11 @@ TrackerFrameAssembler::Push(const TrackerPacket& packet, double receiveTime,
         _Report(diagnostics, DiagnosticCode::SourceRestarted, peer, receiveTime,
                 "the source's endpoint changed from " + previous
                     + "; the trackers this session had observed are forgotten");
-        beginsNewSession = true;
+        // Held on the assembler until a frame opens, which the datagram
+        // carrying the new peer need not do: this port is a well-known one,
+        // and the first thing a new session sends may be an address this
+        // adapter maps to nothing.
+        _pendingNewSession = true;
     }
     if (!peer.empty()) {
         _peer.assign(peer);
@@ -305,6 +309,23 @@ TrackerFrameAssembler::Push(const TrackerPacket& packet, double receiveTime,
     }
 
     for (const TrackerMessage& message : packet.messages) {
+        // A caller's own mistake, and the guard is not defensive: `channel`
+        // indexes two fixed-width arrays below, so a `TrackerChannel::Count`
+        // from a hand-built packet would read and then write past the end of
+        // both. `DecodeTrackerMessage` cannot produce one -- it is the
+        // enum's terminator, not an address -- but a `TrackerPacket` a
+        // caller assembled itself is a supported way to drive this class,
+        // and every caller-precondition failure in this adapter raises
+        // PACKET_MALFORMED.
+        if (message.channel != TrackerChannel::Position
+            && message.channel != TrackerChannel::Rotation) {
+            ++_stats.messagesRefused;
+            _Report(diagnostics, DiagnosticCode::PacketMalformed,
+                    std::string(TrackerAddressPrefix)
+                        + std::string(message.tracker.segment),
+                    receiveTime, "a message carries no readable channel");
+            continue;
+        }
         const std::size_t channel = static_cast<std::size_t>(message.channel);
 
         // One lookup, and both boundary rules read it: this tracker's channel
@@ -366,8 +387,7 @@ TrackerFrameAssembler::Push(const TrackerPacket& packet, double receiveTime,
         }
 
         if (!_frame.open) {
-            _Open(receiveTime, std::string(peer), beginsNewSession);
-            beginsNewSession = false;
+            _Open(receiveTime, std::string(peer));
         }
 
         const std::size_t index = _SampleFor(message.tracker, receiveTime);
