@@ -418,11 +418,15 @@ happened to be recorded first, which is the failure this repository has now
 avoided twice by the same argument (`libs/osc`'s second consumer, the BVH
 corpus's second producer).
 
-Where the assignment policy *lives* is open, and it is the one question VRC-5
-cannot defer: it is generic, so it is not the adapter's, and it names tracker
-regions, which `motionCore` has no vocabulary for. Naming it is a contract
-change ([§10](#10-contract-changes-this-plan-requires)) and it happens before an
-implementation, not with one.
+Where the assignment policy *lives* was the one question VRC-5 could not defer:
+it is generic, so it is not the adapter's, and it names tracker regions, which
+`motionCore` has no vocabulary for. **Answered 2026-08-31, in the contract and
+ahead of any code** ([§10](#10-contract-changes-this-plan-requires)): a new leaf
+`libs/motionTracking`, on the terms
+[WORKSPACE.md §1](../architecture/WORKSPACE.md) states, with the region
+vocabulary as its own rather than as an alias for `HumanBone` — the aliasing is
+what would collapse this table's middle row into its first, and the contract
+forbids it by name.
 
 ## 6. The adapter: capture precedes decoder
 
@@ -541,6 +545,7 @@ they are a frozen surface with golden tests over their formatted form.
 | VRC-2 — tracker semantic decode | adapter | ✅ |
 | VRC-3 — tracking-space normalisation | adapter | ✅ |
 | VRC-4 — tracker frame assembly | adapter | ✅ |
+| VRC-4a — tracker assignment policy | neither end | 🚧 |
 | VRC-5 — the humanoid solve boundary | adapter | ⬜ |
 | VRC-6 — CLI and record | adapter | ⬜ |
 | VRC-7 — cross-source evidence | both | ⬜ |
@@ -1160,6 +1165,37 @@ depends on them ([docs/README.md](../README.md)).
   recorded before a file could carry a peer and still cannot say which
   session a datagram belongs to, so a restart fixture that carries the
   identity is a new recording rather than a re-read of an old one.
+- ✅ **The assignment policy had no home, and neither end could be given it**
+  *(landed 2026-08-31, in its own change ahead of the implementation)*.
+  [§5.1](#51-assignment-is-a-third-thing-and-it-belongs-to-neither-end) separates
+  three decisions and names an owner for two of them; the middle one had an
+  owner described only by what it is not — generic, so not the adapter's, and
+  naming regions, which `motionCore` has no vocabulary for. It is
+  `libs/motionTracking`, a new identity on `liveTransport`'s and `osc`'s
+  procedure: [WORKSPACE.md](../architecture/WORKSPACE.md) §1 row, §2 edges, §5
+  side, written before a file existed.
+
+  **Three things were decided rather than transcribed.** Its **edge set is
+  empty**, `motionCore` included, and that is the row that carries the weight
+  here rather than a tidy property: a region vocabulary that resolved to
+  `HumanBone` would make assignment a lookup and leave the solve nothing to do,
+  so §2 forbids the alias *by name* and the check reads the sources rather than
+  the link line — an enum copied by hand leaves no link line to fail on. It
+  takes the **product side** of §5's split, and it is the first identity where
+  all three of that section's questions pass and no product member links it
+  anyway: `motion_bvh_convert` is the shape of the tool that eventually will,
+  so the exclusion `liveTransport` and `osc` carry is the wrong reading of an
+  absent artifact. And it belongs to the **adapter's tool, never the adapter**,
+  which is a different reason from `vrmRetarget`'s on the same line: retarget
+  is refused there because a library that retargeted would be a second
+  pipeline, and assignment is refused because it is not the adapter's decision
+  to make.
+
+  What the contract deliberately did **not** decide is the policy's *content* —
+  what happens to an observed set it cannot place. That is behaviour with a
+  fixture per outcome, and a contract that pre-empted it would be deciding an
+  implementation it could not see, exactly as the transport ring's magic and
+  timeout were left to OSC-2. VRC-4a decides it.
 - ⬜ **A tracker observation has no representation in the motion contract.**
   `motionCore` carries `HumanoidPose`, which is post-solve. Whether a
   pre-IK tracker sample needs a contract there — a generic `TrackingSource` or
