@@ -48,6 +48,19 @@
 #   consumer defects; no
 #   artifact was ever wrong and none was republished, which is why
 #   `bootstrap.ost.version` below is not the version that produced these leaves.
+#
+#   RE-PINNED TO 0.22.8 (2026-08-30), and it changes nothing about these
+#   artifacts. `ost ci generate` renders the same lanes with a different version
+#   string, and re-pulling a leaf leaves its CMake package byte-identical. The
+#   bump is taken because 0.22.8 is current, not because it fixes anything here
+#   -- and in particular it does NOT close the P1 in
+#   docs/reports/ost/37-2026-08-30-v0.22.6-runtime-python-paths-from-the-producer.md:
+#   every leaf still hands a consumer the Python paths of the machine that built
+#   it, in `pxrConfig.cmake` and again in sixteen imported targets, and only a
+#   republished runtime can change that. The installed-package consumer lane
+#   (.github/workflows/package-consumer.yml) carries the workaround; every other
+#   lane goes through `ost build` and never sees it.
+#
 #   Diagnosis: docs/reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md That matrix expands
 #   to sixteen immutable leaves -- OpenUSD 26.05 and 26.08 x
 #   linux/windows `core`/`gl`/`vulkan` and macOS arm64 `core`/`metal` -- each
@@ -109,7 +122,7 @@ schema: 1
 
 bootstrap:
   ost:
-    version: "0.22.6"
+    version: "0.22.8"
     repository: animu-sphere/open-strata
 
 runners:
