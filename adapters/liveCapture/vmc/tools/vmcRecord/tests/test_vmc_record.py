@@ -99,23 +99,37 @@ def fail(message: str) -> None:
     raise SystemExit(1)
 
 
-def read_capture(path: pathlib.Path) -> tuple[dict[str, str], list[bytes]]:
-    """Header fields and payloads, per datagram and never concatenated."""
+def read_capture(
+        path: pathlib.Path) -> tuple[dict[str, str], list[bytes], list[str]]:
+    """Header fields, payloads per datagram, and the peer each record carries.
+
+    The peer is carried forward from the last `p` line, which is the format's
+    own rule: a `p` names the sender of every record after it until the next
+    one, and `p -` says the sender of what follows is unknown. A capture with
+    no `p` line yields an empty string per record, which is what every fixture
+    written before the line existed does -- so a test that does not care about
+    peers reads the same payloads it always did.
+    """
     header: dict[str, str] = {}
     payloads: list[bytearray] = []
+    peers: list[str] = []
+    peer = ""
     for line in path.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("#") or stripped.startswith("!"):
             continue
         tokens = stripped.split()
-        if tokens[0] == "d":
+        if tokens[0] == "p":
+            peer = "" if tokens[1] == "-" else tokens[1]
+        elif tokens[0] == "d":
             payloads.append(bytearray())
+            peers.append(peer)
         elif not payloads:
             header[tokens[0]] = " ".join(tokens[1:])
         else:
             payloads[-1] += bytes.fromhex(
                 stripped.split("|")[0].replace(" ", ""))
-    return header, [bytes(payload) for payload in payloads]
+    return header, [bytes(payload) for payload in payloads], peers
 
 
 def report_lines(text: str) -> dict[str, str]:
@@ -501,7 +515,7 @@ def check_loopback(tool: pathlib.Path, corpus: pathlib.Path,
                    workspace: pathlib.Path) -> None:
     """What went in came out, and reports the same motion as its source."""
     source = corpus / "arm-raise-30hz.vmcpackets"
-    _, payloads = read_capture(source)
+    _, payloads, _ = read_capture(source)
     output = workspace / "recorded-loopback.vmcpackets"
     live_trace = workspace / "recorded-loopback.trace"
 
@@ -527,7 +541,7 @@ def check_loopback(tool: pathlib.Path, corpus: pathlib.Path,
         fail(f"the report did not name the bound endpoint: "
              f"'{lines.get('listen')}'")
 
-    header, recorded = read_capture(output)
+    header, recorded, _ = read_capture(output)
     if recorded != payloads:
         fail(f"the recorded datagrams are not the ones that were sent: "
              f"{len(recorded)} recorded, {len(payloads)} sent")
@@ -582,7 +596,7 @@ def check_stop_reasons(tool: pathlib.Path, corpus: pathlib.Path,
     child without also killing the test runner needs a process group on POSIX
     and a detached console on Windows, and the two share no mechanism.
     """
-    _, payloads = read_capture(corpus / "arm-raise-30hz.vmcpackets")
+    _, payloads, _ = read_capture(corpus / "arm-raise-30hz.vmcpackets")
 
     # --max-datagrams stops the session mid-stream, and what is written is
     # exactly the datagrams that arrived before it did: not the whole send, and
@@ -595,7 +609,7 @@ def check_stop_reasons(tool: pathlib.Path, corpus: pathlib.Path,
     if lines.get("stopped") != "--max-datagrams reached":
         fail(f"expected --max-datagrams to stop the session, got "
              f"'{lines.get('stopped')}'")
-    _, bounded_payloads = read_capture(bounded)
+    _, bounded_payloads, _ = read_capture(bounded)
     if bounded_payloads != payloads[:40]:
         fail(f"a bounded session recorded {len(bounded_payloads)} datagram(s), "
              f"expected the first 40 that arrived")
@@ -607,7 +621,8 @@ def check_stop_reasons(tool: pathlib.Path, corpus: pathlib.Path,
     #
     # Driven by the bundled capture, where a frame arrives whole in one
     # datagram. The per-message one is used below, for the opposite reason.
-    _, bundled = read_capture(corpus / "neutral-standing-30hz.vmcpackets")
+    _, bundled, _ = read_capture(
+        corpus / "neutral-standing-30hz.vmcpackets")
     bounded_frames = workspace / "bounded-frames.vmcpackets"
     bounded_trace = workspace / "bounded-frames.trace"
     session = Session(tool, bounded_frames, "--max-frames", "2",

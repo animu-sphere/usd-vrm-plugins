@@ -204,7 +204,12 @@ TestTheDeclaredDependencyEdgeIsReal()
     // declared, and this test is where their arrival becomes visible.
     liveTransport::PacketCapture capture;
     capture.sourceId = "edge-01";
-    capture.datagrams.push_back(liveTransport::RecordedDatagram{0.0, {0x2f}});
+    // Field by field rather than braced: a `RecordedDatagram` grew a `peer`
+    // between `receiveTime` and `bytes` on 2026-08-30, and the braced form
+    // went on compiling with the payload read as a one-character peer.
+    liveTransport::RecordedDatagram datagram;
+    datagram.bytes = {0x2f};
+    capture.datagrams.push_back(datagram);
     assert(capture.datagrams.size() == 1);
     assert(liveTransport::PacketCaptureGutter(capture.datagrams[0].bytes.data(),
                                               capture.datagrams[0].bytes.size())

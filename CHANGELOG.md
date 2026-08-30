@@ -177,6 +177,100 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **The VRChat OSC adapter assembles frames, and the boundary is a
+  measurement rather than a convention** (VRC-4). VMC marks a frame with a
+  clock message; this wire sends three floats per address and nothing else,
+  so what stands in for a clock is what a real session was measured doing: a
+  frame is a **burst** of eight datagrams inside a median 0.053 ms, with
+  ~17 ms between bursts. `TrackerFrameAssembler` cuts it with **two** rules,
+  because they fail differently — a repeated tracker and channel closes the
+  frame and needs no clock at all, and a datagram past a 5 ms window closes
+  one that no repeat would. On the recorded sender the window gets there
+  first and the two produce identical frames, which the suite measures by
+  running one stream twice with the window on and off rather than asserting
+  it.
+
+  **Seven policies, each with a case and each with a fixture that produces
+  it**: repeated updates for one tracker, partial tracker sets, timeout,
+  stale samples, the head reference, source reset and calibration
+  discontinuity. Three are worth naming. A **partial** sample — a tracker
+  that reported a position and no rotation, which is about once a second on
+  this wire — is emitted and never repaired, with flags saying which halves
+  are real, because a defaulted rotation of identity is bit-for-bit what a
+  tracker at rest reports. A **silence is not a restart**: a peer that
+  differs is a session boundary and a gap of any length is `SOURCE_TIMEOUT`
+  and nothing more, so a caller that supplies no peer never sees a restart —
+  which is only testable from a file because the capture format grew a
+  per-record peer in the change above. And a **recalibration** is told from
+  motion by simultaneity rather than by size: every observed tracker moving
+  at once, never one of them, because one tracker jumping is a tracking
+  glitch and not a new room.
+
+  Eleven mutations, each a plausible wrong *policy* rather than a syntax
+  error, each failing a case named for what it breaks, with the restored
+  source green — and **one did not fail on the first run**: a restart
+  that kept the old session's trackers was invisible to a case that restarted
+  into the same four trackers, so that case now restarts into a three-point
+  rig four metres away and observes both halves of the policy. The mutation
+  found a hole in the test rather than in the code. **A review then found two
+  more of the same kind**, and the last two mutations are them: the
+  new-session flag was a local of `Push` and was dropped whenever the datagram
+  carrying the new peer contributed no message this layer accepts — ordinary
+  on a well-known port — so the diagnostics said a session restarted while no
+  frame said one began; and a `TrackerChannel::Count` from a caller-built
+  packet indexed two fixed-width arrays out of range before the conversion's
+  own guard could refuse it. Neither is reachable from a fixture. A third
+  finding was a counter that could only ever be zero, and it is gone rather
+  than documented. Three new corpus fixtures
+  — `session-restart`, `silent-gap`
+  and `calibration-jump`, the first two being the same 4.8452 s gap told
+  apart by identity alone — and two new CTest names,
+  `vrmAdapterVrchatOsc_frameAssembler` and
+  `vrmAdapterVrchatOsc_frameCorpus`. **No body role is named anywhere in
+  it**: a frame carries tracker identities, and which tracker is on which
+  body region stays a generic policy outside this adapter.
+
+- **A packet capture can say who sent each datagram, which is the only
+  restart marker one of the three wires has.** The `liveTransport` capture
+  format gains a `p <endpoint>` line: it names the peer of every record
+  after it until the next one, `p -` says the peer of what follows is
+  unknown, and `RecordedDatagram` carries a `peer` beside its bytes. Before
+  it, a capture named one peer in its **header** for a whole file — which
+  was free until a mocopi `VRChat (OSC)` session was recorded stopping and
+  starting again: that sender marks a restart with a new ephemeral source
+  port and with **nothing else**, no session identifier, no rest table and
+  no handshake, so the live session saw two peers and `--inspect` on the
+  same capture reported one
+  ([report 02](docs/reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §4).
+  Every fixture-driven test of restart behaviour was therefore exercising
+  the silence and not the identity change, which is the difference between
+  a source that paused and a second source that began.
+
+  **No committed fixture changes a byte, and that is the property the
+  spelling was chosen for.** The writer emits a `p` line only where a
+  record's peer differs from the one before it, so a capture whose records
+  name nobody is written exactly as it was — which is also why the format
+  version stays at 1: the reader compares it for equality, so a bump would
+  refuse every fixture in two corpora and turn an addition nothing yet
+  reads into a whole-corpus rewrite. A change of peer is one line in a diff
+  rather than one line per datagram, and the `d` record line is untouched,
+  so the strictness that refuses `d 0.5 24 stray` is intact.
+
+  All three recorders write the peer they received, and all three
+  `--inspect` paths report the record's own peer where a capture carries
+  one and the header's where it does not — so a capture of a two-peer
+  session now reports two. The claim is measured in both directions: with
+  the reader and writer reverted, `liveTransport_packetCapture` fails at
+  its first peer assertion, and with the `--inspect` change reverted the
+  recorder's harness reports `1 (192.168.1.8:51662)`, which is the exact
+  reading report 02 recorded. A peer is transport identity and no decoder
+  is given one.
+
+  New CTest name: `liveTransport_packetCapture`. It is the first test of
+  this format in the library that owns it — the three adapters' suites
+  test their own magic — and the `p` line belongs to no adapter, so its
+  magic is one nobody uses.
+
 - **An artifact-only smoke for the BVH path**
   (`scripts/artifact_only_bvh_smoke.py`), which closes the v0.7.0 release
   condition *both paths running from release artifacts alone, profiles

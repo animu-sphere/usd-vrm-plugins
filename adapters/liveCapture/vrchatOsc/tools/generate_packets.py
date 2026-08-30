@@ -237,12 +237,20 @@ class Capture:
         self.listen = listen
         self.peer = peer
         self.datagrams: list[tuple[float, bytes]] = []
+        # Who sent each record, which the header cannot say: it names one
+        # peer for a whole file, and this wire marks a restart with a new
+        # ephemeral source port and with nothing else (report 02 §4).
+        # Empty is the ordinary case and renders no `p` line at all, so
+        # every fixture written before the line existed is unchanged.
+        self.record_peer = ""
+        self.peers: list[str] = []
 
     def add(self, receive_time: float, payload: bytes) -> None:
         self.datagrams.append((round(receive_time, 6), payload))
+        self.peers.append(self.record_peer)
 
     def frame(self, receive_time: float, identities, frame: int,
-              channels=CHANNELS, skip=()) -> None:
+              channels=CHANNELS, skip=(), shift=(0.0, 0.0, 0.0)) -> None:
         """One frame as this sender sends one: a burst of single-message datagrams.
 
         `skip` drops individual (identity, channel) pairs, which is the shape of
@@ -253,9 +261,12 @@ class Capture:
         for identity, channel in cycle(identities):
             if channel not in channels or (identity, channel) in skip:
                 continue
+            values = frame_values(identity, channel, frame)
+            if channel == "position" and shift != (0.0, 0.0, 0.0):
+                values = tuple(value + offset
+                               for value, offset in zip(values, shift))
             self.add(receive_time + step * BURST_SECONDS,
-                     tracker(identity, channel,
-                             frame_values(identity, channel, frame)))
+                     tracker(identity, channel, values))
             step += 1
 
 
@@ -600,6 +611,85 @@ def capture_malformed_forms() -> Capture:
     return capture
 
 
+def capture_session_restart() -> Capture:
+    """A session that stops and starts again, and says so in the only way
+    this wire can.
+
+    The recorded `session-restart` take stopped the application's streaming
+    for about ten seconds and started it again. Three things were measured
+    and all three are here: the source port changes, the dark window is
+    4.8452 s, and there is **no other marker at all** -- no session
+    identifier, no rest table, no handshake, and no in-band signal of any
+    kind (report 02 §4). The two ports are that session's.
+
+    This is the fixture VRC-4 needs to tell a source that paused from a
+    second source that began, and it could not have existed before
+    2026-08-30: a capture had one peer in its header and none per record, so
+    a replayed restart was a gap and nothing more. Its pair is
+    `silent-gap`, which is the same silence with the same peer either side.
+    """
+    capture = Capture("session-restart-01", "192.168.1.8:51662")
+    capture.record_peer = "192.168.1.8:51662"
+    for index in range(3):
+        capture.frame(index * FRAME_SECONDS, MEASURED_TRACKERS, index)
+    # The measured dark window, to four decimals, from the last datagram of
+    # the old session to the first of the new.
+    resume = 2 * FRAME_SECONDS + 4.8452
+    capture.record_peer = "192.168.1.8:50035"
+    for index in range(3):
+        capture.frame(resume + index * FRAME_SECONDS, MEASURED_TRACKERS,
+                      index)
+    return capture
+
+
+def capture_silent_gap() -> Capture:
+    """The same silence, and the same sender on the other side of it.
+
+    A pause is not a restart, and this is the capture that says so: the gap
+    is `session-restart`'s to the microsecond and the source port never
+    changes, so an assembler that read a long silence as a new session
+    would split this stream in two and forget a tracker set that never went
+    away.
+
+    Invented as a *shape*: no recorded take pauses without restarting,
+    because the operator stopped the application to produce the pause. What
+    it pins is the policy rather than the sender -- `SOURCE_TIMEOUT` and
+    nothing more, however long the silence lasts.
+    """
+    capture = Capture("silent-gap-01", "192.168.1.8:51662")
+    capture.record_peer = "192.168.1.8:51662"
+    for index in range(3):
+        capture.frame(index * FRAME_SECONDS, MEASURED_TRACKERS, index)
+    resume = 2 * FRAME_SECONDS + 4.8452
+    for index in range(3):
+        capture.frame(resume + index * FRAME_SECONDS, MEASURED_TRACKERS,
+                      index)
+    return capture
+
+
+def capture_calibration_jump() -> Capture:
+    """Every tracker moves 1.2 m at one frame boundary, at once.
+
+    VRChat's tracking space is the *player's*, established by a calibration
+    the receiving application performs; redoing it moves everything into a
+    space whose relationship to the old one nothing in this adapter can
+    compute. What separates that from motion is **simultaneity** -- one
+    tracker jumping is a tracking glitch, and a body cannot travel 1.2 m in
+    17 ms in any case (that is 70 m/s).
+
+    Unobserved: no recorded session contains a recalibration, because none
+    was performed while recording. So this fixture pins a stated policy and
+    not a measured shape, and the threshold it exercises is a decision
+    rather than a reading.
+    """
+    capture = Capture("calibration-jump-01", "127.0.0.1:51662")
+    for index in range(6):
+        shift = (1.2, 0.0, -0.9) if index >= 3 else (0.0, 0.0, 0.0)
+        capture.frame(index * FRAME_SECONDS, MEASURED_TRACKERS, index,
+                      shift=shift)
+    return capture
+
+
 CAPTURES = {
     "three-trackers-58hz.vrchatoscpackets": capture_three_trackers,
     "one-tracker.vrchatoscpackets": capture_one_tracker,
@@ -608,6 +698,9 @@ CAPTURES = {
     "position-only.vrchatoscpackets": capture_position_only,
     "rotation-only.vrchatoscpackets": capture_rotation_only,
     "tracker-dropout.vrchatoscpackets": capture_tracker_dropout,
+    "session-restart.vrchatoscpackets": capture_session_restart,
+    "silent-gap.vrchatoscpackets": capture_silent_gap,
+    "calibration-jump.vrchatoscpackets": capture_calibration_jump,
     "duplicate-and-reordered.vrchatoscpackets": capture_duplicate_and_reordered,
     "bundled-frame.vrchatoscpackets": capture_bundled_frame,
     "mixed-traffic.vrchatoscpackets": capture_mixed_traffic,
@@ -641,8 +734,18 @@ def render(capture: Capture) -> str:
     if capture.peer:
         out.append(f"peer {capture.peer}")
 
-    for receive_time, payload in capture.datagrams:
+    # A `p` line only where the peer changes, which is what the C++ writer
+    # does: a capture whose records name nobody renders exactly as it did
+    # before the line existed, and a restart is two lines in a fixture
+    # rather than one per datagram.
+    emitted = ""
+    emitted_any = False
+    for index, (receive_time, payload) in enumerate(capture.datagrams):
+        peer = capture.peers[index] if capture.peers else ""
         out.append("")
+        if peer != emitted and (emitted_any or peer):
+            out.append(f"p {peer if peer else '-'}")
+            emitted, emitted_any = peer, True
         out.append(f"d {receive_time:.6f} {len(payload)}")
         for offset in range(0, len(payload), BYTES_PER_LINE):
             chunk = payload[offset:offset + BYTES_PER_LINE]
@@ -670,6 +773,8 @@ def measure(text: str) -> dict:
     device = ""
     source_id = ""
     times: list[float] = []
+    peers: list[str] = []
+    peer = ""
     payload_bytes = 0
     # Per datagram, never concatenated: two records joined end to end produce
     # address patterns neither of them contains.
@@ -680,10 +785,14 @@ def measure(text: str) -> dict:
         if not stripped or stripped.startswith("#"):
             continue
         tokens = stripped.split()
-        if tokens[0] == "d":
+        if tokens[0] == "p":
+            peer = "" if tokens[1] == "-" else tokens[1]
+        elif tokens[0] == "d":
             times.append(float(tokens[1]))
             payload_bytes += int(tokens[2])
             payloads.append(bytearray())
+            if peer and peer not in peers:
+                peers.append(peer)
         elif not payloads:
             if tokens[0] == "sender":
                 sender = tokens[1]
@@ -709,6 +818,10 @@ def measure(text: str) -> dict:
         "payloadBytes": payload_bytes,
         "durationSeconds": round(times[-1] - times[0], 6) if times else 0.0,
         "addressPatterns": sorted(addresses),
+        # In first-seen order rather than sorted: on this wire the order two
+        # peers appear in *is* the order the sessions ran in, and a restart
+        # is the only thing a second peer means here.
+        "peers": peers,
         "sha256": hashlib.sha256(data).hexdigest(),
         "bytes": len(data),
     }

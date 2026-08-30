@@ -607,8 +607,15 @@ struct Expected
 // cannot read. `malformed-packets` is nine datagrams that are not OSC and one
 // that is. `malformed-forms` is a clean frame, a bundled frame with one
 // four-float rotation in it, and seven individually bad messages.
+// `session-restart`, `silent-gap` and `calibration-jump` are six frames of
+// eight apiece and carry nothing this layer refuses: what each of them says is
+// said by its *timing* and its peers, which is VRC-4's subject and not this
+// one's. They are listed because a capture with no row here fails this test,
+// which is what stops a fixture being added to the corpus and decoded by
+// nobody.
 constexpr Expected kExpected[] = {
     {"bundled-frame.vrchatoscpackets", 3, 0, 3, 24, 24, 0, 0, 0, 0},
+    {"calibration-jump.vrchatoscpackets", 48, 0, 0, 48, 48, 0, 0, 0, 0},
     {"duplicate-and-reordered.vrchatoscpackets", 25, 0, 0, 25, 25, 0, 0, 0, 0},
     {"eight-trackers.vrchatoscpackets", 36, 0, 0, 36, 36, 0, 0, 0, 0},
     {"head-absent.vrchatoscpackets", 18, 0, 0, 18, 18, 0, 0, 0, 0},
@@ -618,6 +625,8 @@ constexpr Expected kExpected[] = {
     {"one-tracker.vrchatoscpackets", 6, 0, 0, 6, 6, 0, 0, 0, 0},
     {"position-only.vrchatoscpackets", 12, 0, 0, 12, 12, 0, 0, 0, 0},
     {"rotation-only.vrchatoscpackets", 12, 0, 0, 12, 12, 0, 0, 0, 0},
+    {"session-restart.vrchatoscpackets", 48, 0, 0, 48, 48, 0, 0, 0, 0},
+    {"silent-gap.vrchatoscpackets", 48, 0, 0, 48, 48, 0, 0, 0, 0},
     {"three-trackers-58hz.vrchatoscpackets", 55, 0, 0, 55, 55, 0, 0, 0, 0},
     {"tracker-dropout.vrchatoscpackets", 40, 0, 0, 40, 40, 0, 0, 0, 0},
 };

@@ -539,8 +539,8 @@ they are a frozen surface with golden tests over their formatted form.
 | OSC-3 — second OSC consumer, then extract `libs/osc` | foundation | ✅ |
 | VRC-1 — real mocopi capture and address inventory | adapter | ✅ |
 | VRC-2 — tracker semantic decode | adapter | ✅ |
-| VRC-3 — tracking-space normalisation | adapter | ⬜ |
-| VRC-4 — tracker frame assembly | adapter | ⬜ |
+| VRC-3 — tracking-space normalisation | adapter | ✅ |
+| VRC-4 — tracker frame assembly | adapter | ✅ |
 | VRC-5 — the humanoid solve boundary | adapter | ⬜ |
 | VRC-6 — CLI and record | adapter | ⬜ |
 | VRC-7 — cross-source evidence | both | ⬜ |
@@ -834,6 +834,108 @@ repeated updates for one tracker · partial tracker sets · timeout · stale
 samples · the head reference · source reset · calibration discontinuity. Each is
 a test, and each has a recorded or generated fixture that produces it.
 
+**Done 2026-08-30** —
+[`FrameAssembler.h`](../../adapters/liveCapture/vrchatOsc/include/vrmAdapterVrchatOsc/FrameAssembler.h),
+its suite and three new corpus fixtures. This is the first file in this adapter
+that **decides** rather than converts, and the first whose failure mode is
+invisible per value: every sample in a wrongly-cut frame is individually
+correct and only the grouping is wrong.
+
+**The boundary came from report 02 rather than from a convention.** VMC marks
+a frame with a clock message and this wire has none, so what stands in for one
+is the measurement: a frame here is a **burst** — eight datagrams inside a
+median 0.053 ms — with ~17 ms between bursts, three hundred times wider. Two
+rules are stated rather than one, because they fail differently. *A repeat
+closes the frame*, which needs no clock at all and survives loss: the frame
+that lost `/tracking/trackers/1/rotation` — 96 % of this wire's single-address
+loss — is closed by the next `head/rotation` exactly as an intact one is, and
+comes out one sample short rather than merged with its successor. *A gap closes
+the frame*, at a 5 ms window that sits ninety times above the burst and three
+times below the interval. **On the recorded sender the gap gets there first**,
+because the window is checked when a datagram arrives and 17 ms is past it
+before the repeat inside that datagram is read — and the suite measures that
+the two agree by running one stream twice with the window on and off and
+comparing the frames sample for sample.
+
+**A silence is not a restart, and that is the line the format change bought.**
+The measured restart is a new ephemeral source port and nothing else, so the
+policy is split along what is observable: a peer that differs **is** a restart
+(reported, and the old session's trackers forgotten — never repaired), and a
+silence of any length is `SOURCE_TIMEOUT` and nothing more. **A caller that
+supplies no peer therefore never sees a restart**, which is the honest outcome
+rather than a limitation: guessing one from silence would make every fixture
+written before the `p` line report a session boundary nothing observed. The
+corpus carries both halves — `session-restart` and `silent-gap` are the same
+4.8452 s gap, told apart by identity alone.
+
+**A partial sample is emitted and never repaired.** `hasPosition` and
+`hasRotation` say which halves are real and the absent half is left at its
+default, because a defaulted rotation of identity is bit-for-bit what a tracker
+at rest reports — a reader that ignored the flag could not tell the invented
+value from a measured one. `VRM_VRCHAT_OSC_TRACKER_PARTIAL` is raised here and
+nowhere below, which is what the decode layer deliberately left to this one.
+
+**Missing and stale carry no diagnostic code, deliberately.** The ten codes
+were frozen before this directory existed and an eleventh is a contract change,
+so a per-tracker absence is data on the frame where a consumer applies its own
+policy — and both are measured against the trackers the session has *observed*
+rather than the eight the surface defines, or a three-point setup would report
+an incomplete frame fifty-eight times a second forever.
+
+**A recalibration is told from motion by simultaneity, not by size**, and the
+threshold is the one policy here with no measurement under it: no recorded take
+contains a recalibration, so `calibration-jump` is marked `unobserved` and the
+default's safety is arithmetic — 0.5 m in one frame period at 58 Hz is 29 m/s.
+One tracker jumping is a tracking glitch and raises nothing.
+
+Eleven mutations, each a plausible wrong *policy* rather than a syntax error,
+each failing a case named for what it breaks, with the restored source green:
+the gap rule removed, the repeat rule removed, a cross-datagram repeat read as
+a duplicate, a long silence read as a restart, a restart that keeps the old
+session's trackers, one jumping tracker read as a recalibration, a single
+tracker allowed to be a simultaneity, staleness reported per frame rather than
+per crossing, a partial sample reported as complete, the new-session flag
+scoped to one `Push`, and the channel guard removed.
+
+**Eight of the nine were caught on the first run, and the ninth is the one
+worth recording.** "A restart that keeps the old session's trackers" passed
+the suite unchanged, because the restart case ran the *same four trackers*
+either side of the boundary — where an assembler that forgets everything and
+one that forgets nothing produce identical frames. The case now restarts into
+a three-point rig four metres away, which observes both halves of the policy:
+the old rig is gone rather than reported missing, and the old positions go
+with it, so a restart that moved does not raise `CALIBRATION_REQUIRED` for a
+space that ended. The mutation found a hole in the test rather than in the
+code, which is the outcome this repository's mutation passes exist to produce.
+
+**A review found two more of the same kind, and the last two mutations are
+them.** `beginsNewSession` was a local of `Push`, so it was *dropped* whenever
+the datagram carrying the new peer contributed no message this layer accepts —
+which port 9000 makes ordinary, since anything on the network may send to it
+and `mixed-traffic` is a whole fixture of that shape. The diagnostics said the
+session restarted and no frame said it began. It is now held on the assembler
+until a frame opens. The second was memory rather than policy: the channel
+indexes two fixed-width arrays, and a `TrackerChannel::Count` from a
+caller-built packet — a supported way to drive this class — read and then wrote
+past the end of both before the conversion's own guard could refuse it. It is
+refused first now, as every caller-precondition failure in this adapter is.
+**Neither is observable from a fixture**: both take a hand-built packet, so the
+corpus could not have found them and the cases covering them are unit cases by
+necessity. A third finding was a counter that could only ever be zero —
+`framesRefusedEmpty`, for a state no code path reaches, since the only thing
+that opens a frame is a message that has already converted — and it is gone
+rather than documented.
+
+Two things this milestone did not do. **No body role is named**, so assignment
+(VRC-4a) is still entirely outside this adapter and the frame carries tracker
+identities rather than regions. And **the corpus expectations moved rather than
+the code**, twice, when a first run disagreed with them: `duplicate-and-reordered`
+assembles to four frames because a repeat in its own datagram is the next turn
+of the cycle by this layer's rule — so the twice-sent address opens a frame of
+its own instead of a keep-first or keep-last policy choosing a value to lose —
+and `tracker-dropout` reports `missing` and nothing stale, because the capture
+is 0.086 s long against a half-second horizon.
+
 ### VRC-4a — tracker assignment policy
 
 Which tracker is which body region, as a **generic** contract with an explicit
@@ -1012,8 +1114,8 @@ depends on them ([docs/README.md](../README.md)).
   the answer than after. Nothing in VMC or in the VRChat tracker surface sends a
   `t` argument, so it blocks nothing; it is here so the extraction decides it
   rather than inherits it. Belongs with OSC-3.
-- ⬜ **A capture cannot carry the only restart marker this wire has.** Measured
-  2026-08-30
+- ✅ **A capture can carry the only restart marker this wire has** *(landed
+  2026-08-30, after being measured the same day)*. Measured
   ([report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §4):
   this sender marks a restart with a new ephemeral **source port** and with
   nothing else — no session identifier, no rest table, no handshake — and
@@ -1025,12 +1127,39 @@ depends on them ([docs/README.md](../README.md)).
   cannot separate a session that paused from a second session that began, which
   is what `Reset` versus `Refuse` is made of.
 
-  It is a **format** question and therefore not this adapter's to answer alone:
-  a per-record peer, or a header list of them, touches `liveTransport`, three
-  adapters, and every committed fixture in two corpora. Which of those it is —
-  and whether the native corpus's restart fixture wants re-recording afterwards —
-  belongs in a change of its own, ahead of VRC-4, which is the milestone that
-  first needs to tell the two apart. Blocks nothing before VRC-4.
+  It was a **format** question and therefore not this adapter's to answer
+  alone: a per-record peer, or a header list of them, touches
+  `liveTransport`, three adapters, and every committed fixture in two
+  corpora. It landed as its own change ahead of VRC-4, which is the
+  milestone that first needs to tell the two apart.
+
+  **A per-record peer, and the header list was never the alternative it
+  looked like**: a list says a file saw two senders and still cannot say
+  which datagram came from which, so it answers the count and not the
+  question. The format gains `p <endpoint>`, naming the peer of every
+  record after it until the next one, with `p -` for the peer that has
+  gone away — carried forward rather than repeated, so a restart is two
+  lines in a fixture and not one line per datagram.
+
+  **No committed fixture changed a byte**, which is what made it a small
+  change rather than a corpus migration: the writer emits a `p` only where
+  the peer changes, so a capture whose records name nobody is written
+  exactly as it was, and the format version stays at 1 because the reader
+  compares it for equality — a bump would refuse both corpora outright.
+  The `d` line is untouched too, so the strictness that refuses a fourth
+  token on a record survives.
+
+  The evidence is in both directions. `liveTransport_packetCapture` is the
+  first test of this format in the library that owns it — the three
+  adapters' suites test their own magic, and this line belongs to no
+  adapter — and it fails at its first peer assertion against the reverted
+  reader and writer. With the `--inspect` change reverted, the recorder's
+  own harness reports `1 (192.168.1.8:51662)` for a two-session capture,
+  which is the reading report 02 measured; with it, two. **What this does
+  not do is re-record anything**: the native corpus's restart fixture was
+  recorded before a file could carry a peer and still cannot say which
+  session a datagram belongs to, so a restart fixture that carries the
+  identity is a new recording rather than a re-read of an old one.
 - ⬜ **A tracker observation has no representation in the motion contract.**
   `motionCore` carries `HumanoidPose`, which is post-solve. Whether a
   pre-IK tracker sample needs a contract there — a generic `TrackingSource` or

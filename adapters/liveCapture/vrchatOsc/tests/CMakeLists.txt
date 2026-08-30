@@ -75,6 +75,19 @@ target_compile_options(vrmAdapterVrchatOsc_trackingSpace_tests
 add_test(NAME vrmAdapterVrchatOsc_trackingSpace
          COMMAND vrmAdapterVrchatOsc_trackingSpace_tests)
 
+# The frame: which observations belong together, and what an absence means
+# (VRC-4). Seven policies, each with a case and each with a fixture that
+# produces it -- and the two that could not be tested from a file at all
+# before 2026-08-30, because the only restart marker this wire has is a
+# source port and a capture could not carry one.
+add_executable(vrmAdapterVrchatOsc_frameAssembler test_frame_assembler.cpp)
+target_link_libraries(vrmAdapterVrchatOsc_frameAssembler
+    PRIVATE vrmAdapterVrchatOsc::vrmAdapterVrchatOsc)
+target_compile_options(vrmAdapterVrchatOsc_frameAssembler
+    PRIVATE ${_vrm_adapter_vrchat_osc_assertions})
+add_test(NAME vrmAdapterVrchatOsc_frameAssembler
+         COMMAND vrmAdapterVrchatOsc_frameAssembler)
+
 # The socket, on its own CTest name, so a runner that forbids sockets excludes a
 # name rather than a claim (adapter plan §9.5). This binary carries **three**
 # such names: the two below and `vrmAdapterVrchatOsc_loopbackCorpus` further
@@ -126,7 +139,7 @@ file(GLOB _vrm_adapter_vrchat_osc_captures CONFIGURE_DEPENDS
 set(_vrm_adapter_vrchat_osc_tests
     vrmAdapterVrchatOsc_unit vrmAdapterVrchatOsc_packetCapture
     vrmAdapterVrchatOsc_addressInventory vrmAdapterVrchatOsc_trackerMessage
-    vrmAdapterVrchatOsc_trackingSpace
+    vrmAdapterVrchatOsc_trackingSpace vrmAdapterVrchatOsc_frameAssembler
     vrmAdapterVrchatOsc_udpReceiver vrmAdapterVrchatOsc_udpReceiverTruncation)
 
 if(_vrm_adapter_vrchat_osc_captures)
@@ -167,9 +180,18 @@ if(_vrm_adapter_vrchat_osc_captures)
     add_test(NAME vrmAdapterVrchatOsc_trackingSpaceCorpus
         COMMAND vrmAdapterVrchatOsc_trackingSpace_tests
                 "${_vrm_adapter_vrchat_osc_corpus}")
+    # And the frame layer's reading of the same directory: every capture is
+    # assembled and its frame count, partial count and session boundaries are
+    # compared against numbers derived from the generator's structure. A
+    # capture with no expectation in that test fails it, which is what stops a
+    # fixture being added to the corpus and assembled by nobody.
+    add_test(NAME vrmAdapterVrchatOsc_frameCorpus
+        COMMAND vrmAdapterVrchatOsc_frameAssembler
+                "${_vrm_adapter_vrchat_osc_corpus}")
     list(APPEND _vrm_adapter_vrchat_osc_tests
          vrmAdapterVrchatOsc_corpus vrmAdapterVrchatOsc_trackerCorpus
          vrmAdapterVrchatOsc_trackingSpaceCorpus
+         vrmAdapterVrchatOsc_frameCorpus
          vrmAdapterVrchatOsc_loopbackCorpus)
 endif()
 

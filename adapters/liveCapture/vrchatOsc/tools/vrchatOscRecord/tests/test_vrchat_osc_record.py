@@ -50,7 +50,8 @@ def gutter(payload: bytes) -> str:
 
 
 def write_capture(path: pathlib.Path, header: dict[str, str],
-                  records: list[tuple[float, bytes]]) -> None:
+                  records: list[tuple[float, bytes]],
+                  peers: list[str] | None = None) -> None:
     """A second implementation of the writer, in the format's own terms.
 
     The gutter is emitted rather than omitted even though the reader treats it as
@@ -62,8 +63,17 @@ def write_capture(path: pathlib.Path, header: dict[str, str],
     for key in ("sender", "device", "sourceId", "listen", "peer"):
         if header.get(key):
             lines.append(f"{key} {header[key]}")
-    for receive_time, payload in records:
+    # A `p` line only where the peer changes, which is the writer's rule and
+    # the reason a restart is two lines in a fixture rather than one per
+    # datagram.
+    emitted = ""
+    emitted_any = False
+    for index, (receive_time, payload) in enumerate(records):
+        peer = peers[index] if peers else ""
         lines.append("")
+        if peer != emitted and (emitted_any or peer):
+            lines.append(f"p {peer if peer else '-'}")
+            emitted, emitted_any = peer, True
         lines.append(f"d {receive_time:.6f} {len(payload)}")
         for offset in range(0, len(payload), 16):
             chunk = payload[offset:offset + 16]
@@ -75,23 +85,37 @@ def write_capture(path: pathlib.Path, header: dict[str, str],
     path.write_bytes(("\n".join(lines) + "\n").encode("utf-8"))
 
 
-def read_capture(path: pathlib.Path) -> tuple[dict[str, str], list[bytes]]:
-    """Header fields and payloads, per datagram and never concatenated."""
+def read_capture(
+        path: pathlib.Path) -> tuple[dict[str, str], list[bytes], list[str]]:
+    """Header fields, payloads per datagram, and the peer each record carries.
+
+    The peer is carried forward from the last `p` line, which is the format's
+    own rule: a `p` names the sender of every record after it until the next
+    one, and `p -` says the sender of what follows is unknown. A capture with
+    no `p` line yields an empty string per record, which is what every fixture
+    written before the line existed does -- so a test that does not care about
+    peers reads the same payloads it always did.
+    """
     header: dict[str, str] = {}
     payloads: list[bytearray] = []
+    peers: list[str] = []
+    peer = ""
     for line in path.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("#") or stripped.startswith("!"):
             continue
         tokens = stripped.split()
-        if tokens[0] == "d":
+        if tokens[0] == "p":
+            peer = "" if tokens[1] == "-" else tokens[1]
+        elif tokens[0] == "d":
             payloads.append(bytearray())
+            peers.append(peer)
         elif not payloads:
             header[tokens[0]] = " ".join(tokens[1:])
         else:
             payloads[-1] += bytes.fromhex(
                 stripped.split("|")[0].replace(" ", ""))
-    return header, [bytes(payload) for payload in payloads]
+    return header, [bytes(payload) for payload in payloads], peers
 
 
 def report_lines(text: str) -> dict[str, str]:
@@ -353,6 +377,65 @@ def check_inspect_inventory(tool: pathlib.Path, workspace: pathlib.Path) -> None
         fail("--inspect: the refused datagram was not reported once")
 
 
+def check_inspect_reads_a_restart(tool: pathlib.Path,
+                                  workspace: pathlib.Path) -> None:
+    """The measurement that made the format grow a line.
+
+    A mocopi `VRChat (OSC)` session that stops and starts again resumes from a
+    new ephemeral source port, and that port is the only restart marker this
+    wire has -- no session identifier, no rest table, no handshake
+    ([report 02](../../../../../docs/reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §4).
+    On 2026-08-30 the live session saw two peers and `--inspect` on the same
+    capture reported one, because the header held the only peer a file could
+    carry. This is that reading, from a file: two peers, and the dark window
+    between them.
+
+    The ports and the 4.8 s gap are the recorded session's own numbers. The
+    payloads are not -- they are this file's OSC, for the reason every other
+    check here builds its own.
+    """
+    frame = osc_message("/tracking/trackers/1/position", [0.0, 1.5, 0.0])
+    records = [
+        (0.000000, frame),
+        (0.017000, frame),
+        (4.862000, frame),
+        (4.879000, frame),
+    ]
+    peers = ["192.168.1.8:51662"] * 2 + ["192.168.1.8:50035"] * 2
+
+    capture = workspace / "restart.vrchatoscpackets"
+    write_capture(capture, {
+        "sourceId": "session-restart-01",
+        "peer": "192.168.1.8:51662",
+    }, records, peers)
+
+    # Two lines in the file, not one per datagram: the writer names a peer
+    # where it changes, and this harness is a second implementation of that
+    # rule rather than a reader of the C++ one.
+    written = capture.read_text(encoding="utf-8")
+    if written.count("\np ") != 2:
+        fail(f"expected two peer lines in the capture, got {written!r}")
+
+    _, payloads, recorded_peers = read_capture(capture)
+    if recorded_peers != peers:
+        fail(f"the capture read back peers {recorded_peers}, expected {peers}")
+    if len(payloads) != len(records):
+        fail("a capture with peer lines lost a record")
+
+    lines = report_lines(run_tool(tool, "--inspect", str(capture)))
+    # The line that used to say 1. The header still names one peer, because a
+    # header describes a file; the records name both, because a record
+    # describes a datagram.
+    if not lines.get("peers", "").startswith("2 ("):
+        fail(f"--inspect: peers line was '{lines.get('peers')}', expected two")
+    for endpoint in ("192.168.1.8:51662", "192.168.1.8:50035"):
+        if endpoint not in lines.get("peers", ""):
+            fail(f"--inspect: peers line does not name {endpoint}: "
+                 f"'{lines.get('peers')}'")
+    if "peer=192.168.1.8:51662" not in lines.get("provenance", ""):
+        fail("--inspect: the header peer stopped being the file's provenance")
+
+
 def check_inspect_refuses_a_bad_capture(tool: pathlib.Path,
                                         workspace: pathlib.Path) -> None:
     # A capture that is a *sibling's*. It parses perfectly as a capture -- the
@@ -520,7 +603,7 @@ def check_loopback(tool: pathlib.Path, workspace: pathlib.Path) -> None:
     if code != 0:
         fail(f"the recorder exited {code}\n" + "\n".join(session.stderr))
 
-    header, payloads = read_capture(output)
+    header, payloads, _ = read_capture(output)
     if payloads != sent:
         fail("the capture is not what was sent:\n"
              f"  sent     {[len(p) for p in sent]}\n"
@@ -714,6 +797,7 @@ def main() -> int:
         if arguments.mode == "inspect":
             check_inspect(arguments.tool, workspace)
             check_inspect_inventory(arguments.tool, workspace)
+            check_inspect_reads_a_restart(arguments.tool, workspace)
             check_inspect_refuses_a_bad_capture(arguments.tool, workspace)
             check_help_and_refusals(arguments.tool, workspace)
             print("vrchat_osc_record --inspect checks passed")

@@ -79,6 +79,31 @@ census puts each pair further apart than either copy is long, because assembling
 a frame *is* the protocol. A shared frame assembler is how three protocols
 acquire one protocol's frame policy.
 
+## The format grew one line, and it was measured into it
+
+A capture used to name **one** peer, in its header, for a whole file. That
+was free while a session meant one sender, and on 2026-08-30 it stopped
+being free: a mocopi `VRChat (OSC)` session marks a **restart** with a new
+ephemeral source port and with nothing else — no session identifier, no rest
+table, no handshake — so the only signal that wire gives died at the file
+boundary. The live session saw two peers and `--inspect` on the same capture
+reported one
+([report 02](../../docs/reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §4),
+which made every fixture-driven test of restart behaviour a test of the
+silence rather than of the identity change.
+
+So a record can now say who sent it: `p <endpoint>` names the peer of every
+record after it until the next one, `p -` says the peer of what follows is
+unknown, and `RecordedDatagram::peer` carries it. **No committed fixture
+changed a byte** — the writer emits a `p` only where the peer changes, so a
+capture whose records name nobody is written exactly as it was before —
+which is also why the format version stayed at 1: the version is an equality
+check, and bumping it would refuse every fixture in two corpora.
+
+A peer is transport identity, so nothing in a decode path may read one. The
+recorders write it and `--inspect` reports it; no adapter's decoder is given
+it at all.
+
 ## The one internal header
 
 `src/PollTimeout.h` holds the poll timeout mapping and the wake-up predicate,
@@ -95,6 +120,7 @@ convergence. `tests/test_poll_timeout.cpp` is that test.
 ```text
 include/liveTransport/Diagnostics.h    the vehicle, the severity scale, the line
 include/liveTransport/PacketCapture.h  the recorded-datagram file format
+                                       (and `p`, its one non-adapter line)
 include/liveTransport/UdpReceiver.h    the socket, and the opt-in queue
 src/PollTimeout.h                      internal; not installed
 ```

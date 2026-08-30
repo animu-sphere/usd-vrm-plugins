@@ -58,6 +58,7 @@
 //     listen 0.0.0.0:12351
 //     peer 192.168.0.20:52001
 //
+//     p 192.168.0.20:52001
 //     d 0.000000 16
 //       00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f  |................|
 //
@@ -74,6 +75,50 @@
 // become something narrower than a protocol adapter — and this library, which
 // may not know a protocol at all, only stores them.
 //
+// ## Who sent each datagram, which the format used to be unable to say
+//
+// `p <endpoint>` names the peer of every record that follows it, until the next
+// `p`. `p -` says the peer of what follows is unknown, which is the one thing a
+// bare omission cannot mean once a peer has been named. A capture with no `p`
+// line at all — which is every fixture committed before 2026-08-30 — carries no
+// per-record peer, and `RecordedDatagram::peer` is empty throughout it.
+//
+// **This was a deliberate omission and it acquired a measured cost.** The header
+// names one peer for a whole capture, which was free while a session meant one
+// sender; a VRChat OSC session marks a *restart* with a new ephemeral source
+// port and with nothing else — no session identifier, no rest table, no
+// handshake — so the only signal that wire gives did not survive into a file.
+// A capture of a restart replayed through `--inspect` reported one peer where
+// the live session had seen two
+// ([report 02](../../../../docs/reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §4),
+// and every fixture-driven test of restart behaviour was therefore testing the
+// silence and not the identity change — which is precisely the difference
+// between one session pausing and a second session beginning.
+//
+// Three properties the spelling is chosen for, in the order they were weighed:
+//
+// * **No committed fixture changes a byte.** The writer emits a `p` line only
+//   where a record's peer differs from the one before it, so a capture whose
+//   records carry no peer is written exactly as it was before this line
+//   existed. That is the same rule the `device` key was widened under, and it
+//   is what keeps the format version at 1: the version is an equality check, so
+//   bumping it would refuse every fixture in two corpora and make a
+//   whole-corpus rewrite out of an addition nothing yet reads.
+// * **A change of peer is an event, and it diffs as one.** Carrying the value
+//   forward means a restart is two lines in a file rather than one repeated
+//   line per datagram — a 44 918-datagram session would otherwise carry 44 918
+//   copies of a string that changed once, and a reviewer reads a fixture.
+// * **The record line is untouched.** A fourth token on `d` would have been
+//   shorter and would have cost the strictness that refuses `d 0.5 24 stray`,
+//   which is a check all three adapters' suites name.
+//
+// The header's `peer` is unchanged and is not a fallback: it is the capture's
+// provenance, one endpoint for one file, and a caller that wants it for a
+// record with no peer of its own reads it deliberately rather than by default.
+// Nothing in a decode path may branch on either — a peer is transport identity,
+// and a decoder that read it would be deciding a protocol question from a
+// socket's address.
+//
 // The reader is strict, in the four ways a fixture goes wrong silently:
 //
 // * a record whose hex lines carry fewer or more bytes than it declared is an
@@ -85,6 +130,12 @@
 //   does not read as an absent field;
 // * a declared length above `MaxDatagramBytes` is an error rather than an
 //   allocation sized from a corrupt file.
+//
+// A `p` line inherits all four: it needs a value, it takes exactly one, and it
+// may not appear inside a record. A `p` that repeats the peer already in force
+// is accepted and then dropped by the writer, exactly as uppercase hex is
+// accepted and lowercased — a hand-authored fixture is canonicalised on the way
+// out, and a committed one that is not canonical fails its corpus round trip.
 #pragma once
 
 #include "liveTransport/api.h"
@@ -114,6 +165,13 @@ struct RecordedDatagram
 {
     // Seconds on the receiver's clock, relative to the start of the recording.
     double receiveTime = 0.0;
+    // The sender of this datagram, numerically: "192.168.1.8:51662". Empty
+    // when the capture does not say — which is every capture written before
+    // this field existed, and is a different statement from the header's
+    // `peer`, which describes the file rather than the record. See the header:
+    // on a wire whose only restart marker is a source port, this is the
+    // difference between a session that paused and a second session that began.
+    std::string peer;
     // Verbatim payload. Empty is legal and meaningful: a zero-length UDP
     // datagram is receivable, and it is the smallest thing a decoder must
     // refuse without crashing.

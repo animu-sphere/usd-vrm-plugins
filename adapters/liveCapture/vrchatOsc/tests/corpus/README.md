@@ -13,7 +13,9 @@ split was designed to allow rather than a gap:
   [§6](../../../../../docs/roadmap/osc-and-vrchat-trackers.md#6-the-adapter-capture-precedes-decoder)
   exists to prevent — a specification says what a receiver must accept, not what
   a sender sends. **It arrived with VRC-2** (2026-08-30): twelve captures
-  written from the measured session, [described there](generated/README.md).
+  written from the measured session, and three more with VRC-4 the same day —
+  a session boundary, a silence that is not one, and a recalibration —
+  [described there](generated/README.md).
 - `recorded/` is the evidence, and it arrived from a device session (VRC-1).
   **That session happened on 2026-08-30** and left
   [a manifest](recorded/manifests/2026-08-30-mocopi-vrchat-osc.json) and no

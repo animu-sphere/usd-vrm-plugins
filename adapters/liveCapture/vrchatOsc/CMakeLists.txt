@@ -80,7 +80,7 @@ if(NOT TARGET motionCore::motionCore)
     find_package(motionCore REQUIRED CONFIG)
 endif()
 
-# Four files. Two of them exist because a shared library may not hold what is
+# Six files. Two of them exist because a shared library may not hold what is
 # in them: a code table, and the map from a transport event to one of its rows
 # (WORKSPACE.md §2's diagnostic split). The capture format contributes a third
 # thing of the same kind and it is one string, so it lives in a header.
@@ -99,9 +99,16 @@ endif()
 # adapter's own vocabulary: the sender's axes into the canonical ones, measured
 # from a labelled session rather than read off VRChat's documentation (VRC-3).
 # It is the file the motionCore edge below exists for.
+# `FrameAssembler.cpp` is the sixth and the first that *decides* rather than
+# converts: which observations belong to one frame, which tracker has stopped
+# reporting, and when a stream has become a different stream (VRC-4). It adds
+# no edge -- the canonical value types arrived with VRC-3 and a frame is made
+# of them -- and it names no body role, which is what keeps the assignment
+# policy outside this library (osc-and-vrchat-trackers.md §5.1).
 add_library(vrmAdapterVrchatOsc STATIC
     src/AddressInventory.cpp
     src/Diagnostics.cpp
+    src/FrameAssembler.cpp
     src/TrackerMessage.cpp
     src/TrackingSpace.cpp
     src/UdpReceiver.cpp)

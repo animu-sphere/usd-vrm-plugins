@@ -191,8 +191,13 @@ RunInspect(const vrchatOscRecordTool::Options& options)
     vrchatOscRecordTool::SessionReport report;
     for (const vrmAdapterVrchatOsc::RecordedDatagram& datagram :
          capture.datagrams) {
-        report.ObserveDatagram(capture.peerEndpoint, datagram.bytes.data(),
-                               datagram.bytes.size(), datagram.receiveTime);
+        // The record's own peer where the capture carries one, and the
+        // header's where it does not. A capture written before the format
+        // could say takes the second path and reports what it always did.
+        report.ObserveDatagram(datagram.peer.empty() ? capture.peerEndpoint
+                                                     : datagram.peer,
+                               datagram.bytes.data(), datagram.bytes.size(),
+                               datagram.receiveTime);
     }
 
     // A file has already stopped, and it stopped by ending. None of the live
@@ -273,7 +278,13 @@ RunRecord(const vrchatOscRecordTool::Options& options)
             // on: nothing anything here makes of a packet can change what was
             // recorded.
             capture.datagrams.push_back(vrmAdapterVrchatOsc::RecordedDatagram{
-                datagram.receiveTime, datagram.bytes});
+                datagram.receiveTime, datagram.peer, datagram.bytes});
+            // The header names the first peer the session saw and the
+            // records name every one of them. On this wire that is the
+            // difference between a source that paused and a second source
+            // that began: a restart is marked by a new ephemeral source
+            // port and by nothing else
+            // ([report 02](../../../../../docs/reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §4).
             if (capture.peerEndpoint.empty()) {
                 capture.peerEndpoint = datagram.peer;
             }
