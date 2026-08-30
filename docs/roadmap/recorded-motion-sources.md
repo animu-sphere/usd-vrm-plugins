@@ -587,22 +587,29 @@ Still open:
   characterisation, so a later rule has to change that test before it changes
   the behaviour, and `motion_retarget` names the bone on stderr rather than
   losing it in silence.
-- ⬜ **The profiles reach a packaged product; the artifact-only smoke does not
-  exist.** Both halves of the staging are closed — the root project installs
-  `profiles/motion/*.yaml` to `share/usd-vrm-plugins/profiles/motion/`
-  (2026-08-05, verified against a scratch prefix), and `ost` 0.22.3's
-  `[[workspace.install_data]]` gives the mapping a product-level owner, with the
-  aggregate reporting `data_files: 3`
+- ✅ **The profiles reach a packaged product and the artifact-only smoke runs it**
+  *(2026-08-30, `scripts/artifact_only_bvh_smoke.py`)*. Both halves of the
+  staging closed first — the root project installs `profiles/motion/*.yaml` to
+  `share/usd-vrm-plugins/profiles/motion/` (2026-08-05, verified against a
+  scratch prefix), and `ost` 0.22.3's `[[workspace.install_data]]` gives the
+  mapping a product-level owner, with the aggregate reporting `data_files: 3`
   ([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md) §4).
-  Through v0.7.0 it did not: a `motion_bvh` archive was its two executables and
+  Through v0.7.0 neither did: a `motion_bvh` archive was its two executables and
   its descriptor, so a converter unpacked from a product found nothing on its
   executable-relative search path and refused every file it was given — the
   specific consequence [WORKSPACE.md §5](../architecture/WORKSPACE.md) put the
   profiles beside the tools to prevent, and an `ost` ask rather than something a
   `--profile-dir` flag closes, because "works if you pass a flag naming a
   directory the artifact does not contain" is not an artifact-only smoke.
-  **What stops BVH-3 closing is now only that nobody has extracted the product
-  and run the converter from it.**
+
+  **The smoke then failed for a second reason, which was ours.** The data
+  arrived byte-identically and the converter still refused: an installed product
+  puts a tool member at `<prefix>/tools/<member>/bin/`, and the locator's
+  installed-prefix rule assumed `<prefix>/bin/`. So this entry closes on two
+  fixes in different layers, and the sequence is the point — the packaging ask
+  was real, closing it was not sufficient, and only running the thing
+  distinguished the two. The passing run converts the committed 17-second mocopi
+  export from the prefix alone: 853 frames at 50 Hz, 22 of 27 joints bound.
 
 Two measured facts worth keeping, because both are easy to assume the other way:
 

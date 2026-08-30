@@ -702,9 +702,13 @@ smoke test of the BVH path impossible to pass.
 --install` met it.** A packaged product did not: `ost` packaged a tool member
 out of the `directories:` its descriptor declared, had no notion of a data-only
 member, and the measured `motion_bvh` archive was exactly its two executables
-and its descriptor. Unpacked and run, the converter refused a real capture and
-named `<prefix>/share/usd-vrm-plugins/profiles/motion` as the first directory it
-looked in — so the layout was agreed and only the staging was missing. Declaring
+and its descriptor. Unpacked and run — a *member* archive, on its own, so the
+executable sat at `<root>/bin/` — the converter refused a real capture and
+named `<root>/share/usd-vrm-plugins/profiles/motion` as the first directory it
+looked in, which read at the time as the layout being agreed and only the
+staging being missing. The qualification is added in hindsight and the next
+paragraph is why: that is one of two installed layouts, and the tool searched
+the product's first only after 2026-08-30. Declaring
 `directories: [bin, share]` did stage it, and was rejected: `directories:` names
 subdirectories of the *member root*, so it would have put the layer's data inside
 one tool's directory and the copy that shipped would have stopped being the file
@@ -727,13 +731,32 @@ rather than copied under any member root. The file that ships is the file
 `scripts/check_motion_profiles.py` validates, which is what
 `directories: [bin, share]` could not promise.
 
-**What is proven is the staging, not yet the run.** The product archive carries
-the profiles; nothing in this repository has yet extracted that product to a
-prefix and driven `motion_bvh_convert` from it, so the artifact-only smoke this
-paragraph exists to make possible is now *possible* rather than *passing*. That
-distinction is the one to keep: v0.7.0 recorded the condition unmet because the
-mechanism was missing, and the mechanism arriving is not the same thing as the
-test existing
+**The run happened on 2026-08-30 and it failed, which is why the distinction
+above was worth keeping.** `scripts/artifact_only_bvh_smoke.py` packages the
+product, verifies it, installs it to a prefix outside this repository, and
+drives `motion_bvh_convert` there with no `--profile-dir` and no
+`USDVRM_MOTION_PROFILE_PATH`. The profiles arrived exactly where this section
+says — byte-identical to `profiles/motion/` — and the converter refused the
+capture anyway, because `ost plugin product install` lands a tool member at
+`<prefix>/tools/<member>/bin/` and the locator looked at
+`<exe>/../share/usd-vrm-plugins/profiles/motion`, one directory too shallow
+inside the product's own prefix.
+
+The paragraph this replaces recorded that "the layout was agreed and only the
+staging was missing", and the agreement was real but with a *different* layout:
+it was measured on a member archive unpacked on its own, where the executable
+does sit at `<root>/bin/`. Two installed layouts put the data in the same place
+relative to the prefix and the tool at different depths inside it, so an
+executable-relative rule serves one of them at a time. The locator now carries
+both, the smoke passes — 853 frames at 50 Hz, 22 bound joints, from the artifact
+alone — and it proves the profile it read was the installed one by moving that
+file aside and requiring the refusal to come back.
+
+**None of this changes the destination**, which is the part worth stating: the
+contract in this section was right, `[[workspace.install_data]]` puts the files
+there, and the defect was one reader of it. That is the argument for the smoke
+rather than for more review — the search path was documented, the destination
+was documented, the two were written from each other, and they still disagreed
 ([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md) §4).
 
 That split is the one to check when a future reader arrives: a reader is in the

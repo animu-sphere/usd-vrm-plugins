@@ -37,22 +37,64 @@
 //
 //   1. every `--profile-dir`, in the order given
 //   2. `USDVRM_MOTION_PROFILE_PATH`, a list in the platform's PATH separator
-//   3. `<exe>/../share/usd-vrm-plugins/profiles/motion` — an install prefix
-//   4. `<exe>/../../../profiles/motion` — this repository, whose tools stage
+//   3. `<exe>/../share/usd-vrm-plugins/profiles/motion` — a `cmake --install`
+//      prefix, where the tools land in `<prefix>/bin/`
+//   4. `<exe>/../../../share/usd-vrm-plugins/profiles/motion` — an installed
+//      **product**, where `ost plugin product install` lands a tool member in
+//      `<prefix>/tools/<member>/bin/` and the product's own data in
+//      `<prefix>/share/`
+//   5. `<exe>/../../../profiles/motion` — this repository, whose tools stage
 //      their executables in `tools/<member>/bin/`
 //
-// `share` in the third is literal on every platform, and that is the contract
-// rather than an assumption about GNUInstallDirs: WORKSPACE.md §5 names
-// `share/usd-vrm-plugins/profiles/motion/`, and both install rules that place
-// these files spell it the same way for the same reason. A lookup that followed
-// a configurable data directory while the packager's rule followed another would
-// leave the converter finding nothing — and finding nothing means refusing every
-// file it is given, which is a failure that looks like a broken build rather
-// than like a misplaced directory.
+// The last two are offered **only when the executable really is in a
+// `tools/<member>/bin/`**, and both are absent from the search path — and from
+// the refusal's list — when it is not.
 //
-// The fourth is a convenience and is stated rather than hidden: a build tree
+// **The fourth is what an artifact-only run needs, and it was missing until
+// 2026-08-30.** Both installed layouts put the profiles at the same place
+// relative to the *prefix* and the tool at a different depth inside it, so one
+// executable-relative rule can only ever serve one of them. The third was
+// written against a member archive unpacked on its own — `<root>/bin/<exe>`
+// beside `<root>/share/` — and WORKSPACE.md §5 recorded from that measurement
+// that "the layout was agreed and only the staging was missing". The staging
+// then arrived (`ost` 0.22.3's `[[workspace.install_data]]`), the first run
+// from an installed product was performed, and the agreement turned out to be
+// with a layout the product does not use. Which is the whole argument for
+// writing the smoke rather than reasoning about the destination: this file
+// named `<prefix>/share/usd-vrm-plugins/profiles/motion` correctly and looked
+// somewhere else.
+//
+// `share` in the third and the fourth is literal on every platform, and that is
+// the contract rather than an assumption about GNUInstallDirs: WORKSPACE.md §5
+// names `share/usd-vrm-plugins/profiles/motion/`, and every install rule that
+// places these files spells it the same way for the same reason. A lookup that
+// followed a configurable data directory while the packager's rule followed
+// another would leave the converter finding nothing — and finding nothing means
+// refusing every file it is given, which is a failure that looks like a broken
+// build rather than like a misplaced directory.
+//
+// The fifth is a convenience and is stated rather than hidden: a build tree
 // that found no profile would send whoever ran it looking for a packaging bug
 // that is not there.
+//
+// **That condition is why the fourth and the fifth are guarded rather than
+// unconditional.** Both climb three directories, so from a `bin/` directly
+// under a prefix — the `cmake --install` layout — they reach two levels
+// *above* it, which is exactly where a sibling install of this product puts
+// its own `share/`. Saying "the third is tried first and a correct prefix
+// answers there" is not an answer: a prefix installed without its own
+// profiles is reachable, because both CMake rules that place them are guarded
+// on `profiles/motion` existing. What that costs is not a refusal but a
+// conversion reading another prefix's profile — a near-miss producing motion
+// that is *subtly misassembled rather than absent*, which is the outcome the
+// no-default-profile rule exists to prevent, arriving through the search path
+// instead of through a flag. The guard was added on review, before either rule
+// shipped, after reproducing it: an executable at `a/b/prefix/bin/` with a
+// profile only at `a/share/…` converted instead of refusing.
+//
+// It tightens the fifth as well, which had always climbed unguarded. In this
+// repository the executable is at `tools/<member>/bin/` and the rule is
+// unchanged; outside one it now declines to guess.
 #pragma once
 
 #include <filesystem>

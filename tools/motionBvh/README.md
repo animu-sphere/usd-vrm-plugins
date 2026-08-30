@@ -110,14 +110,28 @@ first hit wins:
 
 1. every `--profile-dir`, in the order given
 2. `USDVRM_MOTION_PROFILE_PATH`, a list in the platform's PATH separator
-3. `<exe>/../share/usd-vrm-plugins/profiles/motion` — an install prefix
-4. `<exe>/../../../profiles/motion` — this repository
+3. `<exe>/../share/usd-vrm-plugins/profiles/motion` — a `cmake --install`
+   prefix, where the tools land in `<prefix>/bin/`
+4. `<exe>/../../../share/usd-vrm-plugins/profiles/motion` — an installed
+   product, where `ost plugin product install` puts a tool member in
+   `<prefix>/tools/<member>/bin/` and the product's data in `<prefix>/share/`
+5. `<exe>/../../../profiles/motion` — this repository
 
-The third is why a packaged artifact works with no flags at all: the profiles
-ship beside the tools, and a converter with none available refuses every file it
-is given. A request that *is* a path is opened as given. The difference matters
-in one more place: when you name an id, the file's own `id` must match it, so a
-profile renamed on disk cannot make a conversion record an id it never read.
+The last two are offered only when the executable really is in a
+`tools/<member>/bin/`; from anywhere else they would climb past a prefix
+entirely, and finding a *different* prefix's profile is worse than finding
+none.
+
+The third and the fourth are why an artifact works with no flags at all: the
+profiles ship beside the tools, and a converter with none available refuses
+every file it is given. Which of the two answers depends on how the artifact was
+installed, and `scripts/artifact_only_bvh_smoke.py` is what keeps the product
+half honest — it installs the product to a clean prefix and converts a real
+export there with neither the flag nor the environment variable set.
+
+A request that *is* a path is opened as given. The difference matters in one
+more place: when you name an id, the file's own `id` must match it, so a profile
+renamed on disk cannot make a conversion record an id it never read.
 
 ### Report and exit status
 

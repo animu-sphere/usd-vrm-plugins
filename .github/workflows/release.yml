@@ -309,6 +309,33 @@ jobs:
       - name: Verify the packaged artifacts, composed (clean-install smoke)
         shell: bash
         run: python scripts/clean_install_smoke.py --skip-build
+      # The other half of "the artifact works": the clean-install smoke opens
+      # avatars through the four bundles, and nothing until 2026-08-30 had run a
+      # *tool* member out of an installed product. WORKSPACE.md §5 ships the
+      # motion profiles as product data so that this can pass, and the first run
+      # of it failed -- the tool lands at `tools/<member>/bin/` and looked for
+      # `<exe>/../share/...`, which is one directory too shallow inside the
+      # product's own prefix.
+      #
+      # `--product` rather than a fresh package: the archive this step is about
+      # is the one the previous steps just built and proved digest-reproducible,
+      # and re-packaging here would smoke a different artifact than the one the
+      # release stages.
+      - name: Verify the packaged BVH path from the product alone
+        shell: bash
+        run: |
+          set -euo pipefail
+          product="$(jq -r '.data.product.archive // empty' .ost-ci/package.json)"
+          if command -v cygpath > /dev/null; then product="$(cygpath -u "$product")"; fi
+          # `// empty` and this guard together, for the reason the staging step
+          # below has the same pair: a bare `jq -r` on a missing key prints the
+          # string "null", `dirname` turns that into ".", and the smoke would be
+          # pointed at the repository root and fail with a message about the
+          # wrong thing.
+          if [ -z "$product" ] || [ ! -f "$product" ]; then
+            echo "::error title=release packaging::workspace product archive is missing" ; exit 1
+          fi
+          python scripts/artifact_only_bvh_smoke.py --product "$(dirname "$product")"
       - name: Verify the packaged VRMA reader independently
         shell: bash
         run: ost plugin test plugins/usdVrmaFileFormat --from-package --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json
