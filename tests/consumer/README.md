@@ -61,6 +61,34 @@ workspace does not produce, and the driver keeps it out of the resolution of the
 package under test: criterion 1 fails if the package answers from anywhere but
 the scratch prefix.
 
+## Running all twelve, and what CI does with them
+
+```sh
+python scripts/run_package_consumer_lane.py --reports package-consumer-reports
+```
+
+That is what the lane runs, and it is a separate entry point from the driver for
+the reason the track states about lanes generally: a lane that cannot be
+reproduced by hand is a lane nobody can debug. **Which packages it runs is
+read, not listed** — every row in PACKAGE_CONTRACT.md §4 with a `find_package`
+contract, through the driver's own parser — so a thirteenth package arrives in
+the lane by acquiring a contract row. The OpenUSD prefix is resolved the same
+way: `ost env <platform> --profile <profile>` names the runtime this host
+materialized, and it reaches the driver as `--extra-prefix`. There is no
+workspace build tree, because this lane builds no workspace.
+
+One criterion is left over, and no host can answer it. Criterion 6 asks whether
+Windows, macOS and Linux agree about the package closure, so each run records
+the closure it measured and
+[`scripts/check_package_closures.py`](../../scripts/check_package_closures.py)
+compares all three in
+[`.github/workflows/package-consumer.yml`](../../.github/workflows/package-consumer.yml).
+What it compares is a contract question rather than a scripting one —
+[PACKAGE_CONTRACT.md §5.1](../../docs/architecture/PACKAGE_CONTRACT.md) — because
+three separate builds of OpenUSD put three different platform link lines on
+`arch`, and a check that called that a defect would be red forever while one
+that shrugged at any difference would catch nothing.
+
 ## Making one fail on purpose
 
 A fixture that has only ever printed a pass is indistinguishable from one that

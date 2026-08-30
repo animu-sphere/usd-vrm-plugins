@@ -387,8 +387,42 @@ def check_fixture(package: str, row: dict, fixture: pathlib.Path) -> list:
 # The prefix
 # --------------------------------------------------------------------------
 
+def python_development_arguments(args) -> list:
+    """What a consumer of the OpenUSD runtime has to say about Python, and
+    nothing about the package under test.
+
+    `pxrConfig.cmake` carries the producing machine's Python paths and hands
+    them to `find_dependency(Python3 "3.13" EXACT COMPONENTS Development)`:
+
+        if (NOT DEFINED Python3_EXECUTABLE)
+            set(Python3_EXECUTABLE [[C:/Users/<producer>/.../python.EXE]])
+
+    -- guarded, and the comment above it says *this can be overridden by
+    specifying different values when running cmake*, which is the whole of the
+    mechanism. The Windows leaf names a home directory that exists on no
+    runner; the Linux leaf names the `/usr` of the container it was built in.
+    On 2026-08-30 the consumer lane's first run met both (PKG-4).
+
+    Every other lane is insensitive to it because `ost build` exports a
+    toolchain file that sets these same three variables before
+    `find_package(pxr)` -- so, once again, the configuration that fails is the
+    one nothing ran. That is a fact about the runtime rather than about any
+    package here, so it is answered the way `--extra-prefix` answers the rest of
+    OpenUSD: the consumer supplies it.
+
+    **Three variables and not a root**, because `Python3_ROOT_DIR` is a hint to
+    FindPython3 and these are `set()` before FindPython3 is reached: pointing
+    the root at a directory that does not exist changes nothing, which is how
+    this was measured rather than assumed."""
+    return [f"-D{name}={value}" for name, value in (
+        ("Python3_EXECUTABLE", args.python_executable),
+        ("Python3_LIBRARY", args.python_library),
+        ("Python3_INCLUDE_DIR", args.python_include_dir),
+    ) if value]
+
+
 def cmake_install(package: str, prefix: pathlib.Path, extra_prefixes: list,
-                  generator, work: pathlib.Path) -> None:
+                  generator, work: pathlib.Path, python: list = ()) -> None:
     src = source_dir(package)
     build = work / f"build-{package}"
     configure = ["cmake", "-S", src, "-B", build,
@@ -396,6 +430,7 @@ def cmake_install(package: str, prefix: pathlib.Path, extra_prefixes: list,
                  "-DCMAKE_BUILD_TYPE=Release",
                  f"-D{package.upper()}_BUILD_TESTS=OFF",
                  "-DUSDVRM_BUILD_TESTS=OFF"]
+    configure += list(python)
     if generator:
         configure += ["-G", generator]
     search = [str(prefix)] + list(extra_prefixes)
@@ -629,6 +664,14 @@ def main() -> int:
                          "Repeatable. Never the workspace build tree.")
     ap.add_argument("--generator", help="CMake generator for both the install "
                                         "and the consumer (default: CMake's)")
+    # The three variables `pxrConfig.cmake` sets from its producer and guards
+    # with `if(NOT DEFINED ...)`. Not a requirement of any package here: the
+    # published runtimes answer OpenUSD's own Python question with the producing
+    # machine's paths, and every other lane hides that behind `ost build`'s
+    # toolchain file, which sets exactly these three.
+    ap.add_argument("--python-executable", default="", metavar="PATH")
+    ap.add_argument("--python-library", default="", metavar="PATH")
+    ap.add_argument("--python-include-dir", default="", metavar="DIR")
     ap.add_argument("--mutate", choices=MUTATIONS,
                     help="break the installed prefix and require the consumer "
                          "to fail - the negative verification")
@@ -784,11 +827,13 @@ def main() -> int:
         deps = workspace_closure(args.package, rows)
         for dep in deps:
             print(f"--- installing required package {dep} ---")
-            cmake_install(dep, prefix, args.extra_prefix, args.generator, work)
+            cmake_install(dep, prefix, args.extra_prefix, args.generator, work,
+                          python_development_arguments(args))
         print(f"--- installing {args.package} ---")
         if args.prefix_source == "cmake-install":
             cmake_install(args.package, prefix, args.extra_prefix,
-                          args.generator, work)
+                          args.generator, work,
+                          python_development_arguments(args))
         else:
             if deps:
                 fail_setup("--prefix-source ost-package composes a library's "
@@ -821,6 +866,7 @@ def main() -> int:
                      "-DCMAKE_BUILD_TYPE=Release",
                      "-DCMAKE_PREFIX_PATH=" +
                      ";".join([str(prefix)] + list(args.extra_prefix))]
+        configure += python_development_arguments(args)
         if args.generator:
             configure += ["-G", args.generator]
         configured = run(configure, capture_output=True)
