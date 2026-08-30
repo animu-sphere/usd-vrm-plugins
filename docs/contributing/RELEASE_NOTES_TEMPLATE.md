@@ -50,10 +50,13 @@ VRMA motion clips as canonical `UsdSkelAnimation` data.
 > §5 keeps optional network and SDK dependencies out of the core distribution —
 > and they build from the source archive.
 >
-> **No member carries data.** `motion_bvh_convert` needs a producer profile from
-> `share/usd-vrm-plugins/profiles/motion/`, which reaches no archive, so run it
-> from a `cmake --install` prefix or pass `--profile` a path. The profiles ship
-> in the source archive.
+> **The product carries the motion profiles.** `motion_bvh_convert` needs a
+> producer profile, and `ost plugin product install --prefix <dir>` puts the
+> shipped ones at `<prefix>/share/usd-vrm-plugins/profiles/motion/` where the
+> tool finds them with no flag — verified per release by
+> `scripts/artifact_only_bvh_smoke.py`. No *member* archive carries them: a
+> `motion_bvh` archive unpacked on its own is its two executables, so that route
+> still needs a `cmake --install` prefix or a `--profile` path.
 
 Each binary bundle carries a `buildInfo.json` stamp in its resources
 (git commit / build OS / compiler / build type / OpenUSD version / schema

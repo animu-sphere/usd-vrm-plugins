@@ -15,6 +15,26 @@ Current schema contract version: **1**.
 
 ### Fixed
 
+- **A tool member of the installed product could not find the product's own
+  data.** `motion_bvh_convert` derives its profile directory from its own
+  executable path, and its installed-prefix rule was
+  `<exe>/../share/usd-vrm-plugins/profiles/motion` — correct for a `cmake
+  --install` prefix and for a member archive unpacked on its own, and one
+  directory too shallow for the aggregate product, where `ost plugin product
+  install` lands a tool member at `<prefix>/tools/<member>/bin/` while the
+  product's data goes to `<prefix>/share/`. A converter that finds no profile
+  refuses every file it is given, so the whole BVH path was unusable from a
+  release artifact: the profiles shipped, byte-identical, to the directory
+  WORKSPACE.md §5 names, and the tool beside them looked somewhere else. The
+  locator now carries both installed layouts.
+
+  **It was found by running it, and nothing else could have found it.** The
+  destination is stated in `openstrata.toml`, in the root `CMakeLists.txt`, in
+  WORKSPACE.md §5 and in `ProfileLocator.h`, all four agree, and one of them was
+  describing a different prefix. `ost` 0.22.3 supplied the staging in August and
+  report 36 §4 recorded in as many words that the staging was what had been
+  proven and not the run; this is the run, and it failed the first time.
+
 - **A rotation too small to square came back un-normalised, in the two
   conversions that had not been fixed.** `GfQuatf::GetLength()` squares in
   float, and both `vrmAdapterVmc::ToCanonicalRotation` and
@@ -129,6 +149,29 @@ Current schema contract version: **1**.
   over rather than a second consumer of this header.
 
 ### Added
+
+- **An artifact-only smoke for the BVH path**
+  (`scripts/artifact_only_bvh_smoke.py`), which closes the v0.7.0 release
+  condition *both paths running from release artifacts alone, profiles
+  included* for the recorded half. It packages the aggregate product, runs
+  `ost plugin product verify`, installs it to a fresh prefix **outside** this
+  repository, and converts a real 17-second mocopi export there — 853 frames at
+  50 Hz through 22 bound joints — with no `--profile-dir`, no
+  `USDVRM_MOTION_PROFILE_PATH`, and nothing from this source tree on any search
+  path.
+
+  Two of its checks are the ones worth naming. Every shipped profile is compared
+  **byte for byte** against `profiles/motion/`, because the failure that shape
+  replaces was a *copy* that had stopped being the file
+  `scripts/check_motion_profiles.py` validates. And after the conversion
+  succeeds the installed profile is moved aside and the same command is re-run,
+  which must now refuse — so "the tool found a profile" cannot pass for "the
+  tool found the one this product ships".
+
+  It runs in `release.yml` beside the clean-install smoke, against the archive
+  that lane just proved digest-reproducible rather than a fresh package of its
+  own. That places it in the one workflow no PR event runs, which is a standing
+  caveat of that lane and not a new one.
 
 - **`osc`, the OSC wire format once instead of once per adapter.** Packets,
   bundles and their flattening, addresses, type tags, arguments, and a refusal

@@ -193,6 +193,10 @@ checks are listed rather than remembered:
 - [ ] the CHANGELOG names the **architecture** changes, not only the features:
       two shared libraries extracted, a third adapter, and every adapter's
       package config gaining a dependency it was missing;
+- [ ] the artifact-only BVH smoke is green on **Linux and macOS**, not only on
+      the workstation that wrote it — it is a `release.yml` step, so a tag is
+      the first time those two cells run it, and the `workflow_dispatch --ref`
+      dry run below is what turns that from a surprise into a measurement;
 - [ ] `scripts/check_docs.py`, `check_motion_profiles.py` and `verify_corpus.py`
       are green, and `release.yml` is dry-run with `workflow_dispatch --ref`
       before the tag — a green PR lane proves nothing about it.
@@ -228,13 +232,25 @@ checks are listed rather than remembered:
   adapter artifact in CI, so whether a release carries them is open
   ([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md)
   §2, §3).
-- ⬜ **The profiles reach the product; the smoke that would prove it does not
-  exist.** Both halves of the staging are closed — the plain-CMake install
-  (2026-08-05) and the packaged one (2026-08-25, `ost` 0.22.3's
-  `[[workspace.install_data]]`, `data_files: 3`). **What remains is the test**:
-  nothing has extracted the product to a prefix and driven `motion_bvh_convert`
-  from it, so the entry stays open on a written smoke rather than on a missing
-  mechanism
+- ✅ **The profiles reach the product, and the smoke that proves it found a
+  defect** *(2026-08-30: `scripts/artifact_only_bvh_smoke.py`)*. Both halves of
+  the staging were already closed — the plain-CMake install (2026-08-05) and the
+  packaged one (2026-08-25, `ost` 0.22.3's `[[workspace.install_data]]`,
+  `data_files: 3`) — and this entry stayed open on the test rather than on a
+  mechanism. **The first run of that test failed.** The profiles installed
+  byte-identically to `share/usd-vrm-plugins/profiles/motion/` and
+  `motion_bvh_convert` refused the capture anyway: `ost plugin product install`
+  lands a tool member at `<prefix>/tools/<member>/bin/`, and the locator's
+  installed-prefix rule was `<exe>/../share/…`, which is the layout of a *member
+  archive* unpacked on its own. The fix is one more search-path rule in
+  [ProfileLocator.cpp](../../tools/motionBvh/src/ProfileLocator.cpp); the run is
+  853 frames at 50 Hz through 22 bound joints, from the artifact alone, and it
+  ends by moving the installed profile aside and requiring the refusal to come
+  back — so "it found *a* profile" cannot pass for "it found the one this
+  product ships". Wired into `release.yml` beside the clean-install smoke, on
+  all three of that lane's cells — which means it inherits that lane's standing
+  caveat: **no PR event runs it**, so the only host it has been measured on is a
+  Windows workstation, and the first Linux and macOS runs happen at a tag
   ([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md) §4).
 
 ### Carried out of v0.7.0 — evidence an operator produces
@@ -258,13 +274,16 @@ None of these closes by writing code, and each is stated with what it costs.
   with hashes, every measured statistic and no bytes — a session is a real
   person's motion and a skeleton packet is a body measurement of that person.
   Getting a publishable one needs the vendor's `BVH Sender`, not a device.
-- ⬜ **Both paths running from release artifacts alone, profiles included.**
-  No longer blocked on the toolchain. Every member the two paths need is in the
-  product, and as of `ost` 0.22.3 so are the profiles. `mocopi_record` is not —
-  it left the aggregate by declaration when the exclusion stopped being a
-  version pin — so this run composes the product with the adapter's own artifact,
-  which `ost library package` can now produce. It stays open because the run has
-  not been performed.
+- 🚧 **Both paths running from release artifacts alone, profiles included.**
+  **The recorded path is done** (2026-08-30): `motion_bvh_convert` converts a
+  real mocopi export from an installed product prefix with nothing from this
+  source tree on any search path, and the profiles it uses are the product's own
+  — see the packaging entry above. What is left is the **live** path, and it is
+  left for the reason it always was rather than a new one: `mocopi_record` is
+  not in the aggregate — it left by declaration when the exclusion stopped being
+  a version pin — so that run composes the product with the adapter's own
+  artifact, which `ost library package` can now produce, and nothing has
+  performed it.
 
 ### Still Motion Phase G
 
