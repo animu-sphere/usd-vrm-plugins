@@ -266,12 +266,17 @@ Current schema contract version: **1**.
   [`tools/generate_packets.py`](adapters/liveCapture/vrchatOsc/tools/generate_packets.py)
   from the measured shapes, replayed by `vrmAdapterVrchatOsc_trackerCorpus`
   against counts derived from the generator's structure, and re-checked against
-  the generator itself by `vrmAdapterVrchatOsc_packetGen`. Three of the twelve
-  carry shapes the real sender never emitted — trackers 4–8, an OSC bundle, and
-  malformed traffic — each marked `observed: false` in the manifest with its
-  reason, so a later reader cannot mistake one for a recording. The recorded
-  half of that corpus still carries no bytes, and that is policy rather than a
-  gap.
+  the generator itself by `vrmAdapterVrchatOsc_packetGen`.
+
+  **Exactly one of the twelve is the session's own shape**, and the manifest
+  says which per capture rather than leaving it to be inferred: `session` for
+  that one, `derived` for the five whose every address and ordering the session
+  carried but whose arrangement it did not — one tracker alone, no head, a
+  single channel sustained, a permanent dropout — and `unobserved` for the six
+  carrying something it never sent at all, each with its reason. A corpus that
+  cannot say how far a recording stands behind each of its fixtures is one a
+  later reader has to guess about. The recorded half of that corpus still
+  carries no bytes, and that is policy rather than a gap.
 
 - **An address inventory for `vrmAdapterVrchatOsc`.** What a recorded session
   actually contains, counted from bytes: one row per address *and type tag

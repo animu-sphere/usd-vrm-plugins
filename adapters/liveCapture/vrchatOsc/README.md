@@ -194,12 +194,20 @@ maps one refusal onto one of its own codes, and here that is
 [`src/AddressInventory.cpp`](src/AddressInventory.cpp) and
 [`src/TrackerMessage.cpp`](src/TrackerMessage.cpp).
 
-Five of the ten are raised today. `TRACKER_PARTIAL`, `SOURCE_TIMEOUT`,
-`SOURCE_RESTARTED` and `CALIBRATION_REQUIRED` need a layer that remembers the
-previous frame, which is VRC-4's, and `SOCKET_BIND_FAILED` needs a session rather
-than a file. That four of the six unraised ones are *frame* states is the whole
-argument for freezing a code set before a decoder: each was named from the
-protocol rather than from whichever failure the first session happened to hit.
+**Seven of the ten are raised today**: five from the decode path — malformed,
+unsupported, argument mismatch, bad tracker id, bad coordinate — and two from
+[`src/UdpReceiver.cpp`](src/UdpReceiver.cpp), which has raised `SOURCE_TIMEOUT`
+and `SOCKET_BIND_FAILED` since VRC-0 because a receiver had them before a
+decoder existed.
+
+The three that are not are `TRACKER_PARTIAL`, `SOURCE_RESTARTED` and
+`CALIBRATION_REQUIRED`, and what they have in common is the argument for
+freezing a code set before writing a decoder. Two need a layer that remembers
+the previous frame, which is VRC-4's. The third has **no recorded behaviour
+behind it at all** — the application was calibrated before every take of the
+2026-08-30 session, so nothing here has ever seen an uncalibrated stream — and it
+stays frozen and unraised on the same terms `VRM_MOCOPI_TRACKING_LOST` did. A
+set written after the decoder would contain none of the three.
 
 ## Layout
 

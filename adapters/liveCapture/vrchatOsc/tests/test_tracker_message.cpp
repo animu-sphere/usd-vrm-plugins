@@ -510,6 +510,55 @@ TestNoPartialIsRaisedByAMessageDecoder()
     }
 }
 
+// The two guards that refuse a caller rather than a sender. Both are reached
+// only through the message overload: `DecodeTrackerDatagram` cannot produce
+// either, which is the point — the OSC layer emits one argument per type tag,
+// so a message where the two disagree did not come from it, and this is the one
+// place that can be shown.
+void
+TestTheStructuralGuardsRefuseRatherThanDereference()
+{
+    osc::OscMessage message;
+    message.address = "/tracking/trackers/1/position";
+    message.typeTags = "fff";
+    message.arguments.resize(3);
+    for (std::size_t slot = 0; slot < 3; ++slot) {
+        message.arguments[slot].tag = 'f';
+        message.arguments[slot].real = 1.0 + static_cast<double>(slot);
+    }
+
+    // It decodes as written, so the two refusals below are about what was
+    // removed rather than about the message being unusable to begin with.
+    TrackerMessage decoded;
+    Diagnostic error;
+    assert(vrmAdapterVrchatOsc::DecodeTrackerMessage(message, &decoded, &error));
+    assert(decoded.values[2] == 3.0f);
+
+    // No output. Refused rather than written through.
+    assert(!vrmAdapterVrchatOsc::DecodeTrackerMessage(message, nullptr, &error));
+    assert(error.code == DiagnosticCode::PacketMalformed);
+
+    // Three type tags and no arguments. The tag check below it would pass, and
+    // the values loop would read three elements that are not there.
+    osc::OscMessage starved = message;
+    starved.arguments.clear();
+    assert(!vrmAdapterVrchatOsc::DecodeTrackerMessage(starved, &decoded, &error));
+    assert(error.code == DiagnosticCode::PacketMalformed);
+    assert(error.detail.find("3 argument(s) and 0 were given")
+           != std::string::npos);
+
+    // And the other direction, which is harmless to read but is still a message
+    // no OSC decoder produced.
+    osc::OscMessage overfed = message;
+    overfed.arguments.resize(4);
+    assert(!vrmAdapterVrchatOsc::DecodeTrackerMessage(overfed, &decoded, &error));
+    assert(error.code == DiagnosticCode::PacketMalformed);
+
+    // A refusal leaves the caller's message untouched, so a decode loop that
+    // reuses one cannot mistake the last good message for this one.
+    assert(decoded.values[2] == 3.0f);
+}
+
 void
 TestTheFormattedLineNamesTheAddress()
 {
@@ -911,6 +960,7 @@ main(int argc, char** argv)
     TestAPacketRefusesMessagesNotTheDatagram();
     TestADatagramThatIsNotOscIsRefusedWhole();
     TestNoPartialIsRaisedByAMessageDecoder();
+    TestTheStructuralGuardsRefuseRatherThanDereference();
     TestTheFormattedLineNamesTheAddress();
     std::puts("vrmAdapterVrchatOsc tracker message tests passed");
     return 0;

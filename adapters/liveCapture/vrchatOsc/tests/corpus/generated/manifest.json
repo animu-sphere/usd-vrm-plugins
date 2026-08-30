@@ -18,7 +18,7 @@
   "limitations": [
     "Reproduces the shapes the protocol produces, not any particular sender's quirks. The shapes come from one measured sender (mocopi 2.7.2 in VRChat (OSC) transfer format) plus the parts of VRChat's published tracking surface a receiver must accept.",
     "No real person's motion is described: the tracker values are invented, name no body region, and assert no unit or basis. Which tracker is on which part of a body is an assignment policy outside this adapter, and what space the numbers are in is VRC-3's to establish.",
-    "The 'observed' field per capture says whether the recorded session of 2026-08-30 carried that shape at all. Three captures are marked false on purpose - trackers 4-8, an OSC bundle, and malformed traffic - and each names its reason in 'pins'.",
+    "The 'observed' field per capture says how far the recorded session of 2026-08-30 stands behind that capture's shape. 'session' means the session carried it: one capture does. 'derived' means every address, type tag and ordering in it is one the session carried, recombined into an arrangement it did not - one tracker alone, no head, a single channel sustained, a permanent dropout; five are. 'unobserved' means it carries something the session never carried at all - an address, a packaging, or a malformation; six are, and each names its reason in 'pins'.",
     "Evidence from a second sender is not here. The only VRChat OSC sender measured to date is one mobile application; a VRChat client itself has never been recorded, and is never a test dependency."
   ],
   "captures": [
@@ -31,7 +31,7 @@
         "frame-loss",
         "partial-tracker"
       ],
-      "observed": true,
+      "observed": "session",
       "id": "three-trackers-58hz",
       "sender": "example.synthetic",
       "device": "example.synthetic",
@@ -59,7 +59,7 @@
         "single-tracker",
         "verbatim-values"
       ],
-      "observed": true,
+      "observed": "derived",
       "id": "one-tracker",
       "sender": "example.synthetic",
       "device": "example.synthetic",
@@ -81,7 +81,7 @@
         "full-surface",
         "invented"
       ],
-      "observed": false,
+      "observed": "unobserved",
       "id": "eight-trackers",
       "sender": "example.synthetic",
       "device": "example.synthetic",
@@ -118,7 +118,7 @@
       "tags": [
         "head-absent"
       ],
-      "observed": true,
+      "observed": "derived",
       "id": "head-absent",
       "sender": "example.synthetic",
       "device": "example.synthetic",
@@ -143,7 +143,7 @@
       "tags": [
         "single-channel"
       ],
-      "observed": true,
+      "observed": "derived",
       "id": "position-only",
       "sender": "example.synthetic",
       "device": "example.synthetic",
@@ -167,7 +167,7 @@
         "single-channel",
         "rotation-arity"
       ],
-      "observed": true,
+      "observed": "derived",
       "id": "rotation-only",
       "sender": "example.synthetic",
       "device": "example.synthetic",
@@ -191,7 +191,7 @@
         "dropout",
         "frame-policy-input"
       ],
-      "observed": true,
+      "observed": "derived",
       "id": "tracker-dropout",
       "sender": "example.synthetic",
       "device": "example.synthetic",
@@ -220,7 +220,7 @@
         "duplicate",
         "frame-policy-input"
       ],
-      "observed": false,
+      "observed": "unobserved",
       "id": "duplicate-and-reordered",
       "sender": "example.synthetic",
       "device": "example.synthetic",
@@ -248,7 +248,7 @@
         "bundled",
         "invented"
       ],
-      "observed": false,
+      "observed": "unobserved",
       "id": "bundled-frame",
       "sender": "example.synthetic",
       "device": "example.synthetic",
@@ -277,7 +277,7 @@
         "unsupported-address",
         "tracker-id-invalid"
       ],
-      "observed": false,
+      "observed": "unobserved",
       "id": "mixed-traffic",
       "sender": "example.synthetic",
       "device": "example.synthetic",
@@ -317,7 +317,7 @@
         "malformed",
         "packet-level"
       ],
-      "observed": false,
+      "observed": "unobserved",
       "id": "malformed-packets",
       "sender": "example.synthetic",
       "device": "example.synthetic",
@@ -343,7 +343,7 @@
         "argument-mismatch",
         "coordinate-invalid"
       ],
-      "observed": false,
+      "observed": "unobserved",
       "id": "malformed-forms",
       "sender": "example.synthetic",
       "device": "example.synthetic",

@@ -717,10 +717,16 @@ have settled the other way:
 Trackers **4–8 are accepted although nothing here has ever sent one**, and that
 is a decision about VRChat's surface rather than about one sender: refusing them
 would make this decoder call a legal address a protocol violation the first time
-somebody connects a fuller setup. The generated capture that carries them is
-marked `observed: false` in the corpus manifest, with the two other unobserved
-shapes — a bundle and malformed traffic — so that a later reader cannot mistake
-any of the three for a recording.
+somebody connects a fuller setup.
+
+**One capture of the twelve is the session's own shape**, and the manifest says
+so per capture: `session` for that one, `derived` for five whose every address
+and ordering the session carried but whose arrangement it did not, `unobserved`
+for six carrying something it never sent — the numbered surface above among
+them. A corpus that cannot say how far a recording stands behind each fixture is
+one whose next reader has to guess, and the ratio is worth seeing: this
+protocol's evidence is one measured arrangement, and everything else is
+constructed from it or from the specification.
 
 **What did not land: the recorded corpus does not replay**, because it has no
 bytes and by policy will not get any from that session

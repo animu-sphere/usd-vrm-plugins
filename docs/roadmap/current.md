@@ -153,15 +153,17 @@ test completes with nothing installed.
       2026-08-30: twelve captures, written from
       [report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md)'s
       measurements rather than from VRChat's published surface, and replayed
-      against counts derived from the generator's structure. Three carry shapes
-      the real sender never emitted — trackers 4–8, an OSC bundle, malformed
-      traffic — each marked `observed: false` with its reason, because a corpus
-      that cannot say which of its shapes were seen is a corpus a later reader
-      has to guess about)*;
+      against counts derived from the generator's structure. **One of the twelve
+      is the session's own shape**; the manifest marks five more `derived` — the
+      session's addresses and ordering in an arrangement it did not send — and
+      six `unobserved`, each with its reason, because a corpus that cannot say
+      how far a recording stands behind each fixture is one a later reader has
+      to guess about)*;
 - [ ] recorded fixtures replay deterministically with no client — **open on the
       bytes, not on the code**: the 2026-08-30 session is manifest-only under
       [the corpus policy](#standing-corpus-policy--recorded-evidence-is-not-the-generated-corpus),
-      and the two CTest names that read the corpus would pick a redistributable
+      and the three CTest names that read the corpus — `_corpus`,
+      `_trackerCorpus` and `_loopbackCorpus` — would pick a redistributable
       session up with no change;
 - [ ] tracker position and rotation reach the canonical tracking space, verified
       against a recorded rest pose rather than the documentation alone;

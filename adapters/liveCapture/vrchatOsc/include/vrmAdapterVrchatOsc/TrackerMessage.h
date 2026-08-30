@@ -232,6 +232,15 @@ struct TrackerPacket
 // two ways is reported as the first one, which is the one a sender would fix
 // first. A `/tracking/trackers/99/position` carrying doubles is a tracker id
 // failure, not an argument failure.
+//
+// **Two structural guards precede all of that**, and they are a different kind
+// of thing: a null `out`, and a message whose `arguments` and `typeTags`
+// disagree in length. Neither can come from `osc::DecodeOscPacket` — it emits
+// one argument per tag, including the zero-width ones — so both are a caller's
+// mistake rather than a sender's, and both raise `PacketMalformed`. The second
+// is load-bearing rather than defensive: the type tag check below establishes
+// that there are three tags, and the values loop indexes `arguments` on the
+// strength of it, which is sound only while the two agree.
 VRMADAPTERVRCHATOSC_API bool DecodeTrackerMessage(
     const osc::OscMessage& message, TrackerMessage* out,
     Diagnostic* error = nullptr);

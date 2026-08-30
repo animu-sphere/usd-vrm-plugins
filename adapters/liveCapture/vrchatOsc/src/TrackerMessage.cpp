@@ -121,6 +121,30 @@ DecodeTrackerMessage(const osc::OscMessage& message, TrackerMessage* out,
 {
     const std::string_view address = message.address;
 
+    // Two guards before anything about this protocol is read, both refusing a
+    // *caller's* mistake rather than a sender's. They come first because
+    // neither has anything to do with the address they carry, and they raise
+    // `PacketMalformed` because that is the code this adapter has for "these
+    // bytes are not a message" — the sibling decoder answers both the same way
+    // (vmc/src/VmcMessage.cpp).
+    if (!out) {
+        return Refuse(error, DiagnosticCode::PacketMalformed, address,
+                      "no output message was provided");
+    }
+    // The OSC layer emits one argument per type tag, including the zero-width
+    // ones, so a message where the two disagree did not come from it. Reading
+    // by tag index would then run off the end of `arguments` — the type tags
+    // are checked against `"fff"` below and the vector is indexed on the
+    // strength of that check, which is only sound while the two agree.
+    if (message.arguments.size() != message.typeTags.size()) {
+        return Refuse(error, DiagnosticCode::PacketMalformed, address,
+                      "the type tags describe "
+                          + std::to_string(message.typeTags.size())
+                          + " argument(s) and "
+                          + std::to_string(message.arguments.size())
+                          + " were given");
+    }
+
     // The address family. A prefix test rather than a pattern match, because
     // the family's shape is fixed and everything after it is what varies.
     if (address.size() <= TrackerAddressPrefix.size()

@@ -23,21 +23,25 @@ before position, the head leading a fixed eight-datagram cycle, ~58 Hz emitted
 with about a third of the frames lost whole, and a single-address loss that
 falls almost entirely on one address.
 
-Three shapes here were never observed on that sender and are in the corpus
-anyway, each for a stated reason:
+**Exactly one capture is the session's own shape**, and the manifest says so per
+capture rather than leaving it to be inferred. `observed` takes three values:
 
-* **trackers 4-8** (`eight-trackers`) -- the surface defines them, and a decoder
-  that accepted only what one six-sensor configuration emitted would refuse a
-  legal address the first time anyone connects a fuller setup.
-* **an OSC bundle** (`bundled-frame`) -- legal OSC that this decoder must read,
-  and the `bundled` flag it must forward. The measured sender bundles nothing,
-  so without this fixture "no sender bundles" would quietly become "this cannot
-  read a bundle".
-* **malformed datagrams** (`malformed-packets`, `malformed-forms`) -- port 9000
-  is well known and anything on the network may send to it.
+* **`session`** -- the recorded session carried this shape. Only
+  `three-trackers-58hz` does.
+* **`derived`** -- every address, type tag and ordering in it is one the session
+  carried, recombined into an arrangement it did not: one tracker alone, no
+  head, a single channel sustained for a session, a permanent dropout. Five are.
+* **`unobserved`** -- it carries something the session never carried at all.
+  Six are, each for a stated reason: **trackers 4-8**, because a decoder that
+  accepted only what one six-sensor configuration emitted would refuse a legal
+  address the first time anyone connects a fuller setup; **an OSC bundle**,
+  because "no sender bundles" must not quietly become "this cannot read one";
+  **VRChat's wider surface** and **a reordered or duplicated frame**, neither of
+  which that sender produces; and **malformed datagrams**, because port 9000 is
+  well known and anything on the network may send to it.
 
-Their invented status is a field in the manifest rather than a note in a
-comment, so a later reader cannot mistake one for a recording.
+Keeping that in a field rather than in a comment is what stops a later reader
+mistaking any of the eleven for a recording.
 
 The output must match the C++ writer byte for byte; `vrmAdapterVrchatOsc_corpus`
 enforces that, and `vrmAdapterVrchatOsc_packetGen` enforces that this file still
