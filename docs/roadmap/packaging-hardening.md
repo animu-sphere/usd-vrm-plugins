@@ -1,8 +1,8 @@
 # Packaging hardening — the installed-package consumer lane
 
-**Status:** in progress — PKG-0 through PKG-3 done; **twelve of twelve packages
-measured**, on one host; PKG-4's lane written and awaiting its first run ·
-**Target:** v0.8.0 ·
+**Status:** **PKG-0 through PKG-5 done** — twelve of twelve packages consumed
+from outside the workspace on all three OS, and the three platforms agree about
+the closure (2026-08-30) · **Target:** v0.8.0 ·
 **Contract:** [architecture/PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md)
 
 The workspace has finished splitting. `vrmSchema`, `usdVrmFileFormat`,
@@ -385,7 +385,7 @@ reaches first and says nothing about the last one — which is the shape the §1
 defect actually had, and `vrmAdapterVrchatOsc` is where that shape was
 reproduced for the second of the two packages that shipped it.
 
-### PKG-4 — the CI lane 🚧
+### PKG-4 — the CI lane ✅
 
 One cell, on every pull request, on all three OS. It must be a *separate* build
 from the workspace cells: the point is a prefix that contains no build tree.
@@ -397,14 +397,24 @@ lane can check. `liveTransport` is where a difference is expected and permitted:
 `ws2_32` on Windows, `Threads::Threads` elsewhere. A difference anywhere else is
 a defect until documented.
 
-**The lane is written and has not run** (2026-08-30):
+**Green on all three OS, 2026-08-30**, and criterion 6 with them:
 [`.github/workflows/package-consumer.yml`](../../.github/workflows/package-consumer.yml),
 three jobs — read the pins, consume on each of the three OS, compare the three
-closures. Everything below is a property of the lane's construction, which is
-what can be verified from a workstation; **its first green run is the milestone,
-and it happens on the pull request that adds it**. Until then `Standalone` keeps
-saying **measured (Windows)** in the four rows where the platform matters, and
-the *Done when* line in [current.md](current.md) stays open.
+closures. Twelve packages × three platforms, and **every workspace target in
+every closure is present on all three or on none**. The one difference this
+contract permits is present in both directions: `Threads::Threads` on macOS and
+Linux, `ws2_32` on Windows, for `liveTransport` and the three adapters that
+inherit it. `Standalone` in PACKAGE_CONTRACT.md §4 is now unqualified in every
+row.
+
+It took two red runs to get there, and both were the lane doing its job (see
+below). The synthetic three-platform inputs the comparison was verified against
+turned out to have the right *shape* and the wrong counts: OpenUSD's own
+platform link line is 3 entries on Windows (`Dbghelp.lib`, `Shlwapi.lib`,
+`Ws2_32.lib`), 2 on Linux (`dl`, `m`) and 3 on macOS (those two plus
+`-framework Foundation`) — 10 external entries against 9 and 9. The rules fired
+where they were aimed; the prediction of what they would see was approximate,
+which is the limit that was stated in advance.
 
 *It is hand-authored because the schema has two cell kinds and neither is this
 one.* `kind: consumer` is refused — `unknown variant `consumer`, expected
@@ -481,7 +491,7 @@ and found none. What the synthetic inputs establish is that each rule fires on
 the shape it is aimed at; what only the lane can establish is what the shape
 actually is.
 
-### PKG-5 — close the standing platform gap 🚧
+### PKG-5 — close the standing platform gap ✅
 
 `vrmAdapterMocopi`'s standalone build has been unverified since the receiver
 added `ws2_32` and an installed-config edit without re-running the check
@@ -492,12 +502,12 @@ worth more than a Windows one because there it verifies the *absence* of a
 threading link. PKG-4's lane closes this by construction, which is why the entry
 moves here from the carry-over list rather than being tracked twice.
 
-**The check now exists and the measurement does not.** The lane's criterion-6
-comparison requires `Threads::Threads` present and `ws2_32` absent on both POSIX
-platforms, from `vrmAdapterMocopi`'s own `Platform deps` cell rather than from a
-rule written for it, and both directions were made to fail before the check was
-believed. What is left is the first run: this closes on a green macOS and Linux
-job, not on the code that would notice.
+**Closed 2026-08-30 by measurement.** On `macos-15` and `ubuntu-24.04`
+`vrmAdapterMocopi`'s consumer links `Threads::Threads` and **no** `ws2_32`,
+which is the absence a Windows run cannot see and the half of the issue that had
+been open since the receiver grew a platform link. The check reads the
+requirement from the package's own `Platform deps` cell rather than from a rule
+written for it, and both directions were made to fail before it was believed.
 
 ## 5. What this track is not
 

@@ -149,7 +149,7 @@ this document of what `find_dependency(pxr)` is carrying.
 | `vrmRetarget` | `vrmRetarget::vrmRetarget` | `include/vrmRetarget/` | `pxr`, `motionCore`, `motionRuntime` | — | yes | **measured** |
 | `motionSource` | `motionSource::motionSource` | `include/motionSource/` | `pxr`, `motionCore` | — | yes | **measured** |
 | `motionBvh` | `motionBvh::motionBvh` | `include/motionBvh/` | `motionSource` | — | yes | **measured** |
-| `liveTransport` | `liveTransport::liveTransport` | `include/liveTransport/` | `Threads` (non-Windows) | `ws2_32` (Windows), `Threads::Threads` (elsewhere) | **no** | **measured** (Windows) |
+| `liveTransport` | `liveTransport::liveTransport` | `include/liveTransport/` | `Threads` (non-Windows) | `ws2_32` (Windows), `Threads::Threads` (elsewhere) | **no** | **measured** |
 | `osc` | `osc::osc` | `include/osc/` | — | — | **no** | **measured** |
 
 `vrmContainer` is the only `SHARED` library here; every other row is `STATIC`
@@ -249,9 +249,9 @@ An adapter is a plain library under `adapters/`, never in the aggregate product
 
 | Package | Exported target | Public headers | Required packages | Platform deps | In product | Standalone |
 | --- | --- | --- | --- | --- | --- | --- |
-| `vrmAdapterVmc` | `vrmAdapterVmc::vrmAdapterVmc` | `include/vrmAdapterVmc/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport`, `osc` | inherited from `liveTransport` | no | **measured** (Windows) |
-| `vrmAdapterMocopi` | `vrmAdapterMocopi::vrmAdapterMocopi` | `include/vrmAdapterMocopi/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport` | inherited from `liveTransport` | no | **measured** (Windows) — the raw-library half of [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113) needs a POSIX host |
-| `vrmAdapterVrchatOsc` | `vrmAdapterVrchatOsc::vrmAdapterVrchatOsc` | `include/vrmAdapterVrchatOsc/` | `liveTransport`, `osc` | inherited from `liveTransport` | no | **measured** (Windows) |
+| `vrmAdapterVmc` | `vrmAdapterVmc::vrmAdapterVmc` | `include/vrmAdapterVmc/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport`, `osc` | inherited from `liveTransport` | no | **measured** |
+| `vrmAdapterMocopi` | `vrmAdapterMocopi::vrmAdapterMocopi` | `include/vrmAdapterMocopi/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport` | inherited from `liveTransport` | no | **measured** — including the raw-library half of [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113), on both POSIX platforms |
+| `vrmAdapterVrchatOsc` | `vrmAdapterVrchatOsc::vrmAdapterVrchatOsc` | `include/vrmAdapterVrchatOsc/` | `liveTransport`, `osc` | inherited from `liveTransport` | no | **measured** |
 | `vrmAdapterArdy` | reserved | reserved | reserved | — | no | not applicable |
 
 `vrmAdapterVmc` is the second row to say **measured**, on 2026-08-29, and it is
@@ -344,15 +344,25 @@ whose edges are not all visible from its headers; and the one bundle that ships
 a CMake package. A twelfth fixture that looked like the first would have
 measured one shape twelve times.
 
-What is still unmeasured is not a package but a *platform*. Every run above was
-made on one host, so criterion 6 is unanswered everywhere, and the four cells
-that say **measured (Windows)** are the rows where that matters: `liveTransport`
-and the three adapters that inherit its platform dependency.
+**Criterion 6 was answered on 2026-08-30, and every cell above is now
+unqualified.** PKG-4's lane ran all twelve packages on `windows-2022`,
+`macos-15` and `ubuntu-24.04`, and the three platforms agree: every workspace
+target in every closure is present on all three or on none, and the one
+difference this document permits is present in both directions —
+`Threads::Threads` on macOS and Linux, `ws2_32` on Windows, for `liveTransport`
+and each of the three adapters that inherit it. That closes the raw-library half
+of [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113): on both
+POSIX platforms `vrmAdapterMocopi` carries the threading library and **no**
+socket one, which is the absence no Windows run can see.
 
-That distinction is the whole reason this document is not the deliverable.
+The four rows that read **measured (Windows)** until then were `liveTransport`
+and those three adapters. Nothing about their packages changed; what changed is
+that a second and third host looked.
+
+That a document is not the deliverable is the whole reason the lane exists.
 Seventeen green lanes did not catch a package naming an unresolvable target, and
 they could not have: no lane opens a config file. So the acceptance criteria
-below belong to a CI lane, and the roadmap track that builds it is
+below belong to a CI lane, and the roadmap track that built it is
 [packaging-hardening.md](../roadmap/packaging-hardening.md). That lane is
 [`.github/workflows/package-consumer.yml`](../../.github/workflows/package-consumer.yml),
 and §5.1 states what it compares — because *which* differences between three

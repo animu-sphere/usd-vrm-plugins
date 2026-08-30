@@ -85,11 +85,11 @@ test completes with nothing installed.
       them are in the track. Half of
       [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113) closes
       with it)*;
-- [ ] a PR-gating cell on all three OS builds the consumers from a prefix that
+- [x] a PR-gating cell on all three OS builds the consumers from a prefix that
       holds no build tree, and the three platforms agree about the package
       closure except where a documented difference says why not
       (`ws2_32` vs `Threads::Threads` is the one expected) *(PKG-4,
-      2026-08-30: the lane is **written and unrun** —
+      2026-08-30: **green on all three OS**, twelve packages each —
       `.github/workflows/package-consumer.yml`, plus the three scripts it is
       thin over. It copies no pin: `ost ci matrix` is what says which runners
       and which runtime digests, because the other hand-authored workflow here
@@ -97,15 +97,13 @@ test completes with nothing installed.
       needed a code path, and PACKAGE_CONTRACT.md §5.1 is it — a workspace
       target agrees or it is a defect, a declared platform dependency is
       present exactly where its cell says and **absent elsewhere**, and what a
-      `pxr` build puts on its own link line is not a promise made here. **This
-      line closes on the first green run, not on the lane existing**, and the
-      three-platform halves of its ten verification cases are a prediction
-      until then. **Its first run found a defect in the runtime rather than in
-      a package**: macOS ran twelve green, Windows and Linux configured four
-      each, because a pulled runtime's CMake package names the producing
-      machine's Python paths and one of the two layers is not overridable —
+      `pxr` build puts on its own link line is not a promise made here. **The
+      two runs it took to get green both found defects, and neither was in a
+      package**: a pulled runtime's CMake package names the producing machine's
+      Python paths, in two layers, and the second of them is not overridable by
+      any `-D` —
       [report 37](../reports/ost/37-2026-08-30-v0.22.6-runtime-python-paths-from-the-producer.md),
-      which carries the upstream P1)*;
+      which carries the upstream P1 and one question it leaves open)*;
 - [x] `scripts/check_docs.py` refuses a `*Config.cmake.in` with no row in
       PACKAGE_CONTRACT.md, and a row naming a package that does not exist
       *(2026-08-30: five ways to fail it, each made to fail before the check was
@@ -220,22 +218,6 @@ checks are listed rather than remembered:
   `openstrata.ci.yaml` values; regeneration never touches them and a green PR
   lane proves nothing about it. The `ost` release contract (`release:` in the
   matrix) is the eventual fix; adopting it is not scoped yet.
-- 🚧 **`vrmAdapterMocopi`'s standalone build is unverified since it grew a
-  platform link**
-  ([#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113)). The
-  scaffold commit measured it; the receiver added `ws2_32` and an edit to the
-  installed package config without re-running the check. The **imported-target
-  half closed on 2026-08-30** with PKG-3's measurement; the raw-library half
-  this entry is actually about — `ws2_32` on a POSIX host, where the check
-  verifies the *absence* of a threading link — still needs the run. It is
-  **PKG-5 of [the packaging track](packaging-hardening.md)**, which closes it by
-  construction rather than by someone remembering to run a check; it stays
-  listed here because it is carried work with an issue behind it. **The check
-  landed on 2026-08-30 and the measurement did not**: the lane's criterion-6
-  comparison requires the threading link present and the socket one absent on
-  both POSIX platforms, from this adapter's own contract cell, and both
-  directions were made to fail before it was believed — but nothing has run it
-  on a POSIX host yet.
 - ⬜ **An adapter artifact exists now, and no lane publishes one.** `ost` 0.22.3
   composes `requires.libraries` in the per-library verb, so
   `ost library package adapters/liveCapture/mocopi` produces
