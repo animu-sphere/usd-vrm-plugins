@@ -34,6 +34,7 @@ import argparse
 import json
 import pathlib
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -109,6 +110,68 @@ def python_development(root: str) -> tuple:
     return (str(executable), str(library), str(include))
 
 
+BAKED_INCLUDE = re.compile(r"set\(Python3_INCLUDE_DIR \[\[(.+?)\]\]\)")
+
+
+def repair_runtime_python_include(prefix: str, include_dir: str) -> tuple:
+    """Point a pulled runtime's imported targets at a Python include directory
+    that exists on this host, and say what was changed.
+
+    `pxrTargets.cmake` writes the producing machine's Python include directory
+    into the `INTERFACE_INCLUDE_DIRECTORIES` of sixteen imported targets. That
+    is not a variable and no `-D` reaches it: CMake refuses at generate time
+    with *Imported target "tf" includes non-existent path*, on every host that
+    is not the producer. Measured on 2026-08-30 against all three published
+    26.08 leaves, and reproduced against a whole-workspace configure -- so this
+    is not something `ost build` is immune to, only something no lane had yet
+    asked of a host that did not build the runtime
+    (docs/reports/ost/37-2026-08-30-v0.22.6-runtime-python-paths-from-the-producer.md).
+
+    **The path is read, not guessed.** `pxrConfig.cmake` names the producer's
+    own `Python3_INCLUDE_DIR` in a literal, so the substitution is exactly that
+    string and nothing that resembles it. If it exists on this host there is
+    nothing to repair, and the macOS leaf is that case.
+
+    This edits the *materialized* runtime, never the artifact it came from --
+    `ost runtime pull --force` restores it byte for byte. It is repair of an
+    external prefix, which is a different act from editing a package under test:
+    nothing in this workspace is touched, and a package that then fails, failed.
+    """
+    root = pathlib.Path(prefix)
+    config, targets = root / "pxrConfig.cmake", root / "cmake" / "pxrTargets.cmake"
+    if not (config.exists() and targets.exists()):
+        return ("", 0, "not-a-pxr-prefix")
+    m = BAKED_INCLUDE.search(config.read_text(encoding="utf-8"))
+    if not m:
+        return ("", 0, "no-baked-include")
+    baked = m.group(1)
+    if pathlib.Path(baked).is_dir():
+        return (baked, 0, "exists")
+
+    # Two spellings of one directory: `pxrConfig.cmake` keeps the separators the
+    # producing platform used and `pxrTargets.cmake` normalizes them, so a
+    # substitution of one form alone silently repairs nothing on Windows.
+    #
+    # And what is written back must be CMake's spelling, not this platform's:
+    # a Windows path with backslashes lands inside a quoted argument where
+    # `\U` and `\P` are escapes, and the file stops parsing -- measured, by
+    # writing one and reading `Syntax error in cmake code` back out.
+    replacement = include_dir.replace("\\", "/")
+    text = original = targets.read_text(encoding="utf-8")
+    changed = 0
+    for spelling in {baked, baked.replace("\\", "/")}:
+        changed += text.count(spelling)
+        text = text.replace(spelling, replacement)
+    if not changed:
+        # The path is absent from this host *and* absent from the file that was
+        # supposed to name it. Nothing was repaired and nothing is known to be
+        # broken; saying "no repair needed" here would be a claim about the
+        # second half that this function never checked.
+        return (baked, 0, "absent")
+    targets.write_text(text, encoding="utf-8")
+    return (baked, changed, "repaired")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
@@ -128,6 +191,11 @@ def main() -> int:
                          "`pxrConfig.cmake` is given. Defaults to the "
                          "interpreter running this script, which is the one a "
                          "lane already pins to the runtime's version")
+    ap.add_argument("--no-repair-runtime", action="store_true",
+                    help="leave a pulled runtime's baked Python include "
+                         "directory alone. The run then fails on any host that "
+                         "did not build the runtime, which is what the "
+                         "unrepaired artifact does (report 37)")
     ap.add_argument("--package", action="append", default=[], metavar="NAME",
                     help="run only these packages (default: every row with a "
                          "find_package contract)")
@@ -173,6 +241,21 @@ def main() -> int:
         print("note: no Python 3 Development artifacts derived; "
               "`pxrConfig.cmake`'s own baked paths are what will answer")
 
+    if python and not args.no_repair_runtime:
+        for prefix in extra:
+            baked, changed, note = repair_runtime_python_include(prefix,
+                                                                 python[2])
+            if note == "repaired":
+                print(f"repaired {prefix}: {changed} imported-target include "
+                      f"entries named `{baked}`, which is not a directory on "
+                      f"this host (report 37)")
+            elif note == "exists":
+                print(f"no repair needed: the runtime's baked `{baked}` is a "
+                      f"directory on this host")
+            elif note == "absent":
+                print(f"nothing repaired: `{baked}` is not on this host and "
+                      f"appears in no imported target either")
+
     reports = pathlib.Path(args.reports)
     reports.mkdir(parents=True, exist_ok=True)
 
@@ -198,10 +281,26 @@ def main() -> int:
         code = outcomes[package]
         print(f"  {'pass' if code == 0 else 'FAIL'}  {package}"
               + ("" if code == 0 else f"  (exit {code})"))
-    failed = [p for p, code in outcomes.items() if code != 0]
-    if failed:
-        print(f"\nFAIL: {', '.join(failed)}. Fix the config, never the fixture "
+    # The driver's two failing answers are different facts, and a summary that
+    # collapses them points an operator at the wrong file. Exit 1 is a package
+    # that did not meet its contract, and PKG-3's rule applies: fix the config,
+    # never the fixture. Exit 2 is the run not having been set up -- which is
+    # what this lane's own first run met, on eight packages at once, and telling
+    # that operator to go and edit a config file would have named the one thing
+    # that was not wrong.
+    contract = [p for p, code in outcomes.items() if code == 1]
+    setup = [p for p, code in outcomes.items() if code not in (0, 1)]
+    if contract:
+        print(f"\nFAIL: {', '.join(contract)} did not meet the contract. Fix "
+              f"the config, never the fixture "
               f"(roadmap/packaging-hardening.md PKG-3).")
+    if setup:
+        print(f"\nSETUP: {', '.join(setup)} could not be run at all, so this "
+              f"host measured nothing about them. That is a fact about the "
+              f"host or the prefixes it was given rather than about the "
+              f"package, and criterion 6 refuses a comparison that is missing "
+              f"them rather than comparing what is left.")
+    if contract or setup:
         return 1
     print(f"\nPASS: every package met every criterion {platform.system()} can "
           f"check. Criterion 6 needs three platforms and is answered by "

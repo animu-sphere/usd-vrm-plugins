@@ -451,6 +451,25 @@ identity spelled as a raw archive. The tenth is the answer that is *not* a
 verdict: two platforms end in a setup refusal rather than a pass, because a
 question about three is not answered by two.
 
+**The first run found a defect, and it is in the runtime rather than in a
+package** ([report 37](../reports/ost/37-2026-08-30-v0.22.6-runtime-python-paths-from-the-producer.md)).
+macOS ran all twelve green. Windows and Linux each configured four and stopped:
+a pulled runtime's CMake package carries the *producing* machine's Python paths,
+in `pxrConfig.cmake`'s guarded variables and again in sixteen imported targets'
+`INTERFACE_INCLUDE_DIRECTORIES`, and the second of those no `-D` can override.
+The four that passed everywhere are exactly the four whose closure never reaches
+`pxr`; the eight that failed are exactly the eight that do.
+
+That is this track's premise arriving from a direction it did not predict. PKG-4
+was written to catch a *package* that could not be consumed from outside, and
+the first thing it caught was a *runtime* — for the same reason, that no lane
+had ever configured against one without `ost build` in front of it. **And `ost
+build` is not immune**: a whole-workspace configure against a runtime whose baked
+include directory was made foreign fails identically, which was measured rather
+than assumed. The lane carries both workarounds in its setup, where they touch no
+package under test, and the ask is upstream (§5 of this document: an upstream fix
+is recorded as a report, not absorbed).
+
 **Those ten cases run against synthetic reports, and that is a stated limit
 rather than an oversight.** The Windows halves are real — twelve packages, this
 workstation, criteria 1–5 met — and the macOS and Linux halves are the

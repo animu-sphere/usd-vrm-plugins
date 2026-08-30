@@ -100,7 +100,12 @@ test completes with nothing installed.
       `pxr` build puts on its own link line is not a promise made here. **This
       line closes on the first green run, not on the lane existing**, and the
       three-platform halves of its ten verification cases are a prediction
-      until then)*;
+      until then. **Its first run found a defect in the runtime rather than in
+      a package**: macOS ran twelve green, Windows and Linux configured four
+      each, because a pulled runtime's CMake package names the producing
+      machine's Python paths and one of the two layers is not overridable —
+      [report 37](../reports/ost/37-2026-08-30-v0.22.6-runtime-python-paths-from-the-producer.md),
+      which carries the upstream P1)*;
 - [x] `scripts/check_docs.py` refuses a `*Config.cmake.in` with no row in
       PACKAGE_CONTRACT.md, and a row naming a package that does not exist
       *(2026-08-30: five ways to fail it, each made to fail before the check was
