@@ -15,6 +15,12 @@ corpus can be authored yet without guessing:
   exists to prevent — a specification says what a receiver must accept, not what
   a sender sends. It arrives with VRC-2.
 - `recorded/` is the evidence, and it arrives from a device session (VRC-1).
+  **That session happened on 2026-08-30** and left
+  [a manifest](recorded/manifests/2026-08-30-mocopi-vrchat-osc.json) and no
+  bytes, on the redistribution rule below: a tracker stream is a real person's
+  motion in a real room. So this directory stays empty of captures while the
+  measurement it exists for is done, which is the arrangement the split was
+  designed to allow rather than a gap.
 
 Until then the two CTest names that read this directory do not exist: they are
 registered by globbing for the extension rather than by testing for the

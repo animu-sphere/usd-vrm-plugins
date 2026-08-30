@@ -9,7 +9,10 @@ UDP datagram → OSC decode → tracker semantics → tracking-space normalisati
              → tracker frame → (a generic humanoid solve) → HumanoidPose
 ```
 
-**Status: recorder, and an inventory of what a session contains.** What exists
+**Status: recorder, and a measured inventory of what a real session contains**
+(2026-08-30 —
+[report 02](../../../docs/reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md)).
+What exists
 is the library's identity and its two edges, the
 [frozen diagnostic set](include/vrmAdapterVrchatOsc/Diagnostics.h), the
 [recorded-packet format](include/vrmAdapterVrchatOsc/PacketCapture.h), the
@@ -49,16 +52,25 @@ raw UDP capture → recorded corpus → address / type-tag / cadence inventory
 ```
 
 The inventory (VRC-1) is the input to the decoder's design, and until a session
-has been through it the decoder has no committed shape. **The tool that produces
-it exists** — `vrchat_osc_record --inspect` prints one address-and-type-tag row
-per pair a capture carried — and what it needs is an operator and a device.
+has been through it the decoder has no committed shape. **A session has now been
+through it** — 2026-08-30, six captures,
+[report 02](../../../docs/reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md).
 
-What that buys is stated as a prediction to be checked rather than a claim: the
-risk this adapter was written expecting is that mocopi's `VRChat (OSC)` output is
-**not** the tracker subset anyone expects, and the inventory is what will say so
-before a decoder has been built around the assumption. That is why the inventory
-carries no list of addresses it expects: an address nobody predicted appears as a
-row rather than as a zero.
+The prediction that justified this order was checked and it held. The risk was
+that mocopi's `VRChat (OSC)` output is **not** the tracker subset anyone expects,
+and it is not: **three numbered trackers out of a surface of eight, plus a named
+`head`** occupying the same path position the numbers do. A decoder written from
+the specification would have read that segment as an integer, dropped the head,
+and reported nothing wrong. The inventory carrying no list of addresses it
+expects is what turned that into a row rather than into four absences.
+
+What else it measured, each of which a decoder here now inherits as a fact:
+every address is `,fff`, so a rotation is three floats and not a quaternion;
+there are no bundles at all, so one datagram is one message and every frame
+boundary is inferred; the eight arrive as a fixed cycle inside a median 0.053 ms;
+and about a third of the frames never arrive, with the residual single-address
+loss falling 96 % on one address, which is what
+`VRM_VRCHAT_OSC_TRACKER_PARTIAL` is for.
 
 ## A tracker source is not a pose source
 
