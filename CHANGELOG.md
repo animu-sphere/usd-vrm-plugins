@@ -28,6 +28,17 @@ Current schema contract version: **1**.
   WORKSPACE.md §5 names, and the tool beside them looked somewhere else. The
   locator now carries both installed layouts.
 
+  Both three-parent rules — the new one and the repository one beside it, which
+  had always been unguarded — are now offered **only when the executable really
+  is in a `tools/<member>/bin/`**. From a `cmake --install` prefix they would
+  otherwise climb two levels *above* it, which is where a sibling install of
+  this product puts its own `share/`, and the result is not a refusal but a
+  conversion reading another prefix's profile. That is the near-miss the
+  no-default-profile rule exists to prevent, arriving through the search path
+  instead of through a flag. Caught in review before either rule shipped, and
+  reproduced first: an executable at `a/b/prefix/bin/` with a profile only at
+  `a/share/…` converted instead of refusing.
+
   **It was found by running it, and nothing else could have found it.** The
   destination is stated in `openstrata.toml`, in the root `CMakeLists.txt`, in
   WORKSPACE.md §5 and in `ProfileLocator.h`, all four agree, and one of them was

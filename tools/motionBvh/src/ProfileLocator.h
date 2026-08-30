@@ -46,6 +46,10 @@
 //   5. `<exe>/../../../profiles/motion` — this repository, whose tools stage
 //      their executables in `tools/<member>/bin/`
 //
+// The last two are offered **only when the executable really is in a
+// `tools/<member>/bin/`**, and both are absent from the search path — and from
+// the refusal's list — when it is not.
+//
 // **The fourth is what an artifact-only run needs, and it was missing until
 // 2026-08-30.** Both installed layouts put the profiles at the same place
 // relative to the *prefix* and the tool at a different depth inside it, so one
@@ -73,10 +77,24 @@
 // that found no profile would send whoever ran it looking for a packaging bug
 // that is not there.
 //
-// The fourth and the fifth both climb three directories, so from a `bin/`
-// directly under a prefix they reach *above* it. That is not new exposure —
-// the fifth has always done it — and it costs nothing here, because the third
-// is tried first and a correct `cmake --install` prefix answers there.
+// **That condition is why the fourth and the fifth are guarded rather than
+// unconditional.** Both climb three directories, so from a `bin/` directly
+// under a prefix — the `cmake --install` layout — they reach two levels
+// *above* it, which is exactly where a sibling install of this product puts
+// its own `share/`. Saying "the third is tried first and a correct prefix
+// answers there" is not an answer: a prefix installed without its own
+// profiles is reachable, because both CMake rules that place them are guarded
+// on `profiles/motion` existing. What that costs is not a refusal but a
+// conversion reading another prefix's profile — a near-miss producing motion
+// that is *subtly misassembled rather than absent*, which is the outcome the
+// no-default-profile rule exists to prevent, arriving through the search path
+// instead of through a flag. The guard was added on review, before either rule
+// shipped, after reproducing it: an executable at `a/b/prefix/bin/` with a
+// profile only at `a/share/…` converted instead of refusing.
+//
+// It tightens the fifth as well, which had always climbed unguarded. In this
+// repository the executable is at `tools/<member>/bin/` and the rule is
+// unchanged; outside one it now declines to guess.
 #pragma once
 
 #include <filesystem>

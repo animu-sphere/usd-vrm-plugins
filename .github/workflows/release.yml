@@ -325,8 +325,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          product="$(jq -r '.data.product.archive' .ost-ci/package.json)"
+          product="$(jq -r '.data.product.archive // empty' .ost-ci/package.json)"
           if command -v cygpath > /dev/null; then product="$(cygpath -u "$product")"; fi
+          # `// empty` and this guard together, for the reason the staging step
+          # below has the same pair: a bare `jq -r` on a missing key prints the
+          # string "null", `dirname` turns that into ".", and the smoke would be
+          # pointed at the repository root and fail with a message about the
+          # wrong thing.
+          if [ -z "$product" ] || [ ! -f "$product" ]; then
+            echo "::error title=release packaging::workspace product archive is missing" ; exit 1
+          fi
           python scripts/artifact_only_bvh_smoke.py --product "$(dirname "$product")"
       - name: Verify the packaged VRMA reader independently
         shell: bash

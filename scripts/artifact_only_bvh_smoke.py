@@ -209,7 +209,15 @@ def check_profiles_installed(failures: Failures,
     if not failures.check(installed.is_dir(),
                           f"the product installed no {'/'.join(PROFILE_DESTINATION)}"):
         return installed
-    for authored in sorted(source.glob("*.yaml")):
+    authored_profiles = sorted(source.glob("*.yaml"))
+    # A comparison over an empty list passes having compared nothing, which is
+    # the shape of green this whole script exists to distrust.
+    if not failures.check(
+            bool(authored_profiles),
+            f"{source} holds no *.yaml, so the byte comparison below would "
+            f"check nothing and report success"):
+        return installed
+    for authored in authored_profiles:
         shipped = installed / authored.name
         if not failures.check(shipped.is_file(),
                               f"{authored.name} did not reach the prefix"):
@@ -275,11 +283,20 @@ def check_the_run(failures: Failures, tool: pathlib.Path, env: dict,
     try:
         result = run_converter(tool, env, bvh, profile_id,
                                work / "must-not-exist.usda")
+        # Exit 2 alone is not enough. `convert_main.cpp` returns it for every
+        # refusal about the command or something it named -- a profile that
+        # will not parse, a profile whose id disagrees with the request, an
+        # output that cannot be created. So a *foreign* profile of this id that
+        # happened to be malformed would satisfy an exit-code-only check and
+        # tell us the opposite of what this check is for. The refusal has to be
+        # the one that says the file is not there.
+        not_found = f"no profile '{profile_id}' was found"
         failures.check(
-            result.returncode == 2,
+            result.returncode == 2 and not_found in result.stderr,
             f"with the installed profile moved aside the converter exited "
-            f"{result.returncode}, so the profile it read the first time was "
-            f"not the one this product ships")
+            f"{result.returncode} and did not report {not_found!r}, so the "
+            f"profile it read the first time was not the one this product "
+            f"ships:\n{result.stdout}{result.stderr}")
     finally:
         hidden.rename(shipped)
 

@@ -140,15 +140,33 @@ ProfileSearchPath(const std::vector<std::string>& extraDirs)
         directories.push_back(executableDir.parent_path() / "share"
                               / "usd-vrm-plugins" / "profiles" / "motion");
         // <prefix>/tools/<member>/bin/<exe> -> <prefix>/share/... : an
-        // installed product. The two installed layouts agree about where the
-        // data is relative to the prefix and disagree about how deep the tool
-        // sits inside it, so each needs its own rule.
-        const std::filesystem::path prefixFromToolMember =
-            executableDir.parent_path().parent_path().parent_path();
-        directories.push_back(prefixFromToolMember / "share"
-                              / "usd-vrm-plugins" / "profiles" / "motion");
-        // tools/<member>/bin/<exe> -> the repository root's profiles/motion.
-        directories.push_back(prefixFromToolMember / "profiles" / "motion");
+        // installed product, and this repository's own build tree. The two
+        // installed layouts agree about where the data is relative to the
+        // prefix and disagree about how deep the tool sits inside it, so each
+        // needs its own rule.
+        //
+        // **Both of these are gated on the tool actually being inside a
+        // `tools/<member>/bin/`**, and the guard is load-bearing rather than
+        // tidiness. Climbing three parents unguarded from a `cmake --install`
+        // prefix — `<prefix>/bin/<exe>` — lands two levels *above* the prefix,
+        // which is where a sibling install of this product puts its own
+        // `share/`. The result would not be a refusal: it would be a
+        // conversion reading some other prefix's profile, which is the
+        // "subtly misassembled rather than absent" outcome this whole path is
+        // shaped to prevent. Found by review on 2026-08-30, before either rule
+        // had shipped, and reproduced: an executable at `a/b/prefix/bin/` with
+        // a profile only at `a/share/...` converted instead of refusing.
+        const std::filesystem::path memberDir = executableDir.parent_path();
+        const std::filesystem::path toolsDir = memberDir.parent_path();
+        if (executableDir.filename() == "bin" && toolsDir.filename() == "tools"
+            && !memberDir.filename().empty()) {
+            const std::filesystem::path prefix = toolsDir.parent_path();
+            directories.push_back(prefix / "share" / "usd-vrm-plugins"
+                                  / "profiles" / "motion");
+            // tools/<member>/bin/<exe> -> the repository root's
+            // profiles/motion.
+            directories.push_back(prefix / "profiles" / "motion");
+        }
     }
     return directories;
 }

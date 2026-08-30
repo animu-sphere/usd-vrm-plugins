@@ -702,9 +702,13 @@ smoke test of the BVH path impossible to pass.
 --install` met it.** A packaged product did not: `ost` packaged a tool member
 out of the `directories:` its descriptor declared, had no notion of a data-only
 member, and the measured `motion_bvh` archive was exactly its two executables
-and its descriptor. Unpacked and run, the converter refused a real capture and
-named `<prefix>/share/usd-vrm-plugins/profiles/motion` as the first directory it
-looked in — so the layout was agreed and only the staging was missing. Declaring
+and its descriptor. Unpacked and run — a *member* archive, on its own, so the
+executable sat at `<root>/bin/` — the converter refused a real capture and
+named `<root>/share/usd-vrm-plugins/profiles/motion` as the first directory it
+looked in, which read at the time as the layout being agreed and only the
+staging being missing. The qualification is added in hindsight and the next
+paragraph is why: that is one of two installed layouts, and the tool searched
+the product's first only after 2026-08-30. Declaring
 `directories: [bin, share]` did stage it, and was rejected: `directories:` names
 subdirectories of the *member root*, so it would have put the layer's data inside
 one tool's directory and the copy that shipped would have stopped being the file
