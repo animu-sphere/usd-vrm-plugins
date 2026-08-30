@@ -810,8 +810,14 @@ foot, held, which is twenty seconds of hardware
 
 Two consequences beyond the arithmetic. **The adapter's binaries load OpenUSD
 for the first time** — producing a canonical value is what took the `motionCore`
-edge, and the boundary check's value-type allowlist stops being a check that the
-closure is *empty*; VRC-0 predicted this at VRC-2 and was a milestone early.
+edge; VRC-0 predicted this at VRC-2 and was a milestone early. Making the
+boundary check *see* that took a second change, found in review: a static
+archive contributes only the objects a binary references, so the exe the gate
+inspected imported no OpenUSD at all and would have gone on passing whatever the
+conversion reached for. The gate now names the suite that links the widest layer
+the adapter touches, and `tests/CMakeLists.txt` states that as a rule. Measured
+in both directions — with `gf` removed from the allowlist the new binary fails
+and the old one passes, which is the defect itself.
 And **the corpus cannot check any of it**: the generated fixtures' numbers are
 this repository's own invention, so the corpus pass asserts that every decoded
 message converts and that the corpus is not all identity, and the basis itself

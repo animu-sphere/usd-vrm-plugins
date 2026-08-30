@@ -32,13 +32,19 @@ AxisRotation(std::size_t axis, float degrees) noexcept
 // The same refusal helper the message layer uses, with the same shape: the
 // diagnostic is filled only when the caller asked for one, and the return is
 // always false so a refusal reads as one line at the call site.
+//
+// It differs from that one in taking the *message* where the sibling takes a
+// subject, and the reason is the caller below: this layer runs once per decoded
+// message on a live path, and the subject is an address that has to be rebuilt
+// from two pieces. Building it before the guards would allocate and discard a
+// string for every message that converts, which is all of them.
 bool
-Refuse(Diagnostic* error, DiagnosticCode code, const std::string& subject,
+Refuse(Diagnostic* error, DiagnosticCode code, const TrackerMessage& message,
        std::string detail)
 {
     if (error != nullptr) {
         *error = MakeDiagnostic(code, std::move(detail));
-        error->subject = subject;
+        error->subject = TrackerMessageAddress(message);
     }
     return false;
 }
@@ -63,14 +69,12 @@ bool
 CheckMappable(const TrackerMessage& message, TrackerChannel expected,
               const void* out, Diagnostic* diagnostic)
 {
-    const std::string address = TrackerMessageAddress(message);
-
     if (out == nullptr) {
-        return Refuse(diagnostic, DiagnosticCode::PacketMalformed, address,
+        return Refuse(diagnostic, DiagnosticCode::PacketMalformed, message,
                       "no output value was provided");
     }
     if (message.channel != expected) {
-        return Refuse(diagnostic, DiagnosticCode::PacketMalformed, address,
+        return Refuse(diagnostic, DiagnosticCode::PacketMalformed, message,
                       "a " + ChannelName(message.channel)
                           + " message was given to the "
                           + ChannelName(expected) + " conversion");
@@ -78,7 +82,7 @@ CheckMappable(const TrackerMessage& message, TrackerChannel expected,
     for (std::size_t slot = 0; slot < message.values.size(); ++slot) {
         if (!std::isfinite(message.values[slot])) {
             return Refuse(diagnostic, DiagnosticCode::CoordinateInvalid,
-                          address,
+                          message,
                           "component " + std::to_string(slot)
                               + " is not a finite number");
         }

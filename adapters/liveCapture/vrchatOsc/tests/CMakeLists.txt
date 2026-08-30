@@ -207,10 +207,26 @@ if(WIN32)
 endif()
 
 if(Python3_Interpreter_FOUND)
-    # The *test executable*, not $<TARGET_FILE:vrmAdapterVrchatOsc>. The adapter
+    # A *test executable*, not $<TARGET_FILE:vrmAdapterVrchatOsc>. The adapter
     # is a static library and an archive records no imports at all, so inspecting
-    # it would be a check that cannot fail. This executable is the first artifact
-    # in which the adapter's real transitive imports exist.
+    # it would be a check that cannot fail.
+    #
+    # **Which executable is load-bearing, and VRC-3 is what proved it.** A static
+    # archive contributes only the objects a binary references, so an exe's
+    # imports are the closure of the *code it calls* rather than of the library.
+    # `vrmAdapterVrchatOsc_tests` names nothing in `TrackingSpace.cpp`, so the
+    # linker drops that object and the exe imports no OpenUSD at all --  measured
+    # with `dumpbin /dependents`, after this file had already been changed to say
+    # that the closure had grown. The check would have gone on passing whatever
+    # `TrackingSpace.cpp` reached for.
+    #
+    # So the binary named here is the one that links the widest layer the adapter
+    # touches, which is the conversion's suite. That is a rule and not a
+    # preference: **a new file reaching a new layer must be reachable from this
+    # binary, or the gate silently stops covering it.** The siblings do not have
+    # this problem yet, because their unit suites call the code that links
+    # motionCore; the day one of them grows a layer its main suite does not
+    # reach, they inherit the same rule.
     #
     # `Python3_Interpreter_FOUND` is trustworthy *here* and is not at the root:
     # the adapter's own CMakeLists re-runs find_package(Python3 Interpreter) in
@@ -221,7 +237,7 @@ if(Python3_Interpreter_FOUND)
         COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_CURRENT_SOURCE_DIR}/check_boundaries.py"
             "${CMAKE_CURRENT_SOURCE_DIR}/.."
-            "$<TARGET_FILE:vrmAdapterVrchatOsc_tests>")
+            "$<TARGET_FILE:vrmAdapterVrchatOsc_trackingSpace_tests>")
 
     # vrmAdapterVrchatOsc_corpus proves the committed captures are canonical for
     # the C++ writer; this proves they still match the generator that authored

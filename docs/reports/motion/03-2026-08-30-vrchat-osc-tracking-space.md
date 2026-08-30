@@ -272,9 +272,25 @@ This is the change where **the adapter's binaries first load OpenUSD**. VRC-0
 recorded that its closure was empty of it and predicted a decoder would change
 that; VRC-2 arrived and it did not, because `libs/osc` links nothing. Producing
 a canonical value is what does it: the library takes the `motionCore` edge for
-the value types, and the boundary check's value-type allowlist — `arch`,
-`boost`, `gf`, `python`, `tf`, `vt` — stops being a check that the closure is
-empty and starts being the check it was written as. It passed unchanged.
+the value types.
+
+**The boundary check did not notice, and that took a second change.** Its
+allowlist — `arch`, `boost`, `gf`, `python`, `tf`, `vt` — was meant to stop
+being a check that the closure is *empty* the day a canonical value arrived, and
+it did not, because a static archive contributes only the objects a binary
+references: the exe the gate inspected calls nothing in `TrackingSpace.cpp`, so
+the linker drops that object and `dumpbin /dependents` finds no `usd_*` in it at
+all. The gate now names the conversion's own suite — the binary linking the
+widest layer this adapter touches — and `tests/CMakeLists.txt` states that as a
+rule for the next file that reaches a new one. Verified in both directions: with
+`gf` removed from the allowlist the new binary fails by name and the old one
+passes, which is the defect stated as an experiment.
+
+It is worth recording how this was caught, because none of it was: the first
+version of this change rewrote three paragraphs to say the closure had grown
+before anybody ran `dumpbin` on the binary the check reads. A check whose
+subject is chosen once and never re-examined is a check that measures whatever
+its subject happened to contain.
 
 ## 4. What this does not say
 

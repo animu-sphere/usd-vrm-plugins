@@ -345,6 +345,58 @@ TestEveryRotationIsUnitLength()
     }
 }
 
+// The header publishes four constants as the reader-checkable statement of what
+// the conversion does — the unit, the angle unit, which component is mirrored,
+// and the determinant that mirror has. A constant nothing asserts is a comment
+// with a type, so this is where they are made load-bearing: each one *derives*
+// what the arithmetic below must produce, and a change to either side alone
+// fails here.
+void
+TestThePublishedConstantsDescribeTheArithmetic()
+{
+    using vrmAdapterVrchatOsc::TrackingSpaceAngleUnitInDegrees;
+    using vrmAdapterVrchatOsc::TrackingSpaceDeterminant;
+    using vrmAdapterVrchatOsc::TrackingSpaceMirroredComponent;
+    using vrmAdapterVrchatOsc::TrackingSpaceUnitInMeters;
+
+    // One unit along each axis converts to that many metres, and exactly the
+    // named component comes back negated.
+    for (int axis = 0; axis < 3; ++axis) {
+        std::array<float, 3> unit = {{0.0f, 0.0f, 0.0f}};
+        unit[static_cast<std::size_t>(axis)] = 1.0f;
+        const pxr::GfVec3f canonical = ToCanonicalPosition(unit);
+
+        const float sign = axis == TrackingSpaceMirroredComponent ? -1.0f : 1.0f;
+        const float metres = sign * static_cast<float>(TrackingSpaceUnitInMeters);
+        for (int slot = 0; slot < 3; ++slot) {
+            const float expected = slot == axis ? metres : 0.0f;
+            assert(NearlyEqual(canonical[slot], expected, 1e-6f));
+        }
+    }
+
+    // A quarter turn about each axis, in the sender's angle unit. `(w, det(M) M
+    // v)` leaves the mirrored axis's rotation alone and reverses the other two,
+    // so the sign of each is the determinant times the mirror's own sign —
+    // written from the constants rather than from the answer.
+    const float quarterTurn = static_cast<float>(90.0 / TrackingSpaceAngleUnitInDegrees);
+    for (int axis = 0; axis < 3; ++axis) {
+        std::array<float, 3> angles = {{0.0f, 0.0f, 0.0f}};
+        angles[static_cast<std::size_t>(axis)] = quarterTurn;
+        const pxr::GfQuatf canonical = ToCanonicalRotation(angles);
+
+        const int mirror = axis == TrackingSpaceMirroredComponent ? -1 : 1;
+        const float sign = static_cast<float>(TrackingSpaceDeterminant * mirror);
+        const float half = std::sin(45.0f * kDegreesToRadians);
+
+        assert(NearlyEqual(canonical.GetReal(), std::cos(45.0f * kDegreesToRadians),
+                           1e-5f));
+        for (int slot = 0; slot < 3; ++slot) {
+            const float expected = slot == axis ? sign * half : 0.0f;
+            assert(NearlyEqual(canonical.GetImaginary()[slot], expected, 1e-5f));
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // The boundary
 // ---------------------------------------------------------------------------
@@ -561,6 +613,7 @@ main(int argc, char** argv)
     TestTheYawIsOutermost();
     TestTheAngleUnitIsDegreesAndTheWrapIsNotADiscontinuity();
     TestEveryRotationIsUnitLength();
+    TestThePublishedConstantsDescribeTheArithmetic();
     TestTheSubjectIsTheAddressTheMessageCameFrom();
     TestTheChannelGuardRefusesAValueItCouldNotTellApart();
     TestANonFiniteComponentIsRefusedHereToo();

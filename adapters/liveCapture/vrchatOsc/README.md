@@ -163,10 +163,17 @@ without it a test exits `0xC0000135` rather than failing.
 That is the transition the two previous versions of this paragraph predicted and
 neither produced. VRC-0's said the closure would grow when a decoder arrived;
 VRC-2's decoder arrived and it did not, because `osc` links nothing at all, not
-even a socket. Producing a canonical value is what does it, and the boundary
-check's value-type allowlist — `arch`, `boost`, `gf`, `python`, `tf`, `vt` —
-stops being a check that the closure stays *empty* and starts being the check it
-was written as. It passed unchanged.
+even a socket. Producing a canonical value is what does it.
+
+**The boundary check needed one change to notice**, and it was found in review
+rather than by the check. A static archive contributes only the objects a binary
+references, so `vrmAdapterVrchatOsc_tests` — which names nothing in
+`TrackingSpace.cpp` — still imports no OpenUSD, and the gate pointed at it would
+have passed whatever that file reached for. It now inspects the conversion's own
+suite, which is the binary linking the widest layer this adapter touches;
+`tests/CMakeLists.txt` carries the rule for the next file that reaches a new
+one. With that fixed the value-type allowlist — `arch`, `boost`, `gf`, `python`,
+`tf`, `vt` — is the check it was written as, and the closure grew *inside* it.
 
 No adapter may depend on another. Through VRC-0 that rule guarded something real
 here: `vrmAdapterVmc` held the only OSC decoder in this repository and this

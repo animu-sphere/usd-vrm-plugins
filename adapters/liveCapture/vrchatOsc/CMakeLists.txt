@@ -21,14 +21,18 @@
 # through the library whose contract already carries it, and the boundary check
 # holds the allowlist that says which OpenUSD libraries may follow.
 #
-# **The closure grows here, exactly once, and the check is what says so.** VRC-0
-# recorded that this adapter's binaries imported no OpenUSD at all and predicted
-# that a decoder producing a canonical value would change it; VRC-2 arrived and
-# it did not, because `osc` links nothing. VRC-3 is the one that does: the test
-# executables now load usd_gf and its dependencies, which is why tests/ gained a
-# PATH modification on Windows, and the boundary check's value-type allowlist
-# stops being a check that the closure is *empty* and starts being the check it
-# was written as.
+# **The closure grows here, exactly once.** VRC-0 recorded that this adapter's
+# binaries imported no OpenUSD at all and predicted that a decoder producing a
+# canonical value would change it; VRC-2 arrived and it did not, because `osc`
+# links nothing. VRC-3 is the one that does: the suite that calls the conversion
+# now loads usd_gf and its dependencies, which is why tests/ gained a PATH
+# modification on Windows.
+#
+# What the boundary check inspects had to change with it, and the reason is in
+# this line: a **static** library contributes only the objects a binary
+# references, so an exe that calls none of `TrackingSpace.cpp` imports none of
+# what that file links. tests/CMakeLists.txt carries the rule that came out of
+# it.
 
 cmake_minimum_required(VERSION 3.22)
 

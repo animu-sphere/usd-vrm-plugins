@@ -42,14 +42,25 @@ deliberate, and all three come straight from the contract:
   exactly as `motion_retarget` does. Scanning it would flag the one place the
   contract permits what the library may not do.
 
-The binary argument is the adapter's **test executable**, not its `.lib`/`.a`. A
-static archive records no imports at all — `dumpbin /dependents` on one prints a
-section summary and nothing else — so pointing this check at the library would
-make it a gate that cannot fail. Since VRC-3 the executable's closure reaches
-OpenUSD's value-type layer, because the adapter links motionCore for the types
-its change of basis returns — so the allowlist below is doing the job it was
-written for, which is keeping the closure *small*, rather than the stronger one
-it did while the closure was empty. The day it named is the day it happened.
+The binary argument is one of the adapter's **test executables**, not its
+`.lib`/`.a`. A static archive records no imports at all — `dumpbin /dependents`
+on one prints a section summary and nothing else — so pointing this check at the
+library would make it a gate that cannot fail.
+
+**Which executable is not a detail, and VRC-3 found that out the hard way.** A
+static archive contributes only the objects a binary references, so an exe's
+imports are the closure of the code it *calls* rather than of the library it
+links. The conversion that took the motionCore edge is called by its own suite
+and by nothing in `vrmAdapterVrchatOsc_tests`, so that exe still imports no
+OpenUSD at all — and this paragraph had already been rewritten to say the
+closure had grown before anybody ran `dumpbin` on it. The caller in
+`tests/CMakeLists.txt` now names the suite that links the widest layer this
+adapter touches, and states that as a rule for the next file that reaches a new
+one.
+
+With that corrected, the allowlist below is doing the job it was written for,
+which is keeping the closure *small* rather than the stronger one it did while
+the closure was empty.
 
 This is also the only enforcement there is. `ost` 0.22.2 discovers plain
 libraries in the project root's immediate subdirectories and under `libs/`, so
@@ -142,10 +153,11 @@ def _binary_dependencies(binary: pathlib.Path) -> str:
 # symbol, where Linux's --as-needed and Windows' import libraries drop them.
 #
 # This adapter imported **none** of them until VRC-3, which took the motionCore
-# edge for the value types its change of basis returns. The list was the
-# contract's permission before it was a description of the binary, and that is
-# what made the transition legible rather than silent: the closure grew to
-# exactly this set, and the check was not touched to let it.
+# edge for the value types its change of basis returns; the inspected binary now
+# imports `usd_gf` and nothing else on this list. The list was the contract's
+# permission before it was a description of the binary, and that is what made the
+# transition legible rather than silent: the closure grew inside this set, and
+# the check was not touched to let it.
 _ALLOWED_USD_LIBRARIES = {"arch", "boost", "gf", "python", "tf", "vt"}
 _USD_LIBRARY = re.compile(r"usd_([A-Za-z0-9]+)")
 
