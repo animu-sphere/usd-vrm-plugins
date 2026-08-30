@@ -405,7 +405,10 @@ Current schema contract version: **1**.
   never claimed it — and it pinned a plugin artifact built against OpenUSD 26.05
   against a 26.08 runtime, which this repository's own note said not to trust.
   `.github/workflows/ost-support-matrix.yml` is deleted; `ost ci generate` no
-  longer emits it.
+  longer emits it — and does not notice, which is one of the three asks in
+  [report 38](docs/reports/ost/38-2026-08-30-v0.22.8-workspace-cell-verbs-and-orphaned-lanes.md)
+  along with the missing workspace-cell verbs that made a sixteen-cell matrix the
+  only way to say what two commands say.
 
 - **The silence timeout arrived, on the terms the fix above promised.** The
   shared receiver has one unconditionally; `vrmAdapterMocopi` exposes it and

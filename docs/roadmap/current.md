@@ -246,7 +246,31 @@ checks are listed rather than remembered:
   GitHub after queueing, and it paired a 26.05-built plugin artifact with a
   26.08 runtime, which OpenUSD guarantees nothing about. Reinstating it needs
   all three of a real runner, a republished plugin artifact and a re-added
-  `lane: scheduled` cell — not the cell alone, which is what was there.
+  `lane: scheduled` cell — not the cell alone, which is what was there
+  ([report 38](../reports/ost/38-2026-08-30-v0.22.8-workspace-cell-verbs-and-orphaned-lanes.md)
+  §5).
+- ⬜ **Three bundle cells exist to reach a verb, not a bundle.** A
+  `kind: workspace` cell takes `verify: graph|build|test`, so `ost plugin test
+  --workspace` and `ost plugin package --workspace` — the two verbs `release.yml`
+  runs by hand — cannot be spelled in `openstrata.ci.yaml` at all. The only
+  generated construct that reaches them is the per-bundle cell, which is
+  per-platform too, so pyramid and packaging coverage costs bundles × platforms
+  jobs. Nine of this repository's twelve were measured redundant against the
+  workspace suite and removed on 2026-08-30; the three that remain
+  (`usdVrmFileFormat` on each platform) are the only lane that configures a
+  bundle **standalone** and the only PR lane that runs `ost plugin package`.
+  Closing this is upstream — `verify: pyramid` and `verify: package` — and would
+  take the matrix to four cells
+  ([report 38](../reports/ost/38-2026-08-30-v0.22.8-workspace-cell-verbs-and-orphaned-lanes.md)
+  §2, the live v0.23.0 P2).
+- ⬜ **`ost` cannot tell us a workspace member ran no tests.** `ost test` reports
+  one flat total, so `usdVrmaFileFormat` contributing **zero** CTest targets read
+  as 100% passing on every lane, on three platforms, for months — the option-name
+  bug fixed on 2026-08-30. The bug is ours and is closed; what stays open is that
+  nothing would report the next one. Asked upstream as per-member attribution in
+  `ost test --json`
+  ([report 38](../reports/ost/38-2026-08-30-v0.22.8-workspace-cell-verbs-and-orphaned-lanes.md)
+  §4).
 - ⚠️ **`release.yml` stays hand-authored, and hand-mirrors what the contract now
   expresses.** Its X11 step, its `ost` pin and its runtime digests are copies of
   `openstrata.ci.yaml` values; regeneration never touches them and a green PR
