@@ -304,23 +304,30 @@ avatar open and validate, and an embedded texture resolves straight from the
 
 CI is generated from the support matrix in `openstrata.ci.yaml`
 (`ost ci generate github`). The PR lane (`.github/workflows/ost-source-ci.yml`)
-runs **sixteen cells** against digest-pinned cy2026 runtimes on hosted Windows /
+runs **seven cells** against digest-pinned cy2026 runtimes on hosted Windows /
 macOS arm64 / Linux:
 
-- **Twelve bundle cells** — each of the four bundles on each OS — building,
-  testing (`--up-to 5`; Windows is capped at 4), and packaging each.
-- **Three workspace cells** (`kind: workspace`), one per OS, which build the
-  root CMake tree and run its CTest suite. That tree is the only configuration
-  in which the plain libraries and the two CLI tools exist, so these cells are
-  the only coverage `motionCore`, `motionRuntime`, `vrmRetarget`,
-  `vrmContainer`, `motion_retarget`, `motion_capture` and the whole-workspace
-  `usdvrm_baseline` gate get.
 - **One graph cell** (`verify: graph`), which runs
   `ost plugin test --workspace --graph-only` — the [WORKSPACE.md §2](docs/architecture/WORKSPACE.md)
   dependency-direction gate — before anything is built, in milliseconds.
+- **Three workspace cells** (`kind: workspace`), one per OS, which build the
+  root CMake tree and run its CTest suite. This is the behavioral lane: the root
+  tree is the only configuration in which the plain libraries and the CLI tools
+  exist, and its suite also contains every bundle's own tests, so it is the
+  coverage `motionCore`, `motionRuntime`, `vrmRetarget`, `vrmContainer`,
+  `motion_retarget`, `motion_capture`, all four plugin bundles and the
+  whole-workspace `usdvrm_baseline` gate get.
+- **Three bundle cells** — `usdVrmFileFormat` on each OS — which build that
+  bundle *standalone* (`ost plugin build`, no root tree in scope), run its
+  pyramid (`--up-to 5`; Windows is capped at 4), and `ost plugin package` it.
+  Neither the standalone configure nor packaging is reachable from a workspace
+  cell, and they are per-platform, which is what these three are for.
 
-A weekly scheduled lane (`ost-support-matrix.yml`) re-validates pinned
-runtime × plugin artifact cells on a self-hosted real runtime.
+There were sixteen cells until 2026-08-30 — all four bundles on all three OS.
+Nine were removed as measured duplicates of the workspace suite; `openstrata.ci.yaml`
+carries the evidence and what to re-run before adding them back. There is no
+scheduled lane any more: its one cell targeted a self-hosted runner that does
+not exist and had been cancelled weekly since 2026-07-27.
 
 ## Release artifacts
 

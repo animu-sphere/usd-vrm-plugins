@@ -239,13 +239,14 @@ checks are listed rather than remembered:
   artifact is verified on all three OS, so the gap is symbols alone. Closing it
   means running `tools/baseline_freeze.py --update` on a Linux and a macOS host
   and committing the result.
-- ⛔ **The scheduled lane's `plugin_artifact` is still a 26.05 build.**
-  `usdvrmfileformat-support-windows-cy2026` pairs a 26.05-built plugin with a
-  26.08 runtime. OpenUSD guarantees no ABI stability across versions, so that
-  artifact must be republished before the lane's result means anything. It is
-  also the reason `ost ci validate` exits non-zero on a workstation that holds
-  the artifact (the evidence gate); hosted runners do not hold it, so the
-  generated lanes stay green.
+- ⬜ **There is no real-runtime compatibility lane any more.** The scheduled
+  lane and its one cell, `usdvrmfileformat-support-windows-cy2026`, were removed
+  on 2026-08-30: it targeted a self-hosted `usd-windows-real` runner that does
+  not exist, so every weekly firing from 2026-07-27 onward was cancelled by
+  GitHub after queueing, and it paired a 26.05-built plugin artifact with a
+  26.08 runtime, which OpenUSD guarantees nothing about. Reinstating it needs
+  all three of a real runner, a republished plugin artifact and a re-added
+  `lane: scheduled` cell — not the cell alone, which is what was there.
 - ⚠️ **`release.yml` stays hand-authored, and hand-mirrors what the contract now
   expresses.** Its X11 step, its `ost` pin and its runtime digests are copies of
   `openstrata.ci.yaml` values; regeneration never touches them and a green PR
