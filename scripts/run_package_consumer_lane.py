@@ -37,6 +37,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import sysconfig
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 DRIVER = REPO_ROOT / "scripts/check_package_consumer.py"
@@ -70,6 +71,44 @@ def runtime_prefix(runtime_platform: str, profile: str) -> str:
     return data["prefix"] if data.get("pulled") else ""
 
 
+def python_development(root: str) -> tuple:
+    """The `Python3_EXECUTABLE`, `Python3_LIBRARY` and `Python3_INCLUDE_DIR`
+    this host can offer `pxrConfig.cmake`, or an empty tuple.
+
+    Derived from the interpreter running this script rather than searched for,
+    because a lane already pins that to the runtime's Python version and
+    `sysconfig` is that interpreter describing its own installation. A named
+    root is honoured for a hand run, and then the same layout is assumed
+    beneath it.
+
+    Every path is checked to exist before it is offered. A variable naming a
+    file that is not there is worse than not setting it: `pxrConfig.cmake`
+    guards its own values with `if(NOT DEFINED ...)`, so a wrong value here
+    replaces a possibly-right one with a definitely-wrong one, and the failure
+    then reads as a defect in the package rather than in this derivation."""
+    prefix = pathlib.Path(root or sysconfig.get_config_var("prefix") or "")
+    if not prefix.is_dir():
+        return ()
+    tag = sysconfig.get_config_var("py_version_short") or ""
+    if sys.platform == "win32":
+        nodot = sysconfig.get_config_var("py_version_nodot") or tag.replace(".", "")
+        library = prefix / "libs" / f"python{nodot}.lib"
+        include = prefix / "Include"
+    else:
+        libdir = pathlib.Path(sysconfig.get_config_var("LIBDIR") or (prefix / "lib"))
+        names = [sysconfig.get_config_var(v) for v in ("LDLIBRARY", "INSTSONAME")]
+        library = next((libdir / n for n in names if n and (libdir / n).exists()),
+                       libdir / f"libpython{tag}.so")
+        include = pathlib.Path(sysconfig.get_paths()["include"])
+    executable = pathlib.Path(sys.executable) if not root else next(
+        (p for p in (prefix / "python.exe", prefix / "bin" / f"python{tag}",
+                     prefix / "bin" / "python3") if p.exists()),
+        pathlib.Path(sys.executable))
+    if not (executable.exists() and library.exists() and include.is_dir()):
+        return ()
+    return (str(executable), str(library), str(include))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
@@ -84,6 +123,11 @@ def main() -> int:
                     help="the runtime platform to resolve OpenUSD from")
     ap.add_argument("--profile", default="usd")
     ap.add_argument("--generator", help="CMake generator, passed through")
+    ap.add_argument("--python-root", default="", metavar="DIR",
+                    help="the Python 3 installation whose Development artifacts "
+                         "`pxrConfig.cmake` is given. Defaults to the "
+                         "interpreter running this script, which is the one a "
+                         "lane already pins to the runtime's version")
     ap.add_argument("--package", action="append", default=[], metavar="NAME",
                     help="run only these packages (default: every row with a "
                          "find_package contract)")
@@ -115,6 +159,20 @@ def main() -> int:
             print("note: no materialized runtime and no --extra-prefix; only "
                   "the packages that need no OpenUSD can pass")
 
+    python = python_development(args.python_root)
+    if python:
+        print("Python 3 Development artifacts, for `pxrConfig.cmake`'s own "
+              "find_dependency:")
+        for flag, value in zip(("executable", "library", "include"), python):
+            print(f"  {flag}: {value}")
+    else:
+        # Not fatal, because the runtime's own baked paths may resolve on this
+        # host -- they do on the machine that produced it, and they did on the
+        # macOS runner. Saying so is the difference between a host that did not
+        # need this and one where the derivation quietly found nothing.
+        print("note: no Python 3 Development artifacts derived; "
+              "`pxrConfig.cmake`'s own baked paths are what will answer")
+
     reports = pathlib.Path(args.reports)
     reports.mkdir(parents=True, exist_ok=True)
 
@@ -125,6 +183,10 @@ def main() -> int:
                    "--json", str(reports / f"{package}.json")]
         for prefix in extra:
             command += ["--extra-prefix", prefix]
+        if python:
+            command += ["--python-executable", python[0],
+                        "--python-library", python[1],
+                        "--python-include-dir", python[2]]
         if args.generator:
             command += ["--generator", args.generator]
         outcomes[package] = subprocess.run(command).returncode
