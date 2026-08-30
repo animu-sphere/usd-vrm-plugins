@@ -1,0 +1,53 @@
+!vrchat-osc-packet-capture 1
+sender example.synthetic
+device example.synthetic
+sourceId malformed-packets-01
+listen 0.0.0.0:9000
+peer 127.0.0.1:51672
+
+d 0.000000 0
+
+d 0.001000 9
+  2f 74 72 61 63 6b 69 6e 67                       |/tracking|
+
+d 0.002000 32
+  74 72 61 63 6b 69 6e 67 2f 74 72 61 63 6b 65 72  |tracking/tracker|
+  73 2f 31 2f 70 6f 73 69 74 69 6f 6e 00 00 00 00  |s/1/position....|
+
+d 0.003000 32
+  2f 74 72 61 63 6b 69 6e 67 2f 74 72 61 63 6b 65  |/tracking/tracke|
+  72 73 2f 31 2f 70 6f 73 69 74 69 6f 6e 2f 78 78  |rs/1/position/xx|
+
+d 0.004000 48
+  2f 74 72 61 63 6b 69 6e 67 2f 74 72 61 63 6b 65  |/tracking/tracke|
+  72 73 2f 31 2f 70 6f 73 69 74 69 6f 6e 00 00 00  |rs/1/position...|
+  66 66 66 00 3d cc cc cd 3e 4c cc cd 3e 99 99 9a  |fff.=...>L..>...|
+
+d 0.005000 32
+  2f 74 72 61 63 6b 69 6e 67 2f 74 72 61 63 6b 65  |/tracking/tracke|
+  72 73 2f 31 2f 70 6f 73 69 74 69 6f 6e 00 00 00  |rs/1/position...|
+
+d 0.006000 56
+  2f 74 72 61 63 6b 69 6e 67 2f 74 72 61 63 6b 65  |/tracking/tracke|
+  72 73 2f 31 2f 70 6f 73 69 74 69 6f 6e 00 00 00  |rs/1/position...|
+  2c 66 66 66 00 00 00 00 3d cc cc cd 3e 4c cc cd  |,fff....=...>L..|
+  3e 99 99 9a 3e cc cc cd                          |>...>...|
+
+d 0.007000 52
+  2f 74 72 61 63 6b 69 6e 67 2f 74 72 61 63 6b 65  |/tracking/tracke|
+  72 73 2f 31 2f 70 6f 73 69 74 69 6f 6e 00 00 00  |rs/1/position...|
+  2c 66 51 66 00 00 00 00 3d cc cc cd 3e 4c cc cd  |,fQf....=...>L..|
+  3e 99 99 9a                                      |>...|
+
+d 0.008000 72
+  23 62 75 6e 64 6c 65 00 00 00 00 00 00 00 00 01  |#bundle.........|
+  00 00 00 44 2f 74 72 61 63 6b 69 6e 67 2f 74 72  |...D/tracking/tr|
+  61 63 6b 65 72 73 2f 31 2f 70 6f 73 69 74 69 6f  |ackers/1/positio|
+  6e 00 00 00 2c 66 66 66 00 00 00 00 3d cc cc cd  |n...,fff....=...|
+  3e 4c cc cd 3e 99 99 9a                          |>L..>...|
+
+d 0.009000 52
+  2f 74 72 61 63 6b 69 6e 67 2f 74 72 61 63 6b 65  |/tracking/tracke|
+  72 73 2f 31 2f 70 6f 73 69 74 69 6f 6e 00 00 00  |rs/1/position...|
+  2c 66 66 66 00 00 00 00 3d cc cc cd 3e 4c cc cd  |,fff....=...>L..|
+  3e 99 99 9a                                      |>...|

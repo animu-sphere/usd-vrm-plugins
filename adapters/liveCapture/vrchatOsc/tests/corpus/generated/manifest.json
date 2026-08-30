@@ -1,0 +1,368 @@
+{
+  "schemaVersion": 1,
+  "description": "Machine-readable provenance for the generated half of the VRChat OSC corpus. Every capture is assembled by adapters/liveCapture/vrchatOsc/tools/generate_packets.py from the OSC grammar - there is no third-party capture data here and therefore no redistribution gate. Field values are measured from the committed files, never guessed. The recorded half of this corpus lives one directory over and carries no bytes at all: a tracker stream is a real person's motion in a real room.",
+  "format": {
+    "name": "vrchat-osc-packet-capture",
+    "version": 1,
+    "spec": "adapters/liveCapture/vrchatOsc/include/vrmAdapterVrchatOsc/PacketCapture.h"
+  },
+  "provenance": {
+    "origin": "synthetic",
+    "generator": "adapters/liveCapture/vrchatOsc/tools/generate_packets.py",
+    "license": "Apache-2.0",
+    "redistributionAllowed": true,
+    "capturedFromRealSender": false,
+    "generatedAt": "2026-08-30",
+    "shapesMeasuredFrom": "docs/reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md"
+  },
+  "limitations": [
+    "Reproduces the shapes the protocol produces, not any particular sender's quirks. The shapes come from one measured sender (mocopi 2.7.2 in VRChat (OSC) transfer format) plus the parts of VRChat's published tracking surface a receiver must accept.",
+    "No real person's motion is described: the tracker values are invented, name no body region, and assert no unit or basis. Which tracker is on which part of a body is an assignment policy outside this adapter, and what space the numbers are in is VRC-3's to establish.",
+    "The 'observed' field per capture says whether the recorded session of 2026-08-30 carried that shape at all. Three captures are marked false on purpose - trackers 4-8, an OSC bundle, and malformed traffic - and each names its reason in 'pins'.",
+    "Evidence from a second sender is not here. The only VRChat OSC sender measured to date is one mobile application; a VRChat client itself has never been recorded, and is never a test dependency."
+  ],
+  "captures": [
+    {
+      "file": "three-trackers-58hz.vrchatoscpackets",
+      "pins": "Ordinary traffic on this wire, and the fixture every other capture here is a departure from: three numbered trackers and a named head, one message per datagram, rotation before position, the head leading a fixed eight-datagram burst, ~58 Hz. Eight frames of which one is lost whole and one is missing a single address - /tracking/trackers/1/rotation, which is where 96 % of the real session's single-address loss fell. Nothing in it is refused by any layer.",
+      "tags": [
+        "baseline",
+        "measured-shape",
+        "frame-loss",
+        "partial-tracker"
+      ],
+      "observed": true,
+      "id": "three-trackers-58hz",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "three-trackers-01",
+      "datagrams": 55,
+      "payloadBytes": 2916,
+      "durationSeconds": 0.120743,
+      "addressPatterns": [
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/1/rotation",
+        "/tracking/trackers/2/position",
+        "/tracking/trackers/2/rotation",
+        "/tracking/trackers/3/position",
+        "/tracking/trackers/3/rotation",
+        "/tracking/trackers/head/position",
+        "/tracking/trackers/head/rotation"
+      ],
+      "sha256": "faf0c1e4faf92885c8efb678b2dd25d90675fd5efabc6d302ddeaf92d46d0b01",
+      "bytes": 15768
+    },
+    {
+      "file": "one-tracker.vrchatoscpackets",
+      "pins": "One tracker, and the only capture whose values are load-bearing: every number is exactly representable in binary32, so a decoder that reflected an axis, reordered components, converted degrees to radians or rescaled units fails here on equality rather than within a tolerance. The signs are asymmetric in all three components so a reflection through any single axis is visible.",
+      "tags": [
+        "single-tracker",
+        "verbatim-values"
+      ],
+      "observed": true,
+      "id": "one-tracker",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "one-tracker-01",
+      "datagrams": 6,
+      "payloadBytes": 312,
+      "durationSeconds": 0.03449,
+      "addressPatterns": [
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/1/rotation"
+      ],
+      "sha256": "440ba59ad2a6da6ff9289f30753381980ad461932ce4b2c95ff9d2dad6bfa569",
+      "bytes": 1842
+    },
+    {
+      "file": "eight-trackers.vrchatoscpackets",
+      "pins": "The whole numbered surface, 1-8, plus the head. Invented traffic: the measured six-sensor sender populates 1-3 only. It is here because accepting only what one configuration emitted would make this decoder refuse a legal address as a protocol violation the first time somebody connects a fuller setup.",
+      "tags": [
+        "full-surface",
+        "invented"
+      ],
+      "observed": false,
+      "id": "eight-trackers",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "eight-trackers-01",
+      "datagrams": 36,
+      "payloadBytes": 1888,
+      "durationSeconds": 0.01737,
+      "addressPatterns": [
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/1/rotation",
+        "/tracking/trackers/2/position",
+        "/tracking/trackers/2/rotation",
+        "/tracking/trackers/3/position",
+        "/tracking/trackers/3/rotation",
+        "/tracking/trackers/4/position",
+        "/tracking/trackers/4/rotation",
+        "/tracking/trackers/5/position",
+        "/tracking/trackers/5/rotation",
+        "/tracking/trackers/6/position",
+        "/tracking/trackers/6/rotation",
+        "/tracking/trackers/7/position",
+        "/tracking/trackers/7/rotation",
+        "/tracking/trackers/8/position",
+        "/tracking/trackers/8/rotation",
+        "/tracking/trackers/head/position",
+        "/tracking/trackers/head/rotation"
+      ],
+      "sha256": "e10e971401bb7ecc01e27d1e8097eb68126ac38be4b647cd2427841d642b0eed",
+      "bytes": 10351
+    },
+    {
+      "file": "head-absent.vrchatoscpackets",
+      "pins": "Numbered trackers with no head reference at all. The head being a name rather than a number and the head being optional are two different facts; this pins the second, so a decoder that treated it as a required frame member fails here rather than in a live session.",
+      "tags": [
+        "head-absent"
+      ],
+      "observed": true,
+      "id": "head-absent",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "head-absent-01",
+      "datagrams": 18,
+      "payloadBytes": 936,
+      "durationSeconds": 0.034521,
+      "addressPatterns": [
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/1/rotation",
+        "/tracking/trackers/2/position",
+        "/tracking/trackers/2/rotation",
+        "/tracking/trackers/3/position",
+        "/tracking/trackers/3/rotation"
+      ],
+      "sha256": "52c359726c8bf229d9989c5bd0276d399218d1c745c730835d00c81f51e794b3",
+      "bytes": 5238
+    },
+    {
+      "file": "position-only.vrchatoscpackets",
+      "pins": "Positions and no rotations, sustained for a whole session. A position message is complete on its own: on this wire a tracker's two halves are two datagrams and either can be the only one there is.",
+      "tags": [
+        "single-channel"
+      ],
+      "observed": true,
+      "id": "position-only",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "position-only-01",
+      "datagrams": 12,
+      "payloadBytes": 636,
+      "durationSeconds": 0.034505,
+      "addressPatterns": [
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/2/position",
+        "/tracking/trackers/3/position",
+        "/tracking/trackers/head/position"
+      ],
+      "sha256": "d4a8714edab13d64f513d23d08579d770efe1f1c52a41aaba5c5f68c2287e58b",
+      "bytes": 3554
+    },
+    {
+      "file": "rotation-only.vrchatoscpackets",
+      "pins": "The mirror of position-only, and not a duplicate of it: a rotation is three floats where a quaternion would be four, so this is the capture that pins the Euler-shaped arity of a rotation on this wire. malformed-forms carries the four-float rotation that must be refused; this carries the three-float one that must not be.",
+      "tags": [
+        "single-channel",
+        "rotation-arity"
+      ],
+      "observed": true,
+      "id": "rotation-only",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "rotation-only-01",
+      "datagrams": 12,
+      "payloadBytes": 636,
+      "durationSeconds": 0.034505,
+      "addressPatterns": [
+        "/tracking/trackers/1/rotation",
+        "/tracking/trackers/2/rotation",
+        "/tracking/trackers/3/rotation",
+        "/tracking/trackers/head/rotation"
+      ],
+      "sha256": "2b402e314232c90cb684825af1e8b38d94febb44376c47fff57ba5155e8fd967",
+      "bytes": 3554
+    },
+    {
+      "file": "tracker-dropout.vrchatoscpackets",
+      "pins": "A tracker that stops mid-session and never returns. Distinct from a lost packet and indistinguishable from one at this layer - both are simply absent - which is the finding this fixture hands to VRC-4, the layer that owns a timeout and can therefore tell them apart.",
+      "tags": [
+        "dropout",
+        "frame-policy-input"
+      ],
+      "observed": true,
+      "id": "tracker-dropout",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "tracker-dropout-01",
+      "datagrams": 40,
+      "payloadBytes": 2128,
+      "durationSeconds": 0.086245,
+      "addressPatterns": [
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/1/rotation",
+        "/tracking/trackers/2/position",
+        "/tracking/trackers/2/rotation",
+        "/tracking/trackers/3/position",
+        "/tracking/trackers/3/rotation",
+        "/tracking/trackers/head/position",
+        "/tracking/trackers/head/rotation"
+      ],
+      "sha256": "eebd6a53cecf1de119215deaaa69d0baeeb986070d5b04c90c2ee30fc333b48c",
+      "bytes": 11516
+    },
+    {
+      "file": "duplicate-and-reordered.vrchatoscpackets",
+      "pins": "Three frames: the measured send order, that order reversed, and one with an address sent twice carrying different values. Neither shape is an error. The reversed frame breaks an assembler that hard-codes rotation-then-position; the duplicate is the case where keep-the-first and keep-the-last give different answers, so a policy is required rather than assumed.",
+      "tags": [
+        "reordered",
+        "duplicate",
+        "frame-policy-input"
+      ],
+      "observed": false,
+      "id": "duplicate-and-reordered",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "duplicate-and-reordered-01",
+      "datagrams": 25,
+      "payloadBytes": 1324,
+      "durationSeconds": 0.034543,
+      "addressPatterns": [
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/1/rotation",
+        "/tracking/trackers/2/position",
+        "/tracking/trackers/2/rotation",
+        "/tracking/trackers/3/position",
+        "/tracking/trackers/3/rotation",
+        "/tracking/trackers/head/position",
+        "/tracking/trackers/head/rotation"
+      ],
+      "sha256": "d0abd0d2682edd489d7cd37f9bfa9091b64309c62f5b4d2652eac896ac6e7030",
+      "bytes": 7255
+    },
+    {
+      "file": "bundled-frame.vrchatoscpackets",
+      "pins": "A whole frame in one OSC bundle. Legal OSC, and unobserved: 44 918 recorded datagrams carried no bundle at all, which is a fact about one sender and not about the protocol. Without it, 'no sender bundles' would quietly become 'this decoder cannot read one'.",
+      "tags": [
+        "bundled",
+        "invented"
+      ],
+      "observed": false,
+      "id": "bundled-frame",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "bundled-frame-01",
+      "datagrams": 3,
+      "payloadBytes": 1416,
+      "durationSeconds": 0.034483,
+      "addressPatterns": [
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/1/rotation",
+        "/tracking/trackers/2/position",
+        "/tracking/trackers/2/rotation",
+        "/tracking/trackers/3/position",
+        "/tracking/trackers/3/rotation",
+        "/tracking/trackers/head/position",
+        "/tracking/trackers/head/rotation"
+      ],
+      "sha256": "3421a97d2cb848eb40cd6d44b123ac44c693fca3f8e2f14dd1bc783ffb90989c",
+      "bytes": 6470
+    },
+    {
+      "file": "mixed-traffic.vrchatoscpackets",
+      "pins": "Tracker frames beside everything else VRChat's OSC surface carries - avatar parameters, an avatar change, eye tracking, input - plus tracker-shaped addresses this adapter maps to nothing and four identities it cannot read (0, 9, 01, hip). Holding UNSUPPORTED_ADDRESS apart from TRACKER_ID_INVALID is what this capture is for: a sender's bad index must not read as a part of the surface nobody implemented yet.",
+      "tags": [
+        "mixed-traffic",
+        "unsupported-address",
+        "tracker-id-invalid"
+      ],
+      "observed": false,
+      "id": "mixed-traffic",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "mixed-traffic-01",
+      "datagrams": 28,
+      "payloadBytes": 1388,
+      "durationSeconds": 0.045483,
+      "addressPatterns": [
+        "/avatar/change",
+        "/avatar/parameters/GestureLeftWeight",
+        "/avatar/parameters/VRCEmote",
+        "/input/Jump",
+        "/tracking/eye/CenterPitchYaw",
+        "/tracking/trackers/0/position",
+        "/tracking/trackers/01/position",
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/1/rotation",
+        "/tracking/trackers/1/velocity",
+        "/tracking/trackers/2",
+        "/tracking/trackers/2/position",
+        "/tracking/trackers/2/rotation",
+        "/tracking/trackers/3/position",
+        "/tracking/trackers/3/position/x",
+        "/tracking/trackers/3/rotation",
+        "/tracking/trackers/9/position",
+        "/tracking/trackers/head/position",
+        "/tracking/trackers/head/rotation",
+        "/tracking/trackers/hip/position"
+      ],
+      "sha256": "a4db273c3d988c4ee95730200c972a5f78abc3e3e53ae44569fd83b67ac81cc8",
+      "bytes": 7624
+    },
+    {
+      "file": "malformed-packets.vrchatoscpackets",
+      "pins": "Nine ways a datagram is not decodable OSC, refused whole by libs/osc and reported with this adapter's own PACKET_MALFORMED - the two-layer split OSC-3 built. The tenth datagram is a valid tracker message, without which a decoder that refused everything would pass this fixture.",
+      "tags": [
+        "malformed",
+        "packet-level"
+      ],
+      "observed": false,
+      "id": "malformed-packets",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "malformed-packets-01",
+      "datagrams": 10,
+      "payloadBytes": 385,
+      "durationSeconds": 0.009,
+      "addressPatterns": [
+        "/trackers/1/position",
+        "/tracking",
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/1/position/xx"
+      ],
+      "sha256": "3ad9e710dc0cd1f92515f97b0f8fbc3d6ab0a20183145fdcfbe82dfc77fd7721",
+      "bytes": 2141
+    },
+    {
+      "file": "malformed-forms.vrchatoscpackets",
+      "pins": "Valid OSC at known addresses with arguments that are not those addresses': short, doubles, a leading string, none at all, integers, a NaN and an infinity. The load-bearing datagram is the second - a bundled frame whose /tracking/trackers/1/rotation carries four floats. A four-float rotation is a quaternion, so reading its first three components as Euler angles is a confident misreading of a different form rather than a partial read of a longer one, and the seven messages that arrived with it still decode.",
+      "tags": [
+        "malformed",
+        "message-level",
+        "argument-mismatch",
+        "coordinate-invalid"
+      ],
+      "observed": false,
+      "id": "malformed-forms",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "malformed-forms-01",
+      "datagrams": 16,
+      "payloadBytes": 1264,
+      "durationSeconds": 0.040483,
+      "addressPatterns": [
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/1/rotation",
+        "/tracking/trackers/2/position",
+        "/tracking/trackers/2/rotation",
+        "/tracking/trackers/3/position",
+        "/tracking/trackers/3/rotation",
+        "/tracking/trackers/head/position",
+        "/tracking/trackers/head/rotation"
+      ],
+      "sha256": "c9c90d01ed6e856dde4d6c2089067f771b3c07827e613020367eb276b7bf769f",
+      "bytes": 6405
+    }
+  ]
+}

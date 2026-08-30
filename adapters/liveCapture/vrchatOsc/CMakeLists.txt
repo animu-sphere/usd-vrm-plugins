@@ -10,10 +10,11 @@
 #
 # `liveTransport` and `osc`. WORKSPACE.md §2 permits an adapter four edges; the
 # other two — motionCore and motionRuntime — are what an adapter takes when it
-# has canonical values to produce, and it still produces none. A wire-format
-# decode is not a pose: what this adapter now reads out of a datagram is
-# addresses and type tags, which are facts about a session rather than motion
-# (osc-and-vrchat-trackers.md §5, §9).
+# has canonical values to produce, and it still produces none. A tracker
+# observation is not a pose: what this adapter reads out of a datagram is a
+# tracker identity, a channel and three floats in the sender's own space, which
+# is an observation rather than motion (osc-and-vrchat-trackers.md §5, §9). The
+# two remaining edges arrive with the solve, not with the decoder.
 #
 # The link line grew and the consequence VRC-0 measured did not change, which is
 # worth stating because that milestone predicted the opposite. It said this
@@ -64,7 +65,7 @@ if(NOT TARGET osc::osc)
     find_package(osc REQUIRED CONFIG)
 endif()
 
-# Three files. Two of them exist because a shared library may not hold what is
+# Four files. Two of them exist because a shared library may not hold what is
 # in them: a code table, and the map from a transport event to one of its rows
 # (WORKSPACE.md §2's diagnostic split). The capture format contributes a third
 # thing of the same kind and it is one string, so it lives in a header.
@@ -74,9 +75,15 @@ endif()
 # made `osc` a library — a decoder with one caller is a decoder shaped like that
 # caller (osc-and-vrchat-trackers.md §3.1). It carries the same diagnostic split
 # as the other two, in its one refusal path.
+# `TrackerMessage.cpp` is the fourth, and it is the first file here that gives a
+# byte a meaning: an address becomes a tracker identity and a channel, and three
+# floats become three floats this adapter is willing to name (VRC-2). It is
+# still not a pose — position and rotation arrive on separate addresses and the
+# window they belong to is VRC-4's — so the link line below is unchanged by it.
 add_library(vrmAdapterVrchatOsc STATIC
     src/AddressInventory.cpp
     src/Diagnostics.cpp
+    src/TrackerMessage.cpp
     src/UdpReceiver.cpp)
 add_library(vrmAdapterVrchatOsc::vrmAdapterVrchatOsc ALIAS vrmAdapterVrchatOsc)
 set_target_properties(vrmAdapterVrchatOsc PROPERTIES

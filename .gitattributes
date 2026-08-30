@@ -37,3 +37,12 @@
 # CRLF regardless -- motionBvh_parser proves it against text built in memory,
 # where the bytes are the test's rather than the checkout's.
 *.bvh text eol=lf
+
+# Recorded VRChat OSC packet captures, for the mocopi reason exactly: this corpus
+# is re-emitted through the adapter's writer (vrmAdapterVrchatOsc_corpus), sent
+# through a loopback socket and compared byte for byte
+# (vrmAdapterVrchatOsc_loopbackCorpus), regenerated and compared against the
+# generator that authored it (vrmAdapterVrchatOsc_packetGen), and hashed into the
+# corpus manifest. All four write '\n'; a CRLF smudge on a Windows checkout would
+# fail all four while the recorded datagrams were fine.
+*.vrchatoscpackets text eol=lf
