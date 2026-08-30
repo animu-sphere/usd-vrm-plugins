@@ -165,6 +165,36 @@ census is what tells them apart:
 An extraction order that did OSC first and transport never would have left the
 tree with one shared decoder and three copies of the socket.
 
+### 2.3 A third ring the census did not look at: the change of basis
+
+*Added 2026-08-30, by VRC-3, and it is an observation rather than a plan.* The
+census above compared adapter against adapter, so it could not see a ring whose
+other copy is in `libs/`. Turning a source's axes into canonical ones now exists
+three times: `vrmAdapterVmc/SkeletonMap.cpp` hard-codes the reflection through
+X, `motionSource/CanonicalConversion.cpp` derives the general signed permutation
+from a profile, and
+[`vrmAdapterVrchatOsc/TrackingSpace.cpp`](../../adapters/liveCapture/vrchatOsc/src/TrackingSpace.cpp)
+is the third.
+
+**It is not extracted, and the reason is a contract rather than a judgement.**
+The general implementation already exists and lives in the recorded half;
+[WORKSPACE.md §2](../architecture/WORKSPACE.md) gives an adapter four edges and
+`motionSource` is not among them, so reaching it is forbidden and the honest
+alternatives are a third copy or a contract change. VRC-3 took the copy, because
+a milestone that is *about* measuring a basis should not also be moving the code
+that applies one.
+
+What the third instance adds is the argument the next reader needs: this one
+composes **Euler angles**, which neither existing copy does the same way — VMC
+sends quaternions, and `motionSource`'s composition is driven by a profile
+enumerator no live adapter has. A shared primitive in `motionCore` — the signed
+permutation, its determinant, and one angle composition — would have all three
+as consumers, which is one more than the rule this track keeps invoking asks
+for. It is a contract change ([§10](#10-contract-changes-this-plan-requires))
+and belongs with [the producer contract](backlog.md#canonical-motion-producer-contract),
+where the four producer categories are already being unified; doing it inside
+this track would settle a workspace-wide boundary from one adapter's needs.
+
 ## 3. Where each shared ring can live
 
 Two of the four rings have a home the contract already permits. Two do not, and
@@ -742,6 +772,53 @@ recorded rest pose rather than against the documentation alone —
 [the handedness episode](adapters-mocopi-vmc-ardy.md#96-cross-source-comparison)
 is the precedent for why a documented basis is a hypothesis. **No avatar joint
 is resolved in this layer.**
+
+**Done 2026-08-30** —
+[`TrackingSpace.h`](../../adapters/liveCapture/vrchatOsc/include/vrmAdapterVrchatOsc/TrackingSpace.h),
+its suite and
+[report 03](../reports/motion/03-2026-08-30-vrchat-osc-tracking-space.md), which
+re-reads the VRC-1 session rather than recording a new one. The documented space
+is the measured one — metres, +Y up, +Z forward, left-handed — so the conversion
+is VRM 1.0's reflection through X, which is the sibling's line.
+
+**Four of the five readings were settled by a rest pose; the fifth needed a
+label.** A person standing still puts their head at 1.5178, their hips at 0.8922
+and both feet at 0.092, which is the unit, the up axis and the floor in one
+table. Handedness is not in that table and cannot be: nothing in a stream of
+numbers says which way a body turned, and the answer came from the take whose
+note reads "head **left**, centre, right" — a left turn reports a yaw of -77.5°,
+so the body's left is -X and the basis is left-handed. **This is the row the
+same device could have failed on**: its native wire is right-handed with +X on
+the body's *left*, so one application's two outputs disagree about the sign of
+X, and a decoder that carried the native reading across would have mirrored
+every session silently.
+
+**The Euler order is measured to three of six, and the residual is quantified
+rather than waved at.** A head turning left and right does not roll, so the
+three compositions that do not apply the yaw outermost are refused by the data —
+they drag 12–18° of pitch into 12–21° of apparent roll at the ends of an 80°
+turn, where the three that do hold the head within 2.6° of level. Which of X and
+Z sits inside the yaw is **not** measurable from this session, because nobody
+tilted: across 44 918 messages the second-largest component of any orientation
+is 25.2°. The three survivors disagree by a median of 0.21°, 1.75° at the 95th
+percentile and 12.33° at worst, with 96 % of samples inside 2°; the six disagree
+by up to 25.7°. The adapter composes `Ry · Rx · Rz`, the survivor Unity
+documents — documentation breaking a tie the measurement narrowed, rather than
+standing in for one. **What closes it is one take**: a labelled *rolled* head or
+foot, held, which is twenty seconds of hardware
+([the operator-evidence list](current.md#carried-out-of-v070--evidence-an-operator-produces)).
+
+Two consequences beyond the arithmetic. **The adapter's binaries load OpenUSD
+for the first time** — producing a canonical value is what took the `motionCore`
+edge, and the boundary check's value-type allowlist stops being a check that the
+closure is *empty*; VRC-0 predicted this at VRC-2 and was a milestone early.
+And **the corpus cannot check any of it**: the generated fixtures' numbers are
+this repository's own invention, so the corpus pass asserts that every decoded
+message converts and that the corpus is not all identity, and the basis itself
+is asserted only against the session. Six mutations — the mirror dropped, the
+position mirror dropped, VRM 0.x's mirror through Z, the yaw moved innermost,
+the angles read as radians, the channel guard removed — each fail the suite,
+with the restored source green.
 
 ### VRC-4 — tracker frame assembly
 
