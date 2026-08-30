@@ -58,6 +58,23 @@ target_compile_options(vrmAdapterVrchatOsc_trackerMessage_tests
 add_test(NAME vrmAdapterVrchatOsc_trackerMessage
          COMMAND vrmAdapterVrchatOsc_trackerMessage_tests)
 
+# The basis: which way this sender's numbers point (VRC-3). Its constants are
+# readings of the 2026-08-30 session and its rotation checks are physical — a
+# direction is rotated and compared against where a body that did that has to
+# end up — because a component-against-component check agrees with a mirrored
+# conversion in every axis-aligned pose, which is the failure this milestone
+# exists to avoid.
+#
+# It is the first binary here that links OpenUSD's value-type layer, which is
+# what the PATH modification further down is for.
+add_executable(vrmAdapterVrchatOsc_trackingSpace_tests test_tracking_space.cpp)
+target_link_libraries(vrmAdapterVrchatOsc_trackingSpace_tests
+    PRIVATE vrmAdapterVrchatOsc::vrmAdapterVrchatOsc)
+target_compile_options(vrmAdapterVrchatOsc_trackingSpace_tests
+    PRIVATE ${_vrm_adapter_vrchat_osc_assertions})
+add_test(NAME vrmAdapterVrchatOsc_trackingSpace
+         COMMAND vrmAdapterVrchatOsc_trackingSpace_tests)
+
 # The socket, on its own CTest name, so a runner that forbids sockets excludes a
 # name rather than a claim (adapter plan §9.5). This binary carries **three**
 # such names: the two below and `vrmAdapterVrchatOsc_loopbackCorpus` further
@@ -109,6 +126,7 @@ file(GLOB _vrm_adapter_vrchat_osc_captures CONFIGURE_DEPENDS
 set(_vrm_adapter_vrchat_osc_tests
     vrmAdapterVrchatOsc_unit vrmAdapterVrchatOsc_packetCapture
     vrmAdapterVrchatOsc_addressInventory vrmAdapterVrchatOsc_trackerMessage
+    vrmAdapterVrchatOsc_trackingSpace
     vrmAdapterVrchatOsc_udpReceiver vrmAdapterVrchatOsc_udpReceiverTruncation)
 
 if(_vrm_adapter_vrchat_osc_captures)
@@ -138,30 +156,77 @@ if(_vrm_adapter_vrchat_osc_captures)
     add_test(NAME vrmAdapterVrchatOsc_loopbackCorpus
         COMMAND vrmAdapterVrchatOsc_udpReceiver_tests
                 "${_vrm_adapter_vrchat_osc_corpus}")
+    # And the basis's reading of the same directory, which asserts one thing:
+    # every message the decoder accepts, the conversion converts. It carries no
+    # expected canonical values per capture and it deliberately cannot — the
+    # generated corpus's numbers are this repository's own invention, so a
+    # fixture can show that the conversion runs and only a labelled session can
+    # show that it is right. What it does refuse is a conversion that returned
+    # identity and zero for everything, which every loop in it would otherwise
+    # pass.
+    add_test(NAME vrmAdapterVrchatOsc_trackingSpaceCorpus
+        COMMAND vrmAdapterVrchatOsc_trackingSpace_tests
+                "${_vrm_adapter_vrchat_osc_corpus}")
     list(APPEND _vrm_adapter_vrchat_osc_tests
          vrmAdapterVrchatOsc_corpus vrmAdapterVrchatOsc_trackerCorpus
+         vrmAdapterVrchatOsc_trackingSpaceCorpus
          vrmAdapterVrchatOsc_loopbackCorpus)
 endif()
 
-# No ENVIRONMENT_MODIFICATION for OpenUSD's DLL directory, and its absence is a
-# measurement rather than an omission. Both siblings need one because they link
-# motionCore, whose Gf entry points pull usd_gf.dll and its dependencies at run
-# time; this adapter links `liveTransport` and `osc`, and neither reaches an
-# OpenUSD library, so nothing in these binaries loads one at all.
+# OpenUSD's DLL directory, on PATH for every name above. **This block is what
+# VRC-0 and VRC-2 both predicted and neither produced.** Its two previous
+# versions recorded that nothing in these binaries loaded an OpenUSD library at
+# all, because `liveTransport` opens a socket and `osc` links nothing; VRC-3
+# links motionCore for the value types its conversion returns, so the test
+# executables now call exported Gf entry points and load usd_gf.dll -- which
+# pulls usd_tf.dll -> tbb.dll from bin/ plus python3xx.dll. An activated `ost`
+# session has all three on PATH; a plain-CMake `ctest` run does not, and the
+# test exits 0xC0000135 without them.
 #
-# **The link line grew and this paragraph did not have to change its claim**,
-# which is worth recording because the version of it written at VRC-0 predicted
-# it would: it said "the day a decoder produces a canonical value, that
-# changes". A decoder arrived and the claim held, because `osc` links nothing at
-# all -- the prediction was about a decoder that produces a *pose*, and an
-# address inventory is not one. It still changes when that arrives, visibly,
-# rather than silently in a 0xC0000135 exit.
+# It is applied to every test name rather than to the one binary that links Gf,
+# for the reason both siblings do it that way: the set is what a lane runs, and
+# a per-binary list is one new suite away from being wrong in a way that shows
+# up as a launch failure rather than as a missing entry.
+if(WIN32)
+    if(TARGET gf)
+        set(_vrm_adapter_vrchat_osc_gf gf)
+    else()
+        set(_vrm_adapter_vrchat_osc_gf pxr::gf)
+    endif()
+    set(_vrm_adapter_vrchat_osc_test_path
+        "PATH=path_list_prepend:$<TARGET_FILE_DIR:${_vrm_adapter_vrchat_osc_gf}>"
+        "PATH=path_list_prepend:$<TARGET_FILE_DIR:${_vrm_adapter_vrchat_osc_gf}>/../bin")
+    if(Python3_EXECUTABLE)
+        get_filename_component(_vrm_adapter_vrchat_osc_python_dir
+                               "${Python3_EXECUTABLE}" DIRECTORY)
+        list(APPEND _vrm_adapter_vrchat_osc_test_path
+             "PATH=path_list_prepend:${_vrm_adapter_vrchat_osc_python_dir}")
+    endif()
+    set_tests_properties(${_vrm_adapter_vrchat_osc_tests} PROPERTIES
+        ENVIRONMENT_MODIFICATION "${_vrm_adapter_vrchat_osc_test_path}")
+endif()
 
 if(Python3_Interpreter_FOUND)
-    # The *test executable*, not $<TARGET_FILE:vrmAdapterVrchatOsc>. The adapter
+    # A *test executable*, not $<TARGET_FILE:vrmAdapterVrchatOsc>. The adapter
     # is a static library and an archive records no imports at all, so inspecting
-    # it would be a check that cannot fail. This executable is the first artifact
-    # in which the adapter's real transitive imports exist.
+    # it would be a check that cannot fail.
+    #
+    # **Which executable is load-bearing, and VRC-3 is what proved it.** A static
+    # archive contributes only the objects a binary references, so an exe's
+    # imports are the closure of the *code it calls* rather than of the library.
+    # `vrmAdapterVrchatOsc_tests` names nothing in `TrackingSpace.cpp`, so the
+    # linker drops that object and the exe imports no OpenUSD at all --  measured
+    # with `dumpbin /dependents`, after this file had already been changed to say
+    # that the closure had grown. The check would have gone on passing whatever
+    # `TrackingSpace.cpp` reached for.
+    #
+    # So the binary named here is the one that links the widest layer the adapter
+    # touches, which is the conversion's suite. That is a rule and not a
+    # preference: **a new file reaching a new layer must be reachable from this
+    # binary, or the gate silently stops covering it.** The siblings do not have
+    # this problem yet, because their unit suites call the code that links
+    # motionCore; the day one of them grows a layer its main suite does not
+    # reach, they inherit the same rule.
     #
     # `Python3_Interpreter_FOUND` is trustworthy *here* and is not at the root:
     # the adapter's own CMakeLists re-runs find_package(Python3 Interpreter) in
@@ -172,7 +237,7 @@ if(Python3_Interpreter_FOUND)
         COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_CURRENT_SOURCE_DIR}/check_boundaries.py"
             "${CMAKE_CURRENT_SOURCE_DIR}/.."
-            "$<TARGET_FILE:vrmAdapterVrchatOsc_tests>")
+            "$<TARGET_FILE:vrmAdapterVrchatOsc_trackingSpace_tests>")
 
     # vrmAdapterVrchatOsc_corpus proves the committed captures are canonical for
     # the C++ writer; this proves they still match the generator that authored

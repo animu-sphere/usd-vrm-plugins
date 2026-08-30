@@ -1,14 +1,23 @@
 @PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
+# OpenUSD's pxrConfig.cmake defines imported targets unconditionally, so skip it
+# when a consumer has already resolved the Gf target this package needs
+# transitively through motionCore. The same guard both siblings carry, arriving
+# here with VRC-3 for the same reason: this adapter now holds canonical values.
+if(NOT TARGET gf AND NOT TARGET pxr::gf)
+    find_dependency(pxr CONFIG REQUIRED)
+endif()
+# The value types, and the only route WORKSPACE.md §2 gives an adapter to them.
+# There is still no `motionRuntime` here, and its absence is this adapter's
+# shape rather than an omission: a tracker observation is not a pose, and the
+# library that intakes poses arrives with the solve (VRC-5).
+if(NOT TARGET motionCore::motionCore)
+    find_dependency(motionCore CONFIG REQUIRED)
+endif()
 # The live half's shared leaf: the socket, the capture format and the diagnostic
 # vehicle (WORKSPACE.md §2). Its own config brings the platform's threading
 # primitive with it, so this file does not ask for one.
-#
-# There is no `pxr`, no `motionCore` and no `motionRuntime` here, and their
-# absence is this adapter's current shape rather than an omission: VRC-0 ships
-# no semantic decoder, so nothing in this library holds a canonical value. They
-# arrive with the code that produces one.
 if(NOT TARGET liveTransport::liveTransport)
     find_dependency(liveTransport CONFIG REQUIRED)
 endif()

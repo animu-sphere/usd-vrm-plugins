@@ -165,8 +165,22 @@ test completes with nothing installed.
       and the three CTest names that read the corpus — `_corpus`,
       `_trackerCorpus` and `_loopbackCorpus` — would pick a redistributable
       session up with no change;
-- [ ] tracker position and rotation reach the canonical tracking space, verified
-      against a recorded rest pose rather than the documentation alone;
+- [x] tracker position and rotation reach the canonical tracking space, verified
+      against a recorded rest pose rather than the documentation alone *(VRC-3,
+      2026-08-30:
+      [report 03](../reports/motion/03-2026-08-30-vrchat-osc-tracking-space.md).
+      The documented space **is** the measured one — metres, +Y up, +Z forward,
+      left-handed — so the conversion is VRM 1.0's reflection through X. The
+      rest pose settled four of the five readings and could not settle the
+      fifth: nothing in a stream of numbers says which way a body turned, and
+      handedness came from the take labelled "head **left**, centre, right",
+      where a left turn reports -77.5° of yaw. The **Euler order is measured to
+      three of six** — a head turning does not roll, which refuses the three
+      compositions that do not apply the yaw outermost — and the residual is
+      quoted rather than waved at: median 0.21°, 12.33° at worst, against 25.7°
+      before the test. Closing it costs one labelled *rolled* take, which is
+      twenty seconds of hardware and is on the operator-evidence list below.
+      This is also where the adapter's binaries first load OpenUSD)*;
 - [ ] partial sets, timeouts, restarts and calibration discontinuity are stated
       policy with a fixture each, not emergent behaviour;
 - [x] unknown VRChat OSC traffic is recoverable *(VRC-2, 2026-08-30:
@@ -323,6 +337,15 @@ None of these closes by writing code, and each is stated with what it costs.
   agreeing exactly. Tracking loss was dropped as a take and the reason is the
   finding: removing a sensor puts the app into re-tracking, so the stream never
   carries a lost sensor. `VRM_MOCOPI_TRACKING_LOST` stays frozen and unraised.
+- ⬜ **A labelled *rolled* take, which is the cheapest item on this list.**
+  VRC-3 measured the VRChat OSC Euler order down to three compositions of six
+  and stopped there, because no sample in the 2026-08-30 session rotates about
+  two axes at once by enough to separate them — the second-largest component of
+  any orientation across 44 918 messages is 25.2°, since nobody tilted. Twenty
+  seconds settles it: a head tilted onto one shoulder and held, or a foot rolled
+  onto its outer edge and held, with which side written down. Until then the
+  conversion carries a residual of median 0.21° and 12.33° at worst
+  ([report 03](../reports/motion/03-2026-08-30-vrchat-osc-tracking-space.md) §2.3).
 - ⬜ **A redistributable mocopi capture.** The five device sessions survive as
   [`recorded/manifest.json`](../../adapters/liveCapture/mocopi/tests/corpus/recorded/manifest.json)
   with hashes, every measured statistic and no bytes — a session is a real

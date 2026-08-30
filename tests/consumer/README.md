@@ -33,9 +33,13 @@ These fixtures are the consumer that is not us.
 python scripts/check_package_consumer.py osc
 ```
 
-Four of the twelve need no OpenUSD and run exactly like that: `osc`,
-`vrmContainer`, `liveTransport` and `vrmAdapterVrchatOsc`. The other eight take
-a `--extra-prefix`.
+Three of the twelve need no OpenUSD and run exactly like that: `osc`,
+`vrmContainer` and `liveTransport`. The other nine take a `--extra-prefix`.
+
+`vrmAdapterVrchatOsc` was a fourth until 2026-08-30, when VRC-3 gave it the
+`motionCore` edge its conversion returns values from. Nothing about the fixture
+changed; what changed is the prefix it needs, which the driver reads from
+PACKAGE_CONTRACT.md rather than from a list kept here.
 
 The driver installs the package and its required packages into a scratch prefix
 holding nothing else, configures the fixture against that prefix alone, builds

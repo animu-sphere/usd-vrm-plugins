@@ -251,7 +251,7 @@ An adapter is a plain library under `adapters/`, never in the aggregate product
 | --- | --- | --- | --- | --- | --- | --- |
 | `vrmAdapterVmc` | `vrmAdapterVmc::vrmAdapterVmc` | `include/vrmAdapterVmc/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport`, `osc` | inherited from `liveTransport` | no | **measured** |
 | `vrmAdapterMocopi` | `vrmAdapterMocopi::vrmAdapterMocopi` | `include/vrmAdapterMocopi/` | `pxr`, `motionCore`, `motionRuntime`, `liveTransport` | inherited from `liveTransport` | no | **measured** — including the raw-library half of [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113), on both POSIX platforms |
-| `vrmAdapterVrchatOsc` | `vrmAdapterVrchatOsc::vrmAdapterVrchatOsc` | `include/vrmAdapterVrchatOsc/` | `liveTransport`, `osc` | inherited from `liveTransport` | no | **measured** |
+| `vrmAdapterVrchatOsc` | `vrmAdapterVrchatOsc::vrmAdapterVrchatOsc` | `include/vrmAdapterVrchatOsc/` | `pxr`, `motionCore`, `liveTransport`, `osc` | inherited from `liveTransport` | no | **measured** |
 | `vrmAdapterArdy` | reserved | reserved | reserved | — | no | not applicable |
 
 `vrmAdapterVmc` is the second row to say **measured**, on 2026-08-29, and it is
@@ -290,11 +290,41 @@ OSC-3 fix added and leaves the other four, and criterion 3 refuses it by name:
 package has defined it*. That is the failure every one of the 17 lanes was
 structurally unable to produce.
 
-**`vrmAdapterVrchatOsc` requires no `pxr`, `motionCore` or `motionRuntime`, and
-that is its current shape rather than an omission.** It ships no semantic
-decoder, so nothing in the library holds a canonical value; those three rows
-arrive with the code that produces one, and this table is where a reviewer
-should notice they are missing when it does.
+**`vrmAdapterVrchatOsc` gained `pxr` and `motionCore` on 2026-08-30, and the
+paragraph this replaces predicted it.** That paragraph said the two rows were
+absent because the library held no canonical value, that they would "arrive with
+the code that produces one", and that this table was where a reviewer should
+notice. VRC-3 is that code — the sender's axes into the canonical basis, which
+is a `GfVec3f` and a `GfQuatf` — so the row grew by two and the closure grew to
+reach OpenUSD's value-type layer.
+
+`motionRuntime` is still absent, and that absence is the same kind of statement
+the other two used to be: it is what an adapter takes when it produces a
+**pose**, and a tracker observation is pre-IK. It arrives with VRC-5's solve or
+it does not arrive at all.
+
+**Nothing here was caught by a check, and that is worth one sentence.**
+`scripts/check_docs.py` refuses a `*Config.cmake.in` with no row and a row
+naming no package; it does not compare a row's *required packages* against the
+`find_dependency` calls in the config it points at. This row was updated by
+hand, in the change that made it wrong, and the driver below is what proved the
+update rather than the review — since `check_package_consumer.py` reads this
+table to build the prefix, a row that under-states its edges installs too little
+and the consumer fails to configure. That is a good failure mode and not a
+substitute for the check.
+
+**The cell says *measured* because it was measured again**, on 2026-08-30 with
+the new edge in place: `python scripts/run_package_consumer_lane.py --package
+vrmAdapterVrchatOsc` on a Windows workstation, criteria 1–5 met, criterion 6
+left to PKG-4's lane. The closure it records is **fourteen** entries, where the
+pre-VRC-3 one reached no OpenUSD at all — `Dbghelp.lib`, `Python3::Python`,
+`Shlwapi.lib`, `TBB::tbb`, `Ws2_32.lib`, `arch`, `boost`, `gf`,
+`liveTransport::liveTransport`,
+`motionCore::motionCore`, `osc::osc`, `python`, `tf`, `ws2_32` — which is the
+same shape `vrmAdapterVmc`'s carries, double `ws2_32` spelling included: once
+from this package's transport edge and once, capitalised, from OpenUSD's `arch`.
+A measurement that was true about an older package is not a fourth value for
+this cell (§3), so re-running it was the requirement rather than the courtesy.
 
 **All three adapters are measured, and all three cells say *(Windows)*.** Every
 adapter inherits its platform dependency from `liveTransport`, which is the one
@@ -448,12 +478,20 @@ on the same rule the driver follows.
 
 The third row would be a hole if the attribution were assumed, so it is checked:
 **a package whose contract closure reaches no external required package must
-carry none of these at all.** That is a strong statement about exactly the four
-rows where it can be strong — `osc`, `vrmContainer`, `liveTransport` and
-`vrmAdapterVrchatOsc` have no `pxr` anywhere in their closure, so a foreign
-entry in one of them is a defect with nothing to blame it on. For the eight rows
-that do reach OpenUSD, the differences are recorded in the lane's output rather
-than failed, and the reason is stated where a reviewer reads it.
+carry none of these at all.** That is a strong statement about exactly the rows
+where it can be strong — `osc`, `vrmContainer` and `liveTransport` have no `pxr`
+anywhere in their closure, so a foreign entry in one of them is a defect with
+nothing to blame it on. For the rows that do reach OpenUSD, the differences are
+recorded in the lane's output rather than failed, and the reason is stated where
+a reviewer reads it.
+
+**That set was four rows until 2026-08-30 and is now three.**
+`vrmAdapterVrchatOsc` left it by taking the `motionCore` edge in VRC-3, which is
+the transition this section describes rather than a hole in it: the strong
+statement is available to a package for exactly as long as its contract closure
+stays inside this workspace, and an adapter that produces a canonical value has
+left that condition on purpose. The nine rows that reach OpenUSD are the nine
+this document's other cells already say do.
 
 Two rules hold for every entry whatever its class, because each is a package
 exporting its build rather than its interface: **no absolute path**, and **no

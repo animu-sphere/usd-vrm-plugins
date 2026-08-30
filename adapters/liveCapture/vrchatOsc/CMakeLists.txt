@@ -6,23 +6,33 @@
 # and ships no plugInfo.json (WORKSPACE.md §1). The CLI that may retarget and
 # author a stage is a separate tool under tools/.
 #
-# ## Two link lines, and what is still not on them
+# ## Three link lines, and the one that is still not here
 #
-# `liveTransport` and `osc`. WORKSPACE.md §2 permits an adapter four edges; the
-# other two — motionCore and motionRuntime — are what an adapter takes when it
-# has canonical values to produce, and it still produces none. A tracker
-# observation is not a pose: what this adapter reads out of a datagram is a
-# tracker identity, a channel and three floats in the sender's own space, which
-# is an observation rather than motion (osc-and-vrchat-trackers.md §5, §9). The
-# two remaining edges arrive with the solve, not with the decoder.
+# `liveTransport`, `osc` and — since VRC-3 — `motionCore`. WORKSPACE.md §2
+# permits an adapter four edges, and the fourth, `motionRuntime`, is what an
+# adapter takes when it produces a *pose*; this one still produces none. What
+# VRC-3 added is one layer below that: a tracker observation in the canonical
+# basis, which is a value the rest of this repository can read and therefore a
+# `GfVec3f` and a `GfQuatf` (osc-and-vrchat-trackers.md §5, §9).
 #
-# The link line grew and the consequence VRC-0 measured did not change, which is
-# worth stating because that milestone predicted the opposite. It said this
-# adapter's closure holds no OpenUSD, and that this would change when a decoder
-# arrived. It has not: `osc` links nothing at all, not even a socket, so nothing
-# here needs Gf's DLL directory on PATH and the boundary check's allowlist of
-# value-type libraries is still a check that the closure stays *empty*. The
-# prediction was about a decoder that produces a pose, and this is not one yet.
+# **The edge is taken for the value types**, and no `motion::` type is named in
+# this library yet. That is the contract's route rather than a convenience:
+# §2 gives an adapter `motionCore` and does not give it `pxr`, so Gf arrives
+# through the library whose contract already carries it, and the boundary check
+# holds the allowlist that says which OpenUSD libraries may follow.
+#
+# **The closure grows here, exactly once.** VRC-0 recorded that this adapter's
+# binaries imported no OpenUSD at all and predicted that a decoder producing a
+# canonical value would change it; VRC-2 arrived and it did not, because `osc`
+# links nothing. VRC-3 is the one that does: the suite that calls the conversion
+# now loads usd_gf and its dependencies, which is why tests/ gained a PATH
+# modification on Windows.
+#
+# What the boundary check inspects had to change with it, and the reason is in
+# this line: a **static** library contributes only the objects a binary
+# references, so an exe that calls none of `TrackingSpace.cpp` imports none of
+# what that file links. tests/CMakeLists.txt carries the rule that came out of
+# it.
 
 cmake_minimum_required(VERSION 3.22)
 
@@ -64,6 +74,11 @@ endif()
 if(NOT TARGET osc::osc)
     find_package(osc REQUIRED CONFIG)
 endif()
+# The value types, by the route WORKSPACE.md §2 gives an adapter: Gf arrives
+# through motionCore and never through a direct `find_package(pxr)` here.
+if(NOT TARGET motionCore::motionCore)
+    find_package(motionCore REQUIRED CONFIG)
+endif()
 
 # Four files. Two of them exist because a shared library may not hold what is
 # in them: a code table, and the map from a transport event to one of its rows
@@ -80,10 +95,15 @@ endif()
 # floats become three floats this adapter is willing to name (VRC-2). It is
 # still not a pose — position and rotation arrive on separate addresses and the
 # window they belong to is VRC-4's — so the link line below is unchanged by it.
+# `TrackingSpace.cpp` is the fifth and the first to produce a value outside this
+# adapter's own vocabulary: the sender's axes into the canonical ones, measured
+# from a labelled session rather than read off VRChat's documentation (VRC-3).
+# It is the file the motionCore edge below exists for.
 add_library(vrmAdapterVrchatOsc STATIC
     src/AddressInventory.cpp
     src/Diagnostics.cpp
     src/TrackerMessage.cpp
+    src/TrackingSpace.cpp
     src/UdpReceiver.cpp)
 add_library(vrmAdapterVrchatOsc::vrmAdapterVrchatOsc ALIAS vrmAdapterVrchatOsc)
 set_target_properties(vrmAdapterVrchatOsc PROPERTIES
@@ -96,14 +116,17 @@ target_include_directories(vrmAdapterVrchatOsc
     PUBLIC
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
         "$<INSTALL_INTERFACE:include>")
-# Both edges this library has. The platform's socket and its threading
+# The three edges this library has. The platform's socket and its threading
 # primitive arrive behind the first, as they do for both siblings since OSC-2;
-# nothing at all arrives behind the second, which is the measurement that keeps
-# this adapter's closure free of OpenUSD.
+# nothing at all arrives behind the second; and OpenUSD's value-type layer
+# arrives behind the third, which is the change VRC-3 makes to this binary's
+# closure. All three are PUBLIC because the installed headers name types from
+# each.
 target_link_libraries(vrmAdapterVrchatOsc
     PUBLIC
         liveTransport::liveTransport
-        osc::osc)
+        osc::osc
+        motionCore::motionCore)
 
 if(MSVC)
     # PUBLIC for the same reason the siblings use it: the installed headers

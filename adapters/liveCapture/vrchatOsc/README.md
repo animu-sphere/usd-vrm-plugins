@@ -9,13 +9,16 @@ UDP datagram → OSC decode → tracker semantics → tracking-space normalisati
              → tracker frame → (a generic humanoid solve) → HumanoidPose
 ```
 
-**Status: a recorder, a measured inventory, and a tracker decoder** (VRC-2,
-2026-08-30). What exists is the library's identity and its two edges, the
+**Status: a recorder, a measured inventory, a tracker decoder and a measured
+tracking space** (VRC-3, 2026-08-30). What exists is the library's identity and
+its three edges, the
 [frozen diagnostic set](include/vrmAdapterVrchatOsc/Diagnostics.h), the
 [recorded-packet format](include/vrmAdapterVrchatOsc/PacketCapture.h), the
 [receiver seam](include/vrmAdapterVrchatOsc/UdpReceiver.h) onto the shared
 transport, the [address inventory](include/vrmAdapterVrchatOsc/AddressInventory.h),
-the [tracker decoder](include/vrmAdapterVrchatOsc/TrackerMessage.h) and
+the [tracker decoder](include/vrmAdapterVrchatOsc/TrackerMessage.h),
+[the change of basis](include/vrmAdapterVrchatOsc/TrackingSpace.h) measured from
+a labelled session,
 [the generated corpus](tests/corpus/generated/README.md) it replays, and
 [**`vrchat_osc_record`**](tools/vrchatOscRecord/README.md) — the CLI that turns a
 sender aimed at this machine into a capture file and reads one back.
@@ -23,7 +26,11 @@ sender aimed at this machine into a capture file and reads one back.
 **What a decoded message is, and what it deliberately is not.** A known address
 becomes a tracker identity, a channel and three floats *verbatim* — no basis
 change, no unit, no normalisation, because a documented tracking space is a
-hypothesis until a recorded rest pose agrees with it (VRC-3). It is a
+hypothesis until a recorded rest pose agrees with it. It does now:
+[`TrackingSpace.h`](include/vrmAdapterVrchatOsc/TrackingSpace.h) is where the
+conversion lives, one layer up, and
+[report 03](../../../docs/reports/motion/03-2026-08-30-vrchat-osc-tracking-space.md)
+is the measurement. It is a
 `TrackerMessage` rather than the plan's `TrackerSample` because position and
 rotation arrive in **separate datagrams**: a message decoder that returned a
 sample would default the other half, and a defaulted rotation of (0, 0, 0) is
@@ -133,24 +140,40 @@ third copy of a file is what that inheritance *is*.
 
 ## Edges
 
-Two: `liveTransport` and `osc`.
+Three: `motionCore`, `liveTransport` and `osc`.
 
-WORKSPACE.md §2 permits an adapter four — `motionCore`, `motionRuntime`,
-`liveTransport` and `osc` — and the two core ones are what an adapter takes when
-it has canonical values to produce. This one has none yet: an address and a type
-tag are facts about a capture, not motion. Declaring them would claim a
-dependency the library does not have.
+WORKSPACE.md §2 permits an adapter four, and the fourth — `motionRuntime` — is
+what an adapter takes when it produces a **pose**. This one produces none: a
+tracker observation is pre-IK, and the solve that makes it a pose is generic and
+lives outside this directory. Declaring it would claim a dependency the library
+does not have.
+
+`motionCore` arrived with VRC-3, which is the first code here that produces a
+canonical value — the sender's axes into the canonical basis, which is a
+`GfVec3f` and a `GfQuatf`. **The edge is taken for the value types**, and no
+`motion::` type is named in the library yet: §2 gives an adapter `motionCore`
+and does not give it `pxr`, so Gf arrives through the library whose contract
+already carries it.
 
 One consequence worth knowing before reading a build log: **this adapter's test
-binaries load no OpenUSD at all**, because Gf arrives through `motionCore` and
-`motionCore` is not linked. Both siblings need OpenUSD's DLL directory on `PATH`
-for `ctest`; this one does not.
+binaries now load OpenUSD**, so `ctest` needs Gf's DLL directory on `PATH` on
+Windows exactly as both siblings do — `tests/CMakeLists.txt` puts it there, and
+without it a test exits `0xC0000135` rather than failing.
 
-That survived the decoder arriving, which the VRC-0 version of this paragraph
-predicted it would not — it said "until a decoder produces a pose". `osc` links
-nothing at all, not even a socket, so the link line grew and the closure did not.
-The prediction was about a decoder that produces a *pose*, and it still holds for
-that one.
+That is the transition the two previous versions of this paragraph predicted and
+neither produced. VRC-0's said the closure would grow when a decoder arrived;
+VRC-2's decoder arrived and it did not, because `osc` links nothing at all, not
+even a socket. Producing a canonical value is what does it.
+
+**The boundary check needed one change to notice**, and it was found in review
+rather than by the check. A static archive contributes only the objects a binary
+references, so `vrmAdapterVrchatOsc_tests` — which names nothing in
+`TrackingSpace.cpp` — still imports no OpenUSD, and the gate pointed at it would
+have passed whatever that file reached for. It now inspects the conversion's own
+suite, which is the binary linking the widest layer this adapter touches;
+`tests/CMakeLists.txt` carries the rule for the next file that reaches a new
+one. With that fixed the value-type allowlist — `arch`, `boost`, `gf`, `python`,
+`tf`, `vt` — is the check it was written as, and the closure grew *inside* it.
 
 No adapter may depend on another. Through VRC-0 that rule guarded something real
 here: `vrmAdapterVmc` held the only OSC decoder in this repository and this
