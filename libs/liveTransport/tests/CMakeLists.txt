@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
-# Two executables, and the small number is deliberate.
+# Three executables, and the small number is deliberate.
 #
 # The socket, the capture format and the two adapters' diagnostic tables are
 # already covered exhaustively by the suites that travelled with them — those
@@ -11,6 +11,11 @@
 # What is here is what could not exist before: the internal header's two
 # decisions, which no adapter could hold without diverging from its sibling, and
 # the vehicle carrying a code set that belongs to neither adapter.
+#
+# The third arrived later and by the same rule. The `p` line -- which peer sent
+# a record -- was added to the format after the extraction, and it is transport
+# identity rather than protocol: no adapter's suite owns it, and a decoder may
+# not read it. Its test names a magic that is nobody's.
 
 # NDEBUG compiles `assert()` away, and the root CMakeLists defaults
 # single-config builds to Release -- so a suite built the normal way would print
@@ -31,8 +36,14 @@ target_include_directories(liveTransport_pollTimeout_tests
 # The diagnostic vehicle, against a code set this library has never seen.
 add_executable(liveTransport_diagnostics_tests test_diagnostics.cpp)
 
+# The capture format's one line that belongs to no adapter, and the
+# compatibility claim two corpora rest on: a capture whose records name no
+# peer is written exactly as it was before the line existed.
+add_executable(liveTransport_packetCapture_tests test_packet_capture.cpp)
+
 foreach(_live_transport_test liveTransport_pollTimeout_tests
-                             liveTransport_diagnostics_tests)
+                             liveTransport_diagnostics_tests
+                             liveTransport_packetCapture_tests)
     target_link_libraries(${_live_transport_test}
         PRIVATE liveTransport::liveTransport)
     target_compile_options(${_live_transport_test}
@@ -49,10 +60,12 @@ add_test(NAME liveTransport_pollTimeout
          COMMAND liveTransport_pollTimeout_tests)
 add_test(NAME liveTransport_diagnostics
          COMMAND liveTransport_diagnostics_tests)
+add_test(NAME liveTransport_packetCapture
+         COMMAND liveTransport_packetCapture_tests)
 
-# No ENVIRONMENT_MODIFICATION for the runtime's bin/ on either, and here that is
-# a statement rather than an oversight: this library links no OpenUSD on any
-# platform, so there is nothing for a loader to find. The boundary check below
+# No ENVIRONMENT_MODIFICATION for the runtime's bin/ on any of the three, and
+# here that is a statement rather than an oversight: this library links no
+# OpenUSD on any platform, so there is nothing for a loader to find. The boundary check below
 # asserts exactly that against the built binary.
 
 if(Python3_Interpreter_FOUND)

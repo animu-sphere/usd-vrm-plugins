@@ -327,8 +327,12 @@ RunInspect(const mocopiRecordTool::Options& options)
     mocopiRecordTool::SessionReport report;
     for (const vrmAdapterMocopi::RecordedDatagram& datagram :
          capture.datagrams) {
-        report.ObserveDatagram(capture.peerEndpoint, datagram.bytes.data(),
-                               datagram.bytes.size(), datagram.receiveTime);
+        // The record's own peer where the capture carries one, and the
+        // header's where it does not.
+        report.ObserveDatagram(datagram.peer.empty() ? capture.peerEndpoint
+                                                     : datagram.peer,
+                               datagram.bytes.data(), datagram.bytes.size(),
+                               datagram.receiveTime);
     }
 
     bool exported = true;
@@ -411,7 +415,7 @@ RunRecord(const mocopiRecordTool::Options& options)
             // the rule costs nothing to keep, and it is the rule the file's
             // whole value rests on.
             capture.datagrams.push_back(vrmAdapterMocopi::RecordedDatagram{
-                datagram.receiveTime, datagram.bytes});
+                datagram.receiveTime, datagram.peer, datagram.bytes});
             if (capture.peerEndpoint.empty()) {
                 capture.peerEndpoint = datagram.peer;
             }

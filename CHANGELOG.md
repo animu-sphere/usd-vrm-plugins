@@ -177,6 +177,47 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **A packet capture can say who sent each datagram, which is the only
+  restart marker one of the three wires has.** The `liveTransport` capture
+  format gains a `p <endpoint>` line: it names the peer of every record
+  after it until the next one, `p -` says the peer of what follows is
+  unknown, and `RecordedDatagram` carries a `peer` beside its bytes. Before
+  it, a capture named one peer in its **header** for a whole file — which
+  was free until a mocopi `VRChat (OSC)` session was recorded stopping and
+  starting again: that sender marks a restart with a new ephemeral source
+  port and with **nothing else**, no session identifier, no rest table and
+  no handshake, so the live session saw two peers and `--inspect` on the
+  same capture reported one
+  ([report 02](docs/reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §4).
+  Every fixture-driven test of restart behaviour was therefore exercising
+  the silence and not the identity change, which is the difference between
+  a source that paused and a second source that began.
+
+  **No committed fixture changes a byte, and that is the property the
+  spelling was chosen for.** The writer emits a `p` line only where a
+  record's peer differs from the one before it, so a capture whose records
+  name nobody is written exactly as it was — which is also why the format
+  version stays at 1: the reader compares it for equality, so a bump would
+  refuse every fixture in two corpora and turn an addition nothing yet
+  reads into a whole-corpus rewrite. A change of peer is one line in a diff
+  rather than one line per datagram, and the `d` record line is untouched,
+  so the strictness that refuses `d 0.5 24 stray` is intact.
+
+  All three recorders write the peer they received, and all three
+  `--inspect` paths report the record's own peer where a capture carries
+  one and the header's where it does not — so a capture of a two-peer
+  session now reports two. The claim is measured in both directions: with
+  the reader and writer reverted, `liveTransport_packetCapture` fails at
+  its first peer assertion, and with the `--inspect` change reverted the
+  recorder's harness reports `1 (192.168.1.8:51662)`, which is the exact
+  reading report 02 recorded. A peer is transport identity and no decoder
+  is given one.
+
+  New CTest name: `liveTransport_packetCapture`. It is the first test of
+  this format in the library that owns it — the three adapters' suites
+  test their own magic — and the `p` line belongs to no adapter, so its
+  magic is one nobody uses.
+
 - **An artifact-only smoke for the BVH path**
   (`scripts/artifact_only_bvh_smoke.py`), which closes the v0.7.0 release
   condition *both paths running from release artifacts alone, profiles

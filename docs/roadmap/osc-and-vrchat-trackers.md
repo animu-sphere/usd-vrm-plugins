@@ -1012,8 +1012,8 @@ depends on them ([docs/README.md](../README.md)).
   the answer than after. Nothing in VMC or in the VRChat tracker surface sends a
   `t` argument, so it blocks nothing; it is here so the extraction decides it
   rather than inherits it. Belongs with OSC-3.
-- ⬜ **A capture cannot carry the only restart marker this wire has.** Measured
-  2026-08-30
+- ✅ **A capture can carry the only restart marker this wire has** *(landed
+  2026-08-30, after being measured the same day)*. Measured
   ([report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §4):
   this sender marks a restart with a new ephemeral **source port** and with
   nothing else — no session identifier, no rest table, no handshake — and
@@ -1025,12 +1025,39 @@ depends on them ([docs/README.md](../README.md)).
   cannot separate a session that paused from a second session that began, which
   is what `Reset` versus `Refuse` is made of.
 
-  It is a **format** question and therefore not this adapter's to answer alone:
-  a per-record peer, or a header list of them, touches `liveTransport`, three
-  adapters, and every committed fixture in two corpora. Which of those it is —
-  and whether the native corpus's restart fixture wants re-recording afterwards —
-  belongs in a change of its own, ahead of VRC-4, which is the milestone that
-  first needs to tell the two apart. Blocks nothing before VRC-4.
+  It was a **format** question and therefore not this adapter's to answer
+  alone: a per-record peer, or a header list of them, touches
+  `liveTransport`, three adapters, and every committed fixture in two
+  corpora. It landed as its own change ahead of VRC-4, which is the
+  milestone that first needs to tell the two apart.
+
+  **A per-record peer, and the header list was never the alternative it
+  looked like**: a list says a file saw two senders and still cannot say
+  which datagram came from which, so it answers the count and not the
+  question. The format gains `p <endpoint>`, naming the peer of every
+  record after it until the next one, with `p -` for the peer that has
+  gone away — carried forward rather than repeated, so a restart is two
+  lines in a fixture and not one line per datagram.
+
+  **No committed fixture changed a byte**, which is what made it a small
+  change rather than a corpus migration: the writer emits a `p` only where
+  the peer changes, so a capture whose records name nobody is written
+  exactly as it was, and the format version stays at 1 because the reader
+  compares it for equality — a bump would refuse both corpora outright.
+  The `d` line is untouched too, so the strictness that refuses a fourth
+  token on a record survives.
+
+  The evidence is in both directions. `liveTransport_packetCapture` is the
+  first test of this format in the library that owns it — the three
+  adapters' suites test their own magic, and this line belongs to no
+  adapter — and it fails at its first peer assertion against the reverted
+  reader and writer. With the `--inspect` change reverted, the recorder's
+  own harness reports `1 (192.168.1.8:51662)` for a two-session capture,
+  which is the reading report 02 measured; with it, two. **What this does
+  not do is re-record anything**: the native corpus's restart fixture was
+  recorded before a file could carry a peer and still cannot say which
+  session a datagram belongs to, so a restart fixture that carries the
+  identity is a new recording rather than a re-read of an old one.
 - ⬜ **A tracker observation has no representation in the motion contract.**
   `motionCore` carries `HumanoidPose`, which is post-solve. Whether a
   pre-IK tracker sample needs a contract there — a generic `TrackingSource` or

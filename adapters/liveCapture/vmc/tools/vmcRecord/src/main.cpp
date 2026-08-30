@@ -194,8 +194,11 @@ RunInspect(const vmcRecordTool::Options& options)
     vmcRecordTool::TraceCollector trace;
     std::vector<vrmAdapterVmc::Diagnostic> log;
     for (const vrmAdapterVmc::RecordedDatagram& datagram : capture.datagrams) {
-        report.ObserveDatagram(capture.peerEndpoint, datagram.bytes.size(),
-                               datagram.receiveTime);
+        // The record's own peer where the capture carries one, and the
+        // header's where it does not.
+        report.ObserveDatagram(datagram.peer.empty() ? capture.peerEndpoint
+                                                     : datagram.peer,
+                               datagram.bytes.size(), datagram.receiveTime);
         source.PushDatagram(datagram.bytes, datagram.receiveTime, &log);
         report.ObserveFrames(source.GetFramesFromLastPush());
         trace.Observe(source.GetFramesFromLastPush(),
@@ -280,6 +283,7 @@ RunRecord(const vmcRecordTool::Options& options)
             // Recorded first. See the header: this order is the rule.
             capture.datagrams.push_back(
                 vrmAdapterVmc::RecordedDatagram{datagram.receiveTime,
+                                                datagram.peer,
                                                 datagram.bytes});
             if (capture.peerEndpoint.empty()) {
                 capture.peerEndpoint = datagram.peer;

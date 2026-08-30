@@ -169,9 +169,18 @@ struct TransportEventReport
 // these outside it and pays for no allocation per packet.
 //
 // This is deliberately not `RecordedDatagram`, which is the *file format's*
-// record and carries no peer: a capture names one peer in its header, where a
-// live socket learns a possibly different one per datagram. A recording tool
-// copies `bytes` and `receiveTime` across and keeps `peer` for its diagnosis.
+// record: this one is reused, so nothing may hold it past the next `Receive`,
+// and that one is owned by a capture and outlives the socket entirely.
+//
+// **The peer is no longer the difference between them.** It was until
+// 2026-08-30: a capture named one peer in its header where a live socket
+// learns a possibly different one per datagram, and this comment recorded that
+// asymmetry as deliberate. It was, and then it acquired a cost — a VRChat OSC
+// session marks a restart with a new ephemeral source port and with nothing
+// else, so the only restart marker that wire has died at the file boundary
+// (PacketCapture.h, `p <endpoint>`). A recording tool now copies all three
+// fields across, and a replayed capture can tell a source that paused from a
+// second source that began.
 struct ReceivedDatagram
 {
     std::vector<std::uint8_t> bytes;

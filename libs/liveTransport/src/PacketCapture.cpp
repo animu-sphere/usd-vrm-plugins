@@ -186,6 +186,13 @@ ReadPacketCapture(std::string_view magic, std::istream& input,
     std::optional<RecordedDatagram> open;
     std::size_t declared = 0;
     std::optional<double> previousReceiveTime;
+    // The peer in force, from the last 'p' line. Empty means the capture has
+    // not named one -- either it carries no 'p' at all, or the last one was
+    // the explicit unknown. `sawPeerLine` is what ends the header: a 'p'
+    // belongs to the record stream, so a header key after one is as late as
+    // a header key after a datagram.
+    std::string peer;
+    bool sawPeerLine = false;
 
     std::string line;
     std::size_t lineNumber = 0;
@@ -225,6 +232,30 @@ ReadPacketCapture(std::string_view magic, std::istream& input,
                 return false;
             }
             sawMagic = true;
+            continue;
+        }
+
+        if (keyword == "p") {
+            // Inside a record this would otherwise reach ReadHexLine and be
+            // refused as a bad hex token, which names the symptom rather
+            // than the mistake: a record's bytes are contiguous by
+            // construction, and nothing may sit between them.
+            if (open) {
+                return Fail(error, lineNumber,
+                            "a 'p' line cannot appear inside a record");
+            }
+            std::string value;
+            if (!(stream >> value)) {
+                return Fail(error, lineNumber, "'p' needs a peer");
+            }
+            if (!FullyConsumed(stream, error, lineNumber, "the 'p' peer")) {
+                return false;
+            }
+            // '-' is the one spelling an endpoint cannot have, and it says
+            // the one thing an omission cannot once a peer has been named:
+            // from here on the capture does not know who sent these.
+            peer = (value == "-") ? std::string() : value;
+            sawPeerLine = true;
             continue;
         }
 
@@ -282,6 +313,7 @@ ReadPacketCapture(std::string_view magic, std::istream& input,
 
             RecordedDatagram datagram;
             datagram.receiveTime = receiveTime;
+            datagram.peer = peer;
             datagram.bytes.reserve(declared);
             if (declared == 0) {
                 // A zero-length datagram is complete the moment it is declared.
@@ -307,8 +339,9 @@ ReadPacketCapture(std::string_view magic, std::istream& input,
 
         // The header describes the whole capture, so it precedes every record.
         // A header key after the first record is refused rather than applied
-        // retroactively to datagrams already read.
-        if (result.datagrams.empty()) {
+        // retroactively to datagrams already read -- and a 'p' line is part
+        // of the record stream, so it closes the header just as a record does.
+        if (result.datagrams.empty() && !sawPeerLine) {
             std::string* field = nullptr;
             if (keyword == "sender") {
                 field = &result.sender;
@@ -400,9 +433,32 @@ WritePacketCapture(std::string_view magic, std::ostream& output,
         output << "peer " << capture.peerEndpoint << '\n';
     }
 
+    // The peer already emitted. A 'p' line is written only where a record's
+    // peer differs from the one before it, which is what keeps a capture
+    // whose records carry no peer byte-identical to one written before this
+    // line existed -- and what makes a change of peer one line in a diff
+    // rather than one line per datagram.
+    std::string emittedPeer;
+    bool emittedAnyPeer = false;
+
     for (const RecordedDatagram& datagram : capture.datagrams) {
-        output << '\n'
-               << "d " << datagram.receiveTime << ' ' << datagram.bytes.size()
+        // The leading records of a capture that names no peer emit nothing:
+        // an empty peer is worth the explicit '-' only once a peer has been
+        // named and has then gone away.
+        const bool peerChanged =
+            datagram.peer != emittedPeer
+            && (emittedAnyPeer || !datagram.peer.empty());
+
+        output << '\n';
+        if (peerChanged) {
+            // The record follows immediately, so the 'p' reads as opening
+            // the run it governs rather than as closing the one above it.
+            output << "p " << (datagram.peer.empty() ? "-" : datagram.peer)
+                   << '\n';
+            emittedPeer = datagram.peer;
+            emittedAnyPeer = true;
+        }
+        output << "d " << datagram.receiveTime << ' ' << datagram.bytes.size()
                << '\n';
 
         const std::size_t size = datagram.bytes.size();

@@ -153,7 +153,8 @@ def gutter(payload: bytes) -> str:
 
 
 def write_capture(path: pathlib.Path, header: dict[str, str],
-                  records: list[tuple[float, bytes]]) -> None:
+                  records: list[tuple[float, bytes]],
+                  peers: list[str] | None = None) -> None:
     """A second implementation of the writer, in the format's own terms.
 
     The gutter is emitted rather than omitted even though the reader treats it as
@@ -165,8 +166,17 @@ def write_capture(path: pathlib.Path, header: dict[str, str],
     for key in ("sender", "device", "sourceId", "listen", "peer"):
         if header.get(key):
             lines.append(f"{key} {header[key]}")
-    for receive_time, payload in records:
+    # A `p` line only where the peer changes, which is the writer's rule and
+    # the reason a restart is two lines in a fixture rather than one per
+    # datagram.
+    emitted = ""
+    emitted_any = False
+    for index, (receive_time, payload) in enumerate(records):
+        peer = peers[index] if peers else ""
         lines.append("")
+        if peer != emitted and (emitted_any or peer):
+            lines.append(f"p {peer if peer else '-'}")
+            emitted, emitted_any = peer, True
         lines.append(f"d {receive_time:.6f} {len(payload)}")
         for offset in range(0, len(payload), 16):
             chunk = payload[offset:offset + 16]
@@ -178,23 +188,37 @@ def write_capture(path: pathlib.Path, header: dict[str, str],
     path.write_bytes(("\n".join(lines) + "\n").encode("utf-8"))
 
 
-def read_capture(path: pathlib.Path) -> tuple[dict[str, str], list[bytes]]:
-    """Header fields and payloads, per datagram and never concatenated."""
+def read_capture(
+        path: pathlib.Path) -> tuple[dict[str, str], list[bytes], list[str]]:
+    """Header fields, payloads per datagram, and the peer each record carries.
+
+    The peer is carried forward from the last `p` line, which is the format's
+    own rule: a `p` names the sender of every record after it until the next
+    one, and `p -` says the sender of what follows is unknown. A capture with
+    no `p` line yields an empty string per record, which is what every fixture
+    written before the line existed does -- so a test that does not care about
+    peers reads the same payloads it always did.
+    """
     header: dict[str, str] = {}
     payloads: list[bytearray] = []
+    peers: list[str] = []
+    peer = ""
     for line in path.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("#") or stripped.startswith("!"):
             continue
         tokens = stripped.split()
-        if tokens[0] == "d":
+        if tokens[0] == "p":
+            peer = "" if tokens[1] == "-" else tokens[1]
+        elif tokens[0] == "d":
             payloads.append(bytearray())
+            peers.append(peer)
         elif not payloads:
             header[tokens[0]] = " ".join(tokens[1:])
         else:
             payloads[-1] += bytes.fromhex(
                 stripped.split("|")[0].replace(" ", ""))
-    return header, [bytes(payload) for payload in payloads]
+    return header, [bytes(payload) for payload in payloads], peers
 
 
 def report_prefix_bytes(text: str) -> bytes | None:
@@ -754,7 +778,7 @@ def check_loopback(tool: pathlib.Path, workspace: pathlib.Path) -> None:
         fail("a loopback session did not warn before receiving anything")
 
     # The claim this tool exists for.
-    header, recorded = read_capture(output)
+    header, recorded, _ = read_capture(output)
     if recorded != payloads:
         fail(f"the recorded datagrams are not the ones that were sent: "
              f"{len(recorded)} recorded, {len(payloads)} sent")
@@ -821,7 +845,7 @@ def check_stop_reasons(tool: pathlib.Path, workspace: pathlib.Path) -> None:
     if lines.get("stopped") != "--max-datagrams reached":
         fail(f"expected --max-datagrams to stop the session, got "
              f"'{lines.get('stopped')}'")
-    _, bounded_payloads = read_capture(bounded)
+    _, bounded_payloads, _ = read_capture(bounded)
     if bounded_payloads != distinct[:3]:
         fail(f"a bounded session recorded {len(bounded_payloads)} datagram(s), "
              f"expected the first 3 that arrived")
@@ -915,10 +939,23 @@ def check_peer_count(tool: pathlib.Path, workspace: pathlib.Path) -> None:
     # not.
     if peers.count(",") != 4 or not peers.endswith("...)"):
         fail(f"expected four named peers and an ellipsis, got '{peers}'")
-    if len(read_capture(output)[1]) != len(ports) * len(payloads):
+    _, recorded, recorded_peers = read_capture(output)
+    if len(recorded) != len(ports) * len(payloads):
         fail("a multi-peer session did not record every datagram")
+    # And the file says which host sent which datagram, which the header
+    # alone cannot: it names one peer for six. Six hosts, three datagrams
+    # each, so every port appears exactly three times.
+    if len(recorded_peers) != len(recorded):
+        fail("the capture did not carry a peer for every record")
+    ports_recorded = sorted(
+        int(peer.rsplit(":", 1)[1]) for peer in recorded_peers)
+    if ports_recorded != sorted(port for port in ports
+                                for _ in payloads):
+        fail(f"the capture recorded ports {ports_recorded}, expected each "
+             f"of {sorted(ports)} three times")
 
-    print("mocopi_record: six peers are counted as six and named as four")
+    print("mocopi_record: six peers are counted as six, named as four, and "
+          "recorded per datagram")
 
 
 def check_silence(tool: pathlib.Path, workspace: pathlib.Path) -> None:
@@ -972,7 +1009,7 @@ def check_silence(tool: pathlib.Path, workspace: pathlib.Path) -> None:
         fail(f"a device that is not there yet is recoverable, so the code is a "
              f"warning: '{diagnostics}'")
 
-    _, recorded = read_capture(output)
+    _, recorded, _ = read_capture(output)
     if recorded != payloads:
         fail(f"the session did not continue past the silence report: "
              f"{len(recorded)} datagram(s) recorded of {len(payloads)}")
@@ -1004,7 +1041,7 @@ def check_ipv6(tool: pathlib.Path, workspace: pathlib.Path) -> int:
     # The receiver takes an IPv6 address rather than refusing one, because a
     # socket inventing a restriction on itself from a product's documentation is
     # the wrong layer for it. So the datagrams do arrive.
-    _, recorded = read_capture(output)
+    _, recorded, _ = read_capture(output)
     if recorded != payloads:
         fail(f"an IPv6 session recorded {len(recorded)} datagram(s) of "
              f"{len(payloads)}; the receiver is documented to take the address")
