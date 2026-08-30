@@ -1251,14 +1251,39 @@ depends on them ([docs/README.md](../README.md)).
   fixture per outcome, and a contract that pre-empted it would be deciding an
   implementation it could not see, exactly as the transport ring's magic and
   timeout were left to OSC-2. VRC-4a decides it.
-- ⬜ **A tracker observation has no representation in the motion contract.**
-  `motionCore` carries `HumanoidPose`, which is post-solve. Whether a
-  pre-IK tracker sample needs a contract there — a generic `TrackingSource` or
-  tracker-sample type — or stays entirely inside the adapter until it becomes a
-  pose is VRC-5's question, and it is the one place this plan could push a
-  VRChat-shaped type into a vendor-neutral library. **No VRChat-specific type
-  enters `motionCore` under any outcome**; if the generic form is not clear, the
-  adapter keeps its own and the contract stays unwritten. Blocks VRC-5.
+- ✅ **A tracker observation has no representation in the motion contract**
+  *(answered 2026-08-31, in its own change ahead of VRC-5's code)*. `motionCore`
+  carries `HumanoidPose`, which is post-solve, and the question was which of two
+  answers to take: a generic tracker-sample type there, or nothing there at all
+  and the observation stays in the adapter until it becomes a pose.
+
+  **Neither, and the third answer was in the tree already.** The question was
+  posed when the only two places to put anything were `motionCore` and an
+  adapter; VRC-4a's `libs/motionTracking` is a third, and it is the layer that
+  already holds two of [§5.1](#51-assignment-is-a-third-thing-and-it-belongs-to-neither-end)'s
+  three decisions. So the observation lands beside the vocabulary and the
+  assignment, where the solve that consumes it lives.
+
+  **What settled it against `motionCore` is who would read one.** Every consumer
+  of that header takes a pose — retarget, the trace format, the comparison
+  semantics, the exec nodes — so a tracker sample there would be a value with
+  no reader in the aggregate product, carrying an equality, a comparison and a
+  trace-format obligation regardless, because
+  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md) requires all three of
+  anything added to the value types. And what settles it against the adapter is
+  the milestone itself: a solve inside an adapter is the second motion pipeline
+  [adapter plan §2](adapters-mocopi-vmc-ardy.md#2-what-an-adapter-is-allowed-to-be)
+  forbids, so an observation that never left the adapter would have kept the
+  solve there with it.
+
+  **The edge is the price, and it is one line.** `motionTracking -> motionCore`
+  leaves the forbidden list for the solve alone
+  ([WORKSPACE.md](../architecture/WORKSPACE.md) §2); the region vocabulary and
+  the assignment keep the empty edge set they were given, and the alias
+  prohibition is unchanged — what the boundary check does in exchange is scope
+  its bone rule to the two files that must never name one, rather than drop it.
+  **No VRChat-specific type enters `motionCore` under any outcome** still holds,
+  and now holds trivially: nothing about a tracker enters it at all.
 - ⬜ **The live-source bridge**, carried by
   [adapter plan §11](adapters-mocopi-vmc-ardy.md#11-contract-changes-this-plan-requires)
   and unchanged in substance. This plan supplies its third instance

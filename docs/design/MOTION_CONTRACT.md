@@ -1,4 +1,4 @@
-# Motion contract (v0.3.0, extended in v0.4.0, v0.5.0, v0.6.0 and v0.7.0)
+# Motion contract (v0.3.0, extended in v0.4.0 through v0.8.0)
 
 This is the executable contract frozen by **Motion Phase A**. It gives
 `motionCore` and `usdVrmaFileFormat` one vocabulary without making either a
@@ -9,9 +9,13 @@ silently reinterpret these fields.
 v0.4.0 extends it with the **Motion Phase C retarget semantics**, v0.5.0 with
 the **Motion Phase D live-capture semantics**, v0.6.0 with **comparison
 semantics**, and v0.7.0 with **expression semantics**, **recorded-source
-provenance** and the **root and hips record**, all below. Nothing above those sections changed: the v0.3.0 fields
-mean exactly what they meant, and each later phase is a new consumer of them
-rather than a reinterpretation.
+provenance** and the **root and hips record**, all below. v0.8.0 adds one
+section that is a boundary rather than a field — **where a tracker observation
+is not** — and adds no type here at all.
+
+Nothing above those sections changed: the v0.3.0 fields mean exactly what
+they meant, and each later phase is a new consumer of them rather than a
+reinterpretation.
 
 ## Scope
 
@@ -705,3 +709,67 @@ a per-sender profile exists to do properly.
 both channels' movement reported separately — which `vmc_record` already does,
 because it reports them as movement rather than as meaning. That is an operator's
 work and not a code milestone.
+
+## Tracker observations, and where they are not (v0.8.0)
+
+A **tracker source** observes numbered devices rather than bones: a position and
+an orientation in the receiving application's tracking space, under an identity
+that is an index into whatever the wearer strapped on
+([the OSC track](../roadmap/osc-and-vrchat-trackers.md) §5). It is pre-IK, and it
+is a fourth producer category beside the recorded source, the live pose source
+and the generated source.
+
+**It gets no type in `motionCore`, and that is a decision rather than a
+deferral.** The question was left open in [the track](../roadmap/osc-and-vrchat-trackers.md)
+§10 with two candidate answers — a generic `TrackingSource` or tracker-sample
+type here, or nothing here at all — and it is settled by asking what would read
+one. Every consumer of this header takes a pose: `vrmRetarget` maps bones onto a
+target rig, the `motion-capture-trace` format serialises poses, the comparison
+semantics compare them, and the OpenExec nodes evaluate them. A tracker sample
+reaching this file would be a value with no reader in the aggregate product and
+three standing obligations anyway — equality, comparison, and a place in the
+trace format, which the rule above requires of *anything* added to the value
+types. So the boundary this contract draws stays where it was: **`motionCore`
+begins at the canonical pose**, and what a device observed before one existed is
+somebody else's type.
+
+**Whose:** `motionTracking`, which already holds two of the three decisions
+[§5.1](../roadmap/osc-and-vrchat-trackers.md#51-assignment-is-a-third-thing-and-it-belongs-to-neither-end)
+separates — the region vocabulary and the operator's assignment — and now holds
+the third. That library takes an edge to this one and never the reverse
+([WORKSPACE.md §2](../architecture/WORKSPACE.md)), which is what lets a solve
+produce a `HumanoidPose` while nothing in `motionCore` learns that a tracker
+exists. It is also the reason no adapter is involved: a solve inside an adapter
+would be the second motion pipeline the whole layer exists to prevent, and a
+VRChat-shaped observation type here would be the first vendor value in a
+vendor-neutral library.
+
+**What a tracker-driven pose is, as a value.** An ordinary `HumanoidPose`, and
+sparse by construction: a rig of three to eleven trackers observes a handful of
+places on a body, so `validRotations` carries what the solve authored and
+nothing else, exactly as a clip that omits a bone does. Nothing new is added to
+the pose for this producer — no tracker identity, no per-bone provenance — and a
+consumer that cannot tell a tracker-driven pose from a clip-driven one is
+reading the value correctly. `MotionSourceMetadata` is where a producer says
+what it was.
+
+**Root and hips are the existing rule, not a second one.** A hips tracker is a
+body translation observed at one place, which is the case the root/hips record
+above already answers: it is `RootMotion::worldPosition`, the same rotation is
+`RootMotion::worldOrientation`, and it remains the `HumanBone::Hips` local
+rotation. A tracker path that invented a second convention would make two
+observations of one session incomparable field for field, which is the cost that
+record was written to stop paying.
+
+**What this section deliberately does not decide** is what a solve *does* — which
+regions it can place, what it does with an observed position it cannot use, and
+what it refuses. That is behaviour with a fixture per outcome, and it belongs to
+VRC-5 rather than here, on the same rule the transport ring's magic and timeout
+followed: a contract that pre-empted an implementation it could not see would be
+deciding the wrong half.
+
+The **tracking state** item this contract still owes its consumers is unchanged
+by any of this. `validRotations` says absent and `confidence` says uncertain;
+neither says *the source is connected and has stopped solving*, and a tracker
+rig — where a device can go dark mid-session while the stream continues — is the
+third producer to want the distinction rather than the first to answer it.
