@@ -9,26 +9,35 @@ UDP datagram → OSC decode → tracker semantics → tracking-space normalisati
              → tracker frame → (a generic humanoid solve) → HumanoidPose
 ```
 
-**Status: recorder, and a measured inventory of what a real session contains**
-(2026-08-30 —
-[report 02](../../../docs/reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md)).
-What exists
-is the library's identity and its two edges, the
+**Status: a recorder, a measured inventory, and a tracker decoder** (VRC-2,
+2026-08-30). What exists is the library's identity and its two edges, the
 [frozen diagnostic set](include/vrmAdapterVrchatOsc/Diagnostics.h), the
 [recorded-packet format](include/vrmAdapterVrchatOsc/PacketCapture.h), the
 [receiver seam](include/vrmAdapterVrchatOsc/UdpReceiver.h) onto the shared
 transport, the [address inventory](include/vrmAdapterVrchatOsc/AddressInventory.h),
-and [**`vrchat_osc_record`**](tools/vrchatOscRecord/README.md) — the CLI that
-turns a sender aimed at this machine into a capture file and reads one back.
+the [tracker decoder](include/vrmAdapterVrchatOsc/TrackerMessage.h) and
+[the generated corpus](tests/corpus/generated/README.md) it replays, and
+[**`vrchat_osc_record`**](tools/vrchatOscRecord/README.md) — the CLI that turns a
+sender aimed at this machine into a capture file and reads one back.
 
-**There is no *semantic* decoder, and that is the milestone rather than a gap.**
-Nothing here knows that `/tracking/trackers/1/position` is a tracker or that `1`
-is an index. The inventory reads OSC's grammar — where an address ends, what its
-type tags are — and counts what it finds; giving a row a meaning is VRC-2's. See
-[the plan](../../../docs/roadmap/osc-and-vrchat-trackers.md) §6 and VRC-0 for the
-order, and the two sections below for why an adapter over a *published*
-specification still records before it decodes, and why the humanoid solve is not
-here.
+**What a decoded message is, and what it deliberately is not.** A known address
+becomes a tracker identity, a channel and three floats *verbatim* — no basis
+change, no unit, no normalisation, because a documented tracking space is a
+hypothesis until a recorded rest pose agrees with it (VRC-3). It is a
+`TrackerMessage` rather than the plan's `TrackerSample` because position and
+rotation arrive in **separate datagrams**: a message decoder that returned a
+sample would default the other half, and a defaulted rotation of (0, 0, 0) is
+bit-for-bit what a tracker at rest reports. Assembling the two, and raising
+`VRM_VRCHAT_OSC_TRACKER_PARTIAL` when only one arrives, is VRC-4's — a single
+message is always partial, so a layer that reported it would warn about once a
+datagram forever.
+
+**No humanoid is resolved anywhere here**, and none will be: a tracker index is
+not a body role, assignment is a generic policy outside this adapter, and the
+solve is the motion layer's. See
+[the plan](../../../docs/roadmap/osc-and-vrchat-trackers.md) §5 and §5.1, and the
+two sections below for why an adapter over a *published* specification still
+records before it decodes.
 
 ## The specification is published, and the recorder still comes first
 
@@ -82,9 +91,9 @@ another, decided by a calibration the receiving application performs.
 
 Two consequences shape everything above:
 
-- **This adapter stops at a tracker frame.** Turning trackers into humanoid
-  semantics is a solve, and a solve written inside a vendor adapter is a second
-  motion pipeline. It is a separate and generic boundary (VRC-5), and **no
+- **This adapter stops at a tracker observation, and then at a tracker frame.**
+  Turning trackers into humanoid semantics is a solve, and a solve written
+  inside a vendor adapter is a second motion pipeline. It is a separate and generic boundary (VRC-5), and **no
   VRChat-shaped type enters `motionCore` under any outcome**: if the generic form
   is not clear, this adapter keeps its own and the contract stays unwritten.
 - **The diagnostic set says things neither sibling's can.** A tracker can report
@@ -182,17 +191,36 @@ from the transport ring. That library's receiver raises two events a caller must
 tell apart; a decoder makes one distinction, decodable or not. So each adapter
 maps one refusal onto one of its own codes, and here that is
 `VRM_VRCHAT_OSC_PACKET_MALFORMED`, raised from
-[`src/AddressInventory.cpp`](src/AddressInventory.cpp) and nowhere else so far.
+[`src/AddressInventory.cpp`](src/AddressInventory.cpp) and
+[`src/TrackerMessage.cpp`](src/TrackerMessage.cpp).
+
+**Seven of the ten are raised today**: five from the decode path — malformed,
+unsupported, argument mismatch, bad tracker id, bad coordinate — and two from
+[`src/UdpReceiver.cpp`](src/UdpReceiver.cpp), which has raised `SOURCE_TIMEOUT`
+and `SOCKET_BIND_FAILED` since VRC-0 because a receiver had them before a
+decoder existed.
+
+The three that are not are `TRACKER_PARTIAL`, `SOURCE_RESTARTED` and
+`CALIBRATION_REQUIRED`, and what they have in common is the argument for
+freezing a code set before writing a decoder. Two need a layer that remembers
+the previous frame, which is VRC-4's. The third has **no recorded behaviour
+behind it at all** — the application was calibrated before every take of the
+2026-08-30 session, so nothing here has ever seen an uncalibrated stream — and it
+stays frozen and unraised on the same terms `VRM_MOCOPI_TRACKING_LOST` did. A
+set written after the decoder would contain none of the three.
 
 ## Layout
 
 ```text
 include/vrmAdapterVrchatOsc/   Diagnostics, the capture magic, the receiver seam,
-                               the address inventory
-src/                           the code table, the event → code map, and the
+                               the address inventory, the tracker decoder
+src/                           the code table, the event → code map, the
                                inventory (the first file here that reads a byte)
-tests/                         unit, format, inventory, socket, boundary
-tests/corpus/                  empty by design until VRC-1 and VRC-2
+                               and the decoder (the first that reads a meaning)
+tests/                         unit, format, inventory, tracker, socket, boundary
+tests/corpus/generated/        twelve captures, written from the measured session
+tests/corpus/recorded/         a manifest and no bytes, by policy
+tools/generate_packets.py      what writes the generated half
 tools/vrchatOscRecord/         the CLI
 ```
 

@@ -9,13 +9,13 @@ endif()
 # be checked without a socket, what needs one, and what needs a socket this
 # runner may not have.
 #
-# None of the three takes a corpus argument, and that absence is the milestone
-# rather than an omission. The sibling tools' equivalent suites read committed
-# captures because there are some; this adapter's corpus is empty until a device
-# session and a decoder exist (VRC-1, VRC-2), so these checks author their own
-# bytes in Python -- which makes the reader check independent of the writer, and
-# is what lets the loopback name assert VRC-0's done-condition end to end rather
-# than through the C++ that produced it.
+# None of the three takes a corpus argument, and that is now a choice rather than
+# a consequence: the generated corpus arrived with VRC-2, and these checks still
+# author their own bytes in Python. That is what makes the reader check
+# independent of the writer, and what lets the loopback name assert VRC-0's
+# done-condition end to end rather than through the C++ that produced it. A tool
+# suite fed by this repository's own C++ writer would agree with it by
+# construction.
 add_test(NAME vrchat_osc_record_inspect
     COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_CURRENT_SOURCE_DIR}/test_vrchat_osc_record.py"

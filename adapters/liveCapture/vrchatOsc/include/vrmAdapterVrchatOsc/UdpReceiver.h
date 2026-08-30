@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 //
-// The socket, and the only thing this adapter does with it before a decoder
-// exists.
+// The socket, and the only thing this adapter does with it.
 //
-//     [ UdpReceiver ] -> datagram -> a capture file -> (VRC-2) a decoder
+//     [ UdpReceiver ] -> datagram -> a capture file -> a decoder
+//
+// It still decodes nothing itself, and that is unchanged by the decoder having
+// arrived (VRC-2): a receiver that filtered its own input would make a corpus a
+// description of what the receiver let through.
 //
 // Caller-driven throughout: no thread, no callback, no work between calls, and
 // no decoding at all — `Receive` hands back the bytes exactly as they arrived,
@@ -27,7 +30,10 @@
 // and name VRChat's default port; that is a menu entry, and this repository does
 // not infer a packet shape from one. So the recorder lands first, the inventory
 // is measured from real datagrams (VRC-1), and the decoder is designed from the
-// inventory (VRC-2).
+// inventory (VRC-2). That order was followed and it paid: the inventory found a
+// tracker identity that is a *name* where every reading of the specification
+// puts an index, and a decoder written the other way round would have dropped
+// it silently.
 //
 // ## What is in this file, and why it is not the socket
 //

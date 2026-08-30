@@ -26,8 +26,10 @@
 // order, with arrival order deliberately discarded. A capture records what the
 // adapter was *given*, in arrival order, including the packets it will refuse.
 // Nothing in this repository can write the trace half for this adapter yet, and
-// that is VRC-0's boundary rather than a gap: there is no decoder, so there is
-// nothing decoded to write down.
+// the reason narrowed at VRC-2 rather than going away: there is now a decoder,
+// and what it produces is a tracker observation in the sender's own space. A
+// trace carries canonical poses, so the missing piece is the solve (VRC-5) and
+// not the decode.
 //
 // ## Why the magic is still per adapter
 //

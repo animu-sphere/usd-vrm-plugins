@@ -227,6 +227,57 @@ Current schema contract version: **1**.
   on the way at identical length, so the byte offsets it asserts are the same
   numbers they were.
 
+- **`vrmAdapterVrchatOsc` decodes tracker messages** (VRC-2). A known address
+  becomes a tracker identity, a channel and three floats
+  ([`TrackerMessage.h`](adapters/liveCapture/vrchatOsc/include/vrmAdapterVrchatOsc/TrackerMessage.h));
+  an unknown one is `VRM_VRCHAT_OSC_UNSUPPORTED_ADDRESS` and the session
+  continues. Nothing is converted on the way through: the values are the
+  sender's own, in the sender's own space, because a documented basis is a
+  hypothesis until a recorded rest pose agrees with it and that is VRC-3's.
+
+  **Four decisions in it come from the recorded session rather than from
+  VRChat's specification**, which is what VRC-1 was measured for:
+
+  - **The identity holds a number and a name.** `head` sits in the same path
+    position as `1`, `2` and `3`, so a decoder reading that segment as an
+    integer drops the head and reports nothing wrong. It is the first line of
+    the first test.
+  - **`,fff` exactly, where the sibling would count the extra.**
+    `vrmAdapterVmc` reads the form it knows and counts arguments past it,
+    because VMC's messages grew by appending fields to a leading form that
+    stayed what it was. Here the *arity is the meaning*: a rotation is three
+    floats and therefore Euler, and a four-float rotation is a quaternion whose
+    first three components are not Euler angles. So it is refused, quoting both
+    tag strings, rather than half-read.
+  - **A bad identity is not an unsupported address.** `0`, `9`, `01` and `hip`
+    are `TRACKER_ID_INVALID`; `/avatar/parameters/...` and
+    `/tracking/trackers/1/velocity` are `UNSUPPORTED_ADDRESS`. Collapsing the
+    two would make a sender's bad index indistinguishable from a part of
+    VRChat's surface nobody has implemented yet.
+  - **It decodes to a `TrackerMessage`, not to the plan's `TrackerSample`.**
+    Position and rotation arrive in separate datagrams, so no single message can
+    fill both halves of a sample — and a defaulted rotation of (0, 0, 0) is
+    bit-for-bit what a tracker at rest reports, which the reader could not tell
+    from a measurement. The sample, the window it is assembled over and
+    `TRACKER_PARTIAL` are all VRC-4's, and that code is raised nowhere in this
+    change on purpose: a single message is always partial.
+
+  **The generated corpus lands with it** — twelve captures written by
+  [`tools/generate_packets.py`](adapters/liveCapture/vrchatOsc/tools/generate_packets.py)
+  from the measured shapes, replayed by `vrmAdapterVrchatOsc_trackerCorpus`
+  against counts derived from the generator's structure, and re-checked against
+  the generator itself by `vrmAdapterVrchatOsc_packetGen`.
+
+  **Exactly one of the twelve is the session's own shape**, and the manifest
+  says which per capture rather than leaving it to be inferred: `session` for
+  that one, `derived` for the five whose every address and ordering the session
+  carried but whose arrangement it did not — one tracker alone, no head, a
+  single channel sustained, a permanent dropout — and `unobserved` for the six
+  carrying something it never sent at all, each with its reason. A corpus that
+  cannot say how far a recording stands behind each of its fixtures is one a
+  later reader has to guess about. The recorded half of that corpus still
+  carries no bytes, and that is policy rather than a gap.
+
 - **An address inventory for `vrmAdapterVrchatOsc`.** What a recorded session
   actually contains, counted from bytes: one row per address *and type tag
   string*, with message and datagram counts and the span each row covers.

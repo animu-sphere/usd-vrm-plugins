@@ -508,7 +508,7 @@ they are a frozen surface with golden tests over their formatted form.
 | VRC-0 — adapter scaffold and raw capture | adapter | ✅ |
 | OSC-3 — second OSC consumer, then extract `libs/osc` | foundation | ✅ |
 | VRC-1 — real mocopi capture and address inventory | adapter | ✅ |
-| VRC-2 — tracker semantic decode | adapter | ⬜ |
+| VRC-2 — tracker semantic decode | adapter | ✅ |
 | VRC-3 — tracking-space normalisation | adapter | ⬜ |
 | VRC-4 — tracker frame assembly | adapter | ⬜ |
 | VRC-5 — the humanoid solve boundary | adapter | ⬜ |
@@ -666,6 +666,74 @@ costs.
 Known addresses decode to `TrackerSample`s; argument counts and type tags are
 validated; an unknown VRChat OSC address is `VRM_VRCHAT_OSC_UNSUPPORTED_ADDRESS`
 and the session continues. Generated corpus lands here; recorded corpus replays.
+
+**Done 2026-08-30** —
+[`TrackerMessage.h`](../../adapters/liveCapture/vrchatOsc/include/vrmAdapterVrchatOsc/TrackerMessage.h),
+its suite, and twelve generated captures written by
+[`tools/generate_packets.py`](../../adapters/liveCapture/vrchatOsc/tools/generate_packets.py)
+from report 02's measurements. The counts the corpus is replayed against come
+from the generator's *structure* rather than from a run, a capture with no
+expectation in the test fails, and six mutations of the decoder — the head
+segment unread, type tags matched as a prefix, a bad identity reported as an
+unsupported address, a non-finite component let through, components reordered,
+an out-of-range index accepted — each fail both the unit suite and the corpus
+replay, with the restored source green.
+
+**It decodes to a `TrackerMessage`, and this section's first paragraph says
+`TrackerSample`.** The difference is this wire's rather than a liberty taken
+with the plan: [§5](#5-a-tracker-source-is-not-a-pose-source)'s sample carries a
+position *and* a rotation, and on this wire those arrive in **separate
+datagrams**, so no message decoder can fill both halves of one. A decoder that
+returned a sample per message would default the other half — and a defaulted
+rotation of (0, 0, 0) is bit-for-bit what a tracker at rest reports, so the
+reader could not tell the invented value from the measured one. The sample is
+therefore constructed by [VRC-4](#vrc-4--tracker-frame-assembly), which owns the
+window that makes two messages one observation, and `TRACKER_PARTIAL` is raised
+there rather than here: a single message is *always* partial, so a message layer
+that reported it would warn about once a datagram forever.
+
+Three more decisions the session settled, each of which a specification would
+have settled the other way:
+
+- **The identity is the path segment, and the index is a reading of it.** `head`
+  has no index and every table in this adapter keys on the segment, so the head
+  is never a special case in ordering, grouping or equality — it is a tracker
+  whose name is not a number.
+- **`,fff` exactly, where `vrmAdapterVmc` counts arguments past the form it
+  knows.** That sibling's rule is right for a protocol whose messages grew by
+  appending fields to a stable leading form. Here the arity *is* the meaning: a
+  three-float rotation is Euler and a four-float one is a quaternion whose first
+  three components are not Euler angles, so reading the known prefix of a longer
+  form is a confident misreading rather than a partial read. The refusal quotes
+  both tag strings. A sender emitting the four-float form would be *measured*
+  into the table, not assumed into it.
+- **`TRACKER_ID_INVALID` is held apart from `UNSUPPORTED_ADDRESS`.** `0`, `9`,
+  `01` and `hip` are the first; `/avatar/parameters/…` and an unread tracker
+  channel are the second. Collapsing them would make a sender's bad index
+  indistinguishable from a part of VRChat's surface this adapter has not
+  implemented, which is the one distinction an operator reading a session log
+  needs from this layer.
+
+Trackers **4–8 are accepted although nothing here has ever sent one**, and that
+is a decision about VRChat's surface rather than about one sender: refusing them
+would make this decoder call a legal address a protocol violation the first time
+somebody connects a fuller setup.
+
+**One capture of the twelve is the session's own shape**, and the manifest says
+so per capture: `session` for that one, `derived` for five whose every address
+and ordering the session carried but whose arrangement it did not, `unobserved`
+for six carrying something it never sent — the numbered surface above among
+them. A corpus that cannot say how far a recording stands behind each fixture is
+one whose next reader has to guess, and the ratio is worth seeing: this
+protocol's evidence is one measured arrangement, and everything else is
+constructed from it or from the specification.
+
+**What did not land: the recorded corpus does not replay**, because it has no
+bytes and by policy will not get any from that session
+([§7](#7-corpus-policy)). The generated half is the evidence a decoder has; a
+redistributable session would be picked up by the same CTest names with no
+change, and the milestone's replay condition stays open on the file rather than
+on the code.
 
 ### VRC-3 — tracking-space normalisation
 

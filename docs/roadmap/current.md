@@ -149,13 +149,33 @@ test completes with nothing installed.
       inventory carrying no list of expected addresses is what made `head`
       arrive as a row instead of four absences, and a decoder reading that path
       segment as an integer would have dropped it silently)*;
-- [ ] generated fixtures fix the protocol's shapes with no hardware, and
-      recorded fixtures replay deterministically with no client;
+- [x] generated fixtures fix the protocol's shapes with no hardware *(VRC-2,
+      2026-08-30: twelve captures, written from
+      [report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md)'s
+      measurements rather than from VRChat's published surface, and replayed
+      against counts derived from the generator's structure. **One of the twelve
+      is the session's own shape**; the manifest marks five more `derived` — the
+      session's addresses and ordering in an arrangement it did not send — and
+      six `unobserved`, each with its reason, because a corpus that cannot say
+      how far a recording stands behind each fixture is one a later reader has
+      to guess about)*;
+- [ ] recorded fixtures replay deterministically with no client — **open on the
+      bytes, not on the code**: the 2026-08-30 session is manifest-only under
+      [the corpus policy](#standing-corpus-policy--recorded-evidence-is-not-the-generated-corpus),
+      and the three CTest names that read the corpus — `_corpus`,
+      `_trackerCorpus` and `_loopbackCorpus` — would pick a redistributable
+      session up with no change;
 - [ ] tracker position and rotation reach the canonical tracking space, verified
       against a recorded rest pose rather than the documentation alone;
 - [ ] partial sets, timeouts, restarts and calibration discontinuity are stated
       policy with a fixture each, not emergent behaviour;
-- [ ] unknown VRChat OSC traffic is recoverable;
+- [x] unknown VRChat OSC traffic is recoverable *(VRC-2, 2026-08-30:
+      `VRM_VRCHAT_OSC_UNSUPPORTED_ADDRESS` is info and recoverable, the message
+      is dropped and the datagram is not, and the `mixed-traffic` fixture
+      carries avatar parameters, an avatar change, eye tracking and input beside
+      two clean frames. Held apart from `TRACKER_ID_INVALID`, which is what a
+      sender's bad index raises — collapsing the two would make a defect
+      indistinguishable from a part of the surface nobody has implemented)*;
 - [ ] a real session reaches a VRM avatar through **unchanged** `motion_capture`
       and `motion_retarget`, or the solve boundary is documented as the stated
       stopping point and the release claims tracker *input* rather than
