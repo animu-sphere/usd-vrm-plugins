@@ -1,0 +1,259 @@
+{
+  "schemaVersion": 1,
+  "description": "The VRC-1 session: a real mocopi `VRChat (OSC)` stream, recorded and inventoried before any decoder existed. None of its bytes are in this repository and none ever will be -- a tracker position is a real person's motion in a real room, and the six captures below are twenty-second recordings of one. This file is what survives instead, and it is written to be enough for a later reader to tell whether a claim still holds without the bytes. Every numeric field is a reading printed by `vrchat_osc_record`; the cadence, ordering and drop-attribution figures are not here because no shipped tool prints them yet, and they live in the report with the script that produced them named.",
+  "format": {
+    "name": "vrchat-osc-packet-capture",
+    "version": 1,
+    "spec": "adapters/liveCapture/vrchatOsc/include/vrmAdapterVrchatOsc/PacketCapture.h"
+  },
+  "recordedWith": {
+    "tool": "vrchat_osc_record",
+    "toolVersion": "0.7.0",
+    "repositoryCommit": "24ecf63",
+    "note": "The recording path is `liveTransport::UdpReceiver` and `liveTransport::WritePacketCapture` through this adapter's forwarding seam. Nothing on it decodes: the tool that wrote these files could not have told a VRChat address from any other byte string, which is the property that makes them evidence a decoder is built from rather than evidence a decoder agreed with itself."
+  },
+  "measuredWith": {
+    "tool": "vrchat_osc_record --inspect",
+    "toolVersion": "0.7.0",
+    "repositoryCommit": "24ecf63",
+    "date": "2026-08-30",
+    "how": "`vrchat_osc_record --inspect <capture>`, whose output is saved beside each capture as `<capture>.inspect.txt` in the operator's session directory. The address rows are `vrmAdapterVrchatOsc::InventoryAddresses`, keyed on the address *and* the type tag string."
+  },
+  "session": {
+    "date": "2026-08-30",
+    "operator": "the repository owner, recording their own motion",
+    "sender": "mocopi-app-2.7.2",
+    "device": "mocopi-6sensor-iphone16",
+    "transferFormat": "VRChat (OSC)",
+    "network": "IPv4 LAN, device to this host over Wi-Fi, UDP 9000",
+    "redistributionAllowed": false,
+    "redistribution": "NOT carried here and not fetchable. The argument is the mocopi corpus's, unchanged by the protocol: a tracker stream is a measurement of a real person moving in a real room. A redistributable capture for this adapter would have to come from a synthetic sender, and no vendor tool equivalent to mocopi's `BVH Sender` is known for this wire.",
+    "report": "docs/reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md"
+  },
+  "limitations": [
+    "No BVH export accompanies any take, and that is a property of the product rather than of the session: this application records no BVH while it is sending `VRChat (OSC)` (observed on app 2.7.2 during this session), and its transfer format is exclusive so the native wire cannot run alongside either. The VRChat OSC path therefore cannot share a physical take with any other observation of the same motion.",
+    "`peers` in the rows below is what `--inspect` reads from the capture *header*, which holds one endpoint. The `session-restart` take's live report named two -- 192.168.1.8:51662 and 192.168.1.8:50035 -- because the sender takes a new ephemeral source port when streaming restarts. That change is this wire's only restart marker and the format does not carry it; the 4.8452 s gap does survive, so a file shows that something happened and not that the identity changed.",
+    "Nothing here is decoded. No coordinate, sign, unit or scale in any datagram was interpreted, so this manifest makes no claim about tracking space, Euler convention, what a tracker index means on a body, or whether body travel reaches this wire.",
+    "The application was calibrated before every take, so `VRM_VRCHAT_OSC_CALIBRATION_REQUIRED` has no recorded behaviour behind it.",
+    "About a third of the frames this sender emits do not arrive, and from the receiving end alone that is not attributable to the sender, the network or this host. The measurement and the one piece of evidence that points away from the receiver are in the report."
+  ],
+  "commonToEveryCapture": {
+    "addresses": 8,
+    "addressList": [
+      "/tracking/trackers/1/position",
+      "/tracking/trackers/1/rotation",
+      "/tracking/trackers/2/position",
+      "/tracking/trackers/2/rotation",
+      "/tracking/trackers/3/position",
+      "/tracking/trackers/3/rotation",
+      "/tracking/trackers/head/position",
+      "/tracking/trackers/head/rotation"
+    ],
+    "typeTagString": ",fff",
+    "bundledDatagrams": 0,
+    "refusedDatagrams": 0,
+    "distinctLengths": 2,
+    "lengthsBytes": [52, 56],
+    "commonPrefix": "/tracking/trackers/",
+    "note": "The same eight rows appear in all six captures and no take added a ninth -- not the head turn, not the arm raise, not the walk, not the restart. `head` occupies the path position the numbers occupy, so the segment is not an integer. Both lengths follow from the address strings: the two `head` addresses are four bytes longer."
+  },
+  "sessions": [
+    {
+      "file": "123713-probe.vrchatoscpackets",
+      "sha256": "95eef5d23761f071a74536807702c683c684ce4925c9a0c9aa4a28663bc65f65",
+      "bytes": 3963843,
+      "recordedAt": "2026-08-30T12:37:58+09:00",
+      "sourceId": "probe",
+      "pins": "The first VRChat OSC bytes this repository has ever seen, and the capture that answered the milestone on its own. No performance: the operator stood still while reachability, rate and address shape were measured. Kept because it is the longest capture and the one the report's inventory is quoted from.",
+      "measured": {
+        "datagrams": 13918,
+        "payloadBytes": 737732,
+        "receiveSeconds": 45.0051,
+        "peers": 1,
+        "peerEndpoint": "192.168.1.8:58651",
+        "arrivalHzMean": 309.232,
+        "arrivalIntervalSeconds": [0.000002, 0.115478],
+        "lengthCensus": "10419 of 52 byte(s), 3499 of 56",
+        "messagesPerAddress": {
+          "/tracking/trackers/1/position": 1749,
+          "/tracking/trackers/1/rotation": 1674,
+          "/tracking/trackers/2/position": 1750,
+          "/tracking/trackers/2/rotation": 1748,
+          "/tracking/trackers/3/position": 1750,
+          "/tracking/trackers/3/rotation": 1748,
+          "/tracking/trackers/head/position": 1749,
+          "/tracking/trackers/head/rotation": 1750
+        }
+      },
+      "expectedDiagnostics": [],
+      "observations": {
+        "riskAIsReal": "Three numbered trackers and a named `head`, out of a surface that admits eight. The inventory carries no list of addresses it expects, which is what let this arrive as four rows nobody predicted rather than as four absent ones.",
+        "oneAddressLosesMore": "1/rotation is 75 messages short of its neighbours here, 4.3 percent of its own frames. It is short in every take."
+      }
+    },
+    {
+      "file": "124019-neutral-standing.vrchatoscpackets",
+      "sha256": "df9f55cef842438793dce1c29907f27cf52c6c082cf6050e45997818bbaf7847",
+      "bytes": 1767169,
+      "recordedAt": "2026-08-30T12:40:54+09:00",
+      "sourceId": "neutral-standing",
+      "pins": "The floor. What this sender reports when nothing is happening, which is the number every other take is read against.",
+      "measured": {
+        "datagrams": 6200,
+        "payloadBytes": 328616,
+        "receiveSeconds": 20.0528,
+        "peers": 1,
+        "peerEndpoint": "192.168.1.8:63824",
+        "arrivalHzMean": 309.133,
+        "arrivalIntervalSeconds": [0.000002, 0.099626],
+        "lengthCensus": "4646 of 52 byte(s), 1554 of 56",
+        "messagesPerAddress": {
+          "/tracking/trackers/1/position": 777,
+          "/tracking/trackers/1/rotation": 761,
+          "/tracking/trackers/2/position": 777,
+          "/tracking/trackers/2/rotation": 777,
+          "/tracking/trackers/3/position": 777,
+          "/tracking/trackers/3/rotation": 777,
+          "/tracking/trackers/head/position": 778,
+          "/tracking/trackers/head/rotation": 776
+        }
+      },
+      "expectedDiagnostics": [],
+      "observations": {
+        "stillnessDoesNotChangeTheEnvelope": "Eight addresses at the same rate as a take with motion in it. This wire sends the same eight messages whether or not the body is moving, so absence of an address is never how it reports stillness."
+      }
+    },
+    {
+      "file": "124258-head-turn.vrchatoscpackets",
+      "sha256": "e92fcabb378a776f33901704a4a0cc63421cbcc8e4d5b975da224b8371e2e70c",
+      "bytes": 1766130,
+      "recordedAt": "2026-08-30T12:43:24+09:00",
+      "sourceId": "head-turn",
+      "pins": "Isolates the named `head` address against the numbered trackers, so a later decode has a take where one identifiable thing moved and the rest did not.",
+      "measured": {
+        "datagrams": 6200,
+        "payloadBytes": 328608,
+        "receiveSeconds": 19.9368,
+        "peers": 1,
+        "peerEndpoint": "192.168.1.8:56413",
+        "arrivalHzMean": 310.933,
+        "arrivalIntervalSeconds": [0.000002, 0.099544],
+        "lengthCensus": "4648 of 52 byte(s), 1552 of 56",
+        "messagesPerAddress": {
+          "/tracking/trackers/1/position": 776,
+          "/tracking/trackers/1/rotation": 770,
+          "/tracking/trackers/2/position": 776,
+          "/tracking/trackers/2/rotation": 776,
+          "/tracking/trackers/3/position": 775,
+          "/tracking/trackers/3/rotation": 775,
+          "/tracking/trackers/head/position": 776,
+          "/tracking/trackers/head/rotation": 776
+        }
+      },
+      "expectedDiagnostics": [],
+      "observations": {
+        "sequence": "5 s still, head left, centre, right, centre, holding about a second at each."
+      }
+    },
+    {
+      "file": "124721-arm-raise-left.vrchatoscpackets",
+      "sha256": "ec491e291772596863e256eedcab4b91ad8d8cbd95238ce1515ec71933fdfd6f",
+      "bytes": 1767159,
+      "recordedAt": "2026-08-30T12:48:21+09:00",
+      "sourceId": "arm-raise-left",
+      "pins": "Labelled asymmetric motion, with the side written down before the bytes existed. The native corpus's `arm-raise-left` is the same performance on the other wire, and the pair is what a later handedness question is asked against -- though not on the same physical take, which this wire cannot offer.",
+      "measured": {
+        "datagrams": 6200,
+        "payloadBytes": 328608,
+        "receiveSeconds": 19.9688,
+        "peers": 1,
+        "peerEndpoint": "192.168.1.8:51799",
+        "arrivalHzMean": 310.434,
+        "arrivalIntervalSeconds": [0.000002, 0.168279],
+        "lengthCensus": "4648 of 52 byte(s), 1552 of 56",
+        "messagesPerAddress": {
+          "/tracking/trackers/1/position": 776,
+          "/tracking/trackers/1/rotation": 771,
+          "/tracking/trackers/2/position": 775,
+          "/tracking/trackers/2/rotation": 776,
+          "/tracking/trackers/3/position": 775,
+          "/tracking/trackers/3/rotation": 775,
+          "/tracking/trackers/head/position": 776,
+          "/tracking/trackers/head/rotation": 776
+        }
+      },
+      "expectedDiagnostics": [],
+      "observations": {
+        "sequence": "5 s still, LEFT arm raised to horizontal, held 2 s, lowered, still.",
+        "sixSensorsAreNotSixTrackers": "A six-sensor configuration produced three numbered trackers, so an arm raise is not carried by an arm tracker. What these three are is VRC-2's and VRC-4a's, and this take is the labelled evidence for it."
+      }
+    },
+    {
+      "file": "124924-walk-root-motion.vrchatoscpackets",
+      "sha256": "3e2c2c353680e2f35d242f1a6830fe8299525c1d3a5273d859067ee57a7a8d3a",
+      "bytes": 1766485,
+      "recordedAt": "2026-08-30T12:49:51+09:00",
+      "sourceId": "walk-root-motion",
+      "pins": "Body travel, recorded so the question has evidence waiting when a decoder lands. Report 01 found 4.81 m of hips path reaching the recorded path and nothing at all reaching the live one; whether travel reaches this wire is the same question asked of a third transport, and an address inventory cannot answer it.",
+      "measured": {
+        "datagrams": 6200,
+        "payloadBytes": 328604,
+        "receiveSeconds": 19.8733,
+        "peers": 1,
+        "peerEndpoint": "192.168.1.8:52900",
+        "arrivalHzMean": 311.925,
+        "arrivalIntervalSeconds": [0.000002, 0.067421],
+        "lengthCensus": "4649 of 52 byte(s), 1551 of 56",
+        "messagesPerAddress": {
+          "/tracking/trackers/1/position": 776,
+          "/tracking/trackers/1/rotation": 772,
+          "/tracking/trackers/2/position": 775,
+          "/tracking/trackers/2/rotation": 776,
+          "/tracking/trackers/3/position": 775,
+          "/tracking/trackers/3/rotation": 775,
+          "/tracking/trackers/head/position": 775,
+          "/tracking/trackers/head/rotation": 776
+        }
+      },
+      "expectedDiagnostics": [],
+      "observations": {
+        "sequence": "5 s still, four steps forward, four steps back without turning, still.",
+        "noNewAddress": "Walking added no address. If travel reaches this wire it is inside the values of the same eight messages, and if it does not, the absence is also inside them."
+      }
+    },
+    {
+      "file": "125054-session-restart.vrchatoscpackets",
+      "sha256": "e7d3b88ddc1849fc6d21cf7310fd66cca65780662ab43618025d596572b17480",
+      "bytes": 1766712,
+      "recordedAt": "2026-08-30T12:51:26+09:00",
+      "sourceId": "session-restart",
+      "pins": "A restart the sender really performed, against a corpus fixture that could only imitate one. Streaming was stopped in the application mid-recording and started again; the recorder ran through the gap.",
+      "measured": {
+        "datagrams": 6200,
+        "payloadBytes": 328624,
+        "receiveSeconds": 23.5773,
+        "peers": 1,
+        "peerEndpoint": "192.168.1.8:51662",
+        "arrivalHzMean": 262.922,
+        "arrivalIntervalSeconds": [0.000002, 4.84511],
+        "lengthCensus": "4644 of 52 byte(s), 1556 of 56",
+        "messagesPerAddress": {
+          "/tracking/trackers/1/position": 777,
+          "/tracking/trackers/1/rotation": 759,
+          "/tracking/trackers/2/position": 776,
+          "/tracking/trackers/2/rotation": 777,
+          "/tracking/trackers/3/position": 777,
+          "/tracking/trackers/3/rotation": 778,
+          "/tracking/trackers/head/position": 778,
+          "/tracking/trackers/head/rotation": 778
+        }
+      },
+      "expectedDiagnostics": [],
+      "observations": {
+        "peersLiveVersusInFile": "The live session reported two peers, 192.168.1.8:51662 and 192.168.1.8:50035; `--inspect` on the file reports one. The format holds a single header peer by design, so the restart marker this wire actually carries does not survive into a capture. The `peers: 1` above is the file's reading and is correct about the file.",
+        "darkWindow": "4.8452 s from the last datagram of the old session to the first of the new, read as the maximum arrival interval. There is no in-band session identifier, no rest table and no handshake -- unlike the native wire, where a restarted session is dark for 3.88 s because it waits for the device to repeat its rest table. Here the stream simply resumes.",
+        "silenceWasReported": "`VRM_VRCHAT_OSC_SOURCE_TIMEOUT` fired during the recording, at the head of the take rather than in the gap: the operator's five seconds before streaming started exceeded the tool's `--silence-timeout 5`, and the 4.85 s gap did not. It is a receiver-level diagnostic and so is not in `expectedDiagnostics`, which lists what a decode of the file raises."
+      }
+    }
+  ]
+}

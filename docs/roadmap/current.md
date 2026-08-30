@@ -139,14 +139,16 @@ test completes with nothing installed.
 
 **VRChat OSC**
 
-- [ ] a real mocopi `VRChat (OSC)` session is captured and its addresses, type
+- [x] a real mocopi `VRChat (OSC)` session is captured and its addresses, type
       tags and cadence are inventoried **before** a decoder is written *(VRC-0 /
-      VRC-1: the recorder and the inventory both exist —
-      `adapters/liveCapture/vrchatOsc/`, and `vrchat_osc_record --inspect`
-      prints one row per address *and type tag string*, carrying no list of
-      addresses it expects, which is the property this line needs. **The session
-      needs an operator and a device**, and this line closes on the session
-      rather than on the tool)*;
+      VRC-1, 2026-08-30: six captures, 44 918 datagrams,
+      [report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md).
+      **Eight addresses — three numbered trackers and a named `head`**, every one
+      `,fff`, one message per datagram, no bundles, in a fixed eight-datagram
+      cycle inside a median 0.053 ms; ~58 Hz emitted and ~39 Hz delivered. The
+      inventory carrying no list of expected addresses is what made `head`
+      arrive as a row instead of four absences, and a decoder reading that path
+      segment as an integer would have dropped it silently)*;
 - [ ] generated fixtures fix the protocol's shapes with no hardware, and
       recorded fixtures replay deterministically with no client;
 - [ ] tracker position and rotation reach the canonical tracking space, verified
@@ -161,8 +163,15 @@ test completes with nothing installed.
 
 **Cross-source**
 
-- [ ] the same physical session is observed on native UDP, VRChat OSC and the
-      BVH export, and compared at the canonical layer;
+- [ ] ~~the same physical session is observed on native UDP, VRChat OSC and the
+      BVH export~~ — **not producible on this sender, measured 2026-08-30**: its
+      transfer format is exclusive *and* it records no BVH while sending OSC, so
+      this path cannot share a take with any other observation
+      ([report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §5).
+      What replaces it: the same labelled sequences, performed separately, and
+      compared at the canonical layer for what each path carries and drops — the
+      per-sample timing agreement report 01 measured is what that costs, and no
+      tolerance widening buys it back;
 - [ ] every difference is classified — including a *solve difference*, which is
       a category no previous comparison could attribute — rather than absorbed
       by widening a tolerance;

@@ -507,7 +507,7 @@ they are a frozen surface with golden tests over their formatted form.
 | OSC-2 — extract the transport ring | foundation | ✅ |
 | VRC-0 — adapter scaffold and raw capture | adapter | ✅ |
 | OSC-3 — second OSC consumer, then extract `libs/osc` | foundation | ✅ |
-| VRC-1 — real mocopi capture and address inventory | adapter | 🚧 |
+| VRC-1 — real mocopi capture and address inventory | adapter | ✅ |
 | VRC-2 — tracker semantic decode | adapter | ⬜ |
 | VRC-3 — tracking-space normalisation | adapter | ⬜ |
 | VRC-4 — tracker frame assembly | adapter | ⬜ |
@@ -598,7 +598,43 @@ measurement report, and it is the input to VRC-2's design. Done when the
 inventory answers, from bytes, which subset of the VRChat OSC Trackers surface
 this sender actually uses.
 
-**The tool exists as of 2026-08-29 and the session does not.**
+**Done 2026-08-30** — six captures, 44 918 datagrams, and the measurement is
+[report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) with
+[the session manifest](../../adapters/liveCapture/vrchatOsc/tests/corpus/recorded/manifests/2026-08-30-mocopi-vrchat-osc.json)
+beside it. **The subset is eight addresses**: three numbered trackers and a named
+`head`, each with `position` and `rotation`, every one of them `,fff`, one
+message per datagram and no bundle anywhere.
+
+Four things that milestone bought, none of which a specification would have
+given:
+
+- **`head` is a name in the position an integer occupies**, so a decoder that
+  parses that segment as an index drops the head and reports nothing wrong. This
+  is the row that justifies the whole capture-before-decode order.
+- **A rotation is three floats**, not four, so the Euler convention becomes
+  VRC-3's problem against a recorded rest pose.
+- **The eight arrive as a burst in a fixed cycle** — `head` first, rotation
+  before position, 99.7 % of consecutive pairs advancing one step, the whole
+  cycle inside a median 0.053 ms — which is VRC-4's frame boundary handed to it
+  as a measurement.
+- **About a third of the frames never arrive**, the sender aiming at ~58 Hz and
+  delivering ~39, with the residual single-address loss falling 96 % on
+  `/tracking/trackers/1/rotation`. Not attributable from the receiving end, and
+  the concrete case behind `VRM_VRCHAT_OSC_TRACKER_PARTIAL`.
+
+**One finding lands outside this adapter.** A restart on this wire is marked by
+the sender's *source port* and by nothing else — no session id, no rest table, no
+handshake — and the capture format carries one peer in its header and none per
+datagram, so that marker does not survive into a file. The live session saw two
+peers; `--inspect` on the same capture sees one. The asymmetry is deliberate and
+documented in
+[`liveTransport/UdpReceiver.h`](../../libs/liveTransport/include/liveTransport/UdpReceiver.h);
+what is new is that it now has a measured cost, because a fixture-driven restart
+test can exercise the silence and not the identity change. Widening the format
+touches a shared library, three adapters and two committed corpora, so it is
+scheduled rather than done — see [§10](#10-contract-changes-this-plan-requires).
+
+**The tool it was measured with predates the session.**
 `vrmAdapterVrchatOsc::InventoryAddresses` and `vrchat_osc_record --inspect`
 produce one row per address *and type tag string* a capture carried, with
 message and datagram counts and the span each row covers. The pair is the key
@@ -606,17 +642,24 @@ rather than the address, because a sender that spells one address two ways is
 the finding a table keyed on the address alone would average away.
 
 It carries **no list of addresses it expects**, which is the property this
-milestone actually needs: the risk being tested is that mocopi's `VRChat (OSC)`
-output is not the tracker subset anyone assumes, and an inventory that reported
-absences of expected rows would answer a different question. An address nobody
-predicted appears as a row.
+milestone actually needed and the reason the result reads the way it does: an
+inventory that reported absences of expected rows would have said *four
+predicted trackers are missing*, where this one said **`head` is here and is not
+a number**. The risk being tested was that mocopi's `VRChat (OSC)` output is not
+the tracker subset anyone assumes, and an address nobody predicted appeared as a
+row.
 
 Every datagram in both suites is built byte by byte, and the tool's test encodes
 OSC in Python rather than calling anything the tool links — so a decoder that
 agreed with this repository's own encoder and with nothing else fails it.
 
-What remains is an operator and a device, on the same terms as VRC-0's
-done-condition: this milestone closes on a session, not on a tool.
+Two things this milestone did **not** produce, both of them properties of the
+product rather than of the session, and both of them now facts the plan is built
+on rather than risks it carries: no take has a BVH export beside it, because this
+application records none while sending OSC; and no take shares a physical
+performance with a native-wire recording, because the transfer format is
+exclusive. [§11](#11-the-fourth-observation-of-one-session) carries what that
+costs.
 
 ### VRC-2 — tracker semantic decode
 
@@ -818,6 +861,25 @@ depends on them ([docs/README.md](../README.md)).
   the answer than after. Nothing in VMC or in the VRChat tracker surface sends a
   `t` argument, so it blocks nothing; it is here so the extraction decides it
   rather than inherits it. Belongs with OSC-3.
+- ⬜ **A capture cannot carry the only restart marker this wire has.** Measured
+  2026-08-30
+  ([report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §4):
+  this sender marks a restart with a new ephemeral **source port** and with
+  nothing else — no session identifier, no rest table, no handshake — and
+  `liveTransport`'s capture format holds one `peer` in its header and none per
+  datagram. The live session saw two peers; `--inspect` on that capture sees one.
+  The asymmetry is deliberate and `UdpReceiver.h` states it; what changed is that
+  it now has a cost, because every fixture-driven test of restart behaviour
+  exercises the silence and not the identity change — and the silence alone
+  cannot separate a session that paused from a second session that began, which
+  is what `Reset` versus `Refuse` is made of.
+
+  It is a **format** question and therefore not this adapter's to answer alone:
+  a per-record peer, or a header list of them, touches `liveTransport`, three
+  adapters, and every committed fixture in two corpora. Which of those it is —
+  and whether the native corpus's restart fixture wants re-recording afterwards —
+  belongs in a change of its own, ahead of VRC-4, which is the milestone that
+  first needs to tell the two apart. Blocks nothing before VRC-4.
 - ⬜ **A tracker observation has no representation in the motion contract.**
   `motionCore` carries `HumanoidPose`, which is post-solve. Whether a
   pre-IK tracker sample needs a contract there — a generic `TrackingSource` or
@@ -876,6 +938,40 @@ tolerance.** The completion condition is not "all four agree" — it is that wha
 each path carries and what each path drops is written down from evidence, with
 the same discipline that produced report 01's finding that 4.81 m of hips travel
 reaches the recorded path and nothing at all reaches the live one.
+
+### One physical session is not available, and that is measured
+
+**Amended 2026-08-30, from the VRC-1 session**
+([report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §5).
+The diagram above asks for one performance observed four ways. This product
+cannot give it, for two reasons that compose:
+
+- its **transfer format is exclusive**, so the native wire and `VRChat (OSC)`
+  never run together; and
+- it **records no BVH while sending OSC**, so two takes cannot be chained through
+  a common file export either — which is the trick that made report 01 honest,
+  since the native wire *does* allow an internal recording alongside it.
+
+So the VRChat OSC path cannot share a physical take with **any** other
+observation of the same motion. Report 01's comparison remains a genuine
+one-take comparison of two paths; a comparison involving this path is between two
+performances of one labelled sequence, and it is weaker in a specific and
+statable way rather than in a vague one.
+
+**What survives, and what does not.** Per-sample timing agreement does not: report
+01's central result — a median 0.084° per bone once a 1667 ppm clock difference
+was modelled — is meaningless between two performances, and no tolerance widening
+rescues it. What survives is everything the comparison was actually for: which
+canonical bones each path reaches, what each path carries and drops, coordinate
+signs, scale, how each represents restart, and whether body travel arrives.
+Those are properties of a path, not of a take.
+
+**VRC-7's completion condition is therefore rewritten rather than deferred**: the
+per-path carry/drop list is produced from separately-performed takes of the same
+labelled sequences, and the report states which of its rows a shared take would
+have strengthened. Waiting for a session this product cannot record would be
+waiting forever, and saying so is cheaper than discovering it again in six
+months.
 
 ## 12. What this boundary deliberately excludes
 
@@ -944,6 +1040,14 @@ closure.
 Capture first. The inventory is the decoder's input, and a menu label is not a
 specification. If the shape turns out to be something else entirely, VRC-1 is
 where that is discovered, at the cost of one PR rather than the adapter.
+
+> **It was not, and it was discovered there** (2026-08-30,
+> [report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md)):
+> three numbered trackers out of eight, plus a **named** `head` sharing the path
+> position a number occupies. A decoder written from the specification would have
+> read that segment as an integer, dropped the head, and reported nothing wrong.
+> The mitigation worked exactly as designed and cost one session; this risk is
+> closed as *realised and paid*, not as *avoided*.
 
 **B — the tracker-to-humanoid solve has no home.** The honest outcome may be
 that this repository has no generic IK and that writing one is a larger project
