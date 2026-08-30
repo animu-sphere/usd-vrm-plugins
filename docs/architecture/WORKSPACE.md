@@ -749,12 +749,16 @@ exactly as that one links `motionSource`, with nothing in this section to
 re-argue.
 
 So it is neither excluded nor shipped today, and there is no artifact row for it
-above. Its only consumer as of 2026-08-31 is an adapter's CLI, which travels
-inside that adapter's own artifact — which means a library on the product's side
-of the split can currently be found only on the excluded side of it. That is a
-statement about which tools exist, not about which side it is on, and it is
-written here so the absence of a `motionTracking-<version>-<target>.tar.zst` is
-not read as the exclusion `liveTransport` and `osc` carry.
+above. **As of 2026-08-31 it has no consumer at all** — the root `CMakeLists.txt`
+configures it and the consumer fixture measures it, and nothing links it: the
+permission §2 grants is `adapters/*/tools/* -> motionTracking`, and no adapter
+CLI has taken it yet (that is VRC-6). A library with no consumer ships in
+nothing, so the absence of a `motionTracking-<version>-<target>.tar.zst` says
+only that, and must not be read as the exclusion `liveTransport` and `osc` carry.
+The first consumer will be an adapter's CLI, which travels in that adapter's own
+artifact rather than in the product — so a library on the product's side of this
+split will first be found on the excluded side of it, and that is still a
+statement about which tools exist rather than about which side it is on.
 
 **That last sentence is the requirement, and through v0.7.0 only `cmake
 --install` met it.** A packaged product did not: `ost` packaged a tool member

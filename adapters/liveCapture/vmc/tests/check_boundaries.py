@@ -176,10 +176,19 @@ def main() -> int:
     # reason worth keeping: an OSC decoder is what this adapter
     # legitimately contained, so the token would have matched the thing it
     # was there to allow.
+    #
+    # `motionTracking` is here for a reason none of the others need. Every other
+    # name on this list is also a link edge, so the CMake allowlist below would
+    # catch it even if this pattern missed; that package is enums and a policy
+    # over them, and an adapter can include its header and name `TrackerRegion`
+    # with no link line to fail on. WORKSPACE.md section 2 puts assignment on the
+    # adapter's TOOL and not on the adapter, and this is the only place that
+    # prohibition is enforceable -- which is the same argument, read from the
+    # other end, that `motionTracking`'s own check makes about the bone enum.
     forbidden_neighbours = re.compile(
         r"\b(?:vrmSchema|vrmContainer|vrmRetarget|usdVrm\w*|execMotion|execVrm|"
         r"vrmAdapterMocopi|vrmAdapterVrchatOsc|vrmAdapterArdy|cgltf|mocopi|"
-        r"vrchat|ardy)\b",
+        r"vrchat|ardy|motionTracking)\b",
         re.IGNORECASE)
     for area in (source / "include", source / "src"):
         for path in area.rglob("*"):

@@ -14,8 +14,9 @@
 # forbids the alias by name).
 #
 # Unlike the two leaves above it, this library is on the **product** side of
-# §5's split. Nothing in the product links it today — its only consumer is an
-# adapter's CLI — and nothing has to change for one to.
+# §5's split, and nothing links it at all yet: §2's permission is
+# `adapters/*/tools/* -> motionTracking` and no CLI has taken it (VRC-6). Nothing
+# has to change for a product tool to link it either.
 
 cmake_minimum_required(VERSION 3.22)
 

@@ -227,18 +227,16 @@ TestEveryVectorIsFilledWhateverTheRefusal()
 }
 
 void
-TestAStatedTrackerThatDidNotArriveIsDataUnderEveryPolicy()
+TestAStatedTrackerThatDidNotArriveIsDataUnderTwoPoliciesAndHeldUnderTheThird()
 {
-    // The other direction from `unplaced`, and deliberately not a refusal: a
-    // rig coming up one device at a time would otherwise refuse every frame for
-    // the first second, and a statement listing more than the rig carries is
-    // something an operator has to see rather than something this library can
-    // resolve. `Hold` is how a caller turns that visibility into waiting.
+    // The other direction from `unplaced`. Under `Refuse` and `Ignore` it is
+    // data and a partial rig still assigns, because a statement listing more
+    // than the rig carries is something an operator has to see rather than
+    // something this library can resolve.
     const std::vector<std::string_view> observed = {"t1", "t2"};
 
     for (const UnplacedTrackerPolicy policy :
-         {UnplacedTrackerPolicy::Refuse, UnplacedTrackerPolicy::Ignore,
-          UnplacedTrackerPolicy::Hold})
+         {UnplacedTrackerPolicy::Refuse, UnplacedTrackerPolicy::Ignore})
     {
         TrackerAssignmentSpec spec = ThreePoint();
         spec.unplaced = policy;
@@ -250,6 +248,25 @@ TestAStatedTrackerThatDidNotArriveIsDataUnderEveryPolicy()
         assert(assignment.absent.size() == 1);
         assert(assignment.absent[0] == TrackerRegion::RightHand);
     }
+
+    // And this is the case `Hold` exists for: a rig coming up one device at a
+    // time is short of a *stated* tracker rather than carrying an extra one, so
+    // a Hold that read only the unplaced side would never fire here — which is
+    // the whole of what its row promises.
+    TrackerAssignmentSpec holding = ThreePoint();
+    holding.unplaced = UnplacedTrackerPolicy::Hold;
+    const TrackerAssignment held = AssignTrackers(holding, observed);
+    assert(!held.Placed());
+    assert(held.refusal == TrackerAssignmentRefusal::Held);
+    assert(held.bound.size() == 2);
+    assert(held.absent.size() == 1);
+    assert(held.unplaced.empty());
+
+    // The rig completes and the same statement assigns, with nothing held.
+    const TrackerAssignment complete =
+        AssignTrackers(holding, {"t1", "t2", "t3"});
+    assert(complete.Placed());
+    assert(complete.absent.empty());
 }
 
 void
@@ -286,11 +303,13 @@ TestAnAssignmentThatPlacedNothingIsRefusedUnderEveryPolicy()
         }
     }
 
-    // An observation carrying nothing at all lands on the same refusal, under
-    // every policy: there is no unplaced device to refuse.
+    // An observation carrying nothing at all has no unplaced device to refuse,
+    // so `Refuse` and `Ignore` land on the general refusal. `Hold` does not: an
+    // empty observation is short of every stated tracker, which is exactly what
+    // it waits for — so `NothingPlaced` is unreachable under it, and that is
+    // stated in the enum rather than pretended.
     for (const UnplacedTrackerPolicy policy :
-         {UnplacedTrackerPolicy::Refuse, UnplacedTrackerPolicy::Ignore,
-          UnplacedTrackerPolicy::Hold})
+         {UnplacedTrackerPolicy::Refuse, UnplacedTrackerPolicy::Ignore})
     {
         TrackerAssignmentSpec spec = ThreePoint();
         spec.unplaced = policy;
@@ -298,6 +317,12 @@ TestAnAssignmentThatPlacedNothingIsRefusedUnderEveryPolicy()
         assert(assignment.refusal == TrackerAssignmentRefusal::NothingPlaced);
         assert(assignment.absent.size() == 3);
     }
+
+    TrackerAssignmentSpec holding = ThreePoint();
+    holding.unplaced = UnplacedTrackerPolicy::Hold;
+    const TrackerAssignment nothing = AssignTrackers(holding, {});
+    assert(nothing.refusal == TrackerAssignmentRefusal::Held);
+    assert(nothing.absent.size() == 3);
 }
 
 void
@@ -457,7 +482,7 @@ main()
     TestAStatedRigPlacesEveryTrackerInDeclarationOrder();
     TestAnUnplacedTrackerIsThreeAnswersAndTheEnumeratorIsTheDifference();
     TestEveryVectorIsFilledWhateverTheRefusal();
-    TestAStatedTrackerThatDidNotArriveIsDataUnderEveryPolicy();
+    TestAStatedTrackerThatDidNotArriveIsDataUnderTwoPoliciesAndHeldUnderTheThird();
     TestAnAssignmentThatPlacedNothingIsRefusedUnderEveryPolicy();
     TestAStatementThatIsNotOneIsRefusedBeforeAnyRig();
     TestAnObservationThatIsNotOneIsRefusedRatherThanHalfBound();

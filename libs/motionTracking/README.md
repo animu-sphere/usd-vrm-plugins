@@ -46,24 +46,30 @@ from rest geometry is a later aid **over** this contract — a producer of
 ## A set it cannot place is three answers
 
 Three-point, six-point and full-body rigs differ in what is observable, not in
-what is solvable, so what happens to an observed tracker no statement places is
-a policy the caller chooses:
+what is solvable. An observation can miss a statement in **two** directions — a
+tracker the statement does not place is *unplaced*, a stated tracker that did not
+arrive is *absent* — and which of those matters is the caller's choice:
 
-| policy | what it is for | refusal |
-| --- | --- | --- |
-| `Refuse` (default) | the statement is wrong for this rig | `UnplacedTracker` |
-| `Ignore` | the rig carries more than the solve needs | none |
-| `Hold` | the rig has not finished coming up | `Held` |
+| policy | reads | what it is for | refusal |
+| --- | --- | --- | --- |
+| `Refuse` (default) | unplaced | the statement is wrong for this rig | `UnplacedTracker` |
+| `Ignore` | neither | the rig carries more than the solve needs | none |
+| `Hold` | both | the rig is not yet the rig that was stated | `Held` |
+
+`Hold` is the only one that reads both directions, and that is what makes it the
+policy its row describes: a rig coming up one device at a time is short of a
+*stated* tracker rather than carrying an extra one, so a `Hold` watching only the
+unplaced side would never fire for the case it exists for.
 
 `Refuse` and `Hold` both refuse, and the enumerator is the difference that
 matters to a live caller: `UnplacedTracker` will still be true next frame, so a
 caller stops and tells the operator; `Held` may not be, so a caller keeps the
 assignment it had and tries again.
 
-The **other** direction is data rather than a refusal. A *stated* tracker that
-did not arrive is `absent` under every policy, exactly as a missing tracker is
-data on a frame one layer over — a rig coming up one device at a time would
-otherwise refuse every frame for the first second.
+Under `Refuse` and `Ignore` an absence is **data** rather than a refusal, and a
+partial rig still assigns — exactly as a missing tracker is data on a frame one
+layer over. `Hold` is the policy for a caller that wants the waiting done here
+instead.
 
 ## What it does not have
 
@@ -75,7 +81,9 @@ it is supplies the code — `motionSource`'s `SourceProfileRefusal` and `osc`'s
 `OscDecodeError` are the same shape.
 
 It is on the **product** side of
-[WORKSPACE.md §5](../../docs/architecture/WORKSPACE.md)'s split and nothing in
-the product links it yet. Its only consumer today is an adapter's CLI, so it
-appears in no artifact of its own — which is a statement about which tools exist
-rather than the exclusion the two shared leaves carry.
+[WORKSPACE.md §5](../../docs/architecture/WORKSPACE.md)'s split, and as of
+2026-08-31 it has **no consumer at all**: the root `CMakeLists.txt` configures it
+and `tests/consumer/motionTracking/` measures its package, and nothing links it.
+The permission §2 grants is `adapters/*/tools/* -> motionTracking`, and the CLI
+that will take it is VRC-6's. So it appears in no artifact — which says only that
+it has no consumer, and is not the exclusion the two shared leaves carry.

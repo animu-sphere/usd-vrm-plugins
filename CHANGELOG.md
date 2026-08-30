@@ -202,28 +202,38 @@ Current schema contract version: **1**.
   contract on whichever rig was recorded first. Automatic assignment from
   rest geometry stays a later aid *over* this contract.
 
-  **A set it cannot place is three answers with a case each**, and two of
-  them refuse: `Refuse` says the statement is wrong for this rig and will
-  still be wrong next frame, `Hold` says the rig has not finished coming up,
-  `Ignore` says the rig carries more than the solve needs. Collapsing the
-  first two would make a mis-numbered tracker and a device that has not
-  powered on the same event, and only one of those is worth interrupting a
-  session for. The *other* direction — a stated tracker that did not arrive —
-  is data under every policy, on the same rule a missing tracker follows one
-  layer up. An assignment that placed nothing is refused under all three,
-  including `Ignore`, which would otherwise hand a caller an empty binding
-  set and let it drive a solve from nothing.
+  **A set it cannot place is three answers with a case each**, and an
+  observation can miss a statement in two directions: a tracker the statement
+  does not place is *unplaced*, and a stated tracker that did not arrive is
+  *absent*. `Refuse` reads the first, `Ignore` reads neither, and **`Hold`
+  reads both** — which is what makes it the policy its own row describes, a
+  rig coming up one device at a time being short of a stated tracker rather
+  than carrying an extra one. `Refuse` and `Hold` both refuse and the
+  enumerator is the difference a live caller acts on: `UnplacedTracker` will
+  still be true next frame so a caller stops, `Held` may not be so a caller
+  keeps the assignment it had. Under the other two an absence is data and a
+  partial rig still assigns, on the rule a missing tracker already follows one
+  layer up. `NothingPlaced` catches an empty binding set no policy objected
+  to, which is what makes `Ignore` a refusal rather than a success with
+  nothing in it.
 
   Fourteen mutations, each a plausible wrong *policy* rather than a syntax
   error, each failing a case named for what it breaks; twelve boundary
-  injections, each refused for its own rule rather than for whichever pattern
-  matched first. **The mutation pass found a hole and the fix was a
-  deletion**: a guard refusing a second `=` in a statement could not be
+  injections, each refused. **The mutation pass found a hole and the fix was
+  a deletion**: a guard refusing a second `=` in a statement could not be
   reached by any input, because `head=hips` is already not a region this
   vocabulary carries. It is gone rather than documented. It links nothing at
   all — no `motionCore`, no OpenUSD, no platform primitive — and carries no
   diagnostic code: a refusal names the event and the caller supplies the
   code, as `motionSource` and `osc` already do.
+
+  **The `adapters/* -> motionTracking` prohibition is enforced in the three
+  adapters' own checks**, and it is the first name on those lists that needed
+  to be. Every other one is also a link edge, so the CMake allowlist would
+  catch it anyway; this package is enums and a policy over them, so an adapter
+  could include its header and name `TrackerRegion` with no link line to fail
+  on — the same argument, read from the other end, that this library's own
+  check makes about the bone enum.
 
 - **The VRChat OSC adapter assembles frames, and the boundary is a
   measurement rather than a convention** (VRC-4). VMC marks a frame with a

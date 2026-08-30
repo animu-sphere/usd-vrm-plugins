@@ -971,28 +971,38 @@ that make the distinction real are the ordinary ones: a knee tracker sits on a
 strap between two bones and there is no knee joint for it to be, and a chest
 strap observes a ribcage rather than the joint a solve produces.
 
-**Three answers, and two of them refuse.** `Refuse` · `Ignore` · `Hold` are
-`§5.1`'s three verbatim, and the outcome worth recording is that `Refuse` and
-`Hold` both refuse and are still two: `UnplacedTracker` will still be true next
-frame, so a caller stops and tells the operator, and `Held` may not be, so a
-caller keeps the assignment it had. One refusal for both would make a
-mis-numbered tracker and a device that has not powered on the same event.
-`NothingPlaced` is raised under **every** policy including `Ignore`, which is
-the one case a policy of ignoring would otherwise turn into success with an
-empty binding set. And the other direction — a stated tracker that did not
-arrive — is data under all three, on the same rule `TrackerFrame::missing`
-follows: a rig coming up one device at a time would otherwise refuse every frame
-for its first second.
+**Three answers, and the interesting one reads two directions.** `Refuse` ·
+`Ignore` · `Hold` are `§5.1`'s three verbatim, and what implementing them
+settled is that an observation can miss a statement two ways: a tracker the
+statement does not place is *unplaced*, a stated tracker that did not arrive is
+*absent*. `Refuse` reads the first and `Ignore` reads neither, so under both an
+absence is data and a partial rig still assigns — the rule
+`TrackerFrame::missing` already follows. **`Hold` reads both, and it has to**: a
+rig coming up one device at a time is short of a *stated* tracker rather than
+carrying an extra one, so a `Hold` watching only the unplaced side would never
+fire for the case it exists for and would fire for the case waiting cannot fix.
+`Refuse` and `Hold` are still two refusals rather than one, and the enumerator
+is what a live caller acts on: `UnplacedTracker` will still be true next frame
+so a caller stops and tells the operator, `Held` may not be so a caller keeps
+the assignment it had. `NothingPlaced` catches an empty binding set no policy
+objected to, which is what makes `Ignore` a refusal rather than a success with
+nothing in it, and it is unreachable under `Hold` — stated in the enum rather
+than pretended.
 
-**Fourteen mutations and twelve boundary injections, and one finding from each
-pass.** The boundary pass found that the diagnostic-code rule could never fire,
-because every code here is spelled `VRM_…` and the producer-name rule matches
-all of them — a check ordered so that it cannot be verified by injecting what it
-is for. The two are reordered, and each rule is now refused for its own reason.
-The mutation pass found a guard **no input could reach**: a second `=` in a
-statement needed no rule, because `head=hips` is already not a region this
-vocabulary carries. It is deleted rather than documented, on VRC-4's precedent
-with `framesRefusedEmpty`.
+**Fourteen mutations and twelve boundary injections, and the mutation pass found
+a guard no input could reach**: a second `=` in a statement needed no rule of its
+own, because `head=hips` is already not a region this vocabulary carries and the
+refusal below it already names what it saw. It is deleted rather than
+documented, on VRC-4's precedent with `framesRefusedEmpty`.
+
+**The prohibition that needed enforcing was the one in the *other* direction.**
+`adapters/* -> motionTracking` is now a refused source token in all three
+adapters' checks, and it is the first name on those lists that had to be: every
+other one is also a link edge, so the CMake allowlist would catch it anyway,
+while this package is enums and a policy over them — an adapter could include
+its header and name `TrackerRegion` with no link line to fail on. That is this
+library's own bone-enum argument read from the other end, and it was missed
+until review.
 
 Two things this milestone did not do. **It names no adapter and no adapter names
 it** — the CLI that will hold both a tracker frame and an assignment is VRC-6's,

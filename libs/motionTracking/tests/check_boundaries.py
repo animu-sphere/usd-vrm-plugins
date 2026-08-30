@@ -189,20 +189,19 @@ def main() -> int:
         (_FORBIDDEN_WORKSPACE,
          "motionTracking's edge set is empty; this names a workspace library"),
         (_FORBIDDEN_USD, "OpenUSD is forbidden in motionTracking"),
-        # The code rule runs BEFORE the producer rule, and the order is the
-        # difference between a rule and a comment. Every adapter code here is
-        # spelled `VRM_...`, so the producer pattern matches all of them --
-        # order it first and the code rule can never fire, which makes it a
-        # check that cannot be verified by injecting what it is for. Proved by
-        # injection in this order: `VRM_TRACKER_UNPLACED` is refused as a code,
-        # and a producer name that is not a code is still refused as one.
-        (_FORBIDDEN_CODE,
-         "an adapter's diagnostic code is forbidden in motionTracking; a "
-         "refusal here names the event and the caller supplies the code"),
         (_FORBIDDEN_PRODUCER,
          "a producer, protocol or SDK name is forbidden in motionTracking"),
         (_FORBIDDEN_ADDRESS,
          "an address literal is forbidden in motionTracking, tests included"),
+        # This rule overlaps the producer one completely -- every adapter code
+        # here is spelled `VRM_...` -- and both fire, because the scan below
+        # appends one error per matching pattern and has no first-match-wins.
+        # So the order of this tuple carries no meaning and the overlap costs
+        # nothing: a code injection reports two reasons rather than one, which
+        # is more information than a reader needs and none that is wrong.
+        (_FORBIDDEN_CODE,
+         "an adapter's diagnostic code is forbidden in motionTracking; a "
+         "refusal here names the event and the caller supplies the code"),
         (_FORBIDDEN_BONE,
          "a humanoid bone is forbidden in motionTracking; a region is a mount "
          "point and a bone is a joint, and the alias is what would turn "

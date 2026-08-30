@@ -354,19 +354,38 @@ AssignTrackers(const TrackerAssignmentSpec& spec,
         }
     }
 
-    if (!assignment.unplaced.empty()
-        && spec.unplaced != UnplacedTrackerPolicy::Ignore)
+    // `Hold` reads BOTH directions and the other two read one, which is what
+    // makes it the policy its own row describes. A rig that has not finished
+    // coming up is short of a *stated* tracker, not carrying an extra one — so a
+    // Hold that only watched `unplaced` would never fire for the case it exists
+    // for, and would fire for the case waiting cannot fix.
+    if (spec.unplaced == UnplacedTrackerPolicy::Hold
+        && (!assignment.unplaced.empty() || !assignment.absent.empty()))
     {
-        const bool hold = spec.unplaced == UnplacedTrackerPolicy::Hold;
-        assignment.refusal = hold ? TrackerAssignmentRefusal::Held
-                                  : TrackerAssignmentRefusal::UnplacedTracker;
+        assignment.refusal = TrackerAssignmentRefusal::Held;
         assignment.detail =
-            "tracker " + Quote(observed[assignment.unplaced.front()])
-            + " is on no region this statement names ("
-            + std::string(UnplacedTrackerPolicyName(spec.unplaced)) + ")";
+            !assignment.absent.empty()
+                ? "region " + Quote(TrackerRegionName(assignment.absent.front()))
+                      + " has no tracker in this observation yet"
+                : "tracker " + Quote(observed[assignment.unplaced.front()])
+                      + " is on no region this statement names";
         return assignment;
     }
 
+    if (spec.unplaced == UnplacedTrackerPolicy::Refuse
+        && !assignment.unplaced.empty())
+    {
+        assignment.refusal = TrackerAssignmentRefusal::UnplacedTracker;
+        assignment.detail =
+            "tracker " + Quote(observed[assignment.unplaced.front()])
+            + " is on no region this statement names";
+        return assignment;
+    }
+
+    // Nothing bound, and no policy above objected. Unreachable under `Hold`,
+    // which has already refused any observation that is not exactly the stated
+    // rig; it is what makes `Ignore` a refusal, and it catches `Refuse` given an
+    // observation carrying nothing at all.
     if (assignment.bound.empty())
     {
         assignment.refusal = TrackerAssignmentRefusal::NothingPlaced;

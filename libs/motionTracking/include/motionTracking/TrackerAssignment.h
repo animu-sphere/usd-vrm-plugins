@@ -27,15 +27,24 @@
 //
 // ## A set it cannot place is three answers, not one
 //
-// Three-point, six-point and full-body rigs differ in what is observable, not
-// in what is solvable, so what happens to an observed tracker no statement
-// places is a policy the caller chooses and this library states:
+// An observation can miss a statement in two directions, and they are not the
+// same event. A tracker the statement does not place is **unplaced** — the rig
+// carries more than was stated. A tracker the statement places that did not
+// arrive is **absent** — the rig carries less. Three-point, six-point and
+// full-body rigs differ in what is observable, not in what is solvable, so what
+// to do about either is a policy the caller chooses and this library states:
 //
-// | policy | what it is for | refusal |
-// | --- | --- | --- |
-// | `Refuse` | the statement is wrong for this rig | `UnplacedTracker` |
-// | `Ignore` | the rig carries more than the solve needs | none |
-// | `Hold`   | the rig has not finished coming up | `Held` |
+// | policy | reads | what it is for | refusal |
+// | --- | --- | --- | --- |
+// | `Refuse` | unplaced | the statement is wrong for this rig | `UnplacedTracker` |
+// | `Ignore` | neither | the rig carries more than the solve needs | none |
+// | `Hold`   | both | the rig is not yet the rig that was stated | `Held` |
+//
+// **`Hold` is the only one that reads both directions, and that is what makes
+// it the policy its own row describes.** A rig coming up one device at a time
+// is short of a *stated* tracker rather than carrying an extra one, so a `Hold`
+// watching only the unplaced side would never fire for the case it exists for,
+// and would fire for the case waiting cannot fix.
 //
 // **`Refuse` and `Hold` both refuse, and the enumerator is the difference that
 // matters to a live caller**: `UnplacedTracker` will still be true next frame,
@@ -47,15 +56,15 @@
 // unnoticed mis-statement drives a body with a foot on the wrong leg and every
 // value in it is individually correct.
 //
-// ## The other direction is data, and deliberately not a refusal
+// ## Under two of the three, an absence is data rather than a refusal
 //
-// A *stated* tracker that did not arrive is `absent`, under every policy. That
-// is the same decision `TrackerFrame::missing` makes one layer over: an absence
-// is reported where a consumer can apply its own policy, because a rig coming
-// up one tracker at a time would otherwise refuse every frame for the first
-// second, and a statement listing five trackers for a three-point rig is
-// something an operator has to *see* rather than something this library can
-// resolve. `Hold` is how a caller turns that visibility into waiting.
+// `absent` is filled whatever the policy, and under `Refuse` and `Ignore` it is
+// *only* filled: a partial rig still assigns. That is the same decision
+// `TrackerFrame::missing` makes one layer over — an absence is reported where a
+// consumer can apply its own policy — and it is why a statement listing five
+// trackers for a three-point rig is something an operator has to *see* rather
+// than something this library resolves. `Hold` is the policy for a caller that
+// wants the waiting done here instead.
 //
 // ## A refusal carries no diagnostic code
 //
@@ -173,14 +182,19 @@ enum class TrackerAssignmentRefusal : std::uint8_t
     // a rig gets half assigned with nobody told.
     ObservationInvalid,
     // An observed tracker no statement places, under `Refuse`. Still true next
-    // frame.
+    // frame, so a caller stops.
     UnplacedTracker,
-    // The same, under `Hold`. May not be true next frame; a caller waits.
+    // Under `Hold`, an observation that is not exactly the stated rig — short a
+    // stated tracker, carrying an unplaced one, or both. May not be true next
+    // frame, so a caller keeps the assignment it had and waits.
     Held,
-    // Nothing bound. Raised under every policy, including `Ignore`, because an
-    // assignment that placed no tracker is not an assignment — and `Ignore` is
-    // the policy that would otherwise return success with an empty binding set
-    // and let a caller drive a solve from nothing.
+    // Nothing bound and no policy above objected: an assignment that placed no
+    // tracker is not an assignment. This is what makes `Ignore` refuse rather
+    // than return success with an empty binding set, and it catches `Refuse`
+    // given an observation carrying nothing at all. **Unreachable under
+    // `Hold`**, which has already refused any observation short of the stated
+    // rig — a caller matching on this enumerator alone is asking a question the
+    // more specific refusals have already answered.
     NothingPlaced,
 
     Count,
