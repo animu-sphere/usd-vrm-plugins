@@ -556,7 +556,7 @@ they are a frozen surface with golden tests over their formatted form.
 | VRC-4a — tracker assignment policy | neither end | ✅ |
 | VRC-5 — the humanoid solve boundary | the motion layer | ✅ |
 | VRC-6 — CLI, trace export and the end-to-end leg | adapter | ✅ |
-| VRC-7 — cross-source evidence | both | ⬜ |
+| VRC-7 — cross-source evidence | both | ✅ |
 
 The order interleaves on purpose, and the two places it does are the two
 findings of [§2](#2-the-duplication-census). **OSC-1 and OSC-2 precede VRC-0**,
@@ -1173,6 +1173,51 @@ hair did not".
 ### VRC-7 — cross-source evidence
 
 [§11](#11-the-fourth-observation-of-one-session).
+
+**Done 2026-08-31**, on the condition §11 rewrote rather than the one the
+diagram drew: one labelled sequence set, performed twice, observed three ways,
+compared at the canonical layer —
+[report 04](../reports/motion/04-2026-08-31-cross-source-carry-drop.md). The
+relay arm is still unobserved and this milestone does not shorten that list.
+
+**The deliverable is the carry/drop table** (report 04 §7) and the entry that
+moved is report 01's: **all three paths now carry the body's travel**. That
+report's one row that mattered — 4.81 m of hips path reaching the recorded path
+and nothing reaching the live one — was closed by the root/hips record in
+v0.7.0, and re-running the identical 2026-08-15 capture through today's tool
+prints the same sentence with the verb the other way round. What is lost is now
+distributed rather than concentrated: the BVH export re-bases the body to the
+origin and loses the room, the tracker path loses eighteen bones and a third of
+the frames its sender emits, and no path carries tracking state because neither
+wire has a field for it.
+
+**The category §11 predicted would be the useful one produced a defect, and it
+was the largest difference in the comparison.** A tracker path is the only one
+where the pose is *solved* rather than transported. On the take where the truth
+is known — stand still for twenty seconds — the tracker path's head and both
+feet snapped **33.6°** on 16 frames of 777 and the hips did not move: a frame
+whose hips tracker sent a position and no rotation had its children localised
+against identity, while every consumer in this workspace replays with `hold` and
+therefore has the hips from a frame ago. 33.6° is the hips' own orientation,
+to five figures. The fix ships in the same change — a bone whose *assigned*
+ancestor fell silent is withheld rather than authored, reported in
+`TrackerSolve::withheldWithParent` — and the worst single-frame step on that take
+goes from 33.60° to 2.46°, with nothing over 5°.
+
+**Two tests asserted the defect and now assert the opposite.** That is the part
+worth carrying forward: every existing check of this path is internal to it, and
+all of them pass against the defect, because within one frame the composition is
+exactly self-consistent. What catches it is a path that never has an absent
+parent, on a take whose answer is known in advance. **This is the argument for
+the milestone**, and it is now evidence rather than a claim.
+
+**What the comparison could not do is stated at its own size.** Report 01's
+median 0.084° per bone does not survive two performances and no tolerance buys
+it back; the 15.5° disagreement on the right-hand head turn is classified
+`unknown` rather than attributed. What did survive is everything the comparison
+was for: the bones each path reaches, the travel, the origin, the rate, the
+restart, and the sign of a labelled turn — **positive for a head turned left, on
+all three paths, from three derivations that share no code**.
 
 ## 10. Contract changes this plan requires
 

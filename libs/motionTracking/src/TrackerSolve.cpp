@@ -55,6 +55,33 @@ IsFinite(const pxr::GfQuatf& value) noexcept
     return std::isfinite(value.GetReal()) && IsFinite(value.GetImaginary());
 }
 
+// Whether any bone above `bone` is one the assignment named that this frame
+// could not orient — bound and rotation-less, or stated and absent.
+//
+// That is the case the header separates from an unobserved ancestor: a
+// consumer holds such a bone at the value it had a frame ago rather than at
+// rest, so the identity `ParentWorldRotation` would divide by is not the
+// rotation the consumer will be composing against. Transitivity comes free —
+// a chain's ancestors are the union of its parent's and its parent — so this
+// reads one chain and not a fixed point.
+bool
+AncestorFellSilent(motion::HumanBone bone,
+                   const std::bitset<motion::HumanBoneCount>& namedBones,
+                   const std::bitset<motion::HumanBoneCount>& withRotation)
+{
+    std::optional<motion::HumanBone> parent = motion::HumanBoneParent(bone);
+    while (parent)
+    {
+        const std::size_t index = static_cast<std::size_t>(*parent);
+        if (namedBones.test(index) && !withRotation.test(index))
+        {
+            return true;
+        }
+        parent = motion::HumanBoneParent(*parent);
+    }
+    return false;
+}
+
 // The world rotation of `bone`'s parent chain, composed from what this solve
 // has authored so far. Every bone the chain carries that nobody observed
 // contributes identity, which is the header's "an unobserved joint stays at
@@ -191,6 +218,44 @@ SolveTrackerPose(const TrackerAssignment& assignment,
         }
     }
 
+    // Which bones this assignment names, and which of them this frame can
+    // orient. Both are needed before any region is classified, because whether
+    // a head is placed depends on a hips two bindings later in the list.
+    //
+    // **`absent` counts as named and unoriented**, and leaving it out was a
+    // defect with the same failure as the one the header describes. A statement
+    // whose tracker did not arrive in this frame produces no binding at all —
+    // it goes to `assignment.absent` — so a hips that dropped out of a bundle
+    // entirely would have left the bones under it composing against identity
+    // while a consumer held the hips from a frame ago, which is the 33.6° snap
+    // arriving through the sibling door. What a consumer holds does not depend
+    // on which of the two ways an observation failed to turn up.
+    std::bitset<motion::HumanBoneCount> namedBones;
+    std::bitset<motion::HumanBoneCount> withRotation;
+    for (const TrackerRegion region : assignment.absent)
+    {
+        if (const std::optional<motion::HumanBone> bone =
+                TrackerRegionBone(region))
+        {
+            namedBones.set(static_cast<std::size_t>(*bone));
+        }
+    }
+    for (const TrackerAssignmentBinding& binding : assignment.bound)
+    {
+        const std::optional<motion::HumanBone> bone =
+            TrackerRegionBone(binding.region);
+        if (!bone)
+        {
+            continue;
+        }
+        const std::size_t index = static_cast<std::size_t>(*bone);
+        namedBones.set(index);
+        if (observed[binding.observedIndex].hasRotation)
+        {
+            withRotation.set(index);
+        }
+    }
+
     // Classify first, refuse afterwards, on the assignment layer's rule: a
     // report of a refused solve reads the same evidence a successful one does.
     for (const TrackerAssignmentBinding& binding : assignment.bound)
@@ -206,6 +271,10 @@ SolveTrackerPose(const TrackerAssignment& assignment,
         else if (!observation.hasRotation)
         {
             solve.withoutRotation.push_back(binding.region);
+        }
+        else if (AncestorFellSilent(*bone, namedBones, withRotation))
+        {
+            solve.withheldWithParent.push_back(binding.region);
         }
         else
         {
@@ -317,6 +386,14 @@ SolveTrackerPose(const TrackerAssignment& assignment,
         {
             continue;
         }
+        // Classified above, and skipped here for the reason stated there: the
+        // parent a consumer will hold is not the identity this composition
+        // would divide by. The hips can never reach this — nothing is above it
+        // — so the root authored above is unaffected.
+        if (AncestorFellSilent(*bone, namedBones, withRotation))
+        {
+            continue;
+        }
 
         const pxr::GfQuatd world =
             pxr::GfQuatd(observation.rotation).GetNormalized();
@@ -344,6 +421,18 @@ SolveTrackerPose(const TrackerAssignment& assignment,
         solve.refusal = TrackerSolveRefusal::NothingSolved;
         solve.detail = "none of the " + std::to_string(assignment.bound.size())
                        + " bound tracker(s) reached a bone or the root";
+        // The tallies a caller reads are over solved frames, so a frame that
+        // refuses reports its regions through this line and nowhere else. A
+        // refusal that said the trackers reached nothing, when what happened is
+        // that every one of them was withheld under a silent root, would send a
+        // reader looking at the straps.
+        if (!solve.withheldWithParent.empty())
+        {
+            solve.detail += ", and "
+                            + std::to_string(solve.withheldWithParent.size())
+                            + " were withheld because a bone this assignment "
+                              "names above them carried no rotation";
+        }
         return solve;
     }
 

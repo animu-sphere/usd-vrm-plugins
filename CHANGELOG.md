@@ -175,7 +175,84 @@ Current schema contract version: **1**.
   transfers — the types do not, so a VMC copy is the same change one namespace
   over rather than a second consumer of this header.
 
+- **A tracker frame that lost its hips rotation snapped every bone under it by
+  the hips' whole orientation.** `SolveTrackerPose` composes a bone's local
+  rotation as `inverse(parent chain) * observed world`, and an ancestor it did
+  not author contributed identity. That is right for a bone **nobody observes**
+  — nothing ever authors a spine, and a consumer leaves it at rest for the whole
+  session — and wrong for a bone the assignment **did** place that carried no
+  rotation in one frame: every consumer in this workspace replays with
+  `missingBones = hold`, so what it holds for that ancestor is the value from a
+  frame ago, not identity. The children were divided by identity and composed
+  against the parent.
+
+  Measured on a real 20 s standing session: the hips tracker sent a position and
+  no rotation on **16 of 777 frames**, and on each of them the head and both
+  feet moved **33.6°** while the hips did not move at all — 33.6° being the
+  hips' own orientation in that frame, `2·acos(0.957319)`, to five figures. It
+  survived `motion_capture` into the clip, so an avatar driven by that recording
+  snapped a third of a right angle and back, sixteen times, while the operator
+  stood still. Every take in the session had it: 16, 6, 5, 5 and 19 frames.
+
+  A bone whose **assigned** ancestor could not be oriented in this frame is now
+  withheld rather than authored, and reported in the new
+  `TrackerSolve::withheldWithParent` — a fifth vector kept apart from
+  `withoutRotation` because the two have different fixes, one a strap and the
+  other the frame the strap arrived in. `vrchat_osc_record --inspect` prints it
+  beside the others. The frame becomes a hold in full: the body stays where the
+  previous frame left it, which is what a frame with an unknown root orientation
+  says. Carrying the last known parent forward would be better motion and needs
+  a stateful solve; this one is a function of one frame by construction. Worst
+  single-frame step on that take: **33.60° before, 2.46° after**, with nothing
+  over 5°.
+
+  **Two tests asserted the defect**, which is the part worth recording:
+  `TestAPositionOnlyTrackerCannotOrientAJoint` required the head to be `placed`
+  under a rotation-less hips, and the export suite required that frame to carry
+  three bones. Both now assert the opposite and say why in the file. Every
+  internal check of this path passed against the defect and had to — within one
+  frame the composition is exactly self-consistent — and what caught it was a
+  comparison against a path that never has an absent parent, on the one take
+  whose answer is known in advance
+  ([report 04](docs/reports/motion/04-2026-08-31-cross-source-carry-drop.md) §5).
+
+  **Both ways an ancestor fails to arrive are read**, which the first version of
+  the rule did not do: a statement whose tracker sends no rotation produces a
+  binding, and a statement whose tracker does not arrive at all produces none and
+  lands in `TrackerAssignment::absent`. A consumer holds the bone identically
+  under each, and the recorded session has both. A `NothingSolved` refusal now
+  also says when withholding is why, because the per-region tallies are over
+  solved frames and that line is otherwise the only thing a refused frame prints.
+
 ### Added
+
+- **VRC-7, the cross-source comparison: three paths, two performances**
+  ([report 04](docs/reports/motion/04-2026-08-31-cross-source-carry-drop.md)).
+  Five labelled sequences performed on 2026-08-15 and again on 2026-08-30,
+  driven to canonical clips through `vrmAdapterMocopi`, `motionBvh` and
+  `vrmAdapterVrchatOsc`, and compared at the canonical layer and nowhere lower.
+  Not one physical take: this sender's transfer format is exclusive and it
+  records no BVH while sending OSC, so the loss is stated rather than papered
+  over — report 01's median 0.084° per bone does not survive two performances
+  and no tolerance widening buys it back.
+
+  The deliverable is the per-path carry/drop table, and **report 01's one row
+  that mattered is closed**: all three paths now carry the body's travel, and
+  re-running the identical 2026-08-15 capture through today's `mocopi_record`
+  prints that report's sentence with the verb the other way round. What is lost
+  is now distributed rather than concentrated — the BVH export re-bases the body
+  to the origin and loses the room, the tracker path loses eighteen bones and a
+  third of the frames its sender emits, the two kinds of root are 6 cm apart,
+  and no path carries tracking state because neither wire has a field for it.
+
+  **A labelled head turn agrees on all three paths**: a head turned to the
+  operator's left arrives as a positive yaw in canonical space, from three
+  derivations that share no code, and the two 2026-08-15 paths agree to 0.00°
+  and 0.04 s — the control that says the measurement measures what it claims to.
+  The one difference the comparison could not attribute is stated as `unknown`
+  rather than absorbed: 15.5° on the right-hand head turn, which two
+  performances cannot separate from a sender difference.
+
 
 - **A VRChat OSC session reaches a rig, and the tracker path is connected end to
   end** (VRC-6). `vrchat_osc_record` gains `--export-trace`, which decodes a

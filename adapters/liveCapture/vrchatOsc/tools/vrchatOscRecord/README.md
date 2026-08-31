@@ -178,10 +178,19 @@ solve: 12 of 12 frame(s)
   placed: head 12, hips 12, leftFoot 12, rightFoot 12
   unsolved: none
   withoutRotation: none
+  withheldWithParent: none
   positionsUnused: head 12, leftFoot 12, rightFoot 12
   stated but absent: none
   observed but unplaced: none
 ```
+
+`withheldWithParent` is the one line that is about a *frame* rather than a
+strap: the region's own tracker sent an orientation and a bone the assignment
+names above it did not, so the bone is held with its ancestor instead of being
+composed against a parent the consumer is not holding
+([`TrackerSolve.h`](../../../../../libs/motionTracking/include/motionTracking/TrackerSolve.h)).
+A session with a count there and `withoutRotation: none` is one whose hips
+dropped out of some bundles, not one with a bad strap.
 
 Every region line is a **count of frames over the whole export**, not a reading
 of one. That is worth saying because the first version of this report took the

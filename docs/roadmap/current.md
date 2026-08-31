@@ -237,11 +237,38 @@ test completes with nothing installed.
       What replaces it: the same labelled sequences, performed separately, and
       compared at the canonical layer for what each path carries and drops — the
       per-sample timing agreement report 01 measured is what that costs, and no
-      tolerance widening buys it back;
-- [ ] every difference is classified — including a *solve difference*, which is
+      tolerance widening buys it back. **The replacement is delivered** (VRC-7,
+      2026-08-31): five labelled sequences performed on both dates, three paths,
+      and the two 08-15 paths kept in as the control — where they agree to 0.00°
+      and the third differs, the difference is the third path's;
+- [x] every difference is classified — including a *solve difference*, which is
       a category no previous comparison could attribute — rather than absorbed
-      by widening a tolerance;
-- [ ] what each path cannot carry is written down from evidence.
+      by widening a tolerance *(VRC-7, 2026-08-31: eight categories, and the one
+      §11 predicted would be the useful one produced **the largest difference in
+      the comparison and it was a defect**. On the take whose answer is known in
+      advance — stand still for twenty seconds — the tracker path's head and
+      both feet snapped **33.6°** on 16 of 777 frames while the hips did not
+      move: a frame whose hips tracker sent a position and no rotation had its
+      children localised against identity, where every consumer replays with
+      `hold` and has the hips from a frame ago. 33.6° is the hips' own
+      orientation, to five figures. Fixed in the same change and the worst
+      single-frame step goes to 2.46°, with nothing over 5°. Two tests asserted
+      the defect and now assert the opposite — every internal check passed
+      against it, because within one frame the composition is exactly
+      self-consistent. The `unknown` row is one: 15.5° on the right-hand head
+      turn, which two performances cannot separate from a sender difference)*;
+- [x] what each path cannot carry is written down from evidence *(VRC-7,
+      2026-08-31:
+      [report 04](../reports/motion/04-2026-08-31-cross-source-carry-drop.md)
+      §7. **Report 01's one row that mattered is closed**: all three paths now
+      carry the body's travel, and re-running the identical 2026-08-15 capture
+      through today's tool prints that report's sentence with the verb the other
+      way round. What is lost is distributed rather than concentrated — the BVH
+      export re-bases the body to the origin and loses the room, the tracker
+      path loses eighteen bones and a third of the frames its sender emits, and
+      no path carries tracking state because neither wire has a field for it.
+      The sign of a labelled head turn agrees on all three paths from three
+      derivations that share no code)*.
 
 ### Before the tag
 

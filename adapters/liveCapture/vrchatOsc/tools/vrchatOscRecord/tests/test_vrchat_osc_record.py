@@ -614,6 +614,19 @@ def check_export(tool: pathlib.Path, corpus: pathlib.Path,
         fail(f"the corpus's one rotation-less hips frame was not reported: "
              f"'{solve_line(report, 'withoutRotation')}'\n{report}")
 
+    # And the three bones under it go with it, although their own trackers
+    # sent orientations in that frame. A consumer replays with `hold`, so
+    # the hips it has there is the one it carried a frame ago and not the
+    # identity a local rotation would have been divided by -- authoring
+    # them anyway is what put a 33.6 degree snap on the head and both feet
+    # of a real standing session (report 04). They are reported apart from
+    # `withoutRotation` because the two have different fixes.
+    withheld = solve_line(report, "withheldWithParent")
+    for region in ("head 1", "leftFoot 1", "rightFoot 1"):
+        if region not in withheld:
+            fail(f"'{region}' should have been withheld under the "
+                 f"rotation-less hips: '{withheld}'\n{report}")
+
     header, samples = read_trace(trace)
     if header.get("protocol") != "vrchat-osc":
         fail(f"the trace's protocol is {header.get('protocol')!r}")
@@ -635,14 +648,20 @@ def check_export(tool: pathlib.Path, corpus: pathlib.Path,
     if set(samples[0]["bones"]) != EXPECTED_BONES:
         fail(f"the first sample is short a bone: {sorted(samples[0]['bones'])}")
 
-    # The rotation-less frame is the one that carries three bones rather than
-    # four, and it still carries a root position -- a tracker that sent a
-    # position and no rotation is half an observation, not an absent one.
-    thin = [sample for sample in samples if len(sample["bones"]) == 3]
+    # The rotation-less frame carries no bone at all, and it still carries a
+    # root position -- a tracker that sent a position and no rotation is
+    # half an observation, not an absent one. It told the pipeline where the
+    # body is and not which way it faces, and only the second of those is
+    # what the three bones under the hips needed. The frame is a hold, in
+    # full: an avatar replaying it stays where the previous frame left it.
+    thin = [sample for sample in samples if not sample["bones"]]
     if len(thin) != 1:
-        fail(f"expected exactly one three-bone sample, found {len(thin)}")
+        fail(f"expected exactly one sample carrying no bone, found "
+             f"{len(thin)}")
     if "pos" not in thin[0]["root"]:
         fail("the rotation-less frame dropped its root position too")
+    if "rot" in thin[0]["root"]:
+        fail("the rotation-less frame authored a root orientation")
 
     print("--export-trace: seven frames of the measured shape reach a "
           "canonical trace, on four bones and no others")

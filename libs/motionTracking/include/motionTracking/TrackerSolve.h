@@ -47,10 +47,10 @@
 //     local = inverse(world rotation of its parent chain) * observed world
 //
 // where the parent chain is composed from the rotations this solve has already
-// authored, and every unauthored bone in it contributes identity. Bones are
-// placed parent-first, which costs nothing to arrange: every bone's parent has
-// a smaller enumerator than it does (`motionCore`'s own table says so), so
-// sorting by enumerator is a valid order.
+// authored, and every bone in it **nobody was told to observe** contributes
+// identity. Bones are placed parent-first, which costs nothing to arrange:
+// every bone's parent has a smaller enumerator than it does (`motionCore`'s own
+// table says so), so sorting by enumerator is a valid order.
 //
 // The property that follows is the one worth testing, and it holds for any
 // combination of regions: **composing the authored locals from the root down to
@@ -58,6 +58,46 @@
 // tracker changes what the head's local rotation *is* and not what the head's
 // world orientation *is*, which is exactly what a consumer that adds a chest
 // strap mid-session should see.
+//
+// ## An assigned ancestor that falls silent is not an unobserved one
+//
+// The identity above is a statement about a bone **the assignment never
+// named**: nothing observes a spine, no frame ever authors one, and a consumer
+// replaying the stream leaves it at rest for the whole session. Identity is
+// what it is, at every instant, and composing against it is exact.
+//
+// A bone the assignment *did* name is a different case the moment one frame
+// arrives without its rotation. A stream is replayed with a missing-bone policy
+// — `hold` for every consumer in this workspace — so the value a consumer has
+// for that bone in that frame is **the one it carried a frame ago**, not
+// identity. Localising its children against identity there produces locals
+// which, composed against what the consumer actually holds, put every one of
+// them a whole parent rotation away from the orientation its own tracker
+// reported.
+//
+// It is not a small error and it is not hypothetical: a real 20 s standing
+// session dropped the hips rotation on 16 of 777 frames and the head and both
+// feet snapped **33.6°** — the hips' own orientation, exactly — on every one of
+// them, in the trace and again in the clip replayed from it
+// ([report 04](../../../../docs/reports/motion/04-2026-08-31-cross-source-carry-drop.md)
+// §5).
+//
+// So a bone whose **named** ancestor could not be oriented in this frame is not
+// authored either. It goes to `withheldWithParent`, and the consumer holds it
+// beside the ancestor it depends on: the body holds as a unit for that frame,
+// which is what a frame with an unknown root orientation actually says. The
+// alternative — carrying the last known parent forward — is a stateful solve,
+// and this one is a function of one frame by construction ([§10 of the OSC
+// track](../../../../docs/roadmap/osc-and-vrchat-trackers.md)).
+//
+// **Named, not bound**, and the distinction is a defect this rule had for one
+// review round. There are two ways a statement fails to produce an orientation:
+// its tracker arrives carrying no rotation (`withoutRotation`, a binding), and
+// its tracker does not arrive at all (`TrackerAssignment::absent`, no binding).
+// A consumer holds the bone identically under both, so both withhold what hangs
+// below them. Reading `bound` alone would have left the whole class of dropped
+// trackers composing against identity — the same snap, through the door next to
+// the one it was found at.
 //
 // ## Which regions this solve places, and the two it refuses
 //
@@ -186,7 +226,7 @@ MOTIONTRACKING_API std::string_view TrackerSolveRefusalName(
 // observation to report against; here the first two refusals are about the
 // bindings *themselves* — an assignment that refused, or one applied to an
 // array it was not made from — and under those there is nothing to classify.
-// They come back with four empty vectors rather than a half reading, and the
+// They come back with five empty vectors rather than a half reading, and the
 // suite asserts that rather than leaving it to be discovered. From
 // `ObservationInvalid` onward the rule is the layer below's exactly: the caller
 // that most needs this struct is the one reporting on a solve that did not
@@ -217,6 +257,15 @@ struct TrackerSolve
     // A position-only tracker cannot orient a joint, and the alternative —
     // authoring identity — is bit-for-bit a tracker reporting rest.
     std::vector<TrackerRegion> withoutRotation;
+    // Regions whose own observation carried a rotation, withheld because a
+    // bone the assignment placed above them carried none in this frame. Their
+    // world orientation is known and their **local** rotation is not, because
+    // the parent a consumer will hold is not the identity this solve would
+    // otherwise divide by; see the header. A caller reporting on a session
+    // wants this apart from `withoutRotation`: one says a tracker sent no
+    // orientation, the other says a tracker's orientation could not be
+    // expressed relative to what a consumer will be holding.
+    std::vector<TrackerRegion> withheldWithParent;
     // Every bound region whose observation carried a position this solve did
     // not consume: every region except the hips, and the hips too when
     // `authorRootMotion` is off. Consuming one is IK.
