@@ -218,6 +218,34 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **VRC-7, the cross-source comparison: three paths, two performances**
+  ([report 04](docs/reports/motion/04-2026-08-31-cross-source-carry-drop.md)).
+  Five labelled sequences performed on 2026-08-15 and again on 2026-08-30,
+  driven to canonical clips through `vrmAdapterMocopi`, `motionBvh` and
+  `vrmAdapterVrchatOsc`, and compared at the canonical layer and nowhere lower.
+  Not one physical take: this sender's transfer format is exclusive and it
+  records no BVH while sending OSC, so the loss is stated rather than papered
+  over — report 01's median 0.084° per bone does not survive two performances
+  and no tolerance widening buys it back.
+
+  The deliverable is the per-path carry/drop table, and **report 01's one row
+  that mattered is closed**: all three paths now carry the body's travel, and
+  re-running the identical 2026-08-15 capture through today's `mocopi_record`
+  prints that report's sentence with the verb the other way round. What is lost
+  is now distributed rather than concentrated — the BVH export re-bases the body
+  to the origin and loses the room, the tracker path loses eighteen bones and a
+  third of the frames its sender emits, the two kinds of root are 6 cm apart,
+  and no path carries tracking state because neither wire has a field for it.
+
+  **A labelled head turn agrees on all three paths**: a head turned to the
+  operator's left arrives as a positive yaw in canonical space, from three
+  derivations that share no code, and the two 2026-08-15 paths agree to 0.00°
+  and 0.04 s — the control that says the measurement measures what it claims to.
+  The one difference the comparison could not attribute is stated as `unknown`
+  rather than absorbed: 15.5° on the right-hand head turn, which two
+  performances cannot separate from a sender difference.
+
+
 - **A VRChat OSC session reaches a rig, and the tracker path is connected end to
   end** (VRC-6). `vrchat_osc_record` gains `--export-trace`, which decodes a
   recorded capture, assembles it into frames, solves each against an operator's
