@@ -201,19 +201,31 @@ test completes with nothing installed.
       two clean frames. Held apart from `TRACKER_ID_INVALID`, which is what a
       sender's bad index raises — collapsing the two would make a defect
       indistinguishable from a part of the surface nobody has implemented)*;
-- [ ] a real session reaches a VRM avatar through **unchanged** `motion_capture`
+- [x] a real session reaches a VRM avatar through **unchanged** `motion_capture`
       and `motion_retarget`, or the solve boundary is documented as the stated
       stopping point and the release claims tracker *input* rather than
       tracker-driven motion — **the second branch is the one this release
-      takes, and VRC-5 took it on 2026-08-31**: assigned observations reach a
+      takes** *(VRC-5 on 2026-08-31: assigned observations reach a
       `HumanoidPose` in `libs/motionTracking`, the solve is direct, and a
       position it does not consume is reported rather than dropped because
-      consuming one is IK
-      ([the track](osc-and-vrchat-trackers.md#vrc-5--the-humanoid-solve-boundary)).
-      What stays open is the **session**: nothing writes a
-      `motion-capture-trace` from a tracker frame yet, so no VRChat OSC session
-      has reached an avatar by any path. That is VRC-6's tool, and the
-      permission its CLI needs is already in the contract with no taker.
+      consuming one is IK; VRC-6 the same day: `vrchat_osc_record --inspect
+      --export-trace --assign` writes the canonical trace, and
+      `vrchat_osc_record_endToEnd` drives it through **unchanged**
+      `motion_capture` and `motion_retarget` onto a rig. It is the first taker
+      of `adapters/*/tools/* -> motionTracking`, which had been a permission
+      with nobody using it since VRC-4a. **The claim is a partition rather than
+      a count**: four joints move and fourteen hold their rest pose *exactly* —
+      not within a tolerance, because nothing authored them — and four of the
+      fourteen sit between a driven hip and a driven foot, which is where a
+      solve that had begun estimating would show first. Two limits stated
+      rather than hidden: the avatar is a fixture rig and not a released VRM,
+      where both sibling adapters drive `Seed-san.vrm` beside theirs; and the
+      capture is `rig-motion`, a **generated** fixture written for this leg,
+      because every other capture in the corpus drifts too little to survive a
+      retarget's rest-pose correction as a visible rotation. A recorded session
+      reaching an avatar is the row below this one and it is still an
+      operator's twenty minutes
+      ([the track](osc-and-vrchat-trackers.md#vrc-6--cli-and-record))*;
 
 **Cross-source**
 

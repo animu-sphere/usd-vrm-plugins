@@ -321,6 +321,14 @@ The record CLIs are the borderline case and the answer is no for now:
 share is argument-parsing idiom rather than behaviour. A fourth tool is when to
 re-measure.
 
+**Re-measured at VRC-6 with all three exports written, and the answer moved
+further away rather than closer.** The two pose adapters' `TraceCollector`s are
+one line of behaviour each; this one's takes an assignment, a solve
+configuration and a per-region report neither sibling has any use for. What the
+three still share is argument-parsing idiom. So the third tool stands, and the
+extraction the census would have justified is one of `TakeValue` and its four
+siblings — which is a utility header, not a shared CLI.
+
 ## 4. What `libs/osc` owns
 
 Owns: OSC packet decoding · bundle flattening and traversal · address
@@ -547,7 +555,7 @@ they are a frozen surface with golden tests over their formatted form.
 | VRC-4 — tracker frame assembly | adapter | ✅ |
 | VRC-4a — tracker assignment policy | neither end | ✅ |
 | VRC-5 — the humanoid solve boundary | the motion layer | ✅ |
-| VRC-6 — CLI and record | adapter | ⬜ |
+| VRC-6 — CLI, trace export and the end-to-end leg | adapter | ✅ |
 | VRC-7 — cross-source evidence | both | ⬜ |
 
 The order interleaves on purpose, and the two places it does are the two
@@ -1106,6 +1114,62 @@ Whether it is a third tool or a generic one is the question
 [§3.4](#34-what-is-not-shared-and-must-not-become-shared) defers to this point,
 with three implementations to measure instead of two.
 
+**Done 2026-08-31.** The recorder half shipped with VRC-0; what this adds is
+`--export-trace`, and with it the first taker of the permission §2 has carried
+since VRC-4a: `adapters/*/tools/* -> motionTracking`. A capture decodes, assembles
+into frames, converts to `TrackerObservation`s, assigns against the operator's
+statement and solves — and the file that comes out is a `motion-capture-trace`
+with no VRChat in it and **no tracker in it either**, which `motion_capture`
+replays exactly as it replays a `.vrma`-derived clip.
+
+**It is a third tool and the question stays open**, with the measurement it was
+waiting for now available: three `Options.cpp` and three `main.cpp`, and the
+export halves diverge more than the recording halves do. This one needs an
+assignment, a solve configuration and a per-region report that neither sibling
+has any use for, and the two of them share a `TraceCollector` whose whole body is
+`session.samples.push_back(frame.pose)`. What the three share is still
+argument-parsing idiom. **A fourth tool is still when to re-measure**, and the
+answer is now less likely to be "extract" than it was before this milestone.
+
+**The end-to-end leg is the deliverable, not the flag.** Both siblings have had
+one since v0.7.0 and this adapter's `tests/CMakeLists.txt` stated the absence
+rather than leaving it to be noticed. It closes now, and it asserts something
+neither sibling's can: a **partition** of the rig. On the `rig-motion` fixture
+four joints move and fourteen hold their rest pose *exactly* — not within a
+tolerance, because nothing authored them and the retarget computes the same
+product at every sample. Four of the fourteen sit between a driven hip and a
+driven foot, which is where a solve that had quietly begun estimating would show
+up first. Mutating the assignment by one region turns the pass into a named
+failure, which is what says the check is not vacuous.
+
+**A fixture was written for it, and the reason is a measurement about the other
+fourteen.** Every capture in this corpus drifts a millimetre and a quarter of a
+degree per frame, which is enough to prove a decoder is not returning its
+defaults and *too little* to survive a retarget's rest-pose correction as a
+visible rotation — so a session that arrived perfectly and one that never
+arrived at all would both have read as "nothing moved". `rig-motion` walks half a
+metre and turns a head most of a right angle. It is `unobserved` and says so: the
+recorded session was performed standing.
+
+**The restart refusal is this wire's own, and copying the siblings' reason would
+have been wrong.** They refuse to splice two sessions into one trace because a
+restarted sender puts *its own clock* back to zero, so the halves overlap. This
+wire carries no sender clock at all — three floats and no timestamp — so the only
+clock is the receiver's and it runs forward across a restart, which the export
+suite now asserts. What is refused here is a continuity of **space**: two peers,
+each calibrated by its own receiving application, with nothing relating the two.
+The refusal is the same and its justification is not, and the test is what stops
+the weaker one being inherited by a reader who assumed it transferred.
+
+Two things this milestone did not do. **The live path still writes no trace**, on
+the rule the tool is built on rather than as a gap: a recording runs no decoder,
+so the export goes with `--inspect` and the refusal says so at the prompt.
+`mocopi_record` makes the same split. And **no released VRM avatar is driven
+here**, where both siblings drive `Seed-san.vrm` beside their fixture rig — what
+that would add is the release condition's own wording rather than a sharper
+check, since the partition above is already stronger than "three moved and the
+hair did not".
+
 ### VRC-7 — cross-source evidence
 
 [§11](#11-the-fourth-observation-of-one-session).
@@ -1497,7 +1561,7 @@ two rules the census adds to
 10 VRC-3  tracking-space normalisation
 11 VRC-4  frame assembly and its policies
 12 VRC-5  humanoid solve boundary (after its contract change, if one is needed)
-13 VRC-6  CLI, trace export, artifact-only smoke
+13 VRC-6  CLI, trace export, end-to-end leg                          ✅
 14 VRC-7  cross-source evidence report
 ```
 
