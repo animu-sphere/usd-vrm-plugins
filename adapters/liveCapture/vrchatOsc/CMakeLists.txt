@@ -176,9 +176,29 @@ if(VRMADAPTERVRCHATOSC_BUILD_TESTS)
 endif()
 
 # The adapter's CLI, which ships in the same artifact as the library
-# (WORKSPACE.md §5) and is where §2's adapter-tool permissions
-# begin. Added after the library target it links, and unconditionally: an
+# (WORKSPACE.md §5) and is where §2's adapter-tool permissions begin. Added
+# after the library target it links.
+#
+# **On by default and switchable, which the guard it replaces was not.** An
 # `if(EXISTS ...)` around a file the build requires can only ever mask a rename
 # or a bad checkout, and this repository has already paid once for a test that
-# silently stopped registering.
-add_subdirectory(tools/vrchatOscRecord)
+# silently stopped registering — so the file's absence is still a configure
+# error. What the option answers is a different question, and VRC-6 is what
+# raised it: since the CLI links `motionTracking` and `motionRuntime` where the
+# library links neither, a configure of *this directory* now needs two packages
+# `vrmAdapterVrchatOsc` itself does not require. That is correct for the
+# artifact, which carries both halves, and wrong for a consumer installing the
+# **package**: `scripts/check_package_consumer.py` builds every package from a
+# prefix holding exactly its declared closure and nothing else, which is the
+# whole design of that check, so it turns the tool off rather than being handed
+# two packages no row of PACKAGE_CONTRACT.md names.
+#
+# Both siblings carry the same option for the same reason even though neither
+# needs it yet: the consumer harness applies one rule to every package, and an
+# option only one of three defines would be a rule with an exception nobody
+# reading the harness could see.
+option(VRMADAPTERVRCHATOSC_BUILD_TOOL
+       "Build vrchat_osc_record, the adapter's CLI" ON)
+if(VRMADAPTERVRCHATOSC_BUILD_TOOL)
+    add_subdirectory(tools/vrchatOscRecord)
+endif()

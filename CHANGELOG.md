@@ -222,6 +222,16 @@ Current schema contract version: **1**.
   `vrchat_osc_record_endToEnd`, and the second closes an absence this adapter's
   `tests/CMakeLists.txt` had stated on purpose since VRC-0.
 
+  **Each adapter gains a `<PACKAGE>_BUILD_TOOL` option, on by default.** The
+  package-consumer check installs every package from a prefix holding exactly
+  its declared closure, which is what lets a mutated config file be attributed
+  to the config file — and a CLI's edges are the tool's rather than the
+  library's, so building one there would need packages no row of
+  `PACKAGE_CONTRACT.md` names. The driver switches the tool off for every
+  source tree with a `tools/` directory. All three adapters define the option
+  even though only one needs it: a rule with an exception that only one of
+  three files shows is a rule nobody reading the driver can check.
+
 - **Assigned tracker observations reach a canonical pose, and the solve stops
   where IK begins** (VRC-5). `motionTracking::SolveTrackerPose` takes an
   operator's assignment and the observations it was made from and produces a
