@@ -546,7 +546,7 @@ they are a frozen surface with golden tests over their formatted form.
 | VRC-3 — tracking-space normalisation | adapter | ✅ |
 | VRC-4 — tracker frame assembly | adapter | ✅ |
 | VRC-4a — tracker assignment policy | neither end | ✅ |
-| VRC-5 — the humanoid solve boundary | adapter | ⬜ |
+| VRC-5 — the humanoid solve boundary | the motion layer | ✅ |
 | VRC-6 — CLI and record | adapter | ⬜ |
 | VRC-7 — cross-source evidence | both | ⬜ |
 
@@ -1019,6 +1019,82 @@ No target-avatar-specific logic enters the adapter under any outcome — that is
 [adapter plan §2](adapters-mocopi-vmc-ardy.md#2-what-an-adapter-is-allowed-to-be)
 and it does not bend for a source that happens to need IK.
 
+**Done 2026-08-31** — `SolveTrackerPose` in
+[`libs/motionTracking`](../../libs/motionTracking), on the contract written the
+same day and ahead of it ([§10](#10-contract-changes-this-plan-requires)). The
+milestone's column changed with it: this is the **motion layer's**, not the
+adapter's, and no adapter names it.
+
+**The solve is direct, and the stopping point is stated rather than
+approached.** It authors what it observed and infers nothing: an observed
+orientation becomes the local rotation of the bone its region names, a joint
+nobody observed stays at rest, and an observed **position** is consumed in
+exactly one place — the hips, where the root/hips record already says what a
+body translation observed at one place is. Every other position is *reported
+unused*, which is the difference between a stopping point and a silent drop:
+consuming a hand's position is IK, IK needs limb lengths, and limb lengths
+belong to a target rig this layer does not have and
+[§2](adapters-mocopi-vmc-ardy.md#2-what-an-adapter-is-allowed-to-be) will not
+let it acquire. So the release claims tracker **input** reaching the canonical
+layer, which is the second of the two branches
+[the roadmap](current.md#done-when) offered.
+
+**The invariant is what makes "stays at rest" a measurement.** A pose carries
+rotations local to the semantic parent and a tracker reports a world
+orientation, so each placed bone takes
+`inverse(parent chain) * observed`, composed from what the solve has already
+authored with every unauthored bone contributing identity. What follows is
+testable for any rig: **composing the authored locals from the root down to a
+placed bone returns the orientation that bone's tracker reported.** Adding a
+chest strap mid-session changes what the head's local rotation *is* and not what
+its world orientation is, which is the case that says the composition is a
+composition rather than a copy.
+
+**The knees and the elbows are refused, and that is this library's own argument
+read forwards.** `TrackerRegion` exists because a knee is not a joint; this
+solve's answer is that it does not know which of the two bones the strap
+observes, because with no limb lengths a bent knee and a rotated thigh are the
+same observation. They are reported in `unsolved` rather than refused — a rig
+carrying them still produces a pose, and the operator is told which devices
+drive nothing.
+
+**One mutation proved the fixture wrong before it proved the code right.**
+Fourteen mutations, and the composition-order one *survived*: the fixture turned
+the hips and the chest about the same axis, and two rotations about one axis
+commute, so a chain composed backwards reproduced the observation anyway. The
+axis changed and the mutation was caught; the case is the only reason anyone
+knows the check was vacuous. Nineteen boundary injections beside it, each
+refused and each shown to pass without the injection.
+
+**Review found three more, and the shape of all three is the same**: two stale
+sentences and one value comparison. `TrackerObservation`'s equality read
+`position` and `rotation` under an unset flag, which is the one thing the type
+says not to do — `motionCore::RootMotion` gates each value on its flag and this
+now does too, because an unset half is not required to hold its default and two
+reports of "this tracker sent no position" must not differ over a stale number.
+The two sentences were the header claiming every report vector is filled under
+every refusal (the two refusals about the *bindings* return before there is
+anything to classify, and the suite already asserted that) and
+`positionsUnused` describing itself as placed regions when it collects every
+bound one — a knee that carried a position appears there and in `unsolved`, and
+the overlap is deliberate, because the two answer different questions. Three
+more mutations, one per finding, each caught.
+
+**The boundary check became per file, which is what the one new edge cost.**
+`motionTracking -> motionCore` is a link line the assignment half must not use,
+and one static library links what it links — so the vocabulary and the
+assignment are still scanned for a bone, for `motionCore` and for OpenUSD in any
+form, the solve is scanned for everything except those, and the alias is
+forbidden in both halves in either direction. **A file in neither half is an
+error**, so the next file chooses its rules deliberately or not at all.
+
+Two things this milestone did not do. **No IK**, which is the paragraph above
+holding rather than an omission: an IK solve is a second function over the same
+values, taking the rest pose this one refuses to invent and producing the same
+`TrackerSolve`. And **nothing consumes it yet** — `adapters/*/tools/* ->
+motionTracking` is still a permission with no taker, so no session has reached
+an avatar by this path. That is VRC-6's tool and an operator's twenty minutes.
+
 ### VRC-6 — CLI and record
 
 One tool, in the shape `vmc_record` and `mocopi_record` already have: listen ·
@@ -1251,14 +1327,39 @@ depends on them ([docs/README.md](../README.md)).
   fixture per outcome, and a contract that pre-empted it would be deciding an
   implementation it could not see, exactly as the transport ring's magic and
   timeout were left to OSC-2. VRC-4a decides it.
-- ⬜ **A tracker observation has no representation in the motion contract.**
-  `motionCore` carries `HumanoidPose`, which is post-solve. Whether a
-  pre-IK tracker sample needs a contract there — a generic `TrackingSource` or
-  tracker-sample type — or stays entirely inside the adapter until it becomes a
-  pose is VRC-5's question, and it is the one place this plan could push a
-  VRChat-shaped type into a vendor-neutral library. **No VRChat-specific type
-  enters `motionCore` under any outcome**; if the generic form is not clear, the
-  adapter keeps its own and the contract stays unwritten. Blocks VRC-5.
+- ✅ **A tracker observation has no representation in the motion contract**
+  *(answered 2026-08-31, in its own change ahead of VRC-5's code)*. `motionCore`
+  carries `HumanoidPose`, which is post-solve, and the question was which of two
+  answers to take: a generic tracker-sample type there, or nothing there at all
+  and the observation stays in the adapter until it becomes a pose.
+
+  **Neither, and the third answer was in the tree already.** The question was
+  posed when the only two places to put anything were `motionCore` and an
+  adapter; VRC-4a's `libs/motionTracking` is a third, and it is the layer that
+  already holds two of [§5.1](#51-assignment-is-a-third-thing-and-it-belongs-to-neither-end)'s
+  three decisions. So the observation lands beside the vocabulary and the
+  assignment, where the solve that consumes it lives.
+
+  **What settled it against `motionCore` is who would read one.** Every consumer
+  of that header takes a pose — retarget, the trace format, the comparison
+  semantics, the exec nodes — so a tracker sample there would be a value with
+  no reader in the aggregate product, carrying an equality, a comparison and a
+  trace-format obligation regardless, because
+  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md) requires all three of
+  anything added to the value types. And what settles it against the adapter is
+  the milestone itself: a solve inside an adapter is the second motion pipeline
+  [adapter plan §2](adapters-mocopi-vmc-ardy.md#2-what-an-adapter-is-allowed-to-be)
+  forbids, so an observation that never left the adapter would have kept the
+  solve there with it.
+
+  **The edge is the price, and it is one line.** `motionTracking -> motionCore`
+  leaves the forbidden list for the solve alone
+  ([WORKSPACE.md](../architecture/WORKSPACE.md) §2); the region vocabulary and
+  the assignment keep the empty edge set they were given, and the alias
+  prohibition is unchanged — what the boundary check does in exchange is scope
+  its bone rule to the two files that must never name one, rather than drop it.
+  **No VRChat-specific type enters `motionCore` under any outcome** still holds,
+  and now holds trivially: nothing about a tracker enters it at all.
 - ⬜ **The live-source bridge**, carried by
   [adapter plan §11](adapters-mocopi-vmc-ardy.md#11-contract-changes-this-plan-requires)
   and unchanged in substance. This plan supplies its third instance

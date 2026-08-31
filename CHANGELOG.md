@@ -177,6 +177,52 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **Assigned tracker observations reach a canonical pose, and the solve stops
+  where IK begins** (VRC-5). `motionTracking::SolveTrackerPose` takes an
+  operator's assignment and the observations it was made from and produces a
+  `motion::HumanoidPose`. The pre-IK observation itself gets **no type in
+  `motionCore`**, decided in the contract before any code: every consumer of
+  that header takes a pose, so a tracker sample there would be a value with no
+  reader in the aggregate product carrying an equality, a comparison and a
+  trace-format obligation regardless. It lives beside the vocabulary and the
+  assignment instead, and `motionTracking` takes the one edge that costs —
+  `motionCore`, for the solve alone.
+
+  **The solve is direct and says so.** An observed orientation becomes the
+  local rotation of the bone its region names, composed as
+  `inverse(parent chain) * observed` so that forward kinematics reproduces the
+  observation exactly; a joint nobody observed stays at **rest** rather than
+  being estimated; and an observed **position** is consumed in one place only,
+  the hips, on the root/hips rule this contract already carries. Every other
+  position is *reported unused* rather than dropped, because consuming one is
+  IK and IK needs limb lengths that belong to a target rig this layer does not
+  have. The knees and the elbows are placed onto no bone at all — a strap
+  between two bones is not either of them, and with no limb lengths a bent knee
+  and a rotated thigh are the same observation — and they are reported as
+  unsolved rather than refused, so a rig carrying them still produces a pose.
+
+  **`TrackerObservation`'s equality reads the flags first and the values only
+  under them**, which is `motionCore::RootMotion`'s rule: an unset half is not
+  required to hold its default, so a stale number under a cleared flag must not
+  make two reports of "this tracker sent no position" differ.
+
+  **The invariant is what the suite is built on**, and one mutation proved the
+  fixture wrong before it proved the code right: the composition-order mutation
+  survived, because the fixture turned the hips and the chest about the *same
+  axis* and two rotations about one axis commute. The axis changed and the
+  mutation was caught. Seventeen mutations and nineteen boundary injections in
+  all, each shown to fail first.
+
+  **The boundary check is now per file rather than per library**, which is what
+  the edge cost: the vocabulary and the assignment keep the empty edge set they
+  were given and are still scanned for `motionCore`, for OpenUSD in any form and
+  for a bone; the solve may name `motionCore` and OpenUSD's `Gf` value types and
+  nothing else; the alias between a region and a bone is forbidden in both
+  halves in either direction; and **a file in neither half is an error**. The
+  installed package declares `motionCore` and `pxr`, its consumer fixture
+  compiles the new header, and dropping the config's `find_dependency` line
+  fails that fixture at compile time.
+
 - **`motionTracking`, a new shared library: which tracker is which body
   region** (VRC-4a). A tracker index is not a body role, so an adapter that
   mapped one onto a bone would have invented a calibration and hidden it in a
@@ -222,9 +268,10 @@ Current schema contract version: **1**.
   injections, each refused. **The mutation pass found a hole and the fix was
   a deletion**: a guard refusing a second `=` in a statement could not be
   reached by any input, because `head=hips` is already not a region this
-  vocabulary carries. It is gone rather than documented. It links nothing at
-  all — no `motionCore`, no OpenUSD, no platform primitive — and carries no
-  diagnostic code: a refusal names the event and the caller supplies the
+  vocabulary carries. It is gone rather than documented. It linked nothing at
+  all when it landed — no `motionCore`, no OpenUSD, no platform primitive — and
+  the solve entry above is what changed that, for the solve alone. It carries no
+  diagnostic code either: a refusal names the event and the caller supplies the
   code, as `motionSource` and `osc` already do.
 
   **The `adapters/* -> motionTracking` prohibition is enforced in the three

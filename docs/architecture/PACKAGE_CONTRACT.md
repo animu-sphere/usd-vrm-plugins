@@ -151,7 +151,7 @@ this document of what `find_dependency(pxr)` is carrying.
 | `motionBvh` | `motionBvh::motionBvh` | `include/motionBvh/` | `motionSource` | — | yes | **measured** |
 | `liveTransport` | `liveTransport::liveTransport` | `include/liveTransport/` | `Threads` (non-Windows) | `ws2_32` (Windows), `Threads::Threads` (elsewhere) | **no** | **measured** |
 | `osc` | `osc::osc` | `include/osc/` | — | — | **no** | **measured** |
-| `motionTracking` | `motionTracking::motionTracking` | `include/motionTracking/` | — | — | not yet | **measured** |
+| `motionTracking` | `motionTracking::motionTracking` | `include/motionTracking/` | `pxr`, `motionCore` | — | not yet | **measured** |
 
 `vrmContainer` is the only `SHARED` library here; every other row is `STATIC`
 and defines a `<NAME>_STATIC` compile definition `PUBLIC`, which a consumer
@@ -164,10 +164,18 @@ question `osc` fails — and nothing links it **yet**, in or out of the product:
 §2's permission is `adapters/*/tools/* -> motionTracking` and no CLI has taken
 it, so this fixture is currently its only reader. A `no` there would read as the exclusion the
 two shared leaves carry, and a `yes` would claim a member that does not exist, so
-the cell says what is true. Its three empty columns are `osc`'s measurement
-repeated: no workspace edge, no platform library, no `find_dependency` in its
-config. Measured on 2026-08-31 from a `cmake --install` prefix — configure,
-build, link and **run**, with an empty link closure.
+the cell says what is true.
+
+**Its required-package cell changed on 2026-08-31, and it is the only cell that
+did.** Until VRC-5 the row was `osc`'s measurement repeated — three empty
+columns, no workspace edge, no `find_dependency` at all. The solve took the one
+edge [WORKSPACE.md §2](WORKSPACE.md) grants this library, so the config now
+carries `motionCore` and, with it, the `pxr` guard every row that names a Gf
+type carries. **The platform column stayed empty**, which is the half worth
+saying out loud: what this library gained is a value type, not an ability, and
+nothing here opens or waits on anything. Re-measured the same day from a
+`cmake --install` prefix — configure, build, link and **run**, against a prefix
+holding `motionCore` and nothing else of this workspace's.
 
 `osc`'s row is empty in three columns and that is the measurement rather than an
 oversight: one source file, two headers, no workspace edge and no platform
