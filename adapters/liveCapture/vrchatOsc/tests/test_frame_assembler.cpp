@@ -677,6 +677,12 @@ constexpr Expected kExpected[] = {
     // reading of the wire and not a fault -- a tracker's two halves are two
     // datagrams and either can be the only one there is.
     {"position-only.vrchatoscpackets", 3, 12, 12, 0, 0, 0, 0},
+    // The one capture here written for a consumer rather than for a decoder:
+    // twelve unbroken frames of four trackers, nothing lost, nothing partial
+    // and nothing refused. VRC-6's end-to-end leg replays it onto a rig, and
+    // this row is what says the frames it starts from are the ones the
+    // generator wrote.
+    {"rig-motion.vrchatoscpackets", 12, 48, 0, 0, 0, 0, 0},
     {"rotation-only.vrchatoscpackets", 3, 12, 12, 0, 0, 0, 0},
     // The restart: two sessions of three frames, one timeout for the 4.85 s
     // dark window and one restart for the port that changed inside it.

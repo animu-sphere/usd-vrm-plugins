@@ -20,6 +20,7 @@ loss falling 96 % on `/tracking/trackers/1/rotation`.
 | Capture | What it pins | `observed` |
 | --- | --- | :-: |
 | `three-trackers-58hz` | ordinary traffic: three numbered trackers, a named head, a frame lost whole and an address lost on its own | session |
+| `rig-motion` | that the shape reaches the far end: twelve unbroken frames of a body that walks, turns its head and rolls its feet far enough to survive a retarget | unobserved |
 | `one-tracker` | values, exactly: every number is representable in binary32, so *nothing is converted on the way through* is an equality rather than a tolerance | derived |
 | `eight-trackers` | the whole numbered surface, 1–8 | unobserved |
 | `head-absent` | a session with no head reference is well-formed | derived |
@@ -41,18 +42,22 @@ it has three values because a boolean was not honest enough:
 - **`session`** — the recorded session carried this shape. **One capture does.**
 - **`derived`** — every address, type tag and ordering in it is one the session
   carried, recombined into an arrangement it did not: one tracker alone, no
-  head, a single channel sustained, a permanent dropout. Five are. The elements
-  are evidence; the arrangement is not.
-- **`unobserved`** — it carries something the session never sent at all. Six
-  are, each with its reason in `pins`: the numbered surface, because refusing
+  head, a single channel sustained, a permanent dropout, a restart. **Six are.**
+  The elements are evidence; the arrangement is not.
+- **`unobserved`** — it carries something the session never sent at all. **Nine
+  are**, each with its reason in `pins`: the numbered surface, because refusing
   4–8 would call a legal address a protocol violation; a bundle, because "no
   sender bundles" must not quietly become "this cannot read one"; a reordered or
   duplicated frame, which that sender's 99.7 %-consistent cycle argues against
-  rather than merely omits; VRChat's wider surface; and malformed traffic,
-  because port 9000 is well known and anything on the network may send to it.
+  rather than merely omits; a silence with the same peer either side and a
+  recalibration, neither of which anybody performed while recording; VRChat's
+  wider surface; two files of malformed traffic, because port 9000 is well known
+  and anything on the network may send to it; and `rig-motion`'s magnitudes,
+  invented in the one dimension a test needs and no reading depends on — the
+  recorded session was performed standing, so nothing in it walks.
 
 The ratio is the thing worth seeing: **this protocol's evidence here is one
-measured arrangement**, and the other eleven fixtures are constructed from it or
+measured arrangement**, and the other fifteen fixtures are constructed from it or
 from the specification. A corpus that cannot say how far a recording stands
 behind each of its fixtures is one a later reader has to guess about.
 
@@ -63,6 +68,12 @@ region** — which tracker is on which part of a body is an assignment policy
 outside this adapter — and assert no unit and no basis, because what space the
 numbers are in is VRC-3's to establish against a recorded rest pose rather than
 from the documentation.
+
+`rig-motion` does not weaken that and is worth reading twice, because it is the
+one fixture a reader could mistake for a body. Its numbers are still not a
+measurement of one: what the end-to-end leg replaying it asserts is that four
+joints move and fourteen hold rest, and *which* four is the assignment the test
+states on its command line. The fixture names no region either.
 
 Nor a second sender: the only VRChat OSC sender measured to date is one mobile
 application in its `VRChat (OSC)` transfer format. A VRChat client itself has
@@ -75,7 +86,9 @@ never been recorded here and is never a test dependency.
    its `tags` and its `observed` (`session`, `derived` or `unobserved`) — the
    measured fields are filled in for you.
 3. Add a row to `kExpected` in
-   [`tests/test_tracker_message.cpp`](../../test_tracker_message.cpp). A capture
-   with no expectation **fails** that test rather than being skipped, which is
-   what stops a fixture being added to the corpus and decoded by nobody.
+   [`tests/test_tracker_message.cpp`](../../test_tracker_message.cpp) **and** to
+   the table in
+   [`tests/test_frame_assembler.cpp`](../../test_frame_assembler.cpp). A capture
+   with no expectation **fails** both rather than being skipped, which is what
+   stops a fixture being added to the corpus and decoded by nobody.
 4. Run `python adapters/liveCapture/vrchatOsc/tools/generate_packets.py`.

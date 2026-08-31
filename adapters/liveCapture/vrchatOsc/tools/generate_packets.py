@@ -250,18 +250,26 @@ class Capture:
         self.peers.append(self.record_peer)
 
     def frame(self, receive_time: float, identities, frame: int,
-              channels=CHANNELS, skip=(), shift=(0.0, 0.0, 0.0)) -> None:
+              channels=CHANNELS, skip=(), shift=(0.0, 0.0, 0.0),
+              values_for=None) -> None:
         """One frame as this sender sends one: a burst of single-message datagrams.
 
         `skip` drops individual (identity, channel) pairs, which is the shape of
         the single-address loss measured on the real wire -- 96 % of it on one
         address -- and the concrete case behind TRACKER_PARTIAL.
+
+        `values_for` replaces the drifting table for the one capture that needs
+        a body doing something rather than trackers that are merely
+        distinguishable. It is a parameter rather than a second `frame` method
+        because everything else about how this sender packages a frame -- the
+        cycle order, the burst spacing, one message per datagram -- is the same
+        measurement in both cases, and a copy of it would be free to drift.
         """
         step = 0
         for identity, channel in cycle(identities):
             if channel not in channels or (identity, channel) in skip:
                 continue
-            values = frame_values(identity, channel, frame)
+            values = (values_for or frame_values)(identity, channel, frame)
             if channel == "position" and shift != (0.0, 0.0, 0.0):
                 values = tuple(value + offset
                                for value, offset in zip(values, shift))
@@ -690,8 +698,71 @@ def capture_calibration_jump() -> Capture:
     return capture
 
 
+def rig_motion_values(identity: str, channel: str, frame: int):
+    """One tracker's values in a session that is *doing* something.
+
+    Every other capture here drifts by a millimetre and a quarter of a degree
+    per frame, on purpose: what those fixtures pin is that a decoder does not
+    return its defaults and does not cross two identities, and a tiny drift
+    proves both while keeping the numbers readable in a hex dump.
+
+    That is not enough for one question, and it is the question this fixture
+    exists for: **does a session reach a rig**. The end-to-end check compares a
+    joint's rotation across time, and a quarter of a degree per frame composed
+    through a retarget's rest-pose correction lands within the tolerance that
+    check needs to leave for float error -- so a session that arrived perfectly
+    and a session that arrived not at all would both read as "nothing moved".
+
+    So this one walks: half a metre forward, a head that turns most of a right
+    angle, and two feet pitching in opposite directions. Nothing here is a
+    measurement of a real body, and the manifest says so -- what it pins is a
+    *magnitude* large enough that the arrival is unambiguous, which is a
+    property of the test and not of the wire.
+    """
+    step = frame * 0.05
+    table = {
+        # Forward, and turning left. The angles are the wire's own: degrees, in
+        # the sender's left-handed space, composed Ry * Rx * Rz (TrackingSpace.h).
+        "head": ((0.020, 1.620, -0.050 + step), (0.0, -6.0 * frame, 0.0)),
+        "1": ((0.010, 0.980, -0.020 + step), (0.0, -3.0 * frame, 0.0)),
+        # The feet pitch in opposite directions, which is what makes the two
+        # distinguishable in a joint comparison: a solve that bound both to one
+        # region would show them moving together.
+        "2": ((-0.110, 0.460, 0.030 + step), (4.0 * frame, 0.0, 0.0)),
+        "3": ((0.100, 0.450, 0.020 + step), (-4.0 * frame, 0.0, 0.0)),
+    }
+    position, rotation = table[identity]
+    return position if channel == "position" else rotation
+
+
+def capture_rig_motion() -> Capture:
+    """Twelve unbroken frames of a body walking, turning and rolling its feet.
+
+    The one capture here written for a *consumer* rather than for a decoder.
+    Everything else in this corpus pins a shape the wire produces; this pins
+    that the shape reaches the far end -- `vrchat_osc_record --export-trace`,
+    then `motion_capture`, then `motion_retarget`, onto a rig whose joints are
+    checked by name (VRC-6).
+
+    Nothing is lost and nothing is refused: a frame missing here would make a
+    failed end-to-end run ambiguous between the loss and the chain, and loss
+    already has three fixtures of its own.
+
+    Unobserved, and the manifest says so. The 2026-08-30 session was recorded
+    standing and turning a head, so the magnitudes below are invented -- and
+    they are invented in the one dimension a test needs and no reading depends
+    on.
+    """
+    capture = Capture("rig-motion-01", "127.0.0.1:51662")
+    for index in range(12):
+        capture.frame(index * FRAME_SECONDS, MEASURED_TRACKERS, index,
+                      values_for=rig_motion_values)
+    return capture
+
+
 CAPTURES = {
     "three-trackers-58hz.vrchatoscpackets": capture_three_trackers,
+    "rig-motion.vrchatoscpackets": capture_rig_motion,
     "one-tracker.vrchatoscpackets": capture_one_tracker,
     "eight-trackers.vrchatoscpackets": capture_eight_trackers,
     "head-absent.vrchatoscpackets": capture_head_absent,

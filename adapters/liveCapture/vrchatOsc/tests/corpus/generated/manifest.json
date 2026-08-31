@@ -54,6 +54,36 @@
       "peers": []
     },
     {
+      "file": "rig-motion.vrchatoscpackets",
+      "pins": "Twelve unbroken frames of a body walking half a metre forward, turning its head most of a right angle and rolling its two feet in opposite directions. The one capture here written for a consumer rather than for a decoder: it is what VRC-6's end-to-end leg replays through --export-trace, motion_capture and motion_retarget onto a rig whose joints are then checked by name. Nothing is lost and nothing is refused, so a failed run of that chain is unambiguous. The magnitudes are invented, and they are invented in the one dimension a test needs and no reading depends on -- every other fixture here drifts a millimetre and a quarter degree per frame, which is enough to prove a decoder is not returning its defaults and too little to tell a rig that arrived from one that did not.",
+      "tags": [
+        "consumer",
+        "rig-motion",
+        "invented"
+      ],
+      "observed": "unobserved",
+      "id": "rig-motion",
+      "sender": "example.synthetic",
+      "device": "example.synthetic",
+      "sourceId": "rig-motion-01",
+      "datagrams": 96,
+      "payloadBytes": 5088,
+      "durationSeconds": 0.189708,
+      "addressPatterns": [
+        "/tracking/trackers/1/position",
+        "/tracking/trackers/1/rotation",
+        "/tracking/trackers/2/position",
+        "/tracking/trackers/2/rotation",
+        "/tracking/trackers/3/position",
+        "/tracking/trackers/3/rotation",
+        "/tracking/trackers/head/position",
+        "/tracking/trackers/head/rotation"
+      ],
+      "peers": [],
+      "sha256": "9774f4ccd997cb571aae57329cb683b66762590f55b141416e3fbbd3057ee33b",
+      "bytes": 27407
+    },
+    {
       "file": "one-tracker.vrchatoscpackets",
       "pins": "One tracker, and the only capture whose values are load-bearing: every number is exactly representable in binary32, so a decoder that reflected an axis, reordered components, converted degrees to radians or rescaled units fails here on equality rather than within a tolerance. The signs are asymmetric in all three components so a reflection through any single axis is visible.",
       "tags": [
