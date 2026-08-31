@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -328,6 +329,44 @@ GetUsage()
         "                         the same report a live session prints minus\n"
         "                         the lines that describe a socket.\n"
         "\n"
+        "Exporting (with --inspect, and only there):\n"
+        "  --export-trace PATH    Write what this adapter delivered as a\n"
+        "                         motion-capture-trace, which the product's own\n"
+        "                         motion_capture replays knowing nothing about\n"
+        "                         VRChat OSC. This is the one thing here that\n"
+        "                         decodes and solves, and it is why it runs\n"
+        "                         against a file: a recording stays\n"
+        "                         decoder-free, and a trace exported from\n"
+        "                         committed bytes is the same trace on any\n"
+        "                         machine.\n"
+        "  --assign SPEC          Which tracker is on which body region, as\n"
+        "                         '1=hips 2=leftFoot 3=rightFoot head=head'.\n"
+        "                         Pairs separate on whitespace or commas; '#'\n"
+        "                         runs to end of line. Required with\n"
+        "                         --export-trace and deliberately undefaulted:\n"
+        "                         a tracker index is not a body role, so a\n"
+        "                         default would be a calibration this tool\n"
+        "                         invented. Regions: head chest hips\n"
+        "                         leftElbow leftHand leftKnee leftFoot\n"
+        "                         rightElbow rightHand rightKnee rightFoot.\n"
+        "                         Spelled exactly; a near miss is refused\n"
+        "                         rather than guessed at.\n"
+        "  --unplaced POLICY      What to do with an observed tracker the\n"
+        "                         assignment does not place: refuse (default),\n"
+        "                         ignore, or hold. 'refuse' stops - it will\n"
+        "                         still be true next frame; 'hold' waits for a\n"
+        "                         rig that is still coming up.\n"
+        "  --no-root-motion       Do not author the observed hips position as\n"
+        "                         root motion. The hips *rotation* is authored\n"
+        "                         either way: a body that turned turned\n"
+        "                         whatever the translation is worth.\n"
+        "  --source-session N     Which of the capture's sessions to export,\n"
+        "                         counting from 1. One trace is one session, so\n"
+        "                         a capture the sender restarted during is\n"
+        "                         refused until this names a half - the two\n"
+        "                         clocks overlap and splicing them would invent\n"
+        "                         a continuity the wire denies.\n"
+        "\n"
         "  --quiet                Suppress the progress line and the warnings\n"
         "                         on stderr. The report is what this tool\n"
         "                         produces and always goes to stdout.\n"
@@ -349,6 +388,13 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
             sessionFlag = flag;
         }
     };
+    // The same problem on the export side, and it needs the same treatment for
+    // the same reason: `--unplaced refuse` and an unwritten `--no-root-motion`
+    // both parse to what the struct already held, so an export flag given
+    // without an export cannot be found by reading the parsed values back.
+    bool assignmentGiven = false;
+    bool unplacedGiven = false;
+    bool rootMotionGiven = false;
 
     for (std::size_t i = 0; i < arguments.size(); ++i) {
         const std::string& argument = arguments[i];
@@ -456,6 +502,73 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
                            &options->maxDatagrams, error)) {
                 return false;
             }
+        } else if (argument == "--export-trace") {
+            if (!TakeValue(arguments, &i, argument, &options->traceExportPath,
+                           error)) {
+                return false;
+            }
+            // Present-but-empty is refused rather than ignored, the correction
+            // `SplitEndpoint` already carries and for its reason: an empty path
+            // leaves this field indistinguishable from the flag never having
+            // been given, so the tool would read the capture, write nothing and
+            // exit 0 -- a silent default, which is the one outcome an argument
+            // parser must not reach because it cannot be told apart from being
+            // obeyed.
+            if (options->traceExportPath.empty()) {
+                *error = "--export-trace names the trace to write and was "
+                         "given an empty path";
+                return false;
+            }
+        } else if (argument == "--assign") {
+            std::string text;
+            if (!TakeValue(arguments, &i, argument, &text, error)) {
+                return false;
+            }
+            // Parsed here rather than carried as text, so an operator with a
+            // device strapped on and a capture in hand learns about a
+            // misspelled region before the capture is read rather than after.
+            // `ParseTrackerAssignmentSpec` refuses a spec that parses and
+            // cannot be used in the same call, which is why one message covers
+            // both.
+            std::string reason;
+            // The parser carries `unplaced` over rather than resetting it
+            // (TrackerAssignment.h), which is what makes the two flags order-
+            // independent: `--unplaced hold --assign ...` and `--assign ...
+            // --unplaced hold` are the same command.
+            if (!motionTracking::ParseTrackerAssignmentSpec(
+                    text, &options->assignment, &reason)) {
+                *error = "--assign: " + reason;
+                return false;
+            }
+            assignmentGiven = true;
+        } else if (argument == "--unplaced") {
+            std::string text;
+            if (!TakeValue(arguments, &i, argument, &text, error)) {
+                return false;
+            }
+            const std::optional<motionTracking::UnplacedTrackerPolicy> policy =
+                motionTracking::ParseUnplacedTrackerPolicy(text);
+            if (!policy) {
+                *error = "--unplaced expects refuse, ignore or hold, got '"
+                    + text + "'";
+                return false;
+            }
+            // The policy is the caller's flag and not part of the spec's
+            // syntax, deliberately: an `unplaced=...` directive inside --assign
+            // would make `unplaced` a tracker identity nobody could use
+            // (TrackerAssignment.h).
+            options->assignment.unplaced = *policy;
+            unplacedGiven = true;
+        } else if (argument == "--no-root-motion") {
+            options->solve.authorRootMotion = false;
+            rootMotionGiven = true;
+        } else if (argument == "--source-session") {
+            // The count's own minimum, so the range in the message is the range
+            // enforced: a capture cannot hold a zeroth session.
+            if (!TakeCount(arguments, &i, argument, 1.0, 1000000.0,
+                           &options->sourceSession, error)) {
+                return false;
+            }
         } else if (argument == "--dry-run") {
             session("--dry-run");
             options->dryRun = true;
@@ -471,18 +584,68 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
         options->maxDatagrams = kDefaultMaxDatagrams;
     }
 
+    // The three flags that only mean something to an export, named one at a
+    // time rather than as a class: an operator who typed `--assign` and forgot
+    // `--export-trace` has asked for a solve nothing would write down, and a
+    // message saying which flag is stranded is the one that says what to add.
+    const char* strandedFlag = nullptr;
+    if (assignmentGiven) {
+        strandedFlag = "--assign";
+    } else if (unplacedGiven) {
+        strandedFlag = "--unplaced";
+    } else if (rootMotionGiven) {
+        strandedFlag = "--no-root-motion";
+    } else if (options->sourceSession != 0) {
+        strandedFlag = "--source-session";
+    }
+    if (options->traceExportPath.empty() && strandedFlag != nullptr) {
+        *error = std::string(strandedFlag)
+            + " configures the trace an export writes, so it needs "
+              "--export-trace";
+        return false;
+    }
+
+    // The assignment is required and cannot be defaulted, which is the whole of
+    // §5.1 said at a prompt: a tracker index is not a body role, so there is no
+    // reading of `/tracking/trackers/1` this tool is entitled to pick. A
+    // default would be a calibration a decoder invented, which is the thing
+    // this path exists to make impossible.
+    if (!options->traceExportPath.empty() && !assignmentGiven) {
+        *error = "--export-trace needs --assign: a tracker index is not a body "
+                 "role, so which device is on which region is your statement "
+                 "about the rig and not something this tool may guess. Try "
+                 "--assign '1=hips 2=leftFoot 3=rightFoot head=head' and read "
+                 "the report's placed/unsolved lines back";
+        return false;
+    }
+
+    // The export must not be pointed at the capture it is reading. This is the
+    // check that can refuse at the prompt, before a byte is read, naming both
+    // flags; it is **not sufficient on its own**, because two spellings of one
+    // path are not one string, and `ExportTrace` asks the filesystem for the
+    // rest. The sibling tool measured what the gap costs: it exited 0 and
+    // printed a report describing datagrams that no longer existed.
+    if (!options->traceExportPath.empty()
+        && options->traceExportPath == options->inspectPath) {
+        *error = "--export-trace names the same path as --inspect, and writing "
+                 "the trace there would destroy the capture it was derived "
+                 "from";
+        return false;
+    }
+
     if (!options->inspectPath.empty()) {
         // --inspect opens no socket and records nothing, so every flag about
         // either is a mistake worth naming rather than a setting that silently
         // does nothing.
         //
-        // The list of exceptions is *empty* here, where the sibling tools each
-        // have two: `--export-trace` and `--source-session` earn an exception
-        // there by changing what is written out of a capture rather than how one
-        // is recorded. Nothing in this tool decodes, so there is nothing to
-        // write out of a capture and nothing to except. `--quiet` is not in this
-        // class at all: it is about the two output streams, which both modes
-        // have.
+        // The four export flags are outside that class and are the only ones
+        // that ever will be: they change what is written *out of* a capture
+        // rather than how one is recorded, which is the same exception both
+        // sibling tools make. This list was empty rather than short until
+        // VRC-6, and the reason is worth keeping -- a flag earns an exception
+        // here by having a file to act on, and until an export existed none
+        // did. `--quiet` is not in this class at all: it is about the two
+        // output streams, which both modes have.
         if (sessionFlag) {
             *error = std::string("--inspect reads a recorded capture and opens "
                                  "no socket, so ")
@@ -490,6 +653,20 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
             return false;
         }
         return true;
+    }
+
+    if (!options->traceExportPath.empty()) {
+        // The line this tool is built on, enforced at the prompt rather than
+        // explained afterwards: a recording runs no decoder, so there is
+        // nothing in a live session for this flag to read (TraceExport.h). The
+        // message names both commands rather than only refusing, because the
+        // operator asking for this has a sender running and the recording they
+        // want is still the right first step.
+        *error = "--export-trace derives a trace from a recorded capture, so it "
+                 "goes with --inspect: record the session first, then export "
+                 "from the file. Nothing decodes during a recording here, and "
+                 "that is what makes the capture the evidence";
+        return false;
     }
 
     if (options->outputPath.empty() && !options->dryRun) {

@@ -40,30 +40,52 @@ if(NOT DEFINED VRCHATOSCRECORD_BUILD_TESTS)
            ${_vrchat_osc_record_tests_default})
 endif()
 
-# A standalone configure of this directory resolves the adapter as an installed
-# package; the composed build already has the in-tree target.
+# A standalone configure of this directory resolves each as an installed
+# package; the composed build already has the in-tree targets.
 if(NOT TARGET vrmAdapterVrchatOsc::vrmAdapterVrchatOsc)
     find_package(vrmAdapterVrchatOsc REQUIRED CONFIG)
+endif()
+if(NOT TARGET motionTracking::motionTracking)
+    find_package(motionTracking REQUIRED CONFIG)
+endif()
+if(NOT TARGET motionRuntime::motionRuntime)
+    find_package(motionRuntime REQUIRED CONFIG)
 endif()
 
 add_executable(vrchat_osc_record
     src/Options.cpp
     src/SessionReport.cpp
+    src/TraceExport.cpp
     src/main.cpp)
 
 target_compile_features(vrchat_osc_record PRIVATE cxx_std_17)
-# The adapter, and deliberately nothing else. §2 would permit this target to link
-# `vrmRetarget` and OpenUSD's stage libraries the way `motion_retarget` does; it
-# does not need them, and a link line is the cheapest place to keep that true.
+# Three edges, and the second of them is the one WORKSPACE.md §2 wrote a
+# paragraph for. `motionTracking` is granted to an adapter's *tool* and refused
+# to its library, because which tracker is on which body region is an operator's
+# statement about a rig — an adapter that resolved it would have invented a
+# calibration and hidden it inside a decoder. VRC-6 is the first taker of that
+# permission; until this line existed it was a rule with nothing to hold.
+#
+# `motionRuntime` arrives for `WriteCaptureTraceFile` alone, which is the
+# hand-off to the product: a `motion-capture-trace` file, which `motion_capture`
+# replays knowing nothing about this adapter (§2).
+#
+# §2 would permit this target to link `vrmRetarget` and OpenUSD's stage
+# libraries the way `motion_retarget` does. It does not need them — the trace is
+# the hand-off, and a stage is the product's to author — and a link line is the
+# cheapest place to keep that true.
 target_link_libraries(vrchat_osc_record
-    PRIVATE vrmAdapterVrchatOsc::vrmAdapterVrchatOsc)
+    PRIVATE
+        vrmAdapterVrchatOsc::vrmAdapterVrchatOsc
+        motionTracking::motionTracking
+        motionRuntime::motionRuntime)
 
 if(MSVC)
     target_compile_options(vrchat_osc_record PRIVATE /utf-8)
-    # The pair every target here sets. NOMINMAX is cheap insurance rather than a
-    # present need in this tool -- nothing in its closure reaches OpenUSD today
-    # -- and it costs one line against a windows.h macro breaking a
-    # numeric_limits<>::max() the day something does.
+    # The pair every target here sets, and since VRC-6 it is a present need
+    # rather than the insurance this comment used to describe: motionCore and
+    # motionRuntime call exported Gf entry points, so windows.h's min/max macros
+    # now have OpenUSD's own numeric_limits<>::max() uses to break.
     target_compile_definitions(vrchat_osc_record PRIVATE NOMINMAX _USE_MATH_DEFINES)
 endif()
 

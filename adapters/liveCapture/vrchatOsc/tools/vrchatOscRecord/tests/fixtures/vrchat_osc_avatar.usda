@@ -1,0 +1,139 @@
+#usda 1.0
+(
+    doc = """A target rig for the VRChat OSC end-to-end leg, and nothing else.
+
+    It is a third fixture rather than a share of either sibling's, and the
+    reason is the source rather than the tidiness. A VMC or mocopi session
+    delivers a pose and drives whatever bones its sender carries; a *tracker*
+    session drives the bones an operator's assignment reached and no others --
+    hips, head and two feet for the three-point-plus-head rig the 2026-08-30
+    session actually wore. The VMC fixture is an arm chain with no legs and no
+    head, so retargeting a tracker session onto it would bind cleanly and
+    animate nothing, and the check that the rig moves would fail for a reason
+    with nothing to do with this adapter.
+
+    So this rig carries the chain a tracker rig drives, and it carries the
+    joints *between* those bones as well -- a spine, a chest, a neck and two
+    legs nothing in the session observes. That is the point rather than
+    padding: VRC-5's solve authors what it observed and leaves every other
+    joint at rest, so a rig with no unobserved joints could not tell "the four
+    bones moved" apart from "everything moved".
+
+    The joint names disagree with the humanoid vocabulary on purpose, the way
+    both siblings' do. A binding comes from the `vrm:humanBones:*` attributes
+    below and never from a name, so a rig whose joints happened to be called
+    `hips` and `head` would let a name heuristic pass this test without anyone
+    noticing one had appeared.
+
+    The mapping lives on the stage rather than in a --humanoid-map file because
+    that is the path a real VRM takes: the importer authors these attributes,
+    and motion_retarget reads them as plain attributes without linking the
+    vrmSchema bundle.
+    """
+    defaultPrim = "Avatar"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Scope "Avatar"
+{
+    # Seventeen bones, of which a three-point-plus-head assignment reaches four.
+    # The other thirteen are named so that they can be *checked to have stayed
+    # still*: an unobserved joint holding its rest pose is VRC-5's stated
+    # stopping point, and a rig that did not carry any would leave that claim
+    # untested. The arms are among them for a second reason — a VRM requires
+    # them, and a rig short of a required bone makes `motion_retarget` warn on
+    # every run, which is a line a reader has to learn to ignore.
+    #
+    # Whole joint paths, because that is what a UsdSkel joint token is.
+    custom token vrm:humanBones:hips = "Root/Pelvis"
+    custom token vrm:humanBones:spine = "Root/Pelvis/SpineA"
+    custom token vrm:humanBones:chest = "Root/Pelvis/SpineA/ChestA"
+    custom token vrm:humanBones:neck = "Root/Pelvis/SpineA/ChestA/NeckA"
+    custom token vrm:humanBones:head = "Root/Pelvis/SpineA/ChestA/NeckA/HeadA"
+    custom token vrm:humanBones:leftUpperLeg = "Root/Pelvis/ThighL"
+    custom token vrm:humanBones:leftLowerLeg = "Root/Pelvis/ThighL/ShinL"
+    custom token vrm:humanBones:leftFoot = "Root/Pelvis/ThighL/ShinL/FootL"
+    custom token vrm:humanBones:rightUpperLeg = "Root/Pelvis/ThighR"
+    custom token vrm:humanBones:rightLowerLeg = "Root/Pelvis/ThighR/ShinR"
+    custom token vrm:humanBones:rightFoot = "Root/Pelvis/ThighR/ShinR/FootR"
+    custom token vrm:humanBones:leftUpperArm = "Root/Pelvis/SpineA/ChestA/ArmUpperL"
+    custom token vrm:humanBones:leftLowerArm = "Root/Pelvis/SpineA/ChestA/ArmUpperL/ArmLowerL"
+    custom token vrm:humanBones:leftHand = "Root/Pelvis/SpineA/ChestA/ArmUpperL/ArmLowerL/HandL"
+    custom token vrm:humanBones:rightUpperArm = "Root/Pelvis/SpineA/ChestA/ArmUpperR"
+    custom token vrm:humanBones:rightLowerArm = "Root/Pelvis/SpineA/ChestA/ArmUpperR/ArmLowerR"
+    custom token vrm:humanBones:rightHand = "Root/Pelvis/SpineA/ChestA/ArmUpperR/ArmLowerR/HandR"
+    rel vrm:skeleton = </Avatar/TargetSkeleton>
+
+    def Skeleton "TargetSkeleton" (
+        apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        uniform token[] joints = [
+            "Root",
+            "Root/Pelvis",
+            "Root/Pelvis/SpineA",
+            "Root/Pelvis/SpineA/ChestA",
+            "Root/Pelvis/SpineA/ChestA/NeckA",
+            "Root/Pelvis/SpineA/ChestA/NeckA/HeadA",
+            "Root/Pelvis/ThighL",
+            "Root/Pelvis/ThighL/ShinL",
+            "Root/Pelvis/ThighL/ShinL/FootL",
+            "Root/Pelvis/ThighR",
+            "Root/Pelvis/ThighR/ShinR",
+            "Root/Pelvis/ThighR/ShinR/FootR",
+            "Root/Pelvis/SpineA/ChestA/ArmUpperL",
+            "Root/Pelvis/SpineA/ChestA/ArmUpperL/ArmLowerL",
+            "Root/Pelvis/SpineA/ChestA/ArmUpperL/ArmLowerL/HandL",
+            "Root/Pelvis/SpineA/ChestA/ArmUpperR",
+            "Root/Pelvis/SpineA/ChestA/ArmUpperR/ArmLowerR",
+            "Root/Pelvis/SpineA/ChestA/ArmUpperR/ArmLowerR/HandR"]
+
+        # The same chain accumulated into world space. UsdSkel warns without it
+        # and resolves anyway, which is how the design fixture gets away with
+        # omitting it -- but a warning printed by every run of this test is a
+        # line a reader has to learn to ignore, and those are expensive.
+        uniform matrix4d[] bindTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.95, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.07, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.23, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.46, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.55, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.09, 0.92, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.09, 0.51, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.09, 0.08, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.09, 0.92, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.09, 0.51, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.09, 0.08, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.16, 1.37, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.42, 1.37, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.66, 1.37, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.16, 1.37, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.42, 1.37, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.66, 1.37, 0, 1))]
+
+        # A rest pose with real offsets rather than a stack of identities: the
+        # root-motion delta is applied relative to each rig's own rest, so a rig
+        # whose hips sit at the origin would not exercise it.
+        uniform matrix4d[] restTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.95, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.12, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.16, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.23, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.09, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.09, -0.03, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.41, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.43, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.09, -0.03, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.41, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -0.43, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.16, 0.14, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.26, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.24, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.16, 0.14, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.26, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.24, 0, 0, 1))]
+    }
+}

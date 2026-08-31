@@ -172,8 +172,18 @@ Three: `motionCore`, `liveTransport` and `osc`.
 WORKSPACE.md §2 permits an adapter four, and the fourth — `motionRuntime` — is
 what an adapter takes when it produces a **pose**. This one produces none: a
 tracker observation is pre-IK, and the solve that makes it a pose is generic and
-lives outside this directory. Declaring it would claim a dependency the library
+lives in `libs/motionTracking`. Declaring it would claim a dependency the library
 does not have.
+
+**Its CLI has two edges this library may not have**, and that split is §2's
+rather than an accident of layout: `tools/vrchatOscRecord` links `motionTracking`
+to solve and `motionRuntime` to write the trace. A *tool* may, because an
+assignment is an operator's statement about a rig; a library may not, because a
+decoder that resolved one would have invented a calibration and hidden it inside
+itself. `adapters/* -> motionTracking` is a refused source token in
+[`tests/check_boundaries.py`](tests/check_boundaries.py) for that reason, and it
+is the one name on that list with no link line to fail on — this package is enums
+and a policy over them, so an include and a `TrackerRegion` would compile.
 
 `motionCore` arrived with VRC-3, which is the first code here that produces a
 canonical value — the sender's axes into the canonical basis, which is a
