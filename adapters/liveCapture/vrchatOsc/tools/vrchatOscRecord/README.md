@@ -183,6 +183,15 @@ solve: 12 of 12 frame(s)
   observed but unplaced: none
 ```
 
+Every region line is a **count of frames over the whole export**, not a reading
+of one. That is worth saying because the first version of this report took the
+last frame's assignment for the bottom two lines, and on this wire a capture
+routinely ends mid-burst — so it would print `stated but absent: head, leftFoot`
+under a `placed:` line counting those same regions, of the same session, three
+lines apart. A strap nobody wore is now absent in every frame and one that
+dropped out halfway is absent in half of them, which a bare list could not tell
+apart either.
+
 `--no-root-motion` turns the hips *position* off for a session whose hips
 position is not trusted. The hips rotation is authored either way: a body that
 turned turned whatever the translation is worth.

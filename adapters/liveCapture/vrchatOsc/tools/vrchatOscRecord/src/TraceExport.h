@@ -152,13 +152,26 @@ struct SolveReport
     std::array<std::size_t, motionTracking::TrackerRegionCount> withoutRotation{};
     std::array<std::size_t, motionTracking::TrackerRegionCount> positionsUnused{};
 
-    // Stated regions no frame ever carried a tracker for, and observed trackers
-    // no statement places — the assignment layer's two ways to miss, kept apart
-    // here as they are there. Both are recorded from the *last* frame that
-    // produced an assignment at all: they describe the rig rather than an
-    // instant, and a per-frame tally of an absence would count one missing
-    // device once per frame.
-    std::vector<motionTracking::TrackerRegion> absent;
+    // The assignment layer's two ways for an observation to miss a statement,
+    // kept apart here as they are there: a stated region whose tracker did not
+    // arrive is *absent*, and an observed tracker no statement places is
+    // *unplaced*.
+    //
+    // **Both accumulate over the export, and the first draft of this took the
+    // last frame's instead.** That read as a statement about the rig and was a
+    // statement about one instant, which is worse than either: on this wire a
+    // capture routinely ends mid-burst, so the last frame is very often a
+    // partial one — and the report then said `placed: head 3, leftFoot 3` above
+    // `stated but absent: head, leftFoot`, of the same session, three lines
+    // apart.
+    //
+    // So `absent` is a count per region on the four tallies' own model — how
+    // many frames a stated region's tracker did not arrive in, out of
+    // `framesObserved` — and `unplaced` is the union of the identities, in
+    // first-seen order. Counted over every observed frame rather than every
+    // solved one, because both are read off the assignment, which is filled
+    // whatever the solve then refuses.
+    std::array<std::size_t, motionTracking::TrackerRegionCount> absent{};
     std::vector<std::string> unplaced;
 };
 

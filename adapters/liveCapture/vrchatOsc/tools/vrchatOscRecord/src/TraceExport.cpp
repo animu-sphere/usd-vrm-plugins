@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "TraceExport.h"
 
+#include <algorithm>
 #include <string_view>
 #include <utility>
 
@@ -87,6 +88,17 @@ TraceCollector::Observe(
     const std::vector<vrmAdapterVrchatOsc::TrackerFrame>& frames,
     const motion::MotionSourceMetadata& metadata)
 {
+    // Observing after `Close` re-opens it, which is the sibling collector's
+    // rule and matters more here than it does there. `Close` sizes `_hips` to
+    // the sessions it found and `GetHipsMotion()` promises to be indexed
+    // alongside `GetSessions()`, so a collector that stayed closed would grow
+    // the second and not the first, and the caller's next
+    // `GetHipsMotion()[index]` would read past the end. The tool observes then
+    // closes once and never comes back, so this costs nothing; what it buys is
+    // that the only way to read a stale derived field is to not call `Close` at
+    // all, which `GetSessions` already documents.
+    _closed = false;
+
     for (const vrmAdapterVrchatOsc::TrackerFrame& frame : frames) {
         ++_report.framesObserved;
 
@@ -124,13 +136,19 @@ TraceCollector::Observe(
                 _assignment, motionTracking::TrackerIdentities(observed));
 
         // Filled whatever the refusal, which is that layer's rule -- so these
-        // are read before the solve rather than under its success. The last
-        // frame that produced an assignment wins; see the header.
-        _report.absent = assignment.absent;
-        _report.unplaced.clear();
+        // are read before the solve rather than under its success. They
+        // **accumulate**; see the header on what taking the last frame's said
+        // instead.
+        Tally(_report.absent, assignment.absent);
         for (const std::size_t index : assignment.unplaced) {
-            if (index < observed.size()) {
-                _report.unplaced.push_back(observed[index].tracker);
+            if (index >= observed.size()) {
+                continue;
+            }
+            const std::string& identity = observed[index].tracker;
+            if (std::find(_report.unplaced.begin(), _report.unplaced.end(),
+                          identity)
+                == _report.unplaced.end()) {
+                _report.unplaced.push_back(identity);
             }
         }
 
@@ -256,17 +274,11 @@ PrintSolveReport(std::FILE* out, const SolveReport& report)
     PrintRegionCounts(out, "withoutRotation", report.withoutRotation);
     PrintRegionCounts(out, "positionsUnused", report.positionsUnused);
 
-    std::fprintf(out, "  stated but absent:");
-    if (report.absent.empty()) {
-        std::fprintf(out, " none");
-    }
-    for (std::size_t i = 0; i < report.absent.size(); ++i) {
-        const std::string_view name =
-            motionTracking::TrackerRegionName(report.absent[i]);
-        std::fprintf(out, "%s %.*s", i == 0 ? "" : ",",
-                     static_cast<int>(name.size()), name.data());
-    }
-    std::fprintf(out, "\n");
+    // A count, like the four above it: a region stated for a strap nobody wore
+    // is absent in every frame, and one whose tracker dropped out halfway is
+    // absent in half of them. Those are different sessions and a bare list
+    // cannot tell them apart.
+    PrintRegionCounts(out, "stated but absent", report.absent);
 
     std::fprintf(out, "  observed but unplaced:");
     if (report.unplaced.empty()) {

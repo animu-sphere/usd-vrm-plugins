@@ -516,6 +516,16 @@ ASSIGNMENT = "1=hips 2=leftFoot 3=rightFoot head=head"
 # already states.
 EXPECTED_BONES = {"hips", "head", "leftFoot", "rightFoot"}
 
+# `duplicate-and-reordered` measured: four frames, of which the last carries
+# tracker "1" alone. Written out because these two lines describing the same
+# session is the whole point -- three placements and one absence, out of four
+# frames, for each of the three trackers the trailing frame is short. A report
+# that took the last frame's assignment instead said `head, leftFoot,
+# rightFoot` here, unqualified, directly under a `placed:` line counting three
+# of each.
+PARTIAL_PLACED = "head 3, hips 3, leftFoot 3, rightFoot 3"
+PARTIAL_ABSENT = "head 1, leftFoot 1, rightFoot 1"
+
 
 def read_trace(path: pathlib.Path) -> tuple[dict[str, str], list[dict]]:
     """A second implementation of the trace reader, in the format's own terms.
@@ -752,10 +762,35 @@ def check_export_regions(tool: pathlib.Path, corpus: pathlib.Path,
 
     # A stated region whose tracker never arrives is the other way an
     # observation can miss a statement, and it is data under every policy.
+    #
+    # **It is a count over the export and not the last frame's reading**, which
+    # is what the first version of this reported. `head-absent` never carries a
+    # head, so the count is every frame the capture produced -- and the same
+    # line on the baseline capture says `none`, three frames of which do carry
+    # one. A report that took the last frame would disagree with its own
+    # `placed:` line two lines above whenever a capture ended mid-burst, which
+    # on this wire is the ordinary case rather than an edge one.
     absent_capture = corpus / "generated" / "head-absent.vrchatoscpackets"
     report = export(tool, absent_capture, workspace / "absent.trace")
-    if "head" not in solve_line(report, "stated but absent"):
-        fail(f"a stated tracker that never arrived was not reported: {report}")
+    solved = solve_line(report, "solve").split(" ", 1)[0]
+    if solve_line(report, "stated but absent") != f"head {solved}":
+        fail(f"a stated tracker that never arrived should be absent in every "
+             f"one of the {solved} frames: "
+             f"'{solve_line(report, 'stated but absent')}'\n{report}")
+
+    # The capture whose last frame is a partial one, which is what caught the
+    # last-frame reading. Every tracker it states is placed in most frames and
+    # absent in the trailing one, so the two lines have to agree about which
+    # session they describe.
+    partial = corpus / "generated" / "duplicate-and-reordered.vrchatoscpackets"
+    report = export(tool, partial, workspace / "partial.trace")
+    if solve_line(report, "placed") != PARTIAL_PLACED:
+        fail(f"{partial.name} placed '{solve_line(report, 'placed')}', measured "
+             f"'{PARTIAL_PLACED}'\n{report}")
+    if solve_line(report, "stated but absent") != PARTIAL_ABSENT:
+        fail(f"{partial.name} reported absent "
+             f"'{solve_line(report, 'stated but absent')}', measured "
+             f"'{PARTIAL_ABSENT}'\n{report}")
 
     print("regions: a knee is bound, reaches no bone and is reported; an "
           "absent statement is data")
