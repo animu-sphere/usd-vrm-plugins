@@ -204,7 +204,16 @@ test completes with nothing installed.
 - [ ] a real session reaches a VRM avatar through **unchanged** `motion_capture`
       and `motion_retarget`, or the solve boundary is documented as the stated
       stopping point and the release claims tracker *input* rather than
-      tracker-driven motion.
+      tracker-driven motion — **the second branch is the one this release
+      takes, and VRC-5 took it on 2026-08-31**: assigned observations reach a
+      `HumanoidPose` in `libs/motionTracking`, the solve is direct, and a
+      position it does not consume is reported rather than dropped because
+      consuming one is IK
+      ([the track](osc-and-vrchat-trackers.md#vrc-5--the-humanoid-solve-boundary)).
+      What stays open is the **session**: nothing writes a
+      `motion-capture-trace` from a tracker frame yet, so no VRChat OSC session
+      has reached an avatar by any path. That is VRC-6's tool, and the
+      permission its CLI needs is already in the contract with no taker.
 
 **Cross-source**
 

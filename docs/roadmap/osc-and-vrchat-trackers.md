@@ -546,7 +546,7 @@ they are a frozen surface with golden tests over their formatted form.
 | VRC-3 — tracking-space normalisation | adapter | ✅ |
 | VRC-4 — tracker frame assembly | adapter | ✅ |
 | VRC-4a — tracker assignment policy | neither end | ✅ |
-| VRC-5 — the humanoid solve boundary | adapter | ⬜ |
+| VRC-5 — the humanoid solve boundary | the motion layer | ✅ |
 | VRC-6 — CLI and record | adapter | ⬜ |
 | VRC-7 — cross-source evidence | both | ⬜ |
 
@@ -1018,6 +1018,68 @@ rather than a solve inside the adapter ([§10](#10-contract-changes-this-plan-re
 No target-avatar-specific logic enters the adapter under any outcome — that is
 [adapter plan §2](adapters-mocopi-vmc-ardy.md#2-what-an-adapter-is-allowed-to-be)
 and it does not bend for a source that happens to need IK.
+
+**Done 2026-08-31** — `SolveTrackerPose` in
+[`libs/motionTracking`](../../libs/motionTracking), on the contract written the
+same day and ahead of it ([§10](#10-contract-changes-this-plan-requires)). The
+milestone's column changed with it: this is the **motion layer's**, not the
+adapter's, and no adapter names it.
+
+**The solve is direct, and the stopping point is stated rather than
+approached.** It authors what it observed and infers nothing: an observed
+orientation becomes the local rotation of the bone its region names, a joint
+nobody observed stays at rest, and an observed **position** is consumed in
+exactly one place — the hips, where the root/hips record already says what a
+body translation observed at one place is. Every other position is *reported
+unused*, which is the difference between a stopping point and a silent drop:
+consuming a hand's position is IK, IK needs limb lengths, and limb lengths
+belong to a target rig this layer does not have and
+[§2](adapters-mocopi-vmc-ardy.md#2-what-an-adapter-is-allowed-to-be) will not
+let it acquire. So the release claims tracker **input** reaching the canonical
+layer, which is the second of the two branches
+[the roadmap](current.md#done-when) offered.
+
+**The invariant is what makes "stays at rest" a measurement.** A pose carries
+rotations local to the semantic parent and a tracker reports a world
+orientation, so each placed bone takes
+`inverse(parent chain) * observed`, composed from what the solve has already
+authored with every unauthored bone contributing identity. What follows is
+testable for any rig: **composing the authored locals from the root down to a
+placed bone returns the orientation that bone's tracker reported.** Adding a
+chest strap mid-session changes what the head's local rotation *is* and not what
+its world orientation is, which is the case that says the composition is a
+composition rather than a copy.
+
+**The knees and the elbows are refused, and that is this library's own argument
+read forwards.** `TrackerRegion` exists because a knee is not a joint; this
+solve's answer is that it does not know which of the two bones the strap
+observes, because with no limb lengths a bent knee and a rotated thigh are the
+same observation. They are reported in `unsolved` rather than refused — a rig
+carrying them still produces a pose, and the operator is told which devices
+drive nothing.
+
+**One mutation proved the fixture wrong before it proved the code right.**
+Fourteen mutations, and the composition-order one *survived*: the fixture turned
+the hips and the chest about the same axis, and two rotations about one axis
+commute, so a chain composed backwards reproduced the observation anyway. The
+axis changed and the mutation was caught; the case is the only reason anyone
+knows the check was vacuous. Nineteen boundary injections beside it, each
+refused and each shown to pass without the injection.
+
+**The boundary check became per file, which is what the one new edge cost.**
+`motionTracking -> motionCore` is a link line the assignment half must not use,
+and one static library links what it links — so the vocabulary and the
+assignment are still scanned for a bone, for `motionCore` and for OpenUSD in any
+form, the solve is scanned for everything except those, and the alias is
+forbidden in both halves in either direction. **A file in neither half is an
+error**, so the next file chooses its rules deliberately or not at all.
+
+Two things this milestone did not do. **No IK**, which is the paragraph above
+holding rather than an omission: an IK solve is a second function over the same
+values, taking the rest pose this one refuses to invent and producing the same
+`TrackerSolve`. And **nothing consumes it yet** — `adapters/*/tools/* ->
+motionTracking` is still a permission with no taker, so no session has reached
+an avatar by this path. That is VRC-6's tool and an operator's twenty minutes.
 
 ### VRC-6 — CLI and record
 
