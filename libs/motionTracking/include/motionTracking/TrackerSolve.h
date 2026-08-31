@@ -180,9 +180,17 @@ MOTIONTRACKING_API std::string_view TrackerSolveRefusalName(
 
 // What solving an assignment against an observation produced.
 //
-// **Every vector is filled whatever the refusal**, on the assignment layer's
-// rule and for its reason: the caller that most needs this struct is the one
-// reporting on a solve that did not succeed.
+// **Every vector is filled from the point the bindings can be read at all**,
+// which is the assignment layer's rule with the one qualification this layer
+// needs. There it is unconditional, because an assignment always has an
+// observation to report against; here the first two refusals are about the
+// bindings *themselves* — an assignment that refused, or one applied to an
+// array it was not made from — and under those there is nothing to classify.
+// They come back with four empty vectors rather than a half reading, and the
+// suite asserts that rather than leaving it to be discovered. From
+// `ObservationInvalid` onward the rule is the layer below's exactly: the caller
+// that most needs this struct is the one reporting on a solve that did not
+// succeed.
 struct TrackerSolve
 {
     // Defaults to a refusal. A `TrackerSolve` nobody solved has concluded
@@ -209,9 +217,17 @@ struct TrackerSolve
     // A position-only tracker cannot orient a joint, and the alternative —
     // authoring identity — is bit-for-bit a tracker reporting rest.
     std::vector<TrackerRegion> withoutRotation;
-    // Regions whose observation carried a position this solve did not consume.
-    // Every placed region except the hips, and the hips too when
+    // Every bound region whose observation carried a position this solve did
+    // not consume: every region except the hips, and the hips too when
     // `authorRootMotion` is off. Consuming one is IK.
+    //
+    // **Bound, not placed** — a knee that carried a position appears here as
+    // well as in `unsolved`, and the overlap is deliberate. The two vectors
+    // answer different questions: `unsolved` says a strap reached no bone, and
+    // this says a number nothing read. A caller reporting to an operator on
+    // what a rig sent and what a pose used wants both, and a list that
+    // silently omitted the positions of the four straps this solve refuses
+    // would be answering the first question twice.
     std::vector<TrackerRegion> positionsUnused;
 
     bool Solved() const noexcept

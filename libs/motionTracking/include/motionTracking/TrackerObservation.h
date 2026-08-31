@@ -55,6 +55,14 @@
 // indistinguishable from observing it. What the solve does with a half is
 // stated there.
 //
+// **So equality reads the flags first and the values only under them**, which is
+// `motionCore::RootMotion`'s rule and is here for its reason rather than by
+// analogy: an unset half is *not* required to hold its default. A caller that
+// decoded a position and then dropped the sample's `hasPosition` — which is
+// what a frame assembler holding one buffer across frames does — would leave a
+// stale number under an unset flag, and a comparison that read it would make
+// two reports of "this tracker sent no position" differ.
+//
 // **No identity semantics.** `tracker` is opaque here for the same reason it is
 // opaque in an assignment — it is whatever the source calls the device, and
 // ordering or parsing it would make one wire's numbering convention this
@@ -91,10 +99,18 @@ struct TrackerObservation
     friend bool operator==(const TrackerObservation& lhs,
                            const TrackerObservation& rhs) noexcept
     {
-        return lhs.tracker == rhs.tracker && lhs.position == rhs.position
-               && lhs.rotation == rhs.rotation
-               && lhs.hasPosition == rhs.hasPosition
-               && lhs.hasRotation == rhs.hasRotation;
+        // Exact, and gated on the flags. See the header note: a value under an
+        // unset flag is not an observation, so it is not one here either.
+        if (lhs.tracker != rhs.tracker || lhs.hasPosition != rhs.hasPosition
+            || lhs.hasRotation != rhs.hasRotation)
+        {
+            return false;
+        }
+        if (lhs.hasPosition && lhs.position != rhs.position)
+        {
+            return false;
+        }
+        return !lhs.hasRotation || lhs.rotation == rhs.rotation;
     }
     friend bool operator!=(const TrackerObservation& lhs,
                            const TrackerObservation& rhs) noexcept

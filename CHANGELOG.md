@@ -201,11 +201,16 @@ Current schema contract version: **1**.
   and a rotated thigh are the same observation — and they are reported as
   unsolved rather than refused, so a rig carrying them still produces a pose.
 
+  **`TrackerObservation`'s equality reads the flags first and the values only
+  under them**, which is `motionCore::RootMotion`'s rule: an unset half is not
+  required to hold its default, so a stale number under a cleared flag must not
+  make two reports of "this tracker sent no position" differ.
+
   **The invariant is what the suite is built on**, and one mutation proved the
   fixture wrong before it proved the code right: the composition-order mutation
   survived, because the fixture turned the hips and the chest about the *same
   axis* and two rotations about one axis commute. The axis changed and the
-  mutation was caught. Fourteen mutations and nineteen boundary injections in
+  mutation was caught. Seventeen mutations and nineteen boundary injections in
   all, each shown to fail first.
 
   **The boundary check is now per file rather than per library**, which is what

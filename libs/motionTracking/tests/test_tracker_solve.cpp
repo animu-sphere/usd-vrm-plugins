@@ -418,7 +418,11 @@ TestAStrapBetweenTwoBonesIsDataRatherThanARefusal()
     std::vector<TrackerObservation> observed = {
         Reporting("t1", pxr::GfVec3f(0.0f, 0.9f, 0.0f),
                   Turn(pxr::GfVec3d(0.0, 1.0, 0.0), 10.0)),
-        Reporting("t2", Turn(pxr::GfVec3d(1.0, 0.0, 0.0), 30.0)),
+        // The knee carries a position, which is what a real full-body rig
+        // sends: a strap this solve places onto no bone still reported a
+        // number, and the two reports it produces answer different questions.
+        Reporting("t2", pxr::GfVec3f(-0.2f, 0.45f, 0.05f),
+                  Turn(pxr::GfVec3d(1.0, 0.0, 0.0), 30.0)),
         Reporting("t3", Turn(pxr::GfVec3d(1.0, 0.0, 0.0), -30.0)),
     };
     TrackerAssignmentSpec spec;
@@ -436,6 +440,50 @@ TestAStrapBetweenTwoBonesIsDataRatherThanARefusal()
            == Regions({TrackerRegion::LeftKnee,
                                          TrackerRegion::RightElbow}));
     assert(solve.pose.validRotations.count() == 1);
+    // Bound, not placed: the knee is in both vectors, because `unsolved` says
+    // a strap reached no bone and `positionsUnused` says a number nothing
+    // read. Omitting it here would answer the first question twice.
+    assert(solve.positionsUnused == Regions({TrackerRegion::LeftKnee}));
+}
+
+void
+TestAnUnsetHalfIsNotCompared()
+{
+    // `motionCore::RootMotion`'s rule, and here for its reason: an unset half
+    // is not required to hold its default, so a stale number under a cleared
+    // flag must not make two reports of "this tracker sent no position"
+    // differ.
+    TrackerObservation quiet;
+    quiet.tracker = "t1";
+    TrackerObservation stale = quiet;
+    stale.position = pxr::GfVec3f(9.0f, -3.0f, 0.5f);
+    stale.rotation = Turn(pxr::GfVec3d(0.0, 1.0, 0.0), 90.0);
+    assert(quiet == stale);
+    assert(!(quiet != stale));
+
+    // Under a set flag the value is the observation, and it is compared
+    // exactly.
+    TrackerObservation reported = quiet;
+    reported.hasPosition = true;
+    TrackerObservation elsewhere = reported;
+    elsewhere.position = pxr::GfVec3f(0.0f, 0.0f, 1.0f);
+    assert(reported != elsewhere);
+
+    TrackerObservation turned = quiet;
+    turned.hasRotation = true;
+    TrackerObservation turnedFurther = turned;
+    turnedFurther.rotation = Turn(pxr::GfVec3d(0.0, 1.0, 0.0), 15.0);
+    assert(turned != turnedFurther);
+
+    // A flag is itself part of the observation: "sent nothing" and "sent a
+    // rotation that happens to be identity" are different reports.
+    assert(quiet != turned);
+    assert(Reporting("t1", pxr::GfQuatf::GetIdentity()) != quiet);
+    // And the identity is compared too, so two devices reporting the same
+    // thing are still two observations.
+    TrackerObservation other = turned;
+    other.tracker = "t2";
+    assert(turned != other);
 }
 
 void
@@ -697,6 +745,7 @@ main()
     TestARootThePolicyDoesNotAuthorIsReportedRatherThanDropped();
     TestEveryPositionButTheHipsIsReportedUnused();
     TestAStrapBetweenTwoBonesIsDataRatherThanARefusal();
+    TestAnUnsetHalfIsNotCompared();
     TestAPositionOnlyTrackerCannotOrientAJoint();
     TestAnAssignmentThatRefusedRefusesTheSolveWithItsReasonAttached();
     TestAnAssignmentAppliedToADifferentArrayIsRefused();

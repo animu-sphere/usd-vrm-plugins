@@ -1066,6 +1066,20 @@ axis changed and the mutation was caught; the case is the only reason anyone
 knows the check was vacuous. Nineteen boundary injections beside it, each
 refused and each shown to pass without the injection.
 
+**Review found three more, and the shape of all three is the same**: two stale
+sentences and one value comparison. `TrackerObservation`'s equality read
+`position` and `rotation` under an unset flag, which is the one thing the type
+says not to do — `motionCore::RootMotion` gates each value on its flag and this
+now does too, because an unset half is not required to hold its default and two
+reports of "this tracker sent no position" must not differ over a stale number.
+The two sentences were the header claiming every report vector is filled under
+every refusal (the two refusals about the *bindings* return before there is
+anything to classify, and the suite already asserted that) and
+`positionsUnused` describing itself as placed regions when it collects every
+bound one — a knee that carried a position appears there and in `unsolved`, and
+the overlap is deliberate, because the two answer different questions. Three
+more mutations, one per finding, each caught.
+
 **The boundary check became per file, which is what the one new edge cost.**
 `motionTracking -> motionCore` is a link line the assignment half must not use,
 and one static library links what it links — so the vocabulary and the
