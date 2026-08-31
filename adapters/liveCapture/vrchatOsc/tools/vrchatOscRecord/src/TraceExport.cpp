@@ -170,6 +170,7 @@ TraceCollector::Observe(
         Tally(_report.placed, solve.placed);
         Tally(_report.unsolved, solve.unsolved);
         Tally(_report.withoutRotation, solve.withoutRotation);
+        Tally(_report.withheldWithParent, solve.withheldWithParent);
         Tally(_report.positionsUnused, solve.positionsUnused);
 
         motion::HumanoidAnimation& session = _sessions.back();
@@ -272,6 +273,7 @@ PrintSolveReport(std::FILE* out, const SolveReport& report)
     PrintRegionCounts(out, "placed", report.placed);
     PrintRegionCounts(out, "unsolved", report.unsolved);
     PrintRegionCounts(out, "withoutRotation", report.withoutRotation);
+    PrintRegionCounts(out, "withheldWithParent", report.withheldWithParent);
     PrintRegionCounts(out, "positionsUnused", report.positionsUnused);
 
     // A count, like the four above it: a region stated for a strap nobody wore

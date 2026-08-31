@@ -284,6 +284,9 @@ TestASolvedRigReproducesEveryObservedOrientation()
                TrackerRegion::LeftFoot, TrackerRegion::RightFoot}));
     assert(solve.unsolved.empty());
     assert(solve.withoutRotation.empty());
+    // Every one of the six reported an orientation, so nothing above anything
+    // fell silent and the fifth vector is empty on the path that works.
+    assert(solve.withheldWithParent.empty());
 
     // Nothing about a tracker reaches the pose: a consumer that cannot tell
     // this from a clip-driven pose is reading it correctly.
@@ -514,7 +517,105 @@ TestAPositionOnlyTrackerCannotOrientAJoint()
     // The position half still reached the root: half an observation is half an
     // observation, not none.
     assert(solve.pose.root.hasPosition);
-    assert(solve.placed == Regions({TrackerRegion::Head}));
+
+    // And the head goes with it, although its own tracker sent an orientation.
+    //
+    // **This assertion used to read `placed == {Head}` and that was the
+    // defect.** A consumer replays a stream with `hold`, so the hips it has in
+    // this frame is the one it carried a frame ago -- not the identity the
+    // composition would otherwise divide by. A real session made the cost
+    // measurable: 16 frames of 777 dropped the hips rotation and the head and
+    // both feet snapped 33.6 degrees, the hips' own orientation exactly, in the
+    // trace and again in the clip replayed from it (report 04 section 5).
+    assert(solve.placed.empty());
+    assert(solve.withheldWithParent == Regions({TrackerRegion::Head}));
+    assert(!solve.pose.validRotations.test(
+        static_cast<std::size_t>(motion::HumanBone::Head)));
+}
+
+void
+TestAWithheldBoneIsTheOneWhoseAncestorWasAssigned()
+{
+    // Two rigs differing in one thing: whether the silent hips is a bone this
+    // assignment placed at all. That is the whole of the distinction the
+    // header draws, so it is the whole of this fixture.
+    const pxr::GfQuatf turned = Turn(pxr::GfVec3d(0.0, 1.0, 0.0), 33.6);
+
+    // A head over an assigned hips that fell silent: withheld.
+    {
+        std::vector<TrackerObservation> observed;
+        TrackerObservation hips;
+        hips.tracker = "t1";
+        observed.push_back(hips);
+        observed.push_back(Reporting("t2", turned));
+
+        TrackerAssignmentSpec spec;
+        assert(ParseTrackerAssignmentSpec("t1=hips t2=head", &spec, nullptr));
+        const TrackerSolve solve = SolveTrackerPose(
+            AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
+        assert(!solve.Solved());
+        // Nothing was authored and no root was either, which is what an empty
+        // pose is called. The frame carries the operator no less information
+        // for it: the report says one strap sent nothing and one was withheld.
+        assert(solve.refusal == TrackerSolveRefusal::NothingSolved);
+        assert(solve.withoutRotation == Regions({TrackerRegion::Hips}));
+        assert(solve.withheldWithParent == Regions({TrackerRegion::Head}));
+    }
+
+    // The same head over a hips nobody assigned: placed, and the spine, chest,
+    // upperChest and neck between them contribute identity exactly as before.
+    // An unobserved bone is at rest in every frame of the session, so dividing
+    // by identity is not an assumption about what a consumer holds.
+    {
+        std::vector<TrackerObservation> observed = {Reporting("t2", turned)};
+        TrackerAssignmentSpec spec;
+        assert(ParseTrackerAssignmentSpec("t2=head", &spec, nullptr));
+        const TrackerSolve solve = SolveTrackerPose(
+            AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
+        assert(solve.Solved());
+        assert(solve.placed == Regions({TrackerRegion::Head}));
+        assert(solve.withheldWithParent.empty());
+        AssertReproduces(solve.pose, motion::HumanBone::Head, turned);
+    }
+}
+
+void
+TestAWithheldBoneWithholdsWhatIsUnderItToo()
+{
+    // hips silent, chest and head both reporting. The chest is withheld under
+    // the hips and the head under the chest -- and the head's chain is checked
+    // against the hips as well, so a rig that grew a fourth level would not
+    // need a fixed point to reach the same answer.
+    std::vector<TrackerObservation> observed;
+    TrackerObservation hips;
+    hips.tracker = "t1";
+    hips.position = pxr::GfVec3f(0.1f, 0.9f, 0.0f);
+    hips.hasPosition = true;
+    observed.push_back(hips);
+    observed.push_back(
+        Reporting("t2", Turn(pxr::GfVec3d(1.0, 0.0, 0.0), 12.0)));
+    observed.push_back(
+        Reporting("t3", Turn(pxr::GfVec3d(0.0, 1.0, 0.0), -40.0)));
+    observed.push_back(
+        Reporting("t4", Turn(pxr::GfVec3d(0.0, 0.0, 1.0), 25.0)));
+
+    TrackerAssignmentSpec spec;
+    assert(ParseTrackerAssignmentSpec(
+        "t1=hips t2=chest t3=head t4=leftFoot", &spec, nullptr));
+    const TrackerSolve solve = SolveTrackerPose(
+        AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
+
+    // The root position still arrives -- a hips that sent a position and no
+    // rotation told the pipeline where the body is and not which way it faces,
+    // and only the second of those is what a child's local rotation needs.
+    assert(solve.Solved());
+    assert(solve.pose.root.hasPosition);
+    assert(!solve.pose.root.hasOrientation);
+    assert(solve.placed.empty());
+    assert(solve.withheldWithParent
+           == Regions({TrackerRegion::Chest, TrackerRegion::Head,
+                       TrackerRegion::LeftFoot}));
+    assert(solve.pose.validRotations.none());
 }
 
 void
@@ -547,6 +648,8 @@ TestAnAssignmentThatRefusedRefusesTheSolveWithItsReasonAttached()
     // classify, and the vectors say so rather than carrying a half reading.
     assert(solve.placed.empty());
     assert(solve.unsolved.empty());
+    assert(solve.withoutRotation.empty());
+    assert(solve.withheldWithParent.empty());
     assert(solve.positionsUnused.empty());
     assert(solve.pose.validRotations.none());
 }
@@ -747,6 +850,8 @@ main()
     TestAStrapBetweenTwoBonesIsDataRatherThanARefusal();
     TestAnUnsetHalfIsNotCompared();
     TestAPositionOnlyTrackerCannotOrientAJoint();
+    TestAWithheldBoneIsTheOneWhoseAncestorWasAssigned();
+    TestAWithheldBoneWithholdsWhatIsUnderItToo();
     TestAnAssignmentThatRefusedRefusesTheSolveWithItsReasonAttached();
     TestAnAssignmentAppliedToADifferentArrayIsRefused();
     TestAValueThatIsNotOneIsRefusedAndOneNobodyReadsIsNot();

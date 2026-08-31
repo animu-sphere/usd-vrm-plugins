@@ -175,6 +175,47 @@ Current schema contract version: **1**.
   transfers — the types do not, so a VMC copy is the same change one namespace
   over rather than a second consumer of this header.
 
+- **A tracker frame that lost its hips rotation snapped every bone under it by
+  the hips' whole orientation.** `SolveTrackerPose` composes a bone's local
+  rotation as `inverse(parent chain) * observed world`, and an ancestor it did
+  not author contributed identity. That is right for a bone **nobody observes**
+  — nothing ever authors a spine, and a consumer leaves it at rest for the whole
+  session — and wrong for a bone the assignment **did** place that carried no
+  rotation in one frame: every consumer in this workspace replays with
+  `missingBones = hold`, so what it holds for that ancestor is the value from a
+  frame ago, not identity. The children were divided by identity and composed
+  against the parent.
+
+  Measured on a real 20 s standing session: the hips tracker sent a position and
+  no rotation on **16 of 777 frames**, and on each of them the head and both
+  feet moved **33.6°** while the hips did not move at all — 33.6° being the
+  hips' own orientation in that frame, `2·acos(0.957319)`, to five figures. It
+  survived `motion_capture` into the clip, so an avatar driven by that recording
+  snapped a third of a right angle and back, sixteen times, while the operator
+  stood still. Every take in the session had it: 16, 6, 5, 5 and 19 frames.
+
+  A bone whose **assigned** ancestor carried no rotation this frame is now
+  withheld rather than authored, and reported in the new
+  `TrackerSolve::withheldWithParent` — a fifth vector kept apart from
+  `withoutRotation` because the two have different fixes, one a strap and the
+  other the frame the strap arrived in. `vrchat_osc_record --inspect` prints it
+  beside the others. The frame becomes a hold in full: the body stays where the
+  previous frame left it, which is what a frame with an unknown root orientation
+  says. Carrying the last known parent forward would be better motion and needs
+  a stateful solve; this one is a function of one frame by construction. Worst
+  single-frame step on that take: **33.60° before, 2.46° after**, with nothing
+  over 5°.
+
+  **Two tests asserted the defect**, which is the part worth recording:
+  `TestAPositionOnlyTrackerCannotOrientAJoint` required the head to be `placed`
+  under a rotation-less hips, and the export suite required that frame to carry
+  three bones. Both now assert the opposite and say why in the file. Every
+  internal check of this path passed against the defect and had to — within one
+  frame the composition is exactly self-consistent — and what caught it was a
+  comparison against a path that never has an absent parent, on the one take
+  whose answer is known in advance
+  ([report 04](docs/reports/motion/04-2026-08-31-cross-source-carry-drop.md) §5).
+
 ### Added
 
 - **A VRChat OSC session reaches a rig, and the tracker path is connected end to

@@ -127,7 +127,7 @@ namespace vrchatOscRecordTool
 // Counted per region rather than per frame, because the question an operator
 // asks is about a device: "did the strap on my left foot reach a joint" is
 // answered by a number against `leftFoot`, and a per-frame total answers it for
-// nobody. The four vectors of `TrackerSolve` are tallied separately for the
+// nobody. The five vectors of `TrackerSolve` are tallied separately for the
 // reason that struct keeps them separate — `unsolved` says a strap reached no
 // bone and `positionsUnused` says a number nothing read, and a region can be in
 // both.
@@ -150,6 +150,12 @@ struct SolveReport
     std::array<std::size_t, motionTracking::TrackerRegionCount> placed{};
     std::array<std::size_t, motionTracking::TrackerRegionCount> unsolved{};
     std::array<std::size_t, motionTracking::TrackerRegionCount> withoutRotation{};
+    // Kept beside `withoutRotation` and never folded into it: this region's own
+    // tracker sent an orientation and a bone above it did not. An operator
+    // reading a session wants the difference, because the two have different
+    // fixes -- one is a strap, the other is the frame the strap arrived in.
+    std::array<std::size_t, motionTracking::TrackerRegionCount>
+        withheldWithParent{};
     std::array<std::size_t, motionTracking::TrackerRegionCount> positionsUnused{};
 
     // The assignment layer's two ways for an observation to miss a statement,
@@ -165,7 +171,7 @@ struct SolveReport
     // `stated but absent: head, leftFoot`, of the same session, three lines
     // apart.
     //
-    // So `absent` is a count per region on the four tallies' own model — how
+    // So `absent` is a count per region on the five tallies' own model — how
     // many frames a stated region's tracker did not arrive in, out of
     // `framesObserved` — and `unplaced` is the union of the identities, in
     // first-seen order. Counted over every observed frame rather than every

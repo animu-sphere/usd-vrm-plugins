@@ -55,6 +55,33 @@ IsFinite(const pxr::GfQuatf& value) noexcept
     return std::isfinite(value.GetReal()) && IsFinite(value.GetImaginary());
 }
 
+// Whether any bone above `bone` is one the assignment placed that carried no
+// rotation in this frame.
+//
+// That is the case the header separates from an unobserved ancestor: a
+// consumer holds such a bone at the value it had a frame ago rather than at
+// rest, so the identity `ParentWorldRotation` would divide by is not the
+// rotation the consumer will be composing against. Transitivity comes free —
+// a chain's ancestors are the union of its parent's and its parent — so this
+// reads one chain and not a fixed point.
+bool
+AncestorFellSilent(motion::HumanBone bone,
+                   const std::bitset<motion::HumanBoneCount>& placedBones,
+                   const std::bitset<motion::HumanBoneCount>& withRotation)
+{
+    std::optional<motion::HumanBone> parent = motion::HumanBoneParent(bone);
+    while (parent)
+    {
+        const std::size_t index = static_cast<std::size_t>(*parent);
+        if (placedBones.test(index) && !withRotation.test(index))
+        {
+            return true;
+        }
+        parent = motion::HumanBoneParent(*parent);
+    }
+    return false;
+}
+
 // The world rotation of `bone`'s parent chain, composed from what this solve
 // has authored so far. Every bone the chain carries that nobody observed
 // contributes identity, which is the header's "an unobserved joint stays at
@@ -191,6 +218,27 @@ SolveTrackerPose(const TrackerAssignment& assignment,
         }
     }
 
+    // Which bones this assignment places, and which of them this frame can
+    // orient. Both are needed before any region is classified, because whether
+    // a head is placed depends on a hips two bindings later in the list.
+    std::bitset<motion::HumanBoneCount> placedBones;
+    std::bitset<motion::HumanBoneCount> withRotation;
+    for (const TrackerAssignmentBinding& binding : assignment.bound)
+    {
+        const std::optional<motion::HumanBone> bone =
+            TrackerRegionBone(binding.region);
+        if (!bone)
+        {
+            continue;
+        }
+        const std::size_t index = static_cast<std::size_t>(*bone);
+        placedBones.set(index);
+        if (observed[binding.observedIndex].hasRotation)
+        {
+            withRotation.set(index);
+        }
+    }
+
     // Classify first, refuse afterwards, on the assignment layer's rule: a
     // report of a refused solve reads the same evidence a successful one does.
     for (const TrackerAssignmentBinding& binding : assignment.bound)
@@ -206,6 +254,10 @@ SolveTrackerPose(const TrackerAssignment& assignment,
         else if (!observation.hasRotation)
         {
             solve.withoutRotation.push_back(binding.region);
+        }
+        else if (AncestorFellSilent(*bone, placedBones, withRotation))
+        {
+            solve.withheldWithParent.push_back(binding.region);
         }
         else
         {
@@ -314,6 +366,14 @@ SolveTrackerPose(const TrackerAssignment& assignment,
             solve.pose.root.hasPosition = true;
         }
         if (!observation.hasRotation)
+        {
+            continue;
+        }
+        // Classified above, and skipped here for the reason stated there: the
+        // parent a consumer will hold is not the identity this composition
+        // would divide by. The hips can never reach this — nothing is above it
+        // — so the root authored above is unaffected.
+        if (AncestorFellSilent(*bone, placedBones, withRotation))
         {
             continue;
         }
