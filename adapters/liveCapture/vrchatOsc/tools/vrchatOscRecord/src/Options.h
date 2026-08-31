@@ -3,6 +3,9 @@
 
 #include "vrmAdapterVrchatOsc/UdpReceiver.h"
 
+#include "motionTracking/TrackerAssignment.h"
+#include "motionTracking/TrackerSolve.h"
+
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -39,13 +42,45 @@ struct Options
     std::string device;
     std::string sourceId;
 
+    // The canonical trace to derive from `inspectPath`, and the operator's
+    // statement that makes deriving one possible.
+    //
+    // **The assignment is required, and it is the one flag in this tool that
+    // cannot be defaulted.** A tracker index is not a body role
+    // (osc-and-vrchat-trackers.md §5.1), so there is no reading of
+    // `/tracking/trackers/1` that this tool is entitled to pick — and a default
+    // would be a calibration invented by a decoder, which is the thing the
+    // whole tracker path is arranged to prevent. It is parsed here rather than
+    // in the export so that a spelling mistake is refused at the prompt, before
+    // a capture is read.
+    //
+    // `solve` is the third decision's own configuration and carries exactly one
+    // field today: whether an observed hips position becomes root motion.
+    std::string traceExportPath;
+    motionTracking::TrackerAssignmentSpec assignment;
+    motionTracking::TrackerSolveConfig solve;
+    // Which of the capture's sessions to export, counting from 1. 0 is "the
+    // capture holds one", and a capture that holds more is refused rather than
+    // resolved -- the sibling tools' rule, for their reason (TraceExport.h).
+    std::size_t sourceSession = 0;
+
+    // There is no flag for `TrackerFrameConfig`, and the absence is a decision.
+    // Every one of its four thresholds was measured off the 2026-08-30 session
+    // (FrameAssembler.h), so a flag would offer an operator the chance to
+    // replace a measurement with a guess — and the frame window in particular
+    // decides *what a frame is*, which decides what the trace holds. A sender
+    // whose cadence those numbers do not fit is a re-measurement, not a
+    // command line.
+
     // Stop conditions. A recorder with none is a process that never exits, so
     // there is always at least one: `maxDatagrams` has a default and the other
     // two are off until asked for.
     //
-    // There is no `--max-frames` here and there cannot be. That bound exists in
-    // the sibling tools because they accumulate a second thing -- one pose per
-    // decoded frame -- and this tool accumulates datagrams alone.
+    // There is still no `--max-frames` here, and the export is why the sentence
+    // needed rewriting rather than deleting. The sibling tools carry that bound
+    // because they accumulate poses *during a recording*; this tool's export
+    // runs against a file that is already bounded by the datagram count that
+    // wrote it, so the second unit has nothing to bound.
     double durationSeconds = 0.0;  // 0: until interrupted
     double idleSeconds = 0.0;      // 0: never
     std::size_t maxDatagrams = 0;  // 0: the default, applied at parse

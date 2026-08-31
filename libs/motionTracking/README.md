@@ -115,9 +115,16 @@ with no link line to fail on. A file in neither half is an error, so a new one
 chooses its rules deliberately or not at all.
 
 It is on the **product** side of
-[WORKSPACE.md §5](../../docs/architecture/WORKSPACE.md)'s split, and as of
-2026-08-31 it has **no consumer at all**: the root `CMakeLists.txt` configures it
-and `tests/consumer/motionTracking/` measures its package, and nothing links it.
-The permission §2 grants is `adapters/*/tools/* -> motionTracking`, and the CLI
-that will take it is VRC-6's. So it appears in no artifact — which says only that
-it has no consumer, and is not the exclusion the two shared leaves carry.
+[WORKSPACE.md §5](../../docs/architecture/WORKSPACE.md)'s split, and its first
+consumer arrived on 2026-08-31: `vrchat_osc_record --export-trace` takes the
+permission §2 grants — `adapters/*/tools/* -> motionTracking` — and turns a
+tracker frame into a canonical pose (VRC-6). It is an **adapter's CLI**, so a
+library on the product's side of that split currently travels only in an
+artifact the product excludes. Its absence from a product artifact therefore
+still says which tools exist rather than which side this library is on, and is
+not the exclusion the two shared leaves carry.
+
+No adapter *library* names it, and none may: an adapter that resolved an
+assignment would have invented a calibration and hidden it inside a decoder,
+which is why `adapters/* -> motionTracking` is a refused source token in all
+three adapters' boundary checks.

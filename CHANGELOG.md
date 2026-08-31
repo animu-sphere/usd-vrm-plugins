@@ -177,6 +177,61 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **A VRChat OSC session reaches a rig, and the tracker path is connected end to
+  end** (VRC-6). `vrchat_osc_record` gains `--export-trace`, which decodes a
+  recorded capture, assembles it into frames, solves each against an operator's
+  `--assign` statement and writes a `motion-capture-trace`. `motion_capture` and
+  `motion_retarget` then replay it onto a rig **unchanged**, knowing nothing
+  about VRChat OSC or about trackers — the hand-off is a file, because no tool
+  in the aggregate product may link an adapter. Two supporting flags:
+  `--unplaced refuse|ignore|hold` for an observed tracker no statement places,
+  and `--no-root-motion` for a session whose hips position is not trusted.
+
+  **This is the first taker of `adapters/*/tools/* -> motionTracking`**, which
+  had been a permission in the workspace contract with nobody using it since
+  VRC-4a. It is a *tool's* permission and the adapter library still may not name
+  that package: which tracker is on which body region is an operator's statement
+  about a rig, and a decoder that resolved one would have invented a calibration
+  and hidden it inside itself. `--assign` is therefore **required and has no
+  default**, and a near-miss region name is refused rather than guessed at.
+
+  **The new end-to-end test asserts a partition rather than a count.** On a
+  fixture that walks half a metre and turns a head, four rig joints move and
+  fourteen hold their rest pose *exactly* — not within a tolerance, because
+  nothing authored them and the retarget computes the same product at every
+  sample. Four of the fourteen sit between a driven hip and a driven foot, which
+  is where a solve that had begun estimating would show up first. It needed a
+  new corpus fixture and the reason is a measurement about the other fifteen:
+  every capture in this corpus drifts a millimetre and a quarter of a degree per
+  frame, which proves a decoder is not returning its defaults and is **too
+  little** to survive a retarget's rest-pose correction as a visible rotation —
+  so a session that arrived perfectly and one that never arrived would both have
+  read as "nothing moved". `rig-motion` is generated, `unobserved`, and says so.
+
+  **One inherited justification turned out not to transfer, and the suite now
+  says so.** Both sibling recorders refuse to splice a restarted capture into
+  one trace because their sender's own clock goes back to zero, so the halves
+  overlap in time. This wire carries no sender clock at all — three floats and
+  no timestamp — so the only clock is the receiver's, and it runs *forward*
+  across a restart. The refusal stands on a different footing: two peers, each
+  calibrated by its own receiving application, with nothing relating the two
+  tracking spaces. Copying the sibling's reason would have been a claim about
+  this wire that measuring it contradicts.
+
+  Two CTest names, `vrchat_osc_record_export` and
+  `vrchat_osc_record_endToEnd`, and the second closes an absence this adapter's
+  `tests/CMakeLists.txt` had stated on purpose since VRC-0.
+
+  **Each adapter gains a `<PACKAGE>_BUILD_TOOL` option, on by default.** The
+  package-consumer check installs every package from a prefix holding exactly
+  its declared closure, which is what lets a mutated config file be attributed
+  to the config file — and a CLI's edges are the tool's rather than the
+  library's, so building one there would need packages no row of
+  `PACKAGE_CONTRACT.md` names. The driver switches the tool off for every
+  source tree with a `tools/` directory. All three adapters define the option
+  even though only one needs it: a rule with an exception that only one of
+  three files shows is a rule nobody reading the driver can check.
+
 - **Assigned tracker observations reach a canonical pose, and the solve stops
   where IK begins** (VRC-5). `motionTracking::SolveTrackerPose` takes an
   operator's assignment and the observations it was made from and produces a

@@ -440,6 +440,21 @@ before configuring it, so the accident is not available to be made. That driver
 reports 1–5 for one named package on one host; 6 is the criterion that needs
 three, and PKG-4's lane is where the closure this one records gets compared.
 
+**A CLI is not a package, and the driver switches every one of them off.** An
+adapter's source directory builds two things — the library whose row is in §4,
+and the adapter's CLI, which [WORKSPACE.md](WORKSPACE.md) §2 grants edges the
+library is refused. VRC-6 made that concrete: `vrchat_osc_record` links
+`motionTracking` and `motionRuntime`, and `vrmAdapterVrchatOsc` requires
+neither and must not. Since this check installs each package from its source
+tree into a prefix holding **exactly its declared closure** — the emptiness
+that lets a mutated config file be attributed to the config file — building the
+CLI there would need two packages no row names, which is either a lie in a row
+or a prefix the check can no longer reason about. So each adapter carries a
+`<PACKAGE>_BUILD_TOOL` option and the driver passes `OFF` for every source tree
+with a `tools/` directory. What that leaves unmeasured is stated rather than
+hidden: a standalone configure of an adapter *with* its CLI is the shape its
+artifact is built from, and `ost library build` is what exercises it.
+
 **It is a rule about edges, and the two files a fixture is built from can create
 different ones.** A `CMakeLists.txt` is where an identity becomes a link edge —
 `find_package` and `target_link_libraries` are the two ways to consume a

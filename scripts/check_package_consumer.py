@@ -430,6 +430,32 @@ def cmake_install(package: str, prefix: pathlib.Path, extra_prefixes: list,
                  "-DCMAKE_BUILD_TYPE=Release",
                  f"-D{package.upper()}_BUILD_TESTS=OFF",
                  "-DUSDVRM_BUILD_TESTS=OFF"]
+    # A CLI is not a package, and the prefix this check builds is the reason
+    # that distinction has to be made here rather than left implicit.
+    #
+    # An adapter's source directory builds two things: the library, whose
+    # consumer contract is the row in PACKAGE_CONTRACT.md section 4, and the
+    # adapter's CLI, which WORKSPACE.md section 2 grants edges the library is
+    # refused. `vrchat_osc_record` links `motionTracking` and `motionRuntime`;
+    # `vrmAdapterVrchatOsc` requires neither, and must not, because a decoder
+    # that resolved a tracker assignment would have invented a calibration.
+    #
+    # This check installs each package from its source tree into a prefix
+    # holding **exactly its declared closure** -- that emptiness is what lets a
+    # mutation of a config file be attributed to the config file. So building
+    # the CLI here would need two packages no row names, which is either a lie
+    # in the contract or a prefix the check can no longer reason about. The tool
+    # is switched off instead, and what goes unmeasured by this lane is stated
+    # rather than hidden: a standalone configure of an adapter *with* its CLI is
+    # the shape its artifact is built from, and `ost library build` is what
+    # exercises that.
+    #
+    # Which packages have a CLI is read off the tree rather than listed here,
+    # on the rule `source_dir` already follows: a list would be a second place
+    # to keep true, and an unused `-D` makes CMake print "manually-specified
+    # variables were not used" for every package that has no tool.
+    if (src / "tools").is_dir():
+        configure.append(f"-D{package.upper()}_BUILD_TOOL=OFF")
     configure += list(python)
     if generator:
         configure += ["-G", generator]

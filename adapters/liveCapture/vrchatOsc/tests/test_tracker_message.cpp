@@ -607,6 +607,9 @@ struct Expected
 // cannot read. `malformed-packets` is nine datagrams that are not OSC and one
 // that is. `malformed-forms` is a clean frame, a bundled frame with one
 // four-float rotation in it, and seven individually bad messages.
+// `rig-motion` is twelve unbroken frames of eight over the measured four
+// identities: nothing is lost and nothing is refused, which is what makes a
+// failed end-to-end run of it unambiguous.
 // `session-restart`, `silent-gap` and `calibration-jump` are six frames of
 // eight apiece and carry nothing this layer refuses: what each of them says is
 // said by its *timing* and its peers, which is VRC-4's subject and not this
@@ -624,6 +627,7 @@ constexpr Expected kExpected[] = {
     {"mixed-traffic.vrchatoscpackets", 28, 0, 0, 28, 16, 8, 4, 0, 0},
     {"one-tracker.vrchatoscpackets", 6, 0, 0, 6, 6, 0, 0, 0, 0},
     {"position-only.vrchatoscpackets", 12, 0, 0, 12, 12, 0, 0, 0, 0},
+    {"rig-motion.vrchatoscpackets", 96, 0, 0, 96, 96, 0, 0, 0, 0},
     {"rotation-only.vrchatoscpackets", 12, 0, 0, 12, 12, 0, 0, 0, 0},
     {"session-restart.vrchatoscpackets", 48, 0, 0, 48, 48, 0, 0, 0, 0},
     {"silent-gap.vrchatoscpackets", 48, 0, 0, 48, 48, 0, 0, 0, 0},

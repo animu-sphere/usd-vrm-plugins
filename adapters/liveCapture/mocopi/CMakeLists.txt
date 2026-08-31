@@ -163,4 +163,15 @@ endif()
 # `mocopi_record_inspect`, `_loopback` and `_ipv6` simply absent. This repository
 # has already paid for a test that silently stopped registering, which is why
 # `ctest -N` counts are checked; a missing file here is a configure error.
-add_subdirectory(tools/mocopiRecord)
+#
+# The option is VRC-6's, and it is here for symmetry rather than for a need of
+# this adapter's: `scripts/check_package_consumer.py` turns every package's CLI
+# off while installing that package, because a consumer's prefix holds exactly
+# the declared closure and a CLI's edges are the tool's rather than the
+# library's. An option only one of three adapters defined would be a rule with
+# an invisible exception.
+option(VRMADAPTERMOCOPI_BUILD_TOOL
+       "Build mocopi_record, the adapter's CLI" ON)
+if(VRMADAPTERMOCOPI_BUILD_TOOL)
+    add_subdirectory(tools/mocopiRecord)
+endif()

@@ -155,6 +155,20 @@ endif()
 # yet. It is where WORKSPACE.md §2's adapter-tool permissions begin -- a tool
 # may drive `vrmRetarget` and author a stage where the library may not -- which
 # is also why `tests/check_boundaries.py` scans include/ and src/ only.
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tools/vmcRecord/CMakeLists.txt")
+#
+# The option is VRC-6's, and it is here for symmetry rather than for a need of
+# this adapter's: `scripts/check_package_consumer.py` turns every package's CLI
+# off while installing that package, because a consumer's prefix holds exactly
+# the declared closure and a CLI's edges are the tool's rather than the
+# library's. An option only one of three adapters defined would be a rule with
+# an invisible exception.
+#
+# The `EXISTS` guard it replaces was written when this tool did not exist. Once
+# it does, that test can never be false in a correct tree, so its only
+# reachable effect was to mask a rename or a bad checkout -- the sibling's own
+# comment says so at length, and this is that argument applied here.
+option(VRMADAPTERVMC_BUILD_TOOL
+       "Build vmc_record, the adapter's CLI" ON)
+if(VRMADAPTERVMC_BUILD_TOOL)
     add_subdirectory(tools/vmcRecord)
 endif()

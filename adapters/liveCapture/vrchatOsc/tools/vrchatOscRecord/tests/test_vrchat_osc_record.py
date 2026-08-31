@@ -2,23 +2,31 @@
 # SPDX-License-Identifier: Apache-2.0
 """`vrchat_osc_record`, from the outside.
 
-Three modes, split the way every other claim in this adapter is split: what can
-be checked without a socket, what needs one, and what needs a socket this runner
-may not have.
+Four modes, split the way every other claim in this adapter is split: what can be
+checked without a socket, what needs one, what needs a socket this runner may not
+have, and what needs bytes a decoder can decode.
 
-**Every byte in this file is authored here, in Python, and none of it is claimed
-to be a packet.** That restraint is the same one the C++ suites keep and it costs
-more here, because this protocol's receiving end is published: a plausible OSC
-message could be written from the specification, and the report would look far
-more impressive with `/tracking/trackers/1/position` in its prefix line. It would
-also be this repository's assumption about a sender, printed as though it were
-evidence, in a test whose whole subject is a tool that must not have opinions
-about payloads (osc-and-vrchat-trackers.md §6).
+**Every byte in the first three is authored here, in Python, and none of it is
+claimed to be a packet.** That restraint is the same one the C++ suites keep and
+it costs more here, because this protocol's receiving end is published: a
+plausible OSC message could be written from the specification, and the report
+would look far more impressive with `/tracking/trackers/1/position` in its prefix
+line. It would also be this repository's assumption about a sender, printed as
+though it were evidence, in a test whose whole subject is a tool that must not
+have opinions about payloads (osc-and-vrchat-trackers.md §6).
 
-What *is* checked is the claim VRC-0 is asked for: the bytes a sender put on the
-wire are the bytes in the capture file, in the order they arrived. The capture is
-written by the tool and read back here by an independent parser, so a writer and
-a reader that agreed with each other and with nothing else would fail this.
+What *is* checked there is the claim VRC-0 is asked for: the bytes a sender put
+on the wire are the bytes in the capture file, in the order they arrived. The
+capture is written by the tool and read back here by an independent parser, so a
+writer and a reader that agreed with each other and with nothing else would fail
+this.
+
+**`export` is the exception and it takes the committed corpus**, because an
+export decodes and solves and its fixtures therefore have to be things the
+decoder can decode. Inventing those here would be a second packet generator,
+silently disagreeing with `tools/generate_packets.py` at whatever point nobody
+checked. The trace it writes is still read back by an independent parser in this
+file, for the reason the capture is.
 """
 
 from __future__ import annotations
@@ -484,12 +492,431 @@ def check_help_and_refusals(tool: pathlib.Path,
     expect_exit(tool, 2, "--output", str(workspace / "x"), "--max-datagrams",
                 "0")
     # --inspect opens no socket, so a flag about one has nothing to act on. The
-    # list of exceptions is empty in this tool, where the siblings each have two
-    # export flags -- nothing here decodes, so there is nothing to write out of a
-    # capture.
+    # four export flags are the exceptions, and `check_export_refusals` is where
+    # they are shown to be exceptions rather than oversights.
     result = expect_exit(tool, 2, "--inspect", str(capture), "--port", "9000")
     if "--port" not in result.stderr:
         fail(f"--inspect refusal should name the flag, got '{result.stderr}'")
+
+
+# ---------------------------------------------------------------------------
+# The export, which is the one thing here that decodes
+# ---------------------------------------------------------------------------
+
+# The assignment the committed corpus is written for: three numbered trackers
+# and a named head, which is the rig the 2026-08-30 session wore. It is stated
+# here in full because that is the whole point of the flag -- nothing in this
+# repository is entitled to guess it, this test included, and a helper that
+# derived it from the capture would be the automatic assignment VRC-4a
+# deliberately does not build.
+ASSIGNMENT = "1=hips 2=leftFoot 3=rightFoot head=head"
+
+# Which bones that assignment reaches. `hips` twice over: the solve authors it
+# as a bone rotation *and* as root motion, on the rule the root/hips record
+# already states.
+EXPECTED_BONES = {"hips", "head", "leftFoot", "rightFoot"}
+
+# `duplicate-and-reordered` measured: four frames, of which the last carries
+# tracker "1" alone. Written out because these two lines describing the same
+# session is the whole point -- three placements and one absence, out of four
+# frames, for each of the three trackers the trailing frame is short. A report
+# that took the last frame's assignment instead said `head, leftFoot,
+# rightFoot` here, unqualified, directly under a `placed:` line counting three
+# of each.
+PARTIAL_PLACED = "head 3, hips 3, leftFoot 3, rightFoot 3"
+PARTIAL_ABSENT = "head 1, leftFoot 1, rightFoot 1"
+
+
+def read_trace(path: pathlib.Path) -> tuple[dict[str, str], list[dict]]:
+    """A second implementation of the trace reader, in the format's own terms.
+
+    Independent of the C++ writer for the same reason `read_capture` above is:
+    a writer and a reader that agreed with each other and with nothing else
+    would pass every check in this file.
+    """
+    header: dict[str, str] = {}
+    samples: list[dict] = []
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines or not lines[0].startswith("!motion-capture-trace"):
+        fail(f"{path.name} does not begin with the trace magic: {lines[:1]}")
+    for line in lines[1:]:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        tokens = stripped.split()
+        if tokens[0] == "t":
+            samples.append({"t": float(tokens[1]), "bones": {}, "root": {}})
+        elif not samples:
+            header[tokens[0]] = tokens[1] if len(tokens) > 1 else ""
+        elif tokens[0] == "root":
+            samples[-1]["root"][tokens[1]] = [float(v) for v in tokens[2:]]
+        elif tokens[0] == "b":
+            samples[-1]["bones"][tokens[1]] = [float(v) for v in tokens[2:]]
+    return header, samples
+
+
+def export(tool: pathlib.Path, capture: pathlib.Path, trace: pathlib.Path,
+           *arguments: str) -> str:
+    """One export, returning the report on stdout."""
+    return run_tool(tool, "--inspect", str(capture), "--export-trace",
+                    str(trace), "--assign", ASSIGNMENT, "--quiet", *arguments)
+
+
+def solve_line(report: str, label: str) -> str:
+    for line in report.splitlines():
+        if line.strip().startswith(f"{label}:"):
+            return line.split(":", 1)[1].strip()
+    fail(f"the report carries no '{label}:' line\n{report}")
+    return ""
+
+
+def check_export(tool: pathlib.Path, corpus: pathlib.Path,
+                 workspace: pathlib.Path) -> None:
+    """The measured shape, all the way to a canonical trace."""
+    capture = corpus / "generated" / "three-trackers-58hz.vrchatoscpackets"
+    trace = workspace / "three-trackers.trace"
+    report = export(tool, capture, trace)
+
+    # Eight frames were sent, one never arrived, and the assembler emits the
+    # seven that did -- so the count is the corpus's own measurement rather than
+    # a number this test chose.
+    if solve_line(report, "solve") != "7 of 7 frame(s)":
+        fail(f"unexpected solve line: '{solve_line(report, 'solve')}'\n{report}")
+
+    # The knees and the elbows are the regions this solve refuses, and this
+    # assignment names none of them, so nothing is unsolved. Stated as a
+    # positive assertion rather than left implied: `unsolved: none` is what
+    # separates "the four regions reached a bone" from "four regions were
+    # bound".
+    for label, expected in (("unsolved", "none"),
+                            ("stated but absent", "none"),
+                            ("observed but unplaced", "none")):
+        if solve_line(report, label) != expected:
+            fail(f"'{label}' should be '{expected}', got "
+                 f"'{solve_line(report, label)}'\n{report}")
+
+    # Every position but the hips', which is the whole of the stopping point:
+    # consuming a foot's position is IK, and IK needs limb lengths this layer
+    # does not have. The hips' is consumed as root motion, so it is absent here.
+    unused = solve_line(report, "positionsUnused")
+    for region in ("head", "leftFoot", "rightFoot"):
+        if region not in unused:
+            fail(f"{region}'s position should be reported unused: '{unused}'")
+    if "hips" in unused:
+        fail(f"the hips position is root motion and was reported unused: "
+             f"'{unused}'")
+
+    # One frame of the corpus is short `/tracking/trackers/1/rotation`, which is
+    # where 96 % of the real session's single-address loss fell. A tracker with
+    # no rotation cannot orient a joint and authoring identity would be
+    # bit-for-bit a tracker reporting rest, so it is reported instead.
+    if "hips 1" not in solve_line(report, "withoutRotation"):
+        fail(f"the corpus's one rotation-less hips frame was not reported: "
+             f"'{solve_line(report, 'withoutRotation')}'\n{report}")
+
+    header, samples = read_trace(trace)
+    if header.get("protocol") != "vrchat-osc":
+        fail(f"the trace's protocol is {header.get('protocol')!r}")
+    if header.get("sourceId") != "three-trackers-01":
+        fail(f"the capture's sourceId did not reach the trace: {header}")
+    if header.get("provider") != "example.synthetic":
+        fail(f"the capture's sender did not reach the trace: {header}")
+    if len(samples) != 7:
+        fail(f"the trace holds {len(samples)} sample(s), the solve reported 7")
+
+    # The bones the assignment reached and no others. A solve that placed a
+    # region onto a bone nobody asked for would fail here rather than in a
+    # session six months from now.
+    for sample in samples:
+        bones = set(sample["bones"])
+        if not bones <= EXPECTED_BONES:
+            fail(f"the trace carries bones no region names: "
+                 f"{sorted(bones - EXPECTED_BONES)}")
+    if set(samples[0]["bones"]) != EXPECTED_BONES:
+        fail(f"the first sample is short a bone: {sorted(samples[0]['bones'])}")
+
+    # The rotation-less frame is the one that carries three bones rather than
+    # four, and it still carries a root position -- a tracker that sent a
+    # position and no rotation is half an observation, not an absent one.
+    thin = [sample for sample in samples if len(sample["bones"]) == 3]
+    if len(thin) != 1:
+        fail(f"expected exactly one three-bone sample, found {len(thin)}")
+    if "pos" not in thin[0]["root"]:
+        fail("the rotation-less frame dropped its root position too")
+
+    print("--export-trace: seven frames of the measured shape reach a "
+          "canonical trace, on four bones and no others")
+
+
+def check_export_root_motion(tool: pathlib.Path, corpus: pathlib.Path,
+                             workspace: pathlib.Path) -> None:
+    """`--no-root-motion` drops the position and keeps the rotation."""
+    capture = corpus / "generated" / "rig-motion.vrchatoscpackets"
+
+    with_root = workspace / "with-root.trace"
+    report = export(tool, capture, with_root)
+    if solve_line(report, "solve") != "12 of 12 frame(s)":
+        fail(f"rig-motion should solve every frame: {report}")
+    _, samples = read_trace(with_root)
+    if any("pos" not in sample["root"] for sample in samples):
+        fail("a hips position was observed in every frame and not authored")
+
+    without = workspace / "without-root.trace"
+    report = export(tool, capture, without, "--no-root-motion")
+    _, samples = read_trace(without)
+    if any("pos" in sample["root"] for sample in samples):
+        fail("--no-root-motion still authored a root position")
+    # The rotation is authored either way: a body that turned turned whatever
+    # the translation is worth.
+    if any("rot" not in sample["root"] for sample in samples):
+        fail("--no-root-motion dropped the root *rotation*, which it must not")
+    if "hips" not in solve_line(report, "positionsUnused"):
+        fail(f"the unconsumed hips position was not reported under "
+             f"--no-root-motion: {report}")
+
+    # The two traces differ in the position and agree everywhere else, which is
+    # the claim the flag makes.
+    if read_trace(with_root)[1][0]["bones"] != samples[0]["bones"]:
+        fail("--no-root-motion changed a bone rotation")
+
+    print("--no-root-motion: the position goes and the rotation stays")
+
+
+def check_export_unplaced(tool: pathlib.Path, corpus: pathlib.Path,
+                          workspace: pathlib.Path) -> None:
+    """The three answers to an observed tracker no statement places."""
+    capture = corpus / "generated" / "three-trackers-58hz.vrchatoscpackets"
+    trace = workspace / "unplaced.trace"
+    partial = "1=hips head=head"
+
+    # `refuse` is the default and it stops: a tracker no statement places will
+    # still be unplaced next frame, so a caller that carried on would be
+    # exporting a rig the operator did not describe.
+    result = expect_exit(tool, 1, "--inspect", str(capture), "--export-trace",
+                         str(trace), "--assign", partial)
+    if "no trace to write" not in result.stderr:
+        fail(f"a refused assignment still wrote a trace: {result.stderr}")
+    if trace.exists():
+        fail("a refused export left a trace behind")
+    if "UnplacedTracker" not in result.stdout:
+        fail(f"the refusal was not reported as an unplaced tracker: "
+             f"{result.stdout}")
+
+    # `ignore` is the operator saying they know: two straps are on the body and
+    # nothing on this rig is meant to read them.
+    report = run_tool(tool, "--inspect", str(capture), "--export-trace",
+                      str(trace), "--assign", partial, "--unplaced", "ignore",
+                      "--quiet")
+    unplaced = solve_line(report, "observed but unplaced")
+    if "2" not in unplaced or "3" not in unplaced:
+        fail(f"the two unplaced trackers were not named: '{unplaced}'")
+    _, samples = read_trace(trace)
+    if set(samples[0]["bones"]) != {"hips", "head"}:
+        fail(f"an ignored tracker still reached a bone: "
+             f"{sorted(samples[0]['bones'])}")
+
+    # `hold` refuses too, and under a *different* enumerator: it may not be true
+    # next frame, so a live caller keeps the assignment it had and waits, where
+    # `refuse` tells the operator and stops. Two refusals rather than one, and
+    # a report that collapsed them would make a rig coming up look like a rig
+    # described wrong.
+    result = expect_exit(tool, 1, "--inspect", str(capture), "--export-trace",
+                         str(workspace / "held.trace"), "--assign", partial,
+                         "--unplaced", "hold")
+    if "UnplacedTracker" in result.stdout:
+        fail(f"--unplaced hold reported the refusal `refuse` raises: "
+             f"{result.stdout}")
+    if "Held" not in result.stdout:
+        fail(f"--unplaced hold did not report `Held`: {result.stdout}")
+
+    print("--unplaced: refuse stops, ignore exports the named half, hold "
+          "refuses under its own name")
+
+
+def check_export_regions(tool: pathlib.Path, corpus: pathlib.Path,
+                         workspace: pathlib.Path) -> None:
+    """A knee is bound, reaches no bone, and is reported rather than dropped."""
+    capture = corpus / "generated" / "three-trackers-58hz.vrchatoscpackets"
+    trace = workspace / "knee.trace"
+    report = run_tool(tool, "--inspect", str(capture), "--export-trace",
+                      str(trace), "--assign",
+                      "1=hips 2=leftKnee 3=rightFoot head=head", "--quiet")
+
+    # `TrackerRegion` carries a knee because a knee strap is a real mount point;
+    # this solve places it on no bone because with no limb lengths a bent knee
+    # and a rotated thigh are the same observation. It is data rather than a
+    # refusal -- the rest of the rig still exports.
+    if "leftKnee" not in solve_line(report, "unsolved"):
+        fail(f"a bound knee was not reported unsolved: {report}")
+    if "leftKnee" in solve_line(report, "placed"):
+        fail(f"a knee reached a bone: {report}")
+    # And in `positionsUnused` as well, which is deliberate overlap: the two
+    # lines answer different questions, and a knee that carried a position is a
+    # number nothing read *and* a strap that reached no bone.
+    if "leftKnee" not in solve_line(report, "positionsUnused"):
+        fail(f"a bound knee's position was not reported unused: {report}")
+    _, samples = read_trace(trace)
+    if set(samples[0]["bones"]) != {"hips", "head", "rightFoot"}:
+        fail(f"the knee reached a bone in the trace: "
+             f"{sorted(samples[0]['bones'])}")
+
+    # A stated region whose tracker never arrives is the other way an
+    # observation can miss a statement, and it is data under every policy.
+    #
+    # **It is a count over the export and not the last frame's reading**, which
+    # is what the first version of this reported. `head-absent` never carries a
+    # head, so the count is every frame the capture produced -- and the same
+    # line on the baseline capture says `none`, three frames of which do carry
+    # one. A report that took the last frame would disagree with its own
+    # `placed:` line two lines above whenever a capture ended mid-burst, which
+    # on this wire is the ordinary case rather than an edge one.
+    absent_capture = corpus / "generated" / "head-absent.vrchatoscpackets"
+    report = export(tool, absent_capture, workspace / "absent.trace")
+    solved = solve_line(report, "solve").split(" ", 1)[0]
+    if solve_line(report, "stated but absent") != f"head {solved}":
+        fail(f"a stated tracker that never arrived should be absent in every "
+             f"one of the {solved} frames: "
+             f"'{solve_line(report, 'stated but absent')}'\n{report}")
+
+    # The capture whose last frame is a partial one, which is what caught the
+    # last-frame reading. Every tracker it states is placed in most frames and
+    # absent in the trailing one, so the two lines have to agree about which
+    # session they describe.
+    partial = corpus / "generated" / "duplicate-and-reordered.vrchatoscpackets"
+    report = export(tool, partial, workspace / "partial.trace")
+    if solve_line(report, "placed") != PARTIAL_PLACED:
+        fail(f"{partial.name} placed '{solve_line(report, 'placed')}', measured "
+             f"'{PARTIAL_PLACED}'\n{report}")
+    if solve_line(report, "stated but absent") != PARTIAL_ABSENT:
+        fail(f"{partial.name} reported absent "
+             f"'{solve_line(report, 'stated but absent')}', measured "
+             f"'{PARTIAL_ABSENT}'\n{report}")
+
+    print("regions: a knee is bound, reaches no bone and is reported; an "
+          "absent statement is data")
+
+
+def check_export_restart(tool: pathlib.Path, corpus: pathlib.Path,
+                         workspace: pathlib.Path) -> None:
+    """One trace is one session, and a restart has to be named."""
+    capture = corpus / "generated" / "session-restart.vrchatoscpackets"
+    trace = workspace / "restart.trace"
+
+    result = expect_exit(tool, 1, "--inspect", str(capture), "--export-trace",
+                         str(trace), "--assign", ASSIGNMENT)
+    if "--source-session" not in result.stderr:
+        fail(f"a restarted capture was not refused with the flag that resolves "
+             f"it: {result.stderr}")
+    if trace.exists():
+        fail("a refused restart export left a trace behind")
+
+    first = workspace / "restart-1.trace"
+    second = workspace / "restart-2.trace"
+    export(tool, capture, first, "--source-session", "1")
+    export(tool, capture, second, "--source-session", "2")
+    _, a = read_trace(first)
+    _, b = read_trace(second)
+    if not a or not b:
+        fail("one of the two sessions exported no sample")
+
+    # **The two clocks do not overlap, and asserting that is the point.** Both
+    # sibling tools refuse a spliced restart because their sender's own clock
+    # goes back to zero; this wire carries no sender clock at all, so the only
+    # one there is belongs to the receiver and it is monotonic across a restart.
+    # The refusal here rests on the peers being different senders, each with its
+    # own calibration -- so this check is what stops the sibling's justification
+    # from being copied into this tool by a reader who assumed it transferred.
+    gap = b[0]["t"] - a[-1]["t"]
+    if gap <= 0.0:
+        fail(f"the receive clock went backwards across a restart "
+             f"({b[0]['t']} after {a[-1]['t']}); this wire has no sender clock, "
+             f"so that cannot happen and the fixture or the assembler changed")
+    if abs(gap - 4.8452) > 0.05:
+        fail(f"the restart's dark window is {gap:.4f} s, and the fixture was "
+             f"written with 4.8452 s")
+
+    expect_exit(tool, 1, "--inspect", str(capture), "--export-trace",
+                str(workspace / "restart-3.trace"), "--assign", ASSIGNMENT,
+                "--source-session", "3")
+
+    print("--source-session: a restart is refused, then named, and the receive "
+          "clock runs forward across it")
+
+
+def check_export_refusals(tool: pathlib.Path, corpus: pathlib.Path,
+                          workspace: pathlib.Path) -> None:
+    """Every export mistake this tool can name before it reads a byte."""
+    capture = corpus / "generated" / "three-trackers-58hz.vrchatoscpackets"
+    trace = workspace / "refused.trace"
+
+    usage = run_tool(tool, "--help")
+    for expected in ("--export-trace", "--assign", "--unplaced",
+                     "--no-root-motion", "--source-session", "leftFoot"):
+        if expected not in usage:
+            fail(f"--help does not mention {expected}")
+
+    # The assignment is required and cannot be defaulted: a tracker index is
+    # not a body role, so a default would be a calibration this tool invented.
+    result = expect_exit(tool, 2, "--inspect", str(capture), "--export-trace",
+                         str(trace))
+    if "--assign" not in result.stderr:
+        fail(f"an export with no assignment did not name the flag: "
+             f"{result.stderr}")
+
+    # And the four export flags mean nothing without an export to configure.
+    for flag in (("--assign", ASSIGNMENT), ("--unplaced", "hold"),
+                 ("--source-session", "1")):
+        result = expect_exit(tool, 2, "--inspect", str(capture), *flag)
+        if "--export-trace" not in result.stderr:
+            fail(f"{flag[0]} without an export did not name --export-trace: "
+                 f"{result.stderr}")
+    result = expect_exit(tool, 2, "--inspect", str(capture),
+                         "--no-root-motion")
+    if "--export-trace" not in result.stderr:
+        fail(f"--no-root-motion without an export did not name --export-trace: "
+             f"{result.stderr}")
+
+    # A recording runs no decoder, so there is nothing in a live session for an
+    # export to read. Refused at the prompt rather than explained afterwards.
+    result = expect_exit(tool, 2, "--output", str(workspace / "live"),
+                         "--export-trace", str(trace), "--assign", ASSIGNMENT)
+    if "--inspect" not in result.stderr:
+        fail(f"a live export did not point at --inspect: {result.stderr}")
+
+    # A region spelled nearly right is refused rather than guessed at, which is
+    # the same rule `motion_bvh_convert` applies to a profile id.
+    for bad in ("1=LeftFoot", "1=lfoot", "1=", "=hips", "1=hips 2=hips",
+                "1=hips 1=head"):
+        expect_exit(tool, 2, "--inspect", str(capture), "--export-trace",
+                    str(trace), "--assign", bad)
+    expect_exit(tool, 2, "--inspect", str(capture), "--export-trace", str(trace),
+                "--assign", ASSIGNMENT, "--unplaced", "maybe")
+    expect_exit(tool, 2, "--inspect", str(capture), "--export-trace", "",
+                "--assign", ASSIGNMENT)
+    expect_exit(tool, 2, "--inspect", str(capture), "--export-trace", str(trace),
+                "--assign", ASSIGNMENT, "--source-session", "0")
+
+    # The capture is the irreplaceable half and the trace is the derived one, so
+    # writing the second over the first is refused twice: at the prompt, where
+    # the two paths are one string, and at the filesystem, where they are not.
+    copied = workspace / "victim.vrchatoscpackets"
+    copied.write_bytes(capture.read_bytes())
+    expect_exit(tool, 2, "--inspect", str(copied), "--export-trace",
+                str(copied), "--assign", ASSIGNMENT)
+    for spelling in (f"./{copied.name}", str(copied.resolve())):
+        result = subprocess.run(
+            [str(tool), "--inspect", str(copied), "--export-trace", spelling,
+             "--assign", ASSIGNMENT],
+            cwd=str(workspace), text=True, encoding="utf-8", errors="replace",
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.returncode == 0:
+            fail(f"an export spelled '{spelling}' overwrote the capture it was "
+                 f"reading")
+        if copied.read_bytes() != capture.read_bytes():
+            fail(f"an export spelled '{spelling}' destroyed the capture")
+
+    print("--export-trace refusals: named at the prompt, and the capture "
+          "survives every spelling of its own path")
 
 
 # ---------------------------------------------------------------------------
@@ -789,11 +1216,31 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tool", required=True, type=pathlib.Path)
     parser.add_argument("--mode", required=True,
-                        choices=("inspect", "loopback", "ipv6"))
+                        choices=("inspect", "loopback", "ipv6", "export"))
+    # Only the export mode takes one, and the absence elsewhere is still the
+    # point rather than an omission: the other three author their own bytes in
+    # Python, which is what makes the reader check independent of the writer.
+    # An export decodes, so its fixtures have to be things the decoder can
+    # decode -- inventing those here would be a second packet generator,
+    # silently disagreeing with tools/generate_packets.py at whatever point
+    # nobody checked. The sibling tool's suite carries the same split.
+    parser.add_argument("--corpus", type=pathlib.Path)
     arguments = parser.parse_args()
 
     with tempfile.TemporaryDirectory() as directory:
         workspace = pathlib.Path(directory)
+        if arguments.mode == "export":
+            if arguments.corpus is None:
+                fail("--mode export needs --corpus")
+            check_export(arguments.tool, arguments.corpus, workspace)
+            check_export_root_motion(arguments.tool, arguments.corpus,
+                                     workspace)
+            check_export_unplaced(arguments.tool, arguments.corpus, workspace)
+            check_export_regions(arguments.tool, arguments.corpus, workspace)
+            check_export_restart(arguments.tool, arguments.corpus, workspace)
+            check_export_refusals(arguments.tool, arguments.corpus, workspace)
+            print("vrchat_osc_record --export-trace checks passed")
+            return 0
         if arguments.mode == "inspect":
             check_inspect(arguments.tool, workspace)
             check_inspect_inventory(arguments.tool, workspace)
