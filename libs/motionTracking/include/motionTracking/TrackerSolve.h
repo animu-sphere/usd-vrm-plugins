@@ -82,13 +82,22 @@
 // ([report 04](../../../../docs/reports/motion/04-2026-08-31-cross-source-carry-drop.md)
 // §5).
 //
-// So a bone whose **bound** ancestor carried no rotation this frame is not
+// So a bone whose **named** ancestor could not be oriented in this frame is not
 // authored either. It goes to `withheldWithParent`, and the consumer holds it
 // beside the ancestor it depends on: the body holds as a unit for that frame,
 // which is what a frame with an unknown root orientation actually says. The
 // alternative — carrying the last known parent forward — is a stateful solve,
 // and this one is a function of one frame by construction ([§10 of the OSC
 // track](../../../../docs/roadmap/osc-and-vrchat-trackers.md)).
+//
+// **Named, not bound**, and the distinction is a defect this rule had for one
+// review round. There are two ways a statement fails to produce an orientation:
+// its tracker arrives carrying no rotation (`withoutRotation`, a binding), and
+// its tracker does not arrive at all (`TrackerAssignment::absent`, no binding).
+// A consumer holds the bone identically under both, so both withhold what hangs
+// below them. Reading `bound` alone would have left the whole class of dropped
+// trackers composing against identity — the same snap, through the door next to
+// the one it was found at.
 //
 // ## Which regions this solve places, and the two it refuses
 //

@@ -212,14 +212,25 @@ It is not a rounding error and it is not confined to the trace: it survived
 avatar driven by that clip snaps its head and both feet a third of a right angle
 and back, sixteen times, while the operator stands still.
 
-**The fix, in this change.** A bone whose *assigned* ancestor carried no rotation
-this frame is not authored either — it is reported in the new
+**The fix, in this change.** A bone whose *assigned* ancestor could not be
+oriented in this frame is not authored either — it is reported in the new
 `TrackerSolve::withheldWithParent` and the consumer holds it beside the ancestor
 it depends on. A frame with an unknown root orientation is a frame in which the
 body holds, which is what such a frame actually says. Carrying the last known
 parent forward would be better motion and needs a stateful solve; this one is a
 function of one frame by construction, and the trade is 26 ms of held head
 against a 33.6° pop.
+
+**There are two ways an ancestor fails to arrive and the rule reads both**, which
+the first version of it did not. A statement whose tracker sends a position and
+no rotation produces a binding (`withoutRotation`, which is what this take hit);
+a statement whose tracker does not arrive in the frame at all produces **no
+binding** and lands in `TrackerAssignment::absent`. This session has both — the
+`stated but absent` line reads `hips 1, leftFoot 1, rightFoot 1` on the very take
+above — and a consumer holds the bone identically under each, so a rule that read
+only the bindings would have left the whole class of dropped trackers composing
+against identity. Same snap, neighbouring door; found in review of this change
+and closed in it.
 
 Re-exported and re-measured on the same bytes:
 

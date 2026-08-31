@@ -562,6 +562,37 @@ TestAWithheldBoneIsTheOneWhoseAncestorWasAssigned()
         assert(solve.withheldWithParent == Regions({TrackerRegion::Head}));
     }
 
+    // A head over an assigned hips whose tracker did not arrive in this frame
+    // at all: withheld too, and this is the door the first version of the rule
+    // left open. An absent statement produces **no binding** -- it goes to
+    // `TrackerAssignment::absent` -- so a rule reading `bound` alone saw no
+    // hips above the head and authored it against identity, which is the same
+    // snap through the neighbouring failure. A consumer holds the bone
+    // identically under both, and that is the whole argument.
+    {
+        std::vector<TrackerObservation> observed = {Reporting("t2", turned)};
+        TrackerAssignmentSpec spec;
+        assert(ParseTrackerAssignmentSpec("t1=hips t2=head", &spec, nullptr));
+        const TrackerAssignment assignment =
+            AssignTrackers(spec, TrackerIdentities(observed));
+        // `Refuse` is about a tracker no statement places, never about a
+        // statement no tracker arrived for, so this assignment placed.
+        assert(assignment.Placed());
+        assert(assignment.absent == Regions({TrackerRegion::Hips}));
+        const TrackerSolve solve = SolveTrackerPose(assignment, observed, 0.0);
+        assert(!solve.Solved());
+        assert(solve.refusal == TrackerSolveRefusal::NothingSolved);
+        assert(solve.placed.empty());
+        assert(solve.withheldWithParent == Regions({TrackerRegion::Head}));
+        // An absent region produces no binding, so it reaches neither of the
+        // two vectors that are filled from one.
+        assert(solve.withoutRotation.empty());
+        // And the refusal says which of the two things happened. The tallies a
+        // caller reads are over solved frames, so this line is the only place a
+        // refused frame reports its regions.
+        assert(solve.detail.find("withheld") != std::string::npos);
+    }
+
     // The same head over a hips nobody assigned: placed, and the spine, chest,
     // upperChest and neck between them contribute identity exactly as before.
     // An unobserved bone is at rest in every frame of the session, so dividing

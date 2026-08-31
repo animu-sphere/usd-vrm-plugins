@@ -267,16 +267,17 @@ PrintSolveReport(std::FILE* out, const SolveReport& report)
         std::fprintf(out, "\n");
     }
 
-    // Four lines, always, in the order a reader asks the questions: what
+    // Five lines, always, in the order a reader asks the questions: what
     // reached a joint, what was worn and reached none, what was worn and sent
-    // no orientation, and what sent a position nothing read.
+    // no orientation, what was held back because something above it did, and
+    // what sent a position nothing read.
     PrintRegionCounts(out, "placed", report.placed);
     PrintRegionCounts(out, "unsolved", report.unsolved);
     PrintRegionCounts(out, "withoutRotation", report.withoutRotation);
     PrintRegionCounts(out, "withheldWithParent", report.withheldWithParent);
     PrintRegionCounts(out, "positionsUnused", report.positionsUnused);
 
-    // A count, like the four above it: a region stated for a strap nobody wore
+    // A count, like the five above it: a region stated for a strap nobody wore
     // is absent in every frame, and one whose tracker dropped out halfway is
     // absent in half of them. Those are different sessions and a bare list
     // cannot tell them apart.

@@ -194,7 +194,7 @@ Current schema contract version: **1**.
   snapped a third of a right angle and back, sixteen times, while the operator
   stood still. Every take in the session had it: 16, 6, 5, 5 and 19 frames.
 
-  A bone whose **assigned** ancestor carried no rotation this frame is now
+  A bone whose **assigned** ancestor could not be oriented in this frame is now
   withheld rather than authored, and reported in the new
   `TrackerSolve::withheldWithParent` — a fifth vector kept apart from
   `withoutRotation` because the two have different fixes, one a strap and the
@@ -215,6 +215,14 @@ Current schema contract version: **1**.
   comparison against a path that never has an absent parent, on the one take
   whose answer is known in advance
   ([report 04](docs/reports/motion/04-2026-08-31-cross-source-carry-drop.md) §5).
+
+  **Both ways an ancestor fails to arrive are read**, which the first version of
+  the rule did not do: a statement whose tracker sends no rotation produces a
+  binding, and a statement whose tracker does not arrive at all produces none and
+  lands in `TrackerAssignment::absent`. A consumer holds the bone identically
+  under each, and the recorded session has both. A `NothingSolved` refusal now
+  also says when withholding is why, because the per-region tallies are over
+  solved frames and that line is otherwise the only thing a refused frame prints.
 
 ### Added
 
