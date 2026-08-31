@@ -2,9 +2,12 @@
 #
 # A consumer of the installed `motionTracking` package, and nothing else.
 #
-# Its edge set is empty (WORKSPACE.md §2) — no workspace dependency, no platform
-# library, no `find_dependency` in its config — so this fixture is `osc`'s twin
-# in shape, and a failure here can only be this package's own config file.
+# Its edge set is one package (WORKSPACE.md §2): the solve links `motionCore`,
+# which brings OpenUSD's Gf value types with it, and there is no platform
+# library and no second workspace edge. So a failure here is this package's own
+# config file or the one `find_dependency` line in it — which is exactly the
+# defect class this lane exists for, and the reason the fixture below now
+# reaches a header that would not compile without the edge resolving.
 #
 # The one thing worth saying that the sibling's comment does not: this package
 # is on the **product** side of §5's split and no product member links it yet,

@@ -37,9 +37,13 @@ Three of the twelve need no OpenUSD and run exactly like that: `osc`,
 `vrmContainer` and `liveTransport`. The other nine take a `--extra-prefix`.
 
 `vrmAdapterVrchatOsc` was a fourth until 2026-08-30, when VRC-3 gave it the
-`motionCore` edge its conversion returns values from. Nothing about the fixture
-changed; what changed is the prefix it needs, which the driver reads from
-PACKAGE_CONTRACT.md rather than from a list kept here.
+`motionCore` edge its conversion returns values from, and `motionTracking` was a
+fifth until 2026-08-31, when VRC-5 gave it the same edge for the same kind of
+reason — a solve produces a `HumanoidPose`. Nothing about either fixture's
+*shape* changed; what changed is the prefix each needs, which the driver reads
+from PACKAGE_CONTRACT.md rather than from a list kept here. That is the whole
+argument for reading the contract: two packages acquired an edge in two days and
+this file needed no list updating for the lane to keep being right.
 
 The driver installs the package and its required packages into a scratch prefix
 holding nothing else, configures the fixture against that prefix alone, builds

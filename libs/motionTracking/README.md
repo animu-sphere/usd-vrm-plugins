@@ -1,7 +1,9 @@
 # motionTracking
 
-`motionTracking` answers one question: **which tracker is on which body
-region**. Not what it observed, and not what that means for a joint.
+`motionTracking` answers two questions in the order they have to be asked:
+**which tracker is on which body region**, and **what that means for a
+skeleton**. It never answers the first by way of the second, which is the whole
+reason it is one library and not a header in `motionCore`.
 
 A tracker source carries numbered observations that are pre-IK, and a tracker
 index is not a body role — it is an index into whatever the wearer strapped on.
@@ -13,7 +15,7 @@ them is how one protocol's semantics leak into the motion layer
 | --- | --- | --- |
 | **Decode** — bytes to an observation | the adapter | addresses, type tags, argument order |
 | **Assignment** — tracker to body region | **this library** | tracker identities, a region vocabulary, an operator's statement |
-| **Solve** — assigned observations to a pose | the motion layer | canonical bones, target-independent |
+| **Solve** — assigned observations to a pose | **this library** | canonical bones, target-independent. Never an avatar |
 
 ## A region is not a bone
 
@@ -71,14 +73,46 @@ partial rig still assigns — exactly as a missing tracker is data on a frame on
 layer over. `Hold` is the policy for a caller that wants the waiting done here
 instead.
 
+## The solve is direct, and that is a stated stopping point
+
+`SolveTrackerPose` authors what it observed and **infers nothing**. An observed
+orientation becomes the local rotation of the bone its region names, composed so
+that forward kinematics reproduces it exactly; a joint nobody observed stays at
+rest; and an observed **position** is consumed in one place only, the hips,
+where the [motion contract](../../docs/design/MOTION_CONTRACT.md)'s root/hips
+rule already says what a body translation observed at one place is.
+
+Everything else a rig reports is **reported rather than dropped**: a position
+this solve does not consume, a strap it cannot place, a tracker that sent no
+rotation. Consuming a hand's position is IK, IK needs limb lengths, and limb
+lengths belong to a target rig this layer does not have and must not acquire.
+
+So what comes out stands where the wearer stood, faces where the wearer faced,
+and holds its limbs where the target's own rest pose puts them. An IK solve is a
+second function over the same values, taking the rest pose this one refuses to
+invent and producing the same `TrackerSolve`.
+
+Two regions per limb are refused outright — the knees and the elbows — and that
+is this library's own argument read forwards: a strap between two bones is not
+either of them, and with no limb lengths a bent knee and a rotated thigh are the
+same observation.
+
 ## What it does not have
 
-An empty edge set, and the edge it most looks like it should have is the one
-that would end it: no `motionCore`, no OpenUSD, no platform primitive, no
-socket, no file format, no address literal, no adapter identity, and no
-diagnostic code. A refusal names the **event**, and whoever knows which adapter
-it is supplies the code — `motionSource`'s `SourceProfileRefusal` and `osc`'s
-`OscDecodeError` are the same shape.
+One edge, taken by the solve alone: `motionCore`, because a `HumanoidPose` is
+that library's type. Beyond it, nothing — no platform primitive, no socket, no
+file format, no address literal, no adapter identity, and no diagnostic code. A
+refusal names the **event**, and whoever knows which adapter it is supplies the
+code — `motionSource`'s `SourceProfileRefusal` and `osc`'s `OscDecodeError` are
+the same shape.
+
+The **assignment half keeps the empty edge set it was given**, and that is a
+per-file rule rather than a per-library one: `tests/check_boundaries.py` scans
+the region vocabulary and the assignment for `motionCore`, for OpenUSD in any
+form and for a bone, and scans the solve for everything except those — with the
+alias forbidden in both halves, in either direction, because that is the failure
+with no link line to fail on. A file in neither half is an error, so a new one
+chooses its rules deliberately or not at all.
 
 It is on the **product** side of
 [WORKSPACE.md §5](../../docs/architecture/WORKSPACE.md)'s split, and as of

@@ -4,14 +4,16 @@
 # above that.
 #
 # A plain static library, not a plugin bundle: it registers nothing with OpenUSD
-# and ships no plugInfo.json (WORKSPACE.md §1). Its allowed edge set is empty,
-# and it is the third such leaf here with a different reason for it —
-# `liveTransport` is empty because it must not learn a protocol, `osc` because a
-# decoder needs nothing a transport owns, and this one because assignment maps
-# one vocabulary it owns onto another. `motionCore` is the edge it most looks
-# like it should have and must not: a region that resolved to a `HumanBone`
-# would make assignment a lookup and leave the solve nothing to do (§2, which
-# forbids the alias by name).
+# and ships no plugInfo.json (WORKSPACE.md §1). Its allowed edge set was empty
+# until VRC-5 and is now one line — `motionCore`, taken by the solve and by
+# nothing else: a solve produces a `HumanoidPose`, which is that library's type.
+#
+# The two halves are held apart by the boundary check rather than by two CMake
+# targets, and that is a deliberate choice. Splitting the assignment half into
+# its own library would make the rule a link line and cost every consumer a
+# second package, while the rule that actually matters — a `TrackerRegion` is
+# never a `HumanBone` — has no link line to fail on anyway (§2, which forbids
+# the alias by name). So the check reads the sources, per file.
 #
 # Unlike the two leaves above it, this library is on the **product** side of
 # §5's split, and nothing links it at all yet: §2's permission is
@@ -49,9 +51,25 @@ if(NOT DEFINED MOTIONTRACKING_BUILD_TESTS)
            ${_motiontracking_tests_default})
 endif()
 
+# The solve names OpenUSD's Gf value types and `motionCore`'s humanoid
+# vocabulary; nothing here has a USD stage, Sdf, plug or file-format dependency,
+# exactly as motionCore and motionRuntime do not.
+if(NOT pxr_FOUND)
+    find_package(pxr REQUIRED CONFIG)
+endif()
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
+
+# In the composed workspace build motionCore is already an in-tree target; a
+# standalone configure resolves its installed package.
+if(NOT TARGET motionCore::motionCore)
+    find_package(motionCore REQUIRED CONFIG)
+endif()
+
 add_library(motionTracking STATIC
     src/TrackerAssignment.cpp
-    src/TrackerRegion.cpp)
+    src/TrackerObservation.cpp
+    src/TrackerRegion.cpp
+    src/TrackerSolve.cpp)
 add_library(motionTracking::motionTracking ALIAS motionTracking)
 set_target_properties(motionTracking PROPERTIES
     EXPORT_NAME motionTracking
@@ -64,9 +82,11 @@ target_include_directories(motionTracking
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
         "$<INSTALL_INTERFACE:include>")
 
-# No target_link_libraries at all, and the absence is the measurement — not even
-# a platform primitive. This library owns two vocabularies and a policy over
-# them; it opens nothing, waits for nothing, and holds no geometric type.
+# One link line, and it is the whole edge set. No platform primitive and no
+# transport: this library opens nothing and waits for nothing, and what it
+# gained at VRC-5 is a value type rather than an ability. `motionCore` carries
+# the Gf target with it, so there is no second line for OpenUSD.
+target_link_libraries(motionTracking PUBLIC motionCore::motionCore)
 
 if(MSVC)
     # PUBLIC for the same reason every leaf here uses it: the installed headers
