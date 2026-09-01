@@ -84,6 +84,7 @@ Its own status:
 | `motionRuntime` | v0.4.0 | `PoseBuffer`, interpolation/extrapolation, resample, filter, blend |
 | `motionRuntime` | v0.5.0 | `IMotionSource` / `ClipSource` / `LiveCaptureSource`, the `motion-capture-trace` format, `ReplaySender`, `CaptureRecorder` (Motion Phase D) |
 | `vrmRetarget` | v0.4.0 | Humanoid map, rest-pose correction, pose retargeter, root-motion policy |
+| `vrmRetarget` | unreleased | `ExpressionResolver`: a clip's named expression weight resolved onto one avatar's morph-target and material-colour binds, joined on `vrm:expressionName` (Motion Phase G) |
 | `motion_retarget` | v0.4.0 | CLI: retargets a clip onto an avatar and binds `skel:animationSource` (Motion Phase C) |
 | `motion_capture` | v0.5.0 | CLI: replays a recorded capture session into a semantic humanoid clip the retarget tool consumes unchanged (Motion Phase D) |
 | `vrmAdapterVmc` | v0.6.0 | VMC Protocol input: OSC and VMC decode, frame assembly, Unity `HumanBodyBones` → `motion::HumanBone` mapping, `LiveCaptureSource` bridge, UDP receiver |
@@ -163,9 +164,11 @@ that a second reader can be added without changing anything above it.
 
 Not yet in that layer: look-at animation, motion generation, OpenExec
 evaluation, blending beyond the primitive, IK, and foot locking. Expression
-animation is read from a `.vrma` clip and carried on the pose, but it is not
-*resolved*: turning a named weight into the morph targets of a particular
-avatar is `ExpressionResolve`, still ahead. See
+animation is read from a `.vrma` clip, carried on the pose, and — unreleased,
+since 2026-09-01 — *resolved* onto a particular avatar's morph-target and
+material-colour binds by `vrmRetarget`'s `ExpressionResolver`. What no tool does
+yet is author the result: nothing writes `blendShapeWeights` onto a stage, so
+the resolve is a library step rather than an end-to-end capability. See
 [MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md) and the
 Motion Phase ladder in the [backlog](../roadmap/backlog.md).
 

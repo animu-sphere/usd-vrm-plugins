@@ -675,6 +675,15 @@ libs/vrmRetarget/
 └─ RetargetResult
 ```
 
+`ExpressionResolver` landed on 2026-09-01 and is the layer §4.1 defers the
+expression join to: `ExpressionRig` holds what the avatar declared, keyed by
+`vrm:expressionName`, and one sample's `ExpressionWeights` resolve into
+blend-shape weights and material colours for that rig alone. It takes plain
+values like every other piece here — the caller reads the binds off the stage —
+so `execVrm`'s `Vrm.ExpressionResolve` is a wrapper over it rather than a second
+implementation, which is the same relationship §11.2 states for the retarget
+node. Authoring the result onto a stage is not part of it and is still open.
+
 Dependencies:
 
 ```text

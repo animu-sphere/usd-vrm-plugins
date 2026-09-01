@@ -2,7 +2,9 @@
 
 The offline retarget core: it takes a clip of semantic humanoid poses and
 expands it into a specific rig's joint order, correcting for the two rigs'
-differing rest poses and resolving where root motion lands.
+differing rest poses and resolving where root motion lands. It resolves the
+clip's *expressions* onto the same rig as well — a named weight becomes the
+blend-shape weights and material colours that name means on this avatar.
 
 `vrmRetarget` is a **plain static CMake library**, not a plugin bundle. It has
 no `plugInfo.json`, no `openstrata.plugin.yaml`, and — the load-bearing
@@ -31,8 +33,9 @@ live source that has no stage at all.
 | `vrmRetarget/RestPose.h` | `SourceRestPose`, `RestPoseCorrection`, `ComputeRestPoseCorrection` |
 | `vrmRetarget/RootMotionPolicy.h` | `RootMotionMode` (`Ignore` / `Hips` / `RootJoint`), `RootMotionOptions`, `ResolveRootTranslation` |
 | `vrmRetarget/PoseRetargeter.h` | `PoseRetargeter`, `RetargetedPose`, `RetargetedAnimation`, `RetargetDiagnostics` |
+| `vrmRetarget/ExpressionResolver.h` | `MorphTargetBind`, `MaterialColorBind`, `ExpressionDefinition`, `ExpressionRig`, `ExpressionResolver`, `ResolvedExpressions`, `ExpressionDiagnostics` |
 
-## Three decisions worth knowing
+## Four decisions worth knowing
 
 - **Joint names are never guessed.** A binding comes from the avatar's
   `vrm:humanBones:<bone>` or from an explicit map file. Name heuristics are
@@ -47,9 +50,19 @@ live source that has no stage at all.
   applied relative to each rig's own rest translation, so a clip authored on a
   1.0 m rig drives a 1.6 m one without the avatar snapping to the source's hip
   height. `preserveTargetHeight` drops the vertical component entirely.
+- **An expression joins on its name, and a reported zero is not silence.** The
+  key is `vrm:expressionName` — the name the source VRM spelled — because the
+  two sides sanitize prim names with private tables and a Japanese or colliding
+  name lands differently on each. A name the sample reported at 0 authors its
+  targets at 0, because "off now" is a statement; a name the sample never
+  reported contributes nothing at all, because an absent name is not a zero
+  weight. The `[0, 1]` clamp the `.vrma` reader deliberately withheld is applied
+  here, per the specification, and the clamped names are reported.
 
 Unmapped joints keep their rest transform, so a clip that drives only part of a
-rig leaves the rest of it alone instead of collapsing it to identity.
+rig leaves the rest of it alone instead of collapsing it to identity. Resolving
+expressions produces values and authors nothing: writing `blendShapeWeights`
+onto a stage is the caller's job, and no tool does it yet.
 
 ## Building
 
