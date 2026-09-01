@@ -78,16 +78,26 @@ checks are listed rather than remembered:
       three scripts and the CI lane had landed with no `Added` entry at all,
       which is exactly the omission this row exists to catch, and it is now
       written)*;
-- [ ] the artifact-only BVH smoke is green on **Linux and macOS**, not only on
+- [x] the artifact-only BVH smoke is green on **Linux and macOS**, not only on
       the workstation that wrote it — it is a `release.yml` step, so a tag is
       the first time those two cells run it, and the `workflow_dispatch --ref`
-      dry run below is what turns that from a surprise into a measurement;
-- [ ] `scripts/check_docs.py`, `check_motion_profiles.py` and `verify_corpus.py`
+      dry run is what turns that from a surprise into a measurement *(it did:
+      `artifact-only BVH smoke: PASS` on both, in the dry run rather than at
+      the tag — 853 frames at 50 Hz through 22 bound joints from the product
+      alone, the negative half included)*;
+- [x] `scripts/check_docs.py`, `check_motion_profiles.py` and `verify_corpus.py`
       are green, and `release.yml` is dry-run with `workflow_dispatch --ref`
-      before the tag — a green PR lane proves nothing about it. *(The three
-      scripts are green; the dry run is the half that is still owed, and it is
-      the half that matters, because `release.yml` is hand-authored and no PR
-      event runs it.)*
+      before the tag — a green PR lane proves nothing about it. **It proved
+      nothing, exactly as written.** The first dry run went red on all three OS
+      at `Stage the release artifacts`, in a jq expression that had never once
+      executed: it consumes `.data.release_members`, which arrived in `ost`
+      0.22.3 *after* v0.7.0 was tagged, and no `pull_request` event runs this
+      workflow. Fixed, along with an `ost` pin two patch versions behind the CI
+      contract beside correctly-mirrored runtime digests; `check_docs.py` now
+      compares the lane's three behavioural pin sites. Second run green on all
+      three OS, staging asserting `4 bundle(s), 3 product tool(s); release
+      members: 4 + 3; product: 7`
+      ([ost report 39](../reports/ost/39-2026-09-01-v0.22.8-release-lane-first-execution.md)).
 
 ### Carried out of v0.8.0
 
