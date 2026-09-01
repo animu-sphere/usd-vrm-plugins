@@ -2,6 +2,7 @@
 #include "vrmRetarget/ExpressionResolver.h"
 
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include <utility>
 
@@ -11,9 +12,24 @@ namespace vrmRetarget
 namespace
 {
 
+// A value that is not a number is not a weight, and 0 is the only value that
+// leaves the rig where it was -- so it is what a NaN clamps to. Written as an
+// explicit test rather than left to the comparisons below, because every
+// comparison against NaN is false: `weight < 0 || weight > 1` says a NaN is
+// already inside [0, 1], and it would reach the binds, the totals and Apply()
+// with the clamp reporting nothing.
+bool
+IsOutsideUnitRange(float weight)
+{
+    return !(weight >= 0.0f && weight <= 1.0f);
+}
+
 float
 ClampUnit(float weight)
 {
+    if (std::isnan(weight)) {
+        return 0.0f;
+    }
     if (weight < 0.0f) {
         return 0.0f;
     }
@@ -133,10 +149,22 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
         }
 
         float weight = reported.weight;
-        if (_options.clampWeights && (weight < 0.0f || weight > 1.0f)) {
-            weight = ClampUnit(weight);
-            if (diagnostics) {
-                RecordName(diagnostics->clampedNames, reported.name);
+        if (IsOutsideUnitRange(weight)) {
+            if (_options.clampWeights) {
+                weight = ClampUnit(weight);
+                if (diagnostics) {
+                    RecordName(diagnostics->clampedNames, reported.name);
+                }
+            } else if (diagnostics && !std::isfinite(weight)) {
+                // Verbatim mode resolves what the producer said, and a value
+                // that is not finite is still what it said. It reaches the
+                // binds -- but silently would make this mode indistinguishable
+                // from a rig that resolved cleanly, so the report says so.
+                RecordWarning(diagnostics->warnings,
+                              "expression '" + reported.name
+                                  + "' reported a weight that is not finite "
+                                    "and clamping is off; it is carried into "
+                                    "the binds unchanged");
             }
         }
         if (definition->isBinary) {
@@ -168,6 +196,20 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
                 }
                 continue;
             }
+            if (bind.colorType.empty()) {
+                // The slot is half the key. Accepting an empty one would merge
+                // two binds of one material into a single accumulator and hand
+                // the caller a colour it cannot map back to a shader input.
+                if (diagnostics) {
+                    RecordWarning(diagnostics->warnings,
+                                  "expression '" + definition->name
+                                      + "' binds a colour of material '"
+                                      + bind.material
+                                      + "' with no colour slot; the bind is "
+                                        "skipped");
+                }
+                continue;
+            }
             ResolvedMaterialColor& color
                 = colors[std::make_pair(bind.material, bind.colorType)];
             color.material = bind.material;
@@ -183,23 +225,27 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
         ResolvedMorphTarget target;
         target.target = entry.first;
         target.weight = entry.second;
-        if (diagnostics && target.weight > 1.0f) {
+        // Both directions: a rig whose binds sum past 1, and -- through a
+        // negative bind weight, or a negative report with clamping off -- one
+        // that drives a target below 0. Neither is corrected, and a report that
+        // named only the first would leave the other looking clean.
+        if (diagnostics && IsOutsideUnitRange(target.weight)) {
             RecordWarning(diagnostics->warnings,
                           "morph target '" + target.target
-                              + "' is driven past a total weight of 1; the "
-                                "sum is carried through rather than clamped");
+                              + "' is driven outside [0, 1]; the sum is "
+                                "carried through rather than clamped");
         }
         result.morphTargets.push_back(std::move(target));
     }
 
     result.materialColors.reserve(colors.size());
     for (const auto& entry : colors) {
-        if (diagnostics && entry.second.totalWeight > 1.0f) {
+        if (diagnostics && IsOutsideUnitRange(entry.second.totalWeight)) {
             RecordWarning(diagnostics->warnings,
                           "material colour '" + entry.second.material + "'."
                               + entry.second.colorType
-                              + " is driven past a total weight of 1; Apply "
-                                "extrapolates rather than clamping");
+                              + " is driven to a total weight outside [0, 1]; "
+                                "Apply extrapolates rather than clamping");
         }
         result.materialColors.push_back(entry.second);
     }

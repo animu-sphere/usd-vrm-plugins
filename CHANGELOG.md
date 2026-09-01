@@ -38,8 +38,14 @@ Current schema contract version: **1**.
   show. And **a material colour is carried as `(totalWeight, weightedTarget)`**
   with an `Apply(base)` that lerps, because the material's own value is the
   caller's and this library will not read it; two expressions driving one slot
-  accumulate, and a total past 1 extrapolates with a warning instead of being
-  quietly corrected into a value no bind asked for.
+  accumulate, and a channel driven outside `[0, 1]` — past it, or below it
+  through a negative bind weight — extrapolates with a warning instead of being
+  quietly corrected into a value no bind asked for. A weight that is **not a
+  number** clamps to 0 and is named beside the out-of-range ones, because every
+  comparison against NaN is false and a range test alone would call it legal and
+  pass it to the binds unreported; a bind missing half its identity — no target
+  path, no material, or no colour slot — is skipped with a warning rather than
+  accumulated under an empty key.
 
   What is left of Motion Phase G's expression half is the authoring: nothing
   writes `blendShapeWeights` onto a stage yet, so `motion_retarget`'s output is

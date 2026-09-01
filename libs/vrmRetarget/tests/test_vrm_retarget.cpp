@@ -646,9 +646,12 @@ TestBinaryRoundsAndOutOfRangeIsClamped()
     assert(NearlyEqual(weight, 0.0f));
     assert(resolver.ResolveWeight("blink", 0.5f, &weight));
     assert(NearlyEqual(weight, 1.0f));
-    // "Does not resolve" is distinguishable from "resolves to zero".
+    // "Does not resolve" is distinguishable from "resolves to zero", and the
+    // sentinel differs from the reported weight so that an implementation
+    // writing through the pointer before the early return fails here.
+    weight = -7.0f;
     assert(!resolver.ResolveWeight("relaxed", 1.0f, &weight));
-    assert(NearlyEqual(weight, 1.0f));
+    assert(NearlyEqual(weight, -7.0f));
 
     // The clip reader carries a weight outside [0, 1] verbatim and leaves the
     // clamp to whoever applies it to a rig, which is here -- and the operator
@@ -761,6 +764,139 @@ TestAnUnresolvedNameIsNamedOnceForAWholeClip()
     assert(diagnostics.warnings.empty());
 }
 
+void
+TestANonNumberIsNotAWeight()
+{
+    const vrmRetarget::ExpressionResolver resolver(DesignExpressionRig());
+    const float notANumber = std::nanf("");
+
+    // Every comparison against NaN is false, so a range test written as
+    // `weight < 0 || weight > 1` calls it "already inside [0, 1]" and lets it
+    // through to the binds, the totals and Apply() with nothing reported. It
+    // clamps to 0 -- the only value that leaves the rig where it was -- and is
+    // named beside the ordinary out-of-range weights.
+    vrmRetarget::ExpressionDiagnostics diagnostics;
+    const vrmRetarget::ResolvedExpressions resolved =
+        resolver.Resolve(Weights({{"happy", notANumber}}), &diagnostics);
+    assert(resolved.morphTargets.size() == 2);
+    assert(NearlyEqual(resolved.morphTargets[0].weight, 0.0f));
+    assert(NearlyEqual(resolved.morphTargets[1].weight, 0.0f));
+    assert(NearlyEqual(resolved.materialColors[0].totalWeight, 0.0f));
+    assert(diagnostics.clampedNames.size() == 1);
+    assert(diagnostics.clampedNames[0] == "happy");
+    assert(!diagnostics.IsClean());
+
+    float weight = -7.0f;
+    assert(resolver.ResolveWeight("happy", notANumber, &weight));
+    assert(NearlyEqual(weight, 0.0f));
+
+    // An infinity is the same question with an answer the comparisons already
+    // gave; it is here so the two cannot drift apart.
+    vrmRetarget::ExpressionDiagnostics infinite;
+    assert(NearlyEqual(
+        resolver.Resolve(Weights({{"happy", HUGE_VALF}}), &infinite)
+            .morphTargets[1].weight,
+        1.0f));
+    assert(infinite.clampedNames.size() == 1);
+
+    // With clamping off the value reaches the binds, because that mode
+    // resolves what the producer said -- but a resolve that carried a NaN into
+    // an avatar must not read as a clean one.
+    vrmRetarget::ExpressionResolveOptions verbatim;
+    verbatim.clampWeights = false;
+    const vrmRetarget::ExpressionResolver unclamped(DesignExpressionRig(),
+                                                    verbatim);
+    vrmRetarget::ExpressionDiagnostics carried;
+    const vrmRetarget::ResolvedExpressions raw =
+        unclamped.Resolve(Weights({{"happy", notANumber}}), &carried);
+    assert(std::isnan(raw.morphTargets[0].weight));
+    // One warning for the expression, and one for each of the three channels
+    // its NaN reached -- a count that says how far the value got.
+    assert(carried.warnings.size() == 4);
+    assert(!carried.IsClean());
+}
+
+void
+TestABindWithNoIdentifierIsSkippedAndNamed()
+{
+    // Half a bind is not a bind: a morph target with no path, a colour with no
+    // material, and a colour with no slot. The last one is the subtle one --
+    // the slot is half the accumulator's key, so an empty one would merge two
+    // binds of one material and hand back a colour nothing can map to a shader
+    // input.
+    vrmRetarget::ExpressionRig rig;
+    vrmRetarget::ExpressionDefinition broken;
+    broken.name = "happy";
+    broken.morphTargets.push_back({"", 1.0f});
+    broken.morphTargets.push_back({"/Asset/Meshes/Face/Smile", 1.0f});
+    broken.materialColors.push_back(
+        {"", "color", pxr::GfVec4f(1.0f, 0.0f, 0.0f, 1.0f)});
+    broken.materialColors.push_back(
+        {"/Asset/Materials/Face", "", pxr::GfVec4f(1.0f, 0.0f, 0.0f, 1.0f)});
+    broken.materialColors.push_back(
+        {"/Asset/Materials/Face", "", pxr::GfVec4f(0.0f, 1.0f, 0.0f, 1.0f)});
+    broken.materialColors.push_back(
+        {"/Asset/Materials/Face", "emissionColor",
+         pxr::GfVec4f(0.0f, 0.0f, 1.0f, 1.0f)});
+    rig.Add(broken);
+
+    const vrmRetarget::ExpressionResolver resolver(rig);
+    vrmRetarget::ExpressionDiagnostics diagnostics;
+    const vrmRetarget::ResolvedExpressions resolved =
+        resolver.Resolve(Weights({{"happy", 1.0f}}), &diagnostics);
+
+    // The bind that could be resolved was, and only it.
+    assert(resolved.morphTargets.size() == 1);
+    assert(resolved.morphTargets[0].target == "/Asset/Meshes/Face/Smile");
+    assert(resolved.materialColors.size() == 1);
+    assert(resolved.materialColors[0].colorType == "emissionColor");
+    // One line per shape, and the two slotless binds did not merge into a
+    // single accumulator on their way to being refused.
+    assert(diagnostics.warnings.size() == 3);
+}
+
+void
+TestATargetDrivenBelowZeroIsReportedToo()
+{
+    // A negative bind weight is a rig this library does not validate, so a
+    // fully-on expression can drive a target below 0. It extrapolates, exactly
+    // as driving one past 1 does, and a report that named only the upper side
+    // would leave this looking clean.
+    vrmRetarget::ExpressionRig rig;
+    vrmRetarget::ExpressionDefinition frown;
+    frown.name = "sad";
+    frown.morphTargets.push_back({"/Asset/Meshes/Face/Smile", -1.0f});
+    rig.Add(frown);
+
+    const vrmRetarget::ExpressionResolver resolver(rig);
+    vrmRetarget::ExpressionDiagnostics diagnostics;
+    const vrmRetarget::ResolvedExpressions resolved =
+        resolver.Resolve(Weights({{"sad", 1.0f}}), &diagnostics);
+    assert(NearlyEqual(resolved.morphTargets[0].weight, -1.0f));
+    assert(diagnostics.warnings.size() == 1);
+    assert(!diagnostics.IsClean());
+
+    // The same in the other mode: a negative report with clamping off drives
+    // every bind of the expression negative.
+    vrmRetarget::ExpressionResolveOptions verbatim;
+    verbatim.clampWeights = false;
+    const vrmRetarget::ExpressionResolver unclamped(DesignExpressionRig(),
+                                                    verbatim);
+    vrmRetarget::ExpressionDiagnostics carried;
+    const vrmRetarget::ResolvedExpressions raw =
+        unclamped.Resolve(Weights({{"happy", -0.5f}}), &carried);
+    assert(NearlyEqual(raw.morphTargets[1].weight, -0.5f));
+    assert(NearlyEqual(raw.materialColors[0].totalWeight, -0.5f));
+    // Apply extrapolates past the material's own value rather than toward the
+    // bind's target, which is the thing worth being told about.
+    assert(NearlyEqual(raw.materialColors[0].Apply(pxr::GfVec4f(1.0f)),
+                       pxr::GfVec4f(1.0f, 1.5f, 1.5f, 1.0f)));
+    // Three channels outside the range -- two morph targets and one colour
+    // slot -- one warning each, and nothing clamped.
+    assert(carried.warnings.size() == 3);
+    assert(carried.clampedNames.empty());
+}
+
 } // namespace
 
 int
@@ -782,6 +918,9 @@ main()
     TestBinaryRoundsAndOutOfRangeIsClamped();
     TestExpressionsAccumulateOnOneTarget();
     TestAnUnresolvedNameIsNamedOnceForAWholeClip();
+    TestANonNumberIsNotAWeight();
+    TestABindWithNoIdentifierIsSkippedAndNamed();
+    TestATargetDrivenBelowZeroIsReportedToo();
     std::puts("vrmRetarget unit tests passed");
     return 0;
 }

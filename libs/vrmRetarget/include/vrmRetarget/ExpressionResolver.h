@@ -143,9 +143,10 @@ struct ResolvedMaterialColor
     pxr::GfVec4f weightedTarget = pxr::GfVec4f(0.0f);
 
     // The slot's value for this sample, given the material's authored value.
-    // Deliberately not clamped: a rig whose binds sum past 1 extrapolates here
-    // and is reported as a warning, rather than being quietly corrected into a
-    // value no bind asked for.
+    // Deliberately not clamped: a rig whose binds drive a slot outside [0, 1]
+    // -- past it, or below it through a negative bind weight -- extrapolates
+    // here and is reported as a warning, rather than being quietly corrected
+    // into a value no bind asked for.
     VRMRETARGET_API pxr::GfVec4f Apply(const pxr::GfVec4f& base) const;
 };
 
@@ -188,7 +189,10 @@ struct ExpressionDiagnostics
 
     // Reported outside [0, 1] and clamped here. The clip reader carries such a
     // weight verbatim on purpose and leaves the clamp to whoever applies it to
-    // a rig, which is this layer; the operator still gets told.
+    // a rig, which is this layer; the operator still gets told. A weight that
+    // is not a number is clamped to 0 and named here too: NaN compares false
+    // against every bound, so left to the comparisons it would pass for a
+    // weight already inside the range and reach the binds unreported.
     std::vector<std::string> clampedNames;
 
     std::vector<std::string> warnings;
@@ -202,11 +206,13 @@ struct ExpressionDiagnostics
 
 struct ExpressionResolveOptions
 {
-    // Clamp a reported weight into [0, 1] before applying it. The VRMA
-    // specification says a weight outside the range is clamped; the reader
+    // Clamp a reported weight into [0, 1] before applying it, NaN to 0. The
+    // VRMA specification says a weight outside the range is clamped; the reader
     // carries it verbatim and this is the layer the specification meant.
     // Turning it off resolves what the producer actually said, which is a
-    // diagnostic mode rather than a rendering one.
+    // diagnostic mode rather than a rendering one -- a non-finite weight then
+    // reaches the binds, and says so in the warnings rather than passing for a
+    // clean resolve.
     bool clampWeights = true;
 
     // A binary expression's resolved weight is 1 at or above this and 0 below
