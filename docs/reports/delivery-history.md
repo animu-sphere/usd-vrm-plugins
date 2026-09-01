@@ -10,7 +10,7 @@ work.
 bundle. The workspace split (§D, §E) landed in
 [v0.2.0](../releases/v0.2.0.md) and the negative corpus (§G) in
 [v0.3.0](../releases/v0.3.0.md); everything logged here is released as of
-[v0.7.0](../releases/v0.7.0.md).
+[v0.8.0](../releases/v0.8.0.md).
 
 This is not a description of current behavior — see [architecture/](../architecture/)
 and [reference/](../reference/) for that — nor of planned work, which is in the
@@ -298,3 +298,112 @@ IK/foot-locking) are in the [roadmap](../roadmap/).
   median 0.084° per bone with the residual shown to be timing rather than value
   ([report 01](motion/01-2026-08-15-mocopi-cross-source.md)). What each path
   cannot carry is written down there, five measured entries.
+
+## L. Installed-package consumer lane (v0.8.0)
+
+- ✅ **[PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md)**: the binding
+  distribution contract, derived from the CMake sources — per package, the
+  `find_package` name, the exported target, the header root, the packages that
+  must resolve first, the platform libraries on its link line, aggregate
+  membership, and whether standalone installability was **measured** or only
+  reviewed. Twelve packages take a contract; three plugin bundles export no
+  target and install no config by design.
+- ✅ **A consumer that is not us**: `scripts/check_package_consumer.py` installs
+  one package and its required packages into a scratch prefix holding nothing
+  else, copies the fixture **outside** this repository, and configures, builds
+  and runs it. **Twelve of twelve pass and no config file failed** — which the
+  plan predicted would not happen, so the finding is that the compliance was
+  already there and is now *measured* rather than reviewed. Backed by
+  **forty-eight mutations** of the installed prefix: 41 caught, 5 refused before
+  install because masking makes them inert on any host, 2 inconclusive because
+  `liveTransport`'s one edge is conditional and unreached on Windows.
+- ✅ **The lane, on every pull request, on all three OS**
+  ([`package-consumer.yml`](../../.github/workflows/package-consumer.yml)):
+  twelve packages × three platforms from a prefix holding no build tree, plus
+  criterion 6 — every workspace target in every closure present on all three or
+  on none, with `ws2_32`/`Threads::Threads` the one documented difference, in
+  both directions. It copies no pin: `scripts/ci_pins.py` reads runners,
+  digests, host packages and Python out of `openstrata.ci.yaml` through `ost ci
+  matrix`, and `--expect 3` is a check rather than a formality.
+- ✅ **It found a defect in the runtime, not in a package**: a pulled runtime's
+  CMake package carries the producing machine's Python paths, in
+  `pxrConfig.cmake`'s guarded variables and again in sixteen imported targets'
+  `INTERFACE_INCLUDE_DIRECTORIES`, the second of which no `-D` can override
+  ([ost report 37](ost/37-2026-08-30-v0.22.6-runtime-python-paths-from-the-producer.md)).
+  The four packages that passed everywhere are exactly the four whose closure
+  never reaches `pxr`.
+- ✅ **PKG-5 closed by measurement**: on `macos-15` and `ubuntu-24.04`
+  `vrmAdapterMocopi`'s consumer links `Threads::Threads` and **no** `ws2_32` —
+  the absence a Windows run structurally cannot see, and the half of
+  [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113) open since
+  the receiver grew a platform link.
+- ✅ **`scripts/check_docs.py` refuses a `*Config.cmake.in` with no contract
+  row**, and a row naming a package that does not exist — added *before* the CI
+  cell, while the document it checks was five days old.
+
+## M. Shared OSC foundation and VRChat OSC Trackers input (v0.8.0)
+
+- ✅ **`libs/liveTransport`**: the UDP receiver, bounded queue, packet-capture
+  format and diagnostic vehicle, once instead of once per adapter. 1485 lines
+  left `vrmAdapterVmc` and 337 arrived; 1781 left `vrmAdapterMocopi` and 359
+  arrived, and every committed capture in both corpora still round-trips byte
+  for byte. Four `UdpReceiver` defects were merged into `vrmAdapterVmc` first,
+  in a change that moved no file — two of them shipped untested on purpose,
+  because a `-1` and an `INT_MAX` poll timeout differ only after 24.8 days and a
+  `POLLERR` wake-up is not producible from a suite that owns only its sockets.
+- ✅ **`libs/osc`**: packets, bundles and their flattening, addresses, type tags,
+  arguments, and a refusal naming the byte and the address it refused at, with
+  no address *semantics*. It moved on measured evidence: an inventory written in
+  `vrmAdapterVrchatOsc` decoding real bytes through the VMC-owned decoder needed
+  **five VMC tokens**, every one of them the name — exactly the three couplings
+  the plan predicted and nothing else. `OscPacket`'s public behaviour was frozen
+  by seven characterisation tests, checked by six mutations, before any source
+  moved.
+- ✅ **`vrmAdapterVrchatOsc` and `vrchat_osc_record`**, the third live adapter,
+  with a frozen ten-code diagnostic set. No adapter imports a sibling, verified
+  by injection in every direction.
+- ✅ **The protocol was inventoried before it was decoded**: six captures,
+  44 918 datagrams — eight addresses (three numbered trackers and a named
+  `head`), every one `,fff`, one message per datagram, no bundles, an
+  eight-datagram cycle inside a median 0.053 ms, ~58 Hz emitted and ~39 Hz
+  delivered ([report 02](motion/02-2026-08-30-vrchat-osc-address-inventory.md)).
+  The inventory carrying no list of expected addresses is what made `head`
+  arrive as a row instead of four absences.
+- ✅ **Tracking space measured against a recorded rest pose**
+  ([report 03](motion/03-2026-08-30-vrchat-osc-tracking-space.md)): metres,
+  +Y up, +Z forward, left-handed, so the conversion is VRM 1.0's reflection
+  through X. Handedness came from a labelled take, not from the numbers. The
+  Euler order is measured to three of six and the residual is quoted — median
+  0.21°, 12.33° at worst, against 25.7° before the test.
+- ✅ **Frame assembly is stated policy with a fixture each**: two boundary rules,
+  because a repeat needs no clock and a gap catches a frame no repeat would
+  close; a peer that changes is a restart, a silence of any length is a timeout,
+  and a caller with no peer never sees a restart. `session-restart` and
+  `silent-gap` are the same 4.8452 s gap told apart by identity alone — testable
+  only because the capture format grew a per-record peer the same day.
+- ✅ **Twelve generated fixtures**, one the session's own shape, five `derived`
+  and six `unobserved`, each with its reason.
+- ✅ **`libs/motionTracking`**: which tracker is which body region, without
+  saying which bone — in neither the adapter nor `motionCore`. Assigned
+  observations reach a `HumanoidPose` by direct assignment, and a position the
+  solve does not consume is **reported rather than dropped**, because consuming
+  one is IK.
+- ✅ **A capture reaches a rig through unchanged tools**: `vrchat_osc_record
+  --inspect --export-trace --assign` writes the canonical trace, and
+  `vrchat_osc_record_endToEnd` drives it through unchanged `motion_capture` and
+  `motion_retarget`. The claim is a partition rather than a count — four joints
+  move and fourteen hold their rest pose *exactly*, four of the fourteen sitting
+  between a driven hip and a driven foot, which is where a solve that had begun
+  estimating would show first.
+- ✅ **Cross-source evidence, three paths and two performances**
+  ([report 04](motion/04-2026-08-31-cross-source-carry-drop.md)). One physical
+  session is **not producible on this sender** — its transfer format is
+  exclusive and it records no BVH while sending OSC — so five labelled sequences
+  were performed on both dates with the two 2026-08-15 paths kept as the
+  control. Eight difference categories, and the one predicted to matter produced
+  the largest difference and it was a **defect**: a frame whose hips tracker
+  sent a position and no rotation localised its children against identity,
+  snapping head and both feet **33.6°** — the hips' own orientation to five
+  figures — on 16 of 777 frames of a stand-still take. Fixed; the worst
+  single-frame step is now 2.46°. Report 01's one open row closes: all three
+  paths now carry the body's travel.

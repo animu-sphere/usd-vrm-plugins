@@ -25,7 +25,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
          _live_transport_version LIMIT_COUNT 1)
     string(STRIP "${_live_transport_version}" _live_transport_version)
 else()
-    set(_live_transport_version "0.7.0")
+    set(_live_transport_version "0.8.0")
 endif()
 
 project(liveTransport

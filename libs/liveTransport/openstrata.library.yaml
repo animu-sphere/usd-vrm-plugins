@@ -17,7 +17,7 @@ schema: openstrata.library/v1alpha1
 library:
   id: liveTransport
   # Mirrors VERSION; release preparation updates this in lockstep.
-  version: 0.7.0
+  version: 0.8.0
 cmake:
   package: liveTransport
   target: liveTransport::liveTransport

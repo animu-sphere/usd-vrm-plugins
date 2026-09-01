@@ -26,7 +26,7 @@ schema: openstrata.library/v1alpha1
 library:
   id: vrmAdapterVrchatOsc
   # Mirrors VERSION; release preparation updates this in lockstep.
-  version: 0.7.0
+  version: 0.8.0
 #
 # **Three edges, where §2 permits four, and the missing one is still the
 # milestone rather than an oversight.** `motionCore` arrived with VRC-3, which
@@ -40,11 +40,11 @@ library:
 requires:
   libraries:
     - id: motionCore
-      version: ">=0.7,<0.8"
+      version: ">=0.8,<0.9"
     - id: liveTransport
-      version: ">=0.7,<0.8"
+      version: ">=0.8,<0.9"
     - id: osc
-      version: ">=0.7,<0.8"
+      version: ">=0.8,<0.9"
 cmake:
   package: vrmAdapterVrchatOsc
   target: vrmAdapterVrchatOsc::vrmAdapterVrchatOsc

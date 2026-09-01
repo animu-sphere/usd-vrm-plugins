@@ -5,11 +5,11 @@ schema: openstrata.tool/v1alpha1
 tool:
   id: motion_capture
   # Mirrors VERSION; release preparation updates this in lockstep.
-  version: 0.7.0
+  version: 0.8.0
   license: Apache-2.0
 executables: [motion_capture]
 directories: [bin]
 requires:
   libraries:
     - id: motionRuntime
-      version: ">=0.7,<0.8"
+      version: ">=0.8,<0.9"

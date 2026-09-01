@@ -13,6 +13,8 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-08-31
+
 ### Fixed
 
 - **The VRMA reader was built by every CI lane and tested by almost none of
@@ -225,6 +227,114 @@ Current schema contract version: **1**.
   solved frames and that line is otherwise the only thing a refused frame prints.
 
 ### Added
+
+- **A consumer that is not us.** Every package this workspace installs is now
+  configured, built, linked and *run* from a clean prefix by an external CMake
+  project that names no workspace target — the check every other lane here is
+  structurally unable to make. A composed workspace build defines each target as
+  an alias in one CMake project and `ost library build` composes
+  `requires.libraries` the same way; neither opens a `*Config.cmake` at any
+  point, so the configuration that fails is the one nothing runs. On 2026-08-29
+  it shipped: two adapters named `osc::osc` on their installed interface link
+  line with no `find_dependency(osc)` in either config, and **all 17 lanes were
+  green** (the fix is under *Fixed* above; this is the general answer to it).
+
+  Four pieces, and each is separately runnable by hand because a lane nobody can
+  reproduce is a lane nobody can debug:
+
+  - [`docs/architecture/PACKAGE_CONTRACT.md`](docs/architecture/PACKAGE_CONTRACT.md),
+    the binding distribution contract, derived from the CMake sources rather
+    than written beside them. Per package: the name a consumer writes in
+    `find_package`, the target it links, the header root, the packages that must
+    resolve first, the platform libraries that travel on the link line, whether
+    it is in the aggregate product, and whether standalone installability has
+    been **measured** or only reviewed. Twelve packages take a `find_package`
+    contract; three plugin bundles export no target and install no config **by
+    design**, and the document says so rather than leaving them absent.
+  - `scripts/check_package_consumer.py`, the driver for one package: install it
+    and its required packages into a scratch prefix holding nothing else, copy
+    the fixture **outside** this repository so it cannot resolve through the
+    source tree it came from, configure, build, run, and report which of the
+    contract's six acceptance criteria were met.
+  - `scripts/run_package_consumer_lane.py`, every package on one host. **Which
+    packages it runs is read, not listed** — every contract row, through the
+    driver's own parser — so a thirteenth package cannot enter the contract
+    without entering this lane.
+  - `scripts/check_package_closures.py`, criterion 6, which no single host can
+    answer: do the three platforms agree about the closure?
+
+  **Twelve of twelve pass, and no config file failed** — which is not what the
+  plan predicted, and is worth stating that way round. The compliance was
+  already there; what is new is that it is *measured*, by something that is not
+  this workspace. What did fail was the harness, three times, and each would
+  have made a later run lie. **Forty-eight mutations of the installed prefix**
+  back the twelve: 41 caught, 5 refused before install because masking makes
+  them inert on any host, and 2 inconclusive because `liveTransport`'s one edge
+  is conditional and unreached on Windows. Masking is a property of the prefix
+  and true everywhere; a condition is a question about the host, and this driver
+  evaluates none — collapsing those two into one refusal threw away a real
+  catch, so they are two answers.
+
+- **A PR-gating package-consumer lane on all three OS**
+  ([`.github/workflows/package-consumer.yml`](.github/workflows/package-consumer.yml)).
+  Three jobs — read the pins, consume on each platform, compare the three
+  closures — building from a prefix that holds no build tree, which is the whole
+  point and the easiest property to lose by accident. Twelve packages × three
+  platforms, green, and **every workspace target in every closure is present on
+  all three or on none**. The one difference the contract permits is present in
+  both directions: `ws2_32` on Windows, `Threads::Threads` on macOS and Linux,
+  for `liveTransport` and the three adapters that inherit it. Every `Standalone`
+  cell in PACKAGE_CONTRACT.md §4 is now unqualified.
+
+  **It copies no pin.** `release.yml` is the other hand-authored workflow here,
+  and it hand-copies an X11 step, an `ost` version and three runtime digests —
+  which is how it went stale and failed a tag build while every PR lane stayed
+  green. So `scripts/ci_pins.py` reads the runners, the digests, the host
+  packages and the Python version out of `openstrata.ci.yaml` through `ost ci
+  matrix`, and the three OS come from the three `verify: test` workspace cells
+  rather than a list in the YAML. The one pin that cannot come from `ost` is
+  which `ost`, so it is read from the contract with a regex and then checked by
+  the tool it installed. **`--expect 3` is a check, not a formality**: criterion
+  6 asks whether three platforms agree, and a lane that quietly asked it of two
+  would print a pass to a different question.
+
+  Criterion 6 needed a contract before it needed a script — read strictly it is
+  unimplementable and read loosely it is vacuous, because the three runtimes are
+  three separate builds of OpenUSD. PACKAGE_CONTRACT.md §5.1 states the
+  partition: a workspace target agrees or it is a defect; a declared platform
+  dependency is present exactly where its cell says and **absent elsewhere**;
+  everything else is attributed to the external package that brought it, and the
+  attribution is what gets checked. Ten cases verify the comparison and each was
+  made to happen, including the tenth, which is the answer that is not a
+  verdict: two platforms end in a setup refusal, because a question about three
+  is not answered by two.
+
+  **The two runs it took to get green both found defects, and neither was in a
+  package.** The first caught a *runtime*: a pulled runtime's CMake package
+  carries the producing machine's Python paths, in `pxrConfig.cmake`'s guarded
+  variables and again in sixteen imported targets'
+  `INTERFACE_INCLUDE_DIRECTORIES`, and no `-D` overrides the second — the four
+  packages that passed everywhere are exactly the four whose closure never
+  reaches `pxr`
+  ([report 37](docs/reports/ost/37-2026-08-30-v0.22.6-runtime-python-paths-from-the-producer.md),
+  which carries the upstream P1). That is this track's premise arriving from a
+  direction it did not predict: the lane was written to catch a package that
+  could not be consumed from outside, and the first thing it caught was the
+  runtime under it, for the same reason — nothing had ever configured against
+  one without `ost build` in front of it.
+
+  It also closes the raw-library half of
+  [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113): on
+  `macos-15` and `ubuntu-24.04`, `vrmAdapterMocopi`'s consumer links
+  `Threads::Threads` and **no** `ws2_32` — the absence a Windows run
+  structurally cannot see, open since the receiver grew a platform link.
+
+- **`scripts/check_docs.py` refuses a `*Config.cmake.in` with no row in
+  PACKAGE_CONTRACT.md**, and a row naming a package that does not exist. Five
+  ways to fail it, each made to fail before the check was believed. It landed
+  **before** the CI cell rather than after it, on purpose: the document it
+  checks was five days old, which is the moment to add such a check rather than
+  after the drift has had time to happen.
 
 - **VRC-7, the cross-source comparison: three paths, two performances**
   ([report 04](docs/reports/motion/04-2026-08-31-cross-source-carry-drop.md)).
@@ -2444,7 +2554,10 @@ Explicitly out of scope for this release (tracked in the
 - ABI stability guarantees across all OpenUSD versions (see
   [`docs/reference/SUPPORTED_CONFIGURATIONS.md`](docs/reference/SUPPORTED_CONFIGURATIONS.md)).
 
-[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.2.0...v0.3.0

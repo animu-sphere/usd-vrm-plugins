@@ -23,7 +23,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
          LIMIT_COUNT 1)
     string(STRIP "${_osc_version}" _osc_version)
 else()
-    set(_osc_version "0.7.0")
+    set(_osc_version "0.8.0")
 endif()
 
 project(osc
