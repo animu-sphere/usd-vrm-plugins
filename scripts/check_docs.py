@@ -549,6 +549,56 @@ def prose_only(text: str) -> str:
     return INLINE_CODE.sub(blank, FENCE.sub(blank, text))
 
 
+def check_release_lane_ost_pin(failures: list[str]) -> None:
+    """`release.yml` bootstraps the `ost` the CI contract pins.
+
+    `.github/workflows/release.yml` is hand-authored -- the CI contract cannot
+    express `ost plugin test --workspace` or `ost plugin package --workspace`,
+    which are the two verbs a release turns on -- so `ost ci generate` never
+    touches it and `ost ci validate` says nothing about it. On 2026-09-01 it was
+    still bootstrapping 0.22.6 while `openstrata.ci.yaml` had moved to 0.22.8
+    two days earlier, and nothing anywhere reported it: the runtime digests
+    beside it *had* been mirrored, which is what makes a partial divergence
+    harder to see than a neglected one. See ost report 39.
+    """
+    contract = read("openstrata.ci.yaml")
+    m = re.search(r'^bootstrap:\s*$.*?^\s+version:\s*"([^"]+)"',
+                  contract, re.M | re.S)
+    if not m:
+        failures.append("openstrata.ci.yaml declares no bootstrap.ost.version")
+        return
+    pinned = m.group(1)
+
+    # Only the three sites that decide behaviour: the asset URL, the assertion
+    # that checks what was installed, and the registry cache key. The header
+    # comment names older versions on purpose — it is prose about this file's
+    # history, and a check that read it would forbid the file from having one.
+    lane = read(".github/workflows/release.yml")
+    sites = {
+        "the release asset URL":
+            r"open-strata/releases/download/v(\d+\.\d+\.\d+)",
+        "the post-install assertion":
+            r'!=\s*"ost (\d+\.\d+\.\d+)"',
+        "the registry cache key":
+            r"key: ost-registry-(\d+\.\d+\.\d+)-",
+    }
+    for what, pattern in sites.items():
+        found = set(re.findall(pattern, lane))
+        if not found:
+            failures.append(
+                f".github/workflows/release.yml: {what} names no `ost` version. "
+                f"It bootstraps one by hand, so every pin site must stay "
+                f"readable or this check silently stops checking it")
+            continue
+        wrong = sorted(v for v in found if v != pinned)
+        if wrong:
+            failures.append(
+                f".github/workflows/release.yml: {what} says ost "
+                f"{', '.join(wrong)} but openstrata.ci.yaml pins {pinned}. "
+                f"It is hand-authored, so regeneration will not fix it and no "
+                f"PR lane will report it (ost report 39)")
+
+
 def check_links(failures: list[str]) -> None:
     for p in sorted(REPO_ROOT.glob("**/*.md")):
         rel = str(p.relative_to(REPO_ROOT)).replace("\\", "/")
@@ -573,7 +623,7 @@ def main() -> int:
     failures: list[str] = []
     for check in (check_inventory, check_no_stale_paths,
                   check_schema_contract, check_mocopi_rig_agreement,
-                  check_openusd_pin,
+                  check_openusd_pin, check_release_lane_ost_pin,
                   check_release_records, check_roadmap_status,
                   check_retired_doc_names, check_component_status,
                   check_package_contract, check_links):

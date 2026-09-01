@@ -25,7 +25,7 @@
 # an omission. WORKSPACE.md §5 keeps every adapter out of the aggregate product.
 # Under the 0.21.0 pin this workflow used to carry, that exclusion held only
 # because `ost` did not discover `adapters/<group>/<name>/tools/<tool>/` at all;
-# 0.22.x does discover them, and the bootstrap pin below is 0.22.6 now. What
+# 0.22.x does discover them, and the bootstrap pin below is 0.22.8 now. What
 # keeps the product at seven members is therefore no longer the toolchain
 # version but `[workspace].release_exclude` in openstrata.toml, which names the
 # three adapter CLIs and makes `ost` itself fail with
@@ -164,7 +164,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libx11-dev libxt-dev
-      - name: Bootstrap ost 0.22.6 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.22.8 (pinned release asset, checksum-verified)
         shell: bash
         run: |
           set -euo pipefail
@@ -177,7 +177,7 @@ jobs:
             *) echo "::error title=ost bootstrap::no ost release asset for ${RUNNER_OS}-${RUNNER_ARCH}" ; exit 1 ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.22.6"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.22.8"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$( (command -v sha256sum > /dev/null && sha256sum "$asset" || shasum -a 256 "$asset") | cut -d' ' -f1 )"
@@ -206,15 +206,15 @@ jobs:
           set -euo pipefail
           version="$(ost --version)"
           echo "$version"
-          if [ "$version" != "ost 0.22.6" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.22.6', got '$version'" ; exit 1
+          if [ "$version" != "ost 0.22.8" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.22.8', got '$version'" ; exit 1
           fi
       - name: Restore the artifact registry cache (speed only, never correctness)
         if: ${{ vars.OST_CI_DISABLE_CACHE != 'true' }}
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .ost-ci-home/artifacts
-          key: ost-registry-0.22.6-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
+          key: ost-registry-0.22.8-${{ runner.os }}-${{ runner.arch }}-${{ matrix.cache_cell }}-${{ matrix.runtime_artifact }}
       - name: Pull the pinned runtime SDK from its remote reference
         shell: bash
         run: |
@@ -356,7 +356,15 @@ jobs:
           if [ -z "$release_members" ] || [ "$release_members" = "null" ]; then
             echo "::error title=release packaging::this ost reports no .data.release_members -- the aggregate's membership would then be whatever the toolchain discovered, which is exactly what openstrata.toml [workspace].release_members exists to stop" ; exit 1
           fi
-          jq --argjson rel "$release_members" '[.data.packages[] | select($rel | index(.name))]'              .ost-ci/package.json > .ost-ci/release-packages.json
+          # The name is bound BEFORE the pipe on purpose. `index()` evaluates
+          # its argument against its own input, so `$rel | index(.name)` asks
+          # the membership ARRAY for a `.name` field and dies with `Cannot
+          # index array with string "name"`. It did, on all three OS, in the
+          # first dry run this step ever had -- `.data.release_members` arrived
+          # in ost 0.22.3, after the last tag, and no pull_request event runs
+          # this workflow, so the rewrite that introduced it had never once
+          # been executed. Index 0 is truthy in jq; only false and null are not.
+          jq --argjson rel "$release_members" '[.data.packages[] | select(.name as $n | $rel | index($n))]' .ost-ci/package.json > .ost-ci/release-packages.json
           count="$(jq -r 'length' .ost-ci/release-packages.json)"
           bundles="$(jq -r '[.[] | select(.member == "bundle")] | length' .ost-ci/release-packages.json)"
           tools="$(jq -r '[.[] | select(.member == "tool")] | length' .ost-ci/release-packages.json)"
