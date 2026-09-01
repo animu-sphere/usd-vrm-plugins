@@ -1,6 +1,6 @@
 {
   "baselineSchemaVersion": 1,
-  "generatedSchemaSha256": "2f68033060e1108d2cde3825fdb4f006c148d0b0584db57d5de4d10cfc21b799",
+  "generatedSchemaSha256": "251de31b19fa82639b13b77e453a2bce5355cf6ef3ff94d3d665174cf10d8ad6",
   "registryVisible": {
     "VrmColliderAPI": true,
     "VrmConstraintAPI": true,
@@ -64,6 +64,10 @@
     "VrmExpressionAPI": {
       "apiSchemaType": null,
       "properties": {
+        "vrm:expressionName": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
         "vrm:expressionType": {
           "typeName": "TfToken",
           "variability": "Sdf.VariabilityUniform"

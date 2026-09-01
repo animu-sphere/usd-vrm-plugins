@@ -156,6 +156,34 @@ private:
 
 public:
     // --------------------------------------------------------------------- //
+    // VRMEXPRESSIONNAME 
+    // --------------------------------------------------------------------- //
+    /// The expression name exactly as the source VRM spelled it. The prim
+    /// name is a sanitized, uniquified identifier and is not a join key: a clip
+    /// and an avatar sanitize independently, so a non-ASCII or colliding name
+    /// lands on a different prim name on each side. This attribute is the key
+    /// that survives, and it is the same one a .vrma clip authors on
+    /// /Animation/Expressions/<name>.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token vrm:expressionName` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    USDVRM_API
+    UsdAttribute GetVrmExpressionNameAttr() const;
+
+    /// See GetVrmExpressionNameAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVRM_API
+    UsdAttribute CreateVrmExpressionNameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // VRMEXPRESSIONTYPE 
     // --------------------------------------------------------------------- //
     /// 'preset' for a standard VRM expression, 'custom' otherwise.

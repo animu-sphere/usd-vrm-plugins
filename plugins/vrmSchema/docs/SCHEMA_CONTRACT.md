@@ -73,6 +73,60 @@ Since 2026-08-13 the UsdPreviewSurface network lives one level down, in a
 neither is a contract-version change, because no v1 path moved and no v1
 property changed meaning.
 
+## Expression identity is an attribute, not a prim name
+
+`vrm:expressionName` (added 2026-09-01, additive within v1) carries the
+**canonical VRM 1.0 expression name**. The prim name does not, and cannot: a
+source name is an arbitrary string, a USD prim name is an identifier, and this
+bundle's producers sanitize independently — `usdVrmFileFormat` through its own
+hashed-fallback table and `usdVrmaFileFormat` through `TfMakeValidIdentifier`.
+A name outside ASCII, or one that had to take a `_2` collision suffix, therefore
+lands on a **different prim name on the avatar and on the clip that drives it**.
+
+For a VRM 1.0 file the canonical name is verbatim what the file spelled. For a
+**VRM 0.x preset it is the VRM 1.0 name that preset migrates to** — 0.x names
+its presets with the `BlendShapePreset` enum, a different vocabulary, and of its
+seventeen entries only `neutral`, `angry` and `blink` are spelled the same in
+1.0:
+
+| VRM 0.x | VRM 1.0 | | VRM 0.x | VRM 1.0 |
+| --- | --- | --- | --- | --- |
+| `joy` | `happy` | | `a` `i` `u` `e` `o` | `aa` `ih` `ou` `ee` `oh` |
+| `sorrow` | `sad` | | `blink_l` `blink_r` | `blinkLeft` `blinkRight` |
+| `fun` | `relaxed` | | `lookup` `lookdown` … | `lookUp` `lookDown` … |
+
+A `.vrma` clip is a VRM 1.0-era file and only ever spells the 1.0 names, so a
+0.x avatar keeping its own vocabulary could never be driven by one. A 0.x custom
+name (no `presetName`, or `unknown`) is not a preset and is carried through
+untouched, as is a `presetName` outside the enum. The raw 0.x block at
+`/Asset.customData.vrm:rawExtension` keeps every original spelling, so the
+migration decides the canonical identity and not the record.
+
+**The key is unique per stage.** Two expressions answering to one name are not
+two expressions — a resolver would silently bind whichever it reached first — so
+the importer keeps the first declaration and reports the rest as `VRM152`. This
+is reachable in both versions: 1.0 can declare the same name under both
+`expressions.preset` and `expressions.custom`, and 0.x `blendShapeGroups` is an
+array. The prim names stay distinct through the uniquifier either way; it is the
+key that is deduplicated.
+
+| Side | Prim | Carries |
+| --- | --- | --- |
+| avatar (`.vrm`) | `/Asset/rig/Expressions/<sanitized>` | `vrm:expressionName`, plus the binds |
+| clip (`.vrma`) | `/Animation/Expressions/<sanitized>` | `vrm:expressionName`, plus the weight |
+
+A consumer joining a clip's expression weight to an avatar's morph and
+material-colour binds **matches on `vrm:expressionName` and never on a path**.
+That is the key `ExpressionResolve` is specified against
+([motion policy](../../../docs/design/MOTION_ARCHITECTURE_POLICY.md) §4.1); the
+clip half shipped it in v0.8.0 and the avatar half is the prerequisite it was
+waiting on.
+
+A stage authored before this attribute existed has expression prims without it.
+That is a v1-legal old stage, not an error: old readers ignore the attribute and
+a new reader that finds none has only the sanitized name to work with, which is
+exactly the situation the attribute exists to end.
+
 ## Humanoid representation decision
 
 The v1 contract uses one token attribute per human bone:
@@ -95,7 +149,7 @@ lossless.
 | API | Applied to | Required typed data | Raw fallback |
 | --- | --- | --- | --- |
 | `VrmHumanoidAPI` | `/Asset/rig/Humanoid` | `vrm:skeleton`, authored `vrm:humanBones:<bone>` tokens | `/Asset.customData.vrm:rawExtension` |
-| `VrmExpressionAPI` | `/Asset/rig/Expressions/<name>` | `vrm:expressionType`, `vrm:isBinary`; optional `vrm:morphTargets` plus parallel `vrm:morphTargetWeights`; optional `vrm:materialColorTargets` plus parallel `vrm:materialColorTypes` and `vrm:materialColorValues` | `/Asset.customData.vrm:rawExtension` |
+| `VrmExpressionAPI` | `/Asset/rig/Expressions/<name>` | `vrm:expressionName`, `vrm:expressionType`, `vrm:isBinary`; optional `vrm:morphTargets` plus parallel `vrm:morphTargetWeights`; optional `vrm:materialColorTargets` plus parallel `vrm:materialColorTypes` and `vrm:materialColorValues` | `/Asset.customData.vrm:rawExtension` |
 | `VrmLookAtAPI` | `/Asset/rig/LookAt` | `vrm:type`; optional `vrm:skeleton`, `vrm:leftEye`, `vrm:rightEye` joint tokens | `/Asset/rig/LookAt.customData.vrm:lookAt:raw` |
 | `VrmSpringBoneAPI` | `/Asset/rig/SecondaryMotion/SpringBones/<name>` | `vrm:joints` plus parallel `vrm:stiffness`, `vrm:gravityPower`, `vrm:dragForce`, `vrm:hitRadius`, `vrm:gravityDir`; optional `vrm:center`; optional `vrm:colliderGroups` | `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
 | `VrmColliderAPI` | `/Asset/rig/SecondaryMotion/Colliders/<group>/Collider_<n>` | `vrm:shape`, `vrm:node`, `vrm:offset`, `vrm:radius`; `vrm:tail` for capsules | `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |

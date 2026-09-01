@@ -253,6 +253,45 @@ def build_oob_expression_morph():
     return b.build(gltf)
 
 
+def build_duplicate_expression_name():
+    """Two expressions claiming the same name, one preset and one custom.
+
+    A JSON object cannot repeat a key, but `expressions.preset` and
+    `expressions.custom` are two objects, so "happy" can be declared in both.
+    `vrm:expressionName` is the key a clip resolves an avatar's binds through,
+    so the second declaration is not a second expression -- it is a second
+    claim on the same one.
+    """
+    b = GlbBuilder()
+    attrs = _skin_attrs(b)
+    idx = _idx(b)
+    ibm = b.add(FLOAT, "MAT4", [tuple(IDENTITY16), tuple(IDENTITY16)])
+    morph = b.add(FLOAT, "VEC3", [(0, 0, 0), (0, 0, 0), (0, 0.5, 0)])
+    bind = [{"node": 0, "index": 0, "weight": 1.0}]
+    ext = vrm1_extension({"hips": 1, "spine": 2})
+    # Both binds are valid on their own: the only thing wrong with this file is
+    # that two expressions answer to one name.
+    ext["expressions"] = {
+        "preset": {"happy": {"isBinary": False, "morphTargetBinds": bind}},
+        "custom": {"happy": {"isBinary": False, "morphTargetBinds": bind}},
+    }
+    gltf = {
+        "asset": {"version": "2.0", "generator": "usdVrm negative fixtures"},
+        "scene": 0, "scenes": [{"nodes": [0, 1]}], "nodes": [
+            {"name": "Face", "mesh": 0, "skin": 0},
+            {"name": "hips", "children": [2], "translation": [0.0, 0.5, 0.0]},
+            {"name": "spine", "translation": [0.0, 0.3, 0.0]}],
+        "meshes": [{"name": "Face", "primitives": [
+            {"attributes": attrs, "indices": idx, "material": 0,
+             "targets": [{"POSITION": morph}]}],
+            "extras": {"targetNames": ["happy_shape"]}}],
+        "skins": [{"joints": [1, 2], "inverseBindMatrices": ibm, "skeleton": 1}],
+        "materials": [_mat("Face_Mat")], "extensionsUsed": ["VRMC_vrm"],
+        "extensions": {"VRMC_vrm": ext},
+    }
+    return b.build(gltf)
+
+
 def build_missing_spring_collider_group():
     """A SpringBone spring referencing collider-group index 5 (only 1 exists)."""
     b = GlbBuilder()
@@ -296,6 +335,7 @@ FIXTURES = {
     "unmapped_humanoid_node.vrm": build_unmapped_humanoid_node,
     "duplicate_humanoid_bone.vrm": build_duplicate_humanoid_bone,
     "oob_expression_morph.vrm": build_oob_expression_morph,
+    "duplicate_expression_name.vrm": build_duplicate_expression_name,
     "missing_spring_collider_group.vrm": build_missing_spring_collider_group,
 }
 

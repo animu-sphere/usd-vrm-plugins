@@ -966,6 +966,16 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             UsdPrim p = UsdGeomScope::Define(
                 stage, exprScopePath.AppendChild(TfToken(exprNames[i]))).GetPrim();
             UsdVrmExpressionAPI::Apply(p);  // typed schema; attrs below are builtins
+            // The prim name is sanitized and uniquified, so it is not a join
+            // key: a `.vrma` clip lays its expressions out the same way but
+            // sanitizes with its own table, and any name outside ASCII -- or any
+            // name that had to take a collision suffix -- lands on a different
+            // prim name on each side. `vrm:expressionName` is the name the file
+            // used, which is what `ExpressionResolve` joins a clip's weight to
+            // this avatar's binds by.
+            p.CreateAttribute(TfToken("vrm:expressionName"),
+                              SdfValueTypeNames->Token, false, SdfVariabilityUniform)
+                .Set(TfToken(e.name));
             p.CreateAttribute(TfToken("vrm:expressionType"),
                               SdfValueTypeNames->Token, false, SdfVariabilityUniform)
                 .Set(TfToken(e.isPreset ? "preset" : "custom"));

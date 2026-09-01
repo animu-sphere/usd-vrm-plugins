@@ -71,6 +71,14 @@
       "note": "An expression morphTargetBind names index 7 on a mesh with one morph target; the bind is skipped."
     },
     {
+      "id": "duplicate-expression-name",
+      "file": "malformed/duplicate_expression_name.vrm",
+      "generator": "build_duplicate_expression_name",
+      "mechanism": "import-warning",
+      "code": "VRM152",
+      "note": "\"happy\" is declared in both expressions.preset and expressions.custom; the first declaration is kept and the rest are preserved in vrm:rawExtension only."
+    },
+    {
       "id": "missing-spring-collider-group",
       "file": "malformed/missing_spring_collider_group.vrm",
       "generator": "build_missing_spring_collider_group",

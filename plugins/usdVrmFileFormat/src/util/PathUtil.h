@@ -20,8 +20,11 @@ std::string VrmSanitizeIdentifier(const std::string& value,
                                   const std::string& fallbackPrefix);
 
 // Sanitize a batch of source names and disambiguate collisions deterministically
-// by appending _2, _3, ... in input order. `fallbackPrefix` is used both for the
-// empty-name fallback and the collision suffix base.
+// by appending _2, _3, ... in input order. A suffixed name is itself checked
+// against the names already handed out, so a source name that sanitizes to some
+// other entry's suffixed spelling still gets its own -- an earlier entry always
+// keeps the name it claimed. `fallbackPrefix` is used both for the empty-name
+// fallback and the collision suffix base.
 std::vector<std::string> VrmMakeUniqueNames(const std::vector<std::string>& sourceNames,
                                             const std::string& fallbackPrefix);
 

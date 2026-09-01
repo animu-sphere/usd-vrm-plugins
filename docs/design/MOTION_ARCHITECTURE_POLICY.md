@@ -226,9 +226,15 @@ open question in the [backlog](../roadmap/backlog.md), and applying one to those
 prims later changes no path and no attribute name. The shape mirrors the
 importer's `/Asset/rig/Expressions/<name>` deliberately, but the two are not
 joinable by path: each side sanitizes a name with its own private table, so any
-name outside ASCII differs between them. `vrm:expressionName` on the clip side
-is the verbatim key; the avatar side owes the same attribute before
-`ExpressionResolve` can join on it.
+name outside ASCII — or any name that had to take a collision suffix — differs
+between them. `vrm:expressionName` is the canonical key, and **both sides now
+author it**: the clip since 2026-08-23, the avatar since 2026-09-01, where it is
+a `VrmExpressionAPI` builtin, unique per stage, and — for a VRM 0.x preset — the
+VRM 1.0 name that preset migrates to rather than the 0.x vocabulary a clip never
+speaks ([schema contract](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)). So
+`ExpressionResolve` joins a clip weight to an avatar's binds on that attribute
+and never on a prim name; a stage authored before the avatar half has no key,
+which is the one case it has to fall back from rather than resolve.
 
 ### 4.2 HumanoidSkeleton is a canonical semantic skeleton
 

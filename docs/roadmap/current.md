@@ -223,11 +223,18 @@ Expressions now travel from a sender *and from a clip* to a canonical pose and
 back out of a trace — v0.7.0 closed the clip half. They do not yet reach a
 **rig**, which is what #88 is actually about:
 
-- ⬜ **`ExpressionResolve`.** A VRM expression binds N morph targets across M
+- 🚧 **`ExpressionResolve`.** A VRM expression binds N morph targets across M
   meshes plus material colours — it is *not* one blend shape — so expanding a
   named weight onto a rig needs `VrmExpressionAPI`, which is why `motionCore`
   carries the name verbatim, the clip reader authors a name and a number, and
-  neither resolves anything.
+  neither resolves anything. **Its join key landed 2026-09-01**: the avatar side
+  now authors `vrm:expressionName` too, additive within schema contract v1, so
+  the two sides are joinable on the verbatim name rather than on prim names
+  neither can predict from the other. That closed a defect on the way — the
+  importer's name uniquifier counted bases, so a source file naming a mesh
+  `Body`, `Body` and `Body_2` imported five meshes as four prims, silently,
+  because `Define` returns an existing prim instead of failing. The resolve step
+  itself is still open, and it is what is left of this bullet.
 - ⬜ **`motion_retarget` authors no `blendShapeWeights`**, and no
   `skel:blendShapes` / `skel:blendShapeTargets` binding on its output.
 - ⬜ **Look-at is untouched**, in every layer.

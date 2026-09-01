@@ -26,9 +26,9 @@
               0.0,
               0.0
             ],
-            "metallic": 0.0,
+            "metallic": 1.0,
             "opacity": 1.0,
-            "roughness": 0.699999988
+            "roughness": 1.0
           }
         }
       },
@@ -47,7 +47,7 @@
         "/Asset/mtl/Face_Mat"
       ],
       "pointCount": 3,
-      "pointsSha256": "aa3ac00c40a3f254f5a18843295eea8e55466cb0fd47118435e3b54c51ab260b",
+      "pointsSha256": "20a2f6d94b4d070a75e4ef476db3d8bbb40d00e31da741906b0fa943fd01d947",
       "primvars": [
         "primvars:displayColor",
         "primvars:displayOpacity",
@@ -141,28 +141,30 @@
   ],
   "skeletons": {
     "/Asset/skel/Skeleton": {
-      "bindTransformsSha256": "06a9245bd684f1203c41eb84cd6e909707fb23020af745100e3a02569546743c",
+      "bindTransformsSha256": "d397146b13c5decca772e0709a97adddae601b161c5875ac9e63bc1076a6cc68",
       "joints": [
         "hips",
         "hips/spine"
       ],
-      "restTransformsSha256": "dfb47d7899cf6ba2609a037b2b77bc978f620eb56ae4368766d3a240c98733d6"
+      "restTransformsSha256": "5d8f8ab0d9d6f8f6f36d2409f5f7273ba0b12cec6d0146ec3cecc0b0473fa5b4"
     }
   },
-  "source": "${BUNDLE}/tests/fixtures/vrm0_expressions.vrm",
+  "source": "${BUNDLE}/tests/corpus/generated/malformed/duplicate_expression_name.vrm",
   "timeSampledAttrs": {},
   "upAxis": "Y",
   "vrm": {
-    "frontAxisNormalized": true,
-    "metaName": null,
-    "metaSha256": "e9b524f3093a365c3e9f0c6d158818491af0de76e46e4ba443abdc64711916ba",
-    "rawExtensionSha256": "dd99b9c068c1cd511285bc4d2a8aa5fe2703d4823d2059c5058f484874389a9c",
+    "frontAxisNormalized": false,
+    "metaName": "usdVrm Fixture",
+    "metaSha256": "2ce7865d03f1b8a92a49a5418d9bec76ee6e8a0f3c748565fee3ead1f9a17cdf",
+    "rawExtensionSha256": "30da352ee1f08c76a3fbacb27b60a50c0466d80e12a9d01bfe11136ede53c6ec",
     "schemaContractVersion": 1,
     "sourceFormat": "VRM",
-    "sourceFrontAxis": "-Z",
-    "sourceVersion": "0.x",
-    "specVersion": "0.0",
-    "warningCodes": [],
-    "warningCount": 0
+    "sourceFrontAxis": "+Z",
+    "sourceVersion": "1.0",
+    "specVersion": "1.0",
+    "warningCodes": [
+      "VRM152"
+    ],
+    "warningCount": 1
   }
 }

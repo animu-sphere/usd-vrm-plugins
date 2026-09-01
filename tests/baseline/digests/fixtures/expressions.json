@@ -137,6 +137,13 @@
       ],
       "path": "/Asset/rig/Expressions/happy",
       "type": "Scope"
+    },
+    {
+      "appliedSchemas": [
+        "VrmExpressionAPI"
+      ],
+      "path": "/Asset/rig/Expressions/Expression_aa9d76db",
+      "type": "Scope"
     }
   ],
   "skeletons": {
@@ -156,7 +163,7 @@
     "frontAxisNormalized": false,
     "metaName": "usdVrm Fixture",
     "metaSha256": "2ce7865d03f1b8a92a49a5418d9bec76ee6e8a0f3c748565fee3ead1f9a17cdf",
-    "rawExtensionSha256": "2cc62e67c33ab6423278c815de64b98fa40ae9f8b9ca1342a8bf764e29a3d869",
+    "rawExtensionSha256": "193bb02b986a8fafea92916ccb000c75efa73d22d9c63b2a1cb492fad4dc81eb",
     "schemaContractVersion": 1,
     "sourceFormat": "VRM",
     "sourceFrontAxis": "+Z",

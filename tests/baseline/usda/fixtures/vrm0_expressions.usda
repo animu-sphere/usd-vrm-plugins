@@ -122,10 +122,11 @@ def SkelRoot "Asset" (
 
         def Scope "Expressions"
         {
-            def Scope "joy" (
+            def Scope "happy" (
                 apiSchemas = ["VrmExpressionAPI"]
             )
             {
+                uniform token vrm:expressionName = "happy"
                 uniform token vrm:expressionType = "preset"
                 uniform bool vrm:isBinary = 0
                 rel vrm:morphTargets = </Asset/skel/BlendShapes/Face_happy_shape>

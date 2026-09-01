@@ -103,12 +103,12 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document,
     // expands nothing (motion policy §4.3).
     //
     // One prim per expression, laid out like the importer's
-    // `/Asset/rig/Expressions/<name>`. The two are **not** joinable by path yet:
-    // the importer sanitizes a name through its own private table and this
-    // bundle cannot link it, so any name outside ASCII lands on a different prim
-    // name on each side. `vrm:expressionName` is the key that survives that, and
-    // the avatar side owes the same attribute before `ExpressionResolve` can
-    // rely on it.
+    // `/Asset/rig/Expressions/<name>`. The two are **not** joinable by path: the
+    // importer sanitizes a name through its own private table and this bundle
+    // cannot link it, so any name outside ASCII lands on a different prim name
+    // on each side. `vrm:expressionName` is the key that survives that, and the
+    // avatar side authors it too since 2026-09-01 -- so `ExpressionResolve`
+    // joins on this attribute and never on a prim name.
     if (!document.expressions.empty()) {
         const SdfPath expressionsPath =
             animationPath.AppendChild(TfToken("Expressions"));
