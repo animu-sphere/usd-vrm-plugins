@@ -126,13 +126,13 @@ def Xform "Asset" (
             uniform token subdivisionScheme = "none"
         }
 
-        def Mesh "_u9854" (
+        def Mesh "Body_2_2" (
             apiSchemas = ["MaterialBindingAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMeshIndex = 2
                     int sourceNodeIndex = 2
-                    string sourceNodeName = "\\u9854"
+                    string sourceNodeName = "Body_2"
                     int sourcePrimitiveIndex = 0
                 }
             }
@@ -146,12 +146,13 @@ def Xform "Asset" (
             uniform token subdivisionScheme = "none"
         }
 
-        def Mesh "Mesh_739d0383" (
+        def Mesh "_u9854" (
             apiSchemas = ["MaterialBindingAPI"]
             customData = {
                 dictionary vrm = {
                     int sourceMeshIndex = 3
                     int sourceNodeIndex = 3
+                    string sourceNodeName = "\\u9854"
                     int sourcePrimitiveIndex = 0
                 }
             }
@@ -161,6 +162,25 @@ def Xform "Asset" (
             int[] faceVertexCounts = [3]
             int[] faceVertexIndices = [0, 1, 2]
             rel material:binding = </Asset/mtl/Mat_2>
+            point3f[] points = [(-0.5, 0, 0), (0.5, 0, 0), (0, 1, 0)]
+            uniform token subdivisionScheme = "none"
+        }
+
+        def Mesh "Mesh_739d0383" (
+            apiSchemas = ["MaterialBindingAPI"]
+            customData = {
+                dictionary vrm = {
+                    int sourceMeshIndex = 4
+                    int sourceNodeIndex = 4
+                    int sourcePrimitiveIndex = 0
+                }
+            }
+        )
+        {
+            float3[] extent = [(-0.5, 0, 0), (0.5, 1, 0)]
+            int[] faceVertexCounts = [3]
+            int[] faceVertexIndices = [0, 1, 2]
+            rel material:binding = </Asset/mtl/Mat>
             point3f[] points = [(-0.5, 0, 0), (0.5, 0, 0), (0, 1, 0)]
             uniform token subdivisionScheme = "none"
         }

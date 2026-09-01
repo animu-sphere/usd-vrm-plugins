@@ -47,6 +47,26 @@ set_tests_properties(usdvrm_transform_util PROPERTIES
     ENVIRONMENT_MODIFICATION
         "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib")
 
+# -----------------------------------------------------------------------------
+# C++ unit test: util/PathUtil, the source-name -> USD identifier hygiene every
+# `Define` in the authorer depends on. The TU is std-only (pxr/pxr.h supplies
+# the namespace macros and nothing else), so it needs USD's headers but links
+# no USD library and loads no plugin.
+# -----------------------------------------------------------------------------
+add_executable(test_path_util
+    test_path_util.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/util/PathUtil.cpp")
+target_include_directories(test_path_util PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src"
+    ${PXR_INCLUDE_DIRS})
+if(MSVC)
+    target_compile_definitions(test_path_util PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    # The fixtures and this test carry UTF-8 source names; without /utf-8 MSVC
+    # reads the literals in the host code page (cp932 here) and the hashes move.
+    target_compile_options(test_path_util PRIVATE /utf-8)
+endif()
+add_test(NAME usdvrm_path_util COMMAND test_path_util)
+
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(NOT Python3_Interpreter_FOUND)
     message(STATUS "usdVrmFileFormat: Python3 interpreter not found; skipping smoke test")

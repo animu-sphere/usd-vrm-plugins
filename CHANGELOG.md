@@ -13,6 +13,49 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+### Added
+
+- **`vrm:expressionName` on the avatar side, which is the key an expression
+  actually joins on.** A `.vrma` clip has authored the verbatim expression name
+  since v0.8.0 and the importer authored none, so the two halves of an
+  expression — the clip's weight and the avatar's morph and material-colour
+  binds — had only their prim names in common. Those are not the same string:
+  `usdVrmFileFormat` sanitizes through its own hashed-fallback table and
+  `usdVrmaFileFormat` through `TfMakeValidIdentifier`, so a Japanese expression
+  name lands on `Expression_739d0383` on one side and something else on the
+  other, and a name that had to take a `_2` collision suffix diverges even in
+  ASCII. `VrmExpressionAPI` gains `uniform token vrm:expressionName` carrying
+  the name exactly as the source VRM spelled it, on both VRM 1.0 and VRM 0.x
+  input. It is an added optional typed attribute, so the **schema contract stays
+  at v1** — an old reader ignores it, and a stage authored before it is still a
+  legal v1 stage. This is the prerequisite `ExpressionResolve` was waiting on;
+  the resolve step itself is still open (Motion Phase G).
+
+### Fixed
+
+- **The importer's name uniquifier could hand two source entries the same USD
+  prim name, and the loser vanished without a diagnostic.**
+  `VrmMakeUniqueNames` disambiguated by counting how often each sanitized *base*
+  had been seen, appending `_2`, `_3`, … to the repeats — without checking
+  whether some other source name already spells that result. A file naming three
+  meshes `Body`, `Body` and `Body_2` produced `Body`, `Body_2`, `Body_2`. The
+  second one is not an error at the USD layer: `UsdGeomMesh::Define` (like every
+  other `Define`) on a path that already exists returns the **existing** prim,
+  so the authorer wrote the third mesh's data over the second's and reported
+  success. Measured on a fixture before the fix: five source meshes, four prims
+  on the stage.
+
+  It uniquifies against the names already claimed now — the same correction the
+  `.vrma` authorer had already made for expression prims — so an earlier entry
+  always keeps the name it took and a later one moves to the next free suffix.
+  Every name the importer authors goes through this function: meshes, joints,
+  materials, morph targets, expressions, collider groups, springs, constraints
+  and animation clips. A new `usdvrm_path_util` CTest target covers the
+  uniquifier directly (both orderings of the trap, sanitize-then-collide, and
+  the non-ASCII and empty-name fallbacks), and `names.vrm` carries the collision
+  shape end to end.
+
+
 ## [0.8.0] — 2026-08-31
 
 ### Fixed

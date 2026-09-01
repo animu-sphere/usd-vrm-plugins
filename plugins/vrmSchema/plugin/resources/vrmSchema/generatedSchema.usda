@@ -297,6 +297,11 @@ class "VrmExpressionAPI" (
     }
 )
 {
+    uniform token vrm:expressionName (
+        customData = {
+            string userDocBrief = "The expression name exactly as the source VRM spelled it."
+        }
+    )
     uniform token vrm:expressionType (
         customData = {
             string userDocBrief = "'preset' for a standard VRM expression, 'custom' otherwise."

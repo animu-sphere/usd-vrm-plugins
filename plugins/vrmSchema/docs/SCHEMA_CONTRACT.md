@@ -73,6 +73,34 @@ Since 2026-08-13 the UsdPreviewSurface network lives one level down, in a
 neither is a contract-version change, because no v1 path moved and no v1
 property changed meaning.
 
+## Expression identity is an attribute, not a prim name
+
+`vrm:expressionName` (added 2026-09-01, additive within v1) carries the
+expression name **exactly as the source VRM spelled it**. The prim name does
+not, and cannot: a source name is an arbitrary string, a USD prim name is an
+identifier, and this bundle's producers sanitize independently —
+`usdVrmFileFormat` through its own hashed-fallback table and `usdVrmaFileFormat`
+through `TfMakeValidIdentifier`. A name outside ASCII, or one that had to take a
+`_2` collision suffix, therefore lands on a **different prim name on the avatar
+and on the clip that drives it**.
+
+| Side | Prim | Carries |
+| --- | --- | --- |
+| avatar (`.vrm`) | `/Asset/rig/Expressions/<sanitized>` | `vrm:expressionName`, plus the binds |
+| clip (`.vrma`) | `/Animation/Expressions/<sanitized>` | `vrm:expressionName`, plus the weight |
+
+A consumer joining a clip's expression weight to an avatar's morph and
+material-colour binds **matches on `vrm:expressionName` and never on a path**.
+That is the key `ExpressionResolve` is specified against
+([motion policy](../../../docs/design/MOTION_ARCHITECTURE_POLICY.md) §4.1); the
+clip half shipped it in v0.8.0 and the avatar half is the prerequisite it was
+waiting on.
+
+A stage authored before this attribute existed has expression prims without it.
+That is a v1-legal old stage, not an error: old readers ignore the attribute and
+a new reader that finds none has only the sanitized name to work with, which is
+exactly the situation the attribute exists to end.
+
 ## Humanoid representation decision
 
 The v1 contract uses one token attribute per human bone:
@@ -95,7 +123,7 @@ lossless.
 | API | Applied to | Required typed data | Raw fallback |
 | --- | --- | --- | --- |
 | `VrmHumanoidAPI` | `/Asset/rig/Humanoid` | `vrm:skeleton`, authored `vrm:humanBones:<bone>` tokens | `/Asset.customData.vrm:rawExtension` |
-| `VrmExpressionAPI` | `/Asset/rig/Expressions/<name>` | `vrm:expressionType`, `vrm:isBinary`; optional `vrm:morphTargets` plus parallel `vrm:morphTargetWeights`; optional `vrm:materialColorTargets` plus parallel `vrm:materialColorTypes` and `vrm:materialColorValues` | `/Asset.customData.vrm:rawExtension` |
+| `VrmExpressionAPI` | `/Asset/rig/Expressions/<name>` | `vrm:expressionName`, `vrm:expressionType`, `vrm:isBinary`; optional `vrm:morphTargets` plus parallel `vrm:morphTargetWeights`; optional `vrm:materialColorTargets` plus parallel `vrm:materialColorTypes` and `vrm:materialColorValues` | `/Asset.customData.vrm:rawExtension` |
 | `VrmLookAtAPI` | `/Asset/rig/LookAt` | `vrm:type`; optional `vrm:skeleton`, `vrm:leftEye`, `vrm:rightEye` joint tokens | `/Asset/rig/LookAt.customData.vrm:lookAt:raw` |
 | `VrmSpringBoneAPI` | `/Asset/rig/SecondaryMotion/SpringBones/<name>` | `vrm:joints` plus parallel `vrm:stiffness`, `vrm:gravityPower`, `vrm:dragForce`, `vrm:hitRadius`, `vrm:gravityDir`; optional `vrm:center`; optional `vrm:colliderGroups` | `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
 | `VrmColliderAPI` | `/Asset/rig/SecondaryMotion/Colliders/<group>/Collider_<n>` | `vrm:shape`, `vrm:node`, `vrm:offset`, `vrm:radius`; `vrm:tail` for capsules | `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |

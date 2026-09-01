@@ -156,7 +156,11 @@ def build_names():
     attrs = {"POSITION": pos}
     # Duplicate ("Body" x2), Japanese, and empty mesh names; duplicate material
     # names — all must sanitize/uniquify to distinct valid USD identifiers.
-    names = ["Body", "Body", "顔", ""]   # 顔 = face
+    # "Body_2" is the regression shape: it is a source name that spells the
+    # suffix the second "Body" is about to be given, so a uniquifier that counts
+    # bases instead of checking claimed names hands the same identifier to two
+    # meshes, and `Define` silently returns the first prim for both.
+    names = ["Body", "Body", "Body_2", "顔", ""]   # 顔 = face
     nodes, meshes = [], []
     for i, nm in enumerate(names):
         nodes.append({"name": nm, "mesh": i})
@@ -416,14 +420,24 @@ def build_expressions():
         "extensionsUsed": ["VRMC_vrm"],
         "extensions": {"VRMC_vrm": {
             **vrm1_extension({"hips": 1, "spine": 2}),
-            "expressions": {"preset": {"happy": {
-                "isBinary": False,
-                "morphTargetBinds": [{"node": 0, "index": 0, "weight": 1.0}],
-                # Also drive the material's emission to red (materialColorBinds).
-                "materialColorBinds": [
-                    {"material": 0, "type": "emissionColor",
-                     "targetValue": [1.0, 0.0, 0.0, 1.0]}],
-            }}},
+            "expressions": {
+                "preset": {"happy": {
+                    "isBinary": False,
+                    "morphTargetBinds": [{"node": 0, "index": 0, "weight": 1.0}],
+                    # Also drive the material's emission to red
+                    # (materialColorBinds).
+                    "materialColorBinds": [
+                        {"material": 0, "type": "emissionColor",
+                         "targetValue": [1.0, 0.0, 0.0, 1.0]}],
+                }},
+                # A custom expression whose name is not an identifier at all: it
+                # sanitizes to a hashed fallback prim name, so the only thing a
+                # clip can join to it by is `vrm:expressionName`.
+                "custom": {"笑顔": {          # 笑顔 = smile
+                    "isBinary": True,
+                    "morphTargetBinds": [{"node": 0, "index": 0, "weight": 0.5}],
+                }},
+            },
         }},
     }
     return b.build(gltf)

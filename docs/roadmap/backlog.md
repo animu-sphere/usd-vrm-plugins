@@ -173,14 +173,19 @@ Still ahead:
   verbatim onto the pose and never expanded); what remains is VRMA look-at
   animation, `ExpressionResolve`, `LookAtEvaluate`, live recording, bake, and
   the VRMA export investigation.
-  - ⬜ **`ExpressionResolve` has no join key yet.** The clip authors
-    `vrm:expressionName` verbatim; the VRM importer authors none, and each side
-    sanitizes prim names with its own private table, so a non-ASCII expression
-    name lands on a different path on each side. The avatar side gaining the
-    same verbatim attribute is a prerequisite, not a detail of the resolve
-    step. (The importer's `VrmMakeUniqueNames` also uniquifies by counting
-    bases, which can hand two entries the same name — the bug fixed on the
-    clip side in the same change.)
+  - ✅ **`ExpressionResolve` has its join key** *(2026-09-01)*. Both sides now
+    author `vrm:expressionName` verbatim — on the avatar side as a
+    `VrmExpressionAPI` builtin, additive within schema contract v1 — so the
+    resolve step joins on that attribute and never on a prim name, which the
+    two sides still sanitize with their own private tables. The importer's
+    `VrmMakeUniqueNames` carried the counting-by-bases bug the clip side had
+    already fixed, and it was **not** hypothetical: five source meshes named
+    `Body`, `Body`, `Body_2`, `顔` and `""` imported as four prims, because
+    `Define` on the duplicate path returns the existing prim rather than
+    failing. It uniquifies against claimed names now, with a `usdvrm_path_util`
+    unit test and the collision shape added to the `names.vrm` fixture. What is
+    left of `ExpressionResolve` is the resolve itself: expanding a named weight
+    onto a rig's N morph targets across M meshes plus its material colours.
 - ⬜ **Motion Phase H — advanced.** Blending, IK / foot locking, contact
   handling, latency compensation, multi-performer sync, simulation bridge,
   generated-motion cache, publish pipeline.

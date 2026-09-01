@@ -23,6 +23,7 @@
 ?CreateVrmColliderGroupsRel@UsdVrmSpringBoneAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdRelationship@2@XZ
 ?CreateVrmConstrainedAttr@UsdVrmConstraintAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmDragForceAttr@UsdVrmSpringBoneAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
+?CreateVrmExpressionNameAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmExpressionTypeAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmGravityDirAttr@UsdVrmSpringBoneAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmGravityPowerAttr@UsdVrmSpringBoneAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
@@ -120,6 +121,7 @@
 ?GetVrmColliderGroupsRel@UsdVrmSpringBoneAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdRelationship@2@XZ
 ?GetVrmConstrainedAttr@UsdVrmConstraintAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmDragForceAttr@UsdVrmSpringBoneAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
+?GetVrmExpressionNameAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmExpressionTypeAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmGravityDirAttr@UsdVrmSpringBoneAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmGravityPowerAttr@UsdVrmSpringBoneAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ

@@ -65,6 +65,10 @@ struct UsdVrmTokensType {
     /// 
     /// UsdVrmSpringBoneAPI
     const TfToken vrmDragForce;
+    /// \brief "vrm:expressionName"
+    /// 
+    /// UsdVrmExpressionAPI
+    const TfToken vrmExpressionName;
     /// \brief "vrm:expressionType"
     /// 
     /// UsdVrmExpressionAPI

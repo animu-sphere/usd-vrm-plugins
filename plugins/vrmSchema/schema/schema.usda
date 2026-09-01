@@ -132,6 +132,14 @@ class "VrmExpressionAPI" (
     customData."""
 )
 {
+    uniform token vrm:expressionName (
+        doc = """The expression name exactly as the source VRM spelled it. The prim
+        name is a sanitized, uniquified identifier and is not a join key: a clip
+        and an avatar sanitize independently, so a non-ASCII or colliding name
+        lands on a different prim name on each side. This attribute is the key
+        that survives, and it is the same one a .vrma clip authors on
+        /Animation/Expressions/<name>."""
+    )
     uniform token vrm:expressionType (
         doc = "'preset' for a standard VRM expression, 'custom' otherwise."
     )

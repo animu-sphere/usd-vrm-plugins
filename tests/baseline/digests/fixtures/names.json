@@ -96,10 +96,23 @@
       ],
       "skeleton": []
     },
+    "/Asset/geo/Body_2_2": {
+      "faceCount": 1,
+      "material": [
+        "/Asset/mtl/Mat"
+      ],
+      "pointCount": 3,
+      "pointsSha256": "20a2f6d94b4d070a75e4ef476db3d8bbb40d00e31da741906b0fa943fd01d947",
+      "primvars": [
+        "primvars:displayColor",
+        "primvars:displayOpacity"
+      ],
+      "skeleton": []
+    },
     "/Asset/geo/Mesh_739d0383": {
       "faceCount": 1,
       "material": [
-        "/Asset/mtl/Mat_2"
+        "/Asset/mtl/Mat"
       ],
       "pointCount": 3,
       "pointsSha256": "20a2f6d94b4d070a75e4ef476db3d8bbb40d00e31da741906b0fa943fd01d947",
@@ -112,7 +125,7 @@
     "/Asset/geo/_u9854": {
       "faceCount": 1,
       "material": [
-        "/Asset/mtl/Mat"
+        "/Asset/mtl/Mat_2"
       ],
       "pointCount": 3,
       "pointsSha256": "20a2f6d94b4d070a75e4ef476db3d8bbb40d00e31da741906b0fa943fd01d947",
@@ -181,6 +194,13 @@
         "MaterialBindingAPI"
       ],
       "path": "/Asset/geo/Body_2",
+      "type": "Mesh"
+    },
+    {
+      "appliedSchemas": [
+        "MaterialBindingAPI"
+      ],
+      "path": "/Asset/geo/Body_2_2",
       "type": "Mesh"
     },
     {

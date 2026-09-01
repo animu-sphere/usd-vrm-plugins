@@ -16,7 +16,7 @@ def SkelRoot "Asset" (
     "name": "usdVrm Fixture",
     "version": "1.0"
 }'''
-            string rawExtension = '{"specVersion":"1.0","meta":{"name":"usdVrm Fixture","version":"1.0","authors":["usd-vrm-plugins"],"licenseUrl":"https://www.apache.org/licenses/LICENSE-2.0","avatarPermission":"everyone"},"humanoid":{"humanBones":{"hips":{"node":1},"spine":{"node":2}}},"expressions":{"preset":{"happy":{"isBinary":false,"morphTargetBinds":[{"node":0,"index":0,"weight":1.0}],"materialColorBinds":[{"material":0,"type":"emissionColor","targetValue":[1.0,0.0,0.0,1.0]}]}}}}'
+            string rawExtension = '{"specVersion":"1.0","meta":{"name":"usdVrm Fixture","version":"1.0","authors":["usd-vrm-plugins"],"licenseUrl":"https://www.apache.org/licenses/LICENSE-2.0","avatarPermission":"everyone"},"humanoid":{"humanBones":{"hips":{"node":1},"spine":{"node":2}}},"expressions":{"preset":{"happy":{"isBinary":false,"morphTargetBinds":[{"node":0,"index":0,"weight":1.0}],"materialColorBinds":[{"material":0,"type":"emissionColor","targetValue":[1.0,0.0,0.0,1.0]}]}},"custom":{"\\u7b11\\u9854":{"isBinary":true,"morphTargetBinds":[{"node":0,"index":0,"weight":0.5}]}}}}'
             int schemaContractVersion = 1
             string sourceFormat = "VRM"
             string sourceFrontAxis = "+Z"
@@ -128,6 +128,7 @@ def SkelRoot "Asset" (
                 apiSchemas = ["VrmExpressionAPI"]
             )
             {
+                uniform token vrm:expressionName = "happy"
                 uniform token vrm:expressionType = "preset"
                 uniform bool vrm:isBinary = 0
                 rel vrm:materialColorTargets = </Asset/mtl/Face_Mat>
@@ -135,6 +136,17 @@ def SkelRoot "Asset" (
                 uniform float4[] vrm:materialColorValues = [(1, 0, 0, 1)]
                 rel vrm:morphTargets = </Asset/skel/BlendShapes/Face_happy_shape>
                 uniform float[] vrm:morphTargetWeights = [1]
+            }
+
+            def Scope "Expression_aa9d76db" (
+                apiSchemas = ["VrmExpressionAPI"]
+            )
+            {
+                uniform token vrm:expressionName = "笑顔"
+                uniform token vrm:expressionType = "custom"
+                uniform bool vrm:isBinary = 1
+                rel vrm:morphTargets = </Asset/skel/BlendShapes/Face_happy_shape>
+                uniform float[] vrm:morphTargetWeights = [0.5]
             }
         }
     }

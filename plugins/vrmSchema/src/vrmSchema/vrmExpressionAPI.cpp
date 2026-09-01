@@ -86,6 +86,23 @@ UsdVrmExpressionAPI::_GetTfType() const
 }
 
 UsdAttribute
+UsdVrmExpressionAPI::GetVrmExpressionNameAttr() const
+{
+    return GetPrim().GetAttribute(UsdVrmTokens->vrmExpressionName);
+}
+
+UsdAttribute
+UsdVrmExpressionAPI::CreateVrmExpressionNameAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmExpressionName,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdVrmExpressionAPI::GetVrmExpressionTypeAttr() const
 {
     return GetPrim().GetAttribute(UsdVrmTokens->vrmExpressionType);
@@ -213,6 +230,7 @@ const TfTokenVector&
 UsdVrmExpressionAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdVrmTokens->vrmExpressionName,
         UsdVrmTokens->vrmExpressionType,
         UsdVrmTokens->vrmIsBinary,
         UsdVrmTokens->vrmMorphTargetWeights,

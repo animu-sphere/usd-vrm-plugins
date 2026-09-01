@@ -181,6 +181,11 @@ def check_expressions():
     assert "VrmExpressionAPI" in happy.GetAppliedSchemas(), happy.GetAppliedSchemas()
     assert happy.GetAttribute("vrm:expressionType").Get() == "preset"
     assert happy.GetAttribute("vrm:expressionType").IsCustom() is False
+    # The join key a .vrma clip resolves against: the name the file spelled,
+    # not the prim name. For an ASCII preset the two agree, which is exactly
+    # why the non-ASCII case below is the one that proves anything.
+    assert happy.GetAttribute("vrm:expressionName").Get() == "happy"
+    assert happy.GetAttribute("vrm:expressionName").IsCustom() is False
     targets = happy.GetRelationship("vrm:morphTargets").GetTargets()
     assert targets == [bs[0].GetPath()], targets
     weights = happy.GetAttribute("vrm:morphTargetWeights").Get()
@@ -192,6 +197,19 @@ def check_expressions():
     assert list(happy.GetAttribute("vrm:materialColorTypes").Get()) == ["emissionColor"]
     cv = happy.GetAttribute("vrm:materialColorValues").Get()
     assert cv and tuple(cv[0]) == (1.0, 0.0, 0.0, 1.0), list(cv)
+
+    # The custom expression "笑顔" holds no ASCII identifier character, so the
+    # prim name is a hashed fallback and carries none of the source name. A
+    # clip authors the same string on its own side and the two prim names do
+    # not match, so vrm:expressionName is the only thing that joins them.
+    exprs = stage.GetPrimAtPath("/Asset/rig/Expressions").GetChildren()
+    by_name = {p.GetAttribute("vrm:expressionName").Get(): p for p in exprs}
+    assert set(by_name) == {"happy", "笑顔"}, sorted(by_name)
+    smile = by_name["笑顔"]
+    assert smile.GetName() != "笑顔", smile.GetName()
+    assert smile.GetName().startswith("Expression_"), smile.GetName()
+    assert smile.GetAttribute("vrm:expressionType").Get() == "custom"
+    assert smile.GetAttribute("vrm:isBinary").Get() is True
 
 
 def check_vrm0_expressions():
@@ -213,6 +231,9 @@ def check_vrm0_expressions():
     joy = stage.GetPrimAtPath("/Asset/rig/Expressions/joy")
     assert joy.IsValid(), "expected /Asset/rig/Expressions/joy"
     assert joy.GetAttribute("vrm:expressionType").Get() == "preset"
+    # VRM 0.x names a preset in presetName; the canonical name is what crosses,
+    # so a 0.x avatar and a 1.0 clip join on the same string.
+    assert joy.GetAttribute("vrm:expressionName").Get() == "joy"
     assert joy.GetRelationship("vrm:morphTargets").GetTargets() == [bs[0].GetPath()]
     weights = joy.GetAttribute("vrm:morphTargetWeights").Get()
     assert weights and abs(weights[0] - 1.0) < 1e-6, list(weights)
@@ -224,8 +245,13 @@ def check_names():
     geo = stage.GetPrimAtPath("/Asset/geo")
     meshes = [p for p in geo.GetChildren() if p.IsA(UsdGeom.Mesh)]
     names = [p.GetName() for p in meshes]
-    assert len(names) == 4, names
-    assert len(set(names)) == 4, f"name collision: {names}"
+    # Five source meshes: "Body", "Body", "Body_2", "顔", "". The third one is
+    # the regression: it already spells the suffix the second one is handed, so
+    # a uniquifier that counts bases produces "Body_2" twice and `Define`
+    # returns the first prim for both -- four meshes, silently.
+    assert len(names) == 5, names
+    assert len(set(names)) == 5, f"name collision: {names}"
+    assert "Body" in names and "Body_2" in names, names
     for n in names:
         assert n and (n[0].isalpha() or n[0] == "_"), f"invalid identifier: {n}"
     mats = stage.GetPrimAtPath("/Asset/mtl").GetChildren()

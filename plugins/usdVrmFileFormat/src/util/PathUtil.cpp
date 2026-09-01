@@ -4,7 +4,7 @@
 #include <cctype>
 #include <cstdint>
 #include <iomanip>
-#include <map>
+#include <set>
 #include <sstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -71,12 +71,23 @@ VrmMakeUniqueNames(const std::vector<std::string>& sourceNames,
     std::vector<std::string> result;
     result.reserve(sourceNames.size());
 
-    std::map<std::string, int> counts;
+    // Uniquify against the names already *claimed*, not against the bases seen.
+    // Counting occurrences of each base hands out `<base>_2` without checking
+    // whether some other source name sanitizes to that exact string: the input
+    // ["A", "A", "A_2"] used to yield ["A", "A_2", "A_2"]. That collision is
+    // silent downstream, because `UsdGeomScope::Define` (and every other
+    // `Define`) on a path that already exists returns the existing prim instead
+    // of failing -- so two source entries collapse into one, the second
+    // overwriting the first. Earlier entries win; a later name that wanted a
+    // taken spelling moves on to the next free suffix.
+    std::set<std::string> claimed;
     for (const std::string& sourceName : sourceNames) {
         const std::string base = VrmSanitizeIdentifier(sourceName, fallbackPrefix);
-        int& count = counts[base];
-        ++count;
-        result.push_back(count == 1 ? base : base + "_" + std::to_string(count));
+        std::string name = base;
+        for (int suffix = 2; !claimed.insert(name).second; ++suffix) {
+            name = base + "_" + std::to_string(suffix);
+        }
+        result.push_back(std::move(name));
     }
 
     return result;
