@@ -203,7 +203,15 @@ def check_expressions():
     # clip authors the same string on its own side and the two prim names do
     # not match, so vrm:expressionName is the only thing that joins them.
     exprs = stage.GetPrimAtPath("/Asset/rig/Expressions").GetChildren()
-    by_name = {p.GetAttribute("vrm:expressionName").Get(): p for p in exprs}
+    by_name = {}
+    for prim in exprs:
+        key = prim.GetAttribute("vrm:expressionName").Get()
+        # Check before building the dict: an unauthored attribute reads as None,
+        # and a None key would make this assert's own sorted() message raise
+        # TypeError — failing with a traceback instead of the prim's name.
+        assert key is not None, f"{prim.GetPath()} has no vrm:expressionName"
+        by_name[str(key)] = prim
+    assert len(by_name) == len(exprs),         f"two expression prims share a join key: {[str(p.GetPath()) for p in exprs]}"
     assert set(by_name) == {"happy", "笑顔"}, sorted(by_name)
     smile = by_name["笑顔"]
     assert smile.GetName() != "笑顔", smile.GetName()
@@ -227,13 +235,18 @@ def check_vrm0_expressions():
     assert face.GetSkeletonRel().GetTargets() == ["/Asset/skel/Skeleton"]
     assert face.GetBlendShapeTargetsRel().GetTargets() == [bs[0].GetPath()]
 
-    # presetName "joy" -> preset; weight 100 normalizes to 1.0.
-    joy = stage.GetPrimAtPath("/Asset/rig/Expressions/joy")
-    assert joy.IsValid(), "expected /Asset/rig/Expressions/joy"
+    # presetName "joy" -> preset; weight 100 normalizes to 1.0. VRM 0.x names
+    # its presets with a *different vocabulary* from VRM 1.0 — "joy" is 1.0's
+    # "happy" — and a .vrma clip only ever spells the 1.0 name, so the 0.x
+    # preset is migrated on the way in. Both the prim name and the join key are
+    # the 1.0 spelling; the raw 0.x block keeps "joy" verbatim.
+    assert not stage.GetPrimAtPath("/Asset/rig/Expressions/joy").IsValid(),         "a 0.x preset must not keep its 0.x name"
+    joy = stage.GetPrimAtPath("/Asset/rig/Expressions/happy")
+    assert joy.IsValid(), "expected /Asset/rig/Expressions/happy"
     assert joy.GetAttribute("vrm:expressionType").Get() == "preset"
-    # VRM 0.x names a preset in presetName; the canonical name is what crosses,
-    # so a 0.x avatar and a 1.0 clip join on the same string.
-    assert joy.GetAttribute("vrm:expressionName").Get() == "joy"
+    assert joy.GetAttribute("vrm:expressionName").Get() == "happy"
+    raw = stage.GetDefaultPrim().GetCustomData()["vrm"]["rawExtension"]
+    assert '"presetName": "joy"' in raw or '"presetName":"joy"' in raw, raw[:200]
     assert joy.GetRelationship("vrm:morphTargets").GetTargets() == [bs[0].GetPath()]
     weights = joy.GetAttribute("vrm:morphTargetWeights").Get()
     assert weights and abs(weights[0] - 1.0) < 1e-6, list(weights)

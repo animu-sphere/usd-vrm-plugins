@@ -25,11 +25,34 @@ Current schema contract version: **1**.
   name lands on `Expression_739d0383` on one side and something else on the
   other, and a name that had to take a `_2` collision suffix diverges even in
   ASCII. `VrmExpressionAPI` gains `uniform token vrm:expressionName` carrying
-  the name exactly as the source VRM spelled it, on both VRM 1.0 and VRM 0.x
-  input. It is an added optional typed attribute, so the **schema contract stays
-  at v1** — an old reader ignores it, and a stage authored before it is still a
-  legal v1 stage. This is the prerequisite `ExpressionResolve` was waiting on;
-  the resolve step itself is still open (Motion Phase G).
+  the canonical VRM 1.0 expression name. It is an added optional typed
+  attribute, so the **schema contract stays at v1** — an old reader ignores it,
+  and a stage authored before it is still a legal v1 stage. This is the
+  prerequisite `ExpressionResolve` was waiting on; the resolve step itself is
+  still open (Motion Phase G).
+
+- **VRM 0.x expression presets migrate to the VRM 1.0 vocabulary.** They are two
+  different name sets — 0.x `BlendShapePreset` says `joy`, `sorrow`, `fun`, `a`,
+  `blink_l` where 1.0 says `happy`, `sad`, `relaxed`, `aa`, `blinkLeft`, and only
+  `neutral`, `angry` and `blink` are spelled the same. A `.vrma` clip is a VRM
+  1.0-era file and only ever spells the 1.0 names, so a 0.x avatar carrying its
+  own vocabulary could not be joined to one at all: the join key would have
+  matched on three presets out of seventeen. The reader now migrates a 0.x
+  `presetName` on the way in, folding case first, so both the prim name and the
+  key are the 1.0 spelling — the same normalization the importer already applies
+  to 0.x weights (0..100 → 0..1), `BlendShapeGroup` and `SecondaryAnimation`. A
+  custom name, an `unknown` preset and a `presetName` outside the enum are
+  carried through untouched, and the raw 0.x block keeps every original spelling.
+
+- **`VRM152`: an expression name declared more than once.** The join key has to
+  be unique or it is not a key — two prims answering to one name means a
+  resolver silently binds whichever it reaches first, which is the same
+  invisible loss as the uniquifier bug below, arriving one layer up. Reachable
+  in both versions: VRM 1.0 can declare a name under both `expressions.preset`
+  and `expressions.custom`, and VRM 0.x `blendShapeGroups` is an array. The
+  importer keeps the first declaration, warns, and leaves the rest in
+  `vrm:rawExtension` — the rule `usdVrmaFileFormat` already applied to a clip
+  (`VRMA107`). A `duplicate_expression_name.vrm` negative fixture pins it.
 
 ### Fixed
 

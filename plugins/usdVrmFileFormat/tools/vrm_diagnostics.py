@@ -89,6 +89,8 @@ _IMPORT_SPECS = [
           "VRM 0.x materialValues expression preserved raw only"),
     _spec("VRM151", Severity.WARNING, "import",
           "Expression morph target index out of range; bind skipped"),
+    _spec("VRM152", Severity.WARNING, "import",
+          "Duplicate expression name; first declaration kept"),
     _spec("VRM160", Severity.WARNING, "import",
           "CUBICSPLINE animation approximated as linear"),
     _spec("VRM170", Severity.WARNING, "import",

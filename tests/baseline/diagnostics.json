@@ -71,6 +71,11 @@
       "source": "import",
       "title": "Expression morph target index out of range; bind skipped"
     },
+    "VRM152": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Duplicate expression name; first declaration kept"
+    },
     "VRM160": {
       "severity": "WARNING",
       "source": "import",
@@ -299,6 +304,11 @@
       "code": "VRM003",
       "file": "malformed/dangling_texture_index.vrm",
       "mechanism": "read-fatal"
+    },
+    "duplicate-expression-name": {
+      "code": "VRM152",
+      "file": "malformed/duplicate_expression_name.vrm",
+      "mechanism": "import-warning"
     },
     "duplicate-humanoid-bone": {
       "code": "VRM141",

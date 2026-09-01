@@ -16,6 +16,7 @@
 #include "cgltf.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
@@ -28,6 +29,41 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
+
+// VRM 0.x names its expression presets with the `BlendShapePreset` enum, which
+// is a *different vocabulary* from VRM 1.0's -- "joy" where 1.0 says "happy",
+// "a" where 1.0 says "aa". `vrm:expressionName` is the key a `.vrma` clip joins
+// an avatar's binds through, and a clip is a VRM 1.0-era file that only ever
+// spells the 1.0 names, so a 0.x avatar carrying its own vocabulary could never
+// be driven by one: of the seventeen presets only `neutral`, `angry` and
+// `blink` are spelled the same on both sides.
+//
+// So a 0.x preset is migrated to the 1.0 name, which is what the importer
+// already does with everything else 0.x (weights 0..100 -> 0..1,
+// BlendShapeGroup -> Expression, SecondaryAnimation -> SpringBone). The raw 0.x
+// block is preserved verbatim at `/Asset.customData.vrm:rawExtension`, so
+// nothing is lost -- the mapping decides the canonical identity, not the record.
+// A `presetName` outside the enum is left alone: it is not a preset this table
+// knows, and inventing a name for it would be worse than carrying it through.
+const std::string& _Vrm0PresetToVrm1(const std::string& presetName)
+{
+    static const std::map<std::string, std::string> kMigration = {
+        {"neutral", "neutral"},
+        {"a", "aa"}, {"i", "ih"}, {"u", "ou"}, {"e", "ee"}, {"o", "oh"},
+        {"blink", "blink"}, {"blink_l", "blinkLeft"}, {"blink_r", "blinkRight"},
+        {"joy", "happy"}, {"angry", "angry"}, {"sorrow", "sad"},
+        {"fun", "relaxed"},
+        {"lookup", "lookUp"}, {"lookdown", "lookDown"},
+        {"lookleft", "lookLeft"}, {"lookright", "lookRight"},
+    };
+    // The enum is serialized lowercase by UniVRM, but the field is free text in
+    // the file: fold case before the lookup rather than miss on "Joy".
+    std::string key = presetName;
+    std::transform(key.begin(), key.end(), key.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    const auto it = kMigration.find(key);
+    return it == kMigration.end() ? presetName : it->second;
+}
 
 // ---------------------------------------------------------------------------
 // Small JSON helpers over pxr/base/js (VRM extension blocks are plain JSON).
@@ -803,6 +839,15 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                 // each with morphTargetBinds: [{ node, index, weight(0..1) }].
                 if (const JsObject* exprs =
                         _AsObject(_Find(*rootObj, "expressions"))) {
+                    // `vrm:expressionName` is the only key a clip can resolve
+                    // an avatar's binds through, so two expressions carrying
+                    // the same one are not two expressions -- a resolver would
+                    // silently bind whichever it reached first. A JSON object
+                    // cannot repeat a key, but `preset` and `custom` are two
+                    // objects and nothing stops both declaring "happy". Keep
+                    // the first and say so; `usdVrmaFileFormat` applies the
+                    // same rule to a clip (VRMA107).
+                    std::set<std::string> claimedExpressionNames;
                     for (const char* group : {"preset", "custom"}) {
                         const JsObject* g = _AsObject(_Find(*exprs, group));
                         if (!g) continue;
@@ -813,6 +858,15 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                             VrmExpression expr;
                             expr.name = kv.first;
                             expr.isPreset = preset;
+                            if (!claimedExpressionNames.insert(expr.name).second) {
+                                outDoc->warnings.push_back(VrmDiagMsg(
+                                    VrmDiag::ExpressionDuplicateName,
+                                    "expression '" + expr.name + "' is declared "
+                                    "more than once; the first declaration is kept "
+                                    "and the rest are preserved in "
+                                    "vrm:rawExtension only"));
+                                continue;
+                            }
                             const JsValue* ib = _Find(*e, "isBinary");
                             expr.isBinary = ib && ib->IsBool() && ib->GetBool();
                             if (const JsArray* binds =
@@ -916,6 +970,10 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                         _AsObject(_Find(*rootObj, "blendShapeMaster"))) {
                     if (const JsArray* groups =
                             _AsArray(_Find(*bsm, "blendShapeGroups"))) {
+                        // Same rule as the 1.0 branch above, and reachable more
+                        // easily here: `blendShapeGroups` is an *array*, so a
+                        // file can declare the same presetName twice outright.
+                        std::set<std::string> claimedExpressionNames;
                         for (const JsValue& gv : *groups) {
                             const JsObject* g = _AsObject(&gv);
                             if (!g) continue;
@@ -926,10 +984,19 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                             const bool isPreset =
                                 !preset.empty() && preset != "unknown";
                             VrmExpression expr;
-                            expr.name = isPreset ? preset
+                            expr.name = isPreset ? _Vrm0PresetToVrm1(preset)
                                         : (nm && nm->IsString() ? nm->GetString()
                                                                 : std::string());
                             expr.isPreset = isPreset;
+                            if (!claimedExpressionNames.insert(expr.name).second) {
+                                outDoc->warnings.push_back(VrmDiagMsg(
+                                    VrmDiag::ExpressionDuplicateName,
+                                    "expression '" + expr.name + "' is declared "
+                                    "more than once; the first declaration is kept "
+                                    "and the rest are preserved in "
+                                    "vrm:rawExtension only"));
+                                continue;
+                            }
                             const JsValue* ib = _Find(*g, "isBinary");
                             expr.isBinary = ib && ib->IsBool() && ib->GetBool();
                             if (const JsArray* binds =
