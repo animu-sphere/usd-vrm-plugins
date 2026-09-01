@@ -15,6 +15,42 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`ExpressionResolve`: a named weight becomes the binds of one particular
+  avatar.** Both sides have carried the join key since the entry below; nothing
+  joined on it. `vrmRetarget` gains `ExpressionResolver`, which takes the
+  expressions an avatar declares (`ExpressionRig`, built from its
+  `vrm:expressionName`, `vrm:isBinary`, morph-target and material-colour binds)
+  and turns one sample's `ExpressionWeights` into the blend-shape weights and
+  material colours that sample means on that rig. It is a plain-value step like
+  the rest of the library: the caller reads the binds off the stage, and
+  nothing here opens, resolves or composes one.
+
+  Four rules are the resolve rather than plumbing. **A reported zero is
+  authored** — "this expression is off now" is a statement, and dropping it
+  would leave the previous sample's weight standing on the target — while an
+  expression the sample never reported contributes no entry at all, which is
+  the same rule `ExpressionWeights::Find` already holds one layer down. **The
+  clamp lands here**: the `.vrma` reader carries a weight outside `[0, 1]`
+  verbatim on purpose and the specification's clamp belongs to whoever applies
+  it to a rig, so this is that layer, and the operator is told which name it
+  was. **`isBinary` rounds on the way to the binds**, not only in the scalar
+  query — a partly-open eyelid is exactly what the flag says the rig cannot
+  show. And **a material colour is carried as `(totalWeight, weightedTarget)`**
+  with an `Apply(base)` that lerps, because the material's own value is the
+  caller's and this library will not read it; two expressions driving one slot
+  accumulate, and a channel driven outside `[0, 1]` — past it, or below it
+  through a negative bind weight — extrapolates with a warning instead of being
+  quietly corrected into a value no bind asked for. A weight that is **not a
+  number** clamps to 0 and is named beside the out-of-range ones, because every
+  comparison against NaN is false and a range test alone would call it legal and
+  pass it to the binds unreported; a bind missing half its identity — no target
+  path, no material, or no colour slot — is skipped with a warning rather than
+  accumulated under an empty key.
+
+  What is left of Motion Phase G's expression half is the authoring: nothing
+  writes `blendShapeWeights` onto a stage yet, so `motion_retarget`'s output is
+  unchanged by this.
+
 - **`vrm:expressionName` on the avatar side, which is the key an expression
   actually joins on.** A `.vrma` clip has authored the verbatim expression name
   since v0.8.0 and the importer authored none, so the two halves of an

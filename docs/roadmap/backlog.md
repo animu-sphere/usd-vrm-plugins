@@ -183,9 +183,21 @@ Still ahead:
     `Body`, `Body`, `Body_2`, `顔` and `""` imported as four prims, because
     `Define` on the duplicate path returns the existing prim rather than
     failing. It uniquifies against claimed names now, with a `usdvrm_path_util`
-    unit test and the collision shape added to the `names.vrm` fixture. What is
-    left of `ExpressionResolve` is the resolve itself: expanding a named weight
-    onto a rig's N morph targets across M meshes plus its material colours.
+    unit test and the collision shape added to the `names.vrm` fixture.
+  - ✅ **`ExpressionResolve` resolves** *(2026-09-01)*. `vrmRetarget`'s
+    `ExpressionResolver` expands a named weight onto a rig's N morph targets
+    across M meshes plus its material colours, joining on `vrm:expressionName`
+    and never on a prim name. It takes plain values like the rest of that
+    library, so the resolve is testable with no stage and `execVrm`'s future
+    `Vrm.ExpressionResolve` node is a wrapper over it rather than a second
+    implementation. Its decisions: a reported zero is authored and an unreported
+    name contributes nothing, the specification's `[0, 1]` clamp lands in this
+    layer and is reported per name, `isBinary` rounds on the way to the binds,
+    and a material colour is carried as `(totalWeight, weightedTarget)` with an
+    `Apply(base)` lerp so the material's own value never reaches a library that
+    does not read stages. **What is left is the authoring**: nothing writes
+    `blendShapeWeights` or a `skel:blendShapes` binding onto a stage yet, so no
+    tool's output has changed.
 - ⬜ **Motion Phase H — advanced.** Blending, IK / foot locking, contact
   handling, latency compensation, multi-performer sync, simulation bridge,
   generated-motion cache, publish pipeline.

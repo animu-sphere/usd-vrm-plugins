@@ -223,20 +223,39 @@ Expressions now travel from a sender *and from a clip* to a canonical pose and
 back out of a trace — v0.7.0 closed the clip half. They do not yet reach a
 **rig**, which is what #88 is actually about:
 
-- 🚧 **`ExpressionResolve`.** A VRM expression binds N morph targets across M
-  meshes plus material colours — it is *not* one blend shape — so expanding a
-  named weight onto a rig needs `VrmExpressionAPI`, which is why `motionCore`
-  carries the name verbatim, the clip reader authors a name and a number, and
-  neither resolves anything. **Its join key landed 2026-09-01**: the avatar side
-  now authors `vrm:expressionName` too, additive within schema contract v1, so
-  the two sides are joinable on the verbatim name rather than on prim names
-  neither can predict from the other. That closed a defect on the way — the
-  importer's name uniquifier counted bases, so a source file naming a mesh
-  `Body`, `Body` and `Body_2` imported five meshes as four prims, silently,
-  because `Define` returns an existing prim instead of failing. The resolve step
-  itself is still open, and it is what is left of this bullet.
+- ✅ **`ExpressionResolve`** *(2026-09-01)*. A VRM expression binds N morph
+  targets across M meshes plus material colours — it is *not* one blend shape —
+  so expanding a named weight onto a rig needs the avatar, which is why
+  `motionCore` carries the name verbatim and the clip reader authors a name and
+  a number and resolves nothing. Both halves landed the same day. The **join
+  key** first: the avatar side now authors `vrm:expressionName` too, additive
+  within schema contract v1, so the two sides join on the verbatim name rather
+  than on prim names neither can predict from the other — and that closed a
+  defect on the way, the importer's name uniquifier having counted bases, so a
+  source file naming a mesh `Body`, `Body` and `Body_2` imported five meshes as
+  four prims, silently, because `Define` returns an existing prim instead of
+  failing.
+
+  Then the **resolve**: `vrmRetarget`'s `ExpressionResolver` turns one sample's
+  weights into the blend-shape weights and material colours they mean on one
+  particular rig. Plain values like the rest of that library — the caller reads
+  the binds off the stage — so `execVrm`'s `Vrm.ExpressionResolve` will be a
+  wrapper over it rather than a second implementation. Four rules are the
+  resolve rather than plumbing: a reported zero is authored and an unreported
+  name contributes nothing (an absent name is not a zero weight, one layer up
+  from where `ExpressionWeights::Find` already says so); the `[0, 1]` clamp the
+  `.vrma` reader deliberately withheld lands here, named per expression;
+  `isBinary` rounds on the way to the binds and not only in the scalar query;
+  and a material colour is carried as `(totalWeight, weightedTarget)` with an
+  `Apply(base)` lerp, so the material's own value never has to reach a library
+  that will not read a stage. **The binary rounding was measured rather than
+  assumed** — the first suite passed with that line deleted from the resolve
+  path, because only the scalar query covered it, which is the false green the
+  test now closes.
 - ⬜ **`motion_retarget` authors no `blendShapeWeights`**, and no
-  `skel:blendShapes` / `skel:blendShapeTargets` binding on its output.
+  `skel:blendShapes` / `skel:blendShapeTargets` binding on its output. This is
+  what is left of the expression half: the resolve above produces the values and
+  nothing writes them onto a stage, so the tool's output is unchanged by it.
 - ⬜ **Look-at is untouched**, in every layer.
 
 ## Next: the recorded-source and producer-contract tracks ⬜
