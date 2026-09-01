@@ -16,7 +16,7 @@ schema: openstrata.library/v1alpha1
 library:
   id: osc
   # Mirrors VERSION; release preparation updates this in lockstep.
-  version: 0.7.0
+  version: 0.8.0
 cmake:
   package: osc
   target: osc::osc

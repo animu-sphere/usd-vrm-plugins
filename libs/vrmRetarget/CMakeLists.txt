@@ -7,7 +7,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
          _vrm_retarget_version LIMIT_COUNT 1)
     string(STRIP "${_vrm_retarget_version}" _vrm_retarget_version)
 else()
-    set(_vrm_retarget_version "0.7.0")
+    set(_vrm_retarget_version "0.8.0")
 endif()
 
 project(vrmRetarget

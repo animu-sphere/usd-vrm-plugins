@@ -65,10 +65,10 @@ must repeat one, `scripts/check_docs.py` checks it against this table.
 | VMC input | Shipped | v0.6.0 |
 | mocopi live input | Shipped | v0.7.0 |
 | generic BVH recorded-motion ingestion | Shipped | v0.7.0 |
-| installed-package consumer lane + package contract | Next | v0.8.0 |
-| shared OSC foundation + VRChat OSC Trackers input | Next | v0.8.0 |
-| NPZ / AMASS recorded sources | Planned | after v0.8.0 |
-| canonical motion producer contract | Planned | after v0.8.0 |
+| installed-package consumer lane + package contract | Shipped | v0.8.0 |
+| shared OSC foundation + VRChat OSC Trackers input | Shipped | v0.8.0 |
+| NPZ / AMASS recorded sources | Next | after v0.8.0 |
+| canonical motion producer contract | Next | after v0.8.0 |
 | OpenExec foundation | Planned | after the two above |
 | `ExecIr` invertible VRM humanoid rig | Planned | after the OpenExec foundation |
 

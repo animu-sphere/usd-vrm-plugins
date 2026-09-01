@@ -8,267 +8,25 @@ conditions, and what is still open.
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 
-## Next: v0.8.0 — installed-package consumer lane, shared OSC foundation and VRChat OSC Trackers input ⬜
+## Shipped: v0.8.0 — installed-package consumer lane, shared OSC foundation and VRChat OSC Trackers input, awaiting its tag 🚧
 
-**Renumbered from v0.7.5 on 2026-08-29**, when packaging hardening became the
-first item of the near-term plan. The two halves ship on one tag because they
-are one boundary — a third adapter *and* the proof that every package this
-workspace produces can be consumed from outside it — and tagging a release whose
-own packages are unverified is the thing this release exists to stop. The
-re-ordering is recorded in
-[the roadmap's status table](README.md#status-at-a-glance).
+The milestone's work is **done** and its record is
+[releases/v0.8.0.md](../releases/v0.8.0.md), which is where the boundary, what
+shipped, and the conditions it deliberately did not close now live. The
+milestones and their evidence are [packaging-hardening.md](packaging-hardening.md)
+§4 (PKG-0 through PKG-5) and [osc-and-vrchat-trackers.md](osc-and-vrchat-trackers.md)
+§9 (OSC-0 through OSC-3, VRC-0 through VRC-7) — every one ✅.
 
-**Release boundary, first half — distribution.** Every package this workspace
-installs configures, resolves and links from a **clean prefix**, driven by a
-consumer project that names no target from this source tree, on all three OS.
-Planned in [packaging-hardening.md](packaging-hardening.md); the per-package
-promise is [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md).
+One completion condition is **open**, and one was met on the second of the two
+branches it was written with. The open one is a redistributable recorded
+session — open on the bytes and not on the code, since the three CTest names
+that read the corpus would pick one up with no change. The branched one is the
+solve: this release claims tracker *input* rather than tracker-driven motion,
+which is the outcome the plan wrote down in advance rather than a shortfall
+found afterwards. Both are in the release record's known limitations, with the
+operator evidence that would close them below.
 
-**Release boundary, second half — input.** One physical session reaches the
-**unchanged** canonical motion and retarget pipeline through a **third**
-independently modelled live surface — VRChat OSC tracking input — over a
-protocol-neutral OSC decoder and a shared transport layer that no adapter
-maintains a private copy of. Planned in
-[osc-and-vrchat-trackers.md](osc-and-vrchat-trackers.md).
-
-**Why distribution goes first.** Five phases of splitting checked every boundary
-they created *from inside*, and neither a composed build nor `ost library build`
-ever opens a package config file. On 2026-08-29 that gap produced a defect
-rather than a hypothesis — two installed packages named a target no consumer
-could resolve, with all 17 lanes green
-([the track](packaging-hardening.md) §1). The fix that landed is per-adapter;
-the general one is a consumer that is not us, and that is what this half builds.
-
-**A tracker source is not a pose source.** VMC and mocopi carry humanoid bone
-transforms; VRChat OSC carries numbered tracker observations, which are pre-IK,
-and a tracker index is not a body role. The adapter therefore stops at a
-`TrackerFrame` and the humanoid solve is a separate, generic boundary — the one
-place this track could push a VRChat-shaped type into `motionCore`, which it
-does not do under any outcome
-([§5](osc-and-vrchat-trackers.md#5-a-tracker-source-is-not-a-pose-source)).
-
-Not in this boundary: Avatar Parameters, OSC eye tracking, OSCQuery discovery,
-an OSC sender or router, two-way VRChat client integration, realtime display,
-and OpenExec. A VRChat client is never a test dependency — the generated corpus
-and a recorded mocopi `VRChat (OSC)` session are the evidence, and every replay
-test completes with nothing installed.
-
-### Done when
-
-**Packaging** — the milestones and their evidence are
-[packaging-hardening.md](packaging-hardening.md) §4.
-
-- [x] every distributable package's consumer contract is written down — package
-      name, exported target, header root, required packages, platform
-      dependencies, aggregate membership, and whether standalone installability
-      has been **measured** or only reviewed *(PKG-0, 2026-08-29:
-      [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md), derived from
-      the CMake sources. Twelve packages take a `find_package` contract; three
-      plugin bundles export no target and install no config **by design**)*;
-- [x] one consumer fixture configures and links against one package from a
-      clean prefix, and is shown to **fail against the pre-fix config** before it
-      is trusted *(PKG-1, 2026-08-29: `osc` first, because its edge set is empty
-      and a failure can only be the config file itself, then `vrmAdapterVmc`,
-      because that is the package the defect was in)*;
-- [x] the driver runs by hand on a workstation before any lane exists, and
-      answers which prefix a consumer actually gets *(PKG-2, 2026-08-29:
-      `scripts/check_package_consumer.py`. For a plain library `cmake --install`
-      and an extracted `ost` package are the same seven files; `vrmSchema` is
-      the one row where the two prefixes could still diverge, and it has not
-      been run)*;
-- [x] all twelve `find_package` packages pass, with each failure fixed in the
-      **config** and never in the fixture *(PKG-3, 2026-08-30: twelve of twelve
-      configure, build, link and **run** from a prefix holding their own
-      transitive closure and nothing else, and **no config file failed** — the
-      compliance is now measured rather than reviewed. What did fail was the
-      harness, three times; the fixes and the rule PKG-4's lane inherits from
-      them are in the track. Half of
-      [#113](https://github.com/animu-sphere/usd-vrm-plugins/issues/113) closes
-      with it)*;
-- [x] a PR-gating cell on all three OS builds the consumers from a prefix that
-      holds no build tree, and the three platforms agree about the package
-      closure except where a documented difference says why not
-      (`ws2_32` vs `Threads::Threads` is the one expected) *(PKG-4,
-      2026-08-30: **green on all three OS**, twelve packages each —
-      `.github/workflows/package-consumer.yml`, plus the three scripts it is
-      thin over. It copies no pin: `ost ci matrix` is what says which runners
-      and which runtime digests, because the other hand-authored workflow here
-      copied all three and went stale. Criterion 6 needed a contract before it
-      needed a code path, and PACKAGE_CONTRACT.md §5.1 is it — a workspace
-      target agrees or it is a defect, a declared platform dependency is
-      present exactly where its cell says and **absent elsewhere**, and what a
-      `pxr` build puts on its own link line is not a promise made here. **The
-      two runs it took to get green both found defects, and neither was in a
-      package**: a pulled runtime's CMake package names the producing machine's
-      Python paths, in two layers, and the second of them is not overridable by
-      any `-D` —
-      [report 37](../reports/ost/37-2026-08-30-v0.22.6-runtime-python-paths-from-the-producer.md),
-      which carries the upstream P1 and one question it leaves open)*;
-- [x] `scripts/check_docs.py` refuses a `*Config.cmake.in` with no row in
-      PACKAGE_CONTRACT.md, and a row naming a package that does not exist
-      *(2026-08-30: five ways to fail it, each made to fail before the check was
-      believed. Landed **before** the CI cell rather than after it — the
-      document it checks is five days old, so the drift has had no time to
-      happen, which is the moment to add such a check)*.
-
-**Foundation** — the milestones and their evidence are
-[osc-and-vrchat-trackers.md](osc-and-vrchat-trackers.md) §9.
-
-- [x] the existing OSC decoder's public behaviour is frozen by characterisation
-      tests before any source moves *(OSC-0, 2026-08-24)*;
-- [x] the four `UdpReceiver` defects are fixed in `vrmAdapterVmc`, ~~each with a
-      test~~, in a change that moves no file *(OSC-1, 2026-08-24. **Two of the
-      four ship untested and it is deliberate** — a `-1` and an `INT_MAX` poll
-      timeout differ only after 24.8 days, and a `POLLERR` wake-up is not
-      producible from a suite that owns only its own sockets, so a test there
-      would pass against the defect. The seam belongs to the extracted library
-      and OSC-2 carries the ask)*;
-- [x] the transport ring — receiver, queue, capture format, diagnostic vehicle —
-      lives once, in a leaf outside the aggregate product's link closure, and
-      every committed capture in both existing corpora still reads unchanged
-      *(OSC-2, 2026-08-24: `libs/liveTransport`)*;
-- [x] two adapters decode OSC through one library that contains no VMC and no
-      VRChat address literal, enforced by a boundary check rather than by
-      review *(OSC-3, 2026-08-29: `libs/osc`. The evidence came before the
-      contract row — an address inventory written in `vrmAdapterVrchatOsc`
-      decoded real bytes through the VMC-owned decoder first and needed five VMC
-      tokens, every one of them the name)*;
-- [x] no adapter imports a sibling adapter, checked in the binary *(VRC-0,
-      2026-08-25: with a third adapter the trio is symmetric, and it is verified
-      by injection in every direction rather than by the green result)*.
-
-**VRChat OSC**
-
-- [x] a real mocopi `VRChat (OSC)` session is captured and its addresses, type
-      tags and cadence are inventoried **before** a decoder is written *(VRC-0 /
-      VRC-1, 2026-08-30: six captures, 44 918 datagrams,
-      [report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md).
-      **Eight addresses — three numbered trackers and a named `head`**, every one
-      `,fff`, one message per datagram, no bundles, in a fixed eight-datagram
-      cycle inside a median 0.053 ms; ~58 Hz emitted and ~39 Hz delivered. The
-      inventory carrying no list of expected addresses is what made `head`
-      arrive as a row instead of four absences, and a decoder reading that path
-      segment as an integer would have dropped it silently)*;
-- [x] generated fixtures fix the protocol's shapes with no hardware *(VRC-2,
-      2026-08-30: twelve captures, written from
-      [report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md)'s
-      measurements rather than from VRChat's published surface, and replayed
-      against counts derived from the generator's structure. **One of the twelve
-      is the session's own shape**; the manifest marks five more `derived` — the
-      session's addresses and ordering in an arrangement it did not send — and
-      six `unobserved`, each with its reason, because a corpus that cannot say
-      how far a recording stands behind each fixture is one a later reader has
-      to guess about)*;
-- [ ] recorded fixtures replay deterministically with no client — **open on the
-      bytes, not on the code**: the 2026-08-30 session is manifest-only under
-      [the corpus policy](#standing-corpus-policy--recorded-evidence-is-not-the-generated-corpus),
-      and the three CTest names that read the corpus — `_corpus`,
-      `_trackerCorpus` and `_loopbackCorpus` — would pick a redistributable
-      session up with no change;
-- [x] tracker position and rotation reach the canonical tracking space, verified
-      against a recorded rest pose rather than the documentation alone *(VRC-3,
-      2026-08-30:
-      [report 03](../reports/motion/03-2026-08-30-vrchat-osc-tracking-space.md).
-      The documented space **is** the measured one — metres, +Y up, +Z forward,
-      left-handed — so the conversion is VRM 1.0's reflection through X. The
-      rest pose settled four of the five readings and could not settle the
-      fifth: nothing in a stream of numbers says which way a body turned, and
-      handedness came from the take labelled "head **left**, centre, right",
-      where a left turn reports -77.5° of yaw. The **Euler order is measured to
-      three of six** — a head turning does not roll, which refuses the three
-      compositions that do not apply the yaw outermost — and the residual is
-      quoted rather than waved at: median 0.21°, 12.33° at worst, against 25.7°
-      before the test. Closing it costs one labelled *rolled* take, which is
-      twenty seconds of hardware and is on the operator-evidence list below.
-      This is also where the adapter's binaries first load OpenUSD)*;
-- [x] partial sets, timeouts, restarts and calibration discontinuity are stated
-      policy with a fixture each, not emergent behaviour *(VRC-4, 2026-08-30:
-      `FrameAssembler.h`, nine mutations, and three new fixtures. The frame
-      boundary is report 02's measurement rather than a convention — a burst
-      0.053 ms wide against a 17 ms interval — and it is **two** rules,
-      because a repeat needs no clock and a gap catches a frame no repeat
-      would close. **The restart policy is what the packaging half of this
-      release paid for**: a peer that changes is a restart, a silence of any
-      length is a timeout and nothing more, and a caller with no peer never
-      sees a restart at all — which is only testable from a file because the
-      capture format grew a per-record peer the same day. `session-restart`
-      and `silent-gap` are the same 4.8452 s gap told apart by identity
-      alone)*;
-- [x] unknown VRChat OSC traffic is recoverable *(VRC-2, 2026-08-30:
-      `VRM_VRCHAT_OSC_UNSUPPORTED_ADDRESS` is info and recoverable, the message
-      is dropped and the datagram is not, and the `mixed-traffic` fixture
-      carries avatar parameters, an avatar change, eye tracking and input beside
-      two clean frames. Held apart from `TRACKER_ID_INVALID`, which is what a
-      sender's bad index raises — collapsing the two would make a defect
-      indistinguishable from a part of the surface nobody has implemented)*;
-- [x] a real session reaches a VRM avatar through **unchanged** `motion_capture`
-      and `motion_retarget`, or the solve boundary is documented as the stated
-      stopping point and the release claims tracker *input* rather than
-      tracker-driven motion — **the second branch is the one this release
-      takes** *(VRC-5 on 2026-08-31: assigned observations reach a
-      `HumanoidPose` in `libs/motionTracking`, the solve is direct, and a
-      position it does not consume is reported rather than dropped because
-      consuming one is IK; VRC-6 the same day: `vrchat_osc_record --inspect
-      --export-trace --assign` writes the canonical trace, and
-      `vrchat_osc_record_endToEnd` drives it through **unchanged**
-      `motion_capture` and `motion_retarget` onto a rig. It is the first taker
-      of `adapters/*/tools/* -> motionTracking`, which had been a permission
-      with nobody using it since VRC-4a. **The claim is a partition rather than
-      a count**: four joints move and fourteen hold their rest pose *exactly* —
-      not within a tolerance, because nothing authored them — and four of the
-      fourteen sit between a driven hip and a driven foot, which is where a
-      solve that had begun estimating would show first. Two limits stated
-      rather than hidden: the avatar is a fixture rig and not a released VRM,
-      where both sibling adapters drive `Seed-san.vrm` beside theirs; and the
-      capture is `rig-motion`, a **generated** fixture written for this leg,
-      because every other capture in the corpus drifts too little to survive a
-      retarget's rest-pose correction as a visible rotation. A recorded session
-      reaching an avatar is the row below this one and it is still an
-      operator's twenty minutes
-      ([the track](osc-and-vrchat-trackers.md#vrc-6--cli-and-record))*;
-
-**Cross-source**
-
-- [ ] ~~the same physical session is observed on native UDP, VRChat OSC and the
-      BVH export~~ — **not producible on this sender, measured 2026-08-30**: its
-      transfer format is exclusive *and* it records no BVH while sending OSC, so
-      this path cannot share a take with any other observation
-      ([report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §5).
-      What replaces it: the same labelled sequences, performed separately, and
-      compared at the canonical layer for what each path carries and drops — the
-      per-sample timing agreement report 01 measured is what that costs, and no
-      tolerance widening buys it back. **The replacement is delivered** (VRC-7,
-      2026-08-31): five labelled sequences performed on both dates, three paths,
-      and the two 08-15 paths kept in as the control — where they agree to 0.00°
-      and the third differs, the difference is the third path's;
-- [x] every difference is classified — including a *solve difference*, which is
-      a category no previous comparison could attribute — rather than absorbed
-      by widening a tolerance *(VRC-7, 2026-08-31: eight categories, and the one
-      §11 predicted would be the useful one produced **the largest difference in
-      the comparison and it was a defect**. On the take whose answer is known in
-      advance — stand still for twenty seconds — the tracker path's head and
-      both feet snapped **33.6°** on 16 of 777 frames while the hips did not
-      move: a frame whose hips tracker sent a position and no rotation had its
-      children localised against identity, where every consumer replays with
-      `hold` and has the hips from a frame ago. 33.6° is the hips' own
-      orientation, to five figures. Fixed in the same change and the worst
-      single-frame step goes to 2.46°, with nothing over 5°. Two tests asserted
-      the defect and now assert the opposite — every internal check passed
-      against it, because within one frame the composition is exactly
-      self-consistent. The `unknown` row is one: 15.5° on the right-hand head
-      turn, which two performances cannot separate from a sender difference)*;
-- [x] what each path cannot carry is written down from evidence *(VRC-7,
-      2026-08-31:
-      [report 04](../reports/motion/04-2026-08-31-cross-source-carry-drop.md)
-      §7. **Report 01's one row that mattered is closed**: all three paths now
-      carry the body's travel, and re-running the identical 2026-08-15 capture
-      through today's tool prints that report's sentence with the verb the other
-      way round. What is lost is distributed rather than concentrated — the BVH
-      export re-bases the body to the origin and loses the room, the tracker
-      path loses eighteen bones and a third of the frames its sender emits, and
-      no path carries tracking state because neither wire has a field for it.
-      The sign of a labelled head turn agrees on all three paths from three
-      derivations that share no code)*.
+What is left is the tag.
 
 ### Before the tag
 
@@ -278,32 +36,60 @@ written from a workstation and the lane ran a different `ost`
 This release adds a second class of the same risk — packaging claims — so the
 checks are listed rather than remembered:
 
-- [ ] the installed-package consumer lane is green on all three OS, and its
-      result is what the release's packaging claims cite;
-- [ ] every bundle, library and adapter manifest agrees with
+- [x] the installed-package consumer lane is green on all three OS, and its
+      result is what the release's packaging claims cite *(2026-08-31, run
+      `33397904470` on the tree that became `main`: `consume-windows`,
+      `consume-linux`, `consume-macos` and `criterion 6 — three platforms agree`,
+      all five jobs green)*;
+- [x] every bundle, library and adapter manifest agrees with
       [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md), and no row
-      still says `unmeasured`;
-- [ ] the aggregate product's closure is measured against
+      still says `unmeasured` *(`check_docs.py` green over 4 bundles and 12
+      libraries — which is where the three adapters are counted — and §4 carries
+      no `unmeasured` cell; §5 says so in prose as well)*;
+- [x] the aggregate product's closure is measured against
       `[workspace].release_members` on the **pinned** `ost`, not the
       workstation's — check `bootstrap.ost.version` in `openstrata.ci.yaml`
-      against `ost --version` before writing any count;
-- [ ] each adapter's standalone package closure is measured, including
-      `vrmAdapterMocopi`'s raw `ws2_32` on a POSIX host (PKG-5);
-- [ ] `liveTransport` and `osc` artifact contents are recorded — 9 files and 7
+      against `ost --version` before writing any count *(pin and workstation
+      are both **0.22.8**, so the v0.7.0 divergence does not exist here.
+      Measured rather than derived: `ost plugin package --workspace` reports
+      `4 package(s) … plus 6 tool package(s)` — ten member archives — and
+      `Aggregate release members: vrmSchema, usdVrmFileFormat,
+      usdVrmPackageResolver, usdVrmaFileFormat, motion_bvh, motion_capture,
+      motion_retarget`, exactly the seven of `release_members` with the three
+      adapter CLIs subtracted. `AGGREGATE_MEMBERSHIP_MISMATCH` did not fire, and
+      every archive is named `-0.8.0-`)*;
+- [x] each adapter's standalone package closure is measured, including
+      `vrmAdapterMocopi`'s raw `ws2_32` on a POSIX host (PKG-5) *(the lane runs
+      all twelve contract rows — the three adapters among them — on all three
+      OS; on `macos-15` and `ubuntu-24.04` `vrmAdapterMocopi` links
+      `Threads::Threads` and **no** `ws2_32`, which is the absence Windows
+      structurally cannot see)*;
+- [x] `liveTransport` and `osc` artifact contents are recorded — 9 files and 7
       as of 2026-08-29, and a change in either is a change in what the excluded
-      side ships;
-- [ ] the CHANGELOG names the **architecture** changes, not only the features:
+      side ships *(re-counted from the artifact manifests: still **9** and
+      **7**, and no header entered or left either. The bytes did change —
+      `PacketCapture.h` grew a per-record peer at VRC-4 and `OscPacket.h` grew
+      the `t` argument — which is a change in content and not in membership,
+      and the distinction is the one this row is asking about)*;
+- [x] the CHANGELOG names the **architecture** changes, not only the features:
       two shared libraries extracted, a third adapter, and every adapter's
-      package config gaining a dependency it was missing;
+      package config gaining a dependency it was missing *(the last three were
+      there; the **entire packaging half was not** — PACKAGE_CONTRACT.md, the
+      three scripts and the CI lane had landed with no `Added` entry at all,
+      which is exactly the omission this row exists to catch, and it is now
+      written)*;
 - [ ] the artifact-only BVH smoke is green on **Linux and macOS**, not only on
       the workstation that wrote it — it is a `release.yml` step, so a tag is
       the first time those two cells run it, and the `workflow_dispatch --ref`
       dry run below is what turns that from a surprise into a measurement;
 - [ ] `scripts/check_docs.py`, `check_motion_profiles.py` and `verify_corpus.py`
       are green, and `release.yml` is dry-run with `workflow_dispatch --ref`
-      before the tag — a green PR lane proves nothing about it.
+      before the tag — a green PR lane proves nothing about it. *(The three
+      scripts are green; the dry run is the half that is still owed, and it is
+      the half that matters, because `release.yml` is hand-authored and no PR
+      event runs it.)*
 
-### Carried into v0.8.0
+### Carried out of v0.8.0
 
 - ⬜ **Freeze the Linux and macOS symbol baselines.** `tests/baseline/symbols/`
   holds `windows-x86_64.txt` only, because until the workspace cells landed no
@@ -436,7 +222,7 @@ back out of a trace — v0.7.0 closed the clip half. They do not yet reach a
   `skel:blendShapes` / `skel:blendShapeTargets` binding on its output.
 - ⬜ **Look-at is untouched**, in every layer.
 
-## Then: the recorded-source and producer-contract tracks ⬜
+## Next: the recorded-source and producer-contract tracks ⬜
 
 **No version yet, deliberately** — it takes one when v0.8.0 is cut. Two pieces
 of work that belong together because the second is what stops the first from

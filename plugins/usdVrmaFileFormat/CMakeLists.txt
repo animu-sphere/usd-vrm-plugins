@@ -7,7 +7,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
     file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION" _vrma_plugin_version LIMIT_COUNT 1)
     string(STRIP "${_vrma_plugin_version}" _vrma_plugin_version)
 else()
-    set(_vrma_plugin_version "0.7.0")
+    set(_vrma_plugin_version "0.8.0")
 endif()
 
 project(UsdVrmaPlugin

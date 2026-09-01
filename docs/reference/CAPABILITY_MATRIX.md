@@ -71,7 +71,9 @@ This table covers the `.vrm` importer only. Skeletal animation *embedded in a
 and is handled by a different bundle.
 
 **The `.vrma` motion layer ships as of v0.5.0**, the first live-input adapter as
-of v0.6.0, and as of v0.7.0 both a second live adapter and a recorded-file path.
+of v0.6.0, as of v0.7.0 both a second live adapter and a recorded-file path, and
+as of v0.8.0 a third live adapter — the first tracker source — over two leaves
+the first two adapters had each been writing privately.
 Its own status:
 
 | Component | Since | Status |
@@ -91,6 +93,11 @@ Its own status:
 | `motionSource` | v0.7.0 | Format-neutral source rig and animation in the source's own angle order and unit, provenance, the producer-profile contract, and one declared crossing into canonical humanoid motion |
 | `motionBvh` | v0.7.0 | BVH syntax, extraction and a frozen diagnostic set — no producer semantics and no default profile |
 | `motion_bvh_inspect` · `motion_bvh_convert` | v0.7.0 | CLIs: report what a BVH file contains, and convert one to the avatar-independent semantic clip under an explicitly named producer profile |
+| `liveTransport` | v0.8.0 | The live half's shared leaf: bounded UDP receiver, opt-in datagram queue, packet-capture file format with a per-record peer, and the diagnostic vehicle every live adapter reports through — no protocol, no product name, no diagnostic code |
+| `osc` | v0.8.0 | The OSC 1.0 wire format once instead of once per adapter: packets, bundles and their flattening, addresses, type tags, arguments, and a refusal naming the byte it refused at — no address semantics |
+| `vrmAdapterVrchatOsc` | v0.8.0 | VRChat OSC tracker input: semantic decode of numbered trackers and a named `head`, tracking-space conversion to VRM 1.0's basis, and frame assembly with restart, timeout and partial-set policies. Unknown traffic is recoverable — the message is dropped and the datagram is not |
+| `vrchat_osc_record` | v0.8.0 | CLI: records or inspects a VRChat OSC packet capture; `--export-trace --assign` writes the `motion-capture-trace` the product's tools replay unchanged |
+| `motionTracking` | v0.8.0 | Which tracker is which body region, and the direct solve from assigned observations to a `HumanoidPose`. Generic and outside every adapter; a region vocabulary that is deliberately not a bone list, and an observed position the solve cannot consume is reported rather than dropped, because consuming one is IK |
 
 **One row of the table above has met real hardware, and the rest have not.** A
 mocopi device drove `vrmAdapterMocopi` end to end on 2026-08-15 — five sessions,
@@ -117,22 +124,30 @@ Protocol and SDK decode belong under `adapters/` (motion policy §8.1).
 `vrmAdapterMocopi` — the first native capture-device adapter — shipped in v0.7.0
 and has been driven by a device; what that release did **not** close is further
 operator evidence, not code ([current.md](../roadmap/current.md)). A **third**
-live adapter is in progress behind it: VRChat OSC Trackers input over a
+live adapter shipped in v0.8.0: VRChat OSC Trackers input over a
 protocol-neutral OSC decoder
-([the OSC track](../roadmap/osc-and-vrchat-trackers.md), and the
-[roadmap status table](../roadmap/README.md#status-at-a-glance) for the version).
-It is the first input here that carries **tracker observations** rather than
-humanoid bone transforms — pre-IK data, where a tracker index is not a body role
-— so nothing in it maps onto a row of this table until a solve boundary exists.
+([the OSC track](../roadmap/osc-and-vrchat-trackers.md)). It is the first input
+here that carries **tracker observations** rather than humanoid bone transforms
+— pre-IK data, where a tracker index is not a body role.
 
-`vrmAdapterVrchatOsc` exists as of 2026-08-25 and **decodes nothing**: it is a
-scaffold, a frozen diagnostic set, and `vrchat_osc_record`, which turns a live
-sender into a packet capture and reports the datagram envelope. That distinction
-is the one this table is for. A recorder is not a capability of the pipeline —
-no row moves — and the reason the decoder is not here yet is deliberate rather
-than pending: VRChat's OSC surface is published, and a specification says what a
-*receiver* must accept where what a sender sends is a measurement, so the
-inventory is taken from real datagrams before a decoder is designed from it.
+**That difference is why this release claims tracker *input* and not
+tracker-driven motion.** The adapter stops at a `TrackerFrame`; the humanoid
+solve is generic and lives in `motionTracking`, outside every adapter, and it is
+**direct assignment rather than IK** — an observed position the solve cannot
+consume is reported rather than dropped, because consuming one is the estimate
+this layer declines to make. What that reaches, end to end, is a partition
+rather than a count: on the fixture leg four joints move and fourteen hold their
+rest pose *exactly*, with four of the fourteen sitting between a driven hip and
+a driven foot, which is where a solve that had begun estimating would show
+first.
+
+The decoder was designed from an inventory rather than from the specification,
+and that ordering is deliberate: VRChat's OSC surface is published, and a
+specification says what a *receiver* must accept where what a sender sends is a
+measurement. Six captures and 44 918 datagrams later, the inventory carried
+**eight addresses — three numbered trackers and a named `head`** — and the named
+one is what a decoder reading that path segment as an integer would have dropped
+silently ([report 02](../reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md)).
 
 **One recorded motion file format other than `.vrma` becomes motion, as of
 v0.7.0.** BVH — the format most capture applications export — is a generic

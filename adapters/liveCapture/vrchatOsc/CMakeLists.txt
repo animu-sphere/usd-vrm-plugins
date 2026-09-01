@@ -42,7 +42,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../../VERSION")
     string(STRIP "${_vrm_adapter_vrchat_osc_version}"
            _vrm_adapter_vrchat_osc_version)
 else()
-    set(_vrm_adapter_vrchat_osc_version "0.7.0")
+    set(_vrm_adapter_vrchat_osc_version "0.8.0")
 endif()
 
 project(vrmAdapterVrchatOsc

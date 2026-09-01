@@ -28,19 +28,19 @@ schema: openstrata.tool/v1alpha1
 tool:
   id: vrchat_osc_record
   # Mirrors VERSION; release preparation updates this in lockstep.
-  version: 0.7.0
+  version: 0.8.0
   license: Apache-2.0
 executables: [vrchat_osc_record]
 directories: [bin]
 requires:
   libraries:
     - id: vrmAdapterVrchatOsc
-      version: ">=0.7,<0.8"
+      version: ">=0.8,<0.9"
     # Named here where the sibling tools name only their adapter, and the
     # difference is the adapter's edge set rather than the tool's. Theirs link
     # `motionRuntime` because they deliver a pose; this one does not, so its
     # tool takes the edge itself.
     - id: motionTracking
-      version: ">=0.7,<0.8"
+      version: ">=0.8,<0.9"
     - id: motionRuntime
-      version: ">=0.7,<0.8"
+      version: ">=0.8,<0.9"

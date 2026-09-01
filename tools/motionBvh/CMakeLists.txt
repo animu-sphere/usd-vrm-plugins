@@ -26,7 +26,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
          _motion_bvh_tools_version LIMIT_COUNT 1)
     string(STRIP "${_motion_bvh_tools_version}" _motion_bvh_tools_version)
 else()
-    set(_motion_bvh_tools_version "0.7.0")
+    set(_motion_bvh_tools_version "0.8.0")
 endif()
 
 project(motionBvhTools
