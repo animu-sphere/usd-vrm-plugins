@@ -405,12 +405,27 @@ would be a scene evaluation at every instant rather than a clip read, and the
 warning is what keeps the difference visible.
 
 **A clip says one of three things**, and the authored stage keeps them apart the
-way the expression half does. A channel drives the node — time samples. The node
-states a transform and nothing animates it — one target for the whole clip,
+way the expression half does. A channel drives the node — time samples. The file
+places the node and nothing animates it — one target for the whole clip,
 authored as a default, because a run of identical time samples would claim the
-file keyed something it did not. The node states none — no `vrm:lookAtTarget` at
+file keyed something it did not. Nothing places it — no `vrm:lookAtTarget` at
 all. A clip that declares no `lookAt` block gets no `/Animation/LookAt` prim,
 which is a fourth thing again: the file never raised the subject.
+
+*Placed* is the word rather than *states a translation*, and the difference is a
+whole state. A target node with no transform of its own under a positioned
+parent is placed exactly as deliberately as one that states its own — the
+position is in the parent — so what separates "the file gave a position" from
+"the file gave none" is whether anything in the chain wrote one, never whether
+the composed number happens to be the origin.
+
+**An unusable node costs the target, not the declaration.** A `lookAt` block
+naming a node that does not exist, or one a bone or an expression already
+drives, still said something: it raised the subject, and it measured its rig's
+offset. So the prim and the offset are authored and the target is not, which is
+the state a clip declaring an unplaced node is already in — and a stage that
+dropped the whole block would be indistinguishable from a clip that never
+mentioned look-at, which is a different statement.
 
 **The recorded-trace format carries it** as a `lookat x y z` line, at most one
 per frame, from format version 3. No live producer emits one today; the format

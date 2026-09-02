@@ -63,6 +63,27 @@ GfMatrix4d NodeLocal(const cgltf_node& node)
     return scale * rotate * translate;
 }
 
+// Whether the file placed `node` at all -- its own stated transform, or any
+// ancestor's.
+//
+// A node that states nothing under a parent that states a translation is placed
+// exactly as deliberately as one that states its own: the position is in the
+// parent. What separates "the file gave a position" from "the file gave none"
+// is therefore whether *anything in the chain* wrote one, never whether the
+// composed number happens to be the origin -- the same rule an un-animated
+// expression node's weight is under. Only translation and matrix are read,
+// because a rotation or a scale cannot move a point that sits at its parent's
+// own origin.
+bool StatesPlacement(const cgltf_node& node)
+{
+    for (const cgltf_node* step = &node; step; step = step->parent) {
+        if (step->has_translation || step->has_matrix) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // The composed local transforms of everything above `node`, so a position
 // stated in its own space can be placed where the file put it. Row-vector
 // convention, matching NodeLocal: a point is `local * parent * grandparent`.
@@ -262,6 +283,43 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
     // 4.3), and it is `LookAtEvaluate`'s job.
     int lookAtNodeIndex = -1;
     if (const JsObject* lookAt = AsObject(Find(*root, "lookAt"))) {
+        // The block itself is the declaration, and it survives a node this
+        // reader cannot use. A file that raised the subject and measured its
+        // rig's offset said something; dropping the whole block on a bad node
+        // would leave a stage indistinguishable from a clip that never
+        // mentioned look-at at all, which is a different statement. What an
+        // unusable node costs is the target, and that is exactly the state a
+        // clip declaring a node it never places is already in.
+        outDocument->lookAt.present = true;
+
+        const JsValue* offset = Find(*lookAt, "offsetFromHeadBone");
+        float components[3] = {0.0f, 0.0f, 0.0f};
+        bool readOffset = false;
+        if (offset && offset->IsArray() && offset->GetJsArray().size() == 3) {
+            readOffset = true;
+            const JsArray& array = offset->GetJsArray();
+            for (int axis = 0; axis != 3; ++axis) {
+                if (array[axis].IsReal()) {
+                    components[axis] = static_cast<float>(array[axis].GetReal());
+                } else if (array[axis].IsInt()) {
+                    components[axis] = static_cast<float>(array[axis].GetInt());
+                } else {
+                    readOffset = false;
+                }
+            }
+        }
+        if (readOffset) {
+            outDocument->lookAt.offsetFromHeadBone =
+                GfVec3f(components[0], components[1], components[2]);
+        } else {
+            // Left at zero, which is a gaze starting at the head bone itself.
+            // That is a claim about the source rig rather than a neutral
+            // default, so it is warned about instead of assumed.
+            outDocument->warnings.push_back(
+                "[VRMA112] look-at states no usable offsetFromHeadBone; "
+                "the offset is taken as zero");
+        }
+
         const int node = AsInt(Find(*lookAt, "node"));
         bool isDriven = expressionByNodeIndex.count(node) != 0;
         for (const auto& mapping : boneNodes) {
@@ -269,45 +327,16 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
         }
         if (node < 0 || node >= static_cast<int>(data->nodes_count)) {
             outDocument->warnings.push_back(
-                "[VRMA110] ignored look-at with no usable node");
+                "[VRMA110] look-at names no usable node; no target is read");
         } else if (isDriven) {
             // One node cannot be both a bone's transform and a target position
             // in the space that bone moves in; taking it as both would read the
             // same channel as two different things.
             outDocument->warnings.push_back(
-                "[VRMA111] ignored look-at whose node is already driven");
+                "[VRMA111] look-at names a node that is already driven; no "
+                "target is read");
         } else {
             lookAtNodeIndex = node;
-            outDocument->lookAt.present = true;
-            const JsValue* offset = Find(*lookAt, "offsetFromHeadBone");
-            float components[3] = {0.0f, 0.0f, 0.0f};
-            bool readOffset = false;
-            if (offset && offset->IsArray() && offset->GetJsArray().size() == 3) {
-                readOffset = true;
-                const JsArray& array = offset->GetJsArray();
-                for (int axis = 0; axis != 3; ++axis) {
-                    if (array[axis].IsReal()) {
-                        components[axis] =
-                            static_cast<float>(array[axis].GetReal());
-                    } else if (array[axis].IsInt()) {
-                        components[axis] =
-                            static_cast<float>(array[axis].GetInt());
-                    } else {
-                        readOffset = false;
-                    }
-                }
-            }
-            if (readOffset) {
-                outDocument->lookAt.offsetFromHeadBone =
-                    GfVec3f(components[0], components[1], components[2]);
-            } else {
-                // Left at zero, which is a gaze starting at the head bone
-                // itself. That is a claim about the source rig rather than a
-                // neutral default, so it is warned about instead of assumed.
-                outDocument->warnings.push_back(
-                    "[VRMA112] look-at states no usable offsetFromHeadBone; "
-                    "the offset is taken as zero");
-            }
         }
     }
 
@@ -501,11 +530,14 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
                 break;
             }
         }
-        if (!outDocument->lookAt.isAnimated
-            && (lookAtNode->has_translation || lookAtNode->has_matrix)) {
-            // Nothing drives it and it states a transform, so glTF leaves it
-            // there for the whole clip: a target the file really did give, by
-            // the same rule an un-animated expression node states a weight.
+        if (!outDocument->lookAt.isAnimated && StatesPlacement(*lookAtNode)) {
+            // Nothing drives it and the file placed it, so glTF leaves it there
+            // for the whole clip: a target the file really did give, by the same
+            // rule an un-animated expression node states a weight. The placement
+            // can be entirely the parent's -- a target node with no transform of
+            // its own under a positioned parent is at that parent, and reading
+            // only the node's own TRS would report a gaze the file never
+            // withheld.
             const GfVec3d target =
                 (NodeLocal(*lookAtNode) * lookAtAncestors).ExtractTranslation();
             outDocument->lookAt.constantTarget =

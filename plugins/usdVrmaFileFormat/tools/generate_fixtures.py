@@ -315,12 +315,18 @@ def _gazing_head_bytes() -> bytes:
 
 
 def _gazing_still_bytes() -> bytes:
-    """A look-at target the clip states once and never animates.
+    """A look-at target the clip states once, entirely through its parent.
 
-    glTF leaves an un-animated node at its own TRS, so a look-at node with a
-    translation and no channel names one target for the whole clip -- a value
-    the file really did give, authored as a default rather than as a run of
-    identical time samples.
+    glTF leaves an un-animated node where the file put it, so a look-at node
+    with no channel names one target for the whole clip -- a value the file
+    really did give, authored as a default rather than as a run of identical
+    time samples.
+
+    The target node here states **no transform of its own**: it sits under
+    `gaze_space`, and its position is the parent's. That is the case a reader
+    that only looked at the node's own TRS would report as "the file gave no
+    gaze", for a clip that placed one unambiguously -- so the assertion is that
+    a placement stated anywhere in the chain is a placement.
 
     The block also omits `offsetFromHeadBone`. Taking that as zero is a claim
     about the source rig -- that the gaze starts at the head bone itself -- so
@@ -349,17 +355,88 @@ def _gazing_still_bytes() -> bytes:
                         "chest": {"node": 2},
                     }
                 },
-                "lookAt": {"node": 3},
+                "lookAt": {"node": 4},
             }
         },
         "nodes": [
             {"name": "hips", "translation": [0.0, 1.0, 0.0], "children": [1]},
             {"name": "spine", "translation": [0.0, 0.5, 0.0], "children": [2]},
             {"name": "chest", "translation": [0.0, 0.5, 0.0]},
-            {"name": "lookAt_target", "translation": [0.2, 1.4, -2.0]},
+            {"name": "gaze_space", "translation": [0.2, 1.4, -2.0], "children": [4]},
+            {"name": "lookAt_target"},
         ],
         "animations": [{
             "name": "gazing_still",
+            "samplers": [
+                {"input": 0, "output": 1, "interpolation": "LINEAR"},
+            ],
+            "channels": [
+                {"sampler": 0, "target": {"node": 0, "path": "rotation"}},
+            ],
+        }],
+        "buffers": [{"byteLength": len(binary)}],
+        "bufferViews": [
+            {"buffer": 0, "byteOffset": times_offset, "byteLength": times_length},
+            {"buffer": 0, "byteOffset": hips_rotation_offset, "byteLength": hips_rotation_length},
+        ],
+        "accessors": [
+            {"bufferView": 0, "componentType": 5126, "count": 2, "type": "SCALAR", "max": [1.0], "min": [0.0]},
+            {"bufferView": 1, "componentType": 5126, "count": 2, "type": "VEC4"},
+        ],
+    }
+    return _glb(document, binary)
+
+
+def _gazing_refused_bytes() -> bytes:
+    """A look-at block whose node the reader cannot use.
+
+    `lookAt.node` here is `chest`, which the humanoid mapping already drives.
+    One node cannot be both a bone's transform and a target position in the
+    space that bone moves in, so no target is read.
+
+    What the file still said is the point of the fixture: it raised the subject
+    and it measured its rig's `offsetFromHeadBone`. Dropping the whole block
+    would leave a stage indistinguishable from a clip that never mentioned
+    look-at -- a different statement -- so the declaration survives and only the
+    target is missing, which is the state a clip declaring an unplaced node is
+    already in.
+    """
+    buffer = _Buffer()
+    append_floats = buffer.append_floats
+
+    times_offset, times_length = append_floats([0.0, 1.0])
+    hips_rotation_offset, hips_rotation_length = append_floats([
+        0.0, 0.0, 0.0, 1.0,
+        0.0, 0.70710677, 0.0, 0.70710677,
+    ])
+    binary = buffer.bytes()
+
+    document = {
+        "asset": {"version": "2.0", "generator": "usd-vrm-plugins fixture generator"},
+        "extensionsUsed": ["VRMC_vrm_animation"],
+        "extensions": {
+            "VRMC_vrm_animation": {
+                "specVersion": "1.0",
+                "humanoid": {
+                    "humanBones": {
+                        "hips": {"node": 0},
+                        "spine": {"node": 1},
+                        "chest": {"node": 2},
+                    }
+                },
+                "lookAt": {
+                    "node": 2,
+                    "offsetFromHeadBone": [0.0, 0.06, 0.0],
+                },
+            }
+        },
+        "nodes": [
+            {"name": "hips", "translation": [0.0, 1.0, 0.0], "children": [1]},
+            {"name": "spine", "translation": [0.0, 0.5, 0.0], "children": [2]},
+            {"name": "chest", "translation": [0.0, 0.5, 0.0]},
+        ],
+        "animations": [{
+            "name": "gazing_refused",
             "samplers": [
                 {"input": 0, "output": 1, "interpolation": "LINEAR"},
             ],
@@ -384,6 +461,7 @@ FIXTURES = {
     "canonical_walk.vrma": _canonical_walk_bytes,
     "expressive_face.vrma": _expressive_face_bytes,
     "gazing_head.vrma": _gazing_head_bytes,
+    "gazing_refused.vrma": _gazing_refused_bytes,
     "gazing_still.vrma": _gazing_still_bytes,
 }
 

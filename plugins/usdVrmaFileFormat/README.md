@@ -97,9 +97,18 @@ def Scope "LookAt"
   ancestor the clip itself animates is warned about (`VRMA114`) rather than
   evaluated, which would be a scene evaluation instead of a clip read.
 - **It does not invent a target.** A channel drives the node → time samples. No
-  channel, but the node states a transform → one default value. No channel and
-  no transform → **no `vrm:lookAtTarget` at all**, because a gaze the file never
+  channel, but the file *places* the node → one default value. No channel and no
+  placement → **no `vrm:lookAtTarget` at all**, because a gaze the file never
   gave is not a gaze at the origin. A clip with no `lookAt` block gets no prim.
+  Placed includes placed *by a parent*: a target node with no transform of its
+  own under a positioned parent is at that parent, and reading only the node's
+  own TRS would report a gaze the file never withheld.
+- **An unusable node costs the target, not the declaration.** A block naming a
+  node that does not exist (`VRMA110`) or one a bone or an expression already
+  drives (`VRMA111`) still raised the subject and still measured an offset, so
+  the prim and `vrm:lookAtOffsetFromHeadBone` are authored and no target is —
+  the same state as a declared-but-unplaced node. Dropping the block would make
+  the stage read as a clip that never mentioned look-at.
 - **A missing `offsetFromHeadBone` is warned about** (`VRMA112`) and read as
   zero: a gaze starting at the head bone itself is a claim about the source rig,
   not a neutral default.

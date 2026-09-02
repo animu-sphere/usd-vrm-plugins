@@ -1,7 +1,7 @@
 #usda 1.0
 (
     defaultPrim = "Animation"
-    doc = """Generated from Composed Stage of root layer C:\\dev\\usd-vrm-plugins\\plugins\\usdVrmaFileFormat\\tests\\fixtures\\gazing_still.vrma
+    doc = """Generated from Composed Stage of root layer C:\\dev\\usd-vrm-plugins\\plugins\\usdVrmaFileFormat\\tests\\fixtures\\gazing_refused.vrma
 """
     endTimeCode = 30
     framesPerSecond = 30
@@ -14,7 +14,7 @@
 def Scope "Animation" (
     customData = {
         dictionary vrma = {
-            string rawExtension = '{"specVersion":"1.0","humanoid":{"humanBones":{"hips":{"node":0},"spine":{"node":1},"chest":{"node":2}}},"lookAt":{"node":4}}'
+            string rawExtension = '{"specVersion":"1.0","humanoid":{"humanBones":{"hips":{"node":0},"spine":{"node":1},"chest":{"node":2}}},"lookAt":{"node":2,"offsetFromHeadBone":[0.0,0.06,0.0]}}'
             string rootMotionSource = "hipsTranslation"
             string sourceFormat = "VRMA"
             string specVersion = "1.0"
@@ -47,8 +47,7 @@ def Scope "Animation" (
 
     def Scope "LookAt"
     {
-        uniform float3 vrm:lookAtOffsetFromHeadBone = (0, 0, 0)
-        point3f vrm:lookAtTarget = (0.2, 1.4, -2)
+        uniform float3 vrm:lookAtOffsetFromHeadBone = (0, 0.06, 0)
     }
 }
 

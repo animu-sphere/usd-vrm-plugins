@@ -128,7 +128,11 @@ def _check_look_at_clip() -> None:
         "hips", "hips/spine", "hips/spine/chest"]
 
     # Stated once and never animated: a target the file really did give, as a
-    # default rather than a run of identical time samples.
+    # default rather than a run of identical time samples. Its node states no
+    # transform of its own and sits under a positioned parent, so this is also
+    # the case a reader that read only the node's own TRS would report as "the
+    # file gave no gaze" -- a placement stated anywhere in the chain is a
+    # placement.
     still = Usd.Stage.Open(str(FIXTURES / "gazing_still.vrma"))
     assert still, "could not open the still look-at VRMA fixture"
     still_look_at = still.GetPrimAtPath("/Animation/LookAt")
@@ -155,6 +159,21 @@ def _check_look_at_clip() -> None:
     assert Gf.IsClose(
         silent.GetAttribute("vrm:lookAtOffsetFromHeadBone").Get(),
         Gf.Vec3f(0.0, 0.06, 0.0), 1e-6)
+
+    # A node this reader cannot use costs the target and not the declaration.
+    # The file raised the subject and measured its rig's offset, and a stage
+    # that dropped the block would be indistinguishable from a clip that never
+    # mentioned look-at -- a different statement.
+    refused = Usd.Stage.Open(str(FIXTURES / "gazing_refused.vrma"))
+    assert refused, "could not open the refused look-at VRMA fixture"
+    refused_look_at = refused.GetPrimAtPath("/Animation/LookAt")
+    assert refused_look_at, (
+        "a look-at block naming an unusable node is still a declaration")
+    assert Gf.IsClose(
+        refused_look_at.GetAttribute("vrm:lookAtOffsetFromHeadBone").Get(),
+        Gf.Vec3f(0.0, 0.06, 0.0), 1e-6)
+    assert not refused_look_at.GetAttribute("vrm:lookAtTarget").IsValid(), (
+        "an unusable node names no target")
 
     # A clip that declares no look-at gets no prim at all, which is a third
     # thing again: the file never raised the subject.

@@ -38,10 +38,16 @@ Current schema contract version: **1**.
   own space would be a gaze at the floor. An ancestor the clip itself animates is
   warned about (`VRMA114`) instead, because evaluating it would be a scene
   evaluation at every instant rather than a clip read. **A clip says one of three
-  things**, authored apart: a channel drives the node (time samples), the node
-  states a transform nothing animates (one default, since glTF leaves it there),
-  or it states none — **no `vrm:lookAtTarget` at all**, because a gaze the file
-  never gave is not a gaze at the origin. And **the offset travels beside the
+  things**, authored apart: a channel drives the node (time samples), the file
+  *places* the node and nothing animates it (one default, since glTF leaves it
+  there), or nothing places it — **no `vrm:lookAtTarget` at all**, because a gaze
+  the file never gave is not a gaze at the origin. Placed includes placed by a
+  **parent**: a target node with no transform of its own under a positioned
+  parent is at that parent, and reading only the node's own TRS would report a
+  gaze the file never withheld. An **unusable** node (`VRMA110`, `VRMA111`) costs
+  the target and not the declaration — the block still raised the subject and
+  still measured an offset, and dropping it would leave a stage indistinguishable
+  from a clip that never mentioned look-at. And **the offset travels beside the
   clip, not on its samples**: `vrm:lookAtOffsetFromHeadBone` is a measurement of
   the rig the clip was authored on, so it is `uniform`, and a file that omits it
   is warned about (`VRMA112`) rather than quietly read as zero — that zero is a
@@ -49,9 +55,10 @@ Current schema contract version: **1**.
 
   New diagnostics: `VRMA110` (no usable look-at node), `VRMA111` (its node is
   already driven by a bone or an expression), `VRMA112`, `VRMA113` (a
-  non-translation channel on the look-at node) and `VRMA114`. Two fixtures,
-  `gazing_head.vrma` and `gazing_still.vrma`, cover the animated and the stated
-  cases; `expressive_face.vrma` gained the declared-and-silent one.
+  non-translation channel on the look-at node) and `VRMA114`. Three fixtures —
+  `gazing_head.vrma`, `gazing_still.vrma` and `gazing_refused.vrma` — cover the
+  animated case, the one placed only by a parent, and the one whose node is
+  already driven; `expressive_face.vrma` gained the declared-and-unplaced one.
 
 - **A clip's face reaches an avatar: `motion_retarget` authors the resolved
   expression weights.** The entry below produced values and nothing wrote them.
