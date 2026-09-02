@@ -416,6 +416,42 @@ TestExpressions()
 }
 
 void
+TestLookAtTarget()
+{
+    HumanoidPose watching;
+    watching.lookAtTarget = pxr::GfVec3f(0.0f, 1.5f, -2.0f);
+
+    HumanoidPose same = watching;
+    assert(same == watching && NearlyEqual(same, watching));
+
+    // Reporting no target is not looking at the origin. A pose that said
+    // nothing about the gaze and one that aimed it at (0, 0, 0) are different
+    // claims, so neither comparison may call them equal -- and the origin is
+    // the one point where a sentinel would have made them the same value.
+    HumanoidPose silent;
+    HumanoidPose origin;
+    origin.lookAtTarget = pxr::GfVec3f(0.0f);
+    std::string difference;
+    assert(origin != silent);
+    assert(!NearlyEqual(origin, silent, MotionTolerance{}, &difference));
+    assert(difference == "only one pose reports a look-at target");
+    assert(!NearlyEqual(silent, origin, MotionTolerance{}, &difference));
+    assert(difference == "only one pose reports a look-at target");
+
+    // A target is a point, so it takes the distance tolerance a root position
+    // does: six-decimal rounding is the same motion, a centimetre is not.
+    HumanoidPose quantum = watching;
+    quantum.lookAtTarget = pxr::GfVec3f(0.0f, Rounded(1.500001f), -2.0f);
+    assert(quantum != watching);
+    assert(NearlyEqual(quantum, watching));
+
+    HumanoidPose elsewhere = watching;
+    elsewhere.lookAtTarget = pxr::GfVec3f(0.0f, 1.51f, -2.0f);
+    assert(!NearlyEqual(elsewhere, watching, MotionTolerance{}, &difference));
+    assert(difference.rfind("look-at target differs by ", 0) == 0);
+}
+
+void
 TestExactImpliesNearly()
 {
     // The two comparisons read the same fields, so the strict one can never
@@ -445,6 +481,7 @@ main()
     TestDifferenceReport();
     TestAnimation();
     TestExpressions();
+    TestLookAtTarget();
     TestExactImpliesNearly();
     return 0;
 }

@@ -26,6 +26,12 @@ tests:
   smoke:
     - tests/fixtures/canonical_walk.vrma
     - tests/fixtures/expressive_face.vrma
+    - tests/fixtures/gazing_head.vrma
+    - tests/fixtures/gazing_refused.vrma
+    - tests/fixtures/gazing_still.vrma
   roundtrip:
     - tests/fixtures/canonical_walk.vrma
     - tests/fixtures/expressive_face.vrma
+    - tests/fixtures/gazing_head.vrma
+    - tests/fixtures/gazing_refused.vrma
+    - tests/fixtures/gazing_still.vrma

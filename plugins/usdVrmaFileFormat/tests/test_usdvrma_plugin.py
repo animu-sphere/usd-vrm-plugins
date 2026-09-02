@@ -89,6 +89,99 @@ def _check_expression_clip() -> None:
     assert abs(midway.GetImaginary()[1] - 0.3826834) < 1e-5, midway
 
 
+def _check_look_at_clip() -> None:
+    """The look-at half: where a clip says the character is looking.
+
+    A gaze is a target point here and never a pair of eye rotations -- which
+    joints a gaze moves, and through what curve, is the avatar's own look-at
+    configuration, and this clip binds to no avatar (motion policy 4.3).
+    """
+    stage = Usd.Stage.Open(str(FIXTURES / "gazing_head.vrma"))
+    assert stage, "could not open the look-at VRMA fixture"
+
+    look_at = stage.GetPrimAtPath("/Animation/LookAt")
+    assert look_at, "no /Animation/LookAt prim"
+
+    offset = look_at.GetAttribute("vrm:lookAtOffsetFromHeadBone")
+    assert offset.IsValid(), "the clip stated an offsetFromHeadBone"
+    # A measurement of the rig the clip was authored on: one value for the
+    # whole clip, so it is uniform and carries no time samples.
+    assert offset.GetVariability() == Sdf.VariabilityUniform
+    assert offset.GetTimeSamples() == []
+    assert Gf.IsClose(offset.Get(), Gf.Vec3f(0.0, 0.06, 0.0), 1e-6), offset.Get()
+
+    target = look_at.GetAttribute("vrm:lookAtTarget")
+    assert target.IsValid(), "the clip animates a look-at target"
+    assert target.GetTypeName() == Sdf.ValueTypeNames.Point3f, target.GetTypeName()
+    assert target.GetTimeSamples() == [0.0, 30.0], target.GetTimeSamples()
+    # The target node is parented under `gaze_space`, which states a
+    # translation of its own. Reading the position in the node's own space
+    # would put the gaze 1.5 m too low, so this is the composition assertion
+    # rather than a restatement of the channel.
+    assert Gf.IsClose(target.Get(0.0), Gf.Vec3f(0.0, 1.5, -2.0), 1e-6), target.Get(0.0)
+    assert Gf.IsClose(target.Get(30.0), Gf.Vec3f(1.0, 1.5, -2.0), 1e-6), target.Get(30.0)
+
+    # Nothing was applied to a pair of eyes: the clip's skeleton carries the
+    # bones the file mapped and no gaze-driven joint appeared beside them.
+    skeleton = UsdSkel.Skeleton(stage.GetPrimAtPath("/Animation/HumanoidSkeleton"))
+    assert list(skeleton.GetJointsAttr().Get()) == [
+        "hips", "hips/spine", "hips/spine/chest"]
+
+    # Stated once and never animated: a target the file really did give, as a
+    # default rather than a run of identical time samples. Its node states no
+    # transform of its own and sits under a positioned parent, so this is also
+    # the case a reader that read only the node's own TRS would report as "the
+    # file gave no gaze" -- a placement stated anywhere in the chain is a
+    # placement.
+    still = Usd.Stage.Open(str(FIXTURES / "gazing_still.vrma"))
+    assert still, "could not open the still look-at VRMA fixture"
+    still_look_at = still.GetPrimAtPath("/Animation/LookAt")
+    assert still_look_at, "no /Animation/LookAt prim"
+    still_target = still_look_at.GetAttribute("vrm:lookAtTarget")
+    assert still_target.IsValid()
+    assert still_target.GetTimeSamples() == [], still_target.GetTimeSamples()
+    assert Gf.IsClose(still_target.Get(), Gf.Vec3f(0.2, 1.4, -2.0), 1e-6), \
+        still_target.Get()
+    # The block omitted `offsetFromHeadBone`. Zero is the reader's stated
+    # fallback -- a gaze starting at the head bone itself -- and it is authored
+    # so a consumer reads the same value the warning describes.
+    still_offset = still_look_at.GetAttribute("vrm:lookAtOffsetFromHeadBone")
+    assert Gf.IsClose(still_offset.Get(), Gf.Vec3f(0.0), 1e-6), still_offset.Get()
+
+    # Declared, and the file gave no position anywhere: no channel, and no
+    # transform on the node to read one out of. That is not a gaze at the
+    # origin, so there is no target here to mistake for one.
+    faces = Usd.Stage.Open(str(FIXTURES / "expressive_face.vrma"))
+    silent = faces.GetPrimAtPath("/Animation/LookAt")
+    assert silent, "a declared look-at block is still a declaration"
+    assert not silent.GetAttribute("vrm:lookAtTarget").IsValid(), (
+        "a target the clip never states must not be authored at the origin")
+    assert Gf.IsClose(
+        silent.GetAttribute("vrm:lookAtOffsetFromHeadBone").Get(),
+        Gf.Vec3f(0.0, 0.06, 0.0), 1e-6)
+
+    # A node this reader cannot use costs the target and not the declaration.
+    # The file raised the subject and measured its rig's offset, and a stage
+    # that dropped the block would be indistinguishable from a clip that never
+    # mentioned look-at -- a different statement.
+    refused = Usd.Stage.Open(str(FIXTURES / "gazing_refused.vrma"))
+    assert refused, "could not open the refused look-at VRMA fixture"
+    refused_look_at = refused.GetPrimAtPath("/Animation/LookAt")
+    assert refused_look_at, (
+        "a look-at block naming an unusable node is still a declaration")
+    assert Gf.IsClose(
+        refused_look_at.GetAttribute("vrm:lookAtOffsetFromHeadBone").Get(),
+        Gf.Vec3f(0.0, 0.06, 0.0), 1e-6)
+    assert not refused_look_at.GetAttribute("vrm:lookAtTarget").IsValid(), (
+        "an unusable node names no target")
+
+    # A clip that declares no look-at gets no prim at all, which is a third
+    # thing again: the file never raised the subject.
+    walk = Usd.Stage.Open(str(FIXTURES / "canonical_walk.vrma"))
+    assert not walk.GetPrimAtPath("/Animation/LookAt"), (
+        "a clip with no lookAt block must author no LookAt prim")
+
+
 def main() -> int:
     plugin_path = os.environ.get("PXR_PLUGINPATH_NAME")
     if plugin_path:
@@ -170,6 +263,7 @@ def main() -> int:
     assert abs(hips_rotation.GetImaginary()[1] - 0.70710677) < 1e-5, hips_rotation
 
     _check_expression_clip()
+    _check_look_at_clip()
 
     print("usdVrmaFileFormat smoke tests: OK")
     return 0

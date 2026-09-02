@@ -172,6 +172,49 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document,
         }
     }
 
+    // Look-at is one target over time and the offset the source rig measured,
+    // and nothing here is applied to a pair of eyes: which joints a gaze moves,
+    // and through what curve, is the *avatar's* look-at configuration, and this
+    // clip binds to no avatar (motion policy 4.3). `LookAtEvaluate` is the layer
+    // that owns that, exactly as `ExpressionResolve` owns expanding a weight.
+    //
+    // Namespaced attributes on a plain prim, like the expression half: this is
+    // what a `VrmAnimationLookAtAPI` would carry anyway, so applying one later
+    // moves no path and renames no attribute (motion policy 4.1).
+    if (document.lookAt.present) {
+        const UsdPrim prim = UsdGeomScope::Define(
+            stage, animationPath.AppendChild(TfToken("LookAt"))).GetPrim();
+        prim.CreateAttribute(TfToken("vrm:lookAtOffsetFromHeadBone"),
+                             SdfValueTypeNames->Float3, false,
+                             SdfVariabilityUniform)
+            .Set(document.lookAt.offsetFromHeadBone);
+
+        // A point rather than a vector: it is a place in the clip's space, so
+        // it translates with whatever the clip is placed into, and `point3f`
+        // is what says so to every consumer that asks the type.
+        if (document.lookAt.constantTarget) {
+            // Stated once by the node and never animated -- authored as a
+            // default, because a run of identical time samples would claim the
+            // file keyed something it did not.
+            prim.CreateAttribute(TfToken("vrm:lookAtTarget"),
+                                 SdfValueTypeNames->Point3f, false)
+                .Set(*document.lookAt.constantTarget);
+        } else if (document.lookAt.isAnimated) {
+            UsdAttribute target = prim.CreateAttribute(
+                TfToken("vrm:lookAtTarget"), SdfValueTypeNames->Point3f, false);
+            for (const motion::HumanoidPose& pose : document.animation.samples) {
+                if (pose.lookAtTarget) {
+                    target.Set(*pose.lookAtTarget,
+                               pose.timestamp * document.animation.nominalFrameRate);
+                }
+            }
+        }
+        // Declared with no channel and no transform to read a position out of:
+        // the attribute stays unauthored rather than being written at the
+        // origin. A gaze the file never gave is not a gaze at (0, 0, 0), the
+        // same distinction an unreported expression weight is under.
+    }
+
     return stage->GetRootLayer()->ExportToString(outUsda);
 }
 

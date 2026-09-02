@@ -1,4 +1,4 @@
-!motion-capture-trace 2
+!motion-capture-trace 3
 provider example.synthetic
 protocol replay
 sourceId walk-rootvel-01

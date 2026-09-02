@@ -50,12 +50,44 @@ struct VrmaExpression {
     std::optional<float> constantWeight;
 };
 
+// The look-at block a clip declares, when it declares one.
+//
+// VRMA points look-at at a node whose position is the point the character
+// watches, and states the offset from the source rig's head bone to where that
+// gaze starts. The two halves travel differently and that is the decision here:
+// the target is a value of an *instant*, so it rides on the poses beside the
+// expression weights, while the offset is a measurement of the rig the clip was
+// authored on -- it cannot vary within a clip, and paying for it per sample
+// would buy nothing (MOTION_CONTRACT.md, "Look-at semantics").
+//
+// A clip says one of the same three things a declared expression can say: a
+// channel drives the node, or the node states a position nothing animates --
+// one target for the whole clip -- or it states none, which is a gaze the file
+// never gave and not a gaze at the origin.
+struct VrmaLookAt {
+    bool present = false;
+
+    // Source-rig measurement, in the clip's own space. Zero when the file
+    // stated none, with a warning: an absent offset reads as a gaze starting at
+    // the head bone itself, which is a claim worth making visible.
+    GfVec3f offsetFromHeadBone = GfVec3f(0.0f);
+
+    // Whether any glTF channel drives the look-at node.
+    bool isAnimated = false;
+
+    // The target the node states for the whole clip, when nothing animates it.
+    // Empty when a channel drives the node, and empty when the node authored no
+    // transform for a position to be read out of.
+    std::optional<GfVec3f> constantTarget;
+};
+
 struct VrmaCanonicalDocument {
     std::string specVersion;
     std::string clipName;
     std::string rawExtensionJson;
     std::vector<VrmaJoint> joints;
     std::vector<VrmaExpression> expressions;
+    VrmaLookAt lookAt;
     motion::HumanoidAnimation animation;
     std::vector<std::string> warnings;
 };

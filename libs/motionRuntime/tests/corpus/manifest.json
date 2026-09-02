@@ -3,7 +3,7 @@
   "description": "Machine-readable provenance for the Motion Phase D capture corpus. Every trace is synthesised by libs/motionRuntime/tools/generate_traces.py from closed-form maths - there is no third-party capture data here and therefore no redistribution gate. Field values are measured from the committed files, never guessed.",
   "format": {
     "name": "motion-capture-trace",
-    "version": 2,
+    "version": 3,
     "spec": "libs/motionRuntime/include/motionRuntime/CaptureTrace.h"
   },
   "provenance": {
@@ -64,7 +64,7 @@
         "happy",
         "studio.browRaise"
       ],
-      "sha256": "ce3ab79218349fb573bf5319c8be48189697f1db68f0250647ebce9ff085aea3",
+      "sha256": "d8bdbb506d6ddc2a1a620865d29b4f9f9a31862969af3896595613874886cade",
       "bytes": 53508
     },
     {
@@ -95,7 +95,7 @@
         "spine"
       ],
       "carriesConfidence": false,
-      "sha256": "4053e99deef638735cdee127d57b8c7deee9a400ae1791dd1add94dda6fcec91",
+      "sha256": "a406b8fe7f243d90606fc5a831fd024b7afdd20c8191afc6ea5aeb18bd6cef56",
       "bytes": 31850,
       "observedExpressions": 0,
       "expressions": []
@@ -137,7 +137,7 @@
         "spine"
       ],
       "carriesConfidence": false,
-      "sha256": "ece771dd75b8bd312bc280372acc30c78983ff1f55d200221a2cadfb461bfd05",
+      "sha256": "b461d9ed8b75b4b7450bb057981d91424f1690566a9f238ff190472e9d4641fe",
       "bytes": 68685,
       "observedExpressions": 0,
       "expressions": []
@@ -178,7 +178,7 @@
         "spine"
       ],
       "carriesConfidence": false,
-      "sha256": "125e9998fc88887c331ff4d280cef30528fa1ac3cc653d79be039cc84f14c8c4",
+      "sha256": "c671602fa625aeb10957e7297a56728f8e7d8f323b72b6ae3199dcf66f9c7aa7",
       "bytes": 65564,
       "observedExpressions": 0,
       "expressions": []
@@ -220,7 +220,7 @@
         "spine"
       ],
       "carriesConfidence": false,
-      "sha256": "b11a42fb23acc3c5b0ab3a3d93f65f7083357d686313bbc293b2acba77c2f8d1",
+      "sha256": "188531bc54fcb24372e00a5fc8b22784919401a231f6c3085bba296344eb4b0d",
       "bytes": 54000,
       "observedExpressions": 0,
       "expressions": []
@@ -261,7 +261,7 @@
         "spine"
       ],
       "carriesConfidence": true,
-      "sha256": "dc73ef334d01e0d7e0adfca52ef2a6693f7dfb19b017e24aa558c5133012d6c0",
+      "sha256": "d70eddfd8cd826b566843c9a1afda63eab698f954090eac9eb4af8da7251fd5d",
       "bytes": 80219,
       "observedExpressions": 0,
       "expressions": []
@@ -303,7 +303,7 @@
         "spine"
       ],
       "carriesConfidence": false,
-      "sha256": "02bdc1aac0f0619bf0623db8f1f2b6509009e8f747550915657478d96b8c5287",
+      "sha256": "ec2dbae6efd48421d5ffa0588a4c03c8be3bfa7e514e0a1b7666737a4a856ef4",
       "bytes": 53378,
       "observedExpressions": 0,
       "expressions": []

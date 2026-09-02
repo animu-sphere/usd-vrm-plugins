@@ -7,13 +7,15 @@
 /Animation
 ├─ HumanoidSkeleton  UsdSkelSkeleton using VRM semantic joint paths
 ├─ BodyAnimation     UsdSkelAnimation, bound to HumanoidSkeleton
-└─ Expressions       one prim per expression the clip declares
+├─ Expressions       one prim per expression the clip declares
+└─ LookAt            the target the clip watches, when it declares one
 ```
 
 Version 0.4.0 implements rotation tracks and the hips translation track from
 the first glTF animation. It preserves the source extension JSON as provenance,
 uses 30 time codes per second, and keeps the clip independent of any target
-VRM. Look-at animation, scale animation, retargeting, live capture, and
+VRM. Look-at animation reads the target the clip names; *applying* a gaze to a
+rig's eyes does not live here. Scale animation, retargeting, live capture, and
 OpenExec are intentionally outside this bundle.
 
 ## Expressions
@@ -63,12 +65,58 @@ animation schemas belong in `vrmSchema` is still open
 `VrmAnimationExpressionAPI` can later be applied to exactly these prims with
 these attribute names without moving anything.
 
-**The prim name is not yet a join key.** The layout mirrors the importer's
+**The prim name is not the join key.** The layout mirrors the importer's
 `/Asset/rig/Expressions/<name>`, but the importer sanitizes names through its
 own private table and this bundle cannot link it, so a name outside ASCII lands
 on a different prim name on each side. `vrm:expressionName` is the key that
-survives that — and the avatar side does not author it yet, which is the first
-thing `ExpressionResolve` has to fix.
+survives that, and the avatar side has authored it since 2026-09-01 — so
+`ExpressionResolve` joins on the attribute and never on a prim name.
+
+## Look-at
+
+VRMA declares `lookAt` once: a node whose **position** is what the character
+watches, and the offset from the source rig's head bone to where that gaze
+starts. It becomes one prim:
+
+```text
+def Scope "LookAt"
+{
+    uniform float3 vrm:lookAtOffsetFromHeadBone = (0, 0.06, 0)
+    point3f vrm:lookAtTarget.timeSamples = { 0: (0, 1.5, -2), 30: (1, 1.5, -2) }
+}
+```
+
+- **A target is a place, not a gaze.** Which joints a look-at moves, and through
+  what curve, is the *avatar's* own configuration — its `lookAt` type, its eye
+  joints and its range maps — and a clip bound to no avatar cannot know them. So
+  nothing here is applied to a pair of eyes; `LookAtEvaluate` is the consumer
+  step, exactly as `ExpressionResolve` is for a weight
+  ([motion policy](../../docs/design/MOTION_ARCHITECTURE_POLICY.md) §4.3).
+- **The target is placed where the file put it.** A look-at node may be
+  parented, so the ancestors' stated transforms are composed into the target; an
+  ancestor the clip itself animates is warned about (`VRMA114`) rather than
+  evaluated, which would be a scene evaluation instead of a clip read.
+- **It does not invent a target.** A channel drives the node → time samples. No
+  channel, but the file *places* the node → one default value. No channel and no
+  placement → **no `vrm:lookAtTarget` at all**, because a gaze the file never
+  gave is not a gaze at the origin. A clip with no `lookAt` block gets no prim.
+  Placed includes placed *by a parent*: a target node with no transform of its
+  own under a positioned parent is at that parent, and reading only the node's
+  own TRS would report a gaze the file never withheld.
+- **An unusable node costs the target, not the declaration.** A block naming a
+  node that does not exist (`VRMA110`) or one a bone or an expression already
+  drives (`VRMA111`) still raised the subject and still measured an offset, so
+  the prim and `vrm:lookAtOffsetFromHeadBone` are authored and no target is —
+  the same state as a declared-but-unplaced node. Dropping the block would make
+  the stage read as a clip that never mentioned look-at.
+- **A missing `offsetFromHeadBone` is warned about** (`VRMA112`) and read as
+  zero: a gaze starting at the head bone itself is a claim about the source rig,
+  not a neutral default.
+
+The offset is `uniform` because it is a measurement of the rig the clip was
+authored on and cannot vary within the clip; the target is `point3f` because it
+is a place in the clip's space
+([MOTION_CONTRACT.md](../../docs/design/MOTION_CONTRACT.md#look-at-semantics-after-v080)).
 
 `BodyAnimation` does author a constant identity `scales`. Scale is not
 animated, but `UsdSkelAnimation.scales` has no schema fallback and UsdSkel
