@@ -31,6 +31,13 @@ struct Options
     std::string rootJointToken;
 
     double resampleRate = 0.0;
+
+    // Resolve the clip's expression weights onto the avatar's binds and author
+    // the result. On by default, because a rig and a clip that both carry
+    // expressions mean the face to move; --no-expressions bakes the body alone,
+    // which is what a pipeline that drives the face from elsewhere wants.
+    bool expressions = true;
+
     bool quiet = false;
 };
 

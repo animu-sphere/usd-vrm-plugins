@@ -86,6 +86,9 @@ GetUsage()
         "  --animation-name NAME  Prim name for the authored UsdSkelAnimation\n"
         "                         (default RetargetedAnimation).\n"
         "  --resample HZ          Resample onto a uniform timeline first.\n"
+        "  --no-expressions       Bake the body only; do not resolve the\n"
+        "                         clip's expression weights onto the avatar's\n"
+        "                         blend shapes.\n"
         "  --quiet                Suppress diagnostics on stderr.\n"
         "  -h, --help             Show this message.\n";
 }
@@ -171,6 +174,8 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
                 *error = "--resample expects a positive rate";
                 return false;
             }
+        } else if (argument == "--no-expressions") {
+            options->expressions = false;
         } else if (argument == "--quiet") {
             options->quiet = true;
         } else {

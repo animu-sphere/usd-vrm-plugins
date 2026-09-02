@@ -252,10 +252,26 @@ back out of a trace — v0.7.0 closed the clip half. They do not yet reach a
   assumed** — the first suite passed with that line deleted from the resolve
   path, because only the scalar query covered it, which is the false green the
   test now closes.
-- ⬜ **`motion_retarget` authors no `blendShapeWeights`**, and no
-  `skel:blendShapes` / `skel:blendShapeTargets` binding on its output. This is
-  what is left of the expression half: the resolve above produces the values and
-  nothing writes them onto a stage, so the tool's output is unchanged by it.
+- ✅ **`motion_retarget` authors the resolved weights** *(2026-09-01)*. The
+  resolve above produced values nothing wrote; the bake tool now reads the
+  avatar's expression binds off the stage, resolves the clip's named weights
+  against them, and authors `blendShapes` plus `blendShapeWeights` on the same
+  `SkelAnimation` it already binds to the rig. **No `skel:blendShapes` or
+  `skel:blendShapeTargets` is authored, and that is the answer rather than the
+  gap**: UsdSkel carries the weights on the animation and hands each skinned
+  prim the subset its own binding names, so authoring one would copy a binding
+  the referenced avatar already owns — the same reason the rig itself is
+  referenced and never copied. What that join costs is a translation this layer
+  has to perform: an expression binds a blend-shape *prim*, an animation names a
+  *token*, and the token is the one the mesh binding it chose — so a blend shape
+  no mesh binds resolves to a weight that cannot be authored at all, and is
+  reported. Three further decisions are measured by the new
+  `expressive_{avatar,clip}` fixtures rather than asserted: an expression key is
+  a sample of the same performance, so a blink between two body keys adds that
+  instant to the bake; a weight the clip never states holds rather than falling
+  to zero, which a value block is the one way to reach and the test uses; and a
+  material colour is resolved and **not** authored, because a colour slot is a
+  material input and that layer owns the vocabulary.
 - ⬜ **Look-at is untouched**, in every layer.
 
 ## Next: the recorded-source and producer-contract tracks ⬜

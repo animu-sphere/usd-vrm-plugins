@@ -164,11 +164,14 @@ that a second reader can be added without changing anything above it.
 
 Not yet in that layer: look-at animation, motion generation, OpenExec
 evaluation, blending beyond the primitive, IK, and foot locking. Expression
-animation is read from a `.vrma` clip, carried on the pose, and — unreleased,
-since 2026-09-01 — *resolved* onto a particular avatar's morph-target and
-material-colour binds by `vrmRetarget`'s `ExpressionResolver`. What no tool does
-yet is author the result: nothing writes `blendShapeWeights` onto a stage, so
-the resolve is a library step rather than an end-to-end capability. See
+animation is read from a `.vrma` clip, carried on the pose, *resolved* onto a
+particular avatar's morph-target and material-colour binds by `vrmRetarget`'s
+`ExpressionResolver`, and — unreleased, since 2026-09-01 — authored:
+`motion_retarget` writes `blendShapes` and `blendShapeWeights` onto the
+`SkelAnimation` it binds to the rig, so a clip's face reaches an avatar end to
+end. The morph-target half does; **material colours are resolved and not
+written**, because a colour slot is a material input and that vocabulary belongs
+to the material layer. See
 [MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md) and the
 Motion Phase ladder in the [backlog](../roadmap/backlog.md).
 

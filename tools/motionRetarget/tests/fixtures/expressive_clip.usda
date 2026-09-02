@@ -1,0 +1,115 @@
+#usda 1.0
+(
+    doc = """The design triplet's walk with a face on it.
+
+    The body is `canonical_walk.usda` unchanged -- two keys, at 0 and 30 -- so
+    what this fixture varies against it is the expression half alone. The
+    expression keys deliberately do not line up with the body's: `blink` keys at
+    15, where no joint does, because expressions live on the pose and a blink
+    between two body keys has to have somewhere to say so.
+
+    Five names, one case each:
+
+      happy      keyed, and its last key is 1.5 -- out of range on purpose, so
+                 the clamp the reader deliberately does not apply is visible in
+                 the layer that does apply it
+      blink      keyed at 0 and 15 only, so its value at 30 is the held 1
+      surprised  declared and never given a weight: not a reported zero
+      angry      one constant weight, on the expression that drives a colour
+      ghost      drives a blend shape the avatar's meshes do not bind
+      myWink     an expression no avatar in this test declares"""
+    defaultPrim = "Animation"
+    startTimeCode = 0
+    endTimeCode = 30
+    timeCodesPerSecond = 30
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Scope "Animation" (
+    customData = {
+        dictionary vrma = {
+            string sourceFormat = "VRMA"
+            string specVersion = "1.0"
+            string rootMotionSource = "hipsTranslation"
+        }
+    }
+)
+{
+    def Skeleton "HumanoidSkeleton" (
+        apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        uniform token[] joints = ["hips", "hips/spine", "hips/spine/chest"]
+        uniform matrix4d[] restTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.5, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.5, 0, 1))]
+        rel skel:animationSource = </Animation/BodyAnimation>
+    }
+
+    def SkelAnimation "BodyAnimation"
+    {
+        uniform token[] joints = ["hips", "hips/spine", "hips/spine/chest"]
+        quatf[] rotations.timeSamples = {
+            0: [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0)],
+            30: [(0.70710677, 0, 0.70710677, 0), (1, 0, 0, 0), (0.70710677, 0.70710677, 0, 0)],
+        }
+        float3[] translations.timeSamples = {
+            0: [(0, 1, 0), (0, 0.5, 0), (0, 0.5, 0)],
+            30: [(0, 1, 0.5), (0, 0.5, 0), (0, 0.5, 0)],
+        }
+        half3[] scales = [(1, 1, 1), (1, 1, 1), (1, 1, 1)]
+    }
+
+    def Scope "Expressions"
+    {
+        def Scope "happy"
+        {
+            uniform token vrm:expressionName = "happy"
+            uniform token vrm:expressionType = "preset"
+            float vrm:expressionWeight.timeSamples = {
+                0: 0,
+                15: 0.5,
+                30: 1.5,
+            }
+        }
+
+        def Scope "blink"
+        {
+            uniform token vrm:expressionName = "blink"
+            uniform token vrm:expressionType = "preset"
+            float vrm:expressionWeight.timeSamples = {
+                0: 0,
+                15: 1,
+            }
+        }
+
+        def Scope "surprised"
+        {
+            uniform token vrm:expressionName = "surprised"
+            uniform token vrm:expressionType = "preset"
+        }
+
+        def Scope "angry"
+        {
+            uniform token vrm:expressionName = "angry"
+            uniform token vrm:expressionType = "preset"
+            float vrm:expressionWeight = 0.25
+        }
+
+        def Scope "ghost"
+        {
+            uniform token vrm:expressionName = "ghost"
+            uniform token vrm:expressionType = "custom"
+            float vrm:expressionWeight = 1
+        }
+
+        def Scope "myWink"
+        {
+            uniform token vrm:expressionName = "myWink"
+            uniform token vrm:expressionType = "custom"
+            float vrm:expressionWeight = 0.75
+        }
+    }
+}

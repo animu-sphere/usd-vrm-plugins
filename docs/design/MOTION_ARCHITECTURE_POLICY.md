@@ -682,7 +682,11 @@ blend-shape weights and material colours for that rig alone. It takes plain
 values like every other piece here — the caller reads the binds off the stage —
 so `execVrm`'s `Vrm.ExpressionResolve` is a wrapper over it rather than a second
 implementation, which is the same relationship §11.2 states for the retarget
-node. Authoring the result onto a stage is not part of it and is still open.
+node. Authoring the result onto a stage is not part of it and belongs to the
+bake tool, which does it as of 2026-09-01: `motion_retarget` reads the binds,
+hands them here, and authors what comes back as `blendShapes` and
+`blendShapeWeights` on the animation it binds to the rig — the morph-target half
+only, since a material colour is a material input rather than a skeletal one.
 
 Dependencies:
 

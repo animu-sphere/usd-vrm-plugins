@@ -28,6 +28,7 @@ add_test(
             "${CMAKE_CURRENT_SOURCE_DIR}/test_motion_retarget.py"
             --tool "$<TARGET_FILE:motion_retarget>"
             --fixtures "${_repo_root}/docs/design/fixtures/motion"
+            --tool-fixtures "${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
             --humanoid-map
                 "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/design_avatar_humanoid_map.json")
 set_tests_properties(motion_retarget_design_triplet PROPERTIES

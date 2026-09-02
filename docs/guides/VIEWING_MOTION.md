@@ -139,6 +139,33 @@ the character stands still. Two ways to land there:
 - **A `SkelAnimation` with no `scales`.** UsdSkel fetches translations,
   rotations and scales as a unit, and `scales` has no schema fallback.
 
+## Checking that the face animates too
+
+When the clip carries expression weights and the avatar declares the binds those
+names mean, the same bake authors `blendShapes` and `blendShapeWeights` beside
+the joints. The same query answers whether they reach the meshes:
+
+```python
+query = cache.GetSkelQuery(binding.GetSkeleton())
+print(query.GetAnimQuery().GetBlendShapeOrder())
+print(query.GetAnimQuery().ComputeBlendShapeWeights(30))
+
+for target in binding.GetSkinningTargets():
+    if target.HasBlendShapes():
+        print(target.GetPrim().GetPath(), bool(target.GetBlendShapeMapper()))
+```
+
+An empty order means the bake resolved nothing — run it without `--quiet` and
+read the warnings, which name every expression the clip animates and this avatar
+does not declare. A mapper that is false means the animation's tokens are not
+the ones that mesh binds: a blend shape is named by the token its own mesh chose
+for it, so an avatar whose meshes bind no blend shape at all has nothing an
+animation can drive, and `motion_retarget` says so per blend shape.
+
+Material colours are a different story: the bake resolves them, reports how many
+slots the clip drives, and deliberately authors none — a colour slot is a
+material input, not a skeletal one.
+
 ## Checking that it is the right size
 
 ```python
