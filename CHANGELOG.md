@@ -15,6 +15,38 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **A clip's face reaches an avatar: `motion_retarget` authors the resolved
+  expression weights.** The entry below produced values and nothing wrote them.
+  The bake tool now reads the avatar's expression binds and its meshes'
+  blend-shape bindings off the stage, resolves the clip's named weights against
+  them, and authors `blendShapes` plus `blendShapeWeights` on the same
+  `UsdSkelAnimation` it already binds to the rig.
+
+  **Nothing is authored on the meshes, and that is the answer rather than the
+  omission**: UsdSkel carries blend-shape weights on the animation the skeleton
+  is bound to and hands each skinned prim the subset its own `skel:blendShapes`
+  names, so authoring a binding would copy one the referenced avatar already
+  owns — the same reason the rig itself is referenced and never copied. What the
+  join does cost is a translation: an expression binds a blend-shape **prim**
+  and an animation names the **token** the mesh binding it chose, so a blend
+  shape no mesh binds resolves to a weight that cannot be authored at all, and
+  is reported rather than dropped.
+
+  Three decisions are the bake rather than plumbing, and each is measured by a
+  fixture instead of asserted. **An expression key is a sample**: expressions
+  live on the pose, so a blink keyed between two body keys adds that instant to
+  the bake and the joints are read there too — which is also why `--resample`
+  now resamples once, ahead of both halves, rather than moving the body onto a
+  uniform timeline and leaving the face on the clip's keys. **A weight the clip
+  never states holds**: a `.vrma` prim that declares a name and authors no
+  weight is not a zero, and a sample that says nothing — a USD value block, the
+  one way a clip can go quiet mid-track — leaves the previous weight standing
+  rather than ending a blink the clip never asked to end. And **a material
+  colour is resolved and not written**, because a colour slot is a material
+  input and that layer owns what an MToon or a `UsdPreviewSurface` calls it; the
+  count is reported so an operator sees the boundary instead of a silent
+  omission. `--no-expressions` bakes the body alone.
+
 - **`ExpressionResolve`: a named weight becomes the binds of one particular
   avatar.** Both sides have carried the join key since the entry below; nothing
   joined on it. `vrmRetarget` gains `ExpressionResolver`, which takes the
@@ -47,9 +79,8 @@ Current schema contract version: **1**.
   path, no material, or no colour slot — is skipped with a warning rather than
   accumulated under an empty key.
 
-  What is left of Motion Phase G's expression half is the authoring: nothing
-  writes `blendShapeWeights` onto a stage yet, so `motion_retarget`'s output is
-  unchanged by this.
+  Resolving authors nothing by itself — the values it produces reach a stage
+  through `motion_retarget`, which is the entry above.
 
 - **`vrm:expressionName` on the avatar side, which is the key an expression
   actually joins on.** A `.vrma` clip has authored the verbatim expression name

@@ -4,6 +4,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/vec3h.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/js/json.h"
 #include "pxr/base/js/value.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -130,6 +131,185 @@ ReadSkeletonRest(const UsdSkelSkeleton& skeleton, VtTokenArray* joints,
         restTransforms->assign(joints->size(), GfMatrix4d(1.0));
     }
     return true;
+}
+
+// Both sides of an expression spell the same three tokens: the avatar declares
+// the binds under them and the clip authors the weight. The join key is
+// `vrm:expressionName` and never a prim name — the two file formats sanitize
+// with their own private tables, so a Japanese name lands on a hashed fallback
+// on one side and a valid-identifier result on the other.
+const TfToken kExpressionName("vrm:expressionName");
+const TfToken kExpressionWeight("vrm:expressionWeight");
+const TfToken kIsBinary("vrm:isBinary");
+const TfToken kMorphTargets("vrm:morphTargets");
+const TfToken kMorphTargetWeights("vrm:morphTargetWeights");
+const TfToken kMaterialColorTargets("vrm:materialColorTargets");
+const TfToken kMaterialColorTypes("vrm:materialColorTypes");
+const TfToken kMaterialColorValues("vrm:materialColorValues");
+
+// The verbatim expression name a prim answers to, or an empty string when it
+// declares none. An expression with no name is not an expression this layer can
+// join anything to, so it is reported rather than resolved against its prim
+// name — which would be a key that agrees with the other side by luck.
+std::string
+ReadExpressionName(const UsdPrim& prim)
+{
+    const UsdAttribute attribute = prim.GetAttribute(kExpressionName);
+    TfToken name;
+    if (!attribute || !attribute.Get(&name)) {
+        return std::string();
+    }
+    return name.GetString();
+}
+
+// Reads one `/Asset/rig/Expressions/<name>` prim into the value form
+// `vrmRetarget` resolves against: what the avatar says this expression does to
+// its own meshes and materials, with nothing evaluated.
+vrmRetarget::ExpressionDefinition
+ReadExpressionDefinition(const UsdPrim& prim, const std::string& name,
+                         std::vector<std::string>* warnings)
+{
+    vrmRetarget::ExpressionDefinition definition;
+    definition.name = name;
+
+    const UsdAttribute binaryAttr = prim.GetAttribute(kIsBinary);
+    bool isBinary = false;
+    if (binaryAttr && binaryAttr.Get(&isBinary)) {
+        definition.isBinary = isBinary;
+    }
+
+    SdfPathVector morphTargets;
+    if (const UsdRelationship rel = prim.GetRelationship(kMorphTargets)) {
+        rel.GetTargets(&morphTargets);
+    }
+    VtFloatArray morphWeights;
+    if (const UsdAttribute attribute = prim.GetAttribute(kMorphTargetWeights)) {
+        attribute.Get(&morphWeights);
+    }
+    // The schema calls the arrays parallel; a stage where they are not is
+    // authored data this layer cannot repair. Falling back to the conventional
+    // full weight keeps the bind rather than dropping the target silently, and
+    // says which prim to look at.
+    if (!morphTargets.empty() && morphWeights.size() != morphTargets.size()) {
+        warnings->push_back(
+            "expression <" + prim.GetPath().GetString() + "> binds "
+            + std::to_string(morphTargets.size()) + " morph target(s) and "
+            + std::to_string(morphWeights.size())
+            + " weight(s); the missing weights are taken as 1");
+    }
+    for (std::size_t i = 0; i < morphTargets.size(); ++i) {
+        vrmRetarget::MorphTargetBind bind;
+        bind.target = morphTargets[i].GetString();
+        bind.weight = i < morphWeights.size() ? morphWeights[i] : 1.0f;
+        definition.morphTargets.push_back(std::move(bind));
+    }
+
+    SdfPathVector colorTargets;
+    if (const UsdRelationship rel = prim.GetRelationship(kMaterialColorTargets)) {
+        rel.GetTargets(&colorTargets);
+    }
+    VtTokenArray colorTypes;
+    if (const UsdAttribute attribute = prim.GetAttribute(kMaterialColorTypes)) {
+        attribute.Get(&colorTypes);
+    }
+    VtVec4fArray colorValues;
+    if (const UsdAttribute attribute = prim.GetAttribute(kMaterialColorValues)) {
+        attribute.Get(&colorValues);
+    }
+    if (!colorTargets.empty()
+        && (colorTypes.size() != colorTargets.size()
+            || colorValues.size() != colorTargets.size())) {
+        warnings->push_back(
+            "expression <" + prim.GetPath().GetString() + "> binds "
+            + std::to_string(colorTargets.size())
+            + " material colour(s) with " + std::to_string(colorTypes.size())
+            + " slot(s) and " + std::to_string(colorValues.size())
+            + " value(s); the binds that are short of either are skipped");
+    }
+    for (std::size_t i = 0; i < colorTargets.size(); ++i) {
+        // Skipped, as the warning says, and not completed from thin air. A
+        // slot is half the key, so inventing one would merge two binds of a
+        // material under a single accumulator; and a value invented for a
+        // colour is a colour -- opaque white, and indistinguishable downstream
+        // from one the avatar actually asked for.
+        if (i >= colorTypes.size() || i >= colorValues.size()) {
+            continue;
+        }
+        vrmRetarget::MaterialColorBind bind;
+        bind.material = colorTargets[i].GetString();
+        bind.colorType = colorTypes[i].GetString();
+        bind.targetValue = colorValues[i];
+        definition.materialColors.push_back(std::move(bind));
+    }
+    return definition;
+}
+
+// The token each blend shape answers to on the mesh that binds it.
+//
+// A UsdSkelAnimation names blend shapes by token, and UsdSkel maps those tokens
+// onto each skinned prim's own `skel:blendShapes` order — so a weight resolved
+// onto a blend-shape *path* has to be translated before it can be authored, and
+// a blend shape no mesh binds cannot be reached from an animation at all.
+void
+ReadBlendShapeTokens(const UsdStageRefPtr& stage,
+                     std::map<std::string, std::string>* tokens,
+                     std::vector<std::string>* warnings)
+{
+    std::map<std::string, std::string> pathByToken;
+    for (const UsdPrim& prim : stage->Traverse()) {
+        const UsdSkelBindingAPI binding(prim);
+        const UsdAttribute namesAttr = binding.GetBlendShapesAttr();
+        if (!namesAttr) {
+            continue;
+        }
+        VtTokenArray names;
+        if (!namesAttr.Get(&names) || names.empty()) {
+            continue;
+        }
+        SdfPathVector targets;
+        if (const UsdRelationship rel = binding.GetBlendShapeTargetsRel()) {
+            rel.GetTargets(&targets);
+        }
+        if (names.size() != targets.size()) {
+            warnings->push_back(
+                "<" + prim.GetPath().GetString() + "> binds "
+                + std::to_string(names.size()) + " blend-shape name(s) to "
+                + std::to_string(targets.size())
+                + " target(s); only the pairs that line up can be driven");
+        }
+        const std::size_t paired = std::min(names.size(), targets.size());
+        for (std::size_t i = 0; i < paired; ++i) {
+            const std::string target = targets[i].GetString();
+            const std::string token = names[i].GetString();
+            const auto existing = tokens->find(target);
+            if (existing != tokens->end()) {
+                if (existing->second != token) {
+                    // Two meshes naming one blend shape differently: an
+                    // animation names it once, so whichever token we author
+                    // drives one of them and not the other.
+                    warnings->push_back(
+                        "blend shape <" + target + "> is bound as '"
+                        + existing->second + "' and as '" + token
+                        + "'; an animation can name only one of them, and '"
+                        + existing->second + "' is what is authored");
+                }
+                continue;
+            }
+            const auto claimed = pathByToken.find(token);
+            if (claimed != pathByToken.end() && claimed->second != target) {
+                // The reverse collision, and the more dangerous one: authoring
+                // this token would drive a blend shape no expression asked for.
+                warnings->push_back(
+                    "blend shapes <" + claimed->second + "> and <" + target
+                    + "> are both bound as '" + token
+                    + "'; a SkelAnimation cannot tell them apart, so only the "
+                      "first is driven");
+                continue;
+            }
+            tokens->emplace(target, token);
+            pathByToken.emplace(token, target);
+        }
+    }
 }
 
 } // namespace
@@ -290,6 +470,34 @@ ReadAvatar(const std::string& path, const std::string& skeletonPathOverride,
             + " and none was supplied; pass --humanoid-map";
         return false;
     }
+
+    // The face half of the rig. A rig that declares no expression is the normal
+    // case for a plain `.usda` skeleton, and it is not a warning: the bake then
+    // authors joints only, exactly as it did before this half existed.
+    for (const UsdPrim& prim : avatar->stage->Traverse()) {
+        if (!prim.HasAttribute(kExpressionName)) {
+            continue;
+        }
+        const std::string name = ReadExpressionName(prim);
+        if (name.empty()) {
+            avatar->warnings.push_back(
+                "avatar expression <" + prim.GetPath().GetString()
+                + "> authors no vrm:expressionName, so no clip can name it");
+            continue;
+        }
+        if (!avatar->expressionRig.Add(
+                ReadExpressionDefinition(prim, name, &avatar->warnings))) {
+            // The importer refuses this on the way in (VRM152); a hand-authored
+            // stage can still carry it, and a resolve would silently bind
+            // whichever prim it reached first.
+            avatar->warnings.push_back(
+                "avatar declares expression '" + name
+                + "' more than once; <" + prim.GetPath().GetString()
+                + "> is ignored");
+        }
+    }
+    ReadBlendShapeTokens(avatar->stage, &avatar->blendShapeTokens,
+                         &avatar->warnings);
     return true;
 }
 
@@ -412,6 +620,52 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride,
 
     std::set<double> timeCodes(rotationTimes.begin(), rotationTimes.end());
     timeCodes.insert(translationTimes.begin(), translationTimes.end());
+
+    // The clip's expression tracks, in the shape motionCore carries them: a
+    // verbatim name and one weight per sample. Their key times join the body's,
+    // because expressions live on the pose and a face key is a sample of the
+    // same performance — a clip that blinks between two body keys would
+    // otherwise have nowhere to say so.
+    struct ClipExpression
+    {
+        std::string name;
+        UsdAttribute weight;
+    };
+    std::vector<ClipExpression> clipExpressions;
+    std::set<std::string> clipExpressionNames;
+    for (const UsdPrim& prim : clip->stage->Traverse()) {
+        if (!prim.HasAttribute(kExpressionName)) {
+            continue;
+        }
+        const std::string name = ReadExpressionName(prim);
+        if (name.empty()) {
+            clip->warnings.push_back(
+                "clip expression <" + prim.GetPath().GetString()
+                + "> authors no vrm:expressionName, so no avatar can bind it");
+            continue;
+        }
+        const UsdAttribute weightAttr = prim.GetAttribute(kExpressionWeight);
+        // Declared and never driven is *not* a weight of zero. An unreported
+        // name means the producer said nothing about that expression, and
+        // inventing a zero here would author it — holding the rig's face at the
+        // neutral shape for the whole clip on the strength of a prim that only
+        // said the expression exists.
+        if (!weightAttr || !weightAttr.HasValue()) {
+            continue;
+        }
+        if (!clipExpressionNames.insert(name).second) {
+            clip->warnings.push_back(
+                "clip animates expression '" + name + "' more than once; <"
+                + prim.GetPath().GetString() + "> is ignored");
+            continue;
+        }
+        clipExpressions.push_back(ClipExpression{name, weightAttr});
+
+        std::vector<double> weightTimes;
+        weightAttr.GetTimeSamples(&weightTimes);
+        timeCodes.insert(weightTimes.begin(), weightTimes.end());
+    }
+
     if (timeCodes.empty()) {
         // A clip with no time samples still has a default value; treat it as a
         // single pose at the stage's start.
@@ -452,6 +706,15 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride,
             pose.root.worldPosition =
                 translations[static_cast<std::size_t>(hipsJointIndex)];
             pose.root.hasPosition = true;
+        }
+
+        for (const ClipExpression& expression : clipExpressions) {
+            float weight = 0.0f;
+            // Carried verbatim, out-of-range values included: the specification
+            // clamps when a weight is applied to a rig, and this is the read.
+            if (expression.weight.Get(&weight, timeCode)) {
+                pose.expressions.Set(expression.name, weight);
+            }
         }
 
         clip->animation.samples.push_back(std::move(pose));
@@ -495,13 +758,93 @@ RelativeAssetPath(const std::string& target, const std::string& fromLayer)
     return result;
 }
 
+// Authors the resolved expression weights onto the animation.
+//
+// This is the other half of the same binding the joints already use: UsdSkel
+// carries blend-shape weights on the SkelAnimation the skeleton is bound to,
+// and hands each skinned prim the subset its own `skel:blendShapes` names. So
+// nothing is authored on the meshes — the avatar keeps owning its binds, the
+// way it keeps owning its rig — and what this writes is `blendShapes` plus one
+// weight array per sample.
+void
+AuthorBlendShapeWeights(
+    const UsdSkelAnimation& authored, const Avatar& avatar,
+    double timeCodesPerSecond,
+    const std::vector<vrmRetarget::ResolvedExpressions>& expressions,
+    WriteResult* result)
+{
+    // One slot per blend shape any sample drives, in blend-shape path order so
+    // that re-baking the same clip authors the same array.
+    std::set<std::string> driven;
+    for (const vrmRetarget::ResolvedExpressions& sample : expressions) {
+        for (const vrmRetarget::ResolvedMorphTarget& morph :
+             sample.morphTargets) {
+            driven.insert(morph.target);
+        }
+    }
+
+    std::map<std::string, std::size_t> slotByTarget;
+    std::vector<TfToken> tokens;
+    std::map<std::string, std::string> targetByToken;
+    for (const std::string& target : driven) {
+        const auto bound = avatar.blendShapeTokens.find(target);
+        if (bound == avatar.blendShapeTokens.end()) {
+            // The avatar declares the bind and no mesh of it binds the blend
+            // shape, so there is no token to name it by. Authoring the path
+            // would produce an array UsdSkel maps onto nothing at all.
+            result->warnings.push_back(
+                "no mesh of the avatar binds blend shape <" + target
+                + ">, so the weight the clip resolves onto it cannot be "
+                  "authored");
+            continue;
+        }
+        const auto claimed = targetByToken.find(bound->second);
+        if (claimed != targetByToken.end()) {
+            result->warnings.push_back(
+                "blend shape <" + target + "> shares the bound name '"
+                + bound->second + "' with <" + claimed->second
+                + ">; only the latter is driven");
+            continue;
+        }
+        targetByToken.emplace(bound->second, target);
+        slotByTarget.emplace(target, tokens.size());
+        tokens.emplace_back(bound->second);
+    }
+    if (tokens.empty()) {
+        return;
+    }
+
+    authored.CreateBlendShapesAttr().Set(
+        VtTokenArray(tokens.begin(), tokens.end()));
+    const UsdAttribute weights = authored.CreateBlendShapeWeightsAttr();
+
+    // A fixed-width array has no "absent", so every sample authors every slot —
+    // and a slot this sample did not resolve keeps the value the last one gave
+    // it rather than dropping to zero. That is the same rule one layer down: a
+    // reported zero is a statement and is authored, while an unreported name is
+    // the producer saying nothing, which leaves the weight where it was.
+    VtFloatArray values(tokens.size(), 0.0f);
+    for (const vrmRetarget::ResolvedExpressions& sample : expressions) {
+        for (const vrmRetarget::ResolvedMorphTarget& morph :
+             sample.morphTargets) {
+            const auto slot = slotByTarget.find(morph.target);
+            if (slot != slotByTarget.end()) {
+                values[slot->second] = morph.weight;
+            }
+        }
+        weights.Set(values, UsdTimeCode(sample.timestamp * timeCodesPerSecond));
+    }
+    result->blendShapesAuthored = tokens.size();
+}
+
 } // namespace
 
 bool
-WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar,
-                         const Clip& clip,
-                         const vrmRetarget::RetargetedAnimation& animation,
-                         const std::string& animationName, std::string* error)
+WriteRetargetedAnimation(
+    const std::string& outputPath, const Avatar& avatar, const Clip& clip,
+    const vrmRetarget::RetargetedAnimation& animation,
+    const std::vector<vrmRetarget::ResolvedExpressions>& expressions,
+    const std::string& animationName, WriteResult* result, std::string* error)
 {
     if (!TfIsValidIdentifier(animationName)) {
         *error = "'" + animationName + "' is not a valid prim name";
@@ -582,6 +925,21 @@ WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar,
         translations.Set(VtVec3fArray(sample.translations.begin(),
                                       sample.translations.end()),
                          timeCode);
+    }
+
+    // The face, on the same samples and the same animation prim. `expressions`
+    // is either empty or one entry per sample; a mismatch would author weights
+    // against the wrong instants, so it is refused rather than truncated.
+    if (!expressions.empty()) {
+        if (expressions.size() != animation.samples.size()) {
+            *error = "resolved " + std::to_string(expressions.size())
+                + " expression sample(s) for "
+                + std::to_string(animation.samples.size())
+                + " retargeted sample(s)";
+            return false;
+        }
+        AuthorBlendShapeWeights(authored, avatar, clip.timeCodesPerSecond,
+                                expressions, result);
     }
 
     // Bind the result on an override of the referenced skeleton rather than by

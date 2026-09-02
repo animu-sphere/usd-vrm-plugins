@@ -62,7 +62,10 @@ live source that has no stage at all.
 Unmapped joints keep their rest transform, so a clip that drives only part of a
 rig leaves the rest of it alone instead of collapsing it to identity. Resolving
 expressions produces values and authors nothing: writing `blendShapeWeights`
-onto a stage is the caller's job, and no tool does it yet.
+onto a stage is the caller's job, and
+[`motion_retarget`](../../tools/motionRetarget/README.md) is the caller that
+does it — it reads the binds off the avatar, hands them here, and authors what
+comes back onto the animation it already binds to the rig.
 
 ## Building
 

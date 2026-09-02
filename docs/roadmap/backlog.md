@@ -195,9 +195,19 @@ Still ahead:
     layer and is reported per name, `isBinary` rounds on the way to the binds,
     and a material colour is carried as `(totalWeight, weightedTarget)` with an
     `Apply(base)` lerp so the material's own value never reaches a library that
-    does not read stages. **What is left is the authoring**: nothing writes
-    `blendShapeWeights` or a `skel:blendShapes` binding onto a stage yet, so no
-    tool's output has changed.
+    does not read stages.
+  - ✅ **The bake authors it** *(2026-09-01)*. `motion_retarget` reads the
+    avatar's expression binds and its meshes' blend-shape bindings off the
+    stage, resolves the clip's named weights against them, and authors
+    `blendShapes` plus `blendShapeWeights` on the `SkelAnimation` it already
+    binds to the rig. Nothing is authored on the meshes: UsdSkel carries the
+    weights on the animation and hands each skinned prim the subset its own
+    binding names, so the avatar keeps owning its binds the way it keeps owning
+    its rig. The join costs one translation — an expression binds a blend-shape
+    *prim* and an animation names the *token* the mesh chose — so a blend shape
+    no mesh binds resolves to a weight that cannot be authored, and is reported.
+    Material colours are resolved and deliberately not written: a colour slot is
+    a material input, and that vocabulary belongs to Product P5.
 - ⬜ **Motion Phase H — advanced.** Blending, IK / foot locking, contact
   handling, latency compensation, multi-performer sync, simulation bridge,
   generated-motion cache, publish pipeline.

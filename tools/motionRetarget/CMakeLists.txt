@@ -43,6 +43,14 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
 if(NOT TARGET vrmRetarget::vrmRetarget)
     find_package(vrmRetarget REQUIRED CONFIG)
 endif()
+# By name rather than through vrmRetarget's PUBLIC re-export, for the reason
+# `motion_bvh` states about `motionSource`: the tool resamples the clip itself,
+# before either half of the bake expands it, so it has a real edge on
+# `motionRuntime` and declaring it leaves nothing to be inferred from a
+# transitive dependency that could stop being transitive.
+if(NOT TARGET motionRuntime::motionRuntime)
+    find_package(motionRuntime REQUIRED CONFIG)
+endif()
 
 add_executable(motion_retarget
     src/Options.cpp
@@ -50,7 +58,10 @@ add_executable(motion_retarget
     src/main.cpp)
 
 target_compile_features(motion_retarget PRIVATE cxx_std_17)
-target_link_libraries(motion_retarget PRIVATE vrmRetarget::vrmRetarget)
+target_link_libraries(motion_retarget
+    PRIVATE
+        vrmRetarget::vrmRetarget
+        motionRuntime::motionRuntime)
 
 foreach(_usd_lib usd usdGeom usdSkel sdf tf gf vt js arch)
     if(TARGET ${_usd_lib})
