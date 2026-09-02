@@ -14,7 +14,7 @@
 def Scope "Animation" (
     customData = {
         dictionary vrma = {
-            string rawExtension = '{"specVersion":"1.0","humanoid":{"humanBones":{"hips":{"node":0},"spine":{"node":1},"chest":{"node":2}}},"expressions":{"preset":{"happy":{"node":3},"surprised":{"node":5},"relaxed":{"node":6},"angry":{"node":99}},"custom":{"myWink":{"node":4}}}}'
+            string rawExtension = '{"specVersion":"1.0","humanoid":{"humanBones":{"hips":{"node":0},"spine":{"node":1},"chest":{"node":2}}},"lookAt":{"node":7,"offsetFromHeadBone":[0.0,0.06,0.0]},"expressions":{"preset":{"happy":{"node":3},"surprised":{"node":5},"relaxed":{"node":6},"angry":{"node":99}},"custom":{"myWink":{"node":4}}}}'
             string rootMotionSource = "hipsTranslation"
             string sourceFormat = "VRMA"
             string specVersion = "1.0"
@@ -83,6 +83,11 @@ def Scope "Animation" (
                 30: 1.5,
             }
         }
+    }
+
+    def Scope "LookAt"
+    {
+        uniform float3 vrm:lookAtOffsetFromHeadBone = (0, 0.06, 0)
     }
 }
 

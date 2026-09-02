@@ -87,8 +87,10 @@ data keys into a namespace dictionary.
 Expressions, look-at, multiple clips, interpolation fidelity beyond the rule
 above, live capture, motion generation, binding/assembly, retargeting, IK, and
 foot locking are intentionally outside v0.3.0. Retargeting landed in v0.4.0
-(below) and expression *reading* in v0.7.0 — `/Animation/Expressions`, described
-under "Expression semantics" — while the rest remain Motion Phases D–H.
+(below), expression *reading* in v0.7.0 — `/Animation/Expressions`, described
+under "Expression semantics" — and look-at *reading* after v0.8.0
+(`/Animation/LookAt`, under "Look-at semantics"), while the rest remain Motion
+Phases D–H.
 
 ## Retarget semantics (Motion Phase C, v0.4.0)
 
@@ -358,6 +360,62 @@ What this costs is stated rather than hidden: a producer whose expression
 channel genuinely runs on its own clock has to be resampled onto the pose
 timeline by whoever reads it. No producer in the tree does, and the day one
 does, this is the paragraph to revisit.
+
+## Look-at semantics (after v0.8.0)
+
+`HumanoidPose::lookAtTarget` is **a point, optional, and never a direction.**
+
+**A point, because a direction needs a head.** VRMA points look-at at a node and
+the character watches where that node *is*; turning that into a gaze means
+knowing where the eyes are, which is a property of a rig. So this layer carries
+the place the producer named, and `LookAtEvaluate` (Motion Phase G) turns it into
+eye rotations or expression weights against one avatar's own look-at
+configuration — the type, the eye joints and the range-map curves the importer
+already authors under `/Asset/rig/LookAt`. It is the same division the
+expression weights are under: carry what the producer said, resolve where the
+rig is.
+
+**Optional, because the origin is a place.** An unreported target is not a gaze
+at `(0, 0, 0)`, exactly as an unreported expression name is not a weight of zero
+and a bone outside `validRotations` is not an identity rotation. A sentinel
+would have made those two the same value at the one point a producer can
+legitimately look at, so the presence is carried separately and both comparisons
+read it before they read the point.
+
+**On the pose, for the reason expressions are.** A `.vrma` clip's look-at
+channel keys into the same union of key times the body and the face are
+evaluated at, so it arrives at the instants the poses already exist at. The
+departure recorded above for expressions applies unchanged, including its cost:
+a producer whose gaze genuinely runs on its own clock has to be resampled onto
+the pose timeline by whoever reads it.
+
+**The offset from the head bone travels beside the clip, not on it.** VRMA
+states `offsetFromHeadBone`, which is a measurement of the rig the clip was
+authored on: it cannot vary within a clip, so paying for it per sample would buy
+nothing, and it is authored once as `vrm:lookAtOffsetFromHeadBone`. A file that
+states none is read as zero — a gaze starting at the head bone itself — with a
+warning, because that is a claim about the source rig rather than a neutral
+default.
+
+**A target is placed where the file put it.** A look-at node may be parented,
+and a position read in its own space would be a gaze at the wrong place, so the
+reader composes the ancestors' *stated* transforms into the target. An ancestor
+that the clip itself animates is warned about and not composed: evaluating it
+would be a scene evaluation at every instant rather than a clip read, and the
+warning is what keeps the difference visible.
+
+**A clip says one of three things**, and the authored stage keeps them apart the
+way the expression half does. A channel drives the node — time samples. The node
+states a transform and nothing animates it — one target for the whole clip,
+authored as a default, because a run of identical time samples would claim the
+file keyed something it did not. The node states none — no `vrm:lookAtTarget` at
+all. A clip that declares no `lookAt` block gets no `/Animation/LookAt` prim,
+which is a fourth thing again: the file never raised the subject.
+
+**The recorded-trace format carries it** as a `lookat x y z` line, at most one
+per frame, from format version 3. No live producer emits one today; the format
+carries it anyway, because a pose field a recorder silently dropped would make a
+replay differ from the session it claims to reproduce.
 
 ## Recorded-source provenance (v0.7.0)
 

@@ -142,6 +142,40 @@ TestExpressionsAreHeldNotFaded()
 }
 
 void
+TestLookAtTargetIsHeldNotFaded()
+{
+    motion::HumanoidPose a;
+    a.timestamp = 0.0;
+    a.lookAtTarget = pxr::GfVec3f(0.0f, 1.5f, -2.0f);
+
+    motion::HumanoidPose b;
+    b.timestamp = 1.0;
+    b.lookAtTarget = pxr::GfVec3f(1.0f, 1.5f, -2.0f);
+
+    // Reported by both: the target moves between them, which is the motion of
+    // the thing being watched.
+    const motion::HumanoidPose mid = motion::LerpPose(a, b, 0.5f);
+    assert(mid.lookAtTarget);
+    assert(NearlyEqual((*mid.lookAtTarget)[0], 0.5f));
+    assert(NearlyEqual((*mid.lookAtTarget)[1], 1.5f));
+
+    // Reported by one endpoint only: held. Easing it toward the origin would
+    // aim the gaze at a place no producer named -- and the origin is a place,
+    // which is exactly why it cannot double as "no target".
+    motion::HumanoidPose silent;
+    silent.timestamp = 1.0;
+    const motion::HumanoidPose held = motion::LerpPose(a, silent, 0.5f);
+    assert(held.lookAtTarget && *held.lookAtTarget == *a.lookAtTarget);
+    const motion::HumanoidPose heldFromB = motion::LerpPose(silent, a, 0.5f);
+    assert(heldFromB.lookAtTarget && *heldFromB.lookAtTarget == *a.lookAtTarget);
+
+    // Neither endpoint reported one: still none, rather than the origin.
+    motion::HumanoidPose alsoSilent;
+    alsoSilent.timestamp = 1.0;
+    assert(!motion::LerpPose(silent, alsoSilent, 0.5f).lookAtTarget);
+}
+
+void
 TestRootMotionFlagsSurviveInterpolation()
 {
     motion::RootMotion a;
@@ -342,6 +376,7 @@ main()
     TestSlerpTakesTheShortArc();
     TestMissingBonesAreHeldNotFaded();
     TestExpressionsAreHeldNotFaded();
+    TestLookAtTargetIsHeldNotFaded();
     TestRootMotionFlagsSurviveInterpolation();
     TestPoseBufferOrderingAndSampling();
     TestPoseBufferExtrapolatesPositionOnly();

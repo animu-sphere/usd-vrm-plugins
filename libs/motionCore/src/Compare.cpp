@@ -321,6 +321,22 @@ ComparePose(const Policy& policy, const HumanoidPose& a, const HumanoidPose& b,
             return false;
         }
     }
+    // A look-at target is a point, so it takes the same tolerance a root
+    // position does. Whether a pose carries one at all is compared first and
+    // exactly, for the reason every other presence flag here is: a pose that
+    // reported no gaze never equals one that reported a gaze at the origin.
+    if (a.lookAtTarget.has_value() != b.lookAtTarget.has_value()) {
+        Report(difference, [] { return std::string(
+            "only one pose reports a look-at target"); });
+        return false;
+    }
+    if (a.lookAtTarget && !policy.Vector(*a.lookAtTarget, *b.lookAtTarget)) {
+        Report(difference, [&] {
+            return "look-at target "
+                + Amount((*a.lookAtTarget - *b.lookAtTarget).GetLength(), "m");
+        });
+        return false;
+    }
     if constexpr (Policy::ReadsProvenance) {
         if (a.source.has_value() != b.source.has_value()
             || (a.source && *a.source != *b.source)) {

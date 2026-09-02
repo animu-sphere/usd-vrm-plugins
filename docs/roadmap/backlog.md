@@ -170,9 +170,10 @@ Still ahead:
   E–F).
 - ⬜ **Motion Phase G — expression / look-at / recording.** VRMA **expression**
   animation landed 2026-08-23 (`/Animation/Expressions`, weights carried
-  verbatim onto the pose and never expanded); what remains is VRMA look-at
-  animation, `ExpressionResolve`, `LookAtEvaluate`, live recording, bake, and
-  the VRMA export investigation.
+  verbatim onto the pose and never expanded) and VRMA **look-at** animation on
+  2026-09-02 (`/Animation/LookAt`, a target point carried onto the pose and
+  never evaluated); what remains is `LookAtEvaluate`, live recording, and the
+  VRMA export investigation.
   - ✅ **`ExpressionResolve` has its join key** *(2026-09-01)*. Both sides now
     author `vrm:expressionName` verbatim — on the avatar side as a
     `VrmExpressionAPI` builtin, additive within schema contract v1 — so the
@@ -184,6 +185,19 @@ Still ahead:
     `Define` on the duplicate path returns the existing prim rather than
     failing. It uniquifies against claimed names now, with a `usdvrm_path_util`
     unit test and the collision shape added to the `names.vrm` fixture.
+  - ✅ **VRMA look-at animation** *(2026-09-02)*. A clip's gaze is a target
+    **point** and never a direction: VRMA points look-at at a node and the
+    character watches where that node is, so `HumanoidPose::lookAtTarget` carries
+    the place and `/Animation/LookAt` authors it beside the
+    `vrm:lookAtOffsetFromHeadBone` the source rig measured. Optional rather than
+    sentinelled, because the origin is a place a producer can legitimately name.
+    Its decisions: a parented look-at node's ancestors are composed into the
+    target (an ancestor the clip animates is warned about, not evaluated); the
+    three things a clip can say — a channel, a stated transform, or nothing — are
+    authored as time samples, a default, and no attribute; and a missing
+    `offsetFromHeadBone` is warned about rather than read as a silent zero. The
+    recorded-trace format took a `lookat` line at version 3 so a recorder cannot
+    drop the field.
   - ✅ **`ExpressionResolve` resolves** *(2026-09-01)*. `vrmRetarget`'s
     `ExpressionResolver` expands a named weight onto a rig's N morph targets
     across M meshes plus its material colours, joining on `vrm:expressionName`
@@ -223,8 +237,11 @@ Still ahead:
   `vrm:expressionName`, `vrm:expressionType`, `vrm:expressionWeight` under
   `/Animation/Expressions/<name>` — which is what a typed API would carry
   anyway, so applying one later moves nothing and reverses nothing. That buys
-  time; it does not answer the question, and the answer is owed before the
-  look-at half repeats the pattern.
+  time; it does not answer the question. **The look-at half repeated the
+  pattern** on 2026-09-02 — `vrm:lookAtOffsetFromHeadBone` and `vrm:lookAtTarget`
+  on a plain `/Animation/LookAt` prim — for the same reason and at the same cost:
+  a typed API applied later moves nothing, and the question of who owns one is
+  now owed by two halves rather than one.
 - ⬜ **Is the `motion:` USD namespace (motion policy §13) a typed schema or
   namespaced attributes?** Motion Plans are the one place the policy authors USD
   outside a file-format plugin.

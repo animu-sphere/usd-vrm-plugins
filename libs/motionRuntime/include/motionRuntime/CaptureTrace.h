@@ -15,7 +15,7 @@
 // what lets a golden trace be compared rather than merely parsed.
 //
 //     # a comment
-//     !motion-capture-trace 2
+//     !motion-capture-trace 3
 //     provider   example.replay
 //     protocol   replay
 //     sourceId   walk-01
@@ -26,6 +26,7 @@
 //     root rot 1.000000 0.000000 0.000000 0.000000
 //     root vel 0.000000 0.000000 0.000000
 //     contacts contact free
+//     lookat 0.000000 1.400000 -2.000000
 //     b hips  1.000000 0.000000 0.000000 0.000000
 //     b spine 0.999962 0.008727 0.000000 0.000000 0.95
 //     e aa    0.250000
@@ -41,6 +42,10 @@
 // are `w x y z`; the trailing number on a `b` line is an optional confidence
 // in [0, 1]. Contact values are `unknown`, `contact`, or `free`. Bone names are
 // the VRM 1.0 vocabulary spelled as `motion::HumanBoneName` spells it.
+//
+// `lookat` is the point the frame said the character is looking at (format 3
+// on), in the same space as `root pos`. At most one per frame, like `contacts`
+// and unlike `b` and `e`, because a sample looks at one place.
 //
 // `e` is an expression weight (format 2 on). Unlike a bone, its name is the
 // producer's own and this layer knows no vocabulary to check it against, so the
@@ -76,7 +81,7 @@
 namespace motion
 {
 
-inline constexpr int CaptureTraceFormatVersion = 2;
+inline constexpr int CaptureTraceFormatVersion = 3;
 
 // The oldest format the reader accepts. A trace is a recording, and a recording
 // that stops being readable because the format moved on is a recording lost.
@@ -84,6 +89,9 @@ inline constexpr int CaptureTraceMinReadableVersion = 1;
 
 // The format version that introduced `e` expression lines.
 inline constexpr int CaptureTraceExpressionsVersion = 2;
+
+// The format version that introduced the `lookat` target line.
+inline constexpr int CaptureTraceLookAtVersion = 3;
 
 // The format writes six decimals, so a timestamp read back from a trace can sit
 // up to half of this away from the exact instant it was meant to represent --

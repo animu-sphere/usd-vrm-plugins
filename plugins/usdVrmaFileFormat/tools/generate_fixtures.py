@@ -133,6 +133,11 @@ def _expressive_face_bytes() -> bytes:
       all: a weight that was never reported, which is not a weight of zero.
     * `angry` points at a node that does not exist and is dropped with a
       warning.
+
+    It also carries the look-at case that belongs beside those: a block that
+    declares a node which states no transform and is driven by no channel. That
+    is a gaze the file never gave, and it must not be authored as a gaze at the
+    origin -- the same distinction `surprised` makes for a weight.
     """
     buffer = _Buffer()
     append_floats = buffer.append_floats
@@ -166,6 +171,10 @@ def _expressive_face_bytes() -> bytes:
                         "chest": {"node": 2},
                     }
                 },
+                "lookAt": {
+                    "node": 7,
+                    "offsetFromHeadBone": [0.0, 0.06, 0.0],
+                },
                 "expressions": {
                     "preset": {
                         "happy": {"node": 3},
@@ -187,6 +196,7 @@ def _expressive_face_bytes() -> bytes:
             {"name": "expression_myWink"},
             {"name": "expression_surprised"},
             {"name": "expression_relaxed", "translation": [0.3, 0.0, 0.0]},
+            {"name": "lookAt_target"},
         ],
         "animations": [{
             "name": "expressive_face",
@@ -220,9 +230,161 @@ def _expressive_face_bytes() -> bytes:
     return _glb(document, binary)
 
 
+def _gazing_head_bytes() -> bytes:
+    """A look-at target that moves, under a parent that does not.
+
+    VRMA points look-at at a node and the character watches where that node
+    *is*, so the two things the reader has to get right are both about place
+    rather than about the channel:
+
+    * the target keys on the body's beats, moving from straight ahead to the
+      character's side;
+    * its node is parented under `gaze_space`, which states a translation of its
+      own and is animated by nothing. A position read in the node's own space
+      would be a gaze 1.5 m below the one the file describes, so the composed
+      ancestor transform is the assertion.
+
+    `offsetFromHeadBone` is stated here, because it is a measurement of the rig
+    the clip was authored on and travels beside the clip rather than on its
+    samples.
+    """
+    buffer = _Buffer()
+    append_floats = buffer.append_floats
+
+    times_offset, times_length = append_floats([0.0, 1.0])
+    hips_rotation_offset, hips_rotation_length = append_floats([
+        0.0, 0.0, 0.0, 1.0,
+        0.0, 0.70710677, 0.0, 0.70710677,
+    ])
+    target_offset, target_length = append_floats([
+        0.0, 0.0, -2.0,
+        1.0, 0.0, -2.0,
+    ])
+    binary = buffer.bytes()
+
+    document = {
+        "asset": {"version": "2.0", "generator": "usd-vrm-plugins fixture generator"},
+        "extensionsUsed": ["VRMC_vrm_animation"],
+        "extensions": {
+            "VRMC_vrm_animation": {
+                "specVersion": "1.0",
+                "humanoid": {
+                    "humanBones": {
+                        "hips": {"node": 0},
+                        "spine": {"node": 1},
+                        "chest": {"node": 2},
+                    }
+                },
+                "lookAt": {
+                    "node": 4,
+                    "offsetFromHeadBone": [0.0, 0.06, 0.0],
+                },
+            }
+        },
+        "nodes": [
+            {"name": "hips", "translation": [0.0, 1.0, 0.0], "children": [1]},
+            {"name": "spine", "translation": [0.0, 0.5, 0.0], "children": [2]},
+            {"name": "chest", "translation": [0.0, 0.5, 0.0]},
+            {"name": "gaze_space", "translation": [0.0, 1.5, 0.0], "children": [4]},
+            {"name": "lookAt_target", "translation": [0.0, 0.0, -2.0]},
+        ],
+        "animations": [{
+            "name": "gazing_head",
+            "samplers": [
+                {"input": 0, "output": 1, "interpolation": "LINEAR"},
+                {"input": 0, "output": 2, "interpolation": "LINEAR"},
+            ],
+            "channels": [
+                {"sampler": 0, "target": {"node": 0, "path": "rotation"}},
+                {"sampler": 1, "target": {"node": 4, "path": "translation"}},
+            ],
+        }],
+        "buffers": [{"byteLength": len(binary)}],
+        "bufferViews": [
+            {"buffer": 0, "byteOffset": times_offset, "byteLength": times_length},
+            {"buffer": 0, "byteOffset": hips_rotation_offset, "byteLength": hips_rotation_length},
+            {"buffer": 0, "byteOffset": target_offset, "byteLength": target_length},
+        ],
+        "accessors": [
+            {"bufferView": 0, "componentType": 5126, "count": 2, "type": "SCALAR", "max": [1.0], "min": [0.0]},
+            {"bufferView": 1, "componentType": 5126, "count": 2, "type": "VEC4"},
+            {"bufferView": 2, "componentType": 5126, "count": 2, "type": "VEC3"},
+        ],
+    }
+    return _glb(document, binary)
+
+
+def _gazing_still_bytes() -> bytes:
+    """A look-at target the clip states once and never animates.
+
+    glTF leaves an un-animated node at its own TRS, so a look-at node with a
+    translation and no channel names one target for the whole clip -- a value
+    the file really did give, authored as a default rather than as a run of
+    identical time samples.
+
+    The block also omits `offsetFromHeadBone`. Taking that as zero is a claim
+    about the source rig -- that the gaze starts at the head bone itself -- so
+    the reader warns rather than assuming quietly.
+    """
+    buffer = _Buffer()
+    append_floats = buffer.append_floats
+
+    times_offset, times_length = append_floats([0.0, 1.0])
+    hips_rotation_offset, hips_rotation_length = append_floats([
+        0.0, 0.0, 0.0, 1.0,
+        0.0, 0.70710677, 0.0, 0.70710677,
+    ])
+    binary = buffer.bytes()
+
+    document = {
+        "asset": {"version": "2.0", "generator": "usd-vrm-plugins fixture generator"},
+        "extensionsUsed": ["VRMC_vrm_animation"],
+        "extensions": {
+            "VRMC_vrm_animation": {
+                "specVersion": "1.0",
+                "humanoid": {
+                    "humanBones": {
+                        "hips": {"node": 0},
+                        "spine": {"node": 1},
+                        "chest": {"node": 2},
+                    }
+                },
+                "lookAt": {"node": 3},
+            }
+        },
+        "nodes": [
+            {"name": "hips", "translation": [0.0, 1.0, 0.0], "children": [1]},
+            {"name": "spine", "translation": [0.0, 0.5, 0.0], "children": [2]},
+            {"name": "chest", "translation": [0.0, 0.5, 0.0]},
+            {"name": "lookAt_target", "translation": [0.2, 1.4, -2.0]},
+        ],
+        "animations": [{
+            "name": "gazing_still",
+            "samplers": [
+                {"input": 0, "output": 1, "interpolation": "LINEAR"},
+            ],
+            "channels": [
+                {"sampler": 0, "target": {"node": 0, "path": "rotation"}},
+            ],
+        }],
+        "buffers": [{"byteLength": len(binary)}],
+        "bufferViews": [
+            {"buffer": 0, "byteOffset": times_offset, "byteLength": times_length},
+            {"buffer": 0, "byteOffset": hips_rotation_offset, "byteLength": hips_rotation_length},
+        ],
+        "accessors": [
+            {"bufferView": 0, "componentType": 5126, "count": 2, "type": "SCALAR", "max": [1.0], "min": [0.0]},
+            {"bufferView": 1, "componentType": 5126, "count": 2, "type": "VEC4"},
+        ],
+    }
+    return _glb(document, binary)
+
+
 FIXTURES = {
     "canonical_walk.vrma": _canonical_walk_bytes,
     "expressive_face.vrma": _expressive_face_bytes,
+    "gazing_head.vrma": _gazing_head_bytes,
+    "gazing_still.vrma": _gazing_still_bytes,
 }
 
 

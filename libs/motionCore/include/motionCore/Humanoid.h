@@ -276,6 +276,26 @@ struct HumanoidPose
     // `motionRuntime` to carry data that arrives at the same instants anyway.
     ExpressionWeights expressions;
 
+    // Where this sample says the character is looking: a target *point*, in the
+    // same space as `root.worldPosition`, and never a direction.
+    //
+    // A direction is only meaningful next to a head, and which head -- where it
+    // sits, how far the eyes are from it -- is a property of a rig this layer
+    // does not have. So the point the producer named is carried and
+    // `LookAtEvaluate` (Motion Phase G) turns it into eye rotations or
+    // expression weights against one avatar's own look-at configuration. This
+    // is the same division the expression weights above are under, for the same
+    // reason.
+    //
+    // The offset from the head bone that the *source* rig measured is a
+    // constant of that rig rather than of a sample, so it travels beside the
+    // clip and not here.
+    //
+    // Optional rather than a sentinel, because the origin is a point a producer
+    // can legitimately look at: "reported no target" cannot be spelled as a
+    // value of the target.
+    std::optional<pxr::GfVec3f> lookAtTarget;
+
     std::optional<MotionSourceMetadata> source;
 };
 

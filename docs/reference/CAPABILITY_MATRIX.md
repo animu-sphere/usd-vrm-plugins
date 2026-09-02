@@ -162,8 +162,12 @@ default profile anywhere. Two producers' profiles ship in
 ship works the same way, by path. FBX is not planned; the layering exists so
 that a second reader can be added without changing anything above it.
 
-Not yet in that layer: look-at animation, motion generation, OpenExec
-evaluation, blending beyond the primitive, IK, and foot locking. Expression
+Not yet in that layer: motion generation, OpenExec evaluation, blending beyond
+the primitive, IK, and foot locking. Look-at animation is **read** — unreleased,
+since 2026-09-02 — as the target point a `.vrma` clip names, carried on the pose
+and authored under `/Animation/LookAt`; **evaluating** it onto a rig's eyes is
+`LookAtEvaluate` and is not written yet, so a gaze reaches a stage as a place to
+look and not yet as a pair of eyes that look there. Expression
 animation is read from a `.vrma` clip, carried on the pose, *resolved* onto a
 particular avatar's morph-target and material-colour binds by `vrmRetarget`'s
 `ExpressionResolver`, and — unreleased, since 2026-09-01 — authored:

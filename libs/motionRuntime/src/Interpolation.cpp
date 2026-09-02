@@ -145,6 +145,19 @@ LerpPose(const HumanoidPose& a, const HumanoidPose& b, float t)
         }
     }
 
+    // A look-at target follows the same rule again: interpolated when both
+    // endpoints named one, held when a single endpoint did. It is a point in the
+    // same space as the root position, so a straight lerp is the motion of the
+    // thing being watched -- and easing a one-sided target toward the origin
+    // would aim the gaze at a place no producer ever named.
+    if (a.lookAtTarget && b.lookAtTarget) {
+        result.lookAtTarget = LerpVec3(*a.lookAtTarget, *b.lookAtTarget, alpha);
+    } else if (a.lookAtTarget) {
+        result.lookAtTarget = a.lookAtTarget;
+    } else if (b.lookAtTarget) {
+        result.lookAtTarget = b.lookAtTarget;
+    }
+
     // Contact state and provenance are discrete, so they snap to the nearer
     // endpoint instead of being averaged into a value neither side reported.
     const HumanoidPose& nearer = (alpha < 0.5f) ? a : b;

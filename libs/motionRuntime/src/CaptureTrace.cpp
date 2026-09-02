@@ -428,6 +428,35 @@ ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
             continue;
         }
 
+        if (keyword == "lookat") {
+            if (formatVersion < CaptureTraceLookAtVersion) {
+                return Fail(error, lineNumber,
+                            "'lookat' targets need format version "
+                                + std::to_string(CaptureTraceLookAtVersion)
+                                + "; this trace declares "
+                                + std::to_string(formatVersion));
+            }
+            float values[3] = {0.0f, 0.0f, 0.0f};
+            if (!ReadFloats(stream, values, 3)) {
+                return Fail(error, lineNumber,
+                            "'lookat' needs an x y z target position");
+            }
+            if (!FullyConsumed(stream, error, lineNumber,
+                               "the 'lookat' position")) {
+                return false;
+            }
+            // A second one in the same frame is two answers to "where is this
+            // sample looking", with no rule saying which wins -- the same
+            // defect a repeated `b` or `e` is.
+            if (frame->pose.lookAtTarget) {
+                return Fail(error, lineNumber,
+                            "'lookat' appears twice in a frame");
+            }
+            frame->pose.lookAtTarget =
+                pxr::GfVec3f(values[0], values[1], values[2]);
+            continue;
+        }
+
         if (keyword == "e") {
             if (formatVersion < CaptureTraceExpressionsVersion) {
                 return Fail(error, lineNumber,
@@ -577,6 +606,10 @@ WriteCaptureTrace(std::ostream& output, const HumanoidAnimation& animation)
         if (pose.contacts) {
             output << "contacts " << ContactName(pose.contacts->leftFoot) << ' '
                    << ContactName(pose.contacts->rightFoot) << '\n';
+        }
+        if (pose.lookAtTarget) {
+            const pxr::GfVec3f& g = *pose.lookAtTarget;
+            output << "lookat " << g[0] << ' ' << g[1] << ' ' << g[2] << '\n';
         }
 
         for (std::size_t index = 0; index < HumanBoneCount; ++index) {

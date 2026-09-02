@@ -122,6 +122,13 @@ MakeTrace(std::size_t frames = 12)
         if (index % 3 == 0) {
             pose.expressions.Set("blink", 1.0f);
         }
+        // A gaze on some frames and not others, for the same reason: the round
+        // trip has to keep "looked nowhere" distinct from "looked at the
+        // origin", and only a trace where both occur can show it.
+        if (index % 2 == 0) {
+            pose.lookAtTarget = pxr::GfVec3f(
+                0.0f, 1.4f, -2.0f + static_cast<float>(index) * 0.01f);
+        }
         pose.source = trace.source;
         trace.samples.push_back(pose);
     }
@@ -367,6 +374,12 @@ TestCaptureTraceRoundTripsByteIdentically()
         // The expression channel survives with the same names, and a frame that
         // reported no `blink` still reports none -- rather than a zero.
         assert(a.expressions == b.expressions);
+        // And a frame that named no target still names none, rather than the
+        // origin.
+        assert(a.lookAtTarget.has_value() == b.lookAtTarget.has_value());
+        if (a.lookAtTarget) {
+            assert(NearlyEqual(*a.lookAtTarget, *b.lookAtTarget));
+        }
     }
 
     // The byte-level claim: a trace this writer produced survives a read and a
@@ -444,6 +457,18 @@ TestCaptureTraceRejectsMalformedInput()
          "!motion-capture-trace 2\nt 0.0\nb hips 1 0 0 0\ne happy 0.5 extra\n"},
         {"non-finite expression weight",
          "!motion-capture-trace 2\nt 0.0\nb hips 1 0 0 0\ne happy nan\n"},
+        {"look-at target in a format 2 trace",
+         "!motion-capture-trace 2\nt 0.0\nb hips 1 0 0 0\nlookat 0 1 -2\n"},
+        // One frame looks at one place, so a second line is two answers
+        // with no rule saying which wins.
+        {"duplicate look-at target",
+         "!motion-capture-trace 3\nt 0.0\nb hips 1 0 0 0\nlookat 0 1 -2\nlookat 0 1 -3\n"},
+        {"look-at target with two components",
+         "!motion-capture-trace 3\nt 0.0\nb hips 1 0 0 0\nlookat 0 1\n"},
+        {"trailing text after a look-at target",
+         "!motion-capture-trace 3\nt 0.0\nb hips 1 0 0 0\nlookat 0 1 -2 extra\n"},
+        {"non-finite look-at target",
+         "!motion-capture-trace 3\nt 0.0\nb hips 1 0 0 0\nlookat 0 nan -2\n"},
     };
 
     for (const Case& testCase : cases) {
@@ -477,12 +502,12 @@ TestCaptureTraceVersioningAndUnwritableNames()
     assert(old.samples.front().expressions.IsEmpty());
 
     // The writer only ever emits the current version, so a format 1 file read
-    // back out is a format 2 file. That is why the committed corpus was
+    // back out is a format 3 file. That is why the committed corpus was
     // regenerated rather than left alone: byte-identity is a property of traces
     // this writer produced, not of every trace it can read.
     std::ostringstream rewritten;
     assert(motion::WriteCaptureTrace(rewritten, old));
-    assert(rewritten.str().rfind("!motion-capture-trace 2", 0) == 0);
+    assert(rewritten.str().rfind("!motion-capture-trace 3", 0) == 0);
 
     // The one value this format cannot spell. A name is written as a single
     // token, so whitespace in one would read back as a different animation --

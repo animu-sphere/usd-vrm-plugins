@@ -236,6 +236,15 @@ speaks ([schema contract](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)). So
 and never on a prim name; a stage authored before the avatar half has no key,
 which is the one case it has to fall back from rather than resolve.
 
+The look-at half followed, as the same *equivalent*: `/Animation/LookAt` carries
+`vrm:lookAtOffsetFromHeadBone` and a `vrm:lookAtTarget` that is time-sampled, a
+default, or absent — a target the clip animates, one it states once, or one it
+never gave. Applying a `VrmAnimationLookAtAPI` to that prim later would change
+no path and no attribute name either. It needs no join key, because a gaze names
+nothing: the target is a place, and the only thing it has to be joined to is a
+head, which is where `LookAtEvaluate` reads the avatar's own `/Asset/rig/LookAt`
+— its type, its eye joints and its range-map curves.
+
 ### 4.2 HumanoidSkeleton is a canonical semantic skeleton
 
 `HumanoidSkeleton.joints` does **not** carry the target VRM's real joint paths.
@@ -1216,7 +1225,7 @@ Milestones E–F).
 ### Motion Phase G: expression / look-at / recording
 
 - VRMA expression animation
-- VRMA look-at animation
+- VRMA look-at animation (reading landed after v0.8.0)
 - `ExpressionResolve`
 - `LookAtEvaluate`
 - live recording

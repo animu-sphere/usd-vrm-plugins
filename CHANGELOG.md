@@ -15,6 +15,44 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **A clip's gaze reaches the canonical layer: VRMA look-at animation.** Look-at
+  was untouched in every layer. `usdVrmaFileFormat` now reads the
+  `VRMC_vrm_animation` `lookAt` block, `motionCore` carries what it says, and
+  `/Animation/LookAt` authors it — the reading half, on the shape the expression
+  half already established rather than a second design.
+
+  **What travels is a point, not a direction.** VRMA points look-at at a node
+  and the character watches where that node *is*; turning that into a gaze means
+  knowing where the eyes are, which is a property of a rig. So
+  `HumanoidPose::lookAtTarget` carries the place the clip named and
+  `LookAtEvaluate` stays the consumer step — the same division
+  `ExpressionResolve` is under. It is optional rather than sentinelled because
+  **the origin is a place**: a producer can legitimately look at `(0, 0, 0)`, so
+  "reported no target" cannot be spelled as a value of the target, and both
+  comparisons read the presence before they read the point.
+
+  Three decisions are the read rather than plumbing, and each has a fixture.
+  **A target is placed where the file put it**: a look-at node may be parented,
+  so the ancestors' stated transforms are composed in — `gazing_head.vrma` puts
+  the target under a node translated 1.5 m up, and a position read in the node's
+  own space would be a gaze at the floor. An ancestor the clip itself animates is
+  warned about (`VRMA114`) instead, because evaluating it would be a scene
+  evaluation at every instant rather than a clip read. **A clip says one of three
+  things**, authored apart: a channel drives the node (time samples), the node
+  states a transform nothing animates (one default, since glTF leaves it there),
+  or it states none — **no `vrm:lookAtTarget` at all**, because a gaze the file
+  never gave is not a gaze at the origin. And **the offset travels beside the
+  clip, not on its samples**: `vrm:lookAtOffsetFromHeadBone` is a measurement of
+  the rig the clip was authored on, so it is `uniform`, and a file that omits it
+  is warned about (`VRMA112`) rather than quietly read as zero — that zero is a
+  claim about the source rig, not a neutral default.
+
+  New diagnostics: `VRMA110` (no usable look-at node), `VRMA111` (its node is
+  already driven by a bone or an expression), `VRMA112`, `VRMA113` (a
+  non-translation channel on the look-at node) and `VRMA114`. Two fixtures,
+  `gazing_head.vrma` and `gazing_still.vrma`, cover the animated and the stated
+  cases; `expressive_face.vrma` gained the declared-and-silent one.
+
 - **A clip's face reaches an avatar: `motion_retarget` authors the resolved
   expression weights.** The entry below produced values and nothing wrote them.
   The bake tool now reads the avatar's expression binds and its meshes'
@@ -120,6 +158,17 @@ Current schema contract version: **1**.
   importer keeps the first declaration, warns, and leaves the rest in
   `vrm:rawExtension` — the rule `usdVrmaFileFormat` already applied to a clip
   (`VRMA107`). A `duplicate_expression_name.vrm` negative fixture pins it.
+
+### Changed
+
+- **The recorded-trace format is version 3**, adding a `lookat x y z` line — at
+  most one per frame, like `contacts`. Format 1 and 2 files still parse, a
+  `lookat` line in one of them is refused the way an `e` line in a format 1 file
+  is, and the writer emits the current version as it always has; the committed
+  corpus was regenerated for that reason rather than edited. No live producer
+  emits a gaze today. Carrying it anyway is what stops a recorder from silently
+  dropping a pose field and making a replay differ from the session it claims to
+  reproduce.
 
 ### Fixed
 

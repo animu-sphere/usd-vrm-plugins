@@ -63,6 +63,19 @@ GfMatrix4d NodeLocal(const cgltf_node& node)
     return scale * rotate * translate;
 }
 
+// The composed local transforms of everything above `node`, so a position
+// stated in its own space can be placed where the file put it. Row-vector
+// convention, matching NodeLocal: a point is `local * parent * grandparent`.
+GfMatrix4d AncestorTransform(const cgltf_node& node)
+{
+    GfMatrix4d composed(1.0);
+    for (const cgltf_node* ancestor = node.parent; ancestor;
+         ancestor = ancestor->parent) {
+        composed = composed * NodeLocal(*ancestor);
+    }
+    return composed;
+}
+
 void ReadKey(const cgltf_animation_sampler* sampler, std::size_t key,
              int components, float* out)
 {
@@ -241,6 +254,63 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
         }
     }
 
+    // Look-at. VRMA points it at one node whose position is what the character
+    // is watching, so unlike an expression there is no name and no vocabulary --
+    // only the node, and the offset the source rig measured from its head bone.
+    // Nothing here turns either into a gaze direction: that needs a head, which
+    // is a property of the rig this clip binds to no avatar of (motion policy
+    // 4.3), and it is `LookAtEvaluate`'s job.
+    int lookAtNodeIndex = -1;
+    if (const JsObject* lookAt = AsObject(Find(*root, "lookAt"))) {
+        const int node = AsInt(Find(*lookAt, "node"));
+        bool isDriven = expressionByNodeIndex.count(node) != 0;
+        for (const auto& mapping : boneNodes) {
+            if (mapping.second == node) { isDriven = true; break; }
+        }
+        if (node < 0 || node >= static_cast<int>(data->nodes_count)) {
+            outDocument->warnings.push_back(
+                "[VRMA110] ignored look-at with no usable node");
+        } else if (isDriven) {
+            // One node cannot be both a bone's transform and a target position
+            // in the space that bone moves in; taking it as both would read the
+            // same channel as two different things.
+            outDocument->warnings.push_back(
+                "[VRMA111] ignored look-at whose node is already driven");
+        } else {
+            lookAtNodeIndex = node;
+            outDocument->lookAt.present = true;
+            const JsValue* offset = Find(*lookAt, "offsetFromHeadBone");
+            float components[3] = {0.0f, 0.0f, 0.0f};
+            bool readOffset = false;
+            if (offset && offset->IsArray() && offset->GetJsArray().size() == 3) {
+                readOffset = true;
+                const JsArray& array = offset->GetJsArray();
+                for (int axis = 0; axis != 3; ++axis) {
+                    if (array[axis].IsReal()) {
+                        components[axis] =
+                            static_cast<float>(array[axis].GetReal());
+                    } else if (array[axis].IsInt()) {
+                        components[axis] =
+                            static_cast<float>(array[axis].GetInt());
+                    } else {
+                        readOffset = false;
+                    }
+                }
+            }
+            if (readOffset) {
+                outDocument->lookAt.offsetFromHeadBone =
+                    GfVec3f(components[0], components[1], components[2]);
+            } else {
+                // Left at zero, which is a gaze starting at the head bone
+                // itself. That is a claim about the source rig rather than a
+                // neutral default, so it is warned about instead of assumed.
+                outDocument->warnings.push_back(
+                    "[VRMA112] look-at states no usable offsetFromHeadBone; "
+                    "the offset is taken as zero");
+            }
+        }
+    }
+
     // The semantic hierarchy comes from motionCore, not from a private table
     // here: the live-capture path authors the same skeleton, and two humanoid
     // taxonomies that can disagree would produce two skeletons that look alike
@@ -292,6 +362,10 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
         expressionByNode[&data->nodes[mapping.first]] = mapping.second;
     }
 
+    const cgltf_node* lookAtNode =
+        lookAtNodeIndex >= 0 ? &data->nodes[lookAtNodeIndex] : nullptr;
+    const cgltf_animation_sampler* lookAtSampler = nullptr;
+
     std::map<std::size_t, const cgltf_animation_sampler*> rotations;
     std::map<std::size_t, const cgltf_animation_sampler*> translations;
     std::map<std::size_t, const cgltf_animation_sampler*> weights;
@@ -319,7 +393,9 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
             !channel.sampler->output) continue;
         const auto jointIt = jointByNode.find(channel.target_node);
         const auto expressionIt = expressionByNode.find(channel.target_node);
-        if (jointIt == jointByNode.end() && expressionIt == expressionByNode.end()) {
+        const bool isLookAt = lookAtNode && channel.target_node == lookAtNode;
+        if (jointIt == jointByNode.end() && expressionIt == expressionByNode.end()
+            && !isLookAt) {
             continue;
         }
         if (channel.sampler->interpolation == cgltf_interpolation_type_cubic_spline &&
@@ -327,6 +403,22 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
             outDocument->warnings.push_back(
                 "[VRMA102] CUBICSPLINE interpolation is approximated as linear");
             warnedCubic = true;
+        }
+
+        if (isLookAt) {
+            // The target is a position, so only a translation channel says
+            // anything about it. A rotation on this node turns the target
+            // around a point rather than moving it, which is not a gaze.
+            if (channel.target_path != cgltf_animation_path_type_translation) {
+                outDocument->warnings.push_back(
+                    "[VRMA113] ignored non-translation channel on the look-at "
+                    "node");
+                continue;
+            }
+            lookAtSampler = channel.sampler;
+            outDocument->lookAt.isAnimated = true;
+            keepKeys(channel.sampler);
+            continue;
         }
 
         if (expressionIt != expressionByNode.end()) {
@@ -364,7 +456,8 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
     }
     if (timeSet.empty()) {
         release();
-        return fail("[VRMA007] first animation has no humanoid or expression channel");
+        return fail("[VRMA007] first animation has no humanoid, expression or "
+                    "look-at channel");
     }
 
     // An expression the clip declares and never animates can still be saying
@@ -382,6 +475,44 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
         if (!node.has_translation && !node.has_matrix) continue;
         expression.constantWeight =
             static_cast<float>(NodeLocal(node).ExtractTranslation()[0]);
+    }
+
+    // The look-at node's position is where the file put it, not where its own
+    // translation says: an exporter is free to parent the target under
+    // something, and a position read in its parent's space would be a gaze at
+    // the wrong place. Only the ancestors' *stated* transforms are composed --
+    // an ancestor this animation drives would need its own channel evaluated at
+    // every instant, which is a scene evaluation rather than a clip read.
+    GfMatrix4d lookAtAncestors(1.0);
+    if (lookAtNode) {
+        lookAtAncestors = AncestorTransform(*lookAtNode);
+        for (cgltf_size channelIndex = 0;
+             channelIndex != animation.channels_count; ++channelIndex) {
+            const cgltf_node* target = animation.channels[channelIndex].target_node;
+            bool animatedAncestor = false;
+            for (const cgltf_node* ancestor = lookAtNode->parent; ancestor;
+                 ancestor = ancestor->parent) {
+                if (ancestor == target) { animatedAncestor = true; break; }
+            }
+            if (animatedAncestor) {
+                outDocument->warnings.push_back(
+                    "[VRMA114] an ancestor of the look-at node is animated; "
+                    "only its stated transform is composed into the target");
+                break;
+            }
+        }
+        if (!outDocument->lookAt.isAnimated
+            && (lookAtNode->has_translation || lookAtNode->has_matrix)) {
+            // Nothing drives it and it states a transform, so glTF leaves it
+            // there for the whole clip: a target the file really did give, by
+            // the same rule an un-animated expression node states a weight.
+            const GfVec3d target =
+                (NodeLocal(*lookAtNode) * lookAtAncestors).ExtractTranslation();
+            outDocument->lookAt.constantTarget =
+                GfVec3f(static_cast<float>(target[0]),
+                        static_cast<float>(target[1]),
+                        static_cast<float>(target[2]));
+        }
     }
 
     bool warnedWeightRange = false;
@@ -431,6 +562,17 @@ CgltfVrmaDocumentReader::Read(const std::string& resolvedPath,
             if (expression.constantWeight) {
                 report(expression.name, *expression.constantWeight);
             }
+        }
+        if (lookAtSampler) {
+            float value[3] = {0.0f, 0.0f, 0.0f};
+            Sample(lookAtSampler, samplerKeys[lookAtSampler], time, 3, value);
+            const GfVec3d target = lookAtAncestors.Transform(
+                GfVec3d(value[0], value[1], value[2]));
+            pose.lookAtTarget = GfVec3f(static_cast<float>(target[0]),
+                                        static_cast<float>(target[1]),
+                                        static_cast<float>(target[2]));
+        } else if (outDocument->lookAt.constantTarget) {
+            pose.lookAtTarget = *outDocument->lookAt.constantTarget;
         }
         outDocument->animation.samples.push_back(std::move(pose));
     }

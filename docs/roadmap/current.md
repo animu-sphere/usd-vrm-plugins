@@ -272,7 +272,42 @@ back out of a trace — v0.7.0 closed the clip half. They do not yet reach a
   to zero, which a value block is the one way to reach and the test uses; and a
   material colour is resolved and **not** authored, because a colour slot is a
   material input and that layer owns the vocabulary.
-- ⬜ **Look-at is untouched**, in every layer.
+- ✅ **A clip's gaze reaches the canonical layer** *(2026-09-02)*. Look-at was
+  untouched in every layer; the *reading* half now runs end to end, and the
+  shape is the expression half's rather than a second design. VRMA points
+  look-at at a node and the character watches where that node **is**, so what
+  travels is a target **point**: `HumanoidPose::lookAtTarget`, optional because
+  the origin is a place a producer can legitimately name, and `/Animation/LookAt`
+  carrying `vrm:lookAtTarget` beside the `vrm:lookAtOffsetFromHeadBone` the
+  source rig measured. Turning a point into a pair of eyes needs the avatar's
+  own look-at configuration, so it stays `LookAtEvaluate`'s job — the same
+  division `ExpressionResolve` is under.
+
+  Three decisions are the read rather than plumbing, and each has a fixture.
+  **A target is placed where the file put it**: a look-at node may be parented,
+  so the ancestors' stated transforms are composed in — `gazing_head.vrma` puts
+  the target under a node translated 1.5 m up, and reading the position in its
+  own space would be a gaze at the floor. **A clip says one of three things**,
+  and they are authored apart: a channel drives the node (time samples), the
+  node states a transform nothing animates (one default), or it states none
+  (**no attribute at all**, because a gaze the file never gave is not a gaze at
+  the origin). And **the offset travels beside the clip, not on its samples**,
+  because it is a measurement of the rig the clip was authored on; a file that
+  omits it is warned about rather than quietly read as zero.
+
+  The pose field obliged the **recorded-trace format** to grow a `lookat` line
+  at version 3, and the committed corpus was regenerated. No live producer emits
+  a gaze today; carrying it anyway is what stops a recorder from silently
+  dropping a field and making a replay differ from the session it reproduces.
+- ⬜ **`LookAtEvaluate` is what is left.** A clip now names a place to look and
+  no rig looks there. The evaluate step takes the target, the source clip's
+  `offsetFromHeadBone` and the avatar's own `/Asset/rig/LookAt` — its `vrm:type`
+  (`bone` or `expression`), its eye joints and the range-map curves the importer
+  preserved as raw JSON — and produces either eye-bone rotations or the named
+  expression weights a `expression`-type rig drives its gaze with. Plain values
+  in `vrmRetarget` like `ExpressionResolver`, so `execVrm`'s `Vrm.LookAtEvaluate`
+  is a wrapper rather than a second implementation, and `motion_retarget` is the
+  stage half that authors the result.
 
 ## Next: the recorded-source and producer-contract tracks ⬜
 

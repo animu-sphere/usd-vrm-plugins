@@ -123,8 +123,8 @@ struct MotionTolerance
 // differs by 0.0031 rad", "sample 12: timestamp differs by 0.002 s". The
 // order is fixed, so the same pair always reports the same line: timestamp,
 // root, bones in humanoid enum order, confidence, contacts, expressions by
-// name. `difference` is assigned only on a false return and is left untouched
-// otherwise.
+// name, look-at target. `difference` is assigned only on a false return and is
+// left untouched otherwise.
 //
 // An expression *name* is an identifier rather than a measurement, so it is
 // compared exactly by both -- there is no tolerance under which "happy" and

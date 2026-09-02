@@ -43,7 +43,7 @@ MANIFEST_NAME = "manifest.json"
 # every committed trace through the C++ writer and compares bytes, so a version
 # that drifted from the header fails there rather than authoring a fixture the
 # reader would refuse.
-TRACE_FORMAT_VERSION = 2
+TRACE_FORMAT_VERSION = 3
 
 # The VRM 1.0 humanoid vocabulary in motionCore's enum order. The trace writer
 # emits bones in this order, so the corpus must too.
