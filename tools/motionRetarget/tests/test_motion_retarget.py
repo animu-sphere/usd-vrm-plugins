@@ -220,7 +220,8 @@ EXPECTED_BLEND_SHAPE_WEIGHTS = {
 
 
 def check_expression_bake(tool: str, fixtures: pathlib.Path,
-                          humanoid_map: str, workspace: pathlib.Path,
+                          faceless_avatar: pathlib.Path, humanoid_map: str,
+                          workspace: pathlib.Path,
                           failures: Failures) -> None:
     """The face half: a named weight becomes this rig's blend-shape weights.
 
@@ -298,6 +299,9 @@ def check_expression_bake(tool: str, fixtures: pathlib.Path,
     check_usdskel_resolves_the_expressions(output, failures)
     check_an_unreported_weight_holds(tool, avatar, clip, humanoid_map,
                                      workspace, failures)
+    check_a_faceless_rig_reports_the_whole_loss(tool, faceless_avatar, clip,
+                                                humanoid_map, workspace,
+                                                failures)
 
     # --no-expressions bakes the body alone. It must author no blendShapes at
     # all rather than an empty array: an authored empty array is a statement
@@ -319,6 +323,42 @@ def check_expression_bake(tool: str, fixtures: pathlib.Path,
             not body_only_animation.GetBlendShapeWeightsAttr()
             .HasAuthoredValue(),
             "--no-expressions still authored blendShapeWeights")
+
+
+def check_a_faceless_rig_reports_the_whole_loss(tool: str,
+                                                avatar: pathlib.Path,
+                                                clip: pathlib.Path,
+                                                humanoid_map: str,
+                                                workspace: pathlib.Path,
+                                                failures: Failures) -> None:
+    """A rig with no expressions at all must say so, not pass over it.
+
+    This is the total loss -- every name the clip animates going missing at
+    once -- and it is the easiest one to lose, because "the avatar declares no
+    expression" reads like a rig that simply has no face rather than like a
+    bake that dropped a whole track. A rig missing *one* name reports it; a rig
+    missing all of them has to report the same way, or the recovery the guide
+    prescribes (run it without --quiet and read the warnings) works on every
+    avatar except the one that lost the most.
+    """
+    output = workspace / "faceless_bake.usda"
+    result = run_tool(
+        tool, "--avatar", str(avatar), "--animation", str(clip),
+        "--output", str(output), "--humanoid-map", humanoid_map)
+    if not failures.check(
+            result.returncode == 0,
+            f"bake of an expressive clip onto a faceless rig failed: "
+            f"{result.stderr}"):
+        return
+    for name in ("happy", "blink", "angry", "ghost", "myWink"):
+        failures.check(
+            f"'{name}'" in result.stderr,
+            f"a rig declaring no expression dropped '{name}' without saying "
+            f"so: {result.stderr.strip()}")
+    stage = Usd.Stage.Open(str(output))
+    failures.check(
+        not find_animation(stage).GetBlendShapesAttr().HasAuthoredValue(),
+        "a rig that binds no blend shape still had blendShapes authored")
 
 
 def check_an_unreported_weight_holds(tool: str, avatar: pathlib.Path,
@@ -582,7 +622,7 @@ def main() -> int:
                 abs(times[-1] - 30.0) <= TOLERANCE,
                 f"resampled clip ends at time code {times[-1]}, expected 30")
 
-        check_expression_bake(options.tool, tool_fixtures,
+        check_expression_bake(options.tool, tool_fixtures, avatar,
                               options.humanoid_map, workspace, failures)
 
         # Writing the output over an input is refused, and the input survives.

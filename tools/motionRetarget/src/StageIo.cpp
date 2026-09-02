@@ -227,15 +227,18 @@ ReadExpressionDefinition(const UsdPrim& prim, const std::string& name,
             + " value(s); the binds that are short of either are skipped");
     }
     for (std::size_t i = 0; i < colorTargets.size(); ++i) {
+        // Skipped, as the warning says, and not completed from thin air. A
+        // slot is half the key, so inventing one would merge two binds of a
+        // material under a single accumulator; and a value invented for a
+        // colour is a colour -- opaque white, and indistinguishable downstream
+        // from one the avatar actually asked for.
+        if (i >= colorTypes.size() || i >= colorValues.size()) {
+            continue;
+        }
         vrmRetarget::MaterialColorBind bind;
         bind.material = colorTargets[i].GetString();
-        // A slot is half the key, so a bind that is missing one is left with an
-        // empty colorType and the resolver skips it by name. Inventing a slot
-        // here would merge two binds of one material under one accumulator.
-        bind.colorType = i < colorTypes.size() ? colorTypes[i].GetString()
-                                               : std::string();
-        bind.targetValue =
-            i < colorValues.size() ? colorValues[i] : GfVec4f(1.0f);
+        bind.colorType = colorTypes[i].GetString();
+        bind.targetValue = colorValues[i];
         definition.materialColors.push_back(std::move(bind));
     }
     return definition;

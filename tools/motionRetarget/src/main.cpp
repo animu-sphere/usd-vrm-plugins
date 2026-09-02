@@ -170,13 +170,16 @@ main(int argc, char** argv)
         ReportWarnings(diagnostics.warnings, options.quiet);
     }
 
-    // The face half of the same samples. A rig that declares no expression
-    // resolves nothing at all -- there is no rig to join a name to, and an
-    // avatar without expressions is the ordinary case for a plain `.usda`
-    // skeleton rather than a defect worth a diagnostic.
+    // The face half of the same samples.
+    //
+    // A rig that declares no expression at all is resolved against anyway,
+    // rather than short-circuited: it resolves nothing, and the point is that
+    // it *says* so. That is the total-loss case -- every name the clip animates
+    // going missing at once -- and it is the one a bake must not pass over in
+    // silence, so the empty rig takes the same path as a rig missing one name.
     std::vector<vrmRetarget::ResolvedExpressions> expressions;
     vrmRetarget::ExpressionDiagnostics expressionDiagnostics;
-    if (options.expressions && !avatar.expressionRig.IsEmpty()) {
+    if (options.expressions) {
         const vrmRetarget::ExpressionResolver resolver(avatar.expressionRig);
         expressions.reserve(source->samples.size());
         for (const motion::HumanoidPose& pose : source->samples) {
