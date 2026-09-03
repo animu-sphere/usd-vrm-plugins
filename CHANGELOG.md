@@ -15,6 +15,75 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **A rig looks where the clip is looking: `LookAtEvaluate` and the gaze bake.**
+  A clip named a place to look and no rig looked there. `vrmRetarget`'s new
+  `LookAtEvaluator` turns that target point into one particular avatar's answer,
+  and `motion_retarget` authors it — the consumer half of the reading half
+  below, and the last of Motion Phase G's two resolve steps.
+
+  **The two VRM rig types are not a spelling difference**, and that is the shape
+  of the step. A `bone` rig answers with eye-joint rotations, and the eye on the
+  side the gaze goes to takes the *outer* range map while the other takes the
+  *inner* one — the split exists because two eyes converge, so a resolve that
+  read one map for both eyes would look plausible on every symmetric rig. An
+  `expression` rig answers with `motion::ExpressionWeights` for `lookLeft`,
+  `lookRight`, `lookUp` and `lookDown`, and that is deliberately the value
+  `ExpressionResolver` already consumes: the gaze is folded into the sample's own
+  weights *before* the expression resolve, so it reaches the avatar's binds
+  through the one accumulator that already sums expressions rather than through
+  a second path into the same blend shapes. One weight drives both eyes there,
+  so the inner map is unreachable for that type, and a rig that states a
+  different one is told rather than quietly half-read.
+
+  Four further decisions are measured by fixtures rather than asserted. **A gaze
+  starts at the eyes**: the origin is the head joint plus the rig's
+  `offsetFromHeadBone`, rotated *by the head*, because the offset is stated in
+  the head's own space — an implementation that added it in world space agrees
+  with every level-headed test and diverges the moment the character turns,
+  which is why a turned head is one of them. **The two VRM spellings are one
+  value**: VRM 1.0's `inputMaxValue`/`outputScale` and VRM 0.x's
+  `xRange`/`yRange` plus an editable Hermite curve parse into the same
+  `LookAtRangeMap`, and the 0.x linear default is that basis reduced
+  algebraically to `t`, so a 0.x rig that never touched its curves and a 1.0 rig
+  are the same map rather than two that happen to agree. **A gaze nobody named
+  is not a gaze forward, and one the clip stops naming holds** — the eyes stay
+  where the retarget put them until a first target arrives, and a sample that
+  says nothing afterwards leaves the last gaze standing, which is the rule a
+  blocked expression weight is already under and the one thing that keeps a
+  fixed-width blend-shape array and a per-sample joint array agreeing. A target
+  sitting *on* the eye origin names no direction at all and is reported, because
+  that one is a defect rather than a silence. And **the
+  clip's own `offsetFromHeadBone` is a fallback, not the measurement**: it
+  describes the rig the clip was authored on, so it is consulted only when the
+  avatar states none, and the substitution is warned about rather than defaulted.
+
+  Two claims the tests had to earn. The eye rotation's composition — yaw about
+  +Y, then pitch about +X *negated*, since a positive right-handed rotation
+  about +X takes the forward axis down — is checked by aiming an identity range
+  map at a target and requiring the resulting rotation to point back at it; it
+  fails on either half being wrong, where asserting the two angles would have
+  agreed with an implementation that had both conventions inverted. The
+  end-to-end fixtures then give the four maps four *different* output scales
+  (10 outer, 5 inner, 12 up, 6 down), so swapping inner for outer fails four
+  assertions instead of none — verified by making both mistakes on purpose and
+  watching them go red.
+
+  New in `vrmRetarget`: `LookAtEvaluator.h` (`LookAtRangeMap`, `LookAtRig`,
+  `ParseLookAtRangeMaps`, `LookAtEvaluator`, `ResolvedLookAt`,
+  `LookAtDiagnostics`) and `GetJointWorldTransform`, which composes a
+  `RetargetedPose`'s ancestor chain — a gaze needs to know where the head *is*,
+  and a retargeted pose states only where each joint sits relative to its
+  parent. The library now links OpenUSD's `js` as well as `gf`, for the raw
+  look-at block alone; it is a value library, so the boundary the
+  `check_boundaries.py` gate enforces is unchanged. `motion_retarget` gains
+  `--no-look-at`, for a pipeline that aims the eyes itself, and reports the eye
+  joints it aimed and the samples that gazed. `--no-expressions` suppresses an
+  *expression*-driven gaze along with the face, because those four weights reach
+  the stage as blend-shape weights and by no other route, and the run says so
+  rather than counting a gaze it did not write. Everything the gaze displaces is
+  named exactly once however many samples ran into it: an eye bone the clip
+  itself animates, and a gaze expression the clip also drives by name.
+
 - **A clip's gaze reaches the canonical layer: VRMA look-at animation.** Look-at
   was untouched in every layer. `usdVrmaFileFormat` now reads the
   `VRMC_vrm_animation` `lookAt` block, `motionCore` carries what it says, and

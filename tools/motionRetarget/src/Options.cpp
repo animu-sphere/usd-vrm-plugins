@@ -89,6 +89,9 @@ GetUsage()
         "  --no-expressions       Bake the body only; do not resolve the\n"
         "                         clip's expression weights onto the avatar's\n"
         "                         blend shapes.\n"
+        "  --no-look-at           Bake without a gaze; do not evaluate the\n"
+        "                         clip's look-at target against the\n"
+        "                         avatar's eyes.\n"
         "  --quiet                Suppress diagnostics on stderr.\n"
         "  -h, --help             Show this message.\n";
 }
@@ -176,6 +179,8 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
             }
         } else if (argument == "--no-expressions") {
             options->expressions = false;
+        } else if (argument == "--no-look-at") {
+            options->lookAt = false;
         } else if (argument == "--quiet") {
             options->quiet = true;
         } else {

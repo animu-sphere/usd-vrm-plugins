@@ -172,8 +172,9 @@ Still ahead:
   animation landed 2026-08-23 (`/Animation/Expressions`, weights carried
   verbatim onto the pose and never expanded) and VRMA **look-at** animation on
   2026-09-02 (`/Animation/LookAt`, a target point carried onto the pose and
-  never evaluated); what remains is `LookAtEvaluate`, live recording, and the
-  VRMA export investigation.
+  never evaluated). `LookAtEvaluate` followed on 2026-09-04, so a gaze now
+  reaches a rig's eyes as well as a stage; what remains is live recording and
+  the VRMA export investigation.
   - ✅ **`ExpressionResolve` has its join key** *(2026-09-01)*. Both sides now
     author `vrm:expressionName` verbatim — on the avatar side as a
     `VrmExpressionAPI` builtin, additive within schema contract v1 — so the

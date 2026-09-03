@@ -147,6 +147,61 @@ const TfToken kMaterialColorTargets("vrm:materialColorTargets");
 const TfToken kMaterialColorTypes("vrm:materialColorTypes");
 const TfToken kMaterialColorValues("vrm:materialColorValues");
 
+const TfToken kVrmType("vrm:type");
+const TfToken kLeftEye("vrm:leftEye");
+const TfToken kRightEye("vrm:rightEye");
+// SetCustomDataByKey nests on ':', so the importer's "vrm:lookAt:raw" is read
+// back by the same colon-separated key rather than by a flat attribute name.
+const TfToken kLookAtRaw("vrm:lookAt:raw");
+const TfToken kLookAtTarget("vrm:lookAtTarget");
+const TfToken kLookAtOffset("vrm:lookAtOffsetFromHeadBone");
+
+// Is this the avatar's VrmLookAtAPI prim?
+//
+// `vrm:type` alone does not say so -- VrmConstraintAPI spells its constraint
+// kind with the same name -- so the test is `vrm:type` plus one thing only a
+// look-at carries: an eye token, or the preserved curve block. A constraint has
+// neither, and an expression-driven look-at that names no eye still has the
+// block, because a rig that drives its gaze through the face states the curves
+// that scale it.
+bool
+IsLookAtPrim(const UsdPrim& prim)
+{
+    if (!prim.HasAttribute(kVrmType)) {
+        return false;
+    }
+    return prim.HasAttribute(kLeftEye) || prim.HasAttribute(kRightEye)
+        || !prim.GetCustomDataByKey(kLookAtRaw).IsEmpty();
+}
+
+// Reads one eye token and resolves it against the target skeleton.
+//
+// A token the skeleton does not contain is dropped rather than carried: the
+// evaluator hands the identifier straight back on the rotation it produces, so
+// an unresolvable one would travel all the way to the authoring step before
+// vanishing, with nothing said about why the eye did not move.
+std::string
+ReadEyeJoint(const UsdPrim& prim, const TfToken& attributeName,
+             const vrmRetarget::TargetSkeleton& skeleton,
+             std::vector<std::string>* warnings)
+{
+    const UsdAttribute attribute = prim.GetAttribute(attributeName);
+    TfToken token;
+    if (!attribute || !attribute.Get(&token) || token.IsEmpty()) {
+        return std::string();
+    }
+    if (skeleton.FindJoint(token.GetString())
+        == vrmRetarget::TargetSkeleton::kNoParent) {
+        warnings->push_back(
+            "avatar look-at names '" + token.GetString() + "' as its "
+            + attributeName.GetString()
+            + ", which the target skeleton does not contain; that eye is not "
+              "driven");
+        return std::string();
+    }
+    return token.GetString();
+}
+
 // The verbatim expression name a prim answers to, or an empty string when it
 // declares none. An expression with no name is not an expression this layer can
 // join anything to, so it is reported rather than resolved against its prim
@@ -498,6 +553,49 @@ ReadAvatar(const std::string& path, const std::string& skeletonPathOverride,
     }
     ReadBlendShapeTokens(avatar->stage, &avatar->blendShapeTokens,
                          &avatar->warnings);
+
+    // The gaze half of the rig. Like the face half, declaring none is the
+    // ordinary case for a plain `.usda` skeleton and is not a warning.
+    for (const UsdPrim& prim : avatar->stage->Traverse()) {
+        if (!IsLookAtPrim(prim)) {
+            continue;
+        }
+        if (avatar->hasLookAt) {
+            avatar->warnings.push_back(
+                "avatar declares more than one look-at configuration; <"
+                + prim.GetPath().GetString() + "> is ignored");
+            continue;
+        }
+        avatar->hasLookAt = true;
+
+        // The preserved block first, then the authored `vrm:type` over it: the
+        // attribute is the value the importer normalized -- a VRM 0.x
+        // "BlendShape" already turned into the 1.0 vocabulary -- and the block
+        // is whatever the source file happened to say.
+        const VtValue raw = prim.GetCustomDataByKey(kLookAtRaw);
+        if (raw.IsHolding<std::string>()) {
+            vrmRetarget::ParseLookAtRangeMaps(raw.UncheckedGet<std::string>(),
+                                              &avatar->lookAtRig,
+                                              &avatar->warnings);
+        }
+        TfToken type;
+        if (prim.GetAttribute(kVrmType).Get(&type)) {
+            if (type == TfToken("bone")) {
+                avatar->lookAtRig.type = vrmRetarget::LookAtType::Bone;
+            } else if (type == TfToken("expression")) {
+                avatar->lookAtRig.type = vrmRetarget::LookAtType::Expression;
+            } else if (!type.IsEmpty()) {
+                avatar->warnings.push_back(
+                    "avatar look-at states vrm:type '" + type.GetString()
+                    + "', which is neither 'bone' nor 'expression'; the "
+                      "preserved block's own type is used instead");
+            }
+        }
+        avatar->lookAtRig.leftEyeJoint = ReadEyeJoint(
+            prim, kLeftEye, avatar->skeleton, &avatar->warnings);
+        avatar->lookAtRig.rightEyeJoint = ReadEyeJoint(
+            prim, kRightEye, avatar->skeleton, &avatar->warnings);
+    }
     return true;
 }
 
@@ -666,6 +764,39 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride,
         timeCodes.insert(weightTimes.begin(), weightTimes.end());
     }
 
+    // The clip's gaze track, on the same union of key times for the reason the
+    // expressions are on it: a look-at channel keys into the instants the poses
+    // already exist at, so a gaze that moves between two body keys has
+    // somewhere to say so.
+    UsdAttribute lookAtTargetAttr;
+    for (const UsdPrim& prim : clip->stage->Traverse()) {
+        const UsdAttribute target = prim.GetAttribute(kLookAtTarget);
+        const UsdAttribute offset = prim.GetAttribute(kLookAtOffset);
+        if (!target && !offset) {
+            continue;
+        }
+        if (clip->hasLookAtTrack || clip->lookAtOffsetFromHeadBone) {
+            clip->warnings.push_back(
+                "clip carries more than one look-at prim; <"
+                + prim.GetPath().GetString() + "> is ignored");
+            continue;
+        }
+        GfVec3f offsetValue(0.0f);
+        if (offset && offset.Get(&offsetValue)) {
+            clip->lookAtOffsetFromHeadBone = offsetValue;
+        }
+        // A prim that states an offset and no target is a clip that measured
+        // the rig it was authored on and animated no gaze -- which the VRMA
+        // reader authors deliberately, so it is not a defect here either.
+        if (target && target.HasValue()) {
+            lookAtTargetAttr = target;
+            clip->hasLookAtTrack = true;
+            std::vector<double> targetTimes;
+            target.GetTimeSamples(&targetTimes);
+            timeCodes.insert(targetTimes.begin(), targetTimes.end());
+        }
+    }
+
     if (timeCodes.empty()) {
         // A clip with no time samples still has a default value; treat it as a
         // single pose at the stage's start.
@@ -706,6 +837,18 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride,
             pose.root.worldPosition =
                 translations[static_cast<std::size_t>(hipsJointIndex)];
             pose.root.hasPosition = true;
+        }
+
+        if (lookAtTargetAttr) {
+            // Get() answers with the default when the attribute has no time
+            // samples, so a gaze the clip stated once and a gaze it animates
+            // read the same way here -- and an attribute the clip never
+            // authored leaves the pose's target absent, which is not a gaze at
+            // the origin.
+            GfVec3f target;
+            if (lookAtTargetAttr.Get(&target, timeCode)) {
+                pose.lookAtTarget = target;
+            }
         }
 
         for (const ClipExpression& expression : clipExpressions) {

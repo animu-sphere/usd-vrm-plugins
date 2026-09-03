@@ -1,0 +1,86 @@
+#usda 1.0
+(
+    """A clip that names where the character is looking.
+
+    The body is deliberately inert — identity rotations at both keys and a hips
+    translation equal to its own rest, so the root-motion delta is zero and the
+    head sits exactly where the avatar's rest puts it. That is what makes the
+    expected eye angles arithmetic rather than a measurement of the retarget:
+    what this fixture varies is the gaze alone.
+
+    Two keys, chosen to exercise a different quadrant each:
+
+      0    (1, 1.56, 1)     level with the eyes, 45 degrees to the character's
+                            own left — so the left eye takes the outer map and
+                            the right eye the inner one
+      30   (-1, 0.56, 1)    45 degrees to the right and 35.26 degrees down —
+                            the mirror horizontally, and the down map vertically
+
+    `vrm:lookAtOffsetFromHeadBone` matches the avatar's on purpose: this is the
+    measurement of the rig the clip was authored on, and a clip authored on
+    *this* rig states this rig's."""
+    defaultPrim = "Animation"
+    startTimeCode = 0
+    endTimeCode = 30
+    timeCodesPerSecond = 30
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Scope "Animation" (
+    customData = {
+        dictionary vrma = {
+            string sourceFormat = "VRMA"
+            string specVersion = "1.0"
+            string rootMotionSource = "hipsTranslation"
+        }
+    }
+)
+{
+    def Skeleton "HumanoidSkeleton" (
+        apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        uniform token[] joints = [
+            "hips",
+            "hips/spine",
+            "hips/spine/chest",
+            "hips/spine/chest/neck",
+            "hips/spine/chest/neck/head"]
+        uniform matrix4d[] restTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.15, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.15, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1))]
+        rel skel:animationSource = </Animation/BodyAnimation>
+    }
+
+    def SkelAnimation "BodyAnimation"
+    {
+        uniform token[] joints = [
+            "hips",
+            "hips/spine",
+            "hips/spine/chest",
+            "hips/spine/chest/neck",
+            "hips/spine/chest/neck/head"]
+        quatf[] rotations.timeSamples = {
+            0: [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0)],
+            30: [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0)],
+        }
+        float3[] translations.timeSamples = {
+            0: [(0, 1, 0), (0, 0.1, 0), (0, 0.15, 0), (0, 0.15, 0), (0, 0.1, 0)],
+            30: [(0, 1, 0), (0, 0.1, 0), (0, 0.15, 0), (0, 0.15, 0), (0, 0.1, 0)],
+        }
+        half3[] scales = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+    }
+
+    def Scope "LookAt"
+    {
+        uniform float3 vrm:lookAtOffsetFromHeadBone = (0, 0.06, 0)
+        point3f vrm:lookAtTarget.timeSamples = {
+            0: (1, 1.56, 1),
+            30: (-1, 0.56, 1),
+        }
+    }
+}

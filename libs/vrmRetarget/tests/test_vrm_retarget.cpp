@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "vrmRetarget/ExpressionResolver.h"
 #include "vrmRetarget/HumanoidMap.h"
+#include "vrmRetarget/LookAtEvaluator.h"
 #include "vrmRetarget/PoseRetargeter.h"
 #include "vrmRetarget/RestPose.h"
 #include "vrmRetarget/RootMotionPolicy.h"
@@ -11,7 +12,9 @@
 #include <cmath>
 #include <cstdio>
 #include <initializer_list>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace
 {
@@ -897,6 +900,583 @@ TestATargetDrivenBelowZeroIsReportedToo()
     assert(carried.clampedNames.empty());
 }
 
+void
+TestAJointsWorldTransformComposesItsWholeChain()
+{
+    // LookAtEvaluator needs to know where the head *is*, and a RetargetedPose
+    // states only where each joint sits relative to its parent. Composing that
+    // is the piece between them, and the translation is the half that is easy
+    // to get wrong: a parent's rotation has to turn the child's offset before
+    // it is added, so a rotated spine moves the chest sideways rather than
+    // further up.
+    const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
+    vrmRetarget::RetargetedPose pose;
+    for (const vrmRetarget::TargetJoint& joint : skeleton.GetJoints()) {
+        pose.rotations.push_back(joint.restRotation);
+        pose.translations.push_back(joint.restTranslation);
+    }
+
+    const int chest = skeleton.FindJoint("Root/Pelvis/SpineA/ChestA");
+    assert(chest >= 0);
+    pxr::GfQuatf orientation(1.0f);
+    pxr::GfVec3f position(0.0f);
+    assert(vrmRetarget::GetJointWorldTransform(skeleton, pose, chest,
+                                               &orientation, &position));
+    // 1 m to the pelvis plus two half-metre segments, all straight up.
+    assert(NearlyEqual(position, pxr::GfVec3f(0.0f, 2.0f, 0.0f)));
+    assert(SameOrientation(orientation, pxr::GfQuatf(1.0f)));
+
+    // Tip the pelvis a quarter turn about +X: everything above it swings from
+    // vertical onto +Z, and the pelvis's own metre of height stays.
+    const int pelvis = skeleton.FindJoint("Root/Pelvis");
+    pose.rotations[static_cast<std::size_t>(pelvis)] = Rotation(kAxisX, 90.0f);
+    assert(vrmRetarget::GetJointWorldTransform(skeleton, pose, chest,
+                                               &orientation, &position));
+    assert(NearlyEqual(position, pxr::GfVec3f(0.0f, 1.0f, 1.0f)));
+    assert(SameOrientation(orientation, Rotation(kAxisX, 90.0f)));
+
+    // A pose that is not the skeleton's own width answers nothing rather than
+    // reading past the end of it, and neither output is touched.
+    vrmRetarget::RetargetedPose truncated = pose;
+    truncated.rotations.pop_back();
+    assert(!vrmRetarget::GetJointWorldTransform(skeleton, truncated, chest,
+                                                &orientation, &position));
+    assert(!vrmRetarget::GetJointWorldTransform(skeleton, pose, -1,
+                                                &orientation, &position));
+    assert(NearlyEqual(position, pxr::GfVec3f(0.0f, 1.0f, 1.0f)));
+}
+
+// ---------------------------------------------------------------------------
+// LookAtEvaluator
+// ---------------------------------------------------------------------------
+
+// A range map that is the identity over [0, 90] degrees, so a resolved eye
+// rotation is the aim itself and the test measures the geometry rather than a
+// curve on top of it.
+vrmRetarget::LookAtRangeMap
+IdentityMap()
+{
+    vrmRetarget::LookAtRangeMap map;
+    map.inputMaxValue = 90.0f;
+    map.outputScale = 90.0f;
+    return map;
+}
+
+vrmRetarget::LookAtRig
+IdentityBoneRig()
+{
+    vrmRetarget::LookAtRig rig;
+    rig.type = vrmRetarget::LookAtType::Bone;
+    rig.leftEyeJoint = "Root/Hips/Spine/Head/LeftEye";
+    rig.rightEyeJoint = "Root/Hips/Spine/Head/RightEye";
+    rig.horizontalInner = IdentityMap();
+    rig.horizontalOuter = IdentityMap();
+    rig.verticalDown = IdentityMap();
+    rig.verticalUp = IdentityMap();
+    // An explicit zero: this rig states that its eyes sit on the head joint,
+    // which is a measurement rather than the absence of one. The tests that are
+    // about the absence clear it.
+    rig.offsetFromHeadBone = pxr::GfVec3f(0.0f);
+    return rig;
+}
+
+// The same rig driven through the face instead. Every map is the identity onto
+// a unit weight, so a gaze at the limit of a range is a weight of exactly 1.
+vrmRetarget::LookAtRig
+IdentityExpressionRig()
+{
+    vrmRetarget::LookAtRig rig = IdentityBoneRig();
+    rig.type = vrmRetarget::LookAtType::Expression;
+    rig.horizontalInner.outputScale = 1.0f;
+    rig.horizontalOuter.outputScale = 1.0f;
+    rig.verticalDown.outputScale = 1.0f;
+    rig.verticalUp.outputScale = 1.0f;
+    return rig;
+}
+
+vrmRetarget::LookAtInput
+GazeAt(const pxr::GfVec3f& target)
+{
+    vrmRetarget::LookAtInput input;
+    input.target = target;
+    return input;
+}
+
+void
+TestAnIdentityRangeMapReproducesTheAim()
+{
+    // The composition order is the claim: yaw about +Y, then pitch about +X
+    // negated, because a positive right-handed rotation about +X takes the
+    // forward axis down. Get either wrong and a rig whose maps do nothing --
+    // 90 degrees of input onto 90 degrees of output -- still fails to point at
+    // the thing it is aiming at. So this measures the round trip rather than
+    // asserting the two angles.
+    const vrmRetarget::LookAtEvaluator evaluator(IdentityBoneRig());
+    vrmRetarget::LookAtDiagnostics diagnostics;
+    const pxr::GfVec3f target(1.0f, 1.0f, 1.0f);
+    const vrmRetarget::ResolvedLookAt resolved =
+        evaluator.Evaluate(GazeAt(target), &diagnostics);
+
+    assert(resolved.hasGaze);
+    assert(NearlyEqual(resolved.yawDegrees, 45.0f));
+    assert(NearlyEqual(resolved.pitchDegrees, 35.26439f));
+    assert(resolved.eyeRotations.size() == 2);
+    for (const vrmRetarget::LookAtEyeRotation& eye : resolved.eyeRotations) {
+        assert(NearlyEqual(eye.rotation.Transform(kAxisZ),
+                           target.GetNormalized()));
+    }
+    // An absent target is the only thing this counts as a sample without one,
+    // and there was none.
+    assert(diagnostics.samplesEvaluated == 1);
+    assert(diagnostics.samplesWithoutTarget == 0);
+
+    // +X is the character's own left in the basis VRM inherits from glTF, so a
+    // target on that side is a positive yaw. The mirror image is the same
+    // magnitude with the other sign, which is what makes the inner/outer choice
+    // below a choice about a side rather than about a formula.
+    const vrmRetarget::ResolvedLookAt mirrored =
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(-1.0f, 1.0f, 1.0f)));
+    assert(NearlyEqual(mirrored.yawDegrees, -45.0f));
+    assert(NearlyEqual(mirrored.pitchDegrees, 35.26439f));
+}
+
+void
+TestTheOffsetPlacesTheGazeOrigin()
+{
+    // The gaze starts at the eyes, not at the head joint, and the offset that
+    // says where they are is stated in the head's own space -- so it has to be
+    // rotated by the head before it is added. A rig that added it in world
+    // space would agree with this test at an identity head orientation and
+    // disagree the moment the character turned, which is why the second half
+    // turns the head.
+    vrmRetarget::LookAtRig rig = IdentityBoneRig();
+    rig.offsetFromHeadBone = pxr::GfVec3f(0.0f, 0.06f, 0.0f);
+    const vrmRetarget::LookAtEvaluator evaluator(rig);
+
+    // Straight ahead of the eyes is a level gaze...
+    const vrmRetarget::ResolvedLookAt level =
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.06f, 1.0f)));
+    assert(level.hasGaze);
+    assert(NearlyEqual(level.yawDegrees, 0.0f));
+    assert(NearlyEqual(level.pitchDegrees, 0.0f));
+
+    // ...and straight ahead of the *joint* is 6 cm below them.
+    const vrmRetarget::ResolvedLookAt below =
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.0f, 1.0f)));
+    assert(NearlyEqual(below.pitchDegrees, -3.43363f));
+
+    // With the head turned a quarter turn to the character's left, the eyes
+    // move with it: the target that was level ahead is now off to the right by
+    // exactly that quarter turn, and the offset -- which is along the head's
+    // own up axis, unchanged by a yaw -- still puts the origin at the eyes.
+    vrmRetarget::LookAtInput turned = GazeAt(pxr::GfVec3f(0.0f, 0.06f, 1.0f));
+    turned.head.orientation = Rotation(kAxisY, 90.0f);
+    const vrmRetarget::ResolvedLookAt aside = evaluator.Evaluate(turned);
+    assert(NearlyEqual(aside.yawDegrees, -90.0f));
+    assert(NearlyEqual(aside.pitchDegrees, 0.0f));
+
+    // A head that has moved carries its eyes with it too.
+    vrmRetarget::LookAtInput walked = GazeAt(pxr::GfVec3f(0.0f, 1.56f, 1.0f));
+    walked.head.position = pxr::GfVec3f(0.0f, 1.5f, 0.0f);
+    const vrmRetarget::ResolvedLookAt ahead = evaluator.Evaluate(walked);
+    assert(NearlyEqual(ahead.pitchDegrees, 0.0f));
+}
+
+void
+TestInnerAndOuterAreChosenBySide()
+{
+    // Two eyes converge: the one on the side the gaze goes to turns outward,
+    // away from the nose, and the other turns inward. The two maps are given
+    // different scales so a resolve that read one map for both eyes -- or read
+    // them the other way round -- cannot pass.
+    vrmRetarget::LookAtRig rig = IdentityBoneRig();
+    rig.horizontalInner.outputScale = 5.0f;
+    rig.horizontalOuter.outputScale = 10.0f;
+    rig.verticalUp.outputScale = 0.0f;
+    rig.verticalDown.outputScale = 0.0f;
+    const vrmRetarget::LookAtEvaluator evaluator(rig);
+
+    const vrmRetarget::ResolvedLookAt left =
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 0.0f)));
+    assert(NearlyEqual(left.yawDegrees, 90.0f));
+    assert(left.eyeRotations[0].joint == rig.leftEyeJoint);
+    assert(SameOrientation(left.eyeRotations[0].rotation,
+                           Rotation(kAxisY, 10.0f)));
+    assert(SameOrientation(left.eyeRotations[1].rotation,
+                           Rotation(kAxisY, 5.0f)));
+
+    const vrmRetarget::ResolvedLookAt right =
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(-1.0f, 0.0f, 0.0f)));
+    assert(NearlyEqual(right.yawDegrees, -90.0f));
+    assert(SameOrientation(right.eyeRotations[0].rotation,
+                           Rotation(kAxisY, -5.0f)));
+    assert(SameOrientation(right.eyeRotations[1].rotation,
+                           Rotation(kAxisY, -10.0f)));
+
+    // Past the map's input range the eye stops rather than extrapolating: a
+    // target behind the character's shoulder is 135 degrees of aim and still
+    // ten degrees of eye.
+    const vrmRetarget::ResolvedLookAt behind =
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, -1.0f)));
+    assert(NearlyEqual(behind.yawDegrees, 135.0f));
+    assert(SameOrientation(behind.eyeRotations[0].rotation,
+                           Rotation(kAxisY, 10.0f)));
+}
+
+void
+TestVerticalIsSharedAndSignedByDirection()
+{
+    // Up and down are two maps because a face is not symmetric about the
+    // horizon -- an eye rolls further up than down -- but both eyes share them,
+    // so this is the one place the two rotations agree.
+    vrmRetarget::LookAtRig rig = IdentityBoneRig();
+    rig.horizontalInner.outputScale = 0.0f;
+    rig.horizontalOuter.outputScale = 0.0f;
+    rig.verticalUp.outputScale = 12.0f;
+    rig.verticalDown.outputScale = 6.0f;
+    const vrmRetarget::LookAtEvaluator evaluator(rig);
+
+    const vrmRetarget::ResolvedLookAt up =
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 1.0f, 0.0f)));
+    assert(NearlyEqual(up.pitchDegrees, 90.0f));
+    assert(SameOrientation(up.eyeRotations[0].rotation,
+                           Rotation(kAxisX, -12.0f)));
+    assert(SameOrientation(up.eyeRotations[1].rotation,
+                           Rotation(kAxisX, -12.0f)));
+
+    const vrmRetarget::ResolvedLookAt down =
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, -1.0f, 0.0f)));
+    assert(NearlyEqual(down.pitchDegrees, -90.0f));
+    assert(SameOrientation(down.eyeRotations[0].rotation,
+                           Rotation(kAxisX, 6.0f)));
+}
+
+void
+TestAGazeNobodyNamedIsNotAGazeForward()
+{
+    // The rule an unreported expression name is under, one field over: a clip
+    // that said nothing about where the character is looking did not say the
+    // character is looking straight ahead. Nothing resolves, and it is not a
+    // warning -- a clip with no look-at track is an ordinary clip.
+    const vrmRetarget::LookAtEvaluator evaluator(IdentityBoneRig());
+    vrmRetarget::LookAtDiagnostics diagnostics;
+    const vrmRetarget::ResolvedLookAt resolved =
+        evaluator.Evaluate(vrmRetarget::LookAtInput(), &diagnostics);
+
+    assert(!resolved.hasGaze);
+    assert(resolved.eyeRotations.empty());
+    assert(resolved.expressions.IsEmpty());
+    assert(NearlyEqual(resolved.yawDegrees, 0.0f));
+    assert(diagnostics.samplesEvaluated == 1);
+    assert(diagnostics.samplesWithoutTarget == 1);
+    assert(diagnostics.IsClean());
+
+    float yaw = 7.0f;
+    float pitch = 7.0f;
+    assert(!evaluator.Aim(vrmRetarget::LookAtInput(), &yaw, &pitch));
+    // Untouched, so a caller cannot mistake a refusal for a level gaze.
+    assert(NearlyEqual(yaw, 7.0f) && NearlyEqual(pitch, 7.0f));
+}
+
+void
+TestATargetOnTheEyesNamesNoDirection()
+{
+    // A target at the eye origin has no direction to normalize, and one a
+    // micrometre away has one that is numerically meaningless. Both are the
+    // same defect and both answer "no gaze" rather than inventing forward --
+    // but unlike an absent target, this one is a rig or a clip going wrong, so
+    // it is reported.
+    vrmRetarget::LookAtRig rig = IdentityBoneRig();
+    rig.offsetFromHeadBone = pxr::GfVec3f(0.0f, 0.06f, 0.0f);
+    const vrmRetarget::LookAtEvaluator evaluator(rig);
+    vrmRetarget::LookAtDiagnostics diagnostics;
+
+    const vrmRetarget::ResolvedLookAt resolved =
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.06f, 0.0f)),
+                           &diagnostics);
+    assert(!resolved.hasGaze);
+    assert(diagnostics.samplesWithoutTarget == 1);
+    assert(diagnostics.warnings.size() == 1);
+
+    // A second sample with the same defect is the same fact about the clip, so
+    // the report does not grow.
+    evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.06f, 0.0f)), &diagnostics);
+    assert(diagnostics.warnings.size() == 1);
+    assert(diagnostics.samplesEvaluated == 2);
+}
+
+void
+TestTheClipsOffsetIsTheFallbackAndIsReported()
+{
+    // A VRM 0.x rig states no offsetFromHeadBone at all. The clip's is the only
+    // measurement left, and using it assumes the two rigs' eyes sit at the same
+    // height -- an assumption an operator should see, so it is a warning rather
+    // than a default.
+    vrmRetarget::LookAtRig unmeasuredRig = IdentityBoneRig();
+    unmeasuredRig.offsetFromHeadBone.reset();
+
+    vrmRetarget::LookAtEvaluateOptions options;
+    options.clipOffsetFromHeadBone = pxr::GfVec3f(0.0f, 0.06f, 0.0f);
+    const vrmRetarget::LookAtEvaluator borrowed(unmeasuredRig, options);
+    vrmRetarget::LookAtDiagnostics diagnostics;
+    const vrmRetarget::ResolvedLookAt resolved =
+        borrowed.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.0f, 1.0f)), &diagnostics);
+    assert(NearlyEqual(resolved.pitchDegrees, -3.43363f));
+    assert(diagnostics.warnings.size() == 1);
+
+    // The avatar's own offset wins when it has one, and then there is nothing
+    // to report.
+    vrmRetarget::LookAtRig own = IdentityBoneRig();
+    own.offsetFromHeadBone = pxr::GfVec3f(0.0f, 0.12f, 0.0f);
+    const vrmRetarget::LookAtEvaluator preferred(own, options);
+    vrmRetarget::LookAtDiagnostics clean;
+    const vrmRetarget::ResolvedLookAt higher =
+        preferred.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.0f, 1.0f)), &clean);
+    assert(NearlyEqual(higher.pitchDegrees, -6.84277f));
+    assert(clean.IsClean());
+
+    // Neither side stating one is a third case, and it is not silent either:
+    // the gaze then starts at the head joint, which is inside the skull.
+    const vrmRetarget::LookAtEvaluator bare(unmeasuredRig);
+    vrmRetarget::LookAtDiagnostics unmeasured;
+    bare.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.0f, 1.0f)), &unmeasured);
+    assert(unmeasured.warnings.size() == 1);
+}
+
+void
+TestAnExpressionRigReportsAllFourNames()
+{
+    // One weight drives both eyes, so an expression rig has no inner eye and
+    // the horizontal curve is the outer one. What matters more is that all four
+    // names are reported every sample: a gaze that swings left after a sample
+    // that looked right has to say `lookRight` is now 0, or the earlier weight
+    // stands on the rig -- the same rule ExpressionResolver states for a
+    // reported zero.
+    const vrmRetarget::LookAtEvaluator evaluator(IdentityExpressionRig());
+
+    vrmRetarget::LookAtDiagnostics diagnostics;
+    const vrmRetarget::ResolvedLookAt left =
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 0.0f)),
+                           &diagnostics);
+    assert(left.hasGaze);
+    // No eye is rotated: an expression rig drives its gaze through the face.
+    assert(left.eyeRotations.empty());
+    assert(left.expressions.entries.size() == 4);
+    assert(NearlyEqual(*left.expressions.Find("lookLeft"), 1.0f));
+    assert(NearlyEqual(*left.expressions.Find("lookRight"), 0.0f));
+    assert(NearlyEqual(*left.expressions.Find("lookUp"), 0.0f));
+    assert(NearlyEqual(*left.expressions.Find("lookDown"), 0.0f));
+
+    const vrmRetarget::ResolvedLookAt down =
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, -1.0f, 0.0f)),
+                           &diagnostics);
+    assert(NearlyEqual(*down.expressions.Find("lookDown"), 1.0f));
+    assert(NearlyEqual(*down.expressions.Find("lookUp"), 0.0f));
+    // A downward gaze is straight down, so its horizontal weights are both
+    // zero -- and both are still stated.
+    assert(NearlyEqual(*down.expressions.Find("lookLeft"), 0.0f));
+    assert(NearlyEqual(*down.expressions.Find("lookRight"), 0.0f));
+    assert(diagnostics.IsClean());
+
+    // The value the expression half hands back is exactly what
+    // ExpressionResolver consumes, so a gaze reaches the avatar's binds through
+    // the path the face already uses rather than through a second one.
+    vrmRetarget::ExpressionRig binds;
+    vrmRetarget::ExpressionDefinition lookDown;
+    lookDown.name = "lookDown";
+    lookDown.morphTargets.push_back({"/Asset/Meshes/Face/EyesDown", 1.0f});
+    binds.Add(lookDown);
+    const vrmRetarget::ExpressionResolver resolver(binds);
+    const vrmRetarget::ResolvedExpressions applied =
+        resolver.Resolve(down.expressions);
+    assert(applied.morphTargets.size() == 1);
+    assert(NearlyEqual(applied.morphTargets[0].weight, 1.0f));
+}
+
+void
+TestAnExpressionWeightOutsideTheRangeIsClampedAndNamed()
+{
+    // A VRM 0.x BlendShape rig states its output range in the same key a Bone
+    // rig states degrees in, and nothing in the block distinguishes them. So a
+    // weight of 10 is clamped rather than being rescaled by a factor guessed
+    // from the rig's type, and the operator is told which name it happened to.
+    vrmRetarget::LookAtRig rig = IdentityExpressionRig();
+    // Both horizontal maps, so the only thing this sample can be told about is
+    // the weight -- an expression rig that states a *different* inner map is a
+    // separate report, and it is the case below.
+    rig.horizontalInner.outputScale = 10.0f;
+    rig.horizontalOuter.outputScale = 10.0f;
+    const vrmRetarget::LookAtEvaluator evaluator(rig);
+
+    vrmRetarget::LookAtDiagnostics diagnostics;
+    const vrmRetarget::ResolvedLookAt clamped =
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 0.0f)),
+                           &diagnostics);
+    assert(NearlyEqual(*clamped.expressions.Find("lookLeft"), 1.0f));
+    assert(diagnostics.warnings.size() == 1);
+
+    vrmRetarget::LookAtEvaluateOptions verbatim;
+    verbatim.clampExpressionWeights = false;
+    const vrmRetarget::LookAtEvaluator unclamped(rig, verbatim);
+    vrmRetarget::LookAtDiagnostics carried;
+    const vrmRetarget::ResolvedLookAt raw =
+        unclamped.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 0.0f)), &carried);
+    assert(NearlyEqual(*raw.expressions.Find("lookLeft"), 10.0f));
+    assert(carried.warnings.size() == 1);
+    assert(carried.warnings[0] != diagnostics.warnings[0]);
+}
+
+void
+TestABoneRigWithHalfItsEyesDrivesTheOneItNamed()
+{
+    vrmRetarget::LookAtRig half = IdentityBoneRig();
+    half.rightEyeJoint.clear();
+    const vrmRetarget::LookAtEvaluator one(half);
+    vrmRetarget::LookAtDiagnostics diagnostics;
+    const vrmRetarget::ResolvedLookAt resolved =
+        one.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 1.0f)), &diagnostics);
+    assert(resolved.hasGaze);
+    assert(resolved.eyeRotations.size() == 1);
+    assert(resolved.eyeRotations[0].joint == half.leftEyeJoint);
+    assert(diagnostics.warnings.size() == 1);
+
+    // A bone rig naming neither eye resolves to nothing at all, and the aim is
+    // still measured -- which is what lets a caller report the gaze it could
+    // not apply.
+    vrmRetarget::LookAtRig blind = IdentityBoneRig();
+    blind.leftEyeJoint.clear();
+    blind.rightEyeJoint.clear();
+    const vrmRetarget::LookAtEvaluator none(blind);
+    vrmRetarget::LookAtDiagnostics blindReport;
+    const vrmRetarget::ResolvedLookAt aimed =
+        none.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 1.0f)), &blindReport);
+    assert(aimed.hasGaze);
+    assert(NearlyEqual(aimed.yawDegrees, 45.0f));
+    assert(aimed.eyeRotations.empty());
+    assert(blindReport.warnings.size() == 1);
+}
+
+void
+TestThePoseOverloadCarriesTheSampleThrough()
+{
+    const vrmRetarget::LookAtEvaluator evaluator(IdentityBoneRig());
+    motion::HumanoidPose pose;
+    pose.timestamp = 1.25;
+    assert(!pose.lookAtTarget);
+
+    vrmRetarget::LookAtHead head;
+    head.position = pxr::GfVec3f(0.0f, 1.5f, 0.0f);
+    const vrmRetarget::ResolvedLookAt silent =
+        evaluator.Evaluate(pose, head);
+    assert(!silent.hasGaze);
+    assert(silent.timestamp == 1.25);
+
+    pose.lookAtTarget = pxr::GfVec3f(0.0f, 2.5f, 1.0f);
+    const vrmRetarget::ResolvedLookAt gazing = evaluator.Evaluate(pose, head);
+    assert(gazing.hasGaze);
+    assert(gazing.timestamp == 1.25);
+    // One metre up and one metre ahead of a head that is itself 1.5 m up.
+    assert(NearlyEqual(gazing.pitchDegrees, 45.0f));
+}
+
+void
+TestBothVrmSpellingsParseToOneValue()
+{
+    // The 1.0 range map and the 0.x curve say the same thing in two shapes, and
+    // the reader's job is that a consumer never learns which shape a rig came
+    // from. The linear default is where the two have to agree exactly rather
+    // than within a tolerance: 0.x's `[0,0,0,1, 1,1,1,0]` is the Hermite basis
+    // over one unit segment with both tangents 1, which reduces to `t`.
+    vrmRetarget::LookAtRig one;
+    std::vector<std::string> warnings;
+    assert(vrmRetarget::ParseLookAtRangeMaps(
+        R"({"type":"bone","offsetFromHeadBone":[0.0,0.06,0.0],)"
+        R"("rangeMapHorizontalInner":{"inputMaxValue":90,"outputScale":5.0},)"
+        R"("rangeMapHorizontalOuter":{"inputMaxValue":90,"outputScale":10.0}})",
+        &one, &warnings));
+    assert(warnings.empty());
+    assert(one.type == vrmRetarget::LookAtType::Bone);
+    assert(one.offsetFromHeadBone
+           && NearlyEqual(*one.offsetFromHeadBone,
+                          pxr::GfVec3f(0.0f, 0.06f, 0.0f)));
+    assert(NearlyEqual(one.horizontalInner.outputScale, 5.0f));
+    assert(NearlyEqual(one.horizontalOuter.Map(45.0f), 5.0f));
+    assert(one.horizontalOuter.curve.empty());
+    // A map the block never mentioned keeps its default rather than collapsing
+    // to zero: an incomplete block is not four broken curves.
+    assert(NearlyEqual(one.verticalUp.inputMaxValue, 90.0f));
+
+    vrmRetarget::LookAtRig zero;
+    assert(vrmRetarget::ParseLookAtRangeMaps(
+        R"({"lookAtTypeName":"BlendShape",)"
+        R"("lookAtHorizontalOuter":{"curve":[0,0,0,1,1,1,1,0],)"
+        R"("xRange":90,"yRange":1.0}})",
+        &zero, &warnings));
+    assert(warnings.empty());
+    // "BlendShape" is the name 0.x gives the rig 1.0 calls `expression`, and
+    // the rest of this library speaks the newer one.
+    assert(zero.type == vrmRetarget::LookAtType::Expression);
+    assert(zero.horizontalOuter.curve.size() == 2);
+    assert(NearlyEqual(zero.horizontalOuter.Map(45.0f), 0.5f));
+
+    vrmRetarget::LookAtRangeMap implicitlyLinear = zero.horizontalOuter;
+    implicitlyLinear.curve.clear();
+    for (const float degrees : {0.0f, 12.5f, 45.0f, 71.25f, 90.0f, 180.0f}) {
+        assert(NearlyEqual(zero.horizontalOuter.Map(degrees),
+                           implicitlyLinear.Map(degrees)));
+    }
+
+    // A curve that is not the linear default is read as the curve it is.
+    vrmRetarget::LookAtRig curved;
+    assert(vrmRetarget::ParseLookAtRangeMaps(
+        R"({"lookAtVerticalUp":{"curve":[0,0,0,0,1,1,0,0],)"
+        R"("xRange":90,"yRange":10}})",
+        &curved, &warnings));
+    // Flat tangents at both ends: the smoothstep, which is 0.5 at the middle
+    // and visibly not `t` on either side of it.
+    assert(NearlyEqual(curved.verticalUp.Map(45.0f), 5.0f));
+    assert(NearlyEqual(curved.verticalUp.Map(22.5f), 1.5625f));
+}
+
+void
+TestAnUnreadableLookAtBlockLeavesTheDefaultsStanding()
+{
+    vrmRetarget::LookAtRig rig;
+    std::vector<std::string> warnings;
+    // The empty string is what a rig with no preserved curves carries, and it
+    // is not a defect -- there is nothing to warn about in a file that said
+    // nothing.
+    assert(!vrmRetarget::ParseLookAtRangeMaps("", &rig, &warnings));
+    assert(warnings.empty());
+
+    // A block that is not an object is a defect, and the defaults stand.
+    assert(!vrmRetarget::ParseLookAtRangeMaps("[90, 10]", &rig, &warnings));
+    assert(warnings.size() == 1);
+    assert(NearlyEqual(rig.horizontalOuter.inputMaxValue, 90.0f));
+
+    // An input range of zero would be a division by it. It maps everything to
+    // nothing instead, and says so.
+    warnings.clear();
+    assert(vrmRetarget::ParseLookAtRangeMaps(
+        R"({"rangeMapVerticalUp":{"inputMaxValue":0,"outputScale":10}})", &rig,
+        &warnings));
+    assert(warnings.size() == 1);
+    assert(rig.verticalUp.Map(45.0f) == 0.0f);
+
+    // A curve that is not a whole number of four-float keys is not a curve.
+    // Reading the keys it does hold would silently rescale the rest of it, so
+    // it falls back to linear and is named.
+    warnings.clear();
+    vrmRetarget::LookAtRig ragged;
+    assert(vrmRetarget::ParseLookAtRangeMaps(
+        R"({"lookAtVerticalDown":{"curve":[0,0,0,1,1],"xRange":90,)"
+        R"("yRange":10}})",
+        &ragged, &warnings));
+    assert(warnings.size() == 1);
+    assert(ragged.verticalDown.curve.empty());
+    assert(NearlyEqual(ragged.verticalDown.Map(45.0f), 5.0f));
+}
+
 } // namespace
 
 int
@@ -921,6 +1501,20 @@ main()
     TestANonNumberIsNotAWeight();
     TestABindWithNoIdentifierIsSkippedAndNamed();
     TestATargetDrivenBelowZeroIsReportedToo();
+    TestAJointsWorldTransformComposesItsWholeChain();
+    TestAnIdentityRangeMapReproducesTheAim();
+    TestTheOffsetPlacesTheGazeOrigin();
+    TestInnerAndOuterAreChosenBySide();
+    TestVerticalIsSharedAndSignedByDirection();
+    TestAGazeNobodyNamedIsNotAGazeForward();
+    TestATargetOnTheEyesNamesNoDirection();
+    TestTheClipsOffsetIsTheFallbackAndIsReported();
+    TestAnExpressionRigReportsAllFourNames();
+    TestAnExpressionWeightOutsideTheRangeIsClampedAndNamed();
+    TestABoneRigWithHalfItsEyesDrivesTheOneItNamed();
+    TestThePoseOverloadCarriesTheSampleThrough();
+    TestBothVrmSpellingsParseToOneValue();
+    TestAnUnreadableLookAtBlockLeavesTheDefaultsStanding();
     std::puts("vrmRetarget unit tests passed");
     return 0;
 }

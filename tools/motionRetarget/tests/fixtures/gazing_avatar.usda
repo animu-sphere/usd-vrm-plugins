@@ -1,0 +1,90 @@
+#usda 1.0
+(
+    """A rig whose eyes are joints, for the look-at half of the bake.
+
+    The skeleton is taller than the design triplet's because a gaze needs a
+    head: the chain reaches 1.5 m at the head joint, and the two eye joints hang
+    off it. The eyes are deliberately **not** in the humanoid map — a VRM names
+    them through its look-at configuration, and a gaze that only reached joints
+    the humanoid mapping had bound would be a different feature.
+
+    The four range maps are given four different output scales, so every choice
+    the evaluate has to make is visible in the result rather than hidden behind
+    one shared number:
+
+      horizontal outer  10 degrees at 90    the eye on the side the gaze goes to
+      horizontal inner   5 degrees at 90    the other eye, turning toward the nose
+      vertical up       12 degrees at 90
+      vertical down      6 degrees at 90
+
+    `offsetFromHeadBone` is 6 cm up, so the gaze starts at the eyes and a target
+    level with the head joint reads as slightly below them."""
+    defaultPrim = "Avatar"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def SkelRoot "Avatar"
+{
+    def Skeleton "TargetSkeleton" (
+        apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        uniform token[] joints = [
+            "Root",
+            "Root/Hips",
+            "Root/Hips/Spine",
+            "Root/Hips/Spine/Chest",
+            "Root/Hips/Spine/Chest/Neck",
+            "Root/Hips/Spine/Chest/Neck/Head",
+            "Root/Hips/Spine/Chest/Neck/Head/LeftEye",
+            "Root/Hips/Spine/Chest/Neck/Head/RightEye"]
+        uniform matrix4d[] restTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.15, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.15, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.03, 0.05, 0.05, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.03, 0.05, 0.05, 1))]
+        uniform matrix4d[] bindTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.25, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.4, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.5, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.03, 1.55, 0.05, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.03, 1.55, 0.05, 1))]
+    }
+
+    def Scope "rig"
+    {
+        def Scope "humanoid"
+        {
+            rel vrm:skeleton = </Avatar/TargetSkeleton>
+            uniform token vrm:humanBones:hips = "Root/Hips"
+            uniform token vrm:humanBones:spine = "Root/Hips/Spine"
+            uniform token vrm:humanBones:chest = "Root/Hips/Spine/Chest"
+            uniform token vrm:humanBones:neck = "Root/Hips/Spine/Chest/Neck"
+            uniform token vrm:humanBones:head = "Root/Hips/Spine/Chest/Neck/Head"
+        }
+
+        def Scope "LookAt" (
+            customData = {
+                dictionary vrm = {
+                    dictionary lookAt = {
+                        string raw = '{"type":"bone","offsetFromHeadBone":[0.0,0.06,0.0],"rangeMapHorizontalInner":{"inputMaxValue":90.0,"outputScale":5.0},"rangeMapHorizontalOuter":{"inputMaxValue":90.0,"outputScale":10.0},"rangeMapVerticalDown":{"inputMaxValue":90.0,"outputScale":6.0},"rangeMapVerticalUp":{"inputMaxValue":90.0,"outputScale":12.0}}'
+                    }
+                }
+            }
+        )
+        {
+            uniform token vrm:type = "bone"
+            rel vrm:skeleton = </Avatar/TargetSkeleton>
+            uniform token vrm:leftEye = "Root/Hips/Spine/Chest/Neck/Head/LeftEye"
+            uniform token vrm:rightEye = "Root/Hips/Spine/Chest/Neck/Head/RightEye"
+        }
+    }
+}

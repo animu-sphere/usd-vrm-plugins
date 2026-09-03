@@ -41,6 +41,26 @@ struct RetargetedAnimation
     motion::MotionSourceMetadata source;
 };
 
+// The skeleton-space transform of one joint of a retargeted pose: its own local
+// rotation and translation with every ancestor's composed on, root first.
+//
+// A consumer needs this the moment it has to relate a retargeted rig to
+// something outside the rig -- a look-at target being the case that brought it
+// here, since `LookAtEvaluator` needs to know where the head *is* and a
+// RetargetedPose states only where each joint is relative to its parent. The
+// pose's arrays are one per joint of `skeleton`, so this walks the ancestor
+// chain rather than the whole rig.
+//
+// Returns false, leaving both outputs untouched, when the index is out of range
+// for either the skeleton or the pose, or when the ancestor chain does not
+// terminate -- a parent cycle is a rig this cannot answer for, and looping on
+// one would be worse than refusing.
+VRMRETARGET_API bool GetJointWorldTransform(const TargetSkeleton& skeleton,
+                                            const RetargetedPose& pose,
+                                            int jointIndex,
+                                            pxr::GfQuatf* orientation,
+                                            pxr::GfVec3f* position);
+
 struct RetargetOptions
 {
     RootMotionOptions rootMotion;

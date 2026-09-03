@@ -50,6 +50,7 @@ endif()
 add_library(vrmRetarget STATIC
     src/ExpressionResolver.cpp
     src/HumanoidMap.cpp
+    src/LookAtEvaluator.cpp
     src/PoseRetargeter.cpp
     src/RestPose.cpp
     src/RootMotionPolicy.cpp
@@ -69,6 +70,20 @@ target_link_libraries(vrmRetarget
     PUBLIC
         motionCore::motionCore
         motionRuntime::motionRuntime)
+
+# `js` is the one OpenUSD library beyond Gf this library links, and it is a
+# value library: JsValue parses a string into numbers and objects, with no
+# stage, no layer, no plugin registry and no exec. It is here because a VRM 0.x
+# rig and a VRM 1.0 rig state the same four look-at curves in two different
+# JSON shapes, and making every consumer of `LookAtEvaluator` know both spellings
+# would put the importer's job in each of them.
+if(TARGET js)
+    target_link_libraries(vrmRetarget PRIVATE js)
+elseif(TARGET pxr::js)
+    target_link_libraries(vrmRetarget PRIVATE pxr::js)
+else()
+    message(FATAL_ERROR "vrmRetarget requires the OpenUSD js CMake target.")
+endif()
 
 if(MSVC)
     # PUBLIC for the same reason as motionRuntime: the installed headers are

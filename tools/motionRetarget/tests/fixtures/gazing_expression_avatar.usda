@@ -1,0 +1,155 @@
+#usda 1.0
+(
+    """The same rig with its gaze driven through the face instead.
+
+    VRM lets an avatar aim its eyes with expressions rather than joints, and the
+    two are not a spelling difference: an expression drives *both* eyes with one
+    weight, so there is no inner eye to distinguish and the horizontal inner map
+    is unreachable. This fixture states the same skeleton and the same targets
+    as `gazing_avatar.usda` and answers with weights, which is what makes the
+    pair a test of the type rather than of the geometry.
+
+    Every range map outputs 1 at 90 degrees, so a resolved weight is the gaze
+    angle over a right angle and the expected numbers are readable. The four
+    gaze expressions bind one blend shape each, and they reach the animation
+    through the expression resolve the face already uses — an authored
+    `lookLeft` is an expression of this rig exactly as `happy` is."""
+    defaultPrim = "Avatar"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def SkelRoot "Avatar"
+{
+    def Skeleton "TargetSkeleton" (
+        apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        uniform token[] joints = [
+            "Root",
+            "Root/Hips",
+            "Root/Hips/Spine",
+            "Root/Hips/Spine/Chest",
+            "Root/Hips/Spine/Chest/Neck",
+            "Root/Hips/Spine/Chest/Neck/Head"]
+        uniform matrix4d[] restTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.15, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.15, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1))]
+        uniform matrix4d[] bindTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.25, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.4, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.5, 0, 1))]
+    }
+
+    def Mesh "Face" (
+        apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        int[] faceVertexCounts = [3]
+        int[] faceVertexIndices = [0, 1, 2]
+        point3f[] points = [(0, 1.5, 0), (0.1, 1.5, 0), (0, 1.6, 0)]
+        uniform token[] skel:blendShapes = ["Eyes_Down", "Eyes_Left", "Eyes_Right", "Eyes_Up"]
+        rel skel:blendShapeTargets = [
+            </Avatar/BlendShapes/Eyes_Down>,
+            </Avatar/BlendShapes/Eyes_Left>,
+            </Avatar/BlendShapes/Eyes_Right>,
+            </Avatar/BlendShapes/Eyes_Up>]
+        rel skel:skeleton = </Avatar/TargetSkeleton>
+    }
+
+    def Scope "BlendShapes"
+    {
+        def BlendShape "Eyes_Down"
+        {
+            uniform vector3f[] offsets = [(0, -0.01, 0), (0, 0, 0), (0, 0, 0)]
+        }
+
+        def BlendShape "Eyes_Left"
+        {
+            uniform vector3f[] offsets = [(0.01, 0, 0), (0, 0, 0), (0, 0, 0)]
+        }
+
+        def BlendShape "Eyes_Right"
+        {
+            uniform vector3f[] offsets = [(-0.01, 0, 0), (0, 0, 0), (0, 0, 0)]
+        }
+
+        def BlendShape "Eyes_Up"
+        {
+            uniform vector3f[] offsets = [(0, 0.01, 0), (0, 0, 0), (0, 0, 0)]
+        }
+    }
+
+    def Scope "rig"
+    {
+        def Scope "humanoid"
+        {
+            rel vrm:skeleton = </Avatar/TargetSkeleton>
+            uniform token vrm:humanBones:hips = "Root/Hips"
+            uniform token vrm:humanBones:spine = "Root/Hips/Spine"
+            uniform token vrm:humanBones:chest = "Root/Hips/Spine/Chest"
+            uniform token vrm:humanBones:neck = "Root/Hips/Spine/Chest/Neck"
+            uniform token vrm:humanBones:head = "Root/Hips/Spine/Chest/Neck/Head"
+        }
+
+        def Scope "LookAt" (
+            customData = {
+                dictionary vrm = {
+                    dictionary lookAt = {
+                        string raw = '{"type":"expression","offsetFromHeadBone":[0.0,0.06,0.0],"rangeMapHorizontalInner":{"inputMaxValue":90.0,"outputScale":1.0},"rangeMapHorizontalOuter":{"inputMaxValue":90.0,"outputScale":1.0},"rangeMapVerticalDown":{"inputMaxValue":90.0,"outputScale":1.0},"rangeMapVerticalUp":{"inputMaxValue":90.0,"outputScale":1.0}}'
+                    }
+                }
+            }
+        )
+        {
+            uniform token vrm:type = "expression"
+            rel vrm:skeleton = </Avatar/TargetSkeleton>
+        }
+
+        def Scope "Expressions"
+        {
+            def Scope "lookLeft"
+            {
+                uniform token vrm:expressionName = "lookLeft"
+                uniform token vrm:expressionType = "preset"
+                uniform bool vrm:isBinary = 0
+                rel vrm:morphTargets = [</Avatar/BlendShapes/Eyes_Left>]
+                uniform float[] vrm:morphTargetWeights = [1]
+            }
+
+            def Scope "lookRight"
+            {
+                uniform token vrm:expressionName = "lookRight"
+                uniform token vrm:expressionType = "preset"
+                uniform bool vrm:isBinary = 0
+                rel vrm:morphTargets = [</Avatar/BlendShapes/Eyes_Right>]
+                uniform float[] vrm:morphTargetWeights = [1]
+            }
+
+            def Scope "lookUp"
+            {
+                uniform token vrm:expressionName = "lookUp"
+                uniform token vrm:expressionType = "preset"
+                uniform bool vrm:isBinary = 0
+                rel vrm:morphTargets = [</Avatar/BlendShapes/Eyes_Up>]
+                uniform float[] vrm:morphTargetWeights = [1]
+            }
+
+            def Scope "lookDown"
+            {
+                uniform token vrm:expressionName = "lookDown"
+                uniform token vrm:expressionType = "preset"
+                uniform bool vrm:isBinary = 0
+                rel vrm:morphTargets = [</Avatar/BlendShapes/Eyes_Down>]
+                uniform float[] vrm:morphTargetWeights = [1]
+            }
+        }
+    }
+}

@@ -4,7 +4,9 @@ The offline retarget core: it takes a clip of semantic humanoid poses and
 expands it into a specific rig's joint order, correcting for the two rigs'
 differing rest poses and resolving where root motion lands. It resolves the
 clip's *expressions* onto the same rig as well — a named weight becomes the
-blend-shape weights and material colours that name means on this avatar.
+blend-shape weights and material colours that name means on this avatar — and
+its *gaze*: the place a clip looks at becomes this rig's eye rotations, or the
+four gaze expressions an expression-driven rig aims with instead.
 
 `vrmRetarget` is a **plain static CMake library**, not a plugin bundle. It has
 no `plugInfo.json`, no `openstrata.plugin.yaml`, and — the load-bearing
@@ -34,8 +36,9 @@ live source that has no stage at all.
 | `vrmRetarget/RootMotionPolicy.h` | `RootMotionMode` (`Ignore` / `Hips` / `RootJoint`), `RootMotionOptions`, `ResolveRootTranslation` |
 | `vrmRetarget/PoseRetargeter.h` | `PoseRetargeter`, `RetargetedPose`, `RetargetedAnimation`, `RetargetDiagnostics` |
 | `vrmRetarget/ExpressionResolver.h` | `MorphTargetBind`, `MaterialColorBind`, `ExpressionDefinition`, `ExpressionRig`, `ExpressionResolver`, `ResolvedExpressions`, `ExpressionDiagnostics` |
+| `vrmRetarget/LookAtEvaluator.h` | `LookAtRangeMap`, `LookAtCurveKey`, `LookAtType`, `LookAtRig`, `ParseLookAtRangeMaps`, `LookAtHead`, `LookAtInput`, `LookAtEvaluator`, `ResolvedLookAt`, `LookAtDiagnostics` |
 
-## Four decisions worth knowing
+## Five decisions worth knowing
 
 - **Joint names are never guessed.** A binding comes from the avatar's
   `vrm:humanBones:<bone>` or from an explicit map file. Name heuristics are
@@ -58,6 +61,21 @@ live source that has no stage at all.
   reported contributes nothing at all, because an absent name is not a zero
   weight. The `[0, 1]` clamp the `.vrma` reader deliberately withheld is applied
   here, per the specification, and the clamped names are reported.
+- **A gaze is a point until it meets a rig, and then it is two answers.** A
+  clip names a target *point*, because a direction needs a head and where the
+  head sits is a property of an avatar. `LookAtEvaluator` is the layer that has
+  the avatar: it places the gaze origin at the head plus the rig's
+  `offsetFromHeadBone`, measures the aim in the head's own space, and runs it
+  through the four range maps VRM 0.x and VRM 1.0 state in two different
+  shapes — one value here, because a consumer that branched on the source
+  version would be carrying the importer's job. A `bone`-type rig answers with
+  eye rotations, the eye on the side the gaze goes to taking the *outer* map and
+  the other the *inner* one; an `expression`-type rig answers with
+  `motion::ExpressionWeights` for `lookLeft`, `lookRight`, `lookUp` and
+  `lookDown` — which is exactly what `ExpressionResolver` consumes, so a gaze
+  reaches the avatar's binds through the path the face already uses rather than
+  through a second one. All four names are reported every sample, zeros
+  included, for the reason a reported zero is authored above.
 
 Unmapped joints keep their rest transform, so a clip that drives only part of a
 rig leaves the rest of it alone instead of collapsing it to identity. Resolving
