@@ -9,16 +9,19 @@
 
 #include "vrmRetarget/ExpressionResolver.h"
 #include "vrmRetarget/HumanoidMap.h"
+#include "vrmRetarget/LookAtEvaluator.h"
 #include "vrmRetarget/PoseRetargeter.h"
 #include "vrmRetarget/RestPose.h"
 #include "vrmRetarget/TargetSkeleton.h"
 
 #include "motionCore/Humanoid.h"
 
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/usd/usd/stage.h"
 
 #include <cstddef>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -46,6 +49,14 @@ struct Avatar
     // no mesh binds cannot be driven from an animation at all.
     std::map<std::string, std::string> blendShapeTokens;
 
+    // What this rig declares about its gaze: the VrmLookAtAPI prim's type, its
+    // eye joint tokens, and the four range-map curves the importer preserved as
+    // raw JSON. `hasLookAt` is separate from the rig's own emptiness because a
+    // rig that declares a look-at and states nothing useful in it is a rig with
+    // a defect, while one that declares none is an ordinary `.usda` skeleton.
+    bool hasLookAt = false;
+    vrmRetarget::LookAtRig lookAtRig;
+
     std::vector<std::string> warnings;
 };
 
@@ -56,6 +67,18 @@ struct Clip
     motion::HumanoidAnimation animation;
     vrmRetarget::SourceRestPose restPose;
     double timeCodesPerSecond = 30.0;
+
+    // The `vrm:lookAtOffsetFromHeadBone` the clip carries: a measurement of the
+    // rig the clip was authored on, and constant over the clip, which is why it
+    // is here rather than on every sample. Absent when the clip authored none.
+    std::optional<pxr::GfVec3f> lookAtOffsetFromHeadBone;
+
+    // True when the clip authored a `vrm:lookAtTarget` with a value -- a
+    // channel or a single default. Separate from any sample's own target,
+    // because it is what lets the caller tell "the clip named a gaze this rig
+    // cannot follow" from "the clip named none".
+    bool hasLookAtTrack = false;
+
     std::vector<std::string> warnings;
 };
 

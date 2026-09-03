@@ -220,8 +220,8 @@ None of these closes by writing code, and each is stated with what it costs.
 ### Still Motion Phase G
 
 Expressions now travel from a sender *and from a clip* to a canonical pose and
-back out of a trace — v0.7.0 closed the clip half. They do not yet reach a
-**rig**, which is what #88 is actually about:
+back out of a trace — v0.7.0 closed the clip half. Reaching a **rig** is what
+#88 is actually about, and both the face and the gaze now do:
 
 - ✅ **`ExpressionResolve`** *(2026-09-01)*. A VRM expression binds N morph
   targets across M meshes plus material colours — it is *not* one blend shape —
@@ -299,15 +299,59 @@ back out of a trace — v0.7.0 closed the clip half. They do not yet reach a
   at version 3, and the committed corpus was regenerated. No live producer emits
   a gaze today; carrying it anyway is what stops a recorder from silently
   dropping a field and making a replay differ from the session it reproduces.
-- ⬜ **`LookAtEvaluate` is what is left.** A clip now names a place to look and
-  no rig looks there. The evaluate step takes the target, the source clip's
-  `offsetFromHeadBone` and the avatar's own `/Asset/rig/LookAt` — its `vrm:type`
-  (`bone` or `expression`), its eye joints and the range-map curves the importer
-  preserved as raw JSON — and produces either eye-bone rotations or the named
-  expression weights a `expression`-type rig drives its gaze with. Plain values
-  in `vrmRetarget` like `ExpressionResolver`, so `execVrm`'s `Vrm.LookAtEvaluate`
-  is a wrapper rather than a second implementation, and `motion_retarget` is the
-  stage half that authors the result.
+- ✅ **`LookAtEvaluate`, and a rig that looks there** *(2026-09-04)*. Both
+  halves landed: `vrmRetarget`'s `LookAtEvaluator` turns a target point into one
+  particular rig's answer, and `motion_retarget` authors it. Plain values like
+  `ExpressionResolver`, so `execVrm`'s `Vrm.LookAtEvaluate` stays a wrapper.
+
+  **The two rig types are not a spelling difference**, and that is the shape of
+  the whole step. A `bone` rig answers with eye rotations, and the eye on the
+  side the gaze goes to takes the *outer* range map while the other takes the
+  *inner* one — the split exists because two eyes converge, and a resolve that
+  read one map for both would look plausible on every symmetric rig. An
+  `expression` rig answers with `motion::ExpressionWeights` for `lookLeft`,
+  `lookRight`, `lookUp` and `lookDown`, which is deliberately the value
+  `ExpressionResolve` already consumes: the gaze is folded into the sample's own
+  weights *before* the expression resolve, so it reaches the avatar's binds
+  through the one accumulator that already sums expressions rather than through
+  a second path into the same blend shapes. One weight drives both eyes there,
+  so the inner map is unreachable for that type and a rig that states a
+  different one is told rather than quietly half-read.
+
+  Four more decisions are measured rather than asserted. **A gaze starts at the
+  eyes**: the origin is the head joint plus the rig's `offsetFromHeadBone`,
+  rotated by the head — an offset added in world space agrees with every test
+  until the character turns, which is why a turned head is one of them. **The
+  two VRM spellings are one value**: 1.0's `inputMaxValue`/`outputScale` and
+  0.x's `xRange`/`yRange` plus an editable Hermite curve parse into the same
+  `LookAtRangeMap`, and the 0.x linear default reduces to the 1.0 map
+  algebraically rather than approximately. **A gaze nobody named is not a gaze
+  forward** — an absent target authors nothing and leaves the eyes where the
+  retarget put them, the rule an unreported expression name is under — while a
+  target sitting *on* the eye origin names no direction and is reported, because
+  that one is a defect. And **the clip's own `offsetFromHeadBone` is a fallback,
+  not the measurement**: it describes the rig the clip was authored on, so it is
+  used only when the avatar states none and the substitution is warned about.
+
+  Two things the tests had to earn rather than claim. The eye rotation's
+  composition — yaw about +Y, then pitch about +X *negated*, since a positive
+  right-handed rotation about +X takes the forward axis down — is checked by
+  aiming an identity range map at a target and requiring the resulting rotation
+  to point back at it, and it fails on either half being wrong; asserting the
+  two angles instead would have agreed with a tool that had both conventions
+  inverted. The same holds one layer up: the end-to-end fixtures give the four
+  maps four *different* output scales (10 outer, 5 inner, 12 up, 6 down), so
+  swapping inner for outer fails four assertions instead of none.
+
+  What is **not** authored is `skel:blendShapes` on any mesh and any eye joint
+  an expression rig does not have — the same answer the expression bake gave,
+  for the same reason. `--no-look-at` bakes the body and leaves the eyes at
+  rest, for a pipeline that aims them itself.
+
+**What is still Phase G** is neither of the two resolve steps: it is **live
+recording** and the **VRMA export investigation**
+([the backlog](backlog.md) carries both). Every item listed above is closed, so
+this section stays only until those two find a version.
 
 ## Next: the recorded-source and producer-contract tracks ⬜
 

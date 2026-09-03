@@ -12,6 +12,7 @@ checks what a consumer actually resolves rather than how the layer is spelled.
 from __future__ import annotations
 
 import argparse
+import math
 import pathlib
 import shutil
 import subprocess
@@ -473,6 +474,237 @@ def check_usdskel_resolves_the_expressions(output: pathlib.Path,
         f"the face mesh resolves {remapped} at time 15, expected {expected}")
 
 
+# What the gazing fixtures must resolve to, per time code, as (yaw, pitch) in
+# degrees measured off the authored eye rotation itself.
+#
+# The numbers are the range maps and nothing else. The clip aims 45 degrees to
+# the character's left at 0 and 45 degrees right and 35.264 degrees down at 30;
+# the avatar maps 90 degrees of aim onto 10 degrees of outer eye, 5 of inner, 6
+# of down and 12 of up. So the outer eye takes 5, the inner 2.5, and the shared
+# vertical 35.264/90 * 6 = 2.3510 -- three different scales, which is what makes
+# a resolve that read one map for both eyes, or swapped inner for outer, fail
+# here rather than merely look plausible.
+EXPECTED_GAZE = {
+    0.0: {"LeftEye": (5.0, 0.0), "RightEye": (2.5, 0.0)},
+    30.0: {"LeftEye": (-2.5, -2.350959), "RightEye": (-5.0, -2.350959)},
+}
+
+# The same two samples on the rig that aims its eyes with expressions. One
+# weight drives both eyes, so there is no inner and outer to tell apart and the
+# gaze angle over a right angle is the weight: 45/90 horizontally, 35.264/90
+# down. The two the sample does not drive are still authored, at zero.
+EXPECTED_GAZE_BLEND_SHAPES = ["Eyes_Down", "Eyes_Left", "Eyes_Right", "Eyes_Up"]
+EXPECTED_GAZE_WEIGHTS = {
+    0.0: [0.0, 0.5, 0.0, 0.0],
+    30.0: [0.391827, 0.0, 0.5, 0.0],
+}
+
+
+def gaze_angles(quaternion) -> tuple[float, float]:
+    """The yaw and pitch an authored eye rotation actually aims at.
+
+    Measured by turning the forward axis with it rather than by decomposing the
+    quaternion the way the tool composed it: a check that rebuilt
+    `yaw about +Y then pitch about +X` would agree with a tool that had both
+    conventions inverted, which is exactly the mistake worth catching.
+    """
+    forward = Gf.Rotation(quaternion).TransformDir(Gf.Vec3d(0.0, 0.0, 1.0))
+    yaw = math.degrees(math.atan2(forward[0], forward[2]))
+    pitch = math.degrees(math.atan2(forward[1],
+                                    math.hypot(forward[0], forward[2])))
+    return yaw, pitch
+
+
+def check_look_at_bake(tool: str, fixtures: pathlib.Path,
+                       workspace: pathlib.Path, failures: Failures) -> None:
+    """The gaze half: a place the clip looks at becomes this rig's eyes.
+
+    A clip names a target *point*, because a direction is only meaningful next
+    to a head and where the head sits belongs to the avatar. So the answer
+    depends on the rig, and the same clip is baked onto two of them here -- one
+    that aims its eyes with joints and one that aims them with expressions --
+    because those two are not a spelling difference and each is a path to the
+    stage of its own.
+    """
+    avatar = fixtures / "gazing_avatar.usda"
+    clip = fixtures / "gazing_clip.usda"
+    output = workspace / "gazing_bake.usda"
+    result = run_tool(
+        tool, "--avatar", str(avatar), "--animation", str(clip),
+        "--output", str(output), "--animation-name", "GazeBake")
+    if not failures.check(
+            result.returncode == 0,
+            f"look-at bake failed ({result.returncode}): "
+            f"{result.stderr.strip()}"):
+        return
+
+    stage = Usd.Stage.Open(str(output))
+    animation = find_animation(stage)
+    joints = list(animation.GetJointsAttr().Get())
+    rotations = animation.GetRotationsAttr()
+
+    for time, expected in EXPECTED_GAZE.items():
+        values = rotations.Get(time)
+        if not failures.check(
+                values is not None and len(values) == len(joints),
+                f"the gaze bake authored no rotations at {time}"):
+            continue
+        for eye, (want_yaw, want_pitch) in expected.items():
+            index = next((i for i, joint in enumerate(joints)
+                          if joint.endswith("/" + eye)), None)
+            if not failures.check(index is not None,
+                                  f"the gaze bake authored no {eye} joint"):
+                continue
+            yaw, pitch = gaze_angles(values[index])
+            failures.check(
+                abs(yaw - want_yaw) <= 1e-3,
+                f"{eye} at {time} aims {yaw:.4f} degrees horizontally, "
+                f"expected {want_yaw}")
+            failures.check(
+                abs(pitch - want_pitch) <= 1e-3,
+                f"{eye} at {time} aims {pitch:.4f} degrees vertically, "
+                f"expected {want_pitch}")
+
+    # The eyes are driven and they are not in the humanoid map: a VRM names them
+    # through its look-at configuration, so a gaze that only reached mapped
+    # joints would be a different feature. The summary says how many it aimed.
+    failures.check("2 eye joints aimed" in result.stdout,
+                   f"the gaze bake did not report the eyes it aimed: "
+                   f"{result.stdout.strip()}")
+    # A bone-driven gaze authors no blend shape at all -- it is joints, and
+    # authoring an empty array would state that this animation drives no blend
+    # shape rather than saying nothing about them.
+    failures.check(
+        not animation.GetBlendShapesAttr().HasAuthoredValue(),
+        "a bone-driven gaze authored blendShapes")
+
+    check_look_at_through_expressions(tool, fixtures, workspace, failures)
+    check_no_look_at_leaves_the_eyes_alone(tool, avatar, clip, workspace,
+                                           failures)
+    check_a_gazeless_rig_says_so(tool, fixtures, clip, workspace, failures)
+
+
+def check_look_at_through_expressions(tool: str, fixtures: pathlib.Path,
+                                      workspace: pathlib.Path,
+                                      failures: Failures) -> None:
+    """An expression-driven rig answers the same clip with weights.
+
+    And it answers through the expression resolve the face already uses:
+    `lookLeft` is an expression of this rig exactly as `happy` is, so the gaze
+    reaches the avatar's binds through one accumulator rather than through a
+    second path into the same blend shapes.
+    """
+    avatar = fixtures / "gazing_expression_avatar.usda"
+    clip = fixtures / "gazing_clip.usda"
+    output = workspace / "gazing_expression_bake.usda"
+    result = run_tool(
+        tool, "--avatar", str(avatar), "--animation", str(clip),
+        "--output", str(output), "--animation-name", "GazeExpressionBake")
+    if not failures.check(
+            result.returncode == 0,
+            f"expression-driven look-at bake failed: {result.stderr.strip()}"):
+        return
+
+    stage = Usd.Stage.Open(str(output))
+    animation = find_animation(stage)
+    blend_shapes = animation.GetBlendShapesAttr().Get()
+    blend_shapes = list(blend_shapes) if blend_shapes else []
+    failures.check(
+        blend_shapes == EXPECTED_GAZE_BLEND_SHAPES,
+        f"the expression-driven gaze authored {blend_shapes}, expected "
+        f"{EXPECTED_GAZE_BLEND_SHAPES}")
+
+    weights = animation.GetBlendShapeWeightsAttr()
+    for time, want in EXPECTED_GAZE_WEIGHTS.items():
+        values = weights.Get(time)
+        failures.check(
+            values is not None and vectors_match(list(values), want),
+            f"the expression-driven gaze resolves {values} at {time}, "
+            f"expected {want}")
+
+    # No eye joint exists on this rig, and none is invented: the skeleton it
+    # references has six joints and the animation drives exactly those.
+    joints = list(animation.GetJointsAttr().Get())
+    failures.check(
+        not any("Eye" in joint for joint in joints),
+        f"an expression-driven gaze authored an eye joint: {joints}")
+
+
+def check_no_look_at_leaves_the_eyes_alone(tool: str, avatar: pathlib.Path,
+                                           clip: pathlib.Path,
+                                           workspace: pathlib.Path,
+                                           failures: Failures) -> None:
+    """--no-look-at bakes the body and leaves the eyes where the rig rests them.
+
+    A pipeline that aims the eyes itself needs the bake not to write over them,
+    and "not written" has to mean the rest rotation rather than a forward gaze:
+    the eye joints are still in the animation, because every joint of the target
+    rig is, so the check is on their value and not on their presence.
+    """
+    output = workspace / "gazing_no_look_at.usda"
+    result = run_tool(
+        tool, "--avatar", str(avatar), "--animation", str(clip),
+        "--output", str(output), "--no-look-at", "--quiet")
+    if not failures.check(result.returncode == 0,
+                          f"--no-look-at bake failed: {result.stderr}"):
+        return
+    stage = Usd.Stage.Open(str(output))
+    animation = find_animation(stage)
+    joints = list(animation.GetJointsAttr().Get())
+    rotations = animation.GetRotationsAttr()
+    for time in rotations.GetTimeSamples():
+        values = rotations.Get(time)
+        for joint, quaternion in zip(joints, values):
+            if "Eye" not in joint:
+                continue
+            yaw, pitch = gaze_angles(quaternion)
+            failures.check(
+                abs(yaw) <= 1e-4 and abs(pitch) <= 1e-4,
+                f"--no-look-at still aimed {joint} at {time}: "
+                f"({yaw:.4f}, {pitch:.4f})")
+
+
+def check_a_gazeless_rig_says_so(tool: str, fixtures: pathlib.Path,
+                                 clip: pathlib.Path, workspace: pathlib.Path,
+                                 failures: Failures) -> None:
+    """A clip that names a gaze no rig can follow must not go quiet.
+
+    This is the look-at equivalent of the faceless-rig case, and it is the same
+    kind of loss: the clip stated where the character is looking, the avatar
+    declares nothing about how its eyes work, and the whole track goes missing.
+    An operator who reads the warnings has to be told, or the recovery works on
+    every rig except the one that lost everything.
+    """
+    # The gazing avatar with its look-at removed, so the *only* difference from
+    # the passing case is the thing under test. A different rig would have
+    # brought a different skeleton and a different humanoid map with it, and the
+    # warning would then be as likely to be about a missing head.
+    avatar = workspace / "gazeless_avatar.usda"
+    shutil.copy(fixtures / "gazing_avatar.usda", avatar)
+    # The stage stays in a local: the layer it saves is fetched back off it.
+    gazeless_stage = Usd.Stage.Open(str(avatar))
+    gazeless_stage.RemovePrim("/Avatar/rig/LookAt")
+    gazeless_stage.GetRootLayer().Save()
+    if not failures.check(
+            not gazeless_stage.GetPrimAtPath("/Avatar/rig/LookAt"),
+            "the gazeless fixture still declares a look-at, so it cannot tell "
+            "a dropped gaze from an authored one"):
+        return
+
+    output = workspace / "gazeless_bake.usda"
+    result = run_tool(
+        tool, "--avatar", str(avatar), "--animation", str(clip),
+        "--output", str(output))
+    if not failures.check(
+            result.returncode == 0,
+            f"bake of a gazing clip onto a rig with no look-at failed: "
+            f"{result.stderr}"):
+        return
+    failures.check(
+        "look-at" in result.stderr,
+        f"a rig declaring no look-at dropped the clip's gaze without saying "
+        f"so: {result.stderr.strip()}")
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tool", required=True)
@@ -490,7 +722,10 @@ def main() -> int:
     expected = fixtures / "expected_retargeted.usda"
     for path in (avatar, clip, expected,
                  tool_fixtures / "expressive_avatar.usda",
-                 tool_fixtures / "expressive_clip.usda"):
+                 tool_fixtures / "expressive_clip.usda",
+                 tool_fixtures / "gazing_avatar.usda",
+                 tool_fixtures / "gazing_expression_avatar.usda",
+                 tool_fixtures / "gazing_clip.usda"):
         if not path.is_file():
             print(f"FAIL: missing fixture {path}", file=sys.stderr)
             return 1
@@ -624,6 +859,8 @@ def main() -> int:
 
         check_expression_bake(options.tool, tool_fixtures, avatar,
                               options.humanoid_map, workspace, failures)
+
+        check_look_at_bake(options.tool, tool_fixtures, workspace, failures)
 
         # Writing the output over an input is refused, and the input survives.
         # The output layer is cleared before it is authored, so accepting this

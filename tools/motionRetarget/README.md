@@ -47,6 +47,7 @@ It is an **executable, not a bundle**: no `openstrata.plugin.yaml`, no
 | `--resample HZ` | Resample onto a uniform timeline first. |
 | `--animation-name NAME` | Prim name for the authored animation. Default `RetargetedAnimation`. |
 | `--no-expressions` | Bake the body only; resolve no expression weights. |
+| `--no-look-at` | Bake without a gaze; leave the eyes where the rig rests them. |
 | `--quiet` | Suppress diagnostics on stderr. |
 
 ## What it authors
@@ -116,6 +117,48 @@ keeps owning its rig. Four consequences are worth knowing:
 
 `--no-expressions` skips all of it and bakes the body alone.
 
+### The gaze, which depends on the rig twice over
+
+A clip names a *place* the character is looking at, not a direction, because a
+direction is only meaningful next to a head and where the head sits belongs to
+the avatar. So the bake evaluates the clip's `vrm:lookAtTarget` against the
+avatar's own `/Asset/rig/LookAt`
+([`vrmRetarget::LookAtEvaluator`](../../libs/vrmRetarget/README.md)) — the head
+transform the body half just produced, plus the rig's `offsetFromHeadBone`, its
+four range-map curves and its type.
+
+**The type decides how the answer reaches the stage**, and the two are not a
+spelling difference:
+
+- a **`bone`** rig is aimed through its eye joints. The rotations are written
+  into the very arrays the body was expanded into, so they reach the stage
+  through the joint authoring that already exists. The eye on the side the gaze
+  goes to takes the *outer* range map and the other takes the *inner* one,
+  because two eyes converge. The eyes need not be in the humanoid map: a VRM
+  names them through its look-at configuration, and that is where these come
+  from.
+- an **`expression`** rig is aimed through `lookLeft`, `lookRight`, `lookUp` and
+  `lookDown`. Those are expressions of the rig exactly as `happy` is, so they
+  are folded into the sample's own weights *before* the expression resolve and
+  land in `blendShapeWeights` through the same accumulator — not through a
+  second path into the same blend shapes. All four are stated every sample,
+  including the two a given gaze drives to zero, or a swing to the left would
+  leave the previous sample's `lookRight` standing.
+
+Three more things worth knowing:
+
+- **A gaze the clip never named is not a gaze forward.** A sample with no target
+  authors nothing and leaves the eyes where the retarget put them — the rule an
+  unreported expression name is already under.
+- **The clip's `vrm:lookAtOffsetFromHeadBone` is a fallback, not the
+  measurement.** It describes the rig the clip was authored on, so it is used
+  only when the avatar states none of its own, and the substitution is reported.
+- **VRM 0.x and VRM 1.0 state the same four curves in two shapes**, and the
+  reader turns both into one value, so nothing above this layer learns which
+  version the rig came from.
+
+`--no-look-at` skips all of it and leaves the eyes at rest.
+
 ## Diagnostics you should not ignore
 
 Bones the clip drives but the rig does not bind, required VRM bones with no
@@ -146,6 +189,15 @@ makes of them in its own order. Each fixture expression carries one decision:
 two morph targets at different bind weights, a binary eyelid, a name the clip
 never weights, a material colour with no morph target, and a blend shape no mesh
 binds.
+
+Then `tests/fixtures/gazing_{avatar,clip}.usda` and
+`gazing_expression_avatar.usda`: one clip baked onto two rigs that aim their
+eyes differently. The four range maps are given four *different* output scales
+(10 outer, 5 inner, 12 up, 6 down) so that reading one map for both eyes, or
+swapping inner for outer, fails rather than merely looks plausible; and the
+authored eye rotation is checked by turning the forward axis *with* it, so a
+bake that inverted both of its conventions cannot pass by agreeing with a test
+that reproduced them.
 
 ```bash
 ctest --test-dir <build> -R motion_retarget --output-on-failure

@@ -3,8 +3,10 @@
 
 #include "motionRuntime/Resample.h"
 
+#include <cstddef>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace vrmRetarget
 {
@@ -18,6 +20,52 @@ Describe(motion::HumanBone bone)
 }
 
 } // namespace
+
+bool
+GetJointWorldTransform(const TargetSkeleton& skeleton,
+                       const RetargetedPose& pose, int jointIndex,
+                       pxr::GfQuatf* orientation, pxr::GfVec3f* position)
+{
+    const std::vector<TargetJoint>& joints = skeleton.GetJoints();
+    const std::size_t count = joints.size();
+    if (jointIndex < 0 || static_cast<std::size_t>(jointIndex) >= count
+        || pose.rotations.size() != count || pose.translations.size() != count) {
+        return false;
+    }
+
+    // Root-first, because composing a chain means applying the outermost
+    // ancestor's transform last. The bound is the joint count: a chain longer
+    // than that has revisited a joint, which is a cycle -- and a rig whose
+    // parents cycle is one this refuses rather than walks forever.
+    std::vector<int> chain;
+    chain.reserve(count);
+    for (int walk = jointIndex; walk != TargetSkeleton::kNoParent;
+         walk = joints[static_cast<std::size_t>(walk)].parent) {
+        if (walk < 0 || static_cast<std::size_t>(walk) >= count
+            || chain.size() == count) {
+            return false;
+        }
+        chain.push_back(walk);
+    }
+
+    pxr::GfQuatf composedRotation(1.0f);
+    pxr::GfVec3f composedPosition(0.0f);
+    for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
+        const auto slot = static_cast<std::size_t>(*it);
+        composedPosition
+            += composedRotation.Transform(pose.translations[slot]);
+        composedRotation
+            = (composedRotation * pose.rotations[slot]).GetNormalized();
+    }
+
+    if (orientation) {
+        *orientation = composedRotation;
+    }
+    if (position) {
+        *position = composedPosition;
+    }
+    return true;
+}
 
 PoseRetargeter::PoseRetargeter(TargetSkeleton skeleton, HumanoidMap map,
                                SourceRestPose sourceRest,

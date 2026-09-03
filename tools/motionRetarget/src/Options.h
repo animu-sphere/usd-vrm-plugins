@@ -38,6 +38,14 @@ struct Options
     // which is what a pipeline that drives the face from elsewhere wants.
     bool expressions = true;
 
+    // Evaluate the clip's look-at target against the avatar's own look-at
+    // configuration and author the result -- eye-joint rotations for a
+    // `bone`-type rig, the four gaze expressions for an `expression`-type one.
+    // On by default for the same reason expressions are, and off for the same
+    // one: a pipeline that aims the eyes itself wants the body and the face
+    // without a gaze written over them.
+    bool lookAt = true;
+
     bool quiet = false;
 };
 
