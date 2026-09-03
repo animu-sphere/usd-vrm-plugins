@@ -1,6 +1,12 @@
-# USD VRM Plugins
+# OpenUSD VRM Avatar Plugins
 
 OpenUSD plugins for [VRM](https://vrm.dev/en/) avatars.
+
+<p align="center">
+  <img src="docs/assets/usdVRMwithHydraStorm.gif" alt="VRM animation retargeting preview in usdview with Hydra Storm" width="640" />
+  <br>
+  <p align="center"><i>A VRM scene loaded directly through the file-format plugin, with a VRMA motion file retargeted onto the avatar, previewed in usdview with Hydra Storm.</i></p>
+</p>
 
 This repository is an OpenUSD plugin **workspace**: it separates schema
 definitions, file-format import, package resolution, and shared GLB container
