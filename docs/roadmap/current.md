@@ -326,10 +326,12 @@ back out of a trace — v0.7.0 closed the clip half. Reaching a **rig** is what
   0.x's `xRange`/`yRange` plus an editable Hermite curve parse into the same
   `LookAtRangeMap`, and the 0.x linear default reduces to the 1.0 map
   algebraically rather than approximately. **A gaze nobody named is not a gaze
-  forward** — an absent target authors nothing and leaves the eyes where the
-  retarget put them, the rule an unreported expression name is under — while a
-  target sitting *on* the eye origin names no direction and is reported, because
-  that one is a defect. And **the clip's own `offsetFromHeadBone` is a fallback,
+  forward, and one the clip stops naming holds** — the eyes stay where the
+  retarget put them until a first target arrives, and a sample that says nothing
+  afterwards leaves the last gaze standing, which is the rule a blocked
+  expression weight is already under and the one thing that keeps the two rig
+  types' different authoring routes agreeing. A target sitting *on* the eye
+  origin names no direction and is reported, because that one is a defect. And **the clip's own `offsetFromHeadBone` is a fallback,
   not the measurement**: it describes the rig the clip was authored on, so it is
   used only when the avatar states none and the substitution is warned about.
 
@@ -346,7 +348,12 @@ back out of a trace — v0.7.0 closed the clip half. Reaching a **rig** is what
   What is **not** authored is `skel:blendShapes` on any mesh and any eye joint
   an expression rig does not have — the same answer the expression bake gave,
   for the same reason. `--no-look-at` bakes the body and leaves the eyes at
-  rest, for a pipeline that aims them itself.
+  rest, for a pipeline that aims them itself; `--no-expressions` does the same
+  to an *expression*-driven gaze, because those four weights reach the stage as
+  blend-shape weights and by no other route, and the run says so rather than
+  counting a gaze it did not write. Everything the gaze displaces is named
+  once: an eye bone the clip itself animates, and a gaze expression the clip
+  also drives by name.
 
 **What is still Phase G** is neither of the two resolve steps: it is **live
 recording** and the **VRMA export investigation**

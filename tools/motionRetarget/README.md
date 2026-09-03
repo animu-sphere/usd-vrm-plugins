@@ -47,7 +47,7 @@ It is an **executable, not a bundle**: no `openstrata.plugin.yaml`, no
 | `--resample HZ` | Resample onto a uniform timeline first. |
 | `--animation-name NAME` | Prim name for the authored animation. Default `RetargetedAnimation`. |
 | `--no-expressions` | Bake the body only; resolve no expression weights. |
-| `--no-look-at` | Bake without a gaze; leave the eyes where the rig rests them. |
+| `--no-look-at` | Bake without a gaze; leave the eyes where the rig rests them. (`--no-expressions` also suppresses an *expression*-driven gaze.) |
 | `--quiet` | Suppress diagnostics on stderr. |
 
 ## What it authors
@@ -147,9 +147,20 @@ spelling difference:
 
 Three more things worth knowing:
 
-- **A gaze the clip never named is not a gaze forward.** A sample with no target
-  authors nothing and leaves the eyes where the retarget put them — the rule an
-  unreported expression name is already under.
+- **A gaze the clip never named is not a gaze forward, and one it stops naming
+  holds.** Until the clip gives a first target the eyes stay where the retarget
+  put them; after that, a sample that says nothing — a USD value block — leaves
+  the last gaze standing rather than snapping back to rest, which is the rule a
+  blocked expression weight is already under. The two rig types have to agree
+  about it: an expression gaze reaches the stage as a fixed-width array that
+  holds by construction and a bone gaze as a per-sample joint array that does
+  not.
+- **A channel the gaze overwrites is named.** An eye is a human bone like any
+  other, so a rig that binds `leftEye` in its humanoid map and a clip that
+  animates it produce a rotation the gaze replaces. The gaze wins — it is the
+  value this rig's own curves produced — and the bone it displaced is reported,
+  as is a clip that drives a gaze *expression* by name while also naming a
+  target.
 - **The clip's `vrm:lookAtOffsetFromHeadBone` is a fallback, not the
   measurement.** It describes the rig the clip was authored on, so it is used
   only when the avatar states none of its own, and the substitution is reported.
@@ -157,7 +168,12 @@ Three more things worth knowing:
   reader turns both into one value, so nothing above this layer learns which
   version the rig came from.
 
-`--no-look-at` skips all of it and leaves the eyes at rest.
+`--no-look-at` skips all of it and leaves the eyes at rest. So does
+`--no-expressions` **on an expression-driven rig**, and for a reason rather than
+as a side effect: those four weights reach the stage as blend-shape weights and
+by no other route, so the flag that refuses to author blend-shape weights
+refuses them too. The run says so rather than silently counting a gaze it did
+not write.
 
 ## Diagnostics you should not ignore
 
@@ -197,7 +213,11 @@ eyes differently. The four range maps are given four *different* output scales
 swapping inner for outer, fails rather than merely looks plausible; and the
 authored eye rotation is checked by turning the forward axis *with* it, so a
 bake that inverted both of its conventions cannot pass by agreeing with a test
-that reproduced them.
+that reproduced them. Four more cases cover what the gaze *displaces* and what
+suppresses it: a blocked target that must hold, an eye the clip itself animates,
+a gaze expression the clip also drives by name — each reported exactly once,
+however many samples ran into it — and `--no-expressions` on an
+expression-driven rig.
 
 ```bash
 ctest --test-dir <build> -R motion_retarget --output-on-failure

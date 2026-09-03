@@ -46,10 +46,13 @@ Current schema contract version: **1**.
   `LookAtRangeMap`, and the 0.x linear default is that basis reduced
   algebraically to `t`, so a 0.x rig that never touched its curves and a 1.0 rig
   are the same map rather than two that happen to agree. **A gaze nobody named
-  is not a gaze forward** — an absent target authors nothing and leaves the eyes
-  where the retarget put them, the rule an unreported expression name is already
-  under — while a target sitting *on* the eye origin names no direction at all
-  and is reported, because that one is a defect rather than a silence. And **the
+  is not a gaze forward, and one the clip stops naming holds** — the eyes stay
+  where the retarget put them until a first target arrives, and a sample that
+  says nothing afterwards leaves the last gaze standing, which is the rule a
+  blocked expression weight is already under and the one thing that keeps a
+  fixed-width blend-shape array and a per-sample joint array agreeing. A target
+  sitting *on* the eye origin names no direction at all and is reported, because
+  that one is a defect rather than a silence. And **the
   clip's own `offsetFromHeadBone` is a fallback, not the measurement**: it
   describes the rig the clip was authored on, so it is consulted only when the
   avatar states none, and the substitution is warned about rather than defaulted.
@@ -74,7 +77,12 @@ Current schema contract version: **1**.
   look-at block alone; it is a value library, so the boundary the
   `check_boundaries.py` gate enforces is unchanged. `motion_retarget` gains
   `--no-look-at`, for a pipeline that aims the eyes itself, and reports the eye
-  joints it aimed and the samples that gazed.
+  joints it aimed and the samples that gazed. `--no-expressions` suppresses an
+  *expression*-driven gaze along with the face, because those four weights reach
+  the stage as blend-shape weights and by no other route, and the run says so
+  rather than counting a gaze it did not write. Everything the gaze displaces is
+  named exactly once however many samples ran into it: an eye bone the clip
+  itself animates, and a gaze expression the clip also drives by name.
 
 - **A clip's gaze reaches the canonical layer: VRMA look-at animation.** Look-at
   was untouched in every layer. `usdVrmaFileFormat` now reads the

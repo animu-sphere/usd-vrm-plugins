@@ -19,7 +19,7 @@ import subprocess
 import sys
 import tempfile
 
-from pxr import Gf, Sdf, Usd, UsdGeom, UsdSkel
+from pxr import Gf, Sdf, Usd, UsdGeom, UsdSkel, Vt
 
 TOLERANCE = 1e-5
 
@@ -582,6 +582,12 @@ def check_look_at_bake(tool: str, fixtures: pathlib.Path,
     check_no_look_at_leaves_the_eyes_alone(tool, avatar, clip, workspace,
                                            failures)
     check_a_gazeless_rig_says_so(tool, fixtures, clip, workspace, failures)
+    check_an_unstated_gaze_holds(tool, avatar, clip, workspace, failures)
+    check_a_clip_driven_eye_is_reported(tool, fixtures, workspace, failures)
+    check_no_expressions_takes_an_expression_gaze_with_it(
+        tool, fixtures, workspace, failures)
+    check_a_gaze_expression_collision_is_reported_once(
+        tool, fixtures, workspace, failures)
 
 
 def check_look_at_through_expressions(tool: str, fixtures: pathlib.Path,
@@ -704,6 +710,233 @@ def check_a_gazeless_rig_says_so(tool: str, fixtures: pathlib.Path,
         "look-at" in result.stderr,
         f"a rig declaring no look-at dropped the clip's gaze without saying "
         f"so: {result.stderr.strip()}")
+
+
+def check_an_unstated_gaze_holds(tool: str, avatar: pathlib.Path,
+                                 clip: pathlib.Path, workspace: pathlib.Path,
+                                 failures: Failures) -> None:
+    """A sample that says nothing about the gaze leaves it standing.
+
+    A USD value block is how a clip spells "no statement at this time", and the
+    rule this repository already applies to a blocked expression weight is that
+    the previous value holds rather than dropping to neutral. The eyes have to
+    be under the same rule, and not only for consistency: the two rig types
+    reach the stage by different routes -- a fixed-width blend-shape array,
+    which holds by construction, and a per-sample joint array, which does not --
+    so the same clip would freeze one rig's eyes and snap the other's back to
+    rest unless this is done deliberately.
+    """
+    blocked = workspace / "blocked_gaze_clip.usda"
+    shutil.copy(clip, blocked)
+    # The stage stays in a local; the layer it saves is fetched back off it.
+    blocked_stage = Usd.Stage.Open(str(blocked))
+    target = blocked_stage.GetPrimAtPath(
+        "/Animation/LookAt").GetAttribute("vrm:lookAtTarget")
+    target.Set(Sdf.ValueBlock(), 30.0)
+    blocked_stage.GetRootLayer().Save()
+    # Without this the case is vacuous: an unblocked target resolves at 30 by
+    # simply being read, and a held eye would be indistinguishable from a
+    # re-evaluated one.
+    if not failures.check(
+            target.Get(30.0) is None,
+            "the blocked-gaze fixture still resolves a target at 30, so it "
+            "cannot tell a held gaze from a re-evaluated one"):
+        return
+
+    output = workspace / "blocked_gaze_bake.usda"
+    result = run_tool(
+        tool, "--avatar", str(avatar), "--animation", str(blocked),
+        "--output", str(output), "--quiet")
+    if not failures.check(result.returncode == 0,
+                          f"bake of a blocked gaze failed: {result.stderr}"):
+        return
+    stage = Usd.Stage.Open(str(output))
+    animation = find_animation(stage)
+    joints = list(animation.GetJointsAttr().Get())
+    values = animation.GetRotationsAttr().Get(30.0)
+    for eye, (want_yaw, want_pitch) in EXPECTED_GAZE[0.0].items():
+        index = next((i for i, joint in enumerate(joints)
+                      if joint.endswith("/" + eye)), None)
+        if index is None:
+            continue
+        yaw, pitch = gaze_angles(values[index])
+        failures.check(
+            abs(yaw - want_yaw) <= 1e-3 and abs(pitch - want_pitch) <= 1e-3,
+            f"a blocked gaze at 30 left {eye} at ({yaw:.4f}, {pitch:.4f}), "
+            f"expected the held ({want_yaw}, {want_pitch})")
+
+
+def check_a_clip_driven_eye_is_reported(tool: str, fixtures: pathlib.Path,
+                                        workspace: pathlib.Path,
+                                        failures: Failures) -> None:
+    """An eye the clip itself animates is overwritten, and it is said out loud.
+
+    An eye is a human bone like any other, so a rig that binds `leftEye` in its
+    humanoid map and a clip that animates it produce a rotation the gaze is
+    about to overwrite. One of the two has to win and the gaze does -- but
+    losing a channel the clip explicitly authored is exactly the silence the
+    expression collision one branch over is already reported for.
+    """
+    eye_token = "Root/Hips/Spine/Chest/Neck/Head/LeftEye"
+    avatar = workspace / "eye_mapped_avatar.usda"
+    shutil.copy(fixtures / "gazing_avatar.usda", avatar)
+    # The stage stays in a local: the layer it saves is fetched back off it.
+    avatar_stage = Usd.Stage.Open(str(avatar))
+    avatar_stage.GetPrimAtPath("/Avatar/rig/humanoid").CreateAttribute(
+        "vrm:humanBones:leftEye", Sdf.ValueTypeNames.Token, True).Set(eye_token)
+    avatar_stage.GetRootLayer().Save()
+
+    clip = workspace / "eye_driven_clip.usda"
+    shutil.copy(fixtures / "gazing_clip.usda", clip)
+    clip_stage = Usd.Stage.Open(str(clip))
+    added = "hips/spine/chest/neck/head/leftEye"
+    skeleton = clip_stage.GetPrimAtPath("/Animation/HumanoidSkeleton")
+    joints_attr = skeleton.GetAttribute("joints")
+    joints_attr.Set(Vt.TokenArray(list(joints_attr.Get()) + [added]))
+    rest_attr = skeleton.GetAttribute("restTransforms")
+    rest = list(rest_attr.Get())
+    rest.append(Gf.Matrix4d().SetTranslate(Gf.Vec3d(0.03, 0.05, 0.05)))
+    rest_attr.Set(Vt.Matrix4dArray(rest))
+
+    animation = clip_stage.GetPrimAtPath("/Animation/BodyAnimation")
+    animation_joints = animation.GetAttribute("joints")
+    animation_joints.Set(Vt.TokenArray(list(animation_joints.Get()) + [added]))
+    rotations = animation.GetAttribute("rotations")
+    for time in rotations.GetTimeSamples():
+        # A quarter turn, so the channel is unmistakably not the rest pose and
+        # not the gaze either.
+        rotations.Set(
+            Vt.QuatfArray(list(rotations.Get(time))
+                          + [Gf.Quatf(Gf.Rotation(Gf.Vec3d(0, 1, 0), 90.0)
+                                      .GetQuat())]),
+            time)
+    translations = animation.GetAttribute("translations")
+    for time in translations.GetTimeSamples():
+        translations.Set(
+            Vt.Vec3fArray(list(translations.Get(time))
+                          + [Gf.Vec3f(0.03, 0.05, 0.05)]),
+            time)
+    scales = animation.GetAttribute("scales")
+    scales.Set(Vt.Vec3hArray(list(scales.Get()) + [Gf.Vec3h(1.0, 1.0, 1.0)]))
+    clip_stage.GetRootLayer().Save()
+
+    output = workspace / "eye_driven_bake.usda"
+    result = run_tool(
+        tool, "--avatar", str(avatar), "--animation", str(clip),
+        "--output", str(output))
+    if not failures.check(
+            result.returncode == 0,
+            f"bake of a clip that drives an eye failed: {result.stderr}"):
+        return
+    failures.check(
+        "leftEye" in result.stderr and "gaze" in result.stderr,
+        f"the gaze overwrote a channel the clip authored without saying so: "
+        f"{result.stderr.strip()}")
+    # Once, not once per sample.
+    failures.check(
+        result.stderr.count("the clip animates 'leftEye'") == 1,
+        f"the eye collision was reported more than once: "
+        f"{result.stderr.strip()}")
+
+    # And the gaze is what survives, not the clip's channel.
+    stage = Usd.Stage.Open(str(output))
+    baked = find_animation(stage)
+    joints = list(baked.GetJointsAttr().Get())
+    index = joints.index(eye_token)
+    yaw, _ = gaze_angles(baked.GetRotationsAttr().Get(0.0)[index])
+    failures.check(
+        abs(yaw - EXPECTED_GAZE[0.0]["LeftEye"][0]) <= 1e-3,
+        f"the clip's own eye channel survived the gaze: {yaw:.4f} degrees")
+
+
+def check_no_expressions_takes_an_expression_gaze_with_it(
+        tool: str, fixtures: pathlib.Path, workspace: pathlib.Path,
+        failures: Failures) -> None:
+    """--no-expressions suppresses an expression-driven gaze, and reports it.
+
+    Those four gaze weights reach the stage as blend-shape weights and by no
+    other route, so the flag that refuses to author blend-shape weights refuses
+    them too. The summary has to agree: a run that says it gazed and wrote
+    nothing is worse than one that never claimed to.
+    """
+    avatar = fixtures / "gazing_expression_avatar.usda"
+    clip = fixtures / "gazing_clip.usda"
+    output = workspace / "gazing_expression_body_only.usda"
+    result = run_tool(
+        tool, "--avatar", str(avatar), "--animation", str(clip),
+        "--output", str(output), "--no-expressions")
+    if not failures.check(
+            result.returncode == 0,
+            f"--no-expressions bake of a gazing clip failed: {result.stderr}"):
+        return
+    stage = Usd.Stage.Open(str(output))
+    animation = find_animation(stage)
+    failures.check(
+        not animation.GetBlendShapesAttr().HasAuthoredValue(),
+        "--no-expressions still authored an expression-driven gaze")
+    failures.check(
+        "samples gazing" not in result.stdout,
+        f"--no-expressions reported a gaze it did not author: "
+        f"{result.stdout.strip()}")
+    failures.check(
+        "--no-expressions" in result.stderr,
+        f"--no-expressions dropped the clip's gaze without saying so: "
+        f"{result.stderr.strip()}")
+
+
+def check_a_gaze_expression_collision_is_reported_once(
+        tool: str, fixtures: pathlib.Path, workspace: pathlib.Path,
+        failures: Failures) -> None:
+    """A clip may drive `lookLeft` by name *and* name a look-at target.
+
+    Both are legitimate authoring and one has to win; the gaze does, because it
+    is the value this rig's own curves produced. What matters here is that the
+    operator is told **once**: a collision is a fact about the clip, not about a
+    sample, and a thousand-sample take reporting it per sample per name buries
+    every other diagnostic under four thousand identical lines.
+    """
+    clip = workspace / "colliding_gaze_clip.usda"
+    shutil.copy(fixtures / "gazing_clip.usda", clip)
+    # The stage stays in a local: the layer it saves is fetched back off it.
+    clip_stage = Usd.Stage.Open(str(clip))
+    expressions = clip_stage.DefinePrim("/Animation/Expressions", "Scope")
+    named = clip_stage.DefinePrim("/Animation/Expressions/lookLeft", "Scope")
+    named.CreateAttribute("vrm:expressionName", Sdf.ValueTypeNames.Token,
+                          True).Set("lookLeft")
+    weight = named.CreateAttribute("vrm:expressionWeight",
+                                   Sdf.ValueTypeNames.Float)
+    weight.Set(0.25, 0.0)
+    weight.Set(0.75, 30.0)
+    clip_stage.GetRootLayer().Save()
+    if not failures.check(
+            bool(expressions) and weight.Get(0.0) is not None,
+            "the colliding-gaze fixture authored no expression track, so it "
+            "cannot collide with anything"):
+        return
+
+    output = workspace / "colliding_gaze_bake.usda"
+    result = run_tool(
+        tool, "--avatar", str(fixtures / "gazing_expression_avatar.usda"),
+        "--animation", str(clip), "--output", str(output))
+    if not failures.check(
+            result.returncode == 0,
+            f"bake of a colliding gaze failed: {result.stderr}"):
+        return
+    occurrences = result.stderr.count("the clip animates expression 'lookLeft'")
+    failures.check(
+        occurrences == 1,
+        f"the gaze/expression collision was reported {occurrences} times, "
+        f"expected exactly one line for a two-sample clip")
+
+    # And the gaze wins: 45 degrees over a right angle, not the clip's 0.25.
+    stage = Usd.Stage.Open(str(output))
+    animation = find_animation(stage)
+    blend_shapes = list(animation.GetBlendShapesAttr().Get())
+    values = list(animation.GetBlendShapeWeightsAttr().Get(0.0))
+    left = values[blend_shapes.index("Eyes_Left")]
+    failures.check(
+        abs(left - 0.5) <= TOLERANCE,
+        f"the clip's own lookLeft weight survived the gaze: {left}")
 
 def main() -> int:
     parser = argparse.ArgumentParser()
