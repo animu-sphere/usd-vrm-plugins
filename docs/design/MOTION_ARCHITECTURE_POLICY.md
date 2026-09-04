@@ -236,6 +236,19 @@ speaks ([schema contract](../../plugins/vrmSchema/docs/SCHEMA_CONTRACT.md)). So
 and never on a prim name; a stage authored before the avatar half has no key,
 which is the one case it has to fall back from rather than resolve.
 
+**A resolve is an arbitration, not a sum.** Expressions accumulate on the
+targets they bind, and two that bind *different* targets still fight when those
+targets displace the same vertices — nothing in the weights looks wrong, because
+the collision is geometric. VRM 1.0's per-expression `overrideBlink`,
+`overrideLookAt` and `overrideMouth` are the one mechanism the specification
+gives for it, they are `VrmExpressionAPI` builtins since 2026-09-04, and they
+are consumed here rather than at import for the reason every other evaluation is:
+an override is a statement one expression makes about *others*, so it exists
+only for a whole sample, and the importer has a file. A rig that aims its eyes
+with expressions gets its gaze arbitrated through the same rule and by the same
+path, since those four weights are already folded into the sample before the
+resolve.
+
 The look-at half followed, as the same *equivalent*: `/Animation/LookAt` carries
 `vrm:lookAtOffsetFromHeadBone` and a `vrm:lookAtTarget` that is time-sampled, a
 default, or absent — a target the clip animates, one it states once, or one it
@@ -696,6 +709,15 @@ bake tool, which does it as of 2026-09-01: `motion_retarget` reads the binds,
 hands them here, and authors what comes back as `blendShapes` and
 `blendShapeWeights` on the animation it binds to the rig — the morph-target half
 only, since a material colour is a material input rather than a skeletal one.
+
+Since 2026-09-04 the resolve also performs the avatar's own arbitration (§4.1):
+each reported name resolves to a weight, the blink / lookAt / mouth categories
+are settled *between* those weights — the largest rate any expression asked for,
+so two overrides do not suppress twice — and only the survivors reach the binds.
+Two rules there are measured rather than assumed: an expression that is off
+overrides nothing, which is why the rate is read off the resolved weight and not
+the reported one; and a binary expression is rounded again after a partial
+suppression, because `isBinary` says the rig has no half-shut eyelid to land on.
 
 Dependencies:
 

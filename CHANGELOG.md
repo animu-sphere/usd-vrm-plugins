@@ -15,6 +15,70 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **Two expressions can no longer both own the eyelid: VRM 1.0's expression
+  overrides, read and obeyed** (closes #170). Expressions accumulate on the
+  targets they bind, and two that bind *different* targets still fight when
+  those targets displace the same vertices: measured on `AliciaSolid.vrm`, a
+  `blink` held inside a full-weight `happy` displaces 154 shared points, 146 of
+  them in the same direction, and drives the lid **1.96x** past where either
+  expression alone would — the lash passes through the eye and lands on the
+  cheek. Nothing in the weight arrays is out of range, because the collision is
+  geometric. VRM 1.0 defines exactly one mechanism for it — the per-expression
+  `overrideBlink`, `overrideLookAt` and `overrideMouth` — and none of the three
+  tokens appeared anywhere in this repository; they survived as unread text
+  inside `vrm:rawExtension`.
+
+  All three layers landed together. `VrmExpressionAPI` gains `vrm:overrideBlink`,
+  `vrm:overrideLookAt` and `vrm:overrideMouth` (additive within schema contract
+  v1: an old reader ignores them and behaves exactly as before), the importer
+  carries the tokens onto them, and `vrmRetarget`'s `ExpressionResolver`
+  performs the arbitration — which is where it belongs, because an override is
+  a statement one expression makes about *others* and therefore exists only for
+  a whole sample, while the importer has a file.
+
+  **A category is a set of preset names, not an expression.** The specification
+  overrides "the mouth", never `aa`: `blink`/`blinkLeft`/`blinkRight`, the four
+  `look*`, the five vowels. A custom expression is in none of them, since VRM
+  reserves the preset names — and a VRM 0.x rig lands in the same sets anyway,
+  because the importer already migrates `presetName` to the 1.0 spelling.
+
+  **An unauthored attribute is not `none`.** The importer authors an override
+  only where the file stated one, so a VRM 0.x expression — 0.x has no such
+  field — carries none of the three rather than three tokens it never said. A
+  token outside the vocabulary is kept verbatim and reported as the new
+  **`VRM153`**, rather than dropped or read as "no arbitration": an override
+  silently downgraded is a face that renders wrong with nothing in the log. The
+  bake refuses such a token out loud for the same reason.
+
+  Four resolve rules are measured rather than asserted. `block` is a switch and
+  not a steep blend — any weight above zero takes the whole category — while
+  `blend` hands over its own weight. **The strongest override wins and they do
+  not stack**: two expressions blending at 0.5 and 0.8 leave 0.2 of the blink,
+  not 0.1, which is a face neither of them asked for. **An expression that is
+  off overrides nothing**, so the rate is read off the *resolved* weight rather
+  than the reported one — a binary expression reported at 0.4 is off, and
+  reading the raw report would let it block a blink while contributing nothing
+  to the face itself. And **a binary expression is rounded again after a partial
+  suppression**, because `isBinary` says the rig has no half-shut eyelid to land
+  on. An expression that overrides the category it is itself in suppresses
+  itself: the rig said so, and exempting it would make an override mean one
+  thing for `happy` and another for `blink`; it is reported, because it is far
+  likelier to be a slip than an intent.
+
+  A suppression is **named and is not a defect** — it carries the expression
+  that caused it ("blink (by happy)") and stays out of `IsClean()`, because the
+  avatar's own rule being obeyed is not an error, while a producer whose blink
+  track went flat has nothing to find in the weights. `motion_retarget` reports
+  it as a note.
+
+  The two VRM 1.0 assets already in the corpus state the rule and were read only
+  as far as `vrm:rawExtension` until now: Seed-san's `happy` carries
+  `overrideBlink: blend` — precisely what would have prevented the artifact
+  above — and its `relaxed` carries `block` on the blink and the gaze. The
+  corpus file that produced the measurement is VRM 0.x, which has no override
+  fields at all, so its own fix stays clip-side; what this closes is the case
+  where the avatar *does* state the rule and it was dropped on the floor.
+
 - **A rig looks where the clip is looking: `LookAtEvaluate` and the gaze bake.**
   A clip named a place to look and no rig looked there. `vrmRetarget`'s new
   `LookAtEvaluator` turns that target point into one particular avatar's answer,

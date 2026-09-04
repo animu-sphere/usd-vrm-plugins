@@ -243,6 +243,14 @@ Still ahead:
   on a plain `/Animation/LookAt` prim — for the same reason and at the same cost:
   a typed API applied later moves nothing, and the question of who owns one is
   now owed by two halves rather than one.
+- ⬜ **Should a rig be told when two expressions displace the same vertices?**
+  VRM 1.0's override fields close the case where the avatar *states* the rule
+  (2026-09-04, #170), and VRM 0.x has no such field at all: its avatars can only
+  be fixed clip-side, and today nothing measures the collision. A check that
+  reported "expressions X and Y displace N shared points in the same direction"
+  would find it on either version — it needs the mesh points and every
+  expression's morph offsets, so it is a corpus-analysis feature rather than a
+  reader one, and it belongs to whichever tool grows a geometry pass first.
 - ⬜ **Is the `motion:` USD namespace (motion policy §13) a typed schema or
   namespaced attributes?** Motion Plans are the one place the policy authors USD
   outside a file-format plugin.

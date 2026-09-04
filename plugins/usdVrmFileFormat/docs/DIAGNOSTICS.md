@@ -49,6 +49,7 @@ Most severe to least. Tools fail (non-zero exit) on any `ERROR` or `FATAL`.
 | VRM150 | INFO | import | VRM 0.x materialValues expression preserved raw only |
 | VRM151 | WARNING | import | Expression morph target index out of range; bind skipped |
 | VRM152 | WARNING | import | Duplicate expression name; first declaration kept |
+| VRM153 | WARNING | import | Expression override value is not none/block/blend; carried verbatim |
 | VRM160 | WARNING | import | CUBICSPLINE animation approximated as linear |
 | VRM170 | WARNING | import | Node constraint has no valid source; skipped |
 | VRM180 | WARNING | import | Morph targets present but no skeleton; blend shapes skipped |

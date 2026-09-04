@@ -97,7 +97,7 @@ def SkelAnimation "RetargetedWalk"
 Nothing is authored on the meshes. UsdSkel carries blend-shape weights on the
 animation the skeleton is bound to and hands each skinned prim the subset its
 own `skel:blendShapes` names, so the avatar keeps owning its binds exactly as it
-keeps owning its rig. Four consequences are worth knowing:
+keeps owning its rig. Five consequences are worth knowing:
 
 - **A blend shape is named by the token its mesh binds it under**, not by its
   prim path — that is the join UsdSkel performs. A blend shape *no* mesh binds
@@ -114,6 +114,18 @@ keeps owning its rig. Four consequences are worth knowing:
   material input and the material layer owns what an MToon or a
   `UsdPreviewSurface` calls it, so the bake reports how many slots the clip
   drives on this rig instead of writing them.
+- **The avatar can say two expressions must not both drive its face.** Morph
+  offsets sum on the vertices they share even when the expressions bind
+  different targets, so a `happy` that raises the cheek drives an eyelid a
+  blink has already shut roughly twice as far as shut. VRM 1.0 answers that with
+  a per-expression `overrideBlink` / `overrideLookAt` / `overrideMouth`, and the
+  bake obeys it: `block` takes the whole category while the overriding
+  expression is on at all, `blend` attenuates it by that expression's weight,
+  and the strongest override wins rather than stacking with the others. A
+  suppression is a **note** and not a warning — the avatar asked for it — but it
+  names the expression that caused it, because nothing in the resulting weights
+  looks wrong. An override token outside those three is refused out loud and
+  arbitrates nothing.
 
 `--no-expressions` skips all of it and bakes the body alone.
 
@@ -205,6 +217,16 @@ makes of them in its own order. Each fixture expression carries one decision:
 two morph targets at different bind weights, a binary eyelid, a name the clip
 never weights, a material colour with no morph target, and a blend shape no mesh
 binds.
+
+`tests/fixtures/overriding_avatar.usda` is that rig again with the arbitration
+on it -- `happy` carrying `overrideBlink = "blend"`, and a `blink` that is
+deliberately *not* binary, so the suppressed weight lands on the attenuated
+value itself rather than being rounded back to shut or open. The same clip drives
+it, and only the blink column moves: half the blink survives a `happy` at 0.5
+and none of it survives a `happy` at 1. It also carries an override token
+outside the vocabulary, on an expression the clip never weights, because a token
+this tool cannot read has to be refused at load rather than read as "no
+arbitration".
 
 Then `tests/fixtures/gazing_{avatar,clip}.usda` and
 `gazing_expression_avatar.usda`: one clip baked onto two rigs that aim their

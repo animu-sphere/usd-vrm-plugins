@@ -191,6 +191,18 @@ def check_expressions():
     weights = happy.GetAttribute("vrm:morphTargetWeights").Get()
     assert weights and abs(weights[0] - 1.0) < 1e-6, list(weights)
 
+    # The override fields: the one mechanism VRM 1.0 gives for two co-active
+    # expressions that displace the same vertices. The importer carries the
+    # tokens and arbitrates nothing -- which expressions a value suppresses is a
+    # question about a whole sample, and this layer has one file.
+    assert happy.GetAttribute("vrm:overrideBlink").Get() == "blend"
+    assert happy.GetAttribute("vrm:overrideBlink").IsCustom() is False
+    assert happy.GetAttribute("vrm:overrideMouth").Get() == "block"
+    # The fixture states no `overrideLookAt`, so the stage must state none
+    # either: an absent attribute and an authored "none" are different claims,
+    # and inventing the second would put words in the avatar's mouth.
+    assert not happy.GetAttribute("vrm:overrideLookAt").HasAuthoredValue(),         "an override the file never stated must not be authored"
+
     # materialColorBinds: drives Face_Mat emission to red.
     ct = happy.GetRelationship("vrm:materialColorTargets").GetTargets()
     assert ct == [Sdf.Path("/Asset/mtl/Face_Mat")], ct
@@ -250,6 +262,12 @@ def check_vrm0_expressions():
     assert joy.GetRelationship("vrm:morphTargets").GetTargets() == [bs[0].GetPath()]
     weights = joy.GetAttribute("vrm:morphTargetWeights").Get()
     assert weights and abs(weights[0] - 1.0) < 1e-6, list(weights)
+    # VRM 0.x has no override fields, so a 0.x rig states no arbitration --
+    # which is a different thing from stating "none", and the migration must not
+    # invent one on the way to the 1.0 vocabulary it does translate.
+    for attribute in ("vrm:overrideBlink", "vrm:overrideLookAt",
+                      "vrm:overrideMouth"):
+        assert not joy.GetAttribute(attribute).HasAuthoredValue(),             f"VRM 0.x expression carries {attribute}"
 
 
 def check_names():

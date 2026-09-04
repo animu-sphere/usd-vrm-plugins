@@ -1,6 +1,6 @@
 {
   "baselineSchemaVersion": 1,
-  "generatedSchemaSha256": "251de31b19fa82639b13b77e453a2bce5355cf6ef3ff94d3d665174cf10d8ad6",
+  "generatedSchemaSha256": "f23875c35342b0c680f3e40bfb47861ef3955ee1033da9ae120cd8cae00c4255",
   "registryVisible": {
     "VrmColliderAPI": true,
     "VrmConstraintAPI": true,
@@ -93,6 +93,18 @@
         },
         "vrm:morphTargets": {
           "kind": "relationship"
+        },
+        "vrm:overrideBlink": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:overrideLookAt": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
+        },
+        "vrm:overrideMouth": {
+          "typeName": "TfToken",
+          "variability": "Sdf.VariabilityUniform"
         }
       }
     },

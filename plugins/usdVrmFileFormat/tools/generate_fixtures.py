@@ -423,6 +423,12 @@ def build_expressions():
             "expressions": {
                 "preset": {"happy": {
                     "isBinary": False,
+                    # Two of the three override fields, and deliberately not the
+                    # third: an avatar that says nothing about the gaze must
+                    # author no `vrm:overrideLookAt` at all, because an absent
+                    # attribute and an authored "none" are different claims.
+                    "overrideBlink": "blend",
+                    "overrideMouth": "block",
                     "morphTargetBinds": [{"node": 0, "index": 0, "weight": 1.0}],
                     # Also drive the material's emission to red
                     # (materialColorBinds).

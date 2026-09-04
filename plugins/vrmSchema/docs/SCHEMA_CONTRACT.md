@@ -127,6 +127,45 @@ That is a v1-legal old stage, not an error: old readers ignore the attribute and
 a new reader that finds none has only the sanitized name to work with, which is
 exactly the situation the attribute exists to end.
 
+## Two co-active expressions are arbitrated, not summed
+
+Expressions accumulate on their targets, and two that bind *different* morph
+targets still fight when those targets displace the same vertices: an eyelid
+driven by `blink` and by a `happy` that raises the cheek is driven roughly
+twice as far as shut, with nothing in either weight array out of range. VRM 1.0
+gives exactly one mechanism for this, and v1 carries it verbatim:
+
+| Attribute | Says |
+| --- | --- |
+| `uniform token vrm:overrideBlink` | What this expression does to `blink`, `blinkLeft`, `blinkRight` while it is on |
+| `uniform token vrm:overrideLookAt` | The same over `lookUp`, `lookDown`, `lookLeft`, `lookRight` |
+| `uniform token vrm:overrideMouth` | The same over `aa`, `ih`, `ou`, `ee`, `oh` |
+
+Each is `none`, `block` (the category is off while this expression is on at all)
+or `blend` (the category is attenuated by this expression's own weight). Three
+things about that are the contract rather than the implementation:
+
+**A category is a set of preset names, not one expression.** The override names
+"the mouth", never `aa` — and a custom expression is in no category, because VRM
+reserves the preset names. A VRM 0.x rig lands in the same sets, since the
+importer migrates `presetName` to the 1.0 spelling on the way in.
+
+**An unauthored attribute is not `none`.** The importer authors one only where
+the source file stated it, so a VRM 0.x expression — 0.x has no such field —
+carries none of the three rather than three tokens it never said.
+
+**The token is carried as spelled.** There is no `allowedTokens` list on these
+attributes: a value outside the three reaches a consumer as data, with the
+importer's `VRM153` beside it, rather than failing schema validation and taking
+the rest of the avatar with it. A consumer that cannot read a token must refuse
+it out loud — reading it as "no arbitration" is a face that renders wrong with
+nothing in the log.
+
+Applying the rule needs a whole sample, because an override is a statement one
+expression makes about *others*, so it belongs to the consumer step
+(`ExpressionResolve`) and never to this layer. Additive within v1: an old reader
+ignores all three and gets exactly the behaviour it had before they existed.
+
 ## Humanoid representation decision
 
 The v1 contract uses one token attribute per human bone:
@@ -149,7 +188,7 @@ lossless.
 | API | Applied to | Required typed data | Raw fallback |
 | --- | --- | --- | --- |
 | `VrmHumanoidAPI` | `/Asset/rig/Humanoid` | `vrm:skeleton`, authored `vrm:humanBones:<bone>` tokens | `/Asset.customData.vrm:rawExtension` |
-| `VrmExpressionAPI` | `/Asset/rig/Expressions/<name>` | `vrm:expressionName`, `vrm:expressionType`, `vrm:isBinary`; optional `vrm:morphTargets` plus parallel `vrm:morphTargetWeights`; optional `vrm:materialColorTargets` plus parallel `vrm:materialColorTypes` and `vrm:materialColorValues` | `/Asset.customData.vrm:rawExtension` |
+| `VrmExpressionAPI` | `/Asset/rig/Expressions/<name>` | `vrm:expressionName`, `vrm:expressionType`, `vrm:isBinary`; optional `vrm:overrideBlink`, `vrm:overrideLookAt`, `vrm:overrideMouth`; optional `vrm:morphTargets` plus parallel `vrm:morphTargetWeights`; optional `vrm:materialColorTargets` plus parallel `vrm:materialColorTypes` and `vrm:materialColorValues` | `/Asset.customData.vrm:rawExtension` |
 | `VrmLookAtAPI` | `/Asset/rig/LookAt` | `vrm:type`; optional `vrm:skeleton`, `vrm:leftEye`, `vrm:rightEye` joint tokens | `/Asset/rig/LookAt.customData.vrm:lookAt:raw` |
 | `VrmSpringBoneAPI` | `/Asset/rig/SecondaryMotion/SpringBones/<name>` | `vrm:joints` plus parallel `vrm:stiffness`, `vrm:gravityPower`, `vrm:dragForce`, `vrm:hitRadius`, `vrm:gravityDir`; optional `vrm:center`; optional `vrm:colliderGroups` | `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
 | `VrmColliderAPI` | `/Asset/rig/SecondaryMotion/Colliders/<group>/Collider_<n>` | `vrm:shape`, `vrm:node`, `vrm:offset`, `vrm:radius`; `vrm:tail` for capsules | `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
@@ -163,7 +202,7 @@ the same index order as its relationship or `vrm:joints` token array.
 | VRM source | Typed/schema destination | Preservation |
 | --- | --- | --- |
 | VRM 1.0 `humanoid.humanBones` / VRM 0.x `humanoid.humanBones[]` | `VrmHumanoidAPI` per-bone token attrs | Full VRM block at `/Asset.customData.vrm:rawExtension` |
-| VRM 1.0 `expressions.preset/custom` / VRM 0.x `blendShapeMaster.blendShapeGroups` | `VrmExpressionAPI` expression prims, morph binds, material-color binds | Full VRM block at `/Asset.customData.vrm:rawExtension`; VRM 0.x materialValues that are not typed are diagnostic `VRM150` |
+| VRM 1.0 `expressions.preset/custom` / VRM 0.x `blendShapeMaster.blendShapeGroups` | `VrmExpressionAPI` expression prims, morph binds, material-color binds, and the VRM 1.0 `overrideBlink` / `overrideLookAt` / `overrideMouth` tokens | Full VRM block at `/Asset.customData.vrm:rawExtension`; VRM 0.x materialValues that are not typed are diagnostic `VRM150` |
 | VRM 1.0 / 0.x `lookAt` | `VrmLookAtAPI` type and eye joint tokens | Raw lookAt curves at `/Asset/rig/LookAt.customData.vrm:lookAt:raw` |
 | VRM 1.0 `springBone` / VRM 0.x `secondaryAnimation` | `VrmSpringBoneAPI` and `VrmColliderAPI` | Raw spring-bone block at `/Asset/rig/SecondaryMotion.customData.vrm:springBone:raw` |
 | `VRMC_node_constraint` | `VrmConstraintAPI` | Raw constraint block at each constraint prim's `customData.vrm:constraint:raw` |

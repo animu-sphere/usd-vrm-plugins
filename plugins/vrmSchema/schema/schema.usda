@@ -146,6 +146,29 @@ class "VrmExpressionAPI" (
     uniform bool vrm:isBinary (
         doc = "Whether the expression value is clamped to 0/1 (binary)."
     )
+    uniform token vrm:overrideBlink (
+        doc = """What this expression does to the blink expressions while on.
+        'none', 'block' (they are off whenever this one is on at all) or 'blend'
+        (they are attenuated by this expression's own weight). VRM 1.0's
+        `overrideBlink`, and the only mechanism the specification gives for two
+        co-active expressions whose morph targets displace the same vertices --
+        their offsets otherwise sum, and an eyelid driven by a blink and a smile
+        at once is driven roughly twice as far as shut. Authored only when the
+        source file states it; VRM 0.x has no such field. The token is carried
+        as the file spelled it and is not constrained by an allowedTokens list,
+        so a value outside the three reaches a consumer as data rather than
+        failing schema validation."""
+    )
+    uniform token vrm:overrideLookAt (
+        doc = """What this expression does to the look-at expressions while on.
+        The same three tokens, over lookUp, lookDown, lookLeft and lookRight --
+        which is how one expression arbitrates the gaze of a rig that aims its
+        eyes with expressions rather than with bones."""
+    )
+    uniform token vrm:overrideMouth (
+        doc = """What this expression does to the mouth expressions while on.
+        The same three tokens, over aa, ih, ou, ee and oh."""
+    )
     rel vrm:morphTargets (
         doc = "The UsdSkelBlendShape prims this expression drives."
     )

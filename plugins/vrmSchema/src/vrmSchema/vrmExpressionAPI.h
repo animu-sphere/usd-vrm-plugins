@@ -230,6 +230,89 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // VRMOVERRIDEBLINK 
+    // --------------------------------------------------------------------- //
+    /// What this expression does to the blink expressions while on.
+    /// 'none', 'block' (they are off whenever this one is on at all) or 'blend'
+    /// (they are attenuated by this expression's own weight). VRM 1.0's
+    /// `overrideBlink`, and the only mechanism the specification gives for two
+    /// co-active expressions whose morph targets displace the same vertices --
+    /// their offsets otherwise sum, and an eyelid driven by a blink and a smile
+    /// at once is driven roughly twice as far as shut. Authored only when the
+    /// source file states it; VRM 0.x has no such field. The token is carried
+    /// as the file spelled it and is not constrained by an allowedTokens list,
+    /// so a value outside the three reaches a consumer as data rather than
+    /// failing schema validation.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token vrm:overrideBlink` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    USDVRM_API
+    UsdAttribute GetVrmOverrideBlinkAttr() const;
+
+    /// See GetVrmOverrideBlinkAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVRM_API
+    UsdAttribute CreateVrmOverrideBlinkAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // VRMOVERRIDELOOKAT 
+    // --------------------------------------------------------------------- //
+    /// What this expression does to the look-at expressions while on.
+    /// The same three tokens, over lookUp, lookDown, lookLeft and lookRight --
+    /// which is how one expression arbitrates the gaze of a rig that aims its
+    /// eyes with expressions rather than with bones.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token vrm:overrideLookAt` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    USDVRM_API
+    UsdAttribute GetVrmOverrideLookAtAttr() const;
+
+    /// See GetVrmOverrideLookAtAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVRM_API
+    UsdAttribute CreateVrmOverrideLookAtAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // VRMOVERRIDEMOUTH 
+    // --------------------------------------------------------------------- //
+    /// What this expression does to the mouth expressions while on.
+    /// The same three tokens, over aa, ih, ou, ee and oh.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token vrm:overrideMouth` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    USDVRM_API
+    UsdAttribute GetVrmOverrideMouthAttr() const;
+
+    /// See GetVrmOverrideMouthAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDVRM_API
+    UsdAttribute CreateVrmOverrideMouthAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // VRMMORPHTARGETWEIGHTS 
     // --------------------------------------------------------------------- //
     /// Per-target weights, parallel to vrm:morphTargets.

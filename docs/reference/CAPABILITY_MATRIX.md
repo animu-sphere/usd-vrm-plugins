@@ -84,7 +84,7 @@ Its own status:
 | `motionRuntime` | v0.4.0 | `PoseBuffer`, interpolation/extrapolation, resample, filter, blend |
 | `motionRuntime` | v0.5.0 | `IMotionSource` / `ClipSource` / `LiveCaptureSource`, the `motion-capture-trace` format, `ReplaySender`, `CaptureRecorder` (Motion Phase D) |
 | `vrmRetarget` | v0.4.0 | Humanoid map, rest-pose correction, pose retargeter, root-motion policy |
-| `vrmRetarget` | unreleased | `ExpressionResolver`: a clip's named expression weight resolved onto one avatar's morph-target and material-colour binds, joined on `vrm:expressionName` (Motion Phase G) |
+| `vrmRetarget` | unreleased | `ExpressionResolver`: a clip's named expression weight resolved onto one avatar's morph-target and material-colour binds, joined on `vrm:expressionName`, with the avatar's `overrideBlink` / `overrideLookAt` / `overrideMouth` arbitrating co-active expressions (Motion Phase G) |
 | `motion_retarget` | v0.4.0 | CLI: retargets a clip onto an avatar and binds `skel:animationSource` (Motion Phase C) |
 | `motion_capture` | v0.5.0 | CLI: replays a recorded capture session into a semantic humanoid clip the retarget tool consumes unchanged (Motion Phase D) |
 | `vrmAdapterVmc` | v0.6.0 | VMC Protocol input: OSC and VMC decode, frame assembly, Unity `HumanBodyBones` → `motion::HumanBone` mapping, `LiveCaptureSource` bridge, UDP receiver |
@@ -176,9 +176,14 @@ particular avatar's morph-target and material-colour binds by `vrmRetarget`'s
 `ExpressionResolver`, and — unreleased, since 2026-09-01 — authored:
 `motion_retarget` writes `blendShapes` and `blendShapeWeights` onto the
 `SkelAnimation` it binds to the rig, so the morph-target half of a clip's face
-reaches an avatar end to end. **Material colours are resolved and not written**,
-because a colour slot is a material input and that vocabulary belongs to the
-material layer. See
+reaches an avatar end to end. Since 2026-09-04 that resolve is an
+**arbitration** rather than a sum: an avatar's per-expression `overrideBlink`,
+`overrideLookAt` and `overrideMouth` — VRM 1.0's only answer to two co-active
+expressions displacing the same vertices — are imported onto
+`VrmExpressionAPI` and applied to the whole sample before the binds, so a rig
+whose `happy` blocks the blink is baked with the blink its own file asked for.
+**Material colours are resolved and not written**, because a colour slot is a
+material input and that vocabulary belongs to the material layer. See
 [MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md) and the
 Motion Phase ladder in the [backlog](../roadmap/backlog.md).
 

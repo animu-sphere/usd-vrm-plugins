@@ -38,7 +38,7 @@ live source that has no stage at all.
 | `vrmRetarget/ExpressionResolver.h` | `MorphTargetBind`, `MaterialColorBind`, `ExpressionDefinition`, `ExpressionRig`, `ExpressionResolver`, `ResolvedExpressions`, `ExpressionDiagnostics` |
 | `vrmRetarget/LookAtEvaluator.h` | `LookAtRangeMap`, `LookAtCurveKey`, `LookAtType`, `LookAtRig`, `ParseLookAtRangeMaps`, `LookAtHead`, `LookAtInput`, `LookAtEvaluator`, `ResolvedLookAt`, `LookAtDiagnostics` |
 
-## Five decisions worth knowing
+## Six decisions worth knowing
 
 - **Joint names are never guessed.** A binding comes from the avatar's
   `vrm:humanBones:<bone>` or from an explicit map file. Name heuristics are
@@ -61,6 +61,19 @@ live source that has no stage at all.
   reported contributes nothing at all, because an absent name is not a zero
   weight. The `[0, 1]` clamp the `.vrma` reader deliberately withheld is applied
   here, per the specification, and the clamped names are reported.
+- **Co-active expressions are arbitrated, not summed.** Two expressions that
+  bind *different* morph targets still fight when those targets displace the
+  same vertices, and nothing in the weights shows it. So a sample is resolved as
+  a whole: every reported name resolves to a weight, then the avatar's own
+  `overrideBlink` / `overrideLookAt` / `overrideMouth` settle the blink, look-at
+  and mouth categories between those weights — the largest rate any expression
+  asked for, since two overrides do not suppress twice — and only the survivors
+  reach the binds. An expression that is *off* overrides nothing, which is why
+  the rate is read off the resolved weight rather than the reported one; and a
+  binary expression is rounded again after a partial suppression, because
+  `isBinary` says the rig has no half-shut eyelid to land on. A suppression is
+  named with the expression that caused it, and is deliberately not a defect:
+  the avatar asked for it.
 - **A gaze is a point until it meets a rig, and then it is two answers.** A
   clip names a target *point*, because a direction needs a head and where the
   head sits is a property of an avatar. `LookAtEvaluator` is the layer that has

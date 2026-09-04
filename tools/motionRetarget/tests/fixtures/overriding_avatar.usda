@@ -1,0 +1,161 @@
+#usda 1.0
+(
+    doc = """The expressive rig again, with the arbitration VRM 1.0 gives it.
+
+    Same skeleton, same blend shapes, same clip drives it: this differs from
+    `expressive_avatar.usda` in exactly the three lines that make the face an
+    arbitration rather than a sum. `happy` declares `overrideBlink = "blend"`,
+    so while it is on the blink is attenuated by its weight -- the mechanism
+    that exists because two expressions binding *different* morph targets still
+    fight when those targets displace the same vertices, and an eyelid driven by
+    a blink and a smile at once is driven roughly twice as far as shut.
+
+    This rig's `blink` is deliberately **not** binary, unlike the one next door.
+    A binary eyelid rounds a suppression back to shut or open, so the bake of
+    this fixture would prove only that an override was noticed; a continuous one
+    lands on the attenuated value itself, which is what proves the *rate* is the
+    avatar's and travelled the whole way.
+
+    `surprised` carries `vrm:overrideMouth = "shush"`, which is not one of the
+    three tokens. Nothing can act on it, and the clip never weights that
+    expression anyway -- it is here because a token this layer cannot read must
+    be refused out loud at load rather than read as "no arbitration", which is
+    a face that renders wrong with nothing in the log."""
+    defaultPrim = "Avatar"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def SkelRoot "Avatar"
+{
+    def Skeleton "TargetSkeleton" (
+        apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        uniform token[] joints = ["Root", "Pelvis", "SpineA", "ChestA"]
+        uniform matrix4d[] restTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.5, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.5, 0, 1))]
+        # Accumulated from the rest transforms above. UsdSkel warns without
+        # them, and this fixture is read through the skinning query.
+        uniform matrix4d[] bindTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1.5, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 2, 0, 1))]
+    }
+
+    # The mesh names its blend shapes itself, and those names -- not the prim
+    # paths the expressions bind -- are what a UsdSkelAnimation carries.
+    def Mesh "Face" (
+        apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        int[] faceVertexCounts = [3]
+        int[] faceVertexIndices = [0, 1, 2]
+        point3f[] points = [(0, 1.5, 0), (0.1, 1.5, 0), (0, 1.6, 0)]
+        uniform token[] skel:blendShapes = ["Face_Smile", "Face_Blink", "Face_Brow", "Face_Frown"]
+        rel skel:blendShapeTargets = [
+            </Avatar/BlendShapes/Face_Smile>,
+            </Avatar/BlendShapes/Face_Blink>,
+            </Avatar/BlendShapes/Face_Brow>,
+            </Avatar/BlendShapes/Face_Frown>]
+        rel skel:skeleton = </Avatar/TargetSkeleton>
+    }
+
+    def Scope "BlendShapes"
+    {
+        def BlendShape "Face_Smile"
+        {
+            uniform vector3f[] offsets = [(0, 0, 0.01), (0, 0, 0), (0, 0, 0)]
+        }
+
+        def BlendShape "Face_Blink"
+        {
+            uniform vector3f[] offsets = [(0, -0.01, 0), (0, 0, 0), (0, 0, 0)]
+        }
+
+        def BlendShape "Face_Brow"
+        {
+            uniform vector3f[] offsets = [(0, 0, 0), (0, 0.01, 0), (0, 0, 0)]
+        }
+
+        def BlendShape "Face_Frown"
+        {
+            uniform vector3f[] offsets = [(0, 0, -0.01), (0, 0, 0), (0, 0, 0)]
+        }
+
+        # No mesh binds this one, so nothing names it and no animation can
+        # reach it. The expression below drives it anyway, which is the case
+        # the bake has to report rather than author.
+        def BlendShape "Face_Unbound"
+        {
+            uniform vector3f[] offsets = [(0, 0, 0), (0, 0, 0), (0, 0.01, 0)]
+        }
+    }
+
+    def Scope "Materials"
+    {
+        def Material "FaceMaterial"
+        {
+        }
+    }
+
+    def Scope "rig"
+    {
+        def Scope "Expressions"
+        {
+            def Scope "happy"
+            {
+                uniform token vrm:expressionName = "happy"
+                uniform token vrm:expressionType = "preset"
+                uniform bool vrm:isBinary = 0
+                uniform token vrm:overrideBlink = "blend"
+                rel vrm:morphTargets = [
+                    </Avatar/BlendShapes/Face_Smile>,
+                    </Avatar/BlendShapes/Face_Brow>]
+                uniform float[] vrm:morphTargetWeights = [1, 0.5]
+            }
+
+            def Scope "blink"
+            {
+                uniform token vrm:expressionName = "blink"
+                uniform token vrm:expressionType = "preset"
+                uniform bool vrm:isBinary = 0
+                rel vrm:morphTargets = [</Avatar/BlendShapes/Face_Blink>]
+                uniform float[] vrm:morphTargetWeights = [1]
+            }
+
+            def Scope "surprised"
+            {
+                uniform token vrm:expressionName = "surprised"
+                uniform token vrm:expressionType = "preset"
+                uniform bool vrm:isBinary = 0
+                uniform token vrm:overrideMouth = "shush"
+                rel vrm:morphTargets = [</Avatar/BlendShapes/Face_Frown>]
+                uniform float[] vrm:morphTargetWeights = [1]
+            }
+
+            def Scope "angry"
+            {
+                uniform token vrm:expressionName = "angry"
+                uniform token vrm:expressionType = "preset"
+                uniform bool vrm:isBinary = 0
+                rel vrm:materialColorTargets = [</Avatar/Materials/FaceMaterial>]
+                uniform token[] vrm:materialColorTypes = ["color"]
+                uniform float4[] vrm:materialColorValues = [(1, 0, 0, 1)]
+            }
+
+            def Scope "ghost"
+            {
+                uniform token vrm:expressionName = "ghost"
+                uniform token vrm:expressionType = "custom"
+                uniform bool vrm:isBinary = 0
+                rel vrm:morphTargets = [</Avatar/BlendShapes/Face_Unbound>]
+                uniform float[] vrm:morphTargetWeights = [1]
+            }
+        }
+    }
+}

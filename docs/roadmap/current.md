@@ -355,6 +355,39 @@ back out of a trace — v0.7.0 closed the clip half. Reaching a **rig** is what
   once: an eye bone the clip itself animates, and a gaze expression the clip
   also drives by name.
 
+- ✅ **The avatar's own arbitration, so two expressions stop both owning the
+  eyelid** *(2026-09-04, closes #170)*. Both resolve steps above expand what a
+  clip says onto a rig; this is the rig answering back. Expressions accumulate
+  on the targets they bind, and two that bind *different* targets still fight
+  when those targets displace the same vertices — measured on `AliciaSolid.vrm`,
+  a `blink` inside a full-weight `happy` displaces 154 shared points, 146 of
+  them the same way, and drives the lid **1.96x** past either expression alone.
+  Nothing in the weights is out of range, because the collision is geometric,
+  which is why no diagnostic and no clamp could have found it.
+
+  VRM 1.0's per-expression `overrideBlink` / `overrideLookAt` / `overrideMouth`
+  are the one mechanism the specification gives for it, and none of the three
+  tokens existed anywhere in this repository — they survived as unread text
+  inside `vrm:rawExtension`, on two corpus assets that state the rule. All three
+  layers landed together: `VrmExpressionAPI` carries the tokens (additive within
+  contract v1), the importer authors them where the file states one and reports
+  a token outside the vocabulary as the new `VRM153`, and `ExpressionResolver`
+  performs the arbitration — which is where it belongs, since an override is a
+  statement one expression makes about *others* and so exists only for a whole
+  sample, while the importer has a file.
+
+  Four decisions are the resolve rather than plumbing, each measured. A
+  **category is a set of preset names**, never one expression, and a custom name
+  is in none of them. **The strongest override wins and they do not stack**: two
+  blends at 0.5 and 0.8 leave 0.2 of the blink and not 0.1, a face neither asked
+  for. **An expression that is off overrides nothing**, so the rate is read off
+  the resolved weight and not the reported one — otherwise a binary expression
+  reported at 0.4 blocks a blink while contributing nothing to the face itself.
+  And **a binary expression is rounded again after a partial suppression**,
+  because `isBinary` says the rig has no half-shut eyelid to land on. A
+  suppression is named with the expression that caused it and is deliberately
+  not a defect: the avatar asked for it.
+
 **What is still Phase G** is neither of the two resolve steps: it is **live
 recording** and the **VRMA export investigation**
 ([the backlog](backlog.md) carries both). Every item listed above is closed, so

@@ -36,6 +36,7 @@ inline constexpr const char* HumanoidBoneDuplicate     = "VRM141";
 inline constexpr const char* ExpressionVrm0MaterialValues = "VRM150";
 inline constexpr const char* ExpressionMorphIndexOutOfRange = "VRM151";
 inline constexpr const char* ExpressionDuplicateName    = "VRM152";
+inline constexpr const char* ExpressionOverrideUnknown  = "VRM153";
 inline constexpr const char* AnimationCubicSpline      = "VRM160";
 inline constexpr const char* ConstraintNoSource        = "VRM170";
 inline constexpr const char* SpringColliderGroupOutOfRange = "VRM190";
