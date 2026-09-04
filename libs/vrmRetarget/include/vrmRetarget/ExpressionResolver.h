@@ -78,7 +78,10 @@ enum class ExpressionOverride
     // steep blend.
     Block,
     // The category is attenuated by this expression's own resolved weight, so a
-    // `happy` at 0.4 leaves 60% of the blink standing.
+    // `happy` at 0.4 leaves 60% of the blink standing. The weight is taken as a
+    // proportion in [0, 1] even where clamping is off, because it multiplies
+    // another expression's weight: a rate past 1 would invert that expression
+    // rather than suppress it.
     Blend,
 };
 
@@ -320,6 +323,12 @@ public:
     // it: every reported name is resolved to a weight, the blink / lookAt /
     // mouth categories are then arbitrated between those weights, and only the
     // survivors reach the binds.
+    //
+    // The arbitration is one pass over the weights the sample resolved to, so
+    // an expression suppressed by another still overrides its own category.
+    // That is the boundary rather than an oversight: cascading would make the
+    // answer depend on the order the categories are settled in, and two
+    // expressions overriding each other's categories would have none at all.
     ResolvedExpressions Resolve(const motion::ExpressionWeights& weights,
                                 ExpressionDiagnostics* diagnostics
                                     = nullptr) const;

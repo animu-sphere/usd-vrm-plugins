@@ -16,13 +16,13 @@ def SkelRoot "Asset" (
     "name": "usdVrm Fixture",
     "version": "1.0"
 }'''
-            string rawExtension = '{"specVersion":"1.0","meta":{"name":"usdVrm Fixture","version":"1.0","authors":["usd-vrm-plugins"],"licenseUrl":"https://www.apache.org/licenses/LICENSE-2.0","avatarPermission":"everyone"},"humanoid":{"humanBones":{"hips":{"node":1},"spine":{"node":2}}},"expressions":{"preset":{"happy":{"isBinary":false,"overrideBlink":"suppress","overrideMouth":"block","morphTargetBinds":[{"node":0,"index":0,"weight":1.0}]}}}}'
+            string rawExtension = '{"specVersion":"1.0","meta":{"name":"usdVrm Fixture","version":"1.0","authors":["usd-vrm-plugins"],"licenseUrl":"https://www.apache.org/licenses/LICENSE-2.0","avatarPermission":"everyone"},"humanoid":{"humanBones":{"hips":{"node":1},"spine":{"node":2}}},"expressions":{"preset":{"happy":{"isBinary":false,"overrideBlink":"suppress","overrideLookAt":3,"overrideMouth":"block","morphTargetBinds":[{"node":0,"index":0,"weight":1.0}]}}}}'
             int schemaContractVersion = 1
             string sourceFormat = "VRM"
             string sourceFrontAxis = "+Z"
             string sourceVersion = "1.0"
             string specVersion = "1.0"
-            string[] warnings = ["[VRM153] expression 'happy' declares overrideBlink 'suppress', which is not none, block or blend; it is carried verbatim and no consumer will act on it"]
+            string[] warnings = ["[VRM153] expression 'happy' declares overrideBlink 'suppress', which is not none, block or blend; it is carried verbatim and no consumer will act on it", "[VRM153] expression 'happy' declares overrideLookAt with a value that is not a token; nothing is authored for it and it survives in vrm:rawExtension only"]
         }
     }
     kind = "component"

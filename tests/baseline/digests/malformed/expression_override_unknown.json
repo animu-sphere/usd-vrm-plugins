@@ -156,7 +156,7 @@
     "frontAxisNormalized": false,
     "metaName": "usdVrm Fixture",
     "metaSha256": "2ce7865d03f1b8a92a49a5418d9bec76ee6e8a0f3c748565fee3ead1f9a17cdf",
-    "rawExtensionSha256": "5c6fcec477688d9aa9f6c2a48f23f5ffb4c69d8163c68b17cf1f102bfdbc2991",
+    "rawExtensionSha256": "a7eaa120e662ba6bbff150843ba91cae680cb0a9d514be11d0cb4e3f53d1469f",
     "schemaContractVersion": 1,
     "sourceFormat": "VRM",
     "sourceFrontAxis": "+Z",
@@ -165,6 +165,6 @@
     "warningCodes": [
       "VRM153"
     ],
-    "warningCount": 1
+    "warningCount": 2
   }
 }

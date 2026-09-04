@@ -714,10 +714,14 @@ Since 2026-09-04 the resolve also performs the avatar's own arbitration (§4.1):
 each reported name resolves to a weight, the blink / lookAt / mouth categories
 are settled *between* those weights — the largest rate any expression asked for,
 so two overrides do not suppress twice — and only the survivors reach the binds.
-Two rules there are measured rather than assumed: an expression that is off
-overrides nothing, which is why the rate is read off the resolved weight and not
-the reported one; and a binary expression is rounded again after a partial
-suppression, because `isBinary` says the rig has no half-shut eyelid to land on.
+Three rules there are measured rather than assumed: an expression the sample
+resolves to zero overrides nothing, which is why the rate is read off the
+resolved weight and not the reported one; a binary expression is rounded again
+after a partial suppression, because `isBinary` says the rig has no half-shut
+eyelid to land on; and the arbitration is a single pass, so an expression
+another override suppressed still overrides its own category — cascading would
+make the answer depend on the order the categories are settled in, and a pair
+that override each other's categories would have no answer at all.
 
 Dependencies:
 

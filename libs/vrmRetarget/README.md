@@ -68,12 +68,15 @@ live source that has no stage at all.
   `overrideBlink` / `overrideLookAt` / `overrideMouth` settle the blink, look-at
   and mouth categories between those weights — the largest rate any expression
   asked for, since two overrides do not suppress twice — and only the survivors
-  reach the binds. An expression that is *off* overrides nothing, which is why
-  the rate is read off the resolved weight rather than the reported one; and a
-  binary expression is rounded again after a partial suppression, because
-  `isBinary` says the rig has no half-shut eyelid to land on. A suppression is
-  named with the expression that caused it, and is deliberately not a defect:
-  the avatar asked for it.
+  reach the binds. An expression the sample resolves to zero overrides nothing,
+  which is why the rate is read off the resolved weight rather than the reported
+  one; and a binary expression is rounded again after a partial suppression,
+  because `isBinary` says the rig has no half-shut eyelid to land on. It is one
+  pass, so an expression *another* override suppressed still overrides its own
+  category — cascading would make the answer depend on the order the categories
+  are settled in, and two expressions overriding each other's categories would
+  have none at all. A suppression is named with the expression that caused it,
+  and is deliberately not a defect: the avatar asked for it.
 - **A gaze is a point until it meets a rig, and then it is two answers.** A
   clip names a target *point*, because a direction needs a head and where the
   head sits is a property of an avatar. `LookAtEvaluator` is the layer that has

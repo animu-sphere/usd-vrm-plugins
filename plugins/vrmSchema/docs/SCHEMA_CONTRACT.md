@@ -157,9 +157,11 @@ carries none of the three rather than three tokens it never said.
 **The token is carried as spelled.** There is no `allowedTokens` list on these
 attributes: a value outside the three reaches a consumer as data, with the
 importer's `VRM153` beside it, rather than failing schema validation and taking
-the rest of the avatar with it. A consumer that cannot read a token must refuse
-it out loud — reading it as "no arbitration" is a face that renders wrong with
-nothing in the log.
+the rest of the avatar with it. A source value that is not a token at all — a
+number, `null`, an empty string — cannot be authored onto a token attribute, so
+it survives in the raw block alone and is reported under the same code. A
+consumer that cannot read a token must refuse it out loud — reading it as "no
+arbitration" is a face that renders wrong with nothing in the log.
 
 Applying the rule needs a whole sample, because an override is a statement one
 expression makes about *others*, so it belongs to the consumer step

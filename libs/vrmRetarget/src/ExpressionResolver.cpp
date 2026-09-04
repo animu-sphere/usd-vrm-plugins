@@ -99,14 +99,28 @@ CategoryName(ExpressionCategory category)
 // How far `mode` at `weight` suppresses the category it names. `block` is a
 // switch -- any weight above zero suppresses completely -- and `blend` hands
 // its own weight over, so the two agree at 1 and differ everywhere else.
+//
+// The result is a proportion and is bounded even where a weight is not. A rate
+// is not carried to any bind of its own: it multiplies *another* expression's
+// weight, so a rate past 1 would not suppress that expression but invert it --
+// a blink driven to -0.5 by a "suppression" -- and a negative rate would
+// amplify it. `clampWeights = false` is a mode for resolving what a producer
+// said onto the binds of the expression that said it, not a licence to drive a
+// second expression somewhere no bind asked for. NaN suppresses nothing, for
+// the same reason it is a weight of zero.
 float
 OverrideRate(ExpressionOverride mode, float weight)
 {
+    // False for NaN, which is the point: every comparison against it is.
+    const bool isOn = weight > 0.0f;
     switch (mode) {
     case ExpressionOverride::Block:
-        return weight > 0.0f ? 1.0f : 0.0f;
+        return isOn ? 1.0f : 0.0f;
     case ExpressionOverride::Blend:
-        return weight;
+        if (!isOn) {
+            return 0.0f;
+        }
+        return weight < 1.0f ? weight : 1.0f;
     case ExpressionOverride::None:
         break;
     }
@@ -312,12 +326,22 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
         contributions.push_back(Contribution{definition, weight});
     }
 
-    // What each category came to for this sample. An override is read off the
-    // *resolved* weight rather than the reported one, which is the one place
-    // this differs from a naive reading of the specification and is deliberate:
-    // a binary expression reported at 0.4 is off, and an expression that is off
-    // cannot suppress anything. Reading the raw report would let it block a
-    // blink while contributing nothing to the face itself.
+    // What each category came to for this sample.
+    //
+    // The rate is read off the weight the expression *itself* resolved to --
+    // the clamp and the binary rounding, which is the one place this differs
+    // from a naive reading of the specification and is deliberate: a binary
+    // expression reported at 0.4 is off, and reading the raw report would let
+    // it block a blink while contributing nothing to the face itself.
+    //
+    // It is read *before* the arbitration below, and that is a boundary rather
+    // than an oversight: an expression suppressed by another one still
+    // overrides its own category. Cascading instead would make the result
+    // depend on the order the three categories are settled in, and a rig whose
+    // `aa` blocks the blink while a blink expression blocks the mouth would
+    // have no answer at all rather than a surprising one. One pass, from the
+    // weights the sample resolved to, is the rule -- the same one the reference
+    // runtime applies -- and `TestASuppressedExpressionStillOverrides` pins it.
     CategoryOverride overrides[3];
     const auto slotOf = [](ExpressionCategory category) {
         switch (category) {

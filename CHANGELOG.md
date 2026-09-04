@@ -47,20 +47,30 @@ Current schema contract version: **1**.
   field — carries none of the three rather than three tokens it never said. A
   token outside the vocabulary is kept verbatim and reported as the new
   **`VRM153`**, rather than dropped or read as "no arbitration": an override
-  silently downgraded is a face that renders wrong with nothing in the log. The
-  bake refuses such a token out loud for the same reason.
+  silently downgraded is a face that renders wrong with nothing in the log. A
+  value that is not a token at all — a number, `null`, an empty string — has
+  nowhere to go on a token attribute, so it survives in `vrm:rawExtension`
+  alone and is reported under the same code, which is the case where the file
+  states an arbitration the stage cannot. The bake refuses a token it cannot
+  read out loud for the same reason.
 
   Four resolve rules are measured rather than asserted. `block` is a switch and
   not a steep blend — any weight above zero takes the whole category — while
   `blend` hands over its own weight. **The strongest override wins and they do
   not stack**: two expressions blending at 0.5 and 0.8 leave 0.2 of the blink,
-  not 0.1, which is a face neither of them asked for. **An expression that is
-  off overrides nothing**, so the rate is read off the *resolved* weight rather
-  than the reported one — a binary expression reported at 0.4 is off, and
-  reading the raw report would let it block a blink while contributing nothing
-  to the face itself. And **a binary expression is rounded again after a partial
-  suppression**, because `isBinary` says the rig has no half-shut eyelid to land
-  on. An expression that overrides the category it is itself in suppresses
+  not 0.1, which is a face neither of them asked for. **An expression the sample
+  resolves to zero overrides nothing**, so the rate is read off the *resolved*
+  weight rather than the reported one — a binary expression reported at 0.4 is
+  off, and reading the raw report would let it block a blink while contributing
+  nothing to the face itself; a rate is also bounded to `[0, 1]` even where
+  clamping is off, because it multiplies *another* expression's weight and a
+  rate past 1 would invert that expression rather than suppress it. The
+  arbitration is **one pass**, so an expression another override suppressed
+  still overrides its own category — cascading would make the answer depend on
+  the order the categories are settled in, and a pair that override each other's
+  categories would have none at all. And **a binary expression is rounded again
+  after a partial suppression**, because `isBinary` says the rig has no
+  half-shut eyelid to land on. An expression that overrides the category it is itself in suppresses
   itself: the rig said so, and exempting it would make an override mean one
   thing for `happy` and another for `blink`; it is reported, because it is far
   likelier to be a slip than an intent.

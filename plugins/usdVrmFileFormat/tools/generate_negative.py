@@ -293,13 +293,15 @@ def build_duplicate_expression_name():
 
 
 def build_expression_override_unknown():
-    """An expression whose `overrideBlink` is not none, block or blend.
+    """An expression whose overrides this importer cannot follow, both ways.
 
     The three tokens are the whole vocabulary of VRM 1.0's expression
-    arbitration, so a fourth is an instruction no consumer can carry out. The
-    importer keeps it verbatim -- dropping it would lose the only evidence of
-    what the author meant -- and says so, because an override read as "no
-    override" is a face that renders wrong with nothing in the log.
+    arbitration, so a fourth is an instruction no consumer can carry out; and a
+    value that is not a token at all cannot even be authored onto a token
+    attribute. Both are reported, because an override read as "no override" is
+    a face that renders wrong with nothing in the log -- the unknown token is
+    kept verbatim, since dropping it would lose the only evidence of what the
+    author meant, and the non-token value survives in vrm:rawExtension alone.
     """
     b = GlbBuilder()
     attrs = _skin_attrs(b)
@@ -310,9 +312,13 @@ def build_expression_override_unknown():
     ext["expressions"] = {"preset": {"happy": {
         "isBinary": False,
         "overrideBlink": "suppress",
-        # The other two are spelled correctly, so the fixture separates "this
-        # file states an override this importer cannot read" from "this file
-        # states no override".
+        # Not a string at all: a token attribute has nowhere to put it, so the
+        # stage carries no `vrm:overrideLookAt` -- which is why the diagnostic
+        # matters more here than for the unknown token above, since the file
+        # states an arbitration and the stage cannot.
+        "overrideLookAt": 3,
+        # Spelled correctly, so the fixture separates "this file states an
+        # override this importer cannot read" from "this file states none".
         "overrideMouth": "block",
         "morphTargetBinds": [{"node": 0, "index": 0, "weight": 1.0}]}}}
     gltf = {

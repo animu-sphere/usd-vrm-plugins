@@ -380,9 +380,13 @@ back out of a trace — v0.7.0 closed the clip half. Reaching a **rig** is what
   **category is a set of preset names**, never one expression, and a custom name
   is in none of them. **The strongest override wins and they do not stack**: two
   blends at 0.5 and 0.8 leave 0.2 of the blink and not 0.1, a face neither asked
-  for. **An expression that is off overrides nothing**, so the rate is read off
-  the resolved weight and not the reported one — otherwise a binary expression
-  reported at 0.4 blocks a blink while contributing nothing to the face itself.
+  for. **An expression the sample resolves to zero overrides nothing**, so the
+  rate is read off the resolved weight and not the reported one — otherwise a
+  binary expression reported at 0.4 blocks a blink while contributing nothing to
+  the face itself. The arbitration is **one pass**, so an expression *another*
+  override suppressed still overrides its own category: cascading would make the
+  answer depend on the order the categories are settled in, and a pair that
+  override each other's categories would have none at all.
   And **a binary expression is rounded again after a partial suppression**,
   because `isBinary` says the rig has no half-shut eyelid to land on. A
   suppression is named with the expression that caused it and is deliberately

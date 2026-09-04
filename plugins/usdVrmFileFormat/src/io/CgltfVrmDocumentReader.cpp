@@ -872,15 +872,36 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
                             // overrideBlink / overrideLookAt / overrideMouth.
                             // Carried, never applied: which expressions a value
                             // suppresses is a question about the whole sample
-                            // and belongs to the consumer that has one. A value
-                            // outside the three is kept as the file spelled it
-                            // -- dropping it would lose the only evidence of
-                            // what the author meant -- and is reported, since
-                            // no consumer can act on a token it cannot read.
+                            // and belongs to the consumer that has one.
+                            //
+                            // Three cases, and the difference between them is
+                            // the whole point of the diagnostic. A field the
+                            // file does not have says nothing, and nothing is
+                            // authored. An unknown *token* is kept as the file
+                            // spelled it -- dropping it would lose the only
+                            // evidence of what the author meant -- and is
+                            // reported. And a value that is not a token at all
+                            // (a number, null, an empty string) cannot be
+                            // authored onto a token attribute, so it survives
+                            // in vrm:rawExtension alone; that one is reported
+                            // *too*, because the file did state an arbitration
+                            // and the stage will not, which is exactly the
+                            // silent downgrade this code exists to prevent.
                             const auto readOverride =
                                 [&](const char* field) -> std::string {
                                 const JsValue* v = _Find(*e, field);
-                                if (!v || !v->IsString()) return std::string();
+                                if (!v) return std::string();
+                                const bool isToken =
+                                    v->IsString() && !v->GetString().empty();
+                                if (!isToken) {
+                                    outDoc->warnings.push_back(VrmDiagMsg(
+                                        VrmDiag::ExpressionOverrideUnknown,
+                                        "expression '" + expr.name + "' declares "
+                                        + field + " with a value that is not a "
+                                        "token; nothing is authored for it and it "
+                                        "survives in vrm:rawExtension only"));
+                                    return std::string();
+                                }
                                 const std::string token = v->GetString();
                                 if (token != "none" && token != "block" &&
                                         token != "blend") {

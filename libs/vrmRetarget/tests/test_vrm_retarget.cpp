@@ -1204,6 +1204,83 @@ TestTheOverrideVocabularyIsThreeTokensAndThreeSets()
 }
 
 void
+TestASuppressedExpressionStillOverrides()
+{
+    // The arbitration is one pass over the weights the sample resolved to, so
+    // an expression another override drives to zero still overrides its own
+    // category. It is a boundary rather than an accident: cascading would make
+    // the answer depend on the order the three categories are settled in, and
+    // the rig below -- where `aa` blocks the blink and `happy` blocks the mouth
+    // -- would then have two defensible answers and no reason to prefer either.
+    vrmRetarget::ExpressionRig rig = DesignOverrideRig(
+        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::Block);
+    vrmRetarget::ExpressionRig rebuilt;
+    for (const vrmRetarget::ExpressionDefinition& definition :
+         rig.GetExpressions()) {
+        vrmRetarget::ExpressionDefinition copy = definition;
+        if (copy.name == "aa") {
+            copy.overrideBlink = vrmRetarget::ExpressionOverride::Block;
+        }
+        rebuilt.Add(std::move(copy));
+    }
+
+    const vrmRetarget::ExpressionResolver resolver(std::move(rebuilt));
+    vrmRetarget::ExpressionDiagnostics diagnostics;
+    const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(
+        Weights({{"happy", 1.0f}, {"aa", 1.0f}, {"blink", 1.0f}}),
+        &diagnostics);
+
+    // `happy` blocks the mouth, so `aa` resolves to nothing --
+    assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/MouthOpen"), 0.0f));
+    // -- and the blink `aa` blocks is off all the same.
+    assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeClose"), 0.0f));
+    assert(diagnostics.suppressedNames.size() == 2);
+    assert(diagnostics.suppressedNames[0] == "aa (by happy)");
+    assert(diagnostics.suppressedNames[1] == "blink (by aa)");
+}
+
+void
+TestAnOverrideRateNeverInvertsAWeight()
+{
+    // With clamping off a reported weight reaches the binds verbatim -- but a
+    // rate is not a weight: it multiplies *another* expression's. Left
+    // unbounded, a `happy` at 1.5 would drive the blink to 1 * (1 - 1.5) =
+    // -0.5, which is not a suppression but an inversion, and it would surface
+    // only as the generic "driven outside [0, 1]" warning about a target
+    // nothing asked to move.
+    vrmRetarget::ExpressionResolveOptions verbatim;
+    verbatim.clampWeights = false;
+    const vrmRetarget::ExpressionResolver resolver(
+        DesignOverrideRig(vrmRetarget::ExpressionOverride::Blend,
+                          vrmRetarget::ExpressionOverride::None,
+                          vrmRetarget::ExpressionOverride::None),
+        verbatim);
+
+    // Past 1 the rate saturates: fully suppressed, never inverted.
+    const vrmRetarget::ResolvedExpressions past = resolver.Resolve(
+        Weights({{"happy", 1.5f}, {"blink", 1.0f}}));
+    assert(NearlyEqual(WeightOf(past, "/Asset/Meshes/Face/EyeClose"), 0.0f));
+    // `happy` itself still reaches its own binds verbatim, which is what that
+    // mode is for -- the bound is on the rate and not on the weight.
+    assert(NearlyEqual(WeightOf(past, "/Asset/Meshes/Face/Smile"), 1.5f));
+
+    // Below 0 it suppresses nothing rather than amplifying.
+    const vrmRetarget::ResolvedExpressions below = resolver.Resolve(
+        Weights({{"happy", -0.5f}, {"blink", 1.0f}}));
+    assert(NearlyEqual(WeightOf(below, "/Asset/Meshes/Face/EyeClose"), 1.0f));
+
+    // And a weight that is not a number arbitrates nothing, for the same
+    // reason it is a weight of zero: every comparison against it is false, so
+    // an unguarded `1 - rate` would carry the NaN into the blink's binds.
+    const vrmRetarget::ResolvedExpressions notANumber = resolver.Resolve(
+        Weights({{"happy", std::nanf("")}, {"blink", 1.0f}}));
+    assert(NearlyEqual(WeightOf(notANumber, "/Asset/Meshes/Face/EyeClose"),
+                       1.0f));
+}
+
+void
 TestAGazeExpressionIsSuppressedLikeAnyOther()
 {
     // An expression-driven look-at reaches the resolve as `lookLeft` and the
@@ -1833,6 +1910,8 @@ main()
     TestABinaryEyelidIsShutOrOpenUnderABlend();
     TestAnOverrideOfItsOwnCategoryIsReported();
     TestTheOverrideVocabularyIsThreeTokensAndThreeSets();
+    TestASuppressedExpressionStillOverrides();
+    TestAnOverrideRateNeverInvertsAWeight();
     TestAGazeExpressionIsSuppressedLikeAnyOther();
     TestAJointsWorldTransformComposesItsWholeChain();
     TestAnIdentityRangeMapReproducesTheAim();
