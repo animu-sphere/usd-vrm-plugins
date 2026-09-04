@@ -137,6 +137,57 @@ UsdVrmExpressionAPI::CreateVrmIsBinaryAttr(VtValue const &defaultValue, bool wri
 }
 
 UsdAttribute
+UsdVrmExpressionAPI::GetVrmOverrideBlinkAttr() const
+{
+    return GetPrim().GetAttribute(UsdVrmTokens->vrmOverrideBlink);
+}
+
+UsdAttribute
+UsdVrmExpressionAPI::CreateVrmOverrideBlinkAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmOverrideBlink,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdVrmExpressionAPI::GetVrmOverrideLookAtAttr() const
+{
+    return GetPrim().GetAttribute(UsdVrmTokens->vrmOverrideLookAt);
+}
+
+UsdAttribute
+UsdVrmExpressionAPI::CreateVrmOverrideLookAtAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmOverrideLookAt,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdVrmExpressionAPI::GetVrmOverrideMouthAttr() const
+{
+    return GetPrim().GetAttribute(UsdVrmTokens->vrmOverrideMouth);
+}
+
+UsdAttribute
+UsdVrmExpressionAPI::CreateVrmOverrideMouthAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmOverrideMouth,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdVrmExpressionAPI::GetVrmMorphTargetWeightsAttr() const
 {
     return GetPrim().GetAttribute(UsdVrmTokens->vrmMorphTargetWeights);
@@ -233,6 +284,9 @@ UsdVrmExpressionAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdVrmTokens->vrmExpressionName,
         UsdVrmTokens->vrmExpressionType,
         UsdVrmTokens->vrmIsBinary,
+        UsdVrmTokens->vrmOverrideBlink,
+        UsdVrmTokens->vrmOverrideLookAt,
+        UsdVrmTokens->vrmOverrideMouth,
         UsdVrmTokens->vrmMorphTargetWeights,
         UsdVrmTokens->vrmMaterialColorTypes,
         UsdVrmTokens->vrmMaterialColorValues,

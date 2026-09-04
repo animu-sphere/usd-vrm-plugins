@@ -326,6 +326,80 @@ def check_expression_bake(tool: str, fixtures: pathlib.Path,
             "--no-expressions still authored blendShapeWeights")
 
 
+# The same clip on the rig that arbitrates instead of summing
+# (`overriding_avatar.usda`, whose `happy` carries `overrideBlink = "blend"` and
+# whose `blink` is not binary).
+#
+# Only the blink column moves, and it moves by the weight `happy` holds at that
+# instant: 0.5 of the way to a full override at time code 15 leaves half the
+# blink standing, and a `happy` clamped to 1 at 30 takes all of it. Both are
+# values a resolve that ignored the override could not produce -- it would
+# author the unsuppressed 1.0 in both rows.
+EXPECTED_OVERRIDDEN_WEIGHTS = {
+    0.0: [0.0, 0.0, 0.0],
+    15.0: [0.5, 0.25, 0.5],
+    30.0: [0.0, 0.5, 1.0],
+}
+
+
+def check_expression_overrides_arbitrate_the_face(
+        tool: str, fixtures: pathlib.Path, humanoid_map: str,
+        workspace: pathlib.Path, failures: Failures) -> None:
+    """The avatar's own arbitration, from its attributes to the baked weights.
+
+    Two co-active expressions sum on the vertices they share, whatever their
+    weights say, and VRM 1.0's per-expression `overrideBlink` / `overrideLookAt`
+    / `overrideMouth` are the only mechanism the specification gives for it. The
+    resolve is the unit suite's; what this measures is that the rule reaches it
+    -- the tokens are read off the avatar, the rate lands on the right
+    expression, and the suppressed weight is what gets authored.
+    """
+    avatar = fixtures / "overriding_avatar.usda"
+    clip = fixtures / "expressive_clip.usda"
+    output = workspace / "overridden_bake.usda"
+    result = run_tool(
+        tool, "--avatar", str(avatar), "--animation", str(clip),
+        "--output", str(output), "--humanoid-map", humanoid_map,
+        "--animation-name", "OverriddenBake")
+    if not failures.check(
+            result.returncode == 0,
+            f"overridden bake failed ({result.returncode}): "
+            f"{result.stderr.strip()}"):
+        return
+
+    stage = Usd.Stage.Open(str(output))
+    animation = find_animation(stage)
+    blend_shapes = animation.GetBlendShapesAttr().Get()
+    blend_shapes = list(blend_shapes) if blend_shapes else []
+    # The same three shapes as the unarbitrated bake: an override changes what a
+    # weight is, never which shapes the rig has.
+    failures.check(
+        blend_shapes == EXPECTED_BLEND_SHAPES,
+        f"authored blendShapes {blend_shapes} != {EXPECTED_BLEND_SHAPES}")
+
+    weights = animation.GetBlendShapeWeightsAttr()
+    for time, want in EXPECTED_OVERRIDDEN_WEIGHTS.items():
+        values = weights.Get(time)
+        values = list(values) if values else []
+        failures.check(
+            vectors_match(values, want),
+            f"overridden blendShapeWeights at {time}: {values} != {want}")
+
+    # The suppression is named, with the expression that did it: a producer
+    # whose blink track went flat has nothing to find in the weights, because
+    # nothing in them is wrong.
+    failures.check(
+        "blink (by happy)" in result.stderr,
+        f"the bake suppressed a blink without saying which expression took it: "
+        f"{result.stderr.strip()}")
+    # And the token outside the vocabulary is refused out loud rather than read
+    # as "no arbitration".
+    failures.check(
+        "shush" in result.stderr,
+        f"an override token the tool cannot read was accepted in silence: "
+        f"{result.stderr.strip()}")
+
+
 def check_a_faceless_rig_reports_the_whole_loss(tool: str,
                                                 avatar: pathlib.Path,
                                                 clip: pathlib.Path,
@@ -1092,6 +1166,10 @@ def main() -> int:
 
         check_expression_bake(options.tool, tool_fixtures, avatar,
                               options.humanoid_map, workspace, failures)
+
+        check_expression_overrides_arbitrate_the_face(
+            options.tool, tool_fixtures, options.humanoid_map, workspace,
+            failures)
 
         check_look_at_bake(options.tool, tool_fixtures, workspace, failures)
 

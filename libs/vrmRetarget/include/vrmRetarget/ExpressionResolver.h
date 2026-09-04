@@ -60,6 +60,67 @@ struct MaterialColorBind
     pxr::GfVec4f targetValue = pxr::GfVec4f(1.0f);
 };
 
+// How one expression treats a whole category of other expressions while it is
+// active -- VRM 1.0's `overrideBlink`, `overrideLookAt` and `overrideMouth`.
+//
+// This is the only mechanism the specification gives for the case where two
+// co-active expressions drive the same vertices: their morph offsets sum, and a
+// `happy` that raises the cheek while `blink` closes the lid drives the lid
+// roughly twice as far as shut. Nothing in either weight array looks wrong when
+// that happens, because the collision is geometric -- so the avatar states the
+// arbitration and this is where it is read.
+enum class ExpressionOverride
+{
+    // Contributes nothing: the other category's expressions run untouched.
+    None,
+    // The category is off while this expression is on at all. A weight of any
+    // size suppresses completely, which is what makes it a switch rather than a
+    // steep blend.
+    Block,
+    // The category is attenuated by this expression's own resolved weight, so a
+    // `happy` at 0.4 leaves 60% of the blink standing. The weight is taken as a
+    // proportion in [0, 1] even where clamping is off, because it multiplies
+    // another expression's weight: a rate past 1 would invert that expression
+    // rather than suppress it.
+    Blend,
+};
+
+// The three categories the override fields arbitrate. A category is a set of
+// *preset* names and never a single expression: the specification overrides
+// "the mouth", not `aa`.
+//
+// A custom expression is in no category. VRM reserves the preset names, so the
+// name alone decides this -- a rig cannot legally declare a custom expression
+// called `blink`, and one that did would be a rig whose own vocabulary collides
+// with the specification's.
+enum class ExpressionCategory
+{
+    None,
+    Blink,   // blink, blinkLeft, blinkRight
+    LookAt,  // lookUp, lookDown, lookLeft, lookRight
+    Mouth,   // aa, ih, ou, ee, oh
+};
+
+// The category `name` belongs to, by the VRM 1.0 preset spelling. The importer
+// migrates a VRM 0.x `presetName` to that same spelling (`blink_l` ->
+// `blinkLeft`, `a` -> `aa`), so a 0.x rig lands in these sets too -- which
+// matters for a 0.x avatar animated by a clip whose *other* expressions carry
+// an override, since 0.x has no override fields of its own.
+VRMRETARGET_API ExpressionCategory
+ExpressionCategoryOf(const std::string& name);
+
+// Parses the `none` / `block` / `blend` token a stage or a file carries. An
+// unrecognized token resolves to `None` and sets `*recognized` to false when
+// given -- a value this layer does not know is not an arbitration it can
+// perform, and guessing which one was meant would suppress a face on a
+// spelling.
+VRMRETARGET_API ExpressionOverride
+ParseExpressionOverride(const std::string& token, bool* recognized = nullptr);
+
+// The token for an override, for a diagnostic that has to name one.
+VRMRETARGET_API const char*
+ExpressionOverrideToken(ExpressionOverride mode);
+
 // One expression of the target rig, as the avatar declared it.
 struct ExpressionDefinition
 {
@@ -73,6 +134,16 @@ struct ExpressionDefinition
     // `vrm:isBinary`. A binary expression has no intermediate state: its
     // resolved weight is 0 or 1 and never 0.4.
     bool isBinary = false;
+
+    // `vrm:overrideBlink`, `vrm:overrideLookAt`, `vrm:overrideMouth`. What
+    // this expression does to each category *while it is on*; it says nothing
+    // about what is done to this expression, which is the other expressions'
+    // business. VRM 0.x has no such fields, so a 0.x rig leaves all three
+    // `None` and every expression of it contributes unconditionally, exactly as
+    // it did before this existed.
+    ExpressionOverride overrideBlink = ExpressionOverride::None;
+    ExpressionOverride overrideLookAt = ExpressionOverride::None;
+    ExpressionOverride overrideMouth = ExpressionOverride::None;
 
     std::vector<MorphTargetBind> morphTargets;
     std::vector<MaterialColorBind> materialColors;
@@ -195,6 +266,16 @@ struct ExpressionDiagnostics
     // weight already inside the range and reach the binds unreported.
     std::vector<std::string> clampedNames;
 
+    // Reduced by another expression's override, with the name of the
+    // expression that did it: "blink (by happy)". Sorted, each pair once.
+    //
+    // Deliberately outside IsClean(): a suppressed blink is the avatar's own
+    // rule being obeyed, not a defect, and the resolve would otherwise report a
+    // correctly arbitrated face as unclean. It is still named, because a
+    // producer whose blink track goes flat wants to be told which expression
+    // took it rather than to go looking in the weights, where nothing is wrong.
+    std::vector<std::string> suppressedNames;
+
     std::vector<std::string> warnings;
 
     bool IsClean() const
@@ -236,6 +317,18 @@ public:
 
     // Resolves one sample's weights. `diagnostics` may be null; when it is not
     // it accumulates across calls, so a whole clip's report is one object.
+    //
+    // The sample is resolved as a whole rather than one name at a time,
+    // because the avatar's overrides are decided between the expressions in
+    // it: every reported name is resolved to a weight, the blink / lookAt /
+    // mouth categories are then arbitrated between those weights, and only the
+    // survivors reach the binds.
+    //
+    // The arbitration is one pass over the weights the sample resolved to, so
+    // an expression suppressed by another still overrides its own category.
+    // That is the boundary rather than an oversight: cascading would make the
+    // answer depend on the order the categories are settled in, and two
+    // expressions overriding each other's categories would have none at all.
     ResolvedExpressions Resolve(const motion::ExpressionWeights& weights,
                                 ExpressionDiagnostics* diagnostics
                                     = nullptr) const;
@@ -251,6 +344,12 @@ public:
     // and the binary rounding, with no binds expanded. Returns false, leaving
     // `resolved` untouched, when the rig declares no such expression -- so a
     // caller can tell "resolves to 0" from "does not resolve".
+    //
+    // No override is applied here, and that is the question rather than an
+    // omission: an override is a statement about one expression made by
+    // *another one's* weight, so it exists only for a whole sample. This
+    // answers what the rig does to one number in isolation, which is what a
+    // caller asking about a single name has.
     bool ResolveWeight(const std::string& name, float reported,
                        float* resolved) const;
 

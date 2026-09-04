@@ -337,6 +337,27 @@ class "VrmExpressionAPI" (
             string userDocBrief = "Per-target weights, parallel to vrm:morphTargets."
         }
     )
+    uniform token vrm:overrideBlink (
+        customData = {
+            string userDocBrief = """What this expression does to the blink expressions while on.\r
+        'none', 'block' (they are off whenever this one is on at all) or 'blend'\r
+        (they are attenuated by this expression's own weight)."""
+        }
+    )
+    uniform token vrm:overrideLookAt (
+        customData = {
+            string userDocBrief = """What this expression does to the look-at expressions while on.\r
+        The same three tokens, over lookUp, lookDown, lookLeft and lookRight --\r
+        which is how one expression arbitrates the gaze of a rig that aims its\r
+        eyes with expressions rather than with bones."""
+        }
+    )
+    uniform token vrm:overrideMouth (
+        customData = {
+            string userDocBrief = """What this expression does to the mouth expressions while on.\r
+        The same three tokens, over aa, ih, ou, ee and oh."""
+        }
+    )
 }
 
 class "VrmLookAtAPI" (

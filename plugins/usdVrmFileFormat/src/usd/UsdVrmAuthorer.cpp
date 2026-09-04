@@ -982,6 +982,21 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             p.CreateAttribute(TfToken("vrm:isBinary"),
                               SdfValueTypeNames->Bool, false, SdfVariabilityUniform)
                 .Set(e.isBinary);
+            // The three override fields, authored only where the source stated
+            // one. An unauthored attribute and an authored "none" mean the same
+            // thing to a consumer, and only one of them is a claim the file
+            // made -- so a VRM 0.x rig, which has no such field, carries none of
+            // the three rather than three tokens it never said.
+            const auto authorOverride = [&](const char* attribute,
+                                            const std::string& value) {
+                if (value.empty()) return;
+                p.CreateAttribute(TfToken(attribute), SdfValueTypeNames->Token,
+                                  false, SdfVariabilityUniform)
+                    .Set(TfToken(value));
+            };
+            authorOverride("vrm:overrideBlink", e.overrideBlink);
+            authorOverride("vrm:overrideLookAt", e.overrideLookAt);
+            authorOverride("vrm:overrideMouth", e.overrideMouth);
 
             SdfPathVector targets;
             VtFloatArray weights;

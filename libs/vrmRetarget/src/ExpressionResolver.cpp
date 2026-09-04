@@ -61,7 +61,146 @@ RecordWarning(std::vector<std::string>& warnings, std::string warning)
     }
 }
 
+// The override a definition declares for one category. Written as a lookup
+// rather than three parallel code paths, so a category added to the
+// specification is one table entry and not a fourth copy of the resolve.
+ExpressionOverride
+OverrideFor(const ExpressionDefinition& definition, ExpressionCategory category)
+{
+    switch (category) {
+    case ExpressionCategory::Blink:
+        return definition.overrideBlink;
+    case ExpressionCategory::LookAt:
+        return definition.overrideLookAt;
+    case ExpressionCategory::Mouth:
+        return definition.overrideMouth;
+    case ExpressionCategory::None:
+        break;
+    }
+    return ExpressionOverride::None;
+}
+
+const char*
+CategoryName(ExpressionCategory category)
+{
+    switch (category) {
+    case ExpressionCategory::Blink:
+        return "blink";
+    case ExpressionCategory::LookAt:
+        return "lookAt";
+    case ExpressionCategory::Mouth:
+        return "mouth";
+    case ExpressionCategory::None:
+        break;
+    }
+    return "none";
+}
+
+// How far `mode` at `weight` suppresses the category it names. `block` is a
+// switch -- any weight above zero suppresses completely -- and `blend` hands
+// its own weight over, so the two agree at 1 and differ everywhere else.
+//
+// The result is a proportion and is bounded even where a weight is not. A rate
+// is not carried to any bind of its own: it multiplies *another* expression's
+// weight, so a rate past 1 would not suppress that expression but invert it --
+// a blink driven to -0.5 by a "suppression" -- and a negative rate would
+// amplify it. `clampWeights = false` is a mode for resolving what a producer
+// said onto the binds of the expression that said it, not a licence to drive a
+// second expression somewhere no bind asked for. NaN suppresses nothing, for
+// the same reason it is a weight of zero.
+float
+OverrideRate(ExpressionOverride mode, float weight)
+{
+    // False for NaN, which is the point: every comparison against it is.
+    const bool isOn = weight > 0.0f;
+    switch (mode) {
+    case ExpressionOverride::Block:
+        return isOn ? 1.0f : 0.0f;
+    case ExpressionOverride::Blend:
+        if (!isOn) {
+            return 0.0f;
+        }
+        return weight < 1.0f ? weight : 1.0f;
+    case ExpressionOverride::None:
+        break;
+    }
+    return 0.0f;
+}
+
+// What one category's arbitration came to for this sample, and which expression
+// decided it. The rate is the largest any expression asked for -- two
+// expressions both suppressing the mouth do not suppress it twice -- and the
+// name is carried so the report can say who, which is the whole difference
+// between "your blink went flat" and "happy took your blink".
+struct CategoryOverride
+{
+    float rate = 0.0f;
+    std::string source;
+};
+
 } // namespace
+
+ExpressionCategory
+ExpressionCategoryOf(const std::string& name)
+{
+    // The VRM 1.0 preset spelling, which is also what a VRM 0.x rig arrives
+    // in: the importer migrates `presetName` on the way through, so `blink_l`
+    // is `blinkLeft` and `a` is `aa` by the time a definition exists.
+    static const std::map<std::string, ExpressionCategory> kCategories = {
+        {"blink", ExpressionCategory::Blink},
+        {"blinkLeft", ExpressionCategory::Blink},
+        {"blinkRight", ExpressionCategory::Blink},
+        {"lookUp", ExpressionCategory::LookAt},
+        {"lookDown", ExpressionCategory::LookAt},
+        {"lookLeft", ExpressionCategory::LookAt},
+        {"lookRight", ExpressionCategory::LookAt},
+        {"aa", ExpressionCategory::Mouth},
+        {"ih", ExpressionCategory::Mouth},
+        {"ou", ExpressionCategory::Mouth},
+        {"ee", ExpressionCategory::Mouth},
+        {"oh", ExpressionCategory::Mouth},
+    };
+    const auto it = kCategories.find(name);
+    return it == kCategories.end() ? ExpressionCategory::None : it->second;
+}
+
+ExpressionOverride
+ParseExpressionOverride(const std::string& token, bool* recognized)
+{
+    if (recognized) {
+        *recognized = true;
+    }
+    // An absent value and an explicit "none" are the same statement, so the
+    // empty string is recognized rather than reported: a stage authors these
+    // only when the source file stated one.
+    if (token.empty() || token == "none") {
+        return ExpressionOverride::None;
+    }
+    if (token == "block") {
+        return ExpressionOverride::Block;
+    }
+    if (token == "blend") {
+        return ExpressionOverride::Blend;
+    }
+    if (recognized) {
+        *recognized = false;
+    }
+    return ExpressionOverride::None;
+}
+
+const char*
+ExpressionOverrideToken(ExpressionOverride mode)
+{
+    switch (mode) {
+    case ExpressionOverride::Block:
+        return "block";
+    case ExpressionOverride::Blend:
+        return "blend";
+    case ExpressionOverride::None:
+        break;
+    }
+    return "none";
+}
 
 pxr::GfVec4f
 ResolvedMaterialColor::Apply(const pxr::GfVec4f& base) const
@@ -135,6 +274,20 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
     std::map<std::string, float> morphTargets;
     std::map<std::pair<std::string, std::string>, ResolvedMaterialColor> colors;
 
+    // The resolve is two passes over the sample rather than one, and the reason
+    // is the arbitration: an expression's weight is not decided by its own
+    // report alone, because another expression in the same sample may be
+    // overriding the category it belongs to. So the first pass answers "what
+    // did each reported name resolve to", the categories are settled between
+    // them, and only then are the binds expanded.
+    struct Contribution
+    {
+        const ExpressionDefinition* definition;
+        float weight;
+    };
+    std::vector<Contribution> contributions;
+    contributions.reserve(weights.entries.size());
+
     for (const motion::ExpressionWeight& reported : weights.entries) {
         const ExpressionDefinition* definition = _rig.Find(reported.name);
         if (!definition) {
@@ -169,6 +322,93 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
         }
         if (definition->isBinary) {
             weight = weight >= _options.binaryThreshold ? 1.0f : 0.0f;
+        }
+        contributions.push_back(Contribution{definition, weight});
+    }
+
+    // What each category came to for this sample.
+    //
+    // The rate is read off the weight the expression *itself* resolved to --
+    // the clamp and the binary rounding, which is the one place this differs
+    // from a naive reading of the specification and is deliberate: a binary
+    // expression reported at 0.4 is off, and reading the raw report would let
+    // it block a blink while contributing nothing to the face itself.
+    //
+    // It is read *before* the arbitration below, and that is a boundary rather
+    // than an oversight: an expression suppressed by another one still
+    // overrides its own category. Cascading instead would make the result
+    // depend on the order the three categories are settled in, and a rig whose
+    // `aa` blocks the blink while a blink expression blocks the mouth would
+    // have no answer at all rather than a surprising one. One pass, from the
+    // weights the sample resolved to, is the rule -- the same one the reference
+    // runtime applies -- and `TestASuppressedExpressionStillOverrides` pins it.
+    CategoryOverride overrides[3];
+    const auto slotOf = [](ExpressionCategory category) {
+        switch (category) {
+        case ExpressionCategory::Blink:
+            return 0;
+        case ExpressionCategory::LookAt:
+            return 1;
+        case ExpressionCategory::Mouth:
+            return 2;
+        case ExpressionCategory::None:
+            break;
+        }
+        return -1;
+    };
+    for (const Contribution& contribution : contributions) {
+        for (const ExpressionCategory category :
+             {ExpressionCategory::Blink, ExpressionCategory::LookAt,
+              ExpressionCategory::Mouth}) {
+            const float rate = OverrideRate(
+                OverrideFor(*contribution.definition, category),
+                contribution.weight);
+            CategoryOverride& winner = overrides[slotOf(category)];
+            if (rate > winner.rate) {
+                winner.rate = rate;
+                winner.source = contribution.definition->name;
+            }
+        }
+    }
+
+    for (const Contribution& contribution : contributions) {
+        const ExpressionDefinition* definition = contribution.definition;
+        float weight = contribution.weight;
+
+        const ExpressionCategory category
+            = ExpressionCategoryOf(definition->name);
+        const int slot = slotOf(category);
+        if (slot >= 0 && overrides[slot].rate > 0.0f) {
+            // An expression that overrides the category it is itself in
+            // suppresses itself, and is not exempted here. The rig said so --
+            // and exempting it would make an override mean one thing for
+            // `happy` and another for `blink`, which is a rule an operator
+            // cannot predict from the file. Reported, because it is far more
+            // likely to be an authoring slip than an intent.
+            if (diagnostics
+                && OverrideFor(*definition, category)
+                    != ExpressionOverride::None
+                && contribution.weight > 0.0f) {
+                RecordWarning(diagnostics->warnings,
+                              "expression '" + definition->name
+                                  + "' overrides the '" + CategoryName(category)
+                                  + "' expressions and is one of them, so it "
+                                    "suppresses itself");
+            }
+            weight *= 1.0f - overrides[slot].rate;
+            // A binary expression has no intermediate state, so a partial
+            // suppression either leaves it standing or turns it off: a
+            // half-shut eyelid is exactly what the flag says this rig cannot
+            // show. The rounding is re-applied rather than skipped, which is
+            // why it is here and not only above.
+            if (definition->isBinary) {
+                weight = weight >= _options.binaryThreshold ? 1.0f : 0.0f;
+            }
+            if (diagnostics && weight != contribution.weight) {
+                RecordName(diagnostics->suppressedNames,
+                           definition->name + " (by " + overrides[slot].source
+                               + ")");
+            }
         }
 
         for (const MorphTargetBind& bind : definition->morphTargets) {

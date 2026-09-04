@@ -93,6 +93,9 @@
 ?CreateVrmMorphTargetsRel@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdRelationship@2@XZ
 ?CreateVrmNodeAttr@UsdVrmColliderAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmOffsetAttr@UsdVrmColliderAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
+?CreateVrmOverrideBlinkAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
+?CreateVrmOverrideLookAtAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
+?CreateVrmOverrideMouthAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmRadiusAttr@UsdVrmColliderAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmRightEyeAttr@UsdVrmLookAtAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
 ?CreateVrmShapeAttr@UsdVrmColliderAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@AEBVVtValue@2@_N@Z
@@ -191,6 +194,9 @@
 ?GetVrmMorphTargetsRel@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdRelationship@2@XZ
 ?GetVrmNodeAttr@UsdVrmColliderAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmOffsetAttr@UsdVrmColliderAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
+?GetVrmOverrideBlinkAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
+?GetVrmOverrideLookAtAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
+?GetVrmOverrideMouthAttr@UsdVrmExpressionAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmRadiusAttr@UsdVrmColliderAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmRightEyeAttr@UsdVrmLookAtAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ
 ?GetVrmShapeAttr@UsdVrmColliderAPI@pxrInternal_v0_26_8__pxrReserved__@@QEBA?AVUsdAttribute@2@XZ

@@ -292,6 +292,52 @@ def build_duplicate_expression_name():
     return b.build(gltf)
 
 
+def build_expression_override_unknown():
+    """An expression whose overrides this importer cannot follow, both ways.
+
+    The three tokens are the whole vocabulary of VRM 1.0's expression
+    arbitration, so a fourth is an instruction no consumer can carry out; and a
+    value that is not a token at all cannot even be authored onto a token
+    attribute. Both are reported, because an override read as "no override" is
+    a face that renders wrong with nothing in the log -- the unknown token is
+    kept verbatim, since dropping it would lose the only evidence of what the
+    author meant, and the non-token value survives in vrm:rawExtension alone.
+    """
+    b = GlbBuilder()
+    attrs = _skin_attrs(b)
+    idx = _idx(b)
+    ibm = b.add(FLOAT, "MAT4", [tuple(IDENTITY16), tuple(IDENTITY16)])
+    morph = b.add(FLOAT, "VEC3", [(0, 0, 0), (0, 0, 0), (0, 0.5, 0)])
+    ext = vrm1_extension({"hips": 1, "spine": 2})
+    ext["expressions"] = {"preset": {"happy": {
+        "isBinary": False,
+        "overrideBlink": "suppress",
+        # Not a string at all: a token attribute has nowhere to put it, so the
+        # stage carries no `vrm:overrideLookAt` -- which is why the diagnostic
+        # matters more here than for the unknown token above, since the file
+        # states an arbitration and the stage cannot.
+        "overrideLookAt": 3,
+        # Spelled correctly, so the fixture separates "this file states an
+        # override this importer cannot read" from "this file states none".
+        "overrideMouth": "block",
+        "morphTargetBinds": [{"node": 0, "index": 0, "weight": 1.0}]}}}
+    gltf = {
+        "asset": {"version": "2.0", "generator": "usdVrm negative fixtures"},
+        "scene": 0, "scenes": [{"nodes": [0, 1]}], "nodes": [
+            {"name": "Face", "mesh": 0, "skin": 0},
+            {"name": "hips", "children": [2], "translation": [0.0, 0.5, 0.0]},
+            {"name": "spine", "translation": [0.0, 0.3, 0.0]}],
+        "meshes": [{"name": "Face", "primitives": [
+            {"attributes": attrs, "indices": idx, "material": 0,
+             "targets": [{"POSITION": morph}]}],
+            "extras": {"targetNames": ["happy_shape"]}}],
+        "skins": [{"joints": [1, 2], "inverseBindMatrices": ibm, "skeleton": 1}],
+        "materials": [_mat("Face_Mat")], "extensionsUsed": ["VRMC_vrm"],
+        "extensions": {"VRMC_vrm": ext},
+    }
+    return b.build(gltf)
+
+
 def build_missing_spring_collider_group():
     """A SpringBone spring referencing collider-group index 5 (only 1 exists)."""
     b = GlbBuilder()
@@ -336,6 +382,7 @@ FIXTURES = {
     "duplicate_humanoid_bone.vrm": build_duplicate_humanoid_bone,
     "oob_expression_morph.vrm": build_oob_expression_morph,
     "duplicate_expression_name.vrm": build_duplicate_expression_name,
+    "expression_override_unknown.vrm": build_expression_override_unknown,
     "missing_spring_collider_group.vrm": build_missing_spring_collider_group,
 }
 

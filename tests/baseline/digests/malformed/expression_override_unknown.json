@@ -26,9 +26,9 @@
               0.0,
               0.0
             ],
-            "metallic": 0.0,
+            "metallic": 1.0,
             "opacity": 1.0,
-            "roughness": 0.699999988
+            "roughness": 1.0
           }
         }
       },
@@ -137,13 +137,6 @@
       ],
       "path": "/Asset/rig/Expressions/happy",
       "type": "Scope"
-    },
-    {
-      "appliedSchemas": [
-        "VrmExpressionAPI"
-      ],
-      "path": "/Asset/rig/Expressions/Expression_aa9d76db",
-      "type": "Scope"
     }
   ],
   "skeletons": {
@@ -156,20 +149,22 @@
       "restTransformsSha256": "5d8f8ab0d9d6f8f6f36d2409f5f7273ba0b12cec6d0146ec3cecc0b0473fa5b4"
     }
   },
-  "source": "${BUNDLE}/tests/fixtures/expressions.vrm",
+  "source": "${BUNDLE}/tests/corpus/generated/malformed/expression_override_unknown.vrm",
   "timeSampledAttrs": {},
   "upAxis": "Y",
   "vrm": {
     "frontAxisNormalized": false,
     "metaName": "usdVrm Fixture",
     "metaSha256": "2ce7865d03f1b8a92a49a5418d9bec76ee6e8a0f3c748565fee3ead1f9a17cdf",
-    "rawExtensionSha256": "8e4ff27171299a5e59c35e0564a014c1af85c0c75e8541c9da58cbb18d06281f",
+    "rawExtensionSha256": "a7eaa120e662ba6bbff150843ba91cae680cb0a9d514be11d0cb4e3f53d1469f",
     "schemaContractVersion": 1,
     "sourceFormat": "VRM",
     "sourceFrontAxis": "+Z",
     "sourceVersion": "1.0",
     "specVersion": "1.0",
-    "warningCodes": [],
-    "warningCount": 0
+    "warningCodes": [
+      "VRM153"
+    ],
+    "warningCount": 2
   }
 }

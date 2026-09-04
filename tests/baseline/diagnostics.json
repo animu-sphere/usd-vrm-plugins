@@ -76,6 +76,11 @@
       "source": "import",
       "title": "Duplicate expression name; first declaration kept"
     },
+    "VRM153": {
+      "severity": "WARNING",
+      "source": "import",
+      "title": "Expression override value is not none/block/blend; carried verbatim"
+    },
     "VRM160": {
       "severity": "WARNING",
       "source": "import",
@@ -313,6 +318,11 @@
     "duplicate-humanoid-bone": {
       "code": "VRM141",
       "file": "malformed/duplicate_humanoid_bone.vrm",
+      "mechanism": "import-warning"
+    },
+    "expression-override-unknown": {
+      "code": "VRM153",
+      "file": "malformed/expression_override_unknown.vrm",
       "mechanism": "import-warning"
     },
     "malformed-glb-json": {

@@ -141,6 +141,9 @@ ReadSkeletonRest(const UsdSkelSkeleton& skeleton, VtTokenArray* joints,
 const TfToken kExpressionName("vrm:expressionName");
 const TfToken kExpressionWeight("vrm:expressionWeight");
 const TfToken kIsBinary("vrm:isBinary");
+const TfToken kOverrideBlink("vrm:overrideBlink");
+const TfToken kOverrideLookAt("vrm:overrideLookAt");
+const TfToken kOverrideMouth("vrm:overrideMouth");
 const TfToken kMorphTargets("vrm:morphTargets");
 const TfToken kMorphTargetWeights("vrm:morphTargetWeights");
 const TfToken kMaterialColorTargets("vrm:materialColorTargets");
@@ -232,6 +235,35 @@ ReadExpressionDefinition(const UsdPrim& prim, const std::string& name,
     if (binaryAttr && binaryAttr.Get(&isBinary)) {
         definition.isBinary = isBinary;
     }
+
+    // The three override fields. An absent attribute is the avatar saying
+    // nothing, which is what every VRM 0.x rig says; a token outside the
+    // vocabulary is a statement this layer cannot act on, so it is refused
+    // loudly rather than read as `none` -- an override silently downgraded to
+    // "no arbitration" is a face that renders wrong with nothing in the log.
+    const auto readOverride
+        = [&](const TfToken& attributeName) -> vrmRetarget::ExpressionOverride {
+        const UsdAttribute attribute = prim.GetAttribute(attributeName);
+        TfToken token;
+        if (!attribute || !attribute.Get(&token)) {
+            return vrmRetarget::ExpressionOverride::None;
+        }
+        bool recognized = false;
+        const vrmRetarget::ExpressionOverride mode
+            = vrmRetarget::ParseExpressionOverride(token.GetString(),
+                                                   &recognized);
+        if (!recognized) {
+            warnings->push_back(
+                "expression <" + prim.GetPath().GetString() + "> declares "
+                + attributeName.GetString() + " '" + token.GetString()
+                + "', which is not none, block or blend; it arbitrates "
+                  "nothing");
+        }
+        return mode;
+    };
+    definition.overrideBlink = readOverride(kOverrideBlink);
+    definition.overrideLookAt = readOverride(kOverrideLookAt);
+    definition.overrideMouth = readOverride(kOverrideMouth);
 
     SdfPathVector morphTargets;
     if (const UsdRelationship rel = prim.GetRelationship(kMorphTargets)) {

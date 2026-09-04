@@ -454,6 +454,17 @@ main(int argc, char** argv)
                          "outside [0, 1] were clamped: "
                       << JoinNames(expressionDiagnostics.clampedNames) << "\n";
         }
+        if (!expressionDiagnostics.suppressedNames.empty()) {
+            // A note rather than a warning: this is the avatar's own
+            // `overrideBlink` / `overrideLookAt` / `overrideMouth` rule being
+            // obeyed, and it is the one thing the weights themselves cannot
+            // show -- a producer whose blink track went flat would otherwise
+            // have nowhere to look.
+            std::cerr << "motion_retarget: note: the avatar's expression "
+                         "overrides suppressed: "
+                      << JoinNames(expressionDiagnostics.suppressedNames)
+                      << "\n";
+        }
         ReportWarnings(expressionDiagnostics.warnings, options.quiet);
         const std::size_t materialColors = CountMaterialColors(expressions);
         if (materialColors != 0) {

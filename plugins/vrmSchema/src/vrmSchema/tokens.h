@@ -345,6 +345,18 @@ struct UsdVrmTokensType {
     /// 
     /// UsdVrmColliderAPI
     const TfToken vrmOffset;
+    /// \brief "vrm:overrideBlink"
+    /// 
+    /// UsdVrmExpressionAPI
+    const TfToken vrmOverrideBlink;
+    /// \brief "vrm:overrideLookAt"
+    /// 
+    /// UsdVrmExpressionAPI
+    const TfToken vrmOverrideLookAt;
+    /// \brief "vrm:overrideMouth"
+    /// 
+    /// UsdVrmExpressionAPI
+    const TfToken vrmOverrideMouth;
     /// \brief "vrm:radius"
     /// 
     /// UsdVrmColliderAPI

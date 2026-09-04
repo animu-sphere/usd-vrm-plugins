@@ -79,6 +79,14 @@
       "note": "\"happy\" is declared in both expressions.preset and expressions.custom; the first declaration is kept and the rest are preserved in vrm:rawExtension only."
     },
     {
+      "id": "expression-override-unknown",
+      "file": "malformed/expression_override_unknown.vrm",
+      "generator": "build_expression_override_unknown",
+      "mechanism": "import-warning",
+      "code": "VRM153",
+      "note": "\"happy\" declares overrideBlink \"suppress\", which is not one of none/block/blend, and overrideLookAt 3, which is not a token at all. The first is carried onto vrm:overrideBlink verbatim and the second is authored nowhere; both are reported, so a consumer sees the instruction it cannot follow rather than silence."
+    },
+    {
       "id": "missing-spring-collider-group",
       "file": "malformed/missing_spring_collider_group.vrm",
       "generator": "build_missing_spring_collider_group",

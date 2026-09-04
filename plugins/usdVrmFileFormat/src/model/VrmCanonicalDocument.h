@@ -131,6 +131,16 @@ struct VrmExpression {
     std::string name;                  // preset or custom name
     bool isPreset = false;
     bool isBinary = false;
+    // VRM 1.0 overrideBlink / overrideLookAt / overrideMouth: what this
+    // expression does to a whole category of others while it is active
+    // ("none" | "block" | "blend"). Empty means the file said nothing, which
+    // is every VRM 0.x expression -- 0.x has no such field, and an empty string
+    // is how "not stated" stays distinguishable from an explicit "none".
+    // Evaluation is out of scope here, as it is for isBinary: the arbitration
+    // belongs to whoever applies a weight to this rig.
+    std::string overrideBlink;
+    std::string overrideLookAt;
+    std::string overrideMouth;
     // Morph-target bindings expressed as (mesh primitive index, morph index, weight).
     struct MorphBind { int meshPrimitiveIndex; int morphTargetIndex; float weight; };
     std::vector<MorphBind> morphBinds;

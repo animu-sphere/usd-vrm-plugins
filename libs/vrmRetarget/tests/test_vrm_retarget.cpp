@@ -900,6 +900,408 @@ TestATargetDrivenBelowZeroIsReportedToo()
     assert(carried.clampedNames.empty());
 }
 
+// ---------------------------------------------------------------------------
+// The override fields: the one mechanism VRM 1.0 gives for two co-active
+// expressions that drive the same vertices. Their morph offsets sum, so a
+// `happy` that raises the cheek while `blink` closes the lid drives the lid
+// roughly twice as far as shut -- and nothing in the weights looks wrong,
+// because the collision is geometric.
+// ---------------------------------------------------------------------------
+
+// A rig with one expression in each of the three categories plus a custom one,
+// so a rule that reached the wrong set has somewhere to show it. `happy` is the
+// one that arbitrates; every other expression declares nothing.
+vrmRetarget::ExpressionRig
+DesignOverrideRig(vrmRetarget::ExpressionOverride blink,
+                  vrmRetarget::ExpressionOverride lookAt,
+                  vrmRetarget::ExpressionOverride mouth,
+                  bool binaryBlink = false)
+{
+    vrmRetarget::ExpressionRig rig;
+
+    vrmRetarget::ExpressionDefinition happy;
+    happy.name = "happy";
+    happy.overrideBlink = blink;
+    happy.overrideLookAt = lookAt;
+    happy.overrideMouth = mouth;
+    happy.morphTargets.push_back({"/Asset/Meshes/Face/Smile", 1.0f});
+    rig.Add(happy);
+
+    vrmRetarget::ExpressionDefinition eyes;
+    eyes.name = "blink";
+    eyes.isBinary = binaryBlink;
+    eyes.morphTargets.push_back({"/Asset/Meshes/Face/EyeClose", 1.0f});
+    eyes.materialColors.push_back(
+        {"/Asset/Materials/Face", "color", pxr::GfVec4f(0.0f, 0.0f, 1.0f, 1.0f)});
+    rig.Add(eyes);
+
+    vrmRetarget::ExpressionDefinition vowel;
+    vowel.name = "aa";
+    vowel.morphTargets.push_back({"/Asset/Meshes/Face/MouthOpen", 1.0f});
+    rig.Add(vowel);
+
+    vrmRetarget::ExpressionDefinition gaze;
+    gaze.name = "lookLeft";
+    gaze.morphTargets.push_back({"/Asset/Meshes/Face/EyeLeft", 1.0f});
+    rig.Add(gaze);
+
+    // Custom, and named to look like a blink on purpose: the categories are
+    // sets of preset names, and a rig's own vocabulary is not one of them.
+    vrmRetarget::ExpressionDefinition custom;
+    custom.name = "wink";
+    custom.morphTargets.push_back({"/Asset/Meshes/Face/Wink", 1.0f});
+    rig.Add(custom);
+
+    return rig;
+}
+
+// The resolved weight of one target of the sample, by path. -1 means the target
+// is absent, which is a different answer from a weight of zero.
+float
+WeightOf(const vrmRetarget::ResolvedExpressions& resolved,
+         const std::string& target)
+{
+    for (const vrmRetarget::ResolvedMorphTarget& entry : resolved.morphTargets) {
+        if (entry.target == target) {
+            return entry.weight;
+        }
+    }
+    return -1.0f;
+}
+
+void
+TestABlockingOverrideTakesTheWholeCategory()
+{
+    // `happy` blocks the mouth and arbitrates nothing else.
+    const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
+        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::Block));
+
+    vrmRetarget::ExpressionDiagnostics diagnostics;
+    const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(
+        Weights({{"happy", 0.2f},
+                 {"blink", 1.0f},
+                 {"aa", 1.0f},
+                 {"lookLeft", 1.0f},
+                 {"wink", 1.0f}}),
+        &diagnostics);
+
+    // Block is a switch, not a steep blend: 0.2 of `happy` takes all of `aa`.
+    assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/MouthOpen"), 0.0f));
+    // Everything else is untouched, including the eyes -- `overrideMouth` names
+    // one category and not "the other expressions".
+    assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeClose"), 1.0f));
+    assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeLeft"), 1.0f));
+    assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/Wink"), 1.0f));
+    assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/Smile"), 0.2f));
+
+    // The avatar's own rule being obeyed is not a defect, so the resolve still
+    // reads as clean -- and the suppression is named anyway, with the
+    // expression that did it, because a producer whose mouth track went flat
+    // has nothing to find in the weights.
+    assert(diagnostics.IsClean());
+    assert(diagnostics.suppressedNames.size() == 1);
+    assert(diagnostics.suppressedNames[0] == "aa (by happy)");
+}
+
+void
+TestABlendingOverrideLeavesTheRestOfTheCategory()
+{
+    const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
+        vrmRetarget::ExpressionOverride::Blend,
+        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::None));
+
+    vrmRetarget::ExpressionDiagnostics diagnostics;
+    const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(
+        Weights({{"happy", 0.4f}, {"blink", 1.0f}}), &diagnostics);
+
+    // 40% of the way to a full override leaves 60% of the blink standing --
+    // which is the whole difference from `block`, where the same 0.4 would have
+    // taken all of it.
+    assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeClose"), 0.6f));
+    // The suppressed weight is the one every bind gets, colours included.
+    assert(resolved.materialColors.size() == 1);
+    assert(NearlyEqual(resolved.materialColors[0].totalWeight, 0.6f));
+    assert(diagnostics.suppressedNames.size() == 1);
+    assert(diagnostics.suppressedNames[0] == "blink (by happy)");
+
+    // At zero weight it arbitrates nothing, and says nothing either.
+    vrmRetarget::ExpressionDiagnostics quiet;
+    assert(NearlyEqual(
+        WeightOf(resolver.Resolve(Weights({{"happy", 0.0f}, {"blink", 1.0f}}),
+                                  &quiet),
+                 "/Asset/Meshes/Face/EyeClose"),
+        1.0f));
+    assert(quiet.suppressedNames.empty());
+}
+
+void
+TestTheStrongestOverrideWinsAndTheyDoNotStack()
+{
+    // Two expressions suppressing one category do not suppress it twice: the
+    // rate is the largest any of them asked for. Multiplying them would leave
+    // 0.5 * 0.2 = 0.1 of the blink, which is a face neither expression asked
+    // for and the number this test exists to refuse.
+    vrmRetarget::ExpressionRig rig = DesignOverrideRig(
+        vrmRetarget::ExpressionOverride::Blend,
+        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::None);
+    vrmRetarget::ExpressionDefinition relaxed;
+    relaxed.name = "relaxed";
+    relaxed.overrideBlink = vrmRetarget::ExpressionOverride::Blend;
+    relaxed.morphTargets.push_back({"/Asset/Meshes/Face/Relax", 1.0f});
+    rig.Add(relaxed);
+
+    const vrmRetarget::ExpressionResolver resolver(std::move(rig));
+    vrmRetarget::ExpressionDiagnostics diagnostics;
+    const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(
+        Weights({{"happy", 0.5f}, {"relaxed", 0.8f}, {"blink", 1.0f}}),
+        &diagnostics);
+
+    assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeClose"), 0.2f));
+    // And the report names the one that decided it, not both.
+    assert(diagnostics.suppressedNames.size() == 1);
+    assert(diagnostics.suppressedNames[0] == "blink (by relaxed)");
+}
+
+void
+TestAnExpressionThatIsOffOverridesNothing()
+{
+    // `block` reads "while this expression is on", so a reported zero is not a
+    // block -- and neither is a binary expression reported below its threshold,
+    // which is off however the file spelled the number. Reading the raw report
+    // instead would let an expression contributing nothing to the face take the
+    // whole blink with it.
+    const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
+        vrmRetarget::ExpressionOverride::Block,
+        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::None));
+    assert(NearlyEqual(
+        WeightOf(resolver.Resolve(Weights({{"happy", 0.0f}, {"blink", 1.0f}})),
+                 "/Asset/Meshes/Face/EyeClose"),
+        1.0f));
+
+    // The same rig with a binary `happy`.
+    vrmRetarget::ExpressionRig source = DesignOverrideRig(
+        vrmRetarget::ExpressionOverride::Block,
+        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::None);
+    vrmRetarget::ExpressionRig rebuilt;
+    for (const vrmRetarget::ExpressionDefinition& definition :
+         source.GetExpressions()) {
+        vrmRetarget::ExpressionDefinition copy = definition;
+        if (copy.name == "happy") {
+            copy.isBinary = true;
+        }
+        rebuilt.Add(std::move(copy));
+    }
+    const vrmRetarget::ExpressionResolver binary(std::move(rebuilt));
+    // 0.4 rounds to off, so the block it declares is not in force here.
+    assert(NearlyEqual(
+        WeightOf(binary.Resolve(Weights({{"happy", 0.4f}, {"blink", 1.0f}})),
+                 "/Asset/Meshes/Face/EyeClose"),
+        1.0f));
+    // At 0.6 it is on -- fully on, since it is binary -- and the block bites.
+    assert(NearlyEqual(
+        WeightOf(binary.Resolve(Weights({{"happy", 0.6f}, {"blink", 1.0f}})),
+                 "/Asset/Meshes/Face/EyeClose"),
+        0.0f));
+}
+
+void
+TestABinaryEyelidIsShutOrOpenUnderABlend()
+{
+    // `isBinary` says this rig has no half-shut eyelid, so a partial
+    // suppression either leaves the blink standing or turns it off. The
+    // rounding is re-applied after the attenuation and not only before it,
+    // which is the line this test measures: without it the eyelid would land on
+    // 0.6 and 0.3, values the flag says the rig cannot show.
+    const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
+        vrmRetarget::ExpressionOverride::Blend,
+        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::None,
+        /*binaryBlink=*/true));
+
+    assert(NearlyEqual(
+        WeightOf(resolver.Resolve(Weights({{"happy", 0.4f}, {"blink", 1.0f}})),
+                 "/Asset/Meshes/Face/EyeClose"),
+        1.0f));
+    assert(NearlyEqual(
+        WeightOf(resolver.Resolve(Weights({{"happy", 0.7f}, {"blink", 1.0f}})),
+                 "/Asset/Meshes/Face/EyeClose"),
+        0.0f));
+}
+
+void
+TestAnOverrideOfItsOwnCategoryIsReported()
+{
+    // A rig that declares `overrideBlink` on `blink` itself suppresses its own
+    // blink. It is followed rather than exempted -- an override cannot mean one
+    // thing for `happy` and another for `blink` without becoming a rule an
+    // operator can no longer predict from the file -- and it is reported,
+    // because it is far more likely to be a slip than an intent.
+    vrmRetarget::ExpressionRig rig;
+    vrmRetarget::ExpressionDefinition eyes;
+    eyes.name = "blink";
+    eyes.overrideBlink = vrmRetarget::ExpressionOverride::Block;
+    eyes.morphTargets.push_back({"/Asset/Meshes/Face/EyeClose", 1.0f});
+    rig.Add(eyes);
+
+    const vrmRetarget::ExpressionResolver resolver(std::move(rig));
+    vrmRetarget::ExpressionDiagnostics diagnostics;
+    const vrmRetarget::ResolvedExpressions resolved =
+        resolver.Resolve(Weights({{"blink", 1.0f}}), &diagnostics);
+    assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeClose"), 0.0f));
+    assert(diagnostics.warnings.size() == 1);
+    assert(!diagnostics.IsClean());
+}
+
+void
+TestTheOverrideVocabularyIsThreeTokensAndThreeSets()
+{
+    bool recognized = false;
+    assert(vrmRetarget::ParseExpressionOverride("block", &recognized)
+           == vrmRetarget::ExpressionOverride::Block);
+    assert(recognized);
+    assert(vrmRetarget::ParseExpressionOverride("blend", &recognized)
+           == vrmRetarget::ExpressionOverride::Blend);
+    assert(recognized);
+    // An absent value and an explicit "none" are the same statement.
+    assert(vrmRetarget::ParseExpressionOverride("none", &recognized)
+           == vrmRetarget::ExpressionOverride::None);
+    assert(recognized);
+    assert(vrmRetarget::ParseExpressionOverride("", &recognized)
+           == vrmRetarget::ExpressionOverride::None);
+    assert(recognized);
+    // A token this layer does not know is not an arbitration it can perform,
+    // and guessing which one was meant would suppress a face on a spelling.
+    assert(vrmRetarget::ParseExpressionOverride("Block", &recognized)
+           == vrmRetarget::ExpressionOverride::None);
+    assert(!recognized);
+    assert(std::string(vrmRetarget::ExpressionOverrideToken(
+               vrmRetarget::ExpressionOverride::Blend))
+           == "blend");
+
+    // The categories are the preset sets, in the VRM 1.0 spelling a VRM 0.x rig
+    // also arrives in -- the importer migrates `blink_l` to `blinkLeft` and `a`
+    // to `aa` on the way through.
+    using vrmRetarget::ExpressionCategory;
+    assert(vrmRetarget::ExpressionCategoryOf("blinkLeft")
+           == ExpressionCategory::Blink);
+    assert(vrmRetarget::ExpressionCategoryOf("lookDown")
+           == ExpressionCategory::LookAt);
+    assert(vrmRetarget::ExpressionCategoryOf("oh") == ExpressionCategory::Mouth);
+    // `happy` arbitrates the categories and is in none of them; a custom name
+    // is in none either, whatever it is called.
+    assert(vrmRetarget::ExpressionCategoryOf("happy")
+           == ExpressionCategory::None);
+    assert(vrmRetarget::ExpressionCategoryOf("wink")
+           == ExpressionCategory::None);
+    assert(vrmRetarget::ExpressionCategoryOf("Blink")
+           == ExpressionCategory::None);
+}
+
+void
+TestASuppressedExpressionStillOverrides()
+{
+    // The arbitration is one pass over the weights the sample resolved to, so
+    // an expression another override drives to zero still overrides its own
+    // category. It is a boundary rather than an accident: cascading would make
+    // the answer depend on the order the three categories are settled in, and
+    // the rig below -- where `aa` blocks the blink and `happy` blocks the mouth
+    // -- would then have two defensible answers and no reason to prefer either.
+    vrmRetarget::ExpressionRig rig = DesignOverrideRig(
+        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::Block);
+    vrmRetarget::ExpressionRig rebuilt;
+    for (const vrmRetarget::ExpressionDefinition& definition :
+         rig.GetExpressions()) {
+        vrmRetarget::ExpressionDefinition copy = definition;
+        if (copy.name == "aa") {
+            copy.overrideBlink = vrmRetarget::ExpressionOverride::Block;
+        }
+        rebuilt.Add(std::move(copy));
+    }
+
+    const vrmRetarget::ExpressionResolver resolver(std::move(rebuilt));
+    vrmRetarget::ExpressionDiagnostics diagnostics;
+    const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(
+        Weights({{"happy", 1.0f}, {"aa", 1.0f}, {"blink", 1.0f}}),
+        &diagnostics);
+
+    // `happy` blocks the mouth, so `aa` resolves to nothing --
+    assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/MouthOpen"), 0.0f));
+    // -- and the blink `aa` blocks is off all the same.
+    assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeClose"), 0.0f));
+    assert(diagnostics.suppressedNames.size() == 2);
+    assert(diagnostics.suppressedNames[0] == "aa (by happy)");
+    assert(diagnostics.suppressedNames[1] == "blink (by aa)");
+}
+
+void
+TestAnOverrideRateNeverInvertsAWeight()
+{
+    // With clamping off a reported weight reaches the binds verbatim -- but a
+    // rate is not a weight: it multiplies *another* expression's. Left
+    // unbounded, a `happy` at 1.5 would drive the blink to 1 * (1 - 1.5) =
+    // -0.5, which is not a suppression but an inversion, and it would surface
+    // only as the generic "driven outside [0, 1]" warning about a target
+    // nothing asked to move.
+    vrmRetarget::ExpressionResolveOptions verbatim;
+    verbatim.clampWeights = false;
+    const vrmRetarget::ExpressionResolver resolver(
+        DesignOverrideRig(vrmRetarget::ExpressionOverride::Blend,
+                          vrmRetarget::ExpressionOverride::None,
+                          vrmRetarget::ExpressionOverride::None),
+        verbatim);
+
+    // Past 1 the rate saturates: fully suppressed, never inverted.
+    const vrmRetarget::ResolvedExpressions past = resolver.Resolve(
+        Weights({{"happy", 1.5f}, {"blink", 1.0f}}));
+    assert(NearlyEqual(WeightOf(past, "/Asset/Meshes/Face/EyeClose"), 0.0f));
+    // `happy` itself still reaches its own binds verbatim, which is what that
+    // mode is for -- the bound is on the rate and not on the weight.
+    assert(NearlyEqual(WeightOf(past, "/Asset/Meshes/Face/Smile"), 1.5f));
+
+    // Below 0 it suppresses nothing rather than amplifying.
+    const vrmRetarget::ResolvedExpressions below = resolver.Resolve(
+        Weights({{"happy", -0.5f}, {"blink", 1.0f}}));
+    assert(NearlyEqual(WeightOf(below, "/Asset/Meshes/Face/EyeClose"), 1.0f));
+
+    // And a weight that is not a number arbitrates nothing, for the same
+    // reason it is a weight of zero: every comparison against it is false, so
+    // an unguarded `1 - rate` would carry the NaN into the blink's binds.
+    const vrmRetarget::ResolvedExpressions notANumber = resolver.Resolve(
+        Weights({{"happy", std::nanf("")}, {"blink", 1.0f}}));
+    assert(NearlyEqual(WeightOf(notANumber, "/Asset/Meshes/Face/EyeClose"),
+                       1.0f));
+}
+
+void
+TestAGazeExpressionIsSuppressedLikeAnyOther()
+{
+    // An expression-driven look-at reaches the resolve as `lookLeft` and the
+    // other three, folded into the sample's own weights -- so `overrideLookAt`
+    // arbitrates a rig's gaze through exactly the path it arbitrates its face,
+    // and needs no second mechanism.
+    const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
+        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::Blend,
+        vrmRetarget::ExpressionOverride::None));
+
+    vrmRetarget::ExpressionDiagnostics diagnostics;
+    const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(
+        Weights({{"happy", 0.25f}, {"lookLeft", 0.8f}, {"blink", 1.0f}}),
+        &diagnostics);
+    assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeLeft"), 0.6f));
+    assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeClose"), 1.0f));
+    assert(diagnostics.suppressedNames.size() == 1);
+    assert(diagnostics.suppressedNames[0] == "lookLeft (by happy)");
+}
+
 void
 TestAJointsWorldTransformComposesItsWholeChain()
 {
@@ -1501,6 +1903,16 @@ main()
     TestANonNumberIsNotAWeight();
     TestABindWithNoIdentifierIsSkippedAndNamed();
     TestATargetDrivenBelowZeroIsReportedToo();
+    TestABlockingOverrideTakesTheWholeCategory();
+    TestABlendingOverrideLeavesTheRestOfTheCategory();
+    TestTheStrongestOverrideWinsAndTheyDoNotStack();
+    TestAnExpressionThatIsOffOverridesNothing();
+    TestABinaryEyelidIsShutOrOpenUnderABlend();
+    TestAnOverrideOfItsOwnCategoryIsReported();
+    TestTheOverrideVocabularyIsThreeTokensAndThreeSets();
+    TestASuppressedExpressionStillOverrides();
+    TestAnOverrideRateNeverInvertsAWeight();
+    TestAGazeExpressionIsSuppressedLikeAnyOther();
     TestAJointsWorldTransformComposesItsWholeChain();
     TestAnIdentityRangeMapReproducesTheAim();
     TestTheOffsetPlacesTheGazeOrigin();

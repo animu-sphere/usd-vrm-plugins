@@ -16,12 +16,13 @@ def SkelRoot "Asset" (
     "name": "usdVrm Fixture",
     "version": "1.0"
 }'''
-            string rawExtension = '{"specVersion":"1.0","meta":{"name":"usdVrm Fixture","version":"1.0","authors":["usd-vrm-plugins"],"licenseUrl":"https://www.apache.org/licenses/LICENSE-2.0","avatarPermission":"everyone"},"humanoid":{"humanBones":{"hips":{"node":1},"spine":{"node":2}}},"expressions":{"preset":{"happy":{"isBinary":false,"overrideBlink":"blend","overrideMouth":"block","morphTargetBinds":[{"node":0,"index":0,"weight":1.0}],"materialColorBinds":[{"material":0,"type":"emissionColor","targetValue":[1.0,0.0,0.0,1.0]}]}},"custom":{"\\u7b11\\u9854":{"isBinary":true,"morphTargetBinds":[{"node":0,"index":0,"weight":0.5}]}}}}'
+            string rawExtension = '{"specVersion":"1.0","meta":{"name":"usdVrm Fixture","version":"1.0","authors":["usd-vrm-plugins"],"licenseUrl":"https://www.apache.org/licenses/LICENSE-2.0","avatarPermission":"everyone"},"humanoid":{"humanBones":{"hips":{"node":1},"spine":{"node":2}}},"expressions":{"preset":{"happy":{"isBinary":false,"overrideBlink":"suppress","overrideLookAt":3,"overrideMouth":"block","morphTargetBinds":[{"node":0,"index":0,"weight":1.0}]}}}}'
             int schemaContractVersion = 1
             string sourceFormat = "VRM"
             string sourceFrontAxis = "+Z"
             string sourceVersion = "1.0"
             string specVersion = "1.0"
+            string[] warnings = ["[VRM153] expression 'happy' declares overrideBlink 'suppress', which is not none, block or blend; it is carried verbatim and no consumer will act on it", "[VRM153] expression 'happy' declares overrideLookAt with a value that is not a token; nothing is authored for it and it survives in vrm:rawExtension only"]
         }
     }
     kind = "component"
@@ -48,9 +49,9 @@ def SkelRoot "Asset" (
                     uniform token info:id = "UsdPreviewSurface"
                     color3f inputs:diffuseColor = (0.8, 0.6, 0.5)
                     color3f inputs:emissiveColor = (0, 0, 0)
-                    float inputs:metallic = 0
+                    float inputs:metallic = 1
                     float inputs:opacity = 1
-                    float inputs:roughness = 0.7
+                    float inputs:roughness = 1
                     token outputs:surface
                 }
             }
@@ -131,24 +132,10 @@ def SkelRoot "Asset" (
                 uniform token vrm:expressionName = "happy"
                 uniform token vrm:expressionType = "preset"
                 uniform bool vrm:isBinary = 0
-                rel vrm:materialColorTargets = </Asset/mtl/Face_Mat>
-                uniform token[] vrm:materialColorTypes = ["emissionColor"]
-                uniform float4[] vrm:materialColorValues = [(1, 0, 0, 1)]
                 rel vrm:morphTargets = </Asset/skel/BlendShapes/Face_happy_shape>
                 uniform float[] vrm:morphTargetWeights = [1]
-                uniform token vrm:overrideBlink = "blend"
+                uniform token vrm:overrideBlink = "suppress"
                 uniform token vrm:overrideMouth = "block"
-            }
-
-            def Scope "Expression_aa9d76db" (
-                apiSchemas = ["VrmExpressionAPI"]
-            )
-            {
-                uniform token vrm:expressionName = "笑顔"
-                uniform token vrm:expressionType = "custom"
-                uniform bool vrm:isBinary = 1
-                rel vrm:morphTargets = </Asset/skel/BlendShapes/Face_happy_shape>
-                uniform float[] vrm:morphTargetWeights = [0.5]
             }
         }
     }

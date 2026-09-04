@@ -91,6 +91,9 @@ _IMPORT_SPECS = [
           "Expression morph target index out of range; bind skipped"),
     _spec("VRM152", Severity.WARNING, "import",
           "Duplicate expression name; first declaration kept"),
+    _spec("VRM153", Severity.WARNING, "import",
+          "Expression override value is not none/block/blend; carried "
+          "verbatim"),
     _spec("VRM160", Severity.WARNING, "import",
           "CUBICSPLINE animation approximated as linear"),
     _spec("VRM170", Severity.WARNING, "import",
