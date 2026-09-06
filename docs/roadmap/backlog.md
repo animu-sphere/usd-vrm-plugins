@@ -14,19 +14,36 @@ not the schedule.
 
 | Release | Theme | Sequences | Plan |
 | --- | --- | --- | --- |
-| after v0.8.0 | NPZ / AMASS recorded sources | — | [recorded-motion-sources.md](recorded-motion-sources.md) §13 |
-| after v0.8.0 | canonical motion producer contract | — | [below](#canonical-motion-producer-contract) |
-| after those | OpenExec VRM runtime foundation | Workspace Phase 8, Motion Phase E | [openexec-foundation.md](openexec-foundation.md) §6 |
-| after the foundation | `ExecIr` invertible VRM humanoid rig | Motion Phase E cont. | [openexec-foundation.md](openexec-foundation.md) §7 |
+| after v0.8.0 | OpenExec VRM runtime foundation | Workspace Phase 8, Motion Phase E | [openexec-foundation.md](openexec-foundation.md) §6 |
+| after the foundation | boundary consolidation — the producer contract, one reference pipeline, adapter distribution, artifact closure | — | [boundary-consolidation.md](boundary-consolidation.md) |
+| after consolidation | motion foundation repository split (`motionCore` + `motionRuntime`), **conditional** | — | [motion-foundation-split.md](motion-foundation-split.md) |
+| after the split gate | NPZ / AMASS recorded sources | — | [recorded-motion-sources.md](recorded-motion-sources.md) §13 |
+| with NPZ / AMASS | ARDY generation adapter | Motion Phase F | [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) §7 |
+| unscheduled | `ExecIr` invertible VRM humanoid rig | Motion Phase E cont. | [openexec-foundation.md](openexec-foundation.md) §7 |
+
+**Re-ordered 2026-09-06, and the two producer-side rows went to the back.**
+OpenExec leads because every node is a *thin wrapper*, which makes the
+foundation the first consumer of `motionRuntime` and `vrmRetarget` that is not
+the tool beside them; boundary consolidation follows immediately so it acts on
+what an implementation found rather than on what a review predicted; the
+repository split follows that, gated on a measurement that can end it. The full
+argument and its stated costs are in
+[the status table](README.md#status-at-a-glance), and the direction it comes
+from is [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md),
+adopted the same day. **The canonical motion producer contract is no longer a
+row**: it is BND-0 of the consolidation track, and
+[the section below](#canonical-motion-producer-contract) is kept as its
+description.
 
 **Re-ordered 2026-08-29.** Two producer-side tracks moved in front of the
-compute layer, and OpenExec lost its version with the move
-([the status table](README.md#status-at-a-glance) has the argument). Neither new
+compute layer, and OpenExec lost its version with the move — the half of that
+change that survives 2026-09-06 is the version, not the order. Neither new
 row carries a phase number, and that is the §8 rule rather than an oversight:
 the Workspace ladder tracks the migration out of the single `usdVrm` bundle, and
 a greenfield reader takes its identity and edges from
 [WORKSPACE.md](../architecture/WORKSPACE.md) §1 and §2 exactly as `motionSource`
-and `motionBvh` did.
+and `motionBvh` did. The two rows added on 2026-09-06 carry none for the same
+reason: neither moves code out of a bundle.
 
 - ⬜ **Workspace Phase 8 — `execMotion` + `execVrm` bootstrap**, then **Motion
   Phase E** inside it. The OpenUSD 26.08 exact pin that was part of this
@@ -34,6 +51,11 @@ and `motionBvh` did.
   that OpenExec type registration requires.
 
 ### Canonical motion producer contract
+
+**Scheduled as BND-0 of [boundary consolidation](boundary-consolidation.md)
+since 2026-09-06.** It stopped being the thing NPZ had to answer on its way in
+and became one item in a track whose whole subject is boundaries; this section
+stays as its description.
 
 *Freeze what a motion producer hands over, before the number of producers grows
 again.* Four categories exist and each was designed on its own terms: recorded
@@ -166,7 +188,7 @@ Still ahead:
   `MotionGenerationRequest`, text intent, root waypoints, sparse joint
   constraints, pose history, clip-ification. The contract is frozen before the
   first generator adapter is written, not derived from it
-  ([adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) §6, Milestones
+  ([adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) §7, Milestones
   E–F).
 - ⬜ **Motion Phase G — expression / look-at / recording.** VRMA **expression**
   animation landed 2026-08-23 (`/Animation/Expressions`, weights carried
@@ -332,7 +354,13 @@ not a commitment to ship one.
 ## Non-goals
 
 Out of scope for these plugins — handle via schema, adapter, an OpenExec task,
-or another plugin (design policy §15, §19; motion policy §8, §18):
+or another plugin (design policy §15, §19; motion policy §8, §18). Since
+2026-09-06 these are the individual cases of one boundary,
+[scope policy §2](../design/INTEGRATION_SCOPE_POLICY.md), which adds the classes
+this list had never needed to refuse in the singular: a general-purpose OSC or
+UDP framework, a general IK engine, an animation graph or behaviour/state
+machine, a generative model with its training and inference infrastructure,
+large corpus hosting, a humanoid DCC toolchain, and a game runtime.
 
 - Full VRM runtime physics execution → `execVrm`
 - Pixel-perfect MToon across all renderers

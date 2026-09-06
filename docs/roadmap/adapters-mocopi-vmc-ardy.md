@@ -467,6 +467,14 @@ generated-clip representation, cancellation, timeout, diagnostics, provenance,
 and cache key. The ARDY adapter must not be what defines them, or the first
 generator's shape silently becomes the contract.
 
+> **The contract it is blocked on now has a home and a position** (2026-09-06).
+> `IMotionGenerator` is the fourth crossing of the canonical producer contract,
+> which is BND-0 of [boundary consolidation](boundary-consolidation.md) — so this
+> phase unblocks when that track freezes it, and it is scheduled after the
+> repository-split gate alongside NPZ/AMASS. That is later than the 2026-08-29
+> order implied and the block itself is unchanged: what moved is when the thing
+> blocking it gets written, not what it is.
+
 ```text
 MotionGenerationRequest → ARDY adapter → HumanoidAnimation / pose stream
                         → motionRuntime → vrmRetarget → VRM avatar

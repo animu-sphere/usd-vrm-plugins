@@ -22,6 +22,15 @@ contract wins — structural changes go there first, in their own PR.
 
 ## Canonical documents
 
+- [design/INTEGRATION_SCOPE_POLICY.md](design/INTEGRATION_SCOPE_POLICY.md) is
+  the **scope** policy: how far this repository goes. It states the one thing
+  the other four assume and none of them fixes — that `usd-vrm-plugins` is the
+  integration workspace joining VRM assets and humanoid motion to OpenUSD, and
+  never a motion engine, a capture SDK, a generative model or a network stack —
+  and from that the test a proposed identity has to pass, the release's artifact
+  closure, the four test layers, the repository-split preconditions, and the
+  invariants a reviewer applies. It restates nothing the four below fix; where
+  it appears to overlap one, the other wins. Added 2026-09-06.
 - [design/DESIGN_POLICY.md](design/DESIGN_POLICY.md) is the long-form design &
   development policy for the **importer** — the source of truth for **Product
   P0–P6** and for the import / evaluation / simulation boundary.
@@ -47,17 +56,27 @@ contract wins — structural changes go there first, in their own PR.
   §5 was repeatedly asked and never stated; §5 keeps naming and aggregate
   membership. Added 2026-08-29.
 
-Five milestone plans sit in [roadmap/](roadmap/) rather than here, because they
+Seven milestone plans sit in [roadmap/](roadmap/) rather than here, because they
 are plans and not policy: the [packaging hardening lane](roadmap/packaging-hardening.md),
 the [live input adapters](roadmap/adapters-mocopi-vmc-ardy.md),
 the [recorded motion sources](roadmap/recorded-motion-sources.md), the
 [shared OSC foundation and VRChat OSC Trackers input](roadmap/osc-and-vrchat-trackers.md),
-and the [OpenExec foundation](roadmap/openexec-foundation.md). All five defer
-every structural claim to WORKSPACE.md and every motion claim to the motion
-policy, and **none states its own release version** — that is the
+the [OpenExec foundation](roadmap/openexec-foundation.md), and — added
+2026-09-06 — [boundary consolidation](roadmap/boundary-consolidation.md) and the
+[motion foundation split](roadmap/motion-foundation-split.md). All seven defer
+every structural claim to WORKSPACE.md, every motion claim to the motion policy,
+and every scope claim to the scope policy, and **none states its own release
+version** — that is the
 [roadmap status table](roadmap/README.md#status-at-a-glance), which exists
-because two of them traded places once already, and has since re-ordered twice
-more.
+because two of them traded places once already, and has since re-ordered three
+times more.
+
+The last two are the only plans that are not about an input, a format or a
+package. Consolidation states the agreements the other five arrived at
+separately and settles what each left open; the split is the one plan that can
+end at its own gate, because a component leaves this repository on a release and
+ownership argument rather than on a source-boundary one
+([scope policy §10](design/INTEGRATION_SCOPE_POLICY.md)).
 
 The three input tracks split the layer twice, and each split is a difference in
 what the code argues about rather than an organisational preference. **Live
@@ -83,12 +102,21 @@ package config file, so a package can name an unresolvable target and CI stays
 green. It did, on 2026-08-29.
 
 The OpenExec track attaches to that finished pipeline afterwards, and since
-2026-08-03 it is also *scheduled* afterwards, so its parity comparison runs on
+2026-08-03 it was also *scheduled* afterwards, so its parity comparison runs on
 sessions recorded from a real device rather than on generated fixtures. That is a
 one-way relationship: the input tracks supply evidence, and nothing in them reads
-back. Since 2026-08-29 it is scheduled behind the *producer* tracks as well, for
-the same reason one step further out: a compute layer over contracts that are
-still moving evaluates a boundary twice instead of once.
+back.
+
+**On 2026-09-06 it became the next milestone.** The 2026-08-29 order had put the
+producer tracks in front of it — a compute layer over contracts that are still
+moving evaluates a boundary twice instead of once — and the re-order answers
+that with the packaging track's own argument one layer out: every exec node is a
+*thin wrapper* over a library call, so the foundation is the first consumer of
+`motionRuntime` and `vrmRetarget` that is not the tool that grew up beside them,
+and a boundary nothing outside has consumed is a boundary nobody has measured.
+Consolidation follows immediately, on the findings rather than on predictions.
+The cost is stated where the order is: no new source shape informs the node set,
+and the producer contract is written after `execVrm` exists.
 
 The three phase systems are separate and always qualified; see
 [roadmap/README.md](roadmap/README.md#three-sequences-deliberately-separate).
