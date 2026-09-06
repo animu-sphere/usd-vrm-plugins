@@ -100,7 +100,7 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | Identity | Kind | Role |
 | --- | --- | --- |
 | `usdVrmaFileFormat` | plugin bundle (`usd-fileformat`, v0.3.0) | `.vrma` `SdfFileFormat`, glTF/GLB animation parsing, canonical semantic `HumanoidSkeleton`, `UsdSkelAnimation` + provenance. Avatar-independent: it never resolves, binds to, or retargets onto a target VRM. |
-| `execMotion` | plugin bundle (reserved) | Vendor-neutral OpenExec motion nodes: clip sample, pose buffer, resample, filter, blend, apply-constraints, generate, record |
+| `execMotion` | plugin bundle (`usd-exec`, bootstrapped 2026-09-06) | Vendor-neutral OpenExec motion nodes: clip sample, pose buffer, resample, filter, blend, apply-constraints, generate, record. **The boundary and one identity computation exist; the nodes do not yet.** It declares the `UsdSkelAnimation` schema and no other, which is a claim no second plugin in the session may make (§2). |
 | `execVrm` | plugin bundle (reserved) | VRM semantics applied to a target rig: humanoid retarget, root-motion resolve, expression, look-at, avatar apply — driven by the schema contract only |
 | `motionCore` | plain static CMake library (v0.3.0) | `motion::HumanoidPose`, `HumanoidAnimation`, `RootMotion`, `MotionConstraintSet`, source metadata. No USD stage authoring, no vendor SDK, no network. |
 | `motionRuntime` | plain static CMake library (v0.4.0) | Timestamped pose buffer, interpolation/extrapolation, resample, filter, blend — the OpenExec-independent runtime |
@@ -287,8 +287,10 @@ vrmRetarget           -> motionRuntime
 motion_retarget       -> vrmRetarget, motionRuntime, motionCore, OpenUSD stage
 motion_capture        -> motionRuntime, motionCore, OpenUSD stage
 execMotion            -> motionCore, motionRuntime
+execMotion            =: UsdSkelAnimation   (the OpenExec schema it declares)
 execVrm               -> vrmSchema
 execVrm               -> motionCore, motionRuntime, vrmRetarget
+execVrm               =: the Vrm*API applied schemas, UsdSkelSkeleton
 adapters/*            -> motionCore, motionRuntime, liveTransport, osc
 adapters/*/tools/*    -> vrmRetarget, motionTracking, OpenUSD stage authoring
 liveTransport         -> nothing — its allowed edge set is empty, not short
@@ -436,6 +438,9 @@ execVrm               -> GLB parser (vrmContainer, cgltf), reparse of the
 execMotion/execVrm    -> socket or device I/O, file watching, a wall clock, a
                          private thread pool, or mutable global state inside a
                          computation callback (see below)
+execVrm               -> declaring UsdSkelAnimation, and execMotion -> declaring
+                         any Vrm*API schema or UsdSkelSkeleton: an OpenExec
+                         schema has exactly one declarer per session (see below)
 
 motionCore            -> any vendor SDK, any product-named code, any network
                          protocol, any OpenUSD stage authoring
@@ -506,8 +511,23 @@ motionSource/motionBvh-> a target VRM joint index, a target rest pose, or any
 any cycle, including self-cycles
 ```
 
-Five of these are the motion layer's load-bearing invariants, restated so a
+Six of these are the motion layer's load-bearing invariants, restated so a
 reviewer can check them without opening the policy:
+
+- **An OpenExec schema has exactly one declarer, so the two bundles partition
+  them.** 26.08 keys its `Info.Exec.Schemas` metadata by schema type and refuses
+  a second plugin that names a schema another already declared: the second one's
+  computations for that schema are never registered, and the failure surfaces
+  later as "computation not found" rather than as a load error. `execMotion`
+  therefore declares `UsdSkelAnimation` and `execVrm` declares the `Vrm*API`
+  applied schemas and `UsdSkelSkeleton`, and neither declares the other's. A
+  bundle reaches a prim it does not own the schema of through an **input
+  accessor**, or by registering on an applied API schema that prim carries —
+  both measured
+  ([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §2,
+  §3). This is a workspace rule and not a preference: the two bundles ship in one
+  product and are loaded into one session, so a collision between them is not a
+  configuration a user can avoid.
 
 - **`vrmRetarget` does not depend on OpenExec.** The retarget core is finished
   and testable before any OpenExec node exists (motion policy §10.1, §18.12);
@@ -630,7 +650,7 @@ vrmSchema-<version>-<target>.tar.zst
 usdVrmFileFormat-<version>-<target>.tar.zst
 usdVrmPackageResolver-<version>-<target>.tar.zst
 usdVrmaFileFormat-<version>-<target>.tar.zst
-execMotion-<version>-<target>.tar.zst          (when it exists)
+execMotion-<version>-<target>.tar.zst
 execVrm-<version>-<target>.tar.zst             (when it exists)
 usd-vrm-plugins-<version>-<target>-plugin-product.tar.zst (aggregate)
 ```
@@ -909,7 +929,7 @@ as the gate in every migration PR.
 | 6a | `motionCore` bootstrap | done (`libs/motionCore`) |
 | 6b | `motionRuntime` + `vrmRetarget` bootstrap | done (`libs/motionRuntime`, `libs/vrmRetarget`) |
 | 7 | `usdVrmaFileFormat` bundle bootstrap | done (`plugins/usdVrmaFileFormat`) |
-| 8 | `execMotion` + `execVrm` bundle bootstrap | not started |
+| 8 | `execMotion` + `execVrm` bundle bootstrap | `execMotion` done (`plugins/execMotion`, 2026-09-06); `execVrm` not started |
 
 > **Phase 6 was renumbered on 2026-07-18.** It previously read "`execVrm`
 > (LookAt first)" — a single phase covering the whole runtime layer. The motion

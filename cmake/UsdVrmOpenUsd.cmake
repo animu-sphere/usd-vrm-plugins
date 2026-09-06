@@ -84,20 +84,48 @@ endif()
 # ---------------------------------------------------------------------------
 # 2. OpenExec capability probe
 # ---------------------------------------------------------------------------
-# 26.08 has no OpenExec build toggle -- build_usd.py ships these
-# unconditionally -- so this is a detection check, not a build-option check. A
-# runtime can still lack them: a slimmed export, a hand-built install with
-# components stripped, or any OpenUSD that predates OpenExec. Each component is
-# probed by both its imported target (does it link?) and one header (is the
-# development half installed?), because ost stages those two halves separately
-# and a runtime missing one of them fails much later and far less clearly.
+# OpenUSD 26.08 *does* have a build toggle, `PXR_BUILD_EXEC`, but `build_usd.py`
+# exposes no flag for it -- so a runtime built the normal way carries OpenExec
+# and this is a detection check rather than a build-option check. A runtime can
+# still lack it: `PXR_BUILD_EXEC=OFF`, a slimmed export, a hand-built install
+# with components stripped, or any OpenUSD that predates OpenExec. Each
+# component is probed by both its imported target (does it link?) and one header
+# (is the development half installed?), because ost stages those two halves
+# separately and a runtime missing one of them fails much later and far less
+# clearly.
+#
+# The list is the one the 26.08 migration audit measured
+# (docs/reports/openusd/26.08-openexec-migration.md 1.2, 1.3, 9.1), not the one
+# the exec libraries' names suggest:
+#
+#   * `ef`, `esf` and `esfUsd` are probed because the *public* exec headers
+#     include them -- `exec/system.h` includes `esf/stage.h`,
+#     `exec/valueKey.h` includes `esf/object.h`, `exec/requestImpl.h` includes
+#     `ef/timeInterval.h`, and `EfTime` is the result type of the builtin
+#     `computeTime` computation. Every execMotion and execVrm translation unit
+#     will include `execUsd/system.h`, so a runtime carrying `exec` without
+#     these fails at *compile* time inside a bundle: the exact failure this
+#     probe exists to move to configure time.
+#   * `usdIrImaging` is the imaging-side sentinel rather than `usdExecImaging`.
+#     `usdExecImaging` is built whenever `PXR_BUILD_USD_IMAGING=ON` -- with
+#     exec off it compiles a stub whose factory returns null, and its target
+#     and all its headers still exist -- so its presence carries no information
+#     about OpenExec. `usdIrImaging`'s CMakeLists returns early when
+#     `PXR_BUILD_EXEC` is off, so its presence does.
+#
+# Requiring an imaging-side component at all is deliberate and predates this
+# list: it is what refuses ost's `core` runtime leaves, which are built
+# `--no-imaging` (docs/reference/SUPPORTED_CONFIGURATIONS.md).
 set(_usdvrm_openexec_probe
+    "vdf"             "pxr/exec/vdf/api.h"
+    "ef"              "pxr/exec/ef/timeInterval.h"
+    "esf"             "pxr/exec/esf/stage.h"
+    "esfUsd"          "pxr/exec/esfUsd/sceneAdapter.h"
     "exec"            "pxr/exec/exec/system.h"
     "execGeom"        "pxr/exec/execGeom/tokens.h"
     "execIr"          "pxr/exec/execIr/controller.h"
     "execUsd"         "pxr/exec/execUsd/system.h"
-    "vdf"             "pxr/exec/vdf/api.h"
-    "usdExecImaging"  "pxr/usdImaging/usdExecImaging/stageSceneIndexInterface.h")
+    "usdIrImaging"    "pxr/usdImaging/usdIrImaging/api.h")
 
 set(USDVRM_OPENEXEC_COMPONENTS)
 set(_usdvrm_openexec_missing)

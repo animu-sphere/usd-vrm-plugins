@@ -6,15 +6,16 @@
 # it, and a green PR lane proves nothing about it.
 #
 # Pushing a tag `vX.Y.Z` (which must equal the repo VERSION file and have a
-# finalized CHANGELOG section) builds the whole workspace -- the four bundles
-# vrmSchema, usdVrmFileFormat, usdVrmPackageResolver, usdVrmaFileFormat plus
-# every CLI tool the workspace declares -- on the same three OS cells and
-# digest-pinned runtimes as the PR lane, proves the *packaged* artifacts
-# (composed clean-install smoke + digest reproducibility), then assembles a
-# DRAFT GitHub release: per-target lean bundles and tool packages with manifest
-# sidecars for all of them, a source archive, SHA256SUMS, and notes rendered
-# from CHANGELOG.md via docs/contributing/RELEASE_NOTES_TEMPLATE.md. Publishing
-# the draft is a human decision.
+# finalized CHANGELOG section) builds the whole workspace -- the five bundles
+# vrmSchema, usdVrmFileFormat, usdVrmPackageResolver, usdVrmaFileFormat and
+# execMotion plus every CLI tool the workspace declares -- on the same three OS
+# cells and digest-pinned runtimes as the PR lane, proves the *packaged*
+# artifacts (composed clean-install smoke + digest reproducibility), then
+# assembles a DRAFT GitHub release: per-target lean bundles and tool packages
+# with manifest sidecars for all of them, a source archive, SHA256SUMS, and
+# notes rendered from CHANGELOG.md via
+# docs/contributing/RELEASE_NOTES_TEMPLATE.md. Publishing the draft is a human
+# decision.
 #
 # The member set is NOT a constant here, and that is deliberate. It was `4 + 2`
 # hard-coded and was wrong by v0.7.0, which ships `4 + 3`: `motion_bvh` joined
@@ -26,10 +27,12 @@
 # Under the 0.21.0 pin this workflow used to carry, that exclusion held only
 # because `ost` did not discover `adapters/<group>/<name>/tools/<tool>/` at all;
 # 0.22.x does discover them, and the bootstrap pin below is 0.22.8 now. What
-# keeps the product at seven members is therefore no longer the toolchain
-# version but `[workspace].release_exclude` in openstrata.toml, which names the
-# three adapter CLIs and makes `ost` itself fail with
-# AGGREGATE_MEMBERSHIP_MISMATCH before this step runs.
+# keeps the adapter CLIs out of the product is therefore no longer the
+# toolchain version but `[workspace].release_exclude` in openstrata.toml, which
+# names the three of them and makes `ost` itself fail with
+# AGGREGATE_MEMBERSHIP_MISMATCH before this step runs. The product was seven
+# members through v0.8.0 and is eight since execMotion joined it -- which is
+# exactly why no number is written down here, only in openstrata.toml.
 #
 # The count below stays anyway, and it is not a duplicate of that check. `ost`
 # compares the packaged set against a declaration, and this step compares it
@@ -271,7 +274,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for bundle in plugins/vrmSchema plugins/usdVrmFileFormat plugins/usdVrmPackageResolver plugins/usdVrmaFileFormat; do
+          # Every bundle openstrata.toml declares a release member, in
+          # dependency order. A bundle missing from this list is not a slow
+          # lane: the root build above rewrote its lib/ without bundle-managed
+          # provenance, so `plugin package --workspace` below fails closed with
+          # PLUGIN_PACKAGE_OUTPUT_MISMATCH -- and no pull_request event runs
+          # this workflow, so a tag is the first time anyone finds out.
+          for bundle in plugins/vrmSchema plugins/usdVrmFileFormat plugins/usdVrmPackageResolver plugins/usdVrmaFileFormat plugins/execMotion; do
             echo "::group::build $bundle"
             ost plugin build "$bundle" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
             echo "::endgroup::"
@@ -310,12 +319,12 @@ jobs:
         shell: bash
         run: python scripts/clean_install_smoke.py --skip-build
       # The other half of "the artifact works": the clean-install smoke opens
-      # avatars through the four bundles, and nothing until 2026-08-30 had run a
-      # *tool* member out of an installed product. WORKSPACE.md §5 ships the
-      # motion profiles as product data so that this can pass, and the first run
-      # of it failed -- the tool lands at `tools/<member>/bin/` and looked for
-      # `<exe>/../share/...`, which is one directory too shallow inside the
-      # product's own prefix.
+      # avatars through the reader bundles, and nothing until 2026-08-30 had
+      # run a *tool* member out of an installed product. WORKSPACE.md §5 ships
+      # the motion profiles as product data so that this can pass, and the
+      # first run of it failed -- the tool lands at `tools/<member>/bin/` and
+      # looked for `<exe>/../share/...`, which is one directory too shallow
+      # inside the product's own prefix.
       #
       # `--product` rather than a fresh package: the archive this step is about
       # is the one the previous steps just built and proved digest-reproducible,

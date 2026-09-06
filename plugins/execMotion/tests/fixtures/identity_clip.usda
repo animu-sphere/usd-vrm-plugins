@@ -1,0 +1,48 @@
+#usda 1.0
+(
+    """Mechanism fixture for execMotion: a UsdSkelAnimation whose joint paths
+    name four canonical humanoid bones and one thing that is not a bone at all.
+
+    The prose is a layer comment rather than `doc` on purpose. `doc` is where
+    usdcat --flatten writes the absolute path of the root layer, and the L5
+    comparison strips exactly that field -- a fixture whose own text shared the
+    field would carry a machine path into the golden.
+
+    The clip is deliberately uninteresting: the identity computation reads
+    `joints` and nothing else. Rotations, translations and scales are here only
+    because a SkelAnimation missing `scales` silently resolves to the rest pose,
+    and a fixture that modelled a malformed clip would be measuring something
+    other than the mechanism."""
+)
+
+def SkelAnimation "Clip"
+{
+    uniform token[] joints = [
+        "hips",
+        "hips/spine",
+        "hips/spine/chest",
+        "hips/spine/chest/neck/head",
+        "prop"
+    ]
+    quatf[] rotations = [
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0)
+    ]
+    half3[] scales = [
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1)
+    ]
+    float3[] translations = [
+        (0, 0, 0),
+        (0, 0, 0),
+        (0, 0, 0),
+        (0, 0, 0),
+        (0, 0, 0)
+    ]
+}

@@ -6,13 +6,16 @@ to build on a part of OpenUSD that is new, unstable, or thinly documented.
 Unlike the [`ost` series](../ost/), these are not upstream feedback and are not
 numbered: each one is named for the release and the subsystem it audits, and it
 is superseded by the next audit of the same subsystem rather than by a
-forward-note. They are still **history** — an audit records what a release
-looked like on the day it was read, and is not rewritten when the release
-changes.
+forward-note. Two audits of the *same* release are not a supersession when their
+methods differ: one read and one run answer different kinds of question, and the
+second says which of the first's claims it corrects. They are still **history**
+— an audit records what a release looked like on the day it was read, and is
+not rewritten when the release changes.
 
 | Audit | Release | Subsystem |
 | --- | --- | --- |
-| [26.08-openexec-migration.md](26.08-openexec-migration.md) | 26.08 | OpenExec: `exec`, `execUsd`, `execIr`, `vdf`, `usdExecImaging` — registration, callbacks, value types, connection dataflow, requests, cache/invalidation, and the Hydra path. |
+| [26.08-openexec-migration.md](26.08-openexec-migration.md) | 26.08 | OpenExec: `exec`, `execUsd`, `execIr`, `vdf`, `usdExecImaging` — registration, callbacks, value types, connection dataflow, requests, cache/invalidation, and the Hydra path. **Read, not run.** |
+| [26.08-openexec-mechanism.md](26.08-openexec-mechanism.md) | 26.08 | OpenExec registration and evaluation, **run**: what a plugin's `Info.Exec.Schemas` block may claim, what an applied API schema reaches, and what `InvalidateAll()` takes with it. Corrects three statements in the migration audit and does not replace it. |
 
 ## Reading an audit
 

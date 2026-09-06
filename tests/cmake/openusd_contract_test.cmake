@@ -22,14 +22,43 @@ endforeach()
 
 set(_failures 0)
 
+# The nine components the module requires, in the order it probes them. An
+# accepted fixture must report exactly this -- a component dropped from the
+# module and the fixture in one edit would otherwise still be "accepted", which
+# is the one mistake neither of those two files can catch on its own.
+set(_expected_components "vdf;ef;esf;esfUsd;exec;execGeom;execIr;execUsd;usdIrImaging")
+
 # name / pxr version / omitted imported targets / omitted headers / expectation
+# The two omission fields are comma-separated, and the fixture splits them: a
+# `;` here would become separate command-line arguments rather than one list.
 # The expectation is either ACCEPT or a regex the configure error must match.
 set(_cases
     "supported_runtime@2608@@@ACCEPT"
     "openusd_too_old@2505@@@Unsupported OpenUSD: found 25\\.05"
     "openusd_too_new@2611@@@Unsupported OpenUSD: found 26\\.11"
     "openexec_library_missing@2608@execIr@@execIr \\(no imported CMake target\\)"
-    "openexec_headers_missing@2608@@usdExecImaging@usdExecImaging \\(headers absent")
+    "openexec_headers_missing@2608@@exec@exec \\(headers absent"
+    # One case per component the 26.08 audit added, alternating the two halves
+    # of the probe so both stay exercised. These three are not optional to a
+    # consumer: the public exec headers include them, so a runtime carrying
+    # `exec` without them fails at compile time inside a bundle instead of here
+    # (docs/reports/openusd/26.08-openexec-migration.md 1.3).
+    "ef_library_missing@2608@ef@@ef \\(no imported CMake target\\)"
+    "esf_headers_missing@2608@@esf@esf \\(headers absent"
+    "esfusd_headers_missing@2608@@esfUsd@esfUsd \\(headers absent"
+    # The imaging-side sentinel. `usdIrImaging` is gated on PXR_BUILD_EXEC where
+    # `usdExecImaging` is not, which is the whole point of the swap.
+    "usdirimaging_library_missing@2608@usdIrImaging@@usdIrImaging \\(no imported CMake target\\)"
+    # A PXR_BUILD_EXEC=OFF install as it actually looks: every exec library and
+    # usdIrImaging gone, usdExecImaging still present and still shipping all of
+    # its headers. Before the swap that last component was the one that would
+    # have passed; now nothing in the install claims OpenExec.
+    "openexec_build_disabled@2608@vdf,ef,esf,esfUsd,exec,execGeom,execIr,execUsd,usdIrImaging@vdf,ef,esf,esfUsd,exec,execGeom,execIr,execUsd,usdIrImaging@usdIrImaging \\(no imported CMake target\\)"
+    # `usdExecImaging` is demoted, not reordered: an install without it at all
+    # is accepted. It is built whenever imaging is on -- with exec off it
+    # compiles a stub whose factory returns null -- so requiring it proved
+    # nothing (docs/reports/openusd/26.08-openexec-migration.md 1.2).
+    "usdexecimaging_demoted@2608@usdExecImaging@usdExecImaging@ACCEPT")
 
 foreach(_case IN LISTS _cases)
     string(REPLACE "@" ";" _fields "${_case}")
@@ -74,6 +103,12 @@ foreach(_case IN LISTS _cases)
             message(SEND_ERROR
                 "[${_name}] configure succeeded but the contract module did "
                 "not report an accepted 26.08:\n${_output}")
+            math(EXPR _failures "${_failures} + 1")
+        elseif(NOT _output MATCHES "components=${_expected_components}")
+            message(SEND_ERROR
+                "[${_name}] accepted, but the components it reports are not "
+                "the ones the contract requires. Expected "
+                "'components=${_expected_components}':\n${_output}")
             math(EXPR _failures "${_failures} + 1")
         else()
             message(STATUS "[${_name}] accepted, as expected")

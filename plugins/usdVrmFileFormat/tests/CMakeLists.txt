@@ -169,8 +169,15 @@ get_filename_component(_repo_root "${_bundle_dir}/../.." ABSOLUTE)
 if(TARGET motionCore::motionCore)
     set(_vrma_bundle "${_bundle_dir}/../usdVrmaFileFormat")
     set(_vrma_resources "${_vrma_bundle}/plugin/resources/usdVrmaFileFormat")
+    # execMotion joins for the same reason usdVrmaFileFormat did: the generator
+    # walks every manifest-declared plugInfo and aborts on a plugin it cannot
+    # find, rather than freezing a short union. It registers no USD *type* --
+    # its plugInfo carries an Exec block and nothing else -- so its presence
+    # changes what the gate can verify, not what discovery.json contains.
+    set(_exec_motion_bundle "${_bundle_dir}/../execMotion")
+    set(_exec_motion_resources "${_exec_motion_bundle}/plugin/resources/execMotion")
     set(_baseline_env
-        "${_smoke_env};PATH=path_list_prepend:${_vrma_bundle}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:motionCore::motionCore>;PXR_PLUGINPATH_NAME=path_list_prepend:${_vrma_resources}")
+        "${_smoke_env};PATH=path_list_prepend:${_vrma_bundle}/lib;PATH=path_list_prepend:${_exec_motion_bundle}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:motionCore::motionCore>;PXR_PLUGINPATH_NAME=path_list_prepend:${_vrma_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_exec_motion_resources}")
 
     add_test(
         NAME usdvrm_baseline
