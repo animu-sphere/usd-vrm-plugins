@@ -1,0 +1,103 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Every suite in this workspace checks with `assert()`, and NDEBUG compiles
+# `assert()` away -- so a suite built Release prints "passed" and returns 0
+# without having checked anything. NDEBUG is undefined for test targets
+# specifically: the bundle under test stays Release, the checks stay live.
+set(_exec_motion_assertions $<IF:$<CXX_COMPILER_ID:MSVC>,/UNDEBUG,-UNDEBUG>)
+
+# ---------------------------------------------------------------------------
+# The seam, with no stage and no exec
+# ---------------------------------------------------------------------------
+# ExecMotionIdentity.cpp is compiled into the test rather than linked out of the
+# plugin: it is deliberately not exported, because nothing outside the bundle
+# calls it and a bundle that exports its internals is a bundle other things
+# start depending on.
+add_executable(execMotion_identity_tests
+    test_exec_motion_identity.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/ExecMotionIdentity.cpp")
+target_include_directories(execMotion_identity_tests PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src")
+target_link_libraries(execMotion_identity_tests PRIVATE motionCore::motionCore)
+target_compile_options(execMotion_identity_tests
+    PRIVATE ${_exec_motion_assertions})
+if(MSVC)
+    target_compile_definitions(execMotion_identity_tests
+        PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(execMotion_identity_tests PRIVATE /utf-8)
+endif()
+add_test(NAME execMotion_identity COMMAND execMotion_identity_tests)
+
+# ---------------------------------------------------------------------------
+# The mechanism, through the built bundle
+# ---------------------------------------------------------------------------
+# This one links OpenUSD and motionCore but NOT the plugin: discovery has to go
+# through PXR_PLUGINPATH_NAME and the staged plugInfo.json, which is the path a
+# packaged bundle takes.
+add_executable(execMotion_mechanism_tests test_exec_motion_mechanism.cpp)
+target_include_directories(execMotion_mechanism_tests PRIVATE
+    ${PXR_INCLUDE_DIRS})
+target_link_libraries(execMotion_mechanism_tests PRIVATE motionCore::motionCore)
+target_compile_options(execMotion_mechanism_tests
+    PRIVATE ${_exec_motion_assertions})
+if(MSVC)
+    target_compile_definitions(execMotion_mechanism_tests
+        PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(execMotion_mechanism_tests PRIVATE /bigobj /utf-8)
+endif()
+
+set(_exec_motion_test_targets)
+foreach(_t IN ITEMS arch tf gf vt plug sdf usd usdSkel
+                    vdf ef esf esfUsd exec execUsd)
+    if(TARGET ${_t})
+        list(APPEND _exec_motion_test_targets ${_t})
+    elseif(TARGET pxr::${_t})
+        list(APPEND _exec_motion_test_targets pxr::${_t})
+    endif()
+endforeach()
+target_link_libraries(execMotion_mechanism_tests
+    PRIVATE ${_exec_motion_test_targets})
+
+add_test(NAME execMotion_mechanism
+    COMMAND execMotion_mechanism_tests
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/identity_clip.usda")
+
+# ---------------------------------------------------------------------------
+# Environment
+# ---------------------------------------------------------------------------
+# The bundle's own resource directory is what PXR_PLUGINPATH_NAME points at, and
+# its plugInfo.json resolves LibraryPath relative to itself -- so the staged
+# tree the bundle already produces is what the test loads, not a copy.
+set(_usd_root "")
+if(pxr_DIR AND EXISTS "${pxr_DIR}/bin")
+    set(_usd_root "${pxr_DIR}")
+elseif(pxr_DIR)
+    get_filename_component(_usd_root "${pxr_DIR}/../../.." ABSOLUTE)
+endif()
+
+set(_bundle_dir "${CMAKE_CURRENT_SOURCE_DIR}/..")
+set(_plug_resources "${_bundle_dir}/plugin/resources/execMotion")
+
+# motionCore is static, so nothing of it is loaded at run time; OpenUSD is not,
+# and on Windows a plain-CMake ctest run finds none of it without this. Same
+# reason as libs/motionRuntime's block: an activated `ost` session already has
+# these on PATH and a bare ctest exits 0xC0000135 without them.
+set(_exec_motion_env
+    "PATH=path_list_prepend:${_usd_root}/bin"
+    "PATH=path_list_prepend:${_usd_root}/lib"
+    "PATH=path_list_prepend:${_bundle_dir}/lib"
+    "PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources}")
+
+set_tests_properties(execMotion_mechanism PROPERTIES
+    ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
+
+# The seam suite needs no plugin and no plugin path, but it does link motionCore
+# and -- through Gf -- loads usd_gf.dll on Windows all the same.
+set_tests_properties(execMotion_identity PROPERTIES
+    ENVIRONMENT_MODIFICATION
+        "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib")
+
+# Motion Phase E's label, so the OpenExec half of the suite can be run and
+# reported on its own (the plan's P0-2 CTest labels).
+set_tests_properties(execMotion_identity execMotion_mechanism PROPERTIES
+    LABELS "motion.openexec")

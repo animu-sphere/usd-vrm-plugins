@@ -1,0 +1,38 @@
+# OpenStrata plugin bundle manifest.
+manifest:
+  schema: openstrata.plugin/v1alpha1
+plugin:
+  name: execMotion
+  version: 0.8.0
+  kind: usd-exec
+license: Apache-2.0
+runtime:
+  # The one OpenUSD version this plugin supports; see usdVrmFileFormat's
+  # manifest for why the tolerated range was retired in v0.6.0. This bundle is
+  # the first that would not build at all without the OpenExec half of it.
+  openusd: "==26.08"
+  cxx_abi: inherit
+provides:
+  # One schema, and exactly one plugin in a session may declare it. 26.08 keys
+  # its Exec.Schemas metadata by schema type and refuses a second declarer with
+  # a coding error, dropping that plugin's computations for the schema -- so
+  # `UsdSkelAnimation` belongs to this bundle and `execVrm` reaches an animation
+  # through an input rather than by registering on it (WORKSPACE.md §2).
+  - usd-exec:UsdSkelAnimation
+requires:
+  capabilities: [usd-stage-read]
+  libraries:
+    # The vendor-neutral half of the motion layer, and the only dependency this
+    # bootstrap has: a computation is a thin wrapper, so the value that crosses
+    # the boundary is motionCore's own (WORKSPACE.md §2, motion policy §11).
+    # `motionRuntime` joins with the first computation that samples or filters
+    # rather than with this one, which does neither.
+    - id: motionCore
+      version: ">=0.8,<0.9"
+usd:
+  plug_info: plugin/resources/execMotion/plugInfo.json
+tests:
+  smoke:
+    - tests/fixtures/identity_clip.usda
+  roundtrip:
+    - tests/fixtures/identity_clip.usda

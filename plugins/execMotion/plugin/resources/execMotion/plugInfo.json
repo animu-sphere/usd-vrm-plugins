@@ -1,0 +1,20 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "ExecMotion",
+            "Root": ".",
+            "LibraryPath": "../../../lib/libExecMotion.dll",
+            "ResourcePath": ".",
+            "Info": {
+                "Exec": {
+                    "Schemas": {
+                        "UsdSkelAnimation": {
+                            "allowsPluginComputations": true
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

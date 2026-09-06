@@ -15,6 +15,51 @@ Current schema contract version: **1**.
 
 ### Added
 
+- **`execMotion`, the first OpenExec bundle: the mechanism, with no algorithm in
+  it** (Workspace Phase 8, the OpenExec plan's P0-4 step 1). `plugins/execMotion`
+  registers `motion::HumanoidPose` as an OpenExec execution value type and one
+  computation, `motion.identityPose`, on `UsdSkelAnimation`: it reads the clip's
+  `joints` and the builtin `computeTime` and returns the identity pose over the
+  canonical bones those joint paths name. That is the whole behaviour, on
+  purpose — with no sampling, filtering or retarget in the bundle, a wrong answer
+  can only be a wrong mechanism, which is what the first bundle over an unstable
+  API is for.
+
+  What is now measured rather than read: a `motionCore` aggregate crosses a
+  computation boundary unchanged, an array-valued USD input declared with its
+  *element* type is consumed with a read iterator, a request compiles and
+  computes, an unchanged recompute reports no invalidation and the same value,
+  an authored change and a `ChangeTime` each reach their own callback, and an
+  unregistered computation is an empty value plus a coding error rather than a
+  load failure. `execMotion_mechanism` does not link the plugin — it reaches the
+  computation only through `plugInfo.json` and `PXR_PLUGINPATH_NAME`, so moving
+  that file aside turns the test red, which is the shape an unstaged plugInfo
+  takes in a packaged bundle.
+
+  **Running it found four things the audit could not read, and two changed tasks
+  that had not started.** The load-bearing one: **an OpenExec schema has exactly
+  one declarer per session.** `execGeom` owns `UsdGeomXformable`; a second plugin
+  naming a declared schema is refused with a coding error and loses every
+  computation it registered there, surfacing much later as "computation not
+  found". So `execMotion` declares `UsdSkelAnimation` and `execVrm` will declare
+  the `Vrm*API` applied schemas and `UsdSkelSkeleton` — the migration audit had
+  told `execVrm` to declare `UsdSkelAnimation` too, which would have cost it
+  every animation-side computation silently. A bundle reaches a prim it does not
+  own the schema of through an input accessor, or by registering on an applied
+  API schema that prim carries; the second route is measured and is what the
+  display slice (P0-7) has left. Also measured: `Diagnostics::InvalidateAll()`
+  expires every outstanding request while `IsValid()` goes on returning true,
+  and resets the system's time — both now asserted in the test, so the day either
+  changes upstream is a red lane rather than a silent behaviour swap. The whole
+  measurement is
+  [docs/reports/openusd/26.08-openexec-mechanism.md](docs/reports/openusd/26.08-openexec-mechanism.md),
+  and the schema partition is a workspace rule in
+  [WORKSPACE.md](docs/architecture/WORKSPACE.md) §2 rather than a note in a plan.
+
+  The bundle joins the aggregate product (five bundles now, and eight release
+  members), builds standalone under `ost plugin build`, and carries the CTest
+  label `motion.openexec` on both of its suites.
+
 - **Two expressions can no longer both own the eyelid: VRM 1.0's expression
   overrides, read and obeyed** (closes #170). Expressions accumulate on the
   targets they bind, and two that bind *different* targets still fight when
@@ -310,6 +355,41 @@ Current schema contract version: **1**.
   (`VRMA107`). A `duplicate_expression_name.vrm` negative fixture pins it.
 
 ### Changed
+
+- **The OpenExec capability probe asks for the nine components a consumer
+  actually needs, and stops asking for one that proved nothing.**
+  `cmake/UsdVrmOpenUsd.cmake` refuses a runtime whose OpenUSD 26.08 does not
+  carry OpenExec, and the six components it named were the ones the exec
+  libraries' names suggest rather than the ones the 26.08 migration audit
+  measured (§1.2, §1.3, §9.1).
+
+  `ef`, `esf` and `esfUsd` are added. They are not optional to a consumer: the
+  *public* exec headers include them — `exec/system.h` includes `esf/stage.h`,
+  `exec/requestImpl.h` includes `ef/timeInterval.h`, and `EfTime` is the result
+  type of the builtin `computeTime` — so every `execMotion` and `execVrm`
+  translation unit will need their headers present. A runtime carrying `exec`
+  without them failed at *compile* time inside a bundle, which is precisely the
+  failure this probe exists to move to configure time.
+
+  `usdExecImaging` is **removed from the required set** and `usdIrImaging` takes
+  its place. `usdExecImaging` is built whenever `PXR_BUILD_USD_IMAGING` is on:
+  with `PXR_BUILD_EXEC=OFF` it compiles a stub whose factory returns null, and
+  its CMake target and all its headers are still installed — so on an
+  OpenExec-less install it was the one component that would have *passed*.
+  `usdIrImaging` returns early when that toggle is off. Which runtimes are
+  refused does not change (`ost`'s `core` leaves, built `--no-imaging`, lack
+  both, and that refusal is still the reason `gl`/`metal` is the floor); what
+  changes is that the imaging-side component now carries information about
+  OpenExec instead of only about imaging.
+
+  `workspace_openusd_contract` goes from five fixture cases to eleven: one per
+  added component, alternating the probe's two halves so both stay exercised; a
+  `PXR_BUILD_EXEC=OFF` install as it actually looks; and an install with **no**
+  `usdExecImaging` at all, which is now accepted — a demotion nothing asserts is
+  only a reordering. Both accepting cases compare the reported component list
+  exactly, which is what catches a component dropped from the module and the
+  fixture in one edit. This closes P0-1 of
+  [the OpenExec plan](docs/roadmap/openexec-foundation.md).
 
 - **The recorded-trace format is version 3**, adding a `lookat x y z` line — at
   most one per frame, like `contacts`. Format 1 and 2 files still parse, a

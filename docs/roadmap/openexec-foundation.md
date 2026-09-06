@@ -184,12 +184,14 @@ run.
 Two results of that work shape the tasks below rather than merely recording
 them.
 
-**`build_usd.py` has no OpenExec toggle.** It ships `exec`, `execGeom`,
-`execIr`, `execUsd`, `usdExecImaging` and `vdf` unconditionally, so every
-runtime we publish carries them; the CMake build *does* have one
-(`PXR_BUILD_EXEC`, default `ON`). So the gate "the build fails on an
-OpenExec-less runtime" stays a *detection* requirement, and `usdExecImaging` is
-not evidence of OpenExec because it is built either way.
+**`build_usd.py` has no OpenExec toggle.** It ships the exec libraries — `vdf`,
+`ef`, `esf`, `esfUsd`, `exec`, `execGeom`, `execIr`, `execUsd` — and both
+imaging-side components unconditionally, so every runtime we publish carries
+them; the CMake build *does* have one (`PXR_BUILD_EXEC`, default `ON`). So the
+gate "the build fails on an OpenExec-less runtime" stays a *detection*
+requirement. `usdExecImaging` is not evidence of OpenExec, because it is built
+either way; `usdIrImaging` is, because its CMakeLists returns early when the
+toggle is off. That is the pair the P0-1 probe swapped.
 
 **The plan's core bet survives — a computation really can be a thin wrapper,
 because the registration language is declarative and a callback is a pure
@@ -203,7 +205,9 @@ into the task below it:
    and `ExecIrXformable`, so no `UsdSkel` adapter can be registered — P0-7 is
    re-scoped.
 3. **`PXR_BUILD_EXEC` exists** and `usdExecImaging` is not evidence of OpenExec
-   — the probe's component list needs amending.
+   — the probe's component list needed amending, and was: nine components,
+   `ef`/`esf`/`esfUsd` added and `usdIrImaging` in `usdExecImaging`'s place
+   (P0-1).
 4. **`ExecIr` is per-prim scalar avars in world space**, against `UsdSkel`'s
    joint arrays in joint-local space — an `ExecIr`-track design item, not an
    integration item.
@@ -272,7 +276,7 @@ display to a later milestone.
 
 ## 6. Foundation tasks
 
-### P0-1 — OpenUSD 26.08 exact pin 🚧
+### P0-1 — OpenUSD 26.08 exact pin ✅
 
 Reject non-26.08 at configure time; publish the three runtimes (§4.2); update
 manifests, docs, and the release workflow; add an OpenUSD/OpenExec capability
@@ -287,17 +291,33 @@ The refusals are *tested* rather than merely present: every runtime this repo
 builds against satisfies the contract, so on a normal build both are code that
 never fires — `workspace_openusd_contract` drives the module against fixture
 OpenUSD installs (too old, too new, an exec library with no imported target, an
-exec component with no headers) and asserts both that it refuses and why. What
-is left:
+exec component with no headers, a `PXR_BUILD_EXEC=OFF` install, and one missing
+a component the contract deliberately does *not* require) and asserts both that
+it refuses and why.
 
-- ⬜ **Amend the capability probe** with what the audit found
-  ([report §9.1](../reports/openusd/26.08-openexec-migration.md#9-what-this-changes-in-the-plan)):
-  `esf`, `esfUsd` and `ef` are unprobed but are transitively required by the
-  public exec headers — a runtime missing them fails at *compile* time inside a
-  bundle, which is the failure the probe exists to move earlier — and
-  `usdExecImaging` carries no information, since it is built whether or not
-  `PXR_BUILD_EXEC` is on. `workspace_openusd_contract` gains a fixture case per
-  component.
+**The capability probe carries what the audit found** *(2026-09-06,
+[report §9.1](../reports/openusd/26.08-openexec-migration.md#9-what-this-changes-in-the-plan))*.
+It probes nine components rather than six. `ef`, `esf` and `esfUsd` were
+unprobed but are transitively required by the public exec headers — a runtime
+missing them fails at *compile* time inside a bundle, which is the failure the
+probe exists to move earlier — and `usdExecImaging` is gone from the required
+set, since it is built whether or not `PXR_BUILD_EXEC` is on. The imaging side
+is `usdIrImaging` now, which OpenUSD does gate on that toggle, so the component
+that refuses a `core` runtime leaf
+([SUPPORTED_CONFIGURATIONS.md](../reference/SUPPORTED_CONFIGURATIONS.md)) says
+something about OpenExec as well as about imaging. Which runtimes are refused
+did not change: a `core` leaf lacks both.
+
+`workspace_openusd_contract` went from five fixture cases to eleven — one per
+added component, alternating the probe's two halves so both stay exercised; a
+`PXR_BUILD_EXEC=OFF` install as it actually looks, with every exec library and
+`usdIrImaging` absent while `usdExecImaging` still ships all of its headers,
+which is the shape where the old list's imaging component was the one that would
+have *passed*; and an install with no `usdExecImaging` at all, which is now
+**accepted**, because a demotion nothing asserts is only a reordering. The two
+accepting cases check the reported component list exactly, which is what catches
+a component dropped from the module and the fixture in one edit — the one
+mistake neither file can catch on its own.
 
 ### P0-2 — motion layer CI ⬜
 
@@ -344,7 +364,7 @@ them with the bundles. Still open here: the artifact-only smoke above, and two
 existing carry-overs — the unverified non-`ost` Windows install path and the
 DLL-discovery question in [INSTALL.md](../guides/INSTALL.md).
 
-### P0-4 — minimal `execMotion` bundle ⬜
+### P0-4 — minimal `execMotion` bundle 🚧
 
 Computations: `motion.sampleAnimation`, `motion.filterPose`,
 `motion.extractRootMotion`, `motion.interpolatePose`, `motion.blendPoses` — each
@@ -367,6 +387,29 @@ all, so a failure is attributable:
 
 Only then the real ones, in that order: `sampleAnimation` → `filterPose` →
 `extractRootMotion` → `interpolatePose` → `blendPoses`.
+
+**Step 1 landed on 2026-09-06** — `plugins/execMotion`, and the seven items above
+are done as one: `motion::HumanoidPose` registers as an execution value type, a
+`motion.identityPose` computation on `UsdSkelAnimation` returns the identity pose
+over the bones a clip's `joints` name, and `execMotion_mechanism` drives all of
+request-compile, compute, an unchanged recompute, an authored-value
+invalidation, a time change and an explicit invalidation against the built
+bundle. Discovery goes through `plugInfo.json` and `PXR_PLUGINPATH_NAME` and the
+test does not link the plugin, so moving that file aside turns the test red with
+`Failed to find computation` — the audit's §2.1 prediction, confirmed as a
+behaviour rather than restated as a risk. The identity computation is the whole
+of the behaviour on purpose: with no algorithm in the bundle, a wrong answer can
+only be a wrong mechanism.
+
+Four measurements came out of it and they are in
+[the mechanism report](../reports/openusd/26.08-openexec-mechanism.md); two
+change tasks below. The one that changes this task is **`execMotion` now owns
+the `UsdSkelAnimation` schema**, because 26.08 allows exactly one plugin to
+declare a schema and drops the loser's computations silently.
+
+Still open here: the five real computations, and the packaged-plugin half of
+step 7 — the mechanism test loads a *built* bundle, and an artifact-only run
+belongs with P0-3's smoke.
 
 **`blendPoses` is last on purpose.** It is the one computation that wants
 multiple inputs, and 26.08's builtin `computeValue` forwards across exactly one
@@ -407,11 +450,24 @@ bytes, joint-name heuristics, and duplicating an algorithm that already exists i
 `vrmRetarget`.
 
 **One obligation the audit added:** `execVrm`'s own `plugInfo.json` must carry an
-`Info.Exec.Schemas` block naming every schema it registers on — the `Vrm*API`
-schemas, `UsdSkelSkeleton`, `UsdSkelAnimation` — because the block lives with the
-*registering* library, not the schema owner, and nothing else declares them. A
-missing block fails as "computation not found", not as a load error
+`Info.Exec.Schemas` block naming every schema it registers on, because the block
+lives with the *registering* library, not the schema owner, and nothing else
+declares them. A missing block fails as "computation not found", not as a load
+error
 ([report §2.1](../reports/openusd/26.08-openexec-migration.md#21-the-pluginfo-half)).
+
+**And one correction to it, measured on 2026-09-06.** That block may name the
+`Vrm*API` schemas and `UsdSkelSkeleton`; it may **not** name `UsdSkelAnimation`.
+A schema has exactly one declarer per session, `execMotion` declares that one,
+and a second declarer loses every computation it registered there — with a
+coding error at metadata read and a "computation not found" much later, which is
+the pair of symptoms least likely to be connected by whoever hits them. `execVrm`
+reaches an animation through an **input accessor** instead. Where it needs to
+compute on a prim whose typed schema belongs elsewhere — a `UsdGeomXformable`,
+which `execGeom` owns — it registers on an applied API schema that prim carries;
+that route is measured
+([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §2, §3)
+and the rule is [WORKSPACE.md §2](../architecture/WORKSPACE.md).
 
 ### P0-6 — OpenExec / offline parity ⬜
 
@@ -455,6 +511,14 @@ defect in this plan's sense; the rest are contract questions that get an answer
 in the contract.
 
 ### P0-7 — display smoke, re-scoped to `UsdGeomXformable` ⬜
+
+**Its route narrowed on 2026-09-06 and the task did not.** "Prove the mechanism
+on `UsdGeomXformable`" cannot mean *our* computation registered for that schema:
+`execGeom` declares it, and a second declarer is refused. What is left is either
+an applied API schema of ours on the Xformable prim — measured to work
+([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §3) — or
+`execGeom`'s own computations. The upstream ask (option (c) below) is unaffected
+and now has a second thing to ask for.
 
 **Originally:** avatar stage + VRMA semantic animation + an OpenExec request →
 computed transforms → `usdExecImaging` → usdview, with a skinned avatar moving.
@@ -745,7 +809,20 @@ depends on them ([docs/README.md](../README.md)). Open:
   computation evaluate an immutable snapshot and perform no I/O; motion policy
   §11.4 now states it, but nothing enforces it. The obvious enforcement is a
   `execMotion`/`execVrm` link check for socket, clock, and threading symbols,
-  in the way each bundle already proves what it links.
+  in the way each bundle already proves what it links. **There is now a bundle
+  to run it against** — `plugins/execMotion` exists and links `motionCore` and
+  the exec libraries and nothing else — so this stopped being a rule with no
+  subject on 2026-09-06.
+Landed on 2026-09-06, and stated in the contract rather than here: **an
+OpenExec schema has exactly one declarer, so `execMotion` and `execVrm`
+partition them** — `UsdSkelAnimation` to the first, the `Vrm*API` applied schemas
+and `UsdSkelSkeleton` to the second, neither declaring the other's, and a bundle
+reaching a prim it does not own the schema of through an input accessor or an
+applied API schema ([WORKSPACE.md §2](../architecture/WORKSPACE.md)). This was
+not a change anyone predicted: it came out of running the mechanism, and it
+would have cost `execVrm` a silent loss of every computation it registered on an
+animation.
+
 Two of this plan's contract asks have landed and are stated in the contracts
 rather than here: the `motionCore` aggregates carry **two** comparisons — the
 exact `operator==` that `ExecTypeRegistry::RegisterType` requires and the

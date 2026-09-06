@@ -45,10 +45,15 @@ a greenfield reader takes its identity and edges from
 and `motionBvh` did. The two rows added on 2026-09-06 carry none for the same
 reason: neither moves code out of a bundle.
 
-- ⬜ **Workspace Phase 8 — `execMotion` + `execVrm` bootstrap**, then **Motion
+- 🚧 **Workspace Phase 8 — `execMotion` + `execVrm` bootstrap**, then **Motion
   Phase E** inside it. The OpenUSD 26.08 exact pin that was part of this
   milestone landed early, in v0.6.0, along with the `motionCore` `operator==`
-  that OpenExec type registration requires.
+  that OpenExec type registration requires — and the registration is no longer a
+  requirement on paper: `plugins/execMotion` registers `motion::HumanoidPose` and
+  one identity computation, and the mechanism around it is measured rather than
+  read (2026-09-06). `execVrm` has not started, and it inherits one constraint
+  from that measurement: the two bundles partition the OpenExec schemas, because
+  a schema has exactly one declarer.
 
 ### Canonical motion producer contract
 

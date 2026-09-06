@@ -397,7 +397,7 @@ recording** and the **VRMA export investigation**
 ([the backlog](backlog.md) carries both). Every item listed above is closed, so
 this section stays only until those two find a version.
 
-## Next: the OpenExec foundation (Workspace Phase 8 + Motion Phase E) ⬜
+## Next: the OpenExec foundation (Workspace Phase 8 + Motion Phase E) 🚧
 
 **No version yet, deliberately** — it takes one when v0.8.0 is cut.
 
@@ -446,15 +446,38 @@ compared, which was P0-4's stated blocker.
 
 ### Still open
 
-- ⬜ **Amend the OpenExec capability probe** with what the audit found: `esf`,
-  `esfUsd` and `ef` go unprobed although the public exec headers require them,
-  and `usdExecImaging` proves nothing because it is built whether or not
-  `PXR_BUILD_EXEC` is on. The refusal is still correct today — the other five
-  components are absent in that configuration — so this is precision, not a hole.
-- ⬜ **`execMotion`, `execVrm`, parity, and the display slice** — P0-4 through
-  P0-7 of the [plan](openexec-foundation.md#6-foundation-tasks). Mechanism before
-  behavior: the first spike registers no real computation, so a failure is
-  attributable.
+- ✅ **The OpenExec capability probe carries what the audit found**
+  *(2026-09-06)*. Nine components rather than six: `ef`, `esf` and `esfUsd`
+  added, because the public exec headers require them and a runtime without them
+  fails at compile time inside a bundle rather than at configure time; and
+  `usdIrImaging` in `usdExecImaging`'s place, because only the first is gated on
+  `PXR_BUILD_EXEC`. The refusal was already correct — the other five components
+  are absent in that configuration — so this was precision rather than a hole,
+  and P0-1 is closed with it. Eleven `workspace_openusd_contract` cases are
+  where the precision is checked, including the two that say what the contract
+  does *not* require.
+- 🚧 **`execMotion` exists, with the mechanism proven and no node in it yet**
+  *(2026-09-06, P0-4 step 1)*. `plugins/execMotion` registers
+  `motion::HumanoidPose` as an execution value type and one `motion.identityPose`
+  computation on `UsdSkelAnimation`, and `execMotion_mechanism` runs the whole of
+  request-compile, compute, unchanged recompute, authored-value invalidation,
+  time change and explicit invalidation against the built bundle — reaching it
+  only through `plugInfo.json`, so hiding that file turns the test red the way a
+  packaged bundle would. Mechanism before behaviour, as written: there is no
+  algorithm in the bundle, so a wrong answer can only be a wrong mechanism.
+
+  **Running it found four things reading could not**, and two of them change
+  tasks that had not started
+  ([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md)). The
+  load-bearing one: **an OpenExec schema has exactly one declarer per session**,
+  so `execVrm` may not name `UsdSkelAnimation` — the migration audit told it to —
+  and the two bundles now partition the schemas in
+  [WORKSPACE.md §2](../architecture/WORKSPACE.md). A collision would have cost
+  `execVrm` every computation it registered there, reported as a coding error at
+  load and a missing computation much later.
+- ⬜ **The five real `execMotion` nodes, `execVrm`, parity, and the display
+  slice** — the rest of P0-4 and P0-5 through P0-7 of the
+  [plan](openexec-foundation.md#6-foundation-tasks).
 
 ## Then: boundary consolidation ⬜
 

@@ -100,8 +100,17 @@ a CMake package.
 | `usdVrmFileFormat` | — | — | — | — | yes | not applicable |
 | `usdVrmPackageResolver` | — | — | — | — | yes | not applicable |
 | `usdVrmaFileFormat` | — | — | — | — | yes | not applicable |
-| `execMotion` | — | — | — | — | reserved | not applicable |
+| `execMotion` | — | — | — | — | yes | not applicable |
 | `execVrm` | — | — | — | — | reserved | not applicable |
+
+`execMotion` joined the product on 2026-09-06 with its bootstrap (Workspace
+Phase 8). It is a bundle in exactly the sense the next paragraph describes —
+OpenUSD finds it, and nothing links it — with one addition: what registers is a
+computation rather than a type, so its consumer contract is *the computation
+resolves on a prim of the schema its plugInfo declares*. A plugInfo that fails to
+stage does not fail loudly there; it presents as a computation that does not
+exist, which is what `execMotion_mechanism` exists to catch
+([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §1).
 
 The three file-format and resolver bundles export no target and install no
 config **by design**: nothing links them, OpenUSD discovers them. Their consumer
