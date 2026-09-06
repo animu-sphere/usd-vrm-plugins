@@ -34,5 +34,9 @@ usd:
 tests:
   smoke:
     - tests/fixtures/identity_clip.usda
+    - tests/fixtures/sampled_clip.usda
+    - tests/fixtures/unrated_clip.usda
   roundtrip:
     - tests/fixtures/identity_clip.usda
+    - tests/fixtures/sampled_clip.usda
+    - tests/fixtures/unrated_clip.usda

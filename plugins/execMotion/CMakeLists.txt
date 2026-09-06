@@ -55,7 +55,7 @@ endif()
 
 set(PLUGIN_NAME ExecMotion)
 add_library(${PLUGIN_NAME} SHARED
-    src/ExecMotionIdentity.cpp
+    src/ExecMotionPose.cpp
     src/ExecMotionRegistration.cpp)
 
 target_compile_features(${PLUGIN_NAME} PRIVATE cxx_std_17)

@@ -16,6 +16,7 @@ not rewritten when the release changes.
 | --- | --- | --- |
 | [26.08-openexec-migration.md](26.08-openexec-migration.md) | 26.08 | OpenExec: `exec`, `execUsd`, `execIr`, `vdf`, `usdExecImaging` — registration, callbacks, value types, connection dataflow, requests, cache/invalidation, and the Hydra path. **Read, not run.** |
 | [26.08-openexec-mechanism.md](26.08-openexec-mechanism.md) | 26.08 | OpenExec registration and evaluation, **run**: what a plugin's `Info.Exec.Schemas` block may claim, what an applied API schema reaches, and what `InvalidateAll()` takes with it. Corrects three statements in the migration audit and does not replace it. |
+| [26.08-openexec-sampling.md](26.08-openexec-sampling.md) | 26.08 | OpenExec inputs and time, **run**: that `.Required()` does not refuse a missing attribute, that time dependence follows the inputs, what the default time code resolves a keyed clip to, and who interpolates between two keys. Extends the mechanism report's timestamp finding and replaces neither audit. |
 
 ## Reading an audit
 

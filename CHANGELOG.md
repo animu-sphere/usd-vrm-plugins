@@ -62,7 +62,63 @@ Current schema contract version: **1**.
 
   The bundle joins the aggregate product (five bundles now, and eight release
   members), builds standalone under `ost plugin build`, and carries the CTest
-  label `motion.openexec` on both of its suites.
+  label `motion.openexec` on all of its suites.
+
+- **`motion.sampleAnimation`: a clip, read through OpenExec at the frame the
+  system is evaluating** (the OpenExec plan's P0-4). The first computation in
+  this repository with an algorithm behind it. It reads a `UsdSkelAnimation`'s
+  `joints`, `rotations` and `translations` — resolved by exec at the evaluated
+  frame — plus the builtin `computeTime`, and returns the `motion::HumanoidPose`
+  the clip states there, stamped in **seconds**.
+
+  **A clip now has to state the rate its frames are counted at.** A computation
+  is handed a frame, `HumanoidPose::timestamp` is seconds, and the rate between
+  them is stage metadata exec will not deliver to a callback — so the node reads
+  `motion:timeCodesPerSecond` off the clip as a `.Required()` input. That choice
+  is the *next* node's, not this one's: `motion.filterPose` will wrap
+  `motion::PoseFilter`, whose cutoff is frame-rate independent precisely because
+  it derives each step's weight from the elapsed time between poses, so a pose
+  stamped by the caller after it leaves exec would reach that filter as time
+  zero. The rate has to be inside the graph. **A clip that states none is
+  refused rather than stamped** — an error and an empty pose — because
+  `timestamp` has no absent state and a guessed second is indistinguishable
+  downstream from a measured one. The attribute duplicates the stage's own
+  `timeCodesPerSecond` deliberately and is a shim for the gap rather than a
+  format: nothing in this repository authors it yet, the bundle's fixtures do,
+  and the producer half is a stated contract ask.
+
+  **Four more measurements came out of running it**
+  ([docs/reports/openusd/26.08-openexec-sampling.md](docs/reports/openusd/26.08-openexec-sampling.md)),
+  and two are rules for every node still to come. **`.Required()` does not
+  refuse a missing attribute**: the request compiles, `IsValid()` returns true,
+  and the callback runs with an input that has no value — the same shape the
+  mechanism report found for a `.Required()` stage metadatum, now on a second
+  kind of input, which makes it general. Every computation owes its own refusal
+  for anything it cannot compute without. And **between two keys the answer is
+  USD's**: an exec input arrives already resolved at the evaluated frame, and
+  26.08 slerps a `quatf[]`, so this node is *not* a wrapper over
+  `motion::SampleAnimation` — parity (P0-6) has two samplers to compare rather
+  than one implementation to check, and has to compare them at the clip's own
+  key times. Also measured: a time-sampled input makes a value key
+  time-dependent and the request is told, while `motion.identityPose` goes on
+  being reported to nothing; and the **default time code resolves a clip that
+  authors only time samples to nothing**, so the first compute after a
+  `BuildRequest` — or after an `InvalidateAll()`, which resets the system's time
+  — is an empty pose rather than the clip's first frame.
+
+  This is also the plan's **first "not a wrapper" finding**, which is what
+  ordering the OpenExec track first was meant to produce: reading a
+  `UsdSkelAnimation` into a canonical pose exists in this repository, in
+  `tools/motionRetarget`'s `StageIo.cpp` — in a *tool*, where a bundle cannot
+  call it. The bundle keeps its own seam over plain values and the duplication
+  is recorded for the boundary-consolidation track rather than hidden.
+
+  `execMotion_sample` drives one request at four times — the default time code
+  and frames 0, 100 and 50 — over a clip whose head turns 90° about +Y, and a
+  second fixture that states no rate; `execMotion_identity` is renamed
+  `execMotion_pose` and gains the sampling half of the seam. Verified against
+  its own absence: replacing the frame-to-seconds division with the raw frame
+  turns both suites red.
 
 - **Two expressions can no longer both own the eyelid: VRM 1.0's expression
   overrides, read and obeyed** (closes #170). Expressions accumulate on the

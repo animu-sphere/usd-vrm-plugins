@@ -412,9 +412,53 @@ change tasks below. The one that changes this task is **`execMotion` now owns
 the `UsdSkelAnimation` schema**, because 26.08 allows exactly one plugin to
 declare a schema and drops the loser's computations silently.
 
-Still open here: the five real computations, and the packaged-plugin half of
-step 7 — the mechanism test loads a *built* bundle, and an artifact-only run
-belongs with P0-3's smoke.
+**`motion.sampleAnimation` landed the same day**, and with it the rate question
+step 1 raised. The node reads `joints`, `rotations`, `translations` and
+`motion:timeCodesPerSecond` off the clip plus the builtin `computeTime`, and
+returns the pose the clip states at the frame the system is evaluating, stamped
+in seconds. `execMotion_sample` drives one request at four times — the default
+time code and frames 0, 100 and 50 — and a second clip that states no rate.
+
+**The rate enters the graph, from an authored attribute**, and the reason is the
+*next* node rather than this one. The alternative the mechanism report named —
+stamp the pose on its way out of exec, where the caller holds the stage — reaches
+`motion.filterPose` as time zero, and `motion::PoseFilter`'s whole property is
+that its cutoff is frame-rate independent because it derives each step's weight
+from the elapsed time between poses. So `motion:timeCodesPerSecond` is a
+`.Required()` input on the clip, **a clip that states none is refused rather than
+stamped** — an empty pose and an error, because `timestamp` has no absent state
+and a guessed second is indistinguishable downstream from a measured one — and
+the attribute is a shim for an upstream gap that goes away if exec ever delivers
+stage metadata to a callback. Nothing in this repository authors it yet; §9 has
+the producer half.
+
+**Four measurements, in [the sampling report](../reports/openusd/26.08-openexec-sampling.md),
+and two of them change tasks below.** `.Required()` **does not refuse a missing
+attribute** — the request compiles, `IsValid()` is true, and the callback runs
+with an input that has no value, which is the mechanism report's metadata finding
+on a second kind of input and makes it general: *every* node in P0-4 and P0-5
+owes its own refusal for anything it cannot compute without. And **between two
+keys the answer is USD's** — an exec input arrives already resolved at the
+evaluated frame, and 26.08 slerps a `quatf[]` — so an exec sampler is not
+`motion::SampleAnimation`, and P0-6 has two samplers to compare rather than one
+implementation to check, at the clip's own key times or not at all. Also
+measured: a time-sampled input makes a value key time-dependent and the request
+is told, while `motion.identityPose` goes on being reported to nothing; and the
+default time code resolves a clip that authors only time samples to **nothing**,
+so the first compute after a `BuildRequest` — or after an `InvalidateAll()` — is
+an empty pose rather than the first frame.
+
+**This node is the plan's first "not a wrapper" finding, and it is the one this
+re-order was scheduled to produce.** Reading a `UsdSkelAnimation` into a
+canonical pose does exist in this repository — in `tools/motionRetarget`'s
+`StageIo.cpp`, in a *tool*, where a bundle cannot call it — so `execMotion` keeps
+its own seam over plain values and the duplication is recorded rather than
+hidden. It is [boundary consolidation](boundary-consolidation.md)'s to act on.
+
+Still open here: `motion.filterPose`, `motion.extractRootMotion`,
+`motion.interpolatePose` and `motion.blendPoses`; a producer that authors the
+rate (§9); and the packaged-plugin half of step 7 — the mechanism and sample
+tests load a *built* bundle, and an artifact-only run belongs with P0-3's smoke.
 
 **`blendPoses` is last on purpose.** It is the one computation that wants
 multiple inputs, and 26.08's builtin `computeValue` forwards across exactly one
@@ -810,6 +854,20 @@ depends on them ([docs/README.md](../README.md)). Open:
   `execMotion` / `execVrm` nodes; this plan adds the display slice (P0-7) and the
   whole `ExecIr` rig track (§7). Either Phase E widens or the ladder
   gains a phase.
+- ⬜ **A clip has to state the rate its frames are counted at, and nothing
+  authors it.** `motion.sampleAnimation` reads `motion:timeCodesPerSecond` off
+  the `UsdSkelAnimation` prim because a computation cannot reach the stage
+  metadatum that means the same thing
+  ([the sampling report](../reports/openusd/26.08-openexec-sampling.md) §2, and
+  [the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §5).
+  Today only the bundle's own fixtures author it, so the attribute is a test
+  convention rather than a contract — and **P0-6 parity needs a real clip that
+  carries it**, which means either `motion_retarget`'s bake and the `.vrma`
+  reader author it, or the parity harness authors it onto the stage it compares.
+  Whichever it is belongs in a contract before P0-6 leans on it, together with
+  the statement that the attribute is a shim: it duplicates
+  `timeCodesPerSecond`, it can disagree with it, and it is meant to be removed
+  if exec ever delivers stage metadata to a callback.
 - ⬜ **The snapshot-input rule needs a contract home.** §5 requires that a
   computation evaluate an immutable snapshot and perform no I/O; motion policy
   §11.4 now states it, but nothing enforces it. The obvious enforcement is a
