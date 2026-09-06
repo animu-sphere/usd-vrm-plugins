@@ -397,39 +397,9 @@ recording** and the **VRMA export investigation**
 ([the backlog](backlog.md) carries both). Every item listed above is closed, so
 this section stays only until those two find a version.
 
-## Next: the recorded-source and producer-contract tracks ⬜
+## Next: the OpenExec foundation (Workspace Phase 8 + Motion Phase E) ⬜
 
-**No version yet, deliberately** — it takes one when v0.8.0 is cut. Two pieces
-of work that belong together because the second is what stops the first from
-being answered once per input:
-
-- ⬜ **NPZ / AMASS through the existing `motionSource` boundary.** The recorded
-  half gains a second format family, and the boundary is already built for it: a
-  reader is allowed format syntax and storage interpretation, and never the VRM
-  target rig, the target rest pose, the retarget policy, stage authoring, an
-  OpenExec graph, or a vendor runtime. Whether that is one identity
-  (`motionNpz`) or two (`motionNpz` + `motionAmass`) is settled by **measuring a
-  few files of the real corpus first** — an AMASS-shaped contract that a
-  format-neutral reader cannot absorb is the only thing that justifies the
-  second identity, and deciding before the measurement is how a boundary ends up
-  shaped like whichever file arrived first.
-  [The recorded track](recorded-motion-sources.md) §13.
-- ⬜ **The canonical producer contract, frozen before the inputs multiply.**
-  Four categories now produce motion — recorded source, live pose source,
-  tracker source, generated source — and each was designed on its own. What is
-  unified is the **canonical value boundary**, not an I/O API:
-  `SourceAnimation → HumanoidAnimation` for recorded, `timestamp +
-  HumanoidPose` for live, `timestamp + TrackerFrame` for trackers, and
-  `request/context → HumanoidAnimation or a pose stream` for generators. A
-  generation product reaches the workspace behind a vendor-neutral
-  `IMotionGenerator`, never as a fifth shape.
-  [The backlog](backlog.md#canonical-motion-producer-contract) carries it.
-
-Both are producer-side, and both are in front of OpenExec on purpose: a compute
-layer over contracts that are still moving buys a second implementation of a
-boundary rather than a second evaluation of one.
-
-## After those: the OpenExec foundation (Workspace Phase 8 + Motion Phase E) ⬜
+**No version yet, deliberately** — it takes one when v0.8.0 is cut.
 
 **Release boundary:** `execMotion` and `execVrm` bundles exist and evaluate a
 humanoid through OpenExec, proven equal to the offline result on the same input.
@@ -437,15 +407,29 @@ Nodes are thin wrappers over `motionRuntime` and `vrmRetarget`, never a second
 implementation, and each evaluates an immutable snapshot rather than a live
 source. Planned in [openexec-foundation.md](openexec-foundation.md).
 
-**Why it has moved twice, and why it now carries no version.** Parity is worth
-what its input is worth. Scoping it as v0.6.0 would have proved that two
-implementations agree about *generated* data; ordering the adapter releases
-first made v0.7.0's recorded sessions the parity input. The 2026-08-29 re-order
-applied the same argument twice more — the input is now also a package closure
-no external consumer has ever resolved and a producer contract that four input
-categories each answered separately — so the order is packaging → tracker path →
-recorded corpus → producer contracts → OpenExec. **Nothing in the plan is
-withdrawn**: the re-order changes when it starts, not what it is.
+**Why it has moved three times, and why it now leads.** Parity is worth what its
+input is worth. Scoping it as v0.6.0 would have proved that two implementations
+agree about *generated* data; ordering the adapter releases first made v0.7.0's
+recorded sessions the parity input; the 2026-08-29 re-order put a package
+closure and a producer contract in front of it as well.
+
+**2026-09-06 inverts that last pair, and the argument is the packaging track's
+one layer out.** Every node here is specified as a *thin wrapper* over a library
+call, so the foundation is the first consumer of `motionRuntime` and
+`vrmRetarget` that is not the tool that grew up beside them — and a boundary
+nothing outside has consumed is a boundary nobody has measured. A node that
+cannot be written as a wrapper is a finding about the library API, produced by
+an implementation rather than predicted by a review, and
+[the boundary track](boundary-consolidation.md) is scheduled immediately
+afterwards to act on those findings.
+
+**What the inversion costs, stated rather than hedged.** NPZ/AMASS no longer
+precedes this, so no new source shape informs Motion Phase E's node set and the
+parity input stays what v0.7.0 recorded. The canonical producer contract is now
+written *after* `execVrm` exists, so a fifth crossing the exec layer needs will
+be discovered as rework rather than avoided. Both were weighed against the
+finding an implemented consumer produces, and **nothing in the plan is
+withdrawn**: the re-order changes when each track starts, not what it is.
 
 Not in this boundary: realtime skinned display, any `ExecIr` dependency, and
 network I/O inside a computation, which is a permanent non-goal rather than a
@@ -471,6 +455,98 @@ compared, which was P0-4's stated blocker.
   P0-7 of the [plan](openexec-foundation.md#6-foundation-tasks). Mechanism before
   behavior: the first spike registers no real computation, so a failure is
   attributable.
+
+## Then: boundary consolidation ⬜
+
+**Boundary:** the agreements nine identities and four producer categories
+arrived at separately are stated as one set, the ones that can be checked are
+checked, and the three decisions the workspace has been carrying as open are
+settled. Planned in [boundary-consolidation.md](boundary-consolidation.md); the
+direction it serves is
+[design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md),
+adopted 2026-09-06.
+
+It adds no format, no adapter, no node and no package. Its five items:
+
+- ⬜ **BND-0 — the canonical producer contract**, *moved here from the
+  recorded-source milestone on 2026-09-06*. Four categories produce motion and
+  each was designed alone: recorded sources, live pose sources, tracker sources,
+  and generated sources. What is unified is the **canonical value boundary**,
+  not an I/O API — `SourceAnimation → HumanoidAnimation` for recorded,
+  `timestamp + HumanoidPose` for live, `timestamp + TrackerFrame` for trackers,
+  and `request/context → HumanoidAnimation or a pose stream` for generators.
+  Done when a fifth producer is added by *naming* a crossing.
+- ⬜ **BND-1 — one reference pipeline, proved once for every category.** Every
+  source reaches `UsdSkelAnimation` today along its own tested path, and no
+  single test says the same thing happens to all of them. One integration test,
+  three sources — a `.vrma` clip, a BVH export, a recorded live trace — through
+  an identical downstream call sequence. A source needing a downstream branch
+  has found a defect, which is the point of running them together. This is the
+  test NPZ/AMASS later joins **without changing it**.
+- ⬜ **BND-2 — settle the adapter distribution decision.** Open since v0.7.0:
+  `ost library package` produces an adapter artifact and no lane publishes one,
+  so "the adapters are optional artifacts" is a design statement with nothing
+  behind it. Recommended answer — one version, separate artifact membership.
+- ⬜ **BND-3 — artifact closure as the release gate**, as one checklist a
+  release passes or does not, rather than seven lanes and some prose.
+- ⬜ **BND-4 / BND-5 — make the invariants checkable, and finish separating the
+  workspace contract from its history.** The `DEPENDENCY_RULES.md` split carried
+  from Product P0 lands here: doing it alongside a repository split is one
+  migration of the section-number citations instead of two.
+
+## Then: the motion foundation repository split ⬜ — and it can end at its gate
+
+**Boundary:** `motionCore` and `motionRuntime` build, test, package and version
+independently, and this workspace consumes them as an external dependency.
+**Scope decided 2026-09-06: the motion foundation only** — `vrmRetarget` stays,
+and so do `motionSource`, `motionBvh`, `motionTracking`, `liveTransport` and
+`osc`. Planned in [motion-foundation-split.md](motion-foundation-split.md).
+
+**It is scheduled ahead of its own preconditions on purpose, so it opens with a
+measurement that can close it.**
+[Scope policy §10](../design/INTEGRATION_SCOPE_POLICY.md) requires two consumers
+outside VRM before a component leaves; after Motion Phase E there is exactly one
+— `execMotion`, vendor-neutral by specification — and two of the four conditions
+are not met at all. MFS-0 measures them and the answer is allowed to be no.
+
+The track divides at a one-way door, and only the last part is behind it.
+**Reversible:** the public API checked free of VRM vocabulary as a property
+rather than a belief, its own version, its own package, its own suite run
+against the installed artifact, and the workspace consuming it through
+`find_package` as though it were external. Every one of those improves this
+repository whether or not anything moves, which is why an inconclusive gate
+wastes none of it. **Irreversible:** moving the history, and turning an in-tree
+edge into a pinned external dependency — a second release contract, a second CI
+configuration, and the loss of one-PR changes across the boundary, bought only
+when someone outside VRM is actually consuming it.
+
+## After those: NPZ / AMASS recorded sources, and the ARDY generation adapter ⬜
+
+Two producer additions, and they are last because they are the ones that *use* a
+boundary rather than fix one. Both were ahead of OpenExec until 2026-09-06.
+
+- ⬜ **NPZ / AMASS through the existing `motionSource` boundary.** The recorded
+  half gains a second format family, and the boundary is already built for it: a
+  reader is allowed format syntax and storage interpretation, and never the VRM
+  target rig, the target rest pose, the retarget policy, stage authoring, an
+  OpenExec graph, or a vendor runtime. **A container is not a format** — the same
+  `.npz` means different things from AMASS, SMPL-X, a HumanML3D derivative or a
+  custom dump, so what ships is a container reader plus an explicit profile, and
+  the field layout never reaches a core API. Whether that is one identity
+  (`motionNpz`) or two (`motionNpz` + `motionAmass`) is settled by **measuring a
+  few files of the real corpus first**; deciding before the measurement is how a
+  boundary ends up shaped like whichever file arrived first.
+  [The recorded track](recorded-motion-sources.md) §13.
+  **A file-format plugin is not part of this**: a CLI and a plain library
+  reaching canonical motion is enough, and `.npz` becomes an `SdfFileFormat`
+  only when composing one directly onto a stage has a use case.
+- ⬜ **The ARDY generation adapter** (Motion Phase F), behind the vendor-neutral
+  `IMotionGenerator` that BND-0 freezes. The generator implementation itself is
+  never in this repository
+  ([scope policy §2](../design/INTEGRATION_SCOPE_POLICY.md)). Done when a
+  generated take and a `.vrma` clip go through the same code path from the
+  retarget onwards.
+  [The adapters track](adapters-mocopi-vmc-ardy.md) §7.
 
 ## Standing: corpus policy — recorded evidence is not the generated corpus
 
@@ -542,6 +618,10 @@ the workspace layout, the output structure, and the import/runtime boundary.*
   repositories rather than for this one. Until then, rationale keeps landing
   where it does now: measurements in [reports/](../reports/), plans in this
   directory, and per-release records in [releases/](../releases/).
+  **The dependency split is scheduled as BND-5** of
+  [boundary consolidation](boundary-consolidation.md) since 2026-09-06: doing it
+  in the track that also prepares a repository split is one migration of the
+  section-number citations rather than two.
 
 Done when: the component table matches the manifests, no document describes
 `usdVrm` as a bundle id, every local link resolves, and a consistency check

@@ -1,12 +1,30 @@
 # The OpenExec foundation
 
-> **Target: no version — it follows the producer tracks.** The one place a track
-> carries a version is the
+> **Target: no version — it is the next milestone, and takes a number when
+> v0.8.0 is cut.** The one place a track carries a version is the
 > [roadmap status table](README.md#status-at-a-glance); this block mirrors it and
 > nothing else in this document states a release number for its own work. The
 > `ExecIr` invertible rig is on its own track after this one.
 >
-> **Re-ordered 2026-08-29**, and this is the third time this plan's position has
+> **Re-ordered 2026-09-06, to the front.** The fourth move, and the first
+> forward one. The 2026-08-29 order below is reversed for its own pair only —
+> packaging hardening and the tracker path shipped in v0.8.0, and what changes is
+> that the NPZ/AMASS reader and the producer contract now come *after* this plan
+> rather than before it. The argument is the packaging track's, one layer out:
+> every node here is a **thin wrapper** over a `motionRuntime` or `vrmRetarget`
+> call (§3), which makes this foundation the first consumer of those libraries
+> that is not the tool that grew up beside them, and a boundary nothing outside
+> has consumed is a boundary nobody has measured. A node that cannot be written
+> as a wrapper is a finding about the library API — produced by an implementation
+> rather than predicted by a review — and
+> [boundary consolidation](boundary-consolidation.md) is scheduled immediately
+> after this plan to act on those findings. **What it costs is stated rather
+> than hedged**: no new source shape informs this plan's node set, and the
+> producer contract is written after `execVrm` exists, so a fifth crossing the
+> exec layer needs arrives as rework. Nothing here is withdrawn by that move
+> either.
+>
+> **Re-ordered 2026-08-29**, and that was the third time this plan's position had
 > moved. It was v0.6.0, then v0.8.0, and now it sits behind packaging hardening,
 > the tracker path, the NPZ/AMASS reader and the canonical producer contract. The
 > argument is the same one that moved it the first two times, applied to what is

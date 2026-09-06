@@ -15,7 +15,9 @@ Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 | [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) | The **live** input-adapter direction: a VMC Protocol adapter (shipped), then a direct capture-product adapter, then a generation adapter — completing end to end with no OpenExec dependency. The filename keeps the original triple; the order inside was reversed on 2026-07-29. |
 | [recorded-motion-sources.md](recorded-motion-sources.md) | The **recorded-file** direction: a generic BVH pipeline over a format-neutral `motionSource` layer, with producer semantics in declarative profiles. Deliberately not any one capture product's importer. Added 2026-08-03. |
 | [osc-and-vrchat-trackers.md](osc-and-vrchat-trackers.md) | The **third live input** and the sharing it forces: a VRChat OSC Trackers adapter over a protocol-neutral OSC decoder, plus the transport code the first two adapters already duplicate. A tracker source is not a pose source, and that difference is the reason it is its own plan. Added 2026-08-23. |
-| [openexec-foundation.md](openexec-foundation.md) | The OpenExec direction: the OpenUSD 26.08 exact pin, the `execMotion` / `execVrm` foundation, and the `ExecIr` invertible rig. Kept separate because it is a plan, not a status list. Renamed from `openexec-v0.6.0-v0.7.0.md` on 2026-08-03, when its target moved. |
+| [openexec-foundation.md](openexec-foundation.md) | The OpenExec direction: the OpenUSD 26.08 exact pin, the `execMotion` / `execVrm` foundation, and the `ExecIr` invertible rig. Kept separate because it is a plan, not a status list. Renamed from `openexec-v0.6.0-v0.7.0.md` on 2026-08-03, when its target moved. **Moved to the front of the queue on 2026-09-06** — see the re-order note below. |
+| [boundary-consolidation.md](boundary-consolidation.md) | The **boundary** direction: state the agreements nine identities and four producer categories arrived at separately, as one set — the canonical producer contract, one reference pipeline for every source category, the adapter distribution decision, artifact closure as a release gate, and the invariants that can be checked rather than reviewed. Adds no format, adapter, node or package. Added 2026-09-06. |
+| [motion-foundation-split.md](motion-foundation-split.md) | The **repository split** direction, and the only one that is conditional: `motionCore` + `motionRuntime` as their own repository, gated on a measurement of the four preconditions that can end the track. Its reversible half — a foundation consumed through `find_package` as though external — pays for itself whether or not anything moves. Added 2026-09-06. |
 
 ## Three sequences, deliberately separate
 
@@ -67,10 +69,48 @@ must repeat one, `scripts/check_docs.py` checks it against this table.
 | generic BVH recorded-motion ingestion | Shipped | v0.7.0 |
 | installed-package consumer lane + package contract | Shipped | v0.8.0 |
 | shared OSC foundation + VRChat OSC Trackers input | Shipped | v0.8.0 |
-| NPZ / AMASS recorded sources | Next | after v0.8.0 |
-| canonical motion producer contract | Next | after v0.8.0 |
-| OpenExec foundation | Planned | after the two above |
-| `ExecIr` invertible VRM humanoid rig | Planned | after the OpenExec foundation |
+| OpenExec foundation | Next | after v0.8.0 |
+| boundary consolidation, the canonical producer contract included | Planned | after the OpenExec foundation |
+| motion foundation repository split | Planned | after boundary consolidation, **and conditional on its own gate** |
+| NPZ / AMASS recorded sources | Planned | after the split gate |
+| ARDY generation adapter | Planned | with NPZ / AMASS |
+| `ExecIr` invertible VRM humanoid rig | Planned | after the OpenExec foundation, unscheduled |
+
+**Re-ordered 2026-09-06 — the owner's call, and it inverts the 2026-08-29
+pair.** The direction it comes from is
+[design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md),
+adopted the same day, which states for the first time how far this repository
+goes: an integration workspace joining VRM assets and humanoid motion to
+OpenUSD, and never a motion engine, a capture SDK, a generative model or a
+network stack. The order that follows from it is **OpenExec → boundary
+consolidation → repository split → additional sources and generators**, and
+three things about it are worth stating precisely rather than leaving to be
+re-derived.
+
+**OpenExec moved to the front, reversing the argument that put it behind the
+producer tracks.** The 2026-08-29 order said a compute layer over moving
+contracts evaluates a boundary twice. The counter-argument is the packaging
+track's, one layer out: every exec node is specified as a *thin wrapper* over
+`motionRuntime` or `vrmRetarget`, so the foundation is the first consumer of
+those libraries that is not the tool that grew up beside them — and a node that
+cannot be written as a wrapper is a finding about the library API, produced by
+an implementation instead of predicted by a review. What that costs is stated
+in [the boundary track](boundary-consolidation.md) §1: no new source shape
+informs Motion Phase E's node set, and the producer contract is written after
+`execVrm` exists rather than before it.
+
+**The canonical producer contract is no longer its own row.** It is BND-0 of
+[the boundary track](boundary-consolidation.md), where it stops being the thing
+NPZ had to answer on its way in and becomes one item in a track whose whole
+subject is boundaries.
+
+**The repository split is scheduled ahead of its own preconditions, on purpose.**
+[Scope policy §10](../design/INTEGRATION_SCOPE_POLICY.md) requires two non-VRM
+consumers before a component leaves, and after Motion Phase E there is exactly
+one (`execMotion`, vendor-neutral by specification). So the track opens with a
+measurement that can end it, and its reversible half — the foundation packaged
+and consumed as though it were external, in place — is work this repository
+wants either way ([the split track](motion-foundation-split.md) §2).
 
 **Re-ordered 2026-08-29, and the numbering moved with it.** The near-term plan
 of that date put **packaging hardening first** — before the third adapter's
@@ -154,7 +194,8 @@ carrying a version number is drift waiting to be re-litigated.
   (OSC-3). What remains on this track is the adapter itself: a recorded session
   to inventory, then the tracker decode, the tracking space, the frame policy
   and the solve boundary.
-- **The recorded half gains a second format family after v0.8.0**, and the
+- **The recorded half gains a second format family, and since 2026-09-06 it
+  waits behind three tracks rather than leading them**, and the
   boundary is already built for it: NPZ / AMASS enters through `motionSource`
   exactly as BVH does, and a reader is allowed format syntax and storage
   interpretation and nothing else — no VRM target rig, no rest pose, no retarget
@@ -162,11 +203,13 @@ carrying a version number is drift waiting to be re-litigated.
   (`motionNpz` + `motionAmass`) is a **measurement, not a preference**: a few
   files of the real corpus decide whether the AMASS contract is absorbable at a
   format-neutral boundary. [The recorded track](recorded-motion-sources.md) §13.
-- Current priorities: **installed-package consumer verification**, **real device
-  evidence** across both input halves, closing the remaining **Workspace Phase
-  5** packaging P0, and widening runtime verification. The
-  [OpenExec foundation](openexec-foundation.md) follows the producer tracks and
-  blocks none of them.
+- Current priorities: **the v0.8.0 tag**, then the
+  [OpenExec foundation](openexec-foundation.md) — which as of 2026-09-06 is the
+  next milestone rather than the one behind the producer tracks. Carried
+  alongside it: **real device evidence** across both input halves, closing the
+  remaining **Workspace Phase 5** packaging P0, and widening runtime
+  verification. None of those three blocks the foundation, and it blocks none of
+  them.
 - The display slice is **re-scoped** (2026-07-29). OpenUSD 26.08 resolves exec
   prim adapters from a hard-coded list, so a skinned VRM avatar cannot be
   displayed through the exec scene index at all. The foundation proves the

@@ -16,8 +16,17 @@ semantics in
 
 **The second reader is now named, and it is NPZ / AMASS** ([§13](#13-the-next-format-family--npz--amass),
 added 2026-08-29). It is the first real test of the claim this document's second
-sentence makes, and it is scheduled after v0.8.0 — the format-neutral layer was
-built for a second reader and has never had one.
+sentence makes — the format-neutral layer was built for a second reader and has
+never had one. **Re-scheduled 2026-09-06**: it was the milestone after v0.8.0
+and now waits behind the OpenExec foundation, boundary consolidation and the
+repository-split gate. Two consequences for this plan, and neither withdraws
+anything in it. The reader joins an integration test that will exist by then
+rather than adding a fourth private path to `UsdSkelAnimation`
+([boundary consolidation](boundary-consolidation.md) BND-1) — and joining it
+**without changing it** is what "the boundary was built for a second reader"
+means, so the delay converts §13 from a claim into a measurement. And the
+producer contract that §13's conversion has to satisfy is frozen first, as BND-0,
+instead of being answered by this reader on its way in.
 
 The version this targets is in the
 [roadmap status table](README.md#status-at-a-glance), not here.
