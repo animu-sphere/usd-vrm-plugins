@@ -1,0 +1,71 @@
+#usda 1.0
+(
+    """Negative fixture for execMotion: the same clip, stating no rate.
+
+    The prose is a layer comment rather than `doc` on purpose; see
+    sampled_clip.usda for why.
+
+    The layer still carries `timeCodesPerSecond = 50` as metadata, and that is
+    the whole point of this file: the number a computation would need is right
+    there on the stage, `UsdStage::GetTimeCodesPerSecond()` reports it, and exec
+    delivers none of it to a callback. So the only thing missing is the authored
+    `motion:timeCodesPerSecond` attribute, and what motion.sampleAnimation does
+    without it -- refuse to compile the request, or refuse at evaluation -- is a
+    measurement this fixture exists to take."""
+    timeCodesPerSecond = 50
+    startTimeCode = 0
+    endTimeCode = 100
+)
+
+def SkelAnimation "Clip"
+{
+    uniform token[] joints = [
+        "hips",
+        "hips/spine",
+        "hips/spine/chest",
+        "hips/spine/chest/neck/head",
+        "prop"
+    ]
+
+    quatf[] rotations.timeSamples = {
+        0: [
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (1, 0, 0, 0)
+        ],
+        100: [
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (0.70710678, 0, 0.70710678, 0),
+            (1, 0, 0, 0)
+        ],
+    }
+
+    float3[] translations.timeSamples = {
+        0: [
+            (0, 0, 0),
+            (0, 0.1, 0),
+            (0, 0.2, 0),
+            (0, 0.3, 0),
+            (0, 0, 0)
+        ],
+        100: [
+            (0, 1, 2),
+            (0, 0.1, 0),
+            (0, 0.2, 0),
+            (0, 0.3, 0),
+            (9, 9, 9)
+        ],
+    }
+
+    half3[] scales = [
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1)
+    ]
+}

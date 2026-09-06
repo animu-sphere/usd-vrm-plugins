@@ -1,0 +1,93 @@
+// SPDX-License-Identifier: Apache-2.0
+#include "ExecMotionPose.h"
+
+#include <cstddef>
+#include <string_view>
+
+namespace execmotion {
+
+std::optional<motion::HumanBone>
+BoneForJointPath(const std::string& jointPath)
+{
+    // A joint path is `parent/child/leaf`; the bone is the leaf. A path with no
+    // separator is already a leaf, which is what a flat rig authors.
+    const std::size_t slash = jointPath.rfind('/');
+    const std::string_view leaf =
+        slash == std::string::npos
+            ? std::string_view(jointPath)
+            : std::string_view(jointPath).substr(slash + 1);
+    if (leaf.empty()) {
+        return std::nullopt;
+    }
+    return motion::FindHumanBone(leaf);
+}
+
+motion::HumanoidPose
+IdentityPoseForJoints(const std::vector<std::string>& jointPaths)
+{
+    motion::HumanoidPose pose;
+    // HumanoidPose's default constructor already fills localRotations with the
+    // identity quaternion and clears validRotations, so this loop only says
+    // which bones the clip named -- it authors no rotation at all.
+    for (const std::string& jointPath : jointPaths) {
+        if (const std::optional<motion::HumanBone> bone =
+                BoneForJointPath(jointPath)) {
+            pose.validRotations.set(static_cast<std::size_t>(*bone));
+        }
+    }
+    return pose;
+}
+
+std::optional<motion::HumanoidPose>
+PoseFromClipSample(const ClipSample& sample)
+{
+    if (!(sample.timeCodesPerSecond > 0.0)) {
+        return std::nullopt;
+    }
+
+    motion::HumanoidPose pose;
+
+    // The default time code is not frame zero, and this is the one place the
+    // difference does not produce a wrong number: a pose resolved outside a
+    // timeline carries no second, `timestamp` has no absent state, and frame
+    // zero converts to 0.0 at every rate -- so "no time" and "the first frame"
+    // are the same value here whatever the clip's rate is. What differs between
+    // the two is which values USD resolved, and that happened before this call.
+    if (sample.hasTimeCode) {
+        pose.timestamp = sample.timeCode / sample.timeCodesPerSecond;
+    }
+
+    const std::size_t jointCount = sample.jointPaths.size();
+    const bool rotationsUsable = sample.rotations.size() == jointCount;
+    const bool translationsUsable = sample.translations.size() == jointCount;
+
+    for (std::size_t i = 0; i < jointCount; ++i) {
+        const std::optional<motion::HumanBone> bone =
+            BoneForJointPath(sample.jointPaths[i]);
+        if (!bone) {
+            continue;
+        }
+        const auto slot = static_cast<std::size_t>(*bone);
+
+        if (rotationsUsable) {
+            // Normalized on the way in, like the offline reader: a clip may
+            // author a quaternion that has drifted off the unit sphere, and
+            // every consumer of a canonical pose is entitled to a rotation.
+            pose.localRotations[slot] = sample.rotations[i].GetNormalized();
+            pose.validRotations.set(slot);
+        }
+
+        // Only the hips carry body translation. A `translations` array states
+        // one per joint, but the rest of it is the rest pose the source rig was
+        // authored with, which a retargeter re-derives for the rig it is aiming
+        // at (motion contract; tools/motionRetarget reads a clip the same way).
+        if (translationsUsable && *bone == motion::HumanBone::Hips) {
+            pose.root.worldPosition = sample.translations[i];
+            pose.root.hasPosition = true;
+        }
+    }
+
+    return pose;
+}
+
+} // namespace execmotion

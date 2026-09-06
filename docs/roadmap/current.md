@@ -456,8 +456,8 @@ compared, which was P0-4's stated blocker.
   and P0-1 is closed with it. Eleven `workspace_openusd_contract` cases are
   where the precision is checked, including the two that say what the contract
   does *not* require.
-- 🚧 **`execMotion` exists, with the mechanism proven and no node in it yet**
-  *(2026-09-06, P0-4 step 1)*. `plugins/execMotion` registers
+- ✅ **`execMotion` exists, and the mechanism is proven** *(2026-09-06,
+  P0-4 step 1)*. `plugins/execMotion` registers
   `motion::HumanoidPose` as an execution value type and one `motion.identityPose`
   computation on `UsdSkelAnimation`, and `execMotion_mechanism` runs the whole of
   request-compile, compute, unchanged recompute, authored-value invalidation,
@@ -479,7 +479,57 @@ compared, which was P0-4's stated blocker.
   convert the frame it is handed into the second canonical motion is expressed
   in — this pose carries no timestamp at all rather than a guessed one, and
   `motion.sampleAnimation` has to be *given* a rate.
-- ⬜ **The five real `execMotion` nodes, `execVrm`, parity, and the display
+- ✅ **`motion.sampleAnimation`, and the rate a clip has to state**
+  *(2026-09-06, P0-4)*. The first computation with an algorithm behind it: it
+  reads the clip's `joints`, `rotations`, `translations` and
+  `motion:timeCodesPerSecond` plus the builtin `computeTime`, and returns the
+  pose the clip states at the frame the system is evaluating, stamped in
+  seconds.
+
+  **The rate enters the graph rather than being applied on the way out**, which
+  is the signature question step 1 left open, and the reason is the *next* node.
+  `motion.filterPose` wraps `motion::PoseFilter`, whose cutoff is frame-rate
+  independent precisely because it derives each step's weight from the time
+  elapsed between poses — so a pose stamped by the caller after it leaves exec
+  reaches that filter as time zero. A clip that states no rate is therefore
+  **refused rather than stamped**: an empty pose and an error, because
+  `timestamp` has no absent state and a guessed second is indistinguishable
+  downstream from a measured one. The attribute duplicates the stage's own
+  `timeCodesPerSecond` and is a shim for a gap in 26.08, not a format; nothing
+  in the repository authors it yet, and the producer half is a contract ask
+  ([the plan](openexec-foundation.md) §9).
+
+  **Running it measured four more things**
+  ([the sampling report](../reports/openusd/26.08-openexec-sampling.md)), and
+  two of them are rules for every node still to come. `.Required()` **does not
+  refuse a missing attribute** — the request compiles, `IsValid()` is true, and
+  the callback runs with an input that has no value, which is the mechanism
+  report's metadata finding on a second kind of input and makes it general: a
+  node that needs something must refuse for itself, because nothing upstream
+  will. And **between two keys the answer is USD's** — an exec input arrives
+  already resolved at the evaluated frame, and 26.08 slerps a `quatf[]` — so
+  this node is **not** a wrapper over `motion::SampleAnimation`, P0-6 has two
+  samplers to compare rather than one implementation to check, and it has to
+  compare them at the clip's own key times. Also measured: **a keyed attribute
+  and the builtin `computeTime` are each enough alone to make a value key
+  time-dependent** — the node is reported over a clip with no time sample
+  anywhere, and, in a throwaway build with `computeTime` deleted, still reported
+  over a keyed one — so a node that declares `computeTime` is recomputed on
+  every frame change even when nothing it reads has moved, which makes it
+  something the later nodes declare because they use it rather than out of
+  habit; `motion.identityPose`, whose one input is `uniform`, goes on being
+  reported to nothing. And the default time code — what a system evaluates at
+  until `ChangeTime`, and again after an `InvalidateAll()` — resolves a clip
+  that authors only time samples to **nothing**, so a caller that forgets the
+  frame gets an empty pose rather than the first one.
+
+  **This is the plan's first "not a wrapper" finding, and producing one is why
+  the re-order put this track first.** Reading a `UsdSkelAnimation` into a
+  canonical pose does exist here — in `tools/motionRetarget`'s `StageIo.cpp`, in
+  a *tool*, where a bundle cannot call it — so the bundle keeps its own seam over
+  plain values and the duplication is recorded rather than hidden, for
+  [boundary consolidation](boundary-consolidation.md) to act on.
+- ⬜ **The four remaining `execMotion` nodes, `execVrm`, parity, and the display
   slice** — the rest of P0-4 and P0-5 through P0-7 of the
   [plan](openexec-foundation.md#6-foundation-tasks).
 

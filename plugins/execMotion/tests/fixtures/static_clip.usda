@@ -1,0 +1,60 @@
+#usda 1.0
+(
+    """Control fixture for execMotion: the same clip, holding still.
+
+    The prose is a layer comment rather than `doc` on purpose; see
+    sampled_clip.usda for why.
+
+    `rotations` and `translations` are **default values** here, with no time
+    samples anywhere on the prim. That is the one thing that differs from
+    sampled_clip.usda, and it is what isolates a question the sampled fixture
+    cannot answer on its own: `motion.sampleAnimation` declares both
+    time-sampled attribute inputs *and* the builtin `computeTime`, so when the
+    frame moves and the request reports that value key, either could be the
+    reason. Read through this clip the attribute inputs do not change with time
+    and `computeTime` still does, so whichever way the request behaves here says
+    which of the two carries the time dependency.
+
+    The head is turned 90 degrees about +Y at every frame, so a pose read from
+    this clip is still distinguishable from an empty one."""
+    timeCodesPerSecond = 50
+    startTimeCode = 0
+    endTimeCode = 100
+)
+
+def SkelAnimation "Clip"
+{
+    uniform token[] joints = [
+        "hips",
+        "hips/spine",
+        "hips/spine/chest",
+        "hips/spine/chest/neck/head",
+        "prop"
+    ]
+
+    custom uniform double motion:timeCodesPerSecond = 50
+
+    quatf[] rotations = [
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (1, 0, 0, 0),
+        (0.70710678, 0, 0.70710678, 0),
+        (1, 0, 0, 0)
+    ]
+
+    float3[] translations = [
+        (0, 1, 2),
+        (0, 0.1, 0),
+        (0, 0.2, 0),
+        (0, 0.3, 0),
+        (9, 9, 9)
+    ]
+
+    half3[] scales = [
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1)
+    ]
+}

@@ -9,24 +9,25 @@ set(_exec_motion_assertions $<IF:$<CXX_COMPILER_ID:MSVC>,/UNDEBUG,-UNDEBUG>)
 # ---------------------------------------------------------------------------
 # The seam, with no stage and no exec
 # ---------------------------------------------------------------------------
-# ExecMotionIdentity.cpp is compiled into the test rather than linked out of the
+# ExecMotionPose.cpp is compiled into the test rather than linked out of the
 # plugin: it is deliberately not exported, because nothing outside the bundle
 # calls it and a bundle that exports its internals is a bundle other things
 # start depending on.
-add_executable(execMotion_identity_tests
-    test_exec_motion_identity.cpp
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src/ExecMotionIdentity.cpp")
-target_include_directories(execMotion_identity_tests PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/../src")
-target_link_libraries(execMotion_identity_tests PRIVATE motionCore::motionCore)
-target_compile_options(execMotion_identity_tests
+add_executable(execMotion_pose_tests
+    test_exec_motion_pose.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/ExecMotionPose.cpp")
+target_include_directories(execMotion_pose_tests PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src"
+    ${PXR_INCLUDE_DIRS})
+target_link_libraries(execMotion_pose_tests PRIVATE motionCore::motionCore)
+target_compile_options(execMotion_pose_tests
     PRIVATE ${_exec_motion_assertions})
 if(MSVC)
-    target_compile_definitions(execMotion_identity_tests
+    target_compile_definitions(execMotion_pose_tests
         PRIVATE NOMINMAX _USE_MATH_DEFINES)
-    target_compile_options(execMotion_identity_tests PRIVATE /utf-8)
+    target_compile_options(execMotion_pose_tests PRIVATE /utf-8)
 endif()
-add_test(NAME execMotion_identity COMMAND execMotion_identity_tests)
+add_test(NAME execMotion_pose COMMAND execMotion_pose_tests)
 
 # ---------------------------------------------------------------------------
 # The mechanism, through the built bundle
@@ -63,6 +64,39 @@ add_test(NAME execMotion_mechanism
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/identity_clip.usda")
 
 # ---------------------------------------------------------------------------
+# The sampled clip, through the built bundle
+# ---------------------------------------------------------------------------
+# Separate from the mechanism suite on purpose. That one holds the mechanism at
+# its weakest possible value -- the identity -- so a red result there is a
+# discovery, compile, cache or invalidation failure and nothing else. This one
+# holds the first computation that has a value to get wrong, and it drives time:
+# the same request at three frames, and a clip that cannot be stamped.
+add_executable(execMotion_sample_tests test_exec_motion_sample.cpp)
+target_include_directories(execMotion_sample_tests PRIVATE
+    ${PXR_INCLUDE_DIRS})
+target_link_libraries(execMotion_sample_tests PRIVATE motionCore::motionCore)
+target_compile_options(execMotion_sample_tests
+    PRIVATE ${_exec_motion_assertions})
+if(MSVC)
+    target_compile_definitions(execMotion_sample_tests
+        PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(execMotion_sample_tests PRIVATE /bigobj /utf-8)
+endif()
+target_link_libraries(execMotion_sample_tests
+    PRIVATE ${_exec_motion_test_targets})
+
+# Three fixtures, each differing from the first by one thing, because two of
+# what this suite measures are attributions rather than values: the second holds
+# still, so `computeTime` is the only input left that moves with the frame, and
+# the third states no rate, so what exec does with a `.Required()` input the
+# stage does not carry is measured rather than assumed from the documentation.
+add_test(NAME execMotion_sample
+    COMMAND execMotion_sample_tests
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/sampled_clip.usda"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/static_clip.usda"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/unrated_clip.usda")
+
+# ---------------------------------------------------------------------------
 # Environment
 # ---------------------------------------------------------------------------
 # The bundle's own resource directory is what PXR_PLUGINPATH_NAME points at, and
@@ -90,14 +124,16 @@ set(_exec_motion_env
 
 set_tests_properties(execMotion_mechanism PROPERTIES
     ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
+set_tests_properties(execMotion_sample PROPERTIES
+    ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
 
 # The seam suite needs no plugin and no plugin path, but it does link motionCore
 # and -- through Gf -- loads usd_gf.dll on Windows all the same.
-set_tests_properties(execMotion_identity PROPERTIES
+set_tests_properties(execMotion_pose PROPERTIES
     ENVIRONMENT_MODIFICATION
         "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib")
 
 # Motion Phase E's label, so the OpenExec half of the suite can be run and
 # reported on its own (the plan's P0-2 CTest labels).
-set_tests_properties(execMotion_identity execMotion_mechanism PROPERTIES
-    LABELS "motion.openexec")
+set_tests_properties(execMotion_pose execMotion_mechanism execMotion_sample
+    PROPERTIES LABELS "motion.openexec")

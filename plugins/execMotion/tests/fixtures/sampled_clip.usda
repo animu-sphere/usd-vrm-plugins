@@ -1,0 +1,86 @@
+#usda 1.0
+(
+    """Behaviour fixture for execMotion: a UsdSkelAnimation that moves, and
+    states the rate its frames are counted at.
+
+    The prose is a layer comment rather than `doc` on purpose. `doc` is where
+    usdcat --flatten writes the absolute path of the root layer, and the L5
+    comparison strips exactly that field -- a fixture whose own text shared the
+    field would carry a machine path into the golden.
+
+    Two frames are keyed, 0 and 100, at 50 time codes per second: so frame 0 is
+    second 0, frame 100 is second 2, and frame 50 -- which nothing authors -- is
+    second 1 and whatever USD resolves between the two keys. Sampling a frame
+    nobody keyed is half of what motion.sampleAnimation is for, and the test
+    measures the answer rather than assuming it.
+
+    `motion:timeCodesPerSecond` states the same number as the layer's
+    `timeCodesPerSecond` metadatum immediately above it, and the duplication is
+    the point rather than an oversight: an OpenExec computation cannot read
+    stage metadata, so the rate has to reach it as an authored attribute
+    (docs/reports/openusd/26.08-openexec-mechanism.md section 5). The test
+    asserts the two agree, so a fixture that drifted would be a red test rather
+    than a quietly wrong second.
+
+    The head turns 90 degrees about +Y and the hips travel, so a pose that
+    ignored the frame, took the wrong joint's translation, or forgot to
+    normalize would differ from this one somewhere."""
+    timeCodesPerSecond = 50
+    startTimeCode = 0
+    endTimeCode = 100
+)
+
+def SkelAnimation "Clip"
+{
+    uniform token[] joints = [
+        "hips",
+        "hips/spine",
+        "hips/spine/chest",
+        "hips/spine/chest/neck/head",
+        "prop"
+    ]
+
+    custom uniform double motion:timeCodesPerSecond = 50
+
+    quatf[] rotations.timeSamples = {
+        0: [
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (1, 0, 0, 0)
+        ],
+        100: [
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (0.70710678, 0, 0.70710678, 0),
+            (1, 0, 0, 0)
+        ],
+    }
+
+    float3[] translations.timeSamples = {
+        0: [
+            (0, 0, 0),
+            (0, 0.1, 0),
+            (0, 0.2, 0),
+            (0, 0.3, 0),
+            (0, 0, 0)
+        ],
+        100: [
+            (0, 1, 2),
+            (0, 0.1, 0),
+            (0, 0.2, 0),
+            (0, 0.3, 0),
+            (9, 9, 9)
+        ],
+    }
+
+    half3[] scales = [
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1)
+    ]
+}
