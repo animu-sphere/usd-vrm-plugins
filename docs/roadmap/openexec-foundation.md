@@ -386,7 +386,8 @@ all, so a failure is attributable:
 7. discovery from a **packaged** plugin, not a build tree
 
 Only then the real ones, in that order: `sampleAnimation` → `filterPose` →
-`extractRootMotion` → `interpolatePose` → `blendPoses`.
+`extractRootMotion` → `interpolatePose` → `blendPoses`. The first two are
+done.
 
 **Step 1 landed on 2026-09-06** — `plugins/execMotion`, and the seven items above
 are done as one: `motion::HumanoidPose` registers as an execution value type, a
@@ -460,10 +461,55 @@ canonical pose does exist in this repository — in `tools/motionRetarget`'s
 its own seam over plain values and the duplication is recorded rather than
 hidden. It is [boundary consolidation](boundary-consolidation.md)'s to act on.
 
-Still open here: `motion.filterPose`, `motion.extractRootMotion`,
-`motion.interpolatePose` and `motion.blendPoses`; a producer that authors the
-rate (§9); and the packaged-plugin half of step 7 — the mechanism and sample
-tests load a *built* bundle, and an artifact-only run belongs with P0-3's smoke.
+**`motion.filterPose` landed the same day, and with it the first node that is a
+recurrence.** `motion::PoseFilter` derives each step's weight from the seconds
+since the pose before it, and a computation is handed one frame with no way to
+reach another — so the state it normally keeps cannot live in the callback,
+which the purity rule forbids, nor in the scene, which would author a derived
+value. It is passed in: `motion.priorPose` is a computation whose ordinary value
+is the clip's own pose at the evaluated frame, and whose purpose is to be
+replaced through `ExecUsdSystem::ComputeWithOverrides`. **Exec does the step and
+the driver owns the sequence** — which is where the state already is for a live
+source, in `motionRuntime`'s pose buffer. Un-overridden the node is
+`motion.sampleAnimation`, because a filter with zero elapsed time reseeds and
+passes its pose through; nothing in the bundle special-cases that. The clip may
+state `motion:filter:cutoffHz`, `motion:filter:rootPosition` and
+`motion:filter:rootOrientation`, and an absent one is left at
+`PoseFilter::Options`' own default rather than at one this bundle picked — a
+different judgement from the rate, and the difference is what an absent value
+costs: a missing rate produces a second no consumer can tell from a measured
+one, a missing cutoff selects the library's documented behaviour.
+
+**Four measurements, in [the filtering report](../reports/openusd/26.08-openexec-filtering.md),
+and three change tasks below.** A computation **reads another computation** on
+the same prim and the registered aggregate crosses that link unchanged, so the
+chain in §5 is links rather than one node — and `Computation<T>()` is not a
+connection, so §5.1's one-connection rule stays `blendPoses`'s problem. **Time
+dependence propagates across the link**: `motion.filterPose` declares neither
+`computeTime` nor a keyed attribute and is still reported when the frame moves,
+which makes the sampling report's "declare `computeTime` only if you use it" free
+to follow rather than something every downstream node has to undo. **A request
+is armed by its first `Compute`** — a `ChangeTime` before any compute reaches no
+callback at all, which cost a red run and is the shape a naive event-driven
+driver would take. And **an override reaches every dependent of the key it names,
+is visible as that key's own value, leaks into no sibling, and does not survive
+the call.**
+
+**The boundary finding this node produced** is smaller than the sampler's and
+the same kind: `motion::PoseFilter` has no stateless one-step entry point, so
+`execMotion` composes one from two `Apply` calls — a seed and a step. The
+algorithm stays in the library, so the node is a wrapper; the idiom is a
+workaround for a missing signature, and a `Step(prior, pose, options)` free
+function is the ask for
+[boundary consolidation](boundary-consolidation.md) §1.
+
+Still open here: `motion.extractRootMotion`, `motion.interpolatePose` and
+`motion.blendPoses`; a producer that authors the rate and the filter policy (§9);
+a **driver contract** — compute once to arm a request, step the recurrence
+through overrides, neither discoverable from the computations themselves, and
+P0-6's parity harness is the first client that needs it written down; and the
+packaged-plugin half of step 7 — the mechanism, sample and filter tests load a
+*built* bundle, and an artifact-only run belongs with P0-3's smoke.
 
 **`blendPoses` is last on purpose.** It is the one computation that wants
 multiple inputs, and 26.08's builtin `computeValue` forwards across exactly one

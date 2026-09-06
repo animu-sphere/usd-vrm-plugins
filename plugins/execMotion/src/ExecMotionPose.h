@@ -12,6 +12,7 @@
 #pragma once
 
 #include <motionCore/Humanoid.h>
+#include <motionRuntime/Filter.h>
 
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
@@ -100,5 +101,62 @@ struct ClipSample
 /// position. Only `hips` carries body translation (motion contract); the rest of
 /// a `translations` array is rest-pose data a retargeter re-derives per rig.
 std::optional<motion::HumanoidPose> PoseFromClipSample(const ClipSample& sample);
+
+/// What a clip states about how it wants to be smoothed.
+///
+/// Every field is optional and an absent one is **not** a value this bundle
+/// picks: it is left at `motion::PoseFilter::Options`' own default, because a
+/// wrapper that supplied its own default would be a second policy sitting on
+/// top of the library's, and a clip authoring nothing would then be smoothed
+/// differently here than by the same library called anywhere else.
+///
+/// That is a different judgement from the sampling rate, and the difference is
+/// what each absent value costs. A missing rate produces a *number* --
+/// a `timestamp` in seconds -- that no consumer can tell from a measured one.
+/// A missing cutoff selects the library's documented behaviour, which every
+/// caller of `motion::PoseFilter` already gets. So the rate is refused and
+/// these are defaulted (the sampling report's "every node owes its own
+/// refusal" applies to what a node cannot compute without, and this one can).
+struct FilterPolicy
+{
+    /// `motion:filter:cutoffHz`. Non-positive disables smoothing, which is
+    /// `motion::PoseFilter`'s own documented pass-through and not a special
+    /// case this layer added.
+    std::optional<float> cutoffHz;
+
+    /// `motion:filter:rootPosition` / `motion:filter:rootOrientation`.
+    ///
+    /// The orientation flag is inert over a clip-sourced pose and is carried
+    /// anyway: `PoseFromClipSample` never sets `root.hasOrientation`, because a
+    /// `UsdSkelAnimation` states rotations per joint and no separate root
+    /// orientation, and `PoseFilter` skips a field the pose does not carry. It
+    /// is here because `Options` has it, and a wrapper does not get to drop a
+    /// field of the thing it wraps -- a pose reaching this node from a live
+    /// source (P0-4's later inputs) does carry one.
+    std::optional<bool> filterRootPosition;
+    std::optional<bool> filterRootOrientation;
+};
+
+/// `pose` smoothed against `prior`, under `policy`.
+///
+/// One step of `motion::PoseFilter`, and the state it needs is passed in rather
+/// than kept. That is forced rather than chosen: an OpenExec callback is handed
+/// exactly one time and no way to reach another
+/// ([the sampling report](../../../docs/reports/openusd/26.08-openexec-sampling.md) §5),
+/// and a filter that remembered the last pose in a static would be the mutable
+/// state the purity rule forbids and invalidation cannot see. So the recurrence
+/// -- "the prior pose is the previous frame's answer" -- belongs to whoever
+/// drives the graph, which is where it already lives for a live source:
+/// `motionRuntime`'s pose buffer.
+///
+/// Seeding is the library's own: a `PoseFilter` with no state returns its first
+/// pose unchanged and keeps it, so `prior` costs one `Apply` and no special
+/// case. Two consequences fall out rather than being written: passing the same
+/// pose as both arguments returns it unchanged (`dt` is zero), and so does a
+/// `prior` stamped at or after `pose` -- a seek backwards is a reseed, exactly
+/// as it is for a streamed source.
+motion::HumanoidPose FilteredPose(const motion::HumanoidPose& prior,
+                                  const motion::HumanoidPose& pose,
+                                  const FilterPolicy& policy);
 
 } // namespace execmotion

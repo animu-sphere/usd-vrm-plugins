@@ -90,4 +90,36 @@ PoseFromClipSample(const ClipSample& sample)
     return pose;
 }
 
+motion::HumanoidPose
+FilteredPose(const motion::HumanoidPose& prior,
+             const motion::HumanoidPose& pose,
+             const FilterPolicy& policy)
+{
+    // The library's defaults, then whatever the clip actually stated. Each
+    // field is overwritten independently, so a clip that authors a cutoff and
+    // nothing else keeps the library's answer for the other two.
+    motion::PoseFilter::Options options;
+    if (policy.cutoffHz) {
+        options.cutoffHz = *policy.cutoffHz;
+    }
+    if (policy.filterRootPosition) {
+        options.filterRootPosition = *policy.filterRootPosition;
+    }
+    if (policy.filterRootOrientation) {
+        options.filterRootOrientation = *policy.filterRootOrientation;
+    }
+
+    // The whole node, and it is a wrapper: a filter constructed here, seeded
+    // with the prior pose, stepped once. The first Apply is the seed -- a
+    // PoseFilter with no state returns its argument and keeps it -- and the
+    // second is the step whose weight the two timestamps decide.
+    //
+    // The filter is a local rather than a member of anything: it lives for one
+    // call, sees exactly the two poses it was given, and is destroyed. That is
+    // what makes this callable from a computation at all.
+    motion::PoseFilter filter(options);
+    filter.Apply(prior);
+    return filter.Apply(pose);
+}
+
 } // namespace execmotion

@@ -29,10 +29,15 @@ requires:
     # `motion.sampleAnimation` does not change that, which was a surprise rather
     # than a plan. An exec input arrives already resolved at the evaluated frame,
     # so the node interpolates nothing and has no `motionRuntime` call to wrap
-    # (docs/reports/openusd/26.08-openexec-sampling.md §5). `motionRuntime` joins
-    # with `motion.filterPose`, which wraps `motion::PoseFilter` and is the first
-    # node that genuinely reaches for it.
+    # (docs/reports/openusd/26.08-openexec-sampling.md §5).
     - id: motionCore
+      version: ">=0.8,<0.9"
+    # And the runtime half, from `motion.filterPose` onward: the node is one
+    # step of `motion::PoseFilter` and the algorithm stays in the library. The
+    # state that filter normally keeps does not come with it -- an OpenExec
+    # callback is pure, so the prior pose is an input the driver supplies
+    # (README, "A filter is a recurrence").
+    - id: motionRuntime
       version: ">=0.8,<0.9"
 usd:
   plug_info: plugin/resources/execMotion/plugInfo.json
@@ -42,8 +47,10 @@ tests:
     - tests/fixtures/sampled_clip.usda
     - tests/fixtures/static_clip.usda
     - tests/fixtures/unrated_clip.usda
+    - tests/fixtures/filtered_clip.usda
   roundtrip:
     - tests/fixtures/identity_clip.usda
     - tests/fixtures/sampled_clip.usda
     - tests/fixtures/static_clip.usda
     - tests/fixtures/unrated_clip.usda
+    - tests/fixtures/filtered_clip.usda
