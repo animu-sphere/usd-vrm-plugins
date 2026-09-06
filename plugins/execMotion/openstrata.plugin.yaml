@@ -22,11 +22,16 @@ provides:
 requires:
   capabilities: [usd-stage-read]
   libraries:
-    # The vendor-neutral half of the motion layer, and the only dependency this
-    # bootstrap has: a computation is a thin wrapper, so the value that crosses
+    # The vendor-neutral half of the motion layer, and still the only dependency
+    # this bundle has: a computation is a thin wrapper, so the value that crosses
     # the boundary is motionCore's own (WORKSPACE.md §2, motion policy §11).
-    # `motionRuntime` joins with the first computation that samples or filters
-    # rather than with this one, which does neither.
+    #
+    # `motion.sampleAnimation` does not change that, which was a surprise rather
+    # than a plan. An exec input arrives already resolved at the evaluated frame,
+    # so the node interpolates nothing and has no `motionRuntime` call to wrap
+    # (docs/reports/openusd/26.08-openexec-sampling.md §5). `motionRuntime` joins
+    # with `motion.filterPose`, which wraps `motion::PoseFilter` and is the first
+    # node that genuinely reaches for it.
     - id: motionCore
       version: ">=0.8,<0.9"
 usd:
@@ -35,8 +40,10 @@ tests:
   smoke:
     - tests/fixtures/identity_clip.usda
     - tests/fixtures/sampled_clip.usda
+    - tests/fixtures/static_clip.usda
     - tests/fixtures/unrated_clip.usda
   roundtrip:
     - tests/fixtures/identity_clip.usda
     - tests/fixtures/sampled_clip.usda
+    - tests/fixtures/static_clip.usda
     - tests/fixtures/unrated_clip.usda

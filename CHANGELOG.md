@@ -99,12 +99,16 @@ Current schema contract version: **1**.
   26.08 slerps a `quatf[]`, so this node is *not* a wrapper over
   `motion::SampleAnimation` — parity (P0-6) has two samplers to compare rather
   than one implementation to check, and has to compare them at the clip's own
-  key times. Also measured: a time-sampled input makes a value key
-  time-dependent and the request is told, while `motion.identityPose` goes on
-  being reported to nothing; and the **default time code resolves a clip that
-  authors only time samples to nothing**, so the first compute after a
-  `BuildRequest` — or after an `InvalidateAll()`, which resets the system's time
-  — is an empty pose rather than the clip's first frame.
+  key times. Also measured: **a keyed attribute and the builtin `computeTime` are
+  each enough on their own to make a value key time-dependent** — the node is
+  reported over a clip with no time sample anywhere, and, with `computeTime`
+  deleted, still reported over a keyed one — so a node that declares
+  `computeTime` is recomputed on every frame change even when nothing it reads
+  has moved, while `motion.identityPose` (one `uniform` input) goes on being
+  reported to nothing; and the **default time code resolves a clip that authors
+  only time samples to nothing**, so the first compute after a `BuildRequest` —
+  or after an `InvalidateAll()`, which resets the system's time — is an empty
+  pose rather than the clip's first frame.
 
   This is also the plan's **first "not a wrapper" finding**, which is what
   ordering the OpenExec track first was meant to produce: reading a
@@ -114,11 +118,13 @@ Current schema contract version: **1**.
   is recorded for the boundary-consolidation track rather than hidden.
 
   `execMotion_sample` drives one request at four times — the default time code
-  and frames 0, 100 and 50 — over a clip whose head turns 90° about +Y, and a
-  second fixture that states no rate; `execMotion_identity` is renamed
-  `execMotion_pose` and gains the sampling half of the seam. Verified against
-  its own absence: replacing the frame-to-seconds division with the raw frame
-  turns both suites red.
+  and frames 0, 100 and 50 — over three fixtures that differ from each other by
+  one thing each: a clip whose head turns 90° about +Y, the same clip holding
+  still with no time samples at all (the control that made the time-dependence
+  claim a measurement instead of an assumption), and one that states no rate.
+  `execMotion_identity` is renamed `execMotion_pose` and gains the sampling half
+  of the seam. Verified against its own absence: replacing the frame-to-seconds
+  division with the raw frame turns both suites red.
 
 - **Two expressions can no longer both own the eyelid: VRM 1.0's expression
   overrides, read and obeyed** (closes #170). Expressions accumulate on the

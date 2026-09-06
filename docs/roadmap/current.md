@@ -510,13 +510,18 @@ compared, which was P0-4's stated blocker.
   already resolved at the evaluated frame, and 26.08 slerps a `quatf[]` — so
   this node is **not** a wrapper over `motion::SampleAnimation`, P0-6 has two
   samplers to compare rather than one implementation to check, and it has to
-  compare them at the clip's own key times. Also measured: a time-sampled input
-  makes a value key time-dependent and the request is told, while
-  `motion.identityPose` goes on being reported to nothing; and the default time
-  code — what a system evaluates at until `ChangeTime`, and again after an
-  `InvalidateAll()` — resolves a clip that authors only time samples to
-  **nothing**, so a caller that forgets the frame gets an empty pose rather than
-  the first one.
+  compare them at the clip's own key times. Also measured: **a keyed attribute
+  and the builtin `computeTime` are each enough alone to make a value key
+  time-dependent** — the node is reported over a clip with no time sample
+  anywhere, and, in a throwaway build with `computeTime` deleted, still reported
+  over a keyed one — so a node that declares `computeTime` is recomputed on
+  every frame change even when nothing it reads has moved, which makes it
+  something the later nodes declare because they use it rather than out of
+  habit; `motion.identityPose`, whose one input is `uniform`, goes on being
+  reported to nothing. And the default time code — what a system evaluates at
+  until `ChangeTime`, and again after an `InvalidateAll()` — resolves a clip
+  that authors only time samples to **nothing**, so a caller that forgets the
+  frame gets an empty pose rather than the first one.
 
   **This is the plan's first "not a wrapper" finding, and producing one is why
   the re-order put this track first.** Reading a `UsdSkelAnimation` into a

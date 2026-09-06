@@ -417,7 +417,8 @@ step 1 raised. The node reads `joints`, `rotations`, `translations` and
 `motion:timeCodesPerSecond` off the clip plus the builtin `computeTime`, and
 returns the pose the clip states at the frame the system is evaluating, stamped
 in seconds. `execMotion_sample` drives one request at four times — the default
-time code and frames 0, 100 and 50 — and a second clip that states no rate.
+time code and frames 0, 100 and 50 — over three fixtures differing by one thing
+each: the keyed clip, the same clip holding still, and one that states no rate.
 
 **The rate enters the graph, from an authored attribute**, and the reason is the
 *next* node rather than this one. The alternative the mechanism report named —
@@ -442,11 +443,15 @@ keys the answer is USD's** — an exec input arrives already resolved at the
 evaluated frame, and 26.08 slerps a `quatf[]` — so an exec sampler is not
 `motion::SampleAnimation`, and P0-6 has two samplers to compare rather than one
 implementation to check, at the clip's own key times or not at all. Also
-measured: a time-sampled input makes a value key time-dependent and the request
-is told, while `motion.identityPose` goes on being reported to nothing; and the
-default time code resolves a clip that authors only time samples to **nothing**,
-so the first compute after a `BuildRequest` — or after an `InvalidateAll()` — is
-an empty pose rather than the first frame.
+measured: **a keyed attribute and the builtin `computeTime` are each enough alone
+to make a value key time-dependent**, so a node that declares `computeTime` is
+recomputed on every frame change even when nothing it reads has moved — which
+makes it something the later nodes declare only if they use it — while
+`motion.identityPose`, whose one input is `uniform`, goes on being reported to
+nothing; and the default time code resolves
+a clip that authors only time samples to **nothing**, so the first compute after
+a `BuildRequest` — or after an `InvalidateAll()` — is an empty pose rather than
+the first frame.
 
 **This node is the plan's first "not a wrapper" finding, and it is the one this
 re-order was scheduled to produce.** Reading a `UsdSkelAnimation` into a

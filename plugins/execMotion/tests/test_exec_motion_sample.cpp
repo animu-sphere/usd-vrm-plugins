@@ -6,8 +6,9 @@
 // Separate from `execMotion_mechanism` on purpose. That suite holds the
 // mechanism at its weakest possible value -- the identity -- so a red result
 // there is a discovery, compile, cache or invalidation failure and nothing
-// else. This one moves the frame and reads the pose, and it carries the two
-// measurements the node's signature was decided on:
+// else. This one moves the frame and reads the pose, over three clips that
+// differ by one thing each: one keyed, one holding still, one stating no rate.
+// It carries the two measurements the node's signature was decided on:
 //
 //   * a clip states the rate its frames are counted at, as an authored
 //     attribute, because exec delivers no stage metadata to a callback
@@ -153,14 +154,14 @@ void TestASampledClip(const std::string& fixture)
     system.ChangeTime(UsdTimeCode(0.0));
     const motion::HumanoidPose atZero = ComputePose(system, request);
 
-    // Unlike `motion.identityPose`, this value key IS time dependent, and the
-    // request is told so. The two assertions are the same measurement from
-    // opposite sides: a node whose inputs are time-sampled is reported to the
-    // time callback, and one whose only input is `uniform` is not
-    // (execMotion_mechanism asserts the second).
+    // Unlike `motion.identityPose`, this value key IS time dependent and the
+    // request is told so. What this assertion alone cannot say is *why*: this
+    // node declares time-sampled attribute inputs and the builtin `computeTime`,
+    // and either would do it. `TestAClipThatHoldsStill` below removes the first
+    // and keeps the second, which is what actually separates them.
     assert(timeInvalidations > timeInvalidationsBefore &&
            "moving the frame did not reach the time callback of a computation "
-           "whose inputs are time-sampled");
+           "that reads both time-sampled attributes and the stage's time");
 
     assert(atZero.timestamp == 0.0);
     assert(atZero.validRotations.count() == 4 &&
@@ -289,14 +290,94 @@ void TestAClipWithNoRate(const std::string& fixture)
                 "is refused by the callback, with an empty pose\n");
 }
 
+// ---------------------------------------------------------------------------
+// The clip that holds still, which is the control
+// ---------------------------------------------------------------------------
+void TestAClipThatHoldsStill(const std::string& fixture)
+{
+    UsdStageRefPtr stage = UsdStage::Open(fixture);
+    assert(stage && "the static fixture did not open");
+
+    UsdPrim clip = stage->GetPrimAtPath(SdfPath("/Clip"));
+    assert(clip && "the fixture has no /Clip prim");
+
+    // The premise of the whole test: this clip states its values as defaults
+    // and keys nothing. If a time sample ever appeared here, the measurement
+    // below would quietly stop isolating anything.
+    std::vector<double> times;
+    assert(clip.GetAttribute(TfToken("rotations")).GetTimeSamples(&times));
+    assert(times.empty() && "the static fixture has time samples after all");
+    assert(clip.GetAttribute(TfToken("translations")).GetTimeSamples(&times));
+    assert(times.empty() && "the static fixture has time samples after all");
+
+    ExecUsdSystem system(stage);
+
+    int timeInvalidations = 0;
+    std::vector<ExecUsdValueKey> keys;
+    keys.emplace_back(clip, kSampleAnimation);
+    ExecUsdRequest request = system.BuildRequest(
+        std::move(keys),
+        [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
+        [&timeInvalidations](const ExecRequestIndexSet&) {
+            ++timeInvalidations;
+        });
+    assert(request.IsValid());
+
+    // A clip whose values are defaults resolves at the default time code, which
+    // the keyed fixture does not -- so this pose is a pose, and the contrast in
+    // TestASampledClip is about the clip rather than about the node.
+    const motion::HumanoidPose atDefault = ComputePose(system, request);
+    assert(atDefault.validRotations.count() == 4);
+    assert(atDefault.timestamp == 0.0);
+
+    system.ChangeTime(UsdTimeCode(0.0));
+    const motion::HumanoidPose atZero = ComputePose(system, request);
+    assert(atZero.validRotations.count() == 4);
+
+    // ---- the isolation ----------------------------------------------------
+    // Same node, same declared inputs, and no attribute on this clip has a time
+    // sample. **The request is still told.** So a clip's time samples are not
+    // what carries the time dependency, and the value key is reported on a frame
+    // change that changes none of its attribute values.
+    //
+    // Which of the node's inputs carries it was settled with a throwaway probe
+    // rather than here, because separating the two candidates needs a build with
+    // one of them deleted and no shipped bundle should carry a computation that
+    // exists to be measured. With `computeTime` removed, this clip stops being
+    // reported and the keyed one goes on being reported -- so a keyed attribute
+    // and `computeTime` are each sufficient alone, and neither is necessary
+    // (docs/reports/openusd/26.08-openexec-sampling.md §3 has the four cells).
+    //
+    // The cell that matters for the later nodes is this one: a node that
+    // declares `computeTime` is recomputed on every frame change even when
+    // nothing it reads has moved. `motion.filterPose` and `motion.blendPoses`
+    // should declare it because they use it, never as a formality.
+    const int before = timeInvalidations;
+    system.ChangeTime(UsdTimeCode(100.0));
+    assert(timeInvalidations > before &&
+           "a value key over a clip with no time samples was NOT reported when "
+           "the frame moved -- the sampling report's section 3 says it is, and "
+           "one of them is now wrong");
+
+    // The pose itself is the same one, because nothing in the clip moved. The
+    // stamp is not: the frame is an input to the second, and this is the one
+    // thing in the pose that a static clip still changes.
+    const motion::HumanoidPose atHundred = ComputePose(system, request);
+    assert(NearlyEqual(atHundred.timestamp, 2.0, 1e-12));
+    assert(atHundred.validRotations == atZero.validRotations);
+    assert(atHundred.root.worldPosition == atZero.root.worldPosition);
+}
+
 } // namespace
 
 int main(int argc, char** argv)
 {
-    assert(argc == 3 &&
-           "usage: execMotion_sample <sampled_clip.usda> <unrated_clip.usda>");
+    assert(argc == 4 &&
+           "usage: execMotion_sample <sampled_clip.usda> <static_clip.usda> "
+           "<unrated_clip.usda>");
     TestASampledClip(argv[1]);
-    TestAClipWithNoRate(argv[2]);
+    TestAClipThatHoldsStill(argv[2]);
+    TestAClipWithNoRate(argv[3]);
     std::printf("execMotion sample: all checks passed\n");
     return 0;
 }

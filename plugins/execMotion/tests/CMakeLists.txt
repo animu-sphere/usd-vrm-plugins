@@ -85,12 +85,15 @@ endif()
 target_link_libraries(execMotion_sample_tests
     PRIVATE ${_exec_motion_test_targets})
 
-# Two fixtures, because half of what this suite measures is a refusal: the
-# second clip states no rate, and what exec does with a `.Required()` input the
-# stage does not carry is a measurement rather than a documented promise.
+# Three fixtures, each differing from the first by one thing, because two of
+# what this suite measures are attributions rather than values: the second holds
+# still, so `computeTime` is the only input left that moves with the frame, and
+# the third states no rate, so what exec does with a `.Required()` input the
+# stage does not carry is measured rather than assumed from the documentation.
 add_test(NAME execMotion_sample
     COMMAND execMotion_sample_tests
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/sampled_clip.usda"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/static_clip.usda"
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/unrated_clip.usda")
 
 # ---------------------------------------------------------------------------

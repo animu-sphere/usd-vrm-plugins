@@ -150,10 +150,11 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
                 sample.jointPaths.push_back(joint->GetString());
             }
 
-            // Not `.Required()`, so an unconnected input is an iterator that is
-            // already at its end rather than an error -- which is how a clip
-            // that authors no translations reaches the seam as a pose with no
-            // root position instead of as a failure.
+            // Neither of the next two is `.Required()`, so an unconnected input
+            // is an iterator already at its end rather than an error -- which is
+            // how a clip that authors no translations reaches the seam as a pose
+            // with no root position instead of as a failure. The seam judges the
+            // two arrays separately, for the same reason.
             VdfReadIterator<GfQuatf> rotation(ctx, _tokens->rotations);
             sample.rotations.reserve(rotation.ComputeSize());
             for (; !rotation.IsAtEnd(); ++rotation) {

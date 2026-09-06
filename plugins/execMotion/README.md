@@ -106,6 +106,6 @@ through an input accessor rather than by registering on it. The measurement is
 | --- | --- |
 | `execMotion_pose` | the seam, with no stage, no system and no request |
 | `execMotion_mechanism` | discovery through `plugInfo.json`, request compile, compute, an unchanged recompute, an authored-value invalidation, a time change reporting nothing for a time-independent value key, an explicit invalidation, and the shape an unregistered computation presents as |
-| `execMotion_sample` | the same request at four times — the default time code, and frames 0, 100 and 50 — the time callback firing for a value key whose inputs *are* time-sampled, and a clip with no rate being refused rather than stamped |
+| `execMotion_sample` | the same request at four times — the default time code, and frames 0, 100 and 50 — a value key being reported to the time callback even over a clip that holds still (which is what makes `computeTime` a per-frame recompute), and a clip with no rate being refused rather than stamped |
 
 All three carry the CTest label `motion.openexec`.
