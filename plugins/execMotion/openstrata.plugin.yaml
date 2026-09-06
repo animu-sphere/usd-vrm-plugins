@@ -22,9 +22,9 @@ provides:
 requires:
   capabilities: [usd-stage-read]
   libraries:
-    # The vendor-neutral half of the motion layer, and still the only dependency
-    # this bundle has: a computation is a thin wrapper, so the value that crosses
-    # the boundary is motionCore's own (WORKSPACE.md §2, motion policy §11).
+    # The vendor-neutral half of the motion layer, and the one every node needs:
+    # a computation is a thin wrapper, so the value that crosses the boundary is
+    # motionCore's own (WORKSPACE.md §2, motion policy §11).
     #
     # `motion.sampleAnimation` does not change that, which was a surprise rather
     # than a plan. An exec input arrives already resolved at the evaluated frame,

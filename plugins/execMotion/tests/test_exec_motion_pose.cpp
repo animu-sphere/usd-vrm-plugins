@@ -9,6 +9,7 @@
 
 #include "ExecMotionPose.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdio>
@@ -347,6 +348,91 @@ void TestEachPolicyFieldReachesTheOptionItNames()
            < 1e-4f);
 }
 
+// ---------------------------------------------------------------------------
+// What the round trip through a pose costs
+// ---------------------------------------------------------------------------
+// The one place the exec node and the streaming filter give different answers,
+// measured against `motion::PoseFilter` itself rather than argued about.
+//
+// `PoseFilter` retains a state strictly richer than the pose it returns: a bone
+// a pose does not report keeps its stored rotation *in the state* and stays out
+// of the *result*, so a brief dropout does not restart that bone's history. Only
+// the result can travel back through `motion.priorPose`, so the retained half
+// does not survive the trip -- and a bone that comes back after a missing frame
+// is passed through unfiltered here where the streaming filter would slerp it
+// from what it kept.
+//
+// It costs nothing for a clip, whose `joints` are `uniform` and whose bones
+// therefore never drop out, and it is real for a live source, which is what the
+// node is aimed at. So it is pinned here, in both directions, and it is the
+// sharpened half of this bundle's ask on `motionRuntime`: a one-step entry point
+// has to hand back the state as well as the result, or a caller cannot carry the
+// history that makes a dropout survivable.
+
+motion::HumanoidPose PoseWithoutHead(double timestamp, const pxr::GfVec3f& hips)
+{
+    motion::HumanoidPose pose = PoseWithHeadAndHips(timestamp, 0.0f, hips);
+    pose.validRotations.reset(static_cast<std::size_t>(motion::HumanBone::Head));
+    return pose;
+}
+
+void TestADropoutDoesNotSurviveTheRoundTrip()
+{
+    // Three instants one frame apart at 50 Hz: the head is at identity, then
+    // absent for one frame, then at 45 degrees.
+    const motion::HumanoidPose first =
+        PoseWithHeadAndHips(0.00, 0.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose dropout =
+        PoseWithoutHead(0.02, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose back =
+        PoseWithHeadAndHips(0.04, 45.0f, pxr::GfVec3f(0.0f));
+
+    // ---- what motion::PoseFilter does, driven as the streaming operator ----
+    motion::PoseFilter streaming;
+    streaming.Apply(first);
+    const motion::HumanoidPose streamedDropout = streaming.Apply(dropout);
+    const motion::HumanoidPose streamedBack = streaming.Apply(back);
+
+    // The dropout frame reports no head either way: the library does not invent
+    // a bone the pose did not carry, which is the behaviour the round trip is
+    // not allowed to change.
+    assert(!Has(streamedDropout, motion::HumanBone::Head));
+
+    // And the frame after it is smoothed from the head the filter kept.
+    constexpr double kTwoPi = 6.2831853071795862;
+    const double weight = 1.0 - std::exp(-kTwoPi * 6.0 * 0.02);
+    assert(std::abs(HeadAngleDegrees(streamedBack) - float(45.0 * weight))
+           < 1e-2f);
+
+    // ---- what the node does, with the result fed back as the prior pose ----
+    const motion::HumanoidPose steppedFirst =
+        execmotion::FilteredPose(first, first, {});
+    const motion::HumanoidPose steppedDropout =
+        execmotion::FilteredPose(steppedFirst, dropout, {});
+    const motion::HumanoidPose steppedBack =
+        execmotion::FilteredPose(steppedDropout, back, {});
+
+    assert(!Has(steppedDropout, motion::HumanBone::Head) &&
+           "the seam invented a bone the pose did not report");
+
+    // The divergence, stated as a number rather than as a risk: the head comes
+    // back at the full 45 degrees, because the pose that travelled back carried
+    // no head for the step to start from.
+    assert(std::abs(HeadAngleDegrees(steppedBack) - 45.0f) < 1e-2f &&
+           "a bone returning from a dropout was smoothed, so the seam is "
+           "carrying history a pose cannot carry");
+    assert(std::abs(HeadAngleDegrees(steppedBack) -
+                    HeadAngleDegrees(streamedBack)) > 1.0f &&
+           "the two now agree -- either PoseFilter stopped retaining dropped "
+           "bones, or the seam grew a state, and the parity note that says they "
+           "differ (P0-6) is stale either way");
+
+    // Everything the dropout did not touch is unaffected: the hips take their
+    // step in both, which is what makes the difference above about retained
+    // history and not about the filter running at all.
+    assert(streamedBack.root.worldPosition == steppedBack.root.worldPosition);
+}
+
 } // namespace
 
 int main()
@@ -363,6 +449,7 @@ int main()
     TestFilteringAgainstYourselfChangesNothing();
     TestAnAbsentPolicyIsTheLibrarysOwn();
     TestEachPolicyFieldReachesTheOptionItNames();
+    TestADropoutDoesNotSurviveTheRoundTrip();
     std::printf("execMotion pose: all checks passed\n");
     return 0;
 }

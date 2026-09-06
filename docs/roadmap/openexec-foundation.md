@@ -503,6 +503,17 @@ workaround for a missing signature, and a `Step(prior, pose, options)` free
 function is the ask for
 [boundary consolidation](boundary-consolidation.md) §1.
 
+**And it has a measured cost, which P0-6 inherits.** A pose is not the whole of a
+filter's state: `PoseFilter` keeps a dropped bone's history in its state and out
+of its result, and only a result can travel back in as the next prior pose. So a
+bone returning after a missing frame is passed through here — **45.0° against
+23.8°** streamed — which is nothing for a clip, whose `joints` are `uniform` so
+no bone drops out, and real for a live source. Reproducing the carry-forward rule
+in the bundle would be the second algorithm the wrapper rule forbids, so the
+difference is asserted in both directions in `execMotion_pose` and the ask above
+is sharpened by it: the one-step entry point has to return the *state* as well.
+**Parity has a third known divergence to compare, beside the two samplers.**
+
 Still open here: `motion.extractRootMotion`, `motion.interpolatePose` and
 `motion.blendPoses`; a producer that authors the rate and the filter policy (§9);
 a **driver contract** — compute once to arm a request, step the recurrence

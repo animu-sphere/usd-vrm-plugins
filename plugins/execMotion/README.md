@@ -94,6 +94,23 @@ Un-overridden, `motion.filterPose` **is** `motion.sampleAnimation`: the filter
 smooths the clip against itself, the elapsed time is zero, and `PoseFilter`
 reseeds and returns its argument. Nothing here special-cases that.
 
+### What the round trip costs
+
+A pose is not the whole of a filter's state. `motion::PoseFilter` retains a
+state strictly richer than what it returns — a bone a pose does not report keeps
+its stored rotation *in the state* and stays out of the *result*, so a brief
+dropout does not restart that bone's history — and only a result can travel back
+in as the next prior pose. So a bone returning after a missing frame is passed
+through here, where the streaming filter would slerp it from what it kept: **45°
+against 23.8°** in the case `execMotion_pose` pins, in both directions.
+
+That costs nothing for a clip, whose `joints` are `uniform` so no bone ever drops
+out, and it is real for a live source — which is what this node is aimed at.
+Reproducing the carry-forward rule in this bundle would be the second algorithm
+the wrapper rule forbids, so the difference is recorded instead, and the ask on
+`motionRuntime` is sharpened by it: a one-step entry point has to hand back the
+**state** as well as the result. P0-6 parity compares the two.
+
 ## What a clip may state about smoothing
 
 | Attribute | Type | Absent means |
@@ -158,7 +175,7 @@ through an input accessor rather than by registering on it. The measurement is
 
 | Test | What it holds |
 | --- | --- |
-| `execMotion_pose` | the seam, with no stage, no system and no request |
+| `execMotion_pose` | the seam, with no stage, no system and no request — including what the round trip through a pose costs, measured against `motion::PoseFilter` driven as the streaming operator it is |
 | `execMotion_mechanism` | discovery through `plugInfo.json`, request compile, compute, an unchanged recompute, an authored-value invalidation, a time change reporting nothing for a time-independent value key, an explicit invalidation, and the shape an unregistered computation presents as |
 | `execMotion_sample` | the same request at four times — the default time code, and frames 0, 100 and 50 — a value key being reported to the time callback even over a clip that holds still (which is what makes `computeTime` a per-frame recompute), and a clip with no rate being refused rather than stamped |
 | `execMotion_filter` | one computation reading another, a value key inherited by a node that declares no `computeTime`, an override reaching every dependent of the key it names and no sibling, and a clip's policy landing on `motion::PoseFilter`'s own weight rather than on this bundle's |

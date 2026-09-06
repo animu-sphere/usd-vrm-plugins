@@ -155,6 +155,24 @@ struct FilterPolicy
 /// pose as both arguments returns it unchanged (`dt` is zero), and so does a
 /// `prior` stamped at or after `pose` -- a seek backwards is a reseed, exactly
 /// as it is for a streamed source.
+///
+/// **What the round trip through a pose costs, measured rather than assumed.**
+/// `PoseFilter` retains a state strictly richer than the pose it returns: a bone
+/// a pose does not report keeps its stored rotation in the *state* and stays out
+/// of the *result*, so a brief dropout does not restart that bone's history.
+/// Only a result can travel back in as the next `prior`, so that retained half
+/// does not survive the trip, and a bone returning after a missing frame is
+/// passed through here where the streaming filter would slerp it -- 45 degrees
+/// against 23.8 in the case `execMotion_pose` pins, in both directions.
+///
+/// It costs nothing for a clip, whose `joints` are `uniform` so no bone ever
+/// drops out, and it is real for a live source, which is what this node is
+/// aimed at. It is also the sharpened half of this bundle's ask on
+/// `motionRuntime`: a one-step entry point has to hand back the *state* as well
+/// as the result, or a caller cannot carry the history that makes a dropout
+/// survivable. Reproducing that carry-forward rule here instead would be the
+/// second algorithm the wrapper rule forbids, so the difference is recorded
+/// (P0-6 parity compares the two).
 motion::HumanoidPose FilteredPose(const motion::HumanoidPose& prior,
                                   const motion::HumanoidPose& pose,
                                   const FilterPolicy& policy);

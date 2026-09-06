@@ -572,7 +572,12 @@ compared, which was P0-4's stated blocker.
   `motion::PoseFilter` has no stateless one-step entry point, so the bundle
   composes one from two `Apply` calls. The algorithm stays in the library — the
   node is a wrapper — but the idiom is a workaround for a missing signature, and
-  `Step(prior, pose, options)` is the ask
+  it has a **measured cost P0-6 inherits**: a pose is not the whole of a filter's
+  state, so a bone returning after a missing frame is passed through here (45.0°)
+  where the streaming filter smooths it (23.8°). Nothing for a clip, whose
+  `joints` are `uniform`; real for a live source. So
+  `Step(prior, pose, options)` — **returning the state beside the result** — is
+  the ask
   ([boundary consolidation](boundary-consolidation.md) §1). A **driver contract**
   joins the open list with it: compute once to arm a request, step the recurrence
   through overrides, neither discoverable from the computations themselves, and

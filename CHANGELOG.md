@@ -171,6 +171,18 @@ Current schema contract version: **1**.
   still a wrapper; the idiom is a workaround for a missing signature, and
   `Step(prior, pose, options)` is the ask.
 
+  **What the round trip costs is measured rather than left implicit.** A pose is
+  not the whole of a filter's state: `PoseFilter` keeps a dropped bone's history
+  in its state and out of its result, and only a result can travel back in as the
+  next prior pose — so a bone returning after a missing frame is passed through
+  here (**45.0°**) where the streaming filter smooths it (**23.8°**). It costs
+  nothing for a clip, whose `joints` are `uniform` so no bone drops out, and it is
+  real for a live source. Reproducing the carry-forward rule in the bundle would
+  be the second algorithm the wrapper rule forbids, so `execMotion_pose` asserts
+  the divergence in both directions instead, P0-6 parity gains a third known
+  difference to compare, and the ask above is sharpened: the one-step entry point
+  has to return the **state** as well as the result.
+
   `execMotion_filter` drives the built bundle over two fixtures differing by one
   thing — `filtered_clip.usda` is `sampled_clip.usda` plus the three
   `motion:filter:*` attributes — and checks the filtered pose against
