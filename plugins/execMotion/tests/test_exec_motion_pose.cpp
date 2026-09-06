@@ -433,6 +433,160 @@ void TestADropoutDoesNotSurviveTheRoundTrip()
     assert(streamedBack.root.worldPosition == steppedBack.root.worldPosition);
 }
 
+// ---------------------------------------------------------------------------
+// The root intake
+// ---------------------------------------------------------------------------
+// `motion::RootMotionIntake`'s three policies over two instants. The library's
+// rule lives in a private method of a capture *session* (see ExecMotionPose.h),
+// so these checks are written against the rule's definition rather than against
+// a call -- which is exactly why they are here rather than taken on trust.
+
+void TestTheIntakeTokenTableIsTheLibrarysEnum()
+{
+    assert(execmotion::RootIntakeForToken("passthrough") ==
+           motion::RootMotionIntake::Passthrough);
+    assert(execmotion::RootIntakeForToken("ignore") ==
+           motion::RootMotionIntake::Ignore);
+    assert(execmotion::RootIntakeForToken("deriveVelocity") ==
+           motion::RootMotionIntake::DeriveVelocity);
+
+    // Nothing else is a policy. A differently-cased spelling is a different
+    // token, the same rule the bone table keeps: one vocabulary, and a laxer
+    // second one here would be the duplicate the workspace forbids.
+    assert(!execmotion::RootIntakeForToken("").has_value());
+    assert(!execmotion::RootIntakeForToken("Passthrough").has_value());
+    assert(!execmotion::RootIntakeForToken("derive").has_value());
+    assert(!execmotion::RootIntakeForToken("smooth").has_value());
+}
+
+void TestAnAbsentIntakeIsTheLibrarysOwn()
+{
+    const motion::HumanoidPose prior =
+        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose pose =
+        PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
+
+    // An absent policy is `LiveCaptureConfig`'s, read from the library rather
+    // than restated -- so this assertion is against the library's own field and
+    // moves with it if it ever moves.
+    execmotion::RootPolicy stated;
+    stated.intake = motion::LiveCaptureConfig{}.rootMotion;
+    assert(execmotion::RootMotionFrom(prior, pose, {}) ==
+           execmotion::RootMotionFrom(prior, pose, stated));
+
+    // And the default is distinguishable from the other two over these poses,
+    // which is what makes the line above worth asserting: a bundle that had
+    // picked `Passthrough` would derive nothing here.
+    execmotion::RootPolicy passthrough;
+    passthrough.intake = motion::RootMotionIntake::Passthrough;
+    assert(execmotion::RootMotionFrom(prior, pose, {}) !=
+           execmotion::RootMotionFrom(prior, pose, passthrough));
+}
+
+void TestPassthroughIsThePoseSOwnRoot()
+{
+    const motion::HumanoidPose prior =
+        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose pose =
+        PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
+
+    execmotion::RootPolicy policy;
+    policy.intake = motion::RootMotionIntake::Passthrough;
+    assert(execmotion::RootMotionFrom(prior, pose, policy) == pose.root &&
+           "passthrough is the one policy with nothing to do, and it did "
+           "something");
+}
+
+void TestIgnoreClearsRatherThanZeroes()
+{
+    const motion::HumanoidPose pose =
+        PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
+
+    execmotion::RootPolicy policy;
+    policy.intake = motion::RootMotionIntake::Ignore;
+    const motion::RootMotion root = execmotion::RootMotionFrom(pose, pose,
+                                                               policy);
+
+    // The difference matters downstream: a cleared root says "this clip does
+    // not place the body", and a zeroed position with `hasPosition` set says
+    // "the body is at the origin". The first lets a rig keep its own placement.
+    assert(root == motion::RootMotion{});
+    assert(!root.hasPosition &&
+           "ignore zeroed the position instead of clearing it");
+}
+
+void TestAVelocityIsDerivedExactlyWhereTheLibraryDerivesOne()
+{
+    execmotion::RootPolicy derive;
+    derive.intake = motion::RootMotionIntake::DeriveVelocity;
+
+    const motion::HumanoidPose prior =
+        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose pose =
+        PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
+
+    // The definition: the distance between two instants over the time between
+    // them. Written out rather than called, because the rule this wraps has no
+    // call to make (ExecMotionPose.h).
+    {
+        const motion::RootMotion root =
+            execmotion::RootMotionFrom(prior, pose, derive);
+        assert(root.hasLinearVelocity);
+        const pxr::GfVec3f expected =
+            (pose.root.worldPosition - prior.root.worldPosition) / 0.02f;
+        assert(std::abs(root.linearVelocity[1] - expected[1]) < 1e-2f);
+        assert(std::abs(root.linearVelocity[2] - expected[2]) < 1e-2f);
+        // The position it was derived from is untouched.
+        assert(root.worldPosition == pose.root.worldPosition);
+    }
+
+    // The same instant twice, which is what an un-overridden node computes.
+    {
+        const motion::RootMotion root =
+            execmotion::RootMotionFrom(pose, pose, derive);
+        assert(!root.hasLinearVelocity &&
+               "a velocity was derived between a pose and itself");
+        assert(root == pose.root);
+    }
+
+    // A prior pose from the future: a seek backwards, and the same answer, for
+    // the same reason the filter reseeds there.
+    {
+        const motion::HumanoidPose later =
+            PoseWithHeadAndHips(2.0, 0.0f, pxr::GfVec3f(0.0f, 9.0f, 9.0f));
+        assert(!execmotion::RootMotionFrom(later, pose, derive)
+                    .hasLinearVelocity);
+    }
+
+    // A source that already reported one keeps it. The library derives a
+    // velocity only where none arrived, and overwriting a measured value with a
+    // differentiated one would be this bundle deciding it knows better.
+    {
+        motion::HumanoidPose reported = pose;
+        reported.root.linearVelocity = pxr::GfVec3f(1.0f, 2.0f, 3.0f);
+        reported.root.hasLinearVelocity = true;
+        const motion::RootMotion root =
+            execmotion::RootMotionFrom(prior, reported, derive);
+        assert(root.linearVelocity == pxr::GfVec3f(1.0f, 2.0f, 3.0f) &&
+               "a reported velocity was replaced by a derived one");
+    }
+
+    // Nothing to differentiate, on either side: a pose with no position, and a
+    // prior with none. Both leave the root as it arrived rather than inventing
+    // a zero, which is the same rule the rest of the seam keeps.
+    {
+        motion::HumanoidPose noPosition = pose;
+        noPosition.root = motion::RootMotion{};
+        assert(!execmotion::RootMotionFrom(prior, noPosition, derive)
+                    .hasLinearVelocity);
+
+        motion::HumanoidPose priorNoPosition = prior;
+        priorNoPosition.root = motion::RootMotion{};
+        assert(!execmotion::RootMotionFrom(priorNoPosition, pose, derive)
+                    .hasLinearVelocity);
+    }
+}
+
 } // namespace
 
 int main()
@@ -450,6 +604,11 @@ int main()
     TestAnAbsentPolicyIsTheLibrarysOwn();
     TestEachPolicyFieldReachesTheOptionItNames();
     TestADropoutDoesNotSurviveTheRoundTrip();
+    TestTheIntakeTokenTableIsTheLibrarysEnum();
+    TestAnAbsentIntakeIsTheLibrarysOwn();
+    TestPassthroughIsThePoseSOwnRoot();
+    TestIgnoreClearsRatherThanZeroes();
+    TestAVelocityIsDerivedExactlyWhereTheLibraryDerivesOne();
     std::printf("execMotion pose: all checks passed\n");
     return 0;
 }

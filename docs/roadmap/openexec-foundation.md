@@ -386,7 +386,7 @@ all, so a failure is attributable:
 7. discovery from a **packaged** plugin, not a build tree
 
 Only then the real ones, in that order: `sampleAnimation` → `filterPose` →
-`extractRootMotion` → `interpolatePose` → `blendPoses`. The first two are
+`extractRootMotion` → `interpolatePose` → `blendPoses`. The first three are
 done.
 
 **Step 1 landed on 2026-09-06** — `plugins/execMotion`, and the seven items above
@@ -514,13 +514,67 @@ difference is asserted in both directions in `execMotion_pose` and the ask above
 is sharpened by it: the one-step entry point has to return the *state* as well.
 **Parity has a third known divergence to compare, beside the two samplers.**
 
-Still open here: `motion.extractRootMotion`, `motion.interpolatePose` and
-`motion.blendPoses`; a producer that authors the rate and the filter policy (§9);
-a **driver contract** — compute once to arm a request, step the recurrence
-through overrides, neither discoverable from the computations themselves, and
+**`motion.extractRootMotion` landed the same day, and it is the first node that
+answers in something other than a pose.** It returns a `motion::RootMotion` —
+where the body is at the evaluated frame, under the intake policy the clip
+states in `motion:root:intake`: `motion::RootMotionIntake`'s own three, reached
+as a token. `passthrough` is the root the pose carries, `ignore` **clears**
+rather than zeroes it — the distinction the presence flags exist for, since a
+cleared root leaves a rig its own placement and a zeroed position puts the body
+at the origin — and `deriveVelocity`, which is the library's default and so what
+an absent attribute selects, fills in a linear velocity from the prior pose. It
+reads `motion.sampleAnimation` rather than `motion.filterPose` because that is
+the *library's* ordering: `LiveCaptureSource` conditions the root of the frame
+as it arrived and smooths afterwards, so a node differentiating a filtered
+position would answer a question P0-6 then has to explain rather than measure.
+
+**Four measurements, in [the root-motion report](../reports/openusd/26.08-openexec-root-motion.md),
+and three change tasks below.** A bundle **registers more than one value type**,
+and a computation may answer in a type other than the one it reads — one request
+returns a pose and a root motion side by side — so nothing forces the remaining
+nodes through `HumanoidPose`. **Time dependence follows the link and not the
+type**: this node declares no `computeTime`, inherits its input's, and the change
+of result type costs nothing. **One override drives every node that depends on
+the key it names**: a single `motion.priorPose` substitution steps the filter and
+derives the velocity in the same `ComputeWithOverrides`, which *shortens* the
+driver contract below — a driver holds one previous answer per prim, not one per
+node. And **an input the callback reads but `.Inputs()` does not declare is
+silent**: the bundle compiles, the request is valid, the callback runs, and the
+pointer is null, so the node takes its absent-value path with nothing anywhere
+reporting the missing declaration. That is the third shape of 26.08's one
+property — a callback cannot tell *absent* from *not asked for* — and it makes
+the node's own refusal the only refusal there is.
+
+**The absent-input rule is now general, because this attribute answers it both
+ways.** The rate is refused when absent, the filter's cutoff is defaulted when
+absent, and `motion:root:intake` is **defaulted when absent and refused when
+stated and unrecognized**. One rule underneath: default where an absent value
+selects the library's documented behaviour, refuse where it would produce a
+number no consumer can tell from a measured one — and never default a value the
+clip *stated* that this layer cannot honour, or a misspelled `ignore` gets the
+root motion it asked not to have.
+
+**The boundary finding is the third, and the first where the wrapper idiom was
+tried and ruled out rather than skipped.** The rule this node applies is
+`motionRuntime`'s, and it lives in `LiveCaptureSource::_Condition` — a private
+method of a capture *session* that owns a buffer, a filter, held-bone state and
+statistics. Composing it the way `motion.filterPose` composes `PoseFilter`
+(construct, push the prior, push the pose, read the head) gives the **wrong
+answer in the ordinary case**: two poses at the same instant are a reseed for
+`PoseFilter` and a *refusal* for `Push`, so the composed answer is the previous
+frame's root, and an un-overridden node evaluates exactly that case. So the
+derivation is three lines in the seam, asserted against its definition rather
+than against the library, and the ask for
+[boundary consolidation](boundary-consolidation.md) §1 is a stateless
+`ConditionRootMotion(prior, pose, intake)` beside the session class.
+
+Still open here: `motion.interpolatePose` and `motion.blendPoses`; a producer
+that authors the rate, the filter policy and the intake policy (§9); a **driver
+contract** — compute once to arm a request, step the recurrence through one
+override per prim, none of it discoverable from the computations themselves, and
 P0-6's parity harness is the first client that needs it written down; and the
-packaged-plugin half of step 7 — the mechanism, sample and filter tests load a
-*built* bundle, and an artifact-only run belongs with P0-3's smoke.
+packaged-plugin half of step 7 — the mechanism, sample, filter and root tests
+load a *built* bundle, and an artifact-only run belongs with P0-3's smoke.
 
 **`blendPoses` is last on purpose.** It is the one computation that wants
 multiple inputs, and 26.08's builtin `computeValue` forwards across exactly one

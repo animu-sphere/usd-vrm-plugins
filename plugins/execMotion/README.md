@@ -5,7 +5,7 @@ Motion Phase E; the plan is
 [docs/roadmap/openexec-foundation.md](../../docs/roadmap/openexec-foundation.md)
 §6, P0-4.
 
-**This is the foundation, not the layer.** It registers one value type and four
+**This is the foundation, not the layer.** It registers two value types and five
 computations:
 
 | Computation | Provider | Result |
@@ -14,15 +14,16 @@ computations:
 | `motion.sampleAnimation` | a `UsdSkelAnimation` prim | the pose the clip states **at the frame the system is evaluating**, stamped in seconds |
 | `motion.priorPose` | a `UsdSkelAnimation` prim | the sampled pose, forwarded — the value key a driver **overrides** with the previous frame's answer |
 | `motion.filterPose` | a `UsdSkelAnimation` prim | one `motion::PoseFilter` step from `motion.priorPose` toward the sampled pose |
+| `motion.extractRootMotion` | a `UsdSkelAnimation` prim | the `motion::RootMotion` the sampled pose states, under the clip's intake policy |
 
 `motion.identityPose` is the mechanism at its weakest possible value and it
 stays: with no algorithm behind it, a wrong answer there can only be a wrong
 mechanism, which is what makes every later failure attributable.
 
-The remaining nodes — `motion.extractRootMotion`, `motion.interpolatePose`,
-`motion.blendPoses` — come next, in that order, over `motionRuntime`.
-`blendPoses` is last because it is the one that wants two inputs, and 26.08's
-builtin `computeValue` forwards across exactly one connection.
+The remaining nodes — `motion.interpolatePose`, `motion.blendPoses` — come next,
+in that order, over `motionRuntime`. `blendPoses` is last because it is the one
+that wants two inputs, and 26.08's builtin `computeValue` forwards across
+exactly one connection.
 
 ## A clip has to state the rate its frames are counted at
 
@@ -125,6 +126,65 @@ is what each absent value costs. A missing rate produces a *second* no consumer
 can tell from a measured one. A missing cutoff selects the behaviour every other
 caller of `motion::PoseFilter` already gets.
 
+## What a clip may state about its root
+
+`motion.extractRootMotion` answers with a `motion::RootMotion` — the bundle's
+**second** registered value type, and the first result here that is not a pose.
+One attribute decides it:
+
+| `motion:root:intake` | What comes back |
+| --- | --- |
+| absent | `motion::LiveCaptureConfig`'s own default, which is `deriveVelocity` |
+| `passthrough` | the root the pose carries, unchanged |
+| `ignore` | a **cleared** `motion::RootMotion` — every presence flag false |
+| `deriveVelocity` | `passthrough`, plus a linear velocity where the pose has a position, reported none, and there is a prior position and time between the two |
+| anything else | nothing, and a posted error naming the computation |
+
+`ignore` **clears rather than zeroes**, and that is what the presence flags are
+for: a cleared root says *this clip does not place the body*, and a zero position
+with `hasPosition` set says *the body is at the origin*. Only the first leaves a
+rig its own placement.
+
+The last row is the other half of the rule above, and the two together are one
+rule rather than two moods. An **absent** attribute is a clip that said nothing,
+and it gets the library's behaviour. A token that spells no policy is a clip that
+*stated* something this layer cannot honour, and defaulting there would hand a
+misspelled `ignore` the root motion it asked not to have. So: default where an
+absent value selects the library's documented behaviour, refuse where it would
+produce a number no consumer can tell from a measured one, and never default a
+value the clip stated.
+
+The node reads `motion.sampleAnimation` rather than `motion.filterPose`, and that
+is the **library's** ordering rather than a preference: `LiveCaptureSource`
+conditions the root of a frame as it arrived and smooths afterwards, so a node
+differentiating a filtered position would answer a different question from the
+one `motionRuntime` answers — and P0-6 parity would have to explain the
+difference instead of measuring it.
+
+Its prior pose is the same `motion.priorPose` the filter takes, so **one override
+drives both**: a driver holds one previous answer per prim and substitutes it
+once per frame, whatever the request happens to contain
+([the root-motion report](../../docs/reports/openusd/26.08-openexec-root-motion.md) §4).
+
+### Where the rule it applies lives
+
+`motion::RootMotionIntake` is the library's enum and the rule it selects is the
+library's — written down in the
+[motion contract](../../docs/design/MOTION_CONTRACT.md) and implemented in
+`LiveCaptureSource::_Condition`, which is **private**, on a class that is a
+capture *session*: a buffer, a filter, held-bone state and statistics.
+
+The composition idiom `motion.filterPose` uses was tried here and **produces a
+wrong answer**. Two poses at the same instant are a reseed for
+`motion::PoseFilter::Apply` and a *refusal* for `LiveCaptureSource::Push` — so a
+composed answer would be the previous frame's root, and an un-overridden node
+evaluates exactly that case. The three lines are therefore in the seam, matched
+condition for condition and asserted against their definition rather than against
+the library, and the ask is
+[boundary consolidation](../../docs/roadmap/boundary-consolidation.md)'s:
+`ConditionRootMotion(prior, pose, intake)` as a free function, so the rule has
+one implementation again.
+
 ## Nothing here interpolates
 
 An exec input arrives **already resolved at the evaluated time**, so a frame
@@ -152,7 +212,9 @@ edges lookup. The two are compared at P0-6 parity rather than assumed equal; wha
   lives in `tools/motionRetarget`'s `StageIo.cpp` and not in a library — or where
   it has one in the wrong shape — `motion::PoseFilter` is a streaming class with
   no one-step entry point, so `motion.filterPose` composes a seed and a step out
-  of two `Apply` calls — that is recorded as a finding for
+  of two `Apply` calls, and `motion.extractRootMotion`'s rule is private to a
+  capture session whose composition gives a wrong answer — that is recorded as a
+  finding for
   [boundary consolidation](../../docs/roadmap/boundary-consolidation.md), which
   is the track scheduled to act on exactly this.
 - **No VRM, and no product name.** Humanoid retarget, expressions, look-at and
@@ -179,5 +241,6 @@ through an input accessor rather than by registering on it. The measurement is
 | `execMotion_mechanism` | discovery through `plugInfo.json`, request compile, compute, an unchanged recompute, an authored-value invalidation, a time change reporting nothing for a time-independent value key, an explicit invalidation, and the shape an unregistered computation presents as |
 | `execMotion_sample` | the same request at four times — the default time code, and frames 0, 100 and 50 — a value key being reported to the time callback even over a clip that holds still (which is what makes `computeTime` a per-frame recompute), and a clip with no rate being refused rather than stamped |
 | `execMotion_filter` | one computation reading another, a value key inherited by a node that declares no `computeTime`, an override reaching every dependent of the key it names and no sibling, and a clip's policy landing on `motion::PoseFilter`'s own weight rather than on this bundle's |
+| `execMotion_root` | the bundle's second registered value type coming back beside the first out of one request, a dependent whose result type differs from its input's, a velocity that exists nowhere in the clip, one override driving both recurrences in a single call, and an intake token that names no policy being refused where an absent one is defaulted |
 
-All four carry the CTest label `motion.openexec`.
+All five carry the CTest label `motion.openexec`.

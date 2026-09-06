@@ -192,6 +192,65 @@ Current schema contract version: **1**.
   half. Four suites in the bundle now, and 130 green CTest names in the
   workspace.
 
+- **`motion.extractRootMotion`: where the body is, under the policy the clip
+  states** (the OpenExec plan's P0-4). The third real computation and the first
+  whose answer is **not a pose**: it returns a `motion::RootMotion`, which makes
+  it the bundle's second registered execution value type. One attribute decides
+  it -- `motion:root:intake`, carrying one of `motion::RootMotionIntake`'s own
+  three policies as a token. `passthrough` is the root the pose carries;
+  `ignore` **clears** it rather than zeroing it, because a cleared root says the
+  clip does not place the body while a zero position says the body is at the
+  origin; and `deriveVelocity`, the library's default and so what an absent
+  attribute selects, fills in a linear velocity from the previous frame's pose.
+  It reads `motion.sampleAnimation` rather than the filtered pose because that
+  is `motionRuntime`'s own ordering -- a live session conditions the root of a
+  frame as it arrived and smooths afterwards.
+
+  **The absent-input rule is now general, because this attribute answers it both
+  ways**: defaulted when absent, refused when *stated and unrecognized*. The rate
+  is refused when absent, the filter's cutoff is defaulted when absent, and
+  together the three are one rule -- default where an absent value selects the
+  library's documented behaviour, refuse where it would produce a number no
+  consumer can tell from a measured one, and never default a value the clip
+  stated that this layer cannot honour, or a misspelled `ignore` gets the root
+  motion it asked not to have.
+
+  **Four measurements**
+  ([docs/reports/openusd/26.08-openexec-root-motion.md](docs/reports/openusd/26.08-openexec-root-motion.md)),
+  three of which change what the remaining nodes may assume. A bundle
+  **registers more than one value type**, and a computation may answer in a type
+  other than the one it reads -- one request hands back a pose and a root motion
+  side by side. **Time dependence follows the link and not the type**, so the
+  change of result type costs nothing. **One override drives every node that
+  depends on the key it names**: a single `motion.priorPose` substitution steps
+  the filter *and* derives the velocity in one `ComputeWithOverrides`, which
+  shortens the driver contract to one previous answer per prim rather than one
+  per node. And **an input the callback reads but `.Inputs()` does not declare is
+  silent** -- the bundle compiles, the request is valid, the callback runs, and
+  the pointer is null, so the node takes its absent-value path with nothing
+  anywhere reporting the missing declaration. That is the third shape of one
+  26.08 property: a callback cannot tell *absent* from *not asked for*, which
+  makes a node's own refusal the only refusal there is.
+
+  **The third boundary finding, and the first where the wrapper idiom was tried
+  and ruled out rather than skipped.** The rule this node applies is
+  `motionRuntime`'s and lives in `LiveCaptureSource::_Condition` -- private, on a
+  class that is a capture *session*. Composing it the way `motion.filterPose`
+  composes `PoseFilter` gives the **wrong answer in the ordinary case**: two
+  poses at the same instant are a reseed for `PoseFilter` and a *refusal* for
+  `Push`, so the composed answer is the previous frame's root, and an
+  un-overridden node evaluates exactly that case. So the derivation is three
+  lines in the seam, asserted against its definition rather than against the
+  library, and `ConditionRootMotion(prior, pose, intake)` is the ask on
+  `motionRuntime` for
+  [boundary consolidation](docs/roadmap/boundary-consolidation.md).
+
+  `execMotion_root` drives the built bundle over two fixtures differing by one
+  thing -- `rooted_clip.usda` is `sampled_clip.usda` plus `motion:root:intake`,
+  stating `passthrough` rather than the default precisely so the pair cannot
+  agree by accident. `execMotion_pose` gains the seam half. Five suites in the
+  bundle now, and 131 green CTest names in the workspace.
+
 - **Two expressions can no longer both own the eyelid: VRM 1.0's expression
   overrides, read and obeyed** (closes #170). Expressions accumulate on the
   targets they bind, and two that bind *different* targets still fight when

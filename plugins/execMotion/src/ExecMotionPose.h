@@ -13,11 +13,13 @@
 
 #include <motionCore/Humanoid.h>
 #include <motionRuntime/Filter.h>
+#include <motionRuntime/LiveCaptureSource.h>
 
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
 
 #include <optional>
+#include <string_view>
 #include <string>
 #include <vector>
 
@@ -176,5 +178,78 @@ struct FilterPolicy
 motion::HumanoidPose FilteredPose(const motion::HumanoidPose& prior,
                                   const motion::HumanoidPose& pose,
                                   const FilterPolicy& policy);
+
+/// What a clip states about how its root is taken in.
+///
+/// The vocabulary is the library's -- `motion::RootMotionIntake`, the same enum
+/// a live session configures `motionRuntime` with -- rather than a second one
+/// spelled for exec. A wrapper that named its own policies would be a wrapper
+/// over a contract of its own making.
+///
+/// Absent means the library's own default, the way `FilterPolicy`'s fields do,
+/// and for the same reason: `LiveCaptureConfig::rootMotion` already answers this
+/// for every other caller and a default invented here would answer it
+/// differently. The default is *read from* `LiveCaptureConfig` rather than
+/// restated (see RootMotionFrom), so the day the library moves it, this bundle
+/// moves with it.
+struct RootPolicy
+{
+    /// `motion:root:intake`. Nullopt is `LiveCaptureConfig`'s own default.
+    std::optional<motion::RootMotionIntake> intake;
+};
+
+/// The intake policy `token` names, or nullopt for a token this layer does not
+/// recognize.
+///
+/// Absent and unrecognized are different answers, and this is where the
+/// difference is drawn: an absent attribute is a clip that said nothing and gets
+/// the library's default; a token that spells no policy is a clip that *stated*
+/// something this layer cannot honour, and the caller refuses it. Falling back
+/// to the default there would give a clip asking for `Ignore` -- misspelled --
+/// the root motion it asked not to have.
+///
+/// The spellings are the enum's own names in lowerCamelCase, which is what a
+/// USD token attribute reads like: `passthrough`, `ignore`, `deriveVelocity`.
+std::optional<motion::RootMotionIntake> RootIntakeForToken(
+    std::string_view token);
+
+/// The root motion `pose` states, under `policy`, given the pose before it.
+///
+/// `Ignore` yields a default-constructed `motion::RootMotion` -- every presence
+/// flag clear, which is what "this clip's placement is not the capture's to
+/// decide" looks like downstream. `Passthrough` yields the pose's own root
+/// unchanged. `DeriveVelocity` is `Passthrough` plus one thing: when the pose
+/// carries a position and no linear velocity and `prior` carries a position, the
+/// velocity is the distance between the two over the seconds between them.
+///
+/// `prior` is the same value `motion.filterPose` takes, and it reaches this
+/// function under the same rule: a computation is handed one instant and a
+/// velocity needs two, so the previous frame's answer is supplied by whoever
+/// drives the graph. Un-overridden it is the pose itself, the elapsed time is
+/// zero, and no velocity is derived -- the pose passes through, which is the
+/// same shape a zero-length filter step has and is not special-cased here
+/// either.
+///
+/// **This node is the plan's third "not a wrapper" finding.** The rule it
+/// applies is `motionRuntime`'s, written down in the motion contract and
+/// implemented in `LiveCaptureSource::_Condition` -- a **private** method of a
+/// class that is a capture *session*: it owns a pose buffer, a filter, held-bone
+/// state and statistics, and it refuses a frame whose timestamp does not
+/// increase. So there is no call to make. The seed-then-step idiom
+/// `FilteredPose` uses was tried first and does not transfer: pushing `prior`
+/// and then `pose` into a local `LiveCaptureSource` gives the wrong answer in
+/// this bundle's *ordinary* case, because two poses at the same instant are one
+/// accepted frame and one refusal, and the buffer head is then the prior rather
+/// than the pose. `PoseFilter` reseeds where `LiveCaptureSource` refuses, and
+/// that difference is what decides it.
+///
+/// So the three lines are here, matched condition for condition to the library's
+/// and asserted against the definition rather than against the library, and the
+/// ask goes to [boundary consolidation](../../../docs/roadmap/boundary-consolidation.md):
+/// a stateless `ConditionRootMotion(prior, pose, intake)` free function beside
+/// the session class, so the rule has one implementation again.
+motion::RootMotion RootMotionFrom(const motion::HumanoidPose& prior,
+                                  const motion::HumanoidPose& pose,
+                                  const RootPolicy& policy);
 
 } // namespace execmotion

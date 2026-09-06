@@ -61,6 +61,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sampleAnimation, "motion.sampleAnimation"))
     ((priorPose, "motion.priorPose"))
     ((filterPose, "motion.filterPose"))
+    ((extractRootMotion, "motion.extractRootMotion"))
     // UsdSkelAnimation's own attributes. Each is declared with its ELEMENT
     // type below and read through an iterator, because an array-valued USD
     // input is boxed into a container of the element type on the way in.
@@ -82,11 +83,22 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((cutoffHz, "motion:filter:cutoffHz"))
     ((filterRootPosition, "motion:filter:rootPosition"))
     ((filterRootOrientation, "motion:filter:rootOrientation"))
+    // What a clip states about how its root is taken in: one of
+    // `motion::RootMotionIntake`'s three policies, spelled in lowerCamelCase.
+    // Absent is the library's own default; a token naming no policy is refused
+    // (ExecMotionPose.h, RootIntakeForToken).
+    ((rootIntake, "motion:root:intake"))
 );
 
 TF_REGISTRY_FUNCTION(ExecTypeRegistry)
 {
+    // Two registered types, and the second is registered for the same reason as
+    // the first: `motion::RootMotion` is what `motion.extractRootMotion`
+    // produces, it is a `motionCore` value rather than a shape invented here,
+    // and it satisfies the registry's two requirements -- not a `VtArray`, and
+    // equality comparable since v0.6.0.
     ExecTypeRegistry::RegisterType(motion::HumanoidPose{});
+    ExecTypeRegistry::RegisterType(motion::RootMotion{});
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
@@ -313,4 +325,75 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
             AttributeValue<float>(_tokens->cutoffHz),
             AttributeValue<bool>(_tokens->filterRootPosition),
             AttributeValue<bool>(_tokens->filterRootOrientation));
+
+    // -----------------------------------------------------------------------
+    // motion.extractRootMotion -- where the body is, under the clip's policy
+    // -----------------------------------------------------------------------
+    //
+    // The first computation that produces something other than a pose, and the
+    // reason the bundle registers a second value type: a `motion::RootMotion`
+    // is what a consumer of body placement wants, and dissolving it into
+    // channels would put the presence flags into masks the way the migration
+    // report's rejected pose shapes did.
+    //
+    // It reads `motion.sampleAnimation` rather than `motion.filterPose`, and
+    // that is the library's ordering rather than a preference:
+    // `LiveCaptureSource` conditions the root of the frame as it *arrived* and
+    // smooths afterwards, so a node deriving its velocity from a filtered
+    // position would answer a different question from the one `motionRuntime`
+    // answers, and P0-6 parity would have to explain the difference rather than
+    // measure it.
+    //
+    // The prior pose is the same `motion.priorPose` the filter takes, and it is
+    // the same override a driver already sets: one substituted value per frame
+    // feeds both nodes, because a velocity and a filter step want the identical
+    // thing -- the previous frame's answer.
+    self.PrimComputation(_tokens->extractRootMotion)
+        .Callback<motion::RootMotion>(+[](const VdfContext &ctx) {
+            const motion::HumanoidPose *const pose =
+                ctx.GetInputValuePtr<motion::HumanoidPose>(
+                    _tokens->sampleAnimation);
+            if (!pose) {
+                // The one thing this node cannot compute without, checked
+                // rather than assumed: a `.Required()` input is not guaranteed
+                // to arrive with a value (the sampling report section 2).
+                TF_RUNTIME_ERROR(
+                    "motion.extractRootMotion: no pose came back from "
+                    "motion.sampleAnimation, so there is no root to extract");
+                return motion::RootMotion{};
+            }
+
+            execmotion::RootPolicy policy;
+            if (const TfToken *const stated =
+                    ctx.GetInputValuePtr<TfToken>(_tokens->rootIntake)) {
+                policy.intake =
+                    execmotion::RootIntakeForToken(stated->GetString());
+                if (!policy.intake) {
+                    // Absent and unrecognized are different answers. An absent
+                    // attribute is a clip that said nothing and gets the
+                    // library's default; a token spelling no policy is a clip
+                    // that stated something this bundle cannot honour, and
+                    // defaulting there would hand a misspelled `Ignore` the
+                    // root motion it asked not to have.
+                    TF_RUNTIME_ERROR(
+                        "motion.extractRootMotion: the clip states "
+                        "'motion:root:intake' = '%s', which names no "
+                        "motion::RootMotionIntake policy; no root motion was "
+                        "extracted",
+                        stated->GetText());
+                    return motion::RootMotion{};
+                }
+            }
+
+            const motion::HumanoidPose *const prior =
+                ctx.GetInputValuePtr<motion::HumanoidPose>(_tokens->priorPose);
+
+            return execmotion::RootMotionFrom(prior ? *prior : *pose, *pose,
+                                              policy);
+        })
+        .Inputs(
+            Computation<motion::HumanoidPose>(
+                _tokens->sampleAnimation).Required(),
+            Computation<motion::HumanoidPose>(_tokens->priorPose).Required(),
+            AttributeValue<TfToken>(_tokens->rootIntake));
 }
