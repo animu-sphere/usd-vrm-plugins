@@ -529,7 +529,60 @@ compared, which was P0-4's stated blocker.
   a *tool*, where a bundle cannot call it — so the bundle keeps its own seam over
   plain values and the duplication is recorded rather than hidden, for
   [boundary consolidation](boundary-consolidation.md) to act on.
-- ⬜ **The four remaining `execMotion` nodes, `execVrm`, parity, and the display
+- ✅ **`motion.filterPose`, and where a recurrence lives when the graph has no
+  history** *(2026-09-06, P0-4)*. One `motion::PoseFilter` step, the first node
+  that wraps `motionRuntime`, and the first that needs a value from a frame it is
+  not being evaluated at.
+
+  **The state is passed in rather than kept**, and that is forced rather than
+  preferred: a static in the callback is the mutable state exec's cache-safety
+  contract and the motion policy both forbid, an authored "previous pose"
+  attribute would put a derived value into the scene, and there is no input that
+  can be evaluated at another time. So `motion.priorPose` is a computation whose
+  ordinary value is the clip's own pose at the evaluated frame and whose purpose
+  is to be replaced through `ExecUsdSystem::ComputeWithOverrides` — **exec does
+  the step, the driver owns the sequence**, which is where the state already sits
+  for a live source in `motionRuntime`'s pose buffer. Un-overridden the node *is*
+  `motion.sampleAnimation`, with nothing special-casing it: zero elapsed time is
+  a reseed and a pass-through in the library. A clip may state
+  `motion:filter:cutoffHz`, `motion:filter:rootPosition` and
+  `motion:filter:rootOrientation`, and an absent one keeps
+  `PoseFilter::Options`' **own** default — the opposite of the rate's treatment
+  one bullet up, because what an absent value costs differs: a missing rate is a
+  second no consumer can tell from a measured one, a missing cutoff is the
+  behaviour every other caller of the library already gets.
+
+  **Four measurements**
+  ([the filtering report](../reports/openusd/26.08-openexec-filtering.md)), three
+  of which change what the remaining nodes may assume. **A computation reads
+  another computation** on the same prim, the registered aggregate crossing that
+  link unchanged — so the plan's chain is links rather than one node, and
+  `Computation<T>()` is not a connection, which leaves 26.08's one-connection
+  fallback to `blendPoses`. **Time dependence propagates across the link**: this
+  node declares neither `computeTime` nor a keyed attribute and is still reported
+  when the frame moves, which makes "declare `computeTime` only if you use it"
+  free to follow rather than something every downstream node has to undo. **A
+  request is armed by its first `Compute`** — a `ChangeTime` before one reaches
+  no callback at all, which cost a red run and is the shape a naive event-driven
+  driver would take. And an **override** reaches every dependent of the key it
+  names, is visible as that key's own value, leaks into no sibling, and does not
+  survive the call.
+
+  **The second boundary finding, smaller than the sampler's and the same kind:**
+  `motion::PoseFilter` has no stateless one-step entry point, so the bundle
+  composes one from two `Apply` calls. The algorithm stays in the library — the
+  node is a wrapper — but the idiom is a workaround for a missing signature, and
+  it has a **measured cost P0-6 inherits**: a pose is not the whole of a filter's
+  state, so a bone returning after a missing frame is passed through here (45.0°)
+  where the streaming filter smooths it (23.8°). Nothing for a clip, whose
+  `joints` are `uniform`; real for a live source. So
+  `Step(prior, pose, options)` — **returning the state beside the result** — is
+  the ask
+  ([boundary consolidation](boundary-consolidation.md) §1). A **driver contract**
+  joins the open list with it: compute once to arm a request, step the recurrence
+  through overrides, neither discoverable from the computations themselves, and
+  P0-6's parity harness is the first client that needs it written down.
+- ⬜ **The three remaining `execMotion` nodes, `execVrm`, parity, and the display
   slice** — the rest of P0-4 and P0-5 through P0-7 of the
   [plan](openexec-foundation.md#6-foundation-tasks).
 

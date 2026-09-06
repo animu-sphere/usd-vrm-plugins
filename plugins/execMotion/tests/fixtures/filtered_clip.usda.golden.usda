@@ -1,0 +1,50 @@
+#usda 1.0
+(
+    """Policy fixture for execMotion: the sampled clip, stating how it wants to
+    be smoothed.
+
+    The prose is a layer comment rather than `doc` on purpose; see
+    sampled_clip.usda for why.
+
+    Everything but the three `motion:filter:*` attributes is sampled_clip.usda,
+    so a difference between the two through motion.filterPose is the policy and
+    nothing else. That is what makes the pair measure the wrapper's rule: a clip
+    stating no policy is filtered with motion::PoseFilter's own defaults, and
+    this one moves each of them off its default so a field that never reached
+    the library would show up as the default's answer.
+
+    12 hertz is twice the library default of 6, chosen because a step's weight
+    is 1 - exp(-2*pi*cutoff*dt) -- the two cutoffs are far enough apart that
+    neither answer can be mistaken for the other at any usable dt, and near
+    enough that both stay strictly between \"unchanged\" and \"the new pose\".
+
+    `motion:filter:rootOrientation` is false and is inert here whichever way it
+    is set: a UsdSkelAnimation states rotations per joint and no separate root
+    orientation, so a pose read from a clip carries none and PoseFilter skips
+    the field. It is authored anyway because the wrapper carries the whole of
+    PoseFilter::Options, and a live source does report one."""
+    doc = """Generated from Composed Stage of root layer C:\\dev\\usd-vrm-plugins\\plugins\\execMotion\\tests\\fixtures\\filtered_clip.usda
+"""
+    endTimeCode = 100
+    startTimeCode = 0
+    timeCodesPerSecond = 50
+)
+
+def SkelAnimation "Clip"
+{
+    uniform token[] joints = ["hips", "hips/spine", "hips/spine/chest", "hips/spine/chest/neck/head", "prop"]
+    custom float motion:filter:cutoffHz = 12
+    custom bool motion:filter:rootOrientation = 0
+    custom bool motion:filter:rootPosition = 1
+    custom uniform double motion:timeCodesPerSecond = 50
+    quatf[] rotations.timeSamples = {
+        0: [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0)],
+        100: [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (0.70710677, 0, 0.70710677, 0), (1, 0, 0, 0)],
+    }
+    half3[] scales = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+    float3[] translations.timeSamples = {
+        0: [(0, 0, 0), (0, 0.1, 0), (0, 0.2, 0), (0, 0.3, 0), (0, 0, 0)],
+        100: [(0, 1, 2), (0, 0.1, 0), (0, 0.2, 0), (0, 0.3, 0), (9, 9, 9)],
+    }
+}
+

@@ -59,6 +59,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     // what may not be a product name.
     ((identityPose, "motion.identityPose"))
     ((sampleAnimation, "motion.sampleAnimation"))
+    ((priorPose, "motion.priorPose"))
+    ((filterPose, "motion.filterPose"))
     // UsdSkelAnimation's own attributes. Each is declared with its ELEMENT
     // type below and read through an iterator, because an array-valued USD
     // input is boxed into a container of the element type on the way in.
@@ -73,6 +75,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     // (docs/reports/openusd/26.08-openexec-mechanism.md §5). This input is the
     // shim for that gap and is meant to go away when it closes.
     ((timeCodesPerSecond, "motion:timeCodesPerSecond"))
+    // What a clip states about how it wants to be smoothed. All three are
+    // optional and an absent one keeps `motion::PoseFilter`'s own default --
+    // see ExecMotionPose.h for why these are defaulted where the rate above is
+    // refused.
+    ((cutoffHz, "motion:filter:cutoffHz"))
+    ((filterRootPosition, "motion:filter:rootPosition"))
+    ((filterRootOrientation, "motion:filter:rootOrientation"))
 );
 
 TF_REGISTRY_FUNCTION(ExecTypeRegistry)
@@ -207,4 +216,101 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
             AttributeValue<double>(_tokens->timeCodesPerSecond).Required(),
             Stage().Computation<EfTime>(
                 ExecBuiltinComputations->computeTime).Required());
+
+    // -----------------------------------------------------------------------
+    // motion.priorPose -- the pose a filter step starts from
+    // -----------------------------------------------------------------------
+    //
+    // The value is the clip's own pose at the evaluated frame, forwarded
+    // unchanged, and the node exists for what a *caller* can put in its place:
+    // it is the value key `ExecUsdSystem::ComputeWithOverrides` is aimed at.
+    //
+    // A filter is a recurrence -- this frame's answer is a function of the last
+    // one -- and OpenExec hands a callback exactly one time with no way to
+    // reach another (the sampling report section 5). The two ways to hold the
+    // missing half inside the graph are both refused by the purity rule: a
+    // static in the callback is mutable state invalidation cannot see, and a
+    // second attribute stating "the previous pose" would put a derived value
+    // into the scene. So the recurrence stays with whoever drives the graph --
+    // which is where it already lives for a live source, in `motionRuntime`'s
+    // pose buffer -- and reaches exec as an override on this key.
+    //
+    // Forwarding, rather than a second copy of the sampling callback: the two
+    // value keys must be distinct so an override can name one of them, but the
+    // behaviour must not be. Un-overridden, `motion.filterPose` therefore
+    // smooths the clip against itself, which `motion::PoseFilter` answers by
+    // returning it unchanged -- the pass-through falls out of `dt == 0` rather
+    // than being special-cased anywhere in this bundle.
+    self.PrimComputation(_tokens->priorPose)
+        .Callback<motion::HumanoidPose>(+[](const VdfContext &ctx) {
+            const motion::HumanoidPose *const pose =
+                ctx.GetInputValuePtr<motion::HumanoidPose>(
+                    _tokens->sampleAnimation);
+            return pose ? *pose : motion::HumanoidPose{};
+        })
+        .Inputs(
+            Computation<motion::HumanoidPose>(
+                _tokens->sampleAnimation).Required());
+
+    // -----------------------------------------------------------------------
+    // motion.filterPose -- one step of motion::PoseFilter
+    // -----------------------------------------------------------------------
+    //
+    // The first node in this bundle that wraps `motionRuntime`, and the first
+    // that consumes another computation's result rather than an attribute --
+    // the plan's chain (SampleAnimation -> FilterPose -> ...) as two links.
+    //
+    // It declares no `computeTime`, and that is a decision rather than an
+    // oversight: it does not use the frame, and a node that declares
+    // `computeTime` is recomputed on every frame change even when nothing it
+    // reads has moved (the sampling report section 3). What time this pose
+    // belongs to arrives inside the poses themselves, as the seconds
+    // `motion.sampleAnimation` stamped -- and those are what the filter's step
+    // weight is derived from, which is the whole reason the rate had to enter
+    // the graph one node earlier.
+    self.PrimComputation(_tokens->filterPose)
+        .Callback<motion::HumanoidPose>(+[](const VdfContext &ctx) {
+            const motion::HumanoidPose *const pose =
+                ctx.GetInputValuePtr<motion::HumanoidPose>(
+                    _tokens->sampleAnimation);
+            if (!pose) {
+                // Required inputs are not guaranteed to arrive with a value
+                // (the sampling report section 2), so the one thing this node
+                // cannot compute without is checked rather than assumed. It
+                // has no other refusal: an absent policy is the library's
+                // default, and an absent prior pose is the pose itself.
+                TF_RUNTIME_ERROR(
+                    "motion.filterPose: no pose came back from "
+                    "motion.sampleAnimation, so there is nothing to filter");
+                return motion::HumanoidPose{};
+            }
+
+            const motion::HumanoidPose *const prior =
+                ctx.GetInputValuePtr<motion::HumanoidPose>(_tokens->priorPose);
+
+            execmotion::FilterPolicy policy;
+            if (const float *const cutoff =
+                    ctx.GetInputValuePtr<float>(_tokens->cutoffHz)) {
+                policy.cutoffHz = *cutoff;
+            }
+            if (const bool *const root =
+                    ctx.GetInputValuePtr<bool>(_tokens->filterRootPosition)) {
+                policy.filterRootPosition = *root;
+            }
+            if (const bool *const root =
+                    ctx.GetInputValuePtr<bool>(
+                        _tokens->filterRootOrientation)) {
+                policy.filterRootOrientation = *root;
+            }
+
+            return execmotion::FilteredPose(prior ? *prior : *pose, *pose,
+                                            policy);
+        })
+        .Inputs(
+            Computation<motion::HumanoidPose>(
+                _tokens->sampleAnimation).Required(),
+            Computation<motion::HumanoidPose>(_tokens->priorPose).Required(),
+            AttributeValue<float>(_tokens->cutoffHz),
+            AttributeValue<bool>(_tokens->filterRootPosition),
+            AttributeValue<bool>(_tokens->filterRootOrientation));
 }

@@ -43,6 +43,19 @@ accepted: three of the four crossings are already implemented, and a contract
 written against three implementations plus one real consumer is a better
 contract than one written against three implementations and a plan.
 
+### Findings from the exec layer, as they land
+
+Written here as they are produced, so this track starts with evidence rather
+than with a re-reading. Each is a place an implementation reached for a library
+call and did not find one; none is a defect in the library it names.
+
+| Finding | Where it surfaced | The ask |
+| --- | --- | --- |
+| Reading a `UsdSkelAnimation` into a canonical pose exists only in a **tool** (`tools/motionRetarget`'s `StageIo.cpp`), where a bundle cannot call it, so `execMotion` keeps a second seam over plain values | `motion.sampleAnimation` ([sampling report §5](../reports/openusd/26.08-openexec-sampling.md)) | a library home for clip → pose, or an explicit decision that the duplication stays |
+| `motion::PoseFilter` has no **stateless one-step** entry point, so a pure computation composes one out of two `Apply` calls — a seed and a step, which also **drops the dropout history** the filter keeps in its state and not in its result (measured: a bone returning after a missing frame is 45.0° here against 23.8° streamed) | `motion.filterPose` ([filtering report §7, §8](../reports/openusd/26.08-openexec-filtering.md)) | `Step(prior, pose, options)` as a free function beside the streaming class, returning the **state** beside the result — the result alone is what a caller cannot carry |
+| A driver has to know two things no computation declares: a request is armed by its first `Compute`, and a recurrence is stepped through `ComputeWithOverrides` | `motion.filterPose` ([filtering report §4, §5](../reports/openusd/26.08-openexec-filtering.md)) | a written driver contract, first needed by P0-6's parity harness |
+| `motion:timeCodesPerSecond` and `motion:filter:*` are authored by fixtures and by nothing else | both nodes | BND-0 below decides whether a rate shim and a filter policy belong on a clip at all |
+
 ## 2. BND-0 — the canonical producer contract ⬜
 
 *Moved here from the recorded-source milestone on 2026-09-06.* It was paired

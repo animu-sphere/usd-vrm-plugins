@@ -9,6 +9,7 @@
 
 #include "ExecMotionPose.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdio>
@@ -231,6 +232,207 @@ void TestARotationIsNormalizedOnTheWayIn()
     assert(std::abs(head.GetReal() - 0.70710678f) < 1e-5f);
 }
 
+// ---------------------------------------------------------------------------
+// The filter step
+// ---------------------------------------------------------------------------
+// One `motion::PoseFilter` step over two poses, with the state passed in. The
+// three checks here are the ones that decide whether the *node* is honest: that
+// an absent policy is the library's answer and not one this bundle invented,
+// that filtering against yourself is the identity, and that a step lands where
+// the library's own weight formula says.
+
+motion::HumanoidPose PoseWithHeadAndHips(double timestamp, float headAngleDeg,
+                                         const pxr::GfVec3f& hips)
+{
+    motion::HumanoidPose pose;
+    pose.timestamp = timestamp;
+    const float radians = headAngleDeg * float(M_PI) / 180.0f;
+    pose.localRotations[static_cast<std::size_t>(motion::HumanBone::Head)] =
+        pxr::GfQuatf(std::cos(radians * 0.5f),
+                     pxr::GfVec3f(0.0f, std::sin(radians * 0.5f), 0.0f));
+    pose.validRotations.set(static_cast<std::size_t>(motion::HumanBone::Head));
+    pose.validRotations.set(static_cast<std::size_t>(motion::HumanBone::Hips));
+    pose.root.worldPosition = hips;
+    pose.root.hasPosition = true;
+    return pose;
+}
+
+float HeadAngleDegrees(const motion::HumanoidPose& pose)
+{
+    const pxr::GfQuatf head =
+        pose.localRotations[static_cast<std::size_t>(motion::HumanBone::Head)]
+            .GetNormalized();
+    const double w = std::min(1.0, std::max(-1.0, double(head.GetReal())));
+    return float(2.0 * std::acos(w) * 180.0 / M_PI);
+}
+
+void TestFilteringAgainstYourselfChangesNothing()
+{
+    const motion::HumanoidPose pose =
+        PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
+
+    // The same pose as both arguments is what the node computes when nobody
+    // overrides `motion.priorPose`, and the answer has to be the pose itself:
+    // the elapsed time is zero, so `PoseFilter` reseeds and passes it through.
+    // Nothing in this file special-cases it -- it is the library's rule for a
+    // non-increasing timestamp, and the node inherits it.
+    assert(execmotion::FilteredPose(pose, pose, {}) == pose);
+
+    // And so does a prior pose from the future, which is what a seek backwards
+    // looks like.
+    const motion::HumanoidPose later =
+        PoseWithHeadAndHips(2.0, 0.0f, pxr::GfVec3f(0.0f));
+    assert(execmotion::FilteredPose(later, pose, {}) == pose);
+}
+
+void TestAnAbsentPolicyIsTheLibrarysOwn()
+{
+    const motion::HumanoidPose prior =
+        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose pose =
+        PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
+
+    // 6 Hz is `motion::PoseFilter::Options`' default, and a policy stating
+    // nothing must land on exactly the same pose as one stating 6. If this
+    // bundle ever grew a default of its own, these two would part company.
+    execmotion::FilterPolicy stated;
+    stated.cutoffHz = 6.0f;
+    assert(execmotion::FilteredPose(prior, pose, {}) ==
+           execmotion::FilteredPose(prior, pose, stated));
+
+    // The weight itself, from the library's documented definition rather than
+    // from the library: 1 - exp(-2*pi*cutoff*dt), and a slerp between two
+    // rotations about one axis moves the angle linearly.
+    constexpr double kTwoPi = 6.2831853071795862;
+    const double weight = 1.0 - std::exp(-kTwoPi * 6.0 * 0.02);
+    const motion::HumanoidPose filtered =
+        execmotion::FilteredPose(prior, pose, {});
+    assert(std::abs(HeadAngleDegrees(filtered) - float(45.0 * weight)) < 1e-2f);
+    assert(std::abs(filtered.root.worldPosition[2] - float(weight)) < 1e-4f);
+
+    // A filtered pose belongs to the frame it was asked for, not to the state
+    // it started from.
+    assert(filtered.timestamp == pose.timestamp);
+}
+
+void TestEachPolicyFieldReachesTheOptionItNames()
+{
+    const motion::HumanoidPose prior =
+        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose pose =
+        PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
+
+    // A non-positive cutoff is the library's own pass-through, and it is the
+    // only value of the policy that makes the node an identity over a real
+    // step.
+    execmotion::FilterPolicy off;
+    off.cutoffHz = 0.0f;
+    assert(execmotion::FilteredPose(prior, pose, off) == pose);
+
+    // A higher cutoff is a longer step toward the new pose, in the direction
+    // the library documents: more responsive, less smoothing.
+    execmotion::FilterPolicy fast;
+    fast.cutoffHz = 12.0f;
+    assert(HeadAngleDegrees(execmotion::FilteredPose(prior, pose, fast)) >
+           HeadAngleDegrees(execmotion::FilteredPose(prior, pose, {})));
+
+    // The root flag reaches the root and nothing else: the hips stop moving,
+    // the head goes on taking its step.
+    execmotion::FilterPolicy heldRoot;
+    heldRoot.filterRootPosition = false;
+    const motion::HumanoidPose held =
+        execmotion::FilteredPose(prior, pose, heldRoot);
+    assert(held.root.worldPosition == pose.root.worldPosition);
+    assert(std::abs(HeadAngleDegrees(held) -
+                    HeadAngleDegrees(execmotion::FilteredPose(prior, pose, {})))
+           < 1e-4f);
+}
+
+// ---------------------------------------------------------------------------
+// What the round trip through a pose costs
+// ---------------------------------------------------------------------------
+// The one place the exec node and the streaming filter give different answers,
+// measured against `motion::PoseFilter` itself rather than argued about.
+//
+// `PoseFilter` retains a state strictly richer than the pose it returns: a bone
+// a pose does not report keeps its stored rotation *in the state* and stays out
+// of the *result*, so a brief dropout does not restart that bone's history. Only
+// the result can travel back through `motion.priorPose`, so the retained half
+// does not survive the trip -- and a bone that comes back after a missing frame
+// is passed through unfiltered here where the streaming filter would slerp it
+// from what it kept.
+//
+// It costs nothing for a clip, whose `joints` are `uniform` and whose bones
+// therefore never drop out, and it is real for a live source, which is what the
+// node is aimed at. So it is pinned here, in both directions, and it is the
+// sharpened half of this bundle's ask on `motionRuntime`: a one-step entry point
+// has to hand back the state as well as the result, or a caller cannot carry the
+// history that makes a dropout survivable.
+
+motion::HumanoidPose PoseWithoutHead(double timestamp, const pxr::GfVec3f& hips)
+{
+    motion::HumanoidPose pose = PoseWithHeadAndHips(timestamp, 0.0f, hips);
+    pose.validRotations.reset(static_cast<std::size_t>(motion::HumanBone::Head));
+    return pose;
+}
+
+void TestADropoutDoesNotSurviveTheRoundTrip()
+{
+    // Three instants one frame apart at 50 Hz: the head is at identity, then
+    // absent for one frame, then at 45 degrees.
+    const motion::HumanoidPose first =
+        PoseWithHeadAndHips(0.00, 0.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose dropout =
+        PoseWithoutHead(0.02, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose back =
+        PoseWithHeadAndHips(0.04, 45.0f, pxr::GfVec3f(0.0f));
+
+    // ---- what motion::PoseFilter does, driven as the streaming operator ----
+    motion::PoseFilter streaming;
+    streaming.Apply(first);
+    const motion::HumanoidPose streamedDropout = streaming.Apply(dropout);
+    const motion::HumanoidPose streamedBack = streaming.Apply(back);
+
+    // The dropout frame reports no head either way: the library does not invent
+    // a bone the pose did not carry, which is the behaviour the round trip is
+    // not allowed to change.
+    assert(!Has(streamedDropout, motion::HumanBone::Head));
+
+    // And the frame after it is smoothed from the head the filter kept.
+    constexpr double kTwoPi = 6.2831853071795862;
+    const double weight = 1.0 - std::exp(-kTwoPi * 6.0 * 0.02);
+    assert(std::abs(HeadAngleDegrees(streamedBack) - float(45.0 * weight))
+           < 1e-2f);
+
+    // ---- what the node does, with the result fed back as the prior pose ----
+    const motion::HumanoidPose steppedFirst =
+        execmotion::FilteredPose(first, first, {});
+    const motion::HumanoidPose steppedDropout =
+        execmotion::FilteredPose(steppedFirst, dropout, {});
+    const motion::HumanoidPose steppedBack =
+        execmotion::FilteredPose(steppedDropout, back, {});
+
+    assert(!Has(steppedDropout, motion::HumanBone::Head) &&
+           "the seam invented a bone the pose did not report");
+
+    // The divergence, stated as a number rather than as a risk: the head comes
+    // back at the full 45 degrees, because the pose that travelled back carried
+    // no head for the step to start from.
+    assert(std::abs(HeadAngleDegrees(steppedBack) - 45.0f) < 1e-2f &&
+           "a bone returning from a dropout was smoothed, so the seam is "
+           "carrying history a pose cannot carry");
+    assert(std::abs(HeadAngleDegrees(steppedBack) -
+                    HeadAngleDegrees(streamedBack)) > 1.0f &&
+           "the two now agree -- either PoseFilter stopped retaining dropped "
+           "bones, or the seam grew a state, and the parity note that says they "
+           "differ (P0-6) is stale either way");
+
+    // Everything the dropout did not touch is unaffected: the hips take their
+    // step in both, which is what makes the difference above about retained
+    // history and not about the filter running at all.
+    assert(streamedBack.root.worldPosition == steppedBack.root.worldPosition);
+}
+
 } // namespace
 
 int main()
@@ -244,6 +446,10 @@ int main()
     TestTheDefaultTimeCodeCarriesNoSecond();
     TestAnArrayThatDoesNotFitTheJointsIsNotGuessedAt();
     TestARotationIsNormalizedOnTheWayIn();
+    TestFilteringAgainstYourselfChangesNothing();
+    TestAnAbsentPolicyIsTheLibrarysOwn();
+    TestEachPolicyFieldReachesTheOptionItNames();
+    TestADropoutDoesNotSurviveTheRoundTrip();
     std::printf("execMotion pose: all checks passed\n");
     return 0;
 }

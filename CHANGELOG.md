@@ -126,6 +126,72 @@ Current schema contract version: **1**.
   of the seam. Verified against its own absence: replacing the frame-to-seconds
   division with the raw frame turns both suites red.
 
+- **`motion.filterPose`: one `motion::PoseFilter` step, with the state the graph
+  cannot hold passed in** (the OpenExec plan's P0-4). The second real node, the
+  first that wraps `motionRuntime`, and the first that is a **recurrence** — a
+  filter's step weight comes from the seconds since the pose before it, and a
+  computation is handed exactly one time with no way to reach another.
+
+  **So the state lives outside the graph, by construction.** Keeping it in the
+  callback would be the mutable state exec's cache-safety contract and the motion
+  policy both forbid; authoring a "previous pose" attribute would put a derived
+  value into the scene. Instead `motion.priorPose` is a computation whose
+  ordinary value is the clip's own pose at the evaluated frame and whose purpose
+  is to be replaced through `ExecUsdSystem::ComputeWithOverrides`: **exec does the
+  step and the driver owns the sequence**, which is where the state already is
+  for a live source — `motionRuntime`'s pose buffer. Un-overridden,
+  `motion.filterPose` *is* `motion.sampleAnimation`, and nothing special-cases
+  that: the elapsed time is zero, so `PoseFilter` reseeds and passes the pose
+  through. A clip may state `motion:filter:cutoffHz`, `motion:filter:rootPosition`
+  and `motion:filter:rootOrientation`; an absent one is left at
+  `PoseFilter::Options`' **own** default rather than at one this bundle picked —
+  the opposite of the rate's treatment, because a missing rate produces a second
+  no consumer can tell from a measured one while a missing cutoff selects the
+  behaviour every other caller of the library already gets.
+
+  **Four measurements**
+  ([docs/reports/openusd/26.08-openexec-filtering.md](docs/reports/openusd/26.08-openexec-filtering.md)),
+  and three change what the remaining nodes may assume. **A computation reads
+  another computation** on the same prim, with the registered aggregate crossing
+  that link unchanged — so the plan's chain is links rather than one node, and
+  `Computation<T>()` is not a connection, which leaves 26.08's one-connection
+  rule to `blendPoses`. **Time dependence propagates across the link**:
+  `motion.filterPose` declares neither `computeTime` nor a keyed attribute and is
+  still reported when the frame moves, which makes "declare `computeTime` only if
+  you use it" free to follow instead of something every downstream node has to
+  undo. **A request is armed by its first `Compute`** — a `ChangeTime` before one
+  reaches no callback at all, which cost a red run and is exactly the shape a
+  naive event-driven driver would take. And **an override reaches every dependent
+  of the key it names, is visible as that key's own value, leaks into no sibling,
+  and does not survive the call.**
+
+  A second boundary finding for the same track: `motion::PoseFilter` has no
+  stateless one-step entry point, so the bundle composes one out of two `Apply`
+  calls — a seed and a step. The algorithm stays in the library, so the node is
+  still a wrapper; the idiom is a workaround for a missing signature, and
+  `Step(prior, pose, options)` is the ask.
+
+  **What the round trip costs is measured rather than left implicit.** A pose is
+  not the whole of a filter's state: `PoseFilter` keeps a dropped bone's history
+  in its state and out of its result, and only a result can travel back in as the
+  next prior pose — so a bone returning after a missing frame is passed through
+  here (**45.0°**) where the streaming filter smooths it (**23.8°**). It costs
+  nothing for a clip, whose `joints` are `uniform` so no bone drops out, and it is
+  real for a live source. Reproducing the carry-forward rule in the bundle would
+  be the second algorithm the wrapper rule forbids, so `execMotion_pose` asserts
+  the divergence in both directions instead, P0-6 parity gains a third known
+  difference to compare, and the ask above is sharpened: the one-step entry point
+  has to return the **state** as well as the result.
+
+  `execMotion_filter` drives the built bundle over two fixtures differing by one
+  thing — `filtered_clip.usda` is `sampled_clip.usda` plus the three
+  `motion:filter:*` attributes — and checks the filtered pose against
+  `PoseFilter`'s documented weight formula written out in the test rather than
+  against the library, so a clip's stated cutoff failing to reach it is a red
+  result and not two agreeing wrong answers. `execMotion_pose` gains the seam
+  half. Four suites in the bundle now, and 130 green CTest names in the
+  workspace.
+
 - **Two expressions can no longer both own the eyelid: VRM 1.0's expression
   overrides, read and obeyed** (closes #170). Expressions accumulate on the
   targets they bind, and two that bind *different* targets still fight when

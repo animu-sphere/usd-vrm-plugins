@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # execMotion — the vendor-neutral OpenExec motion bundle (Workspace Phase 8,
-# Motion Phase E). The boundary, one registered value type and two computations:
+# Motion Phase E). The boundary, one registered value type and four computations:
 # `motion.identityPose`, which is the mechanism held at its weakest possible
-# value, and `motion.sampleAnimation`, which reads a clip at the evaluated frame.
-# `filterPose`, `extractRootMotion`, `interpolatePose` and `blendPoses` follow
+# value, `motion.sampleAnimation`, which reads a clip at the evaluated frame,
+# and `motion.filterPose` with the `motion.priorPose` seam an override enters
+# through. `extractRootMotion`, `interpolatePose` and `blendPoses` follow
 # (docs/roadmap/openexec-foundation.md, P0-4).
 #
 # Self-contained so `ost plugin build plugins/execMotion` can configure it
@@ -54,6 +55,15 @@ if(NOT TARGET motionCore::motionCore)
     find_package(motionCore CONFIG REQUIRED)
 endif()
 
+# The vendor-neutral runtime, from `motion.filterPose` onward: the node is one
+# step of `motion::PoseFilter` and the algorithm stays in the library
+# (WORKSPACE.md §2, motion policy §11.4). `motion.identityPose` and
+# `motion.sampleAnimation` need none of it -- an exec input arrives already
+# resolved at the evaluated frame, so the sampler had nothing to wrap.
+if(NOT TARGET motionRuntime::motionRuntime)
+    find_package(motionRuntime CONFIG REQUIRED)
+endif()
+
 set(PLUGIN_NAME ExecMotion)
 add_library(${PLUGIN_NAME} SHARED
     src/ExecMotionPose.cpp
@@ -63,7 +73,9 @@ target_compile_features(${PLUGIN_NAME} PRIVATE cxx_std_17)
 target_include_directories(${PLUGIN_NAME} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
     ${PXR_INCLUDE_DIRS})
-target_link_libraries(${PLUGIN_NAME} PRIVATE motionCore::motionCore)
+target_link_libraries(${PLUGIN_NAME} PRIVATE
+    motionCore::motionCore
+    motionRuntime::motionRuntime)
 
 if(MSVC)
     target_compile_definitions(${PLUGIN_NAME} PRIVATE NOMINMAX _USE_MATH_DEFINES)

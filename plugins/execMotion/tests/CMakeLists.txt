@@ -19,7 +19,9 @@ add_executable(execMotion_pose_tests
 target_include_directories(execMotion_pose_tests PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/../src"
     ${PXR_INCLUDE_DIRS})
-target_link_libraries(execMotion_pose_tests PRIVATE motionCore::motionCore)
+target_link_libraries(execMotion_pose_tests PRIVATE
+    motionCore::motionCore
+    motionRuntime::motionRuntime)
 target_compile_options(execMotion_pose_tests
     PRIVATE ${_exec_motion_assertions})
 if(MSVC)
@@ -97,6 +99,43 @@ add_test(NAME execMotion_sample
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/unrated_clip.usda")
 
 # ---------------------------------------------------------------------------
+# The filter, through the built bundle
+# ---------------------------------------------------------------------------
+# Separate again, and for the same reason as the sample suite: this one holds
+# the first node that consumes another computation and the first whose missing
+# half a caller supplies, so a red result here is about chaining, overrides or
+# the filter's policy -- never about reading a clip.
+#
+# It does NOT link motionRuntime, although the computation under test wraps it.
+# An expected value produced by the same function would assert that the library
+# equals itself; the suite writes out `PoseFilter`'s documented step weight
+# instead, so a clip's stated cutoff failing to reach the library is a red test
+# rather than two agreeing wrong answers.
+add_executable(execMotion_filter_tests test_exec_motion_filter.cpp)
+target_include_directories(execMotion_filter_tests PRIVATE
+    ${PXR_INCLUDE_DIRS})
+target_link_libraries(execMotion_filter_tests PRIVATE motionCore::motionCore)
+target_compile_options(execMotion_filter_tests
+    PRIVATE ${_exec_motion_assertions})
+if(MSVC)
+    target_compile_definitions(execMotion_filter_tests
+        PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(execMotion_filter_tests PRIVATE /bigobj /utf-8)
+endif()
+target_link_libraries(execMotion_filter_tests
+    PRIVATE ${_exec_motion_test_targets})
+
+# Two fixtures differing by one thing: filtered_clip.usda is sampled_clip.usda
+# plus the three `motion:filter:*` attributes. So the pair separates the policy
+# a clip states from the default `motion::PoseFilter` applies when it states
+# none -- which is the only way to tell the library's default from a default
+# this bundle might have invented.
+add_test(NAME execMotion_filter
+    COMMAND execMotion_filter_tests
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/filtered_clip.usda"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/sampled_clip.usda")
+
+# ---------------------------------------------------------------------------
 # Environment
 # ---------------------------------------------------------------------------
 # The bundle's own resource directory is what PXR_PLUGINPATH_NAME points at, and
@@ -126,9 +165,12 @@ set_tests_properties(execMotion_mechanism PROPERTIES
     ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
 set_tests_properties(execMotion_sample PROPERTIES
     ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
+set_tests_properties(execMotion_filter PROPERTIES
+    ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
 
 # The seam suite needs no plugin and no plugin path, but it does link motionCore
-# and -- through Gf -- loads usd_gf.dll on Windows all the same.
+# and motionRuntime and -- through Gf -- loads usd_gf.dll on Windows all the
+# same.
 set_tests_properties(execMotion_pose PROPERTIES
     ENVIRONMENT_MODIFICATION
         "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib")
@@ -136,4 +178,5 @@ set_tests_properties(execMotion_pose PROPERTIES
 # Motion Phase E's label, so the OpenExec half of the suite can be run and
 # reported on its own (the plan's P0-2 CTest labels).
 set_tests_properties(execMotion_pose execMotion_mechanism execMotion_sample
+                     execMotion_filter
     PROPERTIES LABELS "motion.openexec")
