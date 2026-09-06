@@ -67,8 +67,15 @@ int main(int argc, char** argv)
     // behind it. A test that edits its own fixture in place is one Save() away
     // from rewriting the input it is checking against.
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    assert(stage && "no in-memory stage");
     stage->GetRootLayer()->GetSubLayerPaths().push_back(fixture);
-    assert(stage && "the fixture stage did not open");
+    assert(stage->GetRootLayer()->GetNumSubLayerPaths() == 1 &&
+           "the fixture was not sublayered");
+
+    // Authored so the pose can be checked for NOT carrying a converted time:
+    // 50 time codes per second is a rate a computation cannot see, and a pose
+    // whose timestamp were ever non-zero would mean one had been guessed.
+    stage->SetTimeCodesPerSecond(50.0);
 
     UsdPrim clip = stage->GetPrimAtPath(SdfPath("/Clip"));
     assert(clip && "the fixture has no /Clip prim");
@@ -141,19 +148,30 @@ int main(int argc, char** argv)
     assert(second.validRotations.count() == 5);
     assert(Has(second, motion::HumanBone::LeftShoulder));
 
-    // ---- time is an input, and moving it invalidates ----------------------
-    // The computation takes the builtin computeTime, so a pose carries the time
-    // it was evaluated at. That makes ChangeTime observable here rather than
-    // only in the second callback.
+    // ---- moving time changes nothing, and exec knows it -------------------
+    // `motion.identityPose` has one input, a `uniform` array, so it does not
+    // depend on time -- and it deliberately carries no timestamp, because
+    // `HumanoidPose::timestamp` is seconds, a computation is handed a frame, and
+    // the rate between them is stage metadata exec does not deliver to a
+    // callback (measured: `Stage().Metadata<double>(timeCodesPerSecond)` is
+    // accepted, is not refused with `.Required()`, and still yields no value).
+    //
+    // So what ChangeTime is asserted to do here is *nothing*, which is the
+    // header's own promise: the time callback carries "value keys which are
+    // time dependent, and for which input values are changing between the old
+    // time and new time". A value key that fired here would mean this
+    // computation had acquired a time dependency nobody declared.
     const int timeInvalidationsBefore = timeInvalidations;
-    system.ChangeTime(UsdTimeCode(4.0));
+    system.ChangeTime(UsdTimeCode(200.0));
     ExecUsdCacheView view4 = system.Compute(request);
     const VtValue value4 = view4.Get(0);
     assert(value4.IsHolding<motion::HumanoidPose>());
-    assert(value4.UncheckedGet<motion::HumanoidPose>().timestamp == 4.0 &&
-           "the pose did not carry the time it was computed at");
-    assert(timeInvalidations > timeInvalidationsBefore &&
-           "ChangeTime did not reach the time callback");
+    assert(value4.UncheckedGet<motion::HumanoidPose>() == second &&
+           "moving the frame changed a pose that does not depend on the frame");
+    assert(value4.UncheckedGet<motion::HumanoidPose>().timestamp == 0.0 &&
+           "a second was invented from a frame and a rate exec cannot see");
+    assert(timeInvalidations == timeInvalidationsBefore &&
+           "ChangeTime reported a value key with no time-dependent input");
 
     // ---- explicit invalidation expires the request ------------------------
     // `Diagnostics::InvalidateAll()` does not merely drop cached values: it
@@ -195,23 +213,17 @@ int main(int argc, char** argv)
     assert(value5.UncheckedGet<motion::HumanoidPose>().validRotations.count() == 5 &&
            "InvalidateAll lost an authored change");
 
-    // But the **time did not survive**. A request built after InvalidateAll
-    // evaluates at the default time code, not at the 4.0 this system was last
-    // told to use, so a pose computed through it carries 0. Re-issuing
-    // ChangeTime is what restores it. This is the second half of the same trap:
-    // a caller that rebuilds a request after an explicit invalidation and does
-    // not also restate the time silently computes the wrong frame.
-    assert(value5.UncheckedGet<motion::HumanoidPose>().timestamp == 0.0 &&
-           "a rebuilt request kept the system's time after all -- if this now "
-           "holds, the ChangeTime below is no longer required");
-
-    system.ChangeTime(UsdTimeCode(4.0));
-    ExecUsdCacheView view6 = system.Compute(rebuilt);
-    const VtValue value6 = view6.Get(0);
-    assert(value6.IsHolding<motion::HumanoidPose>());
-    assert(value6.UncheckedGet<motion::HumanoidPose>() ==
+    assert(value5.UncheckedGet<motion::HumanoidPose>() ==
            value4.UncheckedGet<motion::HumanoidPose>() &&
-           "with the time restated, an explicit invalidation changed nothing");
+           "an explicit invalidation changed the answer");
+
+    // **InvalidateAll also resets the system's time**, and this suite can no
+    // longer see it: the only witness was a pose that carried the frame it was
+    // computed at, and carrying one meant writing a frame into a field that
+    // means seconds. The measurement is kept in
+    // docs/reports/openusd/26.08-openexec-mechanism.md §4 with the method that
+    // produced it, rather than kept here at the price of a wrong number and a
+    // time dependency this computation does not have.
 
     // ---- a computation nobody registered ----------------------------------
     // The shape a missing Info.Exec.Schemas block presents as. It is a coding

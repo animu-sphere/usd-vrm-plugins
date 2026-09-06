@@ -18,7 +18,7 @@
 
 namespace execmotion {
 
-/// The identity pose for `jointPaths`, at `timestamp`.
+/// The identity pose for `jointPaths`.
 ///
 /// Every rotation is identity and `validRotations` carries exactly the bones the
 /// joint paths name -- a joint path being `UsdSkelAnimation`'s own spelling,
@@ -28,12 +28,19 @@ namespace execmotion {
 /// function reports what it recognized, and whoever knows which clip it is
 /// decides whether a gap matters.
 ///
+/// The pose's `timestamp` is left at zero, and the caller does not get to pass
+/// one. `HumanoidPose::timestamp` is **seconds**, an OpenExec computation is
+/// handed a **frame**, and the rate between them is stage metadata a computation
+/// cannot reach -- so the only timestamp this layer could produce would be a
+/// guess (see ExecMotionRegistration.cpp). A pose with no time is a pose that
+/// says nothing about time; a pose carrying a frame in a seconds field is a
+/// wrong number every consumer downstream would believe.
+///
 /// No sampling, no interpolation, no retarget. This is the identity, and it is
 /// what makes the first OpenExec computation attributable: a wrong result is a
 /// wrong mechanism, because there is no algorithm to blame.
 motion::HumanoidPose IdentityPoseForJoints(
-    const std::vector<std::string>& jointPaths,
-    double timestamp);
+    const std::vector<std::string>& jointPaths);
 
 /// The bone a `UsdSkelAnimation` joint path names, or nullopt.
 ///

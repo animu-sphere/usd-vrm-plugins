@@ -22,11 +22,9 @@ BoneForJointPath(const std::string& jointPath)
 }
 
 motion::HumanoidPose
-IdentityPoseForJoints(const std::vector<std::string>& jointPaths,
-                      double timestamp)
+IdentityPoseForJoints(const std::vector<std::string>& jointPaths)
 {
     motion::HumanoidPose pose;
-    pose.timestamp = timestamp;
     // HumanoidPose's default constructor already fills localRotations with the
     // identity quaternion and clears validRotations, so this loop only says
     // which bones the clip named -- it authors no rotation at all.

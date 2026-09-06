@@ -34,8 +34,6 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
-#include "pxr/exec/ef/time.h"
-#include "pxr/exec/exec/builtinComputations.h"
 #include "pxr/exec/exec/registerSchema.h"
 #include "pxr/exec/exec/typeRegistry.h"
 #include "pxr/exec/vdf/context.h"
@@ -78,21 +76,29 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
             // Every input the callback reads arrives through .Inputs() below.
             // A value read from anywhere else -- a clock, a global, a captured
             // reference -- is invisible to invalidation and becomes a stale
-            // result no test would see (exec's own "cache safe" contract).
-            const EfTime &time = ctx.GetInputValue<EfTime>(
-                ExecBuiltinComputations->computeTime);
-
-            // UsdTimeCode::GetValue() is a coding error on the default time
-            // code, and the default is what a stage evaluates at until someone
-            // calls ChangeTime -- so it is the normal case, not an edge one.
-            const UsdTimeCode timeCode = time.GetTimeCode();
-            const double timestamp =
-                timeCode.IsNumeric() ? timeCode.GetValue() : 0.0;
-
-            return execmotion::IdentityPoseForJoints(jointPaths, timestamp);
+            // result no test would see (exec's own "cache safe" contract). This
+            // callback reads exactly one thing, and it is declared there.
+            //
+            // The pose carries NO timestamp, and that is a measurement rather
+            // than an omission. A time code is a FRAME; `HumanoidPose::timestamp`
+            // is SECONDS; converting needs the stage's `timeCodesPerSecond`, and
+            // a computation cannot reach it. `Stage().Metadata<double>()` for
+            // that field is accepted by the builder, is not refused even with
+            // `.Required()`, and still delivers no value -- so the only rate a
+            // callback could apply would be a guess, and a guessed rate is a
+            // wrong second that every consumer downstream would take at face
+            // value. `tools/motionRetarget` converts with the rate because it
+            // holds the stage; exec does not, and `motion.sampleAnimation` will
+            // have to be given one rather than find it
+            // (docs/reports/openusd/26.08-openexec-mechanism.md §5).
+            //
+            // The identity pose is the same pose at every time, so this
+            // computation declares no time input either: reading `computeTime`
+            // and discarding it would tell exec this value changes with the
+            // frame, which is a false statement about a computation whose only
+            // input is a `uniform` array.
+            return execmotion::IdentityPoseForJoints(jointPaths);
         })
         .Inputs(
-            AttributeValue<TfToken>(_tokens->joints).Required(),
-            Stage().Computation<EfTime>(
-                ExecBuiltinComputations->computeTime).Required());
+            AttributeValue<TfToken>(_tokens->joints).Required());
 }

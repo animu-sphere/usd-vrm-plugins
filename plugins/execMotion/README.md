@@ -12,6 +12,17 @@ computation, and the computation is the identity:
 | --- | --- | --- |
 | `motion.identityPose` | a `UsdSkelAnimation` prim | the identity `motion::HumanoidPose` over the canonical bones the clip's `joints` name |
 
+The pose carries **no timestamp**, and that is measured rather than skipped. A
+computation is handed a *frame* and `motion::HumanoidPose::timestamp` is
+*seconds*; the rate between them is stage metadata a computation cannot reach
+(`Stage().Metadata<double>(timeCodesPerSecond)` is accepted, is not refused with
+`.Required()`, and still yields no value). A guessed rate would put a wrong
+second into canonical motion that nothing downstream could tell from a measured
+one, so this computation declares no time input at all — the identity pose is the
+same pose at every frame. `motion.sampleAnimation` will have to be *given* a rate
+([the mechanism report](../../docs/reports/openusd/26.08-openexec-mechanism.md)
+§5).
+
 The real nodes — `motion.sampleAnimation`, `motion.filterPose`,
 `motion.extractRootMotion`, `motion.interpolatePose`, `motion.blendPoses` — come
 next, in that order, over `motionRuntime`. Mechanism before behaviour is
@@ -52,6 +63,6 @@ through an input accessor rather than by registering on it. The measurement is
 | Test | What it holds |
 | --- | --- |
 | `execMotion_identity` | the seam, with no stage, no system and no request |
-| `execMotion_mechanism` | discovery through `plugInfo.json`, request compile, compute, an unchanged recompute, an authored-value invalidation, a time change, an explicit invalidation, and the shape an unregistered computation presents as |
+| `execMotion_mechanism` | discovery through `plugInfo.json`, request compile, compute, an unchanged recompute, an authored-value invalidation, a time change reporting nothing for a time-independent value key, an explicit invalidation, and the shape an unregistered computation presents as |
 
 Both carry the CTest label `motion.openexec`.

@@ -394,7 +394,12 @@ are done as one: `motion::HumanoidPose` registers as an execution value type, a
 over the bones a clip's `joints` name, and `execMotion_mechanism` drives all of
 request-compile, compute, an unchanged recompute, an authored-value
 invalidation, a time change and an explicit invalidation against the built
-bundle. Discovery goes through `plugInfo.json` and `PXR_PLUGINPATH_NAME` and the
+bundle. The pose carries no timestamp, which is a measurement rather than a
+shortcut: a computation is handed a frame, `HumanoidPose::timestamp` is seconds,
+and the rate between them is stage metadata exec does not deliver to a callback
+— so **P0-4's remaining nodes need the rate as an explicit input**, decided
+before `motion.sampleAnimation` rather than after
+([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §5). Discovery goes through `plugInfo.json` and `PXR_PLUGINPATH_NAME` and the
 test does not link the plugin, so moving that file aside turns the test red with
 `Failed to find computation` — the audit's §2.1 prediction, confirmed as a
 behaviour rather than restated as a risk. The identity computation is the whole
@@ -402,7 +407,7 @@ of the behaviour on purpose: with no algorithm in the bundle, a wrong answer can
 only be a wrong mechanism.
 
 Four measurements came out of it and they are in
-[the mechanism report](../reports/openusd/26.08-openexec-mechanism.md); two
+[the mechanism report](../reports/openusd/26.08-openexec-mechanism.md); three
 change tasks below. The one that changes this task is **`execMotion` now owns
 the `UsdSkelAnimation` schema**, because 26.08 allows exactly one plugin to
 declare a schema and drops the loser's computations silently.

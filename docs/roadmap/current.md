@@ -466,7 +466,7 @@ compared, which was P0-4's stated blocker.
   packaged bundle would. Mechanism before behaviour, as written: there is no
   algorithm in the bundle, so a wrong answer can only be a wrong mechanism.
 
-  **Running it found four things reading could not**, and two of them change
+  **Running it found four things reading could not**, and three of them change
   tasks that had not started
   ([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md)). The
   load-bearing one: **an OpenExec schema has exactly one declarer per session**,
@@ -474,7 +474,11 @@ compared, which was P0-4's stated blocker.
   and the two bundles now partition the schemas in
   [WORKSPACE.md §2](../architecture/WORKSPACE.md). A collision would have cost
   `execVrm` every computation it registered there, reported as a coding error at
-  load and a missing computation much later.
+  load and a missing computation much later. The one that changed this bundle:
+  **a computation cannot learn the stage's `timeCodesPerSecond`**, so it cannot
+  convert the frame it is handed into the second canonical motion is expressed
+  in — this pose carries no timestamp at all rather than a guessed one, and
+  `motion.sampleAnimation` has to be *given* a rate.
 - ⬜ **The five real `execMotion` nodes, `execVrm`, parity, and the display
   slice** — the rest of P0-4 and P0-5 through P0-7 of the
   [plan](openexec-foundation.md#6-foundation-tasks).

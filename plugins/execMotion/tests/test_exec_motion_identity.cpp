@@ -55,10 +55,13 @@ void TestIdentityPoseNamesOnlyWhatItRecognized()
         "hips", "hips/spine", "hips/spine/chest",
         "hips/spine/chest/neck/head", "prop"};
 
-    const motion::HumanoidPose pose =
-        execmotion::IdentityPoseForJoints(joints, 2.5);
+    const motion::HumanoidPose pose = execmotion::IdentityPoseForJoints(joints);
 
-    assert(pose.timestamp == 2.5);
+    // No timestamp, and no way to pass one: the pose says nothing about time
+    // because a computation cannot learn the stage's timeCodesPerSecond, and a
+    // frame written into a seconds field would be a wrong number rather than a
+    // missing one.
+    assert(pose.timestamp == 0.0);
     assert(CountValid(pose) == 4);
     assert(Has(pose, motion::HumanBone::Hips));
     assert(Has(pose, motion::HumanBone::Spine));
@@ -77,8 +80,7 @@ void TestIdentityPoseNamesOnlyWhatItRecognized()
 
 void TestEmptyClipIsAPoseAndNotAFailure()
 {
-    const motion::HumanoidPose pose =
-        execmotion::IdentityPoseForJoints({}, 0.0);
+    const motion::HumanoidPose pose = execmotion::IdentityPoseForJoints({});
     assert(CountValid(pose) == 0);
 
     // An empty pose still compares equal to itself, which is not a tautology
@@ -89,8 +91,8 @@ void TestEmptyClipIsAPoseAndNotAFailure()
 
 void TestARepeatedJointIsNotCountedTwice()
 {
-    const motion::HumanoidPose pose = execmotion::IdentityPoseForJoints(
-        {"hips", "hips", "hips/spine"}, 0.0);
+    const motion::HumanoidPose pose =
+        execmotion::IdentityPoseForJoints({"hips", "hips", "hips/spine"});
     assert(CountValid(pose) == 2);
 }
 

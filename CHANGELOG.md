@@ -19,9 +19,8 @@ Current schema contract version: **1**.
   it** (Workspace Phase 8, the OpenExec plan's P0-4 step 1). `plugins/execMotion`
   registers `motion::HumanoidPose` as an OpenExec execution value type and one
   computation, `motion.identityPose`, on `UsdSkelAnimation`: it reads the clip's
-  `joints` and the builtin `computeTime` and returns the identity pose over the
-  canonical bones those joint paths name. That is the whole behaviour, on
-  purpose — with no sampling, filtering or retarget in the bundle, a wrong answer
+  `joints` — its only input — and returns the identity pose over the canonical
+  bones those joint paths name. That is the whole behaviour, on purpose — with no sampling, filtering or retarget in the bundle, a wrong answer
   can only be a wrong mechanism, which is what the first bundle over an unstable
   API is for.
 
@@ -29,7 +28,8 @@ Current schema contract version: **1**.
   computation boundary unchanged, an array-valued USD input declared with its
   *element* type is consumed with a read iterator, a request compiles and
   computes, an unchanged recompute reports no invalidation and the same value,
-  an authored change and a `ChangeTime` each reach their own callback, and an
+  an authored change reaches the value callback, a `ChangeTime` correctly
+  reports *nothing* for a value key whose inputs do not vary with time, and an
   unregistered computation is an empty value plus a coding error rather than a
   load failure. `execMotion_mechanism` does not link the plugin — it reaches the
   computation only through `plugInfo.json` and `PXR_PLUGINPATH_NAME`, so moving
@@ -48,9 +48,13 @@ Current schema contract version: **1**.
   own the schema of through an input accessor, or by registering on an applied
   API schema that prim carries; the second route is measured and is what the
   display slice (P0-7) has left. Also measured: `Diagnostics::InvalidateAll()`
-  expires every outstanding request while `IsValid()` goes on returning true,
-  and resets the system's time — both now asserted in the test, so the day either
-  changes upstream is a red lane rather than a silent behaviour swap. The whole
+  expires every outstanding request while `IsValid()` goes on returning true
+  (asserted in the test), and **a computation cannot learn the stage's
+  `timeCodesPerSecond`** — the metadata input is accepted, is not refused with
+  `.Required()`, and still delivers no value. So this pose carries no timestamp
+  at all rather than a second computed from a guessed rate, and the frame-to-
+  seconds conversion is a signature question `motion.sampleAnimation` has to
+  answer before it is written. The whole
   measurement is
   [docs/reports/openusd/26.08-openexec-mechanism.md](docs/reports/openusd/26.08-openexec-mechanism.md),
   and the schema partition is a workspace rule in
