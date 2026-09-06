@@ -11,7 +11,7 @@ unsupported outside its one value but refused at configure time.
 | --- | --- |
 | Supported version | **26.08, exactly** (`openusd: "==26.08"` in every `plugins/*/openstrata.plugin.yaml`) |
 | Enforced at configure time by | [`cmake/UsdVrmOpenUsd.cmake`](../../cmake/UsdVrmOpenUsd.cmake) |
-| OpenExec | required — `exec`, `execGeom`, `execIr`, `execUsd`, `vdf`, `usdExecImaging` |
+| OpenExec | required — `vdf`, `ef`, `esf`, `esfUsd`, `exec`, `execGeom`, `execIr`, `execUsd`, `usdIrImaging` |
 | Verified against | the `cy2026` runtime's 26.08, on all three OS |
 
 **There is no tolerated range.** v0.6.0 retired the `>=25.05,<27.0` range
@@ -75,10 +75,23 @@ and
 
 **The variant in those names is a requirement, not a preference.** The same
 matrix publishes a `core` leaf per platform, built `--no-imaging`, and
-`cmake/UsdVrmOpenUsd.cmake` refuses any runtime without `usdExecImaging` — one
-of the six OpenExec components it probes, and the one that lives under
+`cmake/UsdVrmOpenUsd.cmake` refuses any runtime without `usdIrImaging` — one of
+the nine OpenExec components it probes, and the one that lives under
 `pxr/usdImaging`. A `core` runtime therefore cannot configure this workspace at
-all, and `gl`/`metal` is the floor rather than an upgrade. What the imaging
+all, and `gl`/`metal` is the floor rather than an upgrade.
+
+That component was `usdExecImaging` until 2026-09-06, and the swap changes which
+runtimes are refused not at all — a `core` leaf lacks both — but changes what the
+probe *means*. `usdExecImaging` is built whenever imaging is on: with
+`PXR_BUILD_EXEC=OFF` it compiles a stub whose factory returns null, and its
+target and all its headers are still there, so its presence said nothing about
+OpenExec. `usdIrImaging` returns early when that toggle is off, so its presence
+says something. Three exec libraries the public exec headers require
+transitively — `ef`, `esf` and `esfUsd` — joined the list at the same time, so a
+runtime that would have failed at compile time inside `execMotion` fails at
+configure time instead
+([the audit](../reports/openusd/26.08-openexec-migration.md#9-what-this-changes-in-the-plan)
+§9.1). What the imaging
 leaves add beyond that is evidence: their producer verified loader, physical
 device and render, where the runtimes they replace recorded `not-run` for all
 three.
