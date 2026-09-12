@@ -374,6 +374,55 @@ Current schema contract version: **1**.
   separately the shared-instant check, turns the suites red. Seven suites in the
   bundle now, and 133 green CTest names in the workspace.
 
+- **`execVrm`, the second OpenExec bundle: the target rig and the humanoid map**
+  (Workspace Phase 8, the OpenExec plan's P0-5). `plugins/execVrm` registers
+  `vrmRetarget::TargetSkeleton` and `vrmRetarget::HumanoidMap` as execution
+  value types and two computations: `vrm.computeTargetSkeleton` on
+  `UsdSkelSkeleton`, the rig as `vrmRetarget` reads it with each rest transform
+  decomposed and scale dropped, and `vrm.computeHumanoidMap` on the applied
+  `VrmHumanoidAPI`, which is `HumanoidMap::SetJointToken` for each
+  `vrm:humanBones:*` binding against the one skeleton `vrm:skeleton` reaches.
+  `vrmRetarget` gains an exact `operator==` on `TargetJoint`, `TargetSkeleton`
+  and `HumanoidMap`, which the registry requires. The bundle links nothing of
+  `vrmSchema` and requires it as a bundle, and it joins the aggregate product.
+
+  **Six measurements**
+  ([docs/reports/openusd/26.08-openexec-humanoid.md](docs/reports/openusd/26.08-openexec-humanoid.md)),
+  and the first reaches back into `execMotion`. **An attribute a schema defines
+  and the stage gives no value reaches a callback as one element of the type's
+  fallback** — an empty token, an identity matrix, a zero vector — with an
+  executor `TF_WARN`, not as nothing: 49 warnings for the fixture's 49 unbound
+  bones, one identity matrix for a blocked `restTransforms`. An absent value is
+  therefore recognised by what it is. A skeleton authoring no `joints` arrives as
+  one joint named `""` and is refused, and an unbound bone and an empty token are
+  one value. A one-joint skeleton with no rest pose is answered as identity,
+  because from inside the callback it is one. And a one-joint clip that keys
+  nothing comes out of `motion.sampleAnimation` with a root at the origin nobody
+  stated, which `ExecMotionPose.h` now says. **A computation on this workspace's
+  own applied schema resolves on a prim `execGeom` types** (the importer's
+  humanoid is a `Scope`), and not on a prim carrying the attributes without the
+  schema. **The schema bundle is a runtime edge**: exec resolves
+  `UsdVrmHumanoidAPI` by type name, and without `vrmSchema` the skeleton still
+  computes and the map is not found. **Fifty-five inputs declared in a loop
+  work**, and the vocabulary and the schema's properties are the same 55 names.
+  And **invalidation follows the dependency, not the value**: a rest edit reports
+  a map whose indices do not move, and a retargeted `vrm:skeleton` reaches it
+  with no request rebuilt.
+
+  **Five places this bundle and `motion_retarget` answer differently**, all
+  refusals of statements the importer never authors — rest transforms that do
+  not pair, a binding to a missing joint, two bones on one joint, no
+  `vrm:skeleton`, the attributes without the schema — and they are P0-6's first
+  table. **The sixth boundary finding** is the sampler's again, one library over:
+  a `TargetSkeleton` from rest transforms exists only in the tool.
+
+  `execVrm_rig` tests the seam, `execVrm_humanoid` drives the built bundle over
+  `humanoid_rig.usda`, and `execVrm_humanoid_without_schema` runs it again with
+  no `vrmSchema` registered. Verified against its own absence: disabling the
+  skeleton-target count answers a map for a humanoid naming two objects, and
+  disabling the empty-joint refusal answers a skeleton whose one joint is named
+  nothing; each turns a suite red. 136 green CTest names in the workspace.
+
 - **Two expressions can no longer both own the eyelid: VRM 1.0's expression
   overrides, read and obeyed** (closes #170). Expressions accumulate on the
   targets they bind, and two that bind *different* targets still fight when

@@ -705,10 +705,38 @@ compared, which was P0-4's stated blocker.
   (4.247° between three sources and their reverse) without saying so. The ask is
   a blend that can say *nothing to blend* and states its preconditions
   ([boundary consolidation](boundary-consolidation.md) §1).
-- ⬜ **`execVrm`, parity, and the display slice**: P0-5 through P0-7 of the
-  [plan](openexec-foundation.md#6-foundation-tasks). P0-4's nodes are all in;
-  what remains of P0-4 itself is the producer half of the rate and policies, the
-  written driver contract, and packaged discovery.
+- ✅ **`execVrm` exists: the target rig and the humanoid map** *(2026-09-13,
+  P0-5)*. `plugins/execVrm`, with `vrm.computeTargetSkeleton` on
+  `UsdSkelSkeleton` and `vrm.computeHumanoidMap` on the applied
+  `VrmHumanoidAPI` — `vrmRetarget`'s `TargetSkeleton` and `HumanoidMap`, which
+  gained the exact `operator==` the registry requires. It joins the aggregate
+  product, links nothing of `vrmSchema`, and requires it as a bundle.
+
+  **Six measurements**
+  ([the humanoid report](../reports/openusd/26.08-openexec-humanoid.md)), and the
+  first reaches back into P0-4. **An attribute a schema defines and the stage
+  gives no value reaches a callback as one element of the type's fallback**,
+  beside an executor warning, not as nothing — so an unauthored `joints` is one
+  joint named `""` and is refused, an unbound bone reads as the empty token, a
+  one-joint skeleton with no rest pose is answered as identity, and a one-joint
+  clip that keys nothing comes out of `motion.sampleAnimation` with a root at the
+  origin nobody stated. **A computation on this workspace's own applied schema
+  resolves on a prim `execGeom` types**, and not on one carrying the attributes
+  without the schema. **The schema bundle is a runtime edge** exec resolves by
+  type name. **Fifty-five inputs declared in a loop work**, against the schema's
+  own 55 names. And **invalidation follows the dependency, not the value**.
+
+  **The sixth boundary finding**, and P0-6's first table: a `TargetSkeleton` from
+  rest transforms exists only in the tool, and five stage statements that
+  `motion_retarget` tolerates this bundle refuses or cannot see — none of them
+  reachable from what the importer authors.
+- ⬜ **The rest of `execVrm`, parity, and the display slice**: P0-5's
+  `vrm.computeRestPoseCorrection`, `vrm.humanoidRetarget` and
+  `vrm.computeJointLocalTransforms`, then P0-6 and P0-7 of the
+  [plan](openexec-foundation.md#6-foundation-tasks). What remains of P0-4 itself
+  is the producer half of the rate and policies, the written driver contract,
+  and packaged discovery — and now a decision on what a one-joint clip's
+  fallback-filled root means.
 
 ## Then: boundary consolidation ⬜
 

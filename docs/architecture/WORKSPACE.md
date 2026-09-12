@@ -101,7 +101,7 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | --- | --- | --- |
 | `usdVrmaFileFormat` | plugin bundle (`usd-fileformat`, v0.3.0) | `.vrma` `SdfFileFormat`, glTF/GLB animation parsing, canonical semantic `HumanoidSkeleton`, `UsdSkelAnimation` + provenance. Avatar-independent: it never resolves, binds to, or retargets onto a target VRM. |
 | `execMotion` | plugin bundle (`usd-exec`, bootstrapped 2026-09-06) | Vendor-neutral OpenExec motion nodes: clip sample, pose buffer, resample, filter, blend, apply-constraints, generate, record. **The boundary, `motion.identityPose`, `motion.sampleAnimation`, `motion.priorPose`, `motion.filterPose` and `motion.extractRootMotion` exist (2026-09-06), and `motion.poseHistory` and `motion.interpolatePose` (2026-09-12), and `motion.blendPoses` (2026-09-13), which completes the OpenExec plan's P0-4 node set; the rest of this row's list is outside P0-4 and does not exist yet.** It declares the `UsdSkelAnimation` schema and no other, which is a claim no second plugin in the session may make (§2). |
-| `execVrm` | plugin bundle (reserved) | VRM semantics applied to a target rig: humanoid retarget, root-motion resolve, expression, look-at, avatar apply — driven by the schema contract only |
+| `execVrm` | plugin bundle (`usd-exec`, bootstrapped 2026-09-13) | VRM semantics applied to a target rig: humanoid retarget, root-motion resolve, expression, look-at, avatar apply — driven by the schema contract only. **The boundary, `vrm.computeTargetSkeleton` on `UsdSkelSkeleton` and `vrm.computeHumanoidMap` on the applied `VrmHumanoidAPI` exist (2026-09-13) — the first two of the OpenExec plan's P0-5 nodes; the rest of this row's list does not exist yet.** It declares `UsdSkelSkeleton` and `UsdVrmHumanoidAPI`, links nothing of `vrmSchema`, and needs it in the session: exec resolves the second schema by type name (§2). |
 | `motionCore` | plain static CMake library (v0.3.0) | `motion::HumanoidPose`, `HumanoidAnimation`, `RootMotion`, `MotionConstraintSet`, source metadata. No USD stage authoring, no vendor SDK, no network. |
 | `motionRuntime` | plain static CMake library (v0.4.0) | Timestamped pose buffer, interpolation/extrapolation, resample, filter, blend — the OpenExec-independent runtime |
 | `vrmRetarget` | plain static CMake library (v0.4.0) | Humanoid map, rest pose, pose retargeter, root-motion policy, and — Motion Phase G — the two consumer resolves: `ExpressionResolver` (a named weight onto one rig's binds) and `LookAtEvaluator` (a target point onto one rig's eyes or its gaze expressions). **Completed before OpenExec** (motion policy §18.12). |
@@ -651,7 +651,7 @@ usdVrmFileFormat-<version>-<target>.tar.zst
 usdVrmPackageResolver-<version>-<target>.tar.zst
 usdVrmaFileFormat-<version>-<target>.tar.zst
 execMotion-<version>-<target>.tar.zst
-execVrm-<version>-<target>.tar.zst             (when it exists)
+execVrm-<version>-<target>.tar.zst
 usd-vrm-plugins-<version>-<target>-plugin-product.tar.zst (aggregate)
 ```
 
@@ -929,7 +929,7 @@ as the gate in every migration PR.
 | 6a | `motionCore` bootstrap | done (`libs/motionCore`) |
 | 6b | `motionRuntime` + `vrmRetarget` bootstrap | done (`libs/motionRuntime`, `libs/vrmRetarget`) |
 | 7 | `usdVrmaFileFormat` bundle bootstrap | done (`plugins/usdVrmaFileFormat`) |
-| 8 | `execMotion` + `execVrm` bundle bootstrap | `execMotion` done (`plugins/execMotion`, 2026-09-06); `execVrm` not started |
+| 8 | `execMotion` + `execVrm` bundle bootstrap | done: `execMotion` (`plugins/execMotion`, 2026-09-06) and `execVrm` (`plugins/execVrm`, 2026-09-13) |
 
 > **Phase 6 was renumbered on 2026-07-18.** It previously read "`execVrm`
 > (LookAt first)" — a single phase covering the whole runtime layer. The motion

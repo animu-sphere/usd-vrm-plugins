@@ -75,4 +75,30 @@ TargetSkeleton::IsTopologicallyOrdered() const
     return true;
 }
 
+bool
+operator==(const TargetJoint& a, const TargetJoint& b) noexcept
+{
+    return a.token == b.token && a.parent == b.parent
+        && a.restRotation == b.restRotation
+        && a.restTranslation == b.restTranslation;
+}
+
+bool
+operator!=(const TargetJoint& a, const TargetJoint& b) noexcept
+{
+    return !(a == b);
+}
+
+bool
+operator==(const TargetSkeleton& a, const TargetSkeleton& b) noexcept
+{
+    return a.GetJoints() == b.GetJoints();
+}
+
+bool
+operator!=(const TargetSkeleton& a, const TargetSkeleton& b) noexcept
+{
+    return !(a == b);
+}
+
 } // namespace vrmRetarget

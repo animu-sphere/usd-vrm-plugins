@@ -1,0 +1,23 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "ExecVrm",
+            "Root": ".",
+            "LibraryPath": "../../../lib/libExecVrm.dll",
+            "ResourcePath": ".",
+            "Info": {
+                "Exec": {
+                    "Schemas": {
+                        "UsdSkelSkeleton": {
+                            "allowsPluginComputations": true
+                        },
+                        "UsdVrmHumanoidAPI": {
+                            "allowsPluginComputations": true
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

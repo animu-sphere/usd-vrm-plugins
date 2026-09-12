@@ -58,6 +58,18 @@ public:
     // because the second binding would silently overwrite the first.
     std::vector<int> FindDuplicateJointIndices() const;
 
+    // Exact: the same bones bound to the same joint indices. Like
+    // TargetSkeleton's, it exists because `ExecTypeRegistry::RegisterType`
+    // will not register a type it cannot compare (`execVrm`'s
+    // `vrm.computeHumanoidMap`). Two maps are equal as *indices*, so maps built
+    // against two different skeletons can compare equal -- the map never says
+    // which rig its indices count into, and a consumer holds the skeleton
+    // beside it.
+    friend VRMRETARGET_API bool operator==(const HumanoidMap& a,
+                                           const HumanoidMap& b) noexcept;
+    friend VRMRETARGET_API bool operator!=(const HumanoidMap& a,
+                                           const HumanoidMap& b) noexcept;
+
 private:
     std::array<int, motion::HumanBoneCount> _jointIndices;
     std::bitset<motion::HumanBoneCount> _mapped;

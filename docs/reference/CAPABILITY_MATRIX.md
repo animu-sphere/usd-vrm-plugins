@@ -52,9 +52,10 @@ simulates:
 
 - **LookAt**, **node constraints**, and **spring bones** are authored as typed
   schema data on the stage. Their runtime evaluation/simulation is a **separate
-  layer** (`execVrm`, Product P4), never run by this importer. `execVrm` does not
-  exist yet; the release it lands in is not fixed — it follows the packaging,
-  tracker, recorded-source and producer-contract tracks
+  layer** (`execVrm`, Product P4), never run by this importer. `execVrm` exists
+  since 2026-09-13 with the rig half of retargeting only — the target skeleton
+  and the humanoid map — and evaluates none of these three yet; the release it
+  lands in is not fixed
   ([the OpenExec plan](../roadmap/openexec-foundation.md), and the
   [roadmap status table](../roadmap/README.md#status-at-a-glance) for the
   version).

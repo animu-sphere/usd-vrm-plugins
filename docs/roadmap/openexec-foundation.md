@@ -722,11 +722,67 @@ value type registered with `ExecTypeRegistry::RegisterType` — which requires
 `operator==` on it, the same thing P0-6 parity needs. Array-valued USD inputs are
 declared with their *element* type and consumed with `VdfReadIterator<T>`.
 
-### P0-5 — minimal `execVrm` bundle ⬜
+### P0-5 — minimal `execVrm` bundle 🚧
 
 Computations: `vrm.computeHumanoidMap`, `vrm.computeTargetSkeleton`,
 `vrm.computeRestPoseCorrection`, `vrm.humanoidRetarget`,
 `vrm.computeJointLocalTransforms`.
+
+**The bundle and its first two nodes landed on 2026-09-13**: `plugins/execVrm`,
+with `vrm.computeTargetSkeleton` on `UsdSkelSkeleton` — the rig as `vrmRetarget`
+reads it, each rest transform decomposed with scale and shear dropped — and
+`vrm.computeHumanoidMap` on the applied `VrmHumanoidAPI`, which is
+`HumanoidMap::SetJointToken` for each `vrm:humanBones:*` binding against the one
+skeleton `vrm:skeleton` reaches. `vrmRetarget::TargetSkeleton` and
+`HumanoidMap` register as execution value types; the exact `operator==` the
+registry requires was added to `vrmRetarget` for this, the ask motionCore's
+aggregates answered in v0.6.0. The bundle links neither `vrmSchema` nor its
+generated class, and requires it as a bundle.
+
+**Six measurements, in [the humanoid report](../reports/openusd/26.08-openexec-humanoid.md),
+and the first reaches back into P0-4.** **An attribute a schema defines and the
+stage gives no value reaches a callback as one element of the type's fallback**
+— an empty token, an identity matrix, a zero vector — beside an executor
+`TF_WARN`, not as nothing. The sampling report's "a missing input has no value"
+is true of an attribute the prim does not have at all, and false of one its
+schema defines. So a skeleton that authors no `joints` arrives as one joint
+named `""` and is refused for it, an unbound bone and an authored empty token
+are one value, a one-joint skeleton with no rest pose is answered as identity
+because from inside the callback it *is* one — and, one bundle over, a one-joint
+*clip* that keys nothing comes out of `motion.sampleAnimation` with a root at
+the origin nobody stated (a probe; recorded in `ExecMotionPose.h`, not fixable
+in the callback). **A computation on this workspace's own applied schema
+resolves on a prim another plugin types** — the importer's humanoid is a
+`UsdGeomScope`, `execGeom`'s — and **not** on a prim carrying every attribute
+without the schema, which the offline tool would read. **The schema bundle is a
+runtime edge**: exec resolves `UsdVrmHumanoidAPI` by type name when it reads the
+Exec block, and without `vrmSchema` in the session the skeleton still computes
+and the map is not found. **Fifty-five inputs declared in a loop work**, and
+motionCore's vocabulary and the schema's properties are the same 55 names. And
+**invalidation follows the dependency, not the value**: a rest-transform edit
+reports the map, whose indices do not move, and a retargeted `vrm:skeleton`
+reaches it with no request rebuilt.
+
+**The refusals are this bundle's first P0-6 table.** Five statements a stage can
+make that `motion_retarget` tolerates and `execVrm` refuses or cannot see — rest
+transforms that do not pair, a binding to a joint the skeleton lacks, two bones
+on one joint, no `vrm:skeleton`, the attributes without the schema — each of the
+missing-field kind, none reachable from what the importer authors
+([the report](../reports/openusd/26.08-openexec-humanoid.md) §7). As
+`motion.blendPoses` does, the map reads its relationship twice, and here the
+count decides the answer rather than the message: with it disabled, a humanoid
+naming a skeleton and a `Scope` was answered against the skeleton.
+
+**The sixth boundary finding is the sampler's again, one library over.**
+Building a `TargetSkeleton` from rest transforms exists only in
+`tools/motionRetarget`'s `StageIo.cpp`, so the decomposition is in the seam,
+line for line; the ask is a library constructor from tokens and rest matrices
+([boundary consolidation](boundary-consolidation.md) §1).
+
+Still open here: `vrm.computeRestPoseCorrection`, `vrm.humanoidRetarget` and
+`vrm.computeJointLocalTransforms`, in that order — the retarget needs the
+correction, and the joint-local transforms are the retarget's answer in the
+shape a `UsdSkelAnimation` stores.
 
 Inputs: `vrm:humanBones:*`, the typed `Vrm*API` schemas, `UsdSkelSkeleton`,
 `UsdSkelAnimation`, and explicit policies/relationships.
@@ -840,7 +896,12 @@ The other two options considered are **not** dropped; they are re-filed:
 
 - ⬜ **File the upstream ask** for plugin registration of exec imaging adapters.
   This is the only route to the original slice and nothing else in the plan
-  advances it, so it is tracked whether or not it is answered.
+  advances it, so it is tracked whether or not it is answered. A second ask
+  travels with it since 2026-09-13: an attribute input that computes no value
+  should reach a callback as no value, or exec should offer a builtin saying
+  whether an attribute has one — 26.08 fills it with the type's fallback and a
+  warning the callback never sees
+  ([the humanoid report](../reports/openusd/26.08-openexec-humanoid.md) §8).
 - ⬜ **Real `UsdSkel` skinning display is its own milestone**, after the
   `ExecIr` track, and is a release condition for neither. Four routes
   exist, in the order they should be tried: the upstream ask above; an adapter
@@ -1105,6 +1166,20 @@ depends on them ([docs/README.md](../README.md)). Open:
   the statement that the attribute is a shim: it duplicates
   `timeCodesPerSecond`, it can disagree with it, and it is meant to be removed
   if exec ever delivers stage metadata to a callback.
+- ⬜ **Every node that reads a schema attribute owes a fallback decision, and
+  one schema may want to state it.** 26.08 hands an unauthored schema attribute
+  to a callback as one element of Sdf's default for the type
+  ([the humanoid report](../reports/openusd/26.08-openexec-humanoid.md) §4), so
+  for each such input the question is what that one element looks like against
+  what it pairs with. `motion.sampleAnimation` has a shape where it pairs (a
+  one-joint clip) and cannot tell; `vrm.computeHumanoidMap` reads it as unbound,
+  and a `""` fallback on `VrmHumanoidAPI`'s bone attributes would make that the
+  schema's statement and silence one executor warning per unbound bone. That is
+  a schema-contract change, and it is filed with BND-0 in
+  [boundary consolidation](boundary-consolidation.md) §1 rather than made by a
+  node. The upstream half — an input with no value reaching a callback as no
+  value, or a builtin that says whether an attribute has one — is filed with
+  P0-7's ask.
 - ⬜ **The snapshot-input rule needs a contract home.** §5 requires that a
   computation evaluate an immutable snapshot and perform no I/O; motion policy
   §11.4 now states it, but nothing enforces it. The obvious enforcement is a

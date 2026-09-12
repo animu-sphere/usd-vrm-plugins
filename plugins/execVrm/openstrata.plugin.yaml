@@ -1,0 +1,55 @@
+# OpenStrata plugin bundle manifest.
+manifest:
+  schema: openstrata.plugin/v1alpha1
+plugin:
+  name: execVrm
+  version: 0.8.0
+  kind: usd-exec
+license: Apache-2.0
+runtime:
+  # The one OpenUSD version this plugin supports; see usdVrmFileFormat's
+  # manifest for why the tolerated range was retired in v0.6.0.
+  openusd: "==26.08"
+  cxx_abi: inherit
+provides:
+  # Two schemas, and exactly one plugin in a session may declare each. 26.08
+  # keys its Exec.Schemas metadata by schema type and refuses a second declarer
+  # with a coding error, dropping that plugin's computations for the schema --
+  # so the two exec bundles partition them (WORKSPACE.md §2): `UsdSkelAnimation`
+  # is execMotion's, and `UsdSkelSkeleton` and the Vrm*API applied schemas are
+  # this bundle's. Only the two it registers on are declared today; the rest of
+  # the Vrm*API set is reserved for it by that contract, not by this list.
+  - usd-exec:UsdSkelSkeleton
+  - usd-exec:UsdVrmHumanoidAPI
+requires:
+  capabilities: [usd-stage-read]
+  libraries:
+    # The retarget core, and the one library every node here wraps: the rig a
+    # computation answers with is `vrmRetarget`'s own `TargetSkeleton` and
+    # `HumanoidMap`, which gained an exact `operator==` for this bundle -- the
+    # registry's requirement, the ask motionCore's aggregates answered in v0.6.0.
+    - id: vrmRetarget
+      version: ">=0.8,<0.9"
+    # And the two it is built on, named rather than left to the closure: the
+    # vocabulary a humanoid binds (`motion::HumanBone`) is motionCore's, and a
+    # bundle names what it spells.
+    - id: motionCore
+      version: ">=0.8,<0.9"
+    - id: motionRuntime
+      version: ">=0.8,<0.9"
+  # The typed Vrm*API schemas. Not linked: exec resolves `UsdVrmHumanoidAPI`
+  # by TfType name when it reads this bundle's Exec block, so what this bundle
+  # needs is vrmSchema's plugInfo registered in the session. Without it the
+  # schema name is unknown and every computation on the humanoid is "not
+  # found" -- measured in execVrm_humanoid.
+  bundles:
+    - id: vrmSchema
+      version: ">=0.8,<0.9"
+      contract: 1
+usd:
+  plug_info: plugin/resources/execVrm/plugInfo.json
+tests:
+  smoke:
+    - tests/fixtures/humanoid_rig.usda
+  roundtrip:
+    - tests/fixtures/humanoid_rig.usda

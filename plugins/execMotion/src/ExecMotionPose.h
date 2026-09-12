@@ -105,6 +105,18 @@ struct ClipSample
 /// and a clip that authors no translations produces a pose with no root
 /// position. Only `hips` carries body translation (motion contract); the rest of
 /// a `translations` array is rest-pose data a retargeter re-derives per rig.
+///
+/// **Except for a clip of exactly one joint**, measured on 2026-09-13 and not
+/// fixable here. `rotations` and `translations` are `UsdSkelAnimation`'s own
+/// attributes, and OpenExec hands an unauthored one to the callback as ONE
+/// element of Sdf's fallback -- an identity quaternion, a zero vector -- rather
+/// than as nothing. Against several joints that one element disagrees in length
+/// and contributes nothing, as above. Against one joint it pairs: a hips-only
+/// clip that keys nothing samples to hips at identity and a root **at the
+/// origin**, and from inside this function the fallback and an authored origin
+/// are the same value
+/// ([the humanoid report](../../../docs/reports/openusd/26.08-openexec-humanoid.md)
+/// §4).
 std::optional<motion::HumanoidPose> PoseFromClipSample(const ClipSample& sample);
 
 /// What a clip states about how it wants to be smoothed.

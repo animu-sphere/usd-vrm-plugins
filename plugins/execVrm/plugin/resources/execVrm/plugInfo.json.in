@@ -1,0 +1,23 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "ExecVrm",
+            "Root": ".",
+            "LibraryPath": "../../../lib/@OPENSTRATA_PLUGIN_LIBRARY_PREFIX@ExecVrm@CMAKE_SHARED_LIBRARY_SUFFIX@",
+            "ResourcePath": ".",
+            "Info": {
+                "Exec": {
+                    "Schemas": {
+                        "UsdSkelSkeleton": {
+                            "allowsPluginComputations": true
+                        },
+                        "UsdVrmHumanoidAPI": {
+                            "allowsPluginComputations": true
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
