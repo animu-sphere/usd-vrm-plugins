@@ -6,9 +6,9 @@
 # it, and a green PR lane proves nothing about it.
 #
 # Pushing a tag `vX.Y.Z` (which must equal the repo VERSION file and have a
-# finalized CHANGELOG section) builds the whole workspace -- the five bundles
-# vrmSchema, usdVrmFileFormat, usdVrmPackageResolver, usdVrmaFileFormat and
-# execMotion plus every CLI tool the workspace declares -- on the same three OS
+# finalized CHANGELOG section) builds the whole workspace -- the six bundles
+# vrmSchema, usdVrmFileFormat, usdVrmPackageResolver, usdVrmaFileFormat,
+# execMotion and execVrm plus every CLI tool the workspace declares -- on the same three OS
 # cells and digest-pinned runtimes as the PR lane, proves the *packaged*
 # artifacts (composed clean-install smoke + digest reproducibility), then
 # assembles a DRAFT GitHub release: per-target lean bundles and tool packages
@@ -31,8 +31,9 @@
 # toolchain version but `[workspace].release_exclude` in openstrata.toml, which
 # names the three of them and makes `ost` itself fail with
 # AGGREGATE_MEMBERSHIP_MISMATCH before this step runs. The product was seven
-# members through v0.8.0 and is eight since execMotion joined it -- which is
-# exactly why no number is written down here, only in openstrata.toml.
+# members through v0.8.0, eight once execMotion joined it and nine since
+# execVrm did -- which is exactly why no number is written down here, only in
+# openstrata.toml.
 #
 # The count below stays anyway, and it is not a duplicate of that check. `ost`
 # compares the packaged set against a declaration, and this step compares it
@@ -280,7 +281,7 @@ jobs:
           # provenance, so `plugin package --workspace` below fails closed with
           # PLUGIN_PACKAGE_OUTPUT_MISMATCH -- and no pull_request event runs
           # this workflow, so a tag is the first time anyone finds out.
-          for bundle in plugins/vrmSchema plugins/usdVrmFileFormat plugins/usdVrmPackageResolver plugins/usdVrmaFileFormat plugins/execMotion; do
+          for bundle in plugins/vrmSchema plugins/usdVrmFileFormat plugins/usdVrmPackageResolver plugins/usdVrmaFileFormat plugins/execMotion plugins/execVrm; do
             echo "::group::build $bundle"
             ost plugin build "$bundle" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
             echo "::endgroup::"

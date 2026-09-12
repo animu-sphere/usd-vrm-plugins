@@ -101,8 +101,8 @@ Schedule: [docs/roadmap/](docs/roadmap/README.md#status-at-a-glance).
 | [`motionRuntime`](libs/motionRuntime) | Plain static CMake library | Timestamped pose buffer, interpolation, resample, filter, blend |
 | [`vrmRetarget`](libs/vrmRetarget) | Plain static CMake library | Humanoid mapping, rest-pose correction, root-motion policy, pose retargeter |
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | The stage half: reads the rig and the clip, bakes the retargeted `UsdSkelAnimation`, binds `skel:animationSource` |
-| [`execMotion`](plugins/execMotion) | OpenExec bundle | Vendor-neutral motion nodes. **Bootstrapped**: one registered value type and one identity computation over `UsdSkelAnimation`, with the real nodes behind a mechanism that is now measured rather than read |
-| `execVrm` | OpenExec bundle | VRM semantics: retarget, root motion, expression, look-at, avatar apply |
+| [`execMotion`](plugins/execMotion) | OpenExec bundle | Vendor-neutral motion nodes over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend — the OpenExec plan's P0-4 node set |
+| [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM semantics: retarget, root motion, expression, look-at, avatar apply. **Bootstrapped**: the target rig and the humanoid map as computations over `UsdSkelSkeleton` and the applied `VrmHumanoidAPI`, with the retarget itself still to come |
 | `adapters/` | Optional plain libraries + their CLIs | **Live** input leaves — a VMC Protocol adapter first, then vendor-native and generator adapters. The **only** place product or protocol names are permitted *in code* (e.g. VMC, Mocopi, ARDY) |
 | `motionSource` · `motionBvh` | Plain static CMake libraries | **Recorded-file** input: BVH syntax, a format-neutral source model, and conversion to canonical humanoid motion under an explicit producer profile |
 | `profiles/motion/` | Package data | One declarative file per producer *and export preset*. Product names live here rather than in the libraries that read them |

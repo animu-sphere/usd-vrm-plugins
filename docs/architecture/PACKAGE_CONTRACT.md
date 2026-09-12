@@ -101,7 +101,7 @@ a CMake package.
 | `usdVrmPackageResolver` | — | — | — | — | yes | not applicable |
 | `usdVrmaFileFormat` | — | — | — | — | yes | not applicable |
 | `execMotion` | — | — | — | — | yes | not applicable |
-| `execVrm` | — | — | — | — | reserved | not applicable |
+| `execVrm` | — | — | — | — | yes | not applicable |
 
 `execMotion` joined the product on 2026-09-06 with its bootstrap (Workspace
 Phase 8). It is a bundle in exactly the sense the next paragraph describes —
@@ -111,6 +111,16 @@ resolves on a prim of the schema its plugInfo declares*. A plugInfo that fails t
 stage does not fail loudly there; it presents as a computation that does not
 exist, which is what `execMotion_mechanism` exists to catch
 ([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §1).
+
+`execVrm` joined on 2026-09-13, under the same contract and with one more
+condition on it: one of the schemas its plugInfo declares, `UsdVrmHumanoidAPI`,
+is **another bundle's type**. exec resolves that name when it reads the Exec
+block, so the consumer contract holds only in a session that also registers
+`vrmSchema` — a runtime edge, `requires.bundles`, and not a link one: the bundle
+links nothing of `vrmSchema`. Without it the computations on the typed
+`UsdSkelSkeleton` still resolve and the ones on the humanoid are not found,
+which `execVrm_humanoid_without_schema` measures
+([the humanoid report](../reports/openusd/26.08-openexec-humanoid.md) §6).
 
 The three file-format and resolver bundles export no target and install no
 config **by design**: nothing links them, OpenUSD discovers them. Their consumer

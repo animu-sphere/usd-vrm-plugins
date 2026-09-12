@@ -41,6 +41,7 @@ profile = "usd"
 [workspace]
 members = [
   "plugins/execMotion",
+  "plugins/execVrm",
   "plugins/usdVrmFileFormat",
   "plugins/usdVrmaFileFormat",
   "plugins/usdVrmPackageResolver",
@@ -67,6 +68,7 @@ members = [
 release_members = [
   "vrmSchema",
   "execMotion",
+  "execVrm",
   "usdVrmFileFormat",
   "usdVrmaFileFormat",
   "usdVrmPackageResolver",

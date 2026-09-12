@@ -722,10 +722,10 @@ def main() -> int:
     # Two different reasons a row carries no `find_package` contract, and they
     # are told apart by two different cells. A reserved identity says so in
     # `Exported target` (`vrmAdapterArdy`) *or* in `In the aggregate product`
-    # (`execMotion`, `execVrm`, whose target cell is a plain dash like a plugin
-    # bundle's) -- so testing the target cell alone sent both of those away with
-    # the plugin-load reason, which is not true of either and is not a reason a
-    # reader could act on.
+    # (as `execMotion` and `execVrm` did before their bootstraps, their target
+    # cell a plain dash like a plugin bundle's) -- so testing the target cell
+    # alone sent both kinds away with the plugin-load reason, which is not true
+    # of a reserved one and is not a reason a reader could act on.
     if "reserved" in (row["target"], row["product"]):
         fail_setup(
             f"`{args.package}` is a reserved identity: it has a row in "

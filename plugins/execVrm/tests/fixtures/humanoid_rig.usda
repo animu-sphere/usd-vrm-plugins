@@ -1,0 +1,80 @@
+#usda 1.0
+(
+    """Behaviour fixture for execVrm: a target rig, and a humanoid naming
+    joints of it.
+
+    The prose is a layer comment rather than `doc` on purpose; see execMotion's
+    sampled_clip.usda for why.
+
+    The layout is the importer's: a SkelRoot `Asset`, the skeleton under
+    `skel`, and the humanoid under `rig` as a Scope with VrmHumanoidAPI applied
+    and `vrm:skeleton` pointing at the skeleton (plugins/usdVrmFileFormat's
+    minimal.vrm golden has the same three prims). The humanoid being a Scope is
+    load-bearing: execGeom declares UsdGeomScope, so a computation can reach
+    this prim only through the API schema applied to it.
+
+    The joint names are VRoid's rather than bone names, so a map that resolved
+    `hips` by looking for a joint called hips would find nothing: every binding
+    is a full joint path, and the leaf is not a bone name anywhere.
+
+    One rest transform is not a translation. The left upper arm is turned 90
+    degrees about +Z and scaled by 2, so its decomposed rest rotation has to be
+    (0.70710678, 0, 0, 0.70710678) with the scale dropped -- the motion
+    contract ignores scale channels -- and its translation (0.1, 0.15, 0) read
+    straight off the matrix.
+
+    Six of VRM 1.0's seventeen required bones are bound, so the map this
+    produces is legal and says what it is missing rather than being refused
+    for it. `vrm:humanBones:leftUpperArmTwist` is not a bone of the vocabulary
+    -- the schema preserves such bones as custom attributes -- and it names the
+    hips joint on purpose: a node that read it would bind two bones to one
+    joint and refuse."""
+    defaultPrim = "Asset"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def SkelRoot "Asset"
+{
+    def Scope "skel"
+    {
+        def Skeleton "Skeleton"
+        {
+            uniform token[] joints = [
+                "Root",
+                "Root/J_Bip_C_Hips",
+                "Root/J_Bip_C_Hips/J_Bip_C_Spine",
+                "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest",
+                "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_Neck",
+                "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_Neck/J_Bip_C_Head",
+                "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_L_UpperArm"
+            ]
+            uniform matrix4d[] restTransforms = [
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.15, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.2, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1) ),
+                ( (0, 2, 0, 0), (-2, 0, 0, 0), (0, 0, 2, 0), (0.1, 0.15, 0, 1) )
+            ]
+        }
+    }
+
+    def Scope "rig"
+    {
+        def Scope "Humanoid" (
+            prepend apiSchemas = ["VrmHumanoidAPI"]
+        )
+        {
+            rel vrm:skeleton = </Asset/skel/Skeleton>
+            uniform token vrm:humanBones:hips = "Root/J_Bip_C_Hips"
+            uniform token vrm:humanBones:spine = "Root/J_Bip_C_Hips/J_Bip_C_Spine"
+            uniform token vrm:humanBones:chest = "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest"
+            uniform token vrm:humanBones:neck = "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_Neck"
+            uniform token vrm:humanBones:head = "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_Neck/J_Bip_C_Head"
+            uniform token vrm:humanBones:leftUpperArm = "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_L_UpperArm"
+            custom uniform token vrm:humanBones:leftUpperArmTwist = "Root/J_Bip_C_Hips"
+        }
+    }
+}

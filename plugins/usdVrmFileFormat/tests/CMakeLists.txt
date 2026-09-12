@@ -176,8 +176,14 @@ if(TARGET motionCore::motionCore)
     # changes what the gate can verify, not what discovery.json contains.
     set(_exec_motion_bundle "${_bundle_dir}/../execMotion")
     set(_exec_motion_resources "${_exec_motion_bundle}/plugin/resources/execMotion")
+    # execVrm joins for execMotion's reason, and like it registers no USD type.
+    # Its Exec block names `UsdVrmHumanoidAPI`, a type vrmSchema declares --
+    # which this session already carries, so the name resolves here as it
+    # does everywhere the bundle is composed with what it requires.
+    set(_exec_vrm_bundle "${_bundle_dir}/../execVrm")
+    set(_exec_vrm_resources "${_exec_vrm_bundle}/plugin/resources/execVrm")
     set(_baseline_env
-        "${_smoke_env};PATH=path_list_prepend:${_vrma_bundle}/lib;PATH=path_list_prepend:${_exec_motion_bundle}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:motionCore::motionCore>;PXR_PLUGINPATH_NAME=path_list_prepend:${_vrma_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_exec_motion_resources}")
+        "${_smoke_env};PATH=path_list_prepend:${_vrma_bundle}/lib;PATH=path_list_prepend:${_exec_motion_bundle}/lib;PATH=path_list_prepend:${_exec_vrm_bundle}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:motionCore::motionCore>;PXR_PLUGINPATH_NAME=path_list_prepend:${_vrma_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_exec_motion_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_exec_vrm_resources}")
 
     add_test(
         NAME usdvrm_baseline
