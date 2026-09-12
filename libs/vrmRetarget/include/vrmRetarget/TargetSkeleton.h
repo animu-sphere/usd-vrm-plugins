@@ -80,4 +80,26 @@ private:
     std::vector<TargetJoint> _joints;
 };
 
+// Exact, field by field and joint by joint -- motionCore's "is this the same
+// recorded value?" question (motion contract, comparison semantics), asked of a
+// rig. It exists for the caller motionCore's aggregates and motionRuntime's
+// `PoseSampleResult` added it for: `ExecTypeRegistry::RegisterType` will not
+// register a type it cannot compare, and `execVrm`'s `vrm.computeTargetSkeleton`
+// hands this value back whole.
+//
+// Exact means a rest rotation and its negation are *different* skeletons here,
+// though they rest identically. Downstream of an exec computation that is the
+// conservative answer -- a flipped sign recomputes what depends on it, which is
+// wasteful and never wrong -- and it is the same one `HumanoidPose` gives. There
+// is no `NearlyEqual`: nothing yet asks whether two rigs are the same rig, and a
+// parity check compares the poses retargeted onto them.
+VRMRETARGET_API bool operator==(const TargetJoint& a,
+                                const TargetJoint& b) noexcept;
+VRMRETARGET_API bool operator!=(const TargetJoint& a,
+                                const TargetJoint& b) noexcept;
+VRMRETARGET_API bool operator==(const TargetSkeleton& a,
+                                const TargetSkeleton& b) noexcept;
+VRMRETARGET_API bool operator!=(const TargetSkeleton& a,
+                                const TargetSkeleton& b) noexcept;
+
 } // namespace vrmRetarget

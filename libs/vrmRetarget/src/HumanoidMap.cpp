@@ -124,4 +124,19 @@ HumanoidMap::FindDuplicateJointIndices() const
     return duplicates;
 }
 
+bool
+operator==(const HumanoidMap& a, const HumanoidMap& b) noexcept
+{
+    // Both halves, although every writer keeps an unmapped slot at kUnmapped
+    // and the bitset is therefore implied by the indices today: comparing the
+    // two is what stays correct if a writer ever stops doing that.
+    return a._mapped == b._mapped && a._jointIndices == b._jointIndices;
+}
+
+bool
+operator!=(const HumanoidMap& a, const HumanoidMap& b) noexcept
+{
+    return !(a == b);
+}
+
 } // namespace vrmRetarget

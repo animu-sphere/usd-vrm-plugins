@@ -258,6 +258,16 @@ live-capture semantics above makes part of the answer, and the registry will not
 take a type it cannot compare. It has no `NearlyEqual`: nothing asks whether two
 sample results are the same motion, and a parity check compares their poses.
 
+`vrmRetarget`'s `TargetJoint`, `TargetSkeleton` and `HumanoidMap` carry one as
+well *(added 2026-09-13)*, exact, for `execVrm`'s `vrm.computeTargetSkeleton`
+and `vrm.computeHumanoidMap`, which answer them whole. A skeleton compares joint
+by joint in its own order, since that order is what a map's indices count into,
+and a rest rotation and its negation are different skeletons — the conservative
+answer `HumanoidPose` gives. A map compares as indices, so two maps built against
+two different skeletons can be equal; the map never says which rig it counts
+into. Neither has a `NearlyEqual`: a parity check compares the poses retargeted
+onto them.
+
 `NearlyEqual` takes a `MotionTolerance` and answers the question a parity check
 and a corpus test are actually asking. The two differ in exactly three places,
 and each is a decision rather than an implementation detail:

@@ -180,6 +180,57 @@ TestHumanoidMapReportsGapsAndCollisions()
     assert(duplicates.size() == 1 && duplicates[0] == 3);
 }
 
+// The rig values are compared exactly, because the caller that asked for the
+// comparison -- OpenExec's type registry, for `execVrm` -- wants "is this the
+// same recorded value?", not "is this the same rig?".
+void
+TestRigValuesCompareExactly()
+{
+    const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
+    assert(skeleton == DesignAvatar());
+    assert(!(skeleton != DesignAvatar()));
+
+    // Every field of a joint is part of the value.
+    std::vector<vrmRetarget::TargetJoint> joints = skeleton.GetJoints();
+    joints[2].restTranslation[1] += 1e-6f;
+    assert(vrmRetarget::TargetSkeleton(joints) != skeleton);
+    joints = skeleton.GetJoints();
+    joints[2].parent = vrmRetarget::TargetSkeleton::kNoParent;
+    assert(vrmRetarget::TargetSkeleton(joints) != skeleton);
+    joints = skeleton.GetJoints();
+    joints[2].token = "Root/Pelvis/SpineB";
+    assert(vrmRetarget::TargetSkeleton(joints) != skeleton);
+
+    // A rest rotation and its negation rest identically and are different
+    // values -- the conservative answer, and HumanoidPose's.
+    joints = skeleton.GetJoints();
+    joints[1].restRotation = pxr::GfQuatf(-1.0f, pxr::GfVec3f(0.0f));
+    assert(SameOrientation(joints[1].restRotation,
+                           skeleton.GetJoints()[1].restRotation));
+    assert(vrmRetarget::TargetSkeleton(joints) != skeleton);
+
+    // The joint ORDER is part of the value: it is what a map's indices count
+    // into.
+    joints = skeleton.GetJoints();
+    std::swap(joints[2], joints[3]);
+    assert(vrmRetarget::TargetSkeleton(joints) != skeleton);
+
+    const vrmRetarget::HumanoidMap map = DesignMap(skeleton);
+    assert(map == DesignMap(skeleton));
+    assert(map != vrmRetarget::HumanoidMap());
+
+    vrmRetarget::HumanoidMap moved = DesignMap(skeleton);
+    assert(moved.SetJointToken(motion::HumanBone::Chest, "Root/Pelvis/SpineA",
+                               skeleton));
+    assert(moved != map);
+
+    // A rejected binding leaves the map as it was, and so equal to it.
+    vrmRetarget::HumanoidMap rejected = DesignMap(skeleton);
+    assert(!rejected.SetJointToken(motion::HumanBone::Head, "NoSuchJoint",
+                                   skeleton));
+    assert(rejected == map);
+}
+
 void
 TestIdentityRestPosesPassRotationsThrough()
 {
@@ -1886,6 +1937,7 @@ main()
 {
     TestSkeletonParentsComeFromJointPaths();
     TestHumanoidMapReportsGapsAndCollisions();
+    TestRigValuesCompareExactly();
     TestIdentityRestPosesPassRotationsThrough();
     TestRestPoseCorrectionPreservesTheWorldDelta();
     TestRestPoseCorrectionAccountsForTheWholeAncestorChain();
