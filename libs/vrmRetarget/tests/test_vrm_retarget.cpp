@@ -224,11 +224,39 @@ TestRigValuesCompareExactly()
                                skeleton));
     assert(moved != map);
 
-    // A rejected binding leaves the map as it was, and so equal to it.
+    // A rejected binding of a bone that was never mapped leaves the map as it
+    // was, and so equal to it.
     vrmRetarget::HumanoidMap rejected = DesignMap(skeleton);
     assert(!rejected.SetJointToken(motion::HumanBone::Head, "NoSuchJoint",
                                    skeleton));
     assert(rejected == map);
+}
+
+// A rejected rebinding unmaps the bone, whether the index or the token is what
+// the skeleton cannot honour -- the two setters answer one question one way,
+// and a `false` never leaves an earlier binding standing behind it.
+void
+TestARejectedRebindingUnmapsTheBone()
+{
+    const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
+
+    vrmRetarget::HumanoidMap byToken = DesignMap(skeleton);
+    assert(byToken.IsMapped(motion::HumanBone::Spine));
+    assert(!byToken.SetJointToken(motion::HumanBone::Spine, "NoSuchJoint",
+                                  skeleton));
+    assert(!byToken.IsMapped(motion::HumanBone::Spine) &&
+           "a failed token lookup left the earlier binding standing");
+    assert(byToken.GetJointIndex(motion::HumanBone::Spine)
+           == vrmRetarget::HumanoidMap::kUnmapped);
+    assert(byToken.GetMappedCount() == 2);
+
+    vrmRetarget::HumanoidMap byIndex = DesignMap(skeleton);
+    assert(!byIndex.SetJointIndex(motion::HumanBone::Spine, 99,
+                                  skeleton.GetSize()));
+    assert(!byIndex.IsMapped(motion::HumanBone::Spine));
+
+    // Both routes land on the same map.
+    assert(byToken == byIndex);
 }
 
 void
@@ -1938,6 +1966,7 @@ main()
     TestSkeletonParentsComeFromJointPaths();
     TestHumanoidMapReportsGapsAndCollisions();
     TestRigValuesCompareExactly();
+    TestARejectedRebindingUnmapsTheBone();
     TestIdentityRestPosesPassRotationsThrough();
     TestRestPoseCorrectionPreservesTheWorldDelta();
     TestRestPoseCorrectionAccountsForTheWholeAncestorChain();

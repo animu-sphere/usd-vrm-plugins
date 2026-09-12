@@ -529,13 +529,16 @@ void TestARestPoseThatDoesNotPairIsRefusedAndPropagates(
 // ---------------------------------------------------------------------------
 // What a skeleton that authors nothing arrives as
 // ---------------------------------------------------------------------------
-// Three skeletons beside the fixture's, each differing in what it authors:
+// Four skeletons beside the fixture's, each differing in what it authors:
 //
 //   * /Bare authors nothing -- so `joints` and `restTransforms` both reach the
 //     callback as ONE fallback element, an empty token and an identity matrix,
 //     and the counts pair. Only the empty token can say it, and it is refused.
 //   * /Empty authors both as empty arrays, which is a value: zero elements, no
 //     warning, and the empty skeleton as the answer.
+//   * /Jointless authors `joints = []` and no rest pose, so it arrives as zero
+//     joints and one fallback matrix -- and is the empty skeleton too, because
+//     with no joint for a matrix to belong to, none becomes a number.
 //   * /One authors one joint and no rest pose, and is answered with the
 //     identity rest the fallback supplied -- pinned rather than fixed, because
 //     it is indistinguishable here from an authored identity, and the offline
@@ -549,38 +552,61 @@ void TestWhatAnUnauthoredSkeletonArrivesAs(const std::string& fixture)
         rig.stage->DefinePrim(SdfPath("/Asset/skel/Bare"), skeletonType);
     UsdPrim empty =
         rig.stage->DefinePrim(SdfPath("/Asset/skel/Empty"), skeletonType);
+    UsdPrim jointless =
+        rig.stage->DefinePrim(SdfPath("/Asset/skel/Jointless"), skeletonType);
     UsdPrim one = rig.stage->DefinePrim(SdfPath("/Asset/skel/One"), skeletonType);
-    assert(bare && empty && one);
+    assert(bare && empty && jointless && one);
     assert(empty.GetAttribute(kJoints).Set(VtArray<TfToken>()));
     assert(empty.GetAttribute(kRestTransforms).Set(VtArray<GfMatrix4d>()));
+    assert(jointless.GetAttribute(kJoints).Set(VtArray<TfToken>()));
     assert(one.GetAttribute(kJoints).Set(VtArray<TfToken>({TfToken(kRoot)})));
 
     ExecUsdSystem system(rig.stage);
     std::vector<ExecUsdValueKey> keys;
     keys.emplace_back(bare, kTargetSkeleton);
     keys.emplace_back(empty, kTargetSkeleton);
+    keys.emplace_back(jointless, kTargetSkeleton);
     keys.emplace_back(one, kTargetSkeleton);
     ExecUsdRequest request = system.BuildRequest(std::move(keys));
 
     TfErrorMark mark;
     ExecUsdCacheView view = system.Compute(request);
 
+    // Every warning the compute posted, counted per skeleton: each one that
+    // takes the fallback path says so once per attribute that took it.
+    const std::vector<std::string> unset =
+        warnings.Take("No value set for output");
+    auto warnedFor = [&unset](const std::string& prim) {
+        std::size_t count = 0;
+        for (const std::string& warning : unset) {
+            if (warning.find(prim + ".") != std::string::npos) {
+                ++count;
+            }
+        }
+        return count;
+    };
+
     AssertRefused(view, 0);
     assert(MarkNames(mark, "a 'joints' entry is the empty token") &&
            "a skeleton that authors no joints was not refused for it");
-    assert(warnings.Take("/Asset/skel/Bare.").size() == 2 &&
+    assert(warnedFor("/Asset/skel/Bare") == 2 &&
            "the bare skeleton's two attributes did not both take the "
            "fallback path");
 
-    {
-        const VtValue value = view.Get(1);
+    for (const int index : {1, 2}) {
+        const VtValue value = view.Get(index);
         assert(value.IsHolding<vrmRetarget::TargetSkeleton>() &&
                value.UncheckedGet<vrmRetarget::TargetSkeleton>().IsEmpty() &&
-               "authored empty arrays did not arrive as zero elements");
+               "a skeleton with no joints did not come back empty");
     }
+    assert(warnedFor("/Asset/skel/Empty") == 0 &&
+           "authored empty arrays took the fallback path");
+    assert(warnedFor("/Asset/skel/Jointless") == 1 &&
+           "the jointless skeleton's rest pose did not take the fallback "
+           "path, so this case measures nothing");
 
     {
-        const VtValue value = view.Get(2);
+        const VtValue value = view.Get(3);
         assert(value.IsHolding<vrmRetarget::TargetSkeleton>() &&
                "a one-joint skeleton with no rest pose was refused, which "
                "would mean the fallback is no longer one identity matrix");
@@ -591,6 +617,7 @@ void TestWhatAnUnauthoredSkeletonArrivesAs(const std::string& fixture)
                    GfQuatf(1.0f, GfVec3f(0.0f)) &&
                skeleton.GetJoints()[0].restTranslation == GfVec3f(0.0f));
     }
+    assert(warnedFor("/Asset/skel/One") == 1);
 
     // Nothing but the bare skeleton's refusal was an error.
     std::size_t errors = 0;
@@ -600,8 +627,9 @@ void TestWhatAnUnauthoredSkeletonArrivesAs(const std::string& fixture)
     assert(errors == 1);
     mark.Clear();
     std::printf("execVrm humanoid: an unauthored skeleton is one empty token "
-                "and is refused; authored empty arrays are the empty skeleton; "
-                "one joint with no rest is the identity the fallback supplied\n");
+                "and is refused; no joints is the empty skeleton, with or "
+                "without a rest pose; one joint with no rest is the identity "
+                "the fallback supplied\n");
 }
 
 void TestABindingTheSkeletonCannotHonourIsRefused(const std::string& fixture)
@@ -685,6 +713,47 @@ void TestTheSkeletonRelationshipIsCounted(const std::string& fixture)
     }
     std::printf("execVrm humanoid: no skeleton, two, and one that is not a "
                 "skeleton are each refused\n");
+}
+
+// ---------------------------------------------------------------------------
+// A target naming nothing is invisible beside one that names a skeleton
+// ---------------------------------------------------------------------------
+// The one relationship statement this node cannot refuse, pinned rather than
+// fixed. A target path with no prim behind it provides neither
+// `vrm.computeTargetSkeleton` nor `computePath`, so it is missing from BOTH
+// reads of `vrm:skeleton` -- and beside a real skeleton, the relationship then
+// reads as naming exactly one object. `motion.blendPoses` catches the same
+// drop because its weights are a second statement to count against; a
+// humanoid has none, and exec offers no read of a relationship's authored
+// targets. So a humanoid naming a skeleton and a path to nothing is answered
+// against the skeleton, in either order, with no error.
+void TestADanglingSecondTargetIsInvisible(const std::string& fixture)
+{
+    const vrmRetarget::HumanoidMap expected = [&fixture] {
+        const Rig rig = Open(fixture);
+        ExecUsdSystem system(rig.stage);
+        ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
+        return MapAt(system.Compute(request));
+    }();
+
+    const SdfPath skeleton("/Asset/skel/Skeleton");
+    const SdfPath nowhere("/Asset/skel/Nowhere");
+    for (const SdfPathVector& targets :
+         {SdfPathVector{skeleton, nowhere}, SdfPathVector{nowhere, skeleton}}) {
+        const Rig rig = Open(fixture);
+        assert(rig.humanoid.GetRelationship(kSkeletonRel).SetTargets(targets));
+
+        ExecUsdSystem system(rig.stage);
+        ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
+        TfErrorMark mark;
+        const vrmRetarget::HumanoidMap map = MapAt(system.Compute(request));
+        assert(mark.IsClean() &&
+               "a dangling second target was noticed after all -- the "
+               "limitation this pins is gone, and the node should now refuse");
+        assert(map == expected);
+    }
+    std::printf("execVrm humanoid: a target naming nothing beside a skeleton "
+                "is invisible to both reads, and the map is answered\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -815,6 +884,7 @@ int main(int argc, char** argv)
     TestABindingTheSkeletonCannotHonourIsRefused(fixture);
     TestTwoBonesOnOneJointAreRefused(fixture);
     TestTheSkeletonRelationshipIsCounted(fixture);
+    TestADanglingSecondTargetIsInvisible(fixture);
     TestAnEmptyTokenAndABlockBindNothing(fixture);
     TestAnUnappliedHumanoidHasNoMap(fixture);
 

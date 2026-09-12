@@ -201,7 +201,23 @@ void TestNoJointsIsAnAnswer()
     execvrm::SkeletonOutcome outcome =
         execvrm::TargetSkeletonFromRest(execvrm::SkeletonRest{});
     assert(outcome.skeleton && outcome.skeleton->IsEmpty());
-    std::printf("execVrm rig: a skeleton with no joints is an empty skeleton\n");
+
+    // Whatever the rest transforms say: with no joint for one to belong to,
+    // none can become a number. The first is what exec delivers for
+    // `joints = []` beside an unauthored `restTransforms` -- one fallback
+    // matrix -- and it is not a count the stage stated.
+    execvrm::SkeletonRest fallback;
+    fallback.restTransforms = {pxr::GfMatrix4d(1.0)};
+    outcome = execvrm::TargetSkeletonFromRest(fallback);
+    assert(outcome.skeleton && outcome.skeleton->IsEmpty() &&
+           "joints = [] beside an unauthored restTransforms was refused");
+
+    execvrm::SkeletonRest stray;
+    stray.restTransforms = {Translate(0, 1, 0), Translate(0, 2, 0)};
+    outcome = execvrm::TargetSkeletonFromRest(stray);
+    assert(outcome.skeleton && outcome.skeleton->IsEmpty());
+    std::printf("execVrm rig: a skeleton with no joints is an empty skeleton, "
+                "whatever its rest transforms say\n");
 }
 
 void TestAnEmptyJointTokenIsRefused()

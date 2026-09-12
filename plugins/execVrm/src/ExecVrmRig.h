@@ -65,9 +65,10 @@ struct SkeletonRest
 /// value is rather than by its absence.
 enum class SkeletonRefusal
 {
-    /// `restTransforms` does not pair one-to-one with `joints`. An unauthored
-    /// or blocked `restTransforms` on a skeleton of two joints or more lands
-    /// here, as one fallback matrix against several joints.
+    /// `restTransforms` does not pair one-to-one with a `joints` that names at
+    /// least one joint. An unauthored or blocked `restTransforms` on a skeleton
+    /// of two joints or more lands here, as one fallback matrix against several
+    /// joints.
     RestTransformCount,
 
     /// A `joints` entry is the empty token, which names no joint path and is
@@ -110,11 +111,15 @@ struct SkeletonOutcome
 /// missing-field semantics category rather than a numerical one. The second is
 /// an empty joint token (`SkeletonRefusal::EmptyJointToken`).
 ///
-/// A skeleton that authors **no joints** -- `joints = []`, with `restTransforms
-/// = []` beside it -- is an answer, not a refusal: an empty `TargetSkeleton`
-/// says exactly that, and it is distinguishable from every skeleton that has a
-/// joint. What it cannot do is resolve a binding, which is the humanoid map's
-/// to refuse. A skeleton that authors no `joints` *at all* is refused instead,
+/// A skeleton that authors **no joints** -- `joints = []` -- is an answer, not a
+/// refusal, **whatever its `restTransforms` say**: an empty `TargetSkeleton`
+/// says exactly that, it is distinguishable from every skeleton that has a
+/// joint, and with no joint for a rest transform to belong to, no rest
+/// transform can become a number. So `joints = []` beside an unauthored
+/// `restTransforms` -- one fallback matrix, as exec delivers it -- is the empty
+/// skeleton too, rather than a count mismatch the stage never stated. What an
+/// empty skeleton cannot do is resolve a binding, which is the humanoid map's to
+/// refuse. A skeleton that authors no `joints` *at all* is refused instead,
 /// because exec hands that over as one empty token (`EmptyJointToken`).
 ///
 /// **One case the fallback decides, and it cannot be refused from here**: a
@@ -143,6 +148,13 @@ SkeletonOutcome TargetSkeletonFromRest(const SkeletonRest& rest);
 struct HumanoidInputs
 {
     /// How many objects `vrm:skeleton` reaches.
+    ///
+    /// Objects, not authored targets: a target path with no prim behind it
+    /// provides no `computePath` either, so it is missing from this count and
+    /// from `skeletons` alike. Beside one real skeleton it is therefore
+    /// invisible, and the map is answered -- measured and pinned in
+    /// `execVrm_humanoid`. A blend catches the same drop by counting its
+    /// weights against it; a humanoid states nothing else to count.
     std::size_t skeletonTargetCount = 0;
 
     /// The skeletons that came back from those objects.

@@ -55,6 +55,15 @@ SkeletonOutcome TargetSkeletonFromRest(const SkeletonRest& rest)
             return outcome;
         }
     }
+    // No joints is the empty skeleton, whatever `restTransforms` says: there is
+    // no joint for a rest transform to belong to, so none can become a number.
+    // It is also the one reading under which `joints = []` beside an unauthored
+    // `restTransforms` -- which arrives as one fallback matrix -- is answered
+    // for what the stage states rather than refused over a count it did not.
+    if (rest.joints.empty()) {
+        outcome.skeleton = vrmRetarget::TargetSkeleton();
+        return outcome;
+    }
     if (rest.restTransforms.size() != rest.joints.size()) {
         outcome.refusal = SkeletonRefusal::RestTransformCount;
         return outcome;

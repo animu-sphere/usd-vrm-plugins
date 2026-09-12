@@ -765,6 +765,18 @@ Current schema contract version: **1**.
 
 ### Fixed
 
+- **`HumanoidMap::SetJointToken` left an earlier binding standing when a
+  rebinding named a joint the skeleton lacks.** Its header promised the bone
+  would be left unmapped, and `SetJointIndex` does exactly that for an index out
+  of range; the token setter returned `false` and touched nothing, so a bone
+  rebound to a misspelled joint went on driving the joint it had before. Found
+  in review of `execVrm`'s first nodes, where the wrapper claim is that the node
+  *is* this call. It now goes through `SetJointIndex`, so a `false` from either
+  setter means the bone is unmapped. The one caller that rebinds —
+  `motion_retarget`'s `--humanoid-map` over the stage's own mapping — stops the
+  run on a failed lookup either way, so no output changes;
+  `TestARejectedRebindingUnmapsTheBone` pins both routes to one map.
+
 - **The importer's name uniquifier could hand two source entries the same USD
   prim name, and the loser vanished without a diagnostic.**
   `VrmMakeUniqueNames` disambiguated by counting how often each sanitized *base*
