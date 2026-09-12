@@ -173,6 +173,45 @@ add_test(NAME execMotion_root
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/sampled_clip.usda")
 
 # ---------------------------------------------------------------------------
+# The history, through the built bundle
+# ---------------------------------------------------------------------------
+# The first node whose input a driver hands in rather than feeds back: a
+# timestamped history, supplied as an override on `motion.poseHistory` and
+# sampled at the evaluated instant. So this is where the bundle's third and
+# fourth registered value types are exercised -- `motion::HumanoidAnimation` in,
+# `motion::PoseSampleResult` out -- and where an override of a key that is not a
+# pose, two overrides in one call, and an override of the wrong type are
+# measured.
+#
+# Unlike the filter and root suites it links motionRuntime, because the result
+# type is declared there -- and it calls none of the library's functions. The
+# suite reads a `PoseSampleResult`'s plain fields, so every expected value is
+# still written from a definition rather than produced by the code under test.
+add_executable(execMotion_interpolate_tests test_exec_motion_interpolate.cpp)
+target_include_directories(execMotion_interpolate_tests PRIVATE
+    ${PXR_INCLUDE_DIRS})
+target_link_libraries(execMotion_interpolate_tests PRIVATE
+    motionCore::motionCore
+    motionRuntime::motionRuntime)
+target_compile_options(execMotion_interpolate_tests
+    PRIVATE ${_exec_motion_assertions})
+if(MSVC)
+    target_compile_definitions(execMotion_interpolate_tests
+        PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(execMotion_interpolate_tests PRIVATE /bigobj /utf-8)
+endif()
+target_link_libraries(execMotion_interpolate_tests
+    PRIVATE ${_exec_motion_test_targets})
+
+# No fixture of its own. The node reads nothing off the clip that the sampler
+# does not already read, so the sampled clip and the unrated one are the pair:
+# the first has an instant to sample a history at, the second has none.
+add_test(NAME execMotion_interpolate
+    COMMAND execMotion_interpolate_tests
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/sampled_clip.usda"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/unrated_clip.usda")
+
+# ---------------------------------------------------------------------------
 # Environment
 # ---------------------------------------------------------------------------
 # The bundle's own resource directory is what PXR_PLUGINPATH_NAME points at, and
@@ -206,6 +245,8 @@ set_tests_properties(execMotion_filter PROPERTIES
     ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
 set_tests_properties(execMotion_root PROPERTIES
     ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
+set_tests_properties(execMotion_interpolate PROPERTIES
+    ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
 
 # The seam suite needs no plugin and no plugin path, but it does link motionCore
 # and motionRuntime and -- through Gf -- loads usd_gf.dll on Windows all the
@@ -217,5 +258,5 @@ set_tests_properties(execMotion_pose PROPERTIES
 # Motion Phase E's label, so the OpenExec half of the suite can be run and
 # reported on its own (the plan's P0-2 CTest labels).
 set_tests_properties(execMotion_pose execMotion_mechanism execMotion_sample
-                     execMotion_filter execMotion_root
+                     execMotion_filter execMotion_root execMotion_interpolate
     PROPERTIES LABELS "motion.openexec")

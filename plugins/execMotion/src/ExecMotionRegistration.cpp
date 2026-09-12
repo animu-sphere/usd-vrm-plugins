@@ -34,7 +34,10 @@
 // no canonical bone legitimately samples to, and a cleared `motion::RootMotion`
 // is `motion:root:intake = "ignore"`'s own answer, bit for bit. So a refusal
 // that produced one would hand a misspelled `passthrough` the exact behaviour of
-// a deliberate `ignore`, for any consumer not inspecting `TfError`s.
+// a deliberate `ignore`, for any consumer not inspecting `TfError`s. The same
+// holds for `motion::PoseSampleResult`, whose default is `Unavailable` -- the
+// library's answer for a history that holds nothing, which is a legitimate
+// answer and not the same statement as "this history cannot be sampled".
 //
 // An empty value is the one thing no computation here ever produces as an
 // answer, so it is the only shape a refusal can take and stay distinguishable.
@@ -85,6 +88,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((priorPose, "motion.priorPose"))
     ((filterPose, "motion.filterPose"))
     ((extractRootMotion, "motion.extractRootMotion"))
+    ((poseHistory, "motion.poseHistory"))
+    ((interpolatePose, "motion.interpolatePose"))
     // UsdSkelAnimation's own attributes. Each is declared with its ELEMENT
     // type below and read through an iterator, because an array-valued USD
     // input is boxed into a container of the element type on the way in.
@@ -115,13 +120,25 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_REGISTRY_FUNCTION(ExecTypeRegistry)
 {
-    // Two registered types, and the second is registered for the same reason as
-    // the first: `motion::RootMotion` is what `motion.extractRootMotion`
-    // produces, it is a `motionCore` value rather than a shape invented here,
-    // and it satisfies the registry's two requirements -- not a `VtArray`, and
-    // equality comparable since v0.6.0.
+    // Four registered types, each for the same reason as the first: it is what
+    // a computation here produces, it is the library's value rather than a
+    // shape invented here, and it satisfies the registry's two requirements --
+    // not a `VtArray`, and equality comparable.
+    //
+    //   * `motion::RootMotion` is what `motion.extractRootMotion` produces;
+    //   * `motion::HumanoidAnimation` is the snapshot `motion.poseHistory`
+    //     carries, and what a driver overrides it with -- a history of samples
+    //     crosses as the canonical clip aggregate, whose `std::vector` of poses
+    //     is not a `VtArray` and so is not refused;
+    //   * `motion::PoseSampleResult` is what `motion.interpolatePose` produces,
+    //     and the one type here that is `motionRuntime`'s rather than
+    //     `motionCore`'s. It is the only one that needed a change to register:
+    //     it had no `operator==` until this node asked for one, the same ask
+    //     `motionCore`'s aggregates answered in v0.6.0.
     ExecTypeRegistry::RegisterType(motion::HumanoidPose{});
     ExecTypeRegistry::RegisterType(motion::RootMotion{});
+    ExecTypeRegistry::RegisterType(motion::HumanoidAnimation{});
+    ExecTypeRegistry::RegisterType(motion::PoseSampleResult{});
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
@@ -448,4 +465,123 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
                 _tokens->sampleAnimation).Required(),
             Computation<motion::HumanoidPose>(_tokens->priorPose).Required(),
             AttributeValue<TfToken>(_tokens->rootIntake));
+
+    // -----------------------------------------------------------------------
+    // motion.poseHistory -- the snapshot a driver's pose buffer supplies
+    // -----------------------------------------------------------------------
+    //
+    // The second value key in this bundle whose purpose is to be replaced, and
+    // a different kind of thing from the first. `motion.priorPose` is the
+    // graph's own previous *answer*, fed back; this is the source's *input*,
+    // handed in -- the "immutable snapshot" motion policy §11.4 puts between a
+    // live source's buffer and every computation. A computation never reaches
+    // for a buffer, so the buffer's contents reach the graph the one way a
+    // value the scene does not state can: `ComputeWithOverrides`.
+    //
+    // Un-overridden it is the clip's own pose at the evaluated frame as a
+    // history of one sample, which makes `motion.interpolatePose` answer that
+    // pose -- sampled at its own instant, no bracket and no hold. The same
+    // pass-through `motion.filterPose` has un-overridden, and special-cased in
+    // neither.
+    self.PrimComputation(_tokens->poseHistory)
+        .Callback<motion::HumanoidAnimation>(+[](const VdfContext &ctx) {
+            const motion::HumanoidPose *const pose =
+                ctx.GetInputValuePtr<motion::HumanoidPose>(
+                    _tokens->sampleAnimation);
+            if (!pose) {
+                // Forwarding the refusal, as `motion.priorPose` does: a history
+                // of one default pose would turn the sampler's refusal into a
+                // sample, and an empty history would turn it into the library's
+                // `Unavailable` -- an answer, and the wrong one.
+                ctx.SetEmptyOutput();
+                return;
+            }
+            ctx.SetOutput(execmotion::HistoryOfOne(*pose));
+        })
+        .Inputs(
+            Computation<motion::HumanoidPose>(
+                _tokens->sampleAnimation).Required());
+
+    // -----------------------------------------------------------------------
+    // motion.interpolatePose -- what the history states at the evaluated time
+    // -----------------------------------------------------------------------
+    //
+    // `motion::ClipSource::Sample` over the snapshot, at the evaluated instant:
+    // `IMotionSource`'s one question, asked of the implementation that serves a
+    // finished animation. **Nothing here is a clip's interpolation** -- between
+    // two keys of a `UsdSkelAnimation` the answer is USD's, resolved before any
+    // callback runs (the sampling report section 5). What this node
+    // interpolates is a history the graph cannot see any other way: a driver's
+    // buffered samples, bracketing the instant the system is evaluating.
+    //
+    // The instant arrives inside `motion.sampleAnimation`'s pose, as the
+    // seconds that node stamped, rather than through `computeTime` and the rate
+    // a second time: the conversion has one home, and the refusal of a clip that
+    // states no rate reaches this node by propagation instead of by a copy.
+    //
+    // The answer is the library's `motion::PoseSampleResult` whole. The pose in
+    // it is stamped at the evaluated instant whether the history reached that
+    // instant or not, so the status is the only thing that tells a sample from a
+    // hold -- and a stopped source answers `Held` forever.
+    self.PrimComputation(_tokens->interpolatePose)
+        .Callback<motion::PoseSampleResult>(+[](const VdfContext &ctx) {
+            const motion::HumanoidPose *const pose =
+                ctx.GetInputValuePtr<motion::HumanoidPose>(
+                    _tokens->sampleAnimation);
+            if (!pose) {
+                TF_RUNTIME_ERROR(
+                    "motion.interpolatePose: no pose came back from "
+                    "motion.sampleAnimation, so there is no evaluated instant "
+                    "to sample the history at");
+                ctx.SetEmptyOutput();
+                return;
+            }
+
+            const motion::HumanoidAnimation *const history =
+                ctx.GetInputValuePtr<motion::HumanoidAnimation>(
+                    _tokens->poseHistory);
+            if (!history) {
+                // Not reachable from the graph as declared: `motion.poseHistory`
+                // sets no value only when the pose above is absent, which
+                // returned already, and a driver cannot override the key *to*
+                // nothing -- an empty `VtValue` is a type mismatch exec drops,
+                // computing the ordinary value instead (measured in
+                // `execMotion_interpolate`). What does reach it is the input
+                // below going **undeclared**: the callback then runs with a
+                // null pointer and nothing else reports it (the root-motion
+                // report section 3), so this refusal is the only thing that
+                // does -- verified by deleting the declaration.
+                //
+                // An empty *history* is a different thing again: the library's
+                // `Unavailable`, which is an answer.
+                TF_RUNTIME_ERROR(
+                    "motion.interpolatePose: no history came back from "
+                    "motion.poseHistory, so there is nothing to sample");
+                ctx.SetEmptyOutput();
+                return;
+            }
+
+            if (std::optional<motion::PoseSampleResult> result =
+                    execmotion::SampleHistory(*history, pose->timestamp)) {
+                ctx.SetOutput(*result);
+                return;
+            }
+
+            // The one refusal the seam has: a history out of time order, which
+            // the library's binary search would answer with a bracket nobody
+            // measured. A value of the result type cannot say that -- every
+            // one of them is an answer, `Unavailable` included -- so this sets
+            // none.
+            TF_RUNTIME_ERROR(
+                "motion.interpolatePose: the history's timestamps decrease, so "
+                "the samples bracketing %g s cannot be found; no pose was "
+                "sampled",
+                pose->timestamp);
+            ctx.SetEmptyOutput();
+        })
+        .Inputs(
+            Computation<motion::HumanoidPose>(
+                _tokens->sampleAnimation).Required(),
+            Computation<motion::HumanoidAnimation>(
+                _tokens->poseHistory).Required());
 }

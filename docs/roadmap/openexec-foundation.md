@@ -386,7 +386,7 @@ all, so a failure is attributable:
 7. discovery from a **packaged** plugin, not a build tree
 
 Only then the real ones, in that order: `sampleAnimation` → `filterPose` →
-`extractRootMotion` → `interpolatePose` → `blendPoses`. The first three are
+`extractRootMotion` → `interpolatePose` → `blendPoses`. The first four are
 done.
 
 **Step 1 landed on 2026-09-06** — `plugins/execMotion`, and the seven items above
@@ -584,13 +584,61 @@ than against the library, and the ask for
 [boundary consolidation](boundary-consolidation.md) §1 is a stateless
 `ConditionRootMotion(prior, pose, intake)` beside the session class.
 
-Still open here: `motion.interpolatePose` and `motion.blendPoses`; a producer
-that authors the rate, the filter policy and the intake policy (§9); a **driver
-contract** — compute once to arm a request, step the recurrence through one
-override per prim, none of it discoverable from the computations themselves, and
-P0-6's parity harness is the first client that needs it written down; and the
-packaged-plugin half of step 7 — the mechanism, sample, filter and root tests
-load a *built* bundle, and an artifact-only run belongs with P0-3's smoke.
+**`motion.interpolatePose` landed on 2026-09-12, and it is the first node whose
+input a driver hands in rather than feeds back.** It answers `IMotionSource`'s
+one question — what is the pose at this evaluation time? — of a **snapshot**: a
+timestamped history, the immutable snapshot §5 puts between a live source's
+buffer and every computation, entering as an override on a new key,
+`motion.poseHistory`, whose ordinary value is the clip's own pose as a history of
+one. So a driver now fills two keys and they are different kinds of thing:
+`motion.priorPose` is the graph's previous *answer*, fed back; `motion.poseHistory`
+is the source's *input*, handed in. The node is `motion::ClipSource::Sample`
+over that history at `motion.sampleAnimation`'s timestamp — one library call and
+nothing else, the first in the bundle — and it answers the library's
+`motion::PoseSampleResult` **whole**, because `ClipSource` stamps a hold at the
+requested instant exactly as it stamps a sample, and the status is the only field
+that tells a stopped source from a live one. Registering that type needed an
+exact `operator==` on it, which `motionRuntime` now carries: the v0.6.0 ask,
+answered for the first time outside `motionCore`.
+
+**Four measurements, in [the interpolation report](../reports/openusd/26.08-openexec-interpolation.md),
+and two of them change what P0-6's harness has to do.** An override of a key whose type is a **whole
+history** (`motion::HumanoidAnimation`) reaches its dependent like a pose-typed
+one, closing the root-motion report's open question for a second registered
+type. **Two overrides of two keys in one call** each reach only their own
+dependents, so a driver holds one previous answer *and one snapshot* per prim.
+**A wrongly typed override is dropped, not refused** — 26.08 posts a coding error
+naming the key and computes the key's *ordinary* value, so every dependent
+answers plausibly, and an empty `VtValue` takes the same path: a driver cannot
+push an absence into a key, and has to treat a coding error around
+`ComputeWithOverrides` as a failed frame. And **the first result type with an
+absent state of its own** answers where every earlier one had to refuse: an empty
+history is the library's `Unavailable`, a value, and the node's one refusal is a
+history whose timestamps decrease — which the library's binary search would
+answer with a bracket nobody measured.
+
+**The fourth boundary finding is the first where the wrapper works and the finding
+is its cost.** The status-carrying answer exists only as a method on a *source
+object*, and `ClipSource` owns the animation it serves, so every evaluation copies
+the history into one; the free function beneath it, `motion::SampleAnimation`,
+takes the history by reference and returns the pose without the status. The ask
+for [boundary consolidation](boundary-consolidation.md) §1 is a free
+`SampleClip(animation, t) -> PoseSampleResult` that `ClipSource::Sample` calls,
+with the time-order precondition — which nothing states — written on it. And the
+node gives **P0-6 an instrument**: a driver supplying a clip's own key poses as
+the history evaluates `motion::SampleAnimation`'s rule beside USD's between the
+same keys, in one request, where the sampling report left the second sampler
+unreachable from exec.
+
+Still open here: `motion.blendPoses`; a producer that authors the rate, the
+filter policy and the intake policy (§9); a **driver contract** — compute once to
+arm a request, hold one previous answer and one snapshot per prim and substitute
+both through one `ComputeWithOverrides`, treat a coding error there as a failed
+frame, none of it discoverable from the computations themselves, and P0-6's
+parity harness is the first client that needs it written down; and the
+packaged-plugin half of step 7 — the mechanism, sample, filter, root and
+interpolate tests load a *built* bundle, and an artifact-only run belongs with
+P0-3's smoke.
 
 **`blendPoses` is last on purpose.** It is the one computation that wants
 multiple inputs, and 26.08's builtin `computeValue` forwards across exactly one

@@ -72,6 +72,19 @@ struct PoseSampleResult
     explicit operator bool() const noexcept { return IsValid(); }
 };
 
+// Exact, field by field, with the pose compared by `HumanoidPose`'s own exact
+// `operator==` -- the same "is this the same recorded value?" question motionCore
+// answers for its aggregates (motion contract, comparison semantics). It exists
+// for the same caller those did: `ExecTypeRegistry::RegisterType` will not
+// register a type it cannot compare, and `execMotion`'s `motion.interpolatePose`
+// hands this value back whole rather than dropping the status the contract says
+// is part of the answer. There is no `NearlyEqual`: nothing yet asks whether two
+// sample results are the same motion, and a parity check compares the poses.
+MOTIONRUNTIME_API bool operator==(const PoseSampleResult& a,
+                                  const PoseSampleResult& b) noexcept;
+MOTIONRUNTIME_API bool operator!=(const PoseSampleResult& a,
+                                  const PoseSampleResult& b) noexcept;
+
 class MOTIONRUNTIME_API IMotionSource
 {
 public:

@@ -181,4 +181,38 @@ RootMotionFrom(const motion::HumanoidPose& prior,
     return root;
 }
 
+motion::HumanoidAnimation
+HistoryOfOne(const motion::HumanoidPose& pose)
+{
+    motion::HumanoidAnimation history;
+    history.samples.push_back(pose);
+    history.startTime = pose.timestamp;
+    history.endTime = pose.timestamp;
+    return history;
+}
+
+std::optional<motion::PoseSampleResult>
+SampleHistory(const motion::HumanoidAnimation& history, double seconds)
+{
+    // The precondition the library's binary search relies on, and nothing
+    // stricter: a pair of equal timestamps is something it answers, a pair that
+    // goes backwards is something it would answer wrongly.
+    const std::vector<motion::HumanoidPose>& samples = history.samples;
+    for (std::size_t i = 1; i < samples.size(); ++i) {
+        if (samples[i].timestamp < samples[i - 1].timestamp) {
+            return std::nullopt;
+        }
+    }
+
+    // A source constructed here, asked once, and destroyed -- the same shape
+    // `FilteredPose` gives its `PoseFilter`, and for the same reason: it sees
+    // exactly the value it was handed, so the call is pure. It does cost a copy
+    // of the history, because `ClipSource` owns the animation it serves; the
+    // status-carrying answer exists only as a method on such a source, and
+    // `motion::SampleAnimation`, the free function beneath it, returns the pose
+    // without the status. That is this node's boundary finding.
+    motion::ClipSource source(history);
+    return source.Sample(seconds);
+}
+
 } // namespace execmotion

@@ -5,8 +5,8 @@ Motion Phase E; the plan is
 [docs/roadmap/openexec-foundation.md](../../docs/roadmap/openexec-foundation.md)
 §6, P0-4.
 
-**This is the foundation, not the layer.** It registers two value types and five
-computations:
+**This is the foundation, not the layer.** It registers four value types and
+seven computations:
 
 | Computation | Provider | Result |
 | --- | --- | --- |
@@ -15,15 +15,16 @@ computations:
 | `motion.priorPose` | a `UsdSkelAnimation` prim | the sampled pose, forwarded — the value key a driver **overrides** with the previous frame's answer |
 | `motion.filterPose` | a `UsdSkelAnimation` prim | one `motion::PoseFilter` step from `motion.priorPose` toward the sampled pose |
 | `motion.extractRootMotion` | a `UsdSkelAnimation` prim | the `motion::RootMotion` the sampled pose states, under the clip's intake policy |
+| `motion.poseHistory` | a `UsdSkelAnimation` prim | the sampled pose as a one-sample `motion::HumanoidAnimation` — the value key a driver **overrides** with its buffer's snapshot |
+| `motion.interpolatePose` | a `UsdSkelAnimation` prim | the `motion::PoseSampleResult` `motion::ClipSource` answers over `motion.poseHistory`, **at the instant the system is evaluating** |
 
 `motion.identityPose` is the mechanism at its weakest possible value and it
 stays: with no algorithm behind it, a wrong answer there can only be a wrong
 mechanism, which is what makes every later failure attributable.
 
-The remaining nodes — `motion.interpolatePose`, `motion.blendPoses` — come next,
-in that order, over `motionRuntime`. `blendPoses` is last because it is the one
-that wants two inputs, and 26.08's builtin `computeValue` forwards across
-exactly one connection.
+The remaining node — `motion.blendPoses` — comes next, over `motionRuntime`. It
+is last because it is the one that wants two poses from two places, and 26.08's
+builtin `computeValue` forwards across exactly one connection.
 
 ## A clip has to state the rate its frames are counted at
 
@@ -194,6 +195,82 @@ the library, and the ask is
 `ConditionRootMotion(prior, pose, intake)` as a free function, so the rule has
 one implementation again.
 
+## A history is handed in, and sampled whole
+
+`motion.interpolatePose` answers `IMotionSource`'s one question — *what is the
+pose at this evaluation time?* — of a **snapshot**: a timestamped history of
+poses, the "immutable snapshot" motion policy §11.4 puts between a live source's
+buffer and every computation. A computation never reaches for a buffer, so the
+buffer's samples reach the graph the one way a value the scene does not state
+can: as an override, on `motion.poseHistory`.
+
+That makes two keys here a driver fills, and they are different kinds of thing:
+
+| Key | What a driver puts there | What it is |
+| --- | --- | --- |
+| `motion.priorPose` | the previous frame's answer | the graph's own output, **fed back** — the state a recurrence needs |
+| `motion.poseHistory` | its buffer's samples, as a `motion::HumanoidAnimation` | the source's input, **handed in** |
+
+So a driver holds **one previous answer and one snapshot per prim**, and may
+hand both over in one `ComputeWithOverrides` — each reaches only the nodes that
+depend on it
+([the interpolation report](../../docs/reports/openusd/26.08-openexec-interpolation.md) §2).
+
+Un-overridden, the history is the clip's own pose as a history of one, sampled
+at its own instant, and the node **is** `motion.sampleAnimation` — the same
+pass-through the filter has, special-cased in neither.
+
+| History | What comes back |
+| --- | --- |
+| two samples bracketing the instant | `Sampled` — `motion::LerpPose` between them, stamped at the instant |
+| samples ending before the instant, or starting after it | `Held` — the nearer boundary sample, **stamped at the instant**, with the lag that says how far off it is |
+| empty | `Unavailable`, carrying no pose — an **answer** |
+| timestamps decreasing somewhere | **no value at all**, and a posted error naming the computation |
+
+**The answer is the library's `motion::PoseSampleResult` whole, and not a bare
+pose.** `ClipSource` stamps a hold at the requested instant exactly as it stamps
+a sample, so a pose alone cannot say whether the source reached that instant —
+and a source that has stopped delivering keeps answering `Held` forever. The
+status is part of the answer ([motion contract](../../docs/design/MOTION_CONTRACT.md),
+live-capture semantics), and a wrapper does not get to drop a field of the thing
+it wraps. Registering the type needed an exact `operator==` on it, which
+`motionRuntime` now carries.
+
+**An empty history is an answer, not a refusal**, and that is the bundle's
+refusal rule applied rather than bent: this is the first result type here with an
+absent state of its own, so `Unavailable` cannot be mistaken for a measurement
+and there is nothing for a refusal to protect. A history out of time order is
+the one refusal — the library's binary search would bracket the instant with
+samples that do not surround it. Repeated timestamps are not refused; the library
+answers them.
+
+**The instant is `motion.sampleAnimation`'s timestamp**, the seconds that node
+already converted the frame into — not `computeTime` and the rate a second time.
+So the conversion has one home, and a clip with no rate is refused here by
+propagation, **whether or not a history was supplied**: with no rate there is no
+instant to sample anything at.
+
+**A wrongly typed override answers plausibly.** 26.08 drops an override whose
+type is not the key's — an empty `VtValue` included — posts a coding error
+naming the key, and computes the key's *ordinary* value, so this node answers the
+clip's pose as though nobody had overridden anything
+([the interpolation report](../../docs/reports/openusd/26.08-openexec-interpolation.md) §4).
+The bundle cannot refuse it, because the substitution is rejected before any
+callback runs. A driver treats a coding error around `ComputeWithOverrides` as a
+failed frame.
+
+### What the wrapper costs
+
+This node is one library call and nothing else: `motion::ClipSource`,
+constructed over the history, asked `Sample` once. But `ClipSource` **owns** the
+animation it serves, so every evaluation copies the history into it, and the
+free function beneath it — `motion::SampleAnimation`, which would take the
+history by reference — returns the pose without the status. The ask for
+[boundary consolidation](../../docs/roadmap/boundary-consolidation.md) is a free
+`SampleClip(animation, t) -> PoseSampleResult` that `ClipSource::Sample` calls,
+with the time-order precondition `SampleAnimation` relies on — and nothing states
+— written on it.
+
 ## How a computation refuses
 
 **By setting no value at all** — `VdfContext::SetEmptyOutput`, after posting a
@@ -202,12 +279,14 @@ default-constructed result.
 
 It is one rule, and it is the same one the rate's refusal was written for: *an
 answer nobody can tell from a refusal is worse than no answer.* A
-default-constructed result fails that test for both types this bundle produces:
+default-constructed result fails that test for every type this bundle produces:
 
 | Type | A default-constructed value is also… |
 | --- | --- |
 | `motion::HumanoidPose` | what a clip whose `joints` name no canonical bone legitimately samples to |
 | `motion::RootMotion` | `motion:root:intake = "ignore"`'s own answer, **bit for bit** |
+| `motion::HumanoidAnimation` | an empty history — which `motion.interpolatePose` answers, as `Unavailable` |
+| `motion::PoseSampleResult` | `Unavailable`: the answer for a history that holds nothing, which is not the same statement as "this history cannot be sampled" |
 
 So a refusal spelled that way would hand a misspelled `passthrough` the exact
 behaviour of a deliberate `ignore`, for any consumer not inspecting `TfError`s —
@@ -221,19 +300,26 @@ an answer. `motion.identityPose` keeps the returning form because it has no
 refusal to express, so both forms are live in one bundle.
 
 **A refusal propagates.** A node handed no value refuses in turn, so a clip with
-no rate reaches a caller as a refusal at `motion.sampleAnimation` *and* at
-`motion.filterPose`, rather than as a filtered version of a pose nobody sampled.
-`motion.priorPose` forwards the absence for the same reason.
+no rate reaches a caller as a refusal at `motion.sampleAnimation`, at
+`motion.filterPose` *and* at `motion.interpolatePose`, rather than as a filtered
+or interpolated version of a pose nobody sampled. `motion.priorPose` and
+`motion.poseHistory` forward the absence for the same reason.
 
-## Nothing here interpolates
+## Nothing here interpolates a clip
 
 An exec input arrives **already resolved at the evaluated time**, so a frame
-between two keys is USD's answer and not this bundle's. That is why
+between two keys of a clip is USD's answer and not this bundle's. That is why
 `motion.sampleAnimation` is *not* a wrapper over `motion::SampleAnimation`,
 which is handed a whole `HumanoidAnimation` and performs its own hold-at-the-
 edges lookup. The two are compared at P0-6 parity rather than assumed equal; what
 26.08 does between keys is measured in
 [the sampling report](../../docs/reports/openusd/26.08-openexec-sampling.md).
+
+What `motion.interpolatePose` interpolates is a **history a driver hands in**,
+which the graph cannot see any other way — and through it the library's sampler
+does run inside exec: a driver that supplies a clip's own key poses as the
+history evaluates `motion::SampleAnimation`'s rule beside USD's, at the same
+instant, in one request.
 
 ## What this bundle may not do
 
@@ -252,8 +338,10 @@ edges lookup. The two are compared at P0-6 parity rather than assumed equal; wha
   lives in `tools/motionRetarget`'s `StageIo.cpp` and not in a library — or where
   it has one in the wrong shape — `motion::PoseFilter` is a streaming class with
   no one-step entry point, so `motion.filterPose` composes a seed and a step out
-  of two `Apply` calls, and `motion.extractRootMotion`'s rule is private to a
-  capture session whose composition gives a wrong answer — that is recorded as a
+  of two `Apply` calls, `motion.extractRootMotion`'s rule is private to a
+  capture session whose composition gives a wrong answer, and
+  `motion.interpolatePose`'s status-carrying answer exists only on a source
+  object that costs a copy of the history per evaluation — that is recorded as a
   finding for
   [boundary consolidation](../../docs/roadmap/boundary-consolidation.md), which
   is the track scheduled to act on exactly this.
@@ -282,5 +370,6 @@ through an input accessor rather than by registering on it. The measurement is
 | `execMotion_sample` | the same request at four times — the default time code, and frames 0, 100 and 50 — a value key being reported to the time callback even over a clip that holds still (which is what makes `computeTime` a per-frame recompute), and a clip with no rate being refused rather than stamped, with no value and with the refusal reaching the node downstream |
 | `execMotion_filter` | one computation reading another, a value key inherited by a node that declares no `computeTime`, an override reaching every dependent of the key it names and no sibling, and a clip's policy landing on `motion::PoseFilter`'s own weight rather than on this bundle's |
 | `execMotion_root` | the bundle's second registered value type coming back beside the first out of one request, a dependent whose result type differs from its input's, a velocity that exists nowhere in the clip, one override driving both recurrences in a single call, and an intake token that names no policy being refused **with no value** where an absent one is defaulted and a deliberate `ignore` answers with a cleared root |
+| `execMotion_interpolate` | the third and fourth registered value types, a driver's history overriding a key whose type is not a pose and being sampled bracketed, held and empty — `Unavailable` as an answer, a decreasing history as the one refusal — two overrides of two keys in one call each reaching only their own dependents, a wrongly typed and an empty override being **dropped** by exec in favour of the key's ordinary value, and a clip with no rate refused whether or not a history was supplied |
 
-All five carry the CTest label `motion.openexec`.
+All six carry the CTest label `motion.openexec`.

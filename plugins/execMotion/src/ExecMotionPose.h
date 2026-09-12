@@ -14,6 +14,7 @@
 #include <motionCore/Humanoid.h>
 #include <motionRuntime/Filter.h>
 #include <motionRuntime/LiveCaptureSource.h>
+#include <motionRuntime/MotionSource.h>
 
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
@@ -251,5 +252,57 @@ std::optional<motion::RootMotionIntake> RootIntakeForToken(
 motion::RootMotion RootMotionFrom(const motion::HumanoidPose& prior,
                                   const motion::HumanoidPose& pose,
                                   const RootPolicy& policy);
+
+/// The history a driver's pose buffer holds, when no driver supplies one: the
+/// pose at the evaluated instant, as a one-sample `motion::HumanoidAnimation`.
+///
+/// It is `motion.poseHistory`'s ordinary value and it exists for the same reason
+/// `motion.priorPose`'s does -- to be *replaced*. A computation evaluates an
+/// immutable snapshot and never reaches for one (motion policy §11.4), so a live
+/// source's buffered samples reach the graph the one way a value the scene does
+/// not state can: as an override on a value key.
+///
+/// The span is the one instant, `startTime == endTime == pose.timestamp`, because
+/// that is what a history of one sample spans. `nominalFrameRate` is left at the
+/// library's own default rather than set: a single sample has no rate to state,
+/// and the node that reads this value does not use one.
+motion::HumanoidAnimation HistoryOfOne(const motion::HumanoidPose& pose);
+
+/// What `history` states at `seconds`, or nullopt when it cannot be sampled.
+///
+/// **The whole node, and it is a wrapper**: `motion::ClipSource`, constructed
+/// over the history, asked `Sample(seconds)`. That is `IMotionSource`'s one
+/// question -- "what is the pose at this evaluation time?" -- asked of the
+/// implementation that serves a finished animation, which is what a snapshot is
+/// once it has been taken. So every rule in the answer is the library's:
+/// bracketing samples are interpolated by `motion::LerpPose` (a missing bone held,
+/// never faded), a time outside the history holds the nearer boundary, and the
+/// pose comes back stamped at `seconds`, on the consumer's clock.
+///
+/// The result is the library's `motion::PoseSampleResult` and not a bare pose,
+/// because the status is part of the answer (motion contract, live-capture
+/// semantics). The answer is stamped at the evaluated instant *whether or not*
+/// the history reached it, so a pose alone cannot say whether it was sampled or
+/// held -- and a source that has stopped delivering keeps answering `Held`
+/// forever, which a consumer holding only the pose would read as live. A wrapper
+/// does not get to drop a field of the thing it wraps.
+///
+/// An **empty** history is an answer, not a refusal: the library's
+/// `Unavailable`, carrying no pose. The bundle refuses where an answer would be
+/// indistinguishable from one it measured, and this type has an absent state of
+/// its own, so there is nothing to refuse -- the first result in the bundle for
+/// which that is true.
+///
+/// The one refusal is a history whose timestamps **decrease** somewhere.
+/// `motion::SampleAnimation`, which `ClipSource` samples through, binary-searches
+/// the samples and so relies on their being in time order -- a precondition it
+/// neither states nor checks -- and a history out of order would answer with a
+/// bracket nobody measured. Repeated timestamps are *not* refused: the library's
+/// search answers them deterministically, landing on the first of the pair, and
+/// a check stricter than the library's own need would be a policy of this
+/// bundle's -- `motion::PoseBuffer::Push`'s strictly-increasing rule is a
+/// property of how a buffer is *filled*, not of what can be sampled.
+std::optional<motion::PoseSampleResult> SampleHistory(
+    const motion::HumanoidAnimation& history, double seconds);
 
 } // namespace execmotion

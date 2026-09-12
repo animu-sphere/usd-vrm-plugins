@@ -24,6 +24,18 @@ PoseSampleStatusName(PoseSampleStatus status) noexcept
     return "unavailable";
 }
 
+bool
+operator==(const PoseSampleResult& a, const PoseSampleResult& b) noexcept
+{
+    return a.status == b.status && a.pose == b.pose && a.lag == b.lag;
+}
+
+bool
+operator!=(const PoseSampleResult& a, const PoseSampleResult& b) noexcept
+{
+    return !(a == b);
+}
+
 ClipSource::ClipSource(HumanoidAnimation animation)
     : _animation(std::move(animation))
 {
