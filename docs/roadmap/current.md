@@ -670,9 +670,45 @@ compared, which was P0-4's stated blocker.
   free `motion::SampleAnimation` beneath it drops the status.
   `SampleClip(animation, t) -> PoseSampleResult` is the ask
   ([boundary consolidation](boundary-consolidation.md) §1).
-- ⬜ **The last `execMotion` node, `execVrm`, parity, and the display slice** —
-  `motion.blendPoses`, and P0-5 through P0-7 of the
-  [plan](openexec-foundation.md#6-foundation-tasks).
+- ✅ **`motion.blendPoses`, and the first node that reads several prims**
+  *(2026-09-13, P0-4)*. A blend is a `UsdSkelAnimation` stating
+  `motion:blend:sources`, a relationship to the clips, and
+  `motion:blend:weights`, one per target. The node is `motion::BlendPoses` over
+  each target's `motion.sampleAnimation`, weighted by position: one library call,
+  and the last of P0-4's five nodes.
+
+  **Four measurements**
+  ([the blending report](../reports/openusd/26.08-openexec-blending.md)). A
+  **relationship fan-in arrives in authored target order**: at first compile,
+  after the targets are reordered on a live system, and in a fresh one. That
+  corrects the plan's line that relationship fan-in has no deterministic order;
+  that property is `IncomingConnections`'s. **Two kinds of source vanish from a
+  fan-in without a word**: a target that is not a clip is skipped at compile, and
+  a source that refused is skipped by the read iterator. With the node's check
+  disabled, a blend whose second clip refused answered the first clip exactly.
+  So the node counts its targets a second time through the builtin `computePath`
+  and refuses a mismatch. **Invalidation crosses the relationship**, including an
+  edit of its targets, with no request rebuilt. And **an override on one prim
+  reaches a dependent on another**, which is how a driver's pose enters a blend
+  and adds a driver-contract line: stamp it at the sources' instant.
+
+  **The sources must share one instant**, compared exactly. Two clips at two
+  rates are at two seconds on one frame, and the library would stamp the blend
+  between them (0.625 s between 1.0 s and 0.5 s, measured). Absent weights are
+  refused rather than blended evenly, because a callback cannot tell an absent
+  array from an empty one.
+
+  **The fifth boundary finding is the library's answer, not the call's cost.**
+  Over nothing weighted `motion::BlendPoses` answers a pose stamped 0.0. It
+  carries a NaN weight into NaN rotations, it interpolates its sources'
+  timestamps as though they were samples in time, and its fold depends on order
+  (4.247° between three sources and their reverse) without saying so. The ask is
+  a blend that can say *nothing to blend* and states its preconditions
+  ([boundary consolidation](boundary-consolidation.md) §1).
+- ⬜ **`execVrm`, parity, and the display slice**: P0-5 through P0-7 of the
+  [plan](openexec-foundation.md#6-foundation-tasks). P0-4's nodes are all in;
+  what remains of P0-4 itself is the producer half of the rate and policies, the
+  written driver contract, and packaged discovery.
 
 ## Then: boundary consolidation ⬜
 

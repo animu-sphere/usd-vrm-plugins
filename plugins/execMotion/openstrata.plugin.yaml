@@ -48,6 +48,9 @@ requires:
     # `motion::ClipSource::Sample` over a driver's history, and it answers the
     # library's own `motion::PoseSampleResult` whole, because the status in it
     # is part of the answer.
+    #
+    # `motion.blendPoses` needs it for a call and nothing else: the node is the
+    # N-way `motion::BlendPoses` over the clips a relationship targets.
     - id: motionRuntime
       version: ">=0.8,<0.9"
 usd:
@@ -60,6 +63,7 @@ tests:
     - tests/fixtures/unrated_clip.usda
     - tests/fixtures/filtered_clip.usda
     - tests/fixtures/rooted_clip.usda
+    - tests/fixtures/blended_clips.usda
   roundtrip:
     - tests/fixtures/identity_clip.usda
     - tests/fixtures/sampled_clip.usda
@@ -67,3 +71,4 @@ tests:
     - tests/fixtures/unrated_clip.usda
     - tests/fixtures/filtered_clip.usda
     - tests/fixtures/rooted_clip.usda
+    - tests/fixtures/blended_clips.usda

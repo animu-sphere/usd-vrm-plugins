@@ -1,14 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # execMotion — the vendor-neutral OpenExec motion bundle (Workspace Phase 8,
-# Motion Phase E). The boundary, four registered value types and seven
+# Motion Phase E). The boundary, four registered value types and eight
 # computations: `motion.identityPose`, which is the mechanism held at its
 # weakest possible value, `motion.sampleAnimation`, which reads a clip at the
 # evaluated frame, `motion.filterPose` with the `motion.priorPose` seam an
 # override enters through, `motion.extractRootMotion`, which is where the body
-# is under the clip's stated intake policy, and `motion.interpolatePose`, which
-# samples the history a driver hands in through `motion.poseHistory`.
-# `blendPoses` follows (docs/roadmap/openexec-foundation.md, P0-4).
+# is under the clip's stated intake policy, `motion.interpolatePose`, which
+# samples the history a driver hands in through `motion.poseHistory`, and
+# `motion.blendPoses`, which weights the clips a relationship targets -- the
+# last of P0-4's nodes (docs/roadmap/openexec-foundation.md).
 #
 # Self-contained so `ost plugin build plugins/execMotion` can configure it
 # directly, and also add_subdirectory()-able from the repo-root CMakeLists.txt
@@ -61,7 +62,8 @@ endif()
 # step of `motion::PoseFilter` and the algorithm stays in the library
 # (WORKSPACE.md §2, motion policy §11.4) -- as it does for
 # `motion.interpolatePose`, which is `motion::ClipSource::Sample` and whose
-# result type, `motion::PoseSampleResult`, is this library's.
+# result type, `motion::PoseSampleResult`, is this library's, and for
+# `motion.blendPoses`, which is `motion::BlendPoses`.
 # `motion.identityPose` and `motion.sampleAnimation` need none of it -- an exec
 # input arrives already resolved at the evaluated frame, so the sampler had
 # nothing to wrap.

@@ -224,4 +224,73 @@ SampleHistory(const motion::HumanoidAnimation& history, double seconds)
     return source.Sample(seconds);
 }
 
+BlendOutcome
+BlendedPose(const BlendInputs& inputs)
+{
+    BlendOutcome outcome;
+
+    // In the order that makes each reason the true one: a count can only be
+    // compared once there is something to count, weights can only be judged
+    // once they pair with the sources, and the instant and the total weight are
+    // questions about a blend that is otherwise well formed.
+    if (inputs.sourceCount == 0) {
+        outcome.refusal = BlendRefusal::NoSource;
+        return outcome;
+    }
+    if (inputs.poses.size() != inputs.sourceCount) {
+        outcome.refusal = BlendRefusal::SourceUnanswered;
+        return outcome;
+    }
+    if (inputs.weights.size() != inputs.sourceCount) {
+        outcome.refusal = BlendRefusal::WeightCount;
+        return outcome;
+    }
+    for (const float weight : inputs.weights) {
+        if (!std::isfinite(weight)) {
+            outcome.refusal = BlendRefusal::WeightNotFinite;
+            return outcome;
+        }
+    }
+
+    // Exactly equal, not nearly: every source is converted from the same frame,
+    // so two clips counting it at one rate are stamped with the same bits, and
+    // any difference at all is two rates -- a tolerance here would be a policy
+    // about how far apart two clocks may be. Finiteness as well as equality,
+    // because equality alone lets an infinity through: sources all stamped
+    // +inf agree with each other exactly. (A NaN never agrees, even with
+    // itself, so equality would catch that one on its own.)
+    const double instant = inputs.poses.front().timestamp;
+    for (const motion::HumanoidPose& pose : inputs.poses) {
+        if (!std::isfinite(pose.timestamp) || pose.timestamp != instant) {
+            outcome.refusal = BlendRefusal::InstantsDisagree;
+            return outcome;
+        }
+    }
+
+    // The library treats a negative weight as zero and answers a
+    // default-constructed pose when nothing is left -- documented, and stamped
+    // 0.0 whatever instant the sources were sampled at. So the one case this
+    // layer has to see before the call is the one where the call's answer would
+    // carry a second nobody sampled; everything else is the library's.
+    bool anythingWeighted = false;
+    for (const float weight : inputs.weights) {
+        anythingWeighted = anythingWeighted || weight > 0.0f;
+    }
+    if (!anythingWeighted) {
+        outcome.refusal = BlendRefusal::NothingWeighted;
+        return outcome;
+    }
+
+    // The whole node: one library call. Paired by position, which the fan-in's
+    // authored order and the count check above are what make safe.
+    std::vector<motion::WeightedPose> weighted;
+    weighted.reserve(inputs.poses.size());
+    for (std::size_t i = 0; i < inputs.poses.size(); ++i) {
+        weighted.push_back(motion::WeightedPose{inputs.poses[i],
+                                                inputs.weights[i]});
+    }
+    outcome.pose = motion::BlendPoses(weighted);
+    return outcome;
+}
+
 } // namespace execmotion

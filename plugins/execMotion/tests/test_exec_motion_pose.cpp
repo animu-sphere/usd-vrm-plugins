@@ -806,6 +806,195 @@ void TestATimestampThatIsNotFiniteIsRefused()
     }
 }
 
+// ---------------------------------------------------------------------------
+// The blend, over what the fan-in handed back
+// ---------------------------------------------------------------------------
+// `BlendedPose` is a wrapper -- `motion::BlendPoses` over the poses with the
+// weights at the same positions -- plus the refusals that keep the fan-in's two
+// silent drops from turning into a wrong pairing. Expected values are written
+// from the library's documented fold: each pose is folded in at its share of
+// the running total, which for one head turning about one axis is an angle
+// interpolated linearly.
+
+execmotion::BlendInputs BlendOf(std::vector<motion::HumanoidPose> poses,
+                                std::vector<float> weights)
+{
+    execmotion::BlendInputs inputs;
+    inputs.sourceCount = poses.size();
+    inputs.poses = std::move(poses);
+    inputs.weights = std::move(weights);
+    return inputs;
+}
+
+void TestABlendIsTheLibrarysWeightedFold()
+{
+    const motion::HumanoidPose walk =
+        PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
+    const motion::HumanoidPose turn =
+        PoseWithHeadAndHips(1.0, 90.0f, pxr::GfVec3f(2.0f, 0.0f, 0.0f));
+
+    const execmotion::BlendOutcome outcome =
+        execmotion::BlendedPose(BlendOf({walk, turn}, {0.25f, 0.75f}));
+    assert(outcome.pose.has_value());
+
+    // 45 + (90 - 45) * 0.75 / (0.25 + 0.75), and the hips three quarters of
+    // the way to (2, 0, 0) -- the numbers `execMotion_blend` reads off the
+    // fixture, reached here with no stage.
+    assert(std::abs(HeadAngleDegrees(*outcome.pose) - 78.75f) < 1e-3f);
+    assert(std::abs(outcome.pose->root.worldPosition[0] - 1.5f) < 1e-5f);
+    assert(std::abs(outcome.pose->root.worldPosition[1] - 0.125f) < 1e-5f);
+    assert(std::abs(outcome.pose->root.worldPosition[2] - 0.25f) < 1e-5f);
+    assert(outcome.pose->timestamp == 1.0 &&
+           "a blend of poses at one instant was not stamped at it exactly");
+
+    // A single weighted source is that source, bit for bit: the fold seeds with
+    // the first positive entry and a zero weight is never folded in.
+    const execmotion::BlendOutcome first =
+        execmotion::BlendedPose(BlendOf({walk, turn}, {1.0f, 0.0f}));
+    assert(first.pose && *first.pose == walk);
+
+    // And a negative weight is the library's zero -- documented, so answered.
+    const execmotion::BlendOutcome negative =
+        execmotion::BlendedPose(BlendOf({walk, turn}, {-1.0f, 1.0f}));
+    assert(negative.pose && *negative.pose == turn &&
+           "a negative weight was not treated as the library's zero");
+}
+
+void TestTheOrderIsPartOfTheAnswer()
+{
+    // Three sources turning one bone about three different axes, at equal
+    // weights. The library folds them in one at a time, so the order is an
+    // input to the answer, not only to the pairing: reversing the sources --
+    // and moving each weight along with its source, so the pairing is intact --
+    // lands somewhere else. That is why the fan-in has to arrive in the
+    // relationship's order for more than the weights' sake, and why
+    // `execMotion_blend` measures that it does.
+    constexpr auto head = static_cast<std::size_t>(motion::HumanBone::Head);
+    const float half = float(M_PI) / 4.0f;  // half of a 90-degree turn
+    motion::HumanoidPose aboutX;
+    motion::HumanoidPose aboutY;
+    motion::HumanoidPose aboutZ;
+    aboutX.localRotations[head] =
+        pxr::GfQuatf(std::cos(half), pxr::GfVec3f(std::sin(half), 0.0f, 0.0f));
+    aboutY.localRotations[head] =
+        pxr::GfQuatf(std::cos(half), pxr::GfVec3f(0.0f, std::sin(half), 0.0f));
+    aboutZ.localRotations[head] =
+        pxr::GfQuatf(std::cos(half), pxr::GfVec3f(0.0f, 0.0f, std::sin(half)));
+    for (motion::HumanoidPose* pose : {&aboutX, &aboutY, &aboutZ}) {
+        pose->validRotations.set(head);
+        pose->timestamp = 1.0;
+    }
+
+    const execmotion::BlendOutcome forward = execmotion::BlendedPose(
+        BlendOf({aboutX, aboutY, aboutZ}, {1.0f, 1.0f, 1.0f}));
+    const execmotion::BlendOutcome backward = execmotion::BlendedPose(
+        BlendOf({aboutZ, aboutY, aboutX}, {1.0f, 1.0f, 1.0f}));
+    assert(forward.pose && backward.pose);
+
+    const pxr::GfQuatf a = forward.pose->localRotations[head].GetNormalized();
+    const pxr::GfQuatf b = backward.pose->localRotations[head].GetNormalized();
+    const double dot = std::min(1.0, std::abs(double(pxr::GfDot(a, b))));
+    const double apartDegrees = 2.0 * std::acos(dot) * 180.0 / M_PI;
+    std::printf("execMotion pose: three sources folded in two orders land "
+                "%.3f degrees apart\n", apartDegrees);
+    assert(apartDegrees > 1.0 &&
+           "the library's fold no longer depends on the order -- the fan-in "
+           "order is then only a pairing question, and the header says more");
+}
+
+void TestEachBlendRefusalIsTheOneThatApplies()
+{
+    using execmotion::BlendRefusal;
+    const motion::HumanoidPose walk =
+        PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
+    const motion::HumanoidPose turn =
+        PoseWithHeadAndHips(1.0, 90.0f, pxr::GfVec3f(2.0f, 0.0f, 0.0f));
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    const float inf = std::numeric_limits<float>::infinity();
+
+    auto refused = [](const execmotion::BlendInputs& inputs,
+                      BlendRefusal expected) {
+        const execmotion::BlendOutcome outcome = execmotion::BlendedPose(inputs);
+        return !outcome.pose && outcome.refusal == expected;
+    };
+
+    // Nothing reached.
+    assert(refused(execmotion::BlendInputs{}, BlendRefusal::NoSource));
+
+    // Two targets, one pose back: the fan-in dropped one. Refused even though
+    // the weights pair with the targets -- which is exactly the case where
+    // pairing them with what came back would be wrong.
+    execmotion::BlendInputs dropped = BlendOf({walk}, {0.25f, 0.75f});
+    dropped.sourceCount = 2;
+    assert(refused(dropped, BlendRefusal::SourceUnanswered));
+
+    // Weights that do not pair one to one, including none at all.
+    assert(refused(BlendOf({walk, turn}, {1.0f}), BlendRefusal::WeightCount));
+    assert(refused(BlendOf({walk, turn}, {}), BlendRefusal::WeightCount));
+    assert(refused(BlendOf({walk, turn}, {0.5f, 0.25f, 0.25f}),
+                   BlendRefusal::WeightCount));
+
+    // A weight that is not finite, wherever it sits.
+    assert(refused(BlendOf({walk, turn}, {nan, 1.0f}),
+                   BlendRefusal::WeightNotFinite));
+    assert(refused(BlendOf({walk, turn}, {1.0f, inf}),
+                   BlendRefusal::WeightNotFinite));
+
+    // Two instants, and one instant that is not finite -- an infinity agrees
+    // with itself exactly, so equality alone would let it through.
+    motion::HumanoidPose half = turn;
+    half.timestamp = 0.5;
+    assert(refused(BlendOf({walk, half}, {0.5f, 0.5f}),
+                   BlendRefusal::InstantsDisagree));
+    motion::HumanoidPose never = walk;
+    never.timestamp = std::numeric_limits<double>::infinity();
+    assert(refused(BlendOf({never, never}, {0.5f, 0.5f}),
+                   BlendRefusal::InstantsDisagree));
+
+    // Nothing positive.
+    assert(refused(BlendOf({walk, turn}, {0.0f, 0.0f}),
+                   BlendRefusal::NothingWeighted));
+    assert(refused(BlendOf({walk, turn}, {-1.0f, 0.0f}),
+                   BlendRefusal::NothingWeighted));
+
+    // A timestamp disagreement on a source weighted zero still refuses: the
+    // blend is over its sources, and a weight animating up from zero would
+    // otherwise hit the refusal mid-sequence instead of from the first frame.
+    assert(refused(BlendOf({walk, half}, {1.0f, 0.0f}),
+                   BlendRefusal::InstantsDisagree));
+}
+
+void TestWhatTheLibraryWouldHaveAnswered()
+{
+    // The two refusals that are about the library rather than the fan-in, and
+    // so the boundary finding: what `motion::BlendPoses` answers where this node
+    // refuses. Pinned so the day the library changes, this suite says the
+    // refusals may have become answers.
+    const motion::HumanoidPose walk =
+        PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
+    const motion::HumanoidPose turn =
+        PoseWithHeadAndHips(1.0, 90.0f, pxr::GfVec3f(2.0f, 0.0f, 0.0f));
+
+    // Nothing weighted: a default pose, stamped 0.0 -- not at the 1.0 s both
+    // sources were sampled at. A second nobody sampled, with nothing in the
+    // value to say so.
+    const motion::HumanoidPose nothing = motion::BlendPoses(
+        std::vector<motion::WeightedPose>{{walk, 0.0f}, {turn, 0.0f}});
+    assert(nothing == motion::HumanoidPose{});
+    assert(nothing.timestamp == 0.0 && walk.timestamp == 1.0);
+
+    // A weight that is not a number: carried through the running total into
+    // the rotation, which comes back NaN.
+    const motion::HumanoidPose poisoned = motion::BlendPoses(
+        std::vector<motion::WeightedPose>{
+            {walk, std::numeric_limits<float>::quiet_NaN()}, {turn, 1.0f}});
+    const pxr::GfQuatf head = poisoned.localRotations[
+        static_cast<std::size_t>(motion::HumanBone::Head)];
+    assert(std::isnan(head.GetReal()) &&
+           "a NaN weight no longer poisons the library's blend -- the "
+           "refusal may be redundant now");
+}
+
 } // namespace
 
 int main()
@@ -836,6 +1025,10 @@ int main()
     TestAHistoryOutOfOrderIsRefused();
     TestARepeatedNewestSampleHoldsTheLastOfThePair();
     TestATimestampThatIsNotFiniteIsRefused();
+    TestABlendIsTheLibrarysWeightedFold();
+    TestTheOrderIsPartOfTheAnswer();
+    TestEachBlendRefusalIsTheOneThatApplies();
+    TestWhatTheLibraryWouldHaveAnswered();
     std::printf("execMotion pose: all checks passed\n");
     return 0;
 }

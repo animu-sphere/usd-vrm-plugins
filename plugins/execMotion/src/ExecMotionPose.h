@@ -12,6 +12,7 @@
 #pragma once
 
 #include <motionCore/Humanoid.h>
+#include <motionRuntime/Blend.h>
 #include <motionRuntime/Filter.h>
 #include <motionRuntime/LiveCaptureSource.h>
 #include <motionRuntime/MotionSource.h>
@@ -19,6 +20,7 @@
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
 
+#include <cstddef>
 #include <optional>
 #include <string_view>
 #include <string>
@@ -311,5 +313,111 @@ motion::HumanoidAnimation HistoryOfOne(const motion::HumanoidPose& pose);
 /// rule is a property of how a buffer is *filled*, not of what can be sampled.
 std::optional<motion::PoseSampleResult> SampleHistory(
     const motion::HumanoidAnimation& history, double seconds);
+
+/// What a blend was handed, as plain values.
+///
+/// A blend is the one node in this bundle that wants poses from **several
+/// places**, and it reaches them through a relationship: `motion:blend:sources`
+/// targets the clips, and each target's `motion.sampleAnimation` arrives as one
+/// value of a fan-in. 26.08 gives that fan-in two silent behaviours, both read
+/// in `exec/inputResolver.cpp` and `vdf/readIterator.h` and both measured in
+/// `execMotion_blend`:
+///
+///   * a target that does not provide the computation -- not a
+///     `UsdSkelAnimation`, or not a prim at all -- is **skipped** while the
+///     network is compiled, with no error; and
+///   * a source whose computation **refused** sets no value, and the read
+///     iterator skips an input that provides none, with no error either.
+///
+/// So the poses alone cannot say how many sources there were, and a weight
+/// paired with them by position would silently land on the wrong clip the
+/// moment one dropped out. `sourceCount` is what closes that: the same
+/// relationship read a second time for exec's builtin `computePath`, which every
+/// object that exists provides, so it counts the targets a pose *should* have
+/// come back from.
+struct BlendInputs
+{
+    /// How many objects `motion:blend:sources` reaches -- one `computePath` per
+    /// target that names something on the stage. A target naming nothing is
+    /// missing from this count and from `poses` alike, so it is invisible here;
+    /// the weights then disagree with the count, which is how it surfaces.
+    std::size_t sourceCount = 0;
+
+    /// The poses that came back, in the order the fan-in delivered them --
+    /// measured to be the relationship's authored target order.
+    std::vector<motion::HumanoidPose> poses;
+
+    /// `motion:blend:weights`, as authored: one per target, in target order.
+    std::vector<float> weights;
+};
+
+/// Why a blend was refused. Each is a statement the registration TU turns into
+/// an error naming the computation; the seam decides, the TU reports.
+enum class BlendRefusal
+{
+    /// The relationship reaches nothing, so there is nothing to blend and no
+    /// instant to stamp a blend at.
+    NoSource,
+
+    /// Fewer poses came back than there are targets: one of them is not a clip,
+    /// or its sampler refused. Which one cannot be told from here -- the fan-in
+    /// hands back values, not the objects they came from.
+    SourceUnanswered,
+
+    /// The weights do not pair one-to-one with the targets. An **absent**
+    /// weights attribute lands here too, deliberately: a callback cannot tell an
+    /// absent array from an authored empty one (both are an iterator already at
+    /// its end), so defaulting the one would default the other -- a clip that
+    /// *stated* no weights would be blended evenly.
+    WeightCount,
+
+    /// A weight that is not finite. `motion::BlendPoses` would take a NaN
+    /// through its running total and answer NaN rotations.
+    WeightNotFinite,
+
+    /// The sources were not stamped at one finite instant. Every source is
+    /// sampled at the same frame, so this is two clips counting that frame at
+    /// different rates -- or a driver's override stamped somewhere else -- and
+    /// the library would interpolate the timestamps into a second nobody
+    /// measured.
+    InstantsDisagree,
+
+    /// No weight is positive, so the library's answer is a default-constructed
+    /// pose -- stamped 0.0, whatever instant the sources were sampled at.
+    NothingWeighted,
+};
+
+/// The pose `inputs` blend to, or the reason there is none.
+struct BlendOutcome
+{
+    std::optional<motion::HumanoidPose> pose;
+    BlendRefusal refusal = BlendRefusal::NoSource;
+};
+
+/// `motion::BlendPoses` over `inputs`, or a refusal.
+///
+/// **The whole node, and it is a wrapper**: the N-way `BlendPoses`, handed each
+/// pose with the weight authored at the same position. So every rule in the
+/// answer is the library's -- a negative weight counts as zero, a bone only some
+/// sources report is taken from those rather than blended toward identity
+/// (`motion::LerpPose`, fold by fold), and the result is stamped at the
+/// sources' own instant.
+///
+/// **The order is part of the answer, not only of the pairing.** The library
+/// folds the poses in one at a time -- each at its share of the running total --
+/// which keeps every intermediate a unit quaternion, and which makes a blend of
+/// three or more rotations about different axes depend on the order they are
+/// folded in. So the fan-in's order has to be the authored one for two reasons:
+/// the weights are paired by it, and the library's answer is computed along it.
+/// `execMotion_pose` measures the second; `execMotion_blend` measures that 26.08
+/// delivers the first.
+///
+/// Every refusal is somewhere the library *would* answer, and its answer would
+/// be a pose no consumer could tell from a measured one -- the bundle's refusal
+/// rule, applied six ways (`BlendRefusal`). The two that are about the library
+/// rather than about the fan-in are this node's boundary finding: over nothing
+/// weighted it answers a default-constructed pose, whose `timestamp` is a 0.0
+/// nobody sampled; and it does not refuse a weight that is not finite.
+BlendOutcome BlendedPose(const BlendInputs& inputs);
 
 } // namespace execmotion

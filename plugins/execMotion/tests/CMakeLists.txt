@@ -212,6 +212,41 @@ add_test(NAME execMotion_interpolate
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/unrated_clip.usda")
 
 # ---------------------------------------------------------------------------
+# The blend, through the built bundle
+# ---------------------------------------------------------------------------
+# The one node that reads poses from several prims, so this is where 26.08's
+# fan-in is measured: the order a relationship's targets arrive in, what happens
+# to a target that is not a clip and to a source that refused, an edit of the
+# relationship itself, and an override of one prim's key reaching a node on
+# another.
+#
+# Like the filter and root suites it does not link motionRuntime, although the
+# computation under test is `motion::BlendPoses`. The fixture turns one head about
+# one axis, so every expected blend is an angle interpolated along it, written
+# out from the library's documented fold rather than produced by the library.
+add_executable(execMotion_blend_tests test_exec_motion_blend.cpp)
+target_include_directories(execMotion_blend_tests PRIVATE
+    ${PXR_INCLUDE_DIRS})
+target_link_libraries(execMotion_blend_tests PRIVATE motionCore::motionCore)
+target_compile_options(execMotion_blend_tests
+    PRIVATE ${_exec_motion_assertions})
+if(MSVC)
+    target_compile_definitions(execMotion_blend_tests
+        PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(execMotion_blend_tests PRIVATE /bigobj /utf-8)
+endif()
+target_link_libraries(execMotion_blend_tests
+    PRIVATE ${_exec_motion_test_targets})
+
+# One fixture, three prims: two clips that disagree in every field the suite
+# reads, and a blend over them. Every other case -- a target that is not a clip,
+# a source that refuses, weights that do not pair, two rates -- is one statement
+# the suite authors onto that stage.
+add_test(NAME execMotion_blend
+    COMMAND execMotion_blend_tests
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/blended_clips.usda")
+
+# ---------------------------------------------------------------------------
 # Environment
 # ---------------------------------------------------------------------------
 # The bundle's own resource directory is what PXR_PLUGINPATH_NAME points at, and
@@ -247,6 +282,8 @@ set_tests_properties(execMotion_root PROPERTIES
     ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
 set_tests_properties(execMotion_interpolate PROPERTIES
     ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
+set_tests_properties(execMotion_blend PROPERTIES
+    ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
 
 # The seam suite needs no plugin and no plugin path, but it does link motionCore
 # and motionRuntime and -- through Gf -- loads usd_gf.dll on Windows all the
@@ -259,4 +296,5 @@ set_tests_properties(execMotion_pose PROPERTIES
 # reported on its own (the plan's P0-2 CTest labels).
 set_tests_properties(execMotion_pose execMotion_mechanism execMotion_sample
                      execMotion_filter execMotion_root execMotion_interpolate
+                     execMotion_blend
     PROPERTIES LABELS "motion.openexec")

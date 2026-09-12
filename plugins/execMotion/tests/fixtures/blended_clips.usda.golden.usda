@@ -1,0 +1,70 @@
+#usda 1.0
+(
+    """Behaviour fixture for execMotion: two clips, and a blend over them.
+
+    The prose is a layer comment rather than `doc` on purpose; see
+    sampled_clip.usda for why.
+
+    /Walk is sampled_clip.usda's /Clip: keyed at frames 0 and 100 at 50 time
+    codes per second, so frame 50 is second 1, the head at 45 degrees about +Y
+    and the hips at (0, 0.5, 1). /Turn holds still and differs from it in every
+    field the suite reads: the head at 90 degrees about the same axis, the hips
+    at (2, 0, 0), and only two bones named -- so a spine and a chest that come
+    back from a blend can only have come from /Walk.
+
+    /Blend is a UsdSkelAnimation that states nothing of its own but what to
+    blend. `motion:blend:sources` is a relationship, because fan-in is what a
+    relationship carries in 26.08 and two connections into one attribute
+    silently fall back to its own value. `motion:blend:weights` pairs with the
+    targets by position, one per target, in target order.
+
+    The weights are unequal on purpose. At 0.25 and 0.75 the library folds
+    /Turn into /Walk at three quarters, so the head lands at 78.75 degrees and
+    the hips at (1.5, 0.125, 0.25) -- numbers neither clip states, and ones a
+    blend that paired the weights the other way round would miss by a wide
+    margin (56.25 degrees, and (0.5, 0.375, 0.75)).
+
+    Everything else the suite measures -- a target that is not a clip, a source
+    that refuses, weights that do not pair, two clips counting one frame at two
+    rates -- is authored onto this stage by the test, so each case differs from
+    this file by one statement."""
+    doc = """Generated from Composed Stage of root layer C:\\dev\\usd-vrm-plugins\\plugins\\execMotion\\tests\\fixtures\\blended_clips.usda
+"""
+    endTimeCode = 100
+    startTimeCode = 0
+    timeCodesPerSecond = 50
+)
+
+def SkelAnimation "Walk"
+{
+    uniform token[] joints = ["hips", "hips/spine", "hips/spine/chest", "hips/spine/chest/neck/head"]
+    custom uniform double motion:timeCodesPerSecond = 50
+    quatf[] rotations.timeSamples = {
+        0: [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0)],
+        100: [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (0.70710677, 0, 0.70710677, 0)],
+    }
+    half3[] scales = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+    float3[] translations.timeSamples = {
+        0: [(0, 0, 0), (0, 0.1, 0), (0, 0.2, 0), (0, 0.3, 0)],
+        100: [(0, 1, 2), (0, 0.1, 0), (0, 0.2, 0), (0, 0.3, 0)],
+    }
+}
+
+def SkelAnimation "Turn"
+{
+    uniform token[] joints = ["hips", "hips/spine/chest/neck/head"]
+    custom uniform double motion:timeCodesPerSecond = 50
+    quatf[] rotations = [(1, 0, 0, 0), (0.70710677, 0, 0.70710677, 0)]
+    half3[] scales = [(1, 1, 1), (1, 1, 1)]
+    float3[] translations = [(2, 0, 0), (0, 0.3, 0)]
+}
+
+def SkelAnimation "Blend"
+{
+    rel motion:blend:sources = [
+        </Walk>,
+        </Turn>,
+    ]
+    custom float[] motion:blend:weights = [0.25, 0.75]
+}
+
