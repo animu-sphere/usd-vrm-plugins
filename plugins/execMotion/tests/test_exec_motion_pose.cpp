@@ -13,7 +13,10 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <limits>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -587,6 +590,222 @@ void TestAVelocityIsDerivedExactlyWhereTheLibraryDerivesOne()
     }
 }
 
+// ---------------------------------------------------------------------------
+// The history, and what it states at one instant
+// ---------------------------------------------------------------------------
+// `SampleHistory` is a wrapper -- `motion::ClipSource::Sample` over the
+// snapshot -- so what these check is that the library's answer arrives whole:
+// the bracket, the hold, the stamp and the status. The expected values are
+// written from the definitions (half of a 90-degree turn about one axis is 45
+// degrees; the lag is the request minus the newest sample), for the reason every
+// suite here gives: an expected value produced by the code under test asserts
+// only that it equals itself.
+
+motion::HumanoidAnimation HistoryOf(std::vector<motion::HumanoidPose> samples)
+{
+    motion::HumanoidAnimation history;
+    history.samples = std::move(samples);
+    return history;
+}
+
+void TestAHistoryOfOneAnswersItsOwnPose()
+{
+    const motion::HumanoidPose pose =
+        PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
+
+    const motion::HumanoidAnimation history = execmotion::HistoryOfOne(pose);
+    assert(history.samples.size() == 1);
+    assert(history.samples.front() == pose);
+    assert(history.startTime == 1.0 && history.endTime == 1.0 &&
+           "a history of one sample spans that sample's instant");
+
+    // What the node computes when nobody overrides `motion.poseHistory`: the
+    // pose itself, **sampled** -- the instant is the one sample's, so there is
+    // neither a bracket nor a hold -- with no lag. Nothing special-cases it.
+    const std::optional<motion::PoseSampleResult> result =
+        execmotion::SampleHistory(history, pose.timestamp);
+    assert(result.has_value());
+    assert(result->status == motion::PoseSampleStatus::Sampled);
+    assert(result->pose && *result->pose == pose &&
+           "a history of one pose, sampled at its own instant, answered "
+           "something other than that pose");
+    assert(result->lag == 0.0);
+}
+
+void TestAnInstantBetweenTwoSamplesIsInterpolated()
+{
+    // A driver's snapshot: two samples four hundredths of a second apart,
+    // bracketing the instant the system evaluates at. The head turns 90
+    // degrees about +Y between them and the hips move from the origin to
+    // (0, 1, 2).
+    const motion::HumanoidAnimation history = HistoryOf({
+        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f)),
+        PoseWithHeadAndHips(1.02, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f))});
+
+    const std::optional<motion::PoseSampleResult> result =
+        execmotion::SampleHistory(history, 1.0);
+    assert(result.has_value() && result->pose);
+    assert(result->status == motion::PoseSampleStatus::Sampled);
+
+    const motion::HumanoidPose& pose = *result->pose;
+    assert(std::abs(HeadAngleDegrees(pose) - 45.0f) < 1e-3f &&
+           "halfway between 0 and 90 degrees about one axis is not 45");
+    assert(std::abs(pose.root.worldPosition[1] - 0.5f) < 1e-5f);
+    assert(std::abs(pose.root.worldPosition[2] - 1.0f) < 1e-5f);
+
+    // Stamped at the instant it was asked for, on the consumer's clock.
+    assert(std::abs(pose.timestamp - 1.0) < 1e-12);
+
+    // The request is behind the newest sample, so the lag is negative: the
+    // source is ahead of the consumer, which is what a buffered delay is.
+    assert(std::abs(result->lag - (1.0 - 1.02)) < 1e-12);
+}
+
+void TestAnInstantOutsideTheHistoryIsHeldAndSaysSo()
+{
+    // A source that stopped delivering at 0.9 s, asked about 1.0 s.
+    const motion::HumanoidPose newest =
+        PoseWithHeadAndHips(0.9, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f));
+    const motion::HumanoidAnimation history = HistoryOf({
+        PoseWithHeadAndHips(0.5, 0.0f, pxr::GfVec3f(0.0f)), newest});
+
+    const std::optional<motion::PoseSampleResult> held =
+        execmotion::SampleHistory(history, 1.0);
+    assert(held.has_value() && held->pose);
+    assert(held->status == motion::PoseSampleStatus::Held &&
+           "an instant past the newest sample was not reported as a hold");
+    assert(std::abs(HeadAngleDegrees(*held->pose) - 90.0f) < 1e-3f &&
+           "a hold did not repeat the newest sample");
+    assert(std::abs(held->lag - 0.1) < 1e-12 &&
+           "the lag is not the request minus the newest sample");
+
+    // **Why the result is not a bare pose.** The held pose is stamped at the
+    // evaluated instant -- exactly as a sampled one is -- so its timestamp
+    // cannot tell a consumer that the source has stopped. The status and the
+    // lag are the only fields that do, and a node that answered with the pose
+    // alone would have dropped both.
+    assert(held->pose->timestamp == 1.0 &&
+           "the library no longer stamps a hold at the request, so the reason "
+           "this node returns the status as well needs restating");
+
+    // And the other edge: before the oldest sample, the oldest is held.
+    const std::optional<motion::PoseSampleResult> early =
+        execmotion::SampleHistory(history, 0.1);
+    assert(early.has_value() && early->pose);
+    assert(early->status == motion::PoseSampleStatus::Held);
+    assert(std::abs(HeadAngleDegrees(*early->pose)) < 1e-3f);
+}
+
+void TestAMissingBoneIsHeldAcrossTheBracket()
+{
+    // The library's rule, arriving through the wrapper unchanged: a bone one
+    // bracketing sample reports and the other does not is held at the value it
+    // was reported with, never faded toward identity.
+    motion::HumanoidPose headless =
+        PoseWithHeadAndHips(1.02, 0.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f));
+    headless.validRotations.reset(
+        static_cast<std::size_t>(motion::HumanBone::Head));
+
+    const motion::HumanoidAnimation history = HistoryOf({
+        PoseWithHeadAndHips(0.98, 60.0f, pxr::GfVec3f(0.0f)), headless});
+
+    const std::optional<motion::PoseSampleResult> result =
+        execmotion::SampleHistory(history, 1.0);
+    assert(result.has_value() && result->pose);
+    assert(Has(*result->pose, motion::HumanBone::Head));
+    assert(std::abs(HeadAngleDegrees(*result->pose) - 60.0f) < 1e-3f &&
+           "a bone only one sample reported was faded rather than held");
+}
+
+void TestAnEmptyHistoryIsAnAnswerAndNotARefusal()
+{
+    // The library's `Unavailable`: a value, with no pose in it. It is an
+    // *answer* -- the history holds nothing, and the type can say so -- which
+    // makes it the first result in this bundle with an absent state of its own,
+    // and so the first one with nothing for a refusal to protect.
+    const std::optional<motion::PoseSampleResult> result =
+        execmotion::SampleHistory(motion::HumanoidAnimation{}, 1.0);
+    assert(result.has_value() &&
+           "an empty history was refused, which spends the bundle's one "
+           "refusal on something the library already answers");
+    assert(result->status == motion::PoseSampleStatus::Unavailable);
+    assert(!result->pose);
+    assert(*result == motion::PoseSampleResult{});
+}
+
+void TestAHistoryOutOfOrderIsRefused()
+{
+    // Decreasing: the library's binary search would bracket the instant with
+    // samples that do not surround it, and answer with a pose nobody measured.
+    const motion::HumanoidAnimation backwards = HistoryOf({
+        PoseWithHeadAndHips(1.02, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f)),
+        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f))});
+    assert(!execmotion::SampleHistory(backwards, 1.0).has_value());
+
+    // Repeated is not decreasing, and is not refused: the library answers it.
+    // A stricter check would be this bundle's policy -- `PoseBuffer::Push`'s
+    // strictly-increasing rule is about filling a buffer, not sampling one.
+    const motion::HumanoidAnimation repeated = HistoryOf({
+        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f)),
+        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f)),
+        PoseWithHeadAndHips(1.02, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f))});
+    const std::optional<motion::PoseSampleResult> result =
+        execmotion::SampleHistory(repeated, 1.0);
+    assert(result.has_value() && result->pose);
+    assert(std::abs(HeadAngleDegrees(*result->pose) - 45.0f) < 1e-3f);
+}
+
+void TestARepeatedNewestSampleHoldsTheLastOfThePair()
+{
+    // The case a driver repeating its newest sample produces: two samples at
+    // the same instant at the END of the history, disagreeing about the head.
+    // A request at or past that instant holds `samples.back()` -- the second of
+    // the pair, not the first -- and either way the answer is a sample somebody
+    // measured, which is why a repeat is answered rather than refused.
+    const motion::HumanoidAnimation history = HistoryOf({
+        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f)),
+        PoseWithHeadAndHips(1.02, 60.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f)),
+        PoseWithHeadAndHips(1.02, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f))});
+
+    for (const double instant : {1.02, 1.1}) {
+        const std::optional<motion::PoseSampleResult> result =
+            execmotion::SampleHistory(history, instant);
+        assert(result.has_value() && result->pose);
+        assert(std::abs(HeadAngleDegrees(*result->pose) - 90.0f) < 1e-3f &&
+               "a repeated newest sample did not hold the last of the pair");
+    }
+}
+
+void TestATimestampThatIsNotFiniteIsRefused()
+{
+    // Every comparison with a NaN is false, so an ordering check alone lets one
+    // through -- after which the library brackets the instant with samples that
+    // do not surround it, and a NaN newest sample comes back as a NaN lag that
+    // compares unequal even to itself. Refused wherever it sits, and so is an
+    // infinity: neither is an instant anything was measured at.
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const double inf = std::numeric_limits<double>::infinity();
+    const pxr::GfVec3f origin(0.0f);
+
+    const motion::HumanoidAnimation histories[] = {
+        HistoryOf({PoseWithHeadAndHips(0.98, 0.0f, origin),
+                   PoseWithHeadAndHips(nan, 30.0f, origin),
+                   PoseWithHeadAndHips(1.02, 60.0f, origin)}),
+        HistoryOf({PoseWithHeadAndHips(nan, 0.0f, origin),
+                   PoseWithHeadAndHips(1.02, 60.0f, origin)}),
+        HistoryOf({PoseWithHeadAndHips(0.98, 0.0f, origin),
+                   PoseWithHeadAndHips(nan, 60.0f, origin)}),
+        HistoryOf({PoseWithHeadAndHips(nan, 0.0f, origin)}),
+        HistoryOf({PoseWithHeadAndHips(0.98, 0.0f, origin),
+                   PoseWithHeadAndHips(inf, 60.0f, origin)}),
+    };
+    for (const motion::HumanoidAnimation& history : histories) {
+        assert(!execmotion::SampleHistory(history, 1.0).has_value() &&
+               "a history carrying a timestamp that is not finite was "
+               "sampled");
+    }
+}
+
 } // namespace
 
 int main()
@@ -609,6 +828,14 @@ int main()
     TestPassthroughIsThePoseSOwnRoot();
     TestIgnoreClearsRatherThanZeroes();
     TestAVelocityIsDerivedExactlyWhereTheLibraryDerivesOne();
+    TestAHistoryOfOneAnswersItsOwnPose();
+    TestAnInstantBetweenTwoSamplesIsInterpolated();
+    TestAnInstantOutsideTheHistoryIsHeldAndSaysSo();
+    TestAMissingBoneIsHeldAcrossTheBracket();
+    TestAnEmptyHistoryIsAnAnswerAndNotARefusal();
+    TestAHistoryOutOfOrderIsRefused();
+    TestARepeatedNewestSampleHoldsTheLastOfThePair();
+    TestATimestampThatIsNotFiniteIsRefused();
     std::printf("execMotion pose: all checks passed\n");
     return 0;
 }

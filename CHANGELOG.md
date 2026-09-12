@@ -268,6 +268,65 @@ Current schema contract version: **1**.
   agree by accident. `execMotion_pose` gains the seam half. Five suites in the
   bundle now, and 131 green CTest names in the workspace.
 
+- **`motion.interpolatePose`: the pose a driver's history states at the
+  evaluated instant** (the OpenExec plan's P0-4). The fourth real computation and
+  the first whose input a driver **hands in** rather than feeds back: a
+  timestamped history of poses -- the immutable snapshot motion policy §11.4
+  puts between a live source's buffer and every computation -- entering as an
+  override on a new key, `motion.poseHistory`. Its ordinary value is the clip's
+  own pose as a one-sample `motion::HumanoidAnimation`, so un-overridden the node
+  is `motion.sampleAnimation`. A driver now fills two keys and they are different
+  kinds of thing: `motion.priorPose` is the graph's previous answer, fed back,
+  and `motion.poseHistory` is the source's input, handed in.
+
+  The node is `motion::ClipSource::Sample` over the history at the sampled
+  pose's timestamp -- one library call and nothing else, the first node in the
+  bundle for which that is true -- and it answers the library's
+  `motion::PoseSampleResult` **whole** rather than a bare pose. `ClipSource`
+  stamps a hold at the requested instant exactly as it stamps a sample, so the
+  status and the lag are the only fields that tell a stopped source from a live
+  one, and the motion contract already says the status is part of the answer.
+  **`motionRuntime`'s `PoseSampleResult` gains an exact `operator==`** for it --
+  `ExecTypeRegistry::RegisterType` will not register a type it cannot compare --
+  which makes `motion::HumanoidAnimation` and `motion::PoseSampleResult` the
+  bundle's third and fourth registered value types.
+
+  **An empty history is an answer, not a refusal**: the library's `Unavailable`,
+  carrying no pose. It is the first result type in the bundle with an absent
+  state of its own, so the refusal rule -- refuse only where an answer would be
+  indistinguishable from a measurement -- has nothing to protect. The node
+  refuses a history whose timestamps are not finite or decrease, which the
+  library's binary search would answer with a bracket nobody measured (repeated
+  timestamps are answered, as the library answers them), and it refuses at the
+  **default time code**, overridden or not: the sampler stamps 0.0 there
+  harmlessly, but a history sampled at a guessed 0.0 would answer a believable
+  `Held`, and every request is armed at that time code.
+
+  **Four measurements**
+  ([docs/reports/openusd/26.08-openexec-interpolation.md](docs/reports/openusd/26.08-openexec-interpolation.md)).
+  An override of a key whose type is a **whole history** reaches its dependent
+  like a pose-typed one. **Two overrides of two keys in one call** each reach
+  only their own dependents, so a driver holds one previous answer and one
+  snapshot per prim. **A wrongly typed override is dropped, not refused** --
+  26.08 posts a coding error naming the key and computes the key's ordinary
+  value, so every dependent answers plausibly, and an empty `VtValue` takes the
+  same path: a driver cannot push an absence into a key. And deleting the
+  history's input declaration leaves the node's own refusal as the only report
+  of it, the undeclared-input property measured again.
+
+  **The fourth boundary finding, and the first where the wrapper works and the
+  finding is its cost.** The status-carrying answer exists only as a method on a
+  source object that owns its animation, so every evaluation copies the history;
+  the free `motion::SampleAnimation` beneath it takes the history by reference
+  and drops the status, and the time-order precondition its search relies on is
+  stated nowhere. `SampleClip(animation, t) -> PoseSampleResult` is the ask for
+  [boundary consolidation](docs/roadmap/boundary-consolidation.md).
+
+  `execMotion_interpolate` drives the built bundle over `sampled_clip.usda` and
+  `unrated_clip.usda` -- no fixture of its own, since the node reads nothing off
+  the clip the sampler does not -- and `execMotion_pose` gains the seam half.
+  Six suites in the bundle now, and 132 green CTest names in the workspace.
+
 - **Two expressions can no longer both own the eyelid: VRM 1.0's expression
   overrides, read and obeyed** (closes #170). Expressions accumulate on the
   targets they bind, and two that bind *different* targets still fight when

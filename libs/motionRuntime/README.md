@@ -24,7 +24,7 @@ without needing a new boundary.
 | `motionRuntime/Resample.h` | `Resample`, `SampleAnimation` |
 | `motionRuntime/Filter.h` | `PoseFilter` — frame-rate independent exponential smoothing |
 | `motionRuntime/Blend.h` | `BlendPoses` (two-pose and weighted N-pose) |
-| `motionRuntime/MotionSource.h` | `IMotionSource`, `PoseSampleResult` / `PoseSampleStatus`, `ClipSource` |
+| `motionRuntime/MotionSource.h` | `IMotionSource`, `PoseSampleResult` / `PoseSampleStatus` (with an exact `operator==`, so OpenExec can register the result), `ClipSource` |
 | `motionRuntime/LiveCaptureSource.h` | `LiveCaptureSource` — timestamped intake, confidence gating, missing-bone policy, root-motion intake, statistics |
 | `motionRuntime/CaptureTrace.h` | The `motion-capture-trace` text format: reader, writer, error reporting |
 | `motionRuntime/ReplaySender.h` | `ReplaySender` — pushes a recorded trace as a caller-driven clock advances |

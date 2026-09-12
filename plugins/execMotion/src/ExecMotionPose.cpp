@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ExecMotionPose.h"
 
+#include <cmath>
 #include <cstddef>
 #include <string_view>
 
@@ -179,6 +180,48 @@ RootMotionFrom(const motion::HumanoidPose& prior,
         root.hasLinearVelocity = true;
     }
     return root;
+}
+
+motion::HumanoidAnimation
+HistoryOfOne(const motion::HumanoidPose& pose)
+{
+    motion::HumanoidAnimation history;
+    history.samples.push_back(pose);
+    history.startTime = pose.timestamp;
+    history.endTime = pose.timestamp;
+    return history;
+}
+
+std::optional<motion::PoseSampleResult>
+SampleHistory(const motion::HumanoidAnimation& history, double seconds)
+{
+    // The precondition the library's binary search relies on, and nothing
+    // stricter: a pair of equal timestamps is something it answers, a pair that
+    // goes backwards -- or a timestamp that is not a number at all -- is
+    // something it would answer wrongly. Finiteness is checked on every sample
+    // rather than left to the ordering comparison, because every comparison
+    // with a NaN is false: `a < NaN` would let it through, and a NaN newest
+    // sample would reach the caller as a NaN lag, which compares unequal even
+    // to itself.
+    const std::vector<motion::HumanoidPose>& samples = history.samples;
+    for (std::size_t i = 0; i < samples.size(); ++i) {
+        if (!std::isfinite(samples[i].timestamp)) {
+            return std::nullopt;
+        }
+        if (i > 0 && samples[i].timestamp < samples[i - 1].timestamp) {
+            return std::nullopt;
+        }
+    }
+
+    // A source constructed here, asked once, and destroyed -- the same shape
+    // `FilteredPose` gives its `PoseFilter`, and for the same reason: it sees
+    // exactly the value it was handed, so the call is pure. It does cost a copy
+    // of the history, because `ClipSource` owns the animation it serves; the
+    // status-carrying answer exists only as a method on such a source, and
+    // `motion::SampleAnimation`, the free function beneath it, returns the pose
+    // without the status. That is this node's boundary finding.
+    motion::ClipSource source(history);
+    return source.Sample(seconds);
 }
 
 } // namespace execmotion

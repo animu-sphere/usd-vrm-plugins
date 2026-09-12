@@ -251,6 +251,13 @@ computation boundary at all, and it is the comparison a trace round-trip is
 defined by. The declarative `MotionConstraintSet` types deliberately have none:
 nothing compares them yet.
 
+`motionRuntime`'s `PoseSampleResult` carries one too *(added 2026-09-12)*, exact
+on all three fields — status, pose, lag — for the same caller: `execMotion`'s
+`motion.interpolatePose` answers it whole rather than dropping the status, which
+live-capture semantics above makes part of the answer, and the registry will not
+take a type it cannot compare. It has no `NearlyEqual`: nothing asks whether two
+sample results are the same motion, and a parity check compares their poses.
+
 `NearlyEqual` takes a `MotionTolerance` and answers the question a parity check
 and a corpus test are actually asking. The two differ in exactly three places,
 and each is a decision rather than an implementation detail:

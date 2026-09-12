@@ -637,8 +637,41 @@ compared, which was P0-4's stated blocker.
   against its definition rather than against the library, and
   `ConditionRootMotion(prior, pose, intake)` is the ask
   ([boundary consolidation](boundary-consolidation.md) §1).
-- ⬜ **The two remaining `execMotion` nodes, `execVrm`, parity, and the display
-  slice** — the rest of P0-4 and P0-5 through P0-7 of the
+- ✅ **`motion.interpolatePose`, and the first input a driver hands in**
+  *(2026-09-12, P0-4)*. The pose a **snapshot** states at the evaluated instant —
+  a timestamped history entering as an override on a new key,
+  `motion.poseHistory`, whose ordinary value is the clip's own pose as a history
+  of one, so un-overridden the node is the sampler. It is
+  `motion::ClipSource::Sample`, one library call and nothing else, and it answers
+  the library's `motion::PoseSampleResult` **whole**: a hold is stamped at the
+  requested instant exactly as a sample is, so the status is the only field that
+  tells a stopped source from a live one. `motionRuntime` gained the exact
+  `operator==` that registering the type needed.
+
+  **Four measurements**
+  ([the interpolation report](../reports/openusd/26.08-openexec-interpolation.md)).
+  An override of a key whose type is a **whole history** reaches its dependent
+  like a pose-typed one. **Two overrides of two keys in one call** each reach
+  only their own dependents — the graph's previous answer fed back, the source's
+  history handed in — so a driver holds one of each per prim. **A wrongly typed
+  override is dropped, not refused**: a coding error naming the key, and the key's
+  *ordinary* value computed in its place, so every dependent answers plausibly —
+  and an empty `VtValue` takes the same path, so a driver cannot push an absence
+  into a key. And **the first result type with an absent state of its own**: an
+  empty history is the library's `Unavailable`, an answer rather than a refusal,
+  and the node refuses only a history whose timestamps are not finite or
+  decrease, and the **default time code** — no instant, and the time code every
+  request is armed at, where a history sampled at a guessed 0.0 would answer a
+  believable `Held`.
+
+  **The fourth boundary finding, and the first where the wrapper works and the
+  finding is its cost**: the status-carrying answer exists only on a source
+  object that owns its animation, so every evaluation copies the history, and the
+  free `motion::SampleAnimation` beneath it drops the status.
+  `SampleClip(animation, t) -> PoseSampleResult` is the ask
+  ([boundary consolidation](boundary-consolidation.md) §1).
+- ⬜ **The last `execMotion` node, `execVrm`, parity, and the display slice** —
+  `motion.blendPoses`, and P0-5 through P0-7 of the
   [plan](openexec-foundation.md#6-foundation-tasks).
 
 ## Then: boundary consolidation ⬜

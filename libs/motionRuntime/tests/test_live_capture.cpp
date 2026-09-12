@@ -334,6 +334,48 @@ TestAnEmptySourceIsUnavailableRatherThanWrong()
     assert(!source.GetTimeRange(nullptr, nullptr));
 }
 
+// A sample result compares exactly, and on every field: the status and the lag
+// are part of the answer (motion contract), so two results that carry the same
+// pose and disagree about how it was resolved are different values. This is the
+// comparison `ExecTypeRegistry::RegisterType` needs before `execMotion` can hand
+// a result back whole.
+void
+TestASampleResultComparesOnEveryField()
+{
+    motion::HumanoidAnimation clip;
+    for (const double t : {0.0, 1.0}) {
+        motion::HumanoidPose pose;
+        pose.timestamp = t;
+        pose.validRotations.set(kHips);
+        pose.root.worldPosition = pxr::GfVec3f(0.0f, 0.0f, float(t));
+        pose.root.hasPosition = true;
+        clip.samples.push_back(pose);
+    }
+    motion::ClipSource source(clip);
+
+    const motion::PoseSampleResult sampled = source.Sample(0.5);
+    assert(sampled == source.Sample(0.5));
+    assert(!(sampled != source.Sample(0.5)));
+
+    // The same pose, resolved differently: only the status differs.
+    motion::PoseSampleResult relabelled = sampled;
+    relabelled.status = motion::PoseSampleStatus::Held;
+    assert(relabelled != sampled);
+
+    // The same pose and status, a different lag.
+    motion::PoseSampleResult later = sampled;
+    later.lag += 0.25;
+    assert(later != sampled);
+
+    // A different pose.
+    assert(source.Sample(0.25) != sampled);
+
+    // Two unavailable answers are the same answer, and neither is an answer
+    // that carries a pose.
+    assert(motion::PoseSampleResult{} == motion::PoseSampleResult{});
+    assert(motion::PoseSampleResult{} != sampled);
+}
+
 void
 TestCaptureTraceRoundTripsByteIdentically()
 {
@@ -856,6 +898,7 @@ main(int argc, char** argv)
     TestOutOfOrderAndStaleFramesAreSeparated();
     TestClockAlignmentAndSampleStatus();
     TestAnEmptySourceIsUnavailableRatherThanWrong();
+    TestASampleResultComparesOnEveryField();
     TestCaptureTraceRoundTripsByteIdentically();
     TestCaptureTraceRejectsMalformedInput();
     TestCaptureTraceVersioningAndUnwritableNames();

@@ -43,6 +43,11 @@ requires:
     # library's, and the rule they select sits in a private method of a capture
     # session with no entry point a pure computation can reach -- the third
     # finding this bundle has produced for boundary consolidation.
+    #
+    # `motion.interpolatePose` needs it for both a call and a type: the node is
+    # `motion::ClipSource::Sample` over a driver's history, and it answers the
+    # library's own `motion::PoseSampleResult` whole, because the status in it
+    # is part of the answer.
     - id: motionRuntime
       version: ">=0.8,<0.9"
 usd:
