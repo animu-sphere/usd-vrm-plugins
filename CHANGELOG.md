@@ -327,6 +327,53 @@ Current schema contract version: **1**.
   the clip the sampler does not -- and `execMotion_pose` gains the seam half.
   Six suites in the bundle now, and 132 green CTest names in the workspace.
 
+- **`motion.blendPoses`: several clips, weighted, at the evaluated frame** (the
+  OpenExec plan's P0-4). The fifth and last of P0-4's nodes, and the first that
+  reads poses from **several prims**. A blend is a `UsdSkelAnimation` stating
+  `motion:blend:sources`, a relationship to the clips, and
+  `motion:blend:weights`, one weight per target in target order. The node hands
+  each target's `motion.sampleAnimation` to the N-way `motion::BlendPoses` with
+  the weight at its position: one library call.
+
+  **Four measurements**
+  ([docs/reports/openusd/26.08-openexec-blending.md](docs/reports/openusd/26.08-openexec-blending.md)).
+  A **relationship fan-in arrives in authored target order**, at first compile,
+  after a live edit reorders the targets, and in a fresh system. That corrects
+  the plan's line that relationship fan-in has no deterministic order; the
+  audit gave that property to `IncomingConnections`. **Two kinds of source
+  vanish from a fan-in without a word**: a target that does not provide the
+  computation is skipped at compile, and a source that refused is skipped by the
+  read iterator. With the node's check disabled, a blend whose second clip
+  refused answered the first clip exactly, with no error. So the node reads the
+  relationship a second time, for the builtin `computePath`, and refuses a count
+  that disagrees. **Invalidation crosses the relationship**: time, an authored
+  weight, and an edit of the targets each reach the blend, the last with no
+  request rebuilt. And **an override on one prim reaches a dependent on
+  another**, which is how a pose a driver holds enters a blend.
+
+  **The sources must share one instant.** Each converts the frame at its own
+  `motion:timeCodesPerSecond`, so two clips at two rates sit at two seconds on
+  one frame, and the library would stamp the blend between them (0.625 s between
+  1.0 s and 0.5 s, measured with the check disabled). The node compares the
+  instants exactly and refuses a disagreement. It also refuses absent weights
+  rather than blending evenly, because a callback cannot tell an absent array
+  from an authored empty one.
+
+  **The fifth boundary finding, and the first about the library's answer rather
+  than its entry points.** Over nothing weighted, `motion::BlendPoses` answers a
+  default pose stamped 0.0. It carries a NaN weight into NaN rotations. It
+  interpolates its sources' timestamps as though they were samples in time. And
+  its fold depends on the order it is given (4.247° between three sources and
+  their reverse), which its header does not state. The ask for
+  [boundary consolidation](docs/roadmap/boundary-consolidation.md) is a blend
+  that can say *there is nothing to blend* and states its preconditions.
+
+  `execMotion_blend` drives the built bundle over `blended_clips.usda`, two
+  clips and a blend over them, and `execMotion_pose` gains the seam half.
+  Verified against its own absence: disabling the source-count check, and
+  separately the shared-instant check, turns the suites red. Seven suites in the
+  bundle now, and 133 green CTest names in the workspace.
+
 - **Two expressions can no longer both own the eyelid: VRM 1.0's expression
   overrides, read and obeyed** (closes #170). Expressions accumulate on the
   targets they bind, and two that bind *different* targets still fight when

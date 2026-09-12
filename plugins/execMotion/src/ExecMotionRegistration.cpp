@@ -72,6 +72,7 @@
 #include "pxr/exec/vdf/context.h"
 #include "pxr/exec/vdf/readIterator.h"
 
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/timeCode.h"
 
 #include <string>
@@ -90,6 +91,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((extractRootMotion, "motion.extractRootMotion"))
     ((poseHistory, "motion.poseHistory"))
     ((interpolatePose, "motion.interpolatePose"))
+    ((blendPoses, "motion.blendPoses"))
     // UsdSkelAnimation's own attributes. Each is declared with its ELEMENT
     // type below and read through an iterator, because an array-valued USD
     // input is boxed into a container of the element type on the way in.
@@ -116,6 +118,18 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Absent is the library's own default; a token naming no policy is refused
     // (ExecMotionPose.h, RootIntakeForToken).
     ((rootIntake, "motion:root:intake"))
+    // What a blend states: the clips it blends, as a relationship, and one
+    // weight per target, in target order. A relationship rather than
+    // connections because fan-in is what a relationship carries in 26.08, and
+    // `computeValue` over two connections silently falls back to the
+    // attribute's own value (the migration audit section 5.1).
+    ((blendSources, "motion:blend:sources"))
+    ((blendWeights, "motion:blend:weights"))
+    // The two names the fan-in arrives under. Both inputs traverse the same
+    // relationship, so each is named for what it carries rather than left at
+    // the computation name it reads.
+    ((sourcePaths, "motion:blend:sourcePaths"))
+    ((sourcePoses, "motion:blend:sourcePoses"))
 );
 
 TF_REGISTRY_FUNCTION(ExecTypeRegistry)
@@ -611,4 +625,137 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
                 _tokens->poseHistory).Required(),
             Stage().Computation<EfTime>(
                 ExecBuiltinComputations->computeTime).Required());
+
+    // -----------------------------------------------------------------------
+    // motion.blendPoses -- several clips, weighted, at the evaluated frame
+    // -----------------------------------------------------------------------
+    //
+    // The one node in this bundle that wants poses from more than one place,
+    // and so the one where 26.08's fan-in rules land -- which is why the plan
+    // put it last. It is `motion::BlendPoses` over what the clips
+    // `motion:blend:sources` targets each sample at this frame, weighted by
+    // `motion:blend:weights`: one library call, like `motion.interpolatePose`.
+    //
+    // **Fan-in through a relationship, and read twice.** Each target's
+    // `motion.sampleAnimation` arrives as one value of a fan-in, and 26.08 drops
+    // two kinds of target from it without a word: one that does not provide the
+    // computation is skipped while the network compiles
+    // (`exec/inputResolver.cpp`), and one whose computation refused is skipped
+    // by the read iterator, which passes over an input that holds no value
+    // (`vdf/readIterator.h`). A blend that paired weights with whatever came
+    // back would then weight the wrong clip. So the relationship is read a
+    // second time, for the builtin `computePath` that every object on the stage
+    // provides, and a count that disagrees is refused -- measured by deleting
+    // that check and watching a blend of two quietly become a blend of one.
+    //
+    // It reads each source's `motion.sampleAnimation` -- what the clip states
+    // at this frame -- and not its filtered pose. A blend combines sources; a
+    // filter is a recurrence whose previous answer belongs to whoever drives
+    // that source, and reading it here would make one clip's driver state part
+    // of another prim's answer.
+    //
+    // It declares no `computeTime`: it does not use the frame, and time
+    // dependence reaches it across the fan-in from every source that has it
+    // (measured, the filtering report section 2 across a relationship).
+    self.PrimComputation(_tokens->blendPoses)
+        .Callback<motion::HumanoidPose>(+[](const VdfContext &ctx) {
+            execmotion::BlendInputs inputs;
+
+            std::vector<SdfPath> targets;
+            for (VdfReadIterator<SdfPath> path(ctx, _tokens->sourcePaths);
+                 !path.IsAtEnd(); ++path) {
+                targets.push_back(*path);
+            }
+            inputs.sourceCount = targets.size();
+
+            for (VdfReadIterator<motion::HumanoidPose> pose(
+                     ctx, _tokens->sourcePoses);
+                 !pose.IsAtEnd(); ++pose) {
+                inputs.poses.push_back(*pose);
+            }
+
+            for (VdfReadIterator<float> weight(ctx, _tokens->blendWeights);
+                 !weight.IsAtEnd(); ++weight) {
+                inputs.weights.push_back(*weight);
+            }
+
+            execmotion::BlendOutcome outcome = execmotion::BlendedPose(inputs);
+            if (outcome.pose) {
+                ctx.SetOutput(std::move(*outcome.pose));
+                return;
+            }
+
+            // The targets by path, because the one refusal a reader will most
+            // want to act on -- a source that answered nothing -- cannot say
+            // which of them it was: the fan-in hands back values, not the
+            // objects they came from.
+            std::string named;
+            for (const SdfPath &target : targets) {
+                named += named.empty() ? "<" : ", <";
+                named += target.GetString();
+                named += ">";
+            }
+
+            switch (outcome.refusal) {
+            case execmotion::BlendRefusal::NoSource:
+                TF_RUNTIME_ERROR(
+                    "motion.blendPoses: 'motion:blend:sources' reaches "
+                    "nothing on the stage, so there is nothing to blend; no "
+                    "pose was blended");
+                break;
+            case execmotion::BlendRefusal::SourceUnanswered:
+                TF_RUNTIME_ERROR(
+                    "motion.blendPoses: %zu of the %zu objects "
+                    "'motion:blend:sources' targets (%s) answered no "
+                    "motion.sampleAnimation -- a target that is not a "
+                    "UsdSkelAnimation, or whose sampler refused, is dropped "
+                    "from the fan-in without a word, and a weight paired with "
+                    "what is left would land on the wrong clip; no pose was "
+                    "blended",
+                    inputs.sourceCount - inputs.poses.size(),
+                    inputs.sourceCount, named.c_str());
+                break;
+            case execmotion::BlendRefusal::WeightCount:
+                TF_RUNTIME_ERROR(
+                    "motion.blendPoses: the blend states %zu "
+                    "'motion:blend:weights' for the %zu objects "
+                    "'motion:blend:sources' targets (%s), and a weight is "
+                    "paired with its source by position; no pose was blended",
+                    inputs.weights.size(), inputs.sourceCount, named.c_str());
+                break;
+            case execmotion::BlendRefusal::WeightNotFinite:
+                TF_RUNTIME_ERROR(
+                    "motion.blendPoses: a 'motion:blend:weights' entry is not "
+                    "finite, and motion::BlendPoses would carry it into every "
+                    "rotation; no pose was blended");
+                break;
+            case execmotion::BlendRefusal::InstantsDisagree:
+                TF_RUNTIME_ERROR(
+                    "motion.blendPoses: the sources (%s) were not sampled at "
+                    "one finite instant -- two clips counting the same frame "
+                    "at different 'motion:timeCodesPerSecond', or a pose "
+                    "handed in stamped elsewhere -- and a blend would stamp "
+                    "a second between them that nobody sampled; no pose was "
+                    "blended",
+                    named.c_str());
+                break;
+            case execmotion::BlendRefusal::NothingWeighted:
+                TF_RUNTIME_ERROR(
+                    "motion.blendPoses: no 'motion:blend:weights' entry is "
+                    "positive, and motion::BlendPoses answers that with a "
+                    "default pose stamped 0.0 rather than at the instant the "
+                    "sources were sampled; no pose was blended");
+                break;
+            }
+            ctx.SetEmptyOutput();
+        })
+        .Inputs(
+            Relationship(_tokens->blendSources)
+                .TargetedObjects<SdfPath>(ExecBuiltinComputations->computePath)
+                .InputName(_tokens->sourcePaths),
+            Relationship(_tokens->blendSources)
+                .TargetedObjects<motion::HumanoidPose>(
+                    _tokens->sampleAnimation)
+                .InputName(_tokens->sourcePoses),
+            AttributeValue<float>(_tokens->blendWeights));
 }

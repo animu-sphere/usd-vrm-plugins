@@ -6,7 +6,7 @@ Motion Phase E; the plan is
 §6, P0-4.
 
 **This is the foundation, not the layer.** It registers four value types and
-seven computations:
+eight computations:
 
 | Computation | Provider | Result |
 | --- | --- | --- |
@@ -17,14 +17,15 @@ seven computations:
 | `motion.extractRootMotion` | a `UsdSkelAnimation` prim | the `motion::RootMotion` the sampled pose states, under the clip's intake policy |
 | `motion.poseHistory` | a `UsdSkelAnimation` prim | the sampled pose as a one-sample `motion::HumanoidAnimation` — the value key a driver **overrides** with its buffer's snapshot |
 | `motion.interpolatePose` | a `UsdSkelAnimation` prim | the `motion::PoseSampleResult` `motion::ClipSource` answers over `motion.poseHistory`, **at the instant the system is evaluating** |
+| `motion.blendPoses` | a `UsdSkelAnimation` prim | `motion::BlendPoses` over the clips `motion:blend:sources` targets, each sampled at the evaluated frame and weighted by `motion:blend:weights` |
 
 `motion.identityPose` is the mechanism at its weakest possible value and it
 stays: with no algorithm behind it, a wrong answer there can only be a wrong
 mechanism, which is what makes every later failure attributable.
 
-The remaining node — `motion.blendPoses` — comes next, over `motionRuntime`. It
-is last because it is the one that wants two poses from two places, and 26.08's
-builtin `computeValue` forwards across exactly one connection.
+These are all five of P0-4's nodes. `motion.blendPoses` came last because it is
+the one that reads poses from several prims, and that is where 26.08's fan-in
+rules apply ([below](#a-blend-reads-its-sources-through-a-relationship)).
 
 ## A clip has to state the rate its frames are counted at
 
@@ -285,6 +286,93 @@ history by reference — returns the pose without the status. The ask for
 with the time-order precondition `SampleAnimation` relies on — and nothing states
 — written on it.
 
+## A blend reads its sources through a relationship
+
+`motion.blendPoses` is the one node that wants poses from **several prims**. A
+blend is a `UsdSkelAnimation` that states what to blend:
+
+```usda
+def SkelAnimation "Blend"
+{
+    rel motion:blend:sources = [</Walk>, </Turn>]
+    custom float[] motion:blend:weights = [0.25, 0.75]
+}
+```
+
+It reads each target's `motion.sampleAnimation`, the pose that clip states at
+the evaluated frame, and hands the poses to the N-way `motion::BlendPoses`, each
+with the weight at the same position. That one library call is the whole node.
+
+The sources arrive through a **relationship** rather than connections, because a
+relationship is what carries fan-in in 26.08. `computeValue` over two
+connections silently falls back to the attribute's own value. The fan-in arrives
+in the relationship's **authored target order**, which is measured at first
+compile, after an edit reorders the targets, and in a fresh system
+([the blending report](../../docs/reports/openusd/26.08-openexec-blending.md) §1).
+That is what makes pairing by position safe.
+
+The order matters for more than the pairing. The library folds poses in one at a
+time, so three sources turning a bone about three axes land 4.247° apart when
+their order is reversed, even with each weight moved along with its source.
+
+| Blend | What comes back |
+| --- | --- |
+| weights paired one to one with targets that are all clips at one instant | the library's weighted fold, stamped at that instant. A bone only some sources report is taken from those sources, and a negative weight counts as the library's zero |
+| a target that is not a clip, or a source whose sampler refused | **no value**, and an error naming every target |
+| weights that do not pair one to one, **including no weights at all** | **no value**, and an error giving both counts |
+| a weight that is not finite | **no value** |
+| sources stamped at two instants, or at a non-finite one | **no value** |
+| nothing weighted positive, or nothing targeted | **no value** |
+
+**The fan-in drops two kinds of source without a word.** A target that does not
+provide the computation is skipped while the network compiles. A source that
+refused is skipped by the read iterator, which passes over an input holding no
+value. Either way fewer poses come back than there are targets, and a weight
+paired with what is left lands on the wrong clip. With the check below
+disabled, a blend whose second clip refused answered the first clip exactly,
+with no error anywhere. So the node **reads the relationship a second time**,
+for the builtin `computePath` that every object on the stage provides, and
+refuses when the two counts disagree. A target naming nothing on the stage is
+missing from both reads. It surfaces as weights that outnumber the sources.
+
+**No weights is refused, not blended evenly.** A callback cannot tell an absent
+`float[]` from an authored empty one, so a default for the first would also
+apply to the second. A blend that stated it had no weights would then be blended
+anyway.
+
+**The sources must agree on the instant.** Each source converts the evaluated
+frame at its own `motion:timeCodesPerSecond`. Two clips at two rates are
+therefore at two seconds on the same frame, and the library would interpolate
+the timestamps into a second neither was sampled at. Measured: 0.625 s between
+1.0 s and 0.5 s. The comparison is exact, because one rate gives the same bits.
+It applies to every source, weighted or not. At frame 0 two rates agree,
+because frame 0 is second 0 at every rate, and the blend answers.
+
+**A pose a driver holds enters by overriding a source's key.** An override of
+`/Turn [motion.sampleAnimation]` reaches `/Blend [motion.blendPoses]` across the
+relationship. That is how a live source joins a blend. The pose has to be
+stamped at the instant the other sources were sampled at, or the blend is
+refused.
+
+The node declares no `computeTime`. Time dependence reaches it from the sources
+across the relationship. An authored weight, and **an edit of the relationship's
+targets**, both reach its value callback with no request rebuilt. At the default
+time code it answers rather than refusing: it combines what its sources
+answered, and they answer there.
+
+### What the library would have answered
+
+This node is a wrapper that works. The finding is in what `motion::BlendPoses`
+answers in the cases the node refuses. Over nothing weighted it returns a
+default pose **stamped 0.0**, whatever instant the sources were sampled at. It
+carries a NaN weight into NaN rotations. It interpolates its sources'
+timestamps as though they were samples in time. And its header does not say
+that the answer depends on order. All four are pinned in `execMotion_pose`
+against the library's current behaviour. The ask for
+[boundary consolidation](../../docs/roadmap/boundary-consolidation.md) is a blend
+that can say *there is nothing to blend*, states finite weights and a shared
+instant as preconditions, and states its order dependence.
+
 ## How a computation refuses
 
 **By setting no value at all** — `VdfContext::SetEmptyOutput`, after posting a
@@ -317,7 +405,10 @@ refusal to express, so both forms are live in one bundle.
 no rate reaches a caller as a refusal at `motion.sampleAnimation`, at
 `motion.filterPose` *and* at `motion.interpolatePose`, rather than as a filtered
 or interpolated version of a pose nobody sampled. `motion.priorPose` and
-`motion.poseHistory` forward the absence for the same reason.
+`motion.poseHistory` forward the absence for the same reason. It also reaches a
+blend that targets that clip, but not by itself: the fan-in drops an empty
+input without a word, and only the blend's own count of its targets turns the
+drop back into a refusal.
 
 ## Nothing here interpolates a clip
 
@@ -353,10 +444,11 @@ instant, in one request.
   it has one in the wrong shape — `motion::PoseFilter` is a streaming class with
   no one-step entry point, so `motion.filterPose` composes a seed and a step out
   of two `Apply` calls, `motion.extractRootMotion`'s rule is private to a
-  capture session whose composition gives a wrong answer, and
+  capture session whose composition gives a wrong answer,
   `motion.interpolatePose`'s status-carrying answer exists only on a source
-  object that costs a copy of the history per evaluation — that is recorded as a
-  finding for
+  object that costs a copy of the history per evaluation, and
+  `motion::BlendPoses` answers a pose stamped 0.0 over nothing weighted — that
+  is recorded as a finding for
   [boundary consolidation](../../docs/roadmap/boundary-consolidation.md), which
   is the track scheduled to act on exactly this.
 - **No VRM, and no product name.** Humanoid retarget, expressions, look-at and
@@ -385,5 +477,6 @@ through an input accessor rather than by registering on it. The measurement is
 | `execMotion_filter` | one computation reading another, a value key inherited by a node that declares no `computeTime`, an override reaching every dependent of the key it names and no sibling, and a clip's policy landing on `motion::PoseFilter`'s own weight rather than on this bundle's |
 | `execMotion_root` | the bundle's second registered value type coming back beside the first out of one request, a dependent whose result type differs from its input's, a velocity that exists nowhere in the clip, one override driving both recurrences in a single call, and an intake token that names no policy being refused **with no value** where an absent one is defaulted and a deliberate `ignore` answers with a cleared root |
 | `execMotion_interpolate` | the third and fourth registered value types, a driver's history overriding a key whose type is not a pose and being sampled bracketed, held and empty — `Unavailable` as an answer, a decreasing history as the one refusal — two overrides of two keys in one call each reaching only their own dependents, a wrongly typed and an empty override being **dropped** by exec in favour of the key's ordinary value, a history refused at the default time code even when one was supplied, and a clip with no rate refused whether or not a history was supplied |
+| `execMotion_blend` | a relationship fan-in arriving in authored target order at first compile, after an edit and in a fresh system; a target that is not a clip, a source that refused and a target naming nothing each being refused rather than blended around; weights pairing one per source; two clips at two rates refused where their seconds differ and blended where they agree; time, an authored weight and a relationship edit each reaching the blend across prims; and an override of one prim's key reaching a blend on another |
 
-All six carry the CTest label `motion.openexec`.
+All seven carry the CTest label `motion.openexec`.

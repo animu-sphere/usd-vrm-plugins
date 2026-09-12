@@ -386,8 +386,8 @@ all, so a failure is attributable:
 7. discovery from a **packaged** plugin, not a build tree
 
 Only then the real ones, in that order: `sampleAnimation` → `filterPose` →
-`extractRootMotion` → `interpolatePose` → `blendPoses`. The first four are
-done.
+`extractRootMotion` → `interpolatePose` → `blendPoses`. All five are done; what
+is left of this task is not a node (see "Still open here" below).
 
 **Step 1 landed on 2026-09-06** — `plugins/execMotion`, and the seven items above
 are done as one: `motion::HumanoidPose` registers as an execution value type, a
@@ -633,23 +633,76 @@ the history evaluates `motion::SampleAnimation`'s rule beside USD's between the
 same keys, in one request, where the sampling report left the second sampler
 unreachable from exec.
 
-Still open here: `motion.blendPoses`; a producer that authors the rate, the
-filter policy and the intake policy (§9); a **driver contract** — compute once to
-arm a request, name an instant with `ChangeTime` before expecting a history
-sampled, hold one previous answer and one snapshot per prim and substitute both
-through one `ComputeWithOverrides`, treat a coding error there as a failed frame,
-none of it discoverable from the computations themselves, and P0-6's
-parity harness is the first client that needs it written down; and the
-packaged-plugin half of step 7 — the mechanism, sample, filter, root and
-interpolate tests load a *built* bundle, and an artifact-only run belongs with
-P0-3's smoke.
+**`motion.blendPoses` landed on 2026-09-13, and it is the first node that reads
+poses from several prims.** A blend is a `UsdSkelAnimation` stating
+`motion:blend:sources`, a relationship targeting the clips, and
+`motion:blend:weights`, one weight per target in target order. The node reads
+each target's `motion.sampleAnimation` and hands the poses to the N-way
+`motion::BlendPoses`, each with the weight at its position. Like
+`motion.interpolatePose` it is one library call, and unlike that one it costs no
+copy.
 
-**`blendPoses` is last on purpose.** It is the one computation that wants
-multiple inputs, and 26.08's builtin `computeValue` forwards across exactly one
-connection and silently falls back when there are two (§5, connection dataflow).
-Fan-in is reachable only through relationships with no deterministic ordering,
-so blending is where a fan-in surprise would surface — after the single-input
-chain is proven, not during it.
+**Four measurements, in [the blending report](../reports/openusd/26.08-openexec-blending.md),
+and one corrects this plan.** A **relationship fan-in arrives in authored target
+order**. That holds at first compile, after an edit that reorders the targets
+while both source nodes are already compiled, and in a fresh system. So the
+sentence this plan carried, "fan-in is reachable only through relationships with
+no deterministic ordering", confused two accessors. The audit's "no
+deterministic ordering" belongs to `IncomingConnections`, which nothing here
+uses. **Two kinds of source vanish from a fan-in without a word.** A target that
+does not provide the computation is skipped while the network compiles, and a
+source that **refused** is skipped by the read iterator. With the node's check
+disabled, a blend whose second clip refused answered the first clip exactly. So
+the node reads the relationship a second time, for the builtin `computePath`,
+and refuses when the counts disagree. **Invalidation crosses the relationship**:
+time, an authored weight, and an edit of the relationship's targets each reach
+the blend, the last with no request rebuilt. And **an override on one prim
+reaches a dependent on another**, which is how a pose a driver holds enters a
+blend. That adds a line to the driver contract: such a pose must be stamped at
+the instant the other sources were sampled at.
+
+**The sources must share one instant.** Each converts the evaluated frame at its
+own `motion:timeCodesPerSecond`, so two clips at two rates are at two seconds on
+the same frame. The library would interpolate between them: 0.625 s between
+1.0 s and 0.5 s, measured with the check disabled. The node refuses instead,
+exactly and for every source. It also refuses absent weights rather than
+blending evenly, because a callback cannot tell an absent array from an empty
+one.
+
+**The fifth boundary finding is about the library's answer, not the call's
+cost.** Over nothing weighted, `motion::BlendPoses` answers a default pose
+stamped 0.0. It carries a NaN weight into NaN rotations. It interpolates its
+sources' timestamps as though they were samples in time. And its fold depends
+on order: three sources reversed land 4.247° apart, which its header does not
+say. The node refuses the first three cases. The ask for
+[boundary consolidation](boundary-consolidation.md) §1 is a blend that can say
+*nothing to blend* and states its preconditions and its order dependence.
+
+**One thing the chain cannot do, observed rather than measured.** Every
+downstream node reads `motion.sampleAnimation` on its own prim by name, so a
+blend's answer cannot be filtered, have its root extracted, or be sampled in the
+graph. The relationship this node uses is the mechanism that would let a node
+take its input from a sampler, a blend or an override without knowing which.
+That is a design question for P0-5's retarget node, which has to choose a pose
+to retarget.
+
+Still open here: a producer that authors the rate, the filter policy and the
+intake policy (§9); a **driver contract** — compute once to arm a request, name
+an instant with `ChangeTime` before expecting a history sampled, hold one
+previous answer and one snapshot per prim and substitute both through one
+`ComputeWithOverrides`, treat a coding error there as a failed frame, stamp a
+pose handed to a blend's source at the instant the others were sampled at, none
+of it discoverable from the computations themselves, and P0-6's parity harness
+is the first client that needs it written down; and the packaged-plugin half of
+step 7 — the mechanism, sample, filter, root, interpolate and blend tests load a
+*built* bundle, and an artifact-only run belongs with P0-3's smoke.
+
+**`blendPoses` was last on purpose, and the reason held.** It is the one
+computation that wants several inputs, and 26.08's builtin `computeValue`
+forwards across exactly one connection and silently falls back when there are
+two (§5, connection dataflow). So it reads through a relationship instead, and
+that is where the fan-in surprises showed up: not in ordering, as this plan had
+guessed, but in two kinds of source that vanish without a word.
 
 **The precondition step 1 was blocked on is met.** `ExecTypeRegistry::RegisterType`
 requires `operator==` on the type it registers, and `motionCore`'s aggregates
