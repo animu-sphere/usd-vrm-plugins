@@ -1,0 +1,86 @@
+#usda 1.0
+(
+    """Policy fixture for execMotion: the sampled clip, stating how its root is
+    taken in.
+
+    The prose is a layer comment rather than `doc` on purpose; see
+    sampled_clip.usda for why.
+
+    Everything but `motion:root:intake` is sampled_clip.usda, so a difference
+    between the two through motion.extractRootMotion is the policy and nothing
+    else. That is what makes the pair measure the wrapper's rule the same way
+    filtered_clip.usda does for smoothing: a clip stating nothing gets
+    motion::LiveCaptureConfig's own default, which is DeriveVelocity, and this
+    one states `passthrough` -- the one neighbouring policy whose answer differs
+    from the default by exactly one field.
+
+    So the pair is a two-sided measurement rather than one. Over the same two
+    poses the default derives a linear velocity and this clip does not, and
+    neither answer can be produced by a bundle that ignored the attribute: one
+    of the two would be wrong whichever way it defaulted.
+
+    The third policy, `ignore`, is authored onto this stage by the test rather
+    than into a third fixture -- like filtered_clip.usda's cutoff of zero, the
+    point is as much that the change arrives at a node two links downstream of
+    the one that reads the clip."""
+    timeCodesPerSecond = 50
+    startTimeCode = 0
+    endTimeCode = 100
+)
+
+def SkelAnimation "Clip"
+{
+    uniform token[] joints = [
+        "hips",
+        "hips/spine",
+        "hips/spine/chest",
+        "hips/spine/chest/neck/head",
+        "prop"
+    ]
+
+    custom uniform double motion:timeCodesPerSecond = 50
+
+    custom token motion:root:intake = "passthrough"
+
+    quatf[] rotations.timeSamples = {
+        0: [
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (1, 0, 0, 0)
+        ],
+        100: [
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (0.70710678, 0, 0.70710678, 0),
+            (1, 0, 0, 0)
+        ],
+    }
+
+    float3[] translations.timeSamples = {
+        0: [
+            (0, 0, 0),
+            (0, 0.1, 0),
+            (0, 0.2, 0),
+            (0, 0.3, 0),
+            (0, 0, 0)
+        ],
+        100: [
+            (0, 1, 2),
+            (0, 0.1, 0),
+            (0, 0.2, 0),
+            (0, 0.3, 0),
+            (9, 9, 9)
+        ],
+    }
+
+    half3[] scales = [
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1)
+    ]
+}

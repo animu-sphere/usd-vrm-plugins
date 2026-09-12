@@ -136,6 +136,43 @@ add_test(NAME execMotion_filter
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/sampled_clip.usda")
 
 # ---------------------------------------------------------------------------
+# The root intake, through the built bundle
+# ---------------------------------------------------------------------------
+# The first computation that returns something other than a pose, so this is
+# where the bundle's SECOND registered value type is exercised: one request
+# hands back a `motion::HumanoidPose` and a `motion::RootMotion` side by side,
+# and the dependent value key is a different type from the one it reads.
+#
+# Like the filter suite it does not link motionRuntime. The rule under test has
+# no library call to wrap at all -- it lives in a private method of
+# `LiveCaptureSource` -- so the expected values are written out from the rule's
+# definition, which is the only way this suite can say anything the seam did not
+# already say to itself.
+add_executable(execMotion_root_tests test_exec_motion_root.cpp)
+target_include_directories(execMotion_root_tests PRIVATE
+    ${PXR_INCLUDE_DIRS})
+target_link_libraries(execMotion_root_tests PRIVATE motionCore::motionCore)
+target_compile_options(execMotion_root_tests
+    PRIVATE ${_exec_motion_assertions})
+if(MSVC)
+    target_compile_definitions(execMotion_root_tests
+        PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(execMotion_root_tests PRIVATE /bigobj /utf-8)
+endif()
+target_link_libraries(execMotion_root_tests
+    PRIVATE ${_exec_motion_test_targets})
+
+# Two fixtures differing by one thing again: rooted_clip.usda is
+# sampled_clip.usda plus `motion:root:intake`. The pair is what separates the
+# policy a clip states from `motion::LiveCaptureConfig`'s own default -- and the
+# fixture states `passthrough` rather than the default precisely so the two
+# cannot agree by accident.
+add_test(NAME execMotion_root
+    COMMAND execMotion_root_tests
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/rooted_clip.usda"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/sampled_clip.usda")
+
+# ---------------------------------------------------------------------------
 # Environment
 # ---------------------------------------------------------------------------
 # The bundle's own resource directory is what PXR_PLUGINPATH_NAME points at, and
@@ -167,6 +204,8 @@ set_tests_properties(execMotion_sample PROPERTIES
     ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
 set_tests_properties(execMotion_filter PROPERTIES
     ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
+set_tests_properties(execMotion_root PROPERTIES
+    ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
 
 # The seam suite needs no plugin and no plugin path, but it does link motionCore
 # and motionRuntime and -- through Gf -- loads usd_gf.dll on Windows all the
@@ -178,5 +217,5 @@ set_tests_properties(execMotion_pose PROPERTIES
 # Motion Phase E's label, so the OpenExec half of the suite can be run and
 # reported on its own (the plan's P0-2 CTest labels).
 set_tests_properties(execMotion_pose execMotion_mechanism execMotion_sample
-                     execMotion_filter
+                     execMotion_filter execMotion_root
     PROPERTIES LABELS "motion.openexec")

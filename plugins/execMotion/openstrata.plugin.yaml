@@ -37,6 +37,12 @@ requires:
     # state that filter normally keeps does not come with it -- an OpenExec
     # callback is pure, so the prior pose is an input the driver supplies
     # (README, "A filter is a recurrence").
+    #
+    # `motion.extractRootMotion` needs it for the vocabulary rather than for a
+    # call: `motion::RootMotionIntake` and `LiveCaptureConfig`'s default are the
+    # library's, and the rule they select sits in a private method of a capture
+    # session with no entry point a pure computation can reach -- the third
+    # finding this bundle has produced for boundary consolidation.
     - id: motionRuntime
       version: ">=0.8,<0.9"
 usd:
@@ -48,9 +54,11 @@ tests:
     - tests/fixtures/static_clip.usda
     - tests/fixtures/unrated_clip.usda
     - tests/fixtures/filtered_clip.usda
+    - tests/fixtures/rooted_clip.usda
   roundtrip:
     - tests/fixtures/identity_clip.usda
     - tests/fixtures/sampled_clip.usda
     - tests/fixtures/static_clip.usda
     - tests/fixtures/unrated_clip.usda
     - tests/fixtures/filtered_clip.usda
+    - tests/fixtures/rooted_clip.usda

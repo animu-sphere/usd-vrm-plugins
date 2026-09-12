@@ -122,4 +122,63 @@ FilteredPose(const motion::HumanoidPose& prior,
     return filter.Apply(pose);
 }
 
+std::optional<motion::RootMotionIntake>
+RootIntakeForToken(std::string_view token)
+{
+    // Three spellings and no synonyms. A table rather than a chain of ifs
+    // because the set is closed: it is `motion::RootMotionIntake`, and a fourth
+    // policy is a change to the library that has to reach this list.
+    if (token == "passthrough") {
+        return motion::RootMotionIntake::Passthrough;
+    }
+    if (token == "ignore") {
+        return motion::RootMotionIntake::Ignore;
+    }
+    if (token == "deriveVelocity") {
+        return motion::RootMotionIntake::DeriveVelocity;
+    }
+    return std::nullopt;
+}
+
+motion::RootMotion
+RootMotionFrom(const motion::HumanoidPose& prior,
+               const motion::HumanoidPose& pose,
+               const RootPolicy& policy)
+{
+    // The library's default, read from the library. `LiveCaptureConfig` is what
+    // every other caller of this rule is configured with, so a clip that states
+    // nothing gets exactly what a live session that states nothing gets --
+    // including on the day that default changes.
+    const motion::RootMotionIntake intake =
+        policy.intake ? *policy.intake
+                      : motion::LiveCaptureConfig{}.rootMotion;
+
+    if (intake == motion::RootMotionIntake::Ignore) {
+        return motion::RootMotion();
+    }
+
+    motion::RootMotion root = pose.root;
+    if (intake != motion::RootMotionIntake::DeriveVelocity) {
+        return root;
+    }
+
+    // Four conditions, and each is the library's: a velocity is derived only
+    // where there is a position to differentiate, no velocity the source
+    // already reported, a previous position to differentiate against, and time
+    // between the two. A pose that fails any of them keeps whatever the clip
+    // stated -- nothing is invented, which is the same rule the rest of this
+    // bundle keeps for a value nobody measured.
+    if (!root.hasPosition || root.hasLinearVelocity || !prior.root.hasPosition) {
+        return root;
+    }
+    const double elapsed = pose.timestamp - prior.timestamp;
+    if (elapsed > 0.0) {
+        root.linearVelocity =
+            (root.worldPosition - prior.root.worldPosition)
+            / static_cast<float>(elapsed);
+        root.hasLinearVelocity = true;
+    }
+    return root;
+}
+
 } // namespace execmotion

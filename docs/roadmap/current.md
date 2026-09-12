@@ -492,7 +492,7 @@ compared, which was P0-4's stated blocker.
   independent precisely because it derives each step's weight from the time
   elapsed between poses — so a pose stamped by the caller after it leaves exec
   reaches that filter as time zero. A clip that states no rate is therefore
-  **refused rather than stamped**: an empty pose and an error, because
+  **refused rather than stamped**: an error and no value at all, because
   `timestamp` has no absent state and a guessed second is indistinguishable
   downstream from a measured one. The attribute duplicates the stage's own
   `timeCodesPerSecond` and is a shim for a gap in 26.08, not a format; nothing
@@ -582,7 +582,62 @@ compared, which was P0-4's stated blocker.
   joins the open list with it: compute once to arm a request, step the recurrence
   through overrides, neither discoverable from the computations themselves, and
   P0-6's parity harness is the first client that needs it written down.
-- ⬜ **The three remaining `execMotion` nodes, `execVrm`, parity, and the display
+- ✅ **`motion.extractRootMotion`, and the first answer that is not a pose**
+  *(2026-09-06, P0-4)*. Where the body is at the evaluated frame, as a
+  `motion::RootMotion`, under the intake policy the clip states in
+  `motion:root:intake` — `motion::RootMotionIntake`'s own three, reached as a
+  token. `ignore` **clears** the root rather than zeroing it, which is what the
+  presence flags are for: a cleared root leaves a rig its own placement, a zeroed
+  position puts the body at the origin. It reads `motion.sampleAnimation` rather
+  than the filtered pose because that is the **library's** ordering —
+  `LiveCaptureSource` conditions the root of the frame as it arrived and smooths
+  afterwards.
+
+  **Four measurements**
+  ([the root-motion report](../reports/openusd/26.08-openexec-root-motion.md)),
+  three of which change what the remaining nodes may assume. **A bundle
+  registers more than one value type, and a computation may answer in a type
+  other than the one it reads** — one request hands back a pose and a root
+  motion side by side. **Time dependence follows the link and not the type**, so
+  the change of result type costs nothing. **One override drives every node that
+  depends on the key it names**: a single `motion.priorPose` substitution steps
+  the filter *and* derives the velocity in one `ComputeWithOverrides`, which
+  shortens the driver contract — one previous answer per prim, not one per node.
+  And **an input the callback reads but `.Inputs()` does not declare is silent**:
+  the bundle compiles, the request is valid, the callback runs, and the pointer
+  is null. That is the third shape of 26.08's one property — a callback cannot
+  tell *absent* from *not asked for* — and it makes a node's own refusal the only
+  refusal there is.
+
+  **A refusal sets no value at all, in every node here.** Review found this
+  node's refusal returning a cleared `motion::RootMotion` — `ignore`'s own
+  answer, bit for bit — so a misspelled `passthrough` got a deliberate
+  `ignore`'s behaviour for anyone not reading `TfError`s. The fix is 26.08's
+  documented channel: a void-returning callback and
+  `VdfContext::SetEmptyOutput`, which reaches the caller as an empty value —
+  the one shape no computation here produces as an answer. The earlier nodes
+  moved to it, and **a refusal propagates**: a dependent handed no value refuses
+  in turn, rather than filtering a pose nobody sampled
+  ([the root-motion report](../reports/openusd/26.08-openexec-root-motion.md) §6).
+
+  **The absent-input rule is now general**, because this attribute answers it
+  both ways: defaulted when **absent**, refused when **stated and
+  unrecognized**. Default where an absent value selects the library's documented
+  behaviour; refuse where it would produce a number no consumer can tell from a
+  measured one; never default a value the clip stated that this layer cannot
+  honour, or a misspelled `ignore` gets the root motion it asked not to have.
+
+  **The third boundary finding, and the first where the wrapper idiom was tried
+  and ruled out rather than skipped.** The rule lives in
+  `LiveCaptureSource::_Condition`, private to a capture *session*, and composing
+  it the way `motion.filterPose` composes `PoseFilter` gives the **wrong answer
+  in the ordinary case**: two poses at the same instant are a reseed for
+  `PoseFilter` and a *refusal* for `Push`, and an un-overridden node evaluates
+  exactly that case. So the derivation is three lines in the seam, asserted
+  against its definition rather than against the library, and
+  `ConditionRootMotion(prior, pose, intake)` is the ask
+  ([boundary consolidation](boundary-consolidation.md) §1).
+- ⬜ **The two remaining `execMotion` nodes, `execVrm`, parity, and the display
   slice** — the rest of P0-4 and P0-5 through P0-7 of the
   [plan](openexec-foundation.md#6-foundation-tasks).
 

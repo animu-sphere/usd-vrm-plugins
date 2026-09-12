@@ -236,6 +236,11 @@ void TestAClipWithNoRate(const std::string& fixture)
 
     std::vector<ExecUsdValueKey> keys;
     keys.emplace_back(clip, kSampleAnimation);
+    // The node downstream of it, so what a refusal does to a *dependent* is
+    // measured rather than assumed. A filter handed no pose has nothing to
+    // filter, and the question is whether that reaches the caller as a refusal
+    // or as a plausible-looking pose.
+    keys.emplace_back(clip, TfToken("motion.filterPose"));
 
     TfErrorMark mark;
     ExecUsdRequest request = system.BuildRequest(std::move(keys));
@@ -254,19 +259,26 @@ void TestAClipWithNoRate(const std::string& fixture)
            "below can become an assertion that it never runs");
 
     ExecUsdCacheView view = system.Compute(request);
-    const VtValue value = view.Get(0);
-    assert(value.IsHolding<motion::HumanoidPose>() &&
-           "the callback did not run, so something other than the rate is "
-           "missing");
 
-    // A pose with nothing in it, rather than a pose stamped with a guess. The
-    // difference is the whole reason the node refuses: an empty pose is
-    // recognisable downstream and a wrong second is not.
-    const motion::HumanoidPose pose = value.UncheckedGet<motion::HumanoidPose>();
-    assert(pose == motion::HumanoidPose{} &&
-           "a clip with no rate produced a pose with content in it");
-    assert(pose.timestamp == 0.0 &&
-           "a second was invented from a frame and a rate nobody stated");
+    // **No value at all**, rather than a pose stamped with a guess -- and
+    // rather than a default-constructed pose, which is what this node used to
+    // return and what a review found could not be told apart from an answer.
+    // An empty `motion::HumanoidPose` is a pose a clip can legitimately sample
+    // to: one whose `joints` name no canonical bone produces exactly that. So
+    // the refusal sets no value (`VdfContext::SetEmptyOutput`), which is the
+    // one shape no computation in the bundle ever produces as an answer.
+    const VtValue value = view.Get(0);
+    assert(value.IsEmpty() &&
+           "a clip with no rate produced a value -- if it holds a pose, the "
+           "refusal has gone back to being indistinguishable from an answer");
+    assert(!value.IsHolding<motion::HumanoidPose>());
+
+    // And the refusal **propagates**: the node downstream is handed no pose,
+    // refuses in turn, and the caller sees a refusal there too rather than a
+    // filtered version of a pose nobody sampled.
+    assert(view.Get(1).IsEmpty() &&
+           "motion.filterPose answered although the pose it filters was "
+           "refused");
 
     // And it said so, in this bundle's own words. Asserting the text rather
     // than only the mark is what distinguishes our refusal from any other error
@@ -287,7 +299,8 @@ void TestAClipWithNoRate(const std::string& fixture)
     mark.Clear();
 
     std::printf("execMotion sample: a clip with no rate compiles a request and "
-                "is refused by the callback, with an empty pose\n");
+                "is refused by the callback, with no value at all, and the "
+                "refusal reaches the node downstream\n");
 }
 
 // ---------------------------------------------------------------------------

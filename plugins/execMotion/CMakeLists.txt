@@ -1,12 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # execMotion — the vendor-neutral OpenExec motion bundle (Workspace Phase 8,
-# Motion Phase E). The boundary, one registered value type and four computations:
-# `motion.identityPose`, which is the mechanism held at its weakest possible
-# value, `motion.sampleAnimation`, which reads a clip at the evaluated frame,
-# and `motion.filterPose` with the `motion.priorPose` seam an override enters
-# through. `extractRootMotion`, `interpolatePose` and `blendPoses` follow
-# (docs/roadmap/openexec-foundation.md, P0-4).
+# Motion Phase E). The boundary, two registered value types and five
+# computations: `motion.identityPose`, which is the mechanism held at its
+# weakest possible value, `motion.sampleAnimation`, which reads a clip at the
+# evaluated frame, `motion.filterPose` with the `motion.priorPose` seam an
+# override enters through, and `motion.extractRootMotion`, which is where the
+# body is under the clip's stated intake policy. `interpolatePose` and
+# `blendPoses` follow (docs/roadmap/openexec-foundation.md, P0-4).
 #
 # Self-contained so `ost plugin build plugins/execMotion` can configure it
 # directly, and also add_subdirectory()-able from the repo-root CMakeLists.txt
