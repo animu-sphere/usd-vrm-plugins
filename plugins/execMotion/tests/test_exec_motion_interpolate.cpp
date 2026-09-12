@@ -241,15 +241,21 @@ void TestUnoverriddenTheNodeIsTheClip(const std::string& fixture)
            "a request over a history-typed and a sample-result-typed key did "
            "not compile");
 
-    // Armed by its first compute (the filtering report §4). At the default
-    // time code the clip resolves to nothing, so the history is one empty pose
-    // -- and that is still a **sample**, not an absence: the history holds a
-    // pose, it states no bones. `Unavailable` is for a history holding nothing.
+    // Armed by its first compute (the filtering report §4), which is at the
+    // default time code -- and the default time code is no instant. The sampler
+    // answers there (an empty pose stamped 0.0, which costs it nothing) and so
+    // does the history built from it; this node refuses, because sampling a
+    // history at a guessed 0.0 is the one thing it must not do. The one place
+    // an un-overridden node differs from the sampler.
     {
+        TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
-        const motion::PoseSampleResult result = ResultAt(view, kInterpolated);
-        assert(result.status == motion::PoseSampleStatus::Sampled);
-        assert(result.pose && !result.pose->validRotations.any());
+        assert(!PoseAt(view, kSampled).validRotations.any());
+        assert(HistoryAt(view, kHistory).samples.size() == 1);
+        AssertRefused(view, kInterpolated);
+        assert(MarkNames(mark, "default time code") &&
+               "the default time code was refused without saying why");
+        mark.Clear();
     }
 
     system.ChangeTime(UsdTimeCode(kFrame));
@@ -298,11 +304,33 @@ void TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
     ExecUsdSystem system(stage);
     ExecUsdRequest request = system.BuildRequest(KeysFor(clip));
     assert(request.IsValid());
-    system.Compute(request);
+
+    const motion::HumanoidAnimation bracketing = Bracketing();
+
+    // ---- a driver's first compute, with its buffer, before any ChangeTime ----
+    // The shape a naive driver takes: it has samples, so it hands them over on
+    // the compute that arms the request -- which is at the default time code.
+    // The sampler stamps 0.0 there, and a history sampled at 0.0 would come
+    // back a believable `Held` with a lag of -1.02 s: a second nobody asked
+    // for, answered with a measured pose. Refused instead, with the override
+    // itself arriving intact -- the refusal is this node's, not exec's.
+    {
+        TfErrorMark mark;
+        ExecUsdCacheView view = system.ComputeWithOverrides(
+            request, HistoryOverride(clip, VtValue(bracketing)));
+        assert(HistoryAt(view, kHistory) == bracketing &&
+               "the override did not reach motion.poseHistory at the default "
+               "time code");
+        AssertRefused(view, kInterpolated);
+        assert(MarkNames(mark, "default time code") &&
+               "a history was sampled, or refused silently, at the default "
+               "time code");
+        mark.Clear();
+    }
+
     system.ChangeTime(UsdTimeCode(kFrame));
 
     // ---- bracketed: interpolated, from the snapshot and not from the clip ----
-    const motion::HumanoidAnimation bracketing = Bracketing();
     {
         ExecUsdCacheView view = system.ComputeWithOverrides(
             request, HistoryOverride(clip, VtValue(bracketing)));
@@ -486,7 +514,12 @@ void TestTwoOverridesOfTwoKeysInOneCall(const std::string& fixture)
     keys.emplace_back(clip, kPoseHistory);
     ExecUsdRequest request = system.BuildRequest(std::move(keys));
     assert(request.IsValid());
-    system.Compute(request);
+    {
+        // Arming, at the default time code, where this node refuses.
+        TfErrorMark mark;
+        system.Compute(request);
+        mark.Clear();
+    }
     system.ChangeTime(UsdTimeCode(kFrame));
 
     // The previous frame's answer: the four bones at identity, the hips at the
@@ -540,7 +573,12 @@ void TestNoRateIsNoInstant(const std::string& fixture)
     ExecUsdSystem system(stage);
     ExecUsdRequest request = system.BuildRequest(KeysFor(clip));
     assert(request.IsValid());
-    system.Compute(request);
+    {
+        // Arming: the sampler refuses (no rate) and so does this node.
+        TfErrorMark mark;
+        system.Compute(request);
+        mark.Clear();
+    }
     system.ChangeTime(UsdTimeCode(kFrame));
 
     // Un-overridden: the sampler refuses, the history forwards the absence

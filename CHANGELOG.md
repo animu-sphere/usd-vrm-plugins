@@ -294,10 +294,13 @@ Current schema contract version: **1**.
   **An empty history is an answer, not a refusal**: the library's `Unavailable`,
   carrying no pose. It is the first result type in the bundle with an absent
   state of its own, so the refusal rule -- refuse only where an answer would be
-  indistinguishable from a measurement -- has nothing to protect. The node's one
-  refusal is a history whose timestamps decrease, which the library's binary
-  search would answer with a bracket nobody measured; repeated timestamps are
-  answered, as the library answers them.
+  indistinguishable from a measurement -- has nothing to protect. The node
+  refuses a history whose timestamps are not finite or decrease, which the
+  library's binary search would answer with a bracket nobody measured (repeated
+  timestamps are answered, as the library answers them), and it refuses at the
+  **default time code**, overridden or not: the sampler stamps 0.0 there
+  harmlessly, but a history sampled at a guessed 0.0 would answer a believable
+  `Held`, and every request is armed at that time code.
 
   **Four measurements**
   ([docs/reports/openusd/26.08-openexec-interpolation.md](docs/reports/openusd/26.08-openexec-interpolation.md)).

@@ -293,15 +293,22 @@ motion::HumanoidAnimation HistoryOfOne(const motion::HumanoidPose& pose);
 /// its own, so there is nothing to refuse -- the first result in the bundle for
 /// which that is true.
 ///
-/// The one refusal is a history whose timestamps **decrease** somewhere.
-/// `motion::SampleAnimation`, which `ClipSource` samples through, binary-searches
-/// the samples and so relies on their being in time order -- a precondition it
-/// neither states nor checks -- and a history out of order would answer with a
-/// bracket nobody measured. Repeated timestamps are *not* refused: the library's
-/// search answers them deterministically, landing on the first of the pair, and
-/// a check stricter than the library's own need would be a policy of this
-/// bundle's -- `motion::PoseBuffer::Push`'s strictly-increasing rule is a
-/// property of how a buffer is *filled*, not of what can be sampled.
+/// The one refusal is a history whose timestamps are **not finite** or
+/// **decrease** somewhere. `motion::SampleAnimation`, which `ClipSource` samples
+/// through, binary-searches the samples and so relies on their being in time
+/// order -- a precondition it neither states nor checks -- and a history out of
+/// order, or carrying a NaN every comparison is false against, would answer with
+/// a bracket nobody measured.
+///
+/// Repeated timestamps are *not* refused, because the library's answer to them
+/// never leaves the samples it holds: a request at or past the end holds the
+/// **last** of a repeated pair there (`samples.back()`), one at or before the
+/// start holds the first, and one inside lands exactly on the first of a pair
+/// or between two adjacent samples. Which of two same-instant samples answers
+/// depends on where the request falls, and every answer is a measured sample or
+/// an interpolation between neighbours. A check stricter than that would be a
+/// policy of this bundle's -- `motion::PoseBuffer::Push`'s strictly-increasing
+/// rule is a property of how a buffer is *filled*, not of what can be sampled.
 std::optional<motion::PoseSampleResult> SampleHistory(
     const motion::HumanoidAnimation& history, double seconds);
 

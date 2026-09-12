@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ExecMotionPose.h"
 
+#include <cmath>
 #include <cstddef>
 #include <string_view>
 
@@ -196,10 +197,18 @@ SampleHistory(const motion::HumanoidAnimation& history, double seconds)
 {
     // The precondition the library's binary search relies on, and nothing
     // stricter: a pair of equal timestamps is something it answers, a pair that
-    // goes backwards is something it would answer wrongly.
+    // goes backwards -- or a timestamp that is not a number at all -- is
+    // something it would answer wrongly. Finiteness is checked on every sample
+    // rather than left to the ordering comparison, because every comparison
+    // with a NaN is false: `a < NaN` would let it through, and a NaN newest
+    // sample would reach the caller as a NaN lag, which compares unequal even
+    // to itself.
     const std::vector<motion::HumanoidPose>& samples = history.samples;
-    for (std::size_t i = 1; i < samples.size(); ++i) {
-        if (samples[i].timestamp < samples[i - 1].timestamp) {
+    for (std::size_t i = 0; i < samples.size(); ++i) {
+        if (!std::isfinite(samples[i].timestamp)) {
+            return std::nullopt;
+        }
+        if (i > 0 && samples[i].timestamp < samples[i - 1].timestamp) {
             return std::nullopt;
         }
     }

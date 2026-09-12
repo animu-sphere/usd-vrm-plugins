@@ -613,9 +613,12 @@ answers plausibly, and an empty `VtValue` takes the same path: a driver cannot
 push an absence into a key, and has to treat a coding error around
 `ComputeWithOverrides` as a failed frame. And **the first result type with an
 absent state of its own** answers where every earlier one had to refuse: an empty
-history is the library's `Unavailable`, a value, and the node's one refusal is a
-history whose timestamps decrease — which the library's binary search would
-answer with a bracket nobody measured.
+history is the library's `Unavailable`, a value, and the node refuses only a
+history whose timestamps are not finite or decrease — which the library's binary
+search would answer with a bracket nobody measured — and the **default time
+code**, where there is no instant: the sampler stamps 0.0 there harmlessly, but a
+history sampled at a guessed 0.0 would answer a believable `Held`, and every
+request is armed at that time code.
 
 **The fourth boundary finding is the first where the wrapper works and the finding
 is its cost.** The status-carrying answer exists only as a method on a *source
@@ -632,9 +635,10 @@ unreachable from exec.
 
 Still open here: `motion.blendPoses`; a producer that authors the rate, the
 filter policy and the intake policy (§9); a **driver contract** — compute once to
-arm a request, hold one previous answer and one snapshot per prim and substitute
-both through one `ComputeWithOverrides`, treat a coding error there as a failed
-frame, none of it discoverable from the computations themselves, and P0-6's
+arm a request, name an instant with `ChangeTime` before expecting a history
+sampled, hold one previous answer and one snapshot per prim and substitute both
+through one `ComputeWithOverrides`, treat a coding error there as a failed frame,
+none of it discoverable from the computations themselves, and P0-6's
 parity harness is the first client that needs it written down; and the
 packaged-plugin half of step 7 — the mechanism, sample, filter, root and
 interpolate tests load a *built* bundle, and an artifact-only run belongs with

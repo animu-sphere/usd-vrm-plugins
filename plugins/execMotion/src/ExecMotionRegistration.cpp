@@ -519,6 +519,15 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
     // a second time: the conversion has one home, and the refusal of a clip that
     // states no rate reaches this node by propagation instead of by a copy.
     //
+    // `computeTime` is declared all the same, for the one thing the stamp cannot
+    // say: whether there *is* an instant. At the default time code the sampler
+    // stamps 0.0, which costs it nothing -- what USD resolved there happened
+    // before its callback ran -- but a history lives entirely on a timeline, and
+    // sampling one at 0.0 would answer a believable `Held` at a second nobody
+    // asked for. So this node refuses there, overridden or not. Declaring the
+    // input costs no extra recompute: the node is time dependent through both
+    // of its other inputs already (the filtering report section 2).
+    //
     // The answer is the library's `motion::PoseSampleResult` whole. The pose in
     // it is stamped at the evaluated instant whether the history reached that
     // instant or not, so the status is the only thing that tells a sample from a
@@ -533,6 +542,22 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
                     "motion.interpolatePose: no pose came back from "
                     "motion.sampleAnimation, so there is no evaluated instant "
                     "to sample the history at");
+                ctx.SetEmptyOutput();
+                return;
+            }
+
+            // The default time code is no instant. It is also what every request
+            // is armed at (the filtering report section 4), so this refusal is
+            // the common case of a driver's first compute rather than an edge
+            // one -- which is exactly why a guessed 0.0 here would be reached.
+            const UsdTimeCode timeCode =
+                ctx.GetInputValue<EfTime>(
+                    ExecBuiltinComputations->computeTime).GetTimeCode();
+            if (!timeCode.IsNumeric()) {
+                TF_RUNTIME_ERROR(
+                    "motion.interpolatePose: the system is evaluating at the "
+                    "default time code, which is no instant on a timeline; a "
+                    "history cannot be sampled until ChangeTime names one");
                 ctx.SetEmptyOutput();
                 return;
             }
@@ -567,15 +592,15 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
                 return;
             }
 
-            // The one refusal the seam has: a history out of time order, which
-            // the library's binary search would answer with a bracket nobody
-            // measured. A value of the result type cannot say that -- every
-            // one of them is an answer, `Unavailable` included -- so this sets
-            // none.
+            // The one refusal the seam has: a history whose timestamps are not
+            // finite or not in time order, which the library's binary search
+            // would answer with a bracket nobody measured. A value of the
+            // result type cannot say that -- every one of them is an answer,
+            // `Unavailable` included -- so this sets none.
             TF_RUNTIME_ERROR(
-                "motion.interpolatePose: the history's timestamps decrease, so "
-                "the samples bracketing %g s cannot be found; no pose was "
-                "sampled",
+                "motion.interpolatePose: the history's timestamps are not "
+                "finite and in time order, so the samples bracketing %g s "
+                "cannot be found; no pose was sampled",
                 pose->timestamp);
             ctx.SetEmptyOutput();
         })
@@ -583,5 +608,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
             Computation<motion::HumanoidPose>(
                 _tokens->sampleAnimation).Required(),
             Computation<motion::HumanoidAnimation>(
-                _tokens->poseHistory).Required());
+                _tokens->poseHistory).Required(),
+            Stage().Computation<EfTime>(
+                ExecBuiltinComputations->computeTime).Required());
 }

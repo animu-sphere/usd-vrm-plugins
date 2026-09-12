@@ -659,7 +659,10 @@ compared, which was P0-4's stated blocker.
   and an empty `VtValue` takes the same path, so a driver cannot push an absence
   into a key. And **the first result type with an absent state of its own**: an
   empty history is the library's `Unavailable`, an answer rather than a refusal,
-  and the one refusal is a history whose timestamps decrease.
+  and the node refuses only a history whose timestamps are not finite or
+  decrease, and the **default time code** — no instant, and the time code every
+  request is armed at, where a history sampled at a guessed 0.0 would answer a
+  believable `Held`.
 
   **The fourth boundary finding, and the first where the wrapper works and the
   finding is its cost**: the status-carrying answer exists only on a source

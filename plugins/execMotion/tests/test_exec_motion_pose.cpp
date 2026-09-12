@@ -13,6 +13,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <limits>
 #include <optional>
 #include <string>
 #include <utility>
@@ -754,6 +755,57 @@ void TestAHistoryOutOfOrderIsRefused()
     assert(std::abs(HeadAngleDegrees(*result->pose) - 45.0f) < 1e-3f);
 }
 
+void TestARepeatedNewestSampleHoldsTheLastOfThePair()
+{
+    // The case a driver repeating its newest sample produces: two samples at
+    // the same instant at the END of the history, disagreeing about the head.
+    // A request at or past that instant holds `samples.back()` -- the second of
+    // the pair, not the first -- and either way the answer is a sample somebody
+    // measured, which is why a repeat is answered rather than refused.
+    const motion::HumanoidAnimation history = HistoryOf({
+        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f)),
+        PoseWithHeadAndHips(1.02, 60.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f)),
+        PoseWithHeadAndHips(1.02, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f))});
+
+    for (const double instant : {1.02, 1.1}) {
+        const std::optional<motion::PoseSampleResult> result =
+            execmotion::SampleHistory(history, instant);
+        assert(result.has_value() && result->pose);
+        assert(std::abs(HeadAngleDegrees(*result->pose) - 90.0f) < 1e-3f &&
+               "a repeated newest sample did not hold the last of the pair");
+    }
+}
+
+void TestATimestampThatIsNotFiniteIsRefused()
+{
+    // Every comparison with a NaN is false, so an ordering check alone lets one
+    // through -- after which the library brackets the instant with samples that
+    // do not surround it, and a NaN newest sample comes back as a NaN lag that
+    // compares unequal even to itself. Refused wherever it sits, and so is an
+    // infinity: neither is an instant anything was measured at.
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const double inf = std::numeric_limits<double>::infinity();
+    const pxr::GfVec3f origin(0.0f);
+
+    const motion::HumanoidAnimation histories[] = {
+        HistoryOf({PoseWithHeadAndHips(0.98, 0.0f, origin),
+                   PoseWithHeadAndHips(nan, 30.0f, origin),
+                   PoseWithHeadAndHips(1.02, 60.0f, origin)}),
+        HistoryOf({PoseWithHeadAndHips(nan, 0.0f, origin),
+                   PoseWithHeadAndHips(1.02, 60.0f, origin)}),
+        HistoryOf({PoseWithHeadAndHips(0.98, 0.0f, origin),
+                   PoseWithHeadAndHips(nan, 60.0f, origin)}),
+        HistoryOf({PoseWithHeadAndHips(nan, 0.0f, origin)}),
+        HistoryOf({PoseWithHeadAndHips(0.98, 0.0f, origin),
+                   PoseWithHeadAndHips(inf, 60.0f, origin)}),
+    };
+    for (const motion::HumanoidAnimation& history : histories) {
+        assert(!execmotion::SampleHistory(history, 1.0).has_value() &&
+               "a history carrying a timestamp that is not finite was "
+               "sampled");
+    }
+}
+
 } // namespace
 
 int main()
@@ -782,6 +834,8 @@ int main()
     TestAMissingBoneIsHeldAcrossTheBracket();
     TestAnEmptyHistoryIsAnAnswerAndNotARefusal();
     TestAHistoryOutOfOrderIsRefused();
+    TestARepeatedNewestSampleHoldsTheLastOfThePair();
+    TestATimestampThatIsNotFiniteIsRefused();
     std::printf("execMotion pose: all checks passed\n");
     return 0;
 }

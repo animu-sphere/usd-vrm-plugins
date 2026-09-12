@@ -217,15 +217,17 @@ depend on it
 ([the interpolation report](../../docs/reports/openusd/26.08-openexec-interpolation.md) §2).
 
 Un-overridden, the history is the clip's own pose as a history of one, sampled
-at its own instant, and the node **is** `motion.sampleAnimation` — the same
-pass-through the filter has, special-cased in neither.
+at its own instant, and the node **is** `motion.sampleAnimation` at every frame
+on the timeline — the same pass-through the filter has, special-cased in
+neither.
 
 | History | What comes back |
 | --- | --- |
 | two samples bracketing the instant | `Sampled` — `motion::LerpPose` between them, stamped at the instant |
 | samples ending before the instant, or starting after it | `Held` — the nearer boundary sample, **stamped at the instant**, with the lag that says how far off it is |
 | empty | `Unavailable`, carrying no pose — an **answer** |
-| timestamps decreasing somewhere | **no value at all**, and a posted error naming the computation |
+| a timestamp that is not finite, or timestamps decreasing somewhere | **no value at all**, and a posted error naming the computation |
+| any, while the system is at the **default time code** | **no value at all**, and a posted error — there is no instant to sample at |
 
 **The answer is the library's `motion::PoseSampleResult` whole, and not a bare
 pose.** `ClipSource` stamps a hold at the requested instant exactly as it stamps
@@ -239,16 +241,28 @@ it wraps. Registering the type needed an exact `operator==` on it, which
 **An empty history is an answer, not a refusal**, and that is the bundle's
 refusal rule applied rather than bent: this is the first result type here with an
 absent state of its own, so `Unavailable` cannot be mistaken for a measurement
-and there is nothing for a refusal to protect. A history out of time order is
-the one refusal — the library's binary search would bracket the instant with
-samples that do not surround it. Repeated timestamps are not refused; the library
-answers them.
+and there is nothing for a refusal to protect. A history out of time order, or
+carrying a timestamp that is not finite, is the one refusal about a history — the
+library's binary search would bracket the instant with samples that do not
+surround it, and every comparison with a NaN is false, so an ordering check alone
+would let one through. Repeated timestamps are not refused: at or past the end of
+the history the **last** of a repeated pair holds, elsewhere the first of a pair
+or an interpolation between neighbours answers, and every answer is a sample
+somebody measured.
 
 **The instant is `motion.sampleAnimation`'s timestamp**, the seconds that node
-already converted the frame into — not `computeTime` and the rate a second time.
-So the conversion has one home, and a clip with no rate is refused here by
-propagation, **whether or not a history was supplied**: with no rate there is no
-instant to sample anything at.
+already converted the frame into — not the rate a second time. So the conversion
+has one home, and a clip with no rate is refused here by propagation, **whether
+or not a history was supplied**: with no rate there is no instant to sample
+anything at.
+
+**And at the default time code there is no instant either**, which the stamp
+cannot say — the sampler stamps 0.0 there, harmlessly for a clip. A history lives
+entirely on a timeline, and sampling a buffer at a guessed 0.0 would answer a
+believable `Held`. So the node reads `computeTime` for that one fact and refuses
+there, overridden or not. That is also where every request is armed, so a driver
+names an instant with `ChangeTime` before it expects a history sampled
+([the interpolation report](../../docs/reports/openusd/26.08-openexec-interpolation.md) §5).
 
 **A wrongly typed override answers plausibly.** 26.08 drops an override whose
 type is not the key's — an empty `VtValue` included — posts a coding error
@@ -370,6 +384,6 @@ through an input accessor rather than by registering on it. The measurement is
 | `execMotion_sample` | the same request at four times — the default time code, and frames 0, 100 and 50 — a value key being reported to the time callback even over a clip that holds still (which is what makes `computeTime` a per-frame recompute), and a clip with no rate being refused rather than stamped, with no value and with the refusal reaching the node downstream |
 | `execMotion_filter` | one computation reading another, a value key inherited by a node that declares no `computeTime`, an override reaching every dependent of the key it names and no sibling, and a clip's policy landing on `motion::PoseFilter`'s own weight rather than on this bundle's |
 | `execMotion_root` | the bundle's second registered value type coming back beside the first out of one request, a dependent whose result type differs from its input's, a velocity that exists nowhere in the clip, one override driving both recurrences in a single call, and an intake token that names no policy being refused **with no value** where an absent one is defaulted and a deliberate `ignore` answers with a cleared root |
-| `execMotion_interpolate` | the third and fourth registered value types, a driver's history overriding a key whose type is not a pose and being sampled bracketed, held and empty — `Unavailable` as an answer, a decreasing history as the one refusal — two overrides of two keys in one call each reaching only their own dependents, a wrongly typed and an empty override being **dropped** by exec in favour of the key's ordinary value, and a clip with no rate refused whether or not a history was supplied |
+| `execMotion_interpolate` | the third and fourth registered value types, a driver's history overriding a key whose type is not a pose and being sampled bracketed, held and empty — `Unavailable` as an answer, a decreasing history as the one refusal — two overrides of two keys in one call each reaching only their own dependents, a wrongly typed and an empty override being **dropped** by exec in favour of the key's ordinary value, a history refused at the default time code even when one was supplied, and a clip with no rate refused whether or not a history was supplied |
 
 All six carry the CTest label `motion.openexec`.
