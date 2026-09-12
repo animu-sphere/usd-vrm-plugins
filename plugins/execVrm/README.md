@@ -54,7 +54,7 @@ was authored, so an absent value is recognised here by what it arrives as
 | --- | --- |
 | a skeleton authoring no `joints` | **refused** — it arrives as one joint named `""`, and no UsdSkel skeleton has one |
 | `restTransforms` that do not pair with `joints` — unauthored or blocked on a skeleton of two joints or more lands here, as one matrix against several joints | **refused** |
-| `joints = []` and `restTransforms = []` | the empty skeleton |
+| `joints = []`, with `restTransforms = []` or with none at all | the empty skeleton — with no joint for a rest transform to belong to, none becomes a number |
 | one joint and no `restTransforms` | a one-joint skeleton at **identity** rest — the fallback, which from here is an authored identity; the offline tool answers the same |
 | a bone the humanoid does not bind, or binds to `""`, or value-blocks | unbound — all three are the empty token by the time they arrive |
 
@@ -92,6 +92,13 @@ So the node reads the relationship a second time for the builtin `computePath`
 and refuses unless exactly one object is reached and exactly one skeleton comes
 back. With that check disabled, a humanoid naming a skeleton and a `Scope` was
 answered against the skeleton.
+
+One relationship statement it cannot see: a target path with **no prim behind
+it**, beside a real skeleton. That path provides neither computation, so it is
+missing from both reads, and the map is answered against the skeleton with no
+error. A blend catches the same drop by counting weights; a humanoid states
+nothing else to count against, and exec offers no read of a relationship's
+authored targets. `execVrm_humanoid` pins it.
 
 **Fifty-five inputs, declared in a loop.** `VrmHumanoidAPI` spells a binding as
 one attribute per bone, and `Inputs()` appends on every call, so the

@@ -36,7 +36,8 @@ public:
                        std::size_t jointCount);
 
     // Resolves `token` against `skeleton` and binds it. Returns false when the
-    // skeleton has no such joint, leaving the bone unmapped.
+    // skeleton has no such joint, leaving the bone unmapped -- including a
+    // bone an earlier call had bound, as SetJointIndex does.
     bool SetJointToken(motion::HumanBone bone, const std::string& token,
                        const TargetSkeleton& skeleton);
 

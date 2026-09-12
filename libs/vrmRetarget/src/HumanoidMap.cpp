@@ -36,11 +36,11 @@ bool
 HumanoidMap::SetJointToken(motion::HumanBone bone, const std::string& token,
                            const TargetSkeleton& skeleton)
 {
-    const int index = skeleton.FindJoint(token);
-    if (index == TargetSkeleton::kNoParent) {
-        return false;
-    }
-    return SetJointIndex(bone, index, skeleton.GetSize());
+    // An unknown token is FindJoint's kNoParent, which SetJointIndex rejects as
+    // out of range -- so a failed lookup unmaps the bone exactly as a rejected
+    // index does, rather than leaving an earlier binding standing behind a
+    // `false` that says this one did not take.
+    return SetJointIndex(bone, skeleton.FindJoint(token), skeleton.GetSize());
 }
 
 void
