@@ -492,7 +492,7 @@ compared, which was P0-4's stated blocker.
   independent precisely because it derives each step's weight from the time
   elapsed between poses — so a pose stamped by the caller after it leaves exec
   reaches that filter as time zero. A clip that states no rate is therefore
-  **refused rather than stamped**: an empty pose and an error, because
+  **refused rather than stamped**: an error and no value at all, because
   `timestamp` has no absent state and a guessed second is indistinguishable
   downstream from a measured one. The attribute duplicates the stage's own
   `timeCodesPerSecond` and is a shim for a gap in 26.08, not a format; nothing
@@ -608,6 +608,17 @@ compared, which was P0-4's stated blocker.
   is null. That is the third shape of 26.08's one property — a callback cannot
   tell *absent* from *not asked for* — and it makes a node's own refusal the only
   refusal there is.
+
+  **A refusal sets no value at all, in every node here.** Review found this
+  node's refusal returning a cleared `motion::RootMotion` — `ignore`'s own
+  answer, bit for bit — so a misspelled `passthrough` got a deliberate
+  `ignore`'s behaviour for anyone not reading `TfError`s. The fix is 26.08's
+  documented channel: a void-returning callback and
+  `VdfContext::SetEmptyOutput`, which reaches the caller as an empty value —
+  the one shape no computation here produces as an answer. The earlier nodes
+  moved to it, and **a refusal propagates**: a dependent handed no value refuses
+  in turn, rather than filtering a pose nobody sampled
+  ([the root-motion report](../reports/openusd/26.08-openexec-root-motion.md) §6).
 
   **The absent-input rule is now general**, because this attribute answers it
   both ways: defaulted when **absent**, refused when **stated and

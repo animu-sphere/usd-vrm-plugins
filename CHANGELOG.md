@@ -80,7 +80,7 @@ Current schema contract version: **1**.
   it derives each step's weight from the elapsed time between poses, so a pose
   stamped by the caller after it leaves exec would reach that filter as time
   zero. The rate has to be inside the graph. **A clip that states none is
-  refused rather than stamped** — an error and an empty pose — because
+  refused rather than stamped** — an error and no value at all — because
   `timestamp` has no absent state and a guessed second is indistinguishable
   downstream from a measured one. The attribute duplicates the stage's own
   `timeCodesPerSecond` deliberately and is a shim for the gap rather than a
@@ -205,6 +205,23 @@ Current schema contract version: **1**.
   It reads `motion.sampleAnimation` rather than the filtered pose because that
   is `motionRuntime`'s own ordering -- a live session conditions the root of a
   frame as it arrived and smooths afterwards.
+
+  **A refusal now sets no value at all, in every node of the bundle.** Review of
+  this change found the node's refusal returning a cleared `motion::RootMotion`,
+  which is `motion:root:intake = "ignore"`'s own answer bit for bit -- so a clip
+  that misspelled `passthrough` posted a `TfError` and then handed every
+  consumer exactly what a deliberate `ignore` hands them. A default-constructed
+  result has the same flaw for the pose type: an empty `motion::HumanoidPose` is
+  what a clip whose `joints` name no canonical bone legitimately samples to. So
+  every callback that can refuse -- `motion.sampleAnimation`, `motion.priorPose`,
+  `motion.filterPose` and this one -- now takes 26.08's void-returning form and
+  calls `VdfContext::SetEmptyOutput`, which reaches `ExecUsdCacheView::Get` as an
+  **empty value**: the one shape no computation here ever produces as an answer.
+  **A refusal propagates** as a result -- a clip with no rate is now a refusal at
+  `motion.sampleAnimation` *and* at `motion.filterPose`, where it used to be an
+  empty pose filtered into another empty pose. This changes the refusal the
+  `motion.sampleAnimation` entry above describes, which is corrected in place
+  since neither has been released.
 
   **The absent-input rule is now general, because this attribute answers it both
   ways**: defaulted when absent, refused when *stated and unrecognized*. The rate

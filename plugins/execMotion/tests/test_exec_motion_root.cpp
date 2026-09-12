@@ -16,10 +16,17 @@
 //     same `motion.priorPose` override the filter takes; and
 //   * **absent and unrecognized are different answers**: a clip stating no
 //     policy gets `motion::LiveCaptureConfig`'s own default, and a clip stating
-//     a token that names no policy is refused with an empty root. The rate is
-//     refused when absent, the filter's cutoff is defaulted when absent, and
-//     this attribute is the one that does both -- which is what makes the rule
-//     "what an absent value costs" rather than "what the node feels like".
+//     a token that names no policy is refused. The rate is refused when absent,
+//     the filter's cutoff is defaulted when absent, and this attribute is the
+//     one that does both -- which is what makes the rule "what an absent value
+//     costs" rather than "what the node feels like".
+//
+// And a refusal here carries **no value at all**, which this node is the reason
+// for. A cleared `motion::RootMotion` is `ignore`'s own legitimate answer, bit
+// for bit, so a refusal that produced one would hand a misspelled `passthrough`
+// the behaviour of a deliberate `ignore` -- indistinguishable to anyone not
+// reading `TfError`s. The `ignore` block and the unrecognized-token block sit
+// next to each other below, and the pair is the assertion.
 //
 // Like every suite here but `execMotion_pose`, this executable does not link
 // the plugin: the computations are reached only through `PXR_PLUGINPATH_NAME`
@@ -108,6 +115,23 @@ motion::RootMotion RootAt(const ExecUsdCacheView& view, int index)
     assert(value.IsHolding<motion::RootMotion>() &&
            "motion.extractRootMotion did not return a motion::RootMotion");
     return value.UncheckedGet<motion::RootMotion>();
+}
+
+// A refusal, which in this bundle is **no value at all**.
+//
+// The distinction this asserts is the whole of the review finding that produced
+// it: a cleared `motion::RootMotion` is `ignore`'s own legitimate answer, bit
+// for bit, so a refusal that produced one would be indistinguishable from a
+// deliberate "this clip does not place the body" for anyone not reading
+// `TfError`s. An empty `VtValue` is the one shape no computation here ever
+// produces as an answer.
+void AssertRefused(const ExecUsdCacheView& view, int index)
+{
+    const VtValue value = view.Get(index);
+    assert(value.IsEmpty() &&
+           "a refusal came back carrying a value, which puts it back where a "
+           "consumer cannot tell it from an answer");
+    assert(!value.IsHolding<motion::RootMotion>());
 }
 
 motion::HumanoidPose PoseAt(const ExecUsdCacheView& view, int index)
@@ -209,6 +233,11 @@ void TestAClipWithAPolicy(const std::string& fixture)
     // the pose is empty, and an empty pose has no root.
     {
         ExecUsdCacheView view = system.Compute(request);
+        // A cleared root, and an **answer** rather than a refusal: `RootAt`
+        // requires the value to be present. This is the third way a cleared
+        // `motion::RootMotion` legitimately arises -- beside `ignore` and a
+        // pose that states no position -- which is why a refusal cannot be
+        // spelled that way.
         assert(RootAt(view, kRoot) == motion::RootMotion{} &&
                "a pose with no root produced a root anyway");
     }
@@ -310,6 +339,12 @@ void TestAClipWithAPolicy(const std::string& fixture)
     {
         ExecUsdCacheView view = system.ComputeWithOverrides(
             request, PriorOverride(clip, prior));
+
+        // `RootAt` asserts the value is present and holds a `RootMotion`, so
+        // this is also the positive half of the refusal shape: `ignore` is an
+        // **answer**, and it stays one. The block below states the same clip's
+        // refusal, and the pair is what makes the two distinguishable rather
+        // than merely differently commented.
         const motion::RootMotion root = RootAt(view, kRoot);
         assert(root == motion::RootMotion{} &&
                "ignore left something of the root behind");
@@ -327,15 +362,24 @@ void TestAClipWithAPolicy(const std::string& fixture)
     // clip that said nothing and gets the library's default; this is a clip
     // that stated something, and defaulting here would hand a misspelled
     // `ignore` the root motion it asked not to have.
+    //
+    // And the refusal carries **no value**, which is the mirror of that same
+    // argument and the reason this suite has an `AssertRefused` at all: a
+    // cleared `motion::RootMotion` is what the block immediately above returns
+    // for a deliberate `ignore`, bit for bit, so a refusal producing one would
+    // hand a misspelled `passthrough` the behaviour of an `ignore` nobody
+    // asked for. The two blocks are next to each other on purpose.
     assert(clip.GetAttribute(kRootIntake).Set(TfToken("smooth")));
     {
         TfErrorMark mark;
         ExecUsdCacheView view = system.ComputeWithOverrides(
             request, PriorOverride(clip, prior));
-        const motion::RootMotion root = RootAt(view, kRoot);
-        assert(root == motion::RootMotion{} &&
-               "a clip stating a policy this bundle cannot honour got a root "
-               "motion anyway");
+        AssertRefused(view, kRoot);
+
+        // The nodes it did not refuse are unaffected: a refusal is this value
+        // key's, not the request's.
+        assert(PoseAt(view, kSampled).root.hasPosition &&
+               "a refused intake policy took motion.sampleAnimation with it");
 
         assert(!mark.IsClean() &&
                "an unrecognized policy was refused silently, which is worse "

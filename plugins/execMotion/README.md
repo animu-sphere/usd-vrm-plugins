@@ -47,10 +47,13 @@ filter as time zero, so the rate has to be *in* the graph.
 
 So `motion.sampleAnimation` reads `motion:timeCodesPerSecond` off the clip, as a
 `.Required()` input, and **a clip that states none is refused rather than
-stamped**: the callback posts an error and returns an empty pose, because
+stamped**: the callback posts an error and sets **no value at all**, because
 `timestamp` is a plain double with no absent state — a pose carrying a guessed
-second is indistinguishable downstream from one carrying a measured second, and
-an empty pose is not.
+second is indistinguishable downstream from one carrying a measured second.
+
+A refusal setting no value, rather than a default-constructed one, is
+[the bundle's one refusal shape](#how-a-computation-refuses) and is not specific
+to the rate.
 
 The attribute duplicates the layer's own `timeCodesPerSecond` metadatum, and the
 duplication is a **shim for an upstream gap, not a format**. Nothing in this
@@ -138,12 +141,18 @@ One attribute decides it:
 | `passthrough` | the root the pose carries, unchanged |
 | `ignore` | a **cleared** `motion::RootMotion` — every presence flag false |
 | `deriveVelocity` | `passthrough`, plus a linear velocity where the pose has a position, reported none, and there is a prior position and time between the two |
-| anything else | nothing, and a posted error naming the computation |
+| anything else | **no value at all**, and a posted error naming the computation ([how a computation refuses](#how-a-computation-refuses)) |
 
 `ignore` **clears rather than zeroes**, and that is what the presence flags are
 for: a cleared root says *this clip does not place the body*, and a zero position
 with `hasPosition` set says *the body is at the origin*. Only the first leaves a
 rig its own placement.
+
+That is also why the last row sets **no value** rather than a cleared one: a
+cleared `motion::RootMotion` is `ignore`'s answer bit for bit, so a refusal
+producing one would be a deliberate `ignore` as far as any consumer could tell.
+This node is the reason the bundle states its refusal shape
+[once, below](#how-a-computation-refuses).
 
 The last row is the other half of the rule above, and the two together are one
 rule rather than two moods. An **absent** attribute is a clip that said nothing,
@@ -184,6 +193,37 @@ the library, and the ask is
 [boundary consolidation](../../docs/roadmap/boundary-consolidation.md)'s:
 `ConditionRootMotion(prior, pose, intake)` as a free function, so the rule has
 one implementation again.
+
+## How a computation refuses
+
+**By setting no value at all** — `VdfContext::SetEmptyOutput`, after posting a
+`TF_RUNTIME_ERROR` that names the computation. Never by returning a
+default-constructed result.
+
+It is one rule, and it is the same one the rate's refusal was written for: *an
+answer nobody can tell from a refusal is worse than no answer.* A
+default-constructed result fails that test for both types this bundle produces:
+
+| Type | A default-constructed value is also… |
+| --- | --- |
+| `motion::HumanoidPose` | what a clip whose `joints` name no canonical bone legitimately samples to |
+| `motion::RootMotion` | `motion:root:intake = "ignore"`'s own answer, **bit for bit** |
+
+So a refusal spelled that way would hand a misspelled `passthrough` the exact
+behaviour of a deliberate `ignore`, for any consumer not inspecting `TfError`s —
+the mirror image of the mistake the intake table above refuses to make. An empty
+value is the one shape no computation here ever produces as an *answer*, which
+is what makes it the only shape a refusal can take and stay distinguishable.
+
+It costs the value-returning callback form: a callback that may refuse takes
+`const VdfContext&`, returns `void`, and calls `SetOutput` on every path that has
+an answer. `motion.identityPose` keeps the returning form because it has no
+refusal to express, so both forms are live in one bundle.
+
+**A refusal propagates.** A node handed no value refuses in turn, so a clip with
+no rate reaches a caller as a refusal at `motion.sampleAnimation` *and* at
+`motion.filterPose`, rather than as a filtered version of a pose nobody sampled.
+`motion.priorPose` forwards the absence for the same reason.
 
 ## Nothing here interpolates
 
@@ -239,8 +279,8 @@ through an input accessor rather than by registering on it. The measurement is
 | --- | --- |
 | `execMotion_pose` | the seam, with no stage, no system and no request — including what the round trip through a pose costs, measured against `motion::PoseFilter` driven as the streaming operator it is |
 | `execMotion_mechanism` | discovery through `plugInfo.json`, request compile, compute, an unchanged recompute, an authored-value invalidation, a time change reporting nothing for a time-independent value key, an explicit invalidation, and the shape an unregistered computation presents as |
-| `execMotion_sample` | the same request at four times — the default time code, and frames 0, 100 and 50 — a value key being reported to the time callback even over a clip that holds still (which is what makes `computeTime` a per-frame recompute), and a clip with no rate being refused rather than stamped |
+| `execMotion_sample` | the same request at four times — the default time code, and frames 0, 100 and 50 — a value key being reported to the time callback even over a clip that holds still (which is what makes `computeTime` a per-frame recompute), and a clip with no rate being refused rather than stamped, with no value and with the refusal reaching the node downstream |
 | `execMotion_filter` | one computation reading another, a value key inherited by a node that declares no `computeTime`, an override reaching every dependent of the key it names and no sibling, and a clip's policy landing on `motion::PoseFilter`'s own weight rather than on this bundle's |
-| `execMotion_root` | the bundle's second registered value type coming back beside the first out of one request, a dependent whose result type differs from its input's, a velocity that exists nowhere in the clip, one override driving both recurrences in a single call, and an intake token that names no policy being refused where an absent one is defaulted |
+| `execMotion_root` | the bundle's second registered value type coming back beside the first out of one request, a dependent whose result type differs from its input's, a velocity that exists nowhere in the clip, one override driving both recurrences in a single call, and an intake token that names no policy being refused **with no value** where an absent one is defaulted and a deliberate `ignore` answers with a cleared root |
 
 All five carry the CTest label `motion.openexec`.

@@ -428,7 +428,7 @@ stamp the pose on its way out of exec, where the caller holds the stage — reac
 that its cutoff is frame-rate independent because it derives each step's weight
 from the elapsed time between poses. So `motion:timeCodesPerSecond` is a
 `.Required()` input on the clip, **a clip that states none is refused rather than
-stamped** — an empty pose and an error, because `timestamp` has no absent state
+stamped** — an error and no value at all, because `timestamp` has no absent state
 and a guessed second is indistinguishable downstream from a measured one — and
 the attribute is a shim for an upstream gap that goes away if exec ever delivers
 stage metadata to a callback. Nothing in this repository authors it yet; §9 has
@@ -544,6 +544,22 @@ pointer is null, so the node takes its absent-value path with nothing anywhere
 reporting the missing declaration. That is the third shape of 26.08's one
 property — a callback cannot tell *absent* from *not asked for* — and it makes
 the node's own refusal the only refusal there is.
+
+**A refusal sets no value at all, and that is now the bundle's shape rather
+than this node's.** Review of the change found the node's refusal returning a
+default-constructed `motion::RootMotion` — which is `motion:root:intake =
+"ignore"`'s own answer, bit for bit, so a misspelled `passthrough` got the
+behaviour of a deliberate `ignore` for anyone not reading `TfError`s. 26.08 has
+a channel for it: `.Callback<T>` accepts a void-returning callback that sets its
+result through `VdfContext::SetOutput` or **`SetEmptyOutput`**, and an empty
+value is what `ExecUsdCacheView::Get` then hands back. So a refusal sets none,
+in every node here — an empty value is the one shape no computation ever
+produces as an *answer*, which is the only thing that keeps a refusal
+distinguishable — and **a refusal propagates**, since a dependent handed no
+value refuses in turn rather than filtering a pose nobody sampled. It corrects
+one sentence of [the sampling report](../reports/openusd/26.08-openexec-sampling.md),
+in [the root-motion report](../reports/openusd/26.08-openexec-root-motion.md) §6
+rather than in the audit, because an audit is history.
 
 **The absent-input rule is now general, because this attribute answers it both
 ways.** The rate is refused when absent, the filter's cutoff is defaulted when

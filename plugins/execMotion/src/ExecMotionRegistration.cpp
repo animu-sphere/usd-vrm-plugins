@@ -21,6 +21,29 @@
 // the joint-ordering contract into masks
 // (docs/reports/openusd/26.08-openexec-migration.md §4).
 //
+// # How a computation here refuses
+//
+// **By setting no value at all**, with `VdfContext::SetEmptyOutput`, after
+// posting a `TF_RUNTIME_ERROR` that names the computation. Never by returning a
+// default-constructed result.
+//
+// The rule is one rule and it is the same one the rate's refusal was written
+// for: an answer nobody can tell from a refusal is worse than no answer. A
+// default-constructed result fails that test for every type this bundle
+// produces -- an empty `motion::HumanoidPose` is what a clip whose `joints` name
+// no canonical bone legitimately samples to, and a cleared `motion::RootMotion`
+// is `motion:root:intake = "ignore"`'s own answer, bit for bit. So a refusal
+// that produced one would hand a misspelled `passthrough` the exact behaviour of
+// a deliberate `ignore`, for any consumer not inspecting `TfError`s.
+//
+// An empty value is the one thing no computation here ever produces as an
+// answer, so it is the only shape a refusal can take and stay distinguishable.
+// It costs the value-returning callback form: a callback that may refuse takes
+// `const VdfContext&` and returns void, calling `SetOutput` on every path that
+// has an answer. `motion.identityPose` keeps the returning form, because it has
+// no refusal to express -- the two forms coexist in one bundle, which is itself
+// measured.
+//
 // # Why UsdSkelAnimation, and why only that
 //
 // A computation is registered *for a schema*, and 26.08 lets exactly one plugin
@@ -207,19 +230,27 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
 
             if (std::optional<motion::HumanoidPose> pose =
                     execmotion::PoseFromClipSample(sample)) {
-                return *pose;
+                ctx.SetOutput(*pose);
+                return;
             }
 
             // The seam refuses exactly one thing, and this is it: without a
             // positive rate the frame cannot become the second the canonical
             // pose is stamped in. Reported rather than defaulted, because a
             // pose carrying a guessed second is indistinguishable downstream
-            // from one carrying a measured one, and an empty pose is not.
+            // from one carrying a measured one.
+            //
+            // And the refusal sets NO value rather than a default-constructed
+            // one, which is this bundle's one refusal shape (see the block
+            // above the registrations). An empty pose is a pose a clip can
+            // legitimately produce -- one whose `joints` name no canonical bone
+            // does -- so returning one would make a refusal indistinguishable
+            // from an answer for anyone not reading TfErrors.
             TF_RUNTIME_ERROR(
                 "motion.sampleAnimation: the clip states no usable "
                 "'motion:timeCodesPerSecond', so the frame it is evaluated at "
                 "cannot be converted to seconds; no pose was sampled");
-            return motion::HumanoidPose{};
+            ctx.SetEmptyOutput();
         })
         .Inputs(
             AttributeValue<TfToken>(_tokens->joints).Required(),
@@ -258,7 +289,15 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
             const motion::HumanoidPose *const pose =
                 ctx.GetInputValuePtr<motion::HumanoidPose>(
                     _tokens->sampleAnimation);
-            return pose ? *pose : motion::HumanoidPose{};
+            if (!pose) {
+                // The node it forwards refused, and forwarding means forwarding
+                // that too: a default pose here would turn one node's refusal
+                // into another node's answer, and would be the value an
+                // override is compared against besides.
+                ctx.SetEmptyOutput();
+                return;
+            }
+            ctx.SetOutput(*pose);
         })
         .Inputs(
             Computation<motion::HumanoidPose>(
@@ -294,7 +333,8 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
                 TF_RUNTIME_ERROR(
                     "motion.filterPose: no pose came back from "
                     "motion.sampleAnimation, so there is nothing to filter");
-                return motion::HumanoidPose{};
+                ctx.SetEmptyOutput();
+                return;
             }
 
             const motion::HumanoidPose *const prior =
@@ -315,8 +355,9 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
                 policy.filterRootOrientation = *root;
             }
 
-            return execmotion::FilteredPose(prior ? *prior : *pose, *pose,
-                                            policy);
+            ctx.SetOutput(
+                execmotion::FilteredPose(prior ? *prior : *pose, *pose,
+                                         policy));
         })
         .Inputs(
             Computation<motion::HumanoidPose>(
@@ -360,7 +401,8 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
                 TF_RUNTIME_ERROR(
                     "motion.extractRootMotion: no pose came back from "
                     "motion.sampleAnimation, so there is no root to extract");
-                return motion::RootMotion{};
+                ctx.SetEmptyOutput();
+                return;
             }
 
             execmotion::RootPolicy policy;
@@ -375,21 +417,31 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
                     // that stated something this bundle cannot honour, and
                     // defaulting there would hand a misspelled `Ignore` the
                     // root motion it asked not to have.
+                    //
+                    // And this is the node where setting NO value rather than a
+                    // cleared one is load-bearing rather than tidy: a cleared
+                    // `motion::RootMotion` is `ignore`'s own legitimate answer,
+                    // bit for bit, so a refusal that produced one would hand a
+                    // misspelled `passthrough` the exact behaviour of a
+                    // deliberate `ignore` -- the mirror image of the mistake
+                    // the paragraph above refuses to make.
                     TF_RUNTIME_ERROR(
                         "motion.extractRootMotion: the clip states "
                         "'motion:root:intake' = '%s', which names no "
                         "motion::RootMotionIntake policy; no root motion was "
                         "extracted",
                         stated->GetText());
-                    return motion::RootMotion{};
+                    ctx.SetEmptyOutput();
+                    return;
                 }
             }
 
             const motion::HumanoidPose *const prior =
                 ctx.GetInputValuePtr<motion::HumanoidPose>(_tokens->priorPose);
 
-            return execmotion::RootMotionFrom(prior ? *prior : *pose, *pose,
-                                              policy);
+            ctx.SetOutput(
+                execmotion::RootMotionFrom(prior ? *prior : *pose, *pose,
+                                           policy));
         })
         .Inputs(
             Computation<motion::HumanoidPose>(
