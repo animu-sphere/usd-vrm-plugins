@@ -281,7 +281,22 @@ jobs:
           # provenance, so `plugin package --workspace` below fails closed with
           # PLUGIN_PACKAGE_OUTPUT_MISMATCH -- and no pull_request event runs
           # this workflow, so a tag is the first time anyone finds out.
-          for bundle in plugins/vrmSchema plugins/usdVrmFileFormat plugins/usdVrmPackageResolver plugins/usdVrmaFileFormat plugins/execMotion plugins/execVrm; do
+          #
+          # And the LAST bundle is load-bearing. Each `ost plugin build`
+          # rebuilds one shared workspace-prefix from that bundle's closure
+          # alone, and both the pyramid and packaging below stage EVERY
+          # bundle's plain-library runtime out of that one prefix (ost report
+          # 40). With `execVrm` last -- 2026-09-06 to 2026-09-13, with no
+          # release run in between -- no vrmContainer binary reached any
+          # package and the product could not open a `.vrm`. So the list ends
+          # with a bundle whose closure holds every SHARED workspace library a
+          # release member needs, which today is `usdVrmaFileFormat`
+          # (vrmContainer; the exec bundles link static libraries only). That
+          # is an ordering workaround, not a fix: "Verify every bundle carries
+          # the shared libraries it records" holds the packaged bytes to each
+          # bundle's own record, so a closure that stops covering them fails
+          # there, by library and bundle.
+          for bundle in plugins/vrmSchema plugins/execMotion plugins/execVrm plugins/usdVrmFileFormat plugins/usdVrmPackageResolver plugins/usdVrmaFileFormat; do
             echo "::group::build $bundle"
             ost plugin build "$bundle" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
             echo "::endgroup::"
@@ -310,6 +325,22 @@ jobs:
             echo "::error title=release packaging::two packaging runs of the same build disagree -- release checksums would be unstable" ; exit 1
           fi
           cat .ost-ci/digests-first.txt
+      # The packaged bytes against each bundle's own dependencies.json: every
+      # SHARED workspace library a bundle records has to be in the package
+      # directory the record names, on the loader path. `ost plugin package`
+      # counts a library as staged when the directory exists, so this is the
+      # step that fails -- by library and bundle -- when the build order above
+      # stops putting a binary in the prefix (ost report 40).
+      - name: Verify every bundle carries the shared libraries it records
+        shell: bash
+        run: |
+          set -euo pipefail
+          product="$(jq -r '.data.product.archive // empty' .ost-ci/package.json)"
+          if command -v cygpath > /dev/null; then product="$(cygpath -u "$product")"; fi
+          if [ -z "$product" ] || [ ! -f "$product" ]; then
+            echo "::error title=release packaging::workspace product archive is missing" ; exit 1
+          fi
+          python scripts/check_product_libraries.py --product "$(dirname "$product")"
       # The workspace form composes the three interdependent VRM artifacts. The bare
       # importer package remains intentionally useful as a regression probe:
       # it still fails L3/L4 until ost stages a dependency bundle's USD
@@ -346,6 +377,23 @@ jobs:
             echo "::error title=release packaging::workspace product archive is missing" ; exit 1
           fi
           python scripts/artifact_only_bvh_smoke.py --product "$(dirname "$product")"
+      # The OpenExec plan's packaged-discovery run (P0-4 step 7, P0-7): the
+      # five parity cases with the product's own tools and exec bundles, and
+      # the display suite, in an environment holding only the runtime and the
+      # product. The two harness executables come from the root build above;
+      # the smoke reads back every module they mapped and fails on one from a
+      # build tree, then hides execMotion's registration and requires a
+      # refusal.
+      - name: Evaluate the exec bundles from the product alone
+        shell: bash
+        run: |
+          set -euo pipefail
+          product="$(jq -r '.data.product.archive // empty' .ost-ci/package.json)"
+          if command -v cygpath > /dev/null; then product="$(cygpath -u "$product")"; fi
+          if [ -z "$product" ] || [ ! -f "$product" ]; then
+            echo "::error title=release packaging::workspace product archive is missing" ; exit 1
+          fi
+          python scripts/artifact_only_exec_smoke.py --product "$(dirname "$product")"
       - name: Verify the packaged VRMA reader independently
         shell: bash
         run: ost plugin test plugins/usdVrmaFileFormat --from-package --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --up-to 5 --json

@@ -939,6 +939,31 @@ Current schema contract version: **1**.
   `vrm:rawExtension` — the rule `usdVrmaFileFormat` already applied to a clip
   (`VRMA107`). A `duplicate_expression_name.vrm` negative fixture pins it.
 
+- **The exec bundles run from the installed product** (the OpenExec plan's
+  P0-4 step 7 and P0-7's "from packaged plugins"). Every exec suite loaded a
+  *built* bundle; `scripts/artifact_only_exec_smoke.py` installs the aggregate
+  product outside the repository and runs the five `workspace_exec_parity_*`
+  cases with the product's own `motion_bvh_convert`, `motion_retarget`,
+  `execMotion` and `execVrm`, then the display suite, in an environment holding
+  only the runtime and the product's activation. It does not trust the
+  environment: `exec_parity` now reports every plugin the registry loaded and
+  every module the process mapped, the smoke fails on any library of this
+  workspace loaded from outside the prefix, and it then moves every copy of
+  execMotion's `plugInfo.json` aside and requires a refusal with ExecMotion
+  loaded from nowhere. All five cases hold bit for bit from the product. Wired
+  into `release.yml` on all three OS, which is where it inherits that lane's
+  standing caveat: no `pull_request` event runs it.
+
+- **`scripts/check_product_libraries.py`: each packaged bundle's bytes against
+  its own `dependencies.json`.** For every workspace library built `SHARED`,
+  the binary has to be in a directory the record names, on the bundle's and
+  the product's loader path. `ost plugin package` counts a library as staged
+  when its runtime *directory* exists, which is how the defect under Fixed
+  shipped a record naming `vrmContainer` beside no `vrmContainer`
+  ([ost report 40](docs/reports/ost/40-2026-09-13-v0.22.10-one-workspace-prefix-for-every-bundle.md)).
+  Runs in `release.yml` straight after packaging, so that defect fails by
+  library and bundle rather than as a loader error in CP932.
+
 ### Changed
 
 - **The OpenExec capability probe asks for the nine components a consumer
@@ -986,6 +1011,24 @@ Current schema contract version: **1**.
   reproduce.
 
 ### Fixed
+
+- **The release lane packaged a product that could not open a `.vrm` file,
+  and nothing between the build and the archive said so.** Each
+  `ost plugin build` rebuilds one shared `workspace-prefix` from that bundle's
+  closure alone, and `ost plugin test --workspace` and `ost plugin package`
+  read every bundle's plain-library runtime out of it — so the product carries
+  the closure of whichever bundle `release.yml` built **last**. Since
+  `execMotion` joined the loop on 2026-09-06 that has been an exec bundle,
+  which links static libraries only, and no `vrmContainer` binary reached any
+  package: the importer, the resolver and the VRMA reader could not load, the
+  pyramid step fails three of six bundles, and packaging still exits 0 with
+  each `dependencies.json` recording the library as staged. Reproduced on a
+  fresh clone with `ost` 0.22.8 and 0.22.10. No release ran in between, so
+  nothing shipped this way. The loop now ends with `usdVrmaFileFormat`, whose
+  closure holds the one shared library a release member needs — an ordering
+  workaround, checked by `scripts/check_product_libraries.py` above and asked
+  upstream as a P1
+  ([ost report 40](docs/reports/ost/40-2026-09-13-v0.22.10-one-workspace-prefix-for-every-bundle.md)).
 
 - **`HumanoidMap::SetJointToken` left an earlier binding standing when a
   rebinding named a joint the skeleton lacks.** Its header promised the bone

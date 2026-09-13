@@ -282,11 +282,19 @@ def main() -> int:
     parser.add_argument("--parity-fixtures", type=pathlib.Path, required=True)
     parser.add_argument("--real-avatar", type=pathlib.Path)
     parser.add_argument("--vrma-walk", type=pathlib.Path)
+    # Where the clips, bakes and harness reports go. A temporary directory by
+    # default; the artifact-only smoke names one so it can read each report's
+    # record of which plugins and modules the harness loaded.
+    parser.add_argument("--work", type=pathlib.Path)
     arguments = parser.parse_args()
 
     failures = Failures()
-    with tempfile.TemporaryDirectory() as directory:
-        CASES[arguments.case](arguments, pathlib.Path(directory), failures)
+    if arguments.work is not None:
+        arguments.work.mkdir(parents=True, exist_ok=True)
+        CASES[arguments.case](arguments, arguments.work, failures)
+    else:
+        with tempfile.TemporaryDirectory() as directory:
+            CASES[arguments.case](arguments, pathlib.Path(directory), failures)
     return failures.report()
 
 

@@ -2,7 +2,7 @@
 
 This repository is built end to end with [OpenStrata](https://github.com/animu-sphere/open-strata)
 (`ost`), and these are the dated records of what that was actually like — every
-`ost` version from the pre-0.3 builds through 0.22.8, on Windows, macOS arm64,
+`ost` version from the pre-0.3 builds through 0.22.10, on Windows, macOS arm64,
 and Linux. They are upstream feedback first and our own status trail second.
 
 **They are append-only historical evidence.** A report is never rewritten to
@@ -17,8 +17,12 @@ shipped scope lives in the [delivery history](../delivery-history.md) and the
 
 ## Reading order
 
-The current `ost` ask list is always in the **newest** report. Report 39 is the
-one to read first: it restates report 38's P2 with a second, costlier failure
+The current `ost` ask list is always in the **newest** report. Report 40 is the
+one to read first: it carries a P1 that breaks a release lane following the
+documented build order — `plugin package` and `plugin test --workspace` stage
+every bundle's plain-library runtime out of one prefix that each `plugin build`
+refills with its own closure, so the product carries the last-built bundle's
+libraries and records the others as present. Report 39 is next: it restates report 38's P2 with a second, costlier failure
 mode — `release.yml` is hand-authored because the contract cannot express its
 verbs, and a hand-authored lane silently stopped being correct across three
 releases — and adds a P3 for the pins beside it. Report 38 carries
@@ -41,6 +45,7 @@ each sorts immediately after the report it follows.
 
 | # | Date | Report | `ost` | Focus |
 | --- | --- | --- | --- | --- |
+| 40 | 2026-09-13 | [One workspace prefix answers for every bundle, and the last build decides what it holds](40-2026-09-13-v0.22.10-one-workspace-prefix-for-every-bundle.md) | 0.22.8, 0.22.10 | The first run of the OpenExec bundles from the installed product could not open a `.vrm`: the product carried no `vrmContainer` binary at all. `ost plugin build` rebuilds one shared `workspace-prefix` from each bundle's own closure, and `plugin package` / `plugin test --workspace` stage every bundle's library runtime out of it, counting a library as staged when its *directory* exists — so the product carries the last-built bundle's closure while every `dependencies.json` records `vrmContainer` as present. Our release loop has ended with an exec bundle (static libraries only) since 2026-09-06, with no release run since. Reproduced on a fresh clone with 0.22.10; reordering the loop alone reverses it (pyramid 3/6 fail → 6/6). Workaround plus a record-vs-bytes check in `release.yml`; and, once the product carried its libraries, all five parity cases held bit for bit from it. **Live P1 + two P3s** |
 | 39 | 2026-09-01 | [The release lane's first execution was three releases late](39-2026-09-01-v0.22.8-release-lane-first-execution.md) | 0.22.8 | v0.8.0 release preparation. The `workflow_dispatch` dry run the checklist puts in front of the tag went red on all three OS at the same step — and the defect is **ours**: a jq expression that asks a membership array for a `.name` field, in a step rewritten around `.data.release_members` when that field arrived in 0.22.3, *after* the last tag. No `pull_request` event runs `release.yml`, so it had never once executed. Found beside it: the lane still bootstrapped 0.22.6 while the contract had moved to 0.22.8 two days earlier, with the runtime digests correctly mirrored — a partial divergence, which is the harder kind to see. What behaved: `preflight`, and every 0.22.3 deliverable the step consumes (`release_members` = 7 of 10 packages, `product.members` = 7). Report 38's **P2 now carries two receipts** — a lane that cannot be generated is a lane that cannot be exercised — plus a P3 asking `ci validate` to know what it does not own |
 | 38 | 2026-08-30 | [A workspace cell cannot say `package`, so the matrix said it twelve times](38-2026-08-30-v0.22.8-workspace-cell-verbs-and-orphaned-lanes.md) | 0.22.8 | Consolidating this repository's PR matrix from sixteen cells to seven, and what the contract's shape had cost. `WorkspaceVerify` is `graph|build|test`, so `ost plugin test --workspace` and `ost plugin package --workspace` — the two verbs `release.yml` runs by hand — are inexpressible in `openstrata.ci.yaml`; the only generated construct that reaches them is the per-bundle cell, so a matrix inflates by bundles × platforms and every cell looks individually justified. Nine were measured redundant against the workspace suite and removed; three survive to reach a verb, not a bundle. Also: `ci generate` leaves a workflow it has stopped emitting on disk, still on its cron, with `generate`, `plan` and `validate` all silent — ours fired and was cancelled weekly for five weeks — and `ost test` reports one flat total, so a workspace member contributing **zero** tests reads as 100% passing, which is how one of ours went untested on three platforms for months. What worked: a 0.22.6→0.22.8 re-pin plus a nine-cell removal rendered as 162 deletions and nothing else. **Live P2 + two P3s**
 | 37 | 2026-08-30 | [A published runtime hands every consumer the Python paths of the machine that built it](37-2026-08-30-v0.22.6-runtime-python-paths-from-the-producer.md) | 0.22.6 | The first run of the installed-package consumer lane (PKG-4) is the first thing here to configure CMake against a pulled runtime **without** `ost build`, and it does not configure at all: the runtime's CMake package carries the producing machine's Python paths in two layers. `pxrConfig.cmake` sets `Python3_EXECUTABLE`/`LIBRARY`/`INCLUDE_DIR` before its own `find_dependency` — overridable, and `Python3_ROOT_DIR` is not the override — and `pxrTargets.cmake` writes the producer's include directory into sixteen imported targets' `INTERFACE_INCLUDE_DIRECTORIES`, which nothing can override. Windows names a home directory no runner has, Linux the `/usr` of its build container; macOS resolved both and ran 12 of 12 green. **`ost build` is not immune**: a whole-workspace configure with `ost`'s own toolchain file fails the same way, so what the seventeen green lanes have is not immunity — and why `workspace-pr-linux` is green on the same runner is recorded as unexplained rather than guessed at. **Live P1**
