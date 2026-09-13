@@ -22,6 +22,19 @@ Describe(motion::HumanBone bone)
 } // namespace
 
 bool
+operator==(const RetargetedPose& a, const RetargetedPose& b) noexcept
+{
+    return a.timestamp == b.timestamp && a.rotations == b.rotations
+        && a.translations == b.translations;
+}
+
+bool
+operator!=(const RetargetedPose& a, const RetargetedPose& b) noexcept
+{
+    return !(a == b);
+}
+
+bool
 GetJointWorldTransform(const TargetSkeleton& skeleton,
                        const RetargetedPose& pose, int jointIndex,
                        pxr::GfQuatf* orientation, pxr::GfVec3f* position)

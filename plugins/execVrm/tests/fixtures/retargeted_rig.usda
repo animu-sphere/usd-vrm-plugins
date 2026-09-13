@@ -1,0 +1,230 @@
+#usda 1.0
+(
+    """Behaviour fixture for execVrm's vrm.humanoidRetarget: corrected_rig.usda's
+    target rig and humanoid, with each semantic source skeleton now bound to an
+    animation, so a clip is one relationship away from the humanoid.
+
+    The prose is a layer comment rather than `doc` on purpose; see execMotion's
+    sampled_clip.usda for why.
+
+    /Asset is corrected_rig.usda's, unchanged: J_Bip_C_Hips turned 90 degrees
+    about +Y, J_Bip_L_UpperArm turned 90 degrees about +Z and scaled by 2 (the
+    scale dropped). The humanoid binds six bones and not rightUpperArm, and its
+    `vrm:retarget:sourceSkeleton` names /Clip/HumanoidSkeleton. It states no
+    `vrm:retarget:*` root-motion attribute, so the library's defaults apply:
+    root motion onto the hips, a scale of 1, the source's height.
+
+    /Clip/HumanoidSkeleton is what usdVrmaFileFormat authors: joint leaves that
+    are bone names, identity rests, and SkelBindingAPI's `skel:animationSource`
+    naming the clip's animation. The animation drives one bone the humanoid
+    does not bind, rightUpperArm, which the retarget drops. It is keyed at two
+    frames and counted at 24 per second (`motion:timeCodesPerSecond`, execMotion's
+    convention), so frame 24 is one second:
+
+      * frame 0: every rotation identity, every translation the rest -- the
+        clip standing at its own rest;
+      * frame 24: the spine turned 30 degrees about +X, the left upper arm 90
+        degrees about +Z, the right upper arm 90 degrees about -Z, and the hips
+        moved to (0.5, 1.1, 0.2) from its rest at (0, 1, 0).
+
+    /Posed/HumanoidSkeleton is corrected_rig.usda's non-identity source -- the
+    arm resting at 90 degrees about -Z, under a `Reference` joint that is no
+    bone -- bound to an animation that holds it at that rest, unkeyed, so a
+    retarget from it lands every mapped joint on the rig's own rest."""
+    defaultPrim = "Asset"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def SkelRoot "Asset"
+{
+    def Scope "skel"
+    {
+        def Skeleton "Skeleton"
+        {
+            uniform token[] joints = [
+                "Root",
+                "Root/J_Bip_C_Hips",
+                "Root/J_Bip_C_Hips/J_Bip_C_Spine",
+                "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest",
+                "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_Neck",
+                "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_Neck/J_Bip_C_Head",
+                "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_L_UpperArm"
+            ]
+            uniform matrix4d[] restTransforms = [
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ),
+                ( (0, 0, -1, 0), (0, 1, 0, 0), (1, 0, 0, 0), (0, 1, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.15, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.2, 0, 1) ),
+                ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1) ),
+                ( (0, 2, 0, 0), (-2, 0, 0, 0), (0, 0, 2, 0), (0.1, 0.15, 0, 1) )
+            ]
+        }
+    }
+
+    def Scope "rig"
+    {
+        def Scope "Humanoid" (
+            prepend apiSchemas = ["VrmHumanoidAPI"]
+        )
+        {
+            rel vrm:skeleton = </Asset/skel/Skeleton>
+            custom rel vrm:retarget:sourceSkeleton = </Clip/HumanoidSkeleton>
+            uniform token vrm:humanBones:hips = "Root/J_Bip_C_Hips"
+            uniform token vrm:humanBones:spine = "Root/J_Bip_C_Hips/J_Bip_C_Spine"
+            uniform token vrm:humanBones:chest = "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest"
+            uniform token vrm:humanBones:neck = "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_Neck"
+            uniform token vrm:humanBones:head = "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_C_Neck/J_Bip_C_Head"
+            uniform token vrm:humanBones:leftUpperArm = "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_L_UpperArm"
+        }
+    }
+}
+
+def SkelRoot "Clip"
+{
+    def Skeleton "HumanoidSkeleton" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        rel skel:animationSource = </Clip/Animation>
+        uniform token[] joints = [
+            "hips",
+            "hips/spine",
+            "hips/spine/chest",
+            "hips/spine/chest/neck",
+            "hips/spine/chest/neck/head",
+            "hips/spine/chest/leftUpperArm",
+            "hips/spine/chest/rightUpperArm"
+        ]
+        uniform matrix4d[] restTransforms = [
+            ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1) ),
+            ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1) ),
+            ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.15, 0, 1) ),
+            ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.2, 0, 1) ),
+            ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1) ),
+            ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0.1, 0.15, 0, 1) ),
+            ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.1, 0.15, 0, 1) )
+        ]
+    }
+
+    def SkelAnimation "Animation"
+    {
+        uniform token[] joints = [
+            "hips",
+            "hips/spine",
+            "hips/spine/chest",
+            "hips/spine/chest/neck",
+            "hips/spine/chest/neck/head",
+            "hips/spine/chest/leftUpperArm",
+            "hips/spine/chest/rightUpperArm"
+        ]
+        custom double motion:timeCodesPerSecond = 24
+        quatf[] rotations.timeSamples = {
+            0: [
+                (1, 0, 0, 0),
+                (1, 0, 0, 0),
+                (1, 0, 0, 0),
+                (1, 0, 0, 0),
+                (1, 0, 0, 0),
+                (1, 0, 0, 0),
+                (1, 0, 0, 0)
+            ],
+            24: [
+                (1, 0, 0, 0),
+                (0.9659258, 0.25881904, 0, 0),
+                (1, 0, 0, 0),
+                (1, 0, 0, 0),
+                (1, 0, 0, 0),
+                (0.70710678, 0, 0, 0.70710678),
+                (0.70710678, 0, 0, -0.70710678)
+            ],
+        }
+        float3[] translations.timeSamples = {
+            0: [
+                (0, 1, 0),
+                (0, 0.1, 0),
+                (0, 0.15, 0),
+                (0, 0.2, 0),
+                (0, 0.1, 0),
+                (0.1, 0.15, 0),
+                (-0.1, 0.15, 0)
+            ],
+            24: [
+                (0.5, 1.1, 0.2),
+                (0, 0.1, 0),
+                (0, 0.15, 0),
+                (0, 0.2, 0),
+                (0, 0.1, 0),
+                (0.1, 0.15, 0),
+                (-0.1, 0.15, 0)
+            ],
+        }
+        half3[] scales = [
+            (1, 1, 1),
+            (1, 1, 1),
+            (1, 1, 1),
+            (1, 1, 1),
+            (1, 1, 1),
+            (1, 1, 1),
+            (1, 1, 1)
+        ]
+    }
+}
+
+def SkelRoot "Posed"
+{
+    def Skeleton "HumanoidSkeleton" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        rel skel:animationSource = </Posed/Animation>
+        uniform token[] joints = [
+            "Reference",
+            "Reference/hips",
+            "Reference/hips/spine",
+            "Reference/hips/spine/chest",
+            "Reference/hips/spine/chest/leftUpperArm"
+        ]
+        uniform matrix4d[] restTransforms = [
+            ( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, 0, 0, 1) ),
+            ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.9, 0, 1) ),
+            ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.1, 0, 1) ),
+            ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.15, 0, 1) ),
+            ( (0, -1, 0, 0), (1, 0, 0, 0), (0, 0, 1, 0), (0.1, 0.15, 0, 1) )
+        ]
+    }
+
+    def SkelAnimation "Animation"
+    {
+        uniform token[] joints = [
+            "Reference",
+            "Reference/hips",
+            "Reference/hips/spine",
+            "Reference/hips/spine/chest",
+            "Reference/hips/spine/chest/leftUpperArm"
+        ]
+        custom double motion:timeCodesPerSecond = 24
+        quatf[] rotations = [
+            (0.70710678, 0.70710678, 0, 0),
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (1, 0, 0, 0),
+            (0.70710678, 0, 0, -0.70710678)
+        ]
+        float3[] translations = [
+            (0, 0, 0),
+            (0, 0.9, 0),
+            (0, 0.1, 0),
+            (0, 0.15, 0),
+            (0.1, 0.15, 0)
+        ]
+        half3[] scales = [
+            (1, 1, 1),
+            (1, 1, 1),
+            (1, 1, 1),
+            (1, 1, 1),
+            (1, 1, 1)
+        ]
+    }
+}

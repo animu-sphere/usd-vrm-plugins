@@ -747,9 +747,35 @@ compared, which was P0-4's stated blocker.
   finding**: the clip's rest is read off its skeleton only in the tool. And a
   question for the next node: `PoseRetargeter` computes its own correction and
   accepts none.
+- ✅ **`execVrm` retargets one sample of a clip, across both bundles**
+  *(2026-09-13, P0-5)*. `vrm.humanoidRetarget` on the applied `VrmHumanoidAPI`
+  is `vrmRetarget::PoseRetargeter` over the rig, the map, the clip's rest and
+  four `vrm:retarget:*` root-motion statements, which are `motion_retarget`'s
+  flags word for word. Its pose is `execMotion`'s `motion.sampleAnimation` on
+  the animation the clip's skeleton binds, forwarded by a fifth node,
+  `vrm.computeBoundPose`, because an exec input makes one relationship hop and
+  this needs two. That binding is UsdSkel's, inherited through a sixth,
+  `vrm.computeBindingPose` on the applied `UsdSkelBindingAPI`, so a clip bound
+  on its SkelRoot is retargeted.
+
+  **Six measurements**
+  ([the retarget report](../reports/openusd/26.08-openexec-retarget.md)). The
+  node is one library call, bit for bit. **A value crosses bundles unchanged,
+  and exec says nothing when the other bundle is missing**, so `requires.bundles`
+  names `execMotion` and only the bound pose's count notices its absence. **A
+  bundle that reads a value type registers it too**: without that, a session
+  that did not load `execMotion` first lost every `execVrm` computation, and the
+  suite that loads both stayed green. **The fallback follows existence, not
+  schema**: a declared, valueless `translationScale` is 0, pinned. **The default
+  time code is refused**, because retargeting the sampler's empty pose there
+  gives the rig's whole rest. And invalidation reaches the retarget from the
+  frame, a key, the binding, the source and a statement.
+
+  **The eighth boundary finding**: `PoseRetargeter` computes its correction in
+  its constructor and takes none, so the node recomputes every frame what
+  `vrm.computeRestPoseCorrection` caches, 17.7 µs of 21.2 µs on a full humanoid.
 - ⬜ **The rest of `execVrm`, parity, and the display slice**: P0-5's
-  `vrm.humanoidRetarget` and `vrm.computeJointLocalTransforms`, then P0-6 and
-  P0-7 of the
+  `vrm.computeJointLocalTransforms`, then P0-6 and P0-7 of the
   [plan](openexec-foundation.md#6-foundation-tasks). What remains of P0-4 itself
   is the producer half of the rate and policies, the written driver contract,
   and packaged discovery — and now a decision on what a one-joint clip's

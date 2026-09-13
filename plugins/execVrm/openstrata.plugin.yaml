@@ -12,13 +12,19 @@ runtime:
   openusd: "==26.08"
   cxx_abi: inherit
 provides:
-  # Two schemas, and exactly one plugin in a session may declare each. 26.08
+  # Three schemas, and exactly one plugin in a session may declare each. 26.08
   # keys its Exec.Schemas metadata by schema type and refuses a second declarer
   # with a coding error, dropping that plugin's computations for the schema --
   # so the two exec bundles partition them (WORKSPACE.md §2): `UsdSkelAnimation`
   # is execMotion's, and `UsdSkelSkeleton` and the Vrm*API applied schemas are
-  # this bundle's. Only the two it registers on are declared today; the rest of
+  # this bundle's. Only the ones it registers on are declared today; the rest of
   # the Vrm*API set is reserved for it by that contract, not by this list.
+  #
+  # UsdSkelBindingAPI joined for vrm.computeBindingPose: UsdSkel's animation
+  # binding is inherited from an ancestor with the API applied, and no shipped
+  # plugin declares that schema (execGeom declares UsdGeomScope and
+  # UsdGeomXformable, execIr its own three).
+  - usd-exec:UsdSkelBindingAPI
   - usd-exec:UsdSkelSkeleton
   - usd-exec:UsdVrmHumanoidAPI
 requires:
@@ -26,9 +32,9 @@ requires:
   libraries:
     # The retarget core, and the one library every node here wraps: the rig a
     # computation answers with is `vrmRetarget`'s own `TargetSkeleton`,
-    # `HumanoidMap` and `RestPoseCorrection`, which gained an exact `operator==`
-    # for this bundle -- the registry's requirement, the ask motionCore's
-    # aggregates answered in v0.6.0.
+    # `HumanoidMap`, `RestPoseCorrection` and `RetargetedPose`, which gained an
+    # exact `operator==` for this bundle -- the registry's requirement, the ask
+    # motionCore's aggregates answered in v0.6.0.
     #
     # That equality was added after the v0.8.0 tag, so until the next bump this
     # range admits a tagged 0.8.0 package that cannot build this bundle. The
@@ -51,12 +57,24 @@ requires:
     - id: vrmSchema
       version: ">=0.8,<0.9"
       contract: 1
+    # execMotion, for the pose a retarget reads. Not linked either:
+    # `vrm.computeBoundPose` reads `motion.sampleAnimation` by name across a
+    # skeleton's `skel:animationSource`, and that computation is registered by
+    # execMotion on `UsdSkelAnimation`, a schema this bundle may not declare
+    # (WORKSPACE.md §2). Without it the rig computes and the animation is
+    # dropped from the fan-in with no word from exec -- the bound pose's own
+    # count is the only thing that notices, measured in
+    # execVrm_retarget_without_exec_motion.
+    - id: execMotion
+      version: ">=0.8,<0.9"
 usd:
   plug_info: plugin/resources/execVrm/plugInfo.json
 tests:
   smoke:
     - tests/fixtures/humanoid_rig.usda
     - tests/fixtures/corrected_rig.usda
+    - tests/fixtures/retargeted_rig.usda
   roundtrip:
     - tests/fixtures/humanoid_rig.usda
     - tests/fixtures/corrected_rig.usda
+    - tests/fixtures/retargeted_rig.usda
