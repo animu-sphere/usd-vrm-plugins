@@ -335,7 +335,8 @@ what the bake's `UsdSkelAnimation` states. They are compared:
 - **at the bake's own time samples**, paired by index with the clip's keys. A
   bake can place a sample a rounding away from the frame it read, and reading
   it at the frame would ask USD to interpolate. How far apart the two instants
-  are is compared separately, as placement, under `time`;
+  are is compared separately, as placement, under `time`, and so is the
+  timestamp each side stamped the key with, since no array depends on it;
 - **joint by joint, in the rig's order**. The joints and scales must be equal
   outright, since the arrays are indexed by the one and resolve as a unit with
   the other;

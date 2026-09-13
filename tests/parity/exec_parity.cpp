@@ -563,8 +563,10 @@ bool ComposeParityStage(const Arguments& args, const AvatarShape& avatar,
 
     // The rate, on the clip's animation. Only when the clip states none: one
     // that does is the clip's own statement, and if it disagrees with the
-    // stage's the two implementations are handed two clocks, which the
-    // placement comparison will show.
+    // stage's the two implementations are handed two clocks. No array depends
+    // on which, so only the timestamp comparison shows it -- placement does
+    // not, since neither the clip's keys nor the bake's samples read the
+    // attribute.
     const UsdPrim animation = stage->GetPrimAtPath(clip.animation);
     if (!animation.GetAttribute(kClipRate).HasAuthoredValue()) {
         animation.CreateAttribute(kClipRate, SdfValueTypeNames->Double, true)
@@ -809,6 +811,12 @@ int main(int argc, char** argv)
 
     std::vector<vrmRetarget::JointLocalTransforms> answers;
     answers.reserve(keys.size());
+    // Which samples refused, kept beside the answers rather than read back off
+    // them: an answer with no joints is a legitimate value (the animation of a
+    // skeleton with no joints), so emptiness cannot stand for a refusal here
+    // any more than it can in the bundle.
+    std::vector<bool> refused;
+    refused.reserve(keys.size());
     std::size_t refusals = 0;
     std::vector<std::string> refusalReasons;
     const auto started = std::chrono::steady_clock::now();
@@ -816,8 +824,10 @@ int main(int argc, char** argv)
         TfErrorMark mark;
         system.ChangeTime(UsdTimeCode(key));
         const VtValue value = system.Compute(request).Get(0);
-        if (value.IsEmpty()
-            || !value.IsHolding<vrmRetarget::JointLocalTransforms>()) {
+        const bool none = value.IsEmpty()
+            || !value.IsHolding<vrmRetarget::JointLocalTransforms>();
+        refused.push_back(none);
+        if (none) {
             ++refusals;
             if (refusalReasons.empty()) {
                 refusalReasons = ErrorsIn(mark);
@@ -836,6 +846,7 @@ int main(int argc, char** argv)
     Tally rotations;
     Tally translations;
     Tally placement;
+    Tally stamps;             // exec's timestamp against the tool's
     Tally naiveRotations;     // the bake read at the clip's key instead
     Tally naiveTranslations;
     std::size_t jointsEqual = 0, jointsReordered = 0, jointsMissing = 0;
@@ -853,8 +864,34 @@ int main(int argc, char** argv)
 
     for (std::size_t i = 0; i < keys.size(); ++i) {
         const vrmRetarget::JointLocalTransforms& answer = answers[i];
-        if (answer.joints.empty() && !bakedJoints.empty()) {
-            continue;  // a refusal, counted above
+        if (refused[i]) {
+            continue;  // counted above
+        }
+        // An answer that came back with no joints under a bake that has some
+        // is not skipped: it reaches the joint comparison below and is counted
+        // there as missing, so a regression that answers empty instead of
+        // refusing cannot pass by being compared with nothing.
+
+        // The instant exec stamped the answer with, against the one the tool
+        // stamped the same key with: `key / rate`, the clip stage's rate. exec
+        // divides by `motion:timeCodesPerSecond` instead, and no array depends
+        // on the stamp, so this is the only comparison that sees a clip whose
+        // attribute disagrees with its stage -- or a sampler computing the
+        // wrong second.
+        {
+            const double expected = keys[i] / clip.rate;
+            const double seconds = std::abs(answer.timestamp - expected);
+            Kind kind = Kind::Exact;
+            if (answer.timestamp != expected) {
+                // A NaN stamp is not within anything.
+                kind = seconds <= kTolerance.time ? Kind::Rounding
+                                                  : Kind::Divergence;
+            }
+            std::ostringstream said;
+            said.precision(17);
+            said << "key " << keys[i] << ": exec " << answer.timestamp
+                 << " s, the tool " << expected << " s";
+            stamps.Add(kind, seconds, said.str());
         }
 
         // Each classification is taken before its amount is read: as one
@@ -956,6 +993,7 @@ int main(int argc, char** argv)
     PrintTally("rotations", rotations, "rad");
     PrintTally("translations", translations, "m");
     PrintTally("placement", placement, "s");
+    PrintTally("timestamps", stamps, "s");
     std::printf("  read at the clip's key instead of the bake's sample:\n");
     PrintTally("rotations", naiveRotations, "rad");
     PrintTally("translations", naiveTranslations, "m");
@@ -1002,6 +1040,7 @@ int main(int argc, char** argv)
     report["rotations"] = JsValue(TallyJson(rotations, "radians"));
     report["translations"] = JsValue(TallyJson(translations, "meters"));
     report["placement"] = JsValue(TallyJson(placement, "seconds"));
+    report["timestamps"] = JsValue(TallyJson(stamps, "seconds"));
     {
         JsObject naive;
         naive["rotations"] = JsValue(TallyJson(naiveRotations, "radians"));
@@ -1022,7 +1061,8 @@ int main(int argc, char** argv)
         || jointsMissing != 0 || scalesDiffer != 0 || shapeMismatches != 0
         || rotations.Of(Kind::Divergence) != 0
         || translations.Of(Kind::Divergence) != 0
-        || placement.Of(Kind::Divergence) != 0;
+        || placement.Of(Kind::Divergence) != 0
+        || stamps.Of(Kind::Divergence) != 0;
     std::puts(failed ? "exec_parity: DIVERGED" : "exec_parity: parity holds");
     return failed ? 1 : 0;
 }
