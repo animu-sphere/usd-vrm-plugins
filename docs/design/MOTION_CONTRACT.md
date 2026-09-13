@@ -268,6 +268,13 @@ two different skeletons can be equal; the map never says which rig it counts
 into. Neither has a `NearlyEqual`: a parity check compares the poses retargeted
 onto them.
 
+`vrmRetarget::RestPoseCorrection` carries one too *(added 2026-09-13)*, for
+`vrm.computeRestPoseCorrection`, over `pre`, `post` and the `identity` flags.
+The flags are part of the value because `Apply` reads them first: two
+corrections that differ only in a flag answer differently for the same rotation.
+A correction and its negation are different values, as above. There is no
+`NearlyEqual` for the same reason.
+
 `NearlyEqual` takes a `MotionTolerance` and answers the question a parity check
 and a corpus test are actually asking. The two differ in exactly three places,
 and each is a decision rather than an implementation detail:

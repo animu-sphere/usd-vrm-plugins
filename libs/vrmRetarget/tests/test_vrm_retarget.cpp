@@ -230,6 +230,42 @@ TestRigValuesCompareExactly()
     assert(!rejected.SetJointToken(motion::HumanBone::Head, "NoSuchJoint",
                                    skeleton));
     assert(rejected == map);
+
+    // The correction, for `vrm.computeRestPoseCorrection`: a rig whose hips
+    // rest is turned, so the correction has a slot that is not identity.
+    std::vector<vrmRetarget::TargetJoint> turnedJoints = skeleton.GetJoints();
+    turnedJoints[1].restRotation = Rotation(kAxisY, 30.0f);
+    const vrmRetarget::TargetSkeleton turned(turnedJoints);
+    const vrmRetarget::RestPoseCorrection correction =
+        vrmRetarget::ComputeRestPoseCorrection(DesignSourceRest(), turned, map);
+    const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
+    assert(!correction.identity[hips]);
+    assert(correction
+           == vrmRetarget::ComputeRestPoseCorrection(DesignSourceRest(), turned,
+                                                     map));
+    assert(correction != vrmRetarget::RestPoseCorrection());
+
+    // Each of the three halves is part of the value.
+    vrmRetarget::RestPoseCorrection changed = correction;
+    changed.pre[hips] = Rotation(kAxisY, 31.0f);
+    assert(changed != correction);
+    changed = correction;
+    changed.post[hips] = Rotation(kAxisY, 31.0f);
+    assert(changed != correction);
+    // The flag alone: `Apply` reads it first, so the same pre and post answer
+    // differently once it is set.
+    changed = correction;
+    changed.identity[hips] = true;
+    assert(changed != correction);
+
+    // A negated half applies identically and is a different value.
+    changed = correction;
+    changed.pre[hips] = pxr::GfQuatf(-correction.pre[hips].GetReal(),
+                                     -correction.pre[hips].GetImaginary());
+    const pxr::GfQuatf sample = Rotation(kAxisX, 20.0f);
+    assert(SameOrientation(changed.Apply(motion::HumanBone::Hips, sample),
+                           correction.Apply(motion::HumanBone::Hips, sample)));
+    assert(changed != correction);
 }
 
 // A rejected rebinding unmaps the bone, whether the index or the token is what
