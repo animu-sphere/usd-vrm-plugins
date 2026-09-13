@@ -47,7 +47,10 @@ requires:
     # `motion.interpolatePose` needs it for both a call and a type: the node is
     # `motion::ClipSource::Sample` over a driver's history, and it answers the
     # library's own `motion::PoseSampleResult` whole, because the status in it
-    # is part of the answer.
+    # is part of the answer. That type's `operator==`, which the registry
+    # requires, was added after the v0.8.0 tag, so until the next bump this
+    # range admits a tagged 0.8.0 package that cannot build this bundle; the
+    # next release must be a minor one (PACKAGE_CONTRACT.md §3.1).
     #
     # `motion.blendPoses` needs it for a call and nothing else: the node is the
     # N-way `motion::BlendPoses` over the clips a relationship targets.

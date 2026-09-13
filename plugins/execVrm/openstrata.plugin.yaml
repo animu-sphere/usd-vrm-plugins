@@ -29,6 +29,10 @@ requires:
     # `HumanoidMap` and `RestPoseCorrection`, which gained an exact `operator==`
     # for this bundle -- the registry's requirement, the ask motionCore's
     # aggregates answered in v0.6.0.
+    #
+    # That equality was added after the v0.8.0 tag, so until the next bump this
+    # range admits a tagged 0.8.0 package that cannot build this bundle. The
+    # next release must therefore be a minor one (PACKAGE_CONTRACT.md §3.1).
     - id: vrmRetarget
       version: ">=0.8,<0.9"
     # And the two it is built on, named rather than left to the closure: the

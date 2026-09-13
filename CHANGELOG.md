@@ -13,6 +13,15 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
+> **The release that carries this section is a minor release.** It adds library
+> API that in-tree dependents already use (`vrmRetarget`'s rig equality,
+> `ExpressionResolver` and `LookAtEvaluator`; `motionRuntime`'s
+> `PoseSampleResult` equality), and every `requires` range is still
+> `>=0.8,<0.9`, which admits the tagged 0.8.0 packages that lack that API. A
+> minor bump moves the ranges past them; a patch bump would ship the gap in the
+> release's own descriptors
+> ([PACKAGE_CONTRACT.md §3.1](docs/architecture/PACKAGE_CONTRACT.md#31-a-requires-range-between-two-releases)).
+
 ### Added
 
 - **`execMotion`, the first OpenExec bundle: the mechanism, with no algorithm in
