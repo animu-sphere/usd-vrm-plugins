@@ -79,6 +79,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((computeBoundPose, "vrm.computeBoundPose"))
     ((computeBindingPose, "vrm.computeBindingPose"))
     ((humanoidRetarget, "vrm.humanoidRetarget"))
+    ((computeJointLocalTransforms, "vrm.computeJointLocalTransforms"))
     // execMotion's sampler, read by name across `skel:animationSource`. The one
     // computation this bundle reads that another bundle registers, which is
     // why `execMotion` is in `requires.bundles`.
@@ -132,6 +133,7 @@ TF_REGISTRY_FUNCTION(ExecTypeRegistry)
     ExecTypeRegistry::RegisterType(vrmRetarget::HumanoidMap{});
     ExecTypeRegistry::RegisterType(vrmRetarget::RestPoseCorrection{});
     ExecTypeRegistry::RegisterType(vrmRetarget::RetargetedPose{});
+    ExecTypeRegistry::RegisterType(vrmRetarget::JointLocalTransforms{});
 
     // execMotion's pose, registered here as well. `TargetedObjects<T>` checks
     // that `T` is registered when THIS bundle's computations are registered,
@@ -873,4 +875,75 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
         AttributeValue<float>(_tokens->translationScale),
         AttributeValue<bool>(_tokens->preserveTargetHeight),
         Stage().Computation<EfTime>(ExecBuiltinComputations->computeTime));
+
+    // -----------------------------------------------------------------------
+    // vrm.computeJointLocalTransforms -- the retarget, as an animation sample
+    // -----------------------------------------------------------------------
+    //
+    // The humanoid's own `vrm.humanoidRetarget` in the shape a
+    // `UsdSkelAnimation` states at one time code: the rig's joint tokens, read
+    // off `vrm.computeTargetSkeleton` across `vrm:skeleton` because a
+    // retargeted pose does not carry them, the pose's translations and
+    // rotations unchanged, and one identity scale per joint -- what
+    // `motion_retarget` authors, and so what P0-6 compares against a bake.
+    //
+    // It declares no `computeTime`. The retarget's time dependence reaches it
+    // across the link (the filtering report, section 3), and unlike the
+    // retarget it has nothing to learn from the time code itself: a driver's
+    // override of the retarget is a pose someone named, at whatever instant.
+    //
+    // The skeleton is read once, not counted: when the retarget answered, the
+    // map it read had already refused anything but exactly one skeleton. Only a
+    // driver's override of the retarget reaches this node past the map, and
+    // then a skeleton that did not come back is refused like any other.
+    self.PrimComputation(_tokens->computeJointLocalTransforms)
+        .Callback<vrmRetarget::JointLocalTransforms>(+[](const VdfContext &ctx) {
+            execvrm::JointTransformsInputs inputs;
+            inputs.pose = ctx.GetInputValuePtr<vrmRetarget::RetargetedPose>(
+                _tokens->humanoidRetarget);
+            for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(
+                     ctx, _tokens->skeletons);
+                 !skeleton.IsAtEnd(); ++skeleton) {
+                inputs.targets.push_back(*skeleton);
+            }
+
+            execvrm::JointTransformsOutcome outcome =
+                execvrm::JointLocalTransformsFor(inputs);
+            if (outcome.sample) {
+                ctx.SetOutput(std::move(*outcome.sample));
+                return;
+            }
+
+            switch (outcome.refusal) {
+            case execvrm::JointTransformsRefusal::PoseUnanswered:
+                // The retarget posted the reason; this says where it went.
+                TF_RUNTIME_ERROR(
+                    "vrm.computeJointLocalTransforms: the humanoid's "
+                    "vrm.humanoidRetarget answered nothing; no joint "
+                    "transforms were computed");
+                break;
+            case execvrm::JointTransformsRefusal::RigUnanswered:
+                TF_RUNTIME_ERROR(
+                    "vrm.computeJointLocalTransforms: 'vrm:skeleton' brought "
+                    "back %zu skeletons, so there are no joint tokens to "
+                    "order the pose by; no joint transforms were computed",
+                    inputs.targets.size());
+                break;
+            case execvrm::JointTransformsRefusal::JointCount:
+                TF_RUNTIME_ERROR(
+                    "vrm.computeJointLocalTransforms: the retargeted pose has "
+                    "%zu rotations and %zu translations, and the rig has %zu "
+                    "joints -- a pose that was not retargeted onto this rig; "
+                    "no joint transforms were computed",
+                    outcome.rotations, outcome.translations, outcome.joints);
+                break;
+            }
+            ctx.SetEmptyOutput();
+        })
+        .Inputs(
+            Computation<vrmRetarget::RetargetedPose>(_tokens->humanoidRetarget),
+            Relationship(_tokens->skeleton)
+                .TargetedObjects<vrmRetarget::TargetSkeleton>(
+                    _tokens->computeTargetSkeleton)
+                .InputName(_tokens->skeletons));
 }

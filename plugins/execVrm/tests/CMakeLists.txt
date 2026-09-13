@@ -102,6 +102,24 @@ set(_exec_vrm_retarget_fixture
 add_test(NAME execVrm_retarget
     COMMAND execVrm_retarget_tests "${_exec_vrm_retarget_fixture}")
 
+# The retarget as an animation sample, over the retarget's fixture and in the
+# retarget's session. It links usdSkel for what the sample is compared against:
+# UsdSkel's own resolution of it, authored the way motion_retarget authors it.
+add_executable(execVrm_joint_transforms_tests test_exec_vrm_joint_transforms.cpp)
+target_include_directories(execVrm_joint_transforms_tests PRIVATE
+    ${PXR_INCLUDE_DIRS})
+target_link_libraries(execVrm_joint_transforms_tests PRIVATE
+    vrmRetarget::vrmRetarget ${_exec_vrm_test_targets})
+target_compile_options(execVrm_joint_transforms_tests PRIVATE
+    ${_exec_vrm_assertions})
+if(MSVC)
+    target_compile_definitions(execVrm_joint_transforms_tests
+        PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(execVrm_joint_transforms_tests PRIVATE /bigobj /utf-8)
+endif()
+add_test(NAME execVrm_joint_transforms
+    COMMAND execVrm_joint_transforms_tests "${_exec_vrm_retarget_fixture}")
+
 # The same executable, in a session with vrmSchema and no execMotion: what
 # this bundle's second runtime requirement looks like when it is not met.
 add_test(NAME execVrm_retarget_without_exec_motion
@@ -148,7 +166,7 @@ set_tests_properties(execVrm_humanoid execVrm_correction PROPERTIES
     ENVIRONMENT_MODIFICATION
         "${_exec_vrm_path_env};PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources}")
 
-set_tests_properties(execVrm_retarget PROPERTIES
+set_tests_properties(execVrm_retarget execVrm_joint_transforms PROPERTIES
     ENVIRONMENT_MODIFICATION
         "${_exec_vrm_path_env};PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PATH=path_list_prepend:${_exec_motion_bundle}/lib;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_exec_motion_resources}")
 
@@ -171,5 +189,5 @@ set_tests_properties(execVrm_rig PROPERTIES
 # Motion Phase E's label, as execMotion's suites carry.
 set_tests_properties(execVrm_rig execVrm_humanoid execVrm_correction
                      execVrm_retarget execVrm_retarget_without_exec_motion
-                     execVrm_humanoid_without_schema
+                     execVrm_joint_transforms execVrm_humanoid_without_schema
     PROPERTIES LABELS "motion.openexec")

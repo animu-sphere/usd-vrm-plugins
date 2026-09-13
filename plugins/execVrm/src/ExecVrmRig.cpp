@@ -5,6 +5,7 @@
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec3h.h"
 
 #include <algorithm>
 #include <array>
@@ -12,6 +13,7 @@
 #include <optional>
 #include <set>
 #include <string_view>
+#include <utility>
 
 namespace execvrm {
 
@@ -427,6 +429,45 @@ RetargetOutcome HumanoidRetargetFor(const RetargetInputs& inputs)
     const vrmRetarget::PoseRetargeter retargeter(target, *inputs.map,
                                                  *source.rest.rest, options);
     outcome.pose = retargeter.Retarget(inputs.poses.front());
+    return outcome;
+}
+
+JointTransformsOutcome JointLocalTransformsFor(
+    const JointTransformsInputs& inputs)
+{
+    JointTransformsOutcome outcome;
+    if (!inputs.pose) {
+        outcome.refusal = JointTransformsRefusal::PoseUnanswered;
+        return outcome;
+    }
+    if (inputs.targets.size() != 1) {
+        outcome.refusal = JointTransformsRefusal::RigUnanswered;
+        return outcome;
+    }
+    const vrmRetarget::TargetSkeleton& target = inputs.targets.front();
+    const vrmRetarget::RetargetedPose& pose = *inputs.pose;
+    if (pose.rotations.size() != target.GetSize()
+        || pose.translations.size() != target.GetSize()) {
+        outcome.refusal = JointTransformsRefusal::JointCount;
+        outcome.joints = target.GetSize();
+        outcome.rotations = pose.rotations.size();
+        outcome.translations = pose.translations.size();
+        return outcome;
+    }
+
+    // What `motion_retarget`'s WriteAnimation authors, per sample: the rig's
+    // tokens as `joints`, the pose's arrays unchanged, and one identity scale
+    // per joint.
+    vrmRetarget::JointLocalTransforms sample;
+    sample.timestamp = pose.timestamp;
+    sample.joints.reserve(target.GetSize());
+    for (const vrmRetarget::TargetJoint& joint : target.GetJoints()) {
+        sample.joints.push_back(joint.token);
+    }
+    sample.translations = pose.translations;
+    sample.rotations = pose.rotations;
+    sample.scales.assign(target.GetSize(), pxr::GfVec3h(1.0f));
+    outcome.sample = std::move(sample);
     return outcome;
 }
 

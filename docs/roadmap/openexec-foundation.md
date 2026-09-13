@@ -723,7 +723,7 @@ value type registered with `ExecTypeRegistry::RegisterType` — which requires
 `operator==` on it, the same thing P0-6 parity needs. Array-valued USD inputs are
 declared with their *element* type and consumed with `VdfReadIterator<T>`.
 
-### P0-5 — minimal `execVrm` bundle 🚧
+### P0-5 — minimal `execVrm` bundle ✅
 
 Computations: `vrm.computeHumanoidMap`, `vrm.computeTargetSkeleton`,
 `vrm.computeRestPoseCorrection`, `vrm.humanoidRetarget`,
@@ -873,10 +873,40 @@ graph* needs a node that takes its pose without knowing which computation is
 behind it, and 26.08 names the computation at registration. That is the `ExecIr`
 track's switch controller (§7, P0-4) rather than this node.
 
-Still open here: `vrm.computeJointLocalTransforms`. The retarget already answers
-in joint-local rotations and translations, so what is left is the shape of a
-`UsdSkelAnimation` sample, scales included (P1-2's identity-scale rule), rather
-than a second retarget.
+**`vrm.computeJointLocalTransforms` landed the same day, and P0-5 is complete
+with it.** It is the humanoid's own retarget in the shape a `UsdSkelAnimation`
+states at one time code: the rig's `joints`, read off `vrm.computeTargetSkeleton`
+because a retargeted pose does not carry them, the pose's translations and
+rotations and timestamp bit for bit, and one `(1, 1, 1)` scale per joint.
+`vrmRetarget` gained the type, `JointLocalTransforms`, with the exact
+`operator==` the registry requires. It answers components rather than matrices,
+because the components are what `motion_retarget` authors and what P0-6
+compares, and the matrices are UsdSkel's own composition of them.
+
+**Five measurements, in [the joint-transforms report](../reports/openusd/26.08-openexec-joint-transforms.md).**
+**Authored the way the tool authors it, the value is what UsdSkel resolves**:
+`UsdSkelMakeTransforms` over it, exactly. Leave `scales` out, or make the arrays
+one joint short, and UsdSkel resolves the rig's **rest**, silently. So the scales
+are part of the value, and a driver's override that does not pair with the rig
+is refused rather than answered, since answered it would bake to a rig standing
+still. **The identity scale overwrites a scaled rest pose**: the fixture's arm
+rests at scale 2 and bakes at 1, in both implementations. The importer can
+produce it, on `Seed-san.vrm`'s hair and bag joints, at most 0.14% off unit.
+That is P1-2's question and not a P0-6 row (P1-2 below). **An unregistered
+result type is fatal to every computation in the bundle**, as an unregistered
+input type is. Invalidation reaches the sample from the frame, a statement, a
+key and a rest edit.
+
+**And one measurement about the tool, found by asking where a sample goes in
+time.** `motion_retarget` places each sample at `timestamp × rate`, having read
+`timestamp` as `timeCode / rate`. At 30, 60 and 120 fps that round trip misses
+3 273 of the first 100 000 frames (and 9 175 at 25 and 50). A real bake of a
+30 fps clip keyed at 62 writes `62.00000000000001`, and reading it back at 62
+gives the hips `(1, 0, 1.74e-16, 0)`. P0-6's harness therefore compares a bake
+at the bake's own time samples. The **ninth boundary finding** is that the
+bake's shape (tokens beside the arrays, identity scales) is stated offline only
+in two lines of the tool
+([boundary consolidation](boundary-consolidation.md) §1).
 
 Inputs: `vrm:humanBones:*`, the typed `Vrm*API` schemas, `UsdSkelSkeleton`,
 `UsdSkelAnimation`, and explicit policies/relationships.
@@ -937,6 +967,14 @@ Two comparisons, not one, and they are not interchangeable
 
 - serialization and registered-value identity → `operator==`
 - offline vs OpenExec motion equivalence → `NearlyEqual`
+
+**Compare a bake at its own time samples, not at the clip's frames**
+*(measured 2026-09-13)*. `motion_retarget` rebuilds each sample's time code as
+`(timeCode / rate) × rate`, which at 30 fps puts frame 62 at
+`62.00000000000001`; read at 62, the bake answers a rotation 1.7e-16 off its
+key. `vrm.computeJointLocalTransforms` is the value to compare against it
+([the joint-transforms report](../reports/openusd/26.08-openexec-joint-transforms.md)
+§8, §9).
 
 **A failing case is classified, never widened.** Reaching for a larger epsilon is
 how a real divergence becomes a tolerance. The categories, in the order they are
@@ -1043,6 +1081,17 @@ animated scale input is a structured warning; scale animation is never silently
 applied; OpenExec and offline behave identically. This formalizes the fix that
 shipped with the v0.4.0 tag — see
 [UsdSkel resolves a scale-less animation to the rest pose](current.md).
+
+**One case the rule does not yet name, measured 2026-09-13**
+([the joint-transforms report](../reports/openusd/26.08-openexec-joint-transforms.md)
+§4): a rig whose **rest** is scaled. A bake states every joint, UsdSkel takes an
+animated joint's transform from the animation whole, and the rule states 1, so
+the rest scale is replaced — the fixture's arm, rested at 2, bakes at 1, in
+`motion_retarget` and `vrm.computeJointLocalTransforms` alike. `Seed-san.vrm`
+has seven such joints, none of them humanoid bones, at most 0.14% off unit. The
+decision this item owes: carry the rest scale in `scales` (which needs a scale
+on `TargetJoint`, since `vrm.computeTargetSkeleton` drops it), refuse a rig
+whose rest is scaled, or keep identity and state the cost.
 
 ### P1-3 — partial skeleton policy ⬜
 
