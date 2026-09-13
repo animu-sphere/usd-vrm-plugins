@@ -1,0 +1,62 @@
+#usda 1.0
+(
+    """A generated clip for the parity harness, and the one input in its set
+    where `motion_retarget` does not place a sample at the frame it read.
+
+    The tool reads a key at time code `f` as `f / 30` seconds and authors it
+    back at `(f / 30) * 30`, and in doubles that is not always `f`: frame 31
+    comes back as 31.000000000000004 and frame 62 as 62.00000000000001 (the
+    joint-transforms report, section 8). The recorded input never shows it --
+    its keys are already `frameTime * 50`, which round-trips -- so without this
+    file the harness's rule, compare a bake at its OWN samples, would be a rule
+    no case exercises.
+
+    The avatar is the design triplet's, with its three-bone map, and so are the
+    joints and rests here; only the keys differ:
+
+      * frame 0: the rest;
+      * frame 31: the hips turned 90 degrees about +Y and moved 0.5 along +X,
+        the chest turned 90 degrees about +X;
+      * frame 62: the rest rotations again, the hips 1 along +X.
+
+    The hips move between 31 and 62, so a bake read at frame 62 rather than at
+    its own sample is interpolated from a key that is not the rest."""
+    defaultPrim = "Clip"
+    startTimeCode = 0
+    endTimeCode = 62
+    timeCodesPerSecond = 30
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def Scope "Clip"
+{
+    def Skeleton "HumanoidSkeleton" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        rel skel:animationSource = </Clip/Animation>
+        uniform token[] joints = ["hips", "hips/spine", "hips/spine/chest"]
+        uniform matrix4d[] restTransforms = [
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.5, 0, 1)),
+            ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0.5, 0, 1))
+        ]
+    }
+
+    def SkelAnimation "Animation"
+    {
+        uniform token[] joints = ["hips", "hips/spine", "hips/spine/chest"]
+        quatf[] rotations.timeSamples = {
+            0: [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0)],
+            31: [(0.70710677, 0, 0.70710677, 0), (1, 0, 0, 0), (0.70710677, 0.70710677, 0, 0)],
+            62: [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0)],
+        }
+        float3[] translations.timeSamples = {
+            0: [(0, 1, 0), (0, 0.5, 0), (0, 0.5, 0)],
+            31: [(0.5, 1, 0), (0, 0.5, 0), (0, 0.5, 0)],
+            62: [(1, 1, 0), (0, 0.5, 0), (0, 0.5, 0)],
+        }
+        half3[] scales = [(1, 1, 1), (1, 1, 1), (1, 1, 1)]
+    }
+}

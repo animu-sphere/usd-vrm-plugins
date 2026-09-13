@@ -339,7 +339,11 @@ OpenExec/offline parity.
 the root tree and run its whole CTest suite on all three OS
 ([report 33](../reports/ost/33-2026-07-28-v0.21.0-workspace-ci-adoption.md)).
 What remains of this task is coverage, not lane shape — the CTest labels above
-and the OpenExec/offline parity case, which needs P0-4 and P0-5 first.
+and the OpenExec/offline parity case, which needs P0-4 and P0-5 first. *The
+parity case exists since 2026-09-13*: five `workspace_exec_parity_*` names in
+the root suite, labelled `motion.openexec`, and the three over the recorded
+export `motion.real-corpus` too, the first use of that label. The other five
+labels are still unassigned.
 
 ### P0-3 — `motion_retarget` distribution ⬜
 
@@ -935,12 +939,58 @@ that route is measured
 ([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §2, §3)
 and the rule is [WORKSPACE.md §2](../architecture/WORKSPACE.md).
 
-### P0-6 — OpenExec / offline parity ⬜
+### P0-6 — OpenExec / offline parity 🚧
 
 Compare `motion_retarget`'s offline result against the `execMotion` + `execVrm`
 computed result on the same input: joint order, translations, rotations, identity
 scales, root motion, rest-pose correction, unbound-bone behavior, time sampling,
 and diagnostics. The numerical tolerance is written into the contract.
+
+**The harness landed on 2026-09-13, and the values agree bit for bit.**
+`tests/parity/exec_parity` is handed the tool's own arguments and the bake the
+tool wrote from them. It builds one stage that sublayers the avatar's layer and
+the clip's, so every path the tool saw is the path exec sees, and evaluates
+`vrm.computeJointLocalTransforms` at each of the clip's keys. Five
+`workspace_exec_parity_*` cases run it: the recorded mocopi export on the
+fixture rig, on `Seed-san.vrm`, and under all four root-motion statements, the
+design triplet's walk read as a `.vrma`, and a 30 fps clip keyed where the tool
+misplaces a sample. **All 414 598 compared values are `==`**, which is stronger
+than the gate's `NearlyEqual`. No sign flip and no rounding. Joint order, identity
+scales and Seed-san's scaled rests all agree. The negative pairs are committed:
+exec under each root-motion statement, held against the default bake, diverges
+in translation only.
+
+**Six measurements**
+([the parity report](../reports/openusd/26.08-openexec-parity.md)). **The only
+value that is not exact is placement**: frames 31 and 62 of an integer-keyed
+30 fps clip bake 2.37e-16 s late. The recorded input never shows it, because
+its keys round-trip. Compared at the bake's own samples, as the joint-transforms
+report instructed, it costs nothing; read at the clip's frames, two rotations
+differ in their bits and measure 0 rad apart. **The harness sees a difference**:
+a map one bone short diverges on exactly that joint, and a gaze left in the
+tool's bake diverges on exactly the two eye joints, which exec has no node for.
+**Parity is conditional on five statements the harness makes on the stage**:
+the rate, the source skeleton, the map, the rig, and the root-motion policy
+(§9). **Two of the tool's own fixtures state human bones without
+`VrmHumanoidAPI`**, which exec cannot see and the harness refuses. And
+**diagnostics do not agree**. The tool names the clip bone a rig drops and the
+required bones it lacks. Exec says neither, because `vrm.humanoidRetarget` hands
+`PoseRetargeter` no `RetargetDiagnostics` and a computation has no channel for
+one.
+
+**The tenth boundary finding**: which prim is the humanoid, the rig and the clip
+is decided only in the tool, and the harness restates those rules to compare
+the same input
+([boundary consolidation](boundary-consolidation.md) §1).
+
+The report collects the rows four earlier reports left for this task into one
+table of 24. Every row the importer, the VRMA reader or the BVH converter can
+produce is exercised or measured, and all agree except a gaze, which exec does
+not compute until the `ExecIr` track's P1-2 (bake with `--no-look-at` to
+compare the rest), and diagnostics. **Still open here**: diagnostics, which need
+P1-1's codes computed as a value rather than logged; the rows no producer
+reaches, each already asserted on the exec side and read rather than run on the
+tool's; and the Linux and macOS lanes' first run of the five cases.
 
 This is the check that keeps a computation a wrapper. v0.4.0 already produced the
 mechanism it needs: the design triplet is compared through USD composition at the
@@ -962,11 +1012,23 @@ generated missing bone                recorded mocopi root motion
                                       recorded second VMC sender shape
 ```
 
+*What exists as bytes, 2026-09-13*: one recorded input, the mocopi BVH export
+`libs/motionBvh` may redistribute. It covers the arm raise and root motion, and
+the harness runs it. The device sessions and the VRChat OSC session are
+manifests with no bytes, as v0.7.0 and v0.8.0 recorded, so the right-hand
+column is otherwise still a list of captures to make.
+
 Two comparisons, not one, and they are not interchangeable
 ([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060)):
 
 - serialization and registered-value identity → `operator==`
 - offline vs OpenExec motion equivalence → `NearlyEqual`
+
+*How the second is applied to a bake* is now stated in
+[MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#comparison-semantics-v060):
+joint by joint over `JointLocalTransforms`, at the bake's own samples, under
+`MotionTolerance`'s angle, distance and time. The run did not need the
+tolerance, since every value was `==`.
 
 **Compare a bake at its own time samples, not at the clip's frames**
 *(measured 2026-09-13)*. `motion_retarget` rebuilds each sample's time code as
@@ -974,7 +1036,10 @@ Two comparisons, not one, and they are not interchangeable
 `62.00000000000001`; read at 62, the bake answers a rotation 1.7e-16 off its
 key. `vrm.computeJointLocalTransforms` is the value to compare against it
 ([the joint-transforms report](../reports/openusd/26.08-openexec-joint-transforms.md)
-§8, §9).
+§8, §9). *The harness does this, and the tool is unchanged*: compared at its
+own samples the bake is exact, so the fix to author at the time code it read
+stays the ninth boundary finding's ask rather than a parity requirement
+([the parity report](../reports/openusd/26.08-openexec-parity.md) §3).
 
 **A failing case is classified, never widened.** Reaching for a larger epsilon is
 how a real divergence becomes a tolerance. The categories, in the order they are
@@ -1308,7 +1373,12 @@ depends on them ([docs/README.md](../README.md)). Open:
   Whichever it is belongs in a contract before P0-6 leans on it, together with
   the statement that the attribute is a shim: it duplicates
   `timeCodesPerSecond`, it can disagree with it, and it is meant to be removed
-  if exec ever delivers stage metadata to a callback.
+  if exec ever delivers stage metadata to a callback. *Answered for P0-6 on
+  2026-09-13, and only for P0-6*: the parity harness authors it onto the stage
+  it compares, equal to the clip stage's rate, and leaves a rate the clip
+  already states alone
+  ([the parity report](../reports/openusd/26.08-openexec-parity.md) §5). No
+  producer authors it, so the contract half is still BND-0's.
 - ⬜ **A humanoid has to say which skeleton a clip was authored against, and
   nothing authors that either** *(2026-09-13)*. `vrm.computeRestPoseCorrection`
   reads the clip's rest across `vrm:retarget:sourceSkeleton`, a relationship on
@@ -1327,6 +1397,11 @@ depends on them ([docs/README.md](../README.md)). Open:
   root lands. Those four are `motion_retarget`'s flags, and nothing authors them
   either
   ([the retarget report](../reports/openusd/26.08-openexec-retarget.md) §7).
+  *Answered for P0-6 as the rate is*: the parity harness states the
+  relationship, the four statements for the flags it is given, and, for an
+  avatar with no humanoid, `--humanoid-map` as `vrm:humanBones:*` on a prim it
+  defines. With those five statements the two implementations agree bit for
+  bit ([the parity report](../reports/openusd/26.08-openexec-parity.md) §5).
 - ⬜ **Every node that reads an attribute owes a fallback decision, and one
   schema may want to state it.** 26.08 hands an unauthored schema attribute
   to a callback as one element of Sdf's default for the type

@@ -288,6 +288,16 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
     endif()
 endif()
 
+# The OpenExec plan's P0-6: a `motion_retarget` bake against `execMotion` +
+# `execVrm` evaluating the same avatar and clip. Here for the same reason as the
+# two tests above -- it is a composition of both exec bundles, the retarget
+# tool, and the BVH converter that turns the recorded file into the clip -- and
+# after them, because it needs every one of those targets.
+if(USDVRM_BUILD_TESTS AND TARGET ExecMotion AND TARGET ExecVrm
+   AND TARGET motion_retarget AND TARGET motion_bvh_convert)
+    add_subdirectory("tests/parity")
+endif()
+
 # The live half's shared leaf, before the adapters that link it and after
 # everything else — which is the whole of its position argument. It reaches no
 # workspace library at all (WORKSPACE.md §2 gives it an empty edge set), so it

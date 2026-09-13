@@ -796,11 +796,37 @@ compared, which was P0-4's stated blocker.
   a P0-6 harness rule: compare a bake at its own time samples. **The ninth
   boundary finding** is that the bake's shape is stated offline only in two
   lines of the tool.
-- ⬜ **Parity, and the display slice**: P0-6 and P0-7 of the
-  [plan](openexec-foundation.md#6-foundation-tasks). What remains of P0-4 itself
-  is the producer half of the rate and policies, the written driver contract,
-  and packaged discovery — and now a decision on what a one-joint clip's
-  fallback-filled root means. P1-2 owes a decision on a scaled rest.
+- 🚧 **Parity with the offline bake: the values agree bit for bit**
+  *(2026-09-13, P0-6)*. `tests/parity/exec_parity` is handed `motion_retarget`'s
+  own arguments and its bake, builds one stage that sublayers the avatar and the
+  clip so every path the tool saw is the path exec sees, and compares
+  `vrm.computeJointLocalTransforms` with the bake at each of the clip's keys.
+  Five `workspace_exec_parity_*` cases: the recorded mocopi export on the
+  fixture rig, on `Seed-san.vrm` and under all four root-motion statements, the
+  design walk as a `.vrma`, and a 30 fps clip keyed where the tool misplaces a
+  sample. **All 414 598 values are `==`**, which is stronger than the gate's
+  `NearlyEqual`.
+
+  **Six measurements**
+  ([the parity report](../reports/openusd/26.08-openexec-parity.md)). The only
+  inexact thing is **placement**, 2.37e-16 s on two samples of the integer-keyed
+  clip, and it costs nothing compared at the bake's own samples. **The harness
+  sees a difference**: exec under a root-motion statement against the default
+  bake diverges in translation only (committed), a map one bone short on
+  exactly that joint, a gaze on exactly the two eye joints. **Parity is
+  conditional on five statements the harness makes on the stage**: rate, source
+  skeleton, map, rig, root policy. **Two of the tool's own fixtures state human
+  bones without `VrmHumanoidAPI`**. **Diagnostics do not agree**: the tool names
+  the clip bone a rig drops, and exec cannot. The **tenth boundary finding** is
+  that which prim is the humanoid, the rig and the clip is decided only in the
+  tool.
+- ⬜ **The rest of P0-6, and the display slice (P0-7)** of the
+  [plan](openexec-foundation.md#6-foundation-tasks). P0-6 still owes
+  diagnostics, which need P1-1's codes computed as a value rather than logged,
+  and the Linux and macOS lanes' first run of the five cases. What remains of
+  P0-4 itself is the producer half of the rate and policies, the written driver
+  contract, and packaged discovery, and now a decision on what a one-joint
+  clip's fallback-filled root means. P1-2 owes a decision on a scaled rest.
 
 ## Then: boundary consolidation ⬜
 
