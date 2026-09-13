@@ -13,6 +13,7 @@
 
 #include <motionCore/Humanoid.h>
 #include <vrmRetarget/HumanoidMap.h>
+#include <vrmRetarget/RestPose.h>
 #include <vrmRetarget/TargetSkeleton.h>
 
 #include "pxr/base/gf/matrix4d.h"
@@ -243,5 +244,136 @@ struct MapOutcome
 /// the retargeter already reports it. A humanoid stating no bone at all is the
 /// empty map, for the same reason.
 MapOutcome HumanoidMapFor(const HumanoidInputs& inputs);
+
+/// Why a source skeleton could not be read as a clip's rest pose.
+enum class SourceRestRefusal
+{
+    /// No joint's leaf is a bone of the vocabulary. The skeleton is not a
+    /// semantic one, and the rest pose read off it would be the default -- every
+    /// bone at identity -- which is numbers nobody can tell from a measured
+    /// rest.
+    NoHumanBone,
+
+    /// Two joints' leaves name the same bone. The offline tool keeps the later
+    /// one without a word; which of the two rests the clip meant is exactly
+    /// what cannot be known from here.
+    DuplicateBone,
+};
+
+struct SourceRestOutcome
+{
+    std::optional<vrmRetarget::SourceRestPose> rest;
+    SourceRestRefusal refusal = SourceRestRefusal::NoHumanBone;
+
+    /// For `DuplicateBone`: every joint token that named a bone some other
+    /// joint also named, each beside that bone.
+    std::vector<std::pair<motion::HumanBone, std::string>> offending;
+};
+
+/// The clip's rest pose, per human bone, as the source skeleton states it.
+///
+/// **The source is a semantic skeleton, and on that side a joint's leaf is its
+/// bone.** That is the motion contract's statement about a semantic clip, not a
+/// heuristic: `usdVrmaFileFormat` authors a skeleton whose joint leaves are the
+/// vocabulary's names, and `execMotion`'s `motion.sampleAnimation` reads the
+/// animation's joints the same way (`BoneForJointPath`). The *target* rig is
+/// never read by name -- its bones are the humanoid's bindings.
+///
+/// Read the way `tools/motionRetarget`'s `ReadClip` reads it, line for line: for
+/// each joint whose leaf is a bone, its decomposed rest rotation and translation
+/// fill that bone's slot, and its semantic parent is the bone named by the
+/// **leaf of its parent path** -- the path, not the joint the path resolves to,
+/// so a parent path absent from the skeleton still parents the bone when its
+/// leaf is one. A joint whose leaf is no bone contributes nothing, and a bone
+/// whose parent path's leaf is no bone is a root. So a non-bone joint *between*
+/// two bones, or above the hips, drops its rest rotation from the chain; that
+/// is `SourceRestPose`'s shape (one slot per bone and no other), shared with the
+/// tool, not a divergence P0-6 has to explain.
+///
+/// **This is the seventh boundary finding, and the sampler's kind a third
+/// time**: the reading exists only in the tool, beside the decomposition
+/// `vrm.computeTargetSkeleton` already copies from it. The rest rotations and
+/// translations arrive here already decomposed -- the source skeleton is read
+/// through `vrm.computeTargetSkeleton`, so the two rigs of a retarget are
+/// decomposed by one implementation -- and only the bone assignment is this
+/// function's.
+SourceRestOutcome SourceRestFromSkeleton(
+    const vrmRetarget::TargetSkeleton& skeleton);
+
+/// What `vrm.computeRestPoseCorrection` reads, as plain values.
+///
+/// Three things arrive, over two relationships and one link on the prim:
+///
+///   * the humanoid's own `vrm.computeHumanoidMap`, which is null when the map
+///     refused;
+///   * the target skeleton, across `vrm:skeleton` -- the rig the map's indices
+///     count into, read again rather than trusted, because a map carries no
+///     skeleton;
+///   * the source skeleton, across `vrm:retarget:sourceSkeleton`, counted twice
+///     for the reason `vrm:skeleton` is.
+struct CorrectionInputs
+{
+    /// Null when `vrm.computeHumanoidMap` answered nothing.
+    const vrmRetarget::HumanoidMap* map = nullptr;
+
+    /// What came back across `vrm:skeleton`. When the map answered, the map
+    /// already counted this relationship and it reached exactly one skeleton.
+    std::vector<vrmRetarget::TargetSkeleton> targets;
+
+    /// How many objects `vrm:retarget:sourceSkeleton` reaches, and the
+    /// skeletons that came back from them.
+    std::size_t sourceTargetCount = 0;
+    std::vector<vrmRetarget::TargetSkeleton> sources;
+};
+
+/// Why a correction was refused.
+enum class CorrectionRefusal
+{
+    /// The humanoid's map refused, or the skeleton it counts into did not come
+    /// back. The map's own error says which; this one says it propagated.
+    RigUnanswered,
+
+    /// `vrm:retarget:sourceSkeleton` reaches nothing -- unauthored, or naming
+    /// no prim. **Not defaulted**, although the library has a default rest (all
+    /// identity, which is `usdVrmaFileFormat`'s): a path to nothing arrives as
+    /// nothing, exactly as an unauthored relationship does, so a default here
+    /// would hand a misspelled source the identity rest with no word said.
+    NoSource,
+
+    /// It reaches more than one object. A correction is between two rigs.
+    SeveralSources,
+
+    /// The one object it reaches answered no `vrm.computeTargetSkeleton`: it is
+    /// not a `UsdSkelSkeleton`, or its skeleton refused.
+    SourceUnanswered,
+
+    /// The source skeleton answered and is not readable as a rest pose
+    /// (`SourceRestRefusal`, carried in `sourceRefusal`).
+    SourceRest,
+};
+
+struct CorrectionOutcome
+{
+    std::optional<vrmRetarget::RestPoseCorrection> correction;
+    CorrectionRefusal refusal = CorrectionRefusal::RigUnanswered;
+
+    /// For `CorrectionRefusal::SourceRest`.
+    SourceRestRefusal sourceRefusal = SourceRestRefusal::NoHumanBone;
+    std::vector<std::pair<motion::HumanBone, std::string>> offending;
+};
+
+/// The correction carrying a rest-relative rotation from the clip's rig onto
+/// the humanoid's, or a refusal.
+///
+/// **The node is one library call**: `vrmRetarget::ComputeRestPoseCorrection`
+/// over the source rest, the target skeleton and the map -- asserted as that in
+/// `execVrm_rig`, where the node's correction is compared with the library's
+/// over the same values. Every mapped bone gets a correction and every unmapped
+/// one stays identity, which is the library's rule.
+///
+/// No input moves with time: all three are rig statements, so the correction
+/// is computed once per rig edit and never per frame -- which is the reason it
+/// is a node of its own rather than a step of the retarget.
+CorrectionOutcome RestPoseCorrectionFor(const CorrectionInputs& inputs);
 
 } // namespace execvrm

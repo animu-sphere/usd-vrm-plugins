@@ -12,9 +12,11 @@
 
 #include <motionCore/Humanoid.h>
 #include <vrmRetarget/HumanoidMap.h>
+#include <vrmRetarget/RestPose.h>
 #include <vrmRetarget/TargetSkeleton.h>
 
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
@@ -378,6 +380,264 @@ void TestAnEmptyTokenBindsNothing()
                 "is the empty map\n");
 }
 
+// ---------------------------------------------------------------------------
+// vrm.computeRestPoseCorrection
+// ---------------------------------------------------------------------------
+
+pxr::GfQuatf About(const pxr::GfVec3f& axis, float degrees)
+{
+    const float half = degrees * 3.14159265358979324f / 360.0f;
+    return pxr::GfQuatf(std::cos(half), axis * std::sin(half));
+}
+
+// A matrix with a rotation and a translation, row-vector convention.
+pxr::GfMatrix4d Rest(const pxr::GfQuatf& rotation, const pxr::GfVec3d& at)
+{
+    pxr::GfMatrix4d matrix(1.0);
+    matrix.SetRotate(pxr::GfQuatd(rotation.GetReal(),
+                                  pxr::GfVec3d(rotation.GetImaginary())));
+    matrix.SetTranslateOnly(at);
+    return matrix;
+}
+
+// A semantic skeleton, the shape usdVrmaFileFormat authors under a reference
+// joint that is no bone: turned rests on the hips and the arm, and the
+// reference's own rest turned too, which the source rest pose has no slot for.
+vrmRetarget::TargetSkeleton SemanticSkeleton()
+{
+    execvrm::SkeletonRest rest;
+    rest.joints = {"Reference",
+                   "Reference/hips",
+                   "Reference/hips/spine",
+                   "Reference/hips/spine/chest",
+                   "Reference/hips/spine/chest/leftUpperArm"};
+    rest.restTransforms = {
+        Rest(About(pxr::GfVec3f(1, 0, 0), 90.0f), pxr::GfVec3d(0.0)),
+        Rest(About(pxr::GfVec3f(0, 1, 0), 30.0f), pxr::GfVec3d(0, 0.9, 0)),
+        Translate(0, 0.1, 0),
+        Translate(0, 0.15, 0),
+        Rest(About(pxr::GfVec3f(0, 0, 1), -90.0f), pxr::GfVec3d(0.1, 0.15, 0))};
+    execvrm::SkeletonOutcome outcome = execvrm::TargetSkeletonFromRest(rest);
+    assert(outcome.skeleton);
+    return *outcome.skeleton;
+}
+
+// What SemanticSkeleton states, written from its definition.
+vrmRetarget::SourceRestPose SemanticRest()
+{
+    vrmRetarget::SourceRestPose rest;
+    const auto hips = static_cast<std::size_t>(HumanBone::Hips);
+    const auto arm = static_cast<std::size_t>(HumanBone::LeftUpperArm);
+    rest.localRotations[hips] = About(pxr::GfVec3f(0, 1, 0), 30.0f);
+    rest.localTranslations[hips] = pxr::GfVec3f(0, 0.9f, 0);
+    rest.localTranslations[static_cast<std::size_t>(HumanBone::Spine)] =
+        pxr::GfVec3f(0, 0.1f, 0);
+    rest.localTranslations[static_cast<std::size_t>(HumanBone::Chest)] =
+        pxr::GfVec3f(0, 0.15f, 0);
+    rest.localRotations[arm] = About(pxr::GfVec3f(0, 0, 1), -90.0f);
+    rest.localTranslations[arm] = pxr::GfVec3f(0.1f, 0.15f, 0);
+    rest.SetParent(HumanBone::Spine, HumanBone::Hips);
+    rest.SetParent(HumanBone::Chest, HumanBone::Spine);
+    rest.SetParent(HumanBone::LeftUpperArm, HumanBone::Chest);
+    return rest;
+}
+
+// Orientation, not representation: a rest decomposed off a matrix may come
+// back as -q (the -90 degree arm does -- GfMatrix4d::ExtractRotationQuat picks
+// its sign by branch), and q and -q rest identically.
+bool SameOrientation(const pxr::GfQuatf& a, const pxr::GfQuatf& b)
+{
+    const pxr::GfQuatf na = a.GetNormalized();
+    const pxr::GfQuatf nb = b.GetNormalized();
+    return std::abs(std::abs(pxr::GfDot(na, nb)) - 1.0f) <= 1e-6f;
+}
+
+bool SameRest(const vrmRetarget::SourceRestPose& a,
+              const vrmRetarget::SourceRestPose& b)
+{
+    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot) {
+        if (!SameOrientation(a.localRotations[slot], b.localRotations[slot])
+            || !NearlyEqual(a.localTranslations[slot], b.localTranslations[slot])
+            || a.parents[slot] != b.parents[slot]) {
+            std::fprintf(stderr, "the rests differ at %s\n",
+                         std::string(motion::HumanBoneName(
+                                         static_cast<HumanBone>(slot)))
+                             .c_str());
+            return false;
+        }
+    }
+    return true;
+}
+
+void TestTheSourceRestIsReadOffTheSemanticSkeleton()
+{
+    const execvrm::SourceRestOutcome outcome =
+        execvrm::SourceRestFromSkeleton(SemanticSkeleton());
+    assert(outcome.rest);
+    // Every slot, including the ones nothing named: identity, at the origin,
+    // a root. The reference joint is in none of them, and the hips are a root
+    // of the semantic chain because the reference is no bone.
+    assert(SameRest(*outcome.rest, SemanticRest()) &&
+           "the clip's rest pose is not what its skeleton states");
+    assert(outcome.rest->parents[static_cast<std::size_t>(HumanBone::Hips)] ==
+           vrmRetarget::SourceRestPose::kNoParent);
+    std::printf("execVrm rig: the clip's rest is read off its skeleton by "
+                "leaf, a non-bone joint in no slot\n");
+}
+
+void TestTheSourceParentIsTheParentPathsLeaf()
+{
+    // The tool's rule: the parent PATH's leaf, whether or not a joint of the
+    // skeleton resolves the path. `Reference/hips` is no joint here, and the
+    // spine is still parented to the hips.
+    execvrm::SkeletonRest rest;
+    rest.joints = {"hips", "Reference/hips/spine"};
+    rest.restTransforms = {Translate(0, 1, 0), Translate(0, 0.1, 0)};
+    const execvrm::SourceRestOutcome outcome = execvrm::SourceRestFromSkeleton(
+        *execvrm::TargetSkeletonFromRest(rest).skeleton);
+    assert(outcome.rest);
+    assert(outcome.rest->parents[static_cast<std::size_t>(HumanBone::Spine)] ==
+           static_cast<std::size_t>(HumanBone::Hips));
+    std::printf("execVrm rig: a source bone's parent is its parent path's "
+                "leaf\n");
+}
+
+void TestASourceThatIsNotSemanticIsRefused()
+{
+    // The fixture's own rig, VRoid-named: a skeleton, and no leaf a bone.
+    execvrm::SourceRestOutcome outcome =
+        execvrm::SourceRestFromSkeleton(FixtureSkeleton());
+    assert(!outcome.rest &&
+           "a skeleton naming no bone was read as an identity rest");
+    assert(outcome.refusal == execvrm::SourceRestRefusal::NoHumanBone);
+
+    // And the empty skeleton, for the same reason.
+    outcome = execvrm::SourceRestFromSkeleton(vrmRetarget::TargetSkeleton());
+    assert(!outcome.rest &&
+           outcome.refusal == execvrm::SourceRestRefusal::NoHumanBone);
+    std::printf("execVrm rig: a source naming no bone is refused\n");
+}
+
+void TestASourceNamingOneBoneTwiceIsRefusedAndBothNamed()
+{
+    execvrm::SkeletonRest rest;
+    rest.joints = {"hips", "hips/spine", "Reference", "Reference/hips",
+                   "Reference/spine"};
+    rest.restTransforms = std::vector<pxr::GfMatrix4d>(5, pxr::GfMatrix4d(1.0));
+    const execvrm::SourceRestOutcome outcome = execvrm::SourceRestFromSkeleton(
+        *execvrm::TargetSkeletonFromRest(rest).skeleton);
+    assert(!outcome.rest &&
+           "two rests for one bone were resolved by keeping one of them");
+    assert(outcome.refusal == execvrm::SourceRestRefusal::DuplicateBone);
+    const std::vector<std::pair<HumanBone, std::string>> expected = {
+        {HumanBone::Hips, "hips"},
+        {HumanBone::Hips, "Reference/hips"},
+        {HumanBone::Spine, "hips/spine"},
+        {HumanBone::Spine, "Reference/spine"}};
+    assert(outcome.offending == expected);
+    std::printf("execVrm rig: a source naming one bone twice is refused, "
+                "every joint named\n");
+}
+
+execvrm::CorrectionInputs CorrectionFixture(
+    const vrmRetarget::HumanoidMap& map)
+{
+    execvrm::CorrectionInputs inputs;
+    inputs.map = &map;
+    inputs.targets = {FixtureSkeleton()};
+    inputs.sourceTargetCount = 1;
+    inputs.sources = {SemanticSkeleton()};
+    return inputs;
+}
+
+void TestTheCorrectionIsTheLibrarysCall()
+{
+    const vrmRetarget::HumanoidMap map =
+        *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const execvrm::CorrectionOutcome outcome =
+        execvrm::RestPoseCorrectionFor(CorrectionFixture(map));
+    assert(outcome.correction);
+
+    // The wrapper claim: the library's correction over the rest the source
+    // states -- written from its definition, not read back through the seam --
+    // the same rig, and the same map.
+    const vrmRetarget::RestPoseCorrection expected =
+        vrmRetarget::ComputeRestPoseCorrection(SemanticRest(), FixtureSkeleton(),
+                                               map);
+    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot) {
+        assert(outcome.correction->identity[slot] == expected.identity[slot]);
+        assert(SameOrientation(outcome.correction->pre[slot],
+                               expected.pre[slot]));
+        assert(SameOrientation(outcome.correction->post[slot],
+                               expected.post[slot]));
+    }
+
+    // And bit for bit when the seam's own reading is what the library is
+    // handed -- the node is that call and nothing more.
+    assert(*outcome.correction ==
+           vrmRetarget::ComputeRestPoseCorrection(
+               *execvrm::SourceRestFromSkeleton(SemanticSkeleton()).rest,
+               FixtureSkeleton(), map));
+
+    // A sample at the source's rest lands on the rig's rest -- the arm's -90 Z
+    // onto its +90 Z -- and a bone the map does not bind stays identity.
+    const float half = std::sqrt(0.5f);
+    const pxr::GfQuatf landed = outcome.correction->Apply(
+        HumanBone::LeftUpperArm, About(pxr::GfVec3f(0, 0, 1), -90.0f));
+    assert(SameOrientation(landed, pxr::GfQuatf(half, 0.0f, 0.0f, half)));
+    assert(outcome.correction->identity[static_cast<std::size_t>(
+        HumanBone::RightUpperArm)]);
+    std::printf("execVrm rig: the correction is ComputeRestPoseCorrection over "
+                "the source's rest, the rig and the map\n");
+}
+
+void TestTheCorrectionRefusesWhatItCannotHonour()
+{
+    const vrmRetarget::HumanoidMap map =
+        *execvrm::HumanoidMapFor(FixtureInputs()).map;
+
+    auto refusal = [](const execvrm::CorrectionInputs& inputs) {
+        const execvrm::CorrectionOutcome outcome =
+            execvrm::RestPoseCorrectionFor(inputs);
+        assert(!outcome.correction);
+        return outcome.refusal;
+    };
+    using execvrm::CorrectionRefusal;
+
+    // The map refused, or its skeleton did not come back.
+    execvrm::CorrectionInputs noMap = CorrectionFixture(map);
+    noMap.map = nullptr;
+    assert(refusal(noMap) == CorrectionRefusal::RigUnanswered);
+    execvrm::CorrectionInputs noTarget = CorrectionFixture(map);
+    noTarget.targets.clear();
+    assert(refusal(noTarget) == CorrectionRefusal::RigUnanswered);
+
+    // Nothing named as the source: refused, not defaulted to identity.
+    execvrm::CorrectionInputs none = CorrectionFixture(map);
+    none.sourceTargetCount = 0;
+    none.sources.clear();
+    assert(refusal(none) == CorrectionRefusal::NoSource);
+
+    execvrm::CorrectionInputs two = CorrectionFixture(map);
+    two.sourceTargetCount = 2;
+    assert(refusal(two) == CorrectionRefusal::SeveralSources);
+
+    execvrm::CorrectionInputs dropped = CorrectionFixture(map);
+    dropped.sources.clear();
+    assert(refusal(dropped) == CorrectionRefusal::SourceUnanswered);
+
+    execvrm::CorrectionInputs notSemantic = CorrectionFixture(map);
+    notSemantic.sources = {FixtureSkeleton()};
+    const execvrm::CorrectionOutcome outcome =
+        execvrm::RestPoseCorrectionFor(notSemantic);
+    assert(!outcome.correction &&
+           outcome.refusal == CorrectionRefusal::SourceRest &&
+           outcome.sourceRefusal == execvrm::SourceRestRefusal::NoHumanBone);
+    std::printf("execVrm rig: the correction refuses a rig that did not "
+                "answer, no source, two, one that did not answer and one that "
+                "is not semantic\n");
+}
+
 } // namespace
 
 int main()
@@ -393,6 +653,12 @@ int main()
     TestABindingToNoJointIsRefusedAndNamed();
     TestTwoBonesOnOneJointAreRefusedAndBothNamed();
     TestAnEmptyTokenBindsNothing();
+    TestTheSourceRestIsReadOffTheSemanticSkeleton();
+    TestTheSourceParentIsTheParentPathsLeaf();
+    TestASourceThatIsNotSemanticIsRefused();
+    TestASourceNamingOneBoneTwiceIsRefusedAndBothNamed();
+    TestTheCorrectionIsTheLibrarysCall();
+    TestTheCorrectionRefusesWhatItCannotHonour();
     std::puts("execVrm rig: all checks passed");
     return 0;
 }

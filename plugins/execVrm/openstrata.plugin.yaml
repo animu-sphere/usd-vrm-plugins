@@ -25,9 +25,14 @@ requires:
   capabilities: [usd-stage-read]
   libraries:
     # The retarget core, and the one library every node here wraps: the rig a
-    # computation answers with is `vrmRetarget`'s own `TargetSkeleton` and
-    # `HumanoidMap`, which gained an exact `operator==` for this bundle -- the
-    # registry's requirement, the ask motionCore's aggregates answered in v0.6.0.
+    # computation answers with is `vrmRetarget`'s own `TargetSkeleton`,
+    # `HumanoidMap` and `RestPoseCorrection`, which gained an exact `operator==`
+    # for this bundle -- the registry's requirement, the ask motionCore's
+    # aggregates answered in v0.6.0.
+    #
+    # That equality was added after the v0.8.0 tag, so until the next bump this
+    # range admits a tagged 0.8.0 package that cannot build this bundle. The
+    # next release must therefore be a minor one (PACKAGE_CONTRACT.md §3.1).
     - id: vrmRetarget
       version: ">=0.8,<0.9"
     # And the two it is built on, named rather than left to the closure: the
@@ -51,5 +56,7 @@ usd:
 tests:
   smoke:
     - tests/fixtures/humanoid_rig.usda
+    - tests/fixtures/corrected_rig.usda
   roundtrip:
     - tests/fixtures/humanoid_rig.usda
+    - tests/fixtures/corrected_rig.usda

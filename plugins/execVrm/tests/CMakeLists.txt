@@ -67,6 +67,22 @@ set(_exec_vrm_fixture "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/humanoid_rig.usda")
 add_test(NAME execVrm_humanoid
     COMMAND execVrm_humanoid_tests "${_exec_vrm_fixture}")
 
+# The rest-pose correction, through the same bundle, over its own fixture: a
+# target rig with turned rests and two semantic source skeletons.
+add_executable(execVrm_correction_tests test_exec_vrm_correction.cpp)
+target_include_directories(execVrm_correction_tests PRIVATE ${PXR_INCLUDE_DIRS})
+target_link_libraries(execVrm_correction_tests PRIVATE
+    vrmRetarget::vrmRetarget ${_exec_vrm_test_targets})
+target_compile_options(execVrm_correction_tests PRIVATE ${_exec_vrm_assertions})
+if(MSVC)
+    target_compile_definitions(execVrm_correction_tests
+        PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(execVrm_correction_tests PRIVATE /bigobj /utf-8)
+endif()
+add_test(NAME execVrm_correction
+    COMMAND execVrm_correction_tests
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/corrected_rig.usda")
+
 # The same executable, in a session that registers no vrmSchema. The bundle
 # links nothing of that bundle and still cannot compute on the humanoid
 # without it, because exec resolves `UsdVrmHumanoidAPI` by type name when it
@@ -99,7 +115,7 @@ set(_exec_vrm_path_env
     "PATH=path_list_prepend:${_usd_root}/lib"
     "PATH=path_list_prepend:${_bundle_dir}/lib")
 
-set_tests_properties(execVrm_humanoid PROPERTIES
+set_tests_properties(execVrm_humanoid execVrm_correction PROPERTIES
     ENVIRONMENT_MODIFICATION
         "${_exec_vrm_path_env};PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources}")
 
@@ -114,6 +130,6 @@ set_tests_properties(execVrm_rig PROPERTIES
     ENVIRONMENT_MODIFICATION "${_exec_vrm_path_env}")
 
 # Motion Phase E's label, as execMotion's suites carry.
-set_tests_properties(execVrm_rig execVrm_humanoid
+set_tests_properties(execVrm_rig execVrm_humanoid execVrm_correction
                      execVrm_humanoid_without_schema
     PROPERTIES LABELS "motion.openexec")

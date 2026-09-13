@@ -80,6 +80,21 @@ struct RestPoseCorrection
                                        const pxr::GfQuatf& rotation) const;
 };
 
+// Exact, bone by bone: the same `pre`, `post` and `identity` in every slot. It
+// exists for the caller `TargetSkeleton`'s and `HumanoidMap`'s did:
+// `ExecTypeRegistry::RegisterType` will not register a type it cannot compare,
+// and `execVrm`'s `vrm.computeRestPoseCorrection` hands this value back whole.
+//
+// Exact means a correction and its negation are *different* values although
+// they apply identically, which is the conservative answer downstream of an
+// exec computation and the one `TargetSkeleton` gives. The `identity` flags are
+// compared too: they are what `Apply` reads first, so two corrections that
+// differ only there answer differently for the same rotation.
+VRMRETARGET_API bool operator==(const RestPoseCorrection& a,
+                                const RestPoseCorrection& b) noexcept;
+VRMRETARGET_API bool operator!=(const RestPoseCorrection& a,
+                                const RestPoseCorrection& b) noexcept;
+
 // Builds the correction for every mapped bone; unmapped bones stay identity.
 VRMRETARGET_API RestPoseCorrection ComputeRestPoseCorrection(
     const SourceRestPose& source, const TargetSkeleton& target,

@@ -6,7 +6,11 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
 
+#include <algorithm>
+#include <array>
+#include <optional>
 #include <set>
+#include <string_view>
 
 namespace execvrm {
 
@@ -24,6 +28,19 @@ pxr::GfVec3f ToVec3f(const pxr::GfVec3d& v)
 {
     return pxr::GfVec3f(static_cast<float>(v[0]), static_cast<float>(v[1]),
                         static_cast<float>(v[2]));
+}
+
+// The bone a semantic joint path names: its leaf, looked up in the vocabulary.
+// tools/motionRetarget's `FindHumanBone(LeafToken(path))`, and execMotion's
+// `BoneForJointPath` -- a path with no separator is already a leaf.
+std::optional<motion::HumanBone> BoneForLeaf(const std::string& jointPath)
+{
+    const std::size_t separator = jointPath.rfind('/');
+    const std::string_view leaf =
+        separator == std::string::npos
+            ? std::string_view(jointPath)
+            : std::string_view(jointPath).substr(separator + 1);
+    return motion::FindHumanBone(leaf);
 }
 
 } // namespace
@@ -139,6 +156,98 @@ MapOutcome HumanoidMapFor(const HumanoidInputs& inputs)
     }
 
     outcome.map = std::move(map);
+    return outcome;
+}
+
+SourceRestOutcome SourceRestFromSkeleton(
+    const vrmRetarget::TargetSkeleton& skeleton)
+{
+    SourceRestOutcome outcome;
+    vrmRetarget::SourceRestPose rest;
+
+    // Which joint first named each bone, so a second naming can report both.
+    std::array<const std::string*, motion::HumanBoneCount> namedBy{};
+    std::size_t recognized = 0;
+
+    for (const vrmRetarget::TargetJoint& joint : skeleton.GetJoints()) {
+        const std::optional<motion::HumanBone> bone = BoneForLeaf(joint.token);
+        if (!bone) {
+            continue;
+        }
+        const auto slot = static_cast<std::size_t>(*bone);
+        if (namedBy[slot]) {
+            // Report the first naming once, then every later one.
+            const bool firstReported = std::any_of(
+                outcome.offending.begin(), outcome.offending.end(),
+                [&](const auto& named) { return named.first == *bone; });
+            if (!firstReported) {
+                outcome.offending.emplace_back(*bone, *namedBy[slot]);
+            }
+            outcome.offending.emplace_back(*bone, joint.token);
+            continue;
+        }
+        namedBy[slot] = &joint.token;
+        ++recognized;
+
+        // tools/motionRetarget's ReadClip, line for line: the joint's own
+        // decomposed rest fills its bone's slot, and the semantic parent is the
+        // bone its parent PATH's leaf names -- the path, whether or not a joint
+        // of this skeleton resolves it.
+        rest.localRotations[slot] = joint.restRotation;
+        rest.localTranslations[slot] = joint.restTranslation;
+        const std::size_t separator = joint.token.rfind('/');
+        if (separator == std::string::npos) {
+            continue;
+        }
+        if (const std::optional<motion::HumanBone> parent =
+                BoneForLeaf(joint.token.substr(0, separator))) {
+            rest.SetParent(*bone, *parent);
+        }
+    }
+
+    if (!outcome.offending.empty()) {
+        outcome.refusal = SourceRestRefusal::DuplicateBone;
+        return outcome;
+    }
+    if (recognized == 0) {
+        outcome.refusal = SourceRestRefusal::NoHumanBone;
+        return outcome;
+    }
+    outcome.rest = std::move(rest);
+    return outcome;
+}
+
+CorrectionOutcome RestPoseCorrectionFor(const CorrectionInputs& inputs)
+{
+    CorrectionOutcome outcome;
+    if (!inputs.map || inputs.targets.size() != 1) {
+        outcome.refusal = CorrectionRefusal::RigUnanswered;
+        return outcome;
+    }
+    if (inputs.sourceTargetCount == 0) {
+        outcome.refusal = CorrectionRefusal::NoSource;
+        return outcome;
+    }
+    if (inputs.sourceTargetCount > 1) {
+        outcome.refusal = CorrectionRefusal::SeveralSources;
+        return outcome;
+    }
+    if (inputs.sources.size() != 1) {
+        outcome.refusal = CorrectionRefusal::SourceUnanswered;
+        return outcome;
+    }
+
+    SourceRestOutcome source = SourceRestFromSkeleton(inputs.sources.front());
+    if (!source.rest) {
+        outcome.refusal = CorrectionRefusal::SourceRest;
+        outcome.sourceRefusal = source.refusal;
+        outcome.offending = std::move(source.offending);
+        return outcome;
+    }
+
+    // The whole node, and it is a wrapper.
+    outcome.correction = vrmRetarget::ComputeRestPoseCorrection(
+        *source.rest, inputs.targets.front(), *inputs.map);
     return outcome;
 }
 

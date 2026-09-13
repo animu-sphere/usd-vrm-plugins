@@ -85,6 +85,18 @@ RestPoseCorrection::Apply(motion::HumanBone bone,
     return (pre[slot] * rotation * post[slot]).GetNormalized();
 }
 
+bool
+operator==(const RestPoseCorrection& a, const RestPoseCorrection& b) noexcept
+{
+    return a.identity == b.identity && a.pre == b.pre && a.post == b.post;
+}
+
+bool
+operator!=(const RestPoseCorrection& a, const RestPoseCorrection& b) noexcept
+{
+    return !(a == b);
+}
+
 RestPoseCorrection
 ComputeRestPoseCorrection(const SourceRestPose& source,
                           const TargetSkeleton& target, const HumanoidMap& map)

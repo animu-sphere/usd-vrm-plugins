@@ -86,6 +86,38 @@ true.
    directions, so a consumer of both resolves both. `vrmAdapterVmc`'s config
    does exactly that, in two separate guarded blocks.
 
+### 3.1 A `requires` range between two releases
+
+*(Added 2026-09-13, from the review of `vrm.computeRestPoseCorrection`.)*
+
+The workspace carries one version (the repo-root `VERSION`), and between two
+tags `main` keeps the last one. On 2026-09-13 `VERSION` is `0.8.0`, `v0.8.0` is
+tagged, and the OpenExec bundles have landed since. Every descriptor's `requires`
+range, `>=0.8,<0.9`, therefore **admits the tagged 0.8.0 package of each
+library, although dependents in the tree now use library API that package does
+not have**. This is measured with `git diff v0.8.0 -- libs/*/include`:
+
+| Dependent | Needs, added after `v0.8.0` |
+| --- | --- |
+| `execMotion` | `motionRuntime`'s `operator==` on `PoseSampleResult` (the registry requires it) |
+| `execVrm` | `vrmRetarget`'s `operator==` on `TargetJoint`, `TargetSkeleton`, `HumanoidMap` and `RestPoseCorrection` (the same) |
+| `motion_retarget` | `vrmRetarget`'s `ExpressionResolver` and `LookAtEvaluator` headers, and the `GetJointWorldTransform` added beside `PoseRetargeter` |
+
+No lane builds any of these against the tagged 0.8.0 package, and one that did
+would fail at compile time with a missing symbol, not produce a wrong answer. A
+range is a statement about packages, though, and this one is false for the
+tagged package until the next bump.
+
+**The rule this imposes: a release that carries library API added since the
+last tag is a minor release.** The lockstep bump moves every range with it
+(`>=0.9,<0.10`), which excludes the tagged package and makes each range true
+again. A patch release (`0.8.1`) would keep `>=0.8,<0.9`, admit the 0.8.0
+packages, and ship this gap in the release's own descriptors. SemVer already
+requires a minor release for added API; this subsection records the second
+consequence, which applies here and not in general. The range cannot be made
+true between tags without a pre-release version, and this workspace does not use
+one.
+
 ## 4. The packages
 
 ### 4.1 Plugin bundles
