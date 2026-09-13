@@ -754,7 +754,9 @@ compared, which was P0-4's stated blocker.
   flags word for word. Its pose is `execMotion`'s `motion.sampleAnimation` on
   the animation the clip's skeleton binds, forwarded by a fifth node,
   `vrm.computeBoundPose`, because an exec input makes one relationship hop and
-  this needs two.
+  this needs two. That binding is UsdSkel's, inherited through a sixth,
+  `vrm.computeBindingPose` on the applied `UsdSkelBindingAPI`, so a clip bound
+  on its SkelRoot is retargeted.
 
   **Six measurements**
   ([the retarget report](../reports/openusd/26.08-openexec-retarget.md)). The

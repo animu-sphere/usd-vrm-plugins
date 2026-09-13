@@ -680,8 +680,30 @@ void TestTheBoundPoseIsTheOnePoseForwarded()
     outcome = execvrm::BoundPoseFor(inputs);
     assert(!outcome.pose &&
            outcome.refusal == BoundPoseRefusal::AnimationUnanswered);
-    std::printf("execVrm rig: the bound pose is the one pose forwarded, and no "
-                "animation, two, or one that answered nothing is refused\n");
+
+    // UsdSkel's order: nothing bound here is what an ancestor binds, and an
+    // own binding shadows it -- including one that is broken, which is
+    // refused rather than passed over.
+    motion::HumanoidPose ancestor;
+    ancestor.timestamp = 0.25;
+    inputs.animationTargetCount = 0;
+    inputs.poses.clear();
+    inputs.inherited = &ancestor;
+    outcome = execvrm::BoundPoseFor(inputs);
+    assert(outcome.pose && *outcome.pose == ancestor);
+    inputs.animationTargetCount = 1;
+    inputs.poses = {pose};
+    outcome = execvrm::BoundPoseFor(inputs);
+    assert(outcome.pose && *outcome.pose == pose &&
+           "an ancestor's binding won over the prim's own");
+    inputs.poses.clear();
+    outcome = execvrm::BoundPoseFor(inputs);
+    assert(!outcome.pose &&
+           outcome.refusal == BoundPoseRefusal::AnimationUnanswered &&
+           "a broken own binding fell through to the ancestor's");
+    std::printf("execVrm rig: the bound pose is the one pose forwarded, else "
+                "the ancestor's, and no animation, two, or one that answered "
+                "nothing is refused\n");
 }
 
 // ---------------------------------------------------------------------------

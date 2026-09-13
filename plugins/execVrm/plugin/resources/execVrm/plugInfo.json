@@ -9,6 +9,9 @@
             "Info": {
                 "Exec": {
                     "Schemas": {
+                        "UsdSkelBindingAPI": {
+                            "allowsPluginComputations": true
+                        },
                         "UsdSkelSkeleton": {
                             "allowsPluginComputations": true
                         },

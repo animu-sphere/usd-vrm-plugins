@@ -399,16 +399,31 @@ struct BoundPoseInputs
     /// whose sampler refused is dropped by the read iterator; the count above
     /// is what tells either from a skeleton that names nothing.
     std::vector<motion::HumanoidPose> poses;
+
+    /// What the nearest ancestor with `SkelBindingAPI` applied binds, through
+    /// its own `vrm.computeBindingPose`; null when there is no such ancestor,
+    /// or it binds nothing, or its binding refused (it says why itself).
+    ///
+    /// UsdSkel's binding is inherited: `skel:animationSource` binds "Skeleton
+    /// primitives at or beneath the location at which this property is
+    /// defined", and `UsdSkelBindingAPI::GetInheritedAnimationSource` walks up
+    /// from the skeleton to the first prim that has the API applied and authors
+    /// the relationship. So a clip bound on its SkelRoot is bound. The walk is
+    /// exec's `NamespaceAncestor` over a computation registered on the applied
+    /// `UsdSkelBindingAPI`, which finds exactly the prims UsdSkel's `HasAPI`
+    /// check admits.
+    const motion::HumanoidPose* inherited = nullptr;
 };
 
 /// Why a bound pose was refused.
 enum class BoundPoseRefusal
 {
     /// `skel:animationSource` reaches nothing -- unauthored, or naming no prim,
-    /// which arrive as one value (the correction report, section 3). **Not
-    /// answered as an empty pose**, although one exists: an empty pose is what
-    /// a clip naming no bone samples to, and retargets to the rig's rest, so a
-    /// misspelled binding would put the avatar at rest with no word said.
+    /// which arrive as one value (the correction report, section 3) -- and no
+    /// ancestor binds an animation either. **Not answered as an empty pose**,
+    /// although one exists: an empty pose is what a clip naming no bone samples
+    /// to, and retargets to the rig's rest, so a misspelled binding would put
+    /// the avatar at rest with no word said.
     NoAnimation,
 
     /// It reaches more than one object. UsdSkel binds one animation.
@@ -427,6 +442,18 @@ struct BoundPoseOutcome
 };
 
 /// The pose of the animation the skeleton is bound to, or a refusal.
+///
+/// **UsdSkel's resolution order**: the prim's own `skel:animationSource` when it
+/// reaches anything, and only then what an ancestor binds -- an own binding
+/// shadows an inherited one, as `GetInheritedAnimationSource` stops at the
+/// first prim that authors one.
+///
+/// **One case it cannot follow.** UsdSkel stops at an authored relationship
+/// that targets nothing, or nothing valid, because that is an explicit
+/// *unbinding*. Exec hands an authored empty relationship, and one whose target
+/// names no prim, to a callback exactly as it hands an unauthored one (the
+/// correction report, section 3), so here the walk goes on and the ancestor's
+/// animation is answered. Pinned in `execVrm_retarget`, and a P0-6 row.
 ///
 /// **A forward, and nothing more.** The pose is `execMotion`'s, sampled at the
 /// frame the system evaluates and stamped in seconds there; this node exists

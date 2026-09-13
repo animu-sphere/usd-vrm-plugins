@@ -19,8 +19,11 @@
 //     definition;
 //   * invalidation from the frame, the clip, the binding, the source and the
 //     statements, and a driver's pose crossing both bundles as an override;
-//   * every refusal, and a session with no execMotion at all
-//     (`--without-exec-motion`, its own CTest entry).
+//   * the skeleton's binding inherited from an ancestor with SkelBindingAPI
+//     applied, as UsdSkel inherits it, and the one case it cannot follow;
+//   * every refusal -- the retarget's own reasons included, asked for alone --
+//     and a session with no execMotion at all (`--without-exec-motion`, its own
+//     CTest entry).
 //
 // It links vrmRetarget for the result types and to build the expected values;
 // the claim about the library is exactly that the node is one call of it.
@@ -55,6 +58,7 @@
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
+#include "pxr/usd/usdSkel/bindingAPI.h"
 
 #include <motionCore/Humanoid.h>
 #include <vrmRetarget/HumanoidMap.h>
@@ -94,6 +98,8 @@ const TfToken kTranslationScale("vrm:retarget:translationScale");
 const TfToken kPreserveTargetHeight("vrm:retarget:preserveTargetHeight");
 const TfToken kRotations("rotations");
 const TfToken kRate("motion:timeCodesPerSecond");
+const TfToken kJoints("joints");
+const TfToken kRestTransforms("restTransforms");
 
 const SdfPath kTargetPath("/Asset/skel/Skeleton");
 const SdfPath kHumanoidPath("/Asset/rig/Humanoid");
@@ -941,7 +947,7 @@ void TestTheSourceAndTheRigAreRefusedAsTheCorrectionRefusesThem(
         ExecUsdCacheView view = system.Compute(request);
         AssertRefused(view, kRetargetKey);
         assert(MarkNames(mark, "vrm.humanoidRetarget: the source skeleton "
-                               "</Asset/skel/Skeleton> is not a semantic"));
+                               "</Asset/skel/Skeleton> names no human bone"));
         mark.Clear();
     }
     {
@@ -960,6 +966,230 @@ void TestTheSourceAndTheRigAreRefusedAsTheCorrectionRefusesThem(
     }
     std::printf("execVrm retarget: no source, two, one that is not semantic, "
                 "and a map that refused are each refused\n");
+}
+
+// ---------------------------------------------------------------------------
+// The retarget states why a source is not a clip, by itself
+// ---------------------------------------------------------------------------
+// Every other request here also asks for the correction, which states the same
+// reason -- so this one asks for the retarget alone. A retarget that pointed at
+// the correction's message would point at a message nobody posted.
+void TestTheRetargetStatesWhyASourceIsNotAClip(const std::string& fixture)
+{
+    struct Case
+    {
+        const char* what;
+        bool duplicate;
+        const char* message;
+    };
+    const Case cases[] = {
+        {"the target rig as its own source", false,
+         "vrm.humanoidRetarget: the source skeleton </Asset/skel/Skeleton> "
+         "names no human bone"},
+        {"one bone at two joints", true,
+         "hips at 'hips', hips at 'Reference/hips'"},
+    };
+
+    for (const Case& c : cases) {
+        const Rig rig = Open(fixture);
+        if (c.duplicate) {
+            UsdAttribute joints = rig.clip.GetAttribute(kJoints);
+            UsdAttribute rest = rig.clip.GetAttribute(kRestTransforms);
+            VtArray<TfToken> tokens;
+            VtArray<GfMatrix4d> matrices;
+            assert(joints.Get(&tokens) && rest.Get(&matrices));
+            tokens.push_back(TfToken("Reference"));
+            tokens.push_back(TfToken("Reference/hips"));
+            matrices.push_back(GfMatrix4d(1.0));
+            matrices.push_back(GfMatrix4d(1.0));
+            assert(joints.Set(tokens) && rest.Set(matrices));
+        } else {
+            assert(rig.humanoid.GetRelationship(kSourceRel).SetTargets(
+                {kTargetPath}));
+        }
+
+        ExecUsdSystem system(rig.stage);
+        std::vector<ExecUsdValueKey> keys;
+        keys.emplace_back(rig.humanoid, kRetarget);
+        ExecUsdRequest request = system.BuildRequest(std::move(keys));
+        TfErrorMark mark;
+        ExecUsdCacheView view = system.Compute(request);
+        AssertRefused(view, 0);
+        if (!MarkNames(mark, c.message)) {
+            std::fprintf(stderr, "%s: the retarget did not say why\n", c.what);
+            assert(false && "the retarget's refusal named no reason");
+        }
+        for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd();
+             ++it) {
+            assert(it->GetCommentary().find("vrm.computeRestPoseCorrection")
+                       == std::string::npos &&
+                   "an error named a computation this request never asked for");
+        }
+        mark.Clear();
+    }
+    std::printf("execVrm retarget: asked alone, it says why a source is not a "
+                "clip's skeleton, naming the bones\n");
+}
+
+// ---------------------------------------------------------------------------
+// The binding is inherited, as UsdSkel inherits it
+// ---------------------------------------------------------------------------
+// `skel:animationSource` binds "Skeleton primitives at or beneath the location
+// at which this property is defined", and UsdSkel walks up from a skeleton to
+// the first prim with SkelBindingAPI applied that authors one. The bound pose
+// follows that walk through `vrm.computeBindingPose` and NamespaceAncestor.
+
+// The retarget at frame 24, over whatever the rig's stage now states.
+vrmRetarget::RetargetedPose RetargetAt24(const Rig& rig)
+{
+    ExecUsdSystem system(rig.stage);
+    ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
+    ArmAt(system, request, 24.0);
+    TfErrorMark mark;
+    const vrmRetarget::RetargetedPose pose = RetargetAt(system.Compute(request));
+    if (!mark.IsClean()) {
+        MarkNames(mark, "(nothing: this case expected no error)");
+        assert(false && "an inherited binding posted an error");
+    }
+    return pose;
+}
+
+void TestTheBindingIsInheritedAsUsdSkelInheritsIt(const std::string& fixture)
+{
+    const vrmRetarget::RetargetedPose clip = RetargetAt24(Open(fixture));
+    const vrmRetarget::RetargetedPose posed = [&fixture] {
+        const Rig rig = Open(fixture);
+        assert(rig.clip.GetRelationship(kAnimationSourceRel)
+                   .SetTargets({kPosedAnimationPath}));
+        return RetargetAt24(rig);
+    }();
+    assert(clip != posed && "the two animations no longer differ at frame 24");
+
+    // ---- bound on the SkelRoot, not the skeleton ---------------------------
+    {
+        const Rig rig = Open(fixture);
+        UsdPrim skeleton = rig.clip;
+        assert(skeleton.RemoveProperty(kAnimationSourceRel));
+        UsdSkelBindingAPI root =
+            UsdSkelBindingAPI::Apply(rig.stage->GetPrimAtPath(SdfPath("/Clip")));
+        assert(root.CreateAnimationSourceRel().SetTargets({kClipAnimationPath}));
+        assert(UsdSkelBindingAPI(rig.clip).GetInheritedAnimationSource()
+                   .GetPath() == kClipAnimationPath);
+        assert(RetargetAt24(rig) == clip &&
+               "a clip bound on its SkelRoot was not retargeted");
+    }
+
+    // ---- the skeleton's own binding shadows the SkelRoot's -----------------
+    {
+        const Rig rig = Open(fixture);
+        UsdSkelBindingAPI root =
+            UsdSkelBindingAPI::Apply(rig.stage->GetPrimAtPath(SdfPath("/Clip")));
+        assert(root.CreateAnimationSourceRel().SetTargets({kPosedAnimationPath}));
+        assert(RetargetAt24(rig) == clip &&
+               "an ancestor's binding won over the skeleton's own");
+    }
+
+    // ---- an ancestor without the API applied is not read -------------------
+    // UsdSkel's walk checks HasAPI; NamespaceAncestor finds only prims that
+    // provide the computation, which is the same set.
+    {
+        const Rig rig = Open(fixture);
+        UsdPrim skeleton = rig.clip;
+        assert(skeleton.RemoveProperty(kAnimationSourceRel));
+        UsdPrim root = rig.stage->GetPrimAtPath(SdfPath("/Clip"));
+        assert(root.CreateRelationship(kAnimationSourceRel)
+                   .SetTargets({kClipAnimationPath}));
+        assert(!UsdSkelBindingAPI(rig.clip).GetInheritedAnimationSource());
+
+        ExecUsdSystem system(rig.stage);
+        ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
+        TfErrorMark mark;
+        ExecUsdCacheView view = system.Compute(request);
+        AssertRefused(view, kBoundKey);
+        AssertRefused(view, kRetargetKey);
+        assert(MarkNames(mark, "no ancestor with SkelBindingAPI applied binds "
+                               "an animation either"));
+        mark.Clear();
+    }
+
+    // ---- two levels up, through a SkelBindingAPI prim that binds nothing ---
+    // The intermediate Scope authors no animation source, answers no value
+    // and says nothing, and its own NamespaceAncestor reaches the SkelRoot.
+    {
+        const Rig rig = Open(fixture);
+        UsdPrim deep = rig.stage->DefinePrim(SdfPath("/Deep"),
+                                             TfToken("SkelRoot"));
+        UsdSkelBindingAPI::Apply(deep).CreateAnimationSourceRel().SetTargets(
+            {kClipAnimationPath});
+        UsdPrim scope = rig.stage->DefinePrim(SdfPath("/Deep/Rig"),
+                                              TfToken("Scope"));
+        UsdSkelBindingAPI::Apply(scope);
+        UsdPrim skeleton = rig.stage->DefinePrim(SdfPath("/Deep/Rig/Skeleton"),
+                                                 TfToken("Skeleton"));
+        VtArray<TfToken> tokens;
+        VtArray<GfMatrix4d> matrices;
+        assert(rig.clip.GetAttribute(kJoints).Get(&tokens));
+        assert(rig.clip.GetAttribute(kRestTransforms).Get(&matrices));
+        assert(skeleton.CreateAttribute(kJoints, SdfValueTypeNames->TokenArray)
+                   .Set(tokens));
+        assert(skeleton
+                   .CreateAttribute(kRestTransforms,
+                                    SdfValueTypeNames->Matrix4dArray)
+                   .Set(matrices));
+        assert(rig.humanoid.GetRelationship(kSourceRel).SetTargets(
+            {skeleton.GetPath()}));
+        assert(RetargetAt24(rig) == clip &&
+               "a binding two levels up was not reached");
+    }
+
+    // ---- an edit of the inherited binding reaches the retarget -------------
+    {
+        const Rig rig = Open(fixture);
+        UsdPrim skeleton = rig.clip;
+        assert(skeleton.RemoveProperty(kAnimationSourceRel));
+        UsdSkelBindingAPI root =
+            UsdSkelBindingAPI::Apply(rig.stage->GetPrimAtPath(SdfPath("/Clip")));
+        UsdRelationship rel = root.CreateAnimationSourceRel();
+        assert(rel.SetTargets({kClipAnimationPath}));
+
+        ExecUsdSystem system(rig.stage);
+        std::set<int> reported;
+        ExecUsdRequest request = system.BuildRequest(
+            KeysFor(rig),
+            [&](const ExecRequestIndexSet& indices, const EfTimeInterval&) {
+                reported.insert(indices.begin(), indices.end());
+            });
+        ArmAt(system, request, 24.0);
+        assert(RetargetAt(system.Compute(request)) == clip);
+
+        reported.clear();
+        assert(rel.SetTargets({kPosedAnimationPath}));
+        assert(reported.count(kBoundKey) && reported.count(kRetargetKey) &&
+               "rebinding the SkelRoot did not reach the retarget");
+        assert(!reported.count(kCorrectionKey) && !reported.count(kMapKey));
+        assert(RetargetAt(system.Compute(request)) == posed);
+    }
+
+    // ---- pinned: an explicit unbinding is not seen -------------------------
+    // UsdSkel stops at a relationship authored with no target: the skeleton is
+    // explicitly UNBOUND. Exec hands an authored empty relationship to a
+    // callback exactly as an unauthored one, so the walk goes on and the
+    // SkelRoot's animation is answered. A P0-6 row, not a fix.
+    {
+        const Rig rig = Open(fixture);
+        assert(rig.clip.GetRelationship(kAnimationSourceRel).SetTargets({}));
+        UsdSkelBindingAPI root =
+            UsdSkelBindingAPI::Apply(rig.stage->GetPrimAtPath(SdfPath("/Clip")));
+        assert(root.CreateAnimationSourceRel().SetTargets({kPosedAnimationPath}));
+        assert(!UsdSkelBindingAPI(rig.clip).GetInheritedAnimationSource() &&
+               "UsdSkel no longer reads an empty binding as an unbinding");
+        assert(RetargetAt24(rig) == posed &&
+               "an explicit unbinding is seen after all -- the pin is gone, "
+               "and the bound pose should now refuse it");
+    }
+    std::printf("execVrm retarget: a binding on the SkelRoot, two levels up, "
+                "shadowed by the skeleton's own, and not read without the API; "
+                "an explicit unbinding is pinned as not seen\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -1095,6 +1325,8 @@ int main(int argc, char** argv)
     TestASamplerThatRefusedIsRefusedAcrossBothBundles(fixture);
     TestTheSourceAndTheRigAreRefusedAsTheCorrectionRefusesThem(fixture);
     TestAStatementDeclaredWithNoValueIsTheFallback(fixture);
+    TestTheRetargetStatesWhyASourceIsNotAClip(fixture);
+    TestTheBindingIsInheritedAsUsdSkelInheritsIt(fixture);
 
     for (const std::string& warning : all.Take("")) {
         if (warning.find("No value set for output") == std::string::npos) {

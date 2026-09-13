@@ -2,14 +2,17 @@
 #
 # execVrm — the VRM OpenExec bundle (Workspace Phase 8, Motion Phase E): VRM
 # semantics applied to a target rig, driven by the schema contract only. The
-# boundary, five registered value types and five computations. On
+# boundary, five registered value types and six computations. On
 # `UsdSkelSkeleton`: `vrm.computeTargetSkeleton`, which is the rig as
 # `vrmRetarget` reads it, and `vrm.computeBoundPose`, which forwards the pose
-# of the animation the skeleton is bound to. On the applied `VrmHumanoidAPI`:
+# of the animation the skeleton is bound to. On the applied
+# `UsdSkelBindingAPI`: `vrm.computeBindingPose`, which is that binding
+# inherited from an ancestor, as UsdSkel inherits it. On the applied
+# `VrmHumanoidAPI`:
 # `vrm.computeHumanoidMap`, which is which joint each human bone drives,
 # `vrm.computeRestPoseCorrection`, which carries a clip's rest onto that rig,
 # and `vrm.humanoidRetarget`, which is one sample of the clip on it -- four of
-# P0-5's five nodes, and one it needed (docs/roadmap/openexec-foundation.md).
+# P0-5's five nodes, and two it needed (docs/roadmap/openexec-foundation.md).
 #
 # Self-contained so `ost plugin build plugins/execVrm` can configure it
 # directly, and also add_subdirectory()-able from the repo-root CMakeLists.txt

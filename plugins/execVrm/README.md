@@ -14,19 +14,23 @@ bundle that reads a type has to register itself -- and five computations:
 | `vrm.computeTargetSkeleton` | a `UsdSkelSkeleton` prim | the `vrmRetarget::TargetSkeleton` its `joints` and `restTransforms` state: tokens verbatim, parents from the joint paths, each rest transform decomposed into a rotation and a translation with **scale and shear dropped** |
 | `vrm.computeHumanoidMap` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::HumanoidMap` its `vrm:humanBones:*` tokens state, resolved against the one skeleton `vrm:skeleton` reaches |
 | `vrm.computeRestPoseCorrection` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::RestPoseCorrection` from the rest pose of the skeleton `vrm:retarget:sourceSkeleton` reaches onto this humanoid's rig, through its map |
-| `vrm.computeBoundPose` | a `UsdSkelSkeleton` prim | the `motion::HumanoidPose` `execMotion`'s `motion.sampleAnimation` answers on the animation its `skel:animationSource` binds, forwarded |
+| `vrm.computeBoundPose` | a `UsdSkelSkeleton` prim | the `motion::HumanoidPose` `execMotion`'s `motion.sampleAnimation` answers on the animation the skeleton is bound to -- its own `skel:animationSource`, or else an ancestor's -- forwarded |
+| `vrm.computeBindingPose` | a prim with `UsdSkelBindingAPI` applied | the same, for the animation that prim binds at or beneath it, or else its nearest such ancestor's: UsdSkel's inherited binding, one prim per step |
 | `vrm.humanoidRetarget` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::RetargetedPose`: one sample of the clip `vrm:retarget:sourceSkeleton` reaches, in this rig's joint order, under the humanoid's root-motion statements |
 
 `vrm.computeJointLocalTransforms` is P0-5's last node and does not exist yet.
-`vrm.computeBoundPose` is not one of the plan's five: it is the second hop from
-a humanoid to its clip's animation, which an exec input cannot make.
+`vrm.computeBoundPose` and `vrm.computeBindingPose` are not among the plan's
+five: they are the second hop from a humanoid to its clip's animation, which an
+exec input cannot make, and UsdSkel's inheritance of that hop.
 
 ## Two schemas, and one of them is another bundle's
 
 26.08 lets exactly one plugin declare a schema in `Info.Exec.Schemas`, so the two
 exec bundles partition them ([WORKSPACE.md](../../docs/architecture/WORKSPACE.md)
-§2): `UsdSkelAnimation` is `execMotion`'s; `UsdSkelSkeleton` and the `Vrm*API`
-applied schemas are this bundle's. It declares the two it registers on.
+§2): `UsdSkelAnimation` is `execMotion`'s; `UsdSkelSkeleton`, `UsdSkelBindingAPI`
+and the `Vrm*API` applied schemas are this bundle's. It declares the three it
+registers on. No shipped plugin declares `UsdSkelBindingAPI` -- `execGeom`
+declares `UsdGeomScope` and `UsdGeomXformable`, `execIr` its own three.
 
 `VrmHumanoidAPI` being **applied** is what lets this bundle compute on the
 importer's humanoid at all. That prim is a `UsdGeomScope`, whose typed schema
@@ -169,7 +173,20 @@ own sample at the evaluated frame. It is reached from the humanoid through
 `skel:animationSource` to `motion.sampleAnimation`. That is `motion_retarget`'s
 call per sample, with the same four arguments, and it is the pose P0-6 compares.
 One relationship on the humanoid names the clip, so the rest the correction
-reads and the pose the retarget reads cannot come from two clips. A filtered or
+reads and the pose the retarget reads cannot come from two clips.
+
+**The skeleton's binding is UsdSkel's, inheritance included.** `skel:animationSource`
+binds "Skeleton primitives at or beneath" the prim that states it, and UsdSkel
+walks up from a skeleton to the first prim with `SkelBindingAPI` applied that
+authors one. So the bound pose is the skeleton's own binding, else
+`vrm.computeBindingPose` on its nearest ancestor with the API -- exec's
+`NamespaceAncestor` finds the nearest prim *providing* that computation, which
+is exactly the prims UsdSkel's `HasAPI` check admits. A clip bound on its
+SkelRoot is retargeted, and so is one bound two levels up; the skeleton's own binding
+shadows an ancestor's, and a relationship on an ancestor without the API is not
+read. **One case is not followed**: UsdSkel reads a relationship authored with
+no valid target as an explicit *unbinding* and stops, and exec hands that to a
+callback exactly as an unauthored one, so here the walk goes on. Pinned. A filtered or
 blended pose reaches it only as a driver's override of `motion.sampleAnimation`
 or of `vrm.computeBoundPose`, which the suite measures.
 

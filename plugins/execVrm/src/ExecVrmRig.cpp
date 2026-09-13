@@ -300,6 +300,11 @@ BoundPoseOutcome BoundPoseFor(const BoundPoseInputs& inputs)
 {
     BoundPoseOutcome outcome;
     if (inputs.animationTargetCount == 0) {
+        // Nothing bound here: what an ancestor binds, UsdSkel's inheritance.
+        if (inputs.inherited) {
+            outcome.pose = *inputs.inherited;
+            return outcome;
+        }
         outcome.refusal = BoundPoseRefusal::NoAnimation;
         return outcome;
     }

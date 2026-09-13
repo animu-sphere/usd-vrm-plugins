@@ -8,15 +8,17 @@
 // inputs into those calls and hands the results back -- execMotion's split,
 // for execMotion's reason (motion policy §11.4).
 //
-// # Which schemas, and why these two
+// # Which schemas, and why these three
 //
 // 26.08 lets exactly one plugin declare a schema, and a second declarer loses
 // every computation it registered there to a coding error at metadata read and
 // a "computation not found" much later
 // (docs/reports/openusd/26.08-openexec-mechanism.md §2). So the two exec bundles
 // partition them (WORKSPACE.md §2): `execMotion` has `UsdSkelAnimation`, and
-// this bundle has `UsdSkelSkeleton` and the `Vrm*API` applied schemas. It
-// declares only the two it registers on today.
+// this bundle has `UsdSkelSkeleton`, `UsdSkelBindingAPI` and the `Vrm*API`
+// applied schemas. It declares only the three it registers on today;
+// `UsdSkelBindingAPI` is there because UsdSkel's animation binding is
+// inherited from an ancestor with that API applied (vrm.computeBindingPose).
 //
 // `VrmHumanoidAPI` is an *applied* schema, and that is what lets this bundle
 // compute on the importer's humanoid prim at all: the prim is a `UsdGeomScope`,
@@ -75,6 +77,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((computeHumanoidMap, "vrm.computeHumanoidMap"))
     ((computeRestPoseCorrection, "vrm.computeRestPoseCorrection"))
     ((computeBoundPose, "vrm.computeBoundPose"))
+    ((computeBindingPose, "vrm.computeBindingPose"))
     ((humanoidRetarget, "vrm.humanoidRetarget"))
     // execMotion's sampler, read by name across `skel:animationSource`. The one
     // computation this bundle reads that another bundle registers, which is
@@ -85,6 +88,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((animationSource, "skel:animationSource"))
     ((animationSourcePaths, "skel:animationSource:paths"))
     ((animationSourcePoses, "skel:animationSource:poses"))
+    // What the nearest ancestor with SkelBindingAPI applied binds: UsdSkel's
+    // binding is inherited, so a clip bound on its SkelRoot is bound.
+    ((inheritedPose, "skel:animationSource:inherited"))
     // UsdSkelSkeleton's own attributes, both `uniform`, each declared with its
     // ELEMENT type and read through an iterator (the migration audit §4).
     (joints)
@@ -136,6 +142,115 @@ TF_REGISTRY_FUNCTION(ExecTypeRegistry)
     // `motion::HumanoidPose{}`.
     ExecTypeRegistry::RegisterType(motion::HumanoidPose{});
 }
+
+namespace {
+
+std::string
+_Quoted(const std::vector<SdfPath> &paths)
+{
+    std::string named;
+    for (const SdfPath &path : paths) {
+        named += named.empty() ? "<" : ", <";
+        named += path.GetString();
+        named += ">";
+    }
+    return named;
+}
+
+// The body of both binding computations: `vrm.computeBoundPose` on a skeleton
+// and `vrm.computeBindingPose` on a prim with SkelBindingAPI applied. Each
+// reads its own `skel:animationSource`, twice, and what the nearest ancestor
+// with the API binds; the seam decides (ExecVrmRig.h, BoundPoseFor).
+//
+// Only the skeleton's node reports a prim that binds nothing. An ancestor that
+// binds nothing is the ordinary case -- most SkelBindingAPI prims author only
+// `skel:skeleton` -- and it answers no value silently, which the skeleton below
+// it reads as "no ancestor binds one". An ancestor whose binding IS broken says
+// so itself, as the skeleton's node does.
+void
+_ForwardBoundPose(const VdfContext &ctx, const char *computation,
+                  bool reportUnbound)
+{
+    execvrm::BoundPoseInputs inputs;
+
+    std::vector<SdfPath> targets;
+    for (VdfReadIterator<SdfPath> path(ctx, _tokens->animationSourcePaths);
+         !path.IsAtEnd(); ++path) {
+        targets.push_back(*path);
+    }
+    inputs.animationTargetCount = targets.size();
+    for (VdfReadIterator<motion::HumanoidPose> pose(
+             ctx, _tokens->animationSourcePoses);
+         !pose.IsAtEnd(); ++pose) {
+        inputs.poses.push_back(*pose);
+    }
+    inputs.inherited =
+        ctx.GetInputValuePtr<motion::HumanoidPose>(_tokens->inheritedPose);
+
+    execvrm::BoundPoseOutcome outcome = execvrm::BoundPoseFor(inputs);
+    if (outcome.pose) {
+        ctx.SetOutput(std::move(*outcome.pose));
+        return;
+    }
+
+    switch (outcome.refusal) {
+    case execvrm::BoundPoseRefusal::NoAnimation:
+        if (reportUnbound) {
+            TF_RUNTIME_ERROR(
+                "%s: 'skel:animationSource' reaches nothing on the stage, and "
+                "no ancestor with SkelBindingAPI applied binds an animation "
+                "either, so the skeleton is bound to no animation -- and an "
+                "empty pose is not answered, because it would put the rig at "
+                "rest for a misspelled binding; no pose was forwarded",
+                computation);
+        }
+        break;
+    case execvrm::BoundPoseRefusal::SeveralAnimations:
+        TF_RUNTIME_ERROR(
+            "%s: 'skel:animationSource' reaches %zu objects (%s), and a "
+            "skeleton is bound to one animation; no pose was forwarded",
+            computation, inputs.animationTargetCount,
+            _Quoted(targets).c_str());
+        break;
+    case execvrm::BoundPoseRefusal::AnimationUnanswered:
+        TF_RUNTIME_ERROR(
+            "%s: 'skel:animationSource' targets %s, which answered no "
+            "motion.sampleAnimation -- it is not a UsdSkelAnimation, "
+            "execMotion is not in the session, or its sampler refused; no "
+            "pose was forwarded",
+            computation, _Quoted(targets).c_str());
+        break;
+    }
+    ctx.SetEmptyOutput();
+}
+
+// Why a source skeleton is not a clip's rest, in the words both nodes that
+// read one use -- so the retarget states the reason itself rather than
+// pointing at the correction, which a request need not ask for.
+std::string
+_SourceRestReason(
+    const std::string &named, execvrm::SourceRestRefusal refusal,
+    const std::vector<std::pair<motion::HumanBone, std::string>> &offending)
+{
+    if (refusal == execvrm::SourceRestRefusal::NoHumanBone) {
+        return "the source skeleton " + named
+            + " names no human bone -- no joint's leaf is a bone of the "
+              "vocabulary, so it is not a semantic clip's skeleton";
+    }
+    std::string bones;
+    for (const auto &[bone, token] : offending) {
+        bones += bones.empty() ? "" : ", ";
+        bones += std::string(motion::HumanBoneName(bone));
+        bones += " at '";
+        bones += token;
+        bones += "'";
+    }
+    return "the source skeleton " + named
+        + " names one bone at more than one joint (" + bones
+        + "), and which rest the clip meant cannot be known";
+}
+
+} // namespace
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
@@ -216,7 +331,10 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelSkeleton)
     // -----------------------------------------------------------------------
     //
     // `motion.sampleAnimation` on whatever `skel:animationSource` targets,
-    // forwarded. A retarget reaches a clip through ONE relationship on the
+    // forwarded -- the skeleton's own binding, or else the one the nearest
+    // ancestor with SkelBindingAPI applied states (vrm.computeBindingPose,
+    // below), which is UsdSkel's order. A retarget reaches a clip through ONE
+    // relationship on the
     // humanoid, `vrm:retarget:sourceSkeleton`, because the skeleton is the one
     // prim both halves of a clip can be reached from -- and an exec input
     // traverses one relationship, so the second hop, UsdSkel's own binding, is
@@ -234,58 +352,8 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelSkeleton)
     // is not an animation is.
     self.PrimComputation(_tokens->computeBoundPose)
         .Callback<motion::HumanoidPose>(+[](const VdfContext &ctx) {
-            execvrm::BoundPoseInputs inputs;
-
-            std::vector<SdfPath> targets;
-            for (VdfReadIterator<SdfPath> path(ctx, _tokens->animationSourcePaths);
-                 !path.IsAtEnd(); ++path) {
-                targets.push_back(*path);
-            }
-            inputs.animationTargetCount = targets.size();
-            for (VdfReadIterator<motion::HumanoidPose> pose(
-                     ctx, _tokens->animationSourcePoses);
-                 !pose.IsAtEnd(); ++pose) {
-                inputs.poses.push_back(*pose);
-            }
-
-            execvrm::BoundPoseOutcome outcome = execvrm::BoundPoseFor(inputs);
-            if (outcome.pose) {
-                ctx.SetOutput(std::move(*outcome.pose));
-                return;
-            }
-
-            std::string named;
-            for (const SdfPath &path : targets) {
-                named += named.empty() ? "<" : ", <";
-                named += path.GetString();
-                named += ">";
-            }
-            switch (outcome.refusal) {
-            case execvrm::BoundPoseRefusal::NoAnimation:
-                TF_RUNTIME_ERROR(
-                    "vrm.computeBoundPose: 'skel:animationSource' reaches "
-                    "nothing on the stage, so the skeleton is bound to no "
-                    "animation -- and an empty pose is not answered, because "
-                    "it would put the rig at rest for a misspelled binding; no "
-                    "pose was forwarded");
-                break;
-            case execvrm::BoundPoseRefusal::SeveralAnimations:
-                TF_RUNTIME_ERROR(
-                    "vrm.computeBoundPose: 'skel:animationSource' reaches %zu "
-                    "objects (%s), and a skeleton is bound to one animation; "
-                    "no pose was forwarded",
-                    inputs.animationTargetCount, named.c_str());
-                break;
-            case execvrm::BoundPoseRefusal::AnimationUnanswered:
-                TF_RUNTIME_ERROR(
-                    "vrm.computeBoundPose: 'skel:animationSource' targets %s, "
-                    "which answered no motion.sampleAnimation -- it is not a "
-                    "UsdSkelAnimation, execMotion is not in the session, or "
-                    "its sampler refused; no pose was forwarded",
-                    named.c_str());
-                break;
-            }
-            ctx.SetEmptyOutput();
+            _ForwardBoundPose(ctx, "vrm.computeBoundPose",
+                              /* reportUnbound = */ true);
         })
         .Inputs(
             Relationship(_tokens->animationSource)
@@ -293,7 +361,45 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelSkeleton)
                 .InputName(_tokens->animationSourcePaths),
             Relationship(_tokens->animationSource)
                 .TargetedObjects<motion::HumanoidPose>(_tokens->sampleAnimation)
-                .InputName(_tokens->animationSourcePoses));
+                .InputName(_tokens->animationSourcePoses),
+            NamespaceAncestor<motion::HumanoidPose>(_tokens->computeBindingPose)
+                .InputName(_tokens->inheritedPose));
+}
+
+// ---------------------------------------------------------------------------
+// vrm.computeBindingPose -- what a SkelBindingAPI prim binds at or beneath it
+// ---------------------------------------------------------------------------
+//
+// UsdSkel's binding is inherited: `skel:animationSource` binds "Skeleton
+// primitives at or beneath the location at which this property is defined",
+// and `GetInheritedAnimationSource` walks up from a skeleton to the first prim
+// that has SkelBindingAPI applied and authors one. This computation is that
+// walk, one prim per step: registered on the applied `UsdSkelBindingAPI`, it
+// answers its own binding, or else its nearest such ancestor's through
+// `NamespaceAncestor` -- which finds the nearest ancestor PROVIDING the
+// computation, so exactly the prims UsdSkel's `HasAPI` check admits. A clip
+// bound on its SkelRoot, the layout many UsdSkel producers write, reaches the
+// skeleton's `vrm.computeBoundPose` this way.
+//
+// `UsdSkelBindingAPI` is declared by no shipped plugin, so this bundle declares
+// it (WORKSPACE.md §2). It resolves on a SkelRoot, whose typed schema execGeom
+// declares, as `VrmHumanoidAPI` does on a Scope.
+EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelBindingAPI)
+{
+    self.PrimComputation(_tokens->computeBindingPose)
+        .Callback<motion::HumanoidPose>(+[](const VdfContext &ctx) {
+            _ForwardBoundPose(ctx, "vrm.computeBindingPose",
+                              /* reportUnbound = */ false);
+        })
+        .Inputs(
+            Relationship(_tokens->animationSource)
+                .TargetedObjects<SdfPath>(ExecBuiltinComputations->computePath)
+                .InputName(_tokens->animationSourcePaths),
+            Relationship(_tokens->animationSource)
+                .TargetedObjects<motion::HumanoidPose>(_tokens->sampleAnimation)
+                .InputName(_tokens->animationSourcePoses),
+            NamespaceAncestor<motion::HumanoidPose>(_tokens->computeBindingPose)
+                .InputName(_tokens->inheritedPose));
 }
 
 // ---------------------------------------------------------------------------
@@ -530,30 +636,12 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
                     named.c_str());
                 break;
             case execvrm::CorrectionRefusal::SourceRest:
-                if (outcome.sourceRefusal ==
-                    execvrm::SourceRestRefusal::NoHumanBone) {
-                    TF_RUNTIME_ERROR(
-                        "vrm.computeRestPoseCorrection: the source skeleton "
-                        "%s names no human bone -- no joint's leaf is a bone "
-                        "of the vocabulary, so it is not a semantic clip's "
-                        "skeleton; no correction was computed",
-                        named.c_str());
-                } else {
-                    std::string bones;
-                    for (const auto &[bone, token] : outcome.offending) {
-                        bones += bones.empty() ? "" : ", ";
-                        bones += std::string(motion::HumanBoneName(bone));
-                        bones += " at '";
-                        bones += token;
-                        bones += "'";
-                    }
-                    TF_RUNTIME_ERROR(
-                        "vrm.computeRestPoseCorrection: the source skeleton "
-                        "%s names one bone at more than one joint (%s), and "
-                        "which rest the clip meant cannot be known; no "
-                        "correction was computed",
-                        named.c_str(), bones.c_str());
-                }
+                TF_RUNTIME_ERROR(
+                    "vrm.computeRestPoseCorrection: %s; no correction was "
+                    "computed",
+                    _SourceRestReason(named, outcome.sourceRefusal,
+                                      outcome.offending)
+                        .c_str());
                 break;
             }
             ctx.SetEmptyOutput();
@@ -741,10 +829,10 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
             break;
         case execvrm::RetargetRefusal::SourceRest:
             TF_RUNTIME_ERROR(
-                "vrm.humanoidRetarget: the source skeleton %s is not a "
-                "semantic clip's skeleton (vrm.computeRestPoseCorrection names "
-                "the reason); no pose was retargeted",
-                named.c_str());
+                "vrm.humanoidRetarget: %s; no pose was retargeted",
+                _SourceRestReason(named, outcome.sourceRefusal,
+                                  outcome.offending)
+                    .c_str());
             break;
         case execvrm::RetargetRefusal::PoseUnanswered:
             // The bound pose posted the reason; this says where it went.

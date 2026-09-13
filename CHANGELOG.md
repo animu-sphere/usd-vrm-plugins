@@ -478,7 +478,11 @@ Current schema contract version: **1**.
   The pose is `execMotion`'s `motion.sampleAnimation` on the animation the
   clip's skeleton binds in `skel:animationSource`. An exec input makes one
   relationship hop and this needs two, so a fifth node, `vrm.computeBoundPose` on
-  `UsdSkelSkeleton`, forwards it. Where the root lands is four `vrm:retarget:*`
+  `UsdSkelSkeleton`, forwards it. The binding it reads is UsdSkel's, inheritance
+  included: a sixth, `vrm.computeBindingPose` on the applied `UsdSkelBindingAPI`
+  (which `execVrm` now declares), answers what an ancestor binds through
+  `NamespaceAncestor`, so a clip bound on its SkelRoot is retargeted. An explicit
+  unbinding, which exec cannot tell from no binding, is pinned. Where the root lands is four `vrm:retarget:*`
   attributes on the humanoid, `motion_retarget`'s `--root-motion`,
   `--root-joint`, `--translation-scale` and `--preserve-target-height` word for
   word. `vrmRetarget::RetargetedPose` gains an exact `operator==`, which the
@@ -516,7 +520,8 @@ Current schema contract version: **1**.
   twice: with the animation count taken from the poses that came back, a session
   with no `execMotion` was told the skeleton "is bound to no animation"; and
   with `execVrm`'s own type registration removed, four suites went red with a
-  fatal error. 139 green CTest names in the workspace.
+  fatal error; and with the ancestor's value ignored, a clip bound on its
+  SkelRoot lost its pose. 139 green CTest names in the workspace.
 
 - **Two expressions can no longer both own the eyelid: VRM 1.0's expression
   overrides, read and obeyed** (closes #170). Expressions accumulate on the

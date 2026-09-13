@@ -830,7 +830,11 @@ skeleton binds in `skel:animationSource`. That is a second relationship hop, and
 an exec input makes one, so a fifth computation the plan did not list,
 `vrm.computeBoundPose` on `UsdSkelSkeleton`, forwards it. One relationship on
 the humanoid then names the clip, and the rest and the motion cannot come from
-two clips. Where the root lands is four `vrm:retarget:*` attributes on the
+two clips. The skeleton's binding is UsdSkel's, inheritance included: a sixth,
+`vrm.computeBindingPose` on the applied `UsdSkelBindingAPI`, answers what an
+ancestor binds, reached through `NamespaceAncestor`, so a clip bound on its
+SkelRoot is retargeted. An explicit unbinding, which exec cannot tell from no
+binding, is pinned. Where the root lands is four `vrm:retarget:*` attributes on the
 humanoid, `motion_retarget`'s four flags word for word. `vrmRetarget::RetargetedPose`
 gained the exact `operator==` the registry requires, and `execVrm` registers
 `motion::HumanoidPose` as well as `execMotion` does.
@@ -857,9 +861,10 @@ the node recomputes, on every frame, the value `vrm.computeRestPoseCorrection`
 caches per rig edit. On a full 55-bone humanoid that is 17.7 µs of a 21.2 µs
 evaluation, against 1.9 µs for the retarget alone. The ask is a retargeter that
 takes the correction ([boundary consolidation](boundary-consolidation.md) §1).
-Four more rows go to P0-6's table: a skeleton with no `skel:animationSource` (the
-tool falls back to the stage's one animation), a NaN scale (the tool parses it),
-a valueless scale, and the default time code.
+More rows go to P0-6's table: a binding on the SkelRoot (the tool reaches it
+only through its "exactly one animation on the stage" fallback), a skeleton
+bound nowhere, an explicit unbinding, a NaN scale (the tool parses it), a
+valueless scale, and the default time code.
 
 **Which pose, the question `motion.blendPoses` left, is answered for parity and
 left open for the graph.** The retarget retargets the clip's own sample. A
