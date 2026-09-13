@@ -282,6 +282,16 @@ rig type a parity check *would* compare, since it is the retarget's answer, and
 it still has no `NearlyEqual`: P0-6 decides whether it compares these values or
 the arrays a bake authors from them, and asks for one if it chooses the first.
 
+`vrmRetarget::JointLocalTransforms` carries one too *(added 2026-09-13)*, for
+`vrm.computeJointLocalTransforms`. It is the second of those two choices made
+into a value: a retargeted pose plus the `joints` it is ordered by and one
+`scales` entry per joint, the four arrays a bake authors at one time code. It
+compares over the timestamp, the joints and all three arrays. The joints and
+scales count even though neither moves between samples of one bake, and so does
+the joints' order, since that order is what the arrays are indexed by. A
+rotation and its negation are different values, as above, and there is no
+`NearlyEqual` for the same reason.
+
 `NearlyEqual` takes a `MotionTolerance` and answers the question a parity check
 and a corpus test are actually asking. The two differ in exactly three places,
 and each is a decision rather than an implementation detail:

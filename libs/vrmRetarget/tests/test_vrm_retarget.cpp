@@ -304,6 +304,48 @@ TestRigValuesCompareExactly()
     other = pose;
     std::swap(other.rotations[1], other.rotations[2]);
     assert(other != pose);
+
+    // The same sample in an animation's shape, for
+    // `vrm.computeJointLocalTransforms`: the pose's arrays, the rig's tokens,
+    // and one identity scale per joint.
+    vrmRetarget::JointLocalTransforms baked;
+    baked.timestamp = pose.timestamp;
+    for (const vrmRetarget::TargetJoint& joint : turned.GetJoints()) {
+        baked.joints.push_back(joint.token);
+    }
+    baked.translations = pose.translations;
+    baked.rotations = pose.rotations;
+    baked.scales.assign(turned.GetSize(), pxr::GfVec3h(1.0f));
+    const vrmRetarget::JointLocalTransforms same = baked;
+    assert(baked == same);
+    assert(!(baked != same));
+    assert(baked != vrmRetarget::JointLocalTransforms());
+
+    // Each of the five fields is part of the value -- the joints and the
+    // scales included, although neither moves from sample to sample of one
+    // bake.
+    vrmRetarget::JointLocalTransforms changedBaked = baked;
+    changedBaked.timestamp = 0.25;
+    assert(changedBaked != baked);
+    changedBaked = baked;
+    changedBaked.joints[2] = "Root/Pelvis/SpineB";
+    assert(changedBaked != baked);
+    changedBaked = baked;
+    changedBaked.translations[1][0] += 1e-6f;
+    assert(changedBaked != baked);
+    changedBaked = baked;
+    changedBaked.rotations[1] = pxr::GfQuatf(-pose.rotations[1].GetReal(),
+                                             -pose.rotations[1].GetImaginary());
+    assert(changedBaked != baked);
+    changedBaked = baked;
+    changedBaked.scales[1] = pxr::GfVec3h(2.0f);
+    assert(changedBaked != baked);
+
+    // An animation that names its joints in another order is another value,
+    // even carrying the same arrays: the order is what `joints` states.
+    changedBaked = baked;
+    std::swap(changedBaked.joints[1], changedBaked.joints[2]);
+    assert(changedBaked != baked);
 }
 
 // A rejected rebinding unmaps the bone, whether the index or the token is what

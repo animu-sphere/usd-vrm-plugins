@@ -35,6 +35,20 @@ operator!=(const RetargetedPose& a, const RetargetedPose& b) noexcept
 }
 
 bool
+operator==(const JointLocalTransforms& a, const JointLocalTransforms& b) noexcept
+{
+    return a.timestamp == b.timestamp && a.joints == b.joints
+        && a.translations == b.translations && a.rotations == b.rotations
+        && a.scales == b.scales;
+}
+
+bool
+operator!=(const JointLocalTransforms& a, const JointLocalTransforms& b) noexcept
+{
+    return !(a == b);
+}
+
+bool
 GetJointWorldTransform(const TargetSkeleton& skeleton,
                        const RetargetedPose& pose, int jointIndex,
                        pxr::GfQuatf* orientation, pxr::GfVec3f* position)

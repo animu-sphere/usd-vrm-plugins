@@ -12,6 +12,7 @@
 
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec3h.h"
 
 #include <string>
 #include <vector>
@@ -56,6 +57,43 @@ struct RetargetedAnimation
     double frameRate = 30.0;
     motion::MotionSourceMetadata source;
 };
+
+// One retargeted sample in the shape a UsdSkelAnimation states it at one time
+// code: the rig's joint tokens and one translation, rotation and scale per
+// joint, in that order. It is a RetargetedPose with the two things a bake adds
+// to one -- the `joints` the arrays are ordered by, and `scales` -- so a
+// consumer can author, or compare against, an animation's four arrays without
+// re-deriving either.
+//
+// `scales` is part of the shape rather than something a writer remembers:
+// UsdSkel reads translations, rotations and scales as a unit, and an animation
+// that authors no `scales` binds, reads back attribute by attribute, and then
+// resolves no joint transforms at all -- the rig stays at rest. A retargeted
+// clip never animates scale, so every entry is (1, 1, 1): the rule
+// `motion_retarget` authors as one constant array.
+//
+// `timestamp` is the retarget's, in seconds. An animation places a sample at a
+// time code instead; the writer scales one to the other.
+//
+// It exists for `execVrm`'s `vrm.computeJointLocalTransforms`, which answers it
+// whole, so like every value that crosses an exec boundary it compares exactly.
+struct JointLocalTransforms
+{
+    double timestamp = 0.0;
+    std::vector<std::string> joints;
+    std::vector<pxr::GfVec3f> translations;
+    std::vector<pxr::GfQuatf> rotations;
+    std::vector<pxr::GfVec3h> scales;
+};
+
+// Exact, joint by joint, in the rig's order: the same joints, the same
+// timestamp, and the same entry in every slot of all three arrays. A rotation
+// and its negation are different values, as for RetargetedPose, and there is
+// no `NearlyEqual` for the same reason.
+VRMRETARGET_API bool operator==(const JointLocalTransforms& a,
+                                const JointLocalTransforms& b) noexcept;
+VRMRETARGET_API bool operator!=(const JointLocalTransforms& a,
+                                const JointLocalTransforms& b) noexcept;
 
 // The skeleton-space transform of one joint of a retargeted pose: its own local
 // rotation and translation with every ancestor's composed on, root first.
