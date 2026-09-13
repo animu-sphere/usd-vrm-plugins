@@ -80,6 +80,11 @@ struct Clip
     bool hasLookAtTrack = false;
 
     std::vector<std::string> warnings;
+
+    // What reading the clip adds to the retarget's own report, in its frozen
+    // codes: the codes a stage half raises and `vrmRetarget` cannot, because
+    // it never sees a stage (vrmRetarget/Diagnostics.h).
+    vrmRetarget::RetargetDiagnostics diagnostics;
 };
 
 // Reads a `humanBone -> joint token` JSON object, e.g.

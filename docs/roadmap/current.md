@@ -878,13 +878,35 @@ compared, which was P0-4's stated blocker.
   package's bytes to its record
   ([ost report 40](../reports/ost/40-2026-09-13-v0.22.10-one-workspace-prefix-for-every-bundle.md),
   a P1 upstream).
+- 🚧 **The retarget's diagnostics are a frozen code set, and a diagnostic is a
+  value** *(2026-09-13, P1-1's first half)*. `vrmRetarget/Diagnostics.h` holds
+  eight `VRM_RETARGET_*` codes in one table, and a retarget reports
+  `RetargetDiagnostic` values into a list that keeps each code and subject once
+  and compares exactly — the form P0-6's diagnostics row needs, since a node can
+  answer a value beside the pose where it could not answer a sentence. The
+  contract is [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md), "Retarget
+  diagnostics".
+
+  **The set splits at the layer boundary**: the library raises five, and three
+  say what a stage or a file system added, so only a caller holding one can
+  raise them — `vrmRetarget_boundaries` fails if the library names one. The
+  freeze came after its raisers, so it classified six existing reports and
+  added one code the draft lacked, `VRM_RETARGET_INVALID_ROOT_JOINT`.
+  `DiagnoseRig` states what a rig says about every retarget onto it, and a
+  one-pose-at-a-time caller reaches the tool's exact list with it. **One
+  defect on the way**: the clip overload asked only its first sample which
+  bones it drives, so a bone that first appears later went unreported —
+  unreachable through `motion_retarget`, whose clips drive the same bones on
+  every sample, and reachable from a live source's animation. Still open in
+  P1-1: the CLI exit codes and the `VRM_OPENEXEC_*` table.
 - ⬜ **The rest of P0-6** of the
   [plan](openexec-foundation.md#6-foundation-tasks). P0-6 still owes
-  diagnostics, which need P1-1's codes computed as a value rather than logged.
-  Its five cases ran on Linux and macOS for the first time on PR #185's CI and
-  passed. What remains of P0-4 is the producer half of the rate and policies,
-  the written driver contract, and a decision on what a one-joint clip's
-  fallback-filled root means. P1-2 owes a decision on a scaled rest.
+  diagnostics: the codes are values now, so what remains is an exec
+  computation answering them and the harness comparing its list with the
+  tool's. Its five cases ran on Linux and macOS for the first time on PR #185's
+  CI and passed. What remains of P0-4 is the producer half of the rate and
+  policies, the written driver contract, and a decision on what a one-joint
+  clip's fallback-filled root means. P1-2 owes a decision on a scaled rest.
 
 ## Then: boundary consolidation ⬜
 

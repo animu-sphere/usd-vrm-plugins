@@ -48,6 +48,7 @@ if(NOT TARGET motionRuntime::motionRuntime)
 endif()
 
 add_library(vrmRetarget STATIC
+    src/Diagnostics.cpp
     src/ExpressionResolver.cpp
     src/HumanoidMap.cpp
     src/LookAtEvaluator.cpp

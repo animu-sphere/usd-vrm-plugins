@@ -3,6 +3,7 @@
 
 #include "vrmRetarget/api.h"
 
+#include "vrmRetarget/Diagnostics.h"
 #include "vrmRetarget/HumanoidMap.h"
 #include "vrmRetarget/RestPose.h"
 #include "vrmRetarget/RootMotionPolicy.h"
@@ -124,20 +125,18 @@ struct RetargetOptions
     double resampleRate = 0.0;
 };
 
-// Diagnostics a caller should surface rather than swallow. Retargeting onto a
-// rig that is missing bones is legal and useful; doing it silently is not.
-struct RetargetDiagnostics
-{
-    std::vector<motion::HumanBone> unmappedSourceBones;
-    std::vector<motion::HumanBone> missingRequiredBones;
-    std::vector<std::string> warnings;
-
-    bool IsClean() const
-    {
-        return unmappedSourceBones.empty() && missingRequiredBones.empty()
-            && warnings.empty();
-    }
-};
+// What a rig and its map say about every retarget onto them, before any clip
+// is involved: each required bone the map leaves unbound, each joint two bones
+// share, the first joint out of parent-before-child order, and a root joint the
+// options name and the rig does not have.
+//
+// `PoseRetargeter`'s clip overload reports these first. A caller that
+// retargets one pose at a time -- `execVrm`, whose rig and map are computed
+// once per edit and whose pose is computed per frame -- reports them from here,
+// once per rig, and gets the same list the clip overload would have produced.
+VRMRETARGET_API RetargetDiagnostics DiagnoseRig(
+    const TargetSkeleton& skeleton, const HumanoidMap& map,
+    const RetargetOptions& options = RetargetOptions());
 
 // Expands semantic humanoid poses into a target rig's joint order.
 //
@@ -155,11 +154,17 @@ public:
     const HumanoidMap& GetMap() const noexcept { return _map; }
     const RetargetOptions& GetOptions() const noexcept { return _options; }
 
-    // Expands one pose. `diagnostics` may be null.
+    // Expands one pose. `diagnostics` may be null. What one pose can say is
+    // what it drives: a bone the rig does not bind, and the root motion a
+    // missing hips joint or a missing root joint drops. The rig's own report
+    // is DiagnoseRig's.
     RetargetedPose Retarget(const motion::HumanoidPose& pose,
                             RetargetDiagnostics* diagnostics = nullptr) const;
 
     // Expands a whole clip, resampling first when RetargetOptions asks for it.
+    // Reports DiagnoseRig's list and then every sample's, so a bone the clip
+    // starts driving halfway through is reported like one it drives from the
+    // first sample.
     RetargetedAnimation Retarget(const motion::HumanoidAnimation& animation,
                                  RetargetDiagnostics* diagnostics = nullptr) const;
 

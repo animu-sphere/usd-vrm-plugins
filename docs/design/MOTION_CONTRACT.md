@@ -102,7 +102,8 @@ half.
 binding: the avatar's `vrm:humanBones:<bone>` attributes, or a
 `humanBone -> joint token` map supplied by the caller. Joint names are never
 matched heuristically. A bone the clip drives but the rig does not bind is
-**reported**, not guessed, and a joint the clip does not drive keeps its rest
+**reported** (`VRM_RETARGET_UNBOUND_DRIVEN_BONE`, under "Retarget diagnostics"
+below), not guessed, and a joint the clip does not drive keeps its rest
 transform rather than collapsing to identity.
 
 **Rest-pose correction.** What survives the change of rig is the bone's
@@ -139,6 +140,57 @@ resolves no joint transforms at all.
 The hand-authored triplet under [`fixtures/motion/`](fixtures/motion/) is the
 executable statement of all of the above:
 `canonical_walk.usda` + `avatar.usda` must produce `expected_retargeted.usda`.
+
+## Retarget diagnostics (after v0.8.0)
+
+What a retarget *reports* is part of its answer. Frozen by the OpenExec plan's
+P1-1 ([openexec-foundation.md](../roadmap/openexec-foundation.md)), because P0-6
+compares two implementations of the retarget and a comparison needs something
+both can state: the offline tool reported in prose, and exec had no way to
+report at all.
+
+**A diagnostic is a value**: a code, a subject and a detail, with the code's
+severity and recoverability taken from one table
+([`vrmRetarget/Diagnostics.h`](../../libs/vrmRetarget/include/vrmRetarget/Diagnostics.h)).
+The **code and the subject are the contract** — a human bone's VRM name, a joint
+token, a path — and the detail is a sentence for a person. A retarget reports
+into a list that holds each code and subject **once**, in the order they were
+raised: a bone the clip drives and the rig does not bind is one fact about a
+clip and a rig, however many samples carry it. Two lists compare exactly, entry
+by entry and in order.
+
+| Code | Raised by | Severity | Subject |
+| --- | --- | --- | --- |
+| `VRM_RETARGET_MISSING_REQUIRED_BONE` | `vrmRetarget` | warning | the bone; for `hips` under root-motion mode `hips`, the detail says root motion was dropped |
+| `VRM_RETARGET_UNBOUND_DRIVEN_BONE` | `vrmRetarget` | warning | the bone the clip drives |
+| `VRM_RETARGET_DUPLICATE_TARGET` | `vrmRetarget` | warning | the joint two bones share |
+| `VRM_RETARGET_INVALID_HIERARCHY` | `vrmRetarget` | warning | the first joint whose parent does not precede it |
+| `VRM_RETARGET_INVALID_ROOT_JOINT` | `vrmRetarget` | warning | the root joint index asked for |
+| `VRM_RETARGET_NON_UNIT_SCALE` | a caller | warning | frozen for the scale policy (P1-2); raised by nothing yet |
+| `VRM_RETARGET_TIME_RANGE_DERIVED` | a caller | info | the clip whose one pose was placed at the stage's start |
+| `VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT` | a caller | **error** | the output path |
+
+Every code but the last is recoverable: each says what the rig or the clip did
+not state and what the result did instead, and retargeting onto a partial rig is
+legal and useful. A collision is the one whose answer is not to write.
+
+**The set splits at the layer boundary**, and the split is checked.
+`vrmRetarget` takes plain values, so the three codes that say what a stage or a
+file system added are raised by the caller that holds one —
+`tools/motionRetarget` today — and `vrmRetarget_boundaries` fails if the
+library's sources name them. The rig's own report is `DiagnoseRig`; a clip's is
+that list followed by each sample's, so a caller retargeting one pose at a time
+reaches the same list by asking once per rig and once per pose.
+
+**What is not in the set.** The expression and look-at resolvers still report in
+prose; the frozen set is the body retarget's, which is what parity compares.
+`VRM_OPENEXEC_COMPUTATION_UNAVAILABLE`, `VRM_OPENEXEC_TYPE_MISMATCH` and
+`VRM_OPENEXEC_INVALIDATED` are a separate namespace a **driver** raises around a
+request, since 26.08 classifies none of those failures itself
+([the migration report §6](../reports/openusd/26.08-openexec-migration.md#6-requests-evaluation-cache-and-invalidation));
+no library in this workspace is a driver, so they have strings and no table
+until the driver contract does. And `motion_retarget`'s **exit codes** are not
+frozen yet: it still exits 2 for a usage error and 1 for every other failure.
 
 ## Live-capture semantics (Motion Phase D, v0.5.0)
 

@@ -964,7 +964,45 @@ Current schema contract version: **1**.
   Runs in `release.yml` straight after packaging, so that defect fails by
   library and bundle rather than as a loader error in CP932.
 
+- **The retarget's diagnostics are a frozen code set, and a diagnostic is a
+  value** (the OpenExec plan's P1-1, first half). `vrmRetarget/Diagnostics.h`
+  holds eight `VRM_RETARGET_*` codes with their severity and recoverability in
+  one table, `RetargetDiagnostic` (code, subject, detail) and the
+  `RetargetDiagnostics` list a retarget reports into — each code and subject
+  once, in the order raised, compared exactly. The retarget had reported in
+  prose since v0.4.0, and prose is the one thing P0-6's parity could not
+  compare: the tool said which bone a rig drops and exec could not say anything
+  at all.
+
+  **The set splits at the layer boundary.** The library raises five —
+  `MISSING_REQUIRED_BONE`, `UNBOUND_DRIVEN_BONE`, `DUPLICATE_TARGET`,
+  `INVALID_HIERARCHY`, `INVALID_ROOT_JOINT` — and three only a caller holding a
+  stage or a file system can: `NON_UNIT_SCALE` (frozen for P1-2's scale policy,
+  raised by nothing yet), `TIME_RANGE_DERIVED` (a clip with no time samples,
+  placed at the stage's start), and `OUTPUT_COLLIDES_WITH_INPUT`.
+  `vrmRetarget_boundaries` fails if the library's sources name one of the
+  three. `INVALID_ROOT_JOINT` is an amendment to the plan's drafted list: the
+  library has warned about a root joint the rig lacks since v0.4.0, and the
+  freeze classified what existed rather than only what was drafted.
+
+  `DiagnoseRig(skeleton, map, options)` reports what a rig says about every
+  retarget onto it. The clip overload reports that list first and then each
+  sample's, so a caller retargeting one pose at a time — `execVrm` — reaches
+  the identical list by asking once per rig and once per pose, which is the
+  shape P0-6's remaining row needs. `motion_retarget` prints each diagnostic as
+  one coded line.
+
 ### Changed
+
+- **`vrmRetarget::RetargetDiagnostics` carries coded diagnostics instead of
+  three prose-and-bone lists.** `unmappedSourceBones`, `missingRequiredBones`
+  and `warnings` are gone; `reported` holds `RetargetDiagnostic` values, and
+  `Subjects(code)` gives back the bones or joints one code was raised for.
+  `motion_retarget`'s stderr changes with it: the one-line list of missing
+  required bones becomes one line per bone in the frozen format
+  (`[VRM_RETARGET_MISSING_REQUIRED_BONE] warning recoverable subject=neck: …`),
+  and a refused `--output` names `VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT`. Its
+  exit codes are unchanged; freezing them is P1-1's second half.
 
 - **The OpenExec capability probe asks for the nine components a consumer
   actually needs, and stops asking for one that proved nothing.**
@@ -1011,6 +1049,14 @@ Current schema contract version: **1**.
   reproduce.
 
 ### Fixed
+
+- **A bone a clip starts driving after its first sample is reported.**
+  `PoseRetargeter`'s clip overload collected unbound-bone diagnostics from the
+  first sample only, to report each bone once, and so never reported a bone
+  that first appears later. Every sample now reports into one list that keeps
+  each bone once. `motion_retarget` could not reach the old gap, since a
+  `UsdSkelAnimation`'s `joints` are uniform and every sample it reads drives
+  the same bones; a library caller holding a live source's animation could.
 
 - **The release lane packaged a product that could not open a `.vrm` file,
   and nothing between the build and the archive said so.** Each

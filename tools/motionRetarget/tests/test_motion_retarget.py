@@ -47,6 +47,26 @@ def run_tool(tool: str, *arguments: str) -> subprocess.CompletedProcess:
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
+def diagnostic_subjects(stderr: str, code: str) -> list[str]:
+    """The subjects the tool reported under one frozen retarget code.
+
+    Read off the coded line (vrmRetarget/Diagnostics.h) rather than the
+    sentence after it, since the code and the subject are the contract and the
+    sentence is not.
+    """
+    subjects = []
+    marker = f"[{code}] "
+    for line in stderr.splitlines():
+        if marker not in line:
+            continue
+        rest = line.split(marker, 1)[1]
+        subject = ""
+        if " subject=" in f" {rest}":
+            subject = rest.split("subject=", 1)[1].split(": ", 1)[0]
+        subjects.append(subject)
+    return subjects
+
+
 def find_animation(stage: Usd.Stage) -> UsdSkel.Animation:
     for prim in stage.Traverse():
         if prim.IsA(UsdSkel.Animation):
@@ -1058,6 +1078,58 @@ def main() -> int:
         check_usdskel_resolves_the_animation(output, failures)
         check_stage_metrics(output, avatar, failures)
 
+        # The design rig binds three of VRM's seventeen required bones, and the
+        # clip drives only those three: fourteen coded lines, one per bone and
+        # in vocabulary order, and nothing unbound.
+        missing = diagnostic_subjects(
+            result.stderr, "VRM_RETARGET_MISSING_REQUIRED_BONE")
+        failures.check(
+            len(missing) == 14 and missing[0] == "neck"
+            and missing[-1] == "rightHand",
+            f"the design rig's missing required bones were reported as "
+            f"{missing}, expected the fourteen from neck to rightHand")
+        failures.check(
+            not diagnostic_subjects(result.stderr,
+                                    "VRM_RETARGET_UNBOUND_DRIVEN_BONE"),
+            f"a clip driving only bound bones reported an unbound one: "
+            f"{result.stderr.strip()}")
+        failures.check(
+            not diagnostic_subjects(result.stderr,
+                                    "VRM_RETARGET_TIME_RANGE_DERIVED"),
+            f"a keyed clip reported a derived time range: "
+            f"{result.stderr.strip()}")
+
+        # A clip that states no time samples is one pose at an instant the
+        # stage chose, and says so under its own code rather than baking in
+        # silence.
+        held = workspace / "held_pose_clip.usda"
+        shutil.copy(clip, held)
+        held_stage = Usd.Stage.Open(str(held))
+        held_animation = find_animation(held_stage)
+        for attribute in (held_animation.GetRotationsAttr(),
+                          held_animation.GetTranslationsAttr(),
+                          held_animation.GetScalesAttr()):
+            times = attribute.GetTimeSamples()
+            if not times:
+                continue
+            value = attribute.Get(times[0])
+            attribute.Clear()
+            attribute.Set(value)
+        held_stage.GetRootLayer().Save()
+        result = run_tool(
+            options.tool,
+            "--avatar", str(avatar), "--animation", str(held),
+            "--output", str(workspace / "held_pose_bake.usda"),
+            "--humanoid-map", options.humanoid_map)
+        if failures.check(result.returncode == 0,
+                          f"bake of a held pose failed: {result.stderr}"):
+            failures.check(
+                diagnostic_subjects(result.stderr,
+                                    "VRM_RETARGET_TIME_RANGE_DERIVED")
+                == [held_animation.GetPath().pathString],
+                f"a clip with no time samples did not report its derived "
+                f"time range once, on its animation: {result.stderr.strip()}")
+
         # The metrics are read off the avatar, not assumed to be VRM's. The
         # tool takes any rig OpenUSD can open, and every check above passes
         # against `avatar.usda` on a bake that hardcodes `metersPerUnit = 1`
@@ -1187,6 +1259,10 @@ def main() -> int:
                        "a bake whose --output names the avatar was accepted")
         failures.check(guarded.read_bytes() == before,
                        "the avatar was modified by a refused in-place bake")
+        failures.check(
+            "[VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT] error" in result.stderr,
+            f"the refused in-place bake did not name its code: "
+            f"{result.stderr.strip()}")
 
         # A rig with no VrmHumanoidAPI and no map is refused, by name.
         result = run_tool(

@@ -106,6 +106,15 @@ def main() -> int:
         r"\bosc::|\bosc/|"
         r"\b(?:winsock|sys/socket\.h|asio|curl|websocket)\b",
         re.IGNORECASE)
+    # The retarget code set splits at the layer boundary
+    # (include/vrmRetarget/Diagnostics.h): the last three codes say what a stage
+    # or a file system added, and a library that takes plain values cannot know
+    # any of it. Only the table that defines them may name them.
+    caller_raised = re.compile(
+        r"\b(?:NonUnitScale|TimeRangeDerived|OutputCollidesWithInput)\b|"
+        r"VRM_RETARGET_(?:NON_UNIT_SCALE|TIME_RANGE_DERIVED|"
+        r"OUTPUT_COLLIDES_WITH_INPUT)")
+    code_table = {"Diagnostics.h", "Diagnostics.cpp"}
     for area in (source / "include", source / "src"):
         for path in area.rglob("*"):
             if not path.is_file():
@@ -115,6 +124,10 @@ def main() -> int:
                 errors.append(f"stage/plugin/exec API is forbidden: {path}")
             if forbidden_neighbours.search(code):
                 errors.append(f"forbidden dependency direction: {path}")
+            if path.name not in code_table and caller_raised.search(code):
+                errors.append(
+                    f"a caller-raised retarget code is raised by the library: "
+                    f"{path}")
 
     cmake = re.sub(r"#[^\n]*", "",
                    (source / "CMakeLists.txt").read_text(encoding="utf-8"))
