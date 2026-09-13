@@ -863,7 +863,10 @@ compared, which was P0-4's stated blocker.
   and bundles, then the display suite. `exec_parity` now reports every plugin
   and module it loaded, so the run proves that no library of this workspace
   came from anywhere but the prefix, and with execMotion's registration moved
-  aside it must refuse. All five hold bit for bit from the product.
+  aside it must refuse. All five hold bit for bit from the product, on all
+  three OS in `release.yml`'s dry run
+  ([run 34758168103](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/34758168103)),
+  which also makes P0-7's last row met.
 
   **The first attempt could not open a `.vrm`.** `ost plugin build` rebuilds
   one shared prefix from each bundle's closure, and packaging stages every

@@ -718,7 +718,9 @@ package" is read back rather than inferred from a variable: ExecMotion and
 ExecVrm load from the prefix, no library of this workspace loads from anywhere
 else, and with every copy of execMotion's `plugInfo.json` moved aside the case
 refuses with ExecMotion loaded from nowhere. All five hold bit for bit from the
-product. It runs in `release.yml`, not on a pull request.
+product, on Windows, macOS and Linux in `release.yml`'s dry run
+([run 34758168103](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/34758168103)).
+It runs in `release.yml`, not on a pull request.
 
 **The first attempt could not open a `.vrm`**, and the cause was the release
 lane rather than the bundles: the product carried no `vrmContainer` binary,
@@ -1079,7 +1081,7 @@ root-motion policy difference · actual algorithm divergence. Only the last is a
 defect in this plan's sense; the rest are contract questions that get an answer
 in the contract.
 
-### P0-7 — display smoke, re-scoped to `UsdGeomXformable` 🚧
+### P0-7 — display smoke, re-scoped to `UsdGeomXformable` ✅
 
 **Its route narrowed on 2026-09-06 and the task did not.** "Prove the mechanism
 on `UsdGeomXformable`" cannot mean *our* computation registered for that schema:
@@ -1109,7 +1111,11 @@ invalidates nothing. The stage is checked for `xformOp:transform` only first.
 **"From packaged plugins" is the fifth row, and P0-4's packaged run closes it**
 *(2026-09-13)*: `scripts/artifact_only_exec_smoke.py` runs
 `execMotion_display` against the installed product in the environment its
-parity cases prove holds nothing of this repository's (P0-4 above).
+parity cases prove holds nothing of this repository's (P0-4 above). All five
+rows are met, on all three OS in `release.yml`'s dry run
+([run 34758168103](https://github.com/animu-sphere/usd-vrm-plugins/actions/runs/34758168103)).
+What stays open is re-filed below rather than part of this task: the upstream
+ask and skinned display.
 
 Four findings came with it. **A refusal draws where `ignore` does**: `execGeom`
 reads an absent local transform as the identity, so a misspelled intake, a
