@@ -8,9 +8,10 @@
                                               (exec_parity) <----------+
 
 This file runs the tools and hands `exec_parity` the one argument list it
-handed `motion_retarget`, so the two cannot be given different flags. Every
-comparison is the harness's; what this file asserts is what a case is *for*,
-over the harness's JSON report.
+handed `motion_retarget`, so the two cannot be given different flags, and what
+the tool printed while baking, so the harness can compare the diagnostics each
+side reported. Every comparison is the harness's; what this file asserts is
+what a case is *for*, over the harness's JSON report.
 
 The representative input is recorded, not generated (the plan's P0-6): the
 mocopi export this repository may redistribute, converted by the shipped
@@ -81,11 +82,13 @@ def convert(arguments: argparse.Namespace, work: pathlib.Path,
 
 
 def compare(arguments: argparse.Namespace, work: pathlib.Path, name: str,
-            common: list[str], bake: pathlib.Path) -> tuple[int, dict | None]:
-    """Runs the harness over one bake and returns its exit code and report."""
+            common: list[str], bake: pathlib.Path,
+            tool_log: pathlib.Path) -> tuple[int, dict | None]:
+    """Runs the harness over one bake and what the tool printed writing it,
+    and returns the harness's exit code and report."""
     report = work / f"{name}.parity.json"
     compared = run(arguments.parity, *common, "--bake", str(bake),
-                   "--report", str(report))
+                   "--tool-log", str(tool_log), "--report", str(report))
     print(compared.stdout, end="")
     if compared.stderr:
         print(compared.stderr, end="", file=sys.stderr)
@@ -99,28 +102,89 @@ def compare(arguments: argparse.Namespace, work: pathlib.Path, name: str,
     return compared.returncode, data
 
 
+def tool_log_of(bake: pathlib.Path) -> pathlib.Path:
+    return bake.with_suffix(".tool.log")
+
+
 def parity(arguments: argparse.Namespace, work: pathlib.Path, name: str,
            avatar: pathlib.Path, clip: pathlib.Path, flags: list[str],
            failures: Failures) -> tuple[dict | None, pathlib.Path]:
     """Bakes, then evaluates the same inputs through exec, and returns the
     harness's report. The tool is not `--quiet`: what it says is half of the
-    diagnostics row, and a parity run prints both halves."""
+    diagnostics comparison, and its log goes to the harness beside the bake."""
     bake = work / f"{name}.bake.usda"
     common = ["--avatar", str(avatar), "--animation", str(clip), *flags]
 
     baked = run(arguments.retarget, *common, "--output", str(bake))
     print(f"--- {name}: motion_retarget {' '.join(flags)}")
-    for line in (baked.stdout + baked.stderr).splitlines():
+    said = baked.stdout + baked.stderr
+    for line in said.splitlines():
         print(f"  tool: {line}")
+    tool_log_of(bake).write_text(said, encoding="utf-8", newline="\n")
     if not failures.check(baked.returncode == 0,
                           f"{name}: motion_retarget failed: {baked.stderr}"):
         return None, bake
 
-    code, data = compare(arguments, work, name, common, bake)
+    code, data = compare(arguments, work, name, common, bake, tool_log_of(bake))
     failures.check(code == 0,
                    f"{name}: exec and the bake do not agree (exit {code}); "
                    f"the harness output above names the first difference")
+    if data is not None:
+        failures.check(
+            data["diagnostics"]["compared"] and data["diagnostics"]["agree"],
+            f"{name}: exec and the tool reported different diagnostics; "
+            f"exec only {data['diagnostics']['exec_only']}, the tool only "
+            f"{data['diagnostics']['tool_only']}")
     return data, bake
+
+
+def check_reports(failures: Failures, name: str, data: dict,
+                  expected: list[str]) -> None:
+    """A guard on the diagnostics comparison, as check_moves is on the values:
+    two lists that are both empty agree about nothing, so a case that is for
+    its diagnostics names the ones it expects both sides to report."""
+    tool = data["diagnostics"]["tool"]
+    for line in expected:
+        failures.check(any(line in reported for reported in tool),
+                       f"{name}: the tool did not report '{line}'; it "
+                       f"reported {tool}")
+
+
+def check_sees_a_missing_report(arguments, work, failures, name: str,
+                                avatar: pathlib.Path, clip: pathlib.Path,
+                                flags: list[str], bake: pathlib.Path,
+                                dropped: str) -> None:
+    """The negative pair for the diagnostics: the same bake, and the tool's
+    log with one coded line taken out. The run has to fail on that line and on
+    nothing else -- a harness that had stopped comparing diagnostics would
+    still pass, and one that confused them with values would diverge there."""
+    lines = tool_log_of(bake).read_text(encoding="utf-8").splitlines()
+    kept = [line for line in lines if dropped not in line]
+    if not failures.check(len(kept) == len(lines) - 1,
+                          f"{name}: expected exactly one tool line naming "
+                          f"'{dropped}', found {len(lines) - len(kept)}"):
+        return
+    edited = work / f"{name}_one_report_short.tool.log"
+    edited.write_text("\n".join(kept) + "\n", encoding="utf-8", newline="\n")
+    common = ["--avatar", str(avatar), "--animation", str(clip), *flags]
+    code, data = compare(arguments, work, name + "_one_report_short", common,
+                         bake, edited)
+    if not failures.check(code != 0 and data is not None,
+                          f"{name}: a tool log missing '{dropped}' agreed with "
+                          f"exec, so the harness cannot see a diagnostic"):
+        return
+    exec_only = data["diagnostics"]["exec_only"]
+    failures.check(
+        not data["diagnostics"]["agree"] and len(exec_only) == 1
+        and dropped in exec_only[0] and not data["diagnostics"]["tool_only"],
+        f"{name}: the harness should name exactly the dropped report as exec's "
+        f"alone; exec only {exec_only}, the tool only "
+        f"{data['diagnostics']['tool_only']}")
+    failures.check(
+        data["rotations"]["divergence"] == 0
+        and data["translations"]["divergence"] == 0 and data["exec_refusals"] == 0,
+        f"{name}: a missing diagnostic moved a value; the two comparisons are "
+        f"not independent")
 
 
 def check_moves(failures: Failures, name: str, data: dict,
@@ -150,6 +214,14 @@ def recorded_fixture(arguments, work, failures) -> None:
     failures.check(
         any("from --humanoid-map" in line for line in data["stated"]),
         "the harness did not state the map it was handed")
+    # The one case whose diagnostics agree by both being empty: the map binds
+    # every required bone and every bone the export drives. Stated, so that it
+    # is not counted as coverage of the comparison -- the real avatar and the
+    # walk are that.
+    failures.check(
+        data["diagnostics"]["tool"] == [] and data["diagnostics"]["exec"] == [],
+        f"recorded_fixture: expected no diagnostics on either side, got "
+        f"{data['diagnostics']}")
 
 
 def recorded_root_motion(arguments, work, failures) -> None:
@@ -184,28 +256,34 @@ def recorded_root_motion(arguments, work, failures) -> None:
         common = ["--avatar", str(avatar), "--animation", str(clip),
                   *map_flags, *flags]
         code, mismatched = compare(arguments, work, name + "_vs_default",
-                                   common, default_bake)
+                                   common, default_bake,
+                                   tool_log_of(default_bake))
         if not failures.check(
                 code != 0 and mismatched is not None,
                 f"{name}: exec under {' '.join(flags)} agreed with the "
                 f"default bake, so the harness cannot tell the statements "
                 f"apart"):
             continue
+        # Translations, and nothing else: not the rotations, and not the
+        # diagnostics either, since the fixture binds its hips and a rig that
+        # does has nothing to say about where the root lands.
         failures.check(
             mismatched["translations"]["divergence"] > 0
-            and mismatched["rotations"]["divergence"] == 0,
+            and mismatched["rotations"]["divergence"] == 0
+            and mismatched["diagnostics"]["agree"],
             f"{name}: against the default bake the statements should move "
             f"translations only; rotations "
             f"{mismatched['rotations']['divergence']}, translations "
-            f"{mismatched['translations']['divergence']} diverged")
+            f"{mismatched['translations']['divergence']} diverged, and the "
+            f"diagnostics {'agreed' if mismatched['diagnostics']['agree'] else 'did not'}")
 
 
 def recorded_real_avatar(arguments, work, failures) -> None:
     clip = convert(arguments, work, failures)
     if clip is None:
         return
-    data, _ = parity(arguments, work, "recorded_real_avatar",
-                     arguments.real_avatar, clip, [], failures)
+    data, bake = parity(arguments, work, "recorded_real_avatar",
+                        arguments.real_avatar, clip, [], failures)
     if data is None:
         return
     check_moves(failures, "recorded_real_avatar", data, 100)
@@ -216,6 +294,14 @@ def recorded_real_avatar(arguments, work, failures) -> None:
                 for line in data["stated"]),
         f"the harness stated a humanoid over a real avatar's own: "
         f"{data['stated']}")
+    # The bone the parity report found the two sides disagreeing about: Seed-san
+    # binds no upperChest and the export drives one. Both name it now.
+    unbound = "[VRM_RETARGET_UNBOUND_DRIVEN_BONE] warning recoverable " \
+              "subject=upperChest"
+    check_reports(failures, "recorded_real_avatar", data, [unbound])
+    check_sees_a_missing_report(arguments, work, failures,
+                                "recorded_real_avatar", arguments.real_avatar,
+                                clip, [], bake, "subject=upperChest")
 
 
 def vrma_walk(arguments, work, failures) -> None:
@@ -230,6 +316,14 @@ def vrma_walk(arguments, work, failures) -> None:
     if data is None:
         return
     check_moves(failures, "vrma_walk", data, 2)
+    # The design rig binds three bones, so it lacks fourteen that VRM 1.0
+    # requires -- the longest list any case compares, and all of it the rig's.
+    tool = data["diagnostics"]["tool"]
+    failures.check(
+        len(tool) == 14 and all(line.startswith(
+            "[VRM_RETARGET_MISSING_REQUIRED_BONE]") for line in tool),
+        f"vrma_walk: expected the design rig's fourteen missing required "
+        f"bones, got {tool}")
 
 
 def generated_thirty_fps(arguments, work, failures) -> None:

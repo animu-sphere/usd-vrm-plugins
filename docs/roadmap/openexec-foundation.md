@@ -1006,7 +1006,7 @@ the rate, the source skeleton, the map, the rig, and the root-motion policy
 **diagnostics do not agree**. The tool names the clip bone a rig drops and the
 required bones it lacks. Exec says neither, because `vrm.humanoidRetarget` hands
 `PoseRetargeter` no `RetargetDiagnostics` and a computation has no channel for
-one.
+one. *(Closed the same day, below.)*
 
 **The tenth boundary finding**: which prim is the humanoid, the rig and the clip
 is decided only in the tool, and the harness restates those rules to compare
@@ -1017,14 +1017,30 @@ The report collects the rows four earlier reports left for this task into one
 table of 24. Every row the importer, the VRMA reader or the BVH converter can
 produce is exercised or measured, and all agree except a gaze, which exec does
 not compute until the `ExecIr` track's P1-2 (bake with `--no-look-at` to
-compare the rest), and diagnostics. **Still open here**: diagnostics — P1-1's
-codes are values since 2026-09-13, and `DiagnoseRig` plus the per-pose report
-give a one-pose-at-a-time caller the list the tool reports, so what remains is
-an exec computation answering them and the harness comparing the two lists; and
-the rows no producer reaches, each already asserted on the exec side and read
-rather than run on the tool's. *The Linux and macOS lanes ran the five cases for the first time on
-PR #185's own CI, and all five passed on both* (`workspace-pr-linux`,
-`workspace-pr-macos-arm64`), beside Windows.
+compare the rest), and diagnostics. *The Linux and macOS lanes ran the five
+cases for the first time on PR #185's own CI, and all five passed on both*
+(`workspace-pr-linux`, `workspace-pr-macos-arm64`), beside Windows.
+
+**The diagnostics agree too, line for line** *(2026-09-13)*. P1-1 made the
+codes values, and `execVrm` now answers them in two computations:
+`vrm.computeRigDiagnostics`, which is `DiagnoseRig` and reads no clip, and
+`vrm.computeRetargetDiagnostics`, which is that list and then what retargeting
+this sample reported. The harness is handed the tool's log beside its bake. It
+merges exec's answers over the keys, which rebuilds the clip overload's order,
+and compares whole formatted lines with the tool's library-raised ones. They
+agree on all five cases, the parity report's `upperChest` on Seed-san included.
+A committed negative pair drops one line from the tool's log and requires the
+run to fail on exactly that line with no value moving
+([the diagnostics report](../reports/openusd/26.08-openexec-diagnostics.md)).
+Two findings came with it: a node nothing invalidates posts its refusal only at
+the compute that arms a request, which is a driver-contract line; and the node
+repeats the retarget, because the library reports a pose's diagnostics only
+while retargeting it (the eleventh boundary finding, 23 µs a frame on the
+fixture rig and 50–60 µs on Seed-san).
+
+**Still open here**: the rows no producer reaches, each already asserted on the
+exec side and read rather than run on the tool's. Whether P0-6 needs them run is
+a decision, not a gap.
 
 This is the check that keeps a computation a wrapper. v0.4.0 already produced the
 mechanism it needs: the design triplet is compared through USD composition at the
@@ -1250,9 +1266,10 @@ library caller with a live source's animation could.
 
 **Still open here**: `motion_retarget`'s exit codes, which are unchanged (2 for
 a usage error, 1 for everything else) and need every failure path classified;
-the three `VRM_OPENEXEC_*` codes, whose table waits for a driver to raise them;
-and exec answering the retarget codes, which is P0-6's remaining row rather
-than this task's.
+and the three `VRM_OPENEXEC_*` codes, whose table waits for a driver to raise
+them. Exec answering the retarget codes was P0-6's row, and it closed the same
+day: two `execVrm` computations, compared with the tool line for line (P0-6
+above).
 
 ### P1-2 — scale policy ⬜
 

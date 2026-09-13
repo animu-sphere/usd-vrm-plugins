@@ -12,6 +12,7 @@
 #pragma once
 
 #include <motionCore/Humanoid.h>
+#include <vrmRetarget/Diagnostics.h>
 #include <vrmRetarget/HumanoidMap.h>
 #include <vrmRetarget/PoseRetargeter.h>
 #include <vrmRetarget/RestPose.h>
@@ -643,7 +644,91 @@ struct RetargetOutcome
 /// cost is a repeated computation rather than a copy: the ask is a retargeter
 /// (or a free per-pose function beside it) that takes the correction as an
 /// input.
-RetargetOutcome HumanoidRetargetFor(const RetargetInputs& inputs);
+///
+/// `diagnostics` may be null. When it is not, and the retarget answers, what
+/// retargeting this one pose reported is appended to it -- the library's
+/// per-pose report, `PoseRetargeter::Retarget(pose, diagnostics)`, under its
+/// own once-per-code-and-subject rule. A refusal appends nothing.
+RetargetOutcome HumanoidRetargetFor(
+    const RetargetInputs& inputs,
+    vrmRetarget::RetargetDiagnostics* diagnostics = nullptr);
+
+/// What `vrm.computeRigDiagnostics` reads, as plain values: the retarget's
+/// inputs with everything about a clip taken away -- the map, the rig across
+/// `vrm:skeleton`, and the humanoid's four root-motion statements.
+struct RigDiagnosticsInputs
+{
+    const vrmRetarget::HumanoidMap* map = nullptr;
+    std::vector<vrmRetarget::TargetSkeleton> targets;
+    RootMotionStatements rootMotion;
+};
+
+struct RigDiagnosticsOutcome
+{
+    std::optional<vrmRetarget::RetargetDiagnostics> diagnostics;
+
+    /// `RigUnanswered` or `RootMotion` -- the retarget's first two refusals,
+    /// for the retarget's reasons, because they are judged on these inputs.
+    RetargetRefusal refusal = RetargetRefusal::RigUnanswered;
+    RootMotionRefusal rootMotionRefusal = RootMotionRefusal::UnknownMode;
+};
+
+/// What the rig and its map say about every retarget onto them, or a refusal.
+///
+/// **The node is one library call**: `vrmRetarget::DiagnoseRig` over the rig,
+/// the map and the options the statements state -- each required bone the map
+/// leaves unbound, each joint two bones share, the first joint out of
+/// parent-before-child order, and a root joint the rig does not have.
+///
+/// **It needs no clip**, which is why it is a node of its own rather than a
+/// step of the retarget's diagnostics: a humanoid with no
+/// `vrm:retarget:sourceSkeleton`, or a system at the default time code, has
+/// nothing to retarget and still has a rig that can be diagnosed. Nothing it
+/// reads moves with time, so it is computed once per rig edit -- what
+/// `DiagnoseRig`'s own documentation asks of a caller that retargets one pose
+/// at a time.
+///
+/// Two of its codes cannot come back through this bundle, because a node
+/// upstream refuses first. `DuplicateTarget` is refused by the map
+/// (`MapRefusal::DuplicateJoint`), where the offline tool reports it and
+/// bakes. `InvalidRootJoint` is refused by the statements
+/// (`RootMotionRefusal::UnknownRootJoint`), as the tool refuses it too.
+RigDiagnosticsOutcome RigDiagnosticsFor(const RigDiagnosticsInputs& inputs);
+
+struct RetargetDiagnosticsOutcome
+{
+    std::optional<vrmRetarget::RetargetDiagnostics> diagnostics;
+
+    /// When the retarget refused: its outcome, whose `pose` is empty and whose
+    /// refusal fields say why. The node reports them as the retarget does.
+    RetargetOutcome retarget;
+
+    /// The retarget answered and the rig's diagnostics did not come back.
+    /// Only a driver can reach this -- both nodes read the same map, rig and
+    /// statements, and the retarget refuses first on every one -- and a
+    /// pose's report without the rig's in front of it would be a partial list
+    /// no consumer could tell from a rig that said nothing.
+    bool rigUnanswered = false;
+};
+
+/// What retargeting this sample reported, whole: the rig's diagnostics, then
+/// the pose's own, in the order `PoseRetargeter`'s clip overload raises them.
+///
+/// So the node's value at one key is exactly the list the library reports for
+/// a clip of that one sample, and `RetargetDiagnostics::Merge` over a clip's
+/// keys, in order, is the list it reports for the clip -- which is what the
+/// offline tool prints, and what P0-6's harness compares with it.
+///
+/// **It is the retarget again**, not a reading of the retarget's answer. The
+/// library reports a pose's diagnostics only while retargeting it, and a
+/// computation answers one value, so a node answering the diagnostics beside
+/// the pose repeats the retarget, correction included. That is the eleventh
+/// boundary finding, and the eighth's kind: a per-pose counterpart to
+/// `DiagnoseRig` would be the call this node wraps.
+///
+/// `rig` is `vrm.computeRigDiagnostics`' value, null when it answered none.
+RetargetDiagnosticsOutcome RetargetDiagnosticsFor(
+    const RetargetInputs& inputs, const vrmRetarget::RetargetDiagnostics* rig);
 
 /// What `vrm.computeJointLocalTransforms` reads, as plain values: the
 /// humanoid's own `vrm.humanoidRetarget`, and the rig across `vrm:skeleton`

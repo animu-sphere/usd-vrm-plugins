@@ -992,6 +992,42 @@ Current schema contract version: **1**.
   shape P0-6's remaining row needs. `motion_retarget` prints each diagnostic as
   one coded line.
 
+- **Exec answers the retarget's diagnostics, and they are the tool's own
+  lines** (the OpenExec plan's P0-6, its diagnostics row). `execVrm` registers
+  `vrmRetarget::RetargetDiagnostics` as its seventh value type and two
+  computations on the applied `VrmHumanoidAPI`. `vrm.computeRigDiagnostics` is
+  `DiagnoseRig` over the rig, the map and the root-motion statements. It reads
+  no clip and moves with no frame, so it answers at the default time code and
+  on a humanoid naming no source. `vrm.computeRetargetDiagnostics` is that
+  list, then what `PoseRetargeter::Retarget` reported for the sample
+  `vrm.humanoidRetarget` retargets. Both refuse when the retarget would, in the
+  retarget's words under their own names.
+
+  `exec_parity` takes `--tool-log`, the tool's output while writing the bake.
+  It merges exec's answers over the keys, which rebuilds the clip overload's
+  order, and compares them with the tool's library-raised lines as whole
+  formatted lines, in order. They agree on all five cases: none on the fixture
+  rig, `UNBOUND_DRIVEN_BONE upperChest` on Seed-san (the bone the parity report
+  found the two sides disagreeing about), and the design rig's fourteen missing
+  required bones, twice. A committed negative pair drops that one line from
+  Seed-san's log and requires the run to fail on exactly that line with no
+  value diverging. The artifact-only exec smoke runs the comparison from the
+  installed product, and it passes.
+
+  **Three findings**
+  ([docs/reports/openusd/26.08-openexec-diagnostics.md](docs/reports/openusd/26.08-openexec-diagnostics.md)).
+  **A node nothing invalidates posts its refusal once**, at the compute that
+  arms a request, which a driver discards because the retarget refuses there by
+  design. The first draft of the new suite looked for the rig report's refusal
+  at a frame and found none. The harness now keeps the arming compute's errors.
+  **`DUPLICATE_TARGET` and `INVALID_ROOT_JOINT` never come back through exec**,
+  because the map and the statements refuse first. And the **eleventh boundary
+  finding**: the library reports a pose's diagnostics only while retargeting it,
+  so the node repeats the retarget. That adds 23 µs a frame on the fixture rig
+  and 50–60 µs on Seed-san, against a 4–6 µs floor. A driver's override of the
+  retarget is therefore not diagnosed, while an override of the pose is. New
+  suite `execVrm_diagnostics`; 147 CTest names in the workspace.
+
 ### Changed
 
 - **`vrmRetarget::RetargetDiagnostics` carries coded diagnostics instead of

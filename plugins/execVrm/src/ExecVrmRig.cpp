@@ -373,7 +373,8 @@ RootMotionOutcome RootMotionOptionsFor(const RootMotionStatements& statements,
     return outcome;
 }
 
-RetargetOutcome HumanoidRetargetFor(const RetargetInputs& inputs)
+RetargetOutcome HumanoidRetargetFor(const RetargetInputs& inputs,
+                                    vrmRetarget::RetargetDiagnostics* diagnostics)
 {
     RetargetOutcome outcome;
     if (!inputs.map || inputs.targets.size() != 1) {
@@ -428,7 +429,58 @@ RetargetOutcome HumanoidRetargetFor(const RetargetInputs& inputs)
     options.rootMotion = *rootMotion.options;
     const vrmRetarget::PoseRetargeter retargeter(target, *inputs.map,
                                                  *source.rest.rest, options);
-    outcome.pose = retargeter.Retarget(inputs.poses.front());
+    outcome.pose = retargeter.Retarget(inputs.poses.front(), diagnostics);
+    return outcome;
+}
+
+RigDiagnosticsOutcome RigDiagnosticsFor(const RigDiagnosticsInputs& inputs)
+{
+    RigDiagnosticsOutcome outcome;
+    if (!inputs.map || inputs.targets.size() != 1) {
+        outcome.refusal = RetargetRefusal::RigUnanswered;
+        return outcome;
+    }
+    const vrmRetarget::TargetSkeleton& target = inputs.targets.front();
+
+    const RootMotionOutcome rootMotion =
+        RootMotionOptionsFor(inputs.rootMotion, target);
+    if (!rootMotion.options) {
+        outcome.refusal = RetargetRefusal::RootMotion;
+        outcome.rootMotionRefusal = rootMotion.refusal;
+        return outcome;
+    }
+
+    // The whole node, and it is a wrapper.
+    vrmRetarget::RetargetOptions options;
+    options.rootMotion = *rootMotion.options;
+    outcome.diagnostics = vrmRetarget::DiagnoseRig(target, *inputs.map, options);
+    return outcome;
+}
+
+RetargetDiagnosticsOutcome RetargetDiagnosticsFor(
+    const RetargetInputs& inputs, const vrmRetarget::RetargetDiagnostics* rig)
+{
+    RetargetDiagnosticsOutcome outcome;
+
+    // Seeded with the rig's list, so the pose's report lands behind it and a
+    // code the rig already raised -- a missing hips under root-motion mode
+    // 'hips', which every sample raises again -- stays where the rig put it:
+    // the clip overload's order, exactly.
+    vrmRetarget::RetargetDiagnostics diagnostics;
+    if (rig) {
+        diagnostics = *rig;
+    }
+    outcome.retarget = HumanoidRetargetFor(inputs, &diagnostics);
+    if (!outcome.retarget.pose) {
+        return outcome;
+    }
+    // Answered: the pose is the retarget node's to answer, not this one's.
+    outcome.retarget.pose.reset();
+    if (!rig) {
+        outcome.rigUnanswered = true;
+        return outcome;
+    }
+    outcome.diagnostics = std::move(diagnostics);
     return outcome;
 }
 
