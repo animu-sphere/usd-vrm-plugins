@@ -368,6 +368,14 @@ them with the bundles. Still open here: the artifact-only smoke above, and two
 existing carry-overs — the unverified non-`ost` Windows install path and the
 DLL-discovery question in [INSTALL.md](../guides/INSTALL.md).
 
+*Part of that smoke runs since 2026-09-13*, inside P0-4's packaged run: the
+product's `motion_retarget` bakes `Seed-san.vrm` and a `.vrma` walk from the
+installed prefix, and `exec_parity` evaluates the same inputs against the bake
+bit for bit — plugin discovery, humanoid map loading, retarget execution and
+evaluated joint transforms, from the artifact. What that run does not check is
+embedded texture resolution, and the build-tree scan covers the harness's
+process, not the tool's.
+
 ### P0-4 — minimal `execMotion` bundle 🚧
 
 Computations: `motion.sampleAnimation`, `motion.filterPose`,
@@ -698,9 +706,29 @@ previous answer and one snapshot per prim and substitute both through one
 pose handed to a blend's source at the instant the others were sampled at,
 call `ChangeTime` before expecting a retarget (P0-5), none of it discoverable
 from the computations themselves, and P0-6's parity harness is the first client
-that needs it written down; and the packaged-plugin half of
-step 7 — the mechanism, sample, filter, root, interpolate and blend tests load a
-*built* bundle, and an artifact-only run belongs with P0-3's smoke.
+that needs it written down.
+
+**The packaged-plugin half of step 7 ran on 2026-09-13**, and it is P0-6's
+harness rather than a new suite: `scripts/artifact_only_exec_smoke.py` installs
+the aggregate product outside the repository and runs the five parity cases
+with the product's own tools and bundles, in an environment holding only the
+runtime and the product's activation. `exec_parity` reports every plugin the
+registry loaded and every module the process mapped, so "discovered from the
+package" is read back rather than inferred from a variable: ExecMotion and
+ExecVrm load from the prefix, no library of this workspace loads from anywhere
+else, and with every copy of execMotion's `plugInfo.json` moved aside the case
+refuses with ExecMotion loaded from nowhere. All five hold bit for bit from the
+product. It runs in `release.yml`, not on a pull request.
+
+**The first attempt could not open a `.vrm`**, and the cause was the release
+lane rather than the bundles: the product carried no `vrmContainer` binary,
+because packaging stages every bundle's library runtime out of one prefix that
+the last `ost plugin build` refilled with its own closure — `execVrm`'s, which
+is static
+([ost report 40](../reports/ost/40-2026-09-13-v0.22.10-one-workspace-prefix-for-every-bundle.md)).
+The loop order is the workaround and `scripts/check_product_libraries.py` the
+check; the run above is what found it, which is the reason an artifact-only run
+was on this list at all.
 
 **`blendPoses` was last on purpose, and the reason held.** It is the one
 computation that wants several inputs, and 26.08's builtin `computeValue`
@@ -1078,8 +1106,10 @@ through the stage scene index with an observer where Hydra would be, no GL
 needed. A frame change dirties exactly the prims the clip reaches. A clip edit
 dirties them at `ApplyPendingUpdates`. A material edit dirties nothing and
 invalidates nothing. The stage is checked for `xformOp:transform` only first.
-**Still open: "from packaged plugins"**, which is P0-4's packaged discovery, and
-one run closes both.
+**"From packaged plugins" is the fifth row, and P0-4's packaged run closes it**
+*(2026-09-13)*: `scripts/artifact_only_exec_smoke.py` runs
+`execMotion_display` against the installed product in the environment its
+parity cases prove holds nothing of this repository's (P0-4 above).
 
 Four findings came with it. **A refusal draws where `ignore` does**: `execGeom`
 reads an absent local transform as the identity, so a misspelled intake, a

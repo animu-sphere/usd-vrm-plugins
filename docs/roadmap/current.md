@@ -145,6 +145,16 @@ checks are listed rather than remembered:
   `openstrata.ci.yaml` values; regeneration never touches them and a green PR
   lane proves nothing about it. The `ost` release contract (`release:` in the
   matrix) is the eventual fix; adopting it is not scoped yet.
+- ⚠️ **The last bundle in `release.yml`'s build loop decides every package's
+  libraries.** `ost plugin test --workspace` and `ost plugin package` read one
+  shared prefix that each `ost plugin build` refills with its own closure, so
+  the loop ends with `usdVrmaFileFormat`, the bundle whose closure holds
+  `vrmContainer`. That is a workaround.
+  `scripts/check_product_libraries.py` is what fails, by library and bundle,
+  when a new shared library or a reordered loop stops being covered. The fix
+  is upstream
+  ([ost report 40](../reports/ost/40-2026-09-13-v0.22.10-one-workspace-prefix-for-every-bundle.md)
+  P1).
 - ⬜ **An adapter artifact exists now, and no lane publishes one.** `ost` 0.22.3
   composes `requires.libraries` in the per-library verb, so
   `ost library package adapters/liveCapture/mocopi` produces
@@ -846,14 +856,32 @@ compared, which was P0-4's stated blocker.
   this bundle. Beside them, this is the first consumer of
   `RootMotion::worldOrientation`, and no clip read from USD states one, in
   either reader.
-- ⬜ **The rest of P0-6 and P0-7** of the
+- ✅ **The exec bundles run from the installed product, and the release lane
+  had stopped building one that could** *(2026-09-13, P0-4 step 7 and P0-7)*.
+  `scripts/artifact_only_exec_smoke.py` installs the aggregate product outside
+  the repository and runs the five parity cases with the product's own tools
+  and bundles, then the display suite. `exec_parity` now reports every plugin
+  and module it loaded, so the run proves that no library of this workspace
+  came from anywhere but the prefix, and with execMotion's registration moved
+  aside it must refuse. All five hold bit for bit from the product.
+
+  **The first attempt could not open a `.vrm`.** `ost plugin build` rebuilds
+  one shared prefix from each bundle's closure, and packaging stages every
+  bundle's libraries out of it, so the product carried the closure of the last
+  bundle `release.yml` built. Since 2026-09-06 that has been an exec bundle,
+  which is static, and no `vrmContainer` binary reached any package while every
+  record said it had. No release ran in between. The loop now ends with
+  `usdVrmaFileFormat`, and `scripts/check_product_libraries.py` holds each
+  package's bytes to its record
+  ([ost report 40](../reports/ost/40-2026-09-13-v0.22.10-one-workspace-prefix-for-every-bundle.md),
+  a P1 upstream).
+- ⬜ **The rest of P0-6** of the
   [plan](openexec-foundation.md#6-foundation-tasks). P0-6 still owes
   diagnostics, which need P1-1's codes computed as a value rather than logged.
   Its five cases ran on Linux and macOS for the first time on PR #185's CI and
-  passed. P0-7 owes "from packaged plugins", which is P0-4's packaged discovery
-  too. What remains of P0-4 itself is that, the producer half of the rate and
-  policies, the written driver contract, and a decision on what a one-joint
-  clip's fallback-filled root means. P1-2 owes a decision on a scaled rest.
+  passed. What remains of P0-4 is the producer half of the rate and policies,
+  the written driver contract, and a decision on what a one-joint clip's
+  fallback-filled root means. P1-2 owes a decision on a scaled rest.
 
 ## Then: boundary consolidation ⬜
 

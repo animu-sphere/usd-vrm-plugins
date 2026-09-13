@@ -59,6 +59,15 @@
 // OpenUSD and exec, `vrmRetarget` for the result type, and `motionCore` for
 // the bone vocabulary and `AngleBetween`. Neither plugin: both are found
 // through `PXR_PLUGINPATH_NAME`, the path a packaged bundle takes.
+//
+// # Where what it ran came from
+//
+// The report names every plugin the registry loaded and every module the
+// process mapped, by path. Both libraries it links are static, so a run
+// against an installed product can be held to "nothing but this executable
+// came from a build tree" (scripts/artifact_only_exec_smoke.py) -- a claim an
+// environment variable alone cannot make, because a loader that found a
+// plugin's dependency somewhere else says nothing about it.
 
 #include "pxr/pxr.h"
 
@@ -67,6 +76,8 @@
 #include "pxr/base/gf/vec3h.h"
 #include "pxr/base/js/json.h"
 #include "pxr/base/js/value.h"
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/status.h"
@@ -114,6 +125,15 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#if defined(_WIN32)
+#include <windows.h>
+#include <tlhelp32.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+#else
+#include <unistd.h>
+#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -757,6 +777,70 @@ void PrintTally(const char* what, const Tally& tally, const char* unit)
     }
 }
 
+// ---------------------------------------------------------------------------
+// Provenance: what the process actually loaded
+// ---------------------------------------------------------------------------
+
+// Every file the process has mapped as a module, by the path the loader
+// resolved -- the executable, OpenUSD, the plugins and whatever each of them
+// pulled in. Sorted and unique, so two runs over one product compare.
+std::vector<std::string> LoadedModules()
+{
+    std::set<std::string> paths;
+#if defined(_WIN32)
+    const HANDLE snapshot = CreateToolhelp32Snapshot(
+        TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, GetCurrentProcessId());
+    if (snapshot != INVALID_HANDLE_VALUE) {
+        MODULEENTRY32W entry;
+        entry.dwSize = sizeof(entry);
+        for (BOOL more = Module32FirstW(snapshot, &entry); more;
+             more = Module32NextW(snapshot, &entry)) {
+            const int size = WideCharToMultiByte(
+                CP_UTF8, 0, entry.szExePath, -1, nullptr, 0, nullptr, nullptr);
+            if (size > 1) {
+                std::string path(static_cast<std::size_t>(size - 1), '\0');
+                WideCharToMultiByte(CP_UTF8, 0, entry.szExePath, -1,
+                                    path.data(), size, nullptr, nullptr);
+                paths.insert(path);
+            }
+        }
+        CloseHandle(snapshot);
+    }
+#elif defined(__APPLE__)
+    for (uint32_t i = 0, n = _dyld_image_count(); i < n; ++i) {
+        if (const char* name = _dyld_get_image_name(i)) {
+            paths.insert(name);
+        }
+    }
+#else
+    // A mapping's path is the last field of a line, and only a line that has
+    // one names a file; the executable is listed like any other mapping.
+    std::ifstream maps("/proc/self/maps");
+    for (std::string line; std::getline(maps, line);) {
+        const std::size_t slash = line.find('/');
+        if (slash != std::string::npos) {
+            paths.insert(line.substr(slash));
+        }
+    }
+#endif
+    return {paths.begin(), paths.end()};
+}
+
+// The plugins the registry loaded, by name and path. A plugin the registry
+// knows and never loaded is left out: registered is a statement about a
+// plugInfo.json, loaded is the one about which library answered.
+JsObject LoadedPlugins()
+{
+    JsObject plugins;
+    for (const PlugPluginPtr& plugin :
+         PlugRegistry::GetInstance().GetAllPlugins()) {
+        if (plugin && plugin->IsLoaded()) {
+            plugins[plugin->GetName()] = JsValue(plugin->GetPath());
+        }
+    }
+    return plugins;
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
@@ -1046,6 +1130,16 @@ int main(int argc, char** argv)
         naive["rotations"] = JsValue(TallyJson(naiveRotations, "radians"));
         naive["translations"] = JsValue(TallyJson(naiveTranslations, "meters"));
         report["read_at_clip_keys"] = JsValue(naive);
+    }
+    {
+        // Read last, after every evaluation, so a plugin loaded lazily by the
+        // final compute is counted.
+        report["loaded_plugins"] = JsValue(LoadedPlugins());
+        JsArray modules;
+        for (const std::string& path : LoadedModules()) {
+            modules.emplace_back(path);
+        }
+        report["loaded_modules"] = JsValue(modules);
     }
     {
         std::ofstream out(args.report);
