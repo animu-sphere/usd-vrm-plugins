@@ -632,10 +632,17 @@ TestDesignTripletHandOff()
     assert(NearlyEqual(last.translations[2], pxr::GfVec3f(0.0f, 0.5f, 0.0f)));
     assert(NearlyEqual(last.translations[3], pxr::GfVec3f(0.0f, 0.5f, 0.0f)));
 
-    // The rig maps three bones, so the required-bone gap must be reported.
-    assert(!diagnostics.IsClean());
-    assert(!diagnostics.missingRequiredBones.empty());
-    assert(diagnostics.unmappedSourceBones.empty());
+    // The rig maps three bones, so the other fourteen required bones are
+    // reported, one each and in vocabulary order -- and nothing the clip drives
+    // is unbound.
+    using Code = vrmRetarget::RetargetDiagnosticCode;
+    const std::vector<std::string> missing =
+        diagnostics.Subjects(Code::MissingRequiredBone);
+    assert(missing.size() == 14);
+    assert(missing.front() == "neck");
+    assert(missing.back() == "rightHand");
+    assert(diagnostics.Subjects(Code::UnboundDrivenBone).empty());
+    assert(diagnostics.reported.size() == 14);
 }
 
 void
@@ -658,8 +665,10 @@ TestUnmappedJointsStayAtRestAndAreReported()
     assert(SameOrientation(last.rotations[3], pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
     assert(NearlyEqual(last.translations[3], pxr::GfVec3f(0.0f, 0.5f, 0.0f)));
 
-    assert(diagnostics.unmappedSourceBones.size() == 2);
-    assert(!diagnostics.warnings.empty());
+    // Two bones driven on both samples, reported once each.
+    const std::vector<std::string> unbound = diagnostics.Subjects(
+        vrmRetarget::RetargetDiagnosticCode::UnboundDrivenBone);
+    assert((unbound == std::vector<std::string>{"spine", "chest"}));
 }
 
 void
@@ -707,7 +716,259 @@ TestRootJointModeMovesTheReceiver()
         degraded.Retarget(DesignClip(), &diagnostics);
     assert(NearlyEqual(fallback.samples.back().translations[1],
                        pxr::GfVec3f(0.0f, 1.0f, 0.0f)));
-    assert(!diagnostics.warnings.empty());
+    // Once, from the rig's report, although both samples dropped a root.
+    assert(diagnostics.Subjects(
+               vrmRetarget::RetargetDiagnosticCode::InvalidRootJoint)
+           == std::vector<std::string>{"-1"});
+}
+
+// ---------------------------------------------------------------------------
+// Retarget diagnostics (the OpenExec plan's P1-1): a frozen code set, raised as
+// values, so that two implementations of a retarget can be compared on what
+// they reported as well as on what they computed.
+// ---------------------------------------------------------------------------
+
+// The table is the contract: every code has its own stable string under the
+// retarget prefix, the strings round-trip, and the two halves of the set sit
+// where the layer check expects them.
+void
+TestTheRetargetCodeTableIsClosedAndStable()
+{
+    using Code = vrmRetarget::RetargetDiagnosticCode;
+    const std::vector<std::string> expected = {
+        "VRM_RETARGET_MISSING_REQUIRED_BONE",
+        "VRM_RETARGET_UNBOUND_DRIVEN_BONE",
+        "VRM_RETARGET_DUPLICATE_TARGET",
+        "VRM_RETARGET_INVALID_HIERARCHY",
+        "VRM_RETARGET_INVALID_ROOT_JOINT",
+        "VRM_RETARGET_NON_UNIT_SCALE",
+        "VRM_RETARGET_TIME_RANGE_DERIVED",
+        "VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT",
+    };
+    assert(expected.size() == vrmRetarget::RetargetDiagnosticCodeCount);
+    for (std::size_t i = 0; i < expected.size(); ++i) {
+        const auto code = static_cast<Code>(i);
+        assert(vrmRetarget::RetargetDiagnosticCodeString(code) == expected[i]);
+        assert(vrmRetarget::FindRetargetDiagnosticCode(expected[i]) == code);
+        // The library raises exactly the leading five.
+        assert(vrmRetarget::RetargetDiagnosticIsLibraryRaised(code) == (i < 5));
+    }
+    assert(vrmRetarget::RetargetDiagnosticCodeString(Code::Count).empty());
+    assert(!vrmRetarget::FindRetargetDiagnosticCode("VRM_BVH_PARSE_FAILED"));
+
+    // Only a collision stops a retarget, and only a derived time range is
+    // merely informative.
+    for (std::size_t i = 0; i < expected.size(); ++i) {
+        const auto code = static_cast<Code>(i);
+        assert(vrmRetarget::RetargetDiagnosticIsRecoverable(code)
+               == (code != Code::OutputCollidesWithInput));
+    }
+    assert(vrmRetarget::RetargetDiagnosticDefaultSeverity(
+               Code::OutputCollidesWithInput)
+           == vrmRetarget::RetargetDiagnosticSeverity::Error);
+    assert(vrmRetarget::RetargetDiagnosticDefaultSeverity(Code::TimeRangeDerived)
+           == vrmRetarget::RetargetDiagnosticSeverity::Info);
+    assert(vrmRetarget::RetargetDiagnosticDefaultSeverity(
+               Code::UnboundDrivenBone)
+           == vrmRetarget::RetargetDiagnosticSeverity::Warning);
+}
+
+// A diagnostic built from a code takes the table's severity, and its line is
+// fixed field by field.
+void
+TestARetargetDiagnosticFormatsOneStableLine()
+{
+    using Code = vrmRetarget::RetargetDiagnosticCode;
+    const vrmRetarget::RetargetDiagnostic unbound =
+        vrmRetarget::MakeRetargetDiagnostic(Code::UnboundDrivenBone,
+                                            "upperChest", "no joint");
+    assert(unbound.severity == vrmRetarget::RetargetDiagnosticSeverity::Warning);
+    assert(unbound.recoverable);
+    assert(vrmRetarget::FormatRetargetDiagnostic(unbound)
+           == "[VRM_RETARGET_UNBOUND_DRIVEN_BONE] warning recoverable "
+              "subject=upperChest: no joint");
+
+    const vrmRetarget::RetargetDiagnostic collision =
+        vrmRetarget::MakeRetargetDiagnostic(Code::OutputCollidesWithInput,
+                                            "clip.usda");
+    assert(vrmRetarget::FormatRetargetDiagnostic(collision)
+           == "[VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT] error "
+              "subject=clip.usda");
+}
+
+// A code and a subject are reported once, the first report wins, and two lists
+// compare entry by entry in order.
+void
+TestADiagnosticIsReportedOncePerCodeAndSubject()
+{
+    using Code = vrmRetarget::RetargetDiagnosticCode;
+    vrmRetarget::RetargetDiagnostics diagnostics;
+    assert(diagnostics.IsClean());
+    assert(diagnostics.Report(
+        vrmRetarget::MakeRetargetDiagnostic(Code::UnboundDrivenBone, "jaw", "a")));
+    assert(!diagnostics.Report(
+        vrmRetarget::MakeRetargetDiagnostic(Code::UnboundDrivenBone, "jaw", "b")));
+    // The same subject under another code is another fact.
+    assert(diagnostics.Report(vrmRetarget::MakeRetargetDiagnostic(
+        Code::MissingRequiredBone, "jaw", "c")));
+    assert(diagnostics.reported.size() == 2);
+    assert(diagnostics.reported[0].detail == "a");
+    assert(diagnostics.Has(Code::UnboundDrivenBone, "jaw"));
+    assert(!diagnostics.Has(Code::UnboundDrivenBone, "neck"));
+
+    vrmRetarget::RetargetDiagnostics copy;
+    copy.Merge(diagnostics);
+    copy.Merge(diagnostics);
+    assert(copy == diagnostics);
+
+    vrmRetarget::RetargetDiagnostics reversed;
+    reversed.Report(diagnostics.reported[1]);
+    reversed.Report(diagnostics.reported[0]);
+    assert(reversed != diagnostics);
+}
+
+// The rig's own report, apart from any clip: a duplicate names the joint and
+// both bones, a hierarchy defect names the first joint out of order, and a
+// missing hips joint says what it costs only when root motion would land there.
+void
+TestTheRigIsDiagnosedBeforeAnyClip()
+{
+    using Code = vrmRetarget::RetargetDiagnosticCode;
+    const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
+    vrmRetarget::HumanoidMap map = DesignMap(skeleton);
+    assert(map.SetJointToken(motion::HumanBone::UpperChest,
+                             "Root/Pelvis/SpineA/ChestA", skeleton));
+
+    const vrmRetarget::RetargetDiagnostics rig =
+        vrmRetarget::DiagnoseRig(skeleton, map);
+    assert(rig.Subjects(Code::DuplicateTarget)
+           == std::vector<std::string>{"Root/Pelvis/SpineA/ChestA"});
+    const std::string& duplicate =
+        rig.reported[rig.reported.size() - 1].detail;
+    assert(duplicate.find("'chest'") != std::string::npos);
+    assert(duplicate.find("'upperChest'") != std::string::npos);
+    assert(rig.Subjects(Code::InvalidHierarchy).empty());
+    assert(rig.Subjects(Code::InvalidRootJoint).empty());
+
+    // A child listed before its parent.
+    std::vector<vrmRetarget::TargetJoint> joints = skeleton.GetJoints();
+    std::swap(joints[1], joints[2]);
+    joints[1].parent = 2;
+    joints[2].parent = 0;
+    const vrmRetarget::TargetSkeleton unordered(joints);
+    const vrmRetarget::RetargetDiagnostics hierarchy =
+        vrmRetarget::DiagnoseRig(unordered, vrmRetarget::HumanoidMap());
+    assert(hierarchy.Subjects(Code::InvalidHierarchy)
+           == std::vector<std::string>{"Root/Pelvis/SpineA"});
+
+    // No hips: under 'hips' the root lands nowhere, and the detail says so;
+    // under 'ignore' the same bone is only a missing bone.
+    vrmRetarget::HumanoidMap noHips;
+    assert(noHips.SetJointToken(motion::HumanBone::Spine, "Root/Pelvis/SpineA",
+                                skeleton));
+    const vrmRetarget::RetargetDiagnostics underHips =
+        vrmRetarget::DiagnoseRig(skeleton, noHips);
+    assert(underHips.reported.front().subject == "hips");
+    assert(underHips.reported.front().detail.find("root motion was dropped")
+           != std::string::npos);
+    vrmRetarget::RetargetOptions ignore;
+    ignore.rootMotion.mode = vrmRetarget::RootMotionMode::Ignore;
+    const vrmRetarget::RetargetDiagnostics underIgnore =
+        vrmRetarget::DiagnoseRig(skeleton, noHips, ignore);
+    assert(underIgnore.reported.front().subject == "hips");
+    assert(underIgnore.reported.front().detail.find("root motion")
+           == std::string::npos);
+}
+
+// A clip whose every driven bone is bound reports exactly what the rig does, so
+// a caller retargeting one pose at a time -- execVrm -- reaches the same list by
+// asking DiagnoseRig once and each pose after it.
+void
+TestAClipReportsTheRigThenWhatItDrives()
+{
+    const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
+    const vrmRetarget::HumanoidMap map = DesignMap(skeleton);
+    const vrmRetarget::PoseRetargeter retargeter(skeleton, map,
+                                                 DesignSourceRest());
+
+    vrmRetarget::RetargetDiagnostics clip;
+    retargeter.Retarget(DesignClip(), &clip);
+    assert(clip == vrmRetarget::DiagnoseRig(skeleton, map));
+
+    vrmRetarget::RetargetDiagnostics perPose =
+        vrmRetarget::DiagnoseRig(skeleton, map);
+    const motion::HumanoidAnimation animation = DesignClip();
+    for (const motion::HumanoidPose& pose : animation.samples) {
+        retargeter.Retarget(pose, &perPose);
+    }
+    assert(perPose == clip);
+}
+
+// A map built against a larger skeleton binds the hips to an index this rig
+// does not have. The retarget can only drop the root there, so the rig reports
+// the hips as missing for this rig -- with the dropped root in the detail --
+// and the clip reports it once, not per sample. Before, the root was dropped
+// without a word.
+void
+TestHipsBoundOutsideTheRigAreReportedWithTheDroppedRoot()
+{
+    using Code = vrmRetarget::RetargetDiagnosticCode;
+    const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
+    vrmRetarget::HumanoidMap foreign = DesignMap(skeleton);
+    assert(foreign.SetJointIndex(motion::HumanBone::Hips, 7, 10));
+    assert(foreign.IsMapped(motion::HumanBone::Hips));
+
+    const vrmRetarget::RetargetDiagnostics rig =
+        vrmRetarget::DiagnoseRig(skeleton, foreign);
+    assert(rig.reported.front().code == Code::MissingRequiredBone);
+    assert(rig.reported.front().subject == "hips");
+    assert(rig.reported.front().detail.find("root motion was dropped")
+           != std::string::npos);
+
+    const vrmRetarget::PoseRetargeter retargeter(skeleton, foreign,
+                                                 DesignSourceRest());
+    vrmRetarget::RetargetDiagnostics clip;
+    const vrmRetarget::RetargetedAnimation result =
+        retargeter.Retarget(DesignClip(), &clip);
+    // The rig's report, then the one thing the clip adds: it drives the hips,
+    // which reach no joint -- exactly what an unmapped hips would report.
+    assert(clip.Subjects(Code::MissingRequiredBone)
+           == rig.Subjects(Code::MissingRequiredBone));
+    assert(clip.Subjects(Code::UnboundDrivenBone)
+           == std::vector<std::string>{"hips"});
+    assert(clip.reported.size() == rig.reported.size() + 1);
+    // Every joint keeps its rest translation: the root landed nowhere.
+    assert(NearlyEqual(result.samples.back().translations[1],
+                       pxr::GfVec3f(0.0f, 1.0f, 0.0f)));
+
+    // One pose at a time reaches the same single report.
+    vrmRetarget::RetargetDiagnostics perPose;
+    const motion::HumanoidAnimation animation = DesignClip();
+    for (const motion::HumanoidPose& pose : animation.samples) {
+        retargeter.Retarget(pose, &perPose);
+    }
+    assert(perPose.Subjects(Code::MissingRequiredBone)
+           == std::vector<std::string>{"hips"});
+}
+
+// A bone the clip starts driving on a later sample is reported like one it
+// drives from the first. Until P1-1 only the first sample was asked, so this
+// bone went unreported.
+void
+TestABoneDrivenOnlyLaterIsStillReported()
+{
+    const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
+    const vrmRetarget::PoseRetargeter retargeter(skeleton, DesignMap(skeleton),
+                                                 DesignSourceRest());
+    motion::HumanoidAnimation animation = DesignClip();
+    animation.samples.back().validRotations.set(
+        static_cast<std::size_t>(motion::HumanBone::Jaw));
+
+    vrmRetarget::RetargetDiagnostics diagnostics;
+    retargeter.Retarget(animation, &diagnostics);
+    assert(diagnostics.Subjects(
+               vrmRetarget::RetargetDiagnosticCode::UnboundDrivenBone)
+           == std::vector<std::string>{"jaw"});
 }
 
 
@@ -2091,6 +2352,13 @@ main()
     TestUnmappedJointsStayAtRestAndAreReported();
     TestResampleOptionDrivesSampleCount();
     TestRootJointModeMovesTheReceiver();
+    TestTheRetargetCodeTableIsClosedAndStable();
+    TestARetargetDiagnosticFormatsOneStableLine();
+    TestADiagnosticIsReportedOncePerCodeAndSubject();
+    TestTheRigIsDiagnosedBeforeAnyClip();
+    TestAClipReportsTheRigThenWhatItDrives();
+    TestABoneDrivenOnlyLaterIsStillReported();
+    TestHipsBoundOutsideTheRigAreReportedWithTheDroppedRoot();
     TestExpressionRigDeclaresANameOnce();
     TestOneWeightExpandsOntoEveryBind();
     TestReportedZeroIsAuthoredAndUnreportedIsAbsent();

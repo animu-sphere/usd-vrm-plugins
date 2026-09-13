@@ -1017,10 +1017,12 @@ The report collects the rows four earlier reports left for this task into one
 table of 24. Every row the importer, the VRMA reader or the BVH converter can
 produce is exercised or measured, and all agree except a gaze, which exec does
 not compute until the `ExecIr` track's P1-2 (bake with `--no-look-at` to
-compare the rest), and diagnostics. **Still open here**: diagnostics, which need
-P1-1's codes computed as a value rather than logged; and the rows no producer
-reaches, each already asserted on the exec side and read rather than run on the
-tool's. *The Linux and macOS lanes ran the five cases for the first time on
+compare the rest), and diagnostics. **Still open here**: diagnostics — P1-1's
+codes are values since 2026-09-13, and `DiagnoseRig` plus the per-pose report
+give a one-pose-at-a-time caller the list the tool reports, so what remains is
+an exec computation answering them and the harness comparing the two lists; and
+the rows no producer reaches, each already asserted on the exec side and read
+rather than run on the tool's. *The Linux and macOS lanes ran the five cases for the first time on
 PR #185's own CI, and all five passed on both* (`workspace-pr-linux`,
 `workspace-pr-macos-arm64`), beside Windows.
 
@@ -1190,7 +1192,7 @@ that and nothing else, but a composed third-party avatar would draw wrong with n
 diagnostic
 ([report §8.3](../reports/openusd/26.08-openexec-migration.md#83-the-xformoptransform-only-rule)).
 
-### P1-1 — retarget diagnostics ⬜
+### P1-1 — retarget diagnostics 🚧
 
 Freeze the codes:
 
@@ -1213,6 +1215,44 @@ request. 26.08 has exactly one structured compilation error
 free-text `TF_ERROR` / `TF_RUNTIME_ERROR`, detectable with a `TfErrorMark` but
 not classifiable
 ([report §6](../reports/openusd/26.08-openexec-migration.md#6-requests-evaluation-cache-and-invalidation)).
+
+**The retarget half is frozen, as values** *(2026-09-13)*.
+`vrmRetarget/Diagnostics.h` holds the `VRM_RETARGET_*` set in one table, and a
+retarget reports `RetargetDiagnostic` values — code, subject, detail — into a
+list that keeps each code and subject once and compares exactly. That is P0-6's
+ask from the parity report (§6): codes a node can answer beside the pose rather
+than log. The contract is
+[MOTION_CONTRACT.md, "Retarget diagnostics"](../design/MOTION_CONTRACT.md).
+
+**Freezing after the raisers rather than before changed the list by one.** The
+VMC, mocopi and BVH sets were frozen before their decoders; this library had
+reported two bone lists and four prose warnings since v0.4.0, so the freeze
+classified those six. The two lists and two of the warnings are drafted codes
+(missing required, unbound driven, duplicate target, hierarchy). A root joint
+the rig does not have matched none, and `VRM_RETARGET_INVALID_ROOT_JOINT` is
+the one code added to the draft. A missing `hips` joint under root-motion mode
+`hips`, which had its own sentence, is `MISSING_REQUIRED_BONE` with the dropped
+root in its detail, since the cause is the bone.
+
+**The set splits at the layer boundary, and three of the drafted codes cannot
+be raised by the library.** `NON_UNIT_SCALE`, `TIME_RANGE_DERIVED` and
+`OUTPUT_COLLIDES_WITH_INPUT` say what a stage or a file system added, and
+`vrmRetarget` never sees either — it does not even receive a scale, since
+`TargetSkeleton` drops one when a rest is decomposed. `motion_retarget` raises
+the last two; `NON_UNIT_SCALE` waits for P1-2 to decide what raises it;
+`vrmRetarget_boundaries` fails if the library names any of the three.
+
+**One defect found on the way.** The clip overload asked only its first sample
+which bones it drives, so a bone that first appears later was never reported.
+Measured by a unit test that fails with the old rule restored. `motion_retarget`
+could not reach it — a `UsdSkelAnimation`'s `joints` are uniform — but a
+library caller with a live source's animation could.
+
+**Still open here**: `motion_retarget`'s exit codes, which are unchanged (2 for
+a usage error, 1 for everything else) and need every failure path classified;
+the three `VRM_OPENEXEC_*` codes, whose table waits for a driver to raise them;
+and exec answering the retarget codes, which is P0-6's remaining row rather
+than this task's.
 
 ### P1-2 — scale policy ⬜
 

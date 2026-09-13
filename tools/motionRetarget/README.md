@@ -190,9 +190,21 @@ not write.
 ## Diagnostics you should not ignore
 
 Bones the clip drives but the rig does not bind, required VRM bones with no
-binding, two bones resolving to one joint, and a skeleton whose joints are not
-in parent-before-child order are all reported on stderr. Retargeting onto a
-partial rig is legal and useful; doing it silently is not.
+binding, two bones resolving to one joint, a skeleton whose joints are not in
+parent-before-child order, and a clip with no time samples are all reported on
+stderr. Retargeting onto a partial rig is legal and useful; doing it silently is
+not.
+
+Each of those is one line in a frozen code's format, one line per bone or joint
+([MOTION_CONTRACT.md](../../docs/design/MOTION_CONTRACT.md), "Retarget
+diagnostics"):
+
+```text
+motion_retarget: [VRM_RETARGET_UNBOUND_DRIVEN_BONE] warning recoverable subject=upperChest: the clip drives it and the target rig binds no joint for it
+```
+
+Match the code and the subject, not the sentence after them. A refused
+`--output` that names an input is `VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT`.
 
 The same holds for the face: expressions the clip animates and this avatar does
 not declare, weights clamped from outside `[0, 1]`, blend shapes no mesh binds,

@@ -19,6 +19,43 @@ Describe(motion::HumanBone bone)
     return std::string(motion::HumanBoneName(bone));
 }
 
+// The one required bone whose absence costs more than its own motion: under
+// the default root-motion mode the hips are where the root lands, so a rig
+// without them drops the body's translation as well.
+std::string
+MissingRequiredDetail(motion::HumanBone bone, const RootMotionOptions& options)
+{
+    if (bone == motion::HumanBone::Hips
+        && options.mode == RootMotionMode::Hips) {
+        return "the target rig binds no joint for this required bone, and "
+               "root-motion mode 'hips' lands the root on it, so root motion "
+               "was dropped";
+    }
+    return "the target rig binds no joint for this required bone";
+}
+
+void
+ReportInvalidRootJoint(const RootMotionOptions& options, std::size_t jointCount,
+                       RetargetDiagnostics* diagnostics)
+{
+    const std::string subject = std::to_string(options.rootJointIndex);
+    if (diagnostics->Has(RetargetDiagnosticCode::InvalidRootJoint, subject)) {
+        return;
+    }
+    diagnostics->Report(MakeRetargetDiagnostic(
+        RetargetDiagnosticCode::InvalidRootJoint, subject,
+        "root-motion mode 'root' names this joint index and the target rig "
+        "has " + std::to_string(jointCount)
+            + " joints, so no root translation was authored"));
+}
+
+bool
+IsValidRootJoint(const RootMotionOptions& options, std::size_t jointCount)
+{
+    return options.rootJointIndex >= 0
+        && static_cast<std::size_t>(options.rootJointIndex) < jointCount;
+}
+
 } // namespace
 
 bool
@@ -136,8 +173,15 @@ PoseRetargeter::Retarget(const motion::HumanoidPose& pose,
         const auto bone = static_cast<motion::HumanBone>(slot);
         const int jointIndex = _map.GetJointIndex(bone);
         if (jointIndex < 0 || static_cast<std::size_t>(jointIndex) >= jointCount) {
-            if (diagnostics) {
-                diagnostics->unmappedSourceBones.push_back(bone);
+            // Checked before the detail is built: a clip reports the same bone
+            // on every sample, and only the first report is kept.
+            if (diagnostics
+                && !diagnostics->Has(RetargetDiagnosticCode::UnboundDrivenBone,
+                                     motion::HumanBoneName(bone))) {
+                diagnostics->Report(MakeRetargetDiagnostic(
+                    RetargetDiagnosticCode::UnboundDrivenBone, Describe(bone),
+                    "the clip drives it and the target rig binds no joint for "
+                    "it"));
             }
             continue;
         }
@@ -157,11 +201,9 @@ PoseRetargeter::Retarget(const motion::HumanoidPose& pose,
         int receiver = hipsJoint;
         if (rootOptions.mode == RootMotionMode::RootJoint) {
             receiver = rootOptions.rootJointIndex;
-            if (receiver < 0 || static_cast<std::size_t>(receiver) >= jointCount) {
+            if (!IsValidRootJoint(rootOptions, jointCount)) {
                 if (diagnostics) {
-                    diagnostics->warnings.emplace_back(
-                        "root-motion mode 'root' has no valid root joint index; "
-                        "no root translation was authored");
+                    ReportInvalidRootJoint(rootOptions, jointCount, diagnostics);
                 }
                 receiver = TargetSkeleton::kNoParent;
             }
@@ -184,13 +226,101 @@ PoseRetargeter::Retarget(const motion::HumanoidPose& pose,
                         joints[static_cast<std::size_t>(receiver)]
                             .restTranslation);
             }
-        } else if (hipsJoint < 0 && diagnostics) {
-            diagnostics->warnings.emplace_back(
-                "no target joint is bound to 'hips'; root motion was dropped");
+        } else if (rootOptions.mode == RootMotionMode::Hips && diagnostics
+                   && !diagnostics->Has(
+                       RetargetDiagnosticCode::MissingRequiredBone,
+                       motion::HumanBoneName(motion::HumanBone::Hips))) {
+            // Under 'root' the hips are not where the root lands, so their
+            // absence costs no root motion and the invalid index above is the
+            // whole report. Under 'hips' the receiver is out of this rig either
+            // because the map binds no hips or because it binds them to an
+            // index the rig does not have -- a map built against another
+            // skeleton -- and both drop the root. Checked before the detail is
+            // built, since every sample of a clip lands here.
+            diagnostics->Report(MakeRetargetDiagnostic(
+                RetargetDiagnosticCode::MissingRequiredBone,
+                Describe(motion::HumanBone::Hips),
+                MissingRequiredDetail(motion::HumanBone::Hips, rootOptions)));
         }
     }
 
     return result;
+}
+
+RetargetDiagnostics
+DiagnoseRig(const TargetSkeleton& skeleton, const HumanoidMap& map,
+            const RetargetOptions& options)
+{
+    RetargetDiagnostics diagnostics;
+    const std::vector<TargetJoint>& joints = skeleton.GetJoints();
+
+    // Missing *for this rig*: unbound, or bound to an index the rig does not
+    // have. A map carries indices and never says which skeleton it counted
+    // them against, so one built against another rig binds a bone the
+    // retarget can only drop -- and `FindMissingRequiredBones`, which reads
+    // the map alone, cannot see that.
+    for (const motion::HumanBone bone : HumanoidMap::GetRequiredBones()) {
+        const int jointIndex = map.GetJointIndex(bone);
+        if (jointIndex >= 0
+            && static_cast<std::size_t>(jointIndex) < joints.size()) {
+            continue;
+        }
+        diagnostics.Report(MakeRetargetDiagnostic(
+            RetargetDiagnosticCode::MissingRequiredBone, Describe(bone),
+            MissingRequiredDetail(bone, options.rootMotion)));
+    }
+
+    for (const int duplicate : map.FindDuplicateJointIndices()) {
+        // Named by the rig's own token where the index is one of its joints,
+        // since a subject is what two implementations are compared on and an
+        // index means nothing without the rig beside it.
+        const bool inRig =
+            duplicate >= 0 && static_cast<std::size_t>(duplicate) < joints.size();
+        const std::string subject = inRig
+            ? joints[static_cast<std::size_t>(duplicate)].token
+            : std::to_string(duplicate);
+        std::vector<motion::HumanBone> bound;
+        for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot) {
+            const auto bone = static_cast<motion::HumanBone>(slot);
+            if (map.GetJointIndex(bone) == duplicate) {
+                bound.push_back(bone);
+            }
+        }
+        std::string names;
+        for (const motion::HumanBone bone : bound) {
+            names += names.empty() ? "'" : ", '";
+            names += Describe(bone);
+            names += "'";
+        }
+        // The retarget writes bones in vocabulary order, so of the bones a
+        // sample drives, the last one bound here is the one the joint keeps.
+        diagnostics.Report(MakeRetargetDiagnostic(
+            RetargetDiagnosticCode::DuplicateTarget, subject,
+            names + " are bound to this joint; of those a sample drives, the "
+                    "last in the vocabulary is the one it keeps"));
+    }
+
+    if (!skeleton.IsTopologicallyOrdered()) {
+        for (std::size_t i = 0; i < joints.size(); ++i) {
+            const int parent = joints[i].parent;
+            if (parent == TargetSkeleton::kNoParent
+                || (parent >= 0 && static_cast<std::size_t>(parent) < i)) {
+                continue;
+            }
+            diagnostics.Report(MakeRetargetDiagnostic(
+                RetargetDiagnosticCode::InvalidHierarchy, joints[i].token,
+                "this joint's parent index is " + std::to_string(parent)
+                    + ", which does not precede it; a skeleton states its "
+                      "joints in parent-before-child order"));
+            break;
+        }
+    }
+
+    if (options.rootMotion.mode == RootMotionMode::RootJoint
+        && !IsValidRootJoint(options.rootMotion, joints.size())) {
+        ReportInvalidRootJoint(options.rootMotion, joints.size(), &diagnostics);
+    }
+    return diagnostics;
 }
 
 RetargetedAnimation
@@ -207,19 +337,7 @@ PoseRetargeter::Retarget(const motion::HumanoidAnimation& animation,
     result.source = animation.source;
 
     if (diagnostics) {
-        for (const motion::HumanBone bone : _map.FindMissingRequiredBones()) {
-            diagnostics->missingRequiredBones.push_back(bone);
-        }
-        for (const int duplicate : _map.FindDuplicateJointIndices()) {
-            diagnostics->warnings.push_back(
-                "two human bones resolve to target joint index "
-                + std::to_string(duplicate)
-                + "; the later binding wins and the earlier one is lost");
-        }
-        if (!_skeleton.IsTopologicallyOrdered()) {
-            diagnostics->warnings.emplace_back(
-                "target skeleton joints are not in parent-before-child order");
-        }
+        diagnostics->Merge(DiagnoseRig(_skeleton, _map, _options));
     }
 
     const motion::HumanoidAnimation* source = &animation;
@@ -231,33 +349,11 @@ PoseRetargeter::Retarget(const motion::HumanoidAnimation& animation,
     }
 
     result.samples.reserve(source->samples.size());
-    // Per-sample bone diagnostics would repeat once per frame; collect them
-    // from the first sample only and let the caller report each bone once.
-    RetargetDiagnostics firstSample;
-    bool first = true;
+    // Every sample reports into one list, which keeps each bone once. Until
+    // P1-1 only the first sample was asked, which kept each bone once as well
+    // and missed any bone the clip started driving later.
     for (const motion::HumanoidPose& pose : source->samples) {
-        result.samples.push_back(
-            Retarget(pose, first ? &firstSample : nullptr));
-        first = false;
-    }
-    if (diagnostics) {
-        for (const motion::HumanBone bone : firstSample.unmappedSourceBones) {
-            diagnostics->unmappedSourceBones.push_back(bone);
-        }
-        for (const std::string& warning : firstSample.warnings) {
-            diagnostics->warnings.push_back(warning);
-        }
-        if (!firstSample.unmappedSourceBones.empty()) {
-            std::string names;
-            for (const motion::HumanBone bone : firstSample.unmappedSourceBones) {
-                if (!names.empty()) {
-                    names += ", ";
-                }
-                names += Describe(bone);
-            }
-            diagnostics->warnings.push_back(
-                "the clip drives bones the target rig does not map: " + names);
-        }
+        result.samples.push_back(Retarget(pose, diagnostics));
     }
 
     if (!result.samples.empty()) {

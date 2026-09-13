@@ -39,17 +39,20 @@ ReportWarnings(const std::vector<std::string>& warnings, bool quiet)
     }
 }
 
-std::string
-JoinBones(const std::vector<motion::HumanBone>& bones)
+// One line per diagnostic, in the frozen code's own format, so a script can
+// match the code and the subject without parsing a sentence.
+void
+ReportDiagnostics(const vrmRetarget::RetargetDiagnostics& diagnostics,
+                  bool quiet)
 {
-    std::string joined;
-    for (const motion::HumanBone bone : bones) {
-        if (!joined.empty()) {
-            joined += ", ";
-        }
-        joined += std::string(motion::HumanBoneName(bone));
+    if (quiet) {
+        return;
     }
-    return joined;
+    for (const vrmRetarget::RetargetDiagnostic& diagnostic :
+         diagnostics.reported) {
+        std::cerr << "motion_retarget: "
+                  << vrmRetarget::FormatRetargetDiagnostic(diagnostic) << "\n";
+    }
 }
 
 std::string
@@ -286,6 +289,7 @@ main(int argc, char** argv)
         return 1;
     }
     ReportWarnings(clip.warnings, options.quiet);
+    ReportDiagnostics(clip.diagnostics, options.quiet);
 
     // Resample once, here, rather than inside the retargeter. The body and the
     // face are two expansions of the same samples, and what keeps them on one
@@ -322,15 +326,7 @@ main(int argc, char** argv)
     // authoring that already exists rather than through a second path.
     vrmRetarget::RetargetedAnimation retargeted =
         retargeter.Retarget(*source, &diagnostics);
-
-    if (!options.quiet) {
-        if (!diagnostics.missingRequiredBones.empty()) {
-            std::cerr << "motion_retarget: warning: the target rig maps no "
-                         "joint for required bones: "
-                      << JoinBones(diagnostics.missingRequiredBones) << "\n";
-        }
-        ReportWarnings(diagnostics.warnings, options.quiet);
-    }
+    ReportDiagnostics(diagnostics, options.quiet);
 
     // The gaze, between the body and the face because it needs the first and
     // may feed the second: a bone-driven look-at writes eye rotations over the

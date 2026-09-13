@@ -831,8 +831,15 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride,
 
     if (timeCodes.empty()) {
         // A clip with no time samples still has a default value; treat it as a
-        // single pose at the stage's start.
+        // single pose at the stage's start -- an instant the stage chose, not
+        // one the clip stated, which is what the code says.
         timeCodes.insert(clip->stage->GetStartTimeCode());
+        clip->diagnostics.Report(vrmRetarget::MakeRetargetDiagnostic(
+            vrmRetarget::RetargetDiagnosticCode::TimeRangeDerived,
+            animationPrim.GetPath().GetString(),
+            "the clip states no time samples, so its one pose is placed at "
+            "the stage's start time code, "
+                + TfStringify(clip->stage->GetStartTimeCode())));
     }
 
     int hipsJointIndex = -1;
@@ -1036,12 +1043,20 @@ WriteRetargetedAnimation(
         // identity rather than the paths, so a different spelling of the same
         // file is caught too.
         const SdfLayerHandle opened(layer);
+        const char* collided = nullptr;
         if (opened == avatar.stage->GetRootLayer()) {
-            *error = "--output would overwrite the avatar layer " + outputPath;
-            return false;
+            collided = "avatar";
+        } else if (opened == clip.stage->GetRootLayer()) {
+            collided = "animation";
         }
-        if (opened == clip.stage->GetRootLayer()) {
-            *error = "--output would overwrite the animation layer " + outputPath;
+        if (collided) {
+            *error = vrmRetarget::FormatRetargetDiagnostic(
+                vrmRetarget::MakeRetargetDiagnostic(
+                    vrmRetarget::RetargetDiagnosticCode::OutputCollidesWithInput,
+                    outputPath,
+                    std::string("--output names the ") + collided
+                        + " layer this retarget read, and writing it would "
+                          "replace it"));
             return false;
         }
         layer->Clear();
