@@ -275,6 +275,13 @@ corrections that differ only in a flag answer differently for the same rotation.
 A correction and its negation are different values, as above. There is no
 `NearlyEqual` for the same reason.
 
+`vrmRetarget::RetargetedPose` carries one too *(added 2026-09-13)*, for
+`vrm.humanoidRetarget`, over the timestamp and both arrays in the rig's joint
+order. A rotation and its negation are different poses, as above. It is the one
+rig type a parity check *would* compare, since it is the retarget's answer, and
+it still has no `NearlyEqual`: P0-6 decides whether it compares these values or
+the arrays a bake authors from them, and asks for one if it chooses the first.
+
 `NearlyEqual` takes a `MotionTolerance` and answers the question a parity check
 and a corpus test are actually asking. The two differ in exactly three places,
 and each is a decision rather than an implementation detail:

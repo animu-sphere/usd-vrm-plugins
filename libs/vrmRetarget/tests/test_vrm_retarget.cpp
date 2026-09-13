@@ -266,6 +266,44 @@ TestRigValuesCompareExactly()
     assert(SameOrientation(changed.Apply(motion::HumanBone::Hips, sample),
                            correction.Apply(motion::HumanBone::Hips, sample)));
     assert(changed != correction);
+
+    // The retargeted pose, for `vrm.humanoidRetarget`: one sample expanded
+    // onto the turned rig, so its arrays are not all rest.
+    motion::HumanoidPose source;
+    source.timestamp = 0.5;
+    source.localRotations[hips] = Rotation(kAxisX, 20.0f);
+    source.validRotations.set(hips);
+    source.root.worldPosition = pxr::GfVec3f(0.1f, 1.0f, 0.0f);
+    source.root.hasPosition = true;
+    const vrmRetarget::PoseRetargeter retargeter(turned, map,
+                                                 DesignSourceRest());
+    const vrmRetarget::RetargetedPose pose = retargeter.Retarget(source);
+    assert(pose == retargeter.Retarget(source));
+    assert(!(pose != retargeter.Retarget(source)));
+    assert(pose != vrmRetarget::RetargetedPose());
+
+    // Each of the three fields is part of the value.
+    vrmRetarget::RetargetedPose other = pose;
+    other.timestamp = 0.25;
+    assert(other != pose);
+    other = pose;
+    other.translations[1][0] += 1e-6f;
+    assert(other != pose);
+    other = pose;
+    other.rotations[1] = Rotation(kAxisX, 21.0f);
+    assert(other != pose);
+
+    // A negated rotation poses the joint identically and is a different value.
+    other = pose;
+    other.rotations[1] = pxr::GfQuatf(-pose.rotations[1].GetReal(),
+                                      -pose.rotations[1].GetImaginary());
+    assert(SameOrientation(other.rotations[1], pose.rotations[1]));
+    assert(other != pose);
+
+    // The slot ORDER is part of the value: it is the rig's joint order.
+    other = pose;
+    std::swap(other.rotations[1], other.rotations[2]);
+    assert(other != pose);
 }
 
 // A rejected rebinding unmaps the bone, whether the index or the token is what

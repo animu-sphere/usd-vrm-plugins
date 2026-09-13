@@ -29,6 +29,22 @@ struct RetargetedPose
     std::vector<pxr::GfVec3f> translations;
 };
 
+// Exact, joint by joint: the same timestamp and the same rotation and
+// translation in every slot, in the rig's order. It exists for the caller
+// `RestPoseCorrection`'s does: `ExecTypeRegistry::RegisterType` will not
+// register a type it cannot compare, and `execVrm`'s `vrm.humanoidRetarget`
+// hands this value back whole.
+//
+// Exact means a rotation and its negation are *different* poses although they
+// pose the joint identically -- the conservative answer, and the one
+// `motion::HumanoidPose`'s `operator==` gives. There is no `NearlyEqual`: the
+// OpenExec plan's parity step (P0-6) decides whether it compares these values
+// or the arrays a bake authors from them, and asks for one if it is the first.
+VRMRETARGET_API bool operator==(const RetargetedPose& a,
+                                const RetargetedPose& b) noexcept;
+VRMRETARGET_API bool operator!=(const RetargetedPose& a,
+                                const RetargetedPose& b) noexcept;
+
 struct RetargetedAnimation
 {
     // The joint tokens these samples are ordered by — the target skeleton's
