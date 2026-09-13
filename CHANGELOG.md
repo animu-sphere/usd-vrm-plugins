@@ -563,6 +563,48 @@ Current schema contract version: **1**.
   where six of the seven `execVrm` suites died with a fatal error. 140 green
   CTest names in the workspace.
 
+- **OpenExec and the offline bake, compared on the same recorded input: they
+  agree bit for bit** (the OpenExec plan's P0-6). `tests/parity/exec_parity` is
+  handed `motion_retarget`'s own arguments and the bake the tool wrote from
+  them. It builds one stage that sublayers the avatar's layer and the clip's,
+  so every path the tool saw is the path exec sees. It evaluates
+  `vrm.computeJointLocalTransforms` at each of the clip's keys and compares that
+  with what the bake states, joint by joint, at the bake's **own** samples. A
+  Python driver hands both programs one argument list, so they cannot be given
+  different flags. Five `workspace_exec_parity_*` CTest names run it: the
+  recorded mocopi export, converted by the shipped profile, on the fixture rig,
+  on `Seed-san.vrm`, and under all four root-motion statements; the design
+  triplet's walk read through `usdVrmaFileFormat`; and a new 30 fps clip keyed
+  where the tool does not put a sample back at the frame it read. **All 414 598
+  compared values are `==`**, stronger than the release gate's `NearlyEqual`.
+  Joint order, identity scales and Seed-san's seven scaled rests agree as well.
+
+  **Six measurements**
+  ([docs/reports/openusd/26.08-openexec-parity.md](docs/reports/openusd/26.08-openexec-parity.md)).
+  **The only inexact value is placement**: two samples of the integer-keyed
+  clip bake 2.37e-16 s late, and compared at the bake's own samples that costs
+  nothing. **The harness sees a difference**: each root-motion statement,
+  evaluated through exec against the *default* bake, diverges in translation
+  only (852, 1 704, 852 values), and that negative pair is committed. A map one
+  bone short diverges on exactly that joint. A gaze left in the tool's bake
+  diverges on exactly the two eye joints, which exec has no node for.
+  **Parity is conditional on five statements the harness makes on the stage**:
+  the rate, the source skeleton, the map, the rig and the root policy. No
+  producer authors them yet. **Two of the tool's own fixtures state human bones
+  without `VrmHumanoidAPI`**, which exec cannot see and the harness refuses.
+  **Diagnostics do not agree**: the tool names the clip bone a rig drops, and
+  exec cannot. The **tenth boundary finding** is that which prim is the
+  humanoid, the rig and the clip is decided only in the tool. The report
+  collects the 24 rows earlier reports left for P0-6 into one table.
+
+  MOTION_CONTRACT.md now states how parity with a bake compares: at the bake's
+  own samples, under `MotionTolerance`, each difference classified and none
+  widened. The harness was checked against itself before any result was
+  trusted: an early run of the negative pair printed "worst 0" beside 852
+  divergences, because each classification was one argument of a call whose
+  other argument read the amount it computes, and MSVC evaluated the amount
+  first. 145 green CTest names in the workspace.
+
 - **Two expressions can no longer both own the eyelid: VRM 1.0's expression
   overrides, read and obeyed** (closes #170). Expressions accumulate on the
   targets they bind, and two that bind *different* targets still fight when

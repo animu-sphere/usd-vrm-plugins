@@ -281,6 +281,7 @@ order. A rotation and its negation are different poses, as above. It is the one
 rig type a parity check *would* compare, since it is the retarget's answer, and
 it still has no `NearlyEqual`: P0-6 decides whether it compares these values or
 the arrays a bake authors from them, and asks for one if it chooses the first.
+*P0-6 chose the second (2026-09-13)*, so it has none and needs none.
 
 `vrmRetarget::JointLocalTransforms` carries one too *(added 2026-09-13)*, for
 `vrm.computeJointLocalTransforms`. It is the second of those two choices made
@@ -325,6 +326,26 @@ bones in humanoid enum order, confidence, contacts, expressions by name — so a
 failing corpus test names the bone and the amount rather than only the
 disagreement. An expression *name* is an identifier rather than a measurement,
 so both comparisons read it exactly; only the weight takes a tolerance.
+
+**Parity with a bake** *(P0-6, 2026-09-13)* is the motion question asked of the
+arrays a bake authors rather than of a pose, and it uses the same tolerance.
+The OpenExec side is `vrmRetarget::JointLocalTransforms`; the offline side is
+what the bake's `UsdSkelAnimation` states. They are compared:
+
+- **at the bake's own time samples**, paired by index with the clip's keys. A
+  bake can place a sample a rounding away from the frame it read, and reading
+  it at the frame would ask USD to interpolate. How far apart the two instants
+  are is compared separately, as placement, under `time`;
+- **joint by joint, in the rig's order**. The joints and scales must be equal
+  outright, since the arrays are indexed by the one and resolve as a unit with
+  the other;
+- **each rotation and translation classified, never widened**: exact (`==`); a
+  quaternion's sign only; within `angle` or `distance`, a rounding; or a
+  divergence. Only a divergence, a refusal or a mismatch of shape is a failure.
+
+The first parity run over the recorded input found every value exact, so the
+tolerance is stated here and was not needed
+([the parity report](../reports/openusd/26.08-openexec-parity.md)).
 
 ## What the contract still owes its next two consumers
 
