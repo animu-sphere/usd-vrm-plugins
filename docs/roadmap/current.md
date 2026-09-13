@@ -820,12 +820,39 @@ compared, which was P0-4's stated blocker.
   the clip bone a rig drops, and exec cannot. The **tenth boundary finding** is
   that which prim is the humanoid, the rig and the clip is decided only in the
   tool.
-- ⬜ **The rest of P0-6, and the display slice (P0-7)** of the
+- 🚧 **The display slice: a clip's root places a prop on screen**
+  *(2026-09-13, P0-7)*. `execMotion` registers an **attribute expression** for
+  `motion:root:transform` on a clip, whose computed value is
+  `motion.extractRootMotion` as a matrix. A prop that connects its
+  `xformOp:transform` to it is placed by `execGeom`'s own
+  `computeLocalToWorldTransform`, because `computeValue` follows one connection
+  to an attribute of the same type. Nothing is registered for
+  `UsdGeomXformable`, which `execGeom` owns. `usdExecImaging` hands that matrix
+  to Hydra, and Storm draws the marker on the clip's hips path with the exec
+  scene index on and at its authored place with it off. `execMotion_display`
+  asserts four of the five "done when" rows through the stage scene index, with
+  no GL: time and a clip edit dirty exactly the prims the clip reaches, a
+  material edit dirties nothing, and the stage is checked for
+  `xformOp:transform` only.
+
+  **Four findings**
+  ([the display report](../reports/openusd/26.08-openexec-display.md)).
+  **A refusal draws where `ignore` does**, because `execGeom` reads an absent
+  local transform as the identity; so do the default time code and a session
+  without the bundle, and only the refusal posts an error. **A broken route
+  draws the authored value without a word.** **The precondition is two-sided**:
+  `execGeom` also reads a `xformOp:transform` the order does not list. And **the
+  first frame drawn from a scene camera is empty**, upstream, with or without
+  this bundle. Beside them, this is the first consumer of
+  `RootMotion::worldOrientation`, and no clip read from USD states one, in
+  either reader.
+- ⬜ **The rest of P0-6 and P0-7** of the
   [plan](openexec-foundation.md#6-foundation-tasks). P0-6 still owes
-  diagnostics, which need P1-1's codes computed as a value rather than logged,
-  and the Linux and macOS lanes' first run of the five cases. What remains of
-  P0-4 itself is the producer half of the rate and policies, the written driver
-  contract, and packaged discovery, and now a decision on what a one-joint
+  diagnostics, which need P1-1's codes computed as a value rather than logged.
+  Its five cases ran on Linux and macOS for the first time on PR #185's CI and
+  passed. P0-7 owes "from packaged plugins", which is P0-4's packaged discovery
+  too. What remains of P0-4 itself is that, the producer half of the rate and
+  policies, the written driver contract, and a decision on what a one-joint
   clip's fallback-filled root means. P1-2 owes a decision on a scaled rest.
 
 ## Then: boundary consolidation ⬜

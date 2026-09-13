@@ -247,6 +247,50 @@ add_test(NAME execMotion_blend
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/blended_clips.usda")
 
 # ---------------------------------------------------------------------------
+# The display slice, through the built bundle and usdExecImaging
+# ---------------------------------------------------------------------------
+# The plan's P0-7: a clip's root motion placing an Xformable, through
+# `execGeom`'s own transform computation and `usdExecImaging`'s stage scene
+# index -- the object UsdImagingGLEngine merges over the USD one when
+# USDIMAGINGGL_ENGINE_ENABLE_EXEC_SCENE_INDEX is set. Driven directly, with an
+# observer where Hydra would be, so it needs no GL context and runs on every
+# lane.
+#
+# The only suite here that links imaging, and it links `execGeom` for nothing
+# but the computation's token: the computation itself is found the way this
+# bundle's are, through plugInfo.json. Neither is linked by the bundle, which
+# registers for no schema of theirs. motionCore is for the one pose a driver
+# hands in -- a root orientation, which no clip states.
+add_executable(execMotion_display_tests test_exec_motion_display.cpp)
+target_include_directories(execMotion_display_tests PRIVATE
+    ${PXR_INCLUDE_DIRS})
+target_compile_options(execMotion_display_tests
+    PRIVATE ${_exec_motion_assertions})
+if(MSVC)
+    target_compile_definitions(execMotion_display_tests
+        PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(execMotion_display_tests PRIVATE /bigobj /utf-8)
+endif()
+set(_exec_motion_display_targets ${_exec_motion_test_targets})
+foreach(_t IN ITEMS usdGeom execGeom hd usdImaging usdExecImaging)
+    if(TARGET ${_t})
+        list(APPEND _exec_motion_display_targets ${_t})
+    elseif(TARGET pxr::${_t})
+        list(APPEND _exec_motion_display_targets pxr::${_t})
+    endif()
+endforeach()
+target_link_libraries(execMotion_display_tests
+    PRIVATE motionCore::motionCore ${_exec_motion_display_targets})
+
+# One fixture: the sampled clip plus the attribute a display connects to, a
+# prop that connects to it under a translated parent, and a material nothing
+# the placement reads. Every broken shape -- a route that fails, a policy that
+# refuses, an op exec does not read -- is authored by the suite.
+add_test(NAME execMotion_display
+    COMMAND execMotion_display_tests
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/displayed_clip.usda")
+
+# ---------------------------------------------------------------------------
 # Environment
 # ---------------------------------------------------------------------------
 # The bundle's own resource directory is what PXR_PLUGINPATH_NAME points at, and
@@ -284,6 +328,8 @@ set_tests_properties(execMotion_interpolate PROPERTIES
     ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
 set_tests_properties(execMotion_blend PROPERTIES
     ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
+set_tests_properties(execMotion_display PROPERTIES
+    ENVIRONMENT_MODIFICATION "${_exec_motion_env}")
 
 # The seam suite needs no plugin and no plugin path, but it does link motionCore
 # and motionRuntime and -- through Gf -- loads usd_gf.dll on Windows all the
@@ -296,5 +342,5 @@ set_tests_properties(execMotion_pose PROPERTIES
 # reported on its own (the plan's P0-2 CTest labels).
 set_tests_properties(execMotion_pose execMotion_mechanism execMotion_sample
                      execMotion_filter execMotion_root execMotion_interpolate
-                     execMotion_blend
+                     execMotion_blend execMotion_display
     PROPERTIES LABELS "motion.openexec")

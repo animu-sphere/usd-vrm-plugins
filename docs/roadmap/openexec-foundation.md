@@ -988,9 +988,11 @@ table of 24. Every row the importer, the VRMA reader or the BVH converter can
 produce is exercised or measured, and all agree except a gaze, which exec does
 not compute until the `ExecIr` track's P1-2 (bake with `--no-look-at` to
 compare the rest), and diagnostics. **Still open here**: diagnostics, which need
-P1-1's codes computed as a value rather than logged; the rows no producer
+P1-1's codes computed as a value rather than logged; and the rows no producer
 reaches, each already asserted on the exec side and read rather than run on the
-tool's; and the Linux and macOS lanes' first run of the five cases.
+tool's. *The Linux and macOS lanes ran the five cases for the first time on
+PR #185's own CI, and all five passed on both* (`workspace-pr-linux`,
+`workspace-pr-macos-arm64`), beside Windows.
 
 This is the check that keeps a computation a wrapper. v0.4.0 already produced the
 mechanism it needs: the design triplet is compared through USD composition at the
@@ -1049,7 +1051,7 @@ root-motion policy difference · actual algorithm divergence. Only the last is a
 defect in this plan's sense; the rest are contract questions that get an answer
 in the contract.
 
-### P0-7 — display smoke, re-scoped to `UsdGeomXformable` ⬜
+### P0-7 — display smoke, re-scoped to `UsdGeomXformable` 🚧
 
 **Its route narrowed on 2026-09-06 and the task did not.** "Prove the mechanism
 on `UsdGeomXformable`" cannot mean *our* computation registered for that schema:
@@ -1058,6 +1060,37 @@ an applied API schema of ours on the Xformable prim — measured to work
 ([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §3) — or
 `execGeom`'s own computations. The upstream ask (option (c) below) is unaffected
 and now has a second thing to ask for.
+
+**It took `execGeom`'s own computation, and registered nothing for the schema**
+*(2026-09-13)*. `execMotion` registers an **attribute expression** for
+`motion:root:transform` on a clip: what `computeValue` answers for that
+attribute is `motion.extractRootMotion` as a matrix. An Xformable that connects
+its `xformOp:transform` to it is placed by `execGeom`'s
+`computeLocalToWorldTransform`, because `computeValue` follows exactly one
+connection to an attribute of the same type. No new schema and no applied API
+was needed. `usdExecImaging`'s Xformable adapter hands that matrix to Hydra. In
+Storm, the same stage draws the marker at its authored place with the exec scene
+index off, and on the clip's hips path with it on
+([the display report](../reports/openusd/26.08-openexec-display.md) §4).
+
+`execMotion_display` asserts four of the five "done when" rows on every lane,
+through the stage scene index with an observer where Hydra would be, no GL
+needed. A frame change dirties exactly the prims the clip reaches. A clip edit
+dirties them at `ApplyPendingUpdates`. A material edit dirties nothing and
+invalidates nothing. The stage is checked for `xformOp:transform` only first.
+**Still open: "from packaged plugins"**, which is P0-4's packaged discovery, and
+one run closes both.
+
+Four findings came with it. **A refusal draws where `ignore` does**: `execGeom`
+reads an absent local transform as the identity, so a misspelled intake, a
+deliberate `ignore`, the default time code and a session without the bundle all
+put the prop at its parent, and only the refusal posts an error. **A broken
+route draws the authored value without a word**: two connections, an undeclared
+target, or a target of another type. **The precondition is two-sided**:
+`execGeom` also reads a `xformOp:transform` that `xformOpOrder` does not list,
+which UsdGeom ignores. And **the first frame drawn from a scene camera is empty**,
+with or without this bundle, an upstream behaviour seen only through an engine
+([the display report](../reports/openusd/26.08-openexec-display.md) §3, §6, §7).
 
 **Originally:** avatar stage + VRMA semantic animation + an OpenExec request →
 computed transforms → `usdExecImaging` → usdview, with a skinned avatar moving.
@@ -1099,6 +1132,12 @@ The other two options considered are **not** dropped; they are re-filed:
   whether an attribute has one — 26.08 fills it with the type's fallback and a
   warning the callback never sees
   ([the humanoid report](../reports/openusd/26.08-openexec-humanoid.md) §8).
+  Three more since the display slice ran: an absent computed transform draws
+  as the identity, so a refusal cannot reach a picture; the first frame an
+  engine draws through the exec scene index from a scene camera is empty; and
+  `execGeom` reads a `xformOp:transform` its prim's `xformOpOrder` does not
+  list ([the display report](../reports/openusd/26.08-openexec-display.md) §3,
+  §6, §7).
 - ⬜ **Real `UsdSkel` skinning display is its own milestone**, after the
   `ExecIr` track, and is a release condition for neither. Four routes
   exist, in the order they should be tried: the upstream ask above; an adapter
@@ -1355,7 +1394,15 @@ depends on them ([docs/README.md](../README.md)). Open:
   in WORKSPACE.md §2 on 2026-07-29; the identity row did not.)*
 - ⬜ **`usdExecImaging` has no declared place.** It is an OpenUSD component, not
   a workspace member, but the presentation path through it should be named
-  somewhere binding rather than only here.
+  somewhere binding rather than only here. *Since 2026-09-13 the path is
+  measured rather than proposed*: a clip declares `motion:root:transform`, a
+  prop connects its `xformOp:transform` to it, and `execGeom` and
+  `usdExecImaging` do the rest
+  ([the display report](../reports/openusd/26.08-openexec-display.md) §1). Two
+  statements now need a home: that attribute and that connection are authored
+  by the fixture and by nothing else, which is the rate's situation again and
+  goes to BND-0; and a stage shown this way states `xformOp:transform` and no
+  other op on every Xformable, in both directions (§6 there).
 - ⬜ **Motion Phase E's scope grew.** Motion policy §16 describes Phase E as
   `execMotion` / `execVrm` nodes; this plan adds the display slice (P0-7) and the
   whole `ExecIr` rig track (§7). Either Phase E widens or the ladder

@@ -5,8 +5,9 @@ Motion Phase E; the plan is
 [docs/roadmap/openexec-foundation.md](../../docs/roadmap/openexec-foundation.md)
 §6, P0-4.
 
-**This is the foundation, not the layer.** It registers four value types and
-eight computations:
+**This is the foundation, not the layer.** It registers four value types, eight
+computations, and one attribute expression that reaches a display
+([below](#a-display-reads-the-root-through-a-connection)):
 
 | Computation | Provider | Result |
 | --- | --- | --- |
@@ -373,6 +374,58 @@ against the library's current behaviour. The ask for
 that can say *there is nothing to blend*, states finite weights and a shared
 instant as preconditions, and states its order dependence.
 
+## A display reads the root through a connection
+
+The plan's P0-7. In 26.08 a computed value reaches Hydra only through
+`usdExecImaging`, which adapts exactly two schemas, and the one this workspace
+can use — `UsdGeomXformable` — is `execGeom`'s. A second declarer loses every
+computation it registers there, so this bundle registers nothing for it.
+It registers an **attribute expression** instead:
+
+| Attribute | Type | Computed value under exec |
+| --- | --- | --- |
+| `motion:root:transform` | `matrix4d`, declared on the clip with no value | `motion.extractRootMotion` as a local-to-parent matrix: the orientation, then the position, each only where the root states it |
+
+An Xformable that **connects** its `xformOp:transform` to that attribute is then
+placed by the clip. `execGeom`'s own `computeLocalToWorldTransform` reads
+`computeValue` of `xformOp:transform`, and `computeValue` follows exactly one
+connection to a valid attribute of the same type:
+
+```usda
+def Xform "Prop"
+{
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, -5, 1) )
+    matrix4d xformOp:transform.connect = </Clip.motion:root:transform>
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+```
+
+With `USDIMAGINGGL_ENGINE_ENABLE_EXEC_SCENE_INDEX=1`, usdview and usdrecord draw
+the prop where the clip's hips are, frame by frame. Without it they draw the
+authored value, because a connection is not a value. The same stage, rendered
+through Storm both ways, is in
+[the display report](../../docs/reports/openusd/26.08-openexec-display.md) §4.
+
+An unstated component is the identity, so `ignore` leaves the prop at its
+parent. **So does a refusal**, and that breaks the rule below at the last step:
+this expression sets no value, and `execGeom` reads an absent local transform as
+the identity. So does a session that did not load this bundle, and so does the
+default time code. Four causes draw one picture. Only the refusal posts an
+error; the last two leave an executor warning about a value nobody set, and
+`ignore` says nothing, correctly. The TfError is the only thing that tells a
+misspelled `ignore` from a deliberate one on screen
+([the display report](../../docs/reports/openusd/26.08-openexec-display.md) §3).
+
+**The route fails quietly as well.** Two connections, a connection to an
+attribute the clip does not declare, or one to an attribute of another type all
+draw the prop's own authored value, with no diagnostic. And `execGeom` reads
+`xformOp:transform` by name. It ignores every other op and ignores
+`xformOpOrder`, which cuts both ways. A prim with only `xformOp:translate` draws
+at its parent, and a prim whose `xformOp:transform` the order does not list
+draws at that transform, which UsdGeom ignores. A stage shown this way states
+`xformOp:transform` and nothing else on every Xformable. `execMotion_display`
+checks that before it trusts any drawn value.
+
 ## How a computation refuses
 
 **By setting no value at all** — `VdfContext::SetEmptyOutput`, after posting a
@@ -478,5 +531,6 @@ through an input accessor rather than by registering on it. The measurement is
 | `execMotion_root` | the bundle's second registered value type coming back beside the first out of one request, a dependent whose result type differs from its input's, a velocity that exists nowhere in the clip, one override driving both recurrences in a single call, and an intake token that names no policy being refused **with no value** where an absent one is defaulted and a deliberate `ignore` answers with a cleared root |
 | `execMotion_interpolate` | the third and fourth registered value types, a driver's history overriding a key whose type is not a pose and being sampled bracketed, held and empty — `Unavailable` as an answer, a decreasing history as the one refusal — two overrides of two keys in one call each reaching only their own dependents, a wrongly typed and an empty override being **dropped** by exec in favour of the key's ordinary value, a history refused at the default time code even when one was supplied, and a clip with no rate refused whether or not a history was supplied |
 | `execMotion_blend` | a relationship fan-in arriving in authored target order at first compile, after an edit and in a fresh system; a target that is not a clip, a source that refused and a target naming nothing each being refused rather than blended around; weights pairing one per source; two clips at two rates refused where their seconds differ and blended where they agree; time, an authored weight and a relationship edit each reaching the blend across prims; and an override of one prim's key reaching a blend on another |
+| `execMotion_display` | the display slice: the fixture stating `xformOp:transform` only, checked before anything else; `execGeom`'s transform placing a connected prop, and its child, by the clip's root at three frames; `usdExecImaging`'s stage scene index handing Hydra that matrix; a frame change dirtying exactly the prims the clip reaches; a clip edit dirtying nothing until `ApplyPendingUpdates`; a material edit dirtying and invalidating nothing; a refusal drawing exactly where `ignore` does; three broken routes drawing the authored value with no error; and the transform-only precondition failing in both directions |
 
-All seven carry the CTest label `motion.openexec`.
+All eight carry the CTest label `motion.openexec`.
