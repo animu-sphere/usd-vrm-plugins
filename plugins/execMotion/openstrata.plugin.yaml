@@ -67,6 +67,7 @@ tests:
     - tests/fixtures/filtered_clip.usda
     - tests/fixtures/rooted_clip.usda
     - tests/fixtures/blended_clips.usda
+    - tests/fixtures/displayed_clip.usda
   roundtrip:
     - tests/fixtures/identity_clip.usda
     - tests/fixtures/sampled_clip.usda
@@ -75,3 +76,4 @@ tests:
     - tests/fixtures/filtered_clip.usda
     - tests/fixtures/rooted_clip.usda
     - tests/fixtures/blended_clips.usda
+    - tests/fixtures/displayed_clip.usda

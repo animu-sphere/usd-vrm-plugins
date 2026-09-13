@@ -591,6 +591,110 @@ void TestAVelocityIsDerivedExactlyWhereTheLibraryDerivesOne()
 }
 
 // ---------------------------------------------------------------------------
+// The placement a display reads
+// ---------------------------------------------------------------------------
+// `RootTransform` is what `motion:root:transform` computes, so it is what an
+// Xformable connected to it is drawn at. The expected matrices are written from
+// the definition -- a point is turned about the root's own origin and then
+// carried to its position -- rather than built by the same Gf calls.
+
+void TestAClearedRootIsTheIdentity()
+{
+    // `ignore`'s answer, and a clip whose hips carry no translation: nothing
+    // stated, so nothing moves, and the Xformable stays at its parent.
+    const std::optional<pxr::GfMatrix4d> transform =
+        execmotion::RootTransform(motion::RootMotion{});
+    assert(transform && *transform == pxr::GfMatrix4d(1.0) &&
+           "an unstated root placed something");
+}
+
+void TestTheOrientationTurnsInPlace()
+{
+    motion::RootMotion root;
+    root.worldPosition = pxr::GfVec3f(1.0f, 2.0f, 3.0f);
+    root.hasPosition = true;
+    // A quarter turn about +Y, which takes +X to -Z.
+    const float half = static_cast<float>(M_SQRT1_2);
+    root.worldOrientation = pxr::GfQuatf(half, 0.0f, half, 0.0f);
+    root.hasOrientation = true;
+
+    const std::optional<pxr::GfMatrix4d> transform =
+        execmotion::RootTransform(root);
+    assert(transform);
+
+    // The position is where the root is, whatever the orientation: turning
+    // happens about the root's own origin and does not swing it.
+    const pxr::GfVec3d translation = transform->ExtractTranslation();
+    assert(std::abs(translation[0] - 1.0) < 1e-6
+           && std::abs(translation[1] - 2.0) < 1e-6
+           && std::abs(translation[2] - 3.0) < 1e-6);
+
+    // A point a metre along +X of the root lands a metre along -Z of it.
+    const pxr::GfVec3d moved = transform->Transform(pxr::GfVec3d(1.0, 0.0, 0.0));
+    assert(std::abs(moved[0] - 1.0) < 1e-6
+           && std::abs(moved[1] - 2.0) < 1e-6
+           && std::abs(moved[2] - 2.0) < 1e-6 &&
+           "the orientation and the position compose in the wrong order");
+
+    // An orientation alone turns and does not move.
+    motion::RootMotion turned = root;
+    turned.hasPosition = false;
+    const std::optional<pxr::GfMatrix4d> onlyTurned =
+        execmotion::RootTransform(turned);
+    assert(onlyTurned && onlyTurned->ExtractTranslation() == pxr::GfVec3d(0.0));
+}
+
+void TestAnOrientationIsNormalizedAndNotScaled()
+{
+    motion::RootMotion unit;
+    unit.worldOrientation = pxr::GfQuatf(1.0f, 0.0f, 0.0f, 0.0f);
+    unit.hasOrientation = true;
+    motion::RootMotion doubled = unit;
+    doubled.worldOrientation = pxr::GfQuatf(2.0f, 0.0f, 0.0f, 0.0f);
+
+    // A quaternion off the unit sphere would scale whatever it placed, and a
+    // placement that grew a prop is not a placement anybody stated.
+    const std::optional<pxr::GfMatrix4d> a = execmotion::RootTransform(unit);
+    const std::optional<pxr::GfMatrix4d> b = execmotion::RootTransform(doubled);
+    assert(a && b && *a == *b && *b == pxr::GfMatrix4d(1.0));
+}
+
+void TestAPlacementNobodyStatedIsRefused()
+{
+    const float nan = std::numeric_limits<float>::quiet_NaN();
+    const float inf = std::numeric_limits<float>::infinity();
+
+    motion::RootMotion position;
+    position.hasPosition = true;
+    position.worldPosition = pxr::GfVec3f(0.0f, nan, 0.0f);
+    assert(!execmotion::RootTransform(position));
+    position.worldPosition = pxr::GfVec3f(inf, 0.0f, 0.0f);
+    assert(!execmotion::RootTransform(position));
+
+    motion::RootMotion orientation;
+    orientation.hasOrientation = true;
+    orientation.worldOrientation = pxr::GfQuatf(nan, 0.0f, 0.0f, 0.0f);
+    assert(!execmotion::RootTransform(orientation));
+    // Too short to normalize: Gf would answer the identity, which is a rotation
+    // this root did not state.
+    orientation.worldOrientation = pxr::GfQuatf(0.0f, 0.0f, 0.0f, 0.0f);
+    assert(!execmotion::RootTransform(orientation) &&
+           "a zero-length orientation was drawn as the identity");
+
+    // The flags decide what is read. A field the root does not state is never
+    // looked at, and neither is a velocity, which a placement at one instant
+    // does not depend on.
+    motion::RootMotion unstated;
+    unstated.worldPosition = pxr::GfVec3f(nan);
+    unstated.worldOrientation = pxr::GfQuatf(0.0f, 0.0f, 0.0f, 0.0f);
+    unstated.linearVelocity = pxr::GfVec3f(nan);
+    unstated.hasLinearVelocity = true;
+    const std::optional<pxr::GfMatrix4d> transform =
+        execmotion::RootTransform(unstated);
+    assert(transform && *transform == pxr::GfMatrix4d(1.0));
+}
+
+// ---------------------------------------------------------------------------
 // The history, and what it states at one instant
 // ---------------------------------------------------------------------------
 // `SampleHistory` is a wrapper -- `motion::ClipSource::Sample` over the
@@ -1017,6 +1121,10 @@ int main()
     TestPassthroughIsThePoseSOwnRoot();
     TestIgnoreClearsRatherThanZeroes();
     TestAVelocityIsDerivedExactlyWhereTheLibraryDerivesOne();
+    TestAClearedRootIsTheIdentity();
+    TestTheOrientationTurnsInPlace();
+    TestAnOrientationIsNormalizedAndNotScaled();
+    TestAPlacementNobodyStatedIsRefused();
     TestAHistoryOfOneAnswersItsOwnPose();
     TestAnInstantBetweenTwoSamplesIsInterpolated();
     TestAnInstantOutsideTheHistoryIsHeldAndSaysSo();

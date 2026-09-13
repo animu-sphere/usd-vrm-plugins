@@ -17,6 +17,7 @@
 #include <motionRuntime/LiveCaptureSource.h>
 #include <motionRuntime/MotionSource.h>
 
+#include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
 
@@ -266,6 +267,24 @@ std::optional<motion::RootMotionIntake> RootIntakeForToken(
 motion::RootMotion RootMotionFrom(const motion::HumanoidPose& prior,
                                   const motion::HumanoidPose& pose,
                                   const RootPolicy& policy);
+
+/// The transform `root` places something at, as a local-to-parent matrix: the
+/// orientation, then the position, each only where the root states it.
+///
+/// It is what `motion:root:transform` computes, and so what an Xformable whose
+/// `xformOp:transform` is connected to that attribute draws at through
+/// `usdExecImaging` (the plan's P0-7). An unstated component contributes
+/// nothing rather than a guess, so a cleared root -- `ignore`'s answer -- is the
+/// identity, which leaves the Xformable at its parent's placement: the
+/// "leave the rig its own placement" that `ignore` exists to say.
+///
+/// Nullopt for a root this layer cannot turn into a matrix, and the caller
+/// refuses it: a position or orientation that is not finite, or an orientation
+/// too short to normalize. A matrix built from either would be a transform
+/// nobody stated -- NaN hides the prim, and a normalized near-zero quaternion is
+/// an arbitrary rotation -- and a velocity is not read at all, because a
+/// placement at one instant does not depend on one.
+std::optional<pxr::GfMatrix4d> RootTransform(const motion::RootMotion& root);
 
 /// The history a driver's pose buffer holds, when no driver supplies one: the
 /// pose at the evaluated instant, as a one-sample `motion::HumanoidAnimation`.

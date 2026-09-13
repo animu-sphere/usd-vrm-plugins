@@ -59,6 +59,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -118,6 +119,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Absent is the library's own default; a token naming no policy is refused
     // (ExecMotionPose.h, RootIntakeForToken).
     ((rootIntake, "motion:root:intake"))
+    // Where the root places something, as a matrix an Xformable can take: the
+    // attribute an `xformOp:transform` connects to, so a display reaches the
+    // clip's placement through `execGeom`'s own transform computation. The
+    // clip declares it and states no value; what it holds under exec is
+    // computed (the attribute expression at the end of this file).
+    ((rootTransform, "motion:root:transform"))
     // What a blend states: the clips it blends, as a relationship, and one
     // weight per target, in target order. A relationship rather than
     // connections because fan-in is what a relationship carries in 26.08, and
@@ -758,4 +765,61 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
                     _tokens->sampleAnimation)
                 .InputName(_tokens->sourcePoses),
             AttributeValue<float>(_tokens->blendWeights));
+
+    // -----------------------------------------------------------------------
+    // motion:root:transform -- the root's placement, where a display reads it
+    // -----------------------------------------------------------------------
+    //
+    // The plan's P0-7, and not a computation: an **attribute expression**, which
+    // replaces what `computeValue` answers for `motion:root:transform` on a clip
+    // that declares it. That is the one route 26.08 leaves from this bundle to a
+    // picture. `usdExecImaging` adapts exactly two schemas, and the one we can
+    // use, `UsdGeomXformable`, is `execGeom`'s -- a second declarer loses every
+    // computation it registers there (the mechanism report section 2). What
+    // `execGeom`'s own `computeLocalToWorldTransform` reads is `computeValue` of
+    // `xformOp:transform`, and `computeValue` follows **exactly one** connection
+    // to a valid attribute of the same type. So an Xformable that connects its
+    // `xformOp:transform` to this attribute is placed by the clip's root motion,
+    // through a transform computation nobody here registered, into Hydra.
+    //
+    // It is `motion.extractRootMotion` as a matrix and nothing more -- the clip's
+    // intake policy included, because the placement a display shows should be
+    // the one the clip asked for. An unstated component is the identity (see
+    // `RootTransform`), so `ignore` leaves the Xformable at its parent.
+    //
+    // A refusal sets no value, as everywhere in this bundle, and **here that is
+    // not enough**: `execGeom` reads an absent local transform as the identity
+    // and places the prim at its parent -- exactly where `ignore` puts it. The
+    // TfError below is the only thing that tells the two apart, which the
+    // display suite measures rather than hides.
+    //
+    // No `computeTime`: the placement is time dependent through the root motion
+    // it reads, and declaring the frame again would say nothing new.
+    self.AttributeExpression(_tokens->rootTransform)
+        .Callback<GfMatrix4d>(+[](const VdfContext &ctx) {
+            const motion::RootMotion *const root =
+                ctx.GetInputValuePtr<motion::RootMotion>(
+                    _tokens->extractRootMotion);
+            if (!root) {
+                // Forwarding the refusal of the node it reads -- a sampler with
+                // no rate, or an intake token naming no policy. That node has
+                // already said why.
+                ctx.SetEmptyOutput();
+                return;
+            }
+            if (std::optional<GfMatrix4d> transform =
+                    execmotion::RootTransform(*root)) {
+                ctx.SetOutput(*transform);
+                return;
+            }
+            TF_RUNTIME_ERROR(
+                "motion:root:transform: the root motion states a position or "
+                "orientation that is not finite, or an orientation too short "
+                "to normalize, so it names no placement; no transform was "
+                "computed");
+            ctx.SetEmptyOutput();
+        })
+        .Inputs(
+            Prim().Computation<motion::RootMotion>(
+                _tokens->extractRootMotion).Required());
 }

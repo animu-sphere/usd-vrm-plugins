@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ExecMotionPose.h"
 
+#include "pxr/base/gf/limits.h"
+#include "pxr/base/gf/quatd.h"
+#include "pxr/base/gf/vec3d.h"
+
 #include <cmath>
 #include <cstddef>
 #include <string_view>
@@ -180,6 +184,40 @@ RootMotionFrom(const motion::HumanoidPose& prior,
         root.hasLinearVelocity = true;
     }
     return root;
+}
+
+std::optional<pxr::GfMatrix4d>
+RootTransform(const motion::RootMotion& root)
+{
+    pxr::GfMatrix4d transform(1.0);
+
+    if (root.hasOrientation) {
+        // In double precision before normalizing, so a unit quaternion stored in
+        // float comes out as the rotation it states rather than one rounded
+        // twice. The threshold is the one Gf normalizes against itself: shorter
+        // than that, `GetNormalized` answers the identity -- a rotation nobody
+        // stated, which is the thing this function refuses to produce.
+        const pxr::GfQuatd orientation(root.worldOrientation);
+        const double length = orientation.GetLength();
+        if (!std::isfinite(length) || !(length > GF_MIN_VECTOR_LENGTH)) {
+            return std::nullopt;
+        }
+        transform.SetRotateOnly(orientation / length);
+    }
+
+    if (root.hasPosition) {
+        const pxr::GfVec3d position(root.worldPosition);
+        if (!std::isfinite(position[0]) || !std::isfinite(position[1])
+            || !std::isfinite(position[2])) {
+            return std::nullopt;
+        }
+        // Row-vector convention, as everywhere in Gf: the translation row
+        // applies after the rotation above, so the orientation turns the
+        // placement about its own origin and does not swing the position.
+        transform.SetTranslateOnly(position);
+    }
+
+    return transform;
 }
 
 motion::HumanoidAnimation

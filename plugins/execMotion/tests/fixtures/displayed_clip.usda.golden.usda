@@ -1,0 +1,95 @@
+#usda 1.0
+(
+    """Display fixture for execMotion: a clip whose root places a prop, the way
+    usdExecImaging draws it (the OpenExec plan's P0-7).
+
+    The prose is a layer comment rather than `doc` on purpose; see
+    sampled_clip.usda for why.
+
+    The clip is sampled_clip.usda's -- hips travelling from (0, 0, 0) at frame 0
+    to (0, 1, 2) at frame 100, 50 time codes per second -- plus one attribute,
+    `motion:root:transform`, which it declares and gives no value. Under
+    OpenExec that attribute's computed value is the clip's root motion as a
+    matrix, because execMotion registers an attribute expression for it.
+
+    /World/Prop connects its `xformOp:transform` to that attribute. That is the
+    whole of the route: execGeom's own computeLocalToWorldTransform reads
+    `computeValue` of `xformOp:transform`, which follows exactly one connection
+    to an attribute of the same type, so the prop is placed by the clip through
+    a computation this workspace did not register. /World is translated 10 along
+    +X so the parent's half of the composition is a number too.
+
+    The prop's own authored value, (0, 0, -5), is what a renderer that does not
+    run exec draws, since a connection is not a value. It is deliberately not
+    where the root ever is, so an answer that fell back to it is visible as
+    such rather than coinciding with a computed one.
+
+    Every Xformable here states `xformOp:transform` and nothing else, which the
+    suite asserts before it trusts any drawn transform: execGeom reads that one
+    op and ignores `xformOpOrder` (the migration audit section 8.3).
+
+    /Looks/Paint is bound to the marker and read by nothing the placement
+    depends on. Editing it is the suite's unrelated change, which must dirty no
+    transform."""
+    defaultPrim = "World"
+    doc = """Generated from Composed Stage of root layer C:\\dev\\usd-vrm-plugins\\plugins\\execMotion\\tests\\fixtures\\displayed_clip.usda
+"""
+    endTimeCode = 100
+    metersPerUnit = 1
+    startTimeCode = 0
+    timeCodesPerSecond = 50
+    upAxis = "Y"
+)
+
+def SkelAnimation "Clip"
+{
+    uniform token[] joints = ["hips", "hips/spine", "hips/spine/chest", "hips/spine/chest/neck/head", "prop"]
+    custom matrix4d motion:root:transform
+    custom uniform double motion:timeCodesPerSecond = 50
+    quatf[] rotations.timeSamples = {
+        0: [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0)],
+        100: [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (0.70710677, 0, 0.70710677, 0), (1, 0, 0, 0)],
+    }
+    half3[] scales = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+    float3[] translations.timeSamples = {
+        0: [(0, 0, 0), (0, 0.1, 0), (0, 0.2, 0), (0, 0.3, 0), (0, 0, 0)],
+        100: [(0, 1, 2), (0, 0.1, 0), (0, 0.2, 0), (0, 0.3, 0), (9, 9, 9)],
+    }
+}
+
+def Xform "World"
+{
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (10, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+
+    def Xform "Prop"
+    {
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, -5, 1) )
+        matrix4d xformOp:transform.connect = </Clip.motion:root:transform>
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Cube "Marker" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Looks/Paint>
+            double size = 0.2
+        }
+    }
+}
+
+def Scope "Looks"
+{
+    def Material "Paint"
+    {
+        token outputs:surface.connect = </Looks/Paint/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.8, 0.1, 0.1)
+            token outputs:surface
+        }
+    }
+}
+

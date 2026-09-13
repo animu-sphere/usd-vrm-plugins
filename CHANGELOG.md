@@ -605,6 +605,46 @@ Current schema contract version: **1**.
   other argument read the amount it computes, and MSVC evaluated the amount
   first. 145 green CTest names in the workspace.
 
+- **A clip's root places a prop on screen, through OpenExec and
+  `usdExecImaging`** (the OpenExec plan's P0-7, the display slice).
+  `execMotion` registers its first **attribute expression**: under exec,
+  `motion:root:transform` on a clip computes `motion.extractRootMotion` as a
+  matrix, the orientation and then the position, each only where the root
+  states it. A prim that connects its `xformOp:transform` to that attribute is
+  placed by `execGeom`'s own `computeLocalToWorldTransform`, because
+  `computeValue` follows exactly one connection to an attribute of the same
+  type, and `usdExecImaging` hands that matrix to Hydra. Nothing is registered
+  for `UsdGeomXformable`, which `execGeom` owns, and no schema was added. In
+  Storm, the same stage draws the marker at its authored place with
+  `USDIMAGINGGL_ENGINE_ENABLE_EXEC_SCENE_INDEX` off and on the clip's hips path
+  with it on, at the pixel the arithmetic predicts.
+
+  `execMotion_display` drives the stage scene index directly, with an observer
+  where Hydra would be, so it needs no GL and runs on every lane. It asserts
+  four of the plan's five "done when" rows. A frame change dirties exactly the
+  prims the clip reaches. A clip edit dirties them at `ApplyPendingUpdates` and
+  not before. A material edit dirties nothing and invalidates nothing in exec.
+  The stage is checked for `xformOp:transform` only before any drawn value is
+  trusted. "From packaged plugins" is not claimed; it is P0-4's packaged
+  discovery as well. The display fixture joins the bundle's L5 goldens.
+
+  **Four findings**
+  ([docs/reports/openusd/26.08-openexec-display.md](docs/reports/openusd/26.08-openexec-display.md)).
+  **A refusal draws where `ignore` does**: `execGeom` reads an absent local
+  transform as the identity, so a misspelled intake, a deliberate `ignore`, the
+  default time code and a session without the bundle all put the prop at its
+  parent, and only the refusal posts an error. **A broken route draws the
+  authored value without a word**: two connections, an undeclared target, or a
+  target of another type. **The precondition is two-sided**: `execGeom` ignores
+  every op but `xformOp:transform`, as the migration audit said, and also reads
+  a `xformOp:transform` that `xformOpOrder` does not list, which UsdGeom
+  ignores. And **the first frame drawn from a scene camera is empty**, with an
+  `HdxSimpleLightTask` verification failure, with or without this bundle. This
+  is also the first consumer of `RootMotion::worldOrientation`: a driver's
+  orientation reaches `execGeom` as a turn in place, and no clip read from USD
+  states one, in this bundle or in `motion_retarget`. 146 green CTest names in
+  the workspace.
+
 - **Two expressions can no longer both own the eyelid: VRM 1.0's expression
   overrides, read and obeyed** (closes #170). Expressions accumulate on the
   targets they bind, and two that bind *different* targets still fight when
