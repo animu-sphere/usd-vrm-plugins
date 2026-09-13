@@ -645,4 +645,82 @@ struct RetargetOutcome
 /// input.
 RetargetOutcome HumanoidRetargetFor(const RetargetInputs& inputs);
 
+/// What `vrm.computeJointLocalTransforms` reads, as plain values: the
+/// humanoid's own `vrm.humanoidRetarget`, and the rig across `vrm:skeleton`
+/// for the joint tokens a retargeted pose is ordered by and does not carry.
+struct JointTransformsInputs
+{
+    /// Null when `vrm.humanoidRetarget` answered nothing -- it refused, or a
+    /// driver's override of it was dropped.
+    const vrmRetarget::RetargetedPose* pose = nullptr;
+
+    /// What came back across `vrm:skeleton`. Not counted a second time: the
+    /// map already refuses unless exactly one skeleton comes back, and a
+    /// retarget that answered read that map. A driver's override of the
+    /// retarget skips the map, which is how this can be other than one.
+    std::vector<vrmRetarget::TargetSkeleton> targets;
+};
+
+/// Why an animation sample was refused.
+enum class JointTransformsRefusal
+{
+    /// `vrm.humanoidRetarget` answered nothing. Its own error says why.
+    PoseUnanswered,
+
+    /// `vrm:skeleton` did not bring back exactly one skeleton. Reachable only
+    /// under a driver's override of the retarget, which skips the map that
+    /// would otherwise have refused first.
+    RigUnanswered,
+
+    /// The pose does not have one rotation and one translation per joint of
+    /// the rig. Never a retarget's own answer -- `PoseRetargeter` sizes both
+    /// arrays from the rig -- so this is a driver's override that was not
+    /// retargeted onto this rig. Refused rather than padded or cut: a sample
+    /// whose arrays do not pair with its `joints` is an animation UsdSkel
+    /// maps onto no joint at all.
+    JointCount,
+};
+
+struct JointTransformsOutcome
+{
+    std::optional<vrmRetarget::JointLocalTransforms> sample;
+    JointTransformsRefusal refusal = JointTransformsRefusal::PoseUnanswered;
+
+    /// For `JointCount`: the rig's joints, and the pose's two array sizes.
+    std::size_t joints = 0;
+    std::size_t rotations = 0;
+    std::size_t translations = 0;
+};
+
+/// The retargeted pose as one `UsdSkelAnimation` sample -- the rig's joint
+/// tokens, the pose's translations and rotations, and one identity scale per
+/// joint -- or a refusal.
+///
+/// **Not a second retarget.** The retarget already answers in the rig's joint
+/// order and in joint-local terms, so the arrays pass through bit for bit and
+/// the timestamp with them. What this adds is what a bake adds: the tokens the
+/// arrays are ordered by, which a `RetargetedPose` does not carry, and the
+/// scales, which UsdSkel needs beside the other two before it resolves any
+/// joint at all (`vrmRetarget::JointLocalTransforms`).
+///
+/// **Every scale is (1, 1, 1)**, which is `motion_retarget`'s rule and the
+/// plan's P1-2: a retargeted clip never animates scale. That includes a joint
+/// whose *rest* transform is scaled -- `vrm.computeTargetSkeleton` drops rest
+/// scale, and so does the tool -- so a rig with a scaled rest does not keep its
+/// scale under this sample. UsdSkel takes an animated joint's local transform
+/// from the animation whole, rest scale included, and the sample states 1.
+/// Measured in `execVrm_joint_transforms` on the fixture's arm, rested at
+/// scale 2; the two implementations agree, so it is P1-2's question and not a
+/// P0-6 row.
+///
+/// **The ninth boundary finding, and the smallest.** The bake's shape -- the
+/// rig's tokens beside the arrays, identity scales -- is stated in one place
+/// offline, `tools/motionRetarget`'s `WriteAnimation`, as two lines of a tool,
+/// and `vrmRetarget` had no type for it. The library gained the type, for the
+/// registry; the rule stays two lines here and two lines in the tool, and the
+/// ask is that the tool author from the library's value, so P1-2's "OpenExec
+/// and offline behave identically" is one statement.
+JointTransformsOutcome JointLocalTransformsFor(
+    const JointTransformsInputs& inputs);
+
 } // namespace execvrm

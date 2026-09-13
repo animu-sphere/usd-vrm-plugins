@@ -15,7 +15,7 @@ Current schema contract version: **1**.
 
 > **The release that carries this section is a minor release.** It adds library
 > API that in-tree dependents already use (`vrmRetarget`'s rig equality,
-> `ExpressionResolver` and `LookAtEvaluator`; `motionRuntime`'s
+> `JointLocalTransforms`, `ExpressionResolver` and `LookAtEvaluator`; `motionRuntime`'s
 > `PoseSampleResult` equality), and every `requires` range is still
 > `>=0.8,<0.9`, which admits the tagged 0.8.0 packages that lack that API. A
 > minor bump moves the ranges past them; a patch bump would ship the gap in the
@@ -522,6 +522,46 @@ Current schema contract version: **1**.
   with `execVrm`'s own type registration removed, four suites went red with a
   fatal error; and with the ancestor's value ignored, a clip bound on its
   SkelRoot lost its pose. 139 green CTest names in the workspace.
+
+- **`vrm.computeJointLocalTransforms`: the retarget as an animation sample, and
+  P0-5 complete** (the OpenExec plan's P0-5, its fifth node). On the applied
+  `VrmHumanoidAPI`, it is the humanoid's `vrm.humanoidRetarget` in the shape a
+  `UsdSkelAnimation` states at one time code. It adds the rig's `joints`, read
+  off `vrm.computeTargetSkeleton` because a retargeted pose does not carry them,
+  and one `(1, 1, 1)` scale per joint. The rotations, translations and timestamp
+  pass through bit for bit. That is what `motion_retarget` authors per sample,
+  and so what P0-6 compares against a bake. `vrmRetarget` gains the type,
+  `JointLocalTransforms`, beside `RetargetedPose`, with the exact `operator==`
+  the registry requires.
+
+  **Five measurements**
+  ([docs/reports/openusd/26.08-openexec-joint-transforms.md](docs/reports/openusd/26.08-openexec-joint-transforms.md)).
+  Authored the way the tool authors it, **the value is exactly what UsdSkel
+  resolves**, `UsdSkelMakeTransforms` over it. **Without `scales`, or with arrays
+  one joint short, UsdSkel resolves the rig's rest pose with no error.** So the
+  scales are part of the value, and a driver's override that does not pair with
+  the rig is refused, since answered it would bake to a rig standing still.
+  **The identity scale overwrites a scaled rest pose**, in both implementations:
+  the fixture's arm rests at scale 2 and bakes at 1. `Seed-san.vrm` has seven
+  such joints, none of them humanoid bones, at most 0.14% off unit. That
+  question is P1-2's to decide. **An unregistered result type is fatal to every
+  computation in the bundle**, as an unregistered input type is. Invalidation
+  reaches the sample from the frame, a statement, a key and a rest edit.
+
+  **One measurement about the tool**: `motion_retarget` places each sample at
+  `(timeCode / rate) × rate`, and at 30 fps a key at frame 62 bakes at
+  `62.00000000000001`. Read back at 62, the hips rotation is 1.7e-16 off its
+  key. That adds a P0-6 harness rule: compare a bake at its own time samples.
+  **The ninth boundary finding** is that the bake's shape is stated offline only
+  in two lines of the tool.
+
+  `execVrm_rig` tests the seam, and `execVrm_joint_transforms` drives both built
+  bundles over `retargeted_rig.usda`. Verified against its own absence three
+  ways, each rebuilt and each red: with the scales dropped (both suites); with
+  the joint-count check disabled, where a six-joint override was answered under
+  seven joint tokens (both suites); and with the type's registration removed,
+  where six of the seven `execVrm` suites died with a fatal error. 140 green
+  CTest names in the workspace.
 
 - **Two expressions can no longer both own the eyelid: VRM 1.0's expression
   overrides, read and obeyed** (closes #170). Expressions accumulate on the

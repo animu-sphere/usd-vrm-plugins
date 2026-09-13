@@ -100,7 +100,7 @@ not have**. This is measured with `git diff v0.8.0 -- libs/*/include`:
 | Dependent | Needs, added after `v0.8.0` |
 | --- | --- |
 | `execMotion` | `motionRuntime`'s `operator==` on `PoseSampleResult` (the registry requires it) |
-| `execVrm` | `vrmRetarget`'s `operator==` on `TargetJoint`, `TargetSkeleton`, `HumanoidMap`, `RestPoseCorrection` and `RetargetedPose` (the same) |
+| `execVrm` | `vrmRetarget`'s `operator==` on `TargetJoint`, `TargetSkeleton`, `HumanoidMap`, `RestPoseCorrection` and `RetargetedPose` (the same), and the `JointLocalTransforms` type with its own |
 | `motion_retarget` | `vrmRetarget`'s `ExpressionResolver` and `LookAtEvaluator` headers, and the `GetJointWorldTransform` added beside `PoseRetargeter` |
 
 No lane builds any of these against the tagged 0.8.0 package, and one that did

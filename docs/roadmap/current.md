@@ -774,12 +774,33 @@ compared, which was P0-4's stated blocker.
   **The eighth boundary finding**: `PoseRetargeter` computes its correction in
   its constructor and takes none, so the node recomputes every frame what
   `vrm.computeRestPoseCorrection` caches, 17.7 µs of 21.2 µs on a full humanoid.
-- ⬜ **The rest of `execVrm`, parity, and the display slice**: P0-5's
-  `vrm.computeJointLocalTransforms`, then P0-6 and P0-7 of the
+- ✅ **`execVrm` answers a retarget as an animation sample, and P0-5 is
+  complete** *(2026-09-13)*. `vrm.computeJointLocalTransforms` on the applied
+  `VrmHumanoidAPI` is the humanoid's retarget in the shape a `UsdSkelAnimation`
+  states: the rig's `joints`, the arrays and timestamp bit for bit, and one
+  identity scale per joint, as `vrmRetarget::JointLocalTransforms`.
+
+  **Five measurements**
+  ([the joint-transforms report](../reports/openusd/26.08-openexec-joint-transforms.md)).
+  Authored as the tool authors it, **the value is exactly what UsdSkel
+  resolves**. Without `scales`, or with arrays one joint short, UsdSkel resolves
+  the rig's rest pose silently, so a driver's pose that does not pair with the
+  rig is refused. **The identity scale overwrites a scaled rest**, in both
+  implementations. The fixture's arm bakes at 1 where it rests at 2, and
+  `Seed-san.vrm` has seven such joints, at most 0.14% off unit: P1-2's question.
+  An unregistered result type is fatal to every computation in the bundle.
+  Invalidation reaches the sample from the frame, a statement, a key and a rest.
+
+  **And one about the tool**: `motion_retarget` rebuilds a sample's time code
+  from seconds, so a 30 fps key at 62 bakes at `62.00000000000001`. That becomes
+  a P0-6 harness rule: compare a bake at its own time samples. **The ninth
+  boundary finding** is that the bake's shape is stated offline only in two
+  lines of the tool.
+- ⬜ **Parity, and the display slice**: P0-6 and P0-7 of the
   [plan](openexec-foundation.md#6-foundation-tasks). What remains of P0-4 itself
   is the producer half of the rate and policies, the written driver contract,
   and packaged discovery — and now a decision on what a one-joint clip's
-  fallback-filled root means.
+  fallback-filled root means. P1-2 owes a decision on a scaled rest.
 
 ## Then: boundary consolidation ⬜
 

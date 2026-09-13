@@ -5,9 +5,9 @@ schema contract only. Workspace Phase 8 / Motion Phase E; the plan is
 [docs/roadmap/openexec-foundation.md](../../docs/roadmap/openexec-foundation.md)
 §6, P0-5.
 
-**The rig, and one sample of a clip on it.** It registers five value types --
-four of `vrmRetarget`'s, and `execMotion`'s `motion::HumanoidPose`, which a
-bundle that reads a type has to register itself -- and five computations:
+**The rig, and one sample of a clip on it.** It registers six value types --
+five of `vrmRetarget`'s, and `execMotion`'s `motion::HumanoidPose`, which a
+bundle that reads a type has to register itself -- and seven computations:
 
 | Computation | Provider | Result |
 | --- | --- | --- |
@@ -17,8 +17,8 @@ bundle that reads a type has to register itself -- and five computations:
 | `vrm.computeBoundPose` | a `UsdSkelSkeleton` prim | the `motion::HumanoidPose` `execMotion`'s `motion.sampleAnimation` answers on the animation the skeleton is bound to -- its own `skel:animationSource`, or else an ancestor's -- forwarded |
 | `vrm.computeBindingPose` | a prim with `UsdSkelBindingAPI` applied | the same, for the animation that prim binds at or beneath it, or else its nearest such ancestor's: UsdSkel's inherited binding, one prim per step |
 | `vrm.humanoidRetarget` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::RetargetedPose`: one sample of the clip `vrm:retarget:sourceSkeleton` reaches, in this rig's joint order, under the humanoid's root-motion statements |
+| `vrm.computeJointLocalTransforms` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::JointLocalTransforms`: that retargeted sample in the shape a `UsdSkelAnimation` states at one time code -- the rig's `joints`, the pose's translations and rotations, and one `(1, 1, 1)` scale per joint |
 
-`vrm.computeJointLocalTransforms` is P0-5's last node and does not exist yet.
 `vrm.computeBoundPose` and `vrm.computeBindingPose` are not among the plan's
 five: they are the second hop from a humanoid to its clip's animation, which an
 exec input cannot make, and UsdSkel's inheritance of that hop.
@@ -211,6 +211,39 @@ Retargeted, it would be the rig's whole rest at 0 seconds. So a driver calls
 request", which it already has to do. The check comes after every statement, so
 a request armed on a wrong stage still reports the statement.
 
+## One sample, as an animation states it
+
+`vrm.computeJointLocalTransforms` is the retarget with the two things a bake
+adds, and nothing else: the rig's joint tokens, read off
+`vrm.computeTargetSkeleton` across `vrm:skeleton` because a retargeted pose does
+not carry them, and one identity scale per joint. The rotations, translations
+and timestamp pass through bit for bit. It is what `motion_retarget` authors per
+sample, so it is the value P0-6 compares against a bake. It answers components
+rather than matrices, because the matrices are UsdSkel's own composition of
+these, measured exactly
+([the report](../../docs/reports/openusd/26.08-openexec-joint-transforms.md) §3).
+
+**The scales are part of the value**, not something each writer adds. Author
+the rotations and translations without them and UsdSkel resolves the rig's
+**rest**, with no error. The same happens for arrays one joint short of the
+rig's `joints`, so a pose that does not pair with the rig is refused rather than
+answered. The retarget never answers such a pose; a driver's override of
+`vrm.humanoidRetarget` can:
+
+| The node reads | What comes back |
+| --- | --- |
+| the retarget's answer, or a driver's override of it that pairs with the rig | the sample |
+| no retarget -- it refused | **no value**, saying so beside the retarget's own reason |
+| an override whose arrays are not one per joint of the rig | **no value**, and an error naming the three counts |
+| an override, with `vrm:skeleton` bringing back no skeleton | **no value** |
+
+**A scaled rest is not kept.** Every scale is 1, which is `motion_retarget`'s
+rule and P1-2's. UsdSkel takes an animated joint's transform from the animation
+whole, so a joint whose rest is scaled bakes at scale 1: the fixture's arm, at
+rest scale 2, comes back at 1. The tool does the same, so it is not a P0-6 row.
+It is a question P1-2 has to answer
+([the report](../../docs/reports/openusd/26.08-openexec-joint-transforms.md) §4).
+
 ## Invalidation
 
 No input of the rig nodes moves with time, so none of them is reported to a time
@@ -232,8 +265,12 @@ two links and a bundle: a frame change reports the sampler, the bound pose and
 the retarget, and not the rig, the map or the correction. A key of the clip, a
 rebinding of its skeleton's `skel:animationSource` and a retargeted source
 relationship each reach the retarget with no request rebuilt. A root-motion
-statement reaches the retarget and nothing else
-([the retarget report](../../docs/reports/openusd/26.08-openexec-retarget.md) §6).
+statement reaches the retarget, the joint transforms that read it, and nothing
+else ([the retarget report](../../docs/reports/openusd/26.08-openexec-retarget.md)
+§6). The joint transforms are reported whenever the retarget is, and a rest edit
+reaches them a second way, through the skeleton their tokens are read from
+([the joint-transforms report](../../docs/reports/openusd/26.08-openexec-joint-transforms.md)
+§7).
 
 ## The wrapper, and where it is not one
 
@@ -243,6 +280,12 @@ rest, the rig and the map, and `vrm.humanoidRetarget` is `PoseRetargeter` over
 those and the options. `execVrm_rig` asserts each by comparing the node's value
 with the library's own, and `execVrm_correction` and `execVrm_retarget` do it
 again through the built bundles.
+
+`vrm.computeJointLocalTransforms` wraps no call: what it adds is the bake's
+shape, which is stated offline only in two lines of `motion_retarget`'s
+`WriteAnimation`. `vrmRetarget` gained the type for the registry, and the rule
+stays two lines here and two in the tool. The ask is that the tool author from
+the library's value.
 
 **The retarget is a wrapper that recomputes a cached value.** `PoseRetargeter`
 computes its correction in its constructor and accepts none. So the node
@@ -298,11 +341,12 @@ pose nothing, and the retarget refuses after it.
 
 | Test | What it holds |
 | --- | --- |
-| `execVrm_rig` | the seam, with no stage: the attribute names, the rest decomposition with scale dropped, both skeleton refusals, the empty skeleton, an unordered skeleton carried faithfully, the map equal to the library's own, the skeleton counted, and the three map refusals; the clip's rest read off a semantic skeleton, both source refusals, and the correction equal to the library's, with each of its refusals; the bound pose forwarded and counted; the root-motion statements as the tool's flags, and their refusals; the retarget equal to `PoseRetargeter`'s, applying the cached correction, and its refusals in order |
+| `execVrm_rig` | the seam, with no stage: the attribute names, the rest decomposition with scale dropped, both skeleton refusals, the empty skeleton, an unordered skeleton carried faithfully, the map equal to the library's own, the skeleton counted, and the three map refusals; the clip's rest read off a semantic skeleton, both source refusals, and the correction equal to the library's, with each of its refusals; the bound pose forwarded and counted; the root-motion statements as the tool's flags, and their refusals; the retarget equal to `PoseRetargeter`'s, applying the cached correction, and its refusals in order; the joint transforms as the retarget's arrays with the rig's tokens and identity scales, and their refusals |
 | `execVrm_humanoid` | the built bundle over `humanoid_rig.usda`: the vocabulary against the schema's prim definition, both computations on a `Scope` through the applied schema, one executor warning per unbound bone, a blocked rest pose arriving as one fallback matrix, what a skeleton authoring nothing arrives as, invalidation across the relationship, every refusal, and a prim with the attributes and not the schema having no map |
 | `execVrm_correction` | the built bundle over `corrected_rig.usda`: the correction equal to the library's over the rigs computed beside it, and landing the clip's rest on the rig's; invalidation from both relationships and none from time; every refusal; a source that refused; a dangling second source, pinned; and a one-joint source with no rest, answered as the fallback |
 | `execVrm_retarget` | the built bundle and `execMotion` over `retargeted_rig.usda`: the retarget equal to `PoseRetargeter` over the sampler's pose and applying the cached correction bit for bit, the default time code refused, each root-motion statement against `ResolveRootTranslation`, invalidation from the frame, a key, the binding, the source and a statement, a driver's pose through either bundle's key, every refusal, and a valueless statement as the fallback |
+| `execVrm_joint_transforms` | the built bundle and `execMotion` over `retargeted_rig.usda`: the joint transforms equal to the retarget's arrays with the rig's `joints` and identity scales; authored as the tool authors them, exactly what UsdSkel resolves, and the rig's rest without `scales` or one joint short; the arm's rest scale of 2 baked at 1; a driver's retarget reaching them, and one that does not pair with the rig, or has no rig, refused; a refused retarget refusing them; invalidation from the frame, a statement, a key and a rest |
 | `execVrm_humanoid_without_schema` | the same binary as `execVrm_humanoid` with no `vrmSchema` in the session: the skeleton computes and the humanoid map is not found |
 | `execVrm_retarget_without_exec_motion` | the same binary as `execVrm_retarget` with no `execMotion` in the session: the correction computes, and the bound pose and the retarget are refused by this bundle's count alone |
 
-All six carry the CTest label `motion.openexec`.
+All seven carry the CTest label `motion.openexec`.

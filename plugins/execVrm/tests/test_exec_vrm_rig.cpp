@@ -954,6 +954,111 @@ void TestTheRetargetRefusesInItsOrder()
                 "that order\n");
 }
 
+// ---------------------------------------------------------------------------
+// The retarget as an animation sample
+// ---------------------------------------------------------------------------
+
+execvrm::JointTransformsInputs JointTransformsFixture(
+    const vrmRetarget::RetargetedPose& pose)
+{
+    execvrm::JointTransformsInputs inputs;
+    inputs.pose = &pose;
+    inputs.targets = {FixtureSkeleton()};
+    return inputs;
+}
+
+void TestTheSampleIsTheRetargetWithTheBakesTwoAdditions()
+{
+    const vrmRetarget::HumanoidMap map =
+        *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const vrmRetarget::RetargetedPose pose =
+        *execvrm::HumanoidRetargetFor(RetargetFixture(map)).pose;
+
+    const execvrm::JointTransformsOutcome outcome =
+        execvrm::JointLocalTransformsFor(JointTransformsFixture(pose));
+    assert(outcome.sample);
+    const vrmRetarget::JointLocalTransforms& sample = *outcome.sample;
+
+    // Not a second retarget: the arrays and the timestamp pass through, bit
+    // for bit.
+    assert(sample.timestamp == pose.timestamp);
+    assert(sample.rotations == pose.rotations);
+    assert(sample.translations == pose.translations);
+
+    // What a bake adds. The rig's tokens, verbatim and in the rig's order --
+    // the order the arrays are already in -- and one identity scale per joint,
+    // the arm's included although its rest is scaled by 2.
+    const std::vector<std::string> expectedJoints = {
+        kRoot, kHips, kSpine, kChest, kNeck, kHead, kUpperArm};
+    assert(sample.joints == expectedJoints);
+    assert(sample.scales.size() == expectedJoints.size());
+    for (const pxr::GfVec3h& scale : sample.scales) {
+        assert(scale == pxr::GfVec3h(1.0f));
+    }
+    std::printf("execVrm rig: the joint transforms are the retarget's arrays "
+                "with the rig's tokens and identity scales beside them\n");
+}
+
+void TestTheSampleRefusesWhatCannotBeASample()
+{
+    const vrmRetarget::HumanoidMap map =
+        *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const vrmRetarget::RetargetedPose pose =
+        *execvrm::HumanoidRetargetFor(RetargetFixture(map)).pose;
+    using execvrm::JointTransformsRefusal;
+
+    auto refused = [](const execvrm::JointTransformsInputs& inputs) {
+        const execvrm::JointTransformsOutcome outcome =
+            execvrm::JointLocalTransformsFor(inputs);
+        assert(!outcome.sample);
+        return outcome;
+    };
+
+    // The retarget first: its own error says why, and a skeleton missing too
+    // is the same refusal one link further down.
+    execvrm::JointTransformsInputs noPose = JointTransformsFixture(pose);
+    noPose.pose = nullptr;
+    assert(refused(noPose).refusal == JointTransformsRefusal::PoseUnanswered);
+    noPose.targets.clear();
+    assert(refused(noPose).refusal == JointTransformsRefusal::PoseUnanswered);
+
+    // A rig that did not come back, or came back twice.
+    execvrm::JointTransformsInputs noRig = JointTransformsFixture(pose);
+    noRig.targets.clear();
+    assert(refused(noRig).refusal == JointTransformsRefusal::RigUnanswered);
+    noRig.targets = {FixtureSkeleton(), FixtureSkeleton()};
+    assert(refused(noRig).refusal == JointTransformsRefusal::RigUnanswered);
+
+    // A pose that was not retargeted onto this rig: one joint short, and one
+    // whose two arrays disagree with each other. Both named with their sizes.
+    vrmRetarget::RetargetedPose shortPose = pose;
+    shortPose.rotations.pop_back();
+    shortPose.translations.pop_back();
+    execvrm::JointTransformsOutcome o =
+        refused(JointTransformsFixture(shortPose));
+    assert(o.refusal == JointTransformsRefusal::JointCount && o.joints == 7 &&
+           o.rotations == 6 && o.translations == 6);
+    vrmRetarget::RetargetedPose uneven = pose;
+    uneven.translations.pop_back();
+    o = refused(JointTransformsFixture(uneven));
+    assert(o.refusal == JointTransformsRefusal::JointCount && o.joints == 7 &&
+           o.rotations == 7 && o.translations == 6);
+
+    // An empty rig and an empty pose pair: an empty sample is an answer, the
+    // animation of a skeleton with no joints.
+    const vrmRetarget::RetargetedPose nothing;
+    execvrm::JointTransformsInputs empty;
+    empty.pose = &nothing;
+    empty.targets = {vrmRetarget::TargetSkeleton()};
+    const execvrm::JointTransformsOutcome answered =
+        execvrm::JointLocalTransformsFor(empty);
+    assert(answered.sample && answered.sample->joints.empty() &&
+           answered.sample->scales.empty());
+    std::printf("execVrm rig: the joint transforms refuse a retarget that did "
+                "not answer, a rig that did not come back, and a pose that "
+                "does not pair with the rig\n");
+}
+
 } // namespace
 
 int main()
@@ -980,6 +1085,8 @@ int main()
     TestTheRootMotionOptionsRefuseWhatTheToolRefuses();
     TestTheRetargetIsThePoseRetargetersCall();
     TestTheRetargetRefusesInItsOrder();
+    TestTheSampleIsTheRetargetWithTheBakesTwoAdditions();
+    TestTheSampleRefusesWhatCannotBeASample();
     std::puts("execVrm rig: all checks passed");
     return 0;
 }
