@@ -80,6 +80,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((computeBindingPose, "vrm.computeBindingPose"))
     ((humanoidRetarget, "vrm.humanoidRetarget"))
     ((computeJointLocalTransforms, "vrm.computeJointLocalTransforms"))
+    ((computeRigDiagnostics, "vrm.computeRigDiagnostics"))
+    ((computeRetargetDiagnostics, "vrm.computeRetargetDiagnostics"))
     // execMotion's sampler, read by name across `skel:animationSource`. The one
     // computation this bundle reads that another bundle registers, which is
     // why `execMotion` is in `requires.bundles`.
@@ -124,18 +126,21 @@ TF_DEFINE_PRIVATE_TOKENS(
 TF_REGISTRY_FUNCTION(ExecTypeRegistry)
 {
     // `vrmRetarget`'s own values, crossing unchanged -- the only shape under
-    // which a node stays a wrapper. None is a `VtArray`, and all five are
+    // which a node stays a wrapper. None is a `VtArray`, and all six are
     // equality comparable since this bundle asked for it: the exact
     // `operator==` motionCore's aggregates answered in v0.6.0 and
     // motionRuntime's `PoseSampleResult` for `motion.interpolatePose`, asked of
-    // `vrmRetarget` for the first time. The last, `JointLocalTransforms`, is
-    // the one type the library gained whole for this bundle rather than an
-    // equality on a type it already had.
+    // `vrmRetarget` for the first time. `JointLocalTransforms` is the one type
+    // the library gained whole for this bundle rather than an equality on a
+    // type it already had. The last, `RetargetDiagnostics`, is P1-1's frozen
+    // codes as a value, which P0-6's parity asked for so that a node could
+    // answer them rather than log them.
     ExecTypeRegistry::RegisterType(vrmRetarget::TargetSkeleton{});
     ExecTypeRegistry::RegisterType(vrmRetarget::HumanoidMap{});
     ExecTypeRegistry::RegisterType(vrmRetarget::RestPoseCorrection{});
     ExecTypeRegistry::RegisterType(vrmRetarget::RetargetedPose{});
     ExecTypeRegistry::RegisterType(vrmRetarget::JointLocalTransforms{});
+    ExecTypeRegistry::RegisterType(vrmRetarget::RetargetDiagnostics{});
 
     // execMotion's pose, registered here as well. `TargetedObjects<T>` checks
     // that `T` is registered when THIS bundle's computations are registered,
@@ -252,6 +257,156 @@ _SourceRestReason(
     return "the source skeleton " + named
         + " names one bone at more than one joint (" + bones
         + "), and which rest the clip meant cannot be known";
+}
+
+// The four `vrm:retarget:*` root-motion statements. An attribute the prim does
+// not have is null here and keeps the library's default. One it declares with
+// no value, or blocks, is NOT null: it arrives as the type's fallback beside an
+// executor warning, schema property or not (ExecVrmRig.h, RootMotionStatements).
+execvrm::RootMotionStatements
+_ReadRootMotionStatements(const VdfContext &ctx)
+{
+    execvrm::RootMotionStatements statements;
+    if (const TfToken *const mode =
+            ctx.GetInputValuePtr<TfToken>(_tokens->rootMotion)) {
+        statements.mode = mode->GetString();
+    }
+    if (const TfToken *const joint =
+            ctx.GetInputValuePtr<TfToken>(_tokens->rootJoint)) {
+        statements.rootJoint = joint->GetString();
+    }
+    if (const float *const scale =
+            ctx.GetInputValuePtr<float>(_tokens->translationScale)) {
+        statements.translationScale = *scale;
+    }
+    if (const bool *const preserve =
+            ctx.GetInputValuePtr<bool>(_tokens->preserveTargetHeight)) {
+        statements.preserveTargetHeight = *preserve;
+    }
+    return statements;
+}
+
+// Everything `vrm.humanoidRetarget` reads, for it and for the node that
+// retargets the same sample again to answer what it reported. `sources` gets
+// the paths `vrm:retarget:sourceSkeleton` reached, for the refusals to name.
+execvrm::RetargetInputs
+_ReadRetargetInputs(const VdfContext &ctx, std::vector<SdfPath> *sources)
+{
+    execvrm::RetargetInputs inputs;
+    inputs.map = ctx.GetInputValuePtr<vrmRetarget::HumanoidMap>(
+        _tokens->computeHumanoidMap);
+
+    for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(
+             ctx, _tokens->skeletons);
+         !skeleton.IsAtEnd(); ++skeleton) {
+        inputs.targets.push_back(*skeleton);
+    }
+
+    for (VdfReadIterator<SdfPath> path(ctx, _tokens->sourceSkeletonPaths);
+         !path.IsAtEnd(); ++path) {
+        sources->push_back(*path);
+    }
+    inputs.sourceTargetCount = sources->size();
+    for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(
+             ctx, _tokens->sourceSkeletons);
+         !skeleton.IsAtEnd(); ++skeleton) {
+        inputs.sources.push_back(*skeleton);
+    }
+    for (VdfReadIterator<motion::HumanoidPose> pose(ctx, _tokens->sourcePoses);
+         !pose.IsAtEnd(); ++pose) {
+        inputs.poses.push_back(*pose);
+    }
+
+    inputs.rootMotion = _ReadRootMotionStatements(ctx);
+
+    // `IsNumeric()` first: `GetValue()` is a coding error on the default time
+    // code, which is what a request is armed at.
+    inputs.hasInstant =
+        ctx.GetInputValue<EfTime>(ExecBuiltinComputations->computeTime)
+            .GetTimeCode()
+            .IsNumeric();
+    return inputs;
+}
+
+// Why a retarget was refused, posted under `computation` and ending with what
+// that computation therefore did not do. The retarget's own refusals and the
+// two nodes that read what it reads -- the rig's diagnostics refuse on its
+// first two reasons, the sample's on all of them -- so the three say it in the
+// same words.
+void
+_ReportRetargetRefusal(const char *computation, const char *consequence,
+                       const execvrm::RetargetOutcome &outcome,
+                       const execvrm::RootMotionStatements &statements,
+                       const std::vector<SdfPath> &sources)
+{
+    const std::string named = _Quoted(sources);
+    std::string reason;
+    const char *hint = "";
+
+    switch (outcome.refusal) {
+    case execvrm::RetargetRefusal::RigUnanswered:
+        reason = "the humanoid's vrm.computeHumanoidMap, or the skeleton it "
+                 "counts into, answered nothing";
+        break;
+    case execvrm::RetargetRefusal::RootMotion:
+        switch (outcome.rootMotionRefusal) {
+        case execvrm::RootMotionRefusal::UnknownMode:
+            if (!statements.mode || statements.mode->empty()) {
+                reason = "'vrm:retarget:rootMotion' is the empty token, which "
+                         "names no mode -- and is what the attribute arrives "
+                         "as when it is declared with no value, or blocked";
+            } else {
+                reason = "'vrm:retarget:rootMotion' is '" + *statements.mode
+                    + "', which is none of hips, root and ignore";
+            }
+            break;
+        case execvrm::RootMotionRefusal::NoRootJoint:
+            reason = "'vrm:retarget:rootMotion' is 'root' and "
+                     "'vrm:retarget:rootJoint' names no joint to receive it";
+            break;
+        case execvrm::RootMotionRefusal::UnknownRootJoint:
+            reason = "'vrm:retarget:rootJoint' is '"
+                + statements.rootJoint.value_or(std::string())
+                + "', which is not a joint of the target skeleton";
+            break;
+        case execvrm::RootMotionRefusal::TranslationScale:
+            reason = "'vrm:retarget:translationScale' is not a finite number";
+            break;
+        }
+        break;
+    case execvrm::RetargetRefusal::NoSource:
+        reason = "'vrm:retarget:sourceSkeleton' reaches nothing on the stage, "
+                 "so there is no clip to retarget";
+        break;
+    case execvrm::RetargetRefusal::SeveralSources:
+        reason = "'vrm:retarget:sourceSkeleton' reaches "
+            + std::to_string(sources.size()) + " objects (" + named
+            + "), and a retarget is of exactly one clip";
+        break;
+    case execvrm::RetargetRefusal::SourceUnanswered:
+        reason = "'vrm:retarget:sourceSkeleton' targets " + named
+            + ", which answered no vrm.computeTargetSkeleton -- it is not a "
+              "UsdSkelSkeleton, or its skeleton refused";
+        break;
+    case execvrm::RetargetRefusal::SourceRest:
+        reason = _SourceRestReason(named, outcome.sourceRefusal,
+                                   outcome.offending);
+        break;
+    case execvrm::RetargetRefusal::PoseUnanswered:
+        // The bound pose posted the reason; this says where it went.
+        reason = "the source skeleton " + named
+            + " answered no vrm.computeBoundPose";
+        break;
+    case execvrm::RetargetRefusal::NoInstant:
+        reason = "the system is at the default time code, which names no "
+                 "instant -- the clip's sampler answers an empty pose there, "
+                 "and retargeted it would be the rig's whole rest pose at 0 "
+                 "seconds";
+        hint = " (call ChangeTime first)";
+        break;
+    }
+    TF_RUNTIME_ERROR("%s: %s; %s%s", computation, reason.c_str(), consequence,
+                     hint);
 }
 
 } // namespace
@@ -696,187 +851,50 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
     // builtin costs no recompute it was not getting. It is read for the one
     // thing the pose cannot say -- whether the system names an instant at all
     // (ExecVrmRig.h, RetargetRefusal::NoInstant).
+    // The retarget's inputs, declared once for both computations that read
+    // them -- the retarget, and the node that retargets the same sample again
+    // to answer what it reported -- so the two cannot come to read two
+    // different clips. The rig's diagnostics read the first two lines and the
+    // statements, and declare those themselves.
+    auto declareRetargetInputs = [](auto &computation) {
+        computation.Inputs(
+            Computation<vrmRetarget::HumanoidMap>(_tokens->computeHumanoidMap),
+            Relationship(_tokens->skeleton)
+                .TargetedObjects<vrmRetarget::TargetSkeleton>(
+                    _tokens->computeTargetSkeleton)
+                .InputName(_tokens->skeletons),
+            Relationship(_tokens->sourceSkeleton)
+                .TargetedObjects<SdfPath>(ExecBuiltinComputations->computePath)
+                .InputName(_tokens->sourceSkeletonPaths),
+            Relationship(_tokens->sourceSkeleton)
+                .TargetedObjects<vrmRetarget::TargetSkeleton>(
+                    _tokens->computeTargetSkeleton)
+                .InputName(_tokens->sourceSkeletons),
+            Relationship(_tokens->sourceSkeleton)
+                .TargetedObjects<motion::HumanoidPose>(_tokens->computeBoundPose)
+                .InputName(_tokens->sourcePoses),
+            AttributeValue<TfToken>(_tokens->rootMotion),
+            AttributeValue<TfToken>(_tokens->rootJoint),
+            AttributeValue<float>(_tokens->translationScale),
+            AttributeValue<bool>(_tokens->preserveTargetHeight),
+            Stage().Computation<EfTime>(ExecBuiltinComputations->computeTime));
+    };
+
     auto retarget = self.PrimComputation(_tokens->humanoidRetarget);
     retarget.Callback<vrmRetarget::RetargetedPose>(+[](const VdfContext &ctx) {
-        execvrm::RetargetInputs inputs;
-        inputs.map = ctx.GetInputValuePtr<vrmRetarget::HumanoidMap>(
-            _tokens->computeHumanoidMap);
-
-        for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(
-                 ctx, _tokens->skeletons);
-             !skeleton.IsAtEnd(); ++skeleton) {
-            inputs.targets.push_back(*skeleton);
-        }
-
         std::vector<SdfPath> sources;
-        for (VdfReadIterator<SdfPath> path(ctx, _tokens->sourceSkeletonPaths);
-             !path.IsAtEnd(); ++path) {
-            sources.push_back(*path);
-        }
-        inputs.sourceTargetCount = sources.size();
-        for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(
-                 ctx, _tokens->sourceSkeletons);
-             !skeleton.IsAtEnd(); ++skeleton) {
-            inputs.sources.push_back(*skeleton);
-        }
-        for (VdfReadIterator<motion::HumanoidPose> pose(
-                 ctx, _tokens->sourcePoses);
-             !pose.IsAtEnd(); ++pose) {
-            inputs.poses.push_back(*pose);
-        }
-
-        // An attribute the prim does not have is null here and keeps the
-        // library's default. One it declares with no value, or blocks, is NOT
-        // null: it arrives as the type's fallback beside an executor warning,
-        // schema property or not (ExecVrmRig.h, RootMotionStatements).
-        if (const TfToken *const mode =
-                ctx.GetInputValuePtr<TfToken>(_tokens->rootMotion)) {
-            inputs.rootMotion.mode = mode->GetString();
-        }
-        if (const TfToken *const joint =
-                ctx.GetInputValuePtr<TfToken>(_tokens->rootJoint)) {
-            inputs.rootMotion.rootJoint = joint->GetString();
-        }
-        if (const float *const scale =
-                ctx.GetInputValuePtr<float>(_tokens->translationScale)) {
-            inputs.rootMotion.translationScale = *scale;
-        }
-        if (const bool *const preserve =
-                ctx.GetInputValuePtr<bool>(_tokens->preserveTargetHeight)) {
-            inputs.rootMotion.preserveTargetHeight = *preserve;
-        }
-
-        // `IsNumeric()` first: `GetValue()` is a coding error on the default
-        // time code, which is what a request is armed at.
-        inputs.hasInstant =
-            ctx.GetInputValue<EfTime>(ExecBuiltinComputations->computeTime)
-                .GetTimeCode()
-                .IsNumeric();
+        const execvrm::RetargetInputs inputs = _ReadRetargetInputs(ctx, &sources);
 
         execvrm::RetargetOutcome outcome = execvrm::HumanoidRetargetFor(inputs);
         if (outcome.pose) {
             ctx.SetOutput(std::move(*outcome.pose));
             return;
         }
-
-        std::string named;
-        for (const SdfPath &path : sources) {
-            named += named.empty() ? "<" : ", <";
-            named += path.GetString();
-            named += ">";
-        }
-
-        switch (outcome.refusal) {
-        case execvrm::RetargetRefusal::RigUnanswered:
-            TF_RUNTIME_ERROR(
-                "vrm.humanoidRetarget: the humanoid's vrm.computeHumanoidMap, "
-                "or the skeleton it counts into, answered nothing; no pose was "
-                "retargeted");
-            break;
-        case execvrm::RetargetRefusal::RootMotion:
-            switch (outcome.rootMotionRefusal) {
-            case execvrm::RootMotionRefusal::UnknownMode:
-                if (inputs.rootMotion.mode->empty()) {
-                    TF_RUNTIME_ERROR(
-                        "vrm.humanoidRetarget: 'vrm:retarget:rootMotion' is "
-                        "the empty token, which names no mode -- and is what "
-                        "the attribute arrives as when it is declared with no "
-                        "value, or blocked; no pose was retargeted");
-                } else {
-                    TF_RUNTIME_ERROR(
-                        "vrm.humanoidRetarget: 'vrm:retarget:rootMotion' is "
-                        "'%s', which is none of hips, root and ignore; no pose "
-                        "was retargeted",
-                        inputs.rootMotion.mode->c_str());
-                }
-                break;
-            case execvrm::RootMotionRefusal::NoRootJoint:
-                TF_RUNTIME_ERROR(
-                    "vrm.humanoidRetarget: 'vrm:retarget:rootMotion' is "
-                    "'root' and 'vrm:retarget:rootJoint' names no joint to "
-                    "receive it; no pose was retargeted");
-                break;
-            case execvrm::RootMotionRefusal::UnknownRootJoint:
-                TF_RUNTIME_ERROR(
-                    "vrm.humanoidRetarget: 'vrm:retarget:rootJoint' is '%s', "
-                    "which is not a joint of the target skeleton; no pose was "
-                    "retargeted",
-                    inputs.rootMotion.rootJoint->c_str());
-                break;
-            case execvrm::RootMotionRefusal::TranslationScale:
-                TF_RUNTIME_ERROR(
-                    "vrm.humanoidRetarget: 'vrm:retarget:translationScale' is "
-                    "not a finite number; no pose was retargeted");
-                break;
-            }
-            break;
-        case execvrm::RetargetRefusal::NoSource:
-            TF_RUNTIME_ERROR(
-                "vrm.humanoidRetarget: 'vrm:retarget:sourceSkeleton' reaches "
-                "nothing on the stage, so there is no clip to retarget; no "
-                "pose was retargeted");
-            break;
-        case execvrm::RetargetRefusal::SeveralSources:
-            TF_RUNTIME_ERROR(
-                "vrm.humanoidRetarget: 'vrm:retarget:sourceSkeleton' reaches "
-                "%zu objects (%s), and a retarget is of exactly one clip; no "
-                "pose was retargeted",
-                inputs.sourceTargetCount, named.c_str());
-            break;
-        case execvrm::RetargetRefusal::SourceUnanswered:
-            TF_RUNTIME_ERROR(
-                "vrm.humanoidRetarget: 'vrm:retarget:sourceSkeleton' targets "
-                "%s, which answered no vrm.computeTargetSkeleton -- it is not "
-                "a UsdSkelSkeleton, or its skeleton refused; no pose was "
-                "retargeted",
-                named.c_str());
-            break;
-        case execvrm::RetargetRefusal::SourceRest:
-            TF_RUNTIME_ERROR(
-                "vrm.humanoidRetarget: %s; no pose was retargeted",
-                _SourceRestReason(named, outcome.sourceRefusal,
-                                  outcome.offending)
-                    .c_str());
-            break;
-        case execvrm::RetargetRefusal::PoseUnanswered:
-            // The bound pose posted the reason; this says where it went.
-            TF_RUNTIME_ERROR(
-                "vrm.humanoidRetarget: the source skeleton %s answered no "
-                "vrm.computeBoundPose; no pose was retargeted",
-                named.c_str());
-            break;
-        case execvrm::RetargetRefusal::NoInstant:
-            TF_RUNTIME_ERROR(
-                "vrm.humanoidRetarget: the system is at the default time code, "
-                "which names no instant -- the clip's sampler answers an empty "
-                "pose there, and retargeted it would be the rig's whole rest "
-                "pose at 0 seconds; no pose was retargeted (call ChangeTime "
-                "first)");
-            break;
-        }
+        _ReportRetargetRefusal("vrm.humanoidRetarget", "no pose was retargeted",
+                               outcome, inputs.rootMotion, sources);
         ctx.SetEmptyOutput();
     });
-    retarget.Inputs(
-        Computation<vrmRetarget::HumanoidMap>(_tokens->computeHumanoidMap),
-        Relationship(_tokens->skeleton)
-            .TargetedObjects<vrmRetarget::TargetSkeleton>(
-                _tokens->computeTargetSkeleton)
-            .InputName(_tokens->skeletons),
-        Relationship(_tokens->sourceSkeleton)
-            .TargetedObjects<SdfPath>(ExecBuiltinComputations->computePath)
-            .InputName(_tokens->sourceSkeletonPaths),
-        Relationship(_tokens->sourceSkeleton)
-            .TargetedObjects<vrmRetarget::TargetSkeleton>(
-                _tokens->computeTargetSkeleton)
-            .InputName(_tokens->sourceSkeletons),
-        Relationship(_tokens->sourceSkeleton)
-            .TargetedObjects<motion::HumanoidPose>(_tokens->computeBoundPose)
-            .InputName(_tokens->sourcePoses),
-        AttributeValue<TfToken>(_tokens->rootMotion),
-        AttributeValue<TfToken>(_tokens->rootJoint),
-        AttributeValue<float>(_tokens->translationScale),
-        AttributeValue<bool>(_tokens->preserveTargetHeight),
-        Stage().Computation<EfTime>(ExecBuiltinComputations->computeTime));
+    declareRetargetInputs(retarget);
 
     // -----------------------------------------------------------------------
     // vrm.computeJointLocalTransforms -- the retarget, as an animation sample
@@ -948,4 +966,108 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
                 .TargetedObjects<vrmRetarget::TargetSkeleton>(
                     _tokens->computeTargetSkeleton)
                 .InputName(_tokens->skeletons));
+
+    // -----------------------------------------------------------------------
+    // vrm.computeRigDiagnostics -- what this rig says about any retarget onto it
+    // -----------------------------------------------------------------------
+    //
+    // `vrmRetarget::DiagnoseRig` over the map, the rig across `vrm:skeleton`
+    // and the options the root-motion statements state: P1-1's frozen
+    // `VRM_RETARGET_*` codes, answered as a value rather than posted as a
+    // warning a caller of `Compute` never sees.
+    //
+    // No clip is read, so a humanoid with no source and a system at the
+    // default time code are diagnosed all the same; nothing read moves with
+    // time, so this is computed once per rig edit and reported to no frame
+    // change (ExecVrmRig.h, RigDiagnosticsFor).
+    self.PrimComputation(_tokens->computeRigDiagnostics)
+        .Callback<vrmRetarget::RetargetDiagnostics>(+[](const VdfContext &ctx) {
+            execvrm::RigDiagnosticsInputs inputs;
+            inputs.map = ctx.GetInputValuePtr<vrmRetarget::HumanoidMap>(
+                _tokens->computeHumanoidMap);
+            for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(
+                     ctx, _tokens->skeletons);
+                 !skeleton.IsAtEnd(); ++skeleton) {
+                inputs.targets.push_back(*skeleton);
+            }
+            inputs.rootMotion = _ReadRootMotionStatements(ctx);
+
+            execvrm::RigDiagnosticsOutcome outcome =
+                execvrm::RigDiagnosticsFor(inputs);
+            if (outcome.diagnostics) {
+                ctx.SetOutput(std::move(*outcome.diagnostics));
+                return;
+            }
+            // The retarget's first two refusals, in the retarget's words.
+            execvrm::RetargetOutcome refused;
+            refused.refusal = outcome.refusal;
+            refused.rootMotionRefusal = outcome.rootMotionRefusal;
+            _ReportRetargetRefusal("vrm.computeRigDiagnostics",
+                                   "the rig was not diagnosed", refused,
+                                   inputs.rootMotion, {});
+            ctx.SetEmptyOutput();
+        })
+        .Inputs(
+            Computation<vrmRetarget::HumanoidMap>(_tokens->computeHumanoidMap),
+            Relationship(_tokens->skeleton)
+                .TargetedObjects<vrmRetarget::TargetSkeleton>(
+                    _tokens->computeTargetSkeleton)
+                .InputName(_tokens->skeletons),
+            AttributeValue<TfToken>(_tokens->rootMotion),
+            AttributeValue<TfToken>(_tokens->rootJoint),
+            AttributeValue<float>(_tokens->translationScale),
+            AttributeValue<bool>(_tokens->preserveTargetHeight));
+
+    // -----------------------------------------------------------------------
+    // vrm.computeRetargetDiagnostics -- what retargeting this sample reported
+    // -----------------------------------------------------------------------
+    //
+    // The rig's diagnostics, then what `PoseRetargeter::Retarget` reported for
+    // the sample `vrm.humanoidRetarget` retargets -- the list the library
+    // reports for a clip of that one sample. Merged over a clip's keys in
+    // order, it is the list `motion_retarget` prints for the clip, which is
+    // what P0-6's harness compares.
+    //
+    // It reads the retarget's inputs rather than its answer, and retargets the
+    // sample again: the library reports a pose's diagnostics only while it
+    // retargets it, so a node that answers them beside the pose repeats the
+    // retarget -- the eleventh boundary finding (ExecVrmRig.h,
+    // RetargetDiagnosticsFor). It refuses whenever the retarget does, for the
+    // retarget's reason, because a list from a retarget that did not happen
+    // would be a report about nothing.
+    auto retargetDiagnostics =
+        self.PrimComputation(_tokens->computeRetargetDiagnostics);
+    retargetDiagnostics.Callback<vrmRetarget::RetargetDiagnostics>(
+        +[](const VdfContext &ctx) {
+            std::vector<SdfPath> sources;
+            const execvrm::RetargetInputs inputs =
+                _ReadRetargetInputs(ctx, &sources);
+            const vrmRetarget::RetargetDiagnostics *const rig =
+                ctx.GetInputValuePtr<vrmRetarget::RetargetDiagnostics>(
+                    _tokens->computeRigDiagnostics);
+
+            execvrm::RetargetDiagnosticsOutcome outcome =
+                execvrm::RetargetDiagnosticsFor(inputs, rig);
+            if (outcome.diagnostics) {
+                ctx.SetOutput(std::move(*outcome.diagnostics));
+                return;
+            }
+            if (outcome.rigUnanswered) {
+                TF_RUNTIME_ERROR(
+                    "vrm.computeRetargetDiagnostics: the humanoid's "
+                    "vrm.computeRigDiagnostics answered nothing, and a "
+                    "sample's report without the rig's in front of it would "
+                    "read as a rig that said nothing; nothing was diagnosed");
+            } else {
+                _ReportRetargetRefusal(
+                    "vrm.computeRetargetDiagnostics",
+                    "no pose was retargeted, so nothing was diagnosed",
+                    outcome.retarget, inputs.rootMotion, sources);
+            }
+            ctx.SetEmptyOutput();
+        });
+    declareRetargetInputs(retargetDiagnostics);
+    retargetDiagnostics.Inputs(
+        Computation<vrmRetarget::RetargetDiagnostics>(
+            _tokens->computeRigDiagnostics));
 }

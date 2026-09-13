@@ -180,7 +180,11 @@ file system added are raised by the caller that holds one —
 `tools/motionRetarget` today — and `vrmRetarget_boundaries` fails if the
 library's sources name them. The rig's own report is `DiagnoseRig`; a clip's is
 that list followed by each sample's, so a caller retargeting one pose at a time
-reaches the same list by asking once per rig and once per pose.
+reaches the same list by asking once per rig and once per pose. `execVrm` is
+that caller: `vrm.computeRigDiagnostics` is the rig's report, and
+`vrm.computeRetargetDiagnostics` is the rig's report followed by one sample's,
+so merging the second over a clip's keys, in order, gives the clip's list
+*(2026-09-13)*.
 
 **What is not in the set.** The expression and look-at resolvers still report in
 prose; the frozen set is the body retarget's, which is what parity compares.
@@ -394,11 +398,21 @@ what the bake's `UsdSkelAnimation` states. They are compared:
   the other;
 - **each rotation and translation classified, never widened**: exact (`==`); a
   quaternion's sign only; within `angle` or `distance`, a rounding; or a
-  divergence. Only a divergence, a refusal or a mismatch of shape is a failure.
+  divergence;
+- **the diagnostics as whole lines, in order**: the OpenExec side's list merged
+  over the keys, formatted by `FormatRetargetDiagnostic`, against the lines the
+  bake's tool printed whose code the library raises. A code only a caller
+  raises describes that caller's stage or file system and is reported beside
+  the comparison, not in it.
+
+Only a divergence, a refusal, a mismatch of shape, or two diagnostics lists that
+differ is a failure.
 
 The first parity run over the recorded input found every value exact, so the
 tolerance is stated here and was not needed
-([the parity report](../reports/openusd/26.08-openexec-parity.md)).
+([the parity report](../reports/openusd/26.08-openexec-parity.md)). The
+diagnostics agreed line for line on every case
+([the diagnostics report](../reports/openusd/26.08-openexec-diagnostics.md)).
 
 ## What the contract still owes its next two consumers
 

@@ -5,11 +5,12 @@
 // sample by sample.
 //
 //     exec_parity --avatar A --animation C --bake B --report R.json
-//                 [motion_retarget's mapping and root-motion flags]
+//                 [--tool-log L] [motion_retarget's mapping and root-motion flags]
 //
 // The bake is the tool's output for the same `--avatar`, `--animation` and
-// flags; this program does not run the tool. The driver beside it does, so
-// that the two are handed one argument list and cannot drift apart.
+// flags, and the log is what the tool printed while writing it; this program
+// does not run the tool. The driver beside it does, so that the two are handed
+// one argument list and cannot drift apart.
 //
 // # The stage it evaluates
 //
@@ -52,7 +53,24 @@
 // Each difference is classified, never widened (the plan's P0-6): exact, a
 // quaternion's sign only, within `motion::MotionTolerance` -- the contract's
 // tolerance, not one chosen here -- or a divergence. Only a divergence, a
-// refusal, or two values that do not have the same shape fail the run.
+// refusal, two values that do not have the same shape, or two diagnostics
+// lists that differ fail the run.
+//
+// # How the diagnostics are compared
+//
+// As lines, exactly, in order. Exec answers `vrm.computeRetargetDiagnostics`
+// at each key -- the rig's report, then the pose's -- and the answers merged
+// over the keys in order are the list the library's clip overload reports,
+// which is what the tool prints, one `FormatRetargetDiagnostic` line each. So
+// exec's list goes through the same formatter and is compared, line for line,
+// with the tool's lines whose code the library raises. The ones a caller
+// raises -- a time range the clip did not state, an output naming an input --
+// say what the tool's own stage and file system added, and exec has neither;
+// they are reported beside the comparison and never counted in it.
+//
+// Comparing whole lines rather than codes and subjects is the stricter choice
+// and costs nothing: both sides format one library's values, so a detail that
+// differs is a difference in what the retarget was told.
 //
 // # What it links
 //
@@ -108,6 +126,7 @@
 
 #include <motionCore/Compare.h>
 #include <motionCore/Humanoid.h>
+#include <vrmRetarget/Diagnostics.h>
 #include <vrmRetarget/PoseRetargeter.h>
 
 #include <algorithm>
@@ -140,6 +159,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 const TfToken kJointTransforms("vrm.computeJointLocalTransforms");
+const TfToken kRetargetDiagnostics("vrm.computeRetargetDiagnostics");
 const TfToken kHumanoidApi("VrmHumanoidAPI");
 const TfToken kHumanBonesHips("vrm:humanBones:hips");
 const TfToken kSkeletonRel("vrm:skeleton");
@@ -162,6 +182,8 @@ struct Arguments
     std::string animation;
     std::string bake;
     std::string report;
+    std::string toolLog;
+    bool quiet = false;
     std::string humanoidMap;
     std::string skeleton;
     std::string clipSkeleton;
@@ -201,6 +223,8 @@ bool Parse(int argc, char** argv, Arguments* out, std::string* error)
             if (!value(&out->bake)) return false;
         } else if (flag == "--report") {
             if (!value(&out->report)) return false;
+        } else if (flag == "--tool-log") {
+            if (!value(&out->toolLog)) return false;
         } else if (flag == "--humanoid-map") {
             if (!value(&out->humanoidMap)) return false;
         } else if (flag == "--skeleton") {
@@ -230,9 +254,12 @@ bool Parse(int argc, char** argv, Arguments* out, std::string* error)
             }
         } else if (flag == "--preserve-target-height") {
             out->preserveTargetHeight = true;
-        } else if (flag == "--no-look-at" || flag == "--no-expressions"
-                   || flag == "--quiet") {
+        } else if (flag == "--no-look-at" || flag == "--no-expressions") {
             // Narrow the tool towards exec; nothing to state.
+        } else if (flag == "--quiet") {
+            // Nothing to state either, and it silences the half of the
+            // diagnostics comparison the tool prints.
+            out->quiet = true;
         } else if (flag == "--animation-name") {
             if (!value(&text)) return false;
         } else if (flag == "--resample") {
@@ -248,6 +275,13 @@ bool Parse(int argc, char** argv, Arguments* out, std::string* error)
     if (out->avatar.empty() || out->animation.empty() || out->bake.empty()
         || out->report.empty()) {
         *error = "--avatar, --animation, --bake and --report are required";
+        return false;
+    }
+    if (out->quiet && !out->toolLog.empty()) {
+        // An empty log beside a rig with something to say would read as the
+        // tool disagreeing, when it was only told to keep quiet.
+        *error = "--quiet silences the tool's diagnostics, so --tool-log has "
+                 "nothing to compare";
         return false;
     }
     return true;
@@ -299,6 +333,73 @@ std::vector<std::string> ErrorsIn(const TfErrorMark& mark)
         errors.push_back(it->GetCommentary());
     }
     return errors;
+}
+
+// What the tool printed as coded diagnostics, split at the layer boundary.
+struct ToolDiagnostics
+{
+    std::vector<std::string> library;  // a code the library raises
+    std::vector<std::string> caller;   // a code only a stage or a file system can
+};
+
+// The tool prints each diagnostic as `motion_retarget: ` followed by the
+// library's own line, and prints nothing else in brackets. A line whose
+// bracket names no frozen code is not a diagnostic and is left alone.
+bool ReadToolLog(const std::string& path, ToolDiagnostics* out,
+                 std::string* error)
+{
+    std::ifstream file(path, std::ios::binary);
+    if (!file) {
+        *error = "could not open the tool log " + path;
+        return false;
+    }
+    const std::string prefix = "motion_retarget: [";
+    for (std::string line; std::getline(file, line);) {
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+        if (line.compare(0, prefix.size(), prefix) != 0) {
+            continue;
+        }
+        const std::size_t close = line.find(']', prefix.size());
+        if (close == std::string::npos) {
+            continue;
+        }
+        const std::optional<vrmRetarget::RetargetDiagnosticCode> code =
+            vrmRetarget::FindRetargetDiagnosticCode(
+                line.substr(prefix.size(), close - prefix.size()));
+        if (!code) {
+            continue;
+        }
+        std::string formatted = line.substr(prefix.size() - 1);
+        (vrmRetarget::RetargetDiagnosticIsLibraryRaised(*code) ? out->library
+                                                               : out->caller)
+            .push_back(std::move(formatted));
+    }
+    return true;
+}
+
+// The entries of `a` that `b` does not have, in `a`'s order.
+std::vector<std::string> Missing(const std::vector<std::string>& a,
+                                 const std::vector<std::string>& b)
+{
+    const std::set<std::string> in(b.begin(), b.end());
+    std::vector<std::string> out;
+    for (const std::string& line : a) {
+        if (!in.count(line)) {
+            out.push_back(line);
+        }
+    }
+    return out;
+}
+
+JsArray JsLines(const std::vector<std::string>& lines)
+{
+    JsArray out;
+    for (const std::string& line : lines) {
+        out.emplace_back(line);
+    }
+    return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -881,15 +982,32 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    // -- exec, one request armed once and moved through the keys ------------
+    ToolDiagnostics tool;
+    if (!args.toolLog.empty() && !ReadToolLog(args.toolLog, &tool, &error)) {
+        std::fprintf(stderr, "exec_parity: %s\n", error.c_str());
+        return 1;
+    }
+
+    // -- exec, two requests armed once and moved through the keys ------------
+    // The values and the diagnostics are asked for apart, so each is timed
+    // alone: the second compute at a key finds the rig, the map and the pose
+    // already cached by the first, and what it costs is what diagnosing adds.
     ExecUsdSystem system(parity.stage);
     ExecUsdRequest request = system.BuildRequest(
         {ExecUsdValueKey(parity.humanoid, kJointTransforms)});
+    ExecUsdRequest diagnosticsRequest = system.BuildRequest(
+        {ExecUsdValueKey(parity.humanoid, kRetargetDiagnostics)});
+    std::vector<std::string> armingErrors;
     {
-        // The first compute arms the request, at the default time code, where
-        // the retarget refuses by design (the retarget report, §5).
+        // The first compute arms a request, at the default time code, where
+        // the retarget refuses by design (the retarget report, §5) -- so its
+        // errors are not a failure. They are kept anyway: a node nothing
+        // invalidates computes only here, so this is the one place its
+        // refusal is ever posted (the diagnostics report, §4).
         TfErrorMark mark;
         system.Compute(request);
+        system.Compute(diagnosticsRequest);
+        armingErrors = ErrorsIn(mark);
         mark.Clear();
     }
 
@@ -903,11 +1021,31 @@ int main(int argc, char** argv)
     refused.reserve(keys.size());
     std::size_t refusals = 0;
     std::vector<std::string> refusalReasons;
-    const auto started = std::chrono::steady_clock::now();
+    // Merged over the keys in order: the clip overload's list.
+    vrmRetarget::RetargetDiagnostics execDiagnostics;
+    std::size_t diagnosticsRefusals = 0;
+    double execSeconds = 0.0;
+    double diagnosticsSeconds = 0.0;
     for (const double key : keys) {
         TfErrorMark mark;
+        const auto started = std::chrono::steady_clock::now();
         system.ChangeTime(UsdTimeCode(key));
         const VtValue value = system.Compute(request).Get(0);
+        const auto valued = std::chrono::steady_clock::now();
+        const VtValue diagnosed = system.Compute(diagnosticsRequest).Get(0);
+        const auto finished = std::chrono::steady_clock::now();
+        execSeconds += std::chrono::duration<double>(valued - started).count();
+        diagnosticsSeconds +=
+            std::chrono::duration<double>(finished - valued).count();
+
+        if (!diagnosed.IsEmpty()
+            && diagnosed.IsHolding<vrmRetarget::RetargetDiagnostics>()) {
+            execDiagnostics.Merge(
+                diagnosed.UncheckedGet<vrmRetarget::RetargetDiagnostics>());
+        } else {
+            ++diagnosticsRefusals;
+        }
+
         const bool none = value.IsEmpty()
             || !value.IsHolding<vrmRetarget::JointLocalTransforms>();
         refused.push_back(none);
@@ -923,8 +1061,14 @@ int main(int argc, char** argv)
         }
         mark.Clear();
     }
-    const double execSeconds = std::chrono::duration<double>(
-        std::chrono::steady_clock::now() - started).count();
+
+    std::vector<std::string> execLines;
+    for (const vrmRetarget::RetargetDiagnostic& d : execDiagnostics.reported) {
+        execLines.push_back(vrmRetarget::FormatRetargetDiagnostic(d));
+    }
+    const bool diagnosticsCompared = !args.toolLog.empty();
+    const bool diagnosticsAgree =
+        diagnosticsRefusals == 0 && execLines == tool.library;
 
     // -- the comparison ------------------------------------------------------
     Tally rotations;
@@ -1085,6 +1229,35 @@ int main(int argc, char** argv)
         std::printf("  refused: %s\n", reason.c_str());
     }
 
+    // The diagnostics: what exec answered, and against the tool when it was
+    // handed the tool's log.
+    const std::vector<std::string> execOnly = Missing(execLines, tool.library);
+    const std::vector<std::string> toolOnly = Missing(tool.library, execLines);
+    std::printf("  diagnostics: exec %zu, %.3f s for %zu evaluations",
+                execLines.size(), diagnosticsSeconds, keys.size());
+    if (diagnosticsCompared) {
+        std::printf("; the tool %zu (+%zu a caller raises): %s\n",
+                    tool.library.size(), tool.caller.size(),
+                    diagnosticsAgree ? "the same lines, in order"
+                                     : "they DIFFER");
+    } else {
+        std::printf("; not compared, no --tool-log\n");
+    }
+    if (diagnosticsRefusals != 0) {
+        std::printf("    exec refused to diagnose %zu sample(s)\n",
+                    diagnosticsRefusals);
+    }
+    for (const std::string& line : execLines) {
+        std::printf("    exec: %s\n", line.c_str());
+    }
+    for (const std::string& line : toolOnly) {
+        std::printf("    only the tool: %s\n", line.c_str());
+    }
+    if (diagnosticsCompared && execOnly.empty() && toolOnly.empty()
+        && !diagnosticsAgree && diagnosticsRefusals == 0) {
+        std::printf("    the same lines in a different order\n");
+    }
+
     JsObject report;
     report["samples"] = JsValue(static_cast<int64_t>(keys.size()));
     report["joints"] = JsValue(static_cast<int64_t>(jointCount));
@@ -1092,6 +1265,21 @@ int main(int argc, char** argv)
     report["moving_samples"] = JsValue(static_cast<int64_t>(moving));
     report["exec_refusals"] = JsValue(static_cast<int64_t>(refusals));
     report["exec_seconds"] = JsValue(execSeconds);
+    {
+        JsObject diagnostics;
+        diagnostics["compared"] = JsValue(diagnosticsCompared);
+        diagnostics["agree"] = JsValue(diagnosticsCompared && diagnosticsAgree);
+        diagnostics["exec_refusals"] =
+            JsValue(static_cast<int64_t>(diagnosticsRefusals));
+        diagnostics["seconds"] = JsValue(diagnosticsSeconds);
+        diagnostics["exec"] = JsValue(JsLines(execLines));
+        diagnostics["tool"] = JsValue(JsLines(tool.library));
+        diagnostics["tool_caller_raised"] = JsValue(JsLines(tool.caller));
+        diagnostics["exec_only"] = JsValue(JsLines(execOnly));
+        diagnostics["tool_only"] = JsValue(JsLines(toolOnly));
+        report["diagnostics"] = JsValue(diagnostics);
+        report["arming_errors"] = JsValue(JsLines(armingErrors));
+    }
     {
         JsArray reasons;
         for (const std::string& reason : refusalReasons) {
@@ -1156,7 +1344,8 @@ int main(int argc, char** argv)
         || rotations.Of(Kind::Divergence) != 0
         || translations.Of(Kind::Divergence) != 0
         || placement.Of(Kind::Divergence) != 0
-        || stamps.Of(Kind::Divergence) != 0;
+        || stamps.Of(Kind::Divergence) != 0
+        || (diagnosticsCompared && !diagnosticsAgree);
     std::puts(failed ? "exec_parity: DIVERGED" : "exec_parity: parity holds");
     return failed ? 1 : 0;
 }

@@ -827,9 +827,9 @@ compared, which was P0-4's stated blocker.
   conditional on five statements the harness makes on the stage**: rate, source
   skeleton, map, rig, root policy. **Two of the tool's own fixtures state human
   bones without `VrmHumanoidAPI`**. **Diagnostics do not agree**: the tool names
-  the clip bone a rig drops, and exec cannot. The **tenth boundary finding** is
-  that which prim is the humanoid, the rig and the clip is decided only in the
-  tool.
+  the clip bone a rig drops, and exec cannot *(they agree since the same day;
+  see the diagnostics entry below)*. The **tenth boundary finding** is that
+  which prim is the humanoid, the rig and the clip is decided only in the tool.
 - 🚧 **The display slice: a clip's root places a prop on screen**
   *(2026-09-13, P0-7)*. `execMotion` registers an **attribute expression** for
   `motion:root:transform` on a clip, whose computed value is
@@ -899,14 +899,41 @@ compared, which was P0-4's stated blocker.
   unreachable through `motion_retarget`, whose clips drive the same bones on
   every sample, and reachable from a live source's animation. Still open in
   P1-1: the CLI exit codes and the `VRM_OPENEXEC_*` table.
+- ✅ **Exec answers the retarget's diagnostics, and they are the tool's own
+  lines** *(2026-09-13, P0-6's diagnostics row)*. `execVrm` gained two
+  computations on the applied `VrmHumanoidAPI`, both answering
+  `vrmRetarget::RetargetDiagnostics`. `vrm.computeRigDiagnostics` is
+  `DiagnoseRig` under the humanoid's root-motion statements. It reads no clip,
+  moves with no frame, and answers at the default time code.
+  `vrm.computeRetargetDiagnostics` is that list, then what retargeting this
+  sample reported. The harness takes the tool's log, merges exec's answers over
+  the keys, and compares whole lines in order. They agree on every case: none
+  on the fixture rig, `UNBOUND_DRIVEN_BONE upperChest` on Seed-san, and the
+  design rig's fourteen missing required bones, twice. With one line taken out
+  of the tool's log, the run fails on exactly that line and no value moves. The
+  artifact-only exec smoke passes from the installed product with the
+  comparison in it.
+
+  **Three findings**
+  ([the diagnostics report](../reports/openusd/26.08-openexec-diagnostics.md)).
+  **A node nothing invalidates posts its refusal once**, at the compute that
+  arms the request, which a driver discards because the retarget refuses there
+  by design. The harness now keeps those errors, and the driver contract gains
+  the line. **`DUPLICATE_TARGET` and `INVALID_ROOT_JOINT` never come back
+  through exec**, because the map and the statements refuse first. And **the
+  eleventh boundary finding**: the library reports a pose's diagnostics only
+  while retargeting it, so the node repeats the retarget. That adds 23 µs a
+  frame on the fixture rig and 50–60 µs on Seed-san, and a driver's override of
+  the retarget is not diagnosed.
 - ⬜ **The rest of P0-6** of the
-  [plan](openexec-foundation.md#6-foundation-tasks). P0-6 still owes
-  diagnostics: the codes are values now, so what remains is an exec
-  computation answering them and the harness comparing its list with the
-  tool's. Its five cases ran on Linux and macOS for the first time on PR #185's
-  CI and passed. What remains of P0-4 is the producer half of the rate and
-  policies, the written driver contract, and a decision on what a one-joint
-  clip's fallback-filled root means. P1-2 owes a decision on a scaled rest.
+  [plan](openexec-foundation.md#6-foundation-tasks). The values and the
+  diagnostics agree. What is left is the rows no producer reaches, each
+  asserted on the exec side and read rather than run on the tool's, and whether
+  P0-6 needs them run is a decision, not a gap. Its cases ran on Linux and macOS
+  for the first time on PR #185's CI and passed. What remains of P0-4 is the
+  producer half of the rate and policies, the written driver contract, and a
+  decision on what a one-joint clip's fallback-filled root means. P1-2 owes a
+  decision on a scaled rest.
 
 ## Then: boundary consolidation ⬜
 

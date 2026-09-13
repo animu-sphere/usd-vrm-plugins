@@ -1059,6 +1059,288 @@ void TestTheSampleRefusesWhatCannotBeASample()
                 "does not pair with the rig\n");
 }
 
+// ---------------------------------------------------------------------------
+// vrm.computeRigDiagnostics and vrm.computeRetargetDiagnostics
+// ---------------------------------------------------------------------------
+
+execvrm::RigDiagnosticsInputs RigDiagnosticsFixture(
+    const vrmRetarget::HumanoidMap& map)
+{
+    execvrm::RigDiagnosticsInputs inputs;
+    inputs.map = &map;
+    inputs.targets = {FixtureSkeleton()};
+    return inputs;
+}
+
+// The fixture's map with one binding left out, as the humanoid would state it
+// with that attribute unauthored.
+vrmRetarget::HumanoidMap MapWithout(HumanBone dropped)
+{
+    execvrm::HumanoidInputs inputs = FixtureInputs();
+    inputs.bindings.erase(
+        std::remove_if(inputs.bindings.begin(), inputs.bindings.end(),
+                       [dropped](const auto& binding) {
+                           return binding.first == dropped;
+                       }),
+        inputs.bindings.end());
+    return *execvrm::HumanoidMapFor(inputs).map;
+}
+
+const vrmRetarget::RetargetDiagnostic* Find(
+    const vrmRetarget::RetargetDiagnostics& diagnostics,
+    vrmRetarget::RetargetDiagnosticCode code, const std::string& subject)
+{
+    for (const vrmRetarget::RetargetDiagnostic& d : diagnostics.reported) {
+        if (d.code == code && d.subject == subject) {
+            return &d;
+        }
+    }
+    return nullptr;
+}
+
+void TestTheRigDiagnosticsAreDiagnoseRigsCall()
+{
+    using vrmRetarget::RetargetDiagnosticCode;
+    const vrmRetarget::HumanoidMap map =
+        *execvrm::HumanoidMapFor(FixtureInputs()).map;
+
+    // The wrapper claim, with the library's default options: exactly.
+    execvrm::RigDiagnosticsOutcome outcome =
+        execvrm::RigDiagnosticsFor(RigDiagnosticsFixture(map));
+    assert(outcome.diagnostics);
+    assert(*outcome.diagnostics ==
+               vrmRetarget::DiagnoseRig(FixtureSkeleton(), map) &&
+           "the rig's diagnostics are not DiagnoseRig over the same values");
+
+    // And from the definition, so the equality above is not two empty lists:
+    // the fixture binds six bones, and every required bone it leaves out is
+    // named, in the vocabulary's order, while every one it binds is not.
+    std::vector<std::string> missing;
+    for (const HumanBone bone : vrmRetarget::HumanoidMap::GetRequiredBones()) {
+        if (!map.IsMapped(bone)) {
+            missing.emplace_back(motion::HumanBoneName(bone));
+        }
+    }
+    assert(missing.size() >= 10);
+    assert(outcome.diagnostics->Subjects(
+               RetargetDiagnosticCode::MissingRequiredBone) == missing);
+    assert(outcome.diagnostics->reported.size() == missing.size() &&
+           "the fixture's rig raised something beyond its missing bones");
+
+    // The statements reach the options. A rig with no hips says what that
+    // costs under root-motion mode 'hips', and only there.
+    const vrmRetarget::HumanoidMap noHips = MapWithout(HumanBone::Hips);
+    const std::string hips = "hips";
+    const auto hipsDetail = [&](const execvrm::RigDiagnosticsInputs& inputs) {
+        const execvrm::RigDiagnosticsOutcome o =
+            execvrm::RigDiagnosticsFor(inputs);
+        assert(o.diagnostics);
+        const vrmRetarget::RetargetDiagnostic* d = Find(
+            *o.diagnostics, RetargetDiagnosticCode::MissingRequiredBone, hips);
+        assert(d && "a rig with no hips did not say so");
+        return d->detail;
+    };
+    execvrm::RigDiagnosticsInputs defaulted = RigDiagnosticsFixture(noHips);
+    assert(hipsDetail(defaulted).find("root motion was dropped") !=
+           std::string::npos);
+    execvrm::RigDiagnosticsInputs ignored = RigDiagnosticsFixture(noHips);
+    ignored.rootMotion.mode = "ignore";
+    assert(hipsDetail(ignored).find("root motion") == std::string::npos);
+
+    // Every statement made, against the options the tool builds from the same
+    // four flags.
+    execvrm::RigDiagnosticsInputs stated = RigDiagnosticsFixture(noHips);
+    stated.rootMotion.mode = "root";
+    stated.rootMotion.rootJoint = kRoot;
+    stated.rootMotion.translationScale = 2.0f;
+    vrmRetarget::RetargetOptions options;
+    options.rootMotion.mode = vrmRetarget::RootMotionMode::RootJoint;
+    options.rootMotion.rootJointIndex = 0;
+    options.rootMotion.translationScale = 2.0f;
+    outcome = execvrm::RigDiagnosticsFor(stated);
+    assert(outcome.diagnostics &&
+           *outcome.diagnostics ==
+               vrmRetarget::DiagnoseRig(FixtureSkeleton(), noHips, options));
+
+    // A rig out of parent-before-child order is an answer upstream, and so it
+    // reaches this node as a code rather than a refusal.
+    execvrm::SkeletonRest unordered = FixtureRest();
+    std::swap(unordered.joints[4], unordered.joints[5]);  // head before neck
+    std::swap(unordered.restTransforms[4], unordered.restTransforms[5]);
+    execvrm::HumanoidInputs unorderedHumanoid = FixtureInputs();
+    unorderedHumanoid.skeletons = {
+        *execvrm::TargetSkeletonFromRest(unordered).skeleton};
+    const vrmRetarget::HumanoidMap unorderedMap =
+        *execvrm::HumanoidMapFor(unorderedHumanoid).map;
+    execvrm::RigDiagnosticsInputs hierarchy = RigDiagnosticsFixture(unorderedMap);
+    hierarchy.targets = unorderedHumanoid.skeletons;
+    outcome = execvrm::RigDiagnosticsFor(hierarchy);
+    assert(outcome.diagnostics &&
+           outcome.diagnostics->Subjects(
+               RetargetDiagnosticCode::InvalidHierarchy) ==
+               std::vector<std::string>({kHead}));
+    std::printf("execVrm rig: the rig's diagnostics are DiagnoseRig over the "
+                "rig, the map and the statements -- %zu missing required bones "
+                "on the fixture, and a hierarchy out of order\n",
+                missing.size());
+}
+
+void TestTheRigDiagnosticsRefuseAsTheRetargetDoes()
+{
+    const vrmRetarget::HumanoidMap map =
+        *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    using execvrm::RetargetRefusal;
+
+    auto refused = [](const execvrm::RigDiagnosticsInputs& inputs) {
+        const execvrm::RigDiagnosticsOutcome outcome =
+            execvrm::RigDiagnosticsFor(inputs);
+        assert(!outcome.diagnostics);
+        return outcome;
+    };
+
+    execvrm::RigDiagnosticsInputs noMap = RigDiagnosticsFixture(map);
+    noMap.map = nullptr;
+    assert(refused(noMap).refusal == RetargetRefusal::RigUnanswered);
+    execvrm::RigDiagnosticsInputs noRig = RigDiagnosticsFixture(map);
+    noRig.targets.clear();
+    assert(refused(noRig).refusal == RetargetRefusal::RigUnanswered);
+    noRig.targets = {FixtureSkeleton(), FixtureSkeleton()};
+    assert(refused(noRig).refusal == RetargetRefusal::RigUnanswered);
+
+    // A statement the layer cannot honour is refused rather than diagnosed
+    // under the default it would otherwise have fallen back to -- and that is
+    // where INVALID_ROOT_JOINT goes: a root joint the rig lacks never becomes
+    // an index, so the code DiagnoseRig raises for one is unreachable here.
+    execvrm::RigDiagnosticsInputs statement = RigDiagnosticsFixture(map);
+    statement.rootMotion.mode = "sideways";
+    execvrm::RigDiagnosticsOutcome o = refused(statement);
+    assert(o.refusal == RetargetRefusal::RootMotion &&
+           o.rootMotionRefusal == execvrm::RootMotionRefusal::UnknownMode);
+    statement.rootMotion.mode = "root";
+    statement.rootMotion.rootJoint = "NoSuchJoint";
+    o = refused(statement);
+    assert(o.refusal == RetargetRefusal::RootMotion &&
+           o.rootMotionRefusal == execvrm::RootMotionRefusal::UnknownRootJoint);
+    std::printf("execVrm rig: the rig's diagnostics refuse a rig and a "
+                "statement as the retarget does, and so never raise an "
+                "invalid root joint\n");
+}
+
+void TestTheRetargetDiagnosticsAreTheRigsThenThePoses()
+{
+    using vrmRetarget::RetargetDiagnosticCode;
+    const vrmRetarget::HumanoidMap map =
+        *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const vrmRetarget::SourceRestPose rest =
+        *execvrm::SourceRestFromSkeleton(SemanticSkeleton()).rest;
+    const vrmRetarget::RetargetDiagnostics rig =
+        *execvrm::RigDiagnosticsFor(RigDiagnosticsFixture(map)).diagnostics;
+    const vrmRetarget::PoseRetargeter retargeter(FixtureSkeleton(), map, rest);
+
+    // The wrapper claim: DiagnoseRig, then what the retarget of this one pose
+    // reported -- the clip overload's order, for a clip of this one sample.
+    const execvrm::RetargetDiagnosticsOutcome outcome =
+        execvrm::RetargetDiagnosticsFor(RetargetFixture(map), &rig);
+    assert(outcome.diagnostics && !outcome.rigUnanswered);
+    vrmRetarget::RetargetDiagnostics expected =
+        vrmRetarget::DiagnoseRig(FixtureSkeleton(), map);
+    retargeter.Retarget(ClipSample(), &expected);
+    assert(*outcome.diagnostics == expected);
+    {
+        motion::HumanoidAnimation clip;
+        clip.samples = {ClipSample()};
+        vrmRetarget::RetargetDiagnostics overload;
+        retargeter.Retarget(clip, &overload);
+        assert(*outcome.diagnostics == overload &&
+               "one sample's diagnostics are not a one-sample clip's");
+    }
+
+    // From the definition: the rig's list whole, then the one bone the sample
+    // drives and the fixture does not bind.
+    const std::vector<vrmRetarget::RetargetDiagnostic>& reported =
+        outcome.diagnostics->reported;
+    assert(reported.size() == rig.reported.size() + 1);
+    assert(std::equal(rig.reported.begin(), rig.reported.end(),
+                      reported.begin()));
+    assert(reported.back().code == RetargetDiagnosticCode::UnboundDrivenBone &&
+           reported.back().subject == "rightUpperArm");
+
+    // Diagnosing costs the pose nothing: the retarget answers the same bits
+    // with a list to fill as without one.
+    vrmRetarget::RetargetDiagnostics filled;
+    assert(*execvrm::HumanoidRetargetFor(RetargetFixture(map), &filled).pose ==
+           *execvrm::HumanoidRetargetFor(RetargetFixture(map)).pose);
+    assert(filled.Has(RetargetDiagnosticCode::UnboundDrivenBone,
+                      "rightUpperArm"));
+
+    // Merged over a clip's samples, in order, the nodes' answers are the list
+    // the clip overload reports for the clip -- including a bone the clip
+    // first drives on its second sample, which is what the harness relies on.
+    motion::HumanoidPose later = ClipSample();
+    later.timestamp = 1.0;
+    later.localRotations[static_cast<std::size_t>(HumanBone::LeftLowerArm)] =
+        About(pxr::GfVec3f(0, 1, 0), 15.0f);
+    later.validRotations.set(static_cast<std::size_t>(HumanBone::LeftLowerArm));
+    execvrm::RetargetInputs second = RetargetFixture(map);
+    second.poses = {later};
+    vrmRetarget::RetargetDiagnostics merged;
+    merged.Merge(*execvrm::RetargetDiagnosticsFor(RetargetFixture(map), &rig)
+                      .diagnostics);
+    merged.Merge(*execvrm::RetargetDiagnosticsFor(second, &rig).diagnostics);
+    motion::HumanoidAnimation clip;
+    clip.samples = {ClipSample(), later};
+    vrmRetarget::RetargetDiagnostics overload;
+    retargeter.Retarget(clip, &overload);
+    assert(merged == overload &&
+           "the samples' diagnostics, merged, are not the clip's");
+    assert(merged.Subjects(RetargetDiagnosticCode::UnboundDrivenBone) ==
+           std::vector<std::string>({"rightUpperArm", "leftLowerArm"}));
+    std::printf("execVrm rig: a sample's diagnostics are the rig's then the "
+                "pose's, and merged over the samples they are the clip's\n");
+}
+
+void TestTheRetargetDiagnosticsRefuseWhenTheRetargetDoes()
+{
+    const vrmRetarget::HumanoidMap map =
+        *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const vrmRetarget::RetargetDiagnostics rig =
+        *execvrm::RigDiagnosticsFor(RigDiagnosticsFixture(map)).diagnostics;
+    using execvrm::RetargetRefusal;
+
+    auto refused = [&rig](const execvrm::RetargetInputs& inputs) {
+        const execvrm::RetargetDiagnosticsOutcome outcome =
+            execvrm::RetargetDiagnosticsFor(inputs, &rig);
+        assert(!outcome.diagnostics && !outcome.rigUnanswered);
+        assert(!outcome.retarget.pose &&
+               "a refusal carried the retarget's pose out with it");
+        return outcome.retarget;
+    };
+
+    // Each for the retarget's own reason, which is the retarget's refusal
+    // order: nothing was retargeted, so nothing was reported -- and in
+    // particular not the rig's list alone, which would read as a clean pose.
+    execvrm::RetargetInputs noInstant = RetargetFixture(map);
+    noInstant.hasInstant = false;
+    assert(refused(noInstant).refusal == RetargetRefusal::NoInstant);
+    execvrm::RetargetInputs none = RetargetFixture(map);
+    none.sourceTargetCount = 0;
+    none.sources.clear();
+    none.poses.clear();
+    assert(refused(none).refusal == RetargetRefusal::NoSource);
+    execvrm::RetargetInputs statement = RetargetFixture(map);
+    statement.rootMotion.mode = "sideways";
+    const execvrm::RetargetOutcome o = refused(statement);
+    assert(o.refusal == RetargetRefusal::RootMotion &&
+           o.rootMotionRefusal == execvrm::RootMotionRefusal::UnknownMode);
+
+    // A retarget that answered beside a rig list that did not come back.
+    const execvrm::RetargetDiagnosticsOutcome noRig =
+        execvrm::RetargetDiagnosticsFor(RetargetFixture(map), nullptr);
+    assert(!noRig.diagnostics && noRig.rigUnanswered && !noRig.retarget.pose);
+    std::printf("execVrm rig: a sample's diagnostics refuse whenever the "
+                "retarget does, and without the rig's list in front\n");
+}
+
 } // namespace
 
 int main()
@@ -1087,6 +1369,10 @@ int main()
     TestTheRetargetRefusesInItsOrder();
     TestTheSampleIsTheRetargetWithTheBakesTwoAdditions();
     TestTheSampleRefusesWhatCannotBeASample();
+    TestTheRigDiagnosticsAreDiagnoseRigsCall();
+    TestTheRigDiagnosticsRefuseAsTheRetargetDoes();
+    TestTheRetargetDiagnosticsAreTheRigsThenThePoses();
+    TestTheRetargetDiagnosticsRefuseWhenTheRetargetDoes();
     std::puts("execVrm rig: all checks passed");
     return 0;
 }
