@@ -226,11 +226,17 @@ PoseRetargeter::Retarget(const motion::HumanoidPose& pose,
                         joints[static_cast<std::size_t>(receiver)]
                             .restTranslation);
             }
-        } else if (rootOptions.mode == RootMotionMode::Hips && hipsJoint < 0
-                   && diagnostics) {
+        } else if (rootOptions.mode == RootMotionMode::Hips && diagnostics
+                   && !diagnostics->Has(
+                       RetargetDiagnosticCode::MissingRequiredBone,
+                       motion::HumanBoneName(motion::HumanBone::Hips))) {
             // Under 'root' the hips are not where the root lands, so their
             // absence costs no root motion and the invalid index above is the
-            // whole report.
+            // whole report. Under 'hips' the receiver is out of this rig either
+            // because the map binds no hips or because it binds them to an
+            // index the rig does not have -- a map built against another
+            // skeleton -- and both drop the root. Checked before the detail is
+            // built, since every sample of a clip lands here.
             diagnostics->Report(MakeRetargetDiagnostic(
                 RetargetDiagnosticCode::MissingRequiredBone,
                 Describe(motion::HumanBone::Hips),
@@ -246,13 +252,24 @@ DiagnoseRig(const TargetSkeleton& skeleton, const HumanoidMap& map,
             const RetargetOptions& options)
 {
     RetargetDiagnostics diagnostics;
-    for (const motion::HumanBone bone : map.FindMissingRequiredBones()) {
+    const std::vector<TargetJoint>& joints = skeleton.GetJoints();
+
+    // Missing *for this rig*: unbound, or bound to an index the rig does not
+    // have. A map carries indices and never says which skeleton it counted
+    // them against, so one built against another rig binds a bone the
+    // retarget can only drop -- and `FindMissingRequiredBones`, which reads
+    // the map alone, cannot see that.
+    for (const motion::HumanBone bone : HumanoidMap::GetRequiredBones()) {
+        const int jointIndex = map.GetJointIndex(bone);
+        if (jointIndex >= 0
+            && static_cast<std::size_t>(jointIndex) < joints.size()) {
+            continue;
+        }
         diagnostics.Report(MakeRetargetDiagnostic(
             RetargetDiagnosticCode::MissingRequiredBone, Describe(bone),
             MissingRequiredDetail(bone, options.rootMotion)));
     }
 
-    const std::vector<TargetJoint>& joints = skeleton.GetJoints();
     for (const int duplicate : map.FindDuplicateJointIndices()) {
         // Named by the rig's own token where the index is one of its joints,
         // since a subject is what two implementations are compared on and an

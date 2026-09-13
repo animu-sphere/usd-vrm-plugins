@@ -58,10 +58,11 @@ enum class RetargetDiagnosticCode : std::uint8_t
 {
     // --- raised by this library: where a clip meets a rig --------------------
 
-    // A bone VRM 1.0 requires has no joint on this rig. Retargeting onto such a
-    // rig is legal and useful, which is why this is a warning; doing it
-    // silently is not. Subject: the bone. `hips` names a consequence as well,
-    // in its detail, when root motion was asked for.
+    // A bone VRM 1.0 requires has no joint on this rig: the map binds none, or
+    // binds an index the rig does not have. Retargeting onto such a rig is
+    // legal and useful, which is why this is a warning; doing it silently is
+    // not. Subject: the bone. `hips` names a consequence as well, in its
+    // detail, when root motion was asked for.
     MissingRequiredBone,
     // The clip drives a bone this rig binds no joint for, so that bone's motion
     // reaches nothing. Subject: the bone.

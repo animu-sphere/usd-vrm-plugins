@@ -904,6 +904,53 @@ TestAClipReportsTheRigThenWhatItDrives()
     assert(perPose == clip);
 }
 
+// A map built against a larger skeleton binds the hips to an index this rig
+// does not have. The retarget can only drop the root there, so the rig reports
+// the hips as missing for this rig -- with the dropped root in the detail --
+// and the clip reports it once, not per sample. Before, the root was dropped
+// without a word.
+void
+TestHipsBoundOutsideTheRigAreReportedWithTheDroppedRoot()
+{
+    using Code = vrmRetarget::RetargetDiagnosticCode;
+    const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
+    vrmRetarget::HumanoidMap foreign = DesignMap(skeleton);
+    assert(foreign.SetJointIndex(motion::HumanBone::Hips, 7, 10));
+    assert(foreign.IsMapped(motion::HumanBone::Hips));
+
+    const vrmRetarget::RetargetDiagnostics rig =
+        vrmRetarget::DiagnoseRig(skeleton, foreign);
+    assert(rig.reported.front().code == Code::MissingRequiredBone);
+    assert(rig.reported.front().subject == "hips");
+    assert(rig.reported.front().detail.find("root motion was dropped")
+           != std::string::npos);
+
+    const vrmRetarget::PoseRetargeter retargeter(skeleton, foreign,
+                                                 DesignSourceRest());
+    vrmRetarget::RetargetDiagnostics clip;
+    const vrmRetarget::RetargetedAnimation result =
+        retargeter.Retarget(DesignClip(), &clip);
+    // The rig's report, then the one thing the clip adds: it drives the hips,
+    // which reach no joint -- exactly what an unmapped hips would report.
+    assert(clip.Subjects(Code::MissingRequiredBone)
+           == rig.Subjects(Code::MissingRequiredBone));
+    assert(clip.Subjects(Code::UnboundDrivenBone)
+           == std::vector<std::string>{"hips"});
+    assert(clip.reported.size() == rig.reported.size() + 1);
+    // Every joint keeps its rest translation: the root landed nowhere.
+    assert(NearlyEqual(result.samples.back().translations[1],
+                       pxr::GfVec3f(0.0f, 1.0f, 0.0f)));
+
+    // One pose at a time reaches the same single report.
+    vrmRetarget::RetargetDiagnostics perPose;
+    const motion::HumanoidAnimation animation = DesignClip();
+    for (const motion::HumanoidPose& pose : animation.samples) {
+        retargeter.Retarget(pose, &perPose);
+    }
+    assert(perPose.Subjects(Code::MissingRequiredBone)
+           == std::vector<std::string>{"hips"});
+}
+
 // A bone the clip starts driving on a later sample is reported like one it
 // drives from the first. Until P1-1 only the first sample was asked, so this
 // bone went unreported.
@@ -2311,6 +2358,7 @@ main()
     TestTheRigIsDiagnosedBeforeAnyClip();
     TestAClipReportsTheRigThenWhatItDrives();
     TestABoneDrivenOnlyLaterIsStillReported();
+    TestHipsBoundOutsideTheRigAreReportedWithTheDroppedRoot();
     TestExpressionRigDeclaresANameOnce();
     TestOneWeightExpandsOntoEveryBind();
     TestReportedZeroIsAuthoredAndUnreportedIsAbsent();

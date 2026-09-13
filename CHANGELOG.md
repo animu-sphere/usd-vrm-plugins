@@ -1058,6 +1058,15 @@ Current schema contract version: **1**.
   `UsdSkelAnimation`'s `joints` are uniform and every sample it reads drives
   the same bones; a library caller holding a live source's animation could.
 
+- **A hips binding outside the rig no longer drops root motion in silence.** A
+  `HumanoidMap` carries indices and never says which skeleton it counted them
+  against, so a map built against a larger rig can bind the hips to an index
+  this one lacks. The retarget dropped the root there and reported nothing,
+  because only an *unbound* hips was checked. `DiagnoseRig` now counts a
+  required bone bound outside the rig as missing for it, and the per-pose
+  report raises `VRM_RETARGET_MISSING_REQUIRED_BONE` for the hips whenever the
+  root has nowhere to land — once per clip, checked before its detail is built.
+
 - **The release lane packaged a product that could not open a `.vrm` file,
   and nothing between the build and the archive said so.** Each
   `ost plugin build` rebuilds one shared `workspace-prefix` from that bundle's

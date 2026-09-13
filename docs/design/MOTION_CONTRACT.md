@@ -161,7 +161,7 @@ by entry and in order.
 
 | Code | Raised by | Severity | Subject |
 | --- | --- | --- | --- |
-| `VRM_RETARGET_MISSING_REQUIRED_BONE` | `vrmRetarget` | warning | the bone; for `hips` under root-motion mode `hips`, the detail says root motion was dropped |
+| `VRM_RETARGET_MISSING_REQUIRED_BONE` | `vrmRetarget` | warning | the bone, unbound or bound to an index this rig does not have; for `hips` under root-motion mode `hips`, the detail says root motion was dropped |
 | `VRM_RETARGET_UNBOUND_DRIVEN_BONE` | `vrmRetarget` | warning | the bone the clip drives |
 | `VRM_RETARGET_DUPLICATE_TARGET` | `vrmRetarget` | warning | the joint two bones share |
 | `VRM_RETARGET_INVALID_HIERARCHY` | `vrmRetarget` | warning | the first joint whose parent does not precede it |
