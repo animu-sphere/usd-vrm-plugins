@@ -47,6 +47,8 @@
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
@@ -245,12 +247,17 @@ void TestExecPlacesTheProp(const UsdStageRefPtr& stage)
         });
     assert(request.IsValid());
 
+    // An unstaged bundle does NOT show up here. Without the expression the
+    // attribute's computed value is its resolved value, and a declared,
+    // valueless matrix4d resolves to the type's fallback -- the identity,
+    // beside a "No value set" executor warning (the display report section
+    // 2). That is where the root is at the default time code and at frame 0,
+    // so the first frame that can tell is 50; `AssertBundleRegistered` in
+    // main is what names the cause before any of this runs.
     auto matrixAt = [](const ExecUsdCacheView& view, int index) {
         const VtValue value = view.Get(index);
         assert(value.IsHolding<GfMatrix4d>() &&
-               "no matrix came back -- with the bundle unstaged the "
-               "attribute's computed value is its resolved value, and a "
-               "declared, valueless matrix4d resolves to nothing");
+               "no matrix came back from execGeom or the attribute");
         return value.UncheckedGet<GfMatrix4d>();
     };
 
@@ -285,7 +292,11 @@ void TestExecPlacesTheProp(const UsdStageRefPtr& stage)
                     Describe(marker).c_str(), Describe(world).c_str());
 
         // The attribute alone: the root motion as a matrix, no parent in it.
-        assert(IsTranslation(root, hips));
+        // An identity here at frame 50 or 100 is the expression not running.
+        assert(IsTranslation(root, hips) &&
+               "motion:root:transform is not the clip's root -- an identity "
+               "here is the attribute's valueless fallback, which is what it "
+               "computes when no attribute expression is registered for it");
         // The prop: that, composed under /World by execGeom.
         assert(IsTranslation(prop, hips + kParent) &&
                "execGeom did not place the prop by the clip's root");
@@ -667,6 +678,21 @@ void TestThePreconditionIsTwoSided()
     std::puts("execMotion_display: the precondition is two-sided");
 }
 
+// The one cause the drawn values cannot name. Without the bundle, every
+// transform in this suite is still a matrix -- the attribute's valueless
+// fallback is the identity -- and the first assertion to fail is a placement
+// at frame 50. So the registration is asserted first, by the plugin name the
+// staged plugInfo.json declares.
+void AssertBundleRegistered()
+{
+    const PlugPluginPtr plugin =
+        PlugRegistry::GetInstance().GetPluginWithName("ExecMotion");
+    assert(plugin &&
+           "the ExecMotion plugin is not registered: PXR_PLUGINPATH_NAME does "
+           "not reach its staged plugInfo.json, and without it every "
+           "transform below falls back to the identity rather than failing");
+}
+
 }  // namespace
 
 int main(int argc, char** argv)
@@ -675,6 +701,7 @@ int main(int argc, char** argv)
         std::fprintf(stderr, "usage: %s displayed_clip.usda\n", argv[0]);
         return 2;
     }
+    AssertBundleRegistered();
 
     // Each test opens its own stage: two of them edit the clip, and a later
     // test reading an earlier one's edits would be measuring an order.
