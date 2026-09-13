@@ -124,11 +124,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 TF_REGISTRY_FUNCTION(ExecTypeRegistry)
 {
     // `vrmRetarget`'s own values, crossing unchanged -- the only shape under
-    // which a node stays a wrapper. Neither is a `VtArray`, and both are
+    // which a node stays a wrapper. None is a `VtArray`, and all five are
     // equality comparable since this bundle asked for it: the exact
     // `operator==` motionCore's aggregates answered in v0.6.0 and
     // motionRuntime's `PoseSampleResult` for `motion.interpolatePose`, asked of
-    // `vrmRetarget` for the first time.
+    // `vrmRetarget` for the first time. The last, `JointLocalTransforms`, is
+    // the one type the library gained whole for this bundle rather than an
+    // equality on a type it already had.
     ExecTypeRegistry::RegisterType(vrmRetarget::TargetSkeleton{});
     ExecTypeRegistry::RegisterType(vrmRetarget::HumanoidMap{});
     ExecTypeRegistry::RegisterType(vrmRetarget::RestPoseCorrection{});
