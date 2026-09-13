@@ -470,6 +470,54 @@ Current schema contract version: **1**.
   naming a skeleton and a SkelRoot was answered, and the suite went red. 137
   green CTest names in the workspace.
 
+- **`vrm.humanoidRetarget`: one sample of a clip on the rig, across both exec
+  bundles** (the OpenExec plan's P0-5, its fourth node). On the applied
+  `VrmHumanoidAPI`, it is `vrmRetarget::PoseRetargeter` over the rig, the map,
+  the clip's rest and the root-motion options, asked for the clip's own sample.
+  That is `motion_retarget`'s call per sample, with the same four arguments.
+  The pose is `execMotion`'s `motion.sampleAnimation` on the animation the
+  clip's skeleton binds in `skel:animationSource`. An exec input makes one
+  relationship hop and this needs two, so a fifth node, `vrm.computeBoundPose` on
+  `UsdSkelSkeleton`, forwards it. Where the root lands is four `vrm:retarget:*`
+  attributes on the humanoid, `motion_retarget`'s `--root-motion`,
+  `--root-joint`, `--translation-scale` and `--preserve-target-height` word for
+  word. `vrmRetarget::RetargetedPose` gains an exact `operator==`, which the
+  registry requires. `execVrm` now requires `execMotion` as a bundle: a runtime
+  edge, not a link one, recorded in WORKSPACE.md §2 and PACKAGE_CONTRACT.md
+  §4.1.
+
+  **Six measurements**
+  ([docs/reports/openusd/26.08-openexec-retarget.md](docs/reports/openusd/26.08-openexec-retarget.md)).
+  The node equals the library's answer, bit for bit, and applies exactly the
+  correction `vrm.computeRestPoseCorrection` caches. **A value crosses bundles
+  unchanged, and exec says nothing when the other bundle is missing**: without
+  `execMotion`, the animation drops out of the fan-in silently, and only the
+  bound pose's count of the relationship notices. **A bundle that reads a value
+  type has to register it itself**: without that, every session that did not
+  load `execMotion` first lost every `execVrm` computation to a fatal error,
+  while the one suite loading both stayed green. **The fallback for a valueless
+  attribute follows its existence, not its schema**, so a declared, valueless
+  `translationScale` is a scale of 0; it is pinned, because an authored 0 is the
+  same value. **The default time code is refused**: the sampler's empty pose
+  there, retargeted, would be the rig's whole rest at 0 seconds. And
+  invalidation reaches the retarget from the frame, a key, the binding, the
+  source and a statement, with a driver's pose entering through either bundle's
+  key.
+
+  **The eighth boundary finding**, and the first whose cost is repeated work:
+  `PoseRetargeter` computes its correction in its constructor and accepts none,
+  so the node recomputes, every frame, the value the correction node caches.
+  Measured on a full 55-bone humanoid, that is 17.7 µs of a 21.2 µs evaluation,
+  against 1.9 µs for the retarget alone.
+
+  `execVrm_rig` tests the seam, `execVrm_retarget` drives both built bundles over
+  `retargeted_rig.usda`, and `execVrm_retarget_without_exec_motion` runs the same
+  binary with no `execMotion` in the session. Verified against its own absence
+  twice: with the animation count taken from the poses that came back, a session
+  with no `execMotion` was told the skeleton "is bound to no animation"; and
+  with `execVrm`'s own type registration removed, four suites went red with a
+  fatal error. 139 green CTest names in the workspace.
+
 - **Two expressions can no longer both own the eyelid: VRM 1.0's expression
   overrides, read and obeyed** (closes #170). Expressions accumulate on the
   targets they bind, and two that bind *different* targets still fight when

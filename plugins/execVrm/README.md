@@ -5,17 +5,21 @@ schema contract only. Workspace Phase 8 / Motion Phase E; the plan is
 [docs/roadmap/openexec-foundation.md](../../docs/roadmap/openexec-foundation.md)
 §6, P0-5.
 
-**This is the rig half, not the retarget.** It registers three value types and
-three computations:
+**The rig, and one sample of a clip on it.** It registers five value types --
+four of `vrmRetarget`'s, and `execMotion`'s `motion::HumanoidPose`, which a
+bundle that reads a type has to register itself -- and five computations:
 
 | Computation | Provider | Result |
 | --- | --- | --- |
 | `vrm.computeTargetSkeleton` | a `UsdSkelSkeleton` prim | the `vrmRetarget::TargetSkeleton` its `joints` and `restTransforms` state: tokens verbatim, parents from the joint paths, each rest transform decomposed into a rotation and a translation with **scale and shear dropped** |
 | `vrm.computeHumanoidMap` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::HumanoidMap` its `vrm:humanBones:*` tokens state, resolved against the one skeleton `vrm:skeleton` reaches |
 | `vrm.computeRestPoseCorrection` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::RestPoseCorrection` from the rest pose of the skeleton `vrm:retarget:sourceSkeleton` reaches onto this humanoid's rig, through its map |
+| `vrm.computeBoundPose` | a `UsdSkelSkeleton` prim | the `motion::HumanoidPose` `execMotion`'s `motion.sampleAnimation` answers on the animation its `skel:animationSource` binds, forwarded |
+| `vrm.humanoidRetarget` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::RetargetedPose`: one sample of the clip `vrm:retarget:sourceSkeleton` reaches, in this rig's joint order, under the humanoid's root-motion statements |
 
-`vrm.humanoidRetarget` and `vrm.computeJointLocalTransforms` are P0-5's other two
-nodes and do not exist yet.
+`vrm.computeJointLocalTransforms` is P0-5's last node and does not exist yet.
+`vrm.computeBoundPose` is not one of the plan's five: it is the second hop from
+a humanoid to its clip's animation, which an exec input cannot make.
 
 ## Two schemas, and one of them is another bundle's
 
@@ -40,6 +44,20 @@ humanoid map is "not found" after five coding errors of exec's own; that is what
 `requires.bundles: vrmSchema` states, and `execVrm_humanoid_without_schema`
 measures it (§6 of the report).
 
+**It links nothing of `execMotion` either, and needs that too**, for the
+retarget. The pose a retarget reads is `motion.sampleAnimation`, which
+`execMotion` registers on `UsdSkelAnimation`, read by name across a skeleton's
+`skel:animationSource`. Without `execMotion` in the session the rig and the
+correction compute, and exec drops the animation from the bound pose's fan-in
+**without a word**. Unlike a missing schema bundle, nothing of exec's own is
+posted. The bound pose's count of the relationship is what notices, and
+`execVrm_retarget_without_exec_motion` measures it
+([the retarget report](../../docs/reports/openusd/26.08-openexec-retarget.md) §3).
+The bundle also registers `motion::HumanoidPose` itself: exec checks that a type
+an input reads is registered when *this* bundle's computations are, and with the
+registration removed every session that did not load `execMotion` first lost
+every computation here to a fatal error.
+
 ## A value the stage does not give arrives as the fallback
 
 An attribute a prim's **schema defines** has an exec input node whether or not
@@ -57,6 +75,10 @@ was authored, so an absent value is recognised here by what it arrives as
 | `joints = []`, with `restTransforms = []` or with none at all | the empty skeleton — with no joint for a rest transform to belong to, none becomes a number |
 | one joint and no `restTransforms` | a one-joint skeleton at **identity** rest — the fallback, which from here is an authored identity; the offline tool answers the same |
 | a bone the humanoid does not bind, or binds to `""`, or value-blocks | unbound — all three are the empty token by the time they arrive |
+
+**Not only a schema's attributes.** One the prim *declares* with no value, or
+blocks, arrives the same way whatever defines it. That was measured on the
+retarget's `vrm:retarget:*` statements, which no schema defines (see below).
 
 The unbound bones cost one executor warning each per compute of the map — the
 fixture's 49 of 55 on the first compute, none on a cached recompute. They are
@@ -138,9 +160,44 @@ in the tool, because `SourceRestPose` has one slot per bone.
 If the map refuses, the correction refuses too, and its error says the map's
 refusal came first.
 
+## One sample of the clip, on this rig
+
+`vrm.humanoidRetarget` is `vrmRetarget::PoseRetargeter` over the rig, the map,
+the clip's rest and the root-motion options, asked for **one** pose: the clip's
+own sample at the evaluated frame. It is reached from the humanoid through
+`vrm:retarget:sourceSkeleton` to the clip's skeleton, then through its
+`skel:animationSource` to `motion.sampleAnimation`. That is `motion_retarget`'s
+call per sample, with the same four arguments, and it is the pose P0-6 compares.
+One relationship on the humanoid names the clip, so the rest the correction
+reads and the pose the retarget reads cannot come from two clips. A filtered or
+blended pose reaches it only as a driver's override of `motion.sampleAnimation`
+or of `vrm.computeBoundPose`, which the suite measures.
+
+Where the clip's root lands is stated on the humanoid, in `motion_retarget`'s
+own words:
+
+| Attribute | The flag it is | Absent (the prim has no such attribute) | Refused |
+| --- | --- | --- | --- |
+| `token vrm:retarget:rootMotion` | `--root-motion` | `hips` | anything but `hips`, `root` and `ignore`, the empty token included |
+| `token vrm:retarget:rootJoint` | `--root-joint` | not read unless `root` | under `root`: none, or a token that is not a full joint path of the rig |
+| `float vrm:retarget:translationScale` | `--translation-scale` | 1 | a value that is not finite |
+| `bool vrm:retarget:preserveTargetHeight` | `--preserve-target-height` | false | nothing |
+
+**A declared, valueless `translationScale` is 0, and is pinned.** It arrives as
+the fallback, like a schema attribute (above), and 0 is a scale an author may
+state, since the tool accepts `--translation-scale 0`. So it cannot be refused.
+
+**At the default time code the retarget refuses.** The sampler answers a keyed
+clip there with an empty pose stamped 0.0, which is harmless as a pose.
+Retargeted, it would be the rig's whole rest at 0 seconds. So a driver calls
+`ChangeTime` before expecting a retarget, beside "compute once to arm a
+request", which it already has to do. The check comes after every statement, so
+a request armed on a wrong stage still reports the statement.
+
 ## Invalidation
 
-No input of any node here moves with time, so none is reported to a time change.
+No input of the rig nodes moves with time, so none of them is reported to a time
+change.
 A rig that were would be recomputed, with everything downstream of it, on every
 frame a clip plays. A binding edit reports the map and not the skeleton. A
 rest-transform edit reports both, although the map's value does not change:
@@ -153,13 +210,30 @@ rotations only and does not change. A retargeted `vrm:retarget:sourceSkeleton`
 reaches it with no request rebuilt
 ([the correction report](../../docs/reports/openusd/26.08-openexec-rest-correction.md)).
 
+The pose is the one thing here that moves with time, and its dependence crosses
+two links and a bundle: a frame change reports the sampler, the bound pose and
+the retarget, and not the rig, the map or the correction. A key of the clip, a
+rebinding of its skeleton's `skel:animationSource` and a retargeted source
+relationship each reach the retarget with no request rebuilt. A root-motion
+statement reaches the retarget and nothing else
+([the retarget report](../../docs/reports/openusd/26.08-openexec-retarget.md) §6).
+
 ## The wrapper, and where it is not one
 
-`vrm.computeHumanoidMap` is `HumanoidMap::SetJointToken` over the bindings, and
+`vrm.computeHumanoidMap` is `HumanoidMap::SetJointToken` over the bindings,
 `vrm.computeRestPoseCorrection` is `ComputeRestPoseCorrection` over the source
-rest, the rig and the map. `execVrm_rig` asserts each by comparing the node's
-value with the library's own, and `execVrm_correction` does it again through the
-built bundle.
+rest, the rig and the map, and `vrm.humanoidRetarget` is `PoseRetargeter` over
+those and the options. `execVrm_rig` asserts each by comparing the node's value
+with the library's own, and `execVrm_correction` and `execVrm_retarget` do it
+again through the built bundles.
+
+**The retarget is a wrapper that recomputes a cached value.** `PoseRetargeter`
+computes its correction in its constructor and accepts none. So the node
+constructs one per evaluation, on every frame the clip moves, and computes
+again the correction `vrm.computeRestPoseCorrection` holds; the suite asserts it
+is the same value, bit for bit. On a full 55-bone humanoid that is 17.7 µs of
+the node's 21.2 µs. The ask is a retargeter that takes the correction as an
+input.
 
 Reading a clip's rest off its skeleton — which joint fills which bone, and which
 bone is its parent — exists only in `tools/motionRetarget`'s `ReadClip`, so that
@@ -185,7 +259,9 @@ at all** (`VdfContext::SetEmptyOutput`). An empty `TargetSkeleton`, an empty
 skeleton authoring `joints = []`, a humanoid binding nothing, two rigs with the
 same rest — so none of them can stand for a refusal. A refusal propagates: a
 skeleton that refused leaves the map a fan-in with nothing in it, the map
-refuses in turn, and so does the correction that reads the map.
+refuses in turn, and so does the correction that reads the map. It propagates
+across the bundle boundary too: a clip whose sampler refused leaves the bound
+pose nothing, and the retarget refuses after it.
 
 ## What this bundle may not do
 
@@ -205,9 +281,11 @@ refuses in turn, and so does the correction that reads the map.
 
 | Test | What it holds |
 | --- | --- |
-| `execVrm_rig` | the seam, with no stage: the attribute names, the rest decomposition with scale dropped, both skeleton refusals, the empty skeleton, an unordered skeleton carried faithfully, the map equal to the library's own, the skeleton counted, and the three map refusals; the clip's rest read off a semantic skeleton, both source refusals, and the correction equal to the library's, with each of its refusals |
+| `execVrm_rig` | the seam, with no stage: the attribute names, the rest decomposition with scale dropped, both skeleton refusals, the empty skeleton, an unordered skeleton carried faithfully, the map equal to the library's own, the skeleton counted, and the three map refusals; the clip's rest read off a semantic skeleton, both source refusals, and the correction equal to the library's, with each of its refusals; the bound pose forwarded and counted; the root-motion statements as the tool's flags, and their refusals; the retarget equal to `PoseRetargeter`'s, applying the cached correction, and its refusals in order |
 | `execVrm_humanoid` | the built bundle over `humanoid_rig.usda`: the vocabulary against the schema's prim definition, both computations on a `Scope` through the applied schema, one executor warning per unbound bone, a blocked rest pose arriving as one fallback matrix, what a skeleton authoring nothing arrives as, invalidation across the relationship, every refusal, and a prim with the attributes and not the schema having no map |
 | `execVrm_correction` | the built bundle over `corrected_rig.usda`: the correction equal to the library's over the rigs computed beside it, and landing the clip's rest on the rig's; invalidation from both relationships and none from time; every refusal; a source that refused; a dangling second source, pinned; and a one-joint source with no rest, answered as the fallback |
-| `execVrm_humanoid_without_schema` | the same binary with no `vrmSchema` in the session: the skeleton computes and the humanoid map is not found |
+| `execVrm_retarget` | the built bundle and `execMotion` over `retargeted_rig.usda`: the retarget equal to `PoseRetargeter` over the sampler's pose and applying the cached correction bit for bit, the default time code refused, each root-motion statement against `ResolveRootTranslation`, invalidation from the frame, a key, the binding, the source and a statement, a driver's pose through either bundle's key, every refusal, and a valueless statement as the fallback |
+| `execVrm_humanoid_without_schema` | the same binary as `execVrm_humanoid` with no `vrmSchema` in the session: the skeleton computes and the humanoid map is not found |
+| `execVrm_retarget_without_exec_motion` | the same binary as `execVrm_retarget` with no `execMotion` in the session: the correction computes, and the bound pose and the retarget are refused by this bundle's count alone |
 
-All four carry the CTest label `motion.openexec`.
+All six carry the CTest label `motion.openexec`.

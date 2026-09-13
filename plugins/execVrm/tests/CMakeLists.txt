@@ -83,6 +83,31 @@ add_test(NAME execVrm_correction
     COMMAND execVrm_correction_tests
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/corrected_rig.usda")
 
+# The retarget, through this bundle AND execMotion's: the pose a retarget reads
+# is `motion.sampleAnimation`'s, reached across `skel:animationSource`, so the
+# session needs the bundle that registers it -- `requires.bundles` in the
+# manifest, and here its plugInfo.json and library, from its sibling directory.
+add_executable(execVrm_retarget_tests test_exec_vrm_retarget.cpp)
+target_include_directories(execVrm_retarget_tests PRIVATE ${PXR_INCLUDE_DIRS})
+target_link_libraries(execVrm_retarget_tests PRIVATE
+    vrmRetarget::vrmRetarget ${_exec_vrm_test_targets})
+target_compile_options(execVrm_retarget_tests PRIVATE ${_exec_vrm_assertions})
+if(MSVC)
+    target_compile_definitions(execVrm_retarget_tests
+        PRIVATE NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(execVrm_retarget_tests PRIVATE /bigobj /utf-8)
+endif()
+set(_exec_vrm_retarget_fixture
+    "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/retargeted_rig.usda")
+add_test(NAME execVrm_retarget
+    COMMAND execVrm_retarget_tests "${_exec_vrm_retarget_fixture}")
+
+# The same executable, in a session with vrmSchema and no execMotion: what
+# this bundle's second runtime requirement looks like when it is not met.
+add_test(NAME execVrm_retarget_without_exec_motion
+    COMMAND execVrm_retarget_tests "${_exec_vrm_retarget_fixture}"
+            --without-exec-motion)
+
 # The same executable, in a session that registers no vrmSchema. The bundle
 # links nothing of that bundle and still cannot compute on the humanoid
 # without it, because exec resolves `UsdVrmHumanoidAPI` by type name when it
@@ -110,6 +135,10 @@ set(_plug_resources "${_bundle_dir}/plugin/resources/execVrm")
 set(_vrm_schema_bundle "${_bundle_dir}/../vrmSchema")
 set(_vrm_schema_resources "${_vrm_schema_bundle}/plugin/resources/vrmSchema")
 
+# And execMotion, which the retarget reads a computation of.
+set(_exec_motion_bundle "${_bundle_dir}/../execMotion")
+set(_exec_motion_resources "${_exec_motion_bundle}/plugin/resources/execMotion")
+
 set(_exec_vrm_path_env
     "PATH=path_list_prepend:${_usd_root}/bin"
     "PATH=path_list_prepend:${_usd_root}/lib"
@@ -118,6 +147,16 @@ set(_exec_vrm_path_env
 set_tests_properties(execVrm_humanoid execVrm_correction PROPERTIES
     ENVIRONMENT_MODIFICATION
         "${_exec_vrm_path_env};PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources}")
+
+set_tests_properties(execVrm_retarget PROPERTIES
+    ENVIRONMENT_MODIFICATION
+        "${_exec_vrm_path_env};PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PATH=path_list_prepend:${_exec_motion_bundle}/lib;PXR_PLUGINPATH_NAME=path_list_prepend:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_exec_motion_resources}")
+
+# `set`, not a prepend, for the reason execVrm_humanoid_without_schema gives:
+# an activated session may already carry execMotion.
+set_tests_properties(execVrm_retarget_without_exec_motion PROPERTIES
+    ENVIRONMENT_MODIFICATION
+        "${_exec_vrm_path_env};PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PXR_PLUGINPATH_NAME=set:${_plug_resources};PXR_PLUGINPATH_NAME=path_list_append:${_vrm_schema_resources}")
 
 # `set`, not `path_list_prepend`: an activated ost session may already carry
 # vrmSchema on PXR_PLUGINPATH_NAME, and a prepend would leave it there -- which
@@ -131,5 +170,6 @@ set_tests_properties(execVrm_rig PROPERTIES
 
 # Motion Phase E's label, as execMotion's suites carry.
 set_tests_properties(execVrm_rig execVrm_humanoid execVrm_correction
+                     execVrm_retarget execVrm_retarget_without_exec_motion
                      execVrm_humanoid_without_schema
     PROPERTIES LABELS "motion.openexec")

@@ -25,6 +25,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <limits>
 #include <set>
 #include <string>
 #include <utility>
@@ -638,6 +639,299 @@ void TestTheCorrectionRefusesWhatItCannotHonour()
                 "is not semantic\n");
 }
 
+// ---------------------------------------------------------------------------
+// vrm.computeBoundPose
+// ---------------------------------------------------------------------------
+
+void TestTheBoundPoseIsTheOnePoseForwarded()
+{
+    motion::HumanoidPose pose;
+    pose.timestamp = 0.5;
+    pose.localRotations[static_cast<std::size_t>(HumanBone::Head)] =
+        About(pxr::GfVec3f(0, 1, 0), 20.0f);
+    pose.validRotations.set(static_cast<std::size_t>(HumanBone::Head));
+
+    execvrm::BoundPoseInputs inputs;
+    inputs.animationTargetCount = 1;
+    inputs.poses = {pose};
+    execvrm::BoundPoseOutcome outcome = execvrm::BoundPoseFor(inputs);
+    assert(outcome.pose && *outcome.pose == pose);
+
+    // An empty pose that CAME BACK is an answer: a clip naming no bone samples
+    // to one. What is refused is a binding that reaches no animation.
+    inputs.poses = {motion::HumanoidPose()};
+    outcome = execvrm::BoundPoseFor(inputs);
+    assert(outcome.pose && *outcome.pose == motion::HumanoidPose());
+
+    using execvrm::BoundPoseRefusal;
+    inputs.animationTargetCount = 0;
+    inputs.poses.clear();
+    outcome = execvrm::BoundPoseFor(inputs);
+    assert(!outcome.pose && outcome.refusal == BoundPoseRefusal::NoAnimation);
+
+    inputs.animationTargetCount = 2;
+    inputs.poses = {pose};
+    outcome = execvrm::BoundPoseFor(inputs);
+    assert(!outcome.pose &&
+           outcome.refusal == BoundPoseRefusal::SeveralAnimations);
+
+    inputs.animationTargetCount = 1;
+    inputs.poses.clear();
+    outcome = execvrm::BoundPoseFor(inputs);
+    assert(!outcome.pose &&
+           outcome.refusal == BoundPoseRefusal::AnimationUnanswered);
+    std::printf("execVrm rig: the bound pose is the one pose forwarded, and no "
+                "animation, two, or one that answered nothing is refused\n");
+}
+
+// ---------------------------------------------------------------------------
+// vrm.humanoidRetarget's root-motion statements
+// ---------------------------------------------------------------------------
+
+void TestTheRootMotionOptionsAreTheToolsFlags()
+{
+    const vrmRetarget::TargetSkeleton rig = FixtureSkeleton();
+    using vrmRetarget::RootMotionMode;
+
+    // Nothing stated is the library's default, field for field.
+    execvrm::RootMotionOutcome outcome =
+        execvrm::RootMotionOptionsFor(execvrm::RootMotionStatements(), rig);
+    assert(outcome.options);
+    const vrmRetarget::RootMotionOptions defaults;
+    assert(outcome.options->mode == defaults.mode);
+    assert(outcome.options->rootJointIndex == defaults.rootJointIndex);
+    assert(outcome.options->translationScale == defaults.translationScale);
+    assert(outcome.options->preserveTargetHeight
+           == defaults.preserveTargetHeight);
+
+    auto mode = [&rig](const char* stated) {
+        execvrm::RootMotionStatements statements;
+        statements.mode = stated;
+        statements.rootJoint = kRoot;
+        const execvrm::RootMotionOutcome o =
+            execvrm::RootMotionOptionsFor(statements, rig);
+        assert(o.options);
+        return *o.options;
+    };
+    assert(mode("hips").mode == RootMotionMode::Hips);
+    assert(mode("ignore").mode == RootMotionMode::Ignore);
+    const vrmRetarget::RootMotionOptions root = mode("root");
+    assert(root.mode == RootMotionMode::RootJoint && root.rootJointIndex == 0);
+    // Under any mode but root the joint is not read -- as `--root-joint` is
+    // not -- so the index stays the library's "none".
+    assert(mode("hips").rootJointIndex == -1);
+
+    execvrm::RootMotionStatements scaled;
+    scaled.translationScale = 2.0f;
+    scaled.preserveTargetHeight = true;
+    // A joint no rig has, stated beside a mode that does not read it.
+    scaled.rootJoint = "NoSuchJoint";
+    outcome = execvrm::RootMotionOptionsFor(scaled, rig);
+    assert(outcome.options && outcome.options->translationScale == 2.0f &&
+           outcome.options->preserveTargetHeight &&
+           outcome.options->mode == RootMotionMode::Hips);
+    std::printf("execVrm rig: the root-motion statements are motion_retarget's "
+                "flags, and nothing stated is the library's default\n");
+}
+
+void TestTheRootMotionOptionsRefuseWhatTheToolRefuses()
+{
+    const vrmRetarget::TargetSkeleton rig = FixtureSkeleton();
+    using execvrm::RootMotionRefusal;
+
+    auto refusal = [&rig](const execvrm::RootMotionStatements& statements) {
+        const execvrm::RootMotionOutcome outcome =
+            execvrm::RootMotionOptionsFor(statements, rig);
+        assert(!outcome.options);
+        return outcome.refusal;
+    };
+
+    execvrm::RootMotionStatements statements;
+    // The vocabulary is exact: no case folding, and the empty token -- what a
+    // valueless attribute arrives as -- names no mode.
+    statements.mode = "Hips";
+    assert(refusal(statements) == RootMotionRefusal::UnknownMode);
+    statements.mode = "";
+    assert(refusal(statements) == RootMotionRefusal::UnknownMode);
+
+    statements.mode = "root";
+    assert(refusal(statements) == RootMotionRefusal::NoRootJoint);
+    statements.rootJoint = "";
+    assert(refusal(statements) == RootMotionRefusal::NoRootJoint);
+    // Exact on the full path, as `--root-joint` is: a leaf is not a joint.
+    statements.rootJoint = "J_Bip_C_Hips";
+    assert(refusal(statements) == RootMotionRefusal::UnknownRootJoint);
+
+    execvrm::RootMotionStatements scale;
+    scale.translationScale = std::numeric_limits<float>::infinity();
+    assert(refusal(scale) == RootMotionRefusal::TranslationScale);
+    scale.translationScale = std::numeric_limits<float>::quiet_NaN();
+    assert(refusal(scale) == RootMotionRefusal::TranslationScale);
+
+    // A scale of zero is a value: the tool accepts one, and so does this.
+    scale.translationScale = 0.0f;
+    assert(execvrm::RootMotionOptionsFor(scale, rig).options);
+    std::printf("execVrm rig: an unknown mode, root with no joint or an unknown "
+                "one, and a scale that is no finite number are refused\n");
+}
+
+// ---------------------------------------------------------------------------
+// vrm.humanoidRetarget
+// ---------------------------------------------------------------------------
+
+// A sample of the semantic clip: the spine and arm turned, the hips moved, and
+// one bone the fixture's humanoid does not bind.
+motion::HumanoidPose ClipSample()
+{
+    motion::HumanoidPose pose;
+    pose.timestamp = 0.75;
+    const auto set = [&pose](HumanBone bone, const pxr::GfQuatf& rotation) {
+        pose.localRotations[static_cast<std::size_t>(bone)] = rotation;
+        pose.validRotations.set(static_cast<std::size_t>(bone));
+    };
+    set(HumanBone::Hips, About(pxr::GfVec3f(0, 1, 0), 30.0f));
+    set(HumanBone::Spine, About(pxr::GfVec3f(1, 0, 0), 30.0f));
+    set(HumanBone::LeftUpperArm, About(pxr::GfVec3f(0, 0, 1), 20.0f));
+    set(HumanBone::RightUpperArm, About(pxr::GfVec3f(0, 0, 1), -20.0f));
+    pose.root.worldPosition = pxr::GfVec3f(0.3f, 1.0f, 0.1f);
+    pose.root.hasPosition = true;
+    return pose;
+}
+
+execvrm::RetargetInputs RetargetFixture(const vrmRetarget::HumanoidMap& map)
+{
+    execvrm::RetargetInputs inputs;
+    inputs.map = &map;
+    inputs.targets = {FixtureSkeleton()};
+    inputs.sourceTargetCount = 1;
+    inputs.sources = {SemanticSkeleton()};
+    inputs.poses = {ClipSample()};
+    return inputs;
+}
+
+void TestTheRetargetIsThePoseRetargetersCall()
+{
+    const vrmRetarget::HumanoidMap map =
+        *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    const vrmRetarget::SourceRestPose rest =
+        *execvrm::SourceRestFromSkeleton(SemanticSkeleton()).rest;
+
+    // The wrapper claim, with the library's default options: bit for bit.
+    execvrm::RetargetOutcome outcome =
+        execvrm::HumanoidRetargetFor(RetargetFixture(map));
+    assert(outcome.pose);
+    assert(*outcome.pose ==
+               vrmRetarget::PoseRetargeter(FixtureSkeleton(), map, rest)
+                   .Retarget(ClipSample()) &&
+           "the retarget is not PoseRetargeter over the same values");
+    assert(outcome.pose->timestamp == 0.75);
+
+    // And with every statement made, against the options the tool would have
+    // built from the same four flags.
+    execvrm::RetargetInputs stated = RetargetFixture(map);
+    stated.rootMotion.mode = "root";
+    stated.rootMotion.rootJoint = kRoot;
+    stated.rootMotion.translationScale = 2.0f;
+    stated.rootMotion.preserveTargetHeight = true;
+    vrmRetarget::RetargetOptions options;
+    options.rootMotion.mode = vrmRetarget::RootMotionMode::RootJoint;
+    options.rootMotion.rootJointIndex = 0;
+    options.rootMotion.translationScale = 2.0f;
+    options.rootMotion.preserveTargetHeight = true;
+    outcome = execvrm::HumanoidRetargetFor(stated);
+    assert(outcome.pose &&
+           *outcome.pose ==
+               vrmRetarget::PoseRetargeter(FixtureSkeleton(), map, rest, options)
+                   .Retarget(ClipSample()));
+
+    // The cost the node reports: what it applies to each mapped bone is the
+    // correction vrm.computeRestPoseCorrection computes from the same inputs,
+    // exactly -- computed again, here, because PoseRetargeter takes none.
+    const vrmRetarget::RestPoseCorrection cached =
+        *execvrm::RestPoseCorrectionFor(CorrectionFixture(map)).correction;
+    outcome = execvrm::HumanoidRetargetFor(RetargetFixture(map));
+    const motion::HumanoidPose sample = ClipSample();
+    for (const auto& [bone, token] : FixtureBindings()) {
+        const int joint = map.GetJointIndex(bone);
+        const auto slot = static_cast<std::size_t>(bone);
+        if (!sample.validRotations.test(slot)) {
+            continue;
+        }
+        assert(outcome.pose->rotations[static_cast<std::size_t>(joint)] ==
+               cached.Apply(bone, sample.localRotations[slot]));
+    }
+    std::printf("execVrm rig: the retarget is PoseRetargeter over the rig, the "
+                "map, the clip's rest and the statements, and applies the "
+                "correction the correction node caches\n");
+}
+
+void TestTheRetargetRefusesInItsOrder()
+{
+    const vrmRetarget::HumanoidMap map =
+        *execvrm::HumanoidMapFor(FixtureInputs()).map;
+    using execvrm::RetargetRefusal;
+
+    auto refusal = [](const execvrm::RetargetInputs& inputs) {
+        const execvrm::RetargetOutcome outcome =
+            execvrm::HumanoidRetargetFor(inputs);
+        assert(!outcome.pose);
+        return outcome.refusal;
+    };
+
+    execvrm::RetargetInputs noMap = RetargetFixture(map);
+    noMap.map = nullptr;
+    assert(refusal(noMap) == RetargetRefusal::RigUnanswered);
+
+    // The humanoid's own statements come before the source's, so a request
+    // armed on a stage with both wrong says the nearer one first.
+    execvrm::RetargetInputs statement = RetargetFixture(map);
+    statement.rootMotion.mode = "sideways";
+    statement.sourceTargetCount = 0;
+    statement.sources.clear();
+    const execvrm::RetargetOutcome o = execvrm::HumanoidRetargetFor(statement);
+    assert(!o.pose && o.refusal == RetargetRefusal::RootMotion &&
+           o.rootMotionRefusal == execvrm::RootMotionRefusal::UnknownMode);
+
+    // The correction's three source refusals, for the correction's reasons.
+    execvrm::RetargetInputs none = RetargetFixture(map);
+    none.sourceTargetCount = 0;
+    none.sources.clear();
+    none.poses.clear();
+    assert(refusal(none) == RetargetRefusal::NoSource);
+    execvrm::RetargetInputs two = RetargetFixture(map);
+    two.sourceTargetCount = 2;
+    assert(refusal(two) == RetargetRefusal::SeveralSources);
+    execvrm::RetargetInputs dropped = RetargetFixture(map);
+    dropped.sources.clear();
+    assert(refusal(dropped) == RetargetRefusal::SourceUnanswered);
+    execvrm::RetargetInputs notSemantic = RetargetFixture(map);
+    notSemantic.sources = {FixtureSkeleton()};
+    const execvrm::RetargetOutcome rest =
+        execvrm::HumanoidRetargetFor(notSemantic);
+    assert(!rest.pose && rest.refusal == RetargetRefusal::SourceRest &&
+           rest.sourceRefusal == execvrm::SourceRestRefusal::NoHumanBone);
+
+    // A skeleton that answered and a pose that did not.
+    execvrm::RetargetInputs noPose = RetargetFixture(map);
+    noPose.poses.clear();
+    assert(refusal(noPose) == RetargetRefusal::PoseUnanswered);
+
+    // The default time code, last: after every statement, so arming a request
+    // there still reports what the stage gets wrong.
+    execvrm::RetargetInputs noInstant = RetargetFixture(map);
+    noInstant.hasInstant = false;
+    assert(refusal(noInstant) == RetargetRefusal::NoInstant);
+    noInstant.poses.clear();
+    assert(refusal(noInstant) == RetargetRefusal::PoseUnanswered);
+    noInstant = RetargetFixture(map);
+    noInstant.hasInstant = false;
+    noInstant.rootMotion.mode = "root";
+    assert(refusal(noInstant) == RetargetRefusal::RootMotion);
+    std::printf("execVrm rig: the retarget refuses a rig, a statement, a source "
+                "and a pose that did not answer, and the default time code, in "
+                "that order\n");
+}
+
 } // namespace
 
 int main()
@@ -659,6 +953,11 @@ int main()
     TestASourceNamingOneBoneTwiceIsRefusedAndBothNamed();
     TestTheCorrectionIsTheLibrarysCall();
     TestTheCorrectionRefusesWhatItCannotHonour();
+    TestTheBoundPoseIsTheOnePoseForwarded();
+    TestTheRootMotionOptionsAreTheToolsFlags();
+    TestTheRootMotionOptionsRefuseWhatTheToolRefuses();
+    TestTheRetargetIsThePoseRetargetersCall();
+    TestTheRetargetRefusesInItsOrder();
     std::puts("execVrm rig: all checks passed");
     return 0;
 }

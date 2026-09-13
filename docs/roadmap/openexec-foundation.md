@@ -691,9 +691,10 @@ intake policy (§9); a **driver contract** — compute once to arm a request, na
 an instant with `ChangeTime` before expecting a history sampled, hold one
 previous answer and one snapshot per prim and substitute both through one
 `ComputeWithOverrides`, treat a coding error there as a failed frame, stamp a
-pose handed to a blend's source at the instant the others were sampled at, none
-of it discoverable from the computations themselves, and P0-6's parity harness
-is the first client that needs it written down; and the packaged-plugin half of
+pose handed to a blend's source at the instant the others were sampled at,
+call `ChangeTime` before expecting a retarget (P0-5), none of it discoverable
+from the computations themselves, and P0-6's parity harness is the first client
+that needs it written down; and the packaged-plugin half of
 step 7 — the mechanism, sample, filter, root, interpolate and blend tests load a
 *built* bundle, and an artifact-only run belongs with P0-3's smoke.
 
@@ -819,11 +820,58 @@ Four more divergences go to P0-6's table, two about missing fields and two about
 stage shape: the tool reads a clip as its own stage, and exec reads one stage
 that has to say where the clip's skeleton is.
 
-Still open here: `vrm.humanoidRetarget` and `vrm.computeJointLocalTransforms`, in
-that order. The joint-local transforms are the retarget's answer in the shape a
-`UsdSkelAnimation` stores. The retarget has to choose a pose to retarget, which
-is the design question `motion.blendPoses` left, and has to decide whether it
-can use the correction this bundle already computes.
+**`vrm.humanoidRetarget` landed the same day, and it is the first computation
+in either bundle that reads a value the other bundle computes.** It is
+`vrmRetarget::PoseRetargeter` over the rig, the map, the clip's rest and the
+root-motion options, asked for one pose: the clip's own sample, which is
+`motion_retarget`'s call per sample with the same four arguments. The pose comes
+from `execMotion`'s `motion.sampleAnimation` on the animation the clip's
+skeleton binds in `skel:animationSource`. That is a second relationship hop, and
+an exec input makes one, so a fifth computation the plan did not list,
+`vrm.computeBoundPose` on `UsdSkelSkeleton`, forwards it. One relationship on
+the humanoid then names the clip, and the rest and the motion cannot come from
+two clips. Where the root lands is four `vrm:retarget:*` attributes on the
+humanoid, `motion_retarget`'s four flags word for word. `vrmRetarget::RetargetedPose`
+gained the exact `operator==` the registry requires, and `execVrm` registers
+`motion::HumanoidPose` as well as `execMotion` does.
+
+**Six measurements, in [the retarget report](../reports/openusd/26.08-openexec-retarget.md).**
+**The node is one library call**, bit for bit, and applies exactly the
+correction `vrm.computeRestPoseCorrection` caches. **A value crosses bundles
+unchanged, and exec says nothing when the other bundle is missing**: without
+`execMotion` the animation drops out of the fan-in silently, and only the bound
+pose's count notices. So `requires.bundles` names `execMotion`, a runtime edge
+and not a link one. **A bundle that reads a value type registers it too**:
+without that, every session that did not load `execMotion` first lost every
+`execVrm` computation to a fatal error, while the suite that loads both stayed
+green. **The fallback follows an attribute's existence, not its schema**: a
+declared, valueless `vrm:retarget:translationScale` is a scale of 0, and is
+pinned. **The default time code is refused**, because the sampler's empty pose
+there becomes the rig's whole rest when it is retargeted. And **invalidation
+reaches the retarget** from the frame, a key, the binding, the source and a
+statement, with a driver's pose entering through either bundle's key.
+
+**The eighth boundary finding answers the question the correction node left.**
+`PoseRetargeter` computes its correction in its constructor and accepts none, so
+the node recomputes, on every frame, the value `vrm.computeRestPoseCorrection`
+caches per rig edit. On a full 55-bone humanoid that is 17.7 µs of a 21.2 µs
+evaluation, against 1.9 µs for the retarget alone. The ask is a retargeter that
+takes the correction ([boundary consolidation](boundary-consolidation.md) §1).
+Four more rows go to P0-6's table: a skeleton with no `skel:animationSource` (the
+tool falls back to the stage's one animation), a NaN scale (the tool parses it),
+a valueless scale, and the default time code.
+
+**Which pose, the question `motion.blendPoses` left, is answered for parity and
+left open for the graph.** The retarget retargets the clip's own sample. A
+filtered or blended pose reaches it as a driver's override. Choosing one *in the
+graph* needs a node that takes its pose without knowing which computation is
+behind it, and 26.08 names the computation at registration. That is the `ExecIr`
+track's switch controller (§7, P0-4) rather than this node.
+
+Still open here: `vrm.computeJointLocalTransforms`. The retarget already answers
+in joint-local rotations and translations, so what is left is the shape of a
+`UsdSkelAnimation` sample, scales included (P1-2's identity-scale rule), rather
+than a second retarget.
 
 Inputs: `vrm:humanBones:*`, the typed `Vrm*API` schemas, `UsdSkelSkeleton`,
 `UsdSkelAnimation`, and explicit policies/relationships.
@@ -1218,13 +1266,22 @@ depends on them ([docs/README.md](../README.md)). Open:
   it onto the stage it compares, or a producer does, and whichever it is belongs
   in a contract, and in BND-0's producer contract if a producer does it. Unlike the rate it
   is not a shim for a gap upstream; it is the scene stating which clip drives
-  which avatar, which nothing on a stage says today.
-- ⬜ **Every node that reads a schema attribute owes a fallback decision, and
-  one schema may want to state it.** 26.08 hands an unauthored schema attribute
+  which avatar, which nothing on a stage says today. *Since 2026-09-13 it also
+  carries the motion*: `vrm.humanoidRetarget` reads the clip's pose through the
+  same skeleton's `skel:animationSource`, which `usdVrmaFileFormat` already
+  authors, and four `vrm:retarget:*` attributes on the humanoid state where the
+  root lands. Those four are `motion_retarget`'s flags, and nothing authors them
+  either
+  ([the retarget report](../reports/openusd/26.08-openexec-retarget.md) §7).
+- ⬜ **Every node that reads an attribute owes a fallback decision, and one
+  schema may want to state it.** 26.08 hands an unauthored schema attribute
   to a callback as one element of Sdf's default for the type
   ([the humanoid report](../reports/openusd/26.08-openexec-humanoid.md) §4), so
   for each such input the question is what that one element looks like against
-  what it pairs with. `motion.sampleAnimation` has a shape where it pairs (a
+  what it pairs with. *Widened on 2026-09-13*: an attribute no schema defines
+  that the prim declares with no value, or blocks, arrives the same way, so
+  `vrm.humanoidRetarget`'s valueless `translationScale` is a scale of 0
+  ([the retarget report](../reports/openusd/26.08-openexec-retarget.md) §4). `motion.sampleAnimation` has a shape where it pairs (a
   one-joint clip) and cannot tell; `vrm.computeHumanoidMap` reads it as unbound,
   and a `""` fallback on `VrmHumanoidAPI`'s bone attributes would make that the
   schema's statement and silence one executor warning per unbound bone. That is

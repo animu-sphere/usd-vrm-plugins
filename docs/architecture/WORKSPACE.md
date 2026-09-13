@@ -101,7 +101,7 @@ Motion layer (Workspace Phase 6–8; motion policy §2, §14):
 | --- | --- | --- |
 | `usdVrmaFileFormat` | plugin bundle (`usd-fileformat`, v0.3.0) | `.vrma` `SdfFileFormat`, glTF/GLB animation parsing, canonical semantic `HumanoidSkeleton`, `UsdSkelAnimation` + provenance. Avatar-independent: it never resolves, binds to, or retargets onto a target VRM. |
 | `execMotion` | plugin bundle (`usd-exec`, bootstrapped 2026-09-06) | Vendor-neutral OpenExec motion nodes: clip sample, pose buffer, resample, filter, blend, apply-constraints, generate, record. **The boundary, `motion.identityPose`, `motion.sampleAnimation`, `motion.priorPose`, `motion.filterPose` and `motion.extractRootMotion` exist (2026-09-06), and `motion.poseHistory` and `motion.interpolatePose` (2026-09-12), and `motion.blendPoses` (2026-09-13), which completes the OpenExec plan's P0-4 node set; the rest of this row's list is outside P0-4 and does not exist yet.** It declares the `UsdSkelAnimation` schema and no other, which is a claim no second plugin in the session may make (§2). |
-| `execVrm` | plugin bundle (`usd-exec`, bootstrapped 2026-09-13) | VRM semantics applied to a target rig: humanoid retarget, root-motion resolve, expression, look-at, avatar apply — driven by the schema contract only. **The boundary, `vrm.computeTargetSkeleton` on `UsdSkelSkeleton` and `vrm.computeHumanoidMap` on the applied `VrmHumanoidAPI` exist (2026-09-13) — the first two of the OpenExec plan's P0-5 nodes; the rest of this row's list does not exist yet.** It declares `UsdSkelSkeleton` and `UsdVrmHumanoidAPI`, links nothing of `vrmSchema`, and needs it in the session: exec resolves the second schema by type name (§2). |
+| `execVrm` | plugin bundle (`usd-exec`, bootstrapped 2026-09-13) | VRM semantics applied to a target rig: humanoid retarget, root-motion resolve, expression, look-at, avatar apply — driven by the schema contract only. **The boundary, `vrm.computeTargetSkeleton` and `vrm.computeBoundPose` on `UsdSkelSkeleton`, and `vrm.computeHumanoidMap`, `vrm.computeRestPoseCorrection` and `vrm.humanoidRetarget` on the applied `VrmHumanoidAPI` exist (2026-09-13) — four of the OpenExec plan's five P0-5 nodes, and one it needed; the rest of this row's list does not exist yet.** It declares `UsdSkelSkeleton` and `UsdVrmHumanoidAPI` and links nothing of `vrmSchema` or `execMotion`, and needs both in the session: exec resolves the second schema by type name, and the retarget's pose is `execMotion`'s `motion.sampleAnimation`, read by name (§2). |
 | `motionCore` | plain static CMake library (v0.3.0) | `motion::HumanoidPose`, `HumanoidAnimation`, `RootMotion`, `MotionConstraintSet`, source metadata. No USD stage authoring, no vendor SDK, no network. |
 | `motionRuntime` | plain static CMake library (v0.4.0) | Timestamped pose buffer, interpolation/extrapolation, resample, filter, blend — the OpenExec-independent runtime |
 | `vrmRetarget` | plain static CMake library (v0.4.0) | Humanoid map, rest pose, pose retargeter, root-motion policy, and — Motion Phase G — the two consumer resolves: `ExpressionResolver` (a named weight onto one rig's binds) and `LookAtEvaluator` (a target point onto one rig's eyes or its gaze expressions). **Completed before OpenExec** (motion policy §18.12). |
@@ -290,6 +290,9 @@ execMotion            -> motionCore, motionRuntime
 execMotion            =: UsdSkelAnimation   (the OpenExec schema it declares)
 execVrm               -> vrmSchema
 execVrm               -> motionCore, motionRuntime, vrmRetarget
+execVrm               -> execMotion  (runtime only: `vrm.computeBoundPose`
+                         reads `motion.sampleAnimation` by name; nothing is
+                         linked, and the reverse edge is not allowed)
 execVrm               =: the Vrm*API applied schemas, UsdSkelSkeleton
 adapters/*            -> motionCore, motionRuntime, liveTransport, osc
 adapters/*/tools/*    -> vrmRetarget, motionTracking, OpenUSD stage authoring
@@ -527,7 +530,16 @@ reviewer can check them without opening the policy:
   ([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §2,
   §3). This is a workspace rule and not a preference: the two bundles ship in one
   product and are loaded into one session, so a collision between them is not a
-  configuration a user can avoid.
+  configuration a user can avoid. Reading the *other* bundle's computation by
+  name through such an accessor is allowed in one direction, `execVrm` reading
+  `execMotion`'s `motion.sampleAnimation`, and it has two costs. The reading
+  bundle names the other in `requires.bundles`, because exec drops a target that
+  provides no computation from a fan-in without a word. And the reading bundle
+  registers the value type itself, because `TargetedObjects<T>` checks the
+  registration when the reading bundle's computations are registered, possibly
+  before the other bundle has loaded. Both costs were measured by leaving them
+  unmet ([the retarget report](../reports/openusd/26.08-openexec-retarget.md)
+  §3).
 
 - **`vrmRetarget` does not depend on OpenExec.** The retarget core is finished
   and testable before any OpenExec node exists (motion policy §10.1, §18.12);

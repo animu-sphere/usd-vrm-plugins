@@ -50,6 +50,7 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
+#include "pxr/exec/ef/time.h"
 #include "pxr/exec/exec/builtinComputations.h"
 #include "pxr/exec/exec/registerSchema.h"
 #include "pxr/exec/exec/typeRegistry.h"
@@ -57,6 +58,7 @@
 #include "pxr/exec/vdf/readIterator.h"
 
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/timeCode.h"
 
 #include <string>
 #include <utility>
@@ -72,6 +74,17 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((computeTargetSkeleton, "vrm.computeTargetSkeleton"))
     ((computeHumanoidMap, "vrm.computeHumanoidMap"))
     ((computeRestPoseCorrection, "vrm.computeRestPoseCorrection"))
+    ((computeBoundPose, "vrm.computeBoundPose"))
+    ((humanoidRetarget, "vrm.humanoidRetarget"))
+    // execMotion's sampler, read by name across `skel:animationSource`. The one
+    // computation this bundle reads that another bundle registers, which is
+    // why `execMotion` is in `requires.bundles`.
+    ((sampleAnimation, "motion.sampleAnimation"))
+    // UsdSkelBindingAPI's relationship from a skeleton to its animation, and
+    // the two names its fan-in arrives under.
+    ((animationSource, "skel:animationSource"))
+    ((animationSourcePaths, "skel:animationSource:paths"))
+    ((animationSourcePoses, "skel:animationSource:poses"))
     // UsdSkelSkeleton's own attributes, both `uniform`, each declared with its
     // ELEMENT type and read through an iterator (the migration audit §4).
     (joints)
@@ -89,6 +102,16 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sourceSkeleton, "vrm:retarget:sourceSkeleton"))
     ((sourceSkeletonPaths, "vrm:retarget:sourceSkeleton:paths"))
     ((sourceSkeletons, "vrm:retarget:sourceSkeleton:skeletons"))
+    ((sourcePoses, "vrm:retarget:sourceSkeleton:poses"))
+    // Where the clip's root motion lands: `motion_retarget`'s four flags, as
+    // attributes on the humanoid. Like the source relationship they are a
+    // convention of this bundle and no schema's; one the prim does not have
+    // keeps the library's default (ExecVrmRig.h, RootMotionStatements, for the
+    // one the prim declares with no value).
+    ((rootMotion, "vrm:retarget:rootMotion"))
+    ((rootJoint, "vrm:retarget:rootJoint"))
+    ((translationScale, "vrm:retarget:translationScale"))
+    ((preserveTargetHeight, "vrm:retarget:preserveTargetHeight"))
 );
 
 TF_REGISTRY_FUNCTION(ExecTypeRegistry)
@@ -102,6 +125,16 @@ TF_REGISTRY_FUNCTION(ExecTypeRegistry)
     ExecTypeRegistry::RegisterType(vrmRetarget::TargetSkeleton{});
     ExecTypeRegistry::RegisterType(vrmRetarget::HumanoidMap{});
     ExecTypeRegistry::RegisterType(vrmRetarget::RestPoseCorrection{});
+    ExecTypeRegistry::RegisterType(vrmRetarget::RetargetedPose{});
+
+    // execMotion's pose, registered here as well. `TargetedObjects<T>` checks
+    // that `T` is registered when THIS bundle's computations are registered,
+    // which is before anything has loaded execMotion's library -- so a bundle
+    // that reads a value type has to register it itself. 26.08 allows several
+    // plugins to register one type, provided the fallbacks are equal
+    // (`VdfExecutionTypeRegistry::_Define`), and both are
+    // `motion::HumanoidPose{}`.
+    ExecTypeRegistry::RegisterType(motion::HumanoidPose{});
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
@@ -177,6 +210,90 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelSkeleton)
         .Inputs(
             AttributeValue<TfToken>(_tokens->joints),
             AttributeValue<GfMatrix4d>(_tokens->restTransforms));
+
+    // -----------------------------------------------------------------------
+    // vrm.computeBoundPose -- the pose of the animation this skeleton is bound to
+    // -----------------------------------------------------------------------
+    //
+    // `motion.sampleAnimation` on whatever `skel:animationSource` targets,
+    // forwarded. A retarget reaches a clip through ONE relationship on the
+    // humanoid, `vrm:retarget:sourceSkeleton`, because the skeleton is the one
+    // prim both halves of a clip can be reached from -- and an exec input
+    // traverses one relationship, so the second hop, UsdSkel's own binding, is
+    // a computation on the skeleton. It is the first in this bundle whose value
+    // another bundle computes: `motion.sampleAnimation` is execMotion's,
+    // registered on `UsdSkelAnimation`, which this bundle may not declare.
+    //
+    // It declares no `computeTime`: the sampler's time dependence crosses the
+    // link, as it does inside execMotion (the filtering report, section 3).
+    //
+    // Like every fan-in here the relationship is read twice, and here the
+    // second read is also how this bundle notices that execMotion is not in the
+    // session at all: an animation that provides no `motion.sampleAnimation` is
+    // dropped from the fan-in while the network compiles, exactly as one that
+    // is not an animation is.
+    self.PrimComputation(_tokens->computeBoundPose)
+        .Callback<motion::HumanoidPose>(+[](const VdfContext &ctx) {
+            execvrm::BoundPoseInputs inputs;
+
+            std::vector<SdfPath> targets;
+            for (VdfReadIterator<SdfPath> path(ctx, _tokens->animationSourcePaths);
+                 !path.IsAtEnd(); ++path) {
+                targets.push_back(*path);
+            }
+            inputs.animationTargetCount = targets.size();
+            for (VdfReadIterator<motion::HumanoidPose> pose(
+                     ctx, _tokens->animationSourcePoses);
+                 !pose.IsAtEnd(); ++pose) {
+                inputs.poses.push_back(*pose);
+            }
+
+            execvrm::BoundPoseOutcome outcome = execvrm::BoundPoseFor(inputs);
+            if (outcome.pose) {
+                ctx.SetOutput(std::move(*outcome.pose));
+                return;
+            }
+
+            std::string named;
+            for (const SdfPath &path : targets) {
+                named += named.empty() ? "<" : ", <";
+                named += path.GetString();
+                named += ">";
+            }
+            switch (outcome.refusal) {
+            case execvrm::BoundPoseRefusal::NoAnimation:
+                TF_RUNTIME_ERROR(
+                    "vrm.computeBoundPose: 'skel:animationSource' reaches "
+                    "nothing on the stage, so the skeleton is bound to no "
+                    "animation -- and an empty pose is not answered, because "
+                    "it would put the rig at rest for a misspelled binding; no "
+                    "pose was forwarded");
+                break;
+            case execvrm::BoundPoseRefusal::SeveralAnimations:
+                TF_RUNTIME_ERROR(
+                    "vrm.computeBoundPose: 'skel:animationSource' reaches %zu "
+                    "objects (%s), and a skeleton is bound to one animation; "
+                    "no pose was forwarded",
+                    inputs.animationTargetCount, named.c_str());
+                break;
+            case execvrm::BoundPoseRefusal::AnimationUnanswered:
+                TF_RUNTIME_ERROR(
+                    "vrm.computeBoundPose: 'skel:animationSource' targets %s, "
+                    "which answered no motion.sampleAnimation -- it is not a "
+                    "UsdSkelAnimation, execMotion is not in the session, or "
+                    "its sampler refused; no pose was forwarded",
+                    named.c_str());
+                break;
+            }
+            ctx.SetEmptyOutput();
+        })
+        .Inputs(
+            Relationship(_tokens->animationSource)
+                .TargetedObjects<SdfPath>(ExecBuiltinComputations->computePath)
+                .InputName(_tokens->animationSourcePaths),
+            Relationship(_tokens->animationSource)
+                .TargetedObjects<motion::HumanoidPose>(_tokens->sampleAnimation)
+                .InputName(_tokens->animationSourcePoses));
 }
 
 // ---------------------------------------------------------------------------
@@ -454,4 +571,218 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
                 .TargetedObjects<vrmRetarget::TargetSkeleton>(
                     _tokens->computeTargetSkeleton)
                 .InputName(_tokens->sourceSkeletons));
+
+    // -----------------------------------------------------------------------
+    // vrm.humanoidRetarget -- one sample of the clip, on this rig
+    // -----------------------------------------------------------------------
+    //
+    // `vrmRetarget::PoseRetargeter` over the rig, the map, the clip's rest and
+    // the root-motion options, asked for the one pose the clip's skeleton is
+    // bound to -- `motion_retarget`'s call, per sample. It reads:
+    //
+    //   * the humanoid's `vrm.computeHumanoidMap`, and the rig across
+    //     `vrm:skeleton`, as the correction does;
+    //   * across `vrm:retarget:sourceSkeleton`: the paths, the skeleton (for
+    //     the clip's rest) and its `vrm.computeBoundPose` (for the pose) --
+    //     one relationship, so the rest and the motion cannot come from two
+    //     clips;
+    //   * the four `vrm:retarget:*` root-motion statements.
+    //
+    // **Which pose**, the question `motion.blendPoses` left: the clip's own
+    // sample, the pose `motion_retarget` retargets, because P0-6 compares the
+    // two. A filtered pose or a blend reaches it only as a driver's override --
+    // of `motion.sampleAnimation` on the clip, or of `vrm.computeBoundPose` on
+    // its skeleton -- which the retarget suite measures crossing both bundles.
+    //
+    // It does NOT read `vrm.computeRestPoseCorrection`. `PoseRetargeter`
+    // computes its own correction when it is constructed and takes none, so
+    // this node recomputes, every frame, the value that node caches per rig
+    // edit: the eighth boundary finding (ExecVrmRig.h, HumanoidRetargetFor).
+    //
+    // It reads `computeTime`, and not for the frame: the pose's own time
+    // dependence already crosses two links to reach it, so declaring the
+    // builtin costs no recompute it was not getting. It is read for the one
+    // thing the pose cannot say -- whether the system names an instant at all
+    // (ExecVrmRig.h, RetargetRefusal::NoInstant).
+    auto retarget = self.PrimComputation(_tokens->humanoidRetarget);
+    retarget.Callback<vrmRetarget::RetargetedPose>(+[](const VdfContext &ctx) {
+        execvrm::RetargetInputs inputs;
+        inputs.map = ctx.GetInputValuePtr<vrmRetarget::HumanoidMap>(
+            _tokens->computeHumanoidMap);
+
+        for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(
+                 ctx, _tokens->skeletons);
+             !skeleton.IsAtEnd(); ++skeleton) {
+            inputs.targets.push_back(*skeleton);
+        }
+
+        std::vector<SdfPath> sources;
+        for (VdfReadIterator<SdfPath> path(ctx, _tokens->sourceSkeletonPaths);
+             !path.IsAtEnd(); ++path) {
+            sources.push_back(*path);
+        }
+        inputs.sourceTargetCount = sources.size();
+        for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(
+                 ctx, _tokens->sourceSkeletons);
+             !skeleton.IsAtEnd(); ++skeleton) {
+            inputs.sources.push_back(*skeleton);
+        }
+        for (VdfReadIterator<motion::HumanoidPose> pose(
+                 ctx, _tokens->sourcePoses);
+             !pose.IsAtEnd(); ++pose) {
+            inputs.poses.push_back(*pose);
+        }
+
+        // An attribute the prim does not have is null here and keeps the
+        // library's default. One it declares with no value, or blocks, is NOT
+        // null: it arrives as the type's fallback beside an executor warning,
+        // schema property or not (ExecVrmRig.h, RootMotionStatements).
+        if (const TfToken *const mode =
+                ctx.GetInputValuePtr<TfToken>(_tokens->rootMotion)) {
+            inputs.rootMotion.mode = mode->GetString();
+        }
+        if (const TfToken *const joint =
+                ctx.GetInputValuePtr<TfToken>(_tokens->rootJoint)) {
+            inputs.rootMotion.rootJoint = joint->GetString();
+        }
+        if (const float *const scale =
+                ctx.GetInputValuePtr<float>(_tokens->translationScale)) {
+            inputs.rootMotion.translationScale = *scale;
+        }
+        if (const bool *const preserve =
+                ctx.GetInputValuePtr<bool>(_tokens->preserveTargetHeight)) {
+            inputs.rootMotion.preserveTargetHeight = *preserve;
+        }
+
+        // `IsNumeric()` first: `GetValue()` is a coding error on the default
+        // time code, which is what a request is armed at.
+        inputs.hasInstant =
+            ctx.GetInputValue<EfTime>(ExecBuiltinComputations->computeTime)
+                .GetTimeCode()
+                .IsNumeric();
+
+        execvrm::RetargetOutcome outcome = execvrm::HumanoidRetargetFor(inputs);
+        if (outcome.pose) {
+            ctx.SetOutput(std::move(*outcome.pose));
+            return;
+        }
+
+        std::string named;
+        for (const SdfPath &path : sources) {
+            named += named.empty() ? "<" : ", <";
+            named += path.GetString();
+            named += ">";
+        }
+
+        switch (outcome.refusal) {
+        case execvrm::RetargetRefusal::RigUnanswered:
+            TF_RUNTIME_ERROR(
+                "vrm.humanoidRetarget: the humanoid's vrm.computeHumanoidMap, "
+                "or the skeleton it counts into, answered nothing; no pose was "
+                "retargeted");
+            break;
+        case execvrm::RetargetRefusal::RootMotion:
+            switch (outcome.rootMotionRefusal) {
+            case execvrm::RootMotionRefusal::UnknownMode:
+                if (inputs.rootMotion.mode->empty()) {
+                    TF_RUNTIME_ERROR(
+                        "vrm.humanoidRetarget: 'vrm:retarget:rootMotion' is "
+                        "the empty token, which names no mode -- and is what "
+                        "the attribute arrives as when it is declared with no "
+                        "value, or blocked; no pose was retargeted");
+                } else {
+                    TF_RUNTIME_ERROR(
+                        "vrm.humanoidRetarget: 'vrm:retarget:rootMotion' is "
+                        "'%s', which is none of hips, root and ignore; no pose "
+                        "was retargeted",
+                        inputs.rootMotion.mode->c_str());
+                }
+                break;
+            case execvrm::RootMotionRefusal::NoRootJoint:
+                TF_RUNTIME_ERROR(
+                    "vrm.humanoidRetarget: 'vrm:retarget:rootMotion' is "
+                    "'root' and 'vrm:retarget:rootJoint' names no joint to "
+                    "receive it; no pose was retargeted");
+                break;
+            case execvrm::RootMotionRefusal::UnknownRootJoint:
+                TF_RUNTIME_ERROR(
+                    "vrm.humanoidRetarget: 'vrm:retarget:rootJoint' is '%s', "
+                    "which is not a joint of the target skeleton; no pose was "
+                    "retargeted",
+                    inputs.rootMotion.rootJoint->c_str());
+                break;
+            case execvrm::RootMotionRefusal::TranslationScale:
+                TF_RUNTIME_ERROR(
+                    "vrm.humanoidRetarget: 'vrm:retarget:translationScale' is "
+                    "not a finite number; no pose was retargeted");
+                break;
+            }
+            break;
+        case execvrm::RetargetRefusal::NoSource:
+            TF_RUNTIME_ERROR(
+                "vrm.humanoidRetarget: 'vrm:retarget:sourceSkeleton' reaches "
+                "nothing on the stage, so there is no clip to retarget; no "
+                "pose was retargeted");
+            break;
+        case execvrm::RetargetRefusal::SeveralSources:
+            TF_RUNTIME_ERROR(
+                "vrm.humanoidRetarget: 'vrm:retarget:sourceSkeleton' reaches "
+                "%zu objects (%s), and a retarget is of exactly one clip; no "
+                "pose was retargeted",
+                inputs.sourceTargetCount, named.c_str());
+            break;
+        case execvrm::RetargetRefusal::SourceUnanswered:
+            TF_RUNTIME_ERROR(
+                "vrm.humanoidRetarget: 'vrm:retarget:sourceSkeleton' targets "
+                "%s, which answered no vrm.computeTargetSkeleton -- it is not "
+                "a UsdSkelSkeleton, or its skeleton refused; no pose was "
+                "retargeted",
+                named.c_str());
+            break;
+        case execvrm::RetargetRefusal::SourceRest:
+            TF_RUNTIME_ERROR(
+                "vrm.humanoidRetarget: the source skeleton %s is not a "
+                "semantic clip's skeleton (vrm.computeRestPoseCorrection names "
+                "the reason); no pose was retargeted",
+                named.c_str());
+            break;
+        case execvrm::RetargetRefusal::PoseUnanswered:
+            // The bound pose posted the reason; this says where it went.
+            TF_RUNTIME_ERROR(
+                "vrm.humanoidRetarget: the source skeleton %s answered no "
+                "vrm.computeBoundPose; no pose was retargeted",
+                named.c_str());
+            break;
+        case execvrm::RetargetRefusal::NoInstant:
+            TF_RUNTIME_ERROR(
+                "vrm.humanoidRetarget: the system is at the default time code, "
+                "which names no instant -- the clip's sampler answers an empty "
+                "pose there, and retargeted it would be the rig's whole rest "
+                "pose at 0 seconds; no pose was retargeted (call ChangeTime "
+                "first)");
+            break;
+        }
+        ctx.SetEmptyOutput();
+    });
+    retarget.Inputs(
+        Computation<vrmRetarget::HumanoidMap>(_tokens->computeHumanoidMap),
+        Relationship(_tokens->skeleton)
+            .TargetedObjects<vrmRetarget::TargetSkeleton>(
+                _tokens->computeTargetSkeleton)
+            .InputName(_tokens->skeletons),
+        Relationship(_tokens->sourceSkeleton)
+            .TargetedObjects<SdfPath>(ExecBuiltinComputations->computePath)
+            .InputName(_tokens->sourceSkeletonPaths),
+        Relationship(_tokens->sourceSkeleton)
+            .TargetedObjects<vrmRetarget::TargetSkeleton>(
+                _tokens->computeTargetSkeleton)
+            .InputName(_tokens->sourceSkeletons),
+        Relationship(_tokens->sourceSkeleton)
+            .TargetedObjects<motion::HumanoidPose>(_tokens->computeBoundPose)
+            .InputName(_tokens->sourcePoses),
+        AttributeValue<TfToken>(_tokens->rootMotion),
+        AttributeValue<TfToken>(_tokens->rootJoint),
+        AttributeValue<float>(_tokens->translationScale),
+        AttributeValue<bool>(_tokens->preserveTargetHeight),
+        Stage().Computation<EfTime>(ExecBuiltinComputations->computeTime));
 }

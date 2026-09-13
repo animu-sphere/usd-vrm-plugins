@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <optional>
 #include <set>
 #include <string_view>
@@ -217,6 +218,50 @@ SourceRestOutcome SourceRestFromSkeleton(
     return outcome;
 }
 
+namespace {
+
+// What `vrm:retarget:sourceSkeleton` reached, judged once for both nodes that
+// read it -- the correction and the retarget refuse it identically, because
+// they read it identically.
+enum class SourceCheck
+{
+    Answered,
+    NoSource,
+    SeveralSources,
+    SourceUnanswered,
+    SourceRest,
+};
+
+struct SourceOutcome
+{
+    SourceCheck check = SourceCheck::NoSource;
+    SourceRestOutcome rest;
+};
+
+SourceOutcome SourceFor(std::size_t count,
+                        const std::vector<vrmRetarget::TargetSkeleton>& sources)
+{
+    SourceOutcome outcome;
+    if (count == 0) {
+        outcome.check = SourceCheck::NoSource;
+        return outcome;
+    }
+    if (count > 1) {
+        outcome.check = SourceCheck::SeveralSources;
+        return outcome;
+    }
+    if (sources.size() != 1) {
+        outcome.check = SourceCheck::SourceUnanswered;
+        return outcome;
+    }
+    outcome.rest = SourceRestFromSkeleton(sources.front());
+    outcome.check =
+        outcome.rest.rest ? SourceCheck::Answered : SourceCheck::SourceRest;
+    return outcome;
+}
+
+} // namespace
+
 CorrectionOutcome RestPoseCorrectionFor(const CorrectionInputs& inputs)
 {
     CorrectionOutcome outcome;
@@ -224,30 +269,159 @@ CorrectionOutcome RestPoseCorrectionFor(const CorrectionInputs& inputs)
         outcome.refusal = CorrectionRefusal::RigUnanswered;
         return outcome;
     }
-    if (inputs.sourceTargetCount == 0) {
+
+    SourceOutcome source = SourceFor(inputs.sourceTargetCount, inputs.sources);
+    switch (source.check) {
+    case SourceCheck::Answered:
+        break;
+    case SourceCheck::NoSource:
         outcome.refusal = CorrectionRefusal::NoSource;
         return outcome;
-    }
-    if (inputs.sourceTargetCount > 1) {
+    case SourceCheck::SeveralSources:
         outcome.refusal = CorrectionRefusal::SeveralSources;
         return outcome;
-    }
-    if (inputs.sources.size() != 1) {
+    case SourceCheck::SourceUnanswered:
         outcome.refusal = CorrectionRefusal::SourceUnanswered;
         return outcome;
-    }
-
-    SourceRestOutcome source = SourceRestFromSkeleton(inputs.sources.front());
-    if (!source.rest) {
+    case SourceCheck::SourceRest:
         outcome.refusal = CorrectionRefusal::SourceRest;
-        outcome.sourceRefusal = source.refusal;
-        outcome.offending = std::move(source.offending);
+        outcome.sourceRefusal = source.rest.refusal;
+        outcome.offending = std::move(source.rest.offending);
         return outcome;
     }
 
     // The whole node, and it is a wrapper.
     outcome.correction = vrmRetarget::ComputeRestPoseCorrection(
-        *source.rest, inputs.targets.front(), *inputs.map);
+        *source.rest.rest, inputs.targets.front(), *inputs.map);
+    return outcome;
+}
+
+BoundPoseOutcome BoundPoseFor(const BoundPoseInputs& inputs)
+{
+    BoundPoseOutcome outcome;
+    if (inputs.animationTargetCount == 0) {
+        outcome.refusal = BoundPoseRefusal::NoAnimation;
+        return outcome;
+    }
+    if (inputs.animationTargetCount > 1) {
+        outcome.refusal = BoundPoseRefusal::SeveralAnimations;
+        return outcome;
+    }
+    if (inputs.poses.size() != 1) {
+        outcome.refusal = BoundPoseRefusal::AnimationUnanswered;
+        return outcome;
+    }
+    outcome.pose = inputs.poses.front();
+    return outcome;
+}
+
+RootMotionOutcome RootMotionOptionsFor(const RootMotionStatements& statements,
+                                       const vrmRetarget::TargetSkeleton& target)
+{
+    RootMotionOutcome outcome;
+    vrmRetarget::RootMotionOptions options;
+
+    // motion_retarget's `--root-motion`, word for word (tools/motionRetarget's
+    // Options.cpp).
+    if (statements.mode) {
+        const std::string& mode = *statements.mode;
+        if (mode == "hips") {
+            options.mode = vrmRetarget::RootMotionMode::Hips;
+        } else if (mode == "root") {
+            options.mode = vrmRetarget::RootMotionMode::RootJoint;
+        } else if (mode == "ignore") {
+            options.mode = vrmRetarget::RootMotionMode::Ignore;
+        } else {
+            outcome.refusal = RootMotionRefusal::UnknownMode;
+            return outcome;
+        }
+    }
+
+    // And its `--root-joint`, resolved the way main.cpp resolves it: exactly,
+    // on the full joint path, and only under `root`.
+    if (options.mode == vrmRetarget::RootMotionMode::RootJoint) {
+        if (!statements.rootJoint || statements.rootJoint->empty()) {
+            outcome.refusal = RootMotionRefusal::NoRootJoint;
+            return outcome;
+        }
+        options.rootJointIndex = target.FindJoint(*statements.rootJoint);
+        if (options.rootJointIndex < 0) {
+            outcome.refusal = RootMotionRefusal::UnknownRootJoint;
+            return outcome;
+        }
+    }
+
+    if (statements.translationScale) {
+        if (!std::isfinite(*statements.translationScale)) {
+            outcome.refusal = RootMotionRefusal::TranslationScale;
+            return outcome;
+        }
+        options.translationScale = *statements.translationScale;
+    }
+    if (statements.preserveTargetHeight) {
+        options.preserveTargetHeight = *statements.preserveTargetHeight;
+    }
+
+    outcome.options = options;
+    return outcome;
+}
+
+RetargetOutcome HumanoidRetargetFor(const RetargetInputs& inputs)
+{
+    RetargetOutcome outcome;
+    if (!inputs.map || inputs.targets.size() != 1) {
+        outcome.refusal = RetargetRefusal::RigUnanswered;
+        return outcome;
+    }
+    const vrmRetarget::TargetSkeleton& target = inputs.targets.front();
+
+    const RootMotionOutcome rootMotion =
+        RootMotionOptionsFor(inputs.rootMotion, target);
+    if (!rootMotion.options) {
+        outcome.refusal = RetargetRefusal::RootMotion;
+        outcome.rootMotionRefusal = rootMotion.refusal;
+        return outcome;
+    }
+
+    SourceOutcome source = SourceFor(inputs.sourceTargetCount, inputs.sources);
+    switch (source.check) {
+    case SourceCheck::Answered:
+        break;
+    case SourceCheck::NoSource:
+        outcome.refusal = RetargetRefusal::NoSource;
+        return outcome;
+    case SourceCheck::SeveralSources:
+        outcome.refusal = RetargetRefusal::SeveralSources;
+        return outcome;
+    case SourceCheck::SourceUnanswered:
+        outcome.refusal = RetargetRefusal::SourceUnanswered;
+        return outcome;
+    case SourceCheck::SourceRest:
+        outcome.refusal = RetargetRefusal::SourceRest;
+        outcome.sourceRefusal = source.rest.refusal;
+        outcome.offending = std::move(source.rest.offending);
+        return outcome;
+    }
+
+    // The count above covers this relationship for both reads of it, so a pose
+    // missing here is the bound pose refusing, not a second object.
+    if (inputs.poses.size() != 1) {
+        outcome.refusal = RetargetRefusal::PoseUnanswered;
+        return outcome;
+    }
+    if (!inputs.hasInstant) {
+        outcome.refusal = RetargetRefusal::NoInstant;
+        return outcome;
+    }
+
+    // The whole node, and it is a wrapper -- motion_retarget's call, with its
+    // four arguments. Constructing the retargeter is where the correction is
+    // computed, which is the cost this node reports rather than hides.
+    vrmRetarget::RetargetOptions options;
+    options.rootMotion = *rootMotion.options;
+    const vrmRetarget::PoseRetargeter retargeter(target, *inputs.map,
+                                                 *source.rest.rest, options);
+    outcome.pose = retargeter.Retarget(inputs.poses.front());
     return outcome;
 }
 

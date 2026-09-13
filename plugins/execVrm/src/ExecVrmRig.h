@@ -13,7 +13,9 @@
 
 #include <motionCore/Humanoid.h>
 #include <vrmRetarget/HumanoidMap.h>
+#include <vrmRetarget/PoseRetargeter.h>
 #include <vrmRetarget/RestPose.h>
+#include <vrmRetarget/RootMotionPolicy.h>
 #include <vrmRetarget/TargetSkeleton.h>
 
 #include "pxr/base/gf/matrix4d.h"
@@ -375,5 +377,245 @@ struct CorrectionOutcome
 /// is computed once per rig edit and never per frame -- which is the reason it
 /// is a node of its own rather than a step of the retarget.
 CorrectionOutcome RestPoseCorrectionFor(const CorrectionInputs& inputs);
+
+/// What `vrm.computeBoundPose` reads: the pose `motion.sampleAnimation` answers
+/// on whatever the skeleton's `skel:animationSource` targets, counted twice
+/// for the reason `vrm:skeleton` is.
+///
+/// The computation is on the *skeleton* because that is the prim a
+/// `vrm:retarget:sourceSkeleton` names, and it is the one prim from which both
+/// halves of a clip are reachable: its rest directly, its animation through
+/// UsdSkel's own binding. So one relationship on the humanoid says which clip
+/// drives it, and the rest a correction reads and the pose a retarget reads
+/// cannot come from two different clips.
+struct BoundPoseInputs
+{
+    /// How many objects `skel:animationSource` reaches.
+    std::size_t animationTargetCount = 0;
+
+    /// The poses that came back from them. A target that provides no
+    /// `motion.sampleAnimation` -- not a `UsdSkelAnimation`, or `execMotion`
+    /// not in the session -- is dropped while the network compiles, and one
+    /// whose sampler refused is dropped by the read iterator; the count above
+    /// is what tells either from a skeleton that names nothing.
+    std::vector<motion::HumanoidPose> poses;
+};
+
+/// Why a bound pose was refused.
+enum class BoundPoseRefusal
+{
+    /// `skel:animationSource` reaches nothing -- unauthored, or naming no prim,
+    /// which arrive as one value (the correction report, section 3). **Not
+    /// answered as an empty pose**, although one exists: an empty pose is what
+    /// a clip naming no bone samples to, and retargets to the rig's rest, so a
+    /// misspelled binding would put the avatar at rest with no word said.
+    NoAnimation,
+
+    /// It reaches more than one object. UsdSkel binds one animation.
+    SeveralAnimations,
+
+    /// The one object it reaches answered no `motion.sampleAnimation`: it is
+    /// not a `UsdSkelAnimation`, `execMotion` is not in the session, or the
+    /// sampler refused (its own error says which of the last).
+    AnimationUnanswered,
+};
+
+struct BoundPoseOutcome
+{
+    std::optional<motion::HumanoidPose> pose;
+    BoundPoseRefusal refusal = BoundPoseRefusal::NoAnimation;
+};
+
+/// The pose of the animation the skeleton is bound to, or a refusal.
+///
+/// **A forward, and nothing more.** The pose is `execMotion`'s, sampled at the
+/// frame the system evaluates and stamped in seconds there; this node exists
+/// because an exec input traverses one relationship, and a retarget needs two
+/// (the humanoid's `vrm:retarget:sourceSkeleton`, then the skeleton's
+/// `skel:animationSource`). It is the first computation in this bundle whose
+/// value another bundle computes, and it declares no `computeTime` -- the
+/// sampler's time dependence reaches it across the link.
+BoundPoseOutcome BoundPoseFor(const BoundPoseInputs& inputs);
+
+/// What a humanoid states about where a clip's root motion lands, as plain
+/// values: the four `vrm:retarget:*` attributes below.
+///
+/// **Absent means the prim has no such attribute at all**, and only that. None
+/// of the four is a schema property, and an attribute the prim does not have
+/// reaches a callback as no value. But one the prim *declares* with no value --
+/// or authors and blocks -- reaches it as one element of the type's fallback,
+/// beside an executor warning, exactly as a schema attribute does: the humanoid
+/// report's section 4 is about an attribute's *existence*, not about its
+/// schema (the retarget report, section 4). So a declared, valueless
+/// `vrm:retarget:rootMotion` arrives as the empty token and is refused as no
+/// mode; a valueless `rootJoint` is the empty token and names no joint; a
+/// valueless `preserveTargetHeight` is `false`, the library's own default.
+///
+/// **And a valueless `translationScale` arrives as 0**, the one statement here
+/// whose fallback is a believable number: a scale of zero pins the receiver at
+/// its rest. It cannot be refused from here without refusing an authored zero,
+/// which `motion_retarget --translation-scale 0` accepts, so it is answered and
+/// pinned -- the one-joint skeleton's situation (`TargetSkeletonFromRest`), on
+/// a statement rather than on a rig.
+///
+/// The vocabulary is `motion_retarget`'s own command line, attribute for flag,
+/// so a stage and an invocation that mean the same retarget say it in the same
+/// words -- which is what P0-6 parity compares.
+struct RootMotionStatements
+{
+    /// `vrm:retarget:rootMotion`: `hips`, `root` or `ignore` (`--root-motion`).
+    std::optional<std::string> mode;
+
+    /// `vrm:retarget:rootJoint`: the target joint that receives the root under
+    /// `root`, by its full joint path (`--root-joint`).
+    std::optional<std::string> rootJoint;
+
+    /// `vrm:retarget:translationScale` (`--translation-scale`).
+    std::optional<float> translationScale;
+
+    /// `vrm:retarget:preserveTargetHeight` (`--preserve-target-height`).
+    std::optional<bool> preserveTargetHeight;
+};
+
+/// Why a humanoid's root-motion statements were refused.
+enum class RootMotionRefusal
+{
+    /// `vrm:retarget:rootMotion` names no mode -- the empty token included,
+    /// which is what a declared attribute with no value arrives as. A
+    /// misspelled `ignore` given the library's default `hips` would move a
+    /// body its author asked to keep in place.
+    UnknownMode,
+
+    /// `root`, with no `vrm:retarget:rootJoint` to receive it. The library
+    /// degrades that to `ignore` with a warning; `motion_retarget` refuses it
+    /// before it starts, and so does this.
+    NoRootJoint,
+
+    /// `vrm:retarget:rootJoint` names no joint of the target skeleton. Refused
+    /// by `motion_retarget` too.
+    UnknownRootJoint,
+
+    /// `vrm:retarget:translationScale` is not a finite number.
+    TranslationScale,
+};
+
+struct RootMotionOutcome
+{
+    std::optional<vrmRetarget::RootMotionOptions> options;
+    RootMotionRefusal refusal = RootMotionRefusal::UnknownMode;
+};
+
+/// The root-motion options `statements` state against `target`, or a refusal.
+///
+/// Each absent statement keeps `vrmRetarget::RootMotionOptions`' own default --
+/// `hips`, a scale of 1, the source's height -- because an absent value there
+/// selects the library's documented behaviour, which is both exec bundles'
+/// rule. Each stated one the layer cannot honour is refused, the rule's other
+/// half. A `vrm:retarget:rootJoint` stated beside a mode other than `root` is
+/// not read, as `--root-joint` is not.
+RootMotionOutcome RootMotionOptionsFor(const RootMotionStatements& statements,
+                                       const vrmRetarget::TargetSkeleton& target);
+
+/// What `vrm.humanoidRetarget` reads, as plain values.
+///
+/// The correction node's three inputs, a fourth across the same source
+/// relationship, the humanoid's own root-motion statements, and whether the
+/// system names an instant:
+///
+///   * the humanoid's `vrm.computeHumanoidMap`, null when it refused;
+///   * the target skeleton, across `vrm:skeleton`;
+///   * the source skeleton across `vrm:retarget:sourceSkeleton`, counted, and
+///     the pose its `vrm.computeBoundPose` forwards, across the same one;
+///   * the four `vrm:retarget:*` statements (`RootMotionStatements`);
+///   * `computeTime`'s time code, read only for whether it is the default one.
+///
+/// It does **not** read `vrm.computeRestPoseCorrection`, and that is the
+/// finding rather than an omission: `vrmRetarget::PoseRetargeter` computes its
+/// own correction in its constructor and accepts none, so a wrapper has nowhere
+/// to hand the cached one (the retarget report, section 2).
+struct RetargetInputs
+{
+    const vrmRetarget::HumanoidMap* map = nullptr;
+    std::vector<vrmRetarget::TargetSkeleton> targets;
+
+    std::size_t sourceTargetCount = 0;
+    std::vector<vrmRetarget::TargetSkeleton> sources;
+    std::vector<motion::HumanoidPose> poses;
+
+    RootMotionStatements rootMotion;
+
+    /// False when the system is at the default time code, which names no
+    /// instant (`RetargetRefusal::NoInstant`).
+    bool hasInstant = true;
+};
+
+/// Why a retarget was refused.
+enum class RetargetRefusal
+{
+    /// The humanoid's map refused, or the skeleton it counts into did not come
+    /// back (`CorrectionRefusal::RigUnanswered`'s case).
+    RigUnanswered,
+
+    /// The root-motion statements were refused (`rootMotionRefusal`).
+    RootMotion,
+
+    /// `vrm:retarget:sourceSkeleton` reaches nothing, several objects, or one
+    /// that answered no skeleton -- the correction's three refusals, for the
+    /// correction's reasons.
+    NoSource,
+    SeveralSources,
+    SourceUnanswered,
+
+    /// The source skeleton is not readable as a rest pose (`sourceRefusal`).
+    SourceRest,
+
+    /// The source skeleton answered no `vrm.computeBoundPose`: its own error
+    /// says why.
+    PoseUnanswered,
+
+    /// The system is at the default time code -- what every request is armed
+    /// at until `ChangeTime` (the filtering report, section 4). There the
+    /// sampler answers a clip that authors only time samples with an **empty
+    /// pose** stamped 0.0, which is harmless while it stays a pose: nobody
+    /// takes a pose naming no bone for a frame. Retargeted, it is the rig's
+    /// whole rest pose, every joint filled in, stamped 0.0 -- a believable
+    /// answer for an instant nobody named, so this is where the refusal has to
+    /// be. `motion.interpolatePose` refuses the default time code for the same
+    /// reason one bundle over. Checked after every statement, so a request
+    /// armed there still reports what the stage gets wrong.
+    NoInstant,
+};
+
+struct RetargetOutcome
+{
+    std::optional<vrmRetarget::RetargetedPose> pose;
+    RetargetRefusal refusal = RetargetRefusal::RigUnanswered;
+
+    RootMotionRefusal rootMotionRefusal = RootMotionRefusal::UnknownMode;
+    SourceRestRefusal sourceRefusal = SourceRestRefusal::NoHumanBone;
+    std::vector<std::pair<motion::HumanBone, std::string>> offending;
+};
+
+/// One sample of the clip, expanded into the target rig's joint order, or a
+/// refusal.
+///
+/// **The node is one library call**: `vrmRetarget::PoseRetargeter` over the
+/// target rig, the map, the clip's rest and the root-motion options, asked
+/// for the one pose the clip's skeleton is bound to -- what `motion_retarget`
+/// does per sample, with the same four arguments. A joint the clip does not
+/// drive stays at its rest, and a bone the clip drives that the rig does not
+/// map is dropped: both are the library's rules, and both are visible to a
+/// consumer from the pose and the map, which one request can ask for side by
+/// side.
+///
+/// **And it recomputes the correction on every evaluation.** Constructing the
+/// retargeter is where `ComputeRestPoseCorrection` runs, and this node is
+/// recomputed on every frame the clip moves -- so the value
+/// `vrm.computeRestPoseCorrection` caches per rig edit is computed again, per
+/// frame, beside it. That is the eighth boundary finding, and the first whose
+/// cost is a repeated computation rather than a copy: the ask is a retargeter
+/// (or a free per-pose function beside it) that takes the correction as an
+/// input.
+RetargetOutcome HumanoidRetargetFor(const RetargetInputs& inputs);
 
 } // namespace execvrm

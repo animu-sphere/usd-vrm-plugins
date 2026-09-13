@@ -100,7 +100,7 @@ not have**. This is measured with `git diff v0.8.0 -- libs/*/include`:
 | Dependent | Needs, added after `v0.8.0` |
 | --- | --- |
 | `execMotion` | `motionRuntime`'s `operator==` on `PoseSampleResult` (the registry requires it) |
-| `execVrm` | `vrmRetarget`'s `operator==` on `TargetJoint`, `TargetSkeleton`, `HumanoidMap` and `RestPoseCorrection` (the same) |
+| `execVrm` | `vrmRetarget`'s `operator==` on `TargetJoint`, `TargetSkeleton`, `HumanoidMap`, `RestPoseCorrection` and `RetargetedPose` (the same) |
 | `motion_retarget` | `vrmRetarget`'s `ExpressionResolver` and `LookAtEvaluator` headers, and the `GetJointWorldTransform` added beside `PoseRetargeter` |
 
 No lane builds any of these against the tagged 0.8.0 package, and one that did
@@ -153,6 +153,16 @@ links nothing of `vrmSchema`. Without it the computations on the typed
 `UsdSkelSkeleton` still resolve and the ones on the humanoid are not found,
 which `execVrm_humanoid_without_schema` measures
 ([the humanoid report](../reports/openusd/26.08-openexec-humanoid.md) §6).
+
+A second runtime edge joined it the same day, to `execMotion`, and it fails
+more quietly. `vrm.humanoidRetarget` reads its pose from
+`motion.sampleAnimation`, which `execMotion` registers, and exec drops a target
+that provides no computation from a fan-in without a word, where a missing
+schema bundle at least posts a coding error. So in a session without
+`execMotion` the rig computes, and the bound pose and the retarget are refused
+by this bundle's own count and nothing else. `execVrm_retarget_without_exec_motion`
+measures it
+([the retarget report](../reports/openusd/26.08-openexec-retarget.md) §3).
 
 The three file-format and resolver bundles export no target and install no
 config **by design**: nothing links them, OpenUSD discovers them. Their consumer
