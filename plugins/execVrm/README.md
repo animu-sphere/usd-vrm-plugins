@@ -5,17 +5,17 @@ schema contract only. Workspace Phase 8 / Motion Phase E; the plan is
 [docs/roadmap/openexec-foundation.md](../../docs/roadmap/openexec-foundation.md)
 §6, P0-5.
 
-**This is the rig half, not the retarget.** It registers two value types and two
-computations:
+**This is the rig half, not the retarget.** It registers three value types and
+three computations:
 
 | Computation | Provider | Result |
 | --- | --- | --- |
 | `vrm.computeTargetSkeleton` | a `UsdSkelSkeleton` prim | the `vrmRetarget::TargetSkeleton` its `joints` and `restTransforms` state: tokens verbatim, parents from the joint paths, each rest transform decomposed into a rotation and a translation with **scale and shear dropped** |
 | `vrm.computeHumanoidMap` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::HumanoidMap` its `vrm:humanBones:*` tokens state, resolved against the one skeleton `vrm:skeleton` reaches |
+| `vrm.computeRestPoseCorrection` | a prim with `VrmHumanoidAPI` applied | the `vrmRetarget::RestPoseCorrection` from the rest pose of the skeleton `vrm:retarget:sourceSkeleton` reaches onto this humanoid's rig, through its map |
 
-`vrm.computeRestPoseCorrection`, `vrm.humanoidRetarget` and
-`vrm.computeJointLocalTransforms` are P0-5's other three nodes and do not exist
-yet.
+`vrm.humanoidRetarget` and `vrm.computeJointLocalTransforms` are P0-5's other two
+nodes and do not exist yet.
 
 ## Two schemas, and one of them is another bundle's
 
@@ -106,19 +106,67 @@ registration iterates motionCore's vocabulary rather than spelling it. The names
 are `vrm:humanBones:` + `motion::HumanBoneName`, and `execVrm_humanoid` compares
 them, both ways, with the properties the schema's own prim definition lists.
 
+## The clip's rest, and the correction onto this rig
+
+`vrm.computeRestPoseCorrection` is `vrmRetarget::ComputeRestPoseCorrection`
+over three inputs: the humanoid's own map, the target rig across `vrm:skeleton`,
+and the rig a clip was authored against, across **`vrm:retarget:sourceSkeleton`**.
+That relationship is defined by no schema. It is a convention of this bundle,
+like `motion:timeCodesPerSecond` is `execMotion`'s, and nothing authors it yet.
+It names a *skeleton*, not an animation: an animation states no rest, and the
+skeleton reaches both halves of a clip, since its `skel:animationSource` names
+the animation. Both rigs are read through `vrm.computeTargetSkeleton`, so one
+implementation decomposes them.
+
+**The source is read by name and the target never is.** A semantic clip's joint
+leaves are the vocabulary's bone names. That is the motion contract's statement,
+and `motion.sampleAnimation` reads an animation's joints the same way. Each joint
+whose leaf is a bone fills that bone's rest, and its parent is the bone named by
+the leaf of its parent path. This is how `motion_retarget`'s `ReadClip` reads it.
+A joint that is not a bone fills no slot and its rest is dropped, both here and
+in the tool, because `SourceRestPose` has one slot per bone.
+
+| `vrm:retarget:sourceSkeleton` reaches | What comes back |
+| --- | --- |
+| one semantic skeleton | the correction; unmapped bones identity |
+| nothing — unauthored, **or a path naming no prim** | **no value**: both arrive as a count of zero, so an identity rest is not assumed for either |
+| two objects, or one that is not a skeleton or whose skeleton refused | **no value** |
+| a skeleton where no joint leaf is a bone, such as the avatar's own | **no value** |
+| a skeleton naming one bone at two joints | **no value**, with every joint named; the offline tool keeps the later one silently |
+| a path naming no prim *beside* a real source | the correction, answered against the real one — the path is invisible to both reads, as for `vrm:skeleton`; pinned |
+
+If the map refuses, the correction refuses too, and its error says the map's
+refusal came first.
+
 ## Invalidation
 
-Every input of both nodes is `uniform`, so neither is reported to a time change
-— a rig that were would be recomputed, with everything downstream of it, on
-every frame a clip plays. A binding edit reports the map and not the skeleton; a
-rest-transform edit reports both, although the map's value does not change —
-**invalidation follows the dependency, not the value** — and a retargeted
+No input of any node here moves with time, so none is reported to a time change.
+A rig that were would be recomputed, with everything downstream of it, on every
+frame a clip plays. A binding edit reports the map and not the skeleton. A
+rest-transform edit reports both, although the map's value does not change:
+**invalidation follows the dependency, not the value**. A retargeted
 `vrm:skeleton` reaches the map with no request rebuilt.
+
+The correction follows both relationships. A clip rest edit reports it and not
+the map. A clip rest *translation* reports it too, although a correction is
+rotations only and does not change. A retargeted `vrm:retarget:sourceSkeleton`
+reaches it with no request rebuilt
+([the correction report](../../docs/reports/openusd/26.08-openexec-rest-correction.md)).
 
 ## The wrapper, and where it is not one
 
 `vrm.computeHumanoidMap` is `HumanoidMap::SetJointToken` over the bindings, and
-`execVrm_rig` asserts it by comparing the node's map with the library's own.
+`vrm.computeRestPoseCorrection` is `ComputeRestPoseCorrection` over the source
+rest, the rig and the map. `execVrm_rig` asserts each by comparing the node's
+value with the library's own, and `execVrm_correction` does it again through the
+built bundle.
+
+Reading a clip's rest off its skeleton — which joint fills which bone, and which
+bone is its parent — exists only in `tools/motionRetarget`'s `ReadClip`, so that
+assignment is in the seam too; the decomposition under it is
+`vrm.computeTargetSkeleton`'s. The ask is the same as for the skeleton: a
+`SourceRestPose` built from a semantic skeleton's tokens and rests, beside the
+struct.
 
 `vrm.computeTargetSkeleton` has half a library call: `TargetSkeleton` and
 `ResolveParentsFromTokens` are `vrmRetarget`'s, and turning a rest matrix into
@@ -132,20 +180,23 @@ line for line, and the ask for
 ## How a computation refuses
 
 `execMotion`'s way: a `TF_RUNTIME_ERROR` naming the computation, and **no value
-at all** (`VdfContext::SetEmptyOutput`). An empty `TargetSkeleton` and an empty
-`HumanoidMap` are both answers — a skeleton authoring `joints = []`, a humanoid
-binding nothing — so neither can stand for a refusal. A refusal propagates: a
-skeleton that refused leaves the map a fan-in with nothing in it, and the map
-refuses in turn.
+at all** (`VdfContext::SetEmptyOutput`). An empty `TargetSkeleton`, an empty
+`HumanoidMap` and an all-identity `RestPoseCorrection` are all answers — a
+skeleton authoring `joints = []`, a humanoid binding nothing, two rigs with the
+same rest — so none of them can stand for a refusal. A refusal propagates: a
+skeleton that refused leaves the map a fan-in with nothing in it, the map
+refuses in turn, and so does the correction that reads the map.
 
 ## What this bundle may not do
 
 - **No importer private API and no reparse** of the source `.vrm` / `.vrma`
   bytes: the only input contract is what is on the stage
   ([WORKSPACE.md](../../docs/architecture/WORKSPACE.md) §2).
-- **No joint-name heuristics.** A binding is a full joint path, resolved
-  exactly; the fixture's joints are named `J_Bip_C_Hips` and the like so a leaf
-  lookup would find nothing.
+- **No joint-name heuristics on the target.** A binding is a full joint path,
+  resolved exactly; the fixtures' rig joints are named `J_Bip_C_Hips` and the
+  like so a leaf lookup would find nothing. The *source* skeleton is read by
+  leaf because a semantic clip's joint names are the bone vocabulary by
+  contract, and one that does not follow it is refused, not guessed at.
 - **No declaring `UsdSkelAnimation`**, which is `execMotion`'s; an animation is
   reached through an input.
 - **No stage authoring, no I/O, no second algorithm** — as for `execMotion`.
@@ -154,8 +205,9 @@ refuses in turn.
 
 | Test | What it holds |
 | --- | --- |
-| `execVrm_rig` | the seam, with no stage: the attribute names, the rest decomposition with scale dropped, both skeleton refusals, the empty skeleton, an unordered skeleton carried faithfully, the map equal to the library's own, the skeleton counted, and the three map refusals |
+| `execVrm_rig` | the seam, with no stage: the attribute names, the rest decomposition with scale dropped, both skeleton refusals, the empty skeleton, an unordered skeleton carried faithfully, the map equal to the library's own, the skeleton counted, and the three map refusals; the clip's rest read off a semantic skeleton, both source refusals, and the correction equal to the library's, with each of its refusals |
 | `execVrm_humanoid` | the built bundle over `humanoid_rig.usda`: the vocabulary against the schema's prim definition, both computations on a `Scope` through the applied schema, one executor warning per unbound bone, a blocked rest pose arriving as one fallback matrix, what a skeleton authoring nothing arrives as, invalidation across the relationship, every refusal, and a prim with the attributes and not the schema having no map |
+| `execVrm_correction` | the built bundle over `corrected_rig.usda`: the correction equal to the library's over the rigs computed beside it, and landing the clip's rest on the rig's; invalidation from both relationships and none from time; every refusal; a source that refused; a dangling second source, pinned; and a one-joint source with no rest, answered as the fallback |
 | `execVrm_humanoid_without_schema` | the same binary with no `vrmSchema` in the session: the skeleton computes and the humanoid map is not found |
 
-All three carry the CTest label `motion.openexec`.
+All four carry the CTest label `motion.openexec`.

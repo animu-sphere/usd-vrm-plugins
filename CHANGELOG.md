@@ -423,6 +423,44 @@ Current schema contract version: **1**.
   disabling the empty-joint refusal answers a skeleton whose one joint is named
   nothing; each turns a suite red. 136 green CTest names in the workspace.
 
+- **`vrm.computeRestPoseCorrection`: a clip's rest, carried onto the rig it
+  drives** (the OpenExec plan's P0-5, its third node). On the applied
+  `VrmHumanoidAPI`, it is `vrmRetarget::ComputeRestPoseCorrection` over three
+  inputs: the humanoid's own `vrm.computeHumanoidMap`, the target rig across
+  `vrm:skeleton`, and the skeleton a clip was authored against, across
+  `vrm:retarget:sourceSkeleton`. That relationship is a convention of this
+  bundle; no schema defines it and nothing authors it yet. Both rigs are read
+  through `vrm.computeTargetSkeleton`, so one implementation decomposes them.
+  `vrmRetarget::RestPoseCorrection` gains an exact `operator==` over `pre`,
+  `post` and the `identity` flags, which the registry requires.
+
+  **Five measurements**
+  ([docs/reports/openusd/26.08-openexec-rest-correction.md](docs/reports/openusd/26.08-openexec-rest-correction.md)).
+  The node equals the library's answer over the rigs computed beside it, bit for
+  bit. One computation serves both rigs through two relationships. **A
+  relationship target naming no prim arrives exactly as an unauthored
+  relationship**, so an absent source is refused. The library's default identity
+  rest would give a misspelled path that rest with no error. Invalidation follows
+  the dependency, not the value: a clip's rest translation reports a correction
+  that contains rotations only and does not change. And the source is read by
+  joint leaf, as a semantic clip's joints are named by contract, while the target
+  never is. So naming the avatar's own skeleton as the source is refused, and so
+  is a source naming one bone at two joints, where `motion_retarget` silently
+  keeps the later rest.
+
+  **The seventh boundary finding**: reading a clip's rest pose off its skeleton
+  exists only in the tool. And a question for the next node: `PoseRetargeter`
+  computes its own correction and accepts none. P0-6's table gains four
+  divergences, two of them about stage shape: exec evaluates one stage, which
+  has to name the clip's skeleton.
+
+  `execVrm_rig` tests the seam, and `execVrm_correction` drives the built bundle
+  over `corrected_rig.usda`, a target rig with its hips turned plus two semantic
+  source skeletons. Verified against its own absence: with the source count
+  taken from the skeletons that came back rather than from the paths, a source
+  naming a skeleton and a SkelRoot was answered, and the suite went red. 137
+  green CTest names in the workspace.
+
 - **Two expressions can no longer both own the eyelid: VRM 1.0's expression
   overrides, read and obeyed** (closes #170). Expressions accumulate on the
   targets they bind, and two that bind *different* targets still fight when

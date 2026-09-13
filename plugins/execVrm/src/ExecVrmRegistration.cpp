@@ -71,6 +71,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     // them apart from execMotion's `motion.*` on a stage that loads both.
     ((computeTargetSkeleton, "vrm.computeTargetSkeleton"))
     ((computeHumanoidMap, "vrm.computeHumanoidMap"))
+    ((computeRestPoseCorrection, "vrm.computeRestPoseCorrection"))
     // UsdSkelSkeleton's own attributes, both `uniform`, each declared with its
     // ELEMENT type and read through an iterator (the migration audit §4).
     (joints)
@@ -81,6 +82,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     // twice, once for the skeletons and once for the paths that count them.
     ((skeletonPaths, "vrm:skeleton:paths"))
     ((skeletons, "vrm:skeleton:skeletons"))
+    // The skeleton a clip was authored against, which is where the clip's rest
+    // pose is. Not a vrmSchema property: a convention of this bundle, the way
+    // `motion:timeCodesPerSecond` is execMotion's, and nothing authors it yet
+    // (docs/roadmap/openexec-foundation.md §9).
+    ((sourceSkeleton, "vrm:retarget:sourceSkeleton"))
+    ((sourceSkeletonPaths, "vrm:retarget:sourceSkeleton:paths"))
+    ((sourceSkeletons, "vrm:retarget:sourceSkeleton:skeletons"))
 );
 
 TF_REGISTRY_FUNCTION(ExecTypeRegistry)
@@ -93,6 +101,7 @@ TF_REGISTRY_FUNCTION(ExecTypeRegistry)
     // `vrmRetarget` for the first time.
     ExecTypeRegistry::RegisterType(vrmRetarget::TargetSkeleton{});
     ExecTypeRegistry::RegisterType(vrmRetarget::HumanoidMap{});
+    ExecTypeRegistry::RegisterType(vrmRetarget::RestPoseCorrection{});
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
@@ -305,4 +314,144 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdVrmHumanoidAPI)
     for (const TfToken &name : execvrm::HumanBoneAttributeNames()) {
         humanoidMap.Inputs(AttributeValue<TfToken>(name));
     }
+
+    // -----------------------------------------------------------------------
+    // vrm.computeRestPoseCorrection -- from the clip's rest onto this rig's
+    // -----------------------------------------------------------------------
+    //
+    // `vrmRetarget::ComputeRestPoseCorrection` over three things, and the
+    // first node here that reads a computation of its own prim, one across
+    // `vrm:skeleton` and one across a second relationship -- the SAME
+    // computation, `vrm.computeTargetSkeleton`, on two skeletons:
+    //
+    //   * the humanoid's `vrm.computeHumanoidMap`;
+    //   * the target rig, across `vrm:skeleton`, read again because a map
+    //     carries no skeleton -- the one its indices count into;
+    //   * the source rig, across `vrm:retarget:sourceSkeleton`: the skeleton the
+    //     clip was authored against, whose rest pose is the clip's. Reading it
+    //     through `vrm.computeTargetSkeleton` means both rigs are decomposed by
+    //     one implementation; the seam assigns the source's joints to bones.
+    //
+    // Why a relationship to the SKELETON rather than to the animation: a
+    // `UsdSkelAnimation` states no rest, and the binding runs the other way --
+    // the skeleton names its animation in `skel:animationSource` -- so the
+    // skeleton is the one prim from which both halves of a clip are reachable.
+    //
+    // It declares no `computeTime`, and nothing it reads moves with time, so a
+    // correction is computed once per rig edit and reported to no frame change
+    // -- the reason it is a node of its own and not a step of the retarget.
+    self.PrimComputation(_tokens->computeRestPoseCorrection)
+        .Callback<vrmRetarget::RestPoseCorrection>(+[](const VdfContext &ctx) {
+            execvrm::CorrectionInputs inputs;
+            inputs.map = ctx.GetInputValuePtr<vrmRetarget::HumanoidMap>(
+                _tokens->computeHumanoidMap);
+
+            for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(
+                     ctx, _tokens->skeletons);
+                 !skeleton.IsAtEnd(); ++skeleton) {
+                inputs.targets.push_back(*skeleton);
+            }
+
+            std::vector<SdfPath> sources;
+            for (VdfReadIterator<SdfPath> path(ctx, _tokens->sourceSkeletonPaths);
+                 !path.IsAtEnd(); ++path) {
+                sources.push_back(*path);
+            }
+            inputs.sourceTargetCount = sources.size();
+            for (VdfReadIterator<vrmRetarget::TargetSkeleton> skeleton(
+                     ctx, _tokens->sourceSkeletons);
+                 !skeleton.IsAtEnd(); ++skeleton) {
+                inputs.sources.push_back(*skeleton);
+            }
+
+            execvrm::CorrectionOutcome outcome =
+                execvrm::RestPoseCorrectionFor(inputs);
+            if (outcome.correction) {
+                ctx.SetOutput(std::move(*outcome.correction));
+                return;
+            }
+
+            std::string named;
+            for (const SdfPath &path : sources) {
+                named += named.empty() ? "<" : ", <";
+                named += path.GetString();
+                named += ">";
+            }
+
+            switch (outcome.refusal) {
+            case execvrm::CorrectionRefusal::RigUnanswered:
+                // The map posted the reason; this says where it went.
+                TF_RUNTIME_ERROR(
+                    "vrm.computeRestPoseCorrection: the humanoid's "
+                    "vrm.computeHumanoidMap, or the skeleton it counts into, "
+                    "answered nothing; no correction was computed");
+                break;
+            case execvrm::CorrectionRefusal::NoSource:
+                TF_RUNTIME_ERROR(
+                    "vrm.computeRestPoseCorrection: "
+                    "'vrm:retarget:sourceSkeleton' reaches nothing on the "
+                    "stage, so there is no clip rest pose to correct from -- "
+                    "and an identity rest is not assumed, because a target "
+                    "naming no prim arrives exactly as no target does; no "
+                    "correction was computed");
+                break;
+            case execvrm::CorrectionRefusal::SeveralSources:
+                TF_RUNTIME_ERROR(
+                    "vrm.computeRestPoseCorrection: "
+                    "'vrm:retarget:sourceSkeleton' reaches %zu objects (%s), "
+                    "and a correction is from exactly one rig; no correction "
+                    "was computed",
+                    inputs.sourceTargetCount, named.c_str());
+                break;
+            case execvrm::CorrectionRefusal::SourceUnanswered:
+                TF_RUNTIME_ERROR(
+                    "vrm.computeRestPoseCorrection: "
+                    "'vrm:retarget:sourceSkeleton' targets %s, which answered "
+                    "no vrm.computeTargetSkeleton -- it is not a "
+                    "UsdSkelSkeleton, or its skeleton refused; no correction "
+                    "was computed",
+                    named.c_str());
+                break;
+            case execvrm::CorrectionRefusal::SourceRest:
+                if (outcome.sourceRefusal ==
+                    execvrm::SourceRestRefusal::NoHumanBone) {
+                    TF_RUNTIME_ERROR(
+                        "vrm.computeRestPoseCorrection: the source skeleton "
+                        "%s names no human bone -- no joint's leaf is a bone "
+                        "of the vocabulary, so it is not a semantic clip's "
+                        "skeleton; no correction was computed",
+                        named.c_str());
+                } else {
+                    std::string bones;
+                    for (const auto &[bone, token] : outcome.offending) {
+                        bones += bones.empty() ? "" : ", ";
+                        bones += std::string(motion::HumanBoneName(bone));
+                        bones += " at '";
+                        bones += token;
+                        bones += "'";
+                    }
+                    TF_RUNTIME_ERROR(
+                        "vrm.computeRestPoseCorrection: the source skeleton "
+                        "%s names one bone at more than one joint (%s), and "
+                        "which rest the clip meant cannot be known; no "
+                        "correction was computed",
+                        named.c_str(), bones.c_str());
+                }
+                break;
+            }
+            ctx.SetEmptyOutput();
+        })
+        .Inputs(
+            Computation<vrmRetarget::HumanoidMap>(_tokens->computeHumanoidMap),
+            Relationship(_tokens->skeleton)
+                .TargetedObjects<vrmRetarget::TargetSkeleton>(
+                    _tokens->computeTargetSkeleton)
+                .InputName(_tokens->skeletons),
+            Relationship(_tokens->sourceSkeleton)
+                .TargetedObjects<SdfPath>(ExecBuiltinComputations->computePath)
+                .InputName(_tokens->sourceSkeletonPaths),
+            Relationship(_tokens->sourceSkeleton)
+                .TargetedObjects<vrmRetarget::TargetSkeleton>(
+                    _tokens->computeTargetSkeleton)
+                .InputName(_tokens->sourceSkeletons));
 }

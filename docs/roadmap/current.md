@@ -730,9 +730,26 @@ compared, which was P0-4's stated blocker.
   rest transforms exists only in the tool, and five stage statements that
   `motion_retarget` tolerates this bundle refuses or cannot see — none of them
   reachable from what the importer authors.
+- ✅ **`execVrm` carries a clip's rest onto the rig** *(2026-09-13, P0-5)*.
+  `vrm.computeRestPoseCorrection` on the applied `VrmHumanoidAPI` is
+  `vrmRetarget::ComputeRestPoseCorrection` over the humanoid's map, the target
+  rig, and the skeleton a clip was authored against. That skeleton is reached
+  across `vrm:retarget:sourceSkeleton`, a relationship no schema defines and
+  nothing authors yet. Both rigs are read through `vrm.computeTargetSkeleton`.
+
+  **Five measurements**
+  ([the correction report](../reports/openusd/26.08-openexec-rest-correction.md)).
+  The node equals the library's answer, bit for bit. One computation serves both
+  rigs through two relationships. **A path to nothing arrives exactly as no
+  relationship does**, so an absent source is refused rather than given the
+  library's identity rest. Invalidation follows the dependency, not the value.
+  The source is read by name and the target never is. **The seventh boundary
+  finding**: the clip's rest is read off its skeleton only in the tool. And a
+  question for the next node: `PoseRetargeter` computes its own correction and
+  accepts none.
 - ⬜ **The rest of `execVrm`, parity, and the display slice**: P0-5's
-  `vrm.computeRestPoseCorrection`, `vrm.humanoidRetarget` and
-  `vrm.computeJointLocalTransforms`, then P0-6 and P0-7 of the
+  `vrm.humanoidRetarget` and `vrm.computeJointLocalTransforms`, then P0-6 and
+  P0-7 of the
   [plan](openexec-foundation.md#6-foundation-tasks). What remains of P0-4 itself
   is the producer half of the rate and policies, the written driver contract,
   and packaged discovery — and now a decision on what a one-joint clip's

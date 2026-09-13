@@ -779,10 +779,51 @@ Building a `TargetSkeleton` from rest transforms exists only in
 line for line; the ask is a library constructor from tokens and rest matrices
 ([boundary consolidation](boundary-consolidation.md) §1).
 
-Still open here: `vrm.computeRestPoseCorrection`, `vrm.humanoidRetarget` and
-`vrm.computeJointLocalTransforms`, in that order — the retarget needs the
-correction, and the joint-local transforms are the retarget's answer in the
-shape a `UsdSkelAnimation` stores.
+**`vrm.computeRestPoseCorrection` landed the same day, and it is the first node
+that reads two rigs.** It is `vrmRetarget::ComputeRestPoseCorrection` over the
+humanoid's own map, the target rig across `vrm:skeleton`, and the rig a clip was
+authored against, across a second relationship, `vrm:retarget:sourceSkeleton`.
+Both rigs are read through `vrm.computeTargetSkeleton`, so one implementation
+decomposes them. The relationship names a *skeleton*, not an animation. An
+animation states no rest, and the skeleton is the one prim from which both
+halves of a clip can be reached. It is a convention of this bundle and nothing
+authors it yet (§9). `vrmRetarget::RestPoseCorrection` gained the exact
+`operator==` the registry requires.
+
+**Five measurements, in [the correction report](../reports/openusd/26.08-openexec-rest-correction.md).**
+**The node is one library call**: it equals the library's answer over the rigs
+computed beside it, bit for bit. **One computation serves both rigs**, through
+two relationships, one of them defined by no schema. **A path to nothing
+arrives exactly as no relationship does**, so an absent source is refused rather
+than given the library's default identity rest, which would hide a misspelled
+path. That is the absent-input rule's first stated exception: a default is safe
+only where *absent* and *dangling* can be told apart. **Invalidation follows the
+dependency, not the value**, on a third node: a clip's rest translation reports a
+correction that contains rotations only and does not change. And **the source
+is read by name and the target never is**. A semantic clip's joint leaves are
+the bone vocabulary by contract. Naming the avatar's own skeleton as the source
+is refused, and so is a source naming one bone twice, where the offline tool
+silently keeps the later rest. As on `vrm:skeleton`, the source relationship is
+read twice. With the count taken from what came back, a source naming a skeleton
+and a SkelRoot was answered.
+
+**The seventh boundary finding**, and a question the next node inherits.
+Assigning a clip skeleton's joints to bones exists only in
+`tools/motionRetarget`'s `ReadClip`, and the ask is a `SourceRestPose` from a
+semantic skeleton, beside the struct
+([boundary consolidation](boundary-consolidation.md) §1). And `PoseRetargeter`
+computes its own correction in its constructor and accepts none. A retarget node
+that wraps it would redo, on every evaluation, what this node caches per rig
+edit. That is visible in the API; `vrm.humanoidRetarget` has to measure it.
+Four more divergences go to P0-6's table, two about missing fields and two about
+stage shape: the tool reads a clip as its own stage, and exec reads one stage
+that has to say where the clip's skeleton is.
+
+Still open here: `vrm.humanoidRetarget` and `vrm.computeJointLocalTransforms`, in
+that order. The joint-local transforms are the retarget's answer in the shape a
+`UsdSkelAnimation` stores. The retarget has to choose a pose to retarget, which
+is the design question `motion.blendPoses` left, and has to decide whether it
+can use the correction this bundle already computes.
 
 Inputs: `vrm:humanBones:*`, the typed `Vrm*API` schemas, `UsdSkelSkeleton`,
 `UsdSkelAnimation`, and explicit policies/relationships.
@@ -1166,6 +1207,18 @@ depends on them ([docs/README.md](../README.md)). Open:
   the statement that the attribute is a shim: it duplicates
   `timeCodesPerSecond`, it can disagree with it, and it is meant to be removed
   if exec ever delivers stage metadata to a callback.
+- ⬜ **A humanoid has to say which skeleton a clip was authored against, and
+  nothing authors that either** *(2026-09-13)*. `vrm.computeRestPoseCorrection`
+  reads the clip's rest across `vrm:retarget:sourceSkeleton`, a relationship on
+  the humanoid that no schema defines
+  ([the correction report](../reports/openusd/26.08-openexec-rest-correction.md)
+  §1). The offline tool never needs it, because it opens the clip as a separate
+  stage. Exec evaluates one stage, and that stage has to name the clip's
+  skeleton. It is the rate's situation for a second input: P0-6's harness authors
+  it onto the stage it compares, or a producer does, and whichever it is belongs
+  in a contract, and in BND-0's producer contract if a producer does it. Unlike the rate it
+  is not a shim for a gap upstream; it is the scene stating which clip drives
+  which avatar, which nothing on a stage says today.
 - ⬜ **Every node that reads a schema attribute owes a fallback decision, and
   one schema may want to state it.** 26.08 hands an unauthored schema attribute
   to a callback as one element of Sdf's default for the type

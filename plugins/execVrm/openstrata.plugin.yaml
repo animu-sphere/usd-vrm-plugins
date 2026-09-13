@@ -25,9 +25,10 @@ requires:
   capabilities: [usd-stage-read]
   libraries:
     # The retarget core, and the one library every node here wraps: the rig a
-    # computation answers with is `vrmRetarget`'s own `TargetSkeleton` and
-    # `HumanoidMap`, which gained an exact `operator==` for this bundle -- the
-    # registry's requirement, the ask motionCore's aggregates answered in v0.6.0.
+    # computation answers with is `vrmRetarget`'s own `TargetSkeleton`,
+    # `HumanoidMap` and `RestPoseCorrection`, which gained an exact `operator==`
+    # for this bundle -- the registry's requirement, the ask motionCore's
+    # aggregates answered in v0.6.0.
     - id: vrmRetarget
       version: ">=0.8,<0.9"
     # And the two it is built on, named rather than left to the closure: the
@@ -51,5 +52,7 @@ usd:
 tests:
   smoke:
     - tests/fixtures/humanoid_rig.usda
+    - tests/fixtures/corrected_rig.usda
   roundtrip:
     - tests/fixtures/humanoid_rig.usda
+    - tests/fixtures/corrected_rig.usda
