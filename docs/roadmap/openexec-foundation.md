@@ -1356,6 +1356,11 @@ offline and OpenExec agree under `NearlyEqual` on the **same recorded input** ·
 computation discovery succeeds from a packaged plugin rather than a build tree ·
 the dependency boundary is checked by the workspace gate.
 
+*Since 2026-09-15 the snapshot item and the no-I/O item are CTest names on
+every lane: `execMotion_boundaries` and `execVrm_boundaries` (§9).* The graph
+gate checks the bundle edges, and these two check each bundle's links and
+schema declarations.
+
 Every item green, no exceptions: OpenUSD 26.08 exact · OpenExec-capable runtime ·
 three-OS root workspace build · all libraries, bundles, and tools tested ·
 `ost plugin test --workspace` · packaged `motion_retarget` · artifact-only offline
@@ -1616,14 +1621,40 @@ depends on them ([docs/README.md](../README.md)). Open:
   node. The upstream half — an input with no value reaching a callback as no
   value, or a builtin that says whether an attribute has one — is filed with
   P0-7's ask.
-- ⬜ **The snapshot-input rule needs a contract home.** §5 requires that a
-  computation evaluate an immutable snapshot and perform no I/O; motion policy
-  §11.4 now states it, but nothing enforces it. The obvious enforcement is a
-  `execMotion`/`execVrm` link check for socket, clock, and threading symbols,
-  in the way each bundle already proves what it links. **There is now a bundle
-  to run it against** — `plugins/execMotion` exists and links `motionCore` and
-  the exec libraries and nothing else — so this stopped being a rule with no
-  subject on 2026-09-06.
+- ✅ **The snapshot-input rule is checked, not only stated** *(2026-09-15)*. §5
+  requires that a computation evaluate an immutable snapshot and perform no
+  I/O. Motion policy §11.4 and WORKSPACE.md §2 stated it, and until now no
+  test read it. `execMotion_boundaries` and `execVrm_boundaries` read it in
+  four places. **The source** is scanned by header and by name for sockets,
+  file I/O and watching, a wall clock, a private thread pool, mutable global
+  state, and stage access. **The built library's imports** catch the same
+  capabilities arriving through a header or a macro. **The target's link
+  libraries** are held to an allow-list. **The `plugInfo.json` schema
+  declarations** are held to the registrations and to the partition. The
+  rule's tables are written once, in `execMotion`'s check, and `execVrm`'s
+  imports them.
+
+  **Two of the four halves exist because of a measurement.** The link half
+  exists because a binary cannot show what it would need to show. With
+  `liveTransport` linked into `execMotion`, the built DLL imported neither it
+  nor `ws2_32`: the library is static and nothing called it, so only CMake knew
+  about the edge. The import half reads the C++ runtime's clock, not KERNEL32's.
+  MSVC's CRT stub imports `QueryPerformanceCounter` and
+  `GetSystemTimeAsFileTime` into every DLL, and it did so into both bundles
+  with no clock in either source. `std::chrono`'s clocks reach
+  `_Query_perf_counter` and `_Xtime_get_ticks` instead, which nothing else
+  imports.
+
+  Each half was run against a mutation and failed on the line it names. A
+  mutable `static` and a `steady_clock::now()` in one callback, and a
+  `std::thread` and a `getenv` in another, failed in both the source and the
+  imports. With the source restored and the library left built, they failed in
+  the imports alone. A forbidden link failed in the links alone. A schema
+  declared by both bundles, one declared with nothing registered, and one
+  registered and not declared each failed in the schema half. What the scan
+  passes is stated in the check: a direct-initialised `static T t(1);`, which
+  reads like a function, and a namespace-scope variable with no `static`, which
+  would take parsing C++ to find.
 Landed on 2026-09-06, and stated in the contract rather than here: **an
 OpenExec schema has exactly one declarer, so `execMotion` and `execVrm`
 partition them** — `UsdSkelAnimation` to the first, the `Vrm*API` applied schemas

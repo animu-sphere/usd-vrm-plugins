@@ -1076,6 +1076,28 @@ Current schema contract version: **1**.
   recursion to a jump to itself. The driver compares two `TfEnum`s now, and the
   report's §8 carries the diagnosis and the upstream ask. 148 CTest names in
   the workspace.
+- **The snapshot rule is checked on both exec bundles** (the OpenExec plan's §9
+  and a foundation gate row). Motion policy §11.4 and WORKSPACE.md §2 forbid a
+  socket, file I/O or file watching, a wall clock, a private thread pool and
+  mutable global state inside a computation, and no test read that rule. The
+  new `execMotion_boundaries` and `execVrm_boundaries` read it in four places.
+  The bundle's source is scanned by header and by name, including for stage
+  access. The built library's imports are read for the same capabilities
+  arriving through a header or a macro. The target's link libraries are held
+  to an allow-list: `motionCore`, `motionRuntime`, and for `execVrm`
+  `vrmRetarget`, with nothing of `vrmSchema`. The `plugInfo.json` schema
+  declarations are held to the registrations and to WORKSPACE.md §2's
+  partition. The rule's tables are written once, in `execMotion`'s check, and
+  `execVrm`'s imports them.
+
+  Two measurements shaped it. A static library linked and never called leaves
+  no trace in the built DLL: with `liveTransport` linked into `execMotion`,
+  neither it nor `ws2_32` appeared, so only the link half fails. And MSVC's CRT
+  stub imports `QueryPerformanceCounter` and `GetSystemTimeAsFileTime` into
+  every DLL, so on Windows the clock is read from the C++ runtime's
+  `_Query_perf_counter` and `_Xtime_get_ticks`. Each half was run against a
+  mutation and failed on the line it names, and the import half failed alone
+  with the source restored. 150 CTest names in the workspace.
 
 ### Changed
 

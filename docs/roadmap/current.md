@@ -968,6 +968,24 @@ compared, which was P0-4's stated blocker.
   builds a consumer as, GCC 13 compiles `TfEnum == enum` to infinite recursion
   through 26.08's friend `operator==`. That is an upstream ask, and the driver
   compares two `TfEnum`s.
+- ✅ **The snapshot rule is checked on both exec bundles** *(2026-09-15, the
+  plan's §9 and a foundation gate row)*. No socket, file, clock, thread or
+  mutable global state in a computation was stated in the motion policy and in
+  WORKSPACE.md §2, and no test read it. `execMotion_boundaries` and
+  `execVrm_boundaries` now read it in four places: the source, the built
+  library's imports, the target's link libraries, and the `plugInfo.json`
+  schema declarations against the registrations and the partition. The rule's
+  tables are written once, in `execMotion`'s check, and `execVrm`'s imports
+  them. Each half was run against a mutation and failed on the line it names.
+
+  **Two measurements shaped it.** A static library linked and never called
+  leaves no trace in the built DLL: with `liveTransport` linked into
+  `execMotion`, neither it nor `ws2_32` appeared, so the link half is the only
+  one that sees that edge. And MSVC's CRT stub imports `QueryPerformanceCounter`
+  and `GetSystemTimeAsFileTime` into every DLL, both bundles included, so the
+  Windows clock check reads the C++ runtime's `_Query_perf_counter` and
+  `_Xtime_get_ticks` instead
+  ([the plan](openexec-foundation.md#9-contract-changes-this-plan-requires)).
 - ⬜ **The rest of P0-6** of the
   [plan](openexec-foundation.md#6-foundation-tasks). The values and the
   diagnostics agree. What is left is the rows no producer reaches, each
