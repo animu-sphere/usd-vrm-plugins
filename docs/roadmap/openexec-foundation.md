@@ -1651,10 +1651,23 @@ depends on them ([docs/README.md](../README.md)). Open:
   imports. With the source restored and the library left built, they failed in
   the imports alone. A forbidden link failed in the links alone. A schema
   declared by both bundles, one declared with nothing registered, and one
-  registered and not declared each failed in the schema half. What the scan
-  passes is stated in the check: a direct-initialised `static T t(1);`, which
-  reads like a function, and a namespace-scope variable with no `static`, which
-  would take parsing C++ to find.
+  registered and not declared each failed in the schema half.
+
+  **Review then found two tables that could not fail, and a hand-run mutation
+  had not tried either.** MSVCP140 exports `_Fiopen`, which every file stream
+  reaches, only by its decorated name. The plain-name pattern never matched,
+  and a DLL built with `std::ifstream` passed the first version. The `static`
+  detector took `static const T* last` for a constant, although the pointer is
+  reassigned freely. It took `static std::function<void()> f` for a function,
+  and it reported `constexpr static int k` as state. All four are fixed.
+  `execMotion_boundaries_selftest` now holds the tables to cases: source text,
+  and symbol lists spelled as each platform's tool prints them, so the Linux
+  and macOS tables are checked on every lane. Seven mutations of the fixed
+  check each fail it on the case they break. The scan still misses three
+  shapes, which the check states and the self-test pins as missed: a
+  direct-initialised `static T t(1);`, which reads like a function; a
+  namespace-scope variable with no `static`; and state behind a `mutable`
+  member.
 Landed on 2026-09-06, and stated in the contract rather than here: **an
 OpenExec schema has exactly one declarer, so `execMotion` and `execVrm`
 partition them** — `UsdSkelAnimation` to the first, the `Vrm*API` applied schemas

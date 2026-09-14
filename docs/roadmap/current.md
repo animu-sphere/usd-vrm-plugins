@@ -977,6 +977,10 @@ compared, which was P0-4's stated blocker.
   schema declarations against the registrations and the partition. The rule's
   tables are written once, in `execMotion`'s check, and `execVrm`'s imports
   them. Each half was run against a mutation and failed on the line it names.
+  Review found two tables that could not fail: `_Fiopen` listed by a name
+  MSVCP140 never exports, and a `static` detector that took `static const T*`
+  for a constant. Both are fixed, and `execMotion_boundaries_selftest` holds
+  the tables to cases on every lane.
 
   **Two measurements shaped it.** A static library linked and never called
   leaves no trace in the built DLL: with `liveTransport` linked into

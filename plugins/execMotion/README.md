@@ -528,16 +528,23 @@ above in four places, because each place shows something the others cannot:
 - **The source.** It is scanned for the snapshot rule's five categories, by the
   header that brings each one in and by the name that uses it. It is also
   scanned for stage access, since a callback is never handed a stage. Comments
-  and string literals are removed first. A `static` that is neither `const` nor
-  `constexpr` is state. The one shape the scan passes is a direct-initialised
-  `static T t(1);`, which reads like a function.
+  and string literals are removed first. A `static` object is state unless the
+  object itself is const. So `constexpr static int k` and `static T const k`
+  are constant, and `static const T* last` is state, because the pointer can
+  be reassigned. A template's arguments are skipped, so
+  `static std::function<void()> f;` is state and not a function. The scan
+  misses three shapes, all stated in the check: a direct-initialised
+  `static T t(1);`, which reads like a function; a namespace-scope variable
+  declared with no `static`; and state behind a `mutable` member.
 - **The built library's imports.** These catch a capability that arrives
   through an inline header or a macro. On Windows the clock is the C++
   runtime's (`_Query_perf_counter`, `_Xtime_get_ticks`) and not KERNEL32's,
   because MSVC's CRT stub imports `QueryPerformanceCounter` and
   `GetSystemTimeAsFileTime` into every DLL. This bundle's does too, with no
-  clock in its source. On Linux and macOS a socket, a thread and a clock all
-  live in libc, so the check is by symbol there as well.
+  clock in its source. A file stream is matched by its decorated name: MSVCP140
+  exports `_Fiopen` only as `?_Fiopen@std@@…`, and a DLL using `std::ifstream`
+  passed until the pattern said so. On Linux and macOS a socket, a thread and a
+  clock all live in libc, so the check is by symbol there as well.
 - **The target's link libraries.** The allowed set is `motionCore`,
   `motionRuntime` and the OpenUSD exec and value libraries. This half exists
   because the workspace libraries that open sockets are static. With
@@ -549,6 +556,13 @@ above in four places, because each place shows something the others cannot:
 
 `execVrm`'s check imports the snapshot rule's tables from this file rather than
 copying them. It may reach this bundle's tree, and the reverse is not allowed.
+
+A boundary check that passes proves nothing about whether it can fail.
+[`tests/test_check_boundaries.py`](tests/test_check_boundaries.py) runs the
+tables against source text and against symbol lists spelled the way each
+platform's tool prints them. That holds the Linux and macOS tables to
+libstdc++'s and libc++'s names on any host. It pins the three shapes the scan
+misses as missed, so starting to find one is a deliberate edit.
 
 ## Tests
 
@@ -563,5 +577,6 @@ copying them. It may reach this bundle's tree, and the reverse is not allowed.
 | `execMotion_blend` | a relationship fan-in arriving in authored target order at first compile, after an edit and in a fresh system; a target that is not a clip, a source that refused and a target naming nothing each being refused rather than blended around; weights pairing one per source; two clips at two rates refused where their seconds differ and blended where they agree; time, an authored weight and a relationship edit each reaching the blend across prims; and an override of one prim's key reaching a blend on another |
 | `execMotion_display` | the display slice: the fixture stating `xformOp:transform` only, checked before anything else; `execGeom`'s transform placing a connected prop, and its child, by the clip's root at three frames; `usdExecImaging`'s stage scene index handing Hydra that matrix; a frame change dirtying exactly the prims the clip reaches; a clip edit dirtying nothing until `ApplyPendingUpdates`; a material edit dirtying and invalidating nothing; a refusal drawing exactly where `ignore` does; three broken routes drawing the authored value with no error; and the transform-only precondition failing in both directions |
 | `execMotion_boundaries` | the snapshot rule and the dependency boundary, read off the source, the built library's imports, the target's link libraries and the `plugInfo.json` schema declarations ([above](#how-the-rules-are-checked)) |
+| `execMotion_boundaries_selftest` | that check's own tables: every shape it reports, reported; the CRT stub's imports and ordinary C++ imports on both platforms, not; the three shapes it misses, pinned as missed; the schema partition |
 
-All nine carry the CTest label `motion.openexec`.
+All ten carry the CTest label `motion.openexec`.

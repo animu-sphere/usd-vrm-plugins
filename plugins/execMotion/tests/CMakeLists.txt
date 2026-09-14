@@ -321,6 +321,12 @@ if(_exec_motion_python)
             "${CMAKE_CURRENT_SOURCE_DIR}/.."
             "$<TARGET_FILE:${PLUGIN_NAME}>"
             "$<JOIN:$<TARGET_PROPERTY:${PLUGIN_NAME},LINK_LIBRARIES>,|>")
+    # The check's own tables, against text and symbol lists of both platforms.
+    # A boundary check that passes proves nothing about whether it can fail,
+    # and its first review found two tables that could not.
+    add_test(NAME execMotion_boundaries_selftest
+        COMMAND "${_exec_motion_python}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/test_check_boundaries.py")
 else()
     message(WARNING
         "execMotion: no Python interpreter, so execMotion_boundaries is not "
@@ -382,6 +388,6 @@ set_tests_properties(execMotion_pose execMotion_mechanism execMotion_sample
                      execMotion_blend execMotion_display
     PROPERTIES LABELS "motion.openexec")
 if(TEST execMotion_boundaries)
-    set_tests_properties(execMotion_boundaries
+    set_tests_properties(execMotion_boundaries execMotion_boundaries_selftest
         PROPERTIES LABELS "motion.openexec")
 endif()

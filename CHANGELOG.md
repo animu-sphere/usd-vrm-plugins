@@ -1097,7 +1097,16 @@ Current schema contract version: **1**.
   every DLL, so on Windows the clock is read from the C++ runtime's
   `_Query_perf_counter` and `_Xtime_get_ticks`. Each half was run against a
   mutation and failed on the line it names, and the import half failed alone
-  with the source restored. 150 CTest names in the workspace.
+  with the source restored.
+
+  Review found two tables that could not fail. MSVCP140 exports `_Fiopen`,
+  which every file stream reaches, only by its decorated name, so a DLL built
+  with `std::ifstream` passed. And the `static` detector took
+  `static const T* last` for a constant and `static std::function<void()> f`
+  for a function, and reported `constexpr static int k` as state. All are
+  fixed. The new `execMotion_boundaries_selftest` holds the tables to source
+  text and to symbol lists of both platforms, and it pins the three shapes the
+  scan misses as missed. 151 CTest names in the workspace.
 
 ### Changed
 

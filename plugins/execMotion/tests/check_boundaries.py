@@ -228,7 +228,9 @@ PURITY_NAMES: list[tuple[str, re.Pattern[str]]] = [
         r"\b(?:fopen|_wfopen|fopen_s|_wfopen_s|_fsopen|_wfsopen|freopen|"
         r"ReadDirectoryChanges\w*|FindFirstChangeNotification\w*|CreateFile[AW2]?|"
         r"inotify_\w+|kqueue|FSEventStream\w*|ArchOpenFile|TfReadDir|TfIsFile|"
-        r"TfIsDir|TfPathExists)\b|\bstd::(?:(?:i|o)?fstream|filebuf|filesystem)\b")),
+        r"TfIsDir|TfPathExists)\b|\bstd::filesystem\b|"
+        # Unqualified as well: `using namespace std;` makes `ifstream` a stream.
+        r"\b(?:basic_|w)?[io]?fstream\b|\b(?:basic_|w)?filebuf\b")),
     ("stage access", re.compile(
         r"\b(?:UsdStage\w*|UsdPrim|UsdAttribute|UsdRelationship|UsdEditTarget|"
         r"SdfLayer\w*|SdfAbstractData\w*)\b")),
@@ -255,51 +257,99 @@ PURITY_NAMES: list[tuple[str, re.Pattern[str]]] = [
         r"\b(?:rand|srand)\s*\(")),
 ]
 
-# `static` that is neither `const` nor `constexpr`, up to what ends its
-# declarator. A `(` there is taken for a function, and a function is not state
-# -- which also lets a direct-initialised object `static T t(1);` through. That
-# is the one shape this scan cannot tell from a function without parsing C++,
-# and it is stated here rather than guessed at.
-_STATIC = re.compile(r"\bstatic\s+(?P<rest>[^;{}=()\[]*?)(?P<end>[;{=(\[])")
+# A `static` object is state unless the object itself is const. The qualifiers
+# before `static` count (`constexpr static int k`), a template's arguments do
+# not (`std::vector<const T*>` is a mutable vector), and past a pointer only a
+# `const` after the last `*` makes the pointer const: `static const T* last` is
+# reassigned as freely as a `T*` is.
+#
+# What this scan does NOT find, because telling it apart takes parsing C++:
+#   - a direct-initialised `static T t(1);`, which reads like a function
+#     declaration. A `(` outside a template's arguments is taken for one;
+#   - a variable at namespace scope, named or unnamed, declared with no
+#     `static` at all;
+#   - state reached through a `mutable` member of a const object.
+# The import half does not find them either. Review is what holds these three.
+_STATIC = re.compile(
+    r"(?P<pre>(?:\b(?:constexpr|const|inline|constinit)\s+)*)\bstatic\b")
 
 
-def _mutable_statics(body: str) -> list[str]:
+def _strip_templates(text: str) -> str:
+    previous = None
+    while previous != text:
+        previous = text
+        text = re.sub(r"<[^<>]*>", " ", text)
+    return text
+
+
+def _declarator(body: str, start: int) -> tuple[str, str]:
+    """The text after `static` up to what ends it, outside template arguments."""
+    depth = 0
+    for index in range(start, len(body)):
+        char = body[index]
+        if char == "<":
+            depth += 1
+        elif char == ">" and depth:
+            depth -= 1
+        elif depth == 0 and char in ";{}=[(":
+            return body[start:index], char
+    return body[start:], ""
+
+
+def _is_const_object(declaration: str) -> bool:
+    tokens = re.findall(r"\w+|[*&]", _strip_templates(declaration))
+    if "constexpr" in tokens:
+        return True
+    if "*" in tokens:
+        last_star = len(tokens) - 1 - tokens[::-1].index("*")
+        return "const" in tokens[last_star + 1:]
+    if "&" in tokens:
+        return "const" in tokens[:tokens.index("&")]
+    return "const" in tokens
+
+
+def mutable_statics(body: str) -> list[str]:
     found = []
     for match in _STATIC.finditer(body):
-        words = match.group("rest").split()
-        if words[:1] in (["const"], ["constexpr"]):
+        declarator, end = _declarator(body, match.end())
+        if end in ("(", "}", ""):
             continue
-        if words[:1] == ["inline"] and words[1:2] in (["const"], ["constexpr"]):
-            continue
-        if match.group("end") == "(":
-            continue
-        found.append(" ".join(["static", *words]))
+        declaration = f"{match.group('pre')}static{declarator}"
+        if not _is_const_object(declaration):
+            found.append(" ".join(declaration.split()))
     return found
 
 
-def purity_source_errors(source: pathlib.Path) -> list[str]:
+def purity_text_errors(text: str, where: str) -> list[str]:
+    """The snapshot rule over one translation unit's text."""
     errors: list[str] = []
+    code = code_only(text)
+    for include in _INCLUDE.findall(code):
+        for category, pattern in PURITY_INCLUDES:
+            if pattern.match(include):
+                errors.append(
+                    f"{category} is forbidden in a computation: "
+                    f"#include <{include}> in {where}")
+    body = _STRING.sub('""', _INCLUDE.sub("", code))
+    for category, pattern in PURITY_NAMES:
+        for match in sorted({m.group(0) for m in pattern.finditer(body)}):
+            errors.append(
+                f"{category} is forbidden in a computation: "
+                f"'{match.strip()}' in {where}")
+    for declaration in mutable_statics(body):
+        errors.append(
+            f"mutable global state is forbidden in a computation: "
+            f"'{declaration}' in {where} (make it const, or pass it in)")
+    return errors
+
+
+def purity_source_errors(source: pathlib.Path) -> list[str]:
     files = source_files(source)
     if not files:
         return [f"no source files under {source / 'src'}: nothing was scanned"]
+    errors: list[str] = []
     for path in files:
-        code = code_only(path.read_text(encoding="utf-8"))
-        for include in _INCLUDE.findall(code):
-            for category, pattern in PURITY_INCLUDES:
-                if pattern.match(include):
-                    errors.append(
-                        f"{category} is forbidden in a computation: "
-                        f"#include <{include}> in {path}")
-        body = _STRING.sub('""', _INCLUDE.sub("", code))
-        for category, pattern in PURITY_NAMES:
-            for match in sorted({m.group(0) for m in pattern.finditer(body)}):
-                errors.append(
-                    f"{category} is forbidden in a computation: "
-                    f"'{match.strip()}' in {path}")
-        for declaration in _mutable_statics(body):
-            errors.append(
-                f"mutable global state is forbidden in a computation: "
-                f"'{declaration}' in {path} (make it const, or pass it in)")
+        errors += purity_text_errors(path.read_text(encoding="utf-8"), str(path))
     return errors
 
 
@@ -315,10 +365,23 @@ def purity_source_errors(source: pathlib.Path) -> list[str]:
 # reach `_Query_perf_counter` and `_Xtime_get_ticks` in MSVCP140 and nothing
 # the stub uses does. On POSIX a socket, a thread and a clock all live in libc
 # or libSystem, so the check is by symbol there too, and never by library.
+#
+# MSVCP140 exports most of what matters here as C names, and one of them
+# decorated: `_Fiopen`, which every `std::basic_filebuf::open` reaches, exists
+# only as `?_Fiopen@std@@...` (three overloads). A pattern for the plain name
+# never matches it, and a `std::ifstream` passed this half until it was
+# matched decorated.
 
-_WINDOWS_FORBIDDEN_PROVIDERS = re.compile(
-    r"^(?:ws2_32|wsock32|mswsock|winhttp|wininet|iphlpapi|winmm)\.dll$",
-    re.IGNORECASE)
+_WINDOWS_FORBIDDEN_PROVIDERS: list[tuple[str, re.Pattern[str]]] = [
+    ("socket or device I/O", re.compile(
+        r"^(?:ws2_32|wsock32|mswsock|winhttp|wininet|iphlpapi)\.dll$",
+        re.IGNORECASE)),
+    ("a wall clock", re.compile(r"^winmm\.dll$", re.IGNORECASE)),
+    # The Concurrency Runtime is what `std::async` and PPL run on, and vcomp is
+    # OpenMP's: each is a scheduler of its own beside OpenExec's.
+    ("a private thread pool", re.compile(
+        r"^(?:concrt140|vcomp140d?)\.dll$", re.IGNORECASE)),
+]
 
 _WINDOWS_FORBIDDEN_SYMBOLS: list[tuple[str, re.Pattern[str]]] = [
     ("a wall clock", re.compile(
@@ -334,9 +397,9 @@ _WINDOWS_FORBIDDEN_SYMBOLS: list[tuple[str, re.Pattern[str]]] = [
         r"^(?:_Mtx_\w+|_Cnd_\w+|getenv|_wgetenv|getenv_s|_wgetenv_s|_dupenv_s|"
         r"_wdupenv_s|GetEnvironmentVariable\w*)$")),
     ("file I/O or file watching", re.compile(
-        r"^(?:_Fiopen|__std_fs_\w+|fopen|_wfopen|fopen_s|_wfopen_s|_fsopen|"
+        r"^(?:__std_fs_\w+|fopen|_wfopen|fopen_s|_wfopen_s|_fsopen|"
         r"_wfsopen|freopen|CreateFile[AW2]?|OpenFile|ReadDirectoryChanges\w*|"
-        r"FindFirstChangeNotification\w*)$")),
+        r"FindFirstChangeNotification\w*)$|^\?_Fiopen@std@@")),
 ]
 
 _POSIX_FORBIDDEN_SYMBOLS: list[tuple[str, re.Pattern[str]]] = [
@@ -348,13 +411,42 @@ _POSIX_FORBIDDEN_SYMBOLS: list[tuple[str, re.Pattern[str]]] = [
         r"std::(?:__1::)?chrono::(?:_V2::)?"
         r"(?:steady_clock|system_clock|high_resolution_clock)::now\b")),
     ("a private thread pool", re.compile(
-        r"^pthread_create$|std::(?:__1::)?thread::|std::(?:__1::)?this_thread::")),
+        r"^(?:pthread_create|GOMP_\w+|__kmpc_\w+)$|std::(?:__1::)?thread::|"
+        r"std::(?:__1::)?this_thread::")),
     ("mutable global state", re.compile(r"^(?:getenv|secure_getenv)$")),
     ("file I/O or file watching", re.compile(
         r"^(?:fopen|fopen64|freopen|freopen64|inotify_\w+|kqueue|kevent|"
         r"FSEventStream\w*)$|std::(?:__1::)?(?:__fs::)?filesystem::|"
         r"std::(?:__1::)?basic_filebuf<.*>::open\b")),
 ]
+
+
+def forbidden_imports(symbols: list[tuple[str, str]], windows: bool,
+                      label: str) -> list[str]:
+    """The snapshot rule over an import list, as (provider, name) pairs.
+
+    Separate from reading the list so the tables can be held to synthetic
+    symbols of both platforms on any host (test_check_boundaries.py).
+    """
+    errors: list[str] = []
+    if windows:
+        for provider in sorted({p for p, _ in symbols}):
+            for category, pattern in _WINDOWS_FORBIDDEN_PROVIDERS:
+                if pattern.match(provider):
+                    errors.append(
+                        f"{category} is forbidden in a computation: "
+                        f"{label} imports {provider}")
+        table = _WINDOWS_FORBIDDEN_SYMBOLS
+    else:
+        table = _POSIX_FORBIDDEN_SYMBOLS
+    for provider, name in symbols:
+        for category, pattern in table:
+            if pattern.search(name):
+                where = f" from {provider}" if provider else ""
+                errors.append(
+                    f"{category} is forbidden in a computation: "
+                    f"{label} imports {name}{where}")
+    return errors
 
 
 def purity_import_errors(library: pathlib.Path) -> list[str]:
@@ -366,24 +458,7 @@ def purity_import_errors(library: pathlib.Path) -> list[str]:
         # A binary imports its C++ runtime at the least, so an empty list is a
         # parser that stopped matching, not a pure bundle.
         return [f"no imported symbols read from {library}: nothing was checked"]
-    errors: list[str] = []
-    if sys.platform == "win32":
-        for provider in sorted({p for p, _ in symbols}):
-            if _WINDOWS_FORBIDDEN_PROVIDERS.match(provider):
-                errors.append(
-                    f"socket or device I/O is forbidden in a computation: "
-                    f"{library.name} imports {provider}")
-        table = _WINDOWS_FORBIDDEN_SYMBOLS
-    else:
-        table = _POSIX_FORBIDDEN_SYMBOLS
-    for provider, name in symbols:
-        for category, pattern in table:
-            if pattern.search(name):
-                where = f" from {provider}" if provider else ""
-                errors.append(
-                    f"{category} is forbidden in a computation: "
-                    f"{library.name} imports {name}{where}")
-    return errors
+    return forbidden_imports(symbols, sys.platform == "win32", library.name)
 
 
 # ---------------------------------------------------------------------------
