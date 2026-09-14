@@ -116,10 +116,19 @@ FindSkeleton(const UsdStageRefPtr& stage, const std::string& override_,
 // -- opens without reaching this, so the check cannot refuse a stage OpenUSD
 // would have opened. What is left splits three ways, and only the first is the
 // command line's.
+//
+// "There" means a regular file, not any path: a directory exists and is still
+// not a layer, and letting it through would report a missing plugin for a
+// mistyped argument. Symlinks are followed, so a link to a real file reaches
+// the format checks below.
 bool
 FailToOpen(const std::string& path, const char* what, Failure* failure)
 {
-    if (!TfPathExists(path)) {
+    if (TfIsDir(path, /* resolveSymlinks = */ true)) {
+        return Fail(failure, ExitCode::InvalidUserInput,
+                    path + " is a directory, not an " + what + " file");
+    }
+    if (!TfIsFile(path, /* resolveSymlinks = */ true)) {
         return Fail(failure, ExitCode::InvalidUserInput,
                     std::string("no ") + what + " file at " + path);
     }

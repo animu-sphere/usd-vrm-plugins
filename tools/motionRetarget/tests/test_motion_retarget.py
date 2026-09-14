@@ -1117,6 +1117,10 @@ def check_exit_codes(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
          EXIT_INVALID_USER_INPUT, "no avatar file at"),
         ("a clip path with no file", bake(clip_path=cases / "absent.usda"),
          EXIT_INVALID_USER_INPUT, "no animation file at"),
+        # A directory exists and is still not a layer. Reading "exists" as
+        # "there" sent this to 3, naming a file format for '.' files.
+        ("an avatar path that is a directory", bake(avatar_path=cases),
+         EXIT_INVALID_USER_INPUT, "is a directory, not an avatar file"),
         ("a --humanoid-map path with no file",
          bake("--humanoid-map", str(cases / "absent_map.json")),
          EXIT_INVALID_USER_INPUT, "could not open humanoid map file"),

@@ -1059,8 +1059,9 @@ Current schema contract version: **1**.
   fails, so a URI the resolver understands is never refused by the check. The
   line for a `.vrm` or `.vrma` with no file format registered names the bundle
   it needs. The refusal line is printed under `--quiet`, as it was.
-  `motion_retarget_design_triplet` holds every class to its number, and the
-  earlier build fails it on 13 of 21 runs.
+  A directory given as an input is a 1 with its own line, not a file OpenUSD
+  refused. `motion_retarget_design_triplet` holds every class to its number,
+  and the earlier build fails it on 14 of 22 runs.
 
 - **The OpenExec capability probe asks for the nine components a consumer
   actually needs, and stops asking for one that proved nothing.**

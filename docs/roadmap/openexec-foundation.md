@@ -1281,8 +1281,12 @@ stage missing something. The contract adds three rules to the drafted table:
 A missing file (1) and a file OpenUSD will not open (3) are told apart only
 after `UsdStage::Open` fails, so the check cannot refuse a URI the resolver
 would have opened. `motion_retarget_design_triplet` runs each class of refusal
-and holds it to its code. The build before this change fails that test on 13
-of its 21 runs. The collision case passes on both, because it was already a 1.
+and holds it to its code. The build before this change fails that test on 14
+of its 22 runs. The collision case passes on both, because it was already a 1.
+Review found one path the first draft sent to the wrong class: a directory
+exists and is still not a layer, so reading "exists" as "there" made it a 3
+with a line naming a file format for `'.'` files. "There" is a regular file,
+and a directory is a 1 under its own line.
 
 **Still open here**: the three `VRM_OPENEXEC_*` codes, whose table waits for a
 driver to raise them. Exec answering the retarget codes was P0-6's row, and it

@@ -906,7 +906,7 @@ compared, which was P0-4's stated blocker.
   and 1 for everything else. Each refusal is classified where it is raised,
   since only the raiser knows whether it was given a path the user typed. The
   tool's suite holds every class to its number, and the earlier build fails it
-  on 13 of 21 runs
+  on 14 of 22 runs
   ([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md), "`motion_retarget` exit
   codes"). Still open in P1-1: the `VRM_OPENEXEC_*` table, which waits for a
   driver to raise it.

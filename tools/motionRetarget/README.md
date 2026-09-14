@@ -222,7 +222,7 @@ exit codes"):
 | Code | Meaning |
 | --- | --- |
 | `0` | written, with or without diagnostics |
-| `1` | invalid user input: an option, a path with no file, the `--humanoid-map` file, a prim or joint an option names, or an `--output` that names an input |
+| `1` | invalid user input: an option, a path with no file (or a directory), the `--humanoid-map` file, a prim or joint an option names, or an `--output` that names an input |
 | `2` | the clip is not a semantic humanoid clip this tool reads |
 | `3` | OpenUSD would not open a layer that is there (no file format for it, or the format refused it) |
 | `4` | the avatar is not a rig the retarget can bake onto (no `defaultPrim`, skeleton, joints or humanoid mapping) |

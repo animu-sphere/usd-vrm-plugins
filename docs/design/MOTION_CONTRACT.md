@@ -218,7 +218,8 @@ without parsing the line. The line says what, and it is printed under
 raiser knows whether it was given a path the user typed or found a stage
 missing something:
 
-- **1** covers a bad option and a path with no file behind it. It covers the
+- **1** covers a bad option and a path with no regular file behind it, a
+  directory included: a directory exists and is still not a layer. It covers the
   `--humanoid-map` file, whose format is this tool's own, and a prim or joint
   that `--skeleton`, `--clip-skeleton`, `--root-joint` or `--humanoid-map`
   names and the stage lacks. It also covers two arguments that contradict each
