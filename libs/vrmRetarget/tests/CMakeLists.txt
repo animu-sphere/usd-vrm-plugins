@@ -39,3 +39,9 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/.."
             "$<TARGET_FILE:vrmRetarget>")
 endif()
+
+# The OpenExec plan's P0-2 label, on every test this directory registers. The
+# root suite's workspace_ctest_labels fails if this directory contributes none.
+get_property(_vrm_retarget_labelled DIRECTORY PROPERTY TESTS)
+set_property(TEST ${_vrm_retarget_labelled}
+    APPEND PROPERTY LABELS "motion.retarget")

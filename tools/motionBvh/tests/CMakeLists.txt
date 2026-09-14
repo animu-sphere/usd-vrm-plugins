@@ -91,9 +91,17 @@ if(EXISTS "${_motion_bvh_lib}/tests/corpus/recorded/redistributable"
                 --profiles "${_motion_bvh_profiles}")
     set_tests_properties(motion_bvh_convert_clip PROPERTIES
         ENVIRONMENT_MODIFICATION
-            "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:motion_bvh_convert>;PYTHONPATH=path_list_prepend:${_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_usd_root}/lib/site-packages")
+            "PATH=path_list_prepend:${_usd_root}/bin;PATH=path_list_prepend:${_usd_root}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:motion_bvh_convert>;PYTHONPATH=path_list_prepend:${_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_usd_root}/lib/site-packages"
+        # A real producer's export, which the P0-2 label names.
+        LABELS "motion.real-corpus")
 else()
     message(STATUS
         "motionBvhTools: the recorded corpus or profiles/motion is not beside "
         "this tool; skipping the conversion test")
 endif()
+
+# The OpenExec plan's P0-2 label, on every test this directory registers. The
+# root suite's workspace_ctest_labels fails if this directory contributes none.
+get_property(_motion_bvh_tools_labelled DIRECTORY PROPERTY TESTS)
+set_property(TEST ${_motion_bvh_tools_labelled}
+    APPEND PROPERTY LABELS "motion.cli")

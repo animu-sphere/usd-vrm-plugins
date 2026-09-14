@@ -147,3 +147,14 @@ if(Python3_Interpreter_FOUND)
                 --corpus "${CMAKE_CURRENT_SOURCE_DIR}/corpus")
     endif()
 endif()
+
+# The OpenExec plan's P0-2 label for a real producer's bytes: the three tests
+# above that read the recorded export rather than a fixture this repository
+# wrote. Appended, so it composes with any label a test already carries.
+foreach(_motion_bvh_recorded_test motionBvh_recordedCorpus
+        motionBvh_recordedConversion motionBvh_recordedManifest)
+    if(TEST ${_motion_bvh_recorded_test})
+        set_property(TEST ${_motion_bvh_recorded_test}
+            APPEND PROPERTY LABELS "motion.real-corpus")
+    endif()
+endforeach()

@@ -87,3 +87,9 @@ if(Python3_Interpreter_FOUND)
                 --check --output "${_motion_runtime_corpus}")
     endif()
 endif()
+
+# The OpenExec plan's P0-2 label, on every test this directory registers. The
+# root suite's workspace_ctest_labels fails if this directory contributes none.
+get_property(_motion_runtime_labelled DIRECTORY PROPERTY TESTS)
+set_property(TEST ${_motion_runtime_labelled}
+    APPEND PROPERTY LABELS "motion.runtime")
