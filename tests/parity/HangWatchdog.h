@@ -2,19 +2,23 @@
 //
 // TEMPORARY -- the diagnosis of PR #191's Linux-only hang, to be removed with
 // it. If the process has not finished `seconds` after Start(), every thread's
-// backtrace is printed to stderr and the process exits 3, so a hang reaches the
-// CI log as a stack rather than as a ctest timeout with nothing in it.
+// backtrace is printed to stderr, the frames inside this executable are run
+// through addr2line (so a function with internal linkage gets a name and a
+// line), and the process exits 3.
 #pragma once
 
 #if defined(__linux__)
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 #include <thread>
 
 #include <dirent.h>
+#include <dlfcn.h>
 #include <execinfo.h>
 #include <signal.h>
 #include <sys/syscall.h>
@@ -36,15 +40,82 @@ inline void Mark(const char* where)
     std::fflush(stderr);
 }
 
+struct Stack
+{
+    long tid = 0;
+    int size = 0;
+    void* frames[64] = {};
+};
+
+inline Stack* Stacks()
+{
+    static Stack stacks[64];
+    return stacks;
+}
+
+inline std::atomic<int>& StackCount()
+{
+    static std::atomic<int> count{0};
+    return count;
+}
+
 inline void Dump(int)
 {
-    void* frames[64];
-    const int n = backtrace(frames, 64);
+    const int slot = StackCount()++;
+    if (slot >= 64) {
+        return;
+    }
+    Stack& stack = Stacks()[slot];
+    stack.tid = static_cast<long>(syscall(SYS_gettid));
+    stack.size = backtrace(stack.frames, 64);
     char head[64];
     const int length = std::snprintf(head, sizeof head, "--- thread %ld\n",
-                                     static_cast<long>(syscall(SYS_gettid)));
+                                     stack.tid);
     (void)!write(STDERR_FILENO, head, static_cast<size_t>(length));
-    backtrace_symbols_fd(frames, n, STDERR_FILENO);
+    backtrace_symbols_fd(stack.frames, stack.size, STDERR_FILENO);
+}
+
+// The frames of each recorded stack that fall inside this executable, as
+// call-site offsets addr2line can read.
+inline void Symbolize()
+{
+    Dl_info self = {};
+    if (!dladdr(reinterpret_cast<void*>(&Symbolize), &self) || !self.dli_fbase) {
+        return;
+    }
+    char exe[4096] = {};
+    const ssize_t length = readlink("/proc/self/exe", exe, sizeof exe - 1);
+    if (length <= 0) {
+        return;
+    }
+    const int count = std::min(StackCount().load(), 64);
+    for (int s = 0; s < count; ++s) {
+        const Stack& stack = Stacks()[s];
+        std::string command = "addr2line -f -C -i -p -e '";
+        command += exe;
+        command += "'";
+        bool any = false;
+        for (int f = 0; f < stack.size; ++f) {
+            Dl_info info = {};
+            if (!dladdr(stack.frames[f], &info) || info.dli_fbase != self.dli_fbase) {
+                continue;
+            }
+            char offset[32];
+            std::snprintf(offset, sizeof offset, " 0x%lx",
+                          static_cast<unsigned long>(
+                              static_cast<char*>(stack.frames[f])
+                              - static_cast<char*>(self.dli_fbase) - 1));
+            command += offset;
+            any = true;
+        }
+        if (!any) {
+            continue;
+        }
+        std::fprintf(stderr, "--- thread %ld, in this executable:\n", stack.tid);
+        std::fflush(stderr);
+        command += " 1>&2";
+        (void)!std::system(command.c_str());
+    }
 }
 
 inline void Start(unsigned seconds)
@@ -74,6 +145,7 @@ inline void Start(unsigned seconds)
             }
             closedir(tasks);
         }
+        Symbolize();
         std::_Exit(3);
     }).detach();
 }
