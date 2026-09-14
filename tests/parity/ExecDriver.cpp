@@ -17,8 +17,10 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdio>
 #include <set>
 #include <sstream>
+#include <thread>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -257,10 +259,39 @@ struct Posted
 Posted Drain(TfErrorMark& mark)
 {
     Posted posted;
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
+    // TEMPORARY instrumentation (PR #191's Linux hang): bound the walk and say
+    // how it ended, against the count libtf itself reports.
+    std::size_t counted = 0;
+    const TfErrorMark::Iterator first = mark.GetBegin(&counted);
+    const TfErrorMark::Iterator last = mark.GetEnd();
+    std::set<const void*> seen;
+    std::size_t walked = 0;
+    bool cycled = false;
+    for (TfErrorMark::Iterator it = first; it != mark.GetEnd(); ++it) {
+        if (!seen.insert(static_cast<const void*>(&*it)).second) {
+            cycled = true;
+            break;
+        }
+        if (++walked > 100000) {
+            break;
+        }
+        if (walked <= 12 && counted != 0 && walked > counted) {
+            std::fprintf(stderr, "[drain] past the count: #%zu code %s: %s\n",
+                         walked, it->GetErrorCodeAsString().c_str(),
+                         it->GetCommentary().c_str());
+        }
         (it->GetErrorCode() == TF_DIAGNOSTIC_RUNTIME_ERROR_TYPE ? posted.runtime
                                                                 : posted.other)
             .push_back(it->GetCommentary());
+    }
+    if (walked != counted || cycled) {
+        std::fprintf(stderr,
+                     "[drain] libtf counted %zu, walked %zu, cycle %d, end "
+                     "stable %d, first==end %d, thread %zu\n",
+                     counted, walked, int(cycled),
+                     int(last == mark.GetEnd()), int(first == last),
+                     std::hash<std::thread::id>()(std::this_thread::get_id()));
+        std::fflush(stderr);
     }
     mark.Clear();
     return posted;
