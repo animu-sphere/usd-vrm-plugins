@@ -884,8 +884,10 @@ and the first can say it about `motion_capture` too.
 
 - ⬜ **The artifact-only leg is not done.** Nothing here has been run from
   packaged artifacts. An adapter artifact is producible as of `ost` 0.22.3, so
-  what remains is the run and the decision about whether a release carries one —
-  both in [current.md](current.md#carried-into-v080).
+  what remains is the run, in
+  [current.md](current.md#carried-out-of-v070--evidence-an-operator-produces),
+  and the decision about whether a release carries one, which is
+  [BND-2](boundary-consolidation.md#4-bnd-2--settle-the-adapter-distribution-decision-).
 
 ### Milestone D — the mocopi native live adapter ✅ (v0.7.0, evidence carried)
 
@@ -1021,7 +1023,8 @@ and `ost library package` composes `requires.libraries`, so an adapter is
 separately shippable
 ([report 36](../reports/ost/36-2026-08-25-v0.22.3-canonical-runtimes-and-release-membership.md)).
 Whether a release *carries* an adapter artifact is a decision, not a tool, and it
-is [current.md](current.md#carried-into-v080)'s.
+is scheduled as
+[BND-2](boundary-consolidation.md#4-bnd-2--settle-the-adapter-distribution-decision-).
 
 ## 12. PR splitting
 

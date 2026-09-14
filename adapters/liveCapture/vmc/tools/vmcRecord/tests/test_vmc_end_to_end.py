@@ -67,7 +67,8 @@ EXPECTED_MOVING = {
 # to open it with. The fixture rig above is hand-authored and every bone its
 # humanoid names is bound; a released avatar is not, and the release condition
 # asks for one by name -- "the session reaches a real VRM avatar" (v0.7.0,
-# roadmap/current.md). What it buys here is the other 125 joints: this model
+# roadmap/adapters-mocopi-vmc-ardy.md, Milestone C). What it buys here is the
+# other 125 joints: this model
 # carries hair, a backpack, ropes and twist joints that no human bone names, so
 # the set comparison below stops being "three joints moved" and becomes "three
 # moved and a hundred and twenty-five did not".

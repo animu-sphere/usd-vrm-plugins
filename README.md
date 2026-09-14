@@ -14,8 +14,11 @@ parsing into independently buildable, independently testable components. The
 v0.8.0 release adds VRChat OSC tracker input over two newly shared leaves — an
 OSC decoder and a live transport layer no adapter keeps a private copy of — and
 an installed-package consumer lane that configures every package this workspace
-produces from a clean prefix, outside the repository. That brings the workspace
-to four plugin bundles, twelve shared libraries, and seven CLIs.
+produces from a clean prefix, outside the repository. That brought the workspace
+to four plugin bundles, twelve shared libraries, and seven CLIs. Since that
+release, `main` adds two OpenExec bundles, `execMotion` and `execVrm`, which
+evaluate a humanoid through OpenExec and are the next milestone
+([docs/roadmap/current.md](docs/roadmap/current.md)).
 
 The importer reads VRM 0.x and 1.0, normalizes the differences away, and authors
 a static USD stage. It **never evaluates or simulates** — that boundary is the
@@ -56,6 +59,8 @@ project's central design decision, and it is described below.
 | [`vrmAdapterVrchatOsc`](adapters/liveCapture/vrchatOsc) | Plain static CMake library | VRChat OSC tracker input: numbered tracker observations, which are pre-IK, so it stops at a tracker frame and the humanoid solve stays outside it — semantic decode, tracking-space conversion and frame assembly, with unknown traffic recoverable rather than fatal | v0.8.0 |
 | [`vrchat_osc_record`](adapters/liveCapture/vrchatOsc/tools/vrchatOscRecord) | CLI executable | Records and inspects VRChat OSC packet captures. Recording reports the datagram envelope and nothing about a payload; `--inspect` adds the address inventory and the decoded frames, and `--export-trace --assign` writes the capture trace `motion_capture` replays unchanged | v0.8.0 |
 | [`motionTracking`](libs/motionTracking) | Plain static CMake library | Which tracker is which body region: a generic region vocabulary that is not a bone list, an operator's explicit statement binding an opaque tracker identity to one, and a stated policy for an observed set it cannot place. No address literal, no adapter identity, and an empty link line | v0.8.0 |
+| [`execMotion`](plugins/execMotion) | OpenExec bundle | Vendor-neutral motion computations over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend | On `main`, unreleased |
+| [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM retarget computations over the applied `VrmHumanoidAPI`, equal to `motion_retarget`'s bake bit for bit | On `main`, unreleased |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
 
 `usdVrm` is not a bundle id — it names the product as a whole. It *was* the
@@ -70,8 +75,7 @@ make a `.vrma` clip play back on a real avatar. v0.5.0 adds the observation
 side — a vendor-neutral `LiveCaptureSource`, a recorded-trace format, and the
 `motion_capture` CLI — which produces the *same* semantic clip, so a live
 session is baked by the retarget tool unchanged. The fixed contract is
-[docs/design/MOTION_CONTRACT.md](docs/design/MOTION_CONTRACT.md). The `exec*`
-identities remain reserved; runtime evaluation is not part of this release.
+[docs/design/MOTION_CONTRACT.md](docs/design/MOTION_CONTRACT.md).
 v0.6.0 supplies the first product-specific input leaf: `vrmAdapterVmc` decodes
 VMC Protocol from OSC-over-UDP through frame assembly and VRM bone mapping into
 the existing `LiveCaptureSource`; `vmc_record` records the same wire input for
@@ -91,8 +95,10 @@ deliberately not that product's importer. The two halves meet at `motionCore`
 and nowhere earlier — and when one physical session is observed both ways, they
 agree to a median **0.084°** per bone
 ([report 01](docs/reports/motion/01-2026-08-15-mocopi-cross-source.md)).
-OpenExec evaluation follows, and uses those recordings as its parity input.
-Schedule: [docs/roadmap/](docs/roadmap/README.md#status-at-a-glance).
+OpenExec evaluation follows: `execMotion` and `execVrm` re-evaluate that
+pipeline, and on the recorded export they agree with the offline bake bit for
+bit. They are on `main` and unreleased — the v0.9.0 milestone. Schedule:
+[docs/roadmap/](docs/roadmap/README.md#status-at-a-glance).
 
 | Component | Type | Role |
 | --- | --- | --- |
@@ -102,7 +108,7 @@ Schedule: [docs/roadmap/](docs/roadmap/README.md#status-at-a-glance).
 | [`vrmRetarget`](libs/vrmRetarget) | Plain static CMake library | Humanoid mapping, rest-pose correction, root-motion policy, pose retargeter |
 | [`motion_retarget`](tools/motionRetarget) | CLI executable | The stage half: reads the rig and the clip, bakes the retargeted `UsdSkelAnimation`, binds `skel:animationSource` |
 | [`execMotion`](plugins/execMotion) | OpenExec bundle | Vendor-neutral motion nodes over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend — the OpenExec plan's P0-4 node set |
-| [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM semantics: retarget, root motion, expression, look-at, avatar apply. **Bootstrapped**: the target rig and the humanoid map as computations over `UsdSkelSkeleton` and the applied `VrmHumanoidAPI`, with the retarget itself still to come |
+| [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM semantics over the applied `VrmHumanoidAPI`: the target rig, the humanoid map, rest-pose correction, one sample's retarget under the root-motion statements, the bake's joint transforms and the retarget's diagnostics — each a wrapper over `vrmRetarget`, and equal to `motion_retarget`'s bake bit for bit. Expression and look-at computations follow on the `ExecIr` track |
 | `adapters/` | Optional plain libraries + their CLIs | **Live** input leaves — a VMC Protocol adapter first, then vendor-native and generator adapters. The **only** place product or protocol names are permitted *in code* (e.g. VMC, Mocopi, ARDY) |
 | `motionSource` · `motionBvh` | Plain static CMake libraries | **Recorded-file** input: BVH syntax, a format-neutral source model, and conversion to canonical humanoid motion under an explicit producer profile |
 | `profiles/motion/` | Package data | One declarative file per producer *and export preset*. Product names live here rather than in the libraries that read them |

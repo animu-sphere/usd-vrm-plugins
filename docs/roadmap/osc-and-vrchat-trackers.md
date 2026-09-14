@@ -1044,8 +1044,8 @@ consuming a hand's position is IK, IK needs limb lengths, and limb lengths
 belong to a target rig this layer does not have and
 [§2](adapters-mocopi-vmc-ardy.md#2-what-an-adapter-is-allowed-to-be) will not
 let it acquire. So the release claims tracker **input** reaching the canonical
-layer, which is the second of the two branches
-[the roadmap](current.md#done-when) offered.
+layer, which is the second of the two branches the roadmap offered
+([the release record](../releases/v0.8.0.md#the-solve-boundary-and-what-this-release-claims)).
 
 **The invariant is what makes "stays at rest" a measurement.** A pose carries
 rotations local to the semantic parent and a tracker reports a world
