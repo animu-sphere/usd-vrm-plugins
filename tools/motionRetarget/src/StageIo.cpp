@@ -7,11 +7,13 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/js/json.h"
 #include "pxr/base/js/value.h"
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/primRange.h"
@@ -66,24 +68,29 @@ ToVec3f(const GfVec3d& v)
 // Finds the skeleton to work with: the override when given, otherwise the first
 // UsdSkelSkeleton in stage order. Reporting "which one" back to the caller is
 // what makes --skeleton actionable when a stage carries several.
+//
+// The two refusals are different inputs' faults. An override that names
+// nothing is the command line's; a stage with no skeleton at all is the
+// stage's, and `absent` is what that means for this side of the retarget.
 bool
 FindSkeleton(const UsdStageRefPtr& stage, const std::string& override_,
-             const char* what, UsdSkelSkeleton* skeleton, std::string* error)
+             const char* what, ExitCode absent, UsdSkelSkeleton* skeleton,
+             Failure* failure)
 {
     if (!override_.empty()) {
         if (!SdfPath::IsValidPathString(override_)) {
-            *error = std::string("not a valid prim path: ") + override_;
-            return false;
+            return Fail(failure, ExitCode::InvalidUserInput,
+                        std::string("not a valid prim path: ") + override_);
         }
         const UsdPrim prim = stage->GetPrimAtPath(SdfPath(override_));
         if (!prim) {
-            *error = std::string("no prim at ") + override_;
-            return false;
+            return Fail(failure, ExitCode::InvalidUserInput,
+                        std::string("no prim at ") + override_);
         }
         *skeleton = UsdSkelSkeleton(prim);
         if (!*skeleton) {
-            *error = override_ + " is not a UsdSkelSkeleton";
-            return false;
+            return Fail(failure, ExitCode::InvalidUserInput,
+                        override_ + " is not a UsdSkelSkeleton");
         }
         return true;
     }
@@ -95,11 +102,52 @@ FindSkeleton(const UsdStageRefPtr& stage, const std::string& override_,
         }
     }
     if (found.empty()) {
-        *error = std::string("the ") + what + " stage has no UsdSkelSkeleton";
-        return false;
+        return Fail(failure, absent,
+                    std::string("the ") + what + " stage has no UsdSkelSkeleton");
     }
     *skeleton = UsdSkelSkeleton(stage->GetPrimAtPath(found.front()));
     return true;
+}
+
+// Why a stage did not open, as the input at fault.
+//
+// Asked only after UsdStage::Open refused, never before it: a path the resolver
+// understands and the file system does not -- a package-relative path, a URI
+// -- opens without reaching this, so the check cannot refuse a stage OpenUSD
+// would have opened. What is left splits three ways, and only the first is the
+// command line's.
+//
+// "There" means a regular file, not any path: a directory exists and is still
+// not a layer, and letting it through would report a missing plugin for a
+// mistyped argument. Symlinks are followed, so a link to a real file reaches
+// the format checks below.
+bool
+FailToOpen(const std::string& path, const char* what, Failure* failure)
+{
+    if (TfIsDir(path, /* resolveSymlinks = */ true)) {
+        return Fail(failure, ExitCode::InvalidUserInput,
+                    path + " is a directory, not an " + what + " file");
+    }
+    if (!TfIsFile(path, /* resolveSymlinks = */ true)) {
+        return Fail(failure, ExitCode::InvalidUserInput,
+                    std::string("no ") + what + " file at " + path);
+    }
+    if (!SdfFileFormat::FindByExtension(path)) {
+        // The two formats this workspace ships are the likely cause, and the
+        // bundle to register is the one thing the user needs to know.
+        const std::string extension = TfGetExtension(path);
+        std::string message = "OpenUSD has no file format for '." + extension
+            + "' files, so the " + what + " " + path + " cannot be opened";
+        if (extension == "vrm") {
+            message += "; a .vrm needs usdVrmFileFormat registered";
+        } else if (extension == "vrma") {
+            message += "; a .vrma needs usdVrmaFileFormat registered";
+        }
+        return Fail(failure, ExitCode::StageFailure, message);
+    }
+    return Fail(failure, ExitCode::StageFailure,
+                std::string("OpenUSD could not open the ") + what + " stage "
+                    + path);
 }
 
 // Decomposes a rest transform. Scale and shear are dropped on purpose: the
@@ -404,12 +452,12 @@ ReadBlendShapeTokens(const UsdStageRefPtr& stage,
 bool
 ReadHumanoidMapFile(const std::string& path,
                     std::map<std::string, std::string>* entries,
-                    std::string* error)
+                    Failure* failure)
 {
     std::ifstream file(path);
     if (!file) {
-        *error = "could not open humanoid map file: " + path;
-        return false;
+        return Fail(failure, ExitCode::InvalidUserInput,
+                    "could not open humanoid map file: " + path);
     }
     std::ostringstream buffer;
     buffer << file.rdbuf();
@@ -417,24 +465,27 @@ ReadHumanoidMapFile(const std::string& path,
     JsParseError parseError;
     const JsValue parsed = JsParseString(buffer.str(), &parseError);
     if (parsed.IsNull()) {
-        *error = "could not parse " + path + ": " + parseError.reason + " (line "
-            + std::to_string(parseError.line) + ")";
-        return false;
+        return Fail(failure, ExitCode::InvalidUserInput,
+                    "could not parse " + path + ": " + parseError.reason
+                        + " (line " + std::to_string(parseError.line) + ")");
     }
     if (!parsed.IsObject()) {
-        *error = path + " must contain a JSON object of humanBone -> joint token";
-        return false;
+        return Fail(failure, ExitCode::InvalidUserInput,
+                    path
+                        + " must contain a JSON object of humanBone -> joint "
+                          "token");
     }
 
     for (const auto& entry : parsed.GetJsObject()) {
         if (!entry.second.IsString()) {
-            *error = path + ": value for '" + entry.first + "' is not a string";
-            return false;
+            return Fail(failure, ExitCode::InvalidUserInput,
+                        path + ": value for '" + entry.first
+                            + "' is not a string");
         }
         if (!motion::FindHumanBone(entry.first)) {
-            *error = path + ": '" + entry.first
-                + "' is not a VRM human bone name";
-            return false;
+            return Fail(failure, ExitCode::InvalidUserInput,
+                        path + ": '" + entry.first
+                            + "' is not a VRM human bone name");
         }
         (*entries)[entry.first] = entry.second.GetString();
     }
@@ -444,19 +495,19 @@ ReadHumanoidMapFile(const std::string& path,
 bool
 ReadAvatar(const std::string& path, const std::string& skeletonPathOverride,
            const std::map<std::string, std::string>& extraMappings,
-           Avatar* avatar, std::string* error)
+           Avatar* avatar, Failure* failure)
 {
     avatar->stage = UsdStage::Open(path);
     if (!avatar->stage) {
-        *error = "could not open avatar stage: " + path;
-        return false;
+        return FailToOpen(path, "avatar", failure);
     }
 
     const UsdPrim defaultPrim = avatar->stage->GetDefaultPrim();
     if (!defaultPrim) {
-        *error = "avatar stage " + path
-            + " has no defaultPrim; the output layer references it by name";
-        return false;
+        return Fail(failure, ExitCode::RetargetContractViolation,
+                    "avatar stage " + path
+                        + " has no defaultPrim; the output layer references "
+                          "it by name");
     }
     avatar->defaultPrimPath = defaultPrim.GetPath();
 
@@ -481,28 +532,40 @@ ReadAvatar(const std::string& path, const std::string& skeletonPathOverride,
         }
     }
 
+    // A `vrm:skeleton` the humanoid names is the stage's statement, not the
+    // user's, so a target that is not a skeleton is the rig's defect even
+    // though it reaches FindSkeleton the way --skeleton does.
+    const bool skeletonNamedByUser = !skeletonPathOverride.empty();
     UsdSkelSkeleton skeleton;
-    if (!FindSkeleton(avatar->stage, skeletonOverride, "avatar", &skeleton,
-                      error)) {
+    if (!FindSkeleton(avatar->stage, skeletonOverride, "avatar",
+                      ExitCode::RetargetContractViolation, &skeleton,
+                      failure)) {
+        if (!skeletonNamedByUser) {
+            failure->code = ExitCode::RetargetContractViolation;
+        }
         return false;
     }
     avatar->skeletonPath = skeleton.GetPath();
 
+    // The rig's layout rather than the choice of skeleton, whoever made it:
+    // the skeleton is a real one, and the avatar's defaultPrim does not cover
+    // it.
     if (!avatar->skeletonPath.HasPrefix(avatar->defaultPrimPath)) {
-        *error = "target skeleton <" + avatar->skeletonPath.GetString()
-            + "> is not under the avatar's defaultPrim <"
-            + avatar->defaultPrimPath.GetString()
-            + ">, so referencing the avatar would not bring it in";
-        return false;
+        return Fail(failure, ExitCode::RetargetContractViolation,
+                    "target skeleton <" + avatar->skeletonPath.GetString()
+                        + "> is not under the avatar's defaultPrim <"
+                        + avatar->defaultPrimPath.GetString()
+                        + ">, so referencing the avatar would not bring it "
+                          "in");
     }
 
     VtTokenArray joints;
     VtMatrix4dArray restTransforms;
     if (!ReadSkeletonRest(skeleton, &joints, &restTransforms,
                           &avatar->warnings)) {
-        *error = "target skeleton <" + avatar->skeletonPath.GetString()
-            + "> has no joints";
-        return false;
+        return Fail(failure, ExitCode::RetargetContractViolation,
+                    "target skeleton <" + avatar->skeletonPath.GetString()
+                        + "> has no joints");
     }
 
     for (std::size_t i = 0; i < joints.size(); ++i) {
@@ -546,16 +609,17 @@ ReadAvatar(const std::string& path, const std::string& skeletonPathOverride,
             continue;
         }
         if (!avatar->map.SetJointToken(*bone, entry.second, avatar->skeleton)) {
-            *error = "humanoid map binds '" + entry.first + "' to joint '"
-                + entry.second + "', which the target skeleton does not contain";
-            return false;
+            return Fail(failure, ExitCode::InvalidUserInput,
+                        "humanoid map binds '" + entry.first + "' to joint '"
+                            + entry.second
+                            + "', which the target skeleton does not contain");
         }
     }
 
     if (avatar->map.GetMappedCount() == 0) {
-        *error = "no humanoid mapping was found on " + path
-            + " and none was supplied; pass --humanoid-map";
-        return false;
+        return Fail(failure, ExitCode::RetargetContractViolation,
+                    "no humanoid mapping was found on " + path
+                        + " and none was supplied; pass --humanoid-map");
     }
 
     // The face half of the rig. A rig that declares no expression is the normal
@@ -633,12 +697,11 @@ ReadAvatar(const std::string& path, const std::string& skeletonPathOverride,
 
 bool
 ReadClip(const std::string& path, const std::string& skeletonPathOverride,
-         Clip* clip, std::string* error)
+         Clip* clip, Failure* failure)
 {
     clip->stage = UsdStage::Open(path);
     if (!clip->stage) {
-        *error = "could not open animation stage: " + path;
-        return false;
+        return FailToOpen(path, "animation", failure);
     }
     clip->timeCodesPerSecond = clip->stage->GetTimeCodesPerSecond();
     if (clip->timeCodesPerSecond <= 0.0) {
@@ -646,8 +709,8 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride,
     }
 
     UsdSkelSkeleton skeleton;
-    if (!FindSkeleton(clip->stage, skeletonPathOverride, "animation", &skeleton,
-                      error)) {
+    if (!FindSkeleton(clip->stage, skeletonPathOverride, "animation",
+                      ExitCode::UnsupportedSourceFeature, &skeleton, failure)) {
         return false;
     }
     clip->skeletonPath = skeleton.GetPath();
@@ -664,10 +727,10 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride,
             }
         }
         if (animations.size() != 1) {
-            *error = "clip skeleton <" + clip->skeletonPath.GetString()
-                + "> has no skel:animationSource and the stage does not hold "
-                  "exactly one UsdSkelAnimation";
-            return false;
+            return Fail(failure, ExitCode::UnsupportedSourceFeature,
+                        "clip skeleton <" + clip->skeletonPath.GetString()
+                            + "> has no skel:animationSource and the stage "
+                              "does not hold exactly one UsdSkelAnimation");
         }
         animationPrim = animations.front();
     }
@@ -676,9 +739,9 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride,
     VtTokenArray animationJoints;
     if (!animation.GetJointsAttr().Get(&animationJoints)
         || animationJoints.empty()) {
-        *error = "clip animation <" + animationPrim.GetPath().GetString()
-            + "> has no joints";
-        return false;
+        return Fail(failure, ExitCode::UnsupportedSourceFeature,
+                    "clip animation <" + animationPrim.GetPath().GetString()
+                        + "> has no joints");
     }
 
     // Semantic joint -> human bone, plus the clip's own rest pose.
@@ -698,11 +761,11 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride,
         }
     }
     if (recognized == 0) {
-        *error = "no joint of clip animation <"
-            + animationPrim.GetPath().GetString()
-            + "> names a VRM human bone; is this an avatar-independent "
-              "semantic clip?";
-        return false;
+        return Fail(failure, ExitCode::UnsupportedSourceFeature,
+                    "no joint of clip animation <"
+                        + animationPrim.GetPath().GetString()
+                        + "> names a VRM human bone; is this an "
+                          "avatar-independent semantic clip?");
     }
 
     VtTokenArray restJoints;
@@ -1026,11 +1089,11 @@ WriteRetargetedAnimation(
     const std::string& outputPath, const Avatar& avatar, const Clip& clip,
     const vrmRetarget::RetargetedAnimation& animation,
     const std::vector<vrmRetarget::ResolvedExpressions>& expressions,
-    const std::string& animationName, WriteResult* result, std::string* error)
+    const std::string& animationName, WriteResult* result, Failure* failure)
 {
     if (!TfIsValidIdentifier(animationName)) {
-        *error = "'" + animationName + "' is not a valid prim name";
-        return false;
+        return Fail(failure, ExitCode::InvalidUserInput,
+                    "'" + animationName + "' is not a valid prim name");
     }
 
     // Re-baking over a previous run is the normal case, so clear an existing
@@ -1050,27 +1113,31 @@ WriteRetargetedAnimation(
             collided = "animation";
         }
         if (collided) {
-            *error = vrmRetarget::FormatRetargetDiagnostic(
-                vrmRetarget::MakeRetargetDiagnostic(
-                    vrmRetarget::RetargetDiagnosticCode::OutputCollidesWithInput,
-                    outputPath,
-                    std::string("--output names the ") + collided
-                        + " layer this retarget read, and writing it would "
-                          "replace it"));
-            return false;
+            // The arguments' fault and not the output's: the same file was
+            // named twice, and nothing has been written.
+            return Fail(
+                failure, ExitCode::InvalidUserInput,
+                vrmRetarget::FormatRetargetDiagnostic(
+                    vrmRetarget::MakeRetargetDiagnostic(
+                        vrmRetarget::RetargetDiagnosticCode::
+                            OutputCollidesWithInput,
+                        outputPath,
+                        std::string("--output names the ") + collided
+                            + " layer this retarget read, and writing it "
+                              "would replace it")));
         }
         layer->Clear();
     } else {
         layer = SdfLayer::CreateNew(outputPath);
     }
     if (!layer) {
-        *error = "could not create output layer: " + outputPath;
-        return false;
+        return Fail(failure, ExitCode::OutputAuthoringFailure,
+                    "could not create output layer: " + outputPath);
     }
     const UsdStageRefPtr stage = UsdStage::Open(layer);
     if (!stage) {
-        *error = "could not open output layer as a stage: " + outputPath;
-        return false;
+        return Fail(failure, ExitCode::OutputAuthoringFailure,
+                    "could not open output layer as a stage: " + outputPath);
     }
 
     // Reference the avatar's defaultPrim onto a prim of the same name, so every
@@ -1122,11 +1189,11 @@ WriteRetargetedAnimation(
     // against the wrong instants, so it is refused rather than truncated.
     if (!expressions.empty()) {
         if (expressions.size() != animation.samples.size()) {
-            *error = "resolved " + std::to_string(expressions.size())
-                + " expression sample(s) for "
-                + std::to_string(animation.samples.size())
-                + " retargeted sample(s)";
-            return false;
+            return Fail(failure, ExitCode::OutputAuthoringFailure,
+                        "resolved " + std::to_string(expressions.size())
+                            + " expression sample(s) for "
+                            + std::to_string(animation.samples.size())
+                            + " retargeted sample(s)");
         }
         AuthorBlendShapeWeights(authored, avatar, clip.timeCodesPerSecond,
                                 expressions, result);
@@ -1137,9 +1204,9 @@ WriteRetargetedAnimation(
     const UsdPrim skeletonOverride =
         stage->OverridePrim(avatar.skeletonPath);
     if (!skeletonOverride) {
-        *error = "could not author a binding override at <"
-            + avatar.skeletonPath.GetString() + ">";
-        return false;
+        return Fail(failure, ExitCode::OutputAuthoringFailure,
+                    "could not author a binding override at <"
+                        + avatar.skeletonPath.GetString() + ">");
     }
     // Apply the schema, don't just author the relationship: UsdSkel resolves
     // skel:animationSource only on a prim that carries SkelBindingAPI, so a
@@ -1147,9 +1214,9 @@ WriteRetargetedAnimation(
     const UsdSkelBindingAPI skeletonBinding =
         UsdSkelBindingAPI::Apply(skeletonOverride);
     if (!skeletonBinding) {
-        *error = "could not apply SkelBindingAPI at <"
-            + avatar.skeletonPath.GetString() + ">";
-        return false;
+        return Fail(failure, ExitCode::OutputAuthoringFailure,
+                    "could not apply SkelBindingAPI at <"
+                        + avatar.skeletonPath.GetString() + ">");
     }
     skeletonBinding.CreateAnimationSourceRel().SetTargets({animationPath});
 
@@ -1170,8 +1237,8 @@ WriteRetargetedAnimation(
     UsdGeomSetStageUpAxis(stage, UsdGeomGetStageUpAxis(avatar.stage));
 
     if (!stage->GetRootLayer()->Save()) {
-        *error = "could not save " + outputPath;
-        return false;
+        return Fail(failure, ExitCode::OutputAuthoringFailure,
+                    "could not save " + outputPath);
     }
     return true;
 }

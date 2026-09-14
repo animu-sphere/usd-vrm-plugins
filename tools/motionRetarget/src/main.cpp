@@ -28,6 +28,16 @@
 namespace
 {
 
+// Prints a refusal and returns what the process exits with. The line is
+// printed under --quiet too: it is the one thing a failed run says, and the
+// code alone names only which input to look at.
+int
+Refuse(const motionRetargetTool::Failure& failure)
+{
+    std::cerr << "motion_retarget: " << failure.message << "\n";
+    return static_cast<int>(failure.code);
+}
+
 void
 ReportWarnings(const std::vector<std::string>& warnings, bool quiet)
 {
@@ -251,42 +261,46 @@ main(int argc, char** argv)
 {
     const std::vector<std::string> arguments(argv + 1, argv + argc);
 
+    using motionRetargetTool::ExitCode;
+
     motionRetargetTool::Options options;
     bool showHelp = false;
     std::string error;
     if (!motionRetargetTool::ParseOptions(arguments, &options, &showHelp,
                                           &error)) {
+        // Invalid user input like every other refusal of the command line --
+        // a usage error is not a class of its own, since what fixes it is
+        // the same: change the arguments.
         std::cerr << "motion_retarget: " << error << "\n\n"
                   << motionRetargetTool::GetUsage();
-        return 2;
+        return static_cast<int>(ExitCode::InvalidUserInput);
     }
     if (showHelp) {
         std::fputs(motionRetargetTool::GetUsage(), stdout);
-        return 0;
+        return static_cast<int>(ExitCode::Success);
     }
 
+    motionRetargetTool::Failure failure;
     std::map<std::string, std::string> extraMappings;
     if (!options.humanoidMapPath.empty()
         && !motionRetargetTool::ReadHumanoidMapFile(options.humanoidMapPath,
-                                                    &extraMappings, &error)) {
-        std::cerr << "motion_retarget: " << error << "\n";
-        return 1;
+                                                    &extraMappings, &failure)) {
+        return Refuse(failure);
     }
 
     motionRetargetTool::Avatar avatar;
     if (!motionRetargetTool::ReadAvatar(options.avatarPath,
                                         options.targetSkeletonPath,
-                                        extraMappings, &avatar, &error)) {
-        std::cerr << "motion_retarget: " << error << "\n";
-        return 1;
+                                        extraMappings, &avatar, &failure)) {
+        return Refuse(failure);
     }
     ReportWarnings(avatar.warnings, options.quiet);
 
     motionRetargetTool::Clip clip;
     if (!motionRetargetTool::ReadClip(options.animationPath,
-                                      options.clipSkeletonPath, &clip, &error)) {
-        std::cerr << "motion_retarget: " << error << "\n";
-        return 1;
+                                      options.clipSkeletonPath, &clip,
+                                      &failure)) {
+        return Refuse(failure);
     }
     ReportWarnings(clip.warnings, options.quiet);
     ReportDiagnostics(clip.diagnostics, options.quiet);
@@ -309,10 +323,11 @@ main(int argc, char** argv)
         == vrmRetarget::RootMotionMode::RootJoint) {
         const int index = avatar.skeleton.FindJoint(options.rootJointToken);
         if (index < 0) {
-            std::cerr << "motion_retarget: --root-joint '"
-                      << options.rootJointToken
-                      << "' is not a joint of the target skeleton\n";
-            return 1;
+            motionRetargetTool::Fail(&failure, ExitCode::InvalidUserInput,
+                                     "--root-joint '" + options.rootJointToken
+                                         + "' is not a joint of the target "
+                                           "skeleton");
+            return Refuse(failure);
         }
         retargetOptions.rootMotion.rootJointIndex = index;
     }
@@ -475,9 +490,8 @@ main(int argc, char** argv)
     motionRetargetTool::WriteResult written;
     if (!motionRetargetTool::WriteRetargetedAnimation(
             options.outputPath, avatar, clip, retargeted, expressions,
-            options.animationName, &written, &error)) {
-        std::cerr << "motion_retarget: " << error << "\n";
-        return 1;
+            options.animationName, &written, &failure)) {
+        return Refuse(failure);
     }
     ReportWarnings(written.warnings, options.quiet);
 
@@ -501,5 +515,5 @@ main(int argc, char** argv)
         }
         std::cout << ")\n";
     }
-    return 0;
+    return static_cast<int>(ExitCode::Success);
 }

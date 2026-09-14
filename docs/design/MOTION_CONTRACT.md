@@ -193,8 +193,60 @@ prose; the frozen set is the body retarget's, which is what parity compares.
 request, since 26.08 classifies none of those failures itself
 ([the migration report §6](../reports/openusd/26.08-openexec-migration.md#6-requests-evaluation-cache-and-invalidation));
 no library in this workspace is a driver, so they have strings and no table
-until the driver contract does. And `motion_retarget`'s **exit codes** are not
-frozen yet: it still exits 2 for a usage error and 1 for every other failure.
+until the driver contract does.
+
+### `motion_retarget` exit codes
+
+A diagnostic says what the retarget did; the exit code says why a run did not
+finish. Frozen with the diagnostics by P1-1
+([`tools/motionRetarget/src/ExitCode.h`](../../tools/motionRetarget/src/ExitCode.h)).
+**The code names the input at fault**, so a script knows what to change
+without parsing the line. The line says what, and it is printed under
+`--quiet` too.
+
+| Code | Meaning | What fixes it |
+| --- | --- | --- |
+| `0` | success, with or without diagnostics | — |
+| `1` | invalid user input | the arguments |
+| `2` | unsupported source feature | a different clip, or a converter in front of this tool |
+| `3` | stage or plugin failure | the environment (a plugin path) or the file |
+| `4` | retarget contract violation | the avatar, or `--humanoid-map` / `--skeleton` |
+| `5` | output authoring failure | the output location |
+| `6` | OpenExec evaluation failure | reserved; this tool evaluates nothing through OpenExec |
+
+**Which refusal is which** is decided where it is raised, because only the
+raiser knows whether it was given a path the user typed or found a stage
+missing something:
+
+- **1** covers a bad option and a path with no regular file behind it, a
+  directory included: a directory exists and is still not a layer. It covers the
+  `--humanoid-map` file, whose format is this tool's own, and a prim or joint
+  that `--skeleton`, `--clip-skeleton`, `--root-joint` or `--humanoid-map`
+  names and the stage lacks. It also covers two arguments that contradict each
+  other: `--root-motion root` without `--root-joint`, and an `--output` that
+  names an input. The last is still `VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT`
+  on its line, and nothing is written. A usage error is not a class of its
+  own: it exited 2 through v0.8.0, and the fix is the same as any other 1.
+- **2** is a clip that opened and is not a semantic humanoid clip. It has no
+  skeleton, no animation this tool can find, no joints, or no joint that names
+  a VRM human bone.
+- **3** is a layer that is there and that OpenUSD would not open, either
+  because no file format claims its extension or because the one that does
+  refused it. It is classified only after `UsdStage::Open` fails, so a path the
+  resolver understands and the file system does not (a URI, a package-relative
+  path) never reaches the check. The line names the bundle a `.vrm` or `.vrma`
+  needs.
+- **4** is an avatar that opened and that the retarget cannot bake onto. It
+  has no `defaultPrim`, no skeleton, a skeleton outside the `defaultPrim`, a
+  skeleton with no joints, or no humanoid mapping at all. A `vrm:skeleton` that
+  names something other than a skeleton is here too, since the stage said it
+  and the user did not.
+- **5** is everything after the inputs were accepted: creating, opening,
+  authoring or saving the output layer.
+
+**A warning never changes the code.** A partial rig exits 0 with its
+diagnostics on stderr, and the one error in the diagnostics table, the output
+collision, exits 1 because it is a refusal of the arguments.
 
 ## Live-capture semantics (Motion Phase D, v0.5.0)
 
