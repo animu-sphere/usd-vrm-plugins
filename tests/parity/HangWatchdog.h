@@ -115,6 +115,31 @@ inline void Symbolize()
         std::fflush(stderr);
         command += " 1>&2";
         (void)!std::system(command.c_str());
+
+        // The interrupted PC is the frame after the signal trampoline: the
+        // third one (Dump, the trampoline, then it). Disassemble around it
+        // with source lines, so a spin inlined from a header names its line.
+        if (stack.size >= 3) {
+            Dl_info info = {};
+            if (dladdr(stack.frames[2], &info) && info.dli_fbase == self.dli_fbase) {
+                const unsigned long pc = static_cast<unsigned long>(
+                    static_cast<char*>(stack.frames[2])
+                    - static_cast<char*>(self.dli_fbase));
+                char range[160];
+                std::snprintf(range, sizeof range,
+                              " --start-address=0x%lx --stop-address=0x%lx",
+                              pc > 0xa0 ? pc - 0xa0 : 0, pc + 0x60);
+                std::fprintf(stderr, "--- thread %ld, interrupted at 0x%lx:\n",
+                             stack.tid, pc);
+                std::fflush(stderr);
+                std::string disassemble = "objdump -d -l -C --no-show-raw-insn";
+                disassemble += range;
+                disassemble += " '";
+                disassemble += exe;
+                disassemble += "' 1>&2";
+                (void)!std::system(disassemble.c_str());
+            }
+        }
     }
 }
 
