@@ -123,8 +123,18 @@ These match the per-PR CI matrix in `.github/workflows/ost-source-ci.yml`
 Other host OS versions / architectures (e.g. Linux arm64, x86_64 macOS) are not
 part of the verified matrix.
 
-These cells cover the four plugin bundles. Every plain library under `libs/`,
-every adapter under `adapters/`, and every CLI are covered by the three
+On Windows, every CLI embeds a manifest that sets its process code page to
+UTF-8, so a path outside the host's ANSI code page reaches OpenUSD intact
+(`workspace_unicode_paths`). Windows 10 version 1903 and later honour it. An
+older Windows ignores the setting, and there a CLI opens only paths its ANSI
+code page can spell.
+
+These per-bundle cells configure `usdVrmFileFormat` standalone, one per
+platform; the other three bundles' nine cells were measured redundant against
+the workspace suite and removed on 2026-08-30
+([report 38](../reports/ost/38-2026-08-30-v0.22.8-workspace-cell-verbs-and-orphaned-lanes.md)
+§2). Every plugin bundle, every plain library under `libs/`, every adapter
+under `adapters/`, and every CLI are covered by the three
 `kind: workspace` cells that `ost` 0.21.0 made expressible — they build the root
 CMake tree, which is the only configuration in which those targets exist, and
 run its whole CTest suite on the same three runners

@@ -1131,6 +1131,20 @@ Current schema contract version: **1**.
   `workspace_ctest_labels_selftest` holds each rule to a case. 153 CTest names
   in the workspace.
 
+- **Every executable and file format is tested against non-ASCII paths**
+  (the OpenExec plan's P0-2 last coverage row, and Product P3's Unicode item).
+  `workspace_unicode_paths` runs the four product tools, the three adapter
+  recorders and both importers against a directory named `ユニコード-é`, which
+  no single ANSI code page can spell. Every file in it has a non-ASCII name as
+  well. Each leg is held to the same run from an ASCII directory: the same
+  animation values, byte-identical traces, a bake whose reference to the avatar
+  resolves, and embedded textures that resolve through the package resolver.
+  The two importers are also opened from the test's own process, since a plugin
+  runs in a host whose code page is not ours. The test found the three defects
+  under Fixed, and it fails on the matching leg when any one fix is taken out.
+  Labelled `motion.integration` and `motion.real-corpus`. 154 CTest names in the
+  workspace.
+
 ### Changed
 
 - **`vrmRetarget::RetargetDiagnostics` carries coded diagnostics instead of
@@ -1211,6 +1225,26 @@ Current schema contract version: **1**.
   reproduce.
 
 ### Fixed
+
+- **A path outside ASCII now works on Windows, in every tool and both
+  importers.** OpenUSD reads a path as UTF-8 on every platform. Windows gives a
+  `main(int, char**)` its arguments in the process's ANSI code page, and a
+  narrow `std::ifstream` opens a string the same way. Three defects came from
+  that, all measured on 2026-09-15:
+  - `motion_retarget` could not find an avatar under a directory named in
+    Japanese.
+  - `motion_bvh_convert` read `é` as `e` and could not open the file.
+  - `usdVrmFileFormat` could not open a `.vrm` under such a directory from any
+    host, usdview and Python included. The package path it builds for an
+    embedded texture went through the code page too.
+
+  Every executable the workspace ships now embeds a manifest that sets its
+  code page to UTF-8 (`cmake/UsdVrmUtf8CodePage.cmake`), so its arguments,
+  environment and narrow file APIs are UTF-8. That covers the four product
+  tools and the three adapter recorders, and it needs Windows 10 1903 or later.
+  `usdVrmFileFormat` and `usdVrmaFileFormat` now read through Ar, as OpenUSD's
+  own formats do. The texture package path stays the string OpenUSD handed the
+  importer. Linux and macOS were unaffected.
 
 - **A bone a clip starts driving after its first sample is reported.**
   `PoseRetargeter`'s clip overload collected unbound-bone diagnostics from the
