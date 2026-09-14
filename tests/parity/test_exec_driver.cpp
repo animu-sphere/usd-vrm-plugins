@@ -15,6 +15,7 @@
 // by naming one that no plugin registers.
 
 #include "ExecDriver.h"
+#include "HangWatchdog.h"
 
 #include "pxr/pxr.h"
 
@@ -583,21 +584,28 @@ int main(int argc, char** argv)
 {
     assert(argc == 2 && "usage: exec_driver_contract <filtered_clip.usda>");
     gFixture = argv[1];
+    hangwatch::Start(45);
 
-    TheTable();
-    ArmingKeepsItsRefusals();
-    AComputationNobodyRegisters();
-    AProviderThatIsNotThere();
-    AProviderThatGoesAndComesBack();
-    AMistypedOverride();
-    AnOverrideExecRejects();
-    AnAnswerOfAnotherType();
-    AnOverrideNothingCompiled();
-    ARequestExecStoppedAnswering();
-    AFrameReportsItsOwnRefusals();
-    AStageComputation();
-    AnOverrideReachesItsDependent();
+#define HANGWATCH_RUN(section)                                                 \
+    hangwatch::Mark(#section);                                                 \
+    section();                                                                 \
+    hangwatch::Mark(#section " done")
+    HANGWATCH_RUN(TheTable);
+    HANGWATCH_RUN(ArmingKeepsItsRefusals);
+    HANGWATCH_RUN(AComputationNobodyRegisters);
+    HANGWATCH_RUN(AProviderThatIsNotThere);
+    HANGWATCH_RUN(AProviderThatGoesAndComesBack);
+    HANGWATCH_RUN(AMistypedOverride);
+    HANGWATCH_RUN(AnOverrideExecRejects);
+    HANGWATCH_RUN(AnAnswerOfAnotherType);
+    HANGWATCH_RUN(AnOverrideNothingCompiled);
+    HANGWATCH_RUN(ARequestExecStoppedAnswering);
+    HANGWATCH_RUN(AFrameReportsItsOwnRefusals);
+    HANGWATCH_RUN(AStageComputation);
+    HANGWATCH_RUN(AnOverrideReachesItsDependent);
+#undef HANGWATCH_RUN
 
     std::puts("exec_driver_contract: ok");
+    hangwatch::Mark("main returning");
     return 0;
 }

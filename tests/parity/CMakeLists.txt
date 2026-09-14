@@ -64,6 +64,13 @@ if(MSVC)
     target_compile_options(exec_driver_contract PRIVATE /bigobj /utf-8)
 endif()
 
+# TEMPORARY (PR #191's Linux-only hang): export the executables' own symbols
+# so HangWatchdog.h's backtraces name them. Removed with the watchdog.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_options(exec_parity PRIVATE -rdynamic)
+    target_link_options(exec_driver_contract PRIVATE -rdynamic)
+endif()
+
 # ---------------------------------------------------------------------------
 # Environment
 # ---------------------------------------------------------------------------
