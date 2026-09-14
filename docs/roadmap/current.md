@@ -949,7 +949,7 @@ compared, which was P0-4's stated blocker.
   stopped answering, which the driver rebuilds before naming the instant again.
   Each code comes from the driver's own checks and never from exec's text.
   `exec_driver_contract` raises each one by the failure it names and holds it
-  to its key, and ten mutations of the driver each turn it red. With `execVrm`
+  to its key, and thirteen mutations of the driver each turn it red. With `execVrm`
   out of the session, the harness now names its two keys where it showed empty
   values. The artifact-only exec smoke passes from the installed product on
   the driver.

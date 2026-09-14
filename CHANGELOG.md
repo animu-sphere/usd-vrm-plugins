@@ -1062,9 +1062,13 @@ Current schema contract version: **1**.
   whose every key expired reports itself valid**: exec discards it, and
   discarding clears the bits `IsValid()` reads. That is `InvalidateAll`'s
   shape, reached by a scene edit. New suite `exec_driver_contract`
-  (`workspace_exec_driver`, registered without Python). With each of ten
-  checks disabled in turn, the suite goes red at that check's own assertion.
-  148 CTest names in the workspace.
+  (`workspace_exec_driver`, registered without Python). With each of thirteen
+  checks disabled in turn, the suite goes red. Review before merge found
+  three defects in the first version, each with a test now: a rebuilt request
+  was armed without the frame's overrides, so an answering frame carried the
+  un-overridden graph's refusals; a key on the pseudo-root was judged
+  unavailable; and an expiry went unreported in a frame that rebuilt the
+  request for another reason. 148 CTest names in the workspace.
 
 ### Changed
 

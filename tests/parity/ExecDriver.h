@@ -49,7 +49,9 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/exec/execUsd/request.h"
 #include "pxr/exec/execUsd/system.h"
+#include "pxr/exec/execUsd/valueOverride.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 
@@ -282,11 +284,30 @@ public:
 private:
     struct Request;
 
-    // Builds `request` over its available keys and arms it at the current
-    // time, probing a key that answered nothing when the arm posted a coding
-    // error. Appends what it found to `frame`.
-    void _Build(Request& request, Frame* frame);
+    // One compute's answer, in exec's index space.
+    struct Computed
+    {
+        std::vector<PXR_NS::VtValue> values;
+        std::vector<std::string> refusals;    // runtime errors
+        std::vector<std::string> complaints;  // every other error
+    };
 
+    // Builds `request` over its available keys and arms it with the frame's
+    // own compute -- the current time, `overrides` included -- probing a key
+    // that answered nothing when the arm posted a coding error. Appends the
+    // refusals to `frame` and returns the arm, whose complaints are the
+    // caller's to classify.
+    Computed _Build(Request& request, const std::vector<Override>& overrides,
+                    Frame* frame);
+
+    // Computes `request` as built, with `overrides` whose keys it holds.
+    Computed _Compute(Request& request, const std::vector<Override>& overrides);
+
+    PXR_NS::ExecUsdValueOverrideVector _Handed(
+        const Request& request, const std::vector<Override>& overrides,
+        std::vector<Key>* keys) const;
+
+    PXR_NS::UsdPrim _Provider(const Key& key) const;
     std::vector<bool> _Availability(const std::vector<Key>& keys) const;
 
     PXR_NS::UsdStageRefPtr _stage;

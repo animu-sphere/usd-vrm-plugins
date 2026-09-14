@@ -22,6 +22,8 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
 
+#include "pxr/exec/ef/time.h"
+#include "pxr/exec/exec/builtinComputations.h"
 #include "pxr/exec/exec/systemDiagnostics.h"
 #include "pxr/exec/execUsd/cacheView.h"
 #include "pxr/exec/execUsd/request.h"
@@ -296,6 +298,22 @@ void AProviderThatGoesAndComesBack()
            "can see that route before computing, as it does the other");
     stage->GetPrimAtPath(other).SetActive(true);
 
+    // The same expiry in a frame that also names a key for the first time,
+    // which rebuilds the request anyway: the expiry is still reported.
+    stage->GetPrimAtPath(other).SetActive(false);
+    stage->GetPrimAtPath(other).SetActive(true);
+    const Frame joined = driver.Evaluate(
+        id, UsdTimeCode(50.0),
+        {Override{Key::Of<motion::HumanoidPose>(kClip, kPrior),
+                  VtValue(answered)}});
+    const OpenExecDiagnostic* alongside =
+        Find(joined, OpenExecDiagnosticCode::Invalidated, otherName);
+    assert(alongside && "an expiry was rebuilt in silence because the frame "
+                        "rebuilt the request for another reason");
+    assert(Contains(alongside->detail, "reported the request invalid"));
+    assert(!joined.Failed() && joined.Get<motion::HumanoidPose>(1)
+           && *joined.Get<motion::HumanoidPose>(1) == answered);
+
     // And through the driver that route still ends in a rebuilt request, found
     // after the fact, the way an InvalidateAll is.
     const Driver::RequestId single =
@@ -484,6 +502,56 @@ void ARequestExecStoppedAnswering()
     assert(driver.Reported().Has(OpenExecDiagnosticCode::Invalidated, kSampleName));
 }
 
+// A frame's refusals are its own. A frame that builds the request arms it with
+// its own overrides, so what the graph would refuse WITHOUT them is not
+// reported beside the answer it gave with them.
+void AFrameReportsItsOwnRefusals()
+{
+    // The clip that states no rate: its sampler refuses, and so does every
+    // node that reads it -- until a driver hands the sample in.
+    std::string unrated = gFixture;
+    const std::string name = "filtered_clip.usda";
+    assert(unrated.size() >= name.size()
+           && unrated.compare(unrated.size() - name.size(), name.size(), name) == 0);
+    unrated.replace(unrated.size() - name.size(), name.size(), "unrated_clip.usda");
+    UsdStageRefPtr stage = UsdStage::Open(unrated);
+    assert(stage && stage->GetPrimAtPath(kClip));
+
+    Driver driver(stage);
+    const Driver::RequestId id =
+        driver.Add({Key::Of<motion::HumanoidPose>(kClip, kFilter)});
+    const Frame plain = driver.Evaluate(id, UsdTimeCode(50.0));
+    assert(plain.values[0].IsEmpty()
+           && AnyContains(plain.refusals, "motion.sampleAnimation") &&
+           "the unrated clip no longer refuses, so this proves nothing");
+
+    motion::HumanoidPose handed;
+    handed.timestamp = 1.0;
+    const Frame driven = driver.Evaluate(
+        id, UsdTimeCode(50.0),
+        {Override{Key::Of<motion::HumanoidPose>(kClip, kSample),
+                  VtValue(handed)}});
+    assert(driven.Get<motion::HumanoidPose>(0) &&
+           "the sample handed in did not reach the filter");
+    assert(driven.refusals.empty() &&
+           "the frame carried refusals only the un-overridden graph posts");
+    assert(!driven.Failed());
+}
+
+// A stage computation: its provider is the pseudo-root, which exec accepts.
+void AStageComputation()
+{
+    Driver driver(Open());
+    const Driver::RequestId id = driver.Add({Key::Of<EfTime>(
+        SdfPath::AbsoluteRootPath(), ExecBuiltinComputations->computeTime)});
+    const Frame frame = driver.Evaluate(id, UsdTimeCode(50.0));
+    assert(frame.diagnostics.IsClean() &&
+           "a key on the pseudo-root was reported unavailable");
+    const auto* time = frame.Get<EfTime>(0);
+    assert(time && time->GetTimeCode() == UsdTimeCode(50.0));
+    assert(!frame.Failed());
+}
+
 // Contract: one previous answer per prim, substituted through one call. The
 // positive control for every override above.
 void AnOverrideReachesItsDependent()
@@ -526,6 +594,8 @@ int main(int argc, char** argv)
     AnAnswerOfAnotherType();
     AnOverrideNothingCompiled();
     ARequestExecStoppedAnswering();
+    AFrameReportsItsOwnRefusals();
+    AStageComputation();
     AnOverrideReachesItsDependent();
 
     std::puts("exec_driver_contract: ok");

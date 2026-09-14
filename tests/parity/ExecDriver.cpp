@@ -353,6 +353,15 @@ ExecUsdSystem& Driver::System() noexcept
     return *_system;
 }
 
+// The prim a key names, or none. The pseudo-root is a prim here, as it is to
+// exec: the stage's own computations (`computeTime`) are provided by it.
+UsdPrim Driver::_Provider(const Key& key) const
+{
+    return key.provider.IsAbsoluteRootOrPrimPath()
+        ? _stage->GetPrimAtPath(key.provider)
+        : UsdPrim();
+}
+
 // Exec's own rule for a provider (`_IsValidVisitor` in execUsd's request):
 // a valid prim that the default predicate admits -- active, loaded, defined,
 // not abstract. A key on anything else is expired by exec on construction and
@@ -362,15 +371,57 @@ std::vector<bool> Driver::_Availability(const std::vector<Key>& keys) const
     std::vector<bool> available;
     available.reserve(keys.size());
     for (const Key& key : keys) {
-        const UsdPrim prim = key.provider.IsPrimPath()
-            ? _stage->GetPrimAtPath(key.provider)
-            : UsdPrim();
+        const UsdPrim prim = _Provider(key);
         available.push_back(prim && UsdPrimDefaultPredicate(prim));
     }
     return available;
 }
 
-void Driver::_Build(Request& request, Frame* frame)
+// The overrides a compute hands exec: every one whose key the build handed
+// over. A key found unavailable is not in exec's request, and neither is an
+// override of it.
+ExecUsdValueOverrideVector Driver::_Handed(
+    const Request& request, const std::vector<Override>& overrides,
+    std::vector<Key>* keys) const
+{
+    ExecUsdValueOverrideVector handed;
+    for (const Override& override : overrides) {
+        const std::optional<std::size_t> index = request.IndexOf(override.key);
+        if (!index || request.unavailable[*index]) {
+            continue;
+        }
+        handed.push_back(ExecUsdValueOverride{
+            ExecUsdValueKey(_Provider(override.key), override.key.computation),
+            override.value});
+        if (keys) {
+            keys->push_back(override.key);
+        }
+    }
+    return handed;
+}
+
+Driver::Computed Driver::_Compute(Request& request,
+                                  const std::vector<Override>& overrides)
+{
+    Computed computed;
+    computed.values.resize(HandedCount(request.execIndex));
+    ExecUsdValueOverrideVector handed = _Handed(request, overrides, nullptr);
+    TfErrorMark mark;
+    const ExecUsdCacheView view = handed.empty()
+        ? _system->Compute(*request.exec)
+        : _system->ComputeWithOverrides(*request.exec, std::move(handed));
+    for (std::size_t j = 0; j < computed.values.size(); ++j) {
+        computed.values[j] = view.Get(static_cast<int>(j));
+    }
+    Posted posted = Drain(mark);
+    computed.refusals = std::move(posted.runtime);
+    computed.complaints = std::move(posted.other);
+    return computed;
+}
+
+Driver::Computed Driver::_Build(Request& request,
+                                const std::vector<Override>& overrides,
+                                Frame* frame)
 {
     const std::vector<Key> all = request.All();
     request.availability = _Availability(all);
@@ -379,9 +430,7 @@ void Driver::_Build(Request& request, Frame* frame)
         if (request.availability[i]) {
             continue;
         }
-        const UsdPrim prim = all[i].provider.IsPrimPath()
-            ? _stage->GetPrimAtPath(all[i].provider)
-            : UsdPrim();
+        const UsdPrim prim = _Provider(all[i]);
         request.unavailable[i] = MakeOpenExecDiagnostic(
             OpenExecDiagnosticCode::ComputationUnavailable, all[i].Name(),
             prim ? "the prim at <" + all[i].provider.GetString()
@@ -393,10 +442,13 @@ void Driver::_Build(Request& request, Frame* frame)
     }
 
     // Two passes at most: the second only when the first found a computation
-    // nobody registers, and it builds without it. A pass arms the request --
-    // its first compute, at whatever time the system holds -- and a refusal
-    // posted there is kept, because a rebuilt request over nodes already
-    // computed reaches their cached outputs and posts nothing.
+    // nobody registers, and it builds without it. A pass arms the request with
+    // the frame's own compute -- at the time the system holds, with the
+    // frame's overrides -- so what it posts is the frame's and nobody else's.
+    // Every refusal posted is kept, the first pass's included, because a
+    // rebuilt request over nodes already computed reaches their cached
+    // outputs and posts nothing.
+    Computed armed;
     for (int pass = 0; pass < 2; ++pass) {
         std::vector<ExecUsdValueKey> valueKeys;
         request.execIndex.assign(all.size(), -1);
@@ -405,25 +457,14 @@ void Driver::_Build(Request& request, Frame* frame)
                 continue;
             }
             request.execIndex[i] = static_cast<int>(valueKeys.size());
-            valueKeys.emplace_back(_stage->GetPrimAtPath(all[i].provider),
-                                   all[i].computation);
+            valueKeys.emplace_back(_Provider(all[i]), all[i].computation);
         }
-        const std::size_t count = valueKeys.size();
         request.exec = std::make_unique<ExecUsdRequest>(
             _system->BuildRequest(std::move(valueKeys)));
 
-        std::vector<VtValue> armed(count);
-        Posted posted;
-        {
-            TfErrorMark mark;
-            const ExecUsdCacheView view = _system->Compute(*request.exec);
-            for (std::size_t j = 0; j < count; ++j) {
-                armed[j] = view.Get(static_cast<int>(j));
-            }
-            posted = Drain(mark);
-        }
-        AppendOnce(&frame->refusals, posted.runtime);
-        if (posted.other.empty()) {
+        armed = _Compute(request, overrides);
+        AppendOnce(&frame->refusals, armed.refusals);
+        if (armed.complaints.empty() || pass == 1) {
             break;
         }
 
@@ -433,12 +474,12 @@ void Driver::_Build(Request& request, Frame* frame)
         bool found = false;
         for (std::size_t i = 0; i < all.size(); ++i) {
             const int index = request.execIndex[i];
-            if (index < 0 || !armed[static_cast<std::size_t>(index)].IsEmpty()) {
+            if (index < 0
+                || !armed.values[static_cast<std::size_t>(index)].IsEmpty()) {
                 continue;
             }
             std::vector<ExecUsdValueKey> one;
-            one.emplace_back(_stage->GetPrimAtPath(all[i].provider),
-                             all[i].computation);
+            one.emplace_back(_Provider(all[i]), all[i].computation);
             ExecUsdRequest probe = _system->BuildRequest(std::move(one));
             TfErrorMark mark;
             _system->Compute(probe).Get(0);
@@ -453,13 +494,12 @@ void Driver::_Build(Request& request, Frame* frame)
                 "bundle is not in this session, or the prim lacks the schema "
                 "it is registered on. exec: " + Joined(said.other));
         }
-        if (!found || pass == 1) {
-            // Nothing a key accounts for: kept, verbatim, and the frame fails.
-            AppendOnce(&frame->errors, posted.other);
-            break;
+        if (!found) {
+            break;  // the complaints are the caller's to classify
         }
     }
     request.dirty = false;
+    return armed;
 }
 
 namespace
@@ -508,22 +548,10 @@ Driver::RequestId Driver::Add(std::vector<Key> keys, Frame* arming)
     request->keys = std::move(keys);
 
     Frame frame;
-    _Build(*request, &frame);
-    // The arm's values, read back from the request it left armed: a second
-    // compute at the same time reaches the cache and posts nothing new.
-    std::vector<VtValue> values(HandedCount(request->execIndex));
-    {
-        TfErrorMark mark;
-        const ExecUsdCacheView view = _system->Compute(*request->exec);
-        for (std::size_t j = 0; j < values.size(); ++j) {
-            values[j] = view.Get(static_cast<int>(j));
-        }
-        const Posted posted = Drain(mark);
-        AppendOnce(&frame.refusals, posted.runtime);
-        AppendOnce(&frame.errors, posted.other);
-    }
-    Fill(request->keys, request->execIndex, request->unavailable, values,
-         /*withhold*/ false, &frame);
+    const Computed armed = _Build(*request, {}, &frame);
+    AppendOnce(&frame.errors, armed.complaints);
+    Fill(request->keys, request->execIndex, request->unavailable, armed.values,
+         /*withhold*/ !frame.errors.empty(), &frame);
 
     _reported.Merge(frame.diagnostics);
     if (arming) {
@@ -556,10 +584,17 @@ Frame Driver::Evaluate(RequestId id, UsdTimeCode time,
     // and only while some key is still live: a request whose EVERY key
     // expired is discarded, which clears the bits `IsValid()` reads, so it
     // reports itself valid again and is found below, as an InvalidateAll is.
+    //
+    // Only the keys the last build knew are compared, so a key an override
+    // names for the first time is not mistaken for a provider that moved; and
+    // the expiry is looked for whether or not the request is being rebuilt
+    // anyway, or a frame that joins a key would rebuild it in silence.
     bool resynced = false;
-    if (_Availability(request.All()) != request.availability) {
+    const std::vector<bool> availability = _Availability(request.All());
+    if (!std::equal(request.availability.begin(), request.availability.end(),
+                    availability.begin())) {
         request.dirty = true;
-    } else if (!request.dirty && !request.exec->IsValid()) {
+    } else if (!request.exec->IsValid()) {
         request.dirty = true;
         resynced = true;
     }
@@ -568,10 +603,54 @@ Frame Driver::Evaluate(RequestId id, UsdTimeCode time,
     // as a side effect, after an InvalidateAll reset the system to the default.
     _system->ChangeTime(time);
 
+    // Each override, held to its key before exec sees it. Exec would drop a
+    // mistyped one -- an empty value included, so an absence cannot be pushed
+    // -- with a coding error and compute the key's ordinary value, which is a
+    // plausible answer to a question nobody asked. A frame refused here
+    // computes nothing, and arms nothing: an arm's refusals belong to the frame
+    // that computed them, and this one would discard them.
+    bool refused = false;
+    for (const Override& override : overrides) {
+        if (Holds(override.value, override.key)) {
+            continue;
+        }
+        frame.diagnostics.Report(MakeOpenExecDiagnostic(
+            OpenExecDiagnosticCode::TypeMismatch, override.key.Name(),
+            override.value.IsEmpty()
+                ? "the override is an empty value, and an absence cannot be "
+                  "pushed into a key: exec drops it with a coding error and "
+                  "computes the key's ordinary value, so the driver did not "
+                  "hand it over and the frame has no answer"
+                : "the override holds '" + HeldTypeName(override.value)
+                      + "' and the key is declared '" + override.key.TypeName()
+                      + "': exec drops a mistyped override with a coding error "
+                        "and computes the key's ordinary value, so the driver "
+                        "did not hand it over and the frame has no answer"));
+        refused = true;
+    }
+    if (refused) {
+        // What the last build said about the requested keys still describes
+        // them only if nothing has moved since; otherwise the next frame that
+        // builds says it.
+        Fill(request.keys, request.execIndex,
+             request.dirty ? std::vector<std::optional<OpenExecDiagnostic>>(
+                                 request.keys.size())
+                           : request.unavailable,
+             {}, /*withhold*/ true, &frame);
+        _reported.Merge(frame.diagnostics);
+        return frame;
+    }
+
+    // The frame's compute. When the request has to be built, the arm is this
+    // compute, overrides and all.
     bool built = false;
+    Computed computed;
     if (request.dirty) {
-        _Build(request, &frame);
+        computed = _Build(request, overrides, &frame);
         built = true;
+    } else {
+        computed = _Compute(request, overrides);
+        AppendOnce(&frame.refusals, computed.refusals);
     }
     if (resynced) {
         for (std::size_t i = 0; i < request.keys.size(); ++i) {
@@ -586,95 +665,26 @@ Frame Driver::Evaluate(RequestId id, UsdTimeCode time,
         }
     }
 
-    // Each override, held to its key before exec sees it. Exec would drop a
-    // mistyped one -- an empty value included, so an absence cannot be pushed
-    // -- with a coding error and compute the key's ordinary value, which is a
-    // plausible answer to a question nobody asked.
-    ExecUsdValueOverrideVector handed;
-    std::vector<Key> handedKeys;
-    bool refused = false;
-    for (const Override& override : overrides) {
-        const std::size_t index = *request.IndexOf(override.key);
-        if (request.unavailable[index]) {
-            frame.diagnostics.Report(*request.unavailable[index]);
-            refused = true;
-            continue;
-        }
-        if (!Holds(override.value, override.key)) {
-            frame.diagnostics.Report(MakeOpenExecDiagnostic(
-                OpenExecDiagnosticCode::TypeMismatch, override.key.Name(),
-                override.value.IsEmpty()
-                    ? "the override is an empty value, and an absence cannot "
-                      "be pushed into a key: exec drops it with a coding error "
-                      "and computes the key's ordinary value, so the driver "
-                      "did not hand it over and the frame has no answer"
-                    : "the override holds '" + HeldTypeName(override.value)
-                          + "' and the key is declared '"
-                          + override.key.TypeName()
-                          + "': exec drops a mistyped override with a coding "
-                            "error and computes the key's ordinary value, so "
-                            "the driver did not hand it over and the frame has "
-                            "no answer"));
-            refused = true;
-            continue;
-        }
-        handed.push_back(ExecUsdValueOverride{
-            ExecUsdValueKey(_stage->GetPrimAtPath(override.key.provider),
-                            override.key.computation),
-            override.value});
-        handedKeys.push_back(override.key);
-    }
-    if (refused) {
-        Fill(request.keys, request.execIndex, request.unavailable, {},
-             /*withhold*/ true, &frame);
-        _reported.Merge(frame.diagnostics);
-        return frame;
-    }
-
-    // One compute of the request as it stands, in exec's index space. The
-    // handed overrides name their keys by UsdPrim, and a rebuild re-resolves
-    // the same paths on an unchanged stage, so they stay good across one.
-    auto compute = [&](Posted* posted) {
-        const std::size_t count = HandedCount(request.execIndex);
-        std::vector<VtValue> values(count);
-        TfErrorMark mark;
-        const ExecUsdCacheView view = handed.empty()
-            ? _system->Compute(*request.exec)
-            : _system->ComputeWithOverrides(*request.exec,
-                                            ExecUsdValueOverrideVector(handed));
-        for (std::size_t j = 0; j < count; ++j) {
-            values[j] = view.Get(static_cast<int>(j));
-        }
-        *posted = Drain(mark);
-        return values;
-    };
     auto unavailableCount = [&] {
         return std::count_if(request.unavailable.begin(),
                              request.unavailable.end(),
                              [](const auto& u) { return u.has_value(); });
     };
 
-    Posted posted;
-    std::vector<VtValue> values = compute(&posted);
-    AppendOnce(&frame.refusals, posted.runtime);
-
     // Exec complained about the request rather than a node. First, the one
     // cause the request cannot show: exec stopped answering it. Rebuilding
     // tells the two apart -- the rebuilt request answers cleanly, or the
     // rebuild's own probe finds a key nobody can compute.
     bool withhold = false;
-    if (!posted.other.empty() && !built) {
+    if (!computed.complaints.empty() && !built) {
         const bool answeredNothing =
-            std::all_of(values.begin(), values.end(),
+            std::all_of(computed.values.begin(), computed.values.end(),
                         [](const VtValue& v) { return v.IsEmpty(); });
         const auto unavailableBefore = unavailableCount();
-        _Build(request, &frame);
+        computed = _Build(request, overrides, &frame);
         built = true;
         const auto unavailableAfter = unavailableCount();
-        Posted again;
-        values = compute(&again);
-        AppendOnce(&frame.refusals, again.runtime);
-        if (answeredNothing && again.other.empty()
+        if (answeredNothing && computed.complaints.empty()
             && unavailableAfter == unavailableBefore) {
             for (std::size_t i = 0; i < request.keys.size(); ++i) {
                 if (request.execIndex[i] >= 0) {
@@ -691,12 +701,24 @@ Frame Driver::Evaluate(RequestId id, UsdTimeCode time,
                 }
             }
         }
-        posted.other = again.other;
+    }
+
+    // An override of a key the build found nobody can compute was not handed
+    // over, so the frame did not answer the question it was asked.
+    for (const Override& override : overrides) {
+        const std::optional<std::size_t> index = request.IndexOf(override.key);
+        if (index && request.unavailable[*index]) {
+            frame.diagnostics.Report(*request.unavailable[*index]);
+            withhold = true;
+        }
     }
 
     // Then the overrides, each alone: one exec rejects although it holds the
     // declared type says the declaration is not what the computation answers.
-    if (!posted.other.empty() && !handed.empty()) {
+    std::vector<Key> handedKeys;
+    const ExecUsdValueOverrideVector handed =
+        _Handed(request, overrides, &handedKeys);
+    if (!computed.complaints.empty() && !handed.empty()) {
         bool attributed = false;
         for (std::size_t k = 0; k < handed.size(); ++k) {
             TfErrorMark mark;
@@ -716,17 +738,17 @@ Frame Driver::Evaluate(RequestId id, UsdTimeCode time,
                       "frame has no answer. exec: " + Joined(said.other)));
         }
         if (attributed) {
-            posted.other.clear();
+            computed.complaints.clear();
             withhold = true;
         }
     }
-    AppendOnce(&frame.errors, posted.other);
+    AppendOnce(&frame.errors, computed.complaints);
     if (!frame.errors.empty()) {
         withhold = true;
     }
 
-    Fill(request.keys, request.execIndex, request.unavailable, values, withhold,
-         &frame);
+    Fill(request.keys, request.execIndex, request.unavailable, computed.values,
+         withhold, &frame);
     _reported.Merge(frame.diagnostics);
     return frame;
 }
