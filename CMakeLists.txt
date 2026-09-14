@@ -251,8 +251,9 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
         # producer's recorded export.
         LABELS "motion.integration;motion.real-corpus")
 
-    # The same chain onto a real VRM, which is the release condition's own
-    # wording (roadmap/current.md) and not a second opinion about the tools. It
+    # The same chain onto a real VRM, which is v0.7.0's release condition's own
+    # wording (roadmap/adapters-mocopi-vmc-ardy.md, Milestone C) and not a
+    # second opinion about the tools. It
     # is registered separately rather than folded into the test above because the
     # two rigs answer different questions and neither substitutes: the fixture is
     # shaped so a broken rest-pose correction cannot pass it, and a released
@@ -363,6 +364,52 @@ foreach(_adapter ${_adapters})
         add_subdirectory("adapters/${_adapter}")
     endif()
 endforeach()
+
+# Every executable and file format the workspace ships, handed paths no ANSI
+# code page can spell and held to the same run from an ASCII directory. It is
+# the OpenExec plan's P0-2 "Windows Unicode paths" row and Product P3's Unicode
+# item. Registered here, after the adapters, because three of the seven
+# executables are adapter recorders and nothing above this line may name one.
+if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
+   AND TARGET motion_bvh_inspect AND TARGET motion_bvh_convert
+   AND TARGET motion_retarget AND TARGET motion_capture
+   AND TARGET vmc_record AND TARGET mocopi_record AND TARGET vrchat_osc_record
+   AND TARGET UsdVrmFileFormat AND TARGET UsdVrmaFileFormat
+   AND TARGET UsdVrmPackageResolver AND EXISTS "${_real_avatar}")
+    set(_unicode_plugins "${CMAKE_CURRENT_SOURCE_DIR}/plugins")
+    set(_unicode_resources "${CMAKE_CURRENT_BINARY_DIR}/plugins")
+    get_filename_component(_unicode_python_dir "${USDVRM_TEST_PYTHON}"
+                           DIRECTORY)
+    add_test(NAME workspace_unicode_paths
+        COMMAND "${USDVRM_TEST_PYTHON}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/paths/test_unicode_paths.py"
+            --bvh-inspect "$<TARGET_FILE:motion_bvh_inspect>"
+            --bvh-convert "$<TARGET_FILE:motion_bvh_convert>"
+            --retarget "$<TARGET_FILE:motion_retarget>"
+            --capture "$<TARGET_FILE:motion_capture>"
+            --vmc-record "$<TARGET_FILE:vmc_record>"
+            --mocopi-record "$<TARGET_FILE:mocopi_record>"
+            --vrchat-osc-record "$<TARGET_FILE:vrchat_osc_record>"
+            --avatar "${_real_avatar}"
+            --vrma "${_unicode_plugins}/usdVrmaFileFormat/tests/fixtures/canonical_walk.vrma"
+            --bvh-corpus "${CMAKE_CURRENT_SOURCE_DIR}/libs/motionBvh/tests/corpus"
+            --profiles "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion"
+            --vmc-capture "${CMAKE_CURRENT_SOURCE_DIR}/adapters/liveCapture/vmc/tests/corpus/arm-raise-30hz.vmcpackets"
+            --mocopi-capture "${CMAKE_CURRENT_SOURCE_DIR}/adapters/liveCapture/mocopi/tests/corpus/neutral-standing-60hz.mocopipackets"
+            --vrchat-capture "${CMAKE_CURRENT_SOURCE_DIR}/adapters/liveCapture/vrchatOsc/tests/corpus/generated/rig-motion.vrchatoscpackets")
+    # The three file-format bundles as their own suites load them, and the
+    # Python runtime the adapter recorders load through Gf.
+    set_tests_properties(workspace_unicode_paths PROPERTIES
+        ENVIRONMENT_MODIFICATION
+            "PATH=path_list_prepend:${_e2e_usd_root}/bin;PATH=path_list_prepend:${_e2e_usd_root}/lib;PATH=path_list_prepend:${_unicode_python_dir};PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmFileFormat>;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmaFileFormat>;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmPackageResolver>;PATH=path_list_prepend:${_unicode_plugins}/vrmSchema/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmContainer::vrmContainer>;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_unicode_resources}/usdVrmFileFormat/tests/resources/usdVrmFileFormat;PXR_PLUGINPATH_NAME=path_list_prepend:${_unicode_resources}/usdVrmaFileFormat/tests/resources/usdVrmaFileFormat;PXR_PLUGINPATH_NAME=path_list_prepend:${_unicode_resources}/usdVrmPackageResolver/tests/resources/usdVrmPackageResolver;PXR_PLUGINPATH_NAME=path_list_prepend:${_unicode_plugins}/vrmSchema/plugin/resources/vrmSchema"
+        # A composition of every product tool and both importers, over the
+        # recorded mocopi export.
+        LABELS "motion.integration;motion.real-corpus")
+else()
+    message(STATUS
+        "usd-vrm-plugins: a tool, an adapter recorder or a file-format bundle "
+        "is not in this build tree; skipping workspace_unicode_paths")
+endif()
 
 # The OpenExec plan's P0-2 labels, read back from CTest itself. `ost test`
 # reports one flat total, so a member whose suite silently stopped registering

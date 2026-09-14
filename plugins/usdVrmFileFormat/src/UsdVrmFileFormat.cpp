@@ -11,12 +11,16 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
+#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/layer.h"
 
 #include <cstddef>
 #include <cstdlib>
 #include <fstream>
 #include <future>
+#include <memory>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,13 +51,18 @@ UsdVrmFileFormat::CanRead(const std::string& file) const
         return false;
     }
     // .vrm is a GLB container; sniff the 4-byte GLB header magic "glTF".
-    std::ifstream in(file, std::ios::binary);
-    if (!in) {
+    //
+    // Through Ar, the way OpenUSD's own formats read. The path is UTF-8 on
+    // every platform, and a narrow std::ifstream on Windows reads it in the
+    // host process's code page instead -- so a .vrm under a non-ASCII directory
+    // opened in no host at all, usdview and Python included.
+    const std::shared_ptr<ArAsset> asset =
+        ArGetResolver().OpenAsset(ArResolvedPath(file));
+    if (!asset) {
         return false;
     }
     std::byte magic[4] = {};
-    in.read(reinterpret_cast<char*>(magic), sizeof(magic));
-    return in.gcount() == sizeof(magic) &&
+    return asset->Read(magic, sizeof(magic), 0) == sizeof(magic) &&
         vrmContainer::HasGlbMagic({magic, sizeof(magic)});
 }
 
@@ -66,16 +75,17 @@ UsdVrmFileFormat::Read(
     (void)metadataOnly;
 
     // Slurp the whole .vrm/GLB into memory; cgltf parses from the buffer and
-    // keeps the embedded bin chunk alive for the duration of Read().
-    std::ifstream in(resolvedPath, std::ios::binary | std::ios::ate);
-    if (!in) {
+    // keeps the embedded bin chunk alive for the duration of Read(). Through
+    // Ar for the reason CanRead gives.
+    const std::shared_ptr<ArAsset> asset =
+        ArGetResolver().OpenAsset(ArResolvedPath(resolvedPath));
+    if (!asset) {
         TF_RUNTIME_ERROR("usdVrmFileFormat: could not open '%s'", resolvedPath.c_str());
         return false;
     }
-    const std::streamsize size = in.tellg();
-    in.seekg(0, std::ios::beg);
-    std::vector<std::byte> bytes(size > 0 ? static_cast<size_t>(size) : 0);
-    if (size > 0 && !in.read(reinterpret_cast<char*>(bytes.data()), size)) {
+    const size_t size = asset->GetSize();
+    std::vector<std::byte> bytes(size);
+    if (size > 0 && asset->Read(bytes.data(), size, 0) != size) {
         TF_RUNTIME_ERROR("usdVrmFileFormat: could not read '%s'", resolvedPath.c_str());
         return false;
     }

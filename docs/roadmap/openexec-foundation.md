@@ -1,7 +1,7 @@
 # The OpenExec foundation
 
-> **Target: no version — it is the next milestone, and takes a number when
-> v0.8.0 is cut.** The one place a track carries a version is the
+> **Target: v0.9.0** — the number it took when v0.8.0 was cut on 2026-09-01.
+> The one place a track carries a version is the
 > [roadmap status table](README.md#status-at-a-glance); this block mirrors it and
 > nothing else in this document states a release number for its own work. The
 > `ExecIr` invertible rig is on its own track after this one.
@@ -319,7 +319,7 @@ accepting cases check the reported component list exactly, which is what catches
 a component dropped from the module and the fixture in one edit — the one
 mistake neither file can catch on its own.
 
-### P0-2 — motion layer CI 🚧
+### P0-2 — motion layer CI ✅
 
 Per-bundle cells do not cover plain libraries or executables, so a root-workspace
 lane becomes mandatory: configure the root workspace, build every library, bundle,
@@ -353,9 +353,9 @@ What each one names:
 | `motion.runtime` | 5 | every test of `libs/motionRuntime` |
 | `motion.retarget` | 2 | every test of `libs/vrmRetarget` |
 | `motion.cli` | 7 | every test of the three product tools, `motion_retarget`, `motion_capture` and `motion_bvh` |
-| `motion.integration` | 7 | the compositions only the root build guarantees: `workspace_bvh_end_to_end`, `workspace_real_avatar_bake` and the five parity cases |
+| `motion.integration` | 8 | the compositions only the root build guarantees: `workspace_bvh_end_to_end`, `workspace_real_avatar_bake`, `workspace_unicode_paths` and the five parity cases |
 | `motion.openexec` | 25 | every test of both exec bundles, the driver contract and the parity cases |
-| `motion.real-corpus` | 10 | every test that reads the recorded mocopi export, in `motionBvh`, `motion_bvh_convert`, the root suite and the parity cases |
+| `motion.real-corpus` | 11 | every test that reads the recorded mocopi export, in `motionBvh`, `motion_bvh_convert`, the root suite and the parity cases |
 
 The adapters' recorder tools are CLIs and are not `motion.cli`: they are
 adapter artifacts rather than product members, and the label is the product's
@@ -376,8 +376,8 @@ CTest run of the same tree has open, so the check lists a copy of the tree's
 `CTestTestfile.cmake` files. `workspace_ctest_labels_selftest` holds each rule
 to a case.
 
-**The required coverage, against the suite** *(2026-09-15)*. Every item but one
-has a CTest name, and one is covered outside CTest:
+**The required coverage, against the suite** *(2026-09-15)*. Every item has a
+CTest name but one, which is covered outside CTest:
 
 | Required coverage | Where |
 |---|---|
@@ -390,10 +390,25 @@ has a CTest name, and one is covered outside CTest:
 | resolved `UsdSkel` transforms | `motion_retarget_design_triplet`, `workspace_real_avatar_bake` |
 | packaged CLI execution | not CTest: `release.yml`'s artifact-only BVH and exec smokes, from the installed product |
 | OpenExec/offline parity | `workspace_exec_parity_*` |
-| **Windows Unicode paths** | **none**: no test hands a tool a non-ASCII path |
+| Windows Unicode paths | `workspace_unicode_paths` |
 
-What remains of P0-2 is that last row, which is also Product P3's open Unicode
-item ([current.md](current.md)).
+**The last row found three defects when it was written** *(2026-09-15)*. It
+runs every executable the workspace ships — the four product tools and the
+three adapter recorders — and both importers, against a directory named
+`ユニコード-é`, which no single ANSI code page can spell, and holds each leg to
+the same run from an ASCII directory. On Windows, before the fix:
+`motion_retarget` could not find the avatar, `motion_bvh_convert` read `é` as
+`e`, and `usdVrmFileFormat` could not open the `.vrm` from any host, Python
+included. A Windows `main` receives its arguments in the process's ANSI code
+page and a narrow `std::ifstream` opens a string the same way, while OpenUSD
+reads every path as UTF-8. So each executable now embeds a manifest that makes
+its code page UTF-8 (`cmake/UsdVrmUtf8CodePage.cmake`), and both file formats
+read through Ar as OpenUSD's own formats do, since a plugin runs in a host whose
+code page is not ours. The two plugin legs run in the test's own process for
+that reason. Each fix was taken out once and the test failed on the leg it
+names. The first attempt passed with the `CanRead` fix reverted, because opening
+a layer never calls `CanRead`, so the test now calls it directly. This row was
+also Product P3's Unicode item ([current.md](current.md)).
 
 ### P0-3 — `motion_retarget` distribution ⬜
 
@@ -1377,7 +1392,7 @@ Always author identity scale; animated joint scale is unsupported; a non-unit
 animated scale input is a structured warning; scale animation is never silently
 applied; OpenExec and offline behave identically. This formalizes the fix that
 shipped with the v0.4.0 tag — see
-[UsdSkel resolves a scale-less animation to the rest pose](current.md).
+[UsdSkel resolves a scale-less animation to the rest pose](../releases/v0.4.0.md#the-defect-that-made-the-whole-thing-visible).
 
 **One case the rule does not yet name, measured 2026-09-13**
 ([the joint-transforms report](../reports/openusd/26.08-openexec-joint-transforms.md)
@@ -1409,7 +1424,8 @@ the dependency boundary is checked by the workspace gate.
 *Since 2026-09-15 the snapshot item and the no-I/O item are CTest names on
 every lane: `execMotion_boundaries` and `execVrm_boundaries` (§9).* The graph
 gate checks the bundle edges, and these two check each bundle's links and
-schema declarations.
+schema declarations. *The Unicode paths row is `workspace_unicode_paths`, from
+the same day (P0-2).*
 
 Every item green, no exceptions: OpenUSD 26.08 exact · OpenExec-capable runtime ·
 three-OS root workspace build · all libraries, bundles, and tools tested ·

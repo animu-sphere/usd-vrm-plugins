@@ -47,9 +47,9 @@ capture, or a generator without changing the importer.
 A phase is not a release. Workspace Phase 8 and Motion Phase E land together,
 but *which* release they land in is a scheduling decision that has now changed
 twice — which is why the version lives in the status table below and the phase
-sequences carry none. As of 2026-08-29 that pair carries no version at all: it
-follows the producer tracks, and it takes a number when the release before it is
-cut.
+sequences carry none. From 2026-08-29 that pair carried no version at all, to
+take a number when the release before it was cut. v0.8.0 was cut on 2026-09-01,
+and the pair is **v0.9.0**.
 
 An earlier draft used "Phase A–E" and an importer-specific "Phase 1–4"; both are
 retired. The importer build-out those numbers tracked is complete and recorded
@@ -69,7 +69,7 @@ must repeat one, `scripts/check_docs.py` checks it against this table.
 | generic BVH recorded-motion ingestion | Shipped | v0.7.0 |
 | installed-package consumer lane + package contract | Shipped | v0.8.0 |
 | shared OSC foundation + VRChat OSC Trackers input | Shipped | v0.8.0 |
-| OpenExec foundation | Next | after v0.8.0 |
+| OpenExec foundation | In progress | v0.9.0 |
 | boundary consolidation, the canonical producer contract included | Planned | after the OpenExec foundation |
 | motion foundation repository split | Planned | after boundary consolidation, **and conditional on its own gate** |
 | NPZ / AMASS recorded sources | Planned | after the split gate |
@@ -125,8 +125,7 @@ would have split one boundary across two tags. **The OpenExec foundation loses
 its version** and sits behind the recorded-source and producer-contract tracks;
 it is the compute layer over a canonical pipeline, and the plan's order puts
 every producer contract in front of it. The `v0.7.5` label survives only where
-the re-ordering itself is recorded — here, the OSC bullet below, and
-[the current milestone](current.md)'s opening note.
+the re-ordering itself is recorded, which is here.
 
 **Re-ordered 2026-08-03.** The OpenExec foundation was scoped as v0.6.0 and
 v0.6.0 shipped VMC input instead. Rather than renumber the plan by one, the
@@ -137,79 +136,32 @@ already met real hardware. The file `openexec-v0.6.0-v0.7.0.md` was renamed
 [openexec-foundation.md](openexec-foundation.md) in the same change — a filename
 carrying a version number is drift waiting to be re-litigated.
 
-- The workspace covers **Workspace Phase 6b and 7**: `motionCore`,
-  `motionRuntime`, `vrmRetarget`, and `usdVrmaFileFormat` implement Motion
-  Phases A–D; `vrmAdapterVmc` and `vrmAdapterMocopi` are the vendor leaves over
-  them, and `motionSource` / `motionBvh` are the recorded-file half beside them.
-  Only Workspace Phase 8 (`execMotion` / `execVrm`) is unbuilt.
-- **v0.7.0 is prepared** (mocopi live input and generic BVH ingestion), after
-  v0.6.0's VMC input. Every lane is pinned to OpenUSD 26.08 — and since v0.6.0,
-  no other OpenUSD will configure at all.
-- **The motion layer has CI.** `ost` 0.21.0's `kind: workspace` cells build the
-  root tree and run its whole CTest suite on all three OS; the v0.5.0
-  hand-written lane is deleted. They picked the adapter's tests up — including
-  the two that bind a socket — with no CI edit.
-- **Input has two halves, and v0.7.0 built both.** Live input is
-  [the adapter track](adapters-mocopi-vmc-ardy.md); recorded files are
-  [the BVH track](recorded-motion-sources.md), which is a generic pipeline with
-  producer semantics in data rather than a capture product's importer. They meet
-  at `motionCore` and nowhere earlier
-  ([motion policy §8.3](../design/MOTION_ARCHITECTURE_POLICY.md)). One physical
-  session observed both ways agrees to a median **0.084°** per bone
-  ([report 01](../reports/motion/01-2026-08-15-mocopi-cross-source.md)); what
-  v0.7.0 did **not** close is operator evidence — a VMC relay, a device recovery
-  take, a redistributable capture, and an artifact-only run that needs the
-  profiles to reach an artifact first.
-- **Distribution is the near-term priority, and it is the one boundary this
-  workspace has never checked from outside**
-  ([the packaging track](packaging-hardening.md)). Every split since Workspace
-  Phase 1 is enforced inside the tree — the graph gate, the boundary checks, the
-  workspace cells — and a composed build resolves every target in-tree without
-  ever opening a config file. So an installed package can name a target no
-  consumer can resolve and stay green, which it did: `osc::osc` went `PUBLIC` on
-  two adapters on 2026-08-29 and neither package config gained a
-  `find_dependency(osc)`. The fix that landed is per-adapter; the general one is
-  a consumer that is not us, and its contract is
-  [PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md). **That consumer
-  now exists for all twelve packages** (PKG-3, 2026-08-30) and no config failed
-  it — what it still lacks is a lane, so every measurement is one host's and
-  criterion 6 remains unanswered.
-- **The live half gains a third leaf in v0.8.0, and a shared floor under all
-  three** ([the OSC track](osc-and-vrchat-trackers.md)). It was deliberately not
-  in v0.7.0: that release's remaining items are evidence an operator produces,
-  and a third adapter would have reopened a code milestone underneath them. It
-  now shares a release with the packaging lane rather than preceding it as
-  v0.7.5 — the same argument that kept it out of v0.7.0 makes a point release
-  between two halves of one boundary the wrong shape. The duplication it resolves is **measured, not anticipated** — the
-  two existing adapters carried one packet-capture implementation twice, six
-  lines apart across 800, and one UDP receiver twice carrying four copied
-  defects that were found and fixed in one copy on 2026-08-11 and stayed in the
-  other until OSC-1 closed them on 2026-08-24. **The shared floor landed the
-  same day**: `libs/liveTransport` holds the receiver, the capture format and
-  the diagnostic vehicle once, and both adapters build against it (OSC-2). **The
-  second half landed on 2026-08-29**: `libs/osc` holds the wire format once, and
-  it waited for a second consumer rather than a schedule — an address inventory
-  written in `vrmAdapterVrchatOsc` decoded real bytes through the VMC-owned
-  decoder first, and needed five VMC tokens of which every one was the name
-  (OSC-3). What remains on this track is the adapter itself: a recorded session
-  to inventory, then the tracker decode, the tracking space, the frame policy
-  and the solve boundary.
-- **The recorded half gains a second format family, and since 2026-09-06 it
-  waits behind three tracks rather than leading them**, and the
-  boundary is already built for it: NPZ / AMASS enters through `motionSource`
-  exactly as BVH does, and a reader is allowed format syntax and storage
-  interpretation and nothing else — no VRM target rig, no rest pose, no retarget
-  policy, no stage authoring. Whether that is one identity (`motionNpz`) or two
-  (`motionNpz` + `motionAmass`) is a **measurement, not a preference**: a few
-  files of the real corpus decide whether the AMASS contract is absorbable at a
-  format-neutral boundary. [The recorded track](recorded-motion-sources.md) §13.
-- Current priorities: **the v0.8.0 tag**, then the
-  [OpenExec foundation](openexec-foundation.md) — which as of 2026-09-06 is the
-  next milestone rather than the one behind the producer tracks. Carried
-  alongside it: **real device evidence** across both input halves, closing the
-  remaining **Workspace Phase 5** packaging P0, and widening runtime
-  verification. None of those three blocks the foundation, and it blocks none of
-  them.
+Where things stand, as of 2026-09-15:
+
+- **Every Workspace phase has code.** `motionCore`, `motionRuntime`,
+  `vrmRetarget` and `usdVrmaFileFormat` implement Motion Phases A–D;
+  `motionSource` / `motionBvh` are the recorded-file half beside them; the three
+  `vrmAdapter*` leaves sit on the shared `liveTransport` and `osc` floor; and
+  Workspace Phase 8's `execMotion` / `execVrm` exist, evaluate a humanoid, and
+  agree with the offline bake bit for bit. Every lane is pinned to OpenUSD
+  26.08, and no other OpenUSD will configure.
+- **v0.8.0 shipped on 2026-09-01**: the installed-package consumer lane, which
+  resolves all twelve packages from outside the workspace on all three OS, and
+  the VRChat OSC tracker input over the shared OSC foundation
+  ([release record](../releases/v0.8.0.md)). What it shipped and did not close
+  is in that record's known limitations; the part with work left is in
+  [current.md](current.md#carried-out-of-v080).
+- **Current priority: v0.9.0, the [OpenExec foundation](openexec-foundation.md).**
+  What remains is one packaging task (P0-3), the producer half of the
+  statements the nodes read (P0-4), and three decisions (P0-6, P1-2, P1-3);
+  [current.md](current.md) has the table. Carried beside it: operator evidence
+  for both input halves, the Workspace Phase 5 packaging P0, and runtime
+  verification. None of those blocks the foundation, and it blocks none of them.
+- **The recorded half's second format family waits behind three tracks**, and
+  its boundary is already built: NPZ / AMASS enters through `motionSource`
+  exactly as BVH does. Whether that is one identity (`motionNpz`) or two
+  (`motionNpz` + `motionAmass`) is a **measurement, not a preference**
+  ([the recorded track](recorded-motion-sources.md) §13).
 - The display slice is **re-scoped** (2026-07-29). OpenUSD 26.08 resolves exec
   prim adapters from a hard-coded list, so a skinned VRM avatar cannot be
   displayed through the exec scene index at all. The foundation proves the

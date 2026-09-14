@@ -14,7 +14,7 @@ not the schedule.
 
 | Release | Theme | Sequences | Plan |
 | --- | --- | --- | --- |
-| after v0.8.0 | OpenExec VRM runtime foundation | Workspace Phase 8, Motion Phase E | [openexec-foundation.md](openexec-foundation.md) §6 |
+| v0.9.0 | OpenExec VRM runtime foundation | Workspace Phase 8, Motion Phase E | [openexec-foundation.md](openexec-foundation.md) §6 |
 | after the foundation | boundary consolidation — the producer contract, one reference pipeline, adapter distribution, artifact closure | — | [boundary-consolidation.md](boundary-consolidation.md) |
 | after consolidation | motion foundation repository split (`motionCore` + `motionRuntime`), **conditional** | — | [motion-foundation-split.md](motion-foundation-split.md) |
 | after the split gate | NPZ / AMASS recorded sources | — | [recorded-motion-sources.md](recorded-motion-sources.md) §13 |
@@ -37,7 +37,8 @@ description.
 
 **Re-ordered 2026-08-29.** Two producer-side tracks moved in front of the
 compute layer, and OpenExec lost its version with the move — the half of that
-change that survives 2026-09-06 is the version, not the order. Neither new
+change that survived 2026-09-06 was the version, not the order, until v0.8.0 was
+cut and the foundation took v0.9.0. Neither new
 row carries a phase number, and that is the §8 rule rather than an oversight:
 the Workspace ladder tracks the migration out of the single `usdVrm` bundle, and
 a greenfield reader takes its identity and edges from

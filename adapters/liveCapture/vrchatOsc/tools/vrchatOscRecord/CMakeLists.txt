@@ -52,11 +52,14 @@ if(NOT TARGET motionRuntime::motionRuntime)
     find_package(motionRuntime REQUIRED CONFIG)
 endif()
 
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../../../../cmake/UsdVrmUtf8CodePage.cmake")
+
 add_executable(vrchat_osc_record
     src/Options.cpp
     src/SessionReport.cpp
     src/TraceExport.cpp
     src/main.cpp)
+usdvrm_use_utf8_code_page(vrchat_osc_record)
 
 target_compile_features(vrchat_osc_record PRIVATE cxx_std_17)
 # Three edges, and the second of them is the one WORKSPACE.md §2 wrote a

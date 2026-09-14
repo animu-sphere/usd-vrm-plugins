@@ -45,11 +45,14 @@ if(NOT TARGET vrmAdapterVmc::vrmAdapterVmc)
     find_package(vrmAdapterVmc REQUIRED CONFIG)
 endif()
 
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../../../../cmake/UsdVrmUtf8CodePage.cmake")
+
 add_executable(vmc_record
     src/Options.cpp
     src/SessionReport.cpp
     src/TraceExport.cpp
     src/main.cpp)
+usdvrm_use_utf8_code_page(vmc_record)
 
 target_compile_features(vmc_record PRIVATE cxx_std_17)
 # The adapter, and deliberately nothing else. §2 would permit this target to

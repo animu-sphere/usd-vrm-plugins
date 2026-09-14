@@ -55,11 +55,13 @@ endif()
 if(NOT TARGET motionBvh::motionBvh)
     find_package(motionBvh REQUIRED CONFIG)
 endif()
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmUtf8CodePage.cmake")
 
 add_executable(motion_bvh_inspect
     src/Options.cpp
     src/Report.cpp
     src/main.cpp)
+usdvrm_use_utf8_code_page(motion_bvh_inspect)
 
 target_compile_features(motion_bvh_inspect PRIVATE cxx_std_17)
 target_link_libraries(motion_bvh_inspect PRIVATE motionBvh::motionBvh)
@@ -106,6 +108,7 @@ add_executable(motion_bvh_convert
     src/ConvertOptions.cpp
     src/ProfileLocator.cpp
     src/convert_main.cpp)
+usdvrm_use_utf8_code_page(motion_bvh_convert)
 
 target_compile_features(motion_bvh_convert PRIVATE cxx_std_17)
 target_link_libraries(motion_bvh_convert

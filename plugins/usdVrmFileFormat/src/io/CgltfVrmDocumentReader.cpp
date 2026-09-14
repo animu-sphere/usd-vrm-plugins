@@ -11,6 +11,8 @@
 #include "pxr/base/gf/transform.h"
 #include "pxr/base/js/json.h"
 #include "pxr/base/js/value.h"
+#include "pxr/base/tf/pathUtils.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/ar/packageUtils.h"
 
 #include "cgltf.h"
@@ -19,7 +21,6 @@
 #include <cctype>
 #include <cstdint>
 #include <cstring>
-#include <filesystem>
 #include <functional>
 #include <map>
 #include <set>
@@ -257,9 +258,16 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
     // inside the .vrm container; UsdVrmPackageResolver serves those bytes to Hio
     // without a temp-dir extraction dependency.
     // -----------------------------------------------------------------------
-    namespace fs = std::filesystem;
-    const fs::path sourceDir = fs::path(resolvedPath).parent_path();
-    const std::string packagePath = fs::path(resolvedPath).generic_string();
+    //
+    // Both paths stay the UTF-8 string USD handed us. A std::filesystem::path
+    // built from a narrow string reads it in the process's code page on
+    // Windows, so the generic_string() these used to be round-tripped a
+    // non-ASCII directory into a package path no resolver could find.
+    std::string packagePath = resolvedPath;
+#if defined(ARCH_OS_WINDOWS)
+    std::replace(packagePath.begin(), packagePath.end(), '\\', '/');
+#endif
+    const std::string sourceDir = TfGetPathName(packagePath);
     std::unordered_map<const cgltf_image*, std::string> imageCache;
 
     auto extractImage = [&](const cgltf_image* img) -> std::string {
@@ -304,7 +312,13 @@ CgltfVrmDocumentReader::Read(const std::string& resolvedPath,
             }
         } else if (img->uri && std::strncmp(img->uri, "data:", 5) != 0) {
             // External file reference, resolved relative to the source.
-            result = (sourceDir / img->uri).generic_string();
+            result = img->uri;
+#if defined(ARCH_OS_WINDOWS)
+            std::replace(result.begin(), result.end(), '\\', '/');
+#endif
+            if (TfIsRelativePath(result)) {
+                result = sourceDir + result;
+            }
         } else {
             outDoc->warnings.push_back(VrmDiagMsg(
                 VrmDiag::TextureDataUriUnsupported,

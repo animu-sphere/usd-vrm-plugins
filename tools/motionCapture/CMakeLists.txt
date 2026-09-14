@@ -39,6 +39,7 @@ if(NOT pxr_FOUND)
     find_package(pxr REQUIRED CONFIG)
 endif()
 include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmOpenUsd.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/UsdVrmUtf8CodePage.cmake")
 if(NOT TARGET motionRuntime::motionRuntime)
     find_package(motionRuntime REQUIRED CONFIG)
 endif()
@@ -47,6 +48,7 @@ add_executable(motion_capture
     src/ClipWriter.cpp
     src/Options.cpp
     src/main.cpp)
+usdvrm_use_utf8_code_page(motion_capture)
 
 target_compile_features(motion_capture PRIVATE cxx_std_17)
 target_link_libraries(motion_capture PRIVATE motionRuntime::motionRuntime)

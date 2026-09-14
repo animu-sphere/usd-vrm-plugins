@@ -45,11 +45,14 @@ if(NOT TARGET vrmAdapterMocopi::vrmAdapterMocopi)
     find_package(vrmAdapterMocopi REQUIRED CONFIG)
 endif()
 
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../../../../cmake/UsdVrmUtf8CodePage.cmake")
+
 add_executable(mocopi_record
     src/Options.cpp
     src/SessionReport.cpp
     src/TraceExport.cpp
     src/main.cpp)
+usdvrm_use_utf8_code_page(mocopi_record)
 
 target_compile_features(mocopi_record PRIVATE cxx_std_17)
 # The adapter, and deliberately nothing else. §2 would permit this target to link
