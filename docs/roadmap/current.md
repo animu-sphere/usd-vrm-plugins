@@ -878,7 +878,7 @@ compared, which was P0-4's stated blocker.
   package's bytes to its record
   ([ost report 40](../reports/ost/40-2026-09-13-v0.22.10-one-workspace-prefix-for-every-bundle.md),
   a P1 upstream).
-- 🚧 **The retarget's diagnostics are a frozen code set, and a diagnostic is a
+- ✅ **The retarget's diagnostics are a frozen code set, and a diagnostic is a
   value** *(2026-09-13, P1-1's first half)*. `vrmRetarget/Diagnostics.h` holds
   eight `VRM_RETARGET_*` codes in one table, and a retarget reports
   `RetargetDiagnostic` values into a list that keeps each code and subject once
@@ -908,8 +908,8 @@ compared, which was P0-4's stated blocker.
   tool's suite holds every class to its number, and the earlier build fails it
   on 14 of 22 runs
   ([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md), "`motion_retarget` exit
-  codes"). Still open in P1-1: the `VRM_OPENEXEC_*` table, which waits for a
-  driver to raise it.
+  codes"). The `VRM_OPENEXEC_*` table closed P1-1 on 2026-09-14, when a
+  driver existed to raise it (the driver entry below).
 - ✅ **Exec answers the retarget's diagnostics, and they are the tool's own
   lines** *(2026-09-13, P0-6's diagnostics row)*. `execVrm` gained two
   computations on the applied `VrmHumanoidAPI`, both answering
@@ -936,15 +936,42 @@ compared, which was P0-4's stated blocker.
   while retargeting it, so the node repeats the retarget. That adds 23 µs a
   frame on the fixture rig and 50–60 µs on Seed-san, and a driver's override of
   the retarget is not diagnosed.
+- ✅ **The driver contract is written, and a driver raises `VRM_OPENEXEC_*`**
+  *(2026-09-14, P0-4's driver contract and P1-1's last table)*. Six reports
+  found what a caller of these bundles has to do, one rule at a time. They are
+  now ten rules in
+  [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md), "OpenExec driver
+  contract". `tests/parity/ExecDriver` follows them, and the parity harness
+  drives exec through it. The driver raises the three codes the plan drafted.
+  `COMPUTATION_UNAVAILABLE` is a key the session cannot compute.
+  `TYPE_MISMATCH` is an override or an answer of the wrong type, and an
+  override is checked before exec sees it. `INVALIDATED` is a request exec
+  stopped answering, which the driver rebuilds before naming the instant again.
+  Each code comes from the driver's own checks and never from exec's text.
+  `exec_driver_contract` raises each one by the failure it names and holds it
+  to its key, and ten mutations of the driver each turn it red. With `execVrm`
+  out of the session, the harness now names its two keys where it showed empty
+  values. The artifact-only exec smoke passes from the installed product on
+  the driver.
+
+  **Two findings**
+  ([the driver report](../reports/openusd/26.08-openexec-driver.md)).
+  **An override of a key nothing compiled is skipped without a word, mistyped
+  or not**, because exec reaches its type check only for a compiled output. So
+  the driver requests every key an override names. And **a request whose every
+  key expired reports itself valid**: exec discards it, and discarding clears
+  the bits `IsValid()` reads. That is the `InvalidateAll` shape, reached by a
+  scene edit. The first draft's check for it passed with its own route
+  disabled, because the check matched a word both routes' details shared. The
+  details are now worded apart.
 - ⬜ **The rest of P0-6** of the
   [plan](openexec-foundation.md#6-foundation-tasks). The values and the
   diagnostics agree. What is left is the rows no producer reaches, each
   asserted on the exec side and read rather than run on the tool's, and whether
   P0-6 needs them run is a decision, not a gap. Its cases ran on Linux and macOS
   for the first time on PR #185's CI and passed. What remains of P0-4 is the
-  producer half of the rate and policies, the written driver contract, and a
-  decision on what a one-joint clip's fallback-filled root means. P1-2 owes a
-  decision on a scaled rest.
+  producer half of the rate and policies, and a decision on what a one-joint
+  clip's fallback-filled root means. P1-2 owes a decision on a scaled rest.
 
 ## Then: boundary consolidation ⬜
 
