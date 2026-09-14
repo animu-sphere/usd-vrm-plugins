@@ -15,14 +15,10 @@
 // by naming one that no plugin registers.
 
 #include "ExecDriver.h"
-#include "HangWatchdog.h"
 
 #include "pxr/pxr.h"
 
-#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"
-
-#include <tbb/version.h>
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
 
@@ -587,50 +583,21 @@ int main(int argc, char** argv)
 {
     assert(argc == 2 && "usage: exec_driver_contract <filtered_clip.usda>");
     gFixture = argv[1];
-    hangwatch::Start(45);
-    {
-        // TEMPORARY probe: on an empty mark, GetBegin() (libtf) and GetEnd()
-        // (inlined here) are both this thread's list end -- unless the two
-        // halves see two different thread-local lists.
-        TfErrorMark probe;
-        std::fprintf(stderr,
-                     "[probe] empty mark: begin==end %d; TBB headers %d.%d "
-                     "(interface %d), runtime %s (interface %d)\n",
-                     int(probe.GetBegin() == probe.GetEnd()),
-                     TBB_VERSION_MAJOR, TBB_VERSION_MINOR,
-                     TBB_INTERFACE_VERSION, TBB_runtime_version(),
-                     TBB_runtime_interface_version());
-        TF_RUNTIME_ERROR("probe error");
-        std::size_t walked = 0;
-        for (auto it = probe.GetBegin(); it != probe.GetEnd() && walked < 10;
-             ++it) {
-            ++walked;
-        }
-        std::fprintf(stderr, "[probe] one error: walked %zu (10 = no end)\n",
-                     walked);
-        probe.Clear();
-    }
 
-#define HANGWATCH_RUN(section)                                                 \
-    hangwatch::Mark(#section);                                                 \
-    section();                                                                 \
-    hangwatch::Mark(#section " done")
-    HANGWATCH_RUN(TheTable);
-    HANGWATCH_RUN(ArmingKeepsItsRefusals);
-    HANGWATCH_RUN(AComputationNobodyRegisters);
-    HANGWATCH_RUN(AProviderThatIsNotThere);
-    HANGWATCH_RUN(AProviderThatGoesAndComesBack);
-    HANGWATCH_RUN(AMistypedOverride);
-    HANGWATCH_RUN(AnOverrideExecRejects);
-    HANGWATCH_RUN(AnAnswerOfAnotherType);
-    HANGWATCH_RUN(AnOverrideNothingCompiled);
-    HANGWATCH_RUN(ARequestExecStoppedAnswering);
-    HANGWATCH_RUN(AFrameReportsItsOwnRefusals);
-    HANGWATCH_RUN(AStageComputation);
-    HANGWATCH_RUN(AnOverrideReachesItsDependent);
-#undef HANGWATCH_RUN
+    TheTable();
+    ArmingKeepsItsRefusals();
+    AComputationNobodyRegisters();
+    AProviderThatIsNotThere();
+    AProviderThatGoesAndComesBack();
+    AMistypedOverride();
+    AnOverrideExecRejects();
+    AnAnswerOfAnotherType();
+    AnOverrideNothingCompiled();
+    ARequestExecStoppedAnswering();
+    AFrameReportsItsOwnRefusals();
+    AStageComputation();
+    AnOverrideReachesItsDependent();
 
     std::puts("exec_driver_contract: ok");
-    hangwatch::Mark("main returning");
     return 0;
 }

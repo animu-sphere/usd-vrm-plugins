@@ -127,7 +127,6 @@
 #include "pxr/usd/usdSkel/skeleton.h"
 
 #include "ExecDriver.h"
-#include "HangWatchdog.h"
 
 #include <motionCore/Compare.h>
 #include <motionCore/Humanoid.h>
@@ -949,7 +948,6 @@ int main(int argc, char** argv)
         return 2;
     }
 
-    hangwatch::Start(60);
     Diagnostics diagnostics;
 
     AvatarShape avatar;
@@ -995,7 +993,6 @@ int main(int argc, char** argv)
     // The values and the diagnostics are asked for apart, so each is timed
     // alone: the second compute at a key finds the rig, the map and the pose
     // already cached by the first, and what it costs is what diagnosing adds.
-    hangwatch::Mark("driver");
     execdriver::Driver driver(parity.stage);
     const SdfPath humanoid = parity.humanoid.GetPath();
     // The first compute arms a request, at the default time code, where the
@@ -1013,7 +1010,6 @@ int main(int argc, char** argv)
         {execdriver::Key::Of<vrmRetarget::RetargetDiagnostics>(
             humanoid, kRetargetDiagnostics)},
         &armedDiagnostics);
-    hangwatch::Mark("armed");
     std::vector<std::string> armingErrors;
     for (const execdriver::Frame* armed : {&armedValues, &armedDiagnostics}) {
         armingErrors.insert(armingErrors.end(), armed->refusals.begin(),
@@ -1090,7 +1086,6 @@ int main(int argc, char** argv)
     const bool diagnosticsAgree =
         diagnosticsRefusals == 0 && execLines == tool.library;
 
-    hangwatch::Mark("evaluated");
     // -- the comparison ------------------------------------------------------
     Tally rotations;
     Tally translations;
@@ -1378,7 +1373,5 @@ int main(int argc, char** argv)
         || (diagnosticsCompared && !diagnosticsAgree)
         || driver.Reported().HasError();
     std::puts(failed ? "exec_parity: DIVERGED" : "exec_parity: parity holds");
-    std::fflush(stdout);
-    hangwatch::Mark("main returning");
     return failed ? 1 : 0;
 }

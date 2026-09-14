@@ -1068,7 +1068,14 @@ Current schema contract version: **1**.
   was armed without the frame's overrides, so an answering frame carried the
   un-overridden graph's refusals; a key on the pseudo-root was judged
   unavailable; and an expiry went unreported in a frame that rebuilt the
-  request for another reason. 148 CTest names in the workspace.
+  request for another reason. **The first Linux run hung**, in both processes
+  that use the driver, while Windows and macOS passed. Under C++20, which the
+  lane's toolchain sets, GCC 13 resolves `TfEnum == enum` to the reversed
+  candidate of OpenUSD 26.08's friend `operator==(T, TfEnum const&)`. That
+  function's body `e == val` resolves to itself again, and GCC compiles the
+  recursion to a jump to itself. The driver compares two `TfEnum`s now, and the
+  report's §8 carries the diagnosis and the upstream ask. 148 CTest names in
+  the workspace.
 
 ### Changed
 

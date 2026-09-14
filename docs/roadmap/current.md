@@ -963,7 +963,11 @@ compared, which was P0-4's stated blocker.
   the bits `IsValid()` reads. That is the `InvalidateAll` shape, reached by a
   scene edit. The first draft's check for it passed with its own route
   disabled, because the check matched a word both routes' details shared. The
-  details are now worded apart.
+  details are now worded apart. **A third finding came from the first Linux
+  run**, which hung while Windows and macOS passed. Under C++20, which `ost`
+  builds a consumer as, GCC 13 compiles `TfEnum == enum` to infinite recursion
+  through 26.08's friend `operator==`. That is an upstream ask, and the driver
+  compares two `TfEnum`s.
 - ⬜ **The rest of P0-6** of the
   [plan](openexec-foundation.md#6-foundation-tasks). The values and the
   diagnostics agree. What is left is the rows no producer reaches, each

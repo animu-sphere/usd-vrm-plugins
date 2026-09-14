@@ -4,6 +4,7 @@
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/diagnosticLite.h"
+#include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/safeTypeCompare.h"
@@ -17,10 +18,8 @@
 
 #include <algorithm>
 #include <array>
-#include <cstdio>
 #include <set>
 #include <sstream>
-#include <thread>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -256,42 +255,21 @@ struct Posted
     std::vector<std::string> other;
 };
 
+// Two TfEnums compared, never a TfEnum and an enum. Under C++20, which is what
+// `ost` builds a consumer as, `code == TF_DIAGNOSTIC_RUNTIME_ERROR_TYPE`
+// resolves in GCC 13 to the reversed candidate of 26.08's friend
+// `operator==(T, TfEnum const&)`, whose body `e == val` resolves to itself
+// again: infinite recursion, compiled to a jump to itself. It hung every Linux
+// run of the driver while MSVC, clang and any C++17 build passed (the driver
+// report, §8).
+const TfEnum kRuntimeError{TF_DIAGNOSTIC_RUNTIME_ERROR_TYPE};
+
 Posted Drain(TfErrorMark& mark)
 {
     Posted posted;
-    // TEMPORARY instrumentation (PR #191's Linux hang): bound the walk and say
-    // how it ended, against the count libtf itself reports.
-    std::size_t counted = 0;
-    const TfErrorMark::Iterator first = mark.GetBegin(&counted);
-    const TfErrorMark::Iterator last = mark.GetEnd();
-    std::set<const void*> seen;
-    std::size_t walked = 0;
-    bool cycled = false;
-    for (TfErrorMark::Iterator it = first; it != mark.GetEnd(); ++it) {
-        if (!seen.insert(static_cast<const void*>(&*it)).second) {
-            cycled = true;
-            break;
-        }
-        if (++walked > 100000) {
-            break;
-        }
-        if (walked <= 12 && counted != 0 && walked > counted) {
-            std::fprintf(stderr, "[drain] past the count: #%zu code %s: %s\n",
-                         walked, it->GetErrorCodeAsString().c_str(),
-                         it->GetCommentary().c_str());
-        }
-        (it->GetErrorCode() == TF_DIAGNOSTIC_RUNTIME_ERROR_TYPE ? posted.runtime
-                                                                : posted.other)
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
+        (it->GetErrorCode() == kRuntimeError ? posted.runtime : posted.other)
             .push_back(it->GetCommentary());
-    }
-    if (walked != counted || cycled) {
-        std::fprintf(stderr,
-                     "[drain] libtf counted %zu, walked %zu, cycle %d, end "
-                     "stable %d, first==end %d, thread %zu\n",
-                     counted, walked, int(cycled),
-                     int(last == mark.GetEnd()), int(first == last),
-                     std::hash<std::thread::id>()(std::this_thread::get_id()));
-        std::fflush(stderr);
     }
     mark.Clear();
     return posted;
