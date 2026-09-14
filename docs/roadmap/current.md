@@ -897,8 +897,19 @@ compared, which was P0-4's stated blocker.
   defect on the way**: the clip overload asked only its first sample which
   bones it drives, so a bone that first appears later went unreported —
   unreachable through `motion_retarget`, whose clips drive the same bones on
-  every sample, and reachable from a live source's animation. Still open in
-  P1-1: the CLI exit codes and the `VRM_OPENEXEC_*` table.
+  every sample, and reachable from a live source's animation.
+
+  **The exit codes are frozen too** *(2026-09-14)*. `motion_retarget` exits
+  with the class of the input at fault: 1 for the arguments, 2 for the clip,
+  3 for the environment or the file, 4 for the avatar, and 5 for the output.
+  6 is reserved for OpenExec evaluation. Before, it exited 2 for a usage error
+  and 1 for everything else. Each refusal is classified where it is raised,
+  since only the raiser knows whether it was given a path the user typed. The
+  tool's suite holds every class to its number, and the earlier build fails it
+  on 13 of 21 runs
+  ([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md), "`motion_retarget` exit
+  codes"). Still open in P1-1: the `VRM_OPENEXEC_*` table, which waits for a
+  driver to raise it.
 - ✅ **Exec answers the retarget's diagnostics, and they are the tool's own
   lines** *(2026-09-13, P0-6's diagnostics row)*. `execVrm` gained two
   computations on the applied `VrmHumanoidAPI`, both answering

@@ -23,6 +23,16 @@ from pxr import Gf, Sdf, Usd, UsdGeom, UsdSkel, Vt
 
 TOLERANCE = 1e-5
 
+# motion_retarget's exit codes (MOTION_CONTRACT.md, "motion_retarget exit
+# codes"). Asserted by number, because the number is what a script branches on;
+# 6 is reserved for a tool that evaluates through OpenExec and never returned.
+EXIT_SUCCESS = 0
+EXIT_INVALID_USER_INPUT = 1
+EXIT_UNSUPPORTED_SOURCE_FEATURE = 2
+EXIT_STAGE_FAILURE = 3
+EXIT_RETARGET_CONTRACT_VIOLATION = 4
+EXIT_OUTPUT_AUTHORING_FAILURE = 5
+
 
 class Failures:
     def __init__(self) -> None:
@@ -1032,6 +1042,161 @@ def check_a_gaze_expression_collision_is_reported_once(
         abs(left - 0.5) <= TOLERANCE,
         f"the clip's own lookLeft weight survived the gaze: {left}")
 
+
+def check_exit_codes(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
+                     humanoid_map: str, workspace: pathlib.Path,
+                     failures: Failures) -> None:
+    """Every class of refusal exits with its own code, and says why.
+
+    One case per failure path the tool has, grouped by the code it owes. Each
+    input differs from a bake that succeeds by one thing, derived from the
+    design triplet through USD rather than kept as a fixture, so a case cannot
+    fail for a second reason nobody meant it to test. The code is the contract
+    and the sentence is not, so each case matches only a fragment that says
+    which input was at fault.
+    """
+    cases = workspace / "exit_codes"
+    cases.mkdir()
+
+    def bake(*overrides: str, avatar_path=avatar, clip_path=clip,
+             output=None, mapping=True) -> list[str]:
+        arguments = ["--avatar", str(avatar_path), "--animation", str(clip_path),
+                     "--output", str(output or cases / "out.usda")]
+        if mapping:
+            arguments += ["--humanoid-map", humanoid_map]
+        return arguments + list(overrides)
+
+    # A clip whose animation names rig joints rather than human bones: the
+    # shape of a rig-specific bake fed back in as a source.
+    unsemantic = cases / "unsemantic_clip.usda"
+    shutil.copy(clip, unsemantic)
+    unsemantic_stage = Usd.Stage.Open(str(unsemantic))
+    unsemantic_animation = find_animation(unsemantic_stage)
+    unsemantic_animation.GetJointsAttr().Set(
+        ["Root", "Root/Pelvis", "Root/Pelvis/SpineA"])
+    unsemantic_stage.GetRootLayer().Save()
+
+    # A stage with a default prim and nothing else. As a clip it is a source
+    # with no skeleton; as an avatar, a rig with no skeleton.
+    empty = cases / "empty.usda"
+    empty.write_text('#usda 1.0\n(\n    defaultPrim = "Root"\n)\n\n'
+                     'def Xform "Root"\n{\n}\n', encoding="utf-8")
+
+    # The design rig with its default prim cleared, so the output has nothing
+    # to reference by name.
+    rootless = cases / "rootless_avatar.usda"
+    shutil.copy(avatar, rootless)
+    rootless_stage = Usd.Stage.Open(str(rootless))
+    rootless_stage.ClearDefaultPrim()
+    rootless_stage.GetRootLayer().Save()
+
+    # Layers OpenUSD cannot open although the file is there: one whose
+    # extension no file format claims, and one whose format refuses it.
+    unformatted = cases / "avatar.notusd"
+    shutil.copy(avatar, unformatted)
+    garbled = cases / "garbled_avatar.usda"
+    garbled.write_text("#usda 1.0\nthis is not a layer {\n", encoding="utf-8")
+
+    bad_map = cases / "bad_map.json"
+    bad_map.write_text('{"hips": "NoSuchJoint"}', encoding="utf-8")
+    unparsable_map = cases / "unparsable_map.json"
+    unparsable_map.write_text('{"hips": ', encoding="utf-8")
+
+    # An output whose directory would have to be made under a regular file.
+    blocker = cases / "not_a_directory"
+    blocker.write_text("", encoding="utf-8")
+
+    expectations = [
+        # --- 1: the command line is wrong -----------------------------------
+        ("an unknown option", ["--avatar", str(avatar), "--frobnicate"],
+         EXIT_INVALID_USER_INPUT, "unknown argument '--frobnicate'"),
+        ("no --output", ["--avatar", str(avatar), "--animation", str(clip)],
+         EXIT_INVALID_USER_INPUT, "--output is required"),
+        ("an avatar path with no file",
+         bake(avatar_path=cases / "absent_avatar.usda"),
+         EXIT_INVALID_USER_INPUT, "no avatar file at"),
+        ("a clip path with no file", bake(clip_path=cases / "absent.usda"),
+         EXIT_INVALID_USER_INPUT, "no animation file at"),
+        ("a --humanoid-map path with no file",
+         bake("--humanoid-map", str(cases / "absent_map.json")),
+         EXIT_INVALID_USER_INPUT, "could not open humanoid map file"),
+        ("a --humanoid-map that is not JSON",
+         bake("--humanoid-map", str(unparsable_map)),
+         EXIT_INVALID_USER_INPUT, "could not parse"),
+        ("a --humanoid-map binding a joint the rig lacks",
+         bake("--humanoid-map", str(bad_map)),
+         EXIT_INVALID_USER_INPUT, "NoSuchJoint"),
+        ("a --skeleton naming no prim", bake("--skeleton", "/Avatar/Nothing"),
+         EXIT_INVALID_USER_INPUT, "no prim at /Avatar/Nothing"),
+        ("a --clip-skeleton that is not a skeleton",
+         bake("--clip-skeleton", "/Animation"),
+         EXIT_INVALID_USER_INPUT, "/Animation is not a UsdSkelSkeleton"),
+        ("a --root-joint the rig lacks",
+         bake("--root-motion", "root", "--root-joint", "NoSuchJoint"),
+         EXIT_INVALID_USER_INPUT, "--root-joint 'NoSuchJoint'"),
+        ("an --animation-name that is not a prim name",
+         bake("--animation-name", "not a name"),
+         EXIT_INVALID_USER_INPUT, "is not a valid prim name"),
+        # --- 2: the clip is not one this tool reads --------------------------
+        ("a clip naming no human bone", bake(clip_path=unsemantic),
+         EXIT_UNSUPPORTED_SOURCE_FEATURE, "names a VRM human bone"),
+        ("a clip with no skeleton", bake(clip_path=empty),
+         EXIT_UNSUPPORTED_SOURCE_FEATURE,
+         "the animation stage has no UsdSkelSkeleton"),
+        # --- 3: OpenUSD could not open a layer that is there ----------------
+        ("an avatar no file format claims", bake(avatar_path=unformatted),
+         EXIT_STAGE_FAILURE, "no file format for '.notusd'"),
+        ("an avatar its file format refuses", bake(avatar_path=garbled),
+         EXIT_STAGE_FAILURE, "could not open the avatar stage"),
+        # --- 4: the avatar is not a rig the retarget can bake onto ----------
+        ("an avatar with no humanoid mapping", bake(mapping=False),
+         EXIT_RETARGET_CONTRACT_VIOLATION, "pass --humanoid-map"),
+        ("an avatar with no default prim", bake(avatar_path=rootless),
+         EXIT_RETARGET_CONTRACT_VIOLATION, "has no defaultPrim"),
+        ("an avatar with no skeleton", bake(avatar_path=empty),
+         EXIT_RETARGET_CONTRACT_VIOLATION,
+         "the avatar stage has no UsdSkelSkeleton"),
+        # --- 5: the output could not be written -----------------------------
+        ("an output under a regular file",
+         bake(output=blocker / "out.usda"),
+         EXIT_OUTPUT_AUTHORING_FAILURE, "could not create output layer"),
+    ]
+    for label, arguments, expected, fragment in expectations:
+        result = run_tool(tool, *arguments)
+        failures.check(
+            result.returncode == expected and fragment in result.stderr,
+            f"{label}: exited {result.returncode} (expected {expected}), "
+            f"stderr {result.stderr.strip()!r} (expected {fragment!r})")
+
+    # Writing the output over an input is refused, and the input survives.
+    # The output layer is cleared before it is authored, so accepting this
+    # would destroy the avatar rather than merely producing a bad result. The
+    # arguments are what is wrong -- one file named twice -- so it is 1 and not
+    # 5, and it keeps its retarget code on the line.
+    guarded = cases / "guarded_avatar.usda"
+    shutil.copy(avatar, guarded)
+    before = guarded.read_bytes()
+    result = run_tool(tool, *bake(avatar_path=guarded, output=guarded))
+    failures.check(result.returncode == EXIT_INVALID_USER_INPUT,
+                   f"a bake whose --output names the avatar exited "
+                   f"{result.returncode}, expected {EXIT_INVALID_USER_INPUT}")
+    failures.check(guarded.read_bytes() == before,
+                   "the avatar was modified by a refused in-place bake")
+    failures.check(
+        "[VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT] error" in result.stderr,
+        f"the refused in-place bake did not name its code: "
+        f"{result.stderr.strip()}")
+
+    # --quiet silences diagnostics, not the refusal: a failed run that says
+    # nothing leaves a script with a number and no subject.
+    result = run_tool(tool, *bake(mapping=False), "--quiet")
+    failures.check(
+        result.returncode == EXIT_RETARGET_CONTRACT_VIOLATION
+        and "pass --humanoid-map" in result.stderr,
+        f"a refusal under --quiet exited {result.returncode} with stderr "
+        f"{result.stderr.strip()!r}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tool", required=True)
@@ -1245,50 +1410,11 @@ def main() -> int:
 
         check_look_at_bake(options.tool, tool_fixtures, workspace, failures)
 
-        # Writing the output over an input is refused, and the input survives.
-        # The output layer is cleared before it is authored, so accepting this
-        # would destroy the avatar rather than merely producing a bad result.
-        guarded = workspace / "guarded_avatar.usda"
-        shutil.copy(avatar, guarded)
-        before = guarded.read_bytes()
-        result = run_tool(
-            options.tool,
-            "--avatar", str(guarded), "--animation", str(clip),
-            "--output", str(guarded), "--humanoid-map", options.humanoid_map)
-        failures.check(result.returncode != 0,
-                       "a bake whose --output names the avatar was accepted")
-        failures.check(guarded.read_bytes() == before,
-                       "the avatar was modified by a refused in-place bake")
-        failures.check(
-            "[VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT] error" in result.stderr,
-            f"the refused in-place bake did not name its code: "
-            f"{result.stderr.strip()}")
-
-        # A rig with no VrmHumanoidAPI and no map is refused, by name.
-        result = run_tool(
-            options.tool,
-            "--avatar", str(avatar), "--animation", str(clip),
-            "--output", str(workspace / "unmapped.usda"))
-        failures.check(result.returncode != 0,
-                       "an unmapped avatar was accepted without a humanoid map")
-        failures.check("--humanoid-map" in result.stderr,
-                       "the unmapped-avatar error does not name --humanoid-map")
-
-        # A bad joint token is reported rather than silently dropped.
-        bad_map = workspace / "bad_map.json"
-        bad_map.write_text('{"hips": "NoSuchJoint"}', encoding="utf-8")
-        result = run_tool(
-            options.tool,
-            "--avatar", str(avatar), "--animation", str(clip),
-            "--output", str(workspace / "bad.usda"),
-            "--humanoid-map", str(bad_map))
-        failures.check(result.returncode != 0,
-                       "a humanoid map naming an absent joint was accepted")
-        failures.check("NoSuchJoint" in result.stderr,
-                       "the bad-joint error does not name the joint")
+        check_exit_codes(options.tool, avatar, clip, options.humanoid_map,
+                         workspace, failures)
 
     result = run_tool(options.tool, "--help")
-    failures.check(result.returncode == 0, "--help did not exit 0")
+    failures.check(result.returncode == EXIT_SUCCESS, "--help did not exit 0")
     failures.check("motion_retarget" in result.stdout,
                    "--help did not print usage")
 

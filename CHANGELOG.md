@@ -1038,7 +1038,29 @@ Current schema contract version: **1**.
   required bones becomes one line per bone in the frozen format
   (`[VRM_RETARGET_MISSING_REQUIRED_BONE] warning recoverable subject=neck: …`),
   and a refused `--output` names `VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT`. Its
-  exit codes are unchanged; freezing them is P1-1's second half.
+  exit codes change as well; see the next entry.
+
+- **`motion_retarget` exits with the class of the input at fault**, frozen by
+  the OpenExec plan's P1-1
+  ([MOTION_CONTRACT.md](docs/design/MOTION_CONTRACT.md), "`motion_retarget`
+  exit codes"). It exited 2 for a usage error and 1 for every other refusal,
+  so a script could not tell a typo from a missing plugin. Now: **1** invalid
+  user input, **2** a clip that is not a semantic humanoid clip, **3** a layer
+  OpenUSD would not open, **4** an avatar the retarget cannot bake onto, and
+  **5** an output that could not be written. **6** is reserved for OpenExec
+  evaluation and never returned. Success stays 0, and a partial rig with
+  warnings still exits 0.
+
+  Two changes break a caller that matched the old numbers. **A usage error now
+  exits 1**, like any other bad argument. And a refusal that exited 1 may now
+  exit 2 to 5. An `--output` that names an input stays a 1: the arguments
+  named one file twice and nothing was written. A path with no file (1) and a
+  file OpenUSD will not open (3) are told apart only after `UsdStage::Open`
+  fails, so a URI the resolver understands is never refused by the check. The
+  line for a `.vrm` or `.vrma` with no file format registered names the bundle
+  it needs. The refusal line is printed under `--quiet`, as it was.
+  `motion_retarget_design_triplet` holds every class to its number, and the
+  earlier build fails it on 13 of 21 runs.
 
 - **The OpenExec capability probe asks for the nine components a consumer
   actually needs, and stops asking for one that proved nothing.**

@@ -7,6 +7,8 @@
 // and the source clip off stages and writes the result back to one.
 #pragma once
 
+#include "ExitCode.h"
+
 #include "vrmRetarget/ExpressionResolver.h"
 #include "vrmRetarget/HumanoidMap.h"
 #include "vrmRetarget/LookAtEvaluator.h"
@@ -88,22 +90,26 @@ struct Clip
 };
 
 // Reads a `humanBone -> joint token` JSON object, e.g.
-// `{"hips": "Root/Pelvis", "spine": "Root/Pelvis/SpineA"}`.
+// `{"hips": "Root/Pelvis", "spine": "Root/Pelvis/SpineA"}`. Every refusal is
+// `InvalidUserInput`: the file's format is this tool's own option.
 bool ReadHumanoidMapFile(const std::string& path,
                          std::map<std::string, std::string>* entries,
-                         std::string* error);
+                         Failure* failure);
 
 // Opens the avatar and resolves its target skeleton plus humanoid mapping.
 // `skeletonPathOverride` and `extraMappings` may be empty; extra mappings are
-// applied over anything found on the stage.
+// applied over anything found on the stage. A rig the stage itself leaves
+// short is `RetargetContractViolation`; one an option named wrongly is
+// `InvalidUserInput`.
 bool ReadAvatar(const std::string& path,
                 const std::string& skeletonPathOverride,
                 const std::map<std::string, std::string>& extraMappings,
-                Avatar* avatar, std::string* error);
+                Avatar* avatar, Failure* failure);
 
-// Opens the clip and reads its semantic humanoid animation.
+// Opens the clip and reads its semantic humanoid animation. A clip this tool
+// cannot read as one is `UnsupportedSourceFeature`.
 bool ReadClip(const std::string& path, const std::string& skeletonPathOverride,
-              Clip* clip, std::string* error);
+              Clip* clip, Failure* failure);
 
 // What the write put on the stage, for the caller's summary and diagnostics.
 //
@@ -122,10 +128,15 @@ struct WriteResult
 //
 // `expressions` is either empty or one entry per sample of `animation`, in the
 // same order — the face half of the same samples the body was expanded from.
+//
+// An output that names an input and an animation name that is not a prim name
+// are `InvalidUserInput` -- the arguments contradict themselves -- and are
+// refused before anything is written. Everything after that is
+// `OutputAuthoringFailure`.
 bool WriteRetargetedAnimation(
     const std::string& outputPath, const Avatar& avatar, const Clip& clip,
     const vrmRetarget::RetargetedAnimation& animation,
     const std::vector<vrmRetarget::ResolvedExpressions>& expressions,
-    const std::string& animationName, WriteResult* result, std::string* error);
+    const std::string& animationName, WriteResult* result, Failure* failure);
 
 } // namespace motionRetargetTool

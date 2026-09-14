@@ -1264,12 +1264,30 @@ Measured by a unit test that fails with the old rule restored. `motion_retarget`
 could not reach it — a `UsdSkelAnimation`'s `joints` are uniform — but a
 library caller with a live source's animation could.
 
-**Still open here**: `motion_retarget`'s exit codes, which are unchanged (2 for
-a usage error, 1 for everything else) and need every failure path classified;
-and the three `VRM_OPENEXEC_*` codes, whose table waits for a driver to raise
-them. Exec answering the retarget codes was P0-6's row, and it closed the same
-day: two `execVrm` computations, compared with the tool line for line (P0-6
-above).
+**The exit codes are frozen, one class per input at fault** *(2026-09-14)*.
+`motion_retarget` had exited 2 for a usage error and 1 for everything else.
+Each refusal is now classified where it is raised, into the table above
+([MOTION_CONTRACT.md, "`motion_retarget` exit codes"](../design/MOTION_CONTRACT.md)).
+Only the raiser knows whether it was given a path the user typed or found a
+stage missing something. The contract adds three rules to the drafted table:
+
+- **A usage error is a 1.** It was a 2, and the fix is the same as for any
+  other bad argument.
+- **An `--output` naming an input is a 1, not a 5.** One file was named twice
+  and nothing was written. The line still carries its retarget code.
+- **Code 6 is reserved.** The tool evaluates nothing through OpenExec, so it
+  never returns 6.
+
+A missing file (1) and a file OpenUSD will not open (3) are told apart only
+after `UsdStage::Open` fails, so the check cannot refuse a URI the resolver
+would have opened. `motion_retarget_design_triplet` runs each class of refusal
+and holds it to its code. The build before this change fails that test on 13
+of its 21 runs. The collision case passes on both, because it was already a 1.
+
+**Still open here**: the three `VRM_OPENEXEC_*` codes, whose table waits for a
+driver to raise them. Exec answering the retarget codes was P0-6's row, and it
+closed the same day: two `execVrm` computations, compared with the tool line
+for line (P0-6 above).
 
 ### P1-2 — scale policy ⬜
 

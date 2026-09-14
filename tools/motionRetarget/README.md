@@ -71,7 +71,7 @@ def "Avatar" (
 ```
 
 This requires the target skeleton to sit under the avatar's `defaultPrim`; the
-tool says so and exits non-zero when it does not.
+tool says so and exits 4 when it does not.
 
 ### The face, when both sides have one
 
@@ -213,13 +213,33 @@ rather than counted. A clip is authored against no avatar in particular, so none
 of them is an error — but a whole expression track going missing without a line
 of output is how a bake looks correct and drives nothing.
 
+## Exit codes
+
+A run that does not finish exits with the code of the input at fault
+([MOTION_CONTRACT.md](../../docs/design/MOTION_CONTRACT.md), "`motion_retarget`
+exit codes"):
+
+| Code | Meaning |
+| --- | --- |
+| `0` | written, with or without diagnostics |
+| `1` | invalid user input: an option, a path with no file, the `--humanoid-map` file, a prim or joint an option names, or an `--output` that names an input |
+| `2` | the clip is not a semantic humanoid clip this tool reads |
+| `3` | OpenUSD would not open a layer that is there (no file format for it, or the format refused it) |
+| `4` | the avatar is not a rig the retarget can bake onto (no `defaultPrim`, skeleton, joints or humanoid mapping) |
+| `5` | the output could not be written |
+| `6` | reserved for OpenExec evaluation; never returned here |
+
+The line explaining the refusal is printed under `--quiet` too. A usage error
+exits 1; through v0.8.0 it exited 2.
+
 ## Testing
 
 `tests/test_motion_retarget.py` bakes the frozen design triplet
 (`docs/design/fixtures/motion/`) and compares the result with
 `expected_retargeted.usda` at the value level, then exercises
-`--root-motion ignore`, `--resample`, re-baking over an existing output, and the
-two documented failure modes.
+`--root-motion ignore`, `--resample`, and re-baking over an existing output.
+Every refusal path is run once and held to its exit code and to a fragment of
+its line, each input one change away from a bake that succeeds.
 
 It then bakes `tests/fixtures/expressive_{avatar,clip}.usda` — the same
 skeleton, with a face on it — and checks the expression half through UsdSkel's
