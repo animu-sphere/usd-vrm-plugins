@@ -126,8 +126,10 @@ part of the verified matrix.
 On Windows, every CLI embeds a manifest that sets its process code page to
 UTF-8, so a path outside the host's ANSI code page reaches OpenUSD intact
 (`workspace_unicode_paths`). Windows 10 version 1903 and later honour it. An
-older Windows ignores the setting, and there a CLI opens only paths its ANSI
-code page can spell.
+older Windows ignores the setting, so a CLI there passes OpenUSD its path in
+the ANSI code page and OpenUSD reads those bytes as UTF-8. Only ASCII paths are
+dependable there, even on a host whose code page can spell the path (a CP932
+host with a Japanese directory is the case that failed).
 
 These per-bundle cells configure `usdVrmFileFormat` standalone, one per
 platform; the other three bundles' nine cells were measured redundant against
