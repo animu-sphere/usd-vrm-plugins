@@ -72,11 +72,19 @@
 // and costs nothing: both sides format one library's values, so a detail that
 // differs is a difference in what the retarget was told.
 //
+// # How it drives exec
+//
+// Through `ExecDriver` beside it, the driver contract as code: one system for
+// the stage, each request armed once and its arming refusals kept, each key's
+// instant named before it is computed. The driver's `VRM_OPENEXEC_*` lines are
+// reported, and an error among them fails the run.
+//
 // # What it links
 //
-// OpenUSD and exec, `vrmRetarget` for the result type, and `motionCore` for
-// the bone vocabulary and `AngleBetween`. Neither plugin: both are found
-// through `PXR_PLUGINPATH_NAME`, the path a packaged bundle takes.
+// OpenUSD and exec, the driver, `vrmRetarget` for the result type, and
+// `motionCore` for the bone vocabulary and `AngleBetween`. Neither plugin:
+// both are found through `PXR_PLUGINPATH_NAME`, the path a packaged bundle
+// takes.
 //
 // # Where what it ran came from
 //
@@ -97,18 +105,12 @@
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/diagnosticMgr.h"
-#include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/status.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/warning.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
-
-#include "pxr/exec/execUsd/cacheView.h"
-#include "pxr/exec/execUsd/request.h"
-#include "pxr/exec/execUsd/system.h"
-#include "pxr/exec/execUsd/valueKey.h"
 
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
@@ -123,6 +125,8 @@
 #include "pxr/usd/usdSkel/animation.h"
 #include "pxr/usd/usdSkel/bindingAPI.h"
 #include "pxr/usd/usdSkel/skeleton.h"
+
+#include "ExecDriver.h"
 
 #include <motionCore/Compare.h>
 #include <motionCore/Humanoid.h>
@@ -325,15 +329,6 @@ private:
     std::mutex _mutex;
     std::map<std::string, int> _warnings;
 };
-
-std::vector<std::string> ErrorsIn(const TfErrorMark& mark)
-{
-    std::vector<std::string> errors;
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
-        errors.push_back(it->GetCommentary());
-    }
-    return errors;
-}
 
 // What the tool printed as coded diagnostics, split at the layer boundary.
 struct ToolDiagnostics
@@ -989,26 +984,38 @@ int main(int argc, char** argv)
     }
 
     // -- exec, two requests armed once and moved through the keys ------------
+    // Through the driver, which is the driver contract as code
+    // (docs/design/MOTION_CONTRACT.md): it names each instant before
+    // computing, keeps what the arming compute posted, and raises the
+    // `VRM_OPENEXEC_*` codes -- so a bundle missing from the session is a
+    // named key here rather than an empty value and a coding error.
+    //
     // The values and the diagnostics are asked for apart, so each is timed
     // alone: the second compute at a key finds the rig, the map and the pose
     // already cached by the first, and what it costs is what diagnosing adds.
-    ExecUsdSystem system(parity.stage);
-    ExecUsdRequest request = system.BuildRequest(
-        {ExecUsdValueKey(parity.humanoid, kJointTransforms)});
-    ExecUsdRequest diagnosticsRequest = system.BuildRequest(
-        {ExecUsdValueKey(parity.humanoid, kRetargetDiagnostics)});
+    execdriver::Driver driver(parity.stage);
+    const SdfPath humanoid = parity.humanoid.GetPath();
+    // The first compute arms a request, at the default time code, where the
+    // retarget refuses by design (the retarget report, §5) -- so its errors
+    // are not a failure. They are kept anyway: a node nothing invalidates
+    // computes only here, so this is the one place its refusal is ever posted
+    // (the diagnostics report, §4).
+    execdriver::Frame armedValues;
+    execdriver::Frame armedDiagnostics;
+    const execdriver::Driver::RequestId request = driver.Add(
+        {execdriver::Key::Of<vrmRetarget::JointLocalTransforms>(
+            humanoid, kJointTransforms)},
+        &armedValues);
+    const execdriver::Driver::RequestId diagnosticsRequest = driver.Add(
+        {execdriver::Key::Of<vrmRetarget::RetargetDiagnostics>(
+            humanoid, kRetargetDiagnostics)},
+        &armedDiagnostics);
     std::vector<std::string> armingErrors;
-    {
-        // The first compute arms a request, at the default time code, where
-        // the retarget refuses by design (the retarget report, §5) -- so its
-        // errors are not a failure. They are kept anyway: a node nothing
-        // invalidates computes only here, so this is the one place its
-        // refusal is ever posted (the diagnostics report, §4).
-        TfErrorMark mark;
-        system.Compute(request);
-        system.Compute(diagnosticsRequest);
-        armingErrors = ErrorsIn(mark);
-        mark.Clear();
+    for (const execdriver::Frame* armed : {&armedValues, &armedDiagnostics}) {
+        armingErrors.insert(armingErrors.end(), armed->refusals.begin(),
+                            armed->refusals.end());
+        armingErrors.insert(armingErrors.end(), armed->errors.begin(),
+                            armed->errors.end());
     }
 
     std::vector<vrmRetarget::JointLocalTransforms> answers;
@@ -1027,39 +1034,48 @@ int main(int argc, char** argv)
     double execSeconds = 0.0;
     double diagnosticsSeconds = 0.0;
     for (const double key : keys) {
-        TfErrorMark mark;
         const auto started = std::chrono::steady_clock::now();
-        system.ChangeTime(UsdTimeCode(key));
-        const VtValue value = system.Compute(request).Get(0);
-        const auto valued = std::chrono::steady_clock::now();
-        const VtValue diagnosed = system.Compute(diagnosticsRequest).Get(0);
+        const execdriver::Frame valued =
+            driver.Evaluate(request, UsdTimeCode(key));
+        const auto between = std::chrono::steady_clock::now();
+        const execdriver::Frame diagnosed =
+            driver.Evaluate(diagnosticsRequest, UsdTimeCode(key));
         const auto finished = std::chrono::steady_clock::now();
-        execSeconds += std::chrono::duration<double>(valued - started).count();
+        execSeconds += std::chrono::duration<double>(between - started).count();
         diagnosticsSeconds +=
-            std::chrono::duration<double>(finished - valued).count();
+            std::chrono::duration<double>(finished - between).count();
 
-        if (!diagnosed.IsEmpty()
-            && diagnosed.IsHolding<vrmRetarget::RetargetDiagnostics>()) {
-            execDiagnostics.Merge(
-                diagnosed.UncheckedGet<vrmRetarget::RetargetDiagnostics>());
+        if (const auto* reported =
+                diagnosed.Get<vrmRetarget::RetargetDiagnostics>(0)) {
+            execDiagnostics.Merge(*reported);
         } else {
             ++diagnosticsRefusals;
         }
 
-        const bool none = value.IsEmpty()
-            || !value.IsHolding<vrmRetarget::JointLocalTransforms>();
-        refused.push_back(none);
-        if (none) {
+        const auto* answer = valued.Get<vrmRetarget::JointLocalTransforms>(0);
+        refused.push_back(answer == nullptr);
+        if (!answer) {
             ++refusals;
             if (refusalReasons.empty()) {
-                refusalReasons = ErrorsIn(mark);
+                // What the two frames said, the driver's own lines last.
+                for (const execdriver::Frame* frame : {&valued, &diagnosed}) {
+                    refusalReasons.insert(refusalReasons.end(),
+                                          frame->refusals.begin(),
+                                          frame->refusals.end());
+                    refusalReasons.insert(refusalReasons.end(),
+                                          frame->errors.begin(),
+                                          frame->errors.end());
+                    for (const execdriver::OpenExecDiagnostic& d :
+                         frame->diagnostics.reported) {
+                        refusalReasons.push_back(
+                            execdriver::FormatOpenExecDiagnostic(d));
+                    }
+                }
             }
             answers.emplace_back();
         } else {
-            answers.push_back(
-                value.UncheckedGet<vrmRetarget::JointLocalTransforms>());
+            answers.push_back(*answer);
         }
-        mark.Clear();
     }
 
     std::vector<std::string> execLines;
@@ -1228,6 +1244,14 @@ int main(int argc, char** argv)
     for (const std::string& reason : refusalReasons) {
         std::printf("  refused: %s\n", reason.c_str());
     }
+    // What the driver raised about the requests themselves, over the run. A
+    // bundle missing from the session is the likely one, and it is an error
+    // whatever the values did.
+    std::vector<std::string> driverLines;
+    for (const execdriver::OpenExecDiagnostic& d : driver.Reported().reported) {
+        driverLines.push_back(execdriver::FormatOpenExecDiagnostic(d));
+        std::printf("  driver: %s\n", driverLines.back().c_str());
+    }
 
     // The diagnostics: what exec answered, and against the tool when it was
     // handed the tool's log.
@@ -1279,6 +1303,7 @@ int main(int argc, char** argv)
         diagnostics["tool_only"] = JsValue(JsLines(toolOnly));
         report["diagnostics"] = JsValue(diagnostics);
         report["arming_errors"] = JsValue(JsLines(armingErrors));
+        report["openexec_diagnostics"] = JsValue(JsLines(driverLines));
     }
     {
         JsArray reasons;
@@ -1345,7 +1370,8 @@ int main(int argc, char** argv)
         || translations.Of(Kind::Divergence) != 0
         || placement.Of(Kind::Divergence) != 0
         || stamps.Of(Kind::Divergence) != 0
-        || (diagnosticsCompared && !diagnosticsAgree);
+        || (diagnosticsCompared && !diagnosticsAgree)
+        || driver.Reported().HasError();
     std::puts(failed ? "exec_parity: DIVERGED" : "exec_parity: parity holds");
     return failed ? 1 : 0;
 }

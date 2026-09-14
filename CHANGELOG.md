@@ -1027,6 +1027,55 @@ Current schema contract version: **1**.
   and 50–60 µs on Seed-san, against a 4–6 µs floor. A driver's override of the
   retarget is therefore not diagnosed, while an override of the pose is. New
   suite `execVrm_diagnostics`; 147 CTest names in the workspace.
+- **The OpenExec driver contract, written and followed, and the
+  `VRM_OPENEXEC_*` codes it raises** (the OpenExec plan's P0-4 driver contract
+  and P1-1's last table). What a caller of `execMotion` and `execVrm` has to do
+  is stated by none of their computations, and six reports had found it one
+  rule at a time. It is now ten rules in
+  [MOTION_CONTRACT.md](docs/design/MOTION_CONTRACT.md#openexec-driver-contract-after-v080).
+  A driver arms each request with one compute and keeps what it posted. It
+  names the instant before computing, and holds one previous answer and one
+  snapshot per prim, handing both in one call. It checks an override's type
+  before exec sees it and requests every key an override names. It treats a
+  coding error as a failed frame, and rebuilds a request exec has stopped
+  answering.
+
+  `tests/parity/ExecDriver` follows the contract, and the parity harness now
+  drives exec through it. It raises three frozen codes, each from its own
+  checks and never from exec's text, which travels in the detail.
+  `VRM_OPENEXEC_COMPUTATION_UNAVAILABLE` is a key the session cannot compute:
+  no prim at its path that exec computes on, or no computation of its name for
+  that prim. `VRM_OPENEXEC_TYPE_MISMATCH` is an override or an answer of a
+  type other than its key's declaration. `VRM_OPENEXEC_INVALIDATED` is a
+  request exec stopped answering; it is a recoverable warning, since the
+  driver rebuilds the request and names the instant again. With `execVrm` out
+  of the session, the harness names its two keys as unavailable where it used
+  to show empty values, and an error among the driver's lines fails the run.
+  The artifact-only exec smoke passes from the installed product on the
+  driver. `motion_retarget`'s exit code 6 stays reserved.
+
+  **Two findings**
+  ([docs/reports/openusd/26.08-openexec-driver.md](docs/reports/openusd/26.08-openexec-driver.md)).
+  **Exec skips an override of a key nothing compiled without a word, even a
+  mistyped one**, because its type check is reached only for a compiled
+  output. So the driver requests every key an override names. And **a request
+  whose every key expired reports itself valid**: exec discards it, and
+  discarding clears the bits `IsValid()` reads. That is `InvalidateAll`'s
+  shape, reached by a scene edit. New suite `exec_driver_contract`
+  (`workspace_exec_driver`, registered without Python). With each of thirteen
+  checks disabled in turn, the suite goes red. Review before merge found
+  three defects in the first version, each with a test now: a rebuilt request
+  was armed without the frame's overrides, so an answering frame carried the
+  un-overridden graph's refusals; a key on the pseudo-root was judged
+  unavailable; and an expiry went unreported in a frame that rebuilt the
+  request for another reason. **The first Linux run hung**, in both processes
+  that use the driver, while Windows and macOS passed. Under C++20, which the
+  lane's toolchain sets, GCC 13 resolves `TfEnum == enum` to the reversed
+  candidate of OpenUSD 26.08's friend `operator==(T, TfEnum const&)`. That
+  function's body `e == val` resolves to itself again, and GCC compiles the
+  recursion to a jump to itself. The driver compares two `TfEnum`s now, and the
+  report's §8 carries the diagnosis and the upstream ask. 148 CTest names in
+  the workspace.
 
 ### Changed
 

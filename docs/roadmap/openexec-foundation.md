@@ -699,14 +699,24 @@ That is a design question for P0-5's retarget node, which has to choose a pose
 to retarget.
 
 Still open here: a producer that authors the rate, the filter policy and the
-intake policy (§9); a **driver contract** — compute once to arm a request, name
-an instant with `ChangeTime` before expecting a history sampled, hold one
-previous answer and one snapshot per prim and substitute both through one
-`ComputeWithOverrides`, treat a coding error there as a failed frame, stamp a
-pose handed to a blend's source at the instant the others were sampled at,
-call `ChangeTime` before expecting a retarget (P0-5), none of it discoverable
-from the computations themselves, and P0-6's parity harness is the first client
-that needs it written down.
+intake policy (§9), and a decision on what a one-joint clip's fallback-filled
+root means (P0-5's humanoid report).
+
+**The driver contract is written, and it is code** *(2026-09-14)*. The rules
+this section collected are ten lines in
+[MOTION_CONTRACT.md, "OpenExec driver contract"](../design/MOTION_CONTRACT.md#openexec-driver-contract-after-v080).
+None of them can be found from the computations themselves. They are: arm a
+request with one compute and keep what it posted; name the instant before
+computing; hold one previous answer and one snapshot per prim and hand both in
+one call; check an override's type before exec sees it; request every key an
+override names; treat a coding error as a failed frame; stamp a pose for a
+blend at the other sources' instant; and rebuild a request exec has stopped
+answering. `tests/parity/ExecDriver` follows them, and P0-6's harness, the
+first client, now drives exec through it. Two rules came out of writing it
+rather than out of an earlier report. **An override of a key nothing compiled
+is skipped without a word, mistyped or not.** **A request whose every key
+expired reports itself valid**, as an `InvalidateAll` leaves one
+([the driver report](../reports/openusd/26.08-openexec-driver.md) §3, §4).
 
 **The packaged-plugin half of step 7 ran on 2026-09-13**, and it is P0-6's
 harness rather than a new suite: `scripts/artifact_only_exec_smoke.py` installs
@@ -1208,7 +1218,7 @@ that and nothing else, but a composed third-party avatar would draw wrong with n
 diagnostic
 ([report §8.3](../reports/openusd/26.08-openexec-migration.md#83-the-xformoptransform-only-rule)).
 
-### P1-1 — retarget diagnostics 🚧
+### P1-1 — retarget diagnostics ✅
 
 Freeze the codes:
 
@@ -1288,10 +1298,28 @@ exists and is still not a layer, so reading "exists" as "there" made it a 3
 with a line naming a file format for `'.'` files. "There" is a regular file,
 and a directory is a 1 under its own line.
 
-**Still open here**: the three `VRM_OPENEXEC_*` codes, whose table waits for a
-driver to raise them. Exec answering the retarget codes was P0-6's row, and it
-closed the same day: two `execVrm` computations, compared with the tool line
-for line (P0-6 above).
+Exec answering the retarget codes was P0-6's row, and it closed the same day:
+two `execVrm` computations, compared with the tool line for line (P0-6 above).
+
+**The `VRM_OPENEXEC_*` codes are frozen and raised** *(2026-09-14)*. Their
+table is in the driver contract
+([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#vrm_openexec_-codes)). It
+waited for a driver, and P0-4's driver contract produced one.
+`COMPUTATION_UNAVAILABLE` is a key the session cannot compute: no prim at its
+path that exec computes on, or no computation of its name for that prim.
+`TYPE_MISMATCH` is an override or an answer of a type other than its key's
+declaration. `INVALIDATED` is a request exec stopped answering while every
+provider is still there. It is a recoverable warning, since the driver rebuilds
+the request and names the instant again. The draft's migration-report premise
+held. 26.08 classifies none of these failures, so each code comes from the
+driver's own checks: a runtime error or a coding error, a path lookup, a
+declared type, and a one-key probe run only after a coding error. None comes
+from exec's text, which travels in the detail. `exec_driver_contract` raises
+each one by the failure it names and holds it to its key. With `execVrm` out of
+the session, the parity harness now names both of its keys as unavailable where
+it used to show empty values
+([the driver report](../reports/openusd/26.08-openexec-driver.md)).
+`NON_UNIT_SCALE` stays frozen and unraised until P1-2 decides what raises it.
 
 ### P1-2 — scale policy ⬜
 
@@ -1434,6 +1462,13 @@ One `UsdStage`, one long-lived `ExecUsdSystem`, reusable batch request sets —
 never a per-frame `ExecUsdSystem`. Needs batch requests, invalidation callbacks,
 time-range invalidation, result dump, performance trace, and
 provider/computation diagnostics.
+
+*It starts from the foundation's driver* *(2026-09-14)*. `tests/parity/ExecDriver`
+already holds one system per stage and its requests, follows the driver
+contract, and raises the `VRM_OPENEXEC_*` codes. It is test support, because
+the parity harness is its one client. This task is where it becomes a
+workspace identity
+([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#openexec-driver-contract-after-v080)).
 
 ### P0-7 — invalidation tests ⬜
 

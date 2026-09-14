@@ -15,13 +15,6 @@
 # check is the one failure a parity run must never have.
 set(_parity_assertions $<IF:$<CXX_COMPILER_ID:MSVC>,/UNDEBUG,-UNDEBUG>)
 
-add_executable(exec_parity exec_parity.cpp)
-target_include_directories(exec_parity PRIVATE ${PXR_INCLUDE_DIRS})
-# vrmRetarget for the result type, motionCore for the bone vocabulary and the
-# contract's comparison. Neither exec bundle: they are found at run time, the
-# way a packaged bundle is.
-target_link_libraries(exec_parity PRIVATE
-    vrmRetarget::vrmRetarget motionCore::motionCore)
 set(_parity_pxr_targets)
 foreach(_t IN ITEMS arch tf gf js vt plug sdf usd usdGeom usdSkel
                     vdf ef esf esfUsd exec execUsd)
@@ -31,19 +24,44 @@ foreach(_t IN ITEMS arch tf gf js vt plug sdf usd usdGeom usdSkel
         list(APPEND _parity_pxr_targets pxr::${_t})
     endif()
 endforeach()
-target_link_libraries(exec_parity PRIVATE ${_parity_pxr_targets})
+
+# The driver contract as code (docs/design/MOTION_CONTRACT.md, "OpenExec
+# driver contract"), and where the VRM_OPENEXEC_* codes are raised. Static and
+# test-support: its first client is the harness beside it, and it becomes a
+# workspace identity when the ExecIr track's evaluation client needs one.
+add_library(exec_driver STATIC ExecDriver.cpp)
+target_include_directories(exec_driver PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR} ${PXR_INCLUDE_DIRS})
+target_link_libraries(exec_driver PUBLIC ${_parity_pxr_targets})
+target_compile_options(exec_driver PRIVATE ${_parity_assertions})
+if(MSVC)
+    target_compile_definitions(exec_driver PUBLIC NOMINMAX _USE_MATH_DEFINES)
+    target_compile_options(exec_driver PRIVATE /bigobj /utf-8)
+endif()
+
+add_executable(exec_parity exec_parity.cpp)
+# vrmRetarget for the result type, motionCore for the bone vocabulary and the
+# contract's comparison. Neither exec bundle: they are found at run time, the
+# way a packaged bundle is.
+target_link_libraries(exec_parity PRIVATE
+    exec_driver vrmRetarget::vrmRetarget motionCore::motionCore)
 # Not linked, and still what the harness runs: building it builds them.
 add_dependencies(exec_parity ExecMotion ExecVrm)
 target_compile_options(exec_parity PRIVATE ${_parity_assertions})
 if(MSVC)
-    target_compile_definitions(exec_parity PRIVATE NOMINMAX _USE_MATH_DEFINES)
     target_compile_options(exec_parity PRIVATE /bigobj /utf-8)
 endif()
 
-if(NOT USDVRM_TEST_PYTHON)
-    message(STATUS "parity: no Python interpreter; the harness is built and "
-                   "no parity case is registered")
-    return()
+# The driver's own suite: each VRM_OPENEXEC_* code raised by the failure it
+# names, against execMotion alone. motionRuntime for the history sampler's
+# result type, which is one of the keys it declares.
+add_executable(exec_driver_contract test_exec_driver.cpp)
+target_link_libraries(exec_driver_contract PRIVATE
+    exec_driver motionCore::motionCore motionRuntime::motionRuntime)
+add_dependencies(exec_driver_contract ExecMotion)
+target_compile_options(exec_driver_contract PRIVATE ${_parity_assertions})
+if(MSVC)
+    target_compile_options(exec_driver_contract PRIVATE /bigobj /utf-8)
 endif()
 
 # ---------------------------------------------------------------------------
@@ -74,6 +92,20 @@ set(_parity_env
     "PXR_PLUGINPATH_NAME=path_list_prepend:${_plugins}/execMotion/plugin/resources/execMotion"
     "PXR_PLUGINPATH_NAME=path_list_prepend:${_plugins}/execVrm/plugin/resources/execVrm"
     "PXR_PLUGINPATH_NAME=path_list_prepend:${_plugins}/vrmSchema/plugin/resources/vrmSchema")
+
+# C++ alone, so it is registered whether or not a Python interpreter is.
+add_test(NAME workspace_exec_driver
+    COMMAND exec_driver_contract
+            "${_plugins}/execMotion/tests/fixtures/filtered_clip.usda")
+set_tests_properties(workspace_exec_driver PROPERTIES
+    ENVIRONMENT_MODIFICATION "${_parity_env}"
+    LABELS "motion.openexec")
+
+if(NOT USDVRM_TEST_PYTHON)
+    message(STATUS "parity: no Python interpreter; the harness is built and "
+                   "no parity case is registered")
+    return()
+endif()
 
 set(_real_avatar
     "${_plugins}/usdVrmFileFormat/tests/corpus/spec-samples/vrm1/seed-san/Seed-san.vrm")

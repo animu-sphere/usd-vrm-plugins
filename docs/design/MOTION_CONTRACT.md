@@ -191,9 +191,8 @@ prose; the frozen set is the body retarget's, which is what parity compares.
 `VRM_OPENEXEC_COMPUTATION_UNAVAILABLE`, `VRM_OPENEXEC_TYPE_MISMATCH` and
 `VRM_OPENEXEC_INVALIDATED` are a separate namespace a **driver** raises around a
 request, since 26.08 classifies none of those failures itself
-([the migration report §6](../reports/openusd/26.08-openexec-migration.md#6-requests-evaluation-cache-and-invalidation));
-no library in this workspace is a driver, so they have strings and no table
-until the driver contract does.
+([the migration report §6](../reports/openusd/26.08-openexec-migration.md#6-requests-evaluation-cache-and-invalidation)).
+Their table is the driver contract's, [below](#openexec-driver-contract-after-v080).
 
 ### `motion_retarget` exit codes
 
@@ -247,6 +246,112 @@ missing something:
 **A warning never changes the code.** A partial rig exits 0 with its
 diagnostics on stderr, and the one error in the diagnostics table, the output
 collision, exits 1 because it is a refusal of the arguments.
+
+## OpenExec driver contract (after v0.8.0)
+
+Every computation `execMotion` and `execVrm` register is pure, and what a
+caller has to do around them is stated by none of them. Six reports found the
+rules one at a time; the OpenExec plan's P0-4 writes them down
+([openexec-foundation.md](../roadmap/openexec-foundation.md)). A **driver** is
+whatever holds the stage, the system and the requests, and hands the graph what
+it cannot derive: the instant, a previous answer, a snapshot.
+
+The contract is also code. `tests/parity/ExecDriver` follows it and raises the
+codes below, and `exec_driver_contract` runs each rule and each code against
+`execMotion`, the way the design triplet is the retarget's executable
+statement. The parity harness is its first client
+([the driver report](../reports/openusd/26.08-openexec-driver.md)).
+
+A driver:
+
+1. **Holds one `ExecUsdSystem` per stage for its lifetime, and builds each
+   request once.** That is upstream's own rule
+   ([migration report §6](../reports/openusd/26.08-openexec-migration.md#6-requests-evaluation-cache-and-invalidation)).
+2. **Arms each request with one `Compute` before relying on it.** A request
+   that has never been computed is reported to no invalidation callback, so a
+   `ChangeTime` before the first compute reaches nothing
+   ([filtering report §4](../reports/openusd/26.08-openexec-filtering.md)).
+3. **Keeps what the arming compute posted.** The arm runs at the system's
+   current time, which for a new system is the default time code. The retarget
+   and the history sampler refuse there by design, so those errors are not a
+   failure. They are kept because a node nothing invalidates computes only
+   there, and it is the one place its refusal is posted
+   ([diagnostics report §4](../reports/openusd/26.08-openexec-diagnostics.md)).
+4. **Names the instant with `ChangeTime` before every compute that expects a
+   time-dependent answer.** `vrm.humanoidRetarget` and `motion.interpolatePose`
+   refuse the default time code, and the default time code is where
+   `InvalidateAll` leaves a system
+   ([retarget report §5](../reports/openusd/26.08-openexec-retarget.md),
+   [interpolation report §5](../reports/openusd/26.08-openexec-interpolation.md),
+   [mechanism report §4](../reports/openusd/26.08-openexec-mechanism.md)).
+5. **Holds one previous answer and one snapshot per prim, and hands both in one
+   `ComputeWithOverrides`.** One override drives every node that depends on its
+   key: a single `motion.priorPose` steps the filter and derives the root
+   velocity together, and a history enters as `motion.poseHistory`
+   ([root-motion report §4](../reports/openusd/26.08-openexec-root-motion.md),
+   [interpolation report §2](../reports/openusd/26.08-openexec-interpolation.md)).
+6. **Hands an override exactly its key's type, checked before the call.** Exec
+   drops a mistyped override with a coding error and computes the key's
+   ordinary value, which is a plausible answer to a question nobody asked. An
+   empty value is dropped the same way, so an absence cannot be pushed into a
+   key ([interpolation report §4](../reports/openusd/26.08-openexec-interpolation.md)).
+7. **Requests every key it overrides.** Exec skips an override of a key it has
+   not compiled, without a word, and it reaches the type check only for a
+   compiled key. So a mistyped override of a key the request does not read
+   passes in silence. Requesting the key compiles it. The override still
+   reaches only what depends on the key
+   ([driver report §3](../reports/openusd/26.08-openexec-driver.md)).
+8. **Treats a coding error around a compute as a failed frame.** A computation
+   refuses with a runtime error and no value. Exec's complaints about the
+   request itself are coding errors, and a frame that posted one did not answer
+   the question it was asked.
+9. **Stamps a pose it hands to a blend's source at the instant the other
+   sources were sampled at**
+   ([blending report §4](../reports/openusd/26.08-openexec-blending.md)).
+10. **Rebuilds a request exec has stopped answering, and names the instant
+    again.** `InvalidateAll` expires every request and resets the system's
+    time, while each request goes on reporting itself valid. A resync that
+    expires every key of a request does the same, because exec discards such a
+    request and discarding clears what `IsValid()` reads. A request that still
+    has some live key does report itself invalid
+    ([driver report §4](../reports/openusd/26.08-openexec-driver.md)).
+
+In both bundles an empty value is a refusal and never an answer. It is posted as
+a runtime error naming the computation, and a dependent handed no value refuses
+in turn
+([root-motion report §6](../reports/openusd/26.08-openexec-root-motion.md)).
+
+### `VRM_OPENEXEC_*` codes
+
+What a driver reports about a request. 26.08 classifies none of these failures
+itself: each arrives as a free-text coding error. So the codes come from the
+driver's own checks: a provider looked up by path under exec's own rule, the
+type each key is declared with, and a one-key probe run only after a compute
+posted a coding error. **They never come from matching exec's text.** That text
+is kept verbatim in a diagnostic's detail, for a person.
+
+The shape is the retarget's. A diagnostic is a code, a subject and a detail. A
+list holds each code and subject once, and a line reads
+`[CODE] severity [recoverable] subject=…: detail`. The subject is the value key
+as exec spells one in its own messages, `/Clip [motion.filterPose]`.
+
+| Code | Severity | Raised when | Subject |
+| --- | --- | --- | --- |
+| `VRM_OPENEXEC_COMPUTATION_UNAVAILABLE` | error | a key this session cannot compute. Either no prim at its path is one exec computes on (valid, active, loaded and defined), or no computation of its name answers for that prim, because its bundle is not in the session or the prim lacks the schema it is registered on. The key is not handed to exec, and it is reported in every frame that asks for it | the key |
+| `VRM_OPENEXEC_TYPE_MISMATCH` | error | a value of a type other than the one its key is declared with. For an override, the frame is refused before the call. For an override exec rejected although it held the declared type, the declaration is wrong and the frame has no answer. For an answer, the value is withheld | the key |
+| `VRM_OPENEXEC_INVALIDATED` | warning, recoverable | a request exec stopped answering while every provider is still there. It is seen through `IsValid()` before computing while some key is live, and otherwise after a compute that answered nothing and posted a coding error. The driver rebuilt the request, named the instant and re-armed it, and the frame is the rebuilt request's answer | each key of the request |
+
+**Nothing returns exit code 6.** `motion_retarget` evaluates nothing through
+OpenExec, so its 6 stays reserved. The driver's codes are reported by the
+harness that uses it, and an error among them fails the run.
+
+**Why the driver is test support and not a library.** No library or tool in this
+workspace drives exec yet: a bundle is driven by its caller, and the parity
+harness is the one caller. So `exec_driver` is a static target beside the
+harness and not a workspace identity. It becomes one when the `ExecIr` track's
+evaluation client (that plan's P0-6) needs batch requests and invalidation
+callbacks as well. Which previous answer and which snapshot to hand in stays
+the caller's (rule 5), since only the caller knows what its source is.
 
 ## Live-capture semantics (Motion Phase D, v0.5.0)
 
