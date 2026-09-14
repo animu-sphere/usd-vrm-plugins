@@ -25,3 +25,9 @@ if(Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/.."
             "$<TARGET_FILE:motionCore>")
 endif()
+
+# The OpenExec plan's P0-2 label, on every test this directory registers, so
+# the layer can be run and reported on its own. The root suite's
+# workspace_ctest_labels fails if this directory contributes none.
+get_property(_motion_core_labelled DIRECTORY PROPERTY TESTS)
+set_property(TEST ${_motion_core_labelled} APPEND PROPERTY LABELS "motion.core")

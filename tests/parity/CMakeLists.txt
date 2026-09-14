@@ -164,9 +164,10 @@ foreach(_case IN LISTS _parity_cases)
         COMMAND ${_parity_driver} --case ${_case}
                 --real-avatar "${_real_avatar}"
                 --vrma-walk "${_vrma_walk}")
-    # The plan's P0-2 labels: every case is OpenExec, and the three over the
-    # recorded mocopi export are the real corpus as well.
-    set(_labels "motion.openexec")
+    # The plan's P0-2 labels: every case is OpenExec and a composition of two
+    # bundles and two tools, and the three over the recorded mocopi export are
+    # the real corpus as well.
+    set(_labels "motion.openexec" "motion.integration")
     if(_case MATCHES "^recorded_")
         list(APPEND _labels "motion.real-corpus")
     endif()

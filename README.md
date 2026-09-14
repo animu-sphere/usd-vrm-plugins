@@ -289,6 +289,13 @@ cmake --build build --config Release
 ctest --test-dir build -C Release
 ```
 
+The motion layer's suites carry CTest labels, so one layer runs on its own:
+`motion.core`, `motion.runtime`, `motion.retarget`, `motion.cli`,
+`motion.integration`, `motion.openexec` and `motion.real-corpus`
+(`ctest --test-dir build -C Release -L motion.openexec`).
+[The OpenExec plan](docs/roadmap/openexec-foundation.md) (P0-2) says what each
+names.
+
 Each bundle also builds standalone against *installed* sibling packages
 (`find_package(vrmSchema CONFIG REQUIRED)`), which is what CI proves; a bundle
 never reaches sideways into a sibling's source tree.

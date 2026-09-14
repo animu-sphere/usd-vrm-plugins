@@ -33,3 +33,9 @@ add_test(
                 "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/design_avatar_humanoid_map.json")
 set_tests_properties(motion_retarget_design_triplet PROPERTIES
     ENVIRONMENT_MODIFICATION "${_test_env}")
+
+# The OpenExec plan's P0-2 label, on every test this directory registers. The
+# root suite's workspace_ctest_labels fails if this directory contributes none.
+get_property(_motion_retarget_labelled DIRECTORY PROPERTY TESTS)
+set_property(TEST ${_motion_retarget_labelled}
+    APPEND PROPERTY LABELS "motion.cli")

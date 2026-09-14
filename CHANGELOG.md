@@ -1107,6 +1107,29 @@ Current schema contract version: **1**.
   fixed. The new `execMotion_boundaries_selftest` holds the tables to source
   text and to symbol lists of both platforms, and it pins the three shapes the
   scan misses as missed. 151 CTest names in the workspace.
+- **The motion layer's CTest labels are assigned, and CTest now says when a
+  member registers nothing** (the OpenExec plan's P0-2). Five of the plan's
+  seven labels had no test. `motion.core`, `motion.runtime` and
+  `motion.retarget` now carry every test of their library's suite, and
+  `motion.cli` every test of the three product tools'. `motion.integration`
+  names the seven compositions only the root build guarantees: the BVH chain,
+  the real-avatar bake and the five parity cases. `motion.real-corpus` now
+  names every test that reads the recorded mocopi export, ten of them rather
+  than three. `ctest -L` runs a layer on its own, and a run prints a time per
+  label.
+
+  The new `workspace_ctest_labels` reads the registrations back from CTest and
+  fails on four things. A member test directory that registers no test is the
+  first, and the shape `usdVrmaFileFormat` had for months while `ost test`
+  reported one flat total. The others are a label a directory should
+  contribute and does not, a test missing its directory's label, and a
+  `motion.*` label the plan does not name. On the tree before this change it
+  reported 28 findings and nothing about members. With one member's
+  registrations emptied it reported that member and nothing else. CTest's
+  listing mode rewrites `LastTest.log`, so the check lists a copy of the
+  tree's test files rather than the tree it runs inside.
+  `workspace_ctest_labels_selftest` holds each rule to a case. 153 CTest names
+  in the workspace.
 
 ### Changed
 

@@ -50,3 +50,9 @@ add_test(
             ${_capture_test_arguments})
 set_tests_properties(motion_capture_replay PROPERTIES
     ENVIRONMENT_MODIFICATION "${_test_env}")
+
+# The OpenExec plan's P0-2 label, on every test this directory registers. The
+# root suite's workspace_ctest_labels fails if this directory contributes none.
+get_property(_motion_capture_labelled DIRECTORY PROPERTY TESTS)
+set_property(TEST ${_motion_capture_labelled}
+    APPEND PROPERTY LABELS "motion.cli")

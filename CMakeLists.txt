@@ -80,6 +80,10 @@ if(USDVRM_BUILD_TESTS)
         add_test(NAME workspace_motion_profiles
             COMMAND "${Python3_EXECUTABLE}"
                 "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_motion_profiles.py")
+        # Held against a producer's recorded export, which the OpenExec plan's
+        # P0-2 label names. The two runs below read an invented rig instead.
+        set_property(TEST workspace_motion_profiles
+            APPEND PROPERTY LABELS "motion.real-corpus")
 
         # The same script over an invented rig with no bytes anywhere. A
         # recording this repository may not redistribute leaves a manifest row
@@ -242,7 +246,10 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
             --fixtures "${CMAKE_CURRENT_SOURCE_DIR}/tests/motion/fixtures")
     set_tests_properties(workspace_bvh_end_to_end PROPERTIES
         ENVIRONMENT_MODIFICATION
-            "PATH=path_list_prepend:${_e2e_usd_root}/bin;PATH=path_list_prepend:${_e2e_usd_root}/lib;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/site-packages")
+            "PATH=path_list_prepend:${_e2e_usd_root}/bin;PATH=path_list_prepend:${_e2e_usd_root}/lib;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/site-packages"
+        # The OpenExec plan's P0-2 labels: a composition of two tools, over a
+        # producer's recorded export.
+        LABELS "motion.integration;motion.real-corpus")
 
     # The same chain onto a real VRM, which is the release condition's own
     # wording (roadmap/current.md) and not a second opinion about the tools. It
@@ -280,7 +287,8 @@ if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON
                 --profiles "${CMAKE_CURRENT_SOURCE_DIR}/profiles/motion")
         set_tests_properties(workspace_real_avatar_bake PROPERTIES
             ENVIRONMENT_MODIFICATION
-                "PATH=path_list_prepend:${_e2e_usd_root}/bin;PATH=path_list_prepend:${_e2e_usd_root}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmFileFormat>;PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmContainer::vrmContainer>;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_bundle}/plugin/resources/vrmSchema")
+                "PATH=path_list_prepend:${_e2e_usd_root}/bin;PATH=path_list_prepend:${_e2e_usd_root}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:UsdVrmFileFormat>;PATH=path_list_prepend:${_vrm_schema_bundle}/lib;PATH=path_list_prepend:$<TARGET_FILE_DIR:vrmContainer::vrmContainer>;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/python;PYTHONPATH=path_list_prepend:${_e2e_usd_root}/lib/site-packages;PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_plug_resources};PXR_PLUGINPATH_NAME=path_list_prepend:${_vrm_schema_bundle}/plugin/resources/vrmSchema"
+            LABELS "motion.integration;motion.real-corpus")
     else()
         message(STATUS
             "usd-vrm-plugins: usdVrmFileFormat or the VRM spec sample is not in "
@@ -355,6 +363,28 @@ foreach(_adapter ${_adapters})
         add_subdirectory("adapters/${_adapter}")
     endif()
 endforeach()
+
+# The OpenExec plan's P0-2 labels, read back from CTest itself. `ost test`
+# reports one flat total, so a member whose suite silently stopped registering
+# reads as passing (usdVrmaFileFormat did, for months); this fails instead,
+# naming the label and the directory that contributed nothing. Registered last
+# and from here because it reads the whole tree's registrations, and it runs
+# CTest in listing mode only, so it executes nothing it lists.
+if(USDVRM_BUILD_TESTS AND USDVRM_TEST_PYTHON)
+    add_test(NAME workspace_ctest_labels
+        COMMAND "${USDVRM_TEST_PYTHON}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_ctest_labels.py"
+            --ctest "${CMAKE_CTEST_COMMAND}"
+            --build-dir "${CMAKE_CURRENT_BINARY_DIR}"
+            --source-dir "${CMAKE_CURRENT_SOURCE_DIR}"
+            --config "$<CONFIG>")
+    # The check's rules against cases, so a rule that can no longer fail is
+    # found on every lane rather than by the next silent suite.
+    add_test(NAME workspace_ctest_labels_selftest
+        COMMAND "${USDVRM_TEST_PYTHON}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_ctest_labels.py"
+            --selftest)
+endif()
 
 install(FILES
     LICENSE

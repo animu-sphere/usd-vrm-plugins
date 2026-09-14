@@ -319,7 +319,7 @@ accepting cases check the reported component list exactly, which is what catches
 a component dropped from the module and the fixture in one edit — the one
 mistake neither file can catch on its own.
 
-### P0-2 — motion layer CI ⬜
+### P0-2 — motion layer CI 🚧
 
 Per-bundle cells do not cover plain libraries or executables, so a root-workspace
 lane becomes mandatory: configure the root workspace, build every library, bundle,
@@ -342,8 +342,58 @@ What remains of this task is coverage, not lane shape — the CTest labels above
 and the OpenExec/offline parity case, which needs P0-4 and P0-5 first. *The
 parity case exists since 2026-09-13*: five `workspace_exec_parity_*` names in
 the root suite, labelled `motion.openexec`, and the three over the recorded
-export `motion.real-corpus` too, the first use of that label. The other five
-labels are still unassigned.
+export `motion.real-corpus` too, the first use of that label.
+
+**All seven labels are assigned, and a check reads them back** *(2026-09-15)*.
+What each one names:
+
+| Label | Tests | Where from |
+|---|---|---|
+| `motion.core` | 3 | every test of `libs/motionCore` |
+| `motion.runtime` | 5 | every test of `libs/motionRuntime` |
+| `motion.retarget` | 2 | every test of `libs/vrmRetarget` |
+| `motion.cli` | 7 | every test of the three product tools, `motion_retarget`, `motion_capture` and `motion_bvh` |
+| `motion.integration` | 7 | the compositions only the root build guarantees: `workspace_bvh_end_to_end`, `workspace_real_avatar_bake` and the five parity cases |
+| `motion.openexec` | 25 | every test of both exec bundles, the driver contract and the parity cases |
+| `motion.real-corpus` | 10 | every test that reads the recorded mocopi export, in `motionBvh`, `motion_bvh_convert`, the root suite and the parity cases |
+
+The adapters' recorder tools are CLIs and are not `motion.cli`: they are
+adapter artifacts rather than product members, and the label is the product's
+tools. No adapter test is `motion.real-corpus`, because every recorded device
+and sender session is a manifest with no bytes.
+
+`workspace_ctest_labels` lists the root build's registrations through CTest and
+fails on four things: a member's `tests/CMakeLists.txt` that registers no test,
+a label a directory in the table should contribute and does not, a test missing
+a label its whole directory carries, and a `motion.*` label not in the table.
+The first is the local half of the per-member attribution asked of `ost`
+([current.md](current.md), "`ost` cannot tell us a workspace member ran no
+tests"): it covers the 24 member suites of the root build. On the tree before
+the labels it reported 28 findings, none of them about members, and a copy of
+the tree with `usdVrmaFileFormat`'s registrations emptied reported exactly that
+member. CTest's listing mode rewrites `Testing/Temporary/LastTest.log`, which a
+CTest run of the same tree has open, so the check lists a copy of the tree's
+`CTestTestfile.cmake` files. `workspace_ctest_labels_selftest` holds each rule
+to a case.
+
+**The required coverage, against the suite** *(2026-09-15)*. Every item but one
+has a CTest name, and one is covered outside CTest:
+
+| Required coverage | Where |
+|---|---|
+| quaternion interpolation, pose filtering, resampling, missing sample hold | `motionRuntime_unit` |
+| root-motion policy | `motionRuntime_liveCapture` (intake), `vrmRetarget_unit` (modes) |
+| non-identity rest-pose correction | `vrmRetarget_unit`, and `workspace_bvh_end_to_end`, whose fixture rig a broken correction cannot pass |
+| partial humanoid mapping | `vrmRetarget_unit` (unmapped joints stay at rest and are reported) |
+| invalid mapping | `vrmRetarget_unit` (gaps and collisions), `motion_retarget_design_triplet` (an absent or unreadable `--humanoid-map`) |
+| output/input path collision | `motion_retarget_design_triplet` |
+| resolved `UsdSkel` transforms | `motion_retarget_design_triplet`, `workspace_real_avatar_bake` |
+| packaged CLI execution | not CTest: `release.yml`'s artifact-only BVH and exec smokes, from the installed product |
+| OpenExec/offline parity | `workspace_exec_parity_*` |
+| **Windows Unicode paths** | **none**: no test hands a tool a non-ASCII path |
+
+What remains of P0-2 is that last row, which is also Product P3's open Unicode
+item ([current.md](current.md)).
 
 ### P0-3 — `motion_retarget` distribution ⬜
 

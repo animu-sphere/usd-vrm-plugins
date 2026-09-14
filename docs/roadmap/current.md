@@ -139,7 +139,10 @@ checks are listed rather than remembered:
   nothing would report the next one. Asked upstream as per-member attribution in
   `ost test --json`
   ([report 38](../reports/ost/38-2026-08-30-v0.22.8-workspace-cell-verbs-and-orphaned-lanes.md)
-  §4).
+  §4). *Since 2026-09-15 the root build reports it for itself*:
+  `workspace_ctest_labels` fails when any of the 24 member suites registers no
+  test. That covers the workspace cells and not a standalone per-bundle cell,
+  and it counts registrations, not tests run, so the upstream ask stands.
 - ⚠️ **`release.yml` stays hand-authored, and hand-mirrors what the contract now
   expresses.** Its X11 step, its `ost` pin and its runtime digests are copies of
   `openstrata.ci.yaml` values; regeneration never touches them and a green PR
@@ -990,6 +993,20 @@ compared, which was P0-4's stated blocker.
   Windows clock check reads the C++ runtime's `_Query_perf_counter` and
   `_Xtime_get_ticks` instead
   ([the plan](openexec-foundation.md#9-contract-changes-this-plan-requires)).
+- ✅ **The motion layer's CTest labels are assigned, and CTest says when a
+  member registers nothing** *(2026-09-15, P0-2)*. Five of the plan's seven
+  labels had no test. `motion.core`, `motion.runtime`, `motion.retarget` and
+  `motion.cli` now carry every test of their directories, `motion.integration`
+  the seven compositions only the root build guarantees, and
+  `motion.real-corpus` all ten tests that read the recorded export.
+  `workspace_ctest_labels` reads the registrations back from CTest and fails on
+  a member suite that registers nothing, a label a directory stopped
+  contributing, a test without its directory's label, and a `motion.*` label
+  the plan does not name. It reported 28 findings on the tree before, and
+  exactly one member when that member's registrations were emptied. The plan's
+  required-coverage list is now a table of CTest names
+  ([the plan](openexec-foundation.md#6-foundation-tasks), P0-2), and one row has
+  none: **Windows Unicode paths**, which is what remains of P0-2.
 - ⬜ **The rest of P0-6** of the
   [plan](openexec-foundation.md#6-foundation-tasks). The values and the
   diagnostics agree. What is left is the rows no producer reaches, each
