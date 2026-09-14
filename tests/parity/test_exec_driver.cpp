@@ -19,7 +19,10 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"
+
+#include <tbb/version.h>
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
 
@@ -585,6 +588,28 @@ int main(int argc, char** argv)
     assert(argc == 2 && "usage: exec_driver_contract <filtered_clip.usda>");
     gFixture = argv[1];
     hangwatch::Start(45);
+    {
+        // TEMPORARY probe: on an empty mark, GetBegin() (libtf) and GetEnd()
+        // (inlined here) are both this thread's list end -- unless the two
+        // halves see two different thread-local lists.
+        TfErrorMark probe;
+        std::fprintf(stderr,
+                     "[probe] empty mark: begin==end %d; TBB headers %d.%d "
+                     "(interface %d), runtime %s (interface %d)\n",
+                     int(probe.GetBegin() == probe.GetEnd()),
+                     TBB_VERSION_MAJOR, TBB_VERSION_MINOR,
+                     TBB_INTERFACE_VERSION, TBB_runtime_version(),
+                     TBB_runtime_interface_version());
+        TF_RUNTIME_ERROR("probe error");
+        std::size_t walked = 0;
+        for (auto it = probe.GetBegin(); it != probe.GetEnd() && walked < 10;
+             ++it) {
+            ++walked;
+        }
+        std::fprintf(stderr, "[probe] one error: walked %zu (10 = no end)\n",
+                     walked);
+        probe.Clear();
+    }
 
 #define HANGWATCH_RUN(section)                                                 \
     hangwatch::Mark(#section);                                                 \

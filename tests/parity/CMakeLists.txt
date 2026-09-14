@@ -67,6 +67,16 @@ endif()
 # TEMPORARY (PR #191's Linux-only hang): export the executables' own symbols
 # so HangWatchdog.h's backtraces name them. Removed with the watchdog.
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    foreach(_probe IN ITEMS /usr/include/tbb/version.h
+                            /usr/include/oneapi/tbb/version.h
+                            /usr/local/include/tbb/version.h)
+        if(EXISTS "${_probe}")
+            message(STATUS "parity probe: system TBB header ${_probe}")
+        endif()
+    endforeach()
+    get_target_property(_probe_tf_includes tf INTERFACE_INCLUDE_DIRECTORIES)
+    message(STATUS "parity probe: PXR_INCLUDE_DIRS=${PXR_INCLUDE_DIRS}")
+    message(STATUS "parity probe: tf includes=${_probe_tf_includes}")
     target_link_options(exec_parity PRIVATE -rdynamic)
     target_link_options(exec_driver_contract PRIVATE -rdynamic)
     target_compile_options(exec_driver PRIVATE -g)
