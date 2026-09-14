@@ -558,7 +558,11 @@ reviewer can check them without opening the policy:
   I/O.** Receiving is the adapter's job and buffering is `motionRuntime`'s; a
   callback that opened a socket or read a clock would make cache reuse and
   invalidation untestable, which is the whole reason to be on OpenExec at all
-  ([OpenExec plan §5](../roadmap/openexec-foundation.md)).
+  ([OpenExec plan §5](../roadmap/openexec-foundation.md)). `execMotion_boundaries`
+  and `execVrm_boundaries` check it, along with each bundle's links and its
+  half of the schema partition above, on the source, the built library's
+  imports, the target's link libraries and `plugInfo.json`
+  ([execMotion's README](../../plugins/execMotion/README.md#how-the-rules-are-checked)).
 - **`ExecIr` is optional and never a prerequisite.** It is confined to an
   adapter layer inside `execVrm`; the canonical motion contract is not derived
   from its representation, the importer never has to author its prims, and the

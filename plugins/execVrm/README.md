@@ -400,6 +400,15 @@ pose nothing, and the retarget refuses after it.
   reached through an input.
 - **No stage authoring, no I/O, no second algorithm** — as for `execMotion`.
 
+`execVrm_boundaries` checks these rules the way `execMotion`'s check does
+([its README](../execMotion/README.md#how-the-rules-are-checked)). It uses that
+check's snapshot-rule tables, imported along the one edge the two bundles may
+have. What it adds is this bundle's own: the links it may have are `motionCore`,
+`motionRuntime` and `vrmRetarget`, and nothing of `vrmSchema`. No GLB parser or
+importer may be named in the source. The binary imports neither `vrmSchema` nor
+`execMotion`. No schema may be declared that `execMotion`'s `plugInfo.json`
+declares.
+
 ## Tests
 
 | Test | What it holds |
@@ -412,5 +421,6 @@ pose nothing, and the retarget refuses after it.
 | `execVrm_diagnostics` | the built bundle and `execMotion` over `retargeted_rig.usda`: both reports equal to the library's over exec's own values, formatting into the tool's own line; the rig's report answered with no clip and at the default time code, and time-independent; a statement and a duplicate binding refusing both, the rig's refusal posted only at the arming compute; invalidation from a key, a binding, a statement and the rig's order; a driver's pose diagnosed, and a driver's retarget not |
 | `execVrm_humanoid_without_schema` | the same binary as `execVrm_humanoid` with no `vrmSchema` in the session: the skeleton computes and the humanoid map is not found |
 | `execVrm_retarget_without_exec_motion` | the same binary as `execVrm_retarget` with no `execMotion` in the session: the correction computes, and the bound pose and the retarget are refused by this bundle's count alone |
+| `execVrm_boundaries` | the snapshot rule and the dependency boundary, as `execMotion_boundaries` holds them, plus this bundle's links, its no-parser source, and a schema partition read against `execMotion`'s own declarations |
 
-All eight carry the CTest label `motion.openexec`.
+All nine carry the CTest label `motion.openexec`.

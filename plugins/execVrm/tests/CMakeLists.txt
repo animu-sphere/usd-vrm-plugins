@@ -150,6 +150,34 @@ add_test(NAME execVrm_humanoid_without_schema
     COMMAND execVrm_humanoid_tests "${_exec_vrm_fixture}" --without-schema)
 
 # ---------------------------------------------------------------------------
+# The boundary, and the snapshot rule
+# ---------------------------------------------------------------------------
+# execMotion's check, for the reasons given there, plus what is this bundle's
+# own: no vrmSchema link, no GLB parser, and no schema execMotion declares. The
+# snapshot rule's tables are imported from execMotion's tests directory, along
+# the one edge the two bundles may have.
+if(USDVRM_TEST_PYTHON)
+    set(_exec_vrm_python "${USDVRM_TEST_PYTHON}")
+else()
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if(Python3_Interpreter_FOUND)
+        set(_exec_vrm_python "${Python3_EXECUTABLE}")
+    endif()
+endif()
+if(_exec_vrm_python)
+    add_test(NAME execVrm_boundaries
+        COMMAND "${_exec_vrm_python}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/check_boundaries.py"
+            "${CMAKE_CURRENT_SOURCE_DIR}/.."
+            "$<TARGET_FILE:${PLUGIN_NAME}>"
+            "$<JOIN:$<TARGET_PROPERTY:${PLUGIN_NAME},LINK_LIBRARIES>,|>")
+else()
+    message(WARNING
+        "execVrm: no Python interpreter, so execVrm_boundaries is not "
+        "registered and the snapshot rule is unchecked in this build")
+endif()
+
+# ---------------------------------------------------------------------------
 # Environment
 # ---------------------------------------------------------------------------
 set(_usd_root "")
@@ -208,3 +236,7 @@ set_tests_properties(execVrm_rig execVrm_humanoid execVrm_correction
                      execVrm_joint_transforms execVrm_diagnostics
                      execVrm_humanoid_without_schema
     PROPERTIES LABELS "motion.openexec")
+if(TEST execVrm_boundaries)
+    set_tests_properties(execVrm_boundaries
+        PROPERTIES LABELS "motion.openexec")
+endif()

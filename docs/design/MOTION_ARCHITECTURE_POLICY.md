@@ -852,6 +852,12 @@ invalidation — not reception. A callback that reads a socket or a wall clock i
 not a pure function of its inputs, which makes cache reuse and invalidation
 unverifiable and forfeits the only reason to be on OpenExec at all.
 
+The rule is checked, not only reviewed, since 2026-09-15: `execMotion_boundaries`
+and `execVrm_boundaries` read each bundle's source and its built library's
+imports for each item in the list above. Mutable global state is the one item
+a token scan reaches only partly, and the check states which shapes it passes
+([execMotion's README](../../plugins/execMotion/README.md#how-the-rules-are-checked)).
+
 This also fixes the order of work: everything from input to offline
 `UsdSkelAnimation` is finished *before* OpenExec is introduced, and OpenExec
 attaches to it.

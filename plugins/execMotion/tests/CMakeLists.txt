@@ -291,6 +291,49 @@ add_test(NAME execMotion_display
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/displayed_clip.usda")
 
 # ---------------------------------------------------------------------------
+# The boundary, and the snapshot rule
+# ---------------------------------------------------------------------------
+# Motion policy §11.4: no socket, file, clock, thread or mutable global state in
+# a computation. check_boundaries.py reads the rule off the source, the built
+# library's imports, the target's link libraries and the plugInfo.json schema
+# declarations, and execVrm's check imports its tables from here.
+#
+# The link libraries are handed in from the target itself, because the
+# workspace libraries a bundle could reach a socket through are static: no
+# dependency list of the built binary would ever name one.
+#
+# The interpreter is the root's USDVRM_TEST_PYTHON where there is one. This
+# directory is configured after `find_package(pxr)`, which re-finds Python3 for
+# Development only and leaves `Python3_Interpreter_FOUND` false here, so a guard
+# on that variable would never register the test and nothing would say so.
+if(USDVRM_TEST_PYTHON)
+    set(_exec_motion_python "${USDVRM_TEST_PYTHON}")
+else()
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if(Python3_Interpreter_FOUND)
+        set(_exec_motion_python "${Python3_EXECUTABLE}")
+    endif()
+endif()
+if(_exec_motion_python)
+    add_test(NAME execMotion_boundaries
+        COMMAND "${_exec_motion_python}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/check_boundaries.py"
+            "${CMAKE_CURRENT_SOURCE_DIR}/.."
+            "$<TARGET_FILE:${PLUGIN_NAME}>"
+            "$<JOIN:$<TARGET_PROPERTY:${PLUGIN_NAME},LINK_LIBRARIES>,|>")
+    # The check's own tables, against text and symbol lists of both platforms.
+    # A boundary check that passes proves nothing about whether it can fail,
+    # and its first review found two tables that could not.
+    add_test(NAME execMotion_boundaries_selftest
+        COMMAND "${_exec_motion_python}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/test_check_boundaries.py")
+else()
+    message(WARNING
+        "execMotion: no Python interpreter, so execMotion_boundaries is not "
+        "registered and the snapshot rule is unchecked in this build")
+endif()
+
+# ---------------------------------------------------------------------------
 # Environment
 # ---------------------------------------------------------------------------
 # The bundle's own resource directory is what PXR_PLUGINPATH_NAME points at, and
@@ -344,3 +387,7 @@ set_tests_properties(execMotion_pose execMotion_mechanism execMotion_sample
                      execMotion_filter execMotion_root execMotion_interpolate
                      execMotion_blend execMotion_display
     PROPERTIES LABELS "motion.openexec")
+if(TEST execMotion_boundaries)
+    set_tests_properties(execMotion_boundaries execMotion_boundaries_selftest
+        PROPERTIES LABELS "motion.openexec")
+endif()
