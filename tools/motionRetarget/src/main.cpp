@@ -41,10 +41,12 @@ Refuse(const motionRetargetTool::Failure& failure)
 void
 ReportWarnings(const std::vector<std::string>& warnings, bool quiet)
 {
-    if (quiet) {
+    if (quiet)
+    {
         return;
     }
-    for (const std::string& warning : warnings) {
+    for (const std::string& warning : warnings)
+    {
         std::cerr << "motion_retarget: warning: " << warning << "\n";
     }
 }
@@ -52,16 +54,16 @@ ReportWarnings(const std::vector<std::string>& warnings, bool quiet)
 // One line per diagnostic, in the frozen code's own format, so a script can
 // match the code and the subject without parsing a sentence.
 void
-ReportDiagnostics(const vrmRetarget::RetargetDiagnostics& diagnostics,
-                  bool quiet)
+ReportDiagnostics(const vrmRetarget::RetargetDiagnostics& diagnostics, bool quiet)
 {
-    if (quiet) {
+    if (quiet)
+    {
         return;
     }
-    for (const vrmRetarget::RetargetDiagnostic& diagnostic :
-         diagnostics.reported) {
-        std::cerr << "motion_retarget: "
-                  << vrmRetarget::FormatRetargetDiagnostic(diagnostic) << "\n";
+    for (const vrmRetarget::RetargetDiagnostic& diagnostic : diagnostics.reported)
+    {
+        std::cerr << "motion_retarget: " << vrmRetarget::FormatRetargetDiagnostic(diagnostic)
+                  << "\n";
     }
 }
 
@@ -69,8 +71,10 @@ std::string
 JoinNames(const std::vector<std::string>& names)
 {
     std::string joined;
-    for (const std::string& name : names) {
-        if (!joined.empty()) {
+    for (const std::string& name : names)
+    {
+        if (!joined.empty())
+        {
             joined += ", ";
         }
         joined += "'" + name + "'";
@@ -86,13 +90,13 @@ JoinNames(const std::vector<std::string>& names)
 // silent omission -- an operator whose clip turns a face red sees why it did
 // not.
 std::size_t
-CountMaterialColors(
-    const std::vector<vrmRetarget::ResolvedExpressions>& expressions)
+CountMaterialColors(const std::vector<vrmRetarget::ResolvedExpressions>& expressions)
 {
     std::set<std::pair<std::string, std::string>> slots;
-    for (const vrmRetarget::ResolvedExpressions& sample : expressions) {
-        for (const vrmRetarget::ResolvedMaterialColor& color :
-             sample.materialColors) {
+    for (const vrmRetarget::ResolvedExpressions& sample : expressions)
+    {
+        for (const vrmRetarget::ResolvedMaterialColor& color : sample.materialColors)
+        {
             slots.emplace(color.material, color.colorType);
         }
     }
@@ -109,15 +113,15 @@ CountMaterialColors(
 // already in, since a clip's target and its hips translation are stated in the
 // same space.
 std::vector<vrmRetarget::ResolvedLookAt>
-EvaluateGaze(const motionRetargetTool::Avatar& avatar,
-             const motionRetargetTool::Clip& clip,
+EvaluateGaze(const motionRetargetTool::Avatar& avatar, const motionRetargetTool::Clip& clip,
              const motion::HumanoidAnimation& source,
              const vrmRetarget::RetargetedAnimation& retargeted,
              vrmRetarget::LookAtDiagnostics* diagnostics)
 {
     std::vector<vrmRetarget::ResolvedLookAt> gaze;
     const int head = avatar.map.GetJointIndex(motion::HumanBone::Head);
-    if (head == vrmRetarget::HumanoidMap::kUnmapped) {
+    if (head == vrmRetarget::HumanoidMap::kUnmapped)
+    {
         // Without a head there is no place for the eyes to be, so there is
         // nothing to evaluate against -- and the retarget itself already
         // reports the head as a missing required bone.
@@ -131,23 +135,21 @@ EvaluateGaze(const motionRetargetTool::Avatar& avatar,
     options.clipOffsetFromHeadBone = clip.lookAtOffsetFromHeadBone;
     const vrmRetarget::LookAtEvaluator evaluator(avatar.lookAtRig, options);
 
-    const std::size_t count =
-        std::min(source.samples.size(), retargeted.samples.size());
+    const std::size_t count = std::min(source.samples.size(), retargeted.samples.size());
     gaze.reserve(count);
-    for (std::size_t i = 0; i < count; ++i) {
+    for (std::size_t i = 0; i < count; ++i)
+    {
         vrmRetarget::LookAtHead where;
-        if (!vrmRetarget::GetJointWorldTransform(avatar.skeleton,
-                                                 retargeted.samples[i], head,
-                                                 &where.orientation,
-                                                 &where.position)) {
+        if (!vrmRetarget::GetJointWorldTransform(avatar.skeleton, retargeted.samples[i], head,
+                                                 &where.orientation, &where.position))
+        {
             diagnostics->warnings.push_back(
                 "the target rig's head joint has no resolvable transform, so "
                 "the clip's look-at target cannot be turned into a gaze");
             gaze.clear();
             return gaze;
         }
-        gaze.push_back(evaluator.Evaluate(source.samples[i], where,
-                                          diagnostics));
+        gaze.push_back(evaluator.Evaluate(source.samples[i], where, diagnostics));
     }
     return gaze;
 }
@@ -163,34 +165,33 @@ EvaluateGaze(const motionRetargetTool::Avatar& avatar,
 // usual shape, a glTF node with a translation and nothing else -- and a rig
 // where they do not is told about rather than silently read one way.
 std::size_t
-ApplyEyeRotations(const motionRetargetTool::Avatar& avatar,
-                  const motion::HumanoidAnimation& source,
+ApplyEyeRotations(const motionRetargetTool::Avatar& avatar, const motion::HumanoidAnimation& source,
                   const std::vector<vrmRetarget::ResolvedLookAt>& gaze,
-                  vrmRetarget::RetargetedAnimation* retargeted,
-                  std::vector<std::string>* warnings)
+                  vrmRetarget::RetargetedAnimation* retargeted, std::vector<std::string>* warnings)
 {
     std::map<std::string, int> jointIndex;
-    for (const std::string& token : {avatar.lookAtRig.leftEyeJoint,
-                                     avatar.lookAtRig.rightEyeJoint}) {
-        if (token.empty()) {
+    for (const std::string& token : {avatar.lookAtRig.leftEyeJoint, avatar.lookAtRig.rightEyeJoint})
+    {
+        if (token.empty())
+        {
             continue;
         }
         const int index = avatar.skeleton.FindJoint(token);
-        if (index == vrmRetarget::TargetSkeleton::kNoParent) {
+        if (index == vrmRetarget::TargetSkeleton::kNoParent)
+        {
             continue;
         }
         jointIndex.emplace(token, index);
         const pxr::GfQuatf& rest =
-            avatar.skeleton.GetJoints()[static_cast<std::size_t>(index)]
-                .restRotation;
+            avatar.skeleton.GetJoints()[static_cast<std::size_t>(index)].restRotation;
         // Orientation, not representation: the dot against identity is 1 for
         // an unrotated rest and -1 for the other spelling of the same one.
-        if (std::fabs(pxr::GfDot(rest, pxr::GfQuatf(1.0f))) < 1.0f - 1e-5f) {
-            warnings->push_back(
-                "eye joint '" + token
-                + "' does not rest unrotated, so its gaze is composed onto "
-                  "that rest rotation in the head's axes rather than in the "
-                  "eye's own");
+        if (std::fabs(pxr::GfDot(rest, pxr::GfQuatf(1.0f))) < 1.0f - 1e-5f)
+        {
+            warnings->push_back("eye joint '" + token +
+                                "' does not rest unrotated, so its gaze is composed onto "
+                                "that rest rotation in the head's axes rather than in the "
+                                "eye's own");
         }
 
         // The clip may already be driving this joint. An eye is a human bone
@@ -199,25 +200,27 @@ ApplyEyeRotations(const motionRetargetTool::Avatar& avatar,
         // about to overwrite -- and losing a channel the clip explicitly
         // authored is exactly the silence the expression collision one branch
         // over is reported for. Say it once, naming the bone.
-        for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot) {
+        for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+        {
             const auto bone = static_cast<motion::HumanBone>(slot);
-            if (avatar.map.GetJointIndex(bone) != index) {
+            if (avatar.map.GetJointIndex(bone) != index)
+            {
                 continue;
             }
-            const bool driven = std::any_of(
-                source.samples.begin(), source.samples.end(),
-                [slot](const motion::HumanoidPose& pose) {
-                    return pose.validRotations.test(slot);
-                });
-            if (driven) {
-                warnings->push_back(
-                    "the clip animates '" + std::string(motion::HumanBoneName(bone))
-                    + "' and the avatar aims that joint with its look-at; the "
-                      "gaze this rig resolves wins");
+            const bool driven = std::any_of(source.samples.begin(), source.samples.end(),
+                                            [slot](const motion::HumanoidPose& pose)
+                                            { return pose.validRotations.test(slot); });
+            if (driven)
+            {
+                warnings->push_back("the clip animates '" +
+                                    std::string(motion::HumanBoneName(bone)) +
+                                    "' and the avatar aims that joint with its look-at; the "
+                                    "gaze this rig resolves wins");
             }
         }
     }
-    if (jointIndex.empty()) {
+    if (jointIndex.empty())
+    {
         return 0;
     }
 
@@ -230,24 +233,25 @@ ApplyEyeRotations(const motionRetargetTool::Avatar& avatar,
     // nothing is written, so the eye stays where the retarget put it.
     std::map<int, pxr::GfQuatf> held;
     std::set<int> driven;
-    for (std::size_t i = 0; i < gaze.size() && i < retargeted->samples.size();
-         ++i) {
-        if (gaze[i].hasGaze) {
-            for (const vrmRetarget::LookAtEyeRotation& eye :
-                 gaze[i].eyeRotations) {
+    for (std::size_t i = 0; i < gaze.size() && i < retargeted->samples.size(); ++i)
+    {
+        if (gaze[i].hasGaze)
+        {
+            for (const vrmRetarget::LookAtEyeRotation& eye : gaze[i].eyeRotations)
+            {
                 const auto found = jointIndex.find(eye.joint);
-                if (found == jointIndex.end()) {
+                if (found == jointIndex.end())
+                {
                     continue;
                 }
                 const auto slot = static_cast<std::size_t>(found->second);
-                const pxr::GfQuatf& rest =
-                    avatar.skeleton.GetJoints()[slot].restRotation;
+                const pxr::GfQuatf& rest = avatar.skeleton.GetJoints()[slot].restRotation;
                 held[found->second] = (eye.rotation * rest).GetNormalized();
             }
         }
-        for (const auto& entry : held) {
-            retargeted->samples[i]
-                .rotations[static_cast<std::size_t>(entry.first)] = entry.second;
+        for (const auto& entry : held)
+        {
+            retargeted->samples[i].rotations[static_cast<std::size_t>(entry.first)] = entry.second;
             driven.insert(entry.first);
         }
     }
@@ -266,40 +270,40 @@ main(int argc, char** argv)
     motionRetargetTool::Options options;
     bool showHelp = false;
     std::string error;
-    if (!motionRetargetTool::ParseOptions(arguments, &options, &showHelp,
-                                          &error)) {
+    if (!motionRetargetTool::ParseOptions(arguments, &options, &showHelp, &error))
+    {
         // Invalid user input like every other refusal of the command line --
         // a usage error is not a class of its own, since what fixes it is
         // the same: change the arguments.
-        std::cerr << "motion_retarget: " << error << "\n\n"
-                  << motionRetargetTool::GetUsage();
+        std::cerr << "motion_retarget: " << error << "\n\n" << motionRetargetTool::GetUsage();
         return static_cast<int>(ExitCode::InvalidUserInput);
     }
-    if (showHelp) {
+    if (showHelp)
+    {
         std::fputs(motionRetargetTool::GetUsage(), stdout);
         return static_cast<int>(ExitCode::Success);
     }
 
     motionRetargetTool::Failure failure;
     std::map<std::string, std::string> extraMappings;
-    if (!options.humanoidMapPath.empty()
-        && !motionRetargetTool::ReadHumanoidMapFile(options.humanoidMapPath,
-                                                    &extraMappings, &failure)) {
+    if (!options.humanoidMapPath.empty() &&
+        !motionRetargetTool::ReadHumanoidMapFile(options.humanoidMapPath, &extraMappings, &failure))
+    {
         return Refuse(failure);
     }
 
     motionRetargetTool::Avatar avatar;
-    if (!motionRetargetTool::ReadAvatar(options.avatarPath,
-                                        options.targetSkeletonPath,
-                                        extraMappings, &avatar, &failure)) {
+    if (!motionRetargetTool::ReadAvatar(options.avatarPath, options.targetSkeletonPath,
+                                        extraMappings, &avatar, &failure))
+    {
         return Refuse(failure);
     }
     ReportWarnings(avatar.warnings, options.quiet);
 
     motionRetargetTool::Clip clip;
-    if (!motionRetargetTool::ReadClip(options.animationPath,
-                                      options.clipSkeletonPath, &clip,
-                                      &failure)) {
+    if (!motionRetargetTool::ReadClip(options.animationPath, options.clipSkeletonPath, &clip,
+                                      &failure))
+    {
         return Refuse(failure);
     }
     ReportWarnings(clip.warnings, options.quiet);
@@ -312,35 +316,35 @@ main(int argc, char** argv)
     // stayed on the clip's key times, and the two would meet at neither.
     motion::HumanoidAnimation resampled;
     const motion::HumanoidAnimation* source = &clip.animation;
-    if (options.resampleRate > 0.0) {
+    if (options.resampleRate > 0.0)
+    {
         resampled = motion::Resample(clip.animation, options.resampleRate);
         source = &resampled;
     }
 
     vrmRetarget::RetargetOptions retargetOptions;
     retargetOptions.rootMotion = options.rootMotion;
-    if (retargetOptions.rootMotion.mode
-        == vrmRetarget::RootMotionMode::RootJoint) {
+    if (retargetOptions.rootMotion.mode == vrmRetarget::RootMotionMode::RootJoint)
+    {
         const int index = avatar.skeleton.FindJoint(options.rootJointToken);
-        if (index < 0) {
+        if (index < 0)
+        {
             motionRetargetTool::Fail(&failure, ExitCode::InvalidUserInput,
-                                     "--root-joint '" + options.rootJointToken
-                                         + "' is not a joint of the target "
-                                           "skeleton");
+                                     "--root-joint '" + options.rootJointToken +
+                                         "' is not a joint of the target "
+                                         "skeleton");
             return Refuse(failure);
         }
         retargetOptions.rootMotion.rootJointIndex = index;
     }
 
-    const vrmRetarget::PoseRetargeter retargeter(avatar.skeleton, avatar.map,
-                                                 clip.restPose,
+    const vrmRetarget::PoseRetargeter retargeter(avatar.skeleton, avatar.map, clip.restPose,
                                                  retargetOptions);
     vrmRetarget::RetargetDiagnostics diagnostics;
     // Not const: a bone-driven look-at writes its eye rotations into these very
     // arrays, which is what lets the gaze reach the stage through the joint
     // authoring that already exists rather than through a second path.
-    vrmRetarget::RetargetedAnimation retargeted =
-        retargeter.Retarget(*source, &diagnostics);
+    vrmRetarget::RetargetedAnimation retargeted = retargeter.Retarget(*source, &diagnostics);
     ReportDiagnostics(diagnostics, options.quiet);
 
     // The gaze, between the body and the face because it needs the first and
@@ -350,38 +354,39 @@ main(int argc, char** argv)
     std::vector<vrmRetarget::ResolvedLookAt> gaze;
     vrmRetarget::LookAtDiagnostics lookAtDiagnostics;
     std::size_t eyeJointsDriven = 0;
-    const bool gazeDrivesExpressions =
-        avatar.lookAtRig.type == vrmRetarget::LookAtType::Expression;
+    const bool gazeDrivesExpressions = avatar.lookAtRig.type == vrmRetarget::LookAtType::Expression;
     // An expression-driven gaze reaches the stage as blend-shape weights and by
     // no other route, so --no-expressions takes it along with the face. The
     // evaluation is skipped rather than performed and discarded, because the
     // summary counts what it evaluated: a run that reports samples gazing has
     // to have authored a gaze.
-    const bool gazeHasSomewhereToGo =
-        options.expressions || !gazeDrivesExpressions;
-    if (options.lookAt && avatar.hasLookAt && gazeHasSomewhereToGo) {
-        gaze = EvaluateGaze(avatar, clip, *source, retargeted,
-                            &lookAtDiagnostics);
-        if (!gazeDrivesExpressions) {
-            eyeJointsDriven = ApplyEyeRotations(avatar, *source, gaze,
-                                                &retargeted,
-                                                &lookAtDiagnostics.warnings);
+    const bool gazeHasSomewhereToGo = options.expressions || !gazeDrivesExpressions;
+    if (options.lookAt && avatar.hasLookAt && gazeHasSomewhereToGo)
+    {
+        gaze = EvaluateGaze(avatar, clip, *source, retargeted, &lookAtDiagnostics);
+        if (!gazeDrivesExpressions)
+        {
+            eyeJointsDriven =
+                ApplyEyeRotations(avatar, *source, gaze, &retargeted, &lookAtDiagnostics.warnings);
         }
     }
-    if (!options.quiet) {
-        if (clip.hasLookAtTrack && !avatar.hasLookAt) {
+    if (!options.quiet)
+    {
+        if (clip.hasLookAtTrack && !avatar.hasLookAt)
+        {
             std::cerr << "motion_retarget: warning: the clip names a look-at "
                          "target and the avatar declares no look-at "
                          "configuration, so no gaze was authored\n";
         }
-        if (options.lookAt && avatar.hasLookAt && clip.hasLookAtTrack
-            && !gazeHasSomewhereToGo) {
+        if (options.lookAt && avatar.hasLookAt && clip.hasLookAtTrack && !gazeHasSomewhereToGo)
+        {
             std::cerr << "motion_retarget: warning: this avatar aims its eyes "
                          "with expressions, which --no-expressions does not "
                          "author, so the clip's look-at target was not baked "
                          "either\n";
         }
-        if (options.lookAt && avatar.hasLookAt && !clip.hasLookAtTrack) {
+        if (options.lookAt && avatar.hasLookAt && !clip.hasLookAtTrack)
+        {
             // Not a defect on either side: an avatar states how its eyes work
             // whether or not a given clip uses them.
             std::cerr << "motion_retarget: note: the avatar declares a look-at "
@@ -406,21 +411,23 @@ main(int argc, char** argv)
     // target gets the sum, which is the rule rather than a coincidence.
     std::vector<vrmRetarget::ResolvedExpressions> expressions;
     vrmRetarget::ExpressionDiagnostics expressionDiagnostics;
-    if (options.expressions) {
+    if (options.expressions)
+    {
         const vrmRetarget::ExpressionResolver resolver(avatar.expressionRig);
         expressions.reserve(source->samples.size());
-        for (std::size_t i = 0; i < source->samples.size(); ++i) {
+        for (std::size_t i = 0; i < source->samples.size(); ++i)
+        {
             const motion::HumanoidPose& pose = source->samples[i];
-            if (!gazeDrivesExpressions || i >= gaze.size()
-                || !gaze[i].hasGaze) {
-                expressions.push_back(resolver.Resolve(pose,
-                                                       &expressionDiagnostics));
+            if (!gazeDrivesExpressions || i >= gaze.size() || !gaze[i].hasGaze)
+            {
+                expressions.push_back(resolver.Resolve(pose, &expressionDiagnostics));
                 continue;
             }
             motion::ExpressionWeights weights = pose.expressions;
-            for (const motion::ExpressionWeight& gazeWeight :
-                 gaze[i].expressions.entries) {
-                if (!weights.Set(gazeWeight.name, gazeWeight.weight)) {
+            for (const motion::ExpressionWeight& gazeWeight : gaze[i].expressions.entries)
+            {
+                if (!weights.Set(gazeWeight.name, gazeWeight.weight))
+                {
                     // The clip drives a gaze expression by name *and* names a
                     // look-at target. Both are legitimate authoring, and one
                     // has to win; the gaze does, because it is the value this
@@ -432,13 +439,13 @@ main(int argc, char** argv)
                     // Every other warning path in this feature de-duplicates
                     // for the same reason.
                     const std::string collision =
-                        "the clip animates expression '" + gazeWeight.name
-                        + "' and also names a look-at target; the gaze this "
-                          "rig resolves wins";
+                        "the clip animates expression '" + gazeWeight.name +
+                        "' and also names a look-at target; the gaze this "
+                        "rig resolves wins";
                     if (std::find(expressionDiagnostics.warnings.begin(),
                                   expressionDiagnostics.warnings.end(),
-                                  collision)
-                        == expressionDiagnostics.warnings.end()) {
+                                  collision) == expressionDiagnostics.warnings.end())
+                    {
                         expressionDiagnostics.warnings.push_back(collision);
                     }
                 }
@@ -453,19 +460,22 @@ main(int argc, char** argv)
         }
     }
 
-    if (!options.quiet) {
-        if (!expressionDiagnostics.unresolvedNames.empty()) {
+    if (!options.quiet)
+    {
+        if (!expressionDiagnostics.unresolvedNames.empty())
+        {
             std::cerr << "motion_retarget: warning: the clip animates "
                          "expressions the avatar does not declare: "
-                      << JoinNames(expressionDiagnostics.unresolvedNames)
-                      << "\n";
+                      << JoinNames(expressionDiagnostics.unresolvedNames) << "\n";
         }
-        if (!expressionDiagnostics.clampedNames.empty()) {
+        if (!expressionDiagnostics.clampedNames.empty())
+        {
             std::cerr << "motion_retarget: warning: expression weights "
                          "outside [0, 1] were clamped: "
                       << JoinNames(expressionDiagnostics.clampedNames) << "\n";
         }
-        if (!expressionDiagnostics.suppressedNames.empty()) {
+        if (!expressionDiagnostics.suppressedNames.empty())
+        {
             // A note rather than a warning: this is the avatar's own
             // `overrideBlink` / `overrideLookAt` / `overrideMouth` rule being
             // obeyed, and it is the one thing the weights themselves cannot
@@ -473,14 +483,13 @@ main(int argc, char** argv)
             // have nowhere to look.
             std::cerr << "motion_retarget: note: the avatar's expression "
                          "overrides suppressed: "
-                      << JoinNames(expressionDiagnostics.suppressedNames)
-                      << "\n";
+                      << JoinNames(expressionDiagnostics.suppressedNames) << "\n";
         }
         ReportWarnings(expressionDiagnostics.warnings, options.quiet);
         const std::size_t materialColors = CountMaterialColors(expressions);
-        if (materialColors != 0) {
-            std::cerr << "motion_retarget: warning: the clip drives "
-                      << materialColors
+        if (materialColors != 0)
+        {
+            std::cerr << "motion_retarget: warning: the clip drives " << materialColors
                       << " material colour slot(s) of this rig; "
                          "motion_retarget authors blend-shape weights only, "
                          "so they are not written\n";
@@ -488,29 +497,31 @@ main(int argc, char** argv)
     }
 
     motionRetargetTool::WriteResult written;
-    if (!motionRetargetTool::WriteRetargetedAnimation(
-            options.outputPath, avatar, clip, retargeted, expressions,
-            options.animationName, &written, &failure)) {
+    if (!motionRetargetTool::WriteRetargetedAnimation(options.outputPath, avatar, clip, retargeted,
+                                                      expressions, options.animationName, &written,
+                                                      &failure))
+    {
         return Refuse(failure);
     }
     ReportWarnings(written.warnings, options.quiet);
 
-    if (!options.quiet) {
+    if (!options.quiet)
+    {
         std::cout << "motion_retarget: wrote " << options.outputPath << " ("
-                  << retargeted.samples.size() << " samples over "
-                  << retargeted.joints.size() << " joints, "
-                  << avatar.map.GetMappedCount() << " humanoid bones bound";
-        if (written.blendShapesAuthored != 0) {
-            std::cout << ", " << written.blendShapesAuthored
-                      << " blend shapes driven";
+                  << retargeted.samples.size() << " samples over " << retargeted.joints.size()
+                  << " joints, " << avatar.map.GetMappedCount() << " humanoid bones bound";
+        if (written.blendShapesAuthored != 0)
+        {
+            std::cout << ", " << written.blendShapesAuthored << " blend shapes driven";
         }
-        if (eyeJointsDriven != 0) {
+        if (eyeJointsDriven != 0)
+        {
             std::cout << ", " << eyeJointsDriven << " eye joints aimed";
         }
         const std::size_t gazing =
-            lookAtDiagnostics.samplesEvaluated
-            - lookAtDiagnostics.samplesWithoutTarget;
-        if (gazing != 0) {
+            lookAtDiagnostics.samplesEvaluated - lookAtDiagnostics.samplesWithoutTarget;
+        if (gazing != 0)
+        {
             std::cout << ", " << gazing << " samples gazing";
         }
         std::cout << ")\n";

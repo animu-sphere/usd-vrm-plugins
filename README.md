@@ -1,5 +1,9 @@
 # OpenUSD VRM Avatar Plugins
 
+[![CI](https://github.com/animu-sphere/usd-vrm-plugins/actions/workflows/ost-source-ci.yml/badge.svg)](https://github.com/animu-sphere/usd-vrm-plugins/actions/workflows/ost-source-ci.yml)
+[![OpenUSD 26.08](https://img.shields.io/badge/OpenUSD-26.08-2f6f9f)](docs/reference/SUPPORTED_CONFIGURATIONS.md)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-4b8bbe.svg)](LICENSE)
+
 OpenUSD plugins for [VRM](https://vrm.dev/en/) avatars.
 
 <p align="center">
@@ -395,6 +399,13 @@ and `hydra-merlin` use:
 
 Release history is in the [CHANGELOG](CHANGELOG.md); the release version lives
 in the single-source [VERSION](VERSION) file.
+
+## Contributing
+
+Small fixes, documentation updates, tests, and questions are welcome. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the short setup and pull request guide.
+Please also read the [Code of Conduct](CODE_OF_CONDUCT.md) and
+[Security Policy](SECURITY.md).
 
 ## License
 

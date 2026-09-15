@@ -115,13 +115,11 @@ struct CaptureTraceError
 
 // Parses a trace. On failure `animation` is left untouched and `error`, when
 // given, names the line and the reason.
-MOTIONRUNTIME_API bool ReadCaptureTrace(
-    std::istream& input, HumanoidAnimation* animation,
-    CaptureTraceError* error = nullptr);
+MOTIONRUNTIME_API bool ReadCaptureTrace(std::istream& input, HumanoidAnimation* animation,
+                                        CaptureTraceError* error = nullptr);
 
-MOTIONRUNTIME_API bool ReadCaptureTraceFile(
-    const std::string& path, HumanoidAnimation* animation,
-    CaptureTraceError* error = nullptr);
+MOTIONRUNTIME_API bool ReadCaptureTraceFile(const std::string& path, HumanoidAnimation* animation,
+                                            CaptureTraceError* error = nullptr);
 
 // Writes `animation` as a trace. Emission is deterministic: fixed precision,
 // bones in humanoid enum order, expressions in name order, and only the fields
@@ -141,10 +139,9 @@ MOTIONRUNTIME_API bool ReadCaptureTraceFile(
 // `sourceId` its own reader refused — a sender's model title with a space in
 // it. The fix was mostly the reader's (the header takes rest-of-line now), and
 // what is left here is the residue no line-oriented format can carry.
-MOTIONRUNTIME_API bool WriteCaptureTrace(
-    std::ostream& output, const HumanoidAnimation& animation);
+MOTIONRUNTIME_API bool WriteCaptureTrace(std::ostream& output, const HumanoidAnimation& animation);
 
-MOTIONRUNTIME_API bool WriteCaptureTraceFile(
-    const std::string& path, const HumanoidAnimation& animation);
+MOTIONRUNTIME_API bool WriteCaptureTraceFile(const std::string& path,
+                                             const HumanoidAnimation& animation);
 
 } // namespace motion

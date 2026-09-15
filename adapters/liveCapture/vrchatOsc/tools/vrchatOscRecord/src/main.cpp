@@ -124,15 +124,16 @@ constexpr double kProgressSeconds = 1.0;
 // that raises it, so a filter would suppress the only mid-session message an
 // operator actually waits for.
 void
-ReportDiagnostics(const std::vector<vrmAdapterVrchatOsc::Diagnostic>& log,
-                  bool quiet)
+ReportDiagnostics(const std::vector<vrmAdapterVrchatOsc::Diagnostic>& log, bool quiet)
 {
-    if (quiet) {
+    if (quiet)
+    {
         return;
     }
-    for (const vrmAdapterVrchatOsc::Diagnostic& diagnostic : log) {
-        std::cerr << "vrchat_osc_record: "
-                  << vrmAdapterVrchatOsc::FormatDiagnostic(diagnostic) << "\n";
+    for (const vrmAdapterVrchatOsc::Diagnostic& diagnostic : log)
+    {
+        std::cerr << "vrchat_osc_record: " << vrmAdapterVrchatOsc::FormatDiagnostic(diagnostic)
+                  << "\n";
     }
 }
 
@@ -158,28 +159,28 @@ EndpointIsIpv6(const std::string& endpoint)
 // One row per address and type tag pair, because a sender that spells one
 // address two ways is the finding a table keyed on the address alone would hide.
 void
-PrintAddressInventory(std::FILE* out,
-                      const vrmAdapterVrchatOsc::PacketCapture& capture)
+PrintAddressInventory(std::FILE* out, const vrmAdapterVrchatOsc::PacketCapture& capture)
 {
     const vrmAdapterVrchatOsc::AddressInventory inventory =
         vrmAdapterVrchatOsc::InventoryAddresses(capture);
 
-    std::fprintf(out, "addresses: %zu (%zu message(s), %zu bundled datagram(s), "
-                      "%zu refused)\n",
-                 inventory.rows.size(), inventory.messages, inventory.bundled,
-                 inventory.refused);
-    for (const vrmAdapterVrchatOsc::AddressRow& row : inventory.rows) {
-        std::fprintf(out, "  %s ,%s  %zu message(s) in %zu datagram(s)  "
-                          "%.6f-%.6f s\n",
-                     row.address.c_str(), row.typeTags.c_str(), row.messages,
-                     row.datagrams, row.firstTime, row.lastTime);
+    std::fprintf(out,
+                 "addresses: %zu (%zu message(s), %zu bundled datagram(s), "
+                 "%zu refused)\n",
+                 inventory.rows.size(), inventory.messages, inventory.bundled, inventory.refused);
+    for (const vrmAdapterVrchatOsc::AddressRow& row : inventory.rows)
+    {
+        std::fprintf(out,
+                     "  %s ,%s  %zu message(s) in %zu datagram(s)  "
+                     "%.6f-%.6f s\n",
+                     row.address.c_str(), row.typeTags.c_str(), row.messages, row.datagrams,
+                     row.firstTime, row.lastTime);
     }
     // Every refusal, not a count: a session half-refused is one an operator has
     // to be able to read the reason for, and a capture is a bounded file.
-    for (const vrmAdapterVrchatOsc::Diagnostic& diagnostic :
-         inventory.diagnostics) {
-        std::fprintf(out, "  %s\n",
-                     vrmAdapterVrchatOsc::FormatDiagnostic(diagnostic).c_str());
+    for (const vrmAdapterVrchatOsc::Diagnostic& diagnostic : inventory.diagnostics)
+    {
+        std::fprintf(out, "  %s\n", vrmAdapterVrchatOsc::FormatDiagnostic(diagnostic).c_str());
     }
 }
 
@@ -207,8 +208,8 @@ ExportTrace(const vrchatOscRecordTool::Options& options,
     // not the same file" and "one of them is not there" are the same answer
     // here.
     std::error_code aliased;
-    if (std::filesystem::equivalent(options.inspectPath,
-                                    options.traceExportPath, aliased)) {
+    if (std::filesystem::equivalent(options.inspectPath, options.traceExportPath, aliased))
+    {
         std::cerr << "vrchat_osc_record: " << options.traceExportPath
                   << " is the capture being read, named differently; writing "
                      "the trace there would destroy it\n";
@@ -219,8 +220,7 @@ ExportTrace(const vrchatOscRecordTool::Options& options,
     // The capture's own peer, so a replayed session's diagnostics name what the
     // live one's would have named. A capture that recorded none falls back to
     // its path, which is what the corpus tests read.
-    assembler.SetSource(capture.peerEndpoint.empty() ? options.inspectPath
-                                                     : capture.peerEndpoint);
+    assembler.SetSource(capture.peerEndpoint.empty() ? options.inspectPath : capture.peerEndpoint);
 
     // The provenance the adapter refuses to invent and the operator already
     // stated. `protocol` is this file's to fill because no type in the adapter
@@ -233,21 +233,21 @@ ExportTrace(const vrchatOscRecordTool::Options& options,
     metadata.provider = capture.sender;
     metadata.sourceId = capture.sourceId;
 
-    vrchatOscRecordTool::TraceCollector trace(options.assignment,
-                                              options.solve);
+    vrchatOscRecordTool::TraceCollector trace(options.assignment, options.solve);
     std::vector<vrmAdapterVrchatOsc::TrackerFrame> frames;
     std::vector<vrmAdapterVrchatOsc::Diagnostic> log;
     // First of each code, and how many there were. An eight-datagram frame that
     // is short one address raises one diagnostic per frame, so a 2000-frame
     // session with a strap off would otherwise write 2000 lines over the report
     // an operator ran this for.
-    std::map<vrmAdapterVrchatOsc::DiagnosticCode,
-             std::pair<std::string, std::size_t>>
-        seen;
-    const auto drain = [&seen, &log]() {
-        for (const vrmAdapterVrchatOsc::Diagnostic& diagnostic : log) {
+    std::map<vrmAdapterVrchatOsc::DiagnosticCode, std::pair<std::string, std::size_t>> seen;
+    const auto drain = [&seen, &log]()
+    {
+        for (const vrmAdapterVrchatOsc::Diagnostic& diagnostic : log)
+        {
             auto& entry = seen[diagnostic.code];
-            if (entry.second == 0) {
+            if (entry.second == 0)
+            {
                 entry.first = vrmAdapterVrchatOsc::FormatDiagnostic(diagnostic);
             }
             ++entry.second;
@@ -255,14 +255,15 @@ ExportTrace(const vrchatOscRecordTool::Options& options,
         log.clear();
     };
 
-    for (const vrmAdapterVrchatOsc::RecordedDatagram& datagram :
-         capture.datagrams) {
+    for (const vrmAdapterVrchatOsc::RecordedDatagram& datagram : capture.datagrams)
+    {
         const vrmAdapterVrchatOsc::TrackerPacket packet =
             vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram.bytes);
         // The decoder's own refusals, which it raises without a source or a
         // timestamp because it knows neither. Stamped here, where both are
         // known, exactly as `InventoryAddresses` stamps them.
-        for (vrmAdapterVrchatOsc::Diagnostic diagnostic : packet.diagnostics) {
+        for (vrmAdapterVrchatOsc::Diagnostic diagnostic : packet.diagnostics)
+        {
             diagnostic.source = assembler.GetSource();
             diagnostic.timestamp = datagram.receiveTime;
             log.push_back(std::move(diagnostic));
@@ -275,9 +276,7 @@ ExportTrace(const vrchatOscRecordTool::Options& options,
         // restart, which is the assembler's stated behaviour rather than a
         // fallback (FrameAssembler.h).
         assembler.Push(packet, datagram.receiveTime,
-                       datagram.peer.empty() ? capture.peerEndpoint
-                                             : datagram.peer,
-                       &frames, &log);
+                       datagram.peer.empty() ? capture.peerEndpoint : datagram.peer, &frames, &log);
         drain();
         trace.Observe(frames, metadata);
     }
@@ -293,17 +292,17 @@ ExportTrace(const vrchatOscRecordTool::Options& options,
     trace.Observe(frames, metadata);
 
     trace.Close();
-    const std::vector<motion::HumanoidAnimation>& sessions =
-        trace.GetSessions();
+    const std::vector<motion::HumanoidAnimation>& sessions = trace.GetSessions();
 
-    if (!options.quiet) {
-        for (const auto& entry : seen) {
+    if (!options.quiet)
+    {
+        for (const auto& entry : seen)
+        {
             std::cerr << "vrchat_osc_record: " << entry.second.first;
-            if (entry.second.second > 1) {
+            if (entry.second.second > 1)
+            {
                 std::cerr << " (and " << (entry.second.second - 1) << " more of "
-                          << vrmAdapterVrchatOsc::DiagnosticCodeString(
-                                 entry.first)
-                          << ")";
+                          << vrmAdapterVrchatOsc::DiagnosticCodeString(entry.first) << ")";
             }
             std::cerr << "\n";
         }
@@ -315,7 +314,8 @@ ExportTrace(const vrchatOscRecordTool::Options& options,
     // tracker identity from a strap that was never worn.
     vrchatOscRecordTool::PrintSolveReport(stdout, trace.GetReport());
 
-    if (sessions.empty()) {
+    if (sessions.empty())
+    {
         std::cerr << "vrchat_osc_record: no frame reached a pose, so there is "
                      "no trace to write; the solve lines above say whether the "
                      "assignment or the traffic is why\n";
@@ -323,59 +323,62 @@ ExportTrace(const vrchatOscRecordTool::Options& options,
     }
 
     std::size_t index = 0;
-    if (options.sourceSession != 0) {
-        if (options.sourceSession > sessions.size()) {
-            std::cerr << "vrchat_osc_record: --source-session "
-                      << options.sourceSession << ": this capture holds "
-                      << sessions.size() << " session(s)\n";
+    if (options.sourceSession != 0)
+    {
+        if (options.sourceSession > sessions.size())
+        {
+            std::cerr << "vrchat_osc_record: --source-session " << options.sourceSession
+                      << ": this capture holds " << sessions.size() << " session(s)\n";
             return false;
         }
         index = options.sourceSession - 1;
-    } else if (sessions.size() > 1) {
+    }
+    else if (sessions.size() > 1)
+    {
         // Refused rather than resolved. Picking the first would silently
         // discard a recording, and concatenating them would assert a continuity
         // of tracking *space* across a restart that nothing here can check --
         // which is this wire's version of the sibling tools' refusal and not
         // theirs, because the receiver's clock does not go back (TraceExport.h).
         std::cerr << "vrchat_osc_record: the sender restarted, so this capture "
-                     "holds " << sessions.size()
+                     "holds "
+                  << sessions.size()
                   << " sessions from different peers, each calibrated on its "
                      "own; one trace is one session, so name the one to export "
-                     "with --source-session 1.." << sessions.size() << "\n";
+                     "with --source-session 1.."
+                  << sessions.size() << "\n";
         return false;
     }
 
     const motion::HumanoidAnimation& session = sessions[index];
-    if (!motion::WriteCaptureTraceFile(options.traceExportPath, session)) {
+    if (!motion::WriteCaptureTraceFile(options.traceExportPath, session))
+    {
         // The writer refuses before its first byte when a value cannot be
         // spelled in that format, so a refusal here leaves the path untouched
         // rather than half-written.
-        std::cerr << "vrchat_osc_record: could not write "
-                  << options.traceExportPath << "\n";
+        std::cerr << "vrchat_osc_record: could not write " << options.traceExportPath << "\n";
         return false;
     }
-    if (!options.quiet) {
-        std::cerr << "vrchat_osc_record: wrote " << session.samples.size()
-                  << " solved frame(s)";
-        if (sessions.size() > 1) {
-            std::cerr << " of session " << (index + 1) << " of "
-                      << sessions.size();
+    if (!options.quiet)
+    {
+        std::cerr << "vrchat_osc_record: wrote " << session.samples.size() << " solved frame(s)";
+        if (sessions.size() > 1)
+        {
+            std::cerr << " of session " << (index + 1) << " of " << sessions.size();
         }
         std::cerr << " over " << (session.endTime - session.startTime) << " s at "
-                  << session.nominalFrameRate << " Hz to "
-                  << options.traceExportPath << "\n";
+                  << session.nominalFrameRate << " Hz to " << options.traceExportPath << "\n";
 
         // The largest thing the trace carries beside the rotations, said at the
         // point it crosses -- the sibling tool's line, for its reason. Here it
         // is also the one number that says whether `--no-root-motion` did what
         // was asked: a session exported under it reports every frame as
         // carrying no root record.
-        const vrchatOscRecordTool::HipsMotion& hips =
-            trace.GetHipsMotion()[index];
+        const vrchatOscRecordTool::HipsMotion& hips = trace.GetHipsMotion()[index];
         std::cerr << "vrchat_osc_record: the trace carries " << hips.pathMetres
-                  << " m of hips path (" << hips.netMetres
-                  << " m net) as root motion";
-        if (hips.framesWithoutRoot != 0) {
+                  << " m of hips path (" << hips.netMetres << " m net) as root motion";
+        if (hips.framesWithoutRoot != 0)
+        {
             std::cerr << "; " << hips.framesWithoutRoot
                       << " frame(s) carried no root record and are not in that "
                          "sum";
@@ -390,10 +393,11 @@ RunInspect(const vrchatOscRecordTool::Options& options)
 {
     vrmAdapterVrchatOsc::PacketCapture capture;
     vrmAdapterVrchatOsc::PacketCaptureError captureError;
-    if (!vrmAdapterVrchatOsc::ReadPacketCaptureFile(options.inspectPath,
-                                                    &capture, &captureError)) {
+    if (!vrmAdapterVrchatOsc::ReadPacketCaptureFile(options.inspectPath, &capture, &captureError))
+    {
         std::cerr << "vrchat_osc_record: " << options.inspectPath;
-        if (captureError.line != 0) {
+        if (captureError.line != 0)
+        {
             std::cerr << ":" << captureError.line;
         }
         std::cerr << ": " << captureError.message << "\n";
@@ -401,15 +405,13 @@ RunInspect(const vrchatOscRecordTool::Options& options)
     }
 
     vrchatOscRecordTool::SessionReport report;
-    for (const vrmAdapterVrchatOsc::RecordedDatagram& datagram :
-         capture.datagrams) {
+    for (const vrmAdapterVrchatOsc::RecordedDatagram& datagram : capture.datagrams)
+    {
         // The record's own peer where the capture carries one, and the
         // header's where it does not. A capture written before the format
         // could say takes the second path and reports what it always did.
-        report.ObserveDatagram(datagram.peer.empty() ? capture.peerEndpoint
-                                                     : datagram.peer,
-                               datagram.bytes.data(), datagram.bytes.size(),
-                               datagram.receiveTime);
+        report.ObserveDatagram(datagram.peer.empty() ? capture.peerEndpoint : datagram.peer,
+                               datagram.bytes.data(), datagram.bytes.size(), datagram.receiveTime);
     }
 
     // A file has already stopped, and it stopped by ending. None of the live
@@ -423,8 +425,8 @@ RunInspect(const vrchatOscRecordTool::Options& options)
     // actually sent before they see what a solve made of them. An export that
     // fails is exit 1 with the report already printed: the reading of the
     // capture succeeded, and it is the derivation that did not.
-    if (!options.traceExportPath.empty()
-        && !ExportTrace(options, capture)) {
+    if (!options.traceExportPath.empty() && !ExportTrace(options, capture))
+    {
         return 1;
     }
     return 0;
@@ -435,22 +437,23 @@ RunRecord(const vrchatOscRecordTool::Options& options)
 {
     vrmAdapterVrchatOsc::UdpReceiver receiver;
     std::vector<vrmAdapterVrchatOsc::Diagnostic> log;
-    if (!receiver.Open(options.receiver, &log)) {
-        for (const vrmAdapterVrchatOsc::Diagnostic& diagnostic : log) {
-            std::cerr << "vrchat_osc_record: "
-                      << vrmAdapterVrchatOsc::FormatDiagnostic(diagnostic)
+    if (!receiver.Open(options.receiver, &log))
+    {
+        for (const vrmAdapterVrchatOsc::Diagnostic& diagnostic : log)
+        {
+            std::cerr << "vrchat_osc_record: " << vrmAdapterVrchatOsc::FormatDiagnostic(diagnostic)
                       << "\n";
         }
         return 1;
     }
     log.clear();
 
-    if (!options.quiet) {
+    if (!options.quiet)
+    {
         // Before anything is received, and on stderr, because it is the one line
         // a script waiting to start a sender has to read — and because a
         // `--port 0` session cannot be reached until this says where it landed.
-        std::cerr << "vrchat_osc_record: listening on "
-                  << receiver.GetBoundEndpoint() << "\n";
+        std::cerr << "vrchat_osc_record: listening on " << receiver.GetBoundEndpoint() << "\n";
 
         // Two facts an operator can act on before a single datagram arrives.
         // Neither is a refusal: the socket is right in both cases, and it is the
@@ -460,11 +463,13 @@ RunRecord(const vrchatOscRecordTool::Options& options)
         // the vendor documents `localhost` as unsupported, so loopback-only is
         // hopeless; here a sender on this machine is an ordinary arrangement, so
         // this says what was bound and stops.
-        if (receiver.IsLoopbackOnly()) {
+        if (receiver.IsLoopbackOnly())
+        {
             std::cerr << "vrchat_osc_record: note: loopback only, so only a "
                          "sender on this machine can reach it\n";
         }
-        if (EndpointIsIpv6(receiver.GetBoundEndpoint())) {
+        if (EndpointIsIpv6(receiver.GetBoundEndpoint()))
+        {
             std::cerr << "vrchat_osc_record: warning: this is an IPv6 endpoint, "
                          "and a sender configured for VRChat will be aimed at "
                          "an IPv4 address\n";
@@ -484,16 +489,20 @@ RunRecord(const vrchatOscRecordTool::Options& options)
     double lastArrival = 0.0;
     double lastProgress = 0.0;
     bool running = true;
-    while (running) {
-        if (gInterrupted != 0) {
+    while (running)
+    {
+        if (gInterrupted != 0)
+        {
             report.SetStopReason(vrchatOscRecordTool::StopReason::Interrupted);
             break;
         }
 
         const vrmAdapterVrchatOsc::ReceiveStatus status =
             receiver.Receive(&datagram, kPollSeconds, &log);
-        switch (status) {
-        case vrmAdapterVrchatOsc::ReceiveStatus::Received: {
+        switch (status)
+        {
+        case vrmAdapterVrchatOsc::ReceiveStatus::Received:
+        {
             // Recorded first. With no decoder in this process the rule costs
             // nothing to keep, and it is the rule the file's whole value rests
             // on: nothing anything here makes of a packet can change what was
@@ -506,18 +515,18 @@ RunRecord(const vrchatOscRecordTool::Options& options)
             // that began: a restart is marked by a new ephemeral source
             // port and by nothing else
             // ([report 02](../../../../../docs/reports/motion/02-2026-08-30-vrchat-osc-address-inventory.md) §4).
-            if (capture.peerEndpoint.empty()) {
+            if (capture.peerEndpoint.empty())
+            {
                 capture.peerEndpoint = datagram.peer;
             }
             lastArrival = datagram.receiveTime;
 
-            report.ObserveDatagram(datagram.peer, datagram.bytes.data(),
-                                   datagram.bytes.size(),
+            report.ObserveDatagram(datagram.peer, datagram.bytes.data(), datagram.bytes.size(),
                                    datagram.receiveTime);
 
-            if (report.GetDatagramCount() >= options.maxDatagrams) {
-                report.SetStopReason(
-                    vrchatOscRecordTool::StopReason::MaxDatagrams);
+            if (report.GetDatagramCount() >= options.maxDatagrams)
+            {
+                report.SetStopReason(vrchatOscRecordTool::StopReason::MaxDatagrams);
                 running = false;
             }
             break;
@@ -531,15 +540,13 @@ RunRecord(const vrchatOscRecordTool::Options& options)
             // fails, so a shared message would print "the socket failed:" with
             // nothing after the colon.
             std::cerr << "vrchat_osc_record: the socket is no longer open\n";
-            report.SetStopReason(
-                vrchatOscRecordTool::StopReason::SocketClosed);
+            report.SetStopReason(vrchatOscRecordTool::StopReason::SocketClosed);
             running = false;
             break;
         case vrmAdapterVrchatOsc::ReceiveStatus::Failed:
-            std::cerr << "vrchat_osc_record: the socket failed: "
-                      << receiver.GetLastErrorText() << "\n";
-            report.SetStopReason(
-                vrchatOscRecordTool::StopReason::ReceiveFailed);
+            std::cerr << "vrchat_osc_record: the socket failed: " << receiver.GetLastErrorText()
+                      << "\n";
+            report.SetStopReason(vrchatOscRecordTool::StopReason::ReceiveFailed);
             running = false;
             break;
         }
@@ -556,25 +563,24 @@ RunRecord(const vrchatOscRecordTool::Options& options)
         // `Now()` rather than the last datagram's stamp: a session that stops
         // receiving still has to notice its own duration passing.
         const double now = receiver.Now();
-        if (running && options.durationSeconds > 0.0
-            && now >= options.durationSeconds) {
+        if (running && options.durationSeconds > 0.0 && now >= options.durationSeconds)
+        {
             report.SetStopReason(vrchatOscRecordTool::StopReason::Duration);
             running = false;
         }
-        if (running && options.idleSeconds > 0.0
-            && now - lastArrival >= options.idleSeconds) {
+        if (running && options.idleSeconds > 0.0 && now - lastArrival >= options.idleSeconds)
+        {
             // Measured from `Open` until the first datagram, so a sender that
             // never starts times out exactly as one that stops does.
             report.SetStopReason(vrchatOscRecordTool::StopReason::IdleTimeout);
             running = false;
         }
 
-        if (!options.quiet && now - lastProgress >= kProgressSeconds) {
+        if (!options.quiet && now - lastProgress >= kProgressSeconds)
+        {
             lastProgress = now;
-            std::fprintf(stderr,
-                         "vrchat_osc_record: %6.1f s  %llu datagram(s)\n", now,
-                         static_cast<unsigned long long>(
-                             report.GetDatagramCount()));
+            std::fprintf(stderr, "vrchat_osc_record: %6.1f s  %llu datagram(s)\n", now,
+                         static_cast<unsigned long long>(report.GetDatagramCount()));
         }
     }
 
@@ -583,7 +589,8 @@ RunRecord(const vrchatOscRecordTool::Options& options)
     // of the facts the report is about to print — and the socket's own
     // destructor releases it a few lines later anyway.
 
-    if (!options.quiet && report.HasMultiplePeers()) {
+    if (!options.quiet && report.HasMultiplePeers())
+    {
         // The capture header names one peer, so a mixed session's provenance is
         // true of some of its datagrams and not the rest. Worth an operator's
         // attention before the file becomes a fixture — and more likely here
@@ -593,7 +600,8 @@ RunRecord(const vrchatOscRecordTool::Options& options)
                      "than one peer; the capture header names only "
                   << capture.peerEndpoint << "\n";
     }
-    if (!options.quiet && report.GetDatagramCount() == 0) {
+    if (!options.quiet && report.GetDatagramCount() == 0)
+    {
         std::cerr << "vrchat_osc_record: warning: nothing arrived\n";
     }
 
@@ -602,8 +610,10 @@ RunRecord(const vrchatOscRecordTool::Options& options)
     // this report — and returning early on a full disk would destroy both at
     // once, which is the moment an operator most needs to be told what they had.
     bool written = true;
-    if (!options.dryRun) {
-        if (report.GetDatagramCount() == 0) {
+    if (!options.dryRun)
+    {
+        if (report.GetDatagramCount() == 0)
+        {
             // Declined rather than written, because the format has no
             // datagram-less form: the writer will happily emit a header and
             // stop, and the reader refuses the result at "the capture carries no
@@ -612,21 +622,22 @@ RunRecord(const vrchatOscRecordTool::Options& options)
             // out at the point they tried to use it. Said on stderr whatever
             // `--quiet` says: it is the reason for a non-zero exit, not a
             // warning about the session.
-            std::cerr << "vrchat_osc_record: nothing arrived, so "
-                      << options.outputPath
+            std::cerr << "vrchat_osc_record: nothing arrived, so " << options.outputPath
                       << " was not written: a capture carrying no datagrams is "
                          "one this adapter's reader refuses\n";
             written = false;
-        } else {
-            written = vrmAdapterVrchatOsc::WritePacketCaptureFile(
-                options.outputPath, capture);
-            if (!written) {
-                std::cerr << "vrchat_osc_record: could not write "
-                          << options.outputPath << "\n";
-            } else if (!options.quiet) {
-                std::cerr << "vrchat_osc_record: wrote "
-                          << capture.datagrams.size() << " datagram(s) to "
-                          << options.outputPath << "\n";
+        }
+        else
+        {
+            written = vrmAdapterVrchatOsc::WritePacketCaptureFile(options.outputPath, capture);
+            if (!written)
+            {
+                std::cerr << "vrchat_osc_record: could not write " << options.outputPath << "\n";
+            }
+            else if (!options.quiet)
+            {
+                std::cerr << "vrchat_osc_record: wrote " << capture.datagrams.size()
+                          << " datagram(s) to " << options.outputPath << "\n";
 
                 // Said at the write, because this is the last moment it is
                 // cheap. The corpus check refuses a committed fixture carrying
@@ -637,18 +648,22 @@ RunRecord(const vrchatOscRecordTool::Options& options)
                 // exploratory recording is a legitimate thing to want, and the
                 // first session against a new sender is exactly that.
                 std::string missing;
-                if (capture.sender.empty()) {
+                if (capture.sender.empty())
+                {
                     missing += " --sender";
                 }
-                if (capture.sourceId.empty()) {
+                if (capture.sourceId.empty())
+                {
                     missing += " --source-id";
                 }
-                if (!missing.empty()) {
+                if (!missing.empty())
+                {
                     std::cerr << "vrchat_osc_record: warning: no" << missing
                               << ", which the corpus check requires of a "
                                  "committed fixture\n";
                 }
-                if (capture.device.empty()) {
+                if (capture.device.empty())
+                {
                     // Not required by that check, and named separately for a
                     // reason this wire has and the native one does not: a
                     // VRChat OSC stream is relayed, so `sender` names the
@@ -670,9 +685,8 @@ RunRecord(const vrchatOscRecordTool::Options& options)
     // exit 0 with the distinction surviving only as prose on stdout — which is
     // no distinction at all to the script that wrapped this tool.
     const bool completed =
-        report.GetStopReason() != vrchatOscRecordTool::StopReason::ReceiveFailed
-        && report.GetStopReason()
-            != vrchatOscRecordTool::StopReason::SocketClosed;
+        report.GetStopReason() != vrchatOscRecordTool::StopReason::ReceiveFailed &&
+        report.GetStopReason() != vrchatOscRecordTool::StopReason::SocketClosed;
     return written && completed ? 0 : 1;
 }
 
@@ -686,18 +700,19 @@ main(int argc, char** argv)
     vrchatOscRecordTool::Options options;
     bool showHelp = false;
     std::string error;
-    if (!vrchatOscRecordTool::ParseOptions(arguments, &options, &showHelp,
-                                           &error)) {
-        std::cerr << "vrchat_osc_record: " << error << "\n\n"
-                  << vrchatOscRecordTool::GetUsage();
+    if (!vrchatOscRecordTool::ParseOptions(arguments, &options, &showHelp, &error))
+    {
+        std::cerr << "vrchat_osc_record: " << error << "\n\n" << vrchatOscRecordTool::GetUsage();
         return 2;
     }
-    if (showHelp) {
+    if (showHelp)
+    {
         std::fputs(vrchatOscRecordTool::GetUsage(), stdout);
         return 0;
     }
 
-    if (!options.inspectPath.empty()) {
+    if (!options.inspectPath.empty())
+    {
         return RunInspect(options);
     }
 

@@ -62,7 +62,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace
+{
 
 const TfToken kInterpolatePose("motion.interpolatePose");
 const TfToken kPoseHistory("motion.poseHistory");
@@ -85,19 +86,21 @@ const GfVec3f kClipHips(0.0f, 0.5f, 1.0f);
 
 constexpr std::size_t kHead = static_cast<std::size_t>(motion::HumanBone::Head);
 
-bool NearlyEqual(double a, double b, double tolerance)
+bool
+NearlyEqual(double a, double b, double tolerance)
 {
     return std::abs(a - b) <= tolerance;
 }
 
-bool NearlyEqual(const GfVec3f& a, const GfVec3f& b, double tolerance)
+bool
+NearlyEqual(const GfVec3f& a, const GfVec3f& b, double tolerance)
 {
-    return NearlyEqual(a[0], b[0], tolerance)
-        && NearlyEqual(a[1], b[1], tolerance)
-        && NearlyEqual(a[2], b[2], tolerance);
+    return NearlyEqual(a[0], b[0], tolerance) && NearlyEqual(a[1], b[1], tolerance) &&
+           NearlyEqual(a[2], b[2], tolerance);
 }
 
-float HeadDegrees(const motion::HumanoidPose& pose)
+float
+HeadDegrees(const motion::HumanoidPose& pose)
 {
     const GfQuatf head = pose.localRotations[kHead].GetNormalized();
     const double w = std::min(1.0, std::max(-1.0, double(head.GetReal())));
@@ -106,30 +109,30 @@ float HeadDegrees(const motion::HumanoidPose& pose)
 
 // A pose a driver's buffer would hold: the four bones the fixture names, the
 // head turned about +Y, the hips somewhere.
-motion::HumanoidPose BufferedPose(double timestamp, float headDegrees,
-                                  const GfVec3f& hips)
+motion::HumanoidPose
+BufferedPose(double timestamp, float headDegrees, const GfVec3f& hips)
 {
     motion::HumanoidPose pose;
     pose.timestamp = timestamp;
-    for (const motion::HumanBone bone : {motion::HumanBone::Hips,
-                                         motion::HumanBone::Spine,
-                                         motion::HumanBone::Chest,
-                                         motion::HumanBone::Head}) {
+    for (const motion::HumanBone bone : {motion::HumanBone::Hips, motion::HumanBone::Spine,
+                                         motion::HumanBone::Chest, motion::HumanBone::Head})
+    {
         pose.validRotations.set(static_cast<std::size_t>(bone));
     }
     const float half = headDegrees * float(M_PI) / 360.0f;
-    pose.localRotations[kHead] =
-        GfQuatf(std::cos(half), GfVec3f(0.0f, std::sin(half), 0.0f));
+    pose.localRotations[kHead] = GfQuatf(std::cos(half), GfVec3f(0.0f, std::sin(half), 0.0f));
     pose.root.worldPosition = hips;
     pose.root.hasPosition = true;
     return pose;
 }
 
-motion::HumanoidAnimation HistoryOf(std::vector<motion::HumanoidPose> samples)
+motion::HumanoidAnimation
+HistoryOf(std::vector<motion::HumanoidPose> samples)
 {
     motion::HumanoidAnimation history;
     history.samples = std::move(samples);
-    if (!history.samples.empty()) {
+    if (!history.samples.empty())
+    {
         history.startTime = history.samples.front().timestamp;
         history.endTime = history.samples.back().timestamp;
     }
@@ -141,28 +144,27 @@ motion::HumanoidAnimation HistoryOf(std::vector<motion::HumanoidPose> samples)
 // every field this suite reads -- the head turns 60 degrees rather than 90 and
 // the hips travel along +X rather than up and forward -- so an answer that came
 // from the clip instead of the snapshot cannot land on the right number.
-motion::HumanoidAnimation Bracketing()
+motion::HumanoidAnimation
+Bracketing()
 {
-    return HistoryOf({
-        BufferedPose(kSecond - 0.02, 0.0f, GfVec3f(2.0f, 0.0f, 0.0f)),
-        BufferedPose(kSecond + 0.02, 60.0f, GfVec3f(4.0f, 0.0f, 0.0f))});
+    return HistoryOf({BufferedPose(kSecond - 0.02, 0.0f, GfVec3f(2.0f, 0.0f, 0.0f)),
+                      BufferedPose(kSecond + 0.02, 60.0f, GfVec3f(4.0f, 0.0f, 0.0f))});
 }
 
-ExecUsdValueOverrideVector HistoryOverride(const UsdPrim& clip,
-                                           const VtValue& history)
+ExecUsdValueOverrideVector
+HistoryOverride(const UsdPrim& clip, const VtValue& history)
 {
     ExecUsdValueOverrideVector overrides;
-    overrides.push_back(
-        ExecUsdValueOverride{ExecUsdValueKey(clip, kPoseHistory), history});
+    overrides.push_back(ExecUsdValueOverride{ExecUsdValueKey(clip, kPoseHistory), history});
     return overrides;
 }
 
-motion::PoseSampleResult ResultAt(const ExecUsdCacheView& view, int index)
+motion::PoseSampleResult
+ResultAt(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
-    assert(!value.IsEmpty() &&
-           "no value came back -- if the plugInfo is unstaged this is what it "
-           "looks like, not a load error");
+    assert(!value.IsEmpty() && "no value came back -- if the plugInfo is unstaged this is what it "
+                               "looks like, not a load error");
     // The fourth registered type, and the first that is motionRuntime's. A
     // callback whose declared result type had drifted from what it sets would
     // surface here and nowhere earlier.
@@ -171,7 +173,8 @@ motion::PoseSampleResult ResultAt(const ExecUsdCacheView& view, int index)
     return value.UncheckedGet<motion::PoseSampleResult>();
 }
 
-motion::HumanoidAnimation HistoryAt(const ExecUsdCacheView& view, int index)
+motion::HumanoidAnimation
+HistoryAt(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
     assert(!value.IsEmpty());
@@ -180,7 +183,8 @@ motion::HumanoidAnimation HistoryAt(const ExecUsdCacheView& view, int index)
     return value.UncheckedGet<motion::HumanoidAnimation>();
 }
 
-motion::HumanoidPose PoseAt(const ExecUsdCacheView& view, int index)
+motion::HumanoidPose
+PoseAt(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
     assert(!value.IsEmpty());
@@ -190,25 +194,29 @@ motion::HumanoidPose PoseAt(const ExecUsdCacheView& view, int index)
 
 // A refusal, which in this bundle is **no value at all** (README, "How a
 // computation refuses").
-void AssertRefused(const ExecUsdCacheView& view, int index)
+void
+AssertRefused(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
-    assert(value.IsEmpty() &&
-           "a refusal came back carrying a value, which puts it back where a "
-           "consumer cannot tell it from an answer");
+    assert(value.IsEmpty() && "a refusal came back carrying a value, which puts it back where a "
+                              "consumer cannot tell it from an answer");
 }
 
-bool MarkNames(const TfErrorMark& mark, const std::string& what)
+bool
+MarkNames(const TfErrorMark& mark, const std::string& what)
 {
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
-        if (it->GetCommentary().find(what) != std::string::npos) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
+        if (it->GetCommentary().find(what) != std::string::npos)
+        {
             return true;
         }
     }
     return false;
 }
 
-std::vector<ExecUsdValueKey> KeysFor(const UsdPrim& clip)
+std::vector<ExecUsdValueKey>
+KeysFor(const UsdPrim& clip)
 {
     std::vector<ExecUsdValueKey> keys;
     keys.emplace_back(clip, kInterpolatePose);
@@ -220,7 +228,8 @@ std::vector<ExecUsdValueKey> KeysFor(const UsdPrim& clip)
 // ---------------------------------------------------------------------------
 // Nobody supplies a history
 // ---------------------------------------------------------------------------
-void TestUnoverriddenTheNodeIsTheClip(const std::string& fixture)
+void
+TestUnoverriddenTheNodeIsTheClip(const std::string& fixture)
 {
     UsdStageRefPtr stage = UsdStage::Open(fixture);
     assert(stage && "the sampled fixture did not open");
@@ -231,15 +240,11 @@ void TestUnoverriddenTheNodeIsTheClip(const std::string& fixture)
 
     bool interpolateReported = false;
     ExecUsdRequest request = system.BuildRequest(
-        KeysFor(clip),
-        [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
-        [&](const ExecRequestIndexSet& indices) {
-            interpolateReported =
-                interpolateReported || indices.count(kInterpolated) > 0;
-        });
-    assert(request.IsValid() &&
-           "a request over a history-typed and a sample-result-typed key did "
-           "not compile");
+        KeysFor(clip), [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
+        [&](const ExecRequestIndexSet& indices)
+        { interpolateReported = interpolateReported || indices.count(kInterpolated) > 0; });
+    assert(request.IsValid() && "a request over a history-typed and a sample-result-typed key did "
+                                "not compile");
 
     // Armed by its first compute (the filtering report §4), which is at the
     // default time code -- and the default time code is no instant. The sampler
@@ -263,8 +268,7 @@ void TestUnoverriddenTheNodeIsTheClip(const std::string& fixture)
     // Declares no `computeTime`, and is reported: time dependence reaches it
     // through both of its inputs, one of which is itself a link away from the
     // clip.
-    assert(interpolateReported &&
-           "motion.interpolatePose was NOT reported when the frame moved");
+    assert(interpolateReported && "motion.interpolatePose was NOT reported when the frame moved");
 
     ExecUsdCacheView view = system.Compute(request);
     const motion::HumanoidPose sampled = PoseAt(view, kSampled);
@@ -275,8 +279,7 @@ void TestUnoverriddenTheNodeIsTheClip(const std::string& fixture)
     assert(history.samples.size() == 1);
     assert(history.samples.front() == sampled &&
            "the ordinary history is not the pose the clip states");
-    assert(history.startTime == sampled.timestamp &&
-           history.endTime == sampled.timestamp);
+    assert(history.startTime == sampled.timestamp && history.endTime == sampled.timestamp);
 
     // And the answer is that pose, sampled at its own instant: no bracket, no
     // hold, no lag. The pass-through `motion.filterPose` has un-overridden,
@@ -294,7 +297,8 @@ void TestUnoverriddenTheNodeIsTheClip(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // A driver supplies one
 // ---------------------------------------------------------------------------
-void TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
+void
+TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
 {
     UsdStageRefPtr stage = UsdStage::Open(fixture);
     assert(stage);
@@ -316,8 +320,8 @@ void TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
     // itself arriving intact -- the refusal is this node's, not exec's.
     {
         TfErrorMark mark;
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, HistoryOverride(clip, VtValue(bracketing)));
+        ExecUsdCacheView view =
+            system.ComputeWithOverrides(request, HistoryOverride(clip, VtValue(bracketing)));
         assert(HistoryAt(view, kHistory) == bracketing &&
                "the override did not reach motion.poseHistory at the default "
                "time code");
@@ -332,8 +336,8 @@ void TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
 
     // ---- bracketed: interpolated, from the snapshot and not from the clip ----
     {
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, HistoryOverride(clip, VtValue(bracketing)));
+        ExecUsdCacheView view =
+            system.ComputeWithOverrides(request, HistoryOverride(clip, VtValue(bracketing)));
 
         // The override is visible as the key's own value -- measured for a
         // pose-typed key by the filtering report, and here for a key whose type
@@ -349,8 +353,7 @@ void TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
         // 45 degrees and (0, 0.5, 1) cannot be mistaken for.
         assert(std::abs(HeadDegrees(*result.pose) - 30.0f) < 1e-3f &&
                "the answer did not come from the driver's history");
-        assert(NearlyEqual(result.pose->root.worldPosition,
-                           GfVec3f(3.0f, 0.0f, 0.0f), 1e-5));
+        assert(NearlyEqual(result.pose->root.worldPosition, GfVec3f(3.0f, 0.0f, 0.0f), 1e-5));
         // Stamped at the evaluated instant, and behind the newest sample.
         assert(NearlyEqual(result.pose->timestamp, kSecond, 1e-12));
         assert(NearlyEqual(result.lag, -0.02, 1e-12));
@@ -368,11 +371,11 @@ void TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
     // are the only fields that say the source has stopped -- which is why the
     // node returns them rather than the pose alone.
     {
-        const motion::HumanoidAnimation stopped = HistoryOf({
-            BufferedPose(0.5, 0.0f, GfVec3f(2.0f, 0.0f, 0.0f)),
-            BufferedPose(0.9, 60.0f, GfVec3f(4.0f, 0.0f, 0.0f))});
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, HistoryOverride(clip, VtValue(stopped)));
+        const motion::HumanoidAnimation stopped =
+            HistoryOf({BufferedPose(0.5, 0.0f, GfVec3f(2.0f, 0.0f, 0.0f)),
+                       BufferedPose(0.9, 60.0f, GfVec3f(4.0f, 0.0f, 0.0f))});
+        ExecUsdCacheView view =
+            system.ComputeWithOverrides(request, HistoryOverride(clip, VtValue(stopped)));
 
         const motion::PoseSampleResult result = ResultAt(view, kInterpolated);
         assert(result.status == motion::PoseSampleStatus::Held &&
@@ -397,21 +400,20 @@ void TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
         const motion::PoseSampleResult result = ResultAt(view, kInterpolated);
         assert(result.status == motion::PoseSampleStatus::Unavailable);
         assert(!result.pose);
-        assert(mark.IsClean() &&
-               "an empty history posted an error, as though it were a refusal");
+        assert(mark.IsClean() && "an empty history posted an error, as though it were a refusal");
     }
 
     // ---- a history out of time order: refused ------------------------------
     // The one refusal the node has. Every value of the result type is an
     // answer, `Unavailable` included, so the refusal is no value at all.
     {
-        const motion::HumanoidAnimation backwards = HistoryOf({
-            BufferedPose(kSecond + 0.02, 60.0f, GfVec3f(4.0f, 0.0f, 0.0f)),
-            BufferedPose(kSecond - 0.02, 0.0f, GfVec3f(2.0f, 0.0f, 0.0f))});
+        const motion::HumanoidAnimation backwards =
+            HistoryOf({BufferedPose(kSecond + 0.02, 60.0f, GfVec3f(4.0f, 0.0f, 0.0f)),
+                       BufferedPose(kSecond - 0.02, 0.0f, GfVec3f(2.0f, 0.0f, 0.0f))});
 
         TfErrorMark mark;
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, HistoryOverride(clip, VtValue(backwards)));
+        ExecUsdCacheView view =
+            system.ComputeWithOverrides(request, HistoryOverride(clip, VtValue(backwards)));
         AssertRefused(view, kInterpolated);
         assert(PoseAt(view, kSampled).root.hasPosition &&
                "a refused history took motion.sampleAnimation with it");
@@ -433,10 +435,8 @@ void TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
     {
         TfErrorMark mark;
         ExecUsdCacheView view = system.ComputeWithOverrides(
-            request,
-            HistoryOverride(clip, VtValue(Bracketing().samples.front())));
-        assert(!mark.IsClean() &&
-               "a wrongly typed override was accepted without a word");
+            request, HistoryOverride(clip, VtValue(Bracketing().samples.front())));
+        assert(!mark.IsClean() && "a wrongly typed override was accepted without a word");
         // The coding error names the key and both types -- measured text is
         // "Expected override of value key '/Clip [motion.poseHistory]' to have
         // type 'motion::HumanoidAnimation'; got 'motion::HumanoidPose'".
@@ -465,14 +465,13 @@ void TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
     // that the key's own callback set none.
     {
         TfErrorMark mark;
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, HistoryOverride(clip, VtValue()));
+        ExecUsdCacheView view =
+            system.ComputeWithOverrides(request, HistoryOverride(clip, VtValue()));
         assert(MarkNames(mark, "motion.poseHistory") &&
                "an empty override was accepted without a word");
         assert(HistoryAt(view, kHistory).samples.size() == 1 &&
                "an empty override emptied the key rather than being dropped");
-        assert(ResultAt(view, kInterpolated).status ==
-               motion::PoseSampleStatus::Sampled);
+        assert(ResultAt(view, kInterpolated).status == motion::PoseSampleStatus::Sampled);
         mark.Clear();
     }
 
@@ -483,8 +482,7 @@ void TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
                "a history override outlived the ComputeWithOverrides that "
                "supplied it");
         const motion::PoseSampleResult result = ResultAt(view, kInterpolated);
-        assert(result.pose &&
-               std::abs(HeadDegrees(*result.pose) - kClipHeadDegrees) < 1e-3f);
+        assert(result.pose && std::abs(HeadDegrees(*result.pose) - kClipHeadDegrees) < 1e-3f);
     }
 
     std::printf("execMotion interpolate: a driver's history is sampled at the "
@@ -499,7 +497,8 @@ void TestAHistoryIsSampledAtTheEvaluatedInstant(const std::string& fixture)
 // history is the source's input, handed in. A driver of a live source holds
 // both, and this is the measurement that says it can hand them over in **one**
 // call, each reaching the nodes that depend on it and nothing else.
-void TestTwoOverridesOfTwoKeysInOneCall(const std::string& fixture)
+void
+TestTwoOverridesOfTwoKeysInOneCall(const std::string& fixture)
 {
     UsdStageRefPtr stage = UsdStage::Open(fixture);
     assert(stage);
@@ -524,17 +523,14 @@ void TestTwoOverridesOfTwoKeysInOneCall(const std::string& fixture)
 
     // The previous frame's answer: the four bones at identity, the hips at the
     // origin, one frame earlier.
-    motion::HumanoidPose prior = BufferedPose(kSecond - 0.02, 0.0f,
-                                              GfVec3f(0.0f));
+    motion::HumanoidPose prior = BufferedPose(kSecond - 0.02, 0.0f, GfVec3f(0.0f));
     const motion::HumanoidAnimation bracketing = Bracketing();
 
     ExecUsdValueOverrideVector overrides;
-    overrides.push_back(ExecUsdValueOverride{ExecUsdValueKey(clip, kPriorPose),
-                                             VtValue(prior)});
-    overrides.push_back(ExecUsdValueOverride{
-        ExecUsdValueKey(clip, kPoseHistory), VtValue(bracketing)});
-    ExecUsdCacheView view = system.ComputeWithOverrides(request,
-                                                        std::move(overrides));
+    overrides.push_back(ExecUsdValueOverride{ExecUsdValueKey(clip, kPriorPose), VtValue(prior)});
+    overrides.push_back(
+        ExecUsdValueOverride{ExecUsdValueKey(clip, kPoseHistory), VtValue(bracketing)});
+    ExecUsdCacheView view = system.ComputeWithOverrides(request, std::move(overrides));
 
     // Each key carries its own substitute...
     assert(PoseAt(view, 2) == prior);
@@ -550,8 +546,7 @@ void TestTwoOverridesOfTwoKeysInOneCall(const std::string& fixture)
     // leaked into the other's dependents.
     const motion::HumanoidPose filtered = PoseAt(view, 1);
     assert(filtered.root.hasPosition);
-    assert(filtered.root.worldPosition[2] > 0.0f &&
-           filtered.root.worldPosition[2] < kClipHips[2] &&
+    assert(filtered.root.worldPosition[2] > 0.0f && filtered.root.worldPosition[2] < kClipHips[2] &&
            "the prior-pose override did not reach motion.filterPose");
     assert(filtered.root.worldPosition[0] == 0.0f &&
            "the history override leaked into motion.filterPose");
@@ -563,7 +558,8 @@ void TestTwoOverridesOfTwoKeysInOneCall(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // A clip with no rate has no instant
 // ---------------------------------------------------------------------------
-void TestNoRateIsNoInstant(const std::string& fixture)
+void
+TestNoRateIsNoInstant(const std::string& fixture)
 {
     UsdStageRefPtr stage = UsdStage::Open(fixture);
     assert(stage && "the unrated fixture did not open");
@@ -601,8 +597,8 @@ void TestNoRateIsNoInstant(const std::string& fixture)
     // pose rather than converting the frame again.
     {
         TfErrorMark mark;
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, HistoryOverride(clip, VtValue(Bracketing())));
+        ExecUsdCacheView view =
+            system.ComputeWithOverrides(request, HistoryOverride(clip, VtValue(Bracketing())));
         AssertRefused(view, kInterpolated);
         assert(MarkNames(mark, "motion.interpolatePose"));
         mark.Clear();
@@ -614,11 +610,11 @@ void TestNoRateIsNoInstant(const std::string& fixture)
 
 } // namespace
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
-    assert(argc == 3 &&
-           "usage: execMotion_interpolate <sampled_clip.usda> "
-           "<unrated_clip.usda>");
+    assert(argc == 3 && "usage: execMotion_interpolate <sampled_clip.usda> "
+                        "<unrated_clip.usda>");
     TestUnoverriddenTheNodeIsTheClip(argv[1]);
     TestAHistoryIsSampledAtTheEvaluatedInstant(argv[1]);
     TestTwoOverridesOfTwoKeysInOneCall(argv[1]);

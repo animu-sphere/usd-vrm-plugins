@@ -76,7 +76,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace
+{
 
 const TfToken kTargetSkeleton("vrm.computeTargetSkeleton");
 const TfToken kRetarget("vrm.humanoidRetarget");
@@ -110,7 +111,8 @@ constexpr std::size_t kJointCount = 7;
 // places a sample, `timestamp * timeCodesPerSecond`.
 constexpr double kClipRate = 24.0;
 
-GfQuatf About(const GfVec3f& axis, float degrees)
+GfQuatf
+About(const GfVec3f& axis, float degrees)
 {
     const float half = degrees * 3.14159265358979324f / 360.0f;
     return GfQuatf(std::cos(half), axis * std::sin(half));
@@ -118,11 +120,15 @@ GfQuatf About(const GfVec3f& axis, float degrees)
 
 const GfVec3f kY(0, 1, 0);
 
-bool NearMatrix(const GfMatrix4d& a, const GfMatrix4d& b, double tolerance)
+bool
+NearMatrix(const GfMatrix4d& a, const GfMatrix4d& b, double tolerance)
 {
-    for (int row = 0; row < 4; ++row) {
-        for (int column = 0; column < 4; ++column) {
-            if (std::abs(a[row][column] - b[row][column]) > tolerance) {
+    for (int row = 0; row < 4; ++row)
+    {
+        for (int column = 0; column < 4; ++column)
+        {
+            if (std::abs(a[row][column] - b[row][column]) > tolerance)
+            {
                 return false;
             }
         }
@@ -130,22 +136,27 @@ bool NearMatrix(const GfMatrix4d& a, const GfMatrix4d& b, double tolerance)
     return true;
 }
 
-double RowLength(const GfMatrix4d& m, int row)
+double
+RowLength(const GfMatrix4d& m, int row)
 {
     return GfVec3d(m[row][0], m[row][1], m[row][2]).GetLength();
 }
 
 // Whether an error in `mark` says `what`. When none does, every error posted is
 // printed, so a red run says what was reported instead.
-bool MarkNames(const TfErrorMark& mark, const std::string& what)
+bool
+MarkNames(const TfErrorMark& mark, const std::string& what)
 {
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
-        if (it->GetCommentary().find(what) != std::string::npos) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
+        if (it->GetCommentary().find(what) != std::string::npos)
+        {
             return true;
         }
     }
     std::fprintf(stderr, "no error said \"%s\"; posted:\n", what.c_str());
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
         std::fprintf(stderr, "  %s\n", it->GetCommentary().c_str());
     }
     return false;
@@ -155,34 +166,47 @@ bool MarkNames(const TfErrorMark& mark, const std::string& what)
 // the executor warns once per bone per compute of it.
 class Warnings : public TfDiagnosticMgr::Delegate
 {
-public:
-    Warnings() { TfDiagnosticMgr::GetInstance().AddDelegate(this); }
-    ~Warnings() override { TfDiagnosticMgr::GetInstance().RemoveDelegate(this); }
+  public:
+    Warnings()
+    {
+        TfDiagnosticMgr::GetInstance().AddDelegate(this);
+    }
+    ~Warnings() override
+    {
+        TfDiagnosticMgr::GetInstance().RemoveDelegate(this);
+    }
 
-    void IssueError(const TfError& error) override
+    void
+    IssueError(const TfError& error) override
     {
         std::fprintf(stderr, "error: %s\n", error.GetCommentary().c_str());
     }
-    void IssueFatalError(const TfCallContext&, const std::string& message) override
+    void
+    IssueFatalError(const TfCallContext&, const std::string& message) override
     {
         std::fprintf(stderr, "fatal: %s\n", message.c_str());
     }
-    void IssueStatus(const TfStatus& status) override
+    void
+    IssueStatus(const TfStatus& status) override
     {
         std::fprintf(stderr, "status: %s\n", status.GetCommentary().c_str());
     }
-    void IssueWarning(const TfWarning& warning) override
+    void
+    IssueWarning(const TfWarning& warning) override
     {
         std::lock_guard<std::mutex> lock(_mutex);
         _seen.push_back(warning.GetCommentary());
     }
 
-    std::vector<std::string> Take(const std::string& what)
+    std::vector<std::string>
+    Take(const std::string& what)
     {
         std::lock_guard<std::mutex> lock(_mutex);
         std::vector<std::string> matching;
-        for (const std::string& seen : _seen) {
-            if (seen.find(what) != std::string::npos) {
+        for (const std::string& seen : _seen)
+        {
+            if (seen.find(what) != std::string::npos)
+            {
                 matching.push_back(seen);
             }
         }
@@ -190,7 +214,7 @@ public:
         return matching;
     }
 
-private:
+  private:
     std::mutex _mutex;
     std::vector<std::string> _seen;
 };
@@ -204,7 +228,8 @@ struct Rig
 };
 
 // Opened directly and edited in memory, never saved -- each case opens its own.
-Rig Open(const std::string& fixture)
+Rig
+Open(const std::string& fixture)
 {
     Rig rig;
     rig.stage = UsdStage::Open(fixture);
@@ -217,7 +242,8 @@ Rig Open(const std::string& fixture)
     return rig;
 }
 
-std::vector<ExecUsdValueKey> KeysFor(const Rig& rig)
+std::vector<ExecUsdValueKey>
+KeysFor(const Rig& rig)
 {
     std::vector<ExecUsdValueKey> keys;
     keys.emplace_back(rig.target, kTargetSkeleton);
@@ -227,29 +253,32 @@ std::vector<ExecUsdValueKey> KeysFor(const Rig& rig)
 }
 
 template <class T>
-T ValueAt(const ExecUsdCacheView& view, int index, const char* what)
+T
+ValueAt(const ExecUsdCacheView& view, int index, const char* what)
 {
     const VtValue value = view.Get(index);
-    if (value.IsEmpty() || !value.IsHolding<T>()) {
+    if (value.IsEmpty() || !value.IsHolding<T>())
+    {
         std::fprintf(stderr, "no %s came back\n", what);
         assert(false && "a value this case needs did not come back");
     }
     return value.UncheckedGet<T>();
 }
 
-vrmRetarget::JointLocalTransforms SampleAt(const ExecUsdCacheView& view)
+vrmRetarget::JointLocalTransforms
+SampleAt(const ExecUsdCacheView& view)
 {
-    return ValueAt<vrmRetarget::JointLocalTransforms>(view, kSampleKey,
-                                                      "joint transforms");
+    return ValueAt<vrmRetarget::JointLocalTransforms>(view, kSampleKey, "joint transforms");
 }
 
-vrmRetarget::RetargetedPose RetargetAt(const ExecUsdCacheView& view)
+vrmRetarget::RetargetedPose
+RetargetAt(const ExecUsdCacheView& view)
 {
-    return ValueAt<vrmRetarget::RetargetedPose>(view, kRetargetKey,
-                                                "retargeted pose");
+    return ValueAt<vrmRetarget::RetargetedPose>(view, kRetargetKey, "retargeted pose");
 }
 
-void AssertRefused(const ExecUsdCacheView& view, int index)
+void
+AssertRefused(const ExecUsdCacheView& view, int index)
 {
     assert(view.Get(index).IsEmpty() &&
            "a refusal came back carrying a value, which puts it back where a "
@@ -259,7 +288,8 @@ void AssertRefused(const ExecUsdCacheView& view, int index)
 // Arms a request -- its first compute, at the default time code, where the
 // retarget, and so this node, refuses by design -- and moves the system to
 // `frame`.
-void ArmAt(ExecUsdSystem& system, ExecUsdRequest& request, double frame)
+void
+ArmAt(ExecUsdSystem& system, ExecUsdRequest& request, double frame)
 {
     {
         TfErrorMark mark;
@@ -274,18 +304,19 @@ void ArmAt(ExecUsdSystem& system, ExecUsdRequest& request, double frame)
 // `timestamp * timeCodesPerSecond`, and the rig bound to it through an applied
 // SkelBindingAPI on the skeleton. `withScales` false leaves `scales`
 // unauthored, which is the defect the value's shape exists to prevent.
-void AuthorAsTheToolDoes(const Rig& rig, const SdfPath& path,
-                         const vrmRetarget::JointLocalTransforms& sample,
-                         bool withScales)
+void
+AuthorAsTheToolDoes(const Rig& rig, const SdfPath& path,
+                    const vrmRetarget::JointLocalTransforms& sample, bool withScales)
 {
-    const UsdSkelAnimation animation =
-        UsdSkelAnimation::Define(rig.stage, path);
+    const UsdSkelAnimation animation = UsdSkelAnimation::Define(rig.stage, path);
     VtTokenArray joints;
-    for (const std::string& joint : sample.joints) {
+    for (const std::string& joint : sample.joints)
+    {
         joints.push_back(TfToken(joint));
     }
     assert(animation.CreateJointsAttr().Set(joints));
-    if (withScales) {
+    if (withScales)
+    {
         assert(animation.CreateScalesAttr().Set(
             VtVec3hArray(sample.scales.begin(), sample.scales.end())));
     }
@@ -293,8 +324,7 @@ void AuthorAsTheToolDoes(const Rig& rig, const SdfPath& path,
     assert(animation.CreateRotationsAttr().Set(
         VtQuatfArray(sample.rotations.begin(), sample.rotations.end()), time));
     assert(animation.CreateTranslationsAttr().Set(
-        VtVec3fArray(sample.translations.begin(), sample.translations.end()),
-        time));
+        VtVec3fArray(sample.translations.begin(), sample.translations.end()), time));
 
     const UsdSkelBindingAPI binding = UsdSkelBindingAPI::Apply(rig.target);
     assert(binding);
@@ -303,18 +333,19 @@ void AuthorAsTheToolDoes(const Rig& rig, const SdfPath& path,
 
 // What UsdSkel resolves for the target rig at `frame`: its joint-local
 // transforms, through a fresh cache so no earlier binding is remembered.
-VtMatrix4dArray ResolvedLocals(const Rig& rig, double frame)
+VtMatrix4dArray
+ResolvedLocals(const Rig& rig, double frame)
 {
     UsdSkelCache cache;
-    const UsdSkelSkeletonQuery query =
-        cache.GetSkelQuery(UsdSkelSkeleton(rig.target));
+    const UsdSkelSkeletonQuery query = cache.GetSkelQuery(UsdSkelSkeleton(rig.target));
     assert(query && "UsdSkel has no query for the target rig");
     VtMatrix4dArray locals;
     assert(query.ComputeJointLocalTransforms(&locals, UsdTimeCode(frame)));
     return locals;
 }
 
-VtMatrix4dArray RestTransforms(const Rig& rig)
+VtMatrix4dArray
+RestTransforms(const Rig& rig)
 {
     VtMatrix4dArray rest;
     assert(rig.target.GetAttribute(kRestTransforms).Get(&rest));
@@ -322,12 +353,12 @@ VtMatrix4dArray RestTransforms(const Rig& rig)
 }
 
 // What UsdSkel's own composition makes of a sample's components.
-VtMatrix4dArray Composed(const vrmRetarget::JointLocalTransforms& sample)
+VtMatrix4dArray
+Composed(const vrmRetarget::JointLocalTransforms& sample)
 {
     VtMatrix4dArray composed(sample.joints.size());
     assert(UsdSkelMakeTransforms(
-        TfSpan<const GfVec3f>(sample.translations.data(),
-                              sample.translations.size()),
+        TfSpan<const GfVec3f>(sample.translations.data(), sample.translations.size()),
         TfSpan<const GfQuatf>(sample.rotations.data(), sample.rotations.size()),
         TfSpan<const GfVec3h>(sample.scales.data(), sample.scales.size()),
         TfSpan<GfMatrix4d>(composed.data(), composed.size())));
@@ -337,18 +368,17 @@ VtMatrix4dArray Composed(const vrmRetarget::JointLocalTransforms& sample)
 // ---------------------------------------------------------------------------
 // The retarget, in an animation's shape
 // ---------------------------------------------------------------------------
-void TestTheSampleIsTheRetargetInAnAnimationsShape(const std::string& fixture)
+void
+TestTheSampleIsTheRetargetInAnAnimationsShape(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
     ExecUsdSystem system(rig.stage);
 
     std::set<int> timeReported;
     ExecUsdRequest request = system.BuildRequest(
-        KeysFor(rig),
-        [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
-        [&](const ExecRequestIndexSet& indices) {
-            timeReported.insert(indices.begin(), indices.end());
-        });
+        KeysFor(rig), [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
+        [&](const ExecRequestIndexSet& indices)
+        { timeReported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid());
     ArmAt(system, request, 24.0);
 
@@ -361,7 +391,8 @@ void TestTheSampleIsTheRetargetInAnAnimationsShape(const std::string& fixture)
     VtTokenArray authoredJoints;
     assert(rig.target.GetAttribute(TfToken("joints")).Get(&authoredJoints));
 
-    for (const double frame : {24.0, 12.0}) {
+    for (const double frame : {24.0, 12.0})
+    {
         system.ChangeTime(UsdTimeCode(frame));
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
@@ -379,7 +410,8 @@ void TestTheSampleIsTheRetargetInAnAnimationsShape(const std::string& fixture)
         // its order, and one identity scale per joint.
         assert(sample.joints.size() == authoredJoints.size() &&
                sample.joints.size() == kJointCount);
-        for (std::size_t j = 0; j < kJointCount; ++j) {
+        for (std::size_t j = 0; j < kJointCount; ++j)
+        {
             assert(sample.joints[j] == authoredJoints[j].GetString());
             assert(sample.scales[j] == GfVec3h(1.0f));
         }
@@ -392,7 +424,8 @@ void TestTheSampleIsTheRetargetInAnAnimationsShape(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // Authored, it is what UsdSkel resolves
 // ---------------------------------------------------------------------------
-void TestAuthoredTheSampleIsWhatUsdSkelResolves(const std::string& fixture)
+void
+TestAuthoredTheSampleIsWhatUsdSkelResolves(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
     vrmRetarget::JointLocalTransforms sample;
@@ -409,10 +442,14 @@ void TestAuthoredTheSampleIsWhatUsdSkelResolves(const std::string& fixture)
     const VtMatrix4dArray locals = ResolvedLocals(rig, 24.0);
     const VtMatrix4dArray composed = Composed(sample);
     assert(locals.size() == kJointCount);
-    for (std::size_t j = 0; j < kJointCount; ++j) {
-        if (locals[j] != composed[j]) {
-            std::fprintf(stderr, "joint %zu: UsdSkel resolved another matrix "
-                                 "than it composes from the sample\n", j);
+    for (std::size_t j = 0; j < kJointCount; ++j)
+    {
+        if (locals[j] != composed[j])
+        {
+            std::fprintf(stderr,
+                         "joint %zu: UsdSkel resolved another matrix "
+                         "than it composes from the sample\n",
+                         j);
             assert(false);
         }
     }
@@ -427,9 +464,8 @@ void TestAuthoredTheSampleIsWhatUsdSkelResolves(const std::string& fixture)
     // something a writer is trusted to add.
     AuthorAsTheToolDoes(rig, kUnscaledPath, sample, /* withScales = */ false);
     const VtMatrix4dArray unscaled = ResolvedLocals(rig, 24.0);
-    assert(unscaled == rest &&
-           "an animation with no scales no longer resolves to the rest pose; "
-           "revisit why the sample carries them");
+    assert(unscaled == rest && "an animation with no scales no longer resolves to the rest pose; "
+                               "revisit why the sample carries them");
 
     // ---- arrays that do not pair with `joints`: the rest again --------------
     // What the node would answer a driver's pose one joint short if it did not
@@ -451,7 +487,8 @@ void TestAuthoredTheSampleIsWhatUsdSkelResolves(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // What the identity scale costs on a scaled rest
 // ---------------------------------------------------------------------------
-void TestARigsRestScaleIsNotKept(const std::string& fixture)
+void
+TestARigsRestScaleIsNotKept(const std::string& fixture)
 {
     // Frame 0 is the clip standing at its own rest, which the retarget lands
     // on the rig's rest at every joint: the case where the baked sample should
@@ -469,8 +506,10 @@ void TestARigsRestScaleIsNotKept(const std::string& fixture)
     AuthorAsTheToolDoes(rig, kBakedPath, sample, /* withScales = */ true);
     const VtMatrix4dArray locals = ResolvedLocals(rig, 0.0);
 
-    for (std::size_t j = 0; j < kJointCount; ++j) {
-        if (j == kArmJoint) {
+    for (std::size_t j = 0; j < kJointCount; ++j)
+    {
+        if (j == kArmJoint)
+        {
             continue;
         }
         assert(NearMatrix(locals[j], rest[j], 1e-6) &&
@@ -482,13 +521,16 @@ void TestARigsRestScaleIsNotKept(const std::string& fixture)
     // an animated joint's transform from the animation whole.
     const GfMatrix4d& restArm = rest[kArmJoint];
     const GfMatrix4d& bakedArm = locals[kArmJoint];
-    for (int row = 0; row < 3; ++row) {
+    for (int row = 0; row < 3; ++row)
+    {
         assert(std::abs(RowLength(restArm, row) - 2.0) < 1e-9);
         assert(std::abs(RowLength(bakedArm, row) - 1.0) < 1e-6);
     }
     GfMatrix4d unscaledRest = restArm;
-    for (int row = 0; row < 3; ++row) {
-        for (int column = 0; column < 3; ++column) {
+    for (int row = 0; row < 3; ++row)
+    {
+        for (int column = 0; column < 3; ++column)
+        {
             unscaledRest[row][column] /= 2.0;
         }
     }
@@ -503,17 +545,18 @@ void TestARigsRestScaleIsNotKept(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // A driver's retarget
 // ---------------------------------------------------------------------------
-void TestADriversRetargetReachesTheSample(const std::string& fixture)
+void
+TestADriversRetargetReachesTheSample(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
     ExecUsdSystem system(rig.stage);
     ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
     ArmAt(system, request, 24.0);
-    const vrmRetarget::JointLocalTransforms unchanged =
-        SampleAt(system.Compute(request));
+    const vrmRetarget::JointLocalTransforms unchanged = SampleAt(system.Compute(request));
 
     const ExecUsdValueKey retargetKey(rig.humanoid, kRetarget);
-    auto computeWith = [&](const vrmRetarget::RetargetedPose& pose) {
+    auto computeWith = [&](const vrmRetarget::RetargetedPose& pose)
+    {
         std::vector<ExecUsdValueOverride> overrides;
         overrides.push_back(ExecUsdValueOverride{retargetKey, VtValue(pose)});
         return system.ComputeWithOverrides(request, std::move(overrides));
@@ -532,10 +575,8 @@ void TestADriversRetargetReachesTheSample(const std::string& fixture)
         assert(mark.IsClean());
         const vrmRetarget::JointLocalTransforms sample = SampleAt(view);
         assert(sample.timestamp == 0.5);
-        assert(sample.rotations == held.rotations &&
-               sample.translations == held.translations);
-        assert(sample.joints == unchanged.joints &&
-               sample.scales == unchanged.scales);
+        assert(sample.rotations == held.rotations && sample.translations == held.translations);
+        assert(sample.joints == unchanged.joints && sample.scales == unchanged.scales);
     }
 
     // One not retargeted onto this rig is refused: the one route to a pose
@@ -564,8 +605,7 @@ void TestADriversRetargetReachesTheSample(const std::string& fixture)
         assert(MarkNames(mark, "vrm.computeJointLocalTransforms: 'vrm:skeleton' "
                                "brought back 0 skeletons"));
         mark.Clear();
-        assert(rig.humanoid.GetRelationship(kSkeletonRel)
-                   .SetTargets({kTargetPath}));
+        assert(rig.humanoid.GetRelationship(kSkeletonRel).SetTargets({kTargetPath}));
     }
 
     // And no override survives its call.
@@ -578,7 +618,8 @@ void TestADriversRetargetReachesTheSample(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // Refusals and invalidation
 // ---------------------------------------------------------------------------
-void TestARetargetThatRefusedIsRefused(const std::string& fixture)
+void
+TestARetargetThatRefusedIsRefused(const std::string& fixture)
 {
     // The default time code, where the retarget refuses by design.
     {
@@ -618,31 +659,29 @@ void TestARetargetThatRefusedIsRefused(const std::string& fixture)
                 "nothing to shape, and says so\n");
 }
 
-void TestInvalidationReachesTheSample(const std::string& fixture)
+void
+TestInvalidationReachesTheSample(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
     ExecUsdSystem system(rig.stage);
 
     std::set<int> reported;
     ExecUsdRequest request = system.BuildRequest(
-        KeysFor(rig),
-        [&](const ExecRequestIndexSet& indices, const EfTimeInterval&) {
-            reported.insert(indices.begin(), indices.end());
-        });
+        KeysFor(rig), [&](const ExecRequestIndexSet& indices, const EfTimeInterval&)
+        { reported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid());
     ArmAt(system, request, 24.0);
     vrmRetarget::JointLocalTransforms sample = SampleAt(system.Compute(request));
 
     // ---- a root-motion statement: the retarget and this, not the rig --------
     reported.clear();
-    assert(rig.humanoid.CreateAttribute(kRootMotion, SdfValueTypeNames->Token)
-               .Set(TfToken("ignore")));
+    assert(
+        rig.humanoid.CreateAttribute(kRootMotion, SdfValueTypeNames->Token).Set(TfToken("ignore")));
     assert(reported == std::set<int>({kRetargetKey, kSampleKey}) &&
            "a root-motion statement did not reach exactly the retarget and "
            "the joint transforms");
     {
-        const vrmRetarget::JointLocalTransforms ignored =
-            SampleAt(system.Compute(request));
+        const vrmRetarget::JointLocalTransforms ignored = SampleAt(system.Compute(request));
         assert(ignored.translations != sample.translations);
         assert(ignored.rotations == sample.rotations);
         sample = ignored;
@@ -654,14 +693,13 @@ void TestInvalidationReachesTheSample(const std::string& fixture)
         UsdAttribute rotations = rig.clipAnimation.GetAttribute(kRotations);
         VtArray<GfQuatf> values;
         assert(rotations.Get(&values, UsdTimeCode(24.0)));
-        values[4] = About(kY, 45.0f);  // the head
+        values[4] = About(kY, 45.0f); // the head
         assert(rotations.Set(values, UsdTimeCode(24.0)));
     }
     assert(reported.count(kRetargetKey) && reported.count(kSampleKey) &&
            !reported.count(kTargetKey));
     {
-        const vrmRetarget::JointLocalTransforms turned =
-            SampleAt(system.Compute(request));
+        const vrmRetarget::JointLocalTransforms turned = SampleAt(system.Compute(request));
         assert(turned.rotations[kHeadJoint] != sample.rotations[kHeadJoint]);
         sample = turned;
     }
@@ -681,8 +719,7 @@ void TestInvalidationReachesTheSample(const std::string& fixture)
            reported.count(kSampleKey) &&
            "a rest edit of the rig did not reach the joint transforms");
     {
-        const vrmRetarget::JointLocalTransforms moved =
-            SampleAt(system.Compute(request));
+        const vrmRetarget::JointLocalTransforms moved = SampleAt(system.Compute(request));
         assert(moved.translations[kRootJointSlot] == GfVec3f(0, 0, 0.5f));
         assert(moved.joints == sample.joints);
     }
@@ -692,7 +729,8 @@ void TestInvalidationReachesTheSample(const std::string& fixture)
 
 } // namespace
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
     assert(argc == 2 && "usage: execVrm_joint_transforms <retargeted_rig.usda>");
     const std::string fixture = argv[1];
@@ -707,8 +745,10 @@ int main(int argc, char** argv)
     TestARetargetThatRefusedIsRefused(fixture);
     TestInvalidationReachesTheSample(fixture);
 
-    for (const std::string& warning : all.Take("")) {
-        if (warning.find("No value set for output") == std::string::npos) {
+    for (const std::string& warning : all.Take(""))
+    {
+        if (warning.find("No value set for output") == std::string::npos)
+        {
             std::printf("  also warned: %s\n", warning.c_str());
         }
     }

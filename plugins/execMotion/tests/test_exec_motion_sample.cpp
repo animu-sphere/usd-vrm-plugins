@@ -50,17 +50,19 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace
+{
 
 const TfToken kSampleAnimation("motion.sampleAnimation");
 
-bool Has(const motion::HumanoidPose& pose, motion::HumanBone bone)
+bool
+Has(const motion::HumanoidPose& pose, motion::HumanBone bone)
 {
     return pose.validRotations.test(static_cast<std::size_t>(bone));
 }
 
-const GfQuatf& RotationOf(const motion::HumanoidPose& pose,
-                          motion::HumanBone bone)
+const GfQuatf&
+RotationOf(const motion::HumanoidPose& pose, motion::HumanBone bone)
 {
     return pose.localRotations[static_cast<std::size_t>(bone)];
 }
@@ -68,33 +70,34 @@ const GfQuatf& RotationOf(const motion::HumanoidPose& pose,
 // The angle of a unit quaternion, in degrees. Formed in double precision from
 // the normalized quaternion, because acos turns a float's last bit into a
 // milliradian near zero -- the trap motionCore's own comparison documents.
-double AngleDegrees(const GfQuatf& q)
+double
+AngleDegrees(const GfQuatf& q)
 {
     const GfQuatf n = q.GetNormalized();
     const double w = std::min(1.0, std::max(-1.0, double(n.GetReal())));
     return 2.0 * std::acos(w) * 180.0 / M_PI;
 }
 
-bool NearlyEqual(double a, double b, double tolerance)
+bool
+NearlyEqual(double a, double b, double tolerance)
 {
     return std::abs(a - b) <= tolerance;
 }
 
-bool NearlyEqual(const GfVec3f& a, const GfVec3f& b, double tolerance)
+bool
+NearlyEqual(const GfVec3f& a, const GfVec3f& b, double tolerance)
 {
-    return NearlyEqual(a[0], b[0], tolerance)
-        && NearlyEqual(a[1], b[1], tolerance)
-        && NearlyEqual(a[2], b[2], tolerance);
+    return NearlyEqual(a[0], b[0], tolerance) && NearlyEqual(a[1], b[1], tolerance) &&
+           NearlyEqual(a[2], b[2], tolerance);
 }
 
-motion::HumanoidPose ComputePose(ExecUsdSystem& system,
-                                 ExecUsdRequest& request)
+motion::HumanoidPose
+ComputePose(ExecUsdSystem& system, ExecUsdRequest& request)
 {
     ExecUsdCacheView view = system.Compute(request);
     const VtValue value = view.Get(0);
-    assert(!value.IsEmpty() &&
-           "no value came back -- if the plugInfo is unstaged this is what it "
-           "looks like, not a load error");
+    assert(!value.IsEmpty() && "no value came back -- if the plugInfo is unstaged this is what it "
+                               "looks like, not a load error");
     assert(value.IsHolding<motion::HumanoidPose>() &&
            "the canonical aggregate did not survive the boundary");
     return value.UncheckedGet<motion::HumanoidPose>();
@@ -103,7 +106,8 @@ motion::HumanoidPose ComputePose(ExecUsdSystem& system,
 // ---------------------------------------------------------------------------
 // The clip that states its rate
 // ---------------------------------------------------------------------------
-void TestASampledClip(const std::string& fixture)
+void
+TestASampledClip(const std::string& fixture)
 {
     UsdStageRefPtr stage = UsdStage::Open(fixture);
     assert(stage && "the sampled fixture did not open");
@@ -117,8 +121,7 @@ void TestASampledClip(const std::string& fixture)
     // would make every timestamp below wrong in a way no assertion on the pose
     // alone could attribute, so it is checked here rather than assumed.
     double authoredRate = 0.0;
-    assert(clip.GetAttribute(TfToken("motion:timeCodesPerSecond"))
-               .Get(&authoredRate));
+    assert(clip.GetAttribute(TfToken("motion:timeCodesPerSecond")).Get(&authoredRate));
     assert(authoredRate == stage->GetTimeCodesPerSecond() &&
            "the clip's authored rate and the stage's metadatum disagree");
 
@@ -128,11 +131,8 @@ void TestASampledClip(const std::string& fixture)
     std::vector<ExecUsdValueKey> keys;
     keys.emplace_back(clip, kSampleAnimation);
     ExecUsdRequest request = system.BuildRequest(
-        std::move(keys),
-        [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
-        [&timeInvalidations](const ExecRequestIndexSet&) {
-            ++timeInvalidations;
-        });
+        std::move(keys), [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
+        [&timeInvalidations](const ExecRequestIndexSet&) { ++timeInvalidations; });
     assert(request.IsValid() && "the request did not compile");
 
     // ---- the default time code is not frame zero --------------------------
@@ -170,8 +170,7 @@ void TestASampledClip(const std::string& fixture)
     assert(Has(atZero, motion::HumanBone::Spine));
     assert(Has(atZero, motion::HumanBone::Chest));
     assert(Has(atZero, motion::HumanBone::Head));
-    assert(NearlyEqual(AngleDegrees(RotationOf(atZero, motion::HumanBone::Head)),
-                       0.0, 1e-3));
+    assert(NearlyEqual(AngleDegrees(RotationOf(atZero, motion::HumanBone::Head)), 0.0, 1e-3));
     assert(atZero.root.hasPosition);
     assert(NearlyEqual(atZero.root.worldPosition, GfVec3f(0.0f), 1e-6));
 
@@ -180,17 +179,14 @@ void TestASampledClip(const std::string& fixture)
     const motion::HumanoidPose atHundred = ComputePose(system, request);
     assert(NearlyEqual(atHundred.timestamp, 2.0, 1e-12) &&
            "the frame reached the pose as a frame rather than as a second");
-    assert(NearlyEqual(
-               AngleDegrees(RotationOf(atHundred, motion::HumanBone::Head)),
-               90.0, 1e-2));
+    assert(NearlyEqual(AngleDegrees(RotationOf(atHundred, motion::HumanBone::Head)), 90.0, 1e-2));
 
     // Only the hips carry body translation. The clip authors a translation for
     // every joint -- including 9,9,9 on the one that names no bone -- so a node
     // that took the wrong row would land somewhere obviously wrong rather than
     // plausibly wrong.
     assert(atHundred.root.hasPosition);
-    assert(NearlyEqual(atHundred.root.worldPosition, GfVec3f(0.0f, 1.0f, 2.0f),
-                       1e-6));
+    assert(NearlyEqual(atHundred.root.worldPosition, GfVec3f(0.0f, 1.0f, 2.0f), 1e-6));
 
     // ---- frame 50, which nothing keyed ------------------------------------
     // Sampling between two keys is USD's answer, not this bundle's: an exec
@@ -203,22 +199,20 @@ void TestASampledClip(const std::string& fixture)
     system.ChangeTime(UsdTimeCode(50.0));
     const motion::HumanoidPose atFifty = ComputePose(system, request);
     assert(NearlyEqual(atFifty.timestamp, 1.0, 1e-12));
-    assert(NearlyEqual(AngleDegrees(RotationOf(atFifty, motion::HumanBone::Head)),
-                       45.0, 1e-2) &&
+    assert(NearlyEqual(AngleDegrees(RotationOf(atFifty, motion::HumanBone::Head)), 45.0, 1e-2) &&
            "a frame between two keys was not slerped");
-    assert(NearlyEqual(atFifty.root.worldPosition, GfVec3f(0.0f, 0.5f, 1.0f),
-                       1e-6));
+    assert(NearlyEqual(atFifty.root.worldPosition, GfVec3f(0.0f, 0.5f, 1.0f), 1e-6));
 
     // ---- the same frame twice ---------------------------------------------
     const motion::HumanoidPose again = ComputePose(system, request);
-    assert(again == atFifty &&
-           "the same request at the same time returned a different value");
+    assert(again == atFifty && "the same request at the same time returned a different value");
 }
 
 // ---------------------------------------------------------------------------
 // The clip that does not
 // ---------------------------------------------------------------------------
-void TestAClipWithNoRate(const std::string& fixture)
+void
+TestAClipWithNoRate(const std::string& fixture)
 {
     UsdStageRefPtr stage = UsdStage::Open(fixture);
     assert(stage && "the unrated fixture did not open");
@@ -253,10 +247,9 @@ void TestAClipWithNoRate(const std::string& fixture)
     // metadatum, on a second kind of input -- so in 26.08 the refusal has to be
     // the callback's, and this assertion is what turns an upstream change to
     // that into a red test rather than a silent one.
-    assert(request.IsValid() &&
-           "a missing .Required() attribute now refuses the request, which is "
-           "what it should always have done -- the callback's own refusal "
-           "below can become an assertion that it never runs");
+    assert(request.IsValid() && "a missing .Required() attribute now refuses the request, which is "
+                                "what it should always have done -- the callback's own refusal "
+                                "below can become an assertion that it never runs");
 
     ExecUsdCacheView view = system.Compute(request);
 
@@ -268,34 +261,31 @@ void TestAClipWithNoRate(const std::string& fixture)
     // the refusal sets no value (`VdfContext::SetEmptyOutput`), which is the
     // one shape no computation in the bundle ever produces as an answer.
     const VtValue value = view.Get(0);
-    assert(value.IsEmpty() &&
-           "a clip with no rate produced a value -- if it holds a pose, the "
-           "refusal has gone back to being indistinguishable from an answer");
+    assert(value.IsEmpty() && "a clip with no rate produced a value -- if it holds a pose, the "
+                              "refusal has gone back to being indistinguishable from an answer");
     assert(!value.IsHolding<motion::HumanoidPose>());
 
     // And the refusal **propagates**: the node downstream is handed no pose,
     // refuses in turn, and the caller sees a refusal there too rather than a
     // filtered version of a pose nobody sampled.
-    assert(view.Get(1).IsEmpty() &&
-           "motion.filterPose answered although the pose it filters was "
-           "refused");
+    assert(view.Get(1).IsEmpty() && "motion.filterPose answered although the pose it filters was "
+                                    "refused");
 
     // And it said so, in this bundle's own words. Asserting the text rather
     // than only the mark is what distinguishes our refusal from any other error
     // exec might have posted on the way -- without it, this suite would pass on
     // an unrelated failure that happened to leave the mark dirty.
-    assert(!mark.IsClean() &&
-           "a clip with no rate was refused silently, which is worse than "
-           "being refused");
+    assert(!mark.IsClean() && "a clip with no rate was refused silently, which is worse than "
+                              "being refused");
     bool named = false;
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
-        if (it->GetCommentary().find("motion.sampleAnimation")
-            != std::string::npos) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
+        if (it->GetCommentary().find("motion.sampleAnimation") != std::string::npos)
+        {
             named = true;
         }
     }
-    assert(named &&
-           "the errors posted came from somewhere other than the computation");
+    assert(named && "the errors posted came from somewhere other than the computation");
     mark.Clear();
 
     std::printf("execMotion sample: a clip with no rate compiles a request and "
@@ -306,7 +296,8 @@ void TestAClipWithNoRate(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // The clip that holds still, which is the control
 // ---------------------------------------------------------------------------
-void TestAClipThatHoldsStill(const std::string& fixture)
+void
+TestAClipThatHoldsStill(const std::string& fixture)
 {
     UsdStageRefPtr stage = UsdStage::Open(fixture);
     assert(stage && "the static fixture did not open");
@@ -329,11 +320,8 @@ void TestAClipThatHoldsStill(const std::string& fixture)
     std::vector<ExecUsdValueKey> keys;
     keys.emplace_back(clip, kSampleAnimation);
     ExecUsdRequest request = system.BuildRequest(
-        std::move(keys),
-        [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
-        [&timeInvalidations](const ExecRequestIndexSet&) {
-            ++timeInvalidations;
-        });
+        std::move(keys), [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
+        [&timeInvalidations](const ExecRequestIndexSet&) { ++timeInvalidations; });
     assert(request.IsValid());
 
     // A clip whose values are defaults resolves at the default time code, which
@@ -383,11 +371,11 @@ void TestAClipThatHoldsStill(const std::string& fixture)
 
 } // namespace
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
-    assert(argc == 4 &&
-           "usage: execMotion_sample <sampled_clip.usda> <static_clip.usda> "
-           "<unrated_clip.usda>");
+    assert(argc == 4 && "usage: execMotion_sample <sampled_clip.usda> <static_clip.usda> "
+                        "<unrated_clip.usda>");
     TestASampledClip(argv[1]);
     TestAClipThatHoldsStill(argv[2]);
     TestAClipWithNoRate(argv[3]);

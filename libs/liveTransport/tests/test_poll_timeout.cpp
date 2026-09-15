@@ -47,10 +47,8 @@ TestLargeFiniteTimeoutsAreClampedNotMadeIndefinite()
     assert(TimeoutToMilliseconds(boundary) == kPollMaxMilliseconds);
     assert(TimeoutToMilliseconds(boundary * 2.0) == kPollMaxMilliseconds);
     assert(TimeoutToMilliseconds(1.0e9) == kPollMaxMilliseconds);
-    assert(TimeoutToMilliseconds(std::numeric_limits<double>::max())
-           == kPollMaxMilliseconds);
-    assert(TimeoutToMilliseconds(std::numeric_limits<double>::infinity())
-           == kPollMaxMilliseconds);
+    assert(TimeoutToMilliseconds(std::numeric_limits<double>::max()) == kPollMaxMilliseconds);
+    assert(TimeoutToMilliseconds(std::numeric_limits<double>::infinity()) == kPollMaxMilliseconds);
 
     // None of them is the sentinel, which is the whole assertion.
     assert(TimeoutToMilliseconds(boundary) != kPollForever);
@@ -64,8 +62,7 @@ TestOnlyANegativeRequestWaitsForever()
 {
     assert(TimeoutToMilliseconds(-1.0) == kPollForever);
     assert(TimeoutToMilliseconds(-0.001) == kPollForever);
-    assert(TimeoutToMilliseconds(-std::numeric_limits<double>::infinity())
-           == kPollForever);
+    assert(TimeoutToMilliseconds(-std::numeric_limits<double>::infinity()) == kPollForever);
 
     // Zero is a poll, not a wait, and is emphatically not the sentinel.
     assert(TimeoutToMilliseconds(0.0) == 0);
@@ -108,10 +105,9 @@ TestOnlyTheRequestedBitMeansADatagram()
     // each is a wake-up no test can make a real socket produce on demand.
     assert(ClassifyPollWakeUp(kError, kReadable) == PollWakeUp::ErrorCondition);
     assert(ClassifyPollWakeUp(kHangUp, kReadable) == PollWakeUp::ErrorCondition);
-    assert(ClassifyPollWakeUp(kInvalid, kReadable)
-           == PollWakeUp::ErrorCondition);
-    assert(ClassifyPollWakeUp(kError | kHangUp | kInvalid, kReadable)
-           == PollWakeUp::ErrorCondition);
+    assert(ClassifyPollWakeUp(kInvalid, kReadable) == PollWakeUp::ErrorCondition);
+    assert(ClassifyPollWakeUp(kError | kHangUp | kInvalid, kReadable) ==
+           PollWakeUp::ErrorCondition);
 
     // Ready with nothing set at all: the same answer, and the one a `revents`
     // left uninitialised would produce.
@@ -120,10 +116,8 @@ TestOnlyTheRequestedBitMeansADatagram()
     // An error condition *alongside* a datagram is still a datagram. The
     // datagram is there to be read, and refusing it would drop traffic on a
     // socket that also happened to report a peer's ICMP reply.
-    assert(ClassifyPollWakeUp(kReadable | kError, kReadable)
-           == PollWakeUp::Readable);
-    assert(ClassifyPollWakeUp(kReadable | kHangUp, kReadable)
-           == PollWakeUp::Readable);
+    assert(ClassifyPollWakeUp(kReadable | kError, kReadable) == PollWakeUp::Readable);
+    assert(ClassifyPollWakeUp(kReadable | kHangUp, kReadable) == PollWakeUp::Readable);
 }
 
 // `constexpr` is part of the contract rather than an optimisation: the

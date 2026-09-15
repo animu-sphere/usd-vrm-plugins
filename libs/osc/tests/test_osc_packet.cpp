@@ -44,9 +44,7 @@ using osc::OscPacket;
 std::string
 Explain(const OscDecodeError& error)
 {
-    return error.subject.empty()
-        ? error.detail
-        : error.subject + ": " + error.detail;
+    return error.subject.empty() ? error.detail : error.subject + ": " + error.detail;
 }
 
 // ---------------------------------------------------------------------------
@@ -57,30 +55,35 @@ struct Bytes
 {
     std::vector<std::uint8_t> data;
 
-    Bytes& Raw(std::initializer_list<std::uint8_t> values)
+    Bytes&
+    Raw(std::initializer_list<std::uint8_t> values)
     {
         data.insert(data.end(), values);
         return *this;
     }
 
-    Bytes& Append(const std::vector<std::uint8_t>& values)
+    Bytes&
+    Append(const std::vector<std::uint8_t>& values)
     {
         data.insert(data.end(), values.begin(), values.end());
         return *this;
     }
 
     // A NUL-terminated string padded to four bytes -- always at least one NUL.
-    Bytes& Str(std::string_view text)
+    Bytes&
+    Str(std::string_view text)
     {
         data.insert(data.end(), text.begin(), text.end());
         data.push_back(0);
-        while (data.size() % 4 != 0) {
+        while (data.size() % 4 != 0)
+        {
             data.push_back(0);
         }
         return *this;
     }
 
-    Bytes& U32(std::uint32_t value)
+    Bytes&
+    U32(std::uint32_t value)
     {
         data.push_back(static_cast<std::uint8_t>(value >> 24));
         data.push_back(static_cast<std::uint8_t>(value >> 16));
@@ -89,21 +92,24 @@ struct Bytes
         return *this;
     }
 
-    Bytes& U64(std::uint64_t value)
+    Bytes&
+    U64(std::uint64_t value)
     {
         U32(static_cast<std::uint32_t>(value >> 32));
         U32(static_cast<std::uint32_t>(value));
         return *this;
     }
 
-    Bytes& F32(float value)
+    Bytes&
+    F32(float value)
     {
         std::uint32_t bits = 0;
         std::memcpy(&bits, &value, sizeof(bits));
         return U32(bits);
     }
 
-    Bytes& F64(double value)
+    Bytes&
+    F64(double value)
     {
         std::uint64_t bits = 0;
         std::memcpy(&bits, &value, sizeof(bits));
@@ -112,8 +118,7 @@ struct Bytes
 };
 
 std::vector<std::uint8_t>
-Message(std::string_view address, std::string_view tags,
-        const std::vector<std::uint8_t>& body = {})
+Message(std::string_view address, std::string_view tags, const std::vector<std::uint8_t>& body = {})
 {
     Bytes out;
     out.Str(address);
@@ -123,13 +128,13 @@ Message(std::string_view address, std::string_view tags,
 }
 
 std::vector<std::uint8_t>
-Bundle(std::uint64_t timeTag,
-       std::initializer_list<std::vector<std::uint8_t>> elements)
+Bundle(std::uint64_t timeTag, std::initializer_list<std::vector<std::uint8_t>> elements)
 {
     Bytes out;
     out.Str("#bundle");
     out.U64(timeTag);
-    for (const std::vector<std::uint8_t>& element : elements) {
+    for (const std::vector<std::uint8_t>& element : elements)
+    {
         out.U32(static_cast<std::uint32_t>(element.size()));
         out.Append(element);
     }
@@ -166,14 +171,13 @@ TestAMessageDecodesToItsArguments()
     body.F32(0.0f).F32(0.0f).F32(0.0f).F32(1.0f);
 
     // Named, not a temporary: every view in the decoded packet points into it.
-    const std::vector<std::uint8_t> datagram =
-        Message("/probe/transform1", "sfffffff", body.data);
+    const std::vector<std::uint8_t> datagram = Message("/probe/transform1", "sfffffff", body.data);
 
     OscPacket packet;
     OscDecodeError error;
-    if (!Decode(datagram, &packet, &error)) {
-        std::fprintf(stderr, "%s\n",
-                     Explain(error).c_str());
+    if (!Decode(datagram, &packet, &error))
+    {
+        std::fprintf(stderr, "%s\n", Explain(error).c_str());
         assert(false);
     }
 
@@ -205,28 +209,28 @@ TestEveryOscTypeTagIsSized()
     // decoder's gap.
     const std::vector<std::uint8_t> blob = {0xde, 0xad, 0xbe, 0xef, 0x01};
     Bytes body;
-    body.U32(0x7fffffff);                 // i
-    body.F32(0.5f);                       // f
-    body.Str("text");                     // s
-    body.Str("symbol");                   // S
+    body.U32(0x7fffffff); // i
+    body.F32(0.5f);       // f
+    body.Str("text");     // s
+    body.Str("symbol");   // S
     body.U32(static_cast<std::uint32_t>(blob.size()));
-    body.Append(blob).Raw({0, 0, 0});     // b, padded to four
-    body.U64(0x0123456789abcdefULL);      // h
-    body.U64(1);                          // t
-    body.F64(0.25);                       // d
-    body.U32('A');                        // c
-    body.U32(0x11223344);                 // r
-    body.U32(0x55667788);                 // m
-                                          // T F N I [ ] carry no bytes
+    body.Append(blob).Raw({0, 0, 0}); // b, padded to four
+    body.U64(0x0123456789abcdefULL);  // h
+    body.U64(1);                      // t
+    body.F64(0.25);                   // d
+    body.U32('A');                    // c
+    body.U32(0x11223344);             // r
+    body.U32(0x55667788);             // m
+                                      // T F N I [ ] carry no bytes
 
     const std::vector<std::uint8_t> datagram =
         Message("/every/tag", "ifsSbhtdcrmTFNI[]", body.data);
 
     OscPacket packet;
     OscDecodeError error;
-    if (!Decode(datagram, &packet, &error)) {
-        std::fprintf(stderr, "%s\n",
-                     Explain(error).c_str());
+    if (!Decode(datagram, &packet, &error))
+    {
+        std::fprintf(stderr, "%s\n", Explain(error).c_str());
         assert(false);
     }
 
@@ -265,11 +269,10 @@ TestABundleFlattensIntoWireOrder()
     Bytes value;
     value.Str("Joy").F32(1.0f);
 
-    const std::vector<std::uint8_t> datagram = Bundle(
-        osc::OscTimeTagImmediate,
-        {Message("/probe/one", "f", time.data),
-         Message("/probe/blend/value", "sf", value.data),
-         Message("/probe/blend/applied", "")});
+    const std::vector<std::uint8_t> datagram =
+        Bundle(osc::OscTimeTagImmediate, {Message("/probe/one", "f", time.data),
+                                          Message("/probe/blend/value", "sf", value.data),
+                                          Message("/probe/blend/applied", "")});
 
     OscPacket packet;
     assert(Decode(datagram, &packet));
@@ -285,8 +288,7 @@ TestABundleFlattensIntoWireOrder()
     assert(packet.messages[2].arguments.empty());
 
     // An empty bundle carries nothing and is still valid OSC.
-    const std::vector<std::uint8_t> hollow =
-        Bundle(osc::OscTimeTagImmediate, {});
+    const std::vector<std::uint8_t> hollow = Bundle(osc::OscTimeTagImmediate, {});
     OscPacket empty;
     assert(Decode(hollow, &empty));
     assert(empty.bundled);
@@ -298,8 +300,7 @@ TestNestedBundlesFlattenAndDepthIsCapped()
 {
     const std::vector<std::uint8_t> inner =
         Bundle(2, {Message("/inner/one", ""), Message("/inner/two", "")});
-    const std::vector<std::uint8_t> outer =
-        Bundle(1, {Message("/outer", ""), inner});
+    const std::vector<std::uint8_t> outer = Bundle(1, {Message("/outer", ""), inner});
     OscPacket packet;
     assert(Decode(outer, &packet));
     assert(packet.messages.size() == 3);
@@ -309,8 +310,8 @@ TestNestedBundlesFlattenAndDepthIsCapped()
     assert(packet.timeTag == 1);
 
     std::vector<std::uint8_t> nested = Message("/deep", "");
-    for (std::size_t depth = 0; depth <= osc::MaxOscBundleDepth;
-         ++depth) {
+    for (std::size_t depth = 0; depth <= osc::MaxOscBundleDepth; ++depth)
+    {
         nested = Bundle(1, {nested});
     }
     OscPacket refused;
@@ -353,8 +354,7 @@ struct BadDatagram
 };
 
 std::vector<std::uint8_t>
-Concatenated(std::vector<std::uint8_t> head,
-             std::initializer_list<std::uint8_t> tail)
+Concatenated(std::vector<std::uint8_t> head, std::initializer_list<std::uint8_t> tail)
 {
     head.insert(head.end(), tail);
     return head;
@@ -368,8 +368,7 @@ TestMalformedDatagramsAreRefusedAndSayWhy()
 
     // A bundle whose element size claims more than the bundle holds.
     Bytes overrun;
-    overrun.Str("#bundle").U64(1).U32(512).Append(
-        Message("/probe/one", "f", oneFloat.data));
+    overrun.Str("#bundle").U64(1).U32(512).Append(Message("/probe/one", "f", oneFloat.data));
 
     // A blob claiming more bytes than the message carries.
     Bytes longBlob;
@@ -378,61 +377,55 @@ TestMalformedDatagramsAreRefusedAndSayWhy()
     const BadDatagram cases[] = {
         {"empty", {}, "empty"},
         {"unaligned", {'/', 'a', 'b'}, "multiple of four"},
-        {"neither a message nor a bundle",
-         {0xde, 0xad, 0xbe, 0xef}, "not '/'"},
+        {"neither a message nor a bundle", {0xde, 0xad, 0xbe, 0xef}, "not '/'"},
         {"an address with no terminator",
-         {'/', 'a', 'b', 'c'}, "address pattern has no terminator"},
+         {'/', 'a', 'b', 'c'},
+         "address pattern has no terminator"},
         // Built by hand rather than with `Message`, which always writes the
         // comma.
-        {"a type tag string with no comma",
-         Bytes().Str("/probe/one").Str("f").F32(0.5f).data,
+        {"a type tag string with no comma", Bytes().Str("/probe/one").Str("f").F32(0.5f).data,
          "does not begin with a comma"},
-        {"a message with no type tag string",
-         Bytes().Str("/probe/one").data, "type tag string has no terminator"},
-        {"an argument the type tags promised",
-         Message("/probe/one", "ff", oneFloat.data), "needs 4 bytes"},
+        {"a message with no type tag string", Bytes().Str("/probe/one").data,
+         "type tag string has no terminator"},
+        {"an argument the type tags promised", Message("/probe/one", "ff", oneFloat.data),
+         "needs 4 bytes"},
         {"a string argument with no terminator",
-         Concatenated(Message("/probe/transform1", "s"),
-                      {'H', 'i', 'p', 's'}),
+         Concatenated(Message("/probe/transform1", "s"), {'H', 'i', 'p', 's'}),
          "argument has no terminator"},
-        {"a blob running past the message",
-         Message("/blob", "b", longBlob.data), "runs past the end"},
-        {"a blob of negative length",
-         Message("/blob", "b", Bytes().U32(0xffffffff).data),
+        {"a blob running past the message", Message("/blob", "b", longBlob.data),
+         "runs past the end"},
+        {"a blob of negative length", Message("/blob", "b", Bytes().U32(0xffffffff).data),
          "declares -1 bytes"},
         // The one refusal that is about the decoder's own limits rather than
         // the sender's bytes -- and it has to be a refusal: an unknown tag has
         // an unknown size, so everything after it would be read at the wrong
         // offset.
-        {"an unknown type tag", Message("/probe/one", "q"),
-         "unknown type tag 'q'"},
+        {"an unknown type tag", Message("/probe/one", "q"), "unknown type tag 'q'"},
         {"bytes after the arguments",
-         Concatenated(Message("/probe/one", "f", oneFloat.data),
-                      {0, 0, 0, 0}),
+         Concatenated(Message("/probe/one", "f", oneFloat.data), {0, 0, 0, 0}),
          "follow the arguments"},
         {"a bundle element running past the bundle", overrun.data,
          "runs past the end of the bundle"},
-        {"a bundle with no time tag", Bytes().Str("#bundle").data,
-         "eight-byte time tag"},
-        {"a bundle element declaring nothing",
-         Bytes().Str("#bundle").U64(1).U32(0).data, "declares 0 bytes"},
+        {"a bundle with no time tag", Bytes().Str("#bundle").data, "eight-byte time tag"},
+        {"a bundle element declaring nothing", Bytes().Str("#bundle").U64(1).U32(0).data,
+         "declares 0 bytes"},
         // The offset in this one points *into* the bundle, at the element, not
         // at the datagram's start -- which is the whole reason a nested decode
         // carries a base offset.
         {"a bundle element that is not a multiple of four",
-         Bytes().Str("#bundle").U64(1).U32(3).Raw({'/', 'a', 'b', 0}).data,
-         "multiple of four"},
+         Bytes().Str("#bundle").U64(1).U32(3).Raw({'/', 'a', 'b', 0}).data, "multiple of four"},
     };
 
-    for (const BadDatagram& testCase : cases) {
+    for (const BadDatagram& testCase : cases)
+    {
         const std::vector<std::uint8_t>& bytes = testCase.bytes;
 
         OscPacket packet;
         packet.messages.push_back({});
         OscDecodeError error;
-        if (Decode(bytes, &packet, &error)) {
-            std::fprintf(stderr, "malformed datagram was accepted: %s\n",
-                         testCase.name);
+        if (Decode(bytes, &packet, &error))
+        {
+            std::fprintf(stderr, "malformed datagram was accepted: %s\n", testCase.name);
             assert(false);
         }
 
@@ -440,10 +433,10 @@ TestMalformedDatagramsAreRefusedAndSayWhy()
         // the code that used to be asserted here belongs to whichever
         // adapter is holding the decoder, and this layer names none.
         assert(!error.detail.empty());
-        if (error.detail.find(testCase.detail) == std::string::npos) {
-            std::fprintf(stderr, "%s: detail was \"%s\", expected \"%s\"\n",
-                         testCase.name, error.detail.c_str(),
-                         testCase.detail);
+        if (error.detail.find(testCase.detail) == std::string::npos)
+        {
+            std::fprintf(stderr, "%s: detail was \"%s\", expected \"%s\"\n", testCase.name,
+                         error.detail.c_str(), testCase.detail);
             assert(false);
         }
         // A byte offset, so a fixture can be found rather than bisected.
@@ -463,8 +456,7 @@ TestTheArgumentGuardsRefuseRatherThanDereference()
     // A caller with no output has nowhere for a decode to land, and a size with
     // no bytes describes a datagram that cannot exist. Both are caller bugs,
     // and both are reported rather than dereferenced.
-    assert(!osc::DecodeOscPacket(datagram.data(), datagram.size(), nullptr,
-                                 &error));
+    assert(!osc::DecodeOscPacket(datagram.data(), datagram.size(), nullptr, &error));
     assert(!error.detail.empty());
     // A caller bug must not be attributed to the last sender: the subject is
     // cleared rather than left holding an address from a previous datagram.
@@ -504,12 +496,11 @@ TestARefusedBundleYieldsNoMessagesAtAll()
     Bytes oneFloat;
     oneFloat.F32(0.5f);
 
-    const std::vector<std::uint8_t> datagram = Bundle(
-        osc::OscTimeTagImmediate,
-        {Message("/probe/one", "f", time.data),
-         Message("/probe/blend/applied", ""),
-         // Two floats promised, one delivered.
-         Message("/probe/transform1", "ff", oneFloat.data)});
+    const std::vector<std::uint8_t> datagram =
+        Bundle(osc::OscTimeTagImmediate,
+               {Message("/probe/one", "f", time.data), Message("/probe/blend/applied", ""),
+                // Two floats promised, one delivered.
+                Message("/probe/transform1", "ff", oneFloat.data)});
 
     OscPacket packet;
     OscDecodeError error;
@@ -531,8 +522,7 @@ TestADecodeReplacesWhateverTheCallerHandedIn()
     Bytes time;
     time.F32(12.5f);
     const std::vector<std::uint8_t> bundled =
-        Bundle(7, {Message("/probe/one", "f", time.data),
-                   Message("/probe/blend/applied", "")});
+        Bundle(7, {Message("/probe/one", "f", time.data), Message("/probe/blend/applied", "")});
     const std::vector<std::uint8_t> lone = Message("/probe/blend/applied", "");
 
     OscPacket packet;
@@ -587,53 +577,49 @@ TestARefusalNamesTheByteAndTheAddress()
     // datagram*, and a decoder that reported an offset within the innermost
     // element would say 20.
     const std::vector<std::uint8_t> nested = Bundle(
-        1, {Bundle(1, {Concatenated(Message("/probe/one", "f", oneFloat.data),
-                                    {0, 0, 0, 0})})});
+        1, {Bundle(1, {Concatenated(Message("/probe/one", "f", oneFloat.data), {0, 0, 0, 0})})});
 
     const Refusal cases[] = {
         {"an unaligned datagram", {'/', 'a', 'b'}, 0, ""},
         {"an address with no terminator", {'/', 'a', 'b', 'c'}, 0, ""},
         // The address was read, so from here on the subject is set even though
         // the message never decoded.
-        {"a message with no type tag string", Bytes().Str("/probe/one").data,
-         12, "/probe/one"},
-        {"an argument the type tags promised",
-         Message("/probe/one", "ff", oneFloat.data), 20, "/probe/one"},
+        {"a message with no type tag string", Bytes().Str("/probe/one").data, 12, "/probe/one"},
+        {"an argument the type tags promised", Message("/probe/one", "ff", oneFloat.data), 20,
+         "/probe/one"},
         {"an unknown type tag", Message("/probe/one", "q"), 16, "/probe/one"},
         {"bytes after the arguments",
-         Concatenated(Message("/probe/one", "f", oneFloat.data), {0, 0, 0, 0}),
-         20, "/probe/one"},
+         Concatenated(Message("/probe/one", "f", oneFloat.data), {0, 0, 0, 0}), 20, "/probe/one"},
         // Inside a bundle: the element starts at byte 20 of the datagram, and
         // that is the byte named rather than 0.
         {"a bundle element that is not a multiple of four",
-         Bytes().Str("#bundle").U64(1).U32(3).Raw({'/', 'a', 'b', 0}).data, 20,
-         ""},
+         Bytes().Str("#bundle").U64(1).U32(3).Raw({'/', 'a', 'b', 0}).data, 20, ""},
         {"a message two bundles deep", nested, 60, "/probe/one"},
     };
 
-    for (const Refusal& testCase : cases) {
+    for (const Refusal& testCase : cases)
+    {
         const std::vector<std::uint8_t>& bytes = testCase.bytes;
 
         OscPacket packet;
         OscDecodeError error;
-        if (Decode(bytes, &packet, &error)) {
-            std::fprintf(stderr, "malformed datagram was accepted: %s\n",
-                         testCase.name);
+        if (Decode(bytes, &packet, &error))
+        {
+            std::fprintf(stderr, "malformed datagram was accepted: %s\n", testCase.name);
             assert(false);
         }
 
-        const std::string expected =
-            "(at byte " + std::to_string(testCase.offset) + ")";
-        if (error.detail.find(expected) == std::string::npos) {
-            std::fprintf(stderr, "%s: detail was \"%s\", expected %s\n",
-                         testCase.name, error.detail.c_str(),
-                         expected.c_str());
+        const std::string expected = "(at byte " + std::to_string(testCase.offset) + ")";
+        if (error.detail.find(expected) == std::string::npos)
+        {
+            std::fprintf(stderr, "%s: detail was \"%s\", expected %s\n", testCase.name,
+                         error.detail.c_str(), expected.c_str());
             assert(false);
         }
-        if (error.subject != testCase.subject) {
-            std::fprintf(stderr, "%s: subject was \"%s\", expected \"%s\"\n",
-                         testCase.name, error.subject.c_str(),
-                         testCase.subject);
+        if (error.subject != testCase.subject)
+        {
+            std::fprintf(stderr, "%s: subject was \"%s\", expected \"%s\"\n", testCase.name,
+                         error.subject.c_str(), testCase.subject);
             assert(false);
         }
     }
@@ -654,15 +640,15 @@ TestDecodedViewsPointIntoTheCallersDatagram()
     body.U32(static_cast<std::uint32_t>(blob.size()));
     body.Append(blob);
     const std::vector<std::uint8_t> datagram =
-        Bundle(osc::OscTimeTagImmediate,
-               {Message("/probe/transform1", "sb", body.data)});
+        Bundle(osc::OscTimeTagImmediate, {Message("/probe/transform1", "sb", body.data)});
 
     OscPacket packet;
     assert(Decode(datagram, &packet));
 
     const std::uint8_t* first = datagram.data();
     const std::uint8_t* last = first + datagram.size();
-    const auto inside = [first, last](const void* pointer) {
+    const auto inside = [first, last](const void* pointer)
+    {
         const std::uint8_t* byte = static_cast<const std::uint8_t*>(pointer);
         return byte >= first && byte < last;
     };
@@ -692,14 +678,13 @@ TestArgumentSignednessFollowsTheWire()
     body.U32(0xffffffffu);           // r
     body.U32(0xffffffffu);           // m
     body.U64(0xe9a1000000000000ULL); // t
-    const std::vector<std::uint8_t> datagram =
-        Message("/signs", "ihcrmt", body.data);
+    const std::vector<std::uint8_t> datagram = Message("/signs", "ihcrmt", body.data);
 
     OscPacket packet;
     OscDecodeError error;
-    if (!Decode(datagram, &packet, &error)) {
-        std::fprintf(stderr, "%s\n",
-                     Explain(error).c_str());
+    if (!Decode(datagram, &packet, &error))
+    {
+        std::fprintf(stderr, "%s\n", Explain(error).c_str());
         assert(false);
     }
 
@@ -744,9 +729,9 @@ TestStringPaddingIsAlwaysAtLeastOneNul()
 
     OscPacket packet;
     OscDecodeError error;
-    if (!Decode(aligned, &packet, &error)) {
-        std::fprintf(stderr, "%s\n",
-                     Explain(error).c_str());
+    if (!Decode(aligned, &packet, &error))
+    {
+        std::fprintf(stderr, "%s\n", Explain(error).c_str());
         assert(false);
     }
     // "/pad" is four characters too, so the address and the argument exercise
@@ -760,8 +745,7 @@ TestStringPaddingIsAlwaysAtLeastOneNul()
     Bytes emptyBody;
     emptyBody.Str("");
     emptyBody.F32(0.5f);
-    const std::vector<std::uint8_t> empty =
-        Message("/pad", "sf", emptyBody.data);
+    const std::vector<std::uint8_t> empty = Message("/pad", "sf", emptyBody.data);
     assert(Decode(empty, &packet));
     assert(packet.messages.front().arguments[0].text.empty());
     assert(packet.messages.front().arguments[1].real == 0.5f);
@@ -772,8 +756,7 @@ TestStringPaddingIsAlwaysAtLeastOneNul()
     // not to have sent.
     Bytes blobBody;
     blobBody.U32(0);
-    const std::vector<std::uint8_t> hollow =
-        Message("/pad", "b", blobBody.data);
+    const std::vector<std::uint8_t> hollow = Message("/pad", "b", blobBody.data);
     assert(Decode(hollow, &packet));
     assert(packet.messages.front().arguments[0].blob.size == 0);
 }
@@ -786,16 +769,16 @@ TestNestingUpToTheCapIsAccepted()
     // early would leave every other test green while turning a legal datagram
     // into the sender's fault.
     std::vector<std::uint8_t> nested = Message("/deep", "");
-    for (std::size_t depth = 0; depth < osc::MaxOscBundleDepth;
-         ++depth) {
+    for (std::size_t depth = 0; depth < osc::MaxOscBundleDepth; ++depth)
+    {
         nested = Bundle(1, {nested});
     }
 
     OscPacket packet;
     OscDecodeError error;
-    if (!Decode(nested, &packet, &error)) {
-        std::fprintf(stderr, "%s\n",
-                     Explain(error).c_str());
+    if (!Decode(nested, &packet, &error))
+    {
+        std::fprintf(stderr, "%s\n", Explain(error).c_str());
         assert(false);
     }
     assert(packet.messages.size() == 1);

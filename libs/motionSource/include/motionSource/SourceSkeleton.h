@@ -58,13 +58,13 @@ struct SourceVec3
     float y = 0.0f;
     float z = 0.0f;
 
-    friend bool operator==(const SourceVec3& lhs,
-                           const SourceVec3& rhs) noexcept
+    friend bool
+    operator==(const SourceVec3& lhs, const SourceVec3& rhs) noexcept
     {
         return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
     }
-    friend bool operator!=(const SourceVec3& lhs,
-                           const SourceVec3& rhs) noexcept
+    friend bool
+    operator!=(const SourceVec3& lhs, const SourceVec3& rhs) noexcept
     {
         return !(lhs == rhs);
     }
@@ -91,14 +91,13 @@ struct SourceQuat
     float y = 0.0f;
     float z = 0.0f;
 
-    friend bool operator==(const SourceQuat& lhs,
-                           const SourceQuat& rhs) noexcept
+    friend bool
+    operator==(const SourceQuat& lhs, const SourceQuat& rhs) noexcept
     {
-        return lhs.w == rhs.w && lhs.x == rhs.x && lhs.y == rhs.y
-               && lhs.z == rhs.z;
+        return lhs.w == rhs.w && lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
     }
-    friend bool operator!=(const SourceQuat& lhs,
-                           const SourceQuat& rhs) noexcept
+    friend bool
+    operator!=(const SourceQuat& lhs, const SourceQuat& rhs) noexcept
     {
         return !(lhs == rhs);
     }
@@ -143,14 +142,12 @@ struct SourceSkeleton
 
     // The first joint with this name, exactly as the source spelled it. Nullopt
     // when there is none.
-    MOTIONSOURCE_API std::optional<std::size_t> FindJoint(
-        std::string_view name) const;
+    MOTIONSOURCE_API std::optional<std::size_t> FindJoint(std::string_view name) const;
 
     // Every joint with this name. A profile maps joints by name, so it needs to
     // see an ambiguity rather than silently take the first one — which is the
     // whole reason this exists beside `FindJoint`.
-    MOTIONSOURCE_API std::vector<std::size_t> FindJoints(
-        std::string_view name) const;
+    MOTIONSOURCE_API std::vector<std::size_t> FindJoints(std::string_view name) const;
 
     MOTIONSOURCE_API bool HasUniqueJointNames() const;
 
@@ -164,8 +161,7 @@ struct SourceSkeleton
     MOTIONSOURCE_API std::size_t MaxDepth() const noexcept;
 
     // Indices of `jointIndex`'s immediate children, in joint order.
-    MOTIONSOURCE_API std::vector<std::size_t> ChildJoints(
-        std::size_t jointIndex) const;
+    MOTIONSOURCE_API std::vector<std::size_t> ChildJoints(std::size_t jointIndex) const;
 
     MOTIONSOURCE_API friend bool operator==(const SourceSkeleton& lhs,
                                             const SourceSkeleton& rhs) noexcept;

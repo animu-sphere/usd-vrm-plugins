@@ -121,9 +121,9 @@ TestTheFormattedLine()
     full.sequence = 42;
     full.detail = "no update for 0.5 s";
 
-    assert(FormatDiagnostic(kCodes.Name(full.code), full)
-           == "[TEST_SILENT] warning recoverable source=0.0.0.0:39539 "
-              "t=1.500000 subject=leftHand seq=42: no update for 0.5 s");
+    assert(FormatDiagnostic(kCodes.Name(full.code), full) ==
+           "[TEST_SILENT] warning recoverable source=0.0.0.0:39539 "
+           "t=1.500000 subject=leftHand seq=42: no update for 0.5 s");
 
     // Everything optional absent, and a fatal code.
     DiagnosticFields bare;
@@ -139,8 +139,8 @@ TestTheFormattedLine()
     zeros.recoverable = true;
     zeros.timestamp = 0.0;
     zeros.sequence = 0;
-    assert(FormatDiagnostic("TEST_BOUND", zeros)
-           == "[TEST_BOUND] info recoverable t=0.000000 seq=0");
+    assert(FormatDiagnostic("TEST_BOUND", zeros) ==
+           "[TEST_BOUND] info recoverable t=0.000000 seq=0");
 }
 
 // Six decimals, and the decimal point of the classic locale rather than the
@@ -163,12 +163,9 @@ TestSecondsAreSpelledOneWay()
 void
 TestSeverityStrings()
 {
-    assert(liveTransport::DiagnosticSeverityString(DiagnosticSeverity::Info)
-           == "info");
-    assert(liveTransport::DiagnosticSeverityString(DiagnosticSeverity::Warning)
-           == "warning");
-    assert(liveTransport::DiagnosticSeverityString(DiagnosticSeverity::Error)
-           == "error");
+    assert(liveTransport::DiagnosticSeverityString(DiagnosticSeverity::Info) == "info");
+    assert(liveTransport::DiagnosticSeverityString(DiagnosticSeverity::Warning) == "warning");
+    assert(liveTransport::DiagnosticSeverityString(DiagnosticSeverity::Error) == "error");
 }
 
 } // namespace

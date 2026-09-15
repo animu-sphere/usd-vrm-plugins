@@ -90,19 +90,19 @@
 #include <vector>
 
 #if defined(_WIN32)
-#    ifndef WIN32_LEAN_AND_MEAN
-#        define WIN32_LEAN_AND_MEAN
-#    endif
-#    ifndef NOMINMAX
-#        define NOMINMAX
-#    endif
-#    include <winsock2.h>
-#    include <ws2tcpip.h>
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #else
-#    include <netdb.h>
-#    include <netinet/in.h>
-#    include <sys/socket.h>
-#    include <unistd.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
 #endif
 
 namespace
@@ -153,12 +153,14 @@ bool
 SplitEndpoint(const std::string& endpoint, std::string* host, std::string* port)
 {
     const std::size_t colon = endpoint.rfind(':');
-    if (colon == std::string::npos) {
+    if (colon == std::string::npos)
+    {
         return false;
     }
     *host = endpoint.substr(0, colon);
     *port = endpoint.substr(colon + 1);
-    if (host->size() >= 2 && host->front() == '[' && host->back() == ']') {
+    if (host->size() >= 2 && host->front() == '[' && host->back() == ']')
+    {
         *host = host->substr(1, host->size() - 2);
     }
     return !host->empty() && !port->empty();
@@ -166,15 +168,20 @@ SplitEndpoint(const std::string& endpoint, std::string* host, std::string* port)
 
 class LoopbackSender
 {
-public:
-    ~LoopbackSender() { Close(); }
+  public:
+    ~LoopbackSender()
+    {
+        Close();
+    }
 
-    bool Open(const std::string& endpoint)
+    bool
+    Open(const std::string& endpoint)
     {
         Close();
         std::string host;
         std::string port;
-        if (!SplitEndpoint(endpoint, &host, &port)) {
+        if (!SplitEndpoint(endpoint, &host, &port))
+        {
             return false;
         }
 
@@ -185,22 +192,22 @@ public:
         hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
 
         addrinfo* resolved = nullptr;
-        if (::getaddrinfo(host.c_str(), port.c_str(), &hints, &resolved) != 0
-            || !resolved) {
+        if (::getaddrinfo(host.c_str(), port.c_str(), &hints, &resolved) != 0 || !resolved)
+        {
             return false;
         }
-        for (const addrinfo* it = resolved; it; it = it->ai_next) {
-            const RawSocket handle =
-                ::socket(it->ai_family, it->ai_socktype, it->ai_protocol);
-            if (handle == kNoSocket) {
+        for (const addrinfo* it = resolved; it; it = it->ai_next)
+        {
+            const RawSocket handle = ::socket(it->ai_family, it->ai_socktype, it->ai_protocol);
+            if (handle == kNoSocket)
+            {
                 continue;
             }
             // Connected, so a send is one call and a peer is one value. The
             // receiver never sends, so nothing here depends on the reverse
             // direction working.
-            if (::connect(handle, it->ai_addr,
-                          static_cast<socklen_t>(it->ai_addrlen))
-                != 0) {
+            if (::connect(handle, it->ai_addr, static_cast<socklen_t>(it->ai_addrlen)) != 0)
+            {
                 CloseRaw(handle);
                 continue;
             }
@@ -211,26 +218,29 @@ public:
         return _socket != kNoSocket;
     }
 
-    bool Send(const std::vector<std::uint8_t>& bytes) const
+    bool
+    Send(const std::vector<std::uint8_t>& bytes) const
     {
-        if (_socket == kNoSocket) {
+        if (_socket == kNoSocket)
+        {
             return false;
         }
-        const auto sent = ::send(
-            _socket, reinterpret_cast<const char*>(bytes.data()),
-            static_cast<int>(bytes.size()), 0);
+        const auto sent = ::send(_socket, reinterpret_cast<const char*>(bytes.data()),
+                                 static_cast<int>(bytes.size()), 0);
         return sent == static_cast<decltype(sent)>(bytes.size());
     }
 
-    void Close()
+    void
+    Close()
     {
-        if (_socket != kNoSocket) {
+        if (_socket != kNoSocket)
+        {
             CloseRaw(_socket);
             _socket = kNoSocket;
         }
     }
 
-private:
+  private:
     RawSocket _socket = kNoSocket;
 };
 
@@ -254,7 +264,8 @@ std::vector<std::uint8_t>
 Payload(std::size_t size, std::uint8_t seed)
 {
     std::vector<std::uint8_t> bytes(size);
-    for (std::size_t index = 0; index != size; ++index) {
+    for (std::size_t index = 0; index != size; ++index)
+    {
         bytes[index] = static_cast<std::uint8_t>(seed + index);
     }
     return bytes;
@@ -421,8 +432,7 @@ TestADatagramArrivesWholeWithItsSenderAndItsInstant()
     assert(sender.Send(small));
 
     ReceivedDatagram datagram;
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes == small);
     // The sender is on loopback, on a port it did not choose; what matters is
     // that the receiver knows an address at all, which is the second question
@@ -434,15 +444,13 @@ TestADatagramArrivesWholeWithItsSenderAndItsInstant()
     // than leaving the previous datagram's tail behind.
     const std::vector<std::uint8_t> large = Payload(2000, 0x01);
     assert(sender.Send(large));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes == large);
     const double second = datagram.receiveTime;
 
     // And smaller again, which is the direction a stale tail would survive.
     assert(sender.Send(small));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes == small);
     assert(datagram.receiveTime >= second);
 
@@ -452,8 +460,7 @@ TestADatagramArrivesWholeWithItsSenderAndItsInstant()
     // yet — which is exactly the sort of hole a corpus recorded today would
     // carry into it.
     assert(sender.Send(std::vector<std::uint8_t>()));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes.empty());
 
     const vrmAdapterMocopi::UdpReceiverStats& stats = receiver.GetStats();
@@ -489,10 +496,10 @@ PollUntilSilenceReports(UdpReceiver& receiver, std::uint64_t expected,
 {
     ReceivedDatagram datagram;
     const double deadline = receiver.Now() + kSilenceGiveUp;
-    while (receiver.GetStats().silenceReports < expected) {
+    while (receiver.GetStats().silenceReports < expected)
+    {
         assert(receiver.Now() < deadline);
-        assert(receiver.Receive(&datagram, 0.02, diagnostics)
-               == ReceiveStatus::Idle);
+        assert(receiver.Receive(&datagram, 0.02, diagnostics) == ReceiveStatus::Idle);
     }
 }
 
@@ -507,9 +514,9 @@ TestSilenceIsNotReportedUntilACallerSaysHowMuchIsTooMuch()
 
     ReceivedDatagram datagram;
     std::vector<Diagnostic> diagnostics;
-    for (int poll = 0; poll != 5; ++poll) {
-        assert(silent.Receive(&datagram, 0.01, &diagnostics)
-               == ReceiveStatus::Idle);
+    for (int poll = 0; poll != 5; ++poll)
+    {
+        assert(silent.Receive(&datagram, 0.01, &diagnostics) == ReceiveStatus::Idle);
     }
     assert(diagnostics.empty());
     assert(silent.GetStats().silenceReports == 0);
@@ -548,9 +555,9 @@ TestSilenceIsReportedOncePerEpisodeAndRearmedByADatagram()
     // Still quiet, still one report. A loop that noticed silence a hundred
     // times a second would fill a session log with the loop rather than with
     // the session.
-    for (int poll = 0; poll != 5; ++poll) {
-        assert(receiver.Receive(&datagram, 0.02, &diagnostics)
-               == ReceiveStatus::Idle);
+    for (int poll = 0; poll != 5; ++poll)
+    {
+        assert(receiver.Receive(&datagram, 0.02, &diagnostics) == ReceiveStatus::Idle);
     }
     assert(diagnostics.size() == 1);
     assert(receiver.GetStats().silenceReports == 1);
@@ -560,8 +567,7 @@ TestSilenceIsReportedOncePerEpisodeAndRearmedByADatagram()
     LoopbackSender sender;
     assert(sender.Open(receiver.GetBoundEndpoint()));
     assert(sender.Send(Payload(8, 0x10)));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout, &diagnostics)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout, &diagnostics) == ReceiveStatus::Received);
     assert(diagnostics.size() == 1);
 
     PollUntilSilenceReports(receiver, 2, &diagnostics);
@@ -607,8 +613,7 @@ TestAReopenedReceiverIsNotStillWaitingForTheLastSessionsSource()
     assert(sender.Send(Payload(8, 0x30)));
 
     ReceivedDatagram datagram;
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(receiver.GetStats().datagramsReceived == 1);
     assert(receiver.GetStats().lastReceiveTime > 0.0);
 
@@ -629,8 +634,7 @@ TestAReopenedReceiverIsNotStillWaitingForTheLastSessionsSource()
     assert(diagnostics.size() == 1);
     // And it is the *right* half of the code: nothing has arrived on this
     // socket, whatever the last one saw.
-    assert(diagnostics[0].detail.find("no datagram has arrived")
-           != std::string::npos);
+    assert(diagnostics[0].detail.find("no datagram has arrived") != std::string::npos);
 }
 
 void
@@ -658,8 +662,7 @@ TestANewCountingWindowCanStillSeeAnOngoingSilence()
     // window. It is not measured afresh from the reset either: the silence is
     // already older than the threshold, so the very next poll carries it.
     ReceivedDatagram datagram;
-    assert(receiver.Receive(&datagram, 0.0, &diagnostics)
-           == ReceiveStatus::Idle);
+    assert(receiver.Receive(&datagram, 0.0, &diagnostics) == ReceiveStatus::Idle);
     assert(receiver.GetStats().silenceReports == 1);
     assert(diagnostics.size() == 2);
 }
@@ -697,13 +700,15 @@ CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
     config.listenPort = 0;
 
     UdpReceiver receiver;
-    if (!receiver.Open(config)) {
+    if (!receiver.Open(config))
+    {
         std::puts("skipped: no IPv6 loopback on this host");
         return kSkipExitCode;
     }
 
     LoopbackSender sender;
-    if (!sender.Open(receiver.GetBoundEndpoint())) {
+    if (!sender.Open(receiver.GetBoundEndpoint()))
+    {
         std::puts("skipped: could not reach the IPv6 loopback endpoint");
         return kSkipExitCode;
     }
@@ -712,7 +717,8 @@ CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
     // maximum. One byte over would do; a handful makes the intent legible.
     const std::vector<std::uint8_t> overlong =
         Payload(vrmAdapterMocopi::MaxDatagramBytes + 8, 0x00);
-    if (!sender.Send(overlong)) {
+    if (!sender.Send(overlong))
+    {
         std::puts("skipped: this host will not send an over-long datagram");
         return kSkipExitCode;
     }
@@ -738,8 +744,7 @@ CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
     // And the socket still works afterwards: a refusal is not a shutdown.
     const std::vector<std::uint8_t> ordinary = Payload(24, 0x61);
     assert(sender.Send(ordinary));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes == ordinary);
 
     std::puts("an over-long datagram was dropped rather than recorded");
@@ -768,11 +773,8 @@ TestWhatCameOffTheSocketIsWhatACaptureKeeps()
     // the printable range and out of it, and one that is not a multiple of the
     // sixteen bytes a hex line carries.
     const std::vector<std::vector<std::uint8_t>> sent = {
-        std::vector<std::uint8_t>(),
-        Payload(1, 0x00),
-        Payload(16, 0x20),
-        Payload(37, 0x7d),
-        Payload(256, 0x00),
+        std::vector<std::uint8_t>(), Payload(1, 0x00),   Payload(16, 0x20),
+        Payload(37, 0x7d),           Payload(256, 0x00),
     };
 
     PacketCapture capture;
@@ -782,10 +784,10 @@ TestWhatCameOffTheSocketIsWhatACaptureKeeps()
     capture.listenEndpoint = receiver.GetBoundEndpoint();
 
     ReceivedDatagram datagram;
-    for (const std::vector<std::uint8_t>& bytes : sent) {
+    for (const std::vector<std::uint8_t>& bytes : sent)
+    {
         assert(sender.Send(bytes));
-        assert(receiver.Receive(&datagram, kLoopbackTimeout)
-               == ReceiveStatus::Received);
+        assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
 
         // What a recording tool does, and all it does: copy the bytes and the
         // instant across, and keep the peer for its own diagnosis. The capture
@@ -801,9 +803,9 @@ TestWhatCameOffTheSocketIsWhatACaptureKeeps()
     // monotonic clock is what makes that a guarantee rather than a hope. A wall
     // clock would satisfy this assertion on almost every run and fail it on the
     // one where NTP stepped mid-session.
-    for (std::size_t index = 1; index != capture.datagrams.size(); ++index) {
-        assert(capture.datagrams[index].receiveTime
-               >= capture.datagrams[index - 1].receiveTime);
+    for (std::size_t index = 1; index != capture.datagrams.size(); ++index)
+    {
+        assert(capture.datagrams[index].receiveTime >= capture.datagrams[index - 1].receiveTime);
     }
 
     std::ostringstream written;
@@ -812,14 +814,15 @@ TestWhatCameOffTheSocketIsWhatACaptureKeeps()
     PacketCapture reread;
     std::istringstream input(written.str());
     vrmAdapterMocopi::PacketCaptureError error;
-    if (!vrmAdapterMocopi::ReadPacketCapture(input, &reread, &error)) {
-        std::fprintf(stderr, "line %zu: %s\n", error.line,
-                     error.message.c_str());
+    if (!vrmAdapterMocopi::ReadPacketCapture(input, &reread, &error))
+    {
+        std::fprintf(stderr, "line %zu: %s\n", error.line, error.message.c_str());
         assert(false);
     }
 
     assert(reread.datagrams.size() == sent.size());
-    for (std::size_t index = 0; index != sent.size(); ++index) {
+    for (std::size_t index = 0; index != sent.size(); ++index)
+    {
         assert(reread.datagrams[index].bytes == sent[index]);
     }
     assert(reread.listenEndpoint == capture.listenEndpoint);
@@ -876,7 +879,8 @@ void
 Collect(const vrmAdapterMocopiTests::PushedDatagram& pushed, Replayed* out)
 {
     const std::vector<MocopiFrame>& frames = pushed.frames;
-    for (const MocopiFrame& frame : frames) {
+    for (const MocopiFrame& frame : frames)
+    {
         Delivered delivered;
         delivered.framePose = frame.pose;
         delivered.frameNumber = frame.frameNumber;
@@ -890,7 +894,8 @@ Collect(const vrmAdapterMocopiTests::PushedDatagram& pushed, Replayed* out)
         delivered.droppedTranslations = frame.droppedTranslations;
         out->frames.push_back(std::move(delivered));
     }
-    if (!pushed.sampled) {
+    if (!pushed.sampled)
+    {
         return;
     }
     out->frames.back().sampledPose = *pushed.sampled;
@@ -912,20 +917,19 @@ ReplayFromFile(const PacketCapture& capture)
 
     Replayed out;
     std::vector<std::uint8_t> buffer;
-    for (const RecordedDatagram& datagram : capture.datagrams) {
+    for (const RecordedDatagram& datagram : capture.datagrams)
+    {
         buffer.assign(datagram.bytes.begin(), datagram.bytes.end());
-        const vrmAdapterMocopiTests::PushedDatagram pushed =
-            vrmAdapterMocopiTests::PushDatagram(&source, &buffer,
-                                                datagram.receiveTime,
-                                                &out.diagnostics);
-        if (pushed.restartLatched) {
+        const vrmAdapterMocopiTests::PushedDatagram pushed = vrmAdapterMocopiTests::PushDatagram(
+            &source, &buffer, datagram.receiveTime, &out.diagnostics);
+        if (pushed.restartLatched)
+        {
             ++out.restartsLatched;
         }
         Collect(pushed, &out);
     }
 
-    const vrmAdapterMocopiTests::ReplayStats stats =
-        vrmAdapterMocopiTests::ReadStats(source);
+    const vrmAdapterMocopiTests::ReplayStats stats = vrmAdapterMocopiTests::ReadStats(source);
     out.stats = stats.source;
     out.frameStats = stats.frame;
     out.intakeStats = stats.intake;
@@ -937,17 +941,17 @@ ReplayFromFile(const PacketCapture& capture)
 // the loss behaviour of a kernel receive buffer inside the assertion, which is
 // not what this is about.
 bool
-ReplayFromWire(const PacketCapture& capture, Replayed* out,
-               std::string* endpoint)
+ReplayFromWire(const PacketCapture& capture, Replayed* out, std::string* endpoint)
 {
     UdpReceiver receiver;
-    if (!receiver.Open(LoopbackConfig())) {
-        std::fprintf(stderr, "could not bind loopback: %s\n",
-                     receiver.GetLastErrorText().c_str());
+    if (!receiver.Open(LoopbackConfig()))
+    {
+        std::fprintf(stderr, "could not bind loopback: %s\n", receiver.GetLastErrorText().c_str());
         return false;
     }
     LoopbackSender sender;
-    if (!sender.Open(receiver.GetBoundEndpoint())) {
+    if (!sender.Open(receiver.GetBoundEndpoint()))
+    {
         std::fprintf(stderr, "could not open the test sender\n");
         return false;
     }
@@ -962,14 +966,16 @@ ReplayFromWire(const PacketCapture& capture, Replayed* out,
     // One datagram record for the whole session, reused by every `Receive` —
     // which is the shape the bridge says a receiver should have.
     ReceivedDatagram received;
-    for (const RecordedDatagram& datagram : capture.datagrams) {
-        if (!sender.Send(datagram.bytes)) {
+    for (const RecordedDatagram& datagram : capture.datagrams)
+    {
+        if (!sender.Send(datagram.bytes))
+        {
             std::fprintf(stderr, "the test sender could not send %zu bytes\n",
                          datagram.bytes.size());
             return false;
         }
-        if (receiver.Receive(&received, kLoopbackTimeout)
-            != ReceiveStatus::Received) {
+        if (receiver.Receive(&received, kLoopbackTimeout) != ReceiveStatus::Received)
+        {
             std::fprintf(stderr, "a loopback datagram never arrived\n");
             return false;
         }
@@ -979,18 +985,16 @@ ReplayFromWire(const PacketCapture& capture, Replayed* out,
         // proves nothing, because `PushDatagram` has already completed by then;
         // a decoder that retained a `string_view` into the caller's bytes would
         // survive that shape and produce garbage under this one.
-        const vrmAdapterMocopiTests::PushedDatagram pushed =
-            vrmAdapterMocopiTests::PushDatagram(&source, &received.bytes,
-                                                received.receiveTime,
-                                                &out->diagnostics);
-        if (pushed.restartLatched) {
+        const vrmAdapterMocopiTests::PushedDatagram pushed = vrmAdapterMocopiTests::PushDatagram(
+            &source, &received.bytes, received.receiveTime, &out->diagnostics);
+        if (pushed.restartLatched)
+        {
             ++out->restartsLatched;
         }
         Collect(pushed, out);
     }
 
-    const vrmAdapterMocopiTests::ReplayStats stats =
-        vrmAdapterMocopiTests::ReadStats(source);
+    const vrmAdapterMocopiTests::ReplayStats stats = vrmAdapterMocopiTests::ReadStats(source);
     out->stats = stats.source;
     out->frameStats = stats.frame;
     out->intakeStats = stats.intake;
@@ -998,11 +1002,10 @@ ReplayFromWire(const PacketCapture& capture, Replayed* out,
     // with their own line. This one fires after every datagram round-tripped and
     // every pose was collected, so reporting it as "the replay did not complete"
     // would give a bind failure and a miscounting receiver the same message.
-    if (receiver.GetStats().datagramsReceived != capture.datagrams.size()) {
-        std::fprintf(stderr,
-                     "the receiver counted %llu datagram(s), %zu were sent\n",
-                     static_cast<unsigned long long>(
-                         receiver.GetStats().datagramsReceived),
+    if (receiver.GetStats().datagramsReceived != capture.datagrams.size())
+    {
+        std::fprintf(stderr, "the receiver counted %llu datagram(s), %zu were sent\n",
+                     static_cast<unsigned long long>(receiver.GetStats().datagramsReceived),
                      capture.datagrams.size());
         return false;
     }
@@ -1016,29 +1019,26 @@ ReplayFromWire(const PacketCapture& capture, Replayed* out,
 bool
 SameDelivery(const Delivered& file, const Delivered& wire)
 {
-    return file.frameNumber == wire.frameNumber
-           && file.senderUnixSeconds == wire.senderUnixSeconds
-           && file.clockDrift == wire.clockDrift
-           && file.beginsNewSession == wire.beginsNewSession
-           && file.lostFrames == wire.lostFrames && file.missing == wire.missing
-           && file.hipsPosition == wire.hipsPosition
-           && file.unusedJoints == wire.unusedJoints
-           && file.droppedTranslations == wire.droppedTranslations
-           && file.sampled == wire.sampled && file.framePose == wire.framePose
-           && (!file.sampled || file.sampledPose == wire.sampledPose);
+    return file.frameNumber == wire.frameNumber &&
+           file.senderUnixSeconds == wire.senderUnixSeconds && file.clockDrift == wire.clockDrift &&
+           file.beginsNewSession == wire.beginsNewSession && file.lostFrames == wire.lostFrames &&
+           file.missing == wire.missing && file.hipsPosition == wire.hipsPosition &&
+           file.unusedJoints == wire.unusedJoints &&
+           file.droppedTranslations == wire.droppedTranslations && file.sampled == wire.sampled &&
+           file.framePose == wire.framePose &&
+           (!file.sampled || file.sampledPose == wire.sampledPose);
 }
 
 // `source` is excluded and everything else is not — the timestamp included,
 // because a diagnostic's timestamp is the *sender's* clock and no diagnostic on
 // this path is stamped from the receiver's.
 bool
-SameDiagnosticApartFromWhereItCameFrom(const Diagnostic& file,
-                                       const Diagnostic& wire)
+SameDiagnosticApartFromWhereItCameFrom(const Diagnostic& file, const Diagnostic& wire)
 {
-    return file.code == wire.code && file.severity == wire.severity
-           && file.recoverable == wire.recoverable
-           && file.timestamp == wire.timestamp && file.subject == wire.subject
-           && file.sequence == wire.sequence && file.detail == wire.detail;
+    return file.code == wire.code && file.severity == wire.severity &&
+           file.recoverable == wire.recoverable && file.timestamp == wire.timestamp &&
+           file.subject == wire.subject && file.sequence == wire.sequence &&
+           file.detail == wire.detail;
 }
 
 struct ComparedStat
@@ -1063,63 +1063,48 @@ const char*
 FirstStatThatDiffers(const Replayed& file, const Replayed& wire)
 {
     const ComparedStat compared[] = {
-        {"datagramsDecoded", file.stats.datagramsDecoded,
-         wire.stats.datagramsDecoded},
-        {"datagramsRefused", file.stats.datagramsRefused,
-         wire.stats.datagramsRefused},
+        {"datagramsDecoded", file.stats.datagramsDecoded, wire.stats.datagramsDecoded},
+        {"datagramsRefused", file.stats.datagramsRefused, wire.stats.datagramsRefused},
         {"bonesRefused", file.stats.bonesRefused, wire.stats.bonesRefused},
-        {"framesDelivered", file.stats.framesDelivered,
-         wire.stats.framesDelivered},
-        {"framesAdmitted", file.stats.framesAdmitted,
-         wire.stats.framesAdmitted},
+        {"framesDelivered", file.stats.framesDelivered, wire.stats.framesDelivered},
+        {"framesAdmitted", file.stats.framesAdmitted, wire.stats.framesAdmitted},
         {"framesRefused", file.stats.framesRefused, wire.stats.framesRefused},
         {"sessionsReset", file.stats.sessionsReset, wire.stats.sessionsReset},
 
-        {"framesEmitted", file.frameStats.framesEmitted,
-         wire.frameStats.framesEmitted},
-        {"framesIncomplete", file.frameStats.framesIncomplete,
-         wire.frameStats.framesIncomplete},
+        {"framesEmitted", file.frameStats.framesEmitted, wire.frameStats.framesEmitted},
+        {"framesIncomplete", file.frameStats.framesIncomplete, wire.frameStats.framesIncomplete},
         {"framesRefusedOutOfOrder", file.frameStats.framesRefusedOutOfOrder,
          wire.frameStats.framesRefusedOutOfOrder},
         {"framesRefusedNoRig", file.frameStats.framesRefusedNoRig,
          wire.frameStats.framesRefusedNoRig},
         {"framesRefusedEmpty", file.frameStats.framesRefusedEmpty,
          wire.frameStats.framesRefusedEmpty},
-        {"sessionRestarts", file.frameStats.sessionRestarts,
-         wire.frameStats.sessionRestarts},
+        {"sessionRestarts", file.frameStats.sessionRestarts, wire.frameStats.sessionRestarts},
         {"framesLost", file.frameStats.framesLost, wire.frameStats.framesLost},
-        {"skeletonsAccepted", file.frameStats.skeletonsAccepted,
-         wire.frameStats.skeletonsAccepted},
-        {"skeletonsRefused", file.frameStats.skeletonsRefused,
-         wire.frameStats.skeletonsRefused},
-        {"unusedJoints", file.frameStats.unusedJoints,
-         wire.frameStats.unusedJoints},
+        {"skeletonsAccepted", file.frameStats.skeletonsAccepted, wire.frameStats.skeletonsAccepted},
+        {"skeletonsRefused", file.frameStats.skeletonsRefused, wire.frameStats.skeletonsRefused},
+        {"unusedJoints", file.frameStats.unusedJoints, wire.frameStats.unusedJoints},
         {"droppedTranslations", file.frameStats.droppedTranslations,
          wire.frameStats.droppedTranslations},
 
-        {"framesAccepted", file.intakeStats.framesAccepted,
-         wire.intakeStats.framesAccepted},
+        {"framesAccepted", file.intakeStats.framesAccepted, wire.intakeStats.framesAccepted},
         {"framesRejectedOutOfOrder", file.intakeStats.framesRejectedOutOfOrder,
          wire.intakeStats.framesRejectedOutOfOrder},
         {"framesRejectedStale", file.intakeStats.framesRejectedStale,
          wire.intakeStats.framesRejectedStale},
         {"framesRejectedEmpty", file.intakeStats.framesRejectedEmpty,
          wire.intakeStats.framesRejectedEmpty},
-        {"bonesObserved", file.intakeStats.bonesObserved,
-         wire.intakeStats.bonesObserved},
+        {"bonesObserved", file.intakeStats.bonesObserved, wire.intakeStats.bonesObserved},
         {"bonesGatedByConfidence", file.intakeStats.bonesGatedByConfidence,
          wire.intakeStats.bonesGatedByConfidence},
         {"bonesHeld", file.intakeStats.bonesHeld, wire.intakeStats.bonesHeld},
-        {"bonesUnbound", file.intakeStats.bonesUnbound,
-         wire.intakeStats.bonesUnbound},
+        {"bonesUnbound", file.intakeStats.bonesUnbound, wire.intakeStats.bonesUnbound},
         {"rootSamplesObserved", file.intakeStats.rootSamplesObserved,
          wire.intakeStats.rootSamplesObserved},
         {"rootVelocitiesDerived", file.intakeStats.rootVelocitiesDerived,
          wire.intakeStats.rootVelocitiesDerived},
-        {"samplesSampled", file.intakeStats.samplesSampled,
-         wire.intakeStats.samplesSampled},
-        {"samplesHeld", file.intakeStats.samplesHeld,
-         wire.intakeStats.samplesHeld},
+        {"samplesSampled", file.intakeStats.samplesSampled, wire.intakeStats.samplesSampled},
+        {"samplesHeld", file.intakeStats.samplesHeld, wire.intakeStats.samplesHeld},
         {"samplesExtrapolated", file.intakeStats.samplesExtrapolated,
          wire.intakeStats.samplesExtrapolated},
         {"samplesUnavailable", file.intakeStats.samplesUnavailable,
@@ -1127,8 +1112,10 @@ FirstStatThatDiffers(const Replayed& file, const Replayed& wire)
 
         {"restartsLatched", file.restartsLatched, wire.restartsLatched},
     };
-    for (const ComparedStat& stat : compared) {
-        if (stat.file != stat.wire) {
+    for (const ComparedStat& stat : compared)
+    {
+        if (stat.file != stat.wire)
+        {
             return stat.name;
         }
     }
@@ -1136,7 +1123,8 @@ FirstStatThatDiffers(const Replayed& file, const Replayed& wire)
     // exactly, like everything else here: lag is derived from the timestamps a
     // frame carried, and every one of those came off the same bytes. A tolerance
     // would be admitting the socket may change it a little.
-    if (file.intakeStats.peakLagSeconds != wire.intakeStats.peakLagSeconds) {
+    if (file.intakeStats.peakLagSeconds != wire.intakeStats.peakLagSeconds)
+    {
         return "peakLagSeconds";
     }
     return nullptr;
@@ -1149,10 +1137,9 @@ CheckTheWireChangesNothing(const std::filesystem::path& path)
 
     PacketCapture capture;
     vrmAdapterMocopi::PacketCaptureError error;
-    if (!vrmAdapterMocopi::ReadPacketCaptureFile(path.string(), &capture,
-                                                 &error)) {
-        std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line,
-                     error.message.c_str());
+    if (!vrmAdapterMocopi::ReadPacketCaptureFile(path.string(), &capture, &error))
+    {
+        std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line, error.message.c_str());
         return 1;
     }
 
@@ -1160,9 +1147,9 @@ CheckTheWireChangesNothing(const std::filesystem::path& path)
 
     Replayed fromWire;
     std::string endpoint;
-    if (!ReplayFromWire(capture, &fromWire, &endpoint)) {
-        std::fprintf(stderr, "%s: the loopback replay did not complete\n",
-                     name.c_str());
+    if (!ReplayFromWire(capture, &fromWire, &endpoint))
+    {
+        std::fprintf(stderr, "%s: the loopback replay did not complete\n", name.c_str());
         return 1;
     }
 
@@ -1173,39 +1160,41 @@ CheckTheWireChangesNothing(const std::filesystem::path& path)
     // "which diagnostic changed" are worth having. Returning here would leave
     // the failure that matters most described by one line out of three.
     int failures = 0;
-    if (fromFile.frames.size() != fromWire.frames.size()) {
-        std::fprintf(stderr, "%s: %zu frame(s) from the file, %zu from the "
-                             "wire\n",
-                     name.c_str(), fromFile.frames.size(),
-                     fromWire.frames.size());
+    if (fromFile.frames.size() != fromWire.frames.size())
+    {
+        std::fprintf(stderr,
+                     "%s: %zu frame(s) from the file, %zu from the "
+                     "wire\n",
+                     name.c_str(), fromFile.frames.size(), fromWire.frames.size());
         ++failures;
     }
 
-    const std::size_t common =
-        std::min(fromFile.frames.size(), fromWire.frames.size());
-    for (std::size_t index = 0; index != common; ++index) {
-        if (!SameDelivery(fromFile.frames[index], fromWire.frames[index])) {
-            std::fprintf(stderr,
-                         "%s: frame %zu is not the frame the file produced\n",
-                         name.c_str(), index);
+    const std::size_t common = std::min(fromFile.frames.size(), fromWire.frames.size());
+    for (std::size_t index = 0; index != common; ++index)
+    {
+        if (!SameDelivery(fromFile.frames[index], fromWire.frames[index]))
+        {
+            std::fprintf(stderr, "%s: frame %zu is not the frame the file produced\n", name.c_str(),
+                         index);
             ++failures;
         }
     }
 
-    if (fromFile.diagnostics.size() != fromWire.diagnostics.size()) {
-        std::fprintf(stderr,
-                     "%s: %zu diagnostic(s) from the file, %zu from the wire\n",
-                     name.c_str(), fromFile.diagnostics.size(),
-                     fromWire.diagnostics.size());
+    if (fromFile.diagnostics.size() != fromWire.diagnostics.size())
+    {
+        std::fprintf(stderr, "%s: %zu diagnostic(s) from the file, %zu from the wire\n",
+                     name.c_str(), fromFile.diagnostics.size(), fromWire.diagnostics.size());
         ++failures;
-    } else {
-        for (std::size_t index = 0; index != fromFile.diagnostics.size();
-             ++index) {
+    }
+    else
+    {
+        for (std::size_t index = 0; index != fromFile.diagnostics.size(); ++index)
+        {
             const Diagnostic& file = fromFile.diagnostics[index];
             const Diagnostic& wire = fromWire.diagnostics[index];
-            if (!SameDiagnosticApartFromWhereItCameFrom(file, wire)) {
-                std::fprintf(stderr, "%s: diagnostic %zu differs: %s\n",
-                             name.c_str(), index,
+            if (!SameDiagnosticApartFromWhereItCameFrom(file, wire))
+            {
+                std::fprintf(stderr, "%s: diagnostic %zu differs: %s\n", name.c_str(), index,
                              vrmAdapterMocopi::FormatDiagnostic(wire).c_str());
                 ++failures;
                 continue;
@@ -1225,37 +1214,43 @@ CheckTheWireChangesNothing(const std::filesystem::path& path)
     // anything this test chose. `endpoint` comes back from
     // `UdpReceiver::GetBoundEndpoint` on an OS-assigned port, so it is not a
     // string the test could have predicted.
-    for (const Diagnostic& diagnostic : fromFile.diagnostics) {
-        if (diagnostic.source != capture.sourceId) {
-            std::fprintf(stderr, "%s: a file-path diagnostic names '%s', not "
-                                 "the fixture\n",
+    for (const Diagnostic& diagnostic : fromFile.diagnostics)
+    {
+        if (diagnostic.source != capture.sourceId)
+        {
+            std::fprintf(stderr,
+                         "%s: a file-path diagnostic names '%s', not "
+                         "the fixture\n",
                          name.c_str(), diagnostic.source.c_str());
             ++failures;
             break;
         }
     }
-    for (const Diagnostic& diagnostic : fromWire.diagnostics) {
-        if (diagnostic.source != endpoint) {
-            std::fprintf(stderr, "%s: a wire-path diagnostic names '%s', not "
-                                 "the bound endpoint '%s'\n",
-                         name.c_str(), diagnostic.source.c_str(),
-                         endpoint.c_str());
+    for (const Diagnostic& diagnostic : fromWire.diagnostics)
+    {
+        if (diagnostic.source != endpoint)
+        {
+            std::fprintf(stderr,
+                         "%s: a wire-path diagnostic names '%s', not "
+                         "the bound endpoint '%s'\n",
+                         name.c_str(), diagnostic.source.c_str(), endpoint.c_str());
             ++failures;
             break;
         }
     }
 
-    if (const char* differs = FirstStatThatDiffers(fromFile, fromWire)) {
-        std::fprintf(stderr, "%s: the wire changed %s\n", name.c_str(),
-                     differs);
+    if (const char* differs = FirstStatThatDiffers(fromFile, fromWire))
+    {
+        std::fprintf(stderr, "%s: the wire changed %s\n", name.c_str(), differs);
         ++failures;
     }
 
-    if (failures != 0) {
+    if (failures != 0)
+    {
         return 1;
     }
-    std::printf("%s: %zu datagram(s) over a socket, %zu identical frame(s)\n",
-                name.c_str(), capture.datagrams.size(), fromWire.frames.size());
+    std::printf("%s: %zu datagram(s) over a socket, %zu identical frame(s)\n", name.c_str(),
+                capture.datagrams.size(), fromWire.frames.size());
     return 0;
 }
 
@@ -1263,17 +1258,19 @@ int
 CheckCorpus(const std::filesystem::path& directory)
 {
     std::vector<std::filesystem::path> files;
-    if (!vrmAdapterMocopiTests::CollectCaptures(directory, &files)) {
+    if (!vrmAdapterMocopiTests::CollectCaptures(directory, &files))
+    {
         return 1;
     }
 
     int failures = 0;
-    for (const std::filesystem::path& file : files) {
+    for (const std::filesystem::path& file : files)
+    {
         failures += CheckTheWireChangesNothing(file);
     }
-    if (failures != 0) {
-        std::fprintf(stderr, "%d capture(s) failed the loopback replay\n",
-                     failures);
+    if (failures != 0)
+    {
+        std::fprintf(stderr, "%d capture(s) failed the loopback replay\n", failures);
         return 1;
     }
     std::printf("mocopi loopback: %zu capture(s) replayed through a socket, "
@@ -1303,12 +1300,14 @@ main(int argc, char** argv)
     // One case is split off behind an argument because it is the one that may
     // legitimately not run here (see `kSkipExitCode`). Everything else is
     // unconditional.
-    if (argc > 1 && std::string(argv[1]) == "truncation") {
+    if (argc > 1 && std::string(argv[1]) == "truncation")
+    {
         return CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole();
     }
     // Any other argument is a corpus directory, which is the convention every
     // other test binary in this adapter already follows.
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
 

@@ -178,8 +178,8 @@ inline constexpr int TrackingSpaceDeterminant = -1;
 // non-finite input converts to a non-finite output rather than being caught
 // here, because this is the arithmetic and `MapTrackerPosition` is the
 // boundary.
-VRMADAPTERVRCHATOSC_API pxr::GfVec3f ToCanonicalPosition(
-    const std::array<float, 3>& position) noexcept;
+VRMADAPTERVRCHATOSC_API pxr::GfVec3f
+ToCanonicalPosition(const std::array<float, 3>& position) noexcept;
 
 // Three angles in the sender's own space into a canonical orientation. Degrees,
 // composed `Ry · Rx · Rz` by the right-hand rule and then mirrored — see the
@@ -190,16 +190,15 @@ VRMADAPTERVRCHATOSC_API pxr::GfVec3f ToCanonicalPosition(
 // unlike the sibling's quaternion path there is no zero-length case to refuse:
 // the composition of three unit quaternions is unit up to float error, and the
 // normalisation is arithmetic rather than a repair.
-VRMADAPTERVRCHATOSC_API pxr::GfQuatf ToCanonicalRotation(
-    const std::array<float, 3>& eulerDegrees) noexcept;
+VRMADAPTERVRCHATOSC_API pxr::GfQuatf
+ToCanonicalRotation(const std::array<float, 3>& eulerDegrees) noexcept;
 
 // The address a decoded message came from, rebuilt: `/tracking/trackers/1/position`.
 // It is a diagnostic subject rather than a routing key — a `TrackerMessage`
 // carries the identity and the channel the address was read from, and a refusal
 // at this layer has to name what the wire said rather than what this adapter
 // made of it (Diagnostics.h).
-VRMADAPTERVRCHATOSC_API std::string TrackerMessageAddress(
-    const TrackerMessage& message);
+VRMADAPTERVRCHATOSC_API std::string TrackerMessageAddress(const TrackerMessage& message);
 
 // `message` must carry `TrackerChannel::Position`. Returns false and fills
 // `diagnostic` for a component that is not finite
@@ -214,14 +213,12 @@ VRMADAPTERVRCHATOSC_API std::string TrackerMessageAddress(
 // read as a position is a point half a kilometre away, and a position read as a
 // rotation is a fraction of a degree from identity. The second of those is
 // indistinguishable from a tracker at rest.
-VRMADAPTERVRCHATOSC_API bool MapTrackerPosition(const TrackerMessage& message,
-                                                pxr::GfVec3f* out,
+VRMADAPTERVRCHATOSC_API bool MapTrackerPosition(const TrackerMessage& message, pxr::GfVec3f* out,
                                                 Diagnostic* diagnostic = nullptr);
 
 // `message` must carry `TrackerChannel::Rotation`; the failures are the
 // position function's.
-VRMADAPTERVRCHATOSC_API bool MapTrackerRotation(const TrackerMessage& message,
-                                                pxr::GfQuatf* out,
+VRMADAPTERVRCHATOSC_API bool MapTrackerRotation(const TrackerMessage& message, pxr::GfQuatf* out,
                                                 Diagnostic* diagnostic = nullptr);
 
 } // namespace vrmAdapterVrchatOsc

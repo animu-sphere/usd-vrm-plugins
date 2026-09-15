@@ -61,10 +61,10 @@ struct Options
     // sender emits one frame per datagram and a per-message one takes fifty,
     // so a single bound in either unit is wrong for the other sender by that
     // factor.
-    double durationSeconds = 0.0;  // 0: until interrupted
-    double idleSeconds = 0.0;      // 0: never
-    std::size_t maxDatagrams = 0;  // 0: the default below, applied at parse
-    std::size_t maxFrames = 0;     // 0: the default below, when exporting
+    double durationSeconds = 0.0; // 0: until interrupted
+    double idleSeconds = 0.0;     // 0: never
+    std::size_t maxDatagrams = 0; // 0: the default below, applied at parse
+    std::size_t maxFrames = 0;    // 0: the default below, when exporting
 
     bool dryRun = false;
 
@@ -76,8 +76,8 @@ struct Options
 
 // Parses argv. On failure `error` explains why and the result is false; on
 // --help `showHelp` is set and the caller should print usage and exit 0.
-bool ParseOptions(const std::vector<std::string>& arguments, Options* options,
-                  bool* showHelp, std::string* error);
+bool ParseOptions(const std::vector<std::string>& arguments, Options* options, bool* showHelp,
+                  std::string* error);
 
 const char* GetUsage();
 

@@ -197,21 +197,44 @@ namespace vrmAdapterMocopi
 // Measured: the column all five sessions sent, single-rooted and already in
 // topological order. It is the rig's identity as far as this layer is
 // concerned — ids mean nothing without it.
-inline constexpr std::array<std::int16_t, MeasuredBoneCount>
-    MeasuredParentColumn = {{
-        // root, the seven torso segments, two neck segments, head
-        -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-        // the two arms, off the top of the torso chain
-        7, 11, 12, 13, 7, 15, 16, 17,
-        // the two legs, off the root
-        0, 19, 20, 21, 0, 23, 24, 25,
-    }};
+inline constexpr std::array<std::int16_t, MeasuredBoneCount> MeasuredParentColumn = {{
+    // root, the seven torso segments, two neck segments, head
+    -1,
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    // the two arms, off the top of the torso chain
+    7,
+    11,
+    12,
+    13,
+    7,
+    15,
+    16,
+    17,
+    // the two legs, off the root
+    0,
+    19,
+    20,
+    21,
+    0,
+    23,
+    24,
+    25,
+}};
 
 // The canonical bone the measured rig's joint `boneId` carries, or nullopt for
 // the five it has no bone for and for any id the measured rig does not have.
 // `IsMeasuredJoint` is what separates those two answers.
-VRMADAPTERMOCOPI_API std::optional<motion::HumanBone> MeasuredHumanBone(
-    std::uint16_t boneId) noexcept;
+VRMADAPTERMOCOPI_API std::optional<motion::HumanBone>
+MeasuredHumanBone(std::uint16_t boneId) noexcept;
 
 // Whether `boneId` is a joint of the measured rig at all. A measured joint with
 // no canonical bone is one of the five on the path; anything else is a joint
@@ -222,14 +245,14 @@ VRMADAPTERMOCOPI_API bool IsMeasuredJoint(std::uint16_t boneId) noexcept;
 // header. No validity check: a non-finite input converts to a non-finite
 // output, because these are the arithmetic and the functions below are the
 // boundary.
-VRMADAPTERMOCOPI_API pxr::GfVec3f ToCanonicalPosition(
-    const std::array<float, 3>& translation) noexcept;
+VRMADAPTERMOCOPI_API pxr::GfVec3f
+ToCanonicalPosition(const std::array<float, 3>& translation) noexcept;
 
 // Reorders the wire's scalar-last components into `pxr::GfQuatf`'s scalar-first
 // ones, and normalises. NaN components stay NaN and a zero-length quaternion
 // converts to a zero-length one; neither is repaired here.
-VRMADAPTERMOCOPI_API pxr::GfQuatf ToCanonicalRotation(
-    const std::array<float, 4>& rotation) noexcept;
+VRMADAPTERMOCOPI_API pxr::GfQuatf
+ToCanonicalRotation(const std::array<float, 4>& rotation) noexcept;
 
 // One canonical joint of one frame.
 struct BoneSample
@@ -256,8 +279,7 @@ struct SkeletonMap
     VRMADAPTERMOCOPI_API SkeletonMap();
 
     // The canonical bone `boneId` carries in this rig, or nullopt.
-    VRMADAPTERMOCOPI_API std::optional<motion::HumanBone> Bone(
-        std::uint16_t boneId) const noexcept;
+    VRMADAPTERMOCOPI_API std::optional<motion::HumanBone> Bone(std::uint16_t boneId) const noexcept;
 
     // The canonical bones this rig carries. Twenty-two for the measured rig.
     std::bitset<motion::HumanBoneCount> present;
@@ -315,9 +337,8 @@ struct SkeletonMap
 // live log should not have to read the detail text to tell those apart.
 //
 // `diagnostics`, when given, is appended to and never cleared.
-VRMADAPTERMOCOPI_API bool MakeSkeletonMap(
-    const MotionSkeleton& skeleton, SkeletonMap* out,
-    std::vector<Diagnostic>* diagnostics = nullptr);
+VRMADAPTERMOCOPI_API bool MakeSkeletonMap(const MotionSkeleton& skeleton, SkeletonMap* out,
+                                          std::vector<Diagnostic>* diagnostics = nullptr);
 
 // What one frame said, in canonical terms.
 struct FrameMapping
@@ -370,8 +391,8 @@ struct FrameMapping
 // across frames must never see the previous frame's bones survive this call.
 //
 // `diagnostics`, when given, is appended to and never cleared.
-VRMADAPTERMOCOPI_API bool MapMotionFrame(
-    const SkeletonMap& map, const MotionFrame& frame, FrameMapping* out,
-    std::vector<Diagnostic>* diagnostics = nullptr);
+VRMADAPTERMOCOPI_API bool MapMotionFrame(const SkeletonMap& map, const MotionFrame& frame,
+                                         FrameMapping* out,
+                                         std::vector<Diagnostic>* diagnostics = nullptr);
 
 } // namespace vrmAdapterMocopi

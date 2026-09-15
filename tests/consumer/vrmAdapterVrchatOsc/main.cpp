@@ -42,22 +42,24 @@ main()
     const vrmAdapterVrchatOsc::AddressInventory inventory =
         vrmAdapterVrchatOsc::InventoryAddresses(capture);
 
-    if (inventory.datagrams != 1 || inventory.decoded != 1
-        || inventory.refused != 0) {
-        std::fprintf(stderr, "consumer: inventoried %zu datagrams, %zu decoded, "
-                             "%zu refused\n",
+    if (inventory.datagrams != 1 || inventory.decoded != 1 || inventory.refused != 0)
+    {
+        std::fprintf(stderr,
+                     "consumer: inventoried %zu datagrams, %zu decoded, "
+                     "%zu refused\n",
                      inventory.datagrams, inventory.decoded, inventory.refused);
         return 1;
     }
-    if (inventory.rows.size() != 1 || inventory.rows[0].address != "/a"
-        || !inventory.rows[0].typeTags.empty()) {
-        std::fprintf(stderr, "consumer: inventoried %zu rows\n",
-                     inventory.rows.size());
+    if (inventory.rows.size() != 1 || inventory.rows[0].address != "/a" ||
+        !inventory.rows[0].typeTags.empty())
+    {
+        std::fprintf(stderr, "consumer: inventoried %zu rows\n", inventory.rows.size());
         return 1;
     }
 
-    std::fprintf(stdout, "consumer: inventoried %s through the installed "
-                         "package\n",
+    std::fprintf(stdout,
+                 "consumer: inventoried %s through the installed "
+                 "package\n",
                  inventory.rows[0].address.c_str());
     return 0;
 }

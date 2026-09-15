@@ -63,8 +63,7 @@ UnityAbout(const std::array<float, 3>& axis, double degrees)
 {
     const double half = degrees * kPi / 180.0 * 0.5;
     const float sine = static_cast<float>(std::sin(half));
-    return {axis[0] * sine, axis[1] * sine, axis[2] * sine,
-            static_cast<float>(std::cos(half))};
+    return {axis[0] * sine, axis[1] * sine, axis[2] * sine, static_cast<float>(std::cos(half))};
 }
 
 constexpr std::array<float, 4> kUnityIdentity = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -82,8 +81,7 @@ BoneMessage(std::string_view name, const std::array<float, 3>& position,
 }
 
 VmcMessage
-RootMessage(const std::array<float, 3>& position,
-            const std::array<float, 4>& rotation)
+RootMessage(const std::array<float, 3>& position, const std::array<float, 4>& rotation)
 {
     VmcMessage message = BoneMessage("root", position, rotation);
     message.kind = VmcMessageKind::RootTransform;
@@ -104,7 +102,8 @@ void
 TestTheVocabularyIsWholeAndRoundTrips()
 {
     std::set<std::string_view> seen;
-    for (std::size_t index = 0; index != HumanBoneCount; ++index) {
+    for (std::size_t index = 0; index != HumanBoneCount; ++index)
+    {
         const HumanBone bone = static_cast<HumanBone>(index);
         const std::string_view name = VmcHumanBoneName(bone);
         assert(!name.empty());
@@ -128,19 +127,13 @@ TestTheThumbIsRenamedAndNotJustRecased()
     // incomplete: VRM 1.0 moved the thumb chain one joint down, so Unity's
     // "Proximal" is VRM 1.0's metacarpal and Unity's "Intermediate" is VRM
     // 1.0's proximal. Both directions, both hands.
-    assert(FindVmcHumanBone("LeftThumbProximal")
-           == HumanBone::LeftThumbMetacarpal);
-    assert(FindVmcHumanBone("LeftThumbIntermediate")
-           == HumanBone::LeftThumbProximal);
+    assert(FindVmcHumanBone("LeftThumbProximal") == HumanBone::LeftThumbMetacarpal);
+    assert(FindVmcHumanBone("LeftThumbIntermediate") == HumanBone::LeftThumbProximal);
     assert(FindVmcHumanBone("LeftThumbDistal") == HumanBone::LeftThumbDistal);
-    assert(FindVmcHumanBone("RightThumbProximal")
-           == HumanBone::RightThumbMetacarpal);
-    assert(FindVmcHumanBone("RightThumbIntermediate")
-           == HumanBone::RightThumbProximal);
-    assert(VmcHumanBoneName(HumanBone::LeftThumbMetacarpal)
-           == "LeftThumbProximal");
-    assert(VmcHumanBoneName(HumanBone::LeftThumbProximal)
-           == "LeftThumbIntermediate");
+    assert(FindVmcHumanBone("RightThumbProximal") == HumanBone::RightThumbMetacarpal);
+    assert(FindVmcHumanBone("RightThumbIntermediate") == HumanBone::RightThumbProximal);
+    assert(VmcHumanBoneName(HumanBone::LeftThumbMetacarpal) == "LeftThumbProximal");
+    assert(VmcHumanBoneName(HumanBone::LeftThumbProximal) == "LeftThumbIntermediate");
 
     // Unity has no name for the joint VRM 1.0 calls a metacarpal, and VRM 1.0
     // has none for the one Unity calls intermediate. A map that fell back to
@@ -150,8 +143,7 @@ TestTheThumbIsRenamedAndNotJustRecased()
 
     // The fingers that were *not* renamed, so the thumb's shift is visibly the
     // exception rather than the rule.
-    assert(FindVmcHumanBone("LeftIndexIntermediate")
-           == HumanBone::LeftIndexIntermediate);
+    assert(FindVmcHumanBone("LeftIndexIntermediate") == HumanBone::LeftIndexIntermediate);
 }
 
 void
@@ -161,7 +153,8 @@ TestTheVrm10SpellingIsNotAccepted()
     // leave the corpus unable to say which spelling the protocol uses -- and
     // for the thumb the two vocabularies disagree about more than case, so
     // "accept either" is not even well defined.
-    for (std::size_t index = 0; index != HumanBoneCount; ++index) {
+    for (std::size_t index = 0; index != HumanBoneCount; ++index)
+    {
         const HumanBone bone = static_cast<HumanBone>(index);
         assert(!FindVmcHumanBone(motion::HumanBoneName(bone)));
         assert(!motion::FindHumanBone(VmcHumanBoneName(bone)));
@@ -182,8 +175,7 @@ TestPositionsReflectThroughX()
 
     // A reflection is its own inverse, which is the whole reason this
     // conversion needs no second function for the other direction.
-    const pxr::GfVec3f back =
-        ToCanonicalPosition({converted[0], converted[1], converted[2]});
+    const pxr::GfVec3f back = ToCanonicalPosition({converted[0], converted[1], converted[2]});
     assert(Near(back[0], 0.09f) && Near(back[1], 0.9f) && Near(back[2], -1.5f));
 }
 
@@ -197,35 +189,30 @@ TestRotationsReflectThroughXAndReverseSense()
     // About Unity's +Z by 60 degrees comes out about the canonical -Z by 60:
     // the axis survives the reflection unchanged and the sense reverses with
     // the handedness, which is one sign flip and not two.
-    const std::array<float, 4> senderAboutZ =
-        UnityAbout({0.0f, 0.0f, 1.0f}, 60.0);
+    const std::array<float, 4> senderAboutZ = UnityAbout({0.0f, 0.0f, 1.0f}, 60.0);
     const pxr::GfQuatf aboutZ = ToCanonicalRotation(senderAboutZ);
     const float sixtyHalf = static_cast<float>(std::sin(kPi / 6.0));
     assert(Near(aboutZ.GetImaginary()[0], 0.0f));
     assert(Near(aboutZ.GetImaginary()[1], 0.0f));
     assert(Near(aboutZ.GetImaginary()[2], -sixtyHalf));
-    assert(Near(motion::AngleBetween(aboutZ, pxr::GfQuatf(1.0f,
-                                                          pxr::GfVec3f(0.0f))),
+    assert(Near(motion::AngleBetween(aboutZ, pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))),
                 static_cast<float>(kPi / 3.0)));
 
     // About +Y, the same flip.
-    const pxr::GfQuatf aboutY =
-        ToCanonicalRotation(UnityAbout({0.0f, 1.0f, 0.0f}, 60.0));
+    const pxr::GfQuatf aboutY = ToCanonicalRotation(UnityAbout({0.0f, 1.0f, 0.0f}, 60.0));
     assert(Near(aboutY.GetImaginary()[1], -sixtyHalf));
 
     // About +X, no flip at all: the axis reverses with the reflection and the
     // sense reverses with the handedness, and the two cancel.
-    const pxr::GfQuatf aboutX =
-        ToCanonicalRotation(UnityAbout({1.0f, 0.0f, 0.0f}, 60.0));
+    const pxr::GfQuatf aboutX = ToCanonicalRotation(UnityAbout({1.0f, 0.0f, 0.0f}, 60.0));
     assert(Near(aboutX.GetImaginary()[0], sixtyHalf));
     assert(Near(aboutX.GetImaginary()[1], 0.0f));
     assert(Near(aboutX.GetImaginary()[2], 0.0f));
 
     // And an involution here too: feeding the canonical components back
     // through, in the same wire order, returns what the sender sent.
-    const std::array<float, 4> canonicalWire = {
-        aboutZ.GetImaginary()[0], aboutZ.GetImaginary()[1],
-        aboutZ.GetImaginary()[2], aboutZ.GetReal()};
+    const std::array<float, 4> canonicalWire = {aboutZ.GetImaginary()[0], aboutZ.GetImaginary()[1],
+                                                aboutZ.GetImaginary()[2], aboutZ.GetReal()};
     const pxr::GfQuatf back = ToCanonicalRotation(canonicalWire);
     assert(Near(back.GetReal(), senderAboutZ[3]));
     assert(Near(back.GetImaginary()[0], senderAboutZ[0]));
@@ -241,7 +228,8 @@ TestRotationsAreNormalised()
     // change the orientation that comes out.
     const std::array<float, 4> unit = UnityAbout({0.0f, 0.0f, 1.0f}, 40.0);
     std::array<float, 4> scaled = unit;
-    for (float& component : scaled) {
+    for (float& component : scaled)
+    {
         component *= 7.5f;
     }
     const pxr::GfQuatf a = ToCanonicalRotation(unit);
@@ -265,12 +253,10 @@ TestARotationTooSmallToSquareIsStillNormalised()
     // enters -- the same two-precisions trap `motionCore/Compare.h` records
     // paying for once already.
     const float tiny = 1e-23f;
-    const pxr::GfQuatf converted = ToCanonicalRotation({tiny, tiny, tiny,
-                                                        tiny});
+    const pxr::GfQuatf converted = ToCanonicalRotation({tiny, tiny, tiny, tiny});
     assert(Near(converted.GetLength(), 1.0f));
-    assert(motion::AngleBetween(converted,
-                                ToCanonicalRotation({1.0f, 1.0f, 1.0f, 1.0f}))
-           < motion::MotionTolerance{}.angle);
+    assert(motion::AngleBetween(converted, ToCanonicalRotation({1.0f, 1.0f, 1.0f, 1.0f})) <
+           motion::MotionTolerance{}.angle);
 
     // And it survives the layer, rather than only the arithmetic: this is the
     // magnitude `CheckTransform` admits, so the mapping is where an
@@ -278,17 +264,15 @@ TestARotationTooSmallToSquareIsStillNormalised()
     Diagnostic diagnostic;
     VmcBoneSample sample;
     assert(MapVmcBoneTransform(
-        BoneMessage("LeftUpperArm", {0.0f, 0.0f, 0.0f},
-                    {0.0f, 0.0f, tiny, tiny}),
-        &sample, &diagnostic));
+        BoneMessage("LeftUpperArm", {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, tiny, tiny}), &sample,
+        &diagnostic));
     assert(Near(sample.localRotation.GetLength(), 1.0f));
 
     // The root goes through the same conversion and is worth naming, because it
     // is the one whose orientation multiplies into every bone below it.
     motion::RootMotion root;
-    assert(MapVmcRootTransform(
-        RootMessage({0.0f, 0.0f, 0.0f}, {0.0f, tiny, 0.0f, tiny}), &root,
-        &diagnostic));
+    assert(MapVmcRootTransform(RootMessage({0.0f, 0.0f, 0.0f}, {0.0f, tiny, 0.0f, tiny}), &root,
+                               &diagnostic));
     assert(Near(root.worldOrientation.GetLength(), 1.0f));
 }
 
@@ -302,8 +286,7 @@ TestABoneTransformBecomesCanonical()
     Diagnostic diagnostic;
     VmcBoneSample sample;
     assert(MapVmcBoneTransform(
-        BoneMessage("LeftUpperArm", {0.12f, 0.0f, 0.0f},
-                    UnityAbout({0.0f, 0.0f, 1.0f}, 30.0)),
+        BoneMessage("LeftUpperArm", {0.12f, 0.0f, 0.0f}, UnityAbout({0.0f, 0.0f, 1.0f}, 30.0)),
         &sample, &diagnostic));
     assert(sample.bone == HumanBone::LeftUpperArm);
     assert(Near(sample.localPosition[0], -0.12f));
@@ -320,9 +303,9 @@ TestAnUnknownBoneIsUnsupportedNotMalformed()
     Diagnostic diagnostic;
     VmcBoneSample sample;
     sample.bone = HumanBone::Head;
-    assert(!MapVmcBoneTransform(
-        BoneMessage("LeftPinkyProximal", {0.0f, 0.0f, 0.0f}, kUnityIdentity),
-        &sample, &diagnostic));
+    assert(
+        !MapVmcBoneTransform(BoneMessage("LeftPinkyProximal", {0.0f, 0.0f, 0.0f}, kUnityIdentity),
+                             &sample, &diagnostic));
     assert(diagnostic.code == DiagnosticCode::UnsupportedMessage);
     assert(diagnostic.severity == DiagnosticSeverity::Info);
     assert(diagnostic.recoverable);
@@ -340,23 +323,20 @@ TestAValueThatIsNotATransformIsRefused()
     Diagnostic diagnostic;
     VmcBoneSample sample;
 
-    assert(!MapVmcBoneTransform(
-        BoneMessage("Hips", {0.0f, nan, 0.0f}, kUnityIdentity), &sample,
-        &diagnostic));
+    assert(!MapVmcBoneTransform(BoneMessage("Hips", {0.0f, nan, 0.0f}, kUnityIdentity), &sample,
+                                &diagnostic));
     assert(diagnostic.code == DiagnosticCode::PacketMalformed);
     assert(diagnostic.subject == "Hips");
 
-    assert(!MapVmcBoneTransform(
-        BoneMessage("Hips", {0.0f, 0.0f, 0.0f}, {0.0f, inf, 0.0f, 1.0f}),
-        &sample, &diagnostic));
+    assert(!MapVmcBoneTransform(BoneMessage("Hips", {0.0f, 0.0f, 0.0f}, {0.0f, inf, 0.0f, 1.0f}),
+                                &sample, &diagnostic));
     assert(diagnostic.code == DiagnosticCode::PacketMalformed);
 
     // A quaternion of zero length names no orientation, and the value that
     // would have to be invented to carry on -- identity -- is exactly the one a
     // reader could not tell from a real sample.
-    assert(!MapVmcBoneTransform(
-        BoneMessage("Hips", {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}),
-        &sample, &diagnostic));
+    assert(!MapVmcBoneTransform(BoneMessage("Hips", {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 0.0f}),
+                                &sample, &diagnostic));
     assert(diagnostic.code == DiagnosticCode::PacketMalformed);
     assert(diagnostic.detail.find("no orientation") != std::string::npos);
 }
@@ -370,24 +350,20 @@ TestTheGuardsRefuseRatherThanDereference()
 
     // A message of the wrong kind, and a null destination: both are caller
     // bugs, and both are reported rather than trusted.
-    assert(!MapVmcBoneTransform(
-        RootMessage({0.0f, 0.0f, 0.0f}, kUnityIdentity), &sample, &diagnostic));
+    assert(!MapVmcBoneTransform(RootMessage({0.0f, 0.0f, 0.0f}, kUnityIdentity), &sample,
+                                &diagnostic));
     assert(diagnostic.code == DiagnosticCode::PacketMalformed);
-    assert(!MapVmcBoneTransform(
-        BoneMessage("Hips", {0.0f, 0.0f, 0.0f}, kUnityIdentity), nullptr,
-        &diagnostic));
-    assert(!MapVmcRootTransform(
-        BoneMessage("Hips", {0.0f, 0.0f, 0.0f}, kUnityIdentity), &root,
-        &diagnostic));
-    assert(!MapVmcRootTransform(
-        RootMessage({0.0f, 0.0f, 0.0f}, kUnityIdentity), nullptr, &diagnostic));
+    assert(!MapVmcBoneTransform(BoneMessage("Hips", {0.0f, 0.0f, 0.0f}, kUnityIdentity), nullptr,
+                                &diagnostic));
+    assert(!MapVmcRootTransform(BoneMessage("Hips", {0.0f, 0.0f, 0.0f}, kUnityIdentity), &root,
+                                &diagnostic));
+    assert(!MapVmcRootTransform(RootMessage({0.0f, 0.0f, 0.0f}, kUnityIdentity), nullptr,
+                                &diagnostic));
 
     // And every one of them survives being given nowhere to report to.
-    assert(!MapVmcBoneTransform(
-        BoneMessage("Nonexistent", {0.0f, 0.0f, 0.0f}, kUnityIdentity),
-        &sample));
-    assert(!MapVmcRootTransform(
-        BoneMessage("Hips", {0.0f, 0.0f, 0.0f}, kUnityIdentity), &root));
+    assert(!MapVmcBoneTransform(BoneMessage("Nonexistent", {0.0f, 0.0f, 0.0f}, kUnityIdentity),
+                                &sample));
+    assert(!MapVmcRootTransform(BoneMessage("Hips", {0.0f, 0.0f, 0.0f}, kUnityIdentity), &root));
 }
 
 void
@@ -429,12 +405,9 @@ struct Expected
 };
 
 constexpr Expected kExpected[] = {
-    {"arm-raise-30hz.vmcpackets", 105, 5},
-    {"extended-forms.vmcpackets", 21, 1},
-    {"malformed-forms.vmcpackets", 41, 2},
-    {"malformed-packets.vmcpackets", 0, 0},
-    {"mixed-traffic-30hz.vmcpackets", 63, 3},
-    {"neutral-standing-30hz.vmcpackets", 110, 5},
+    {"arm-raise-30hz.vmcpackets", 105, 5},      {"extended-forms.vmcpackets", 21, 1},
+    {"malformed-forms.vmcpackets", 41, 2},      {"malformed-packets.vmcpackets", 0, 0},
+    {"mixed-traffic-30hz.vmcpackets", 63, 3},   {"neutral-standing-30hz.vmcpackets", 110, 5},
     {"sender-restart-30hz.vmcpackets", 153, 8},
 };
 
@@ -456,22 +429,23 @@ int
 CheckCorpus(const std::filesystem::path& directory)
 {
     std::vector<std::filesystem::path> captures;
-    if (!std::filesystem::is_directory(directory)) {
-        std::fprintf(stderr, "corpus directory not found: %s\n",
-                     directory.string().c_str());
+    if (!std::filesystem::is_directory(directory))
+    {
+        std::fprintf(stderr, "corpus directory not found: %s\n", directory.string().c_str());
         return 1;
     }
     for (const std::filesystem::directory_entry& file :
-         std::filesystem::directory_iterator(directory)) {
-        if (file.is_regular_file()
-            && file.path().extension() == ".vmcpackets") {
+         std::filesystem::directory_iterator(directory))
+    {
+        if (file.is_regular_file() && file.path().extension() == ".vmcpackets")
+        {
             captures.push_back(file.path());
         }
     }
     std::sort(captures.begin(), captures.end());
-    if (captures.empty()) {
-        std::fprintf(stderr, "no .vmcpackets fixtures in %s\n",
-                     directory.string().c_str());
+    if (captures.empty())
+    {
+        std::fprintf(stderr, "no .vmcpackets fixtures in %s\n", directory.string().c_str());
         return 1;
     }
 
@@ -479,16 +453,20 @@ CheckCorpus(const std::filesystem::path& directory)
     std::set<std::string> covered;
     std::size_t reflectedAcrossCorpus = 0;
 
-    for (const std::filesystem::path& path : captures) {
+    for (const std::filesystem::path& path : captures)
+    {
         const std::string name = path.filename().string();
         const Expected* entry = nullptr;
-        for (const Expected& candidate : kExpected) {
-            if (name == candidate.file) {
+        for (const Expected& candidate : kExpected)
+        {
+            if (name == candidate.file)
+            {
                 entry = &candidate;
                 break;
             }
         }
-        if (!entry) {
+        if (!entry)
+        {
             std::fprintf(stderr,
                          "%s: no expected mapping in this test -- add one, or "
                          "the capture is in the corpus and mapped by nobody\n",
@@ -500,71 +478,80 @@ CheckCorpus(const std::filesystem::path& directory)
 
         vrmAdapterVmc::PacketCapture capture;
         vrmAdapterVmc::PacketCaptureError error;
-        if (!vrmAdapterVmc::ReadPacketCaptureFile(path.string(), &capture,
-                                                  &error)) {
-            std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line,
-                         error.message.c_str());
+        if (!vrmAdapterVmc::ReadPacketCaptureFile(path.string(), &capture, &error))
+        {
+            std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line, error.message.c_str());
             ++failures;
             continue;
         }
 
         Mapped actual;
-        for (const vrmAdapterVmc::RecordedDatagram& datagram :
-             capture.datagrams) {
+        for (const vrmAdapterVmc::RecordedDatagram& datagram : capture.datagrams)
+        {
             vrmAdapterVmc::OscPacket osc;
-            if (!vrmAdapterVmc::DecodeOscPacket(datagram.bytes, &osc)) {
+            if (!vrmAdapterVmc::DecodeOscPacket(datagram.bytes, &osc))
+            {
                 continue;
             }
             vrmAdapterVmc::VmcPacket vmc;
             vrmAdapterVmc::DecodeVmcPacket(osc, &vmc);
 
-            for (const VmcMessage& message : vmc.messages) {
+            for (const VmcMessage& message : vmc.messages)
+            {
                 Diagnostic diagnostic;
-                if (message.kind == VmcMessageKind::BoneTransform) {
+                if (message.kind == VmcMessageKind::BoneTransform)
+                {
                     VmcBoneSample sample;
-                    if (!MapVmcBoneTransform(message, &sample, &diagnostic)) {
-                        if (diagnostic.code
-                            == DiagnosticCode::UnsupportedMessage) {
+                    if (!MapVmcBoneTransform(message, &sample, &diagnostic))
+                    {
+                        if (diagnostic.code == DiagnosticCode::UnsupportedMessage)
+                        {
                             ++actual.unsupported;
-                        } else {
+                        }
+                        else
+                        {
                             ++actual.refused;
                         }
                         continue;
                     }
                     ++actual.bones;
-                    if (sample.localPosition[0]
-                        == -message.transform.position[0]) {
-                        if (message.transform.position[0] != 0.0f) {
+                    if (sample.localPosition[0] == -message.transform.position[0])
+                    {
+                        if (message.transform.position[0] != 0.0f)
+                        {
                             ++actual.reflectedX;
                         }
-                    } else {
-                        std::fprintf(stderr,
-                                     "%s: %s local X %f became %f\n",
-                                     name.c_str(),
+                    }
+                    else
+                    {
+                        std::fprintf(stderr, "%s: %s local X %f became %f\n", name.c_str(),
                                      std::string(message.name).c_str(),
-                                     static_cast<double>(
-                                         message.transform.position[0]),
-                                     static_cast<double>(
-                                         sample.localPosition[0]));
+                                     static_cast<double>(message.transform.position[0]),
+                                     static_cast<double>(sample.localPosition[0]));
                         ++failures;
                     }
-                    if (motion::AngleBetween(
-                            sample.localRotation,
-                            pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f)))
-                        > motion::MotionTolerance{}.angle) {
+                    if (motion::AngleBetween(sample.localRotation,
+                                             pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))) >
+                        motion::MotionTolerance{}.angle)
+                    {
                         actual.everyRotationIsIdentity = false;
                     }
-                    if (sample.bone == HumanBone::LeftUpperArm) {
+                    if (sample.bone == HumanBone::LeftUpperArm)
+                    {
                         actual.leftUpperArm.push_back(sample.localRotation);
                     }
-                } else if (message.kind == VmcMessageKind::RootTransform) {
+                }
+                else if (message.kind == VmcMessageKind::RootTransform)
+                {
                     motion::RootMotion root;
-                    if (!MapVmcRootTransform(message, &root, &diagnostic)) {
+                    if (!MapVmcRootTransform(message, &root, &diagnostic))
+                    {
                         ++actual.refused;
                         continue;
                     }
                     ++actual.roots;
-                    if (root.worldPosition.GetLength() != 0.0f) {
+                    if (root.worldPosition.GetLength() != 0.0f)
+                    {
                         actual.everyRootIsAtTheOrigin = false;
                     }
                 }
@@ -572,14 +559,14 @@ CheckCorpus(const std::filesystem::path& directory)
         }
         reflectedAcrossCorpus += actual.reflectedX;
 
-        if (actual.bones != entry->bones || actual.roots != entry->roots
-            || actual.unsupported != 0 || actual.refused != 0) {
+        if (actual.bones != entry->bones || actual.roots != entry->roots ||
+            actual.unsupported != 0 || actual.refused != 0)
+        {
             std::fprintf(stderr,
                          "%s: %zu bone(s), %zu root(s), %zu unsupported, %zu "
                          "refused -- expected %zu, %zu, 0, 0\n",
-                         name.c_str(), actual.bones, actual.roots,
-                         actual.unsupported, actual.refused, entry->bones,
-                         entry->roots);
+                         name.c_str(), actual.bones, actual.roots, actual.unsupported,
+                         actual.refused, entry->bones, entry->roots);
             ++failures;
             continue;
         }
@@ -587,12 +574,11 @@ CheckCorpus(const std::filesystem::path& directory)
         // A neutral pose survives the basis change as a neutral pose. The
         // layer below already checks the recorded bytes are identity; this
         // checks the conversion did not turn them into something else.
-        if (name == "neutral-standing-30hz.vmcpackets") {
-            if (!actual.everyRotationIsIdentity
-                || !actual.everyRootIsAtTheOrigin) {
-                std::fprintf(stderr,
-                             "%s: identity=%d origin=%d -- expected 1, 1\n",
-                             name.c_str(),
+        if (name == "neutral-standing-30hz.vmcpackets")
+        {
+            if (!actual.everyRotationIsIdentity || !actual.everyRootIsAtTheOrigin)
+            {
+                std::fprintf(stderr, "%s: identity=%d origin=%d -- expected 1, 1\n", name.c_str(),
                              actual.everyRotationIsIdentity ? 1 : 0,
                              actual.everyRootIsAtTheOrigin ? 1 : 0);
                 ++failures;
@@ -606,22 +592,20 @@ CheckCorpus(const std::filesystem::path& directory)
         // must come out about the canonical +Z, at the angle it was written
         // with. Both signs move the same arm the same way -- that is the point
         // of the reflection -- so a conversion that dropped it lands here.
-        if (name == "arm-raise-30hz.vmcpackets") {
+        if (name == "arm-raise-30hz.vmcpackets")
+        {
             const pxr::GfQuatf identity(1.0f, pxr::GfVec3f(0.0f));
             bool ok = actual.leftUpperArm.size() == 5;
-            for (std::size_t index = 0;
-                 ok && index != actual.leftUpperArm.size(); ++index) {
+            for (std::size_t index = 0; ok && index != actual.leftUpperArm.size(); ++index)
+            {
                 const pxr::GfQuatf& rotation = actual.leftUpperArm[index];
-                const float expected =
-                    static_cast<float>(15.0 * index * kPi / 180.0);
-                ok = rotation.GetImaginary()[0] == 0.0f
-                    && rotation.GetImaginary()[1] == 0.0f
-                    && rotation.GetImaginary()[2] >= 0.0f
-                    && std::abs(motion::AngleBetween(rotation, identity)
-                                - expected)
-                        < 1e-4f;
+                const float expected = static_cast<float>(15.0 * index * kPi / 180.0);
+                ok = rotation.GetImaginary()[0] == 0.0f && rotation.GetImaginary()[1] == 0.0f &&
+                     rotation.GetImaginary()[2] >= 0.0f &&
+                     std::abs(motion::AngleBetween(rotation, identity) - expected) < 1e-4f;
             }
-            if (!ok) {
+            if (!ok)
+            {
                 std::fprintf(stderr,
                              "%s: %zu leftUpperArm sample(s), not five "
                              "rotations about +Z at 0/15/30/45/60 degrees\n",
@@ -630,27 +614,30 @@ CheckCorpus(const std::filesystem::path& directory)
             }
         }
 
-        std::printf("%s: %zu bone(s), %zu root(s) mapped\n", name.c_str(),
-                    actual.bones, actual.roots);
+        std::printf("%s: %zu bone(s), %zu root(s) mapped\n", name.c_str(), actual.bones,
+                    actual.roots);
     }
 
-    for (const Expected& entry : kExpected) {
-        if (covered.find(entry.file) == covered.end()) {
-            std::fprintf(stderr, "%s: expected in this test, absent from %s\n",
-                         entry.file, directory.string().c_str());
+    for (const Expected& entry : kExpected)
+    {
+        if (covered.find(entry.file) == covered.end())
+        {
+            std::fprintf(stderr, "%s: expected in this test, absent from %s\n", entry.file,
+                         directory.string().c_str());
             ++failures;
         }
     }
     // Without one recorded bone off the X axis, the reflection check above
     // passes on a conversion that negates nothing.
-    if (reflectedAcrossCorpus == 0) {
-        std::fprintf(stderr,
-                     "no capture carries a bone off the X axis; the reflection "
-                     "check would pass on a conversion that copied\n");
+    if (reflectedAcrossCorpus == 0)
+    {
+        std::fprintf(stderr, "no capture carries a bone off the X axis; the reflection "
+                             "check would pass on a conversion that copied\n");
         ++failures;
     }
 
-    if (failures != 0) {
+    if (failures != 0)
+    {
         std::fprintf(stderr, "%d corpus capture(s) failed\n", failures);
         return 1;
     }
@@ -665,7 +652,8 @@ CheckCorpus(const std::filesystem::path& directory)
 int
 main(int argc, char** argv)
 {
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
 

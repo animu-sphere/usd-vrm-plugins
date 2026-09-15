@@ -55,10 +55,26 @@ struct Arg
     const char* text = nullptr;
 };
 
-Arg I(std::int64_t value) { return Arg{'i', value, 0.0, nullptr}; }
-Arg F(double value) { return Arg{'f', 0, value, nullptr}; }
-Arg D(double value) { return Arg{'d', 0, value, nullptr}; }
-Arg S(const char* value) { return Arg{'s', 0, 0.0, value}; }
+Arg
+I(std::int64_t value)
+{
+    return Arg{'i', value, 0.0, nullptr};
+}
+Arg
+F(double value)
+{
+    return Arg{'f', 0, value, nullptr};
+}
+Arg
+D(double value)
+{
+    return Arg{'d', 0, value, nullptr};
+}
+Arg
+S(const char* value)
+{
+    return Arg{'s', 0, 0.0, value};
+}
 
 // Owns its type tag string, which `OscMessage::typeTags` then points into — so
 // it is neither copyable nor movable. A short tag string lives inside the
@@ -68,21 +84,24 @@ Arg S(const char* value) { return Arg{'s', 0, 0.0, value}; }
 // arguments are literals, which outlive everything.
 class Built
 {
-public:
+  public:
     Built(std::string_view address, const std::vector<Arg>& arguments)
     {
-        for (const Arg& argument : arguments) {
+        for (const Arg& argument : arguments)
+        {
             _tags += argument.tag;
         }
         _message.address = address;
         _message.typeTags = _tags;
         _message.arguments.reserve(arguments.size());
-        for (const Arg& argument : arguments) {
+        for (const Arg& argument : arguments)
+        {
             OscArgument decoded;
             decoded.tag = argument.tag;
             decoded.integer = argument.integer;
             decoded.real = argument.real;
-            if (argument.text) {
+            if (argument.text)
+            {
                 decoded.text = argument.text;
             }
             _message.arguments.push_back(decoded);
@@ -92,9 +111,13 @@ public:
     Built(const Built&) = delete;
     Built& operator=(const Built&) = delete;
 
-    const OscMessage& Get() const { return _message; }
+    const OscMessage&
+    Get() const
+    {
+        return _message;
+    }
 
-private:
+  private:
     std::string _tags;
     OscMessage _message;
 };
@@ -104,8 +127,8 @@ private:
 // `initializer_list`, which refers to a temporary array and would dangle the
 // moment it left this function.
 std::vector<Arg>
-Transform(const char* name, double px, double py, double pz, double qx,
-          double qy, double qz, double qw)
+Transform(const char* name, double px, double py, double pz, double qx, double qy, double qz,
+          double qw)
 {
     return {S(name), F(px), F(py), F(pz), F(qx), F(qy), F(qz), F(qw)};
 }
@@ -121,10 +144,10 @@ Decode(const Built& built, VmcMessage* out, Diagnostic* diagnostic = nullptr)
 void
 TestTheKindTableIsWholeAndAddressesRoundTrip()
 {
-    for (std::size_t index = 0; index < VmcMessageKindCount; ++index) {
+    for (std::size_t index = 0; index < VmcMessageKindCount; ++index)
+    {
         const auto kind = static_cast<VmcMessageKind>(index);
-        const std::string_view address =
-            vrmAdapterVmc::VmcMessageKindAddress(kind);
+        const std::string_view address = vrmAdapterVmc::VmcMessageKindAddress(kind);
         assert(!address.empty());
         assert(address.rfind("/VMC/Ext/", 0) == 0);
         const auto found = vrmAdapterVmc::FindVmcMessageKind(address);
@@ -132,12 +155,9 @@ TestTheKindTableIsWholeAndAddressesRoundTrip()
     }
     // Count is the "no message" value and names nothing.
     assert(vrmAdapterVmc::VmcMessageKindAddress(VmcMessageKind::Count).empty());
-    assert(vrmAdapterVmc::VmcMessageKindTypeTags(VmcMessageKind::Count)
-           .empty());
-    assert(vrmAdapterVmc::VmcMessageKindTypeTags(VmcMessageKind::BoneTransform)
-           == "sfffffff");
-    assert(vrmAdapterVmc::VmcMessageKindTypeTags(VmcMessageKind::BlendApply)
-           .empty());
+    assert(vrmAdapterVmc::VmcMessageKindTypeTags(VmcMessageKind::Count).empty());
+    assert(vrmAdapterVmc::VmcMessageKindTypeTags(VmcMessageKind::BoneTransform) == "sfffffff");
+    assert(vrmAdapterVmc::VmcMessageKindTypeTags(VmcMessageKind::BlendApply).empty());
 }
 
 void
@@ -146,17 +166,15 @@ TestEachKnownAddressDecodes()
     const Built availability("/VMC/Ext/OK", {I(1), I(3), I(0)});
     VmcMessage message;
     Diagnostic diagnostic;
-    if (!Decode(availability, &message, &diagnostic)) {
-        std::fprintf(stderr, "%s\n",
-                     vrmAdapterVmc::FormatDiagnostic(diagnostic).c_str());
+    if (!Decode(availability, &message, &diagnostic))
+    {
+        std::fprintf(stderr, "%s\n", vrmAdapterVmc::FormatDiagnostic(diagnostic).c_str());
         assert(false);
     }
     assert(message.kind == VmcMessageKind::Availability);
     assert(message.availability.loaded == 1);
-    assert(message.availability.calibrationState
-           && *message.availability.calibrationState == 3);
-    assert(message.availability.calibrationMode
-           && *message.availability.calibrationMode == 0);
+    assert(message.availability.calibrationState && *message.availability.calibrationState == 3);
+    assert(message.availability.calibrationMode && *message.availability.calibrationMode == 0);
     assert(message.unreadArguments == 0);
     // The single-message overload has no packet to count within.
     assert(message.oscIndex == 0);
@@ -177,8 +195,7 @@ TestEachKnownAddressDecodes()
     const Built partial("/VMC/Ext/OK", {I(1), I(3)});
     assert(Decode(partial, &message));
     assert(message.availability.loaded == 1);
-    assert(message.availability.calibrationState
-           && *message.availability.calibrationState == 3);
+    assert(message.availability.calibrationState && *message.availability.calibrationState == 3);
     assert(!message.availability.calibrationMode);
     assert(message.unreadArguments == 0);
 
@@ -193,15 +210,13 @@ TestEachKnownAddressDecodes()
     assert(message.name == "avatar.vrm");
     assert(message.title == "Example Avatar");
 
-    const Built root("/VMC/Ext/Root/Pos",
-                     Transform("root", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0));
+    const Built root("/VMC/Ext/Root/Pos", Transform("root", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0));
     assert(Decode(root, &message));
     assert(message.kind == VmcMessageKind::RootTransform);
     assert(message.name == "root");
 
     const Built bone("/VMC/Ext/Bone/Pos",
-                     Transform("LeftUpperArm", 0.12, 0.0, 0.0, 0.0, 0.0, 0.0,
-                               1.0));
+                     Transform("LeftUpperArm", 0.12, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0));
     assert(Decode(bone, &message));
     assert(message.kind == VmcMessageKind::BoneTransform);
     // Plain text. Whether "LeftUpperArm" is a `motion::HumanBone` is a question
@@ -232,8 +247,7 @@ TestNothingIsConvertedOnTheWayThrough()
     // by symmetry. Handedness, up axis, units and normalisation belong to the
     // skeleton map; a conversion here would make the corpus agree with exactly
     // one downstream reading of it.
-    const Built bone("/VMC/Ext/Bone/Pos",
-                     Transform("Hips", 1.0, 2.0, 3.0, 0.25, 0.5, 0.75, 2.0));
+    const Built bone("/VMC/Ext/Bone/Pos", Transform("Hips", 1.0, 2.0, 3.0, 0.25, 0.5, 0.75, 2.0));
     VmcMessage message;
     assert(Decode(bone, &message));
     assert(message.transform.position[0] == 1.0f);
@@ -256,28 +270,27 @@ TestUnimplementedAddressesAreUnsupportedNotMalformed()
     // the reason the address match is exact: a prefix test would make both into
     // bone poses and then read arguments that are not there.
     const char* const addresses[] = {
-        "/foo/bar",           "/VMC/Ext/Midi/Note", "/VMC/Ext/Hmd/Pos",
-        "/VMC/Ext/Con/Pos",   "/VMC/Ext/Cam",       "/VMC/Ext/Opt",
-        "/VMC/Ext/Bone",      "/VMC/Ext/Bone/Pos/2",
+        "/foo/bar",     "/VMC/Ext/Midi/Note", "/VMC/Ext/Hmd/Pos", "/VMC/Ext/Con/Pos",
+        "/VMC/Ext/Cam", "/VMC/Ext/Opt",       "/VMC/Ext/Bone",    "/VMC/Ext/Bone/Pos/2",
     };
 
     // Carries a real decode, so "left untouched" is a claim about the refusal
     // rather than about a fresh default. A receive loop reuses one of these per
     // datagram, and a decoder that half-filled it on the way out would hand the
     // assembler the previous bone under this message's name.
-    const Built previous("/VMC/Ext/Bone/Pos",
-                         Transform("Hips", 0.0, 0.9, 0.0, 0.0, 0.0, 0.0, 1.0));
+    const Built previous("/VMC/Ext/Bone/Pos", Transform("Hips", 0.0, 0.9, 0.0, 0.0, 0.0, 0.0, 1.0));
     VmcMessage message;
     assert(Decode(previous, &message));
 
-    for (const char* address : addresses) {
+    for (const char* address : addresses)
+    {
         // Deliberately the *bone* argument shape: `/VMC/Ext/Hmd/Pos` really
         // does carry it, and matching on arguments rather than on the address
         // would decode a headset as a humanoid bone.
-        const Built built(
-            address, Transform("Head", 0.0, 1.6, 0.0, 0.0, 0.0, 0.0, 1.0));
+        const Built built(address, Transform("Head", 0.0, 1.6, 0.0, 0.0, 0.0, 0.0, 1.0));
         Diagnostic diagnostic;
-        if (Decode(built, &message, &diagnostic)) {
+        if (Decode(built, &message, &diagnostic))
+        {
             std::fprintf(stderr, "%s decoded as a VMC message\n", address);
             assert(false);
         }
@@ -303,24 +316,26 @@ void
 TestAKnownAddressWithTheWrongArgumentsIsMalformed()
 {
     const std::vector<BadForm> cases = {
-        {"a bone with three floats", "/VMC/Ext/Bone/Pos",
-         {S("Hips"), F(0.0), F(0.9), F(0.0)}, ",sfff"},
+        {"a bone with three floats",
+         "/VMC/Ext/Bone/Pos",
+         {S("Hips"), F(0.0), F(0.9), F(0.0)},
+         ",sfff"},
         // The count is right and every type is wrong. OSC puts an `f` and a `d`
         // in the same field, so a decoder reading values without checking tags
         // would accept this and pin nothing about the wire format.
-        {"a bone in doubles", "/VMC/Ext/Bone/Pos",
+        {"a bone in doubles",
+         "/VMC/Ext/Bone/Pos",
          {S("Hips"), D(0.0), D(0.9), D(0.0), D(0.0), D(0.0), D(0.0), D(1.0)},
          ",sddddddd"},
-        {"a bone with its name last", "/VMC/Ext/Bone/Pos",
+        {"a bone with its name last",
+         "/VMC/Ext/Bone/Pos",
          {F(0.0), F(0.9), F(0.0), F(0.0), F(0.0), F(0.0), F(1.0), S("Hips")},
          ",fffffffs"},
         {"a time in integer seconds", "/VMC/Ext/T", {I(12)}, ",i"},
         {"a time with no argument", "/VMC/Ext/T", {}, ","},
-        {"a blend value with no name", "/VMC/Ext/Blend/Val", {F(1.0), F(0.5)},
-         ",ff"},
+        {"a blend value with no name", "/VMC/Ext/Blend/Val", {F(1.0), F(0.5)}, ",ff"},
         {"an availability in floats", "/VMC/Ext/OK", {F(1.0)}, ",f"},
-        {"a model with no title", "/VMC/Ext/VRM", {S("avatar.vrm"), I(1)},
-         ",si"},
+        {"a model with no title", "/VMC/Ext/VRM", {S("avatar.vrm"), I(1)}, ",si"},
     };
 
     // Reused across the loop and carrying a real decode, for the reason above:
@@ -330,12 +345,13 @@ TestAKnownAddressWithTheWrongArgumentsIsMalformed()
     VmcMessage message;
     assert(Decode(previous, &message));
 
-    for (const BadForm& testCase : cases) {
+    for (const BadForm& testCase : cases)
+    {
         const Built built(testCase.address, testCase.arguments);
         Diagnostic diagnostic;
-        if (Decode(built, &message, &diagnostic)) {
-            std::fprintf(stderr, "accepted a malformed form: %s\n",
-                         testCase.name);
+        if (Decode(built, &message, &diagnostic))
+        {
+            std::fprintf(stderr, "accepted a malformed form: %s\n", testCase.name);
             assert(false);
         }
         assert(diagnostic.code == DiagnosticCode::PacketMalformed);
@@ -346,14 +362,13 @@ TestAKnownAddressWithTheWrongArgumentsIsMalformed()
         // Both tag strings, so a sender-compatibility surprise reads as "this
         // sender writes X where VMC says Y" rather than as a bare refusal.
         const std::string expected =
-            std::string(",")
-            + std::string(vrmAdapterVmc::VmcMessageKindTypeTags(
-                *vrmAdapterVmc::FindVmcMessageKind(testCase.address)));
-        if (diagnostic.detail.find(expected) == std::string::npos
-            || diagnostic.detail.find(testCase.carried) == std::string::npos) {
-            std::fprintf(stderr, "%s: detail was \"%s\", wanted %s and %s\n",
-                         testCase.name, diagnostic.detail.c_str(),
-                         expected.c_str(), testCase.carried);
+            std::string(",") + std::string(vrmAdapterVmc::VmcMessageKindTypeTags(
+                                   *vrmAdapterVmc::FindVmcMessageKind(testCase.address)));
+        if (diagnostic.detail.find(expected) == std::string::npos ||
+            diagnostic.detail.find(testCase.carried) == std::string::npos)
+        {
+            std::fprintf(stderr, "%s: detail was \"%s\", wanted %s and %s\n", testCase.name,
+                         diagnostic.detail.c_str(), expected.c_str(), testCase.carried);
             assert(false);
         }
         assert(message.kind == VmcMessageKind::BlendValue);
@@ -387,8 +402,7 @@ TestArgumentsPastTheKnownFormAreCountedNotRead()
 
     // A third string on the model message. What it carries is not this layer's
     // claim to make -- no fixture here records one -- so it is a count.
-    const Built hashed("/VMC/Ext/VRM",
-                       {S("avatar.vrm"), S("Example Avatar"), S("0f1e2d")});
+    const Built hashed("/VMC/Ext/VRM", {S("avatar.vrm"), S("Example Avatar"), S("0f1e2d")});
     assert(Decode(hashed, &message));
     assert(message.name == "avatar.vrm");
     assert(message.title == "Example Avatar");
@@ -397,9 +411,8 @@ TestArgumentsPastTheKnownFormAreCountedNotRead()
     // Six more floats after the root quaternion. The first seven still decode,
     // and the extras are counted rather than folded into the transform.
     const Built scaled("/VMC/Ext/Root/Pos",
-                       {S("root"), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0),
-                        F(0.0), F(1.0), F(1.0), F(1.0), F(1.0), F(0.0), F(0.0),
-                        F(0.0)});
+                       {S("root"), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(1.0), F(1.0),
+                        F(1.0), F(1.0), F(0.0), F(0.0), F(0.0)});
     assert(Decode(scaled, &message));
     assert(message.kind == VmcMessageKind::RootTransform);
     assert(message.transform.rotation[3] == 1.0f);
@@ -415,27 +428,23 @@ void
 TestAPacketRefusesMessagesNotTheDatagram()
 {
     const Built time("/VMC/Ext/T", {F(30.0)});
-    const Built hips("/VMC/Ext/Bone/Pos",
-                     Transform("Hips", 0.0, 0.9, 0.0, 0.0, 0.0, 0.0, 1.0));
+    const Built hips("/VMC/Ext/Bone/Pos", Transform("Hips", 0.0, 0.9, 0.0, 0.0, 0.0, 0.0, 1.0));
     const Built broken("/VMC/Ext/Bone/Pos", {S("Spine"), F(0.0), F(0.1)});
-    const Built headset("/VMC/Ext/Hmd/Pos",
-                        Transform("Head", 0.0, 1.6, 0.0, 0.0, 0.0, 0.0, 1.0));
-    const Built chest("/VMC/Ext/Bone/Pos",
-                      Transform("Chest", 0.0, 0.12, 0.0, 0.0, 0.0, 0.0, 1.0));
+    const Built headset("/VMC/Ext/Hmd/Pos", Transform("Head", 0.0, 1.6, 0.0, 0.0, 0.0, 0.0, 1.0));
+    const Built chest("/VMC/Ext/Bone/Pos", Transform("Chest", 0.0, 0.12, 0.0, 0.0, 0.0, 0.0, 1.0));
     const Built apply("/VMC/Ext/Blend/Apply", {});
 
     OscPacket packet;
     packet.bundled = true;
-    for (const Built* built :
-         {&time, &hips, &broken, &headset, &chest, &apply}) {
+    for (const Built* built : {&time, &hips, &broken, &headset, &chest, &apply})
+    {
         packet.messages.push_back(built->Get());
     }
 
     // Seeded, because a receive loop accumulates across a session and a decoder
     // that cleared the vector would erase the frame before this one.
     std::vector<Diagnostic> diagnostics;
-    diagnostics.push_back(
-        vrmAdapterVmc::MakeDiagnostic(DiagnosticCode::SourceRestarted, "seed"));
+    diagnostics.push_back(vrmAdapterVmc::MakeDiagnostic(DiagnosticCode::SourceRestarted, "seed"));
 
     VmcPacket decoded;
     // False because one message was malformed -- the other five are in
@@ -458,11 +467,9 @@ TestAPacketRefusesMessagesNotTheDatagram()
     assert(diagnostics.size() == 3);
     assert(diagnostics[0].code == DiagnosticCode::SourceRestarted);
     assert(diagnostics[1].code == DiagnosticCode::PacketMalformed);
-    assert(diagnostics[1].detail.find("message 2 of the datagram")
-           != std::string::npos);
+    assert(diagnostics[1].detail.find("message 2 of the datagram") != std::string::npos);
     assert(diagnostics[2].code == DiagnosticCode::UnsupportedMessage);
-    assert(diagnostics[2].detail.find("message 3 of the datagram")
-           != std::string::npos);
+    assert(diagnostics[2].detail.find("message 3 of the datagram") != std::string::npos);
 
     // A datagram of nothing but traffic this adapter ignores is not a failure.
     // Every sender emits one, and reporting it as an error would make an error
@@ -480,8 +487,7 @@ TestAPacketRefusesMessagesNotTheDatagram()
 void
 TestTheArgumentGuardsRefuseRatherThanDereference()
 {
-    const Built bone("/VMC/Ext/Bone/Pos",
-                     Transform("Hips", 0.0, 0.9, 0.0, 0.0, 0.0, 0.0, 1.0));
+    const Built bone("/VMC/Ext/Bone/Pos", Transform("Hips", 0.0, 0.9, 0.0, 0.0, 0.0, 0.0, 1.0));
     Diagnostic diagnostic;
     assert(!vrmAdapterVmc::DecodeVmcMessage(bone.Get(), nullptr, &diagnostic));
     assert(diagnostic.code == DiagnosticCode::PacketMalformed);
@@ -494,8 +500,7 @@ TestTheArgumentGuardsRefuseRatherThanDereference()
     VmcMessage message;
     assert(!vrmAdapterVmc::DecodeVmcMessage(truncated, &message, &diagnostic));
     assert(diagnostic.code == DiagnosticCode::PacketMalformed);
-    assert(diagnostic.detail.find("8 argument(s) and 3 were given")
-           != std::string::npos);
+    assert(diagnostic.detail.find("8 argument(s) and 3 were given") != std::string::npos);
     assert(message.kind == VmcMessageKind::Count);
 
     OscPacket packet;
@@ -578,30 +583,31 @@ struct Decoded
 bool
 IsIdentity(const vrmAdapterVmc::VmcTransform& transform)
 {
-    return transform.rotation[0] == 0.0f && transform.rotation[1] == 0.0f
-        && transform.rotation[2] == 0.0f && transform.rotation[3] == 1.0f;
+    return transform.rotation[0] == 0.0f && transform.rotation[1] == 0.0f &&
+           transform.rotation[2] == 0.0f && transform.rotation[3] == 1.0f;
 }
 
 int
 CheckCorpus(const std::filesystem::path& directory)
 {
     std::vector<std::filesystem::path> captures;
-    if (!std::filesystem::is_directory(directory)) {
-        std::fprintf(stderr, "corpus directory not found: %s\n",
-                     directory.string().c_str());
+    if (!std::filesystem::is_directory(directory))
+    {
+        std::fprintf(stderr, "corpus directory not found: %s\n", directory.string().c_str());
         return 1;
     }
     for (const std::filesystem::directory_entry& file :
-         std::filesystem::directory_iterator(directory)) {
-        if (file.is_regular_file()
-            && file.path().extension() == ".vmcpackets") {
+         std::filesystem::directory_iterator(directory))
+    {
+        if (file.is_regular_file() && file.path().extension() == ".vmcpackets")
+        {
             captures.push_back(file.path());
         }
     }
     std::sort(captures.begin(), captures.end());
-    if (captures.empty()) {
-        std::fprintf(stderr, "no .vmcpackets fixtures in %s\n",
-                     directory.string().c_str());
+    if (captures.empty())
+    {
+        std::fprintf(stderr, "no .vmcpackets fixtures in %s\n", directory.string().c_str());
         return 1;
     }
 
@@ -612,16 +618,20 @@ CheckCorpus(const std::filesystem::path& directory)
     // its defaults and read nothing.
     bool anyRotationMoved = false;
 
-    for (const std::filesystem::path& path : captures) {
+    for (const std::filesystem::path& path : captures)
+    {
         const std::string name = path.filename().string();
         const Expected* entry = nullptr;
-        for (const Expected& candidate : kExpected) {
-            if (name == candidate.file) {
+        for (const Expected& candidate : kExpected)
+        {
+            if (name == candidate.file)
+            {
                 entry = &candidate;
                 break;
             }
         }
-        if (!entry) {
+        if (!entry)
+        {
             std::fprintf(stderr,
                          "%s: no expected decode in this test -- add one, or "
                          "the capture is in the corpus and decoded by nobody\n",
@@ -633,23 +643,23 @@ CheckCorpus(const std::filesystem::path& directory)
 
         vrmAdapterVmc::PacketCapture capture;
         vrmAdapterVmc::PacketCaptureError error;
-        if (!vrmAdapterVmc::ReadPacketCaptureFile(path.string(), &capture,
-                                                  &error)) {
-            std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line,
-                         error.message.c_str());
+        if (!vrmAdapterVmc::ReadPacketCaptureFile(path.string(), &capture, &error))
+        {
+            std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line, error.message.c_str());
             ++failures;
             continue;
         }
 
         Decoded actual;
-        for (const vrmAdapterVmc::RecordedDatagram& datagram :
-             capture.datagrams) {
+        for (const vrmAdapterVmc::RecordedDatagram& datagram : capture.datagrams)
+        {
             OscPacket osc;
             // A datagram the OSC layer refuses never reaches this one. Which
             // eight of the malformed capture's ten those are is a claim
             // `vrmAdapterVmc_oscCorpus` already makes; repeating it here would
             // move it rather than strengthen it.
-            if (!vrmAdapterVmc::DecodeOscPacket(datagram.bytes, &osc)) {
+            if (!vrmAdapterVmc::DecodeOscPacket(datagram.bytes, &osc))
+            {
                 continue;
             }
 
@@ -662,35 +672,40 @@ CheckCorpus(const std::filesystem::path& directory)
             // Every message is accounted for exactly once, whatever happened to
             // it. The tallies and the vector are filled on separate paths, and
             // this is the only place the two can be caught disagreeing.
-            assert(vmc.messages.size() + vmc.unsupported + vmc.malformed
-                   == osc.messages.size());
-            if (vmc.malformed != 0) {
+            assert(vmc.messages.size() + vmc.unsupported + vmc.malformed == osc.messages.size());
+            if (vmc.malformed != 0)
+            {
                 actual.survivedRefusal.push_back(vmc.messages.size());
             }
-            for (const Diagnostic& diagnostic : diagnostics) {
-                if (diagnostic.code == DiagnosticCode::PacketMalformed) {
-                    actual.refusals.push_back(
-                        vrmAdapterVmc::FormatDiagnostic(diagnostic));
+            for (const Diagnostic& diagnostic : diagnostics)
+            {
+                if (diagnostic.code == DiagnosticCode::PacketMalformed)
+                {
+                    actual.refusals.push_back(vrmAdapterVmc::FormatDiagnostic(diagnostic));
                 }
             }
 
-            for (const VmcMessage& message : vmc.messages) {
+            for (const VmcMessage& message : vmc.messages)
+            {
                 ++actual.kinds[static_cast<std::size_t>(message.kind)];
-                switch (message.kind) {
+                switch (message.kind)
+                {
                 case VmcMessageKind::Time:
                     actual.times.push_back(message.seconds);
                     break;
                 case VmcMessageKind::BoneTransform:
-                    if (IsIdentity(message.transform)) {
+                    if (IsIdentity(message.transform))
+                    {
                         break;
                     }
                     actual.everyRotationIsIdentity = false;
                     anyRotationMoved = true;
                     break;
                 case VmcMessageKind::RootTransform:
-                    if (message.transform.position[0] != 0.0f
-                        || message.transform.position[1] != 0.0f
-                        || message.transform.position[2] != 0.0f) {
+                    if (message.transform.position[0] != 0.0f ||
+                        message.transform.position[1] != 0.0f ||
+                        message.transform.position[2] != 0.0f)
+                    {
                         actual.everyRootIsAtTheOrigin = false;
                     }
                     break;
@@ -701,25 +716,23 @@ CheckCorpus(const std::filesystem::path& directory)
             }
         }
 
-        if (actual.decoded != entry->decoded
-            || actual.unsupported != entry->unsupported
-            || actual.malformed != entry->malformed
-            || actual.unread != entry->unread
-            || actual.kinds != entry->kinds) {
+        if (actual.decoded != entry->decoded || actual.unsupported != entry->unsupported ||
+            actual.malformed != entry->malformed || actual.unread != entry->unread ||
+            actual.kinds != entry->kinds)
+        {
             std::fprintf(stderr,
                          "%s: %zu decoded, %zu unsupported, %zu malformed, "
                          "%zu unread, kinds [%zu %zu %zu %zu %zu %zu %zu] -- "
                          "expected %zu, %zu, %zu, %zu, "
                          "[%zu %zu %zu %zu %zu %zu %zu]\n",
-                         name.c_str(), actual.decoded, actual.unsupported,
-                         actual.malformed, actual.unread, actual.kinds[0],
-                         actual.kinds[1], actual.kinds[2], actual.kinds[3],
-                         actual.kinds[4], actual.kinds[5], actual.kinds[6],
-                         entry->decoded, entry->unsupported, entry->malformed,
-                         entry->unread, entry->kinds[0], entry->kinds[1],
-                         entry->kinds[2], entry->kinds[3], entry->kinds[4],
-                         entry->kinds[5], entry->kinds[6]);
-            for (const std::string& refusal : actual.refusals) {
+                         name.c_str(), actual.decoded, actual.unsupported, actual.malformed,
+                         actual.unread, actual.kinds[0], actual.kinds[1], actual.kinds[2],
+                         actual.kinds[3], actual.kinds[4], actual.kinds[5], actual.kinds[6],
+                         entry->decoded, entry->unsupported, entry->malformed, entry->unread,
+                         entry->kinds[0], entry->kinds[1], entry->kinds[2], entry->kinds[3],
+                         entry->kinds[4], entry->kinds[5], entry->kinds[6]);
+            for (const std::string& refusal : actual.refusals)
+            {
                 std::fprintf(stderr, "  %s\n", refusal.c_str());
             }
             ++failures;
@@ -731,16 +744,15 @@ CheckCorpus(const std::filesystem::path& directory)
         // result stateable without a second implementation to compare against;
         // and the sender's clock starts at 12.5 s where the receive clock
         // starts at 0, so a decoder that read the wrong one fails here.
-        if (name == "neutral-standing-30hz.vmcpackets") {
-            const double first =
-                actual.times.empty() ? -1.0 : actual.times.front();
-            if (!actual.everyRotationIsIdentity
-                || !actual.everyRootIsAtTheOrigin || first != 12.5) {
+        if (name == "neutral-standing-30hz.vmcpackets")
+        {
+            const double first = actual.times.empty() ? -1.0 : actual.times.front();
+            if (!actual.everyRotationIsIdentity || !actual.everyRootIsAtTheOrigin || first != 12.5)
+            {
                 std::fprintf(stderr,
                              "%s: identity=%d origin=%d first sender time=%f "
                              "-- expected 1, 1, 12.500000\n",
-                             name.c_str(),
-                             actual.everyRotationIsIdentity ? 1 : 0,
+                             name.c_str(), actual.everyRotationIsIdentity ? 1 : 0,
                              actual.everyRootIsAtTheOrigin ? 1 : 0, first);
                 ++failures;
             }
@@ -752,17 +764,17 @@ CheckCorpus(const std::filesystem::path& directory)
         // the datagram yields 22 messages rather than 0. The seven refusals
         // after it are a message on their own and yield nothing, which is what
         // makes 22 the interesting entry rather than the only one.
-        if (name == "malformed-forms.vmcpackets") {
-            const bool ok = actual.survivedRefusal.size() == 8
-                && actual.survivedRefusal.front() == 22;
-            if (!ok) {
+        if (name == "malformed-forms.vmcpackets")
+        {
+            const bool ok =
+                actual.survivedRefusal.size() == 8 && actual.survivedRefusal.front() == 22;
+            if (!ok)
+            {
                 std::fprintf(stderr,
                              "%s: %zu datagram(s) carried a refusal, the first "
                              "yielding %zu message(s) -- expected 8 and 22\n",
                              name.c_str(), actual.survivedRefusal.size(),
-                             actual.survivedRefusal.empty()
-                                 ? 0
-                                 : actual.survivedRefusal.front());
+                             actual.survivedRefusal.empty() ? 0 : actual.survivedRefusal.front());
                 ++failures;
             }
         }
@@ -771,10 +783,11 @@ CheckCorpus(const std::filesystem::path& directory)
         // without complaint: VRM_VMC_TIMESTAMP_REGRESSION needs a memory of the
         // previous frame, and this layer has none. Raising it here would make
         // every out-of-order datagram a decode failure.
-        if (name == "sender-restart-30hz.vmcpackets") {
-            const bool monotonic = std::is_sorted(actual.times.begin(),
-                                                  actual.times.end());
-            if (monotonic || actual.malformed != 0) {
+        if (name == "sender-restart-30hz.vmcpackets")
+        {
+            const bool monotonic = std::is_sorted(actual.times.begin(), actual.times.end());
+            if (monotonic || actual.malformed != 0)
+            {
                 std::fprintf(stderr,
                              "%s: sender clock monotonic=%d, malformed=%zu -- "
                              "expected a backwards clock decoded cleanly\n",
@@ -785,25 +798,28 @@ CheckCorpus(const std::filesystem::path& directory)
 
         std::printf("%s: %zu decoded, %zu unsupported, %zu malformed, %zu "
                     "unread\n",
-                    name.c_str(), actual.decoded, actual.unsupported,
-                    actual.malformed, actual.unread);
+                    name.c_str(), actual.decoded, actual.unsupported, actual.malformed,
+                    actual.unread);
     }
 
-    for (const Expected& entry : kExpected) {
-        if (covered.find(entry.file) == covered.end()) {
-            std::fprintf(stderr, "%s: expected in this test, absent from %s\n",
-                         entry.file, directory.string().c_str());
+    for (const Expected& entry : kExpected)
+    {
+        if (covered.find(entry.file) == covered.end())
+        {
+            std::fprintf(stderr, "%s: expected in this test, absent from %s\n", entry.file,
+                         directory.string().c_str());
             ++failures;
         }
     }
-    if (!anyRotationMoved) {
-        std::fprintf(stderr,
-                     "no capture carries a rotation off identity; the neutral "
-                     "check would pass on a decoder that read nothing\n");
+    if (!anyRotationMoved)
+    {
+        std::fprintf(stderr, "no capture carries a rotation off identity; the neutral "
+                             "check would pass on a decoder that read nothing\n");
         ++failures;
     }
 
-    if (failures != 0) {
+    if (failures != 0)
+    {
         std::fprintf(stderr, "%d corpus capture(s) failed\n", failures);
         return 1;
     }
@@ -816,7 +832,8 @@ CheckCorpus(const std::filesystem::path& directory)
 int
 main(int argc, char** argv)
 {
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
 

@@ -93,25 +93,21 @@ namespace vrmAdapterVmc
 
 // The Unity `HumanBodyBones` spelling a VMC sender writes for `bone`, e.g.
 // "LeftUpperArm". Empty for `HumanBone::Count`.
-VRMADAPTERVMC_API std::string_view VmcHumanBoneName(
-    motion::HumanBone bone) noexcept;
+VRMADAPTERVMC_API std::string_view VmcHumanBoneName(motion::HumanBone bone) noexcept;
 
 // The bone a VMC name denotes. Exact match on the Unity spelling; nullopt for
 // anything else, including the VRM 1.0 spelling of the same bone.
-VRMADAPTERVMC_API std::optional<motion::HumanBone> FindVmcHumanBone(
-    std::string_view name) noexcept;
+VRMADAPTERVMC_API std::optional<motion::HumanBone> FindVmcHumanBone(std::string_view name) noexcept;
 
 // The sender's axes into the canonical ones, with no validity check: a
 // non-finite input converts to a non-finite output rather than being caught
 // here, because these are the arithmetic and the mapping functions below are
 // the boundary.
-VRMADAPTERVMC_API pxr::GfVec3f ToCanonicalPosition(
-    const std::array<float, 3>& position) noexcept;
+VRMADAPTERVMC_API pxr::GfVec3f ToCanonicalPosition(const std::array<float, 3>& position) noexcept;
 
 // Also normalises. NaN components stay NaN, and a zero-length quaternion
 // converts to a zero-length one — neither is repaired here.
-VRMADAPTERVMC_API pxr::GfQuatf ToCanonicalRotation(
-    const std::array<float, 4>& rotation) noexcept;
+VRMADAPTERVMC_API pxr::GfQuatf ToCanonicalRotation(const std::array<float, 4>& rotation) noexcept;
 
 // One `/VMC/Ext/Bone/Pos` in canonical terms.
 struct VmcBoneSample
@@ -139,8 +135,7 @@ struct VmcBoneSample
 // with the name as its subject) or for a position or rotation that is not
 // finite, or a rotation of zero length (`VRM_VMC_PACKET_MALFORMED`). `out` is
 // left untouched on every failure.
-VRMADAPTERVMC_API bool MapVmcBoneTransform(const VmcMessage& message,
-                                           VmcBoneSample* out,
+VRMADAPTERVMC_API bool MapVmcBoneTransform(const VmcMessage& message, VmcBoneSample* out,
                                            Diagnostic* diagnostic = nullptr);
 
 // `/VMC/Ext/Root/Pos` into `motion::RootMotion`: position and orientation are
@@ -151,8 +146,7 @@ VRMADAPTERVMC_API bool MapVmcBoneTransform(const VmcMessage& message,
 //
 // `message` must be a `VmcMessageKind::RootTransform`; the failures are the
 // bone function's, minus the name.
-VRMADAPTERVMC_API bool MapVmcRootTransform(const VmcMessage& message,
-                                           motion::RootMotion* out,
+VRMADAPTERVMC_API bool MapVmcRootTransform(const VmcMessage& message, motion::RootMotion* out,
                                            Diagnostic* diagnostic = nullptr);
 
 } // namespace vrmAdapterVmc

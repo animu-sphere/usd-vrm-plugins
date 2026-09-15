@@ -15,9 +15,8 @@ namespace motionTracking
 namespace
 {
 
-constexpr std::array<std::string_view, TrackerSolveRefusalCount> kRefusalNames =
-    {"None", "AssignmentRefused", "AssignmentUnusable", "ObservationInvalid",
-     "NothingSolved"};
+constexpr std::array<std::string_view, TrackerSolveRefusalCount> kRefusalNames = {
+    "None", "AssignmentRefused", "AssignmentUnusable", "ObservationInvalid", "NothingSolved"};
 
 static_assert(kRefusalNames.size() == TrackerSolveRefusalCount,
               "every refusal needs a name a report can print");
@@ -38,15 +37,13 @@ std::string
 RegionText(TrackerRegion region)
 {
     const std::string_view name = TrackerRegionName(region);
-    return name.empty() ? std::string("<outside the vocabulary>")
-                        : Quote(name);
+    return name.empty() ? std::string("<outside the vocabulary>") : Quote(name);
 }
 
 bool
 IsFinite(const pxr::GfVec3f& value) noexcept
 {
-    return std::isfinite(value[0]) && std::isfinite(value[1])
-           && std::isfinite(value[2]);
+    return std::isfinite(value[0]) && std::isfinite(value[1]) && std::isfinite(value[2]);
 }
 
 bool
@@ -65,8 +62,7 @@ IsFinite(const pxr::GfQuatf& value) noexcept
 // a chain's ancestors are the union of its parent's and its parent — so this
 // reads one chain and not a fixed point.
 bool
-AncestorFellSilent(motion::HumanBone bone,
-                   const std::bitset<motion::HumanBoneCount>& namedBones,
+AncestorFellSilent(motion::HumanBone bone, const std::bitset<motion::HumanBoneCount>& namedBones,
                    const std::bitset<motion::HumanBoneCount>& withRotation)
 {
     std::optional<motion::HumanBone> parent = motion::HumanBoneParent(bone);
@@ -94,8 +90,7 @@ AncestorFellSilent(motion::HumanBone bone,
 // the arithmetic.
 pxr::GfQuatd
 ParentWorldRotation(motion::HumanBone bone,
-                    const std::array<pxr::GfQuatd, motion::HumanBoneCount>&
-                        authored,
+                    const std::array<pxr::GfQuatd, motion::HumanBoneCount>& authored,
                     const std::bitset<motion::HumanBoneCount>& valid)
 {
     std::vector<motion::HumanBone> chain;
@@ -162,14 +157,13 @@ std::string_view
 TrackerSolveRefusalName(TrackerSolveRefusal refusal) noexcept
 {
     const std::size_t index = static_cast<std::size_t>(refusal);
-    return index < kRefusalNames.size() ? kRefusalNames[index]
-                                        : std::string_view();
+    return index < kRefusalNames.size() ? kRefusalNames[index] : std::string_view();
 }
 
 TrackerSolve
 SolveTrackerPose(const TrackerAssignment& assignment,
-                 const std::vector<TrackerObservation>& observed,
-                 double timestamp, const TrackerSolveConfig& config)
+                 const std::vector<TrackerObservation>& observed, double timestamp,
+                 const TrackerSolveConfig& config)
 {
     TrackerSolve solve;
     solve.pose.timestamp = timestamp;
@@ -181,8 +175,7 @@ SolveTrackerPose(const TrackerAssignment& assignment,
     if (!assignment.Placed())
     {
         solve.refusal = TrackerSolveRefusal::AssignmentRefused;
-        solve.detail =
-            std::string(TrackerAssignmentRefusalName(assignment.refusal));
+        solve.detail = std::string(TrackerAssignmentRefusalName(assignment.refusal));
         if (!assignment.detail.empty())
         {
             solve.detail += ": " + assignment.detail;
@@ -199,11 +192,10 @@ SolveTrackerPose(const TrackerAssignment& assignment,
         if (binding.observedIndex >= observed.size())
         {
             solve.refusal = TrackerSolveRefusal::AssignmentUnusable;
-            solve.detail = "region " + RegionText(binding.region)
-                           + " is bound to observed tracker "
-                           + std::to_string(binding.observedIndex)
-                           + ", and this observation carries "
-                           + std::to_string(observed.size());
+            solve.detail = "region " + RegionText(binding.region) +
+                           " is bound to observed tracker " +
+                           std::to_string(binding.observedIndex) +
+                           ", and this observation carries " + std::to_string(observed.size());
             return solve;
         }
         for (std::size_t j = 0; j < i; ++j)
@@ -211,8 +203,7 @@ SolveTrackerPose(const TrackerAssignment& assignment,
             if (assignment.bound[j].region == binding.region)
             {
                 solve.refusal = TrackerSolveRefusal::AssignmentUnusable;
-                solve.detail = "region " + RegionText(binding.region)
-                               + " is bound twice";
+                solve.detail = "region " + RegionText(binding.region) + " is bound twice";
                 return solve;
             }
         }
@@ -234,16 +225,14 @@ SolveTrackerPose(const TrackerAssignment& assignment,
     std::bitset<motion::HumanBoneCount> withRotation;
     for (const TrackerRegion region : assignment.absent)
     {
-        if (const std::optional<motion::HumanBone> bone =
-                TrackerRegionBone(region))
+        if (const std::optional<motion::HumanBone> bone = TrackerRegionBone(region))
         {
             namedBones.set(static_cast<std::size_t>(*bone));
         }
     }
     for (const TrackerAssignmentBinding& binding : assignment.bound)
     {
-        const std::optional<motion::HumanBone> bone =
-            TrackerRegionBone(binding.region);
+        const std::optional<motion::HumanBone> bone = TrackerRegionBone(binding.region);
         if (!bone)
         {
             continue;
@@ -261,8 +250,7 @@ SolveTrackerPose(const TrackerAssignment& assignment,
     for (const TrackerAssignmentBinding& binding : assignment.bound)
     {
         const TrackerObservation& observation = observed[binding.observedIndex];
-        const std::optional<motion::HumanBone> bone =
-            TrackerRegionBone(binding.region);
+        const std::optional<motion::HumanBone> bone = TrackerRegionBone(binding.region);
 
         if (!bone)
         {
@@ -281,10 +269,8 @@ SolveTrackerPose(const TrackerAssignment& assignment,
             solve.placed.push_back(binding.region);
         }
 
-        const bool consumesPosition = bone
-                                      && *bone == motion::HumanBone::Hips
-                                      && config.authorRootMotion
-                                      && observation.hasPosition;
+        const bool consumesPosition = bone && *bone == motion::HumanBone::Hips &&
+                                      config.authorRootMotion && observation.hasPosition;
         if (observation.hasPosition && !consumesPosition)
         {
             solve.positionsUnused.push_back(binding.region);
@@ -300,21 +286,19 @@ SolveTrackerPose(const TrackerAssignment& assignment,
     for (const TrackerAssignmentBinding& binding : assignment.bound)
     {
         const TrackerObservation& observation = observed[binding.observedIndex];
-        const std::optional<motion::HumanBone> bone =
-            TrackerRegionBone(binding.region);
+        const std::optional<motion::HumanBone> bone = TrackerRegionBone(binding.region);
         if (!bone)
         {
             continue;
         }
 
-        const bool consumesPosition = *bone == motion::HumanBone::Hips
-                                      && config.authorRootMotion
-                                      && observation.hasPosition;
+        const bool consumesPosition =
+            *bone == motion::HumanBone::Hips && config.authorRootMotion && observation.hasPosition;
         if (consumesPosition && !IsFinite(observation.position))
         {
             solve.refusal = TrackerSolveRefusal::ObservationInvalid;
-            solve.detail = "tracker " + Quote(observation.tracker)
-                           + " reports a position that is not finite";
+            solve.detail =
+                "tracker " + Quote(observation.tracker) + " reports a position that is not finite";
             return solve;
         }
         if (!observation.hasRotation)
@@ -324,16 +308,15 @@ SolveTrackerPose(const TrackerAssignment& assignment,
         if (!IsFinite(observation.rotation))
         {
             solve.refusal = TrackerSolveRefusal::ObservationInvalid;
-            solve.detail = "tracker " + Quote(observation.tracker)
-                           + " reports a rotation that is not finite";
+            solve.detail =
+                "tracker " + Quote(observation.tracker) + " reports a rotation that is not finite";
             return solve;
         }
-        if (pxr::GfQuatd(observation.rotation).GetLength()
-            < kShortestUsableRotation)
+        if (pxr::GfQuatd(observation.rotation).GetLength() < kShortestUsableRotation)
         {
             solve.refusal = TrackerSolveRefusal::ObservationInvalid;
-            solve.detail = "tracker " + Quote(observation.tracker)
-                           + " reports a rotation with no length to normalise";
+            solve.detail = "tracker " + Quote(observation.tracker) +
+                           " reports a rotation with no length to normalise";
             return solve;
         }
     }
@@ -348,16 +331,12 @@ SolveTrackerPose(const TrackerAssignment& assignment,
         ordered.push_back(&binding);
     }
     std::stable_sort(ordered.begin(), ordered.end(),
-                     [](const TrackerAssignmentBinding* lhs,
-                        const TrackerAssignmentBinding* rhs) {
-                         const std::optional<motion::HumanBone> a =
-                             TrackerRegionBone(lhs->region);
-                         const std::optional<motion::HumanBone> b =
-                             TrackerRegionBone(rhs->region);
-                         return static_cast<std::size_t>(
-                                    a.value_or(motion::HumanBone::Count))
-                                < static_cast<std::size_t>(
-                                    b.value_or(motion::HumanBone::Count));
+                     [](const TrackerAssignmentBinding* lhs, const TrackerAssignmentBinding* rhs)
+                     {
+                         const std::optional<motion::HumanBone> a = TrackerRegionBone(lhs->region);
+                         const std::optional<motion::HumanBone> b = TrackerRegionBone(rhs->region);
+                         return static_cast<std::size_t>(a.value_or(motion::HumanBone::Count)) <
+                                static_cast<std::size_t>(b.value_or(motion::HumanBone::Count));
                      });
 
     std::array<pxr::GfQuatd, motion::HumanBoneCount> authored;
@@ -366,16 +345,14 @@ SolveTrackerPose(const TrackerAssignment& assignment,
     for (const TrackerAssignmentBinding* binding : ordered)
     {
         const TrackerObservation& observation = observed[binding->observedIndex];
-        const std::optional<motion::HumanBone> bone =
-            TrackerRegionBone(binding->region);
+        const std::optional<motion::HumanBone> bone = TrackerRegionBone(binding->region);
         if (!bone)
         {
             continue;
         }
         const std::size_t index = static_cast<std::size_t>(*bone);
 
-        if (*bone == motion::HumanBone::Hips && config.authorRootMotion
-            && observation.hasPosition)
+        if (*bone == motion::HumanBone::Hips && config.authorRootMotion && observation.hasPosition)
         {
             // The root/hips rule, unchanged: a hips tracker is a body
             // translation observed at one place.
@@ -395,8 +372,7 @@ SolveTrackerPose(const TrackerAssignment& assignment,
             continue;
         }
 
-        const pxr::GfQuatd world =
-            pxr::GfQuatd(observation.rotation).GetNormalized();
+        const pxr::GfQuatd world = pxr::GfQuatd(observation.rotation).GetNormalized();
         if (*bone == motion::HumanBone::Hips)
         {
             // And the other half of it: the same rotation is the body's
@@ -415,12 +391,12 @@ SolveTrackerPose(const TrackerAssignment& assignment,
         solve.pose.validRotations.set(index);
     }
 
-    if (solve.pose.validRotations.none() && !solve.pose.root.hasPosition
-        && !solve.pose.root.hasOrientation)
+    if (solve.pose.validRotations.none() && !solve.pose.root.hasPosition &&
+        !solve.pose.root.hasOrientation)
     {
         solve.refusal = TrackerSolveRefusal::NothingSolved;
-        solve.detail = "none of the " + std::to_string(assignment.bound.size())
-                       + " bound tracker(s) reached a bone or the root";
+        solve.detail = "none of the " + std::to_string(assignment.bound.size()) +
+                       " bound tracker(s) reached a bone or the root";
         // The tallies a caller reads are over solved frames, so a frame that
         // refuses reports its regions through this line and nowhere else. A
         // refusal that said the trackers reached nothing, when what happened is
@@ -428,10 +404,9 @@ SolveTrackerPose(const TrackerAssignment& assignment,
         // reader looking at the straps.
         if (!solve.withheldWithParent.empty())
         {
-            solve.detail += ", and "
-                            + std::to_string(solve.withheldWithParent.size())
-                            + " were withheld because a bone this assignment "
-                              "names above them carried no rotation";
+            solve.detail += ", and " + std::to_string(solve.withheldWithParent.size()) +
+                            " were withheld because a bone this assignment "
+                            "names above them carried no rotation";
         }
         return solve;
     }

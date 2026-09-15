@@ -16,9 +16,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdVrmColliderAPI,
-        TfType::Bases< UsdAPISchemaBase > >();
-    
+    TfType::Define<UsdVrmColliderAPI, TfType::Bases<UsdAPISchemaBase>>();
 }
 
 /* virtual */
@@ -28,42 +26,43 @@ UsdVrmColliderAPI::~UsdVrmColliderAPI()
 
 /* static */
 UsdVrmColliderAPI
-UsdVrmColliderAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdVrmColliderAPI::Get(const UsdStagePtr& stage, const SdfPath& path)
 {
-    if (!stage) {
+    if (!stage)
+    {
         TF_CODING_ERROR("Invalid stage");
         return UsdVrmColliderAPI();
     }
     return UsdVrmColliderAPI(stage->GetPrimAtPath(path));
 }
 
-
 /* virtual */
-UsdSchemaKind UsdVrmColliderAPI::_GetSchemaKind() const
+UsdSchemaKind
+UsdVrmColliderAPI::_GetSchemaKind() const
 {
     return UsdVrmColliderAPI::schemaKind;
 }
 
 /* static */
 bool
-UsdVrmColliderAPI::CanApply(
-    const UsdPrim &prim, std::string *whyNot)
+UsdVrmColliderAPI::CanApply(const UsdPrim& prim, std::string* whyNot)
 {
     return prim.CanApplyAPI<UsdVrmColliderAPI>(whyNot);
 }
 
 /* static */
 UsdVrmColliderAPI
-UsdVrmColliderAPI::Apply(const UsdPrim &prim)
+UsdVrmColliderAPI::Apply(const UsdPrim& prim)
 {
-    if (prim.ApplyAPI<UsdVrmColliderAPI>()) {
+    if (prim.ApplyAPI<UsdVrmColliderAPI>())
+    {
         return UsdVrmColliderAPI(prim);
     }
     return UsdVrmColliderAPI();
 }
 
 /* static */
-const TfType &
+const TfType&
 UsdVrmColliderAPI::_GetStaticTfType()
 {
     static TfType tfType = TfType::Find<UsdVrmColliderAPI>();
@@ -71,7 +70,7 @@ UsdVrmColliderAPI::_GetStaticTfType()
 }
 
 /* static */
-bool 
+bool
 UsdVrmColliderAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
@@ -79,7 +78,7 @@ UsdVrmColliderAPI::_IsTypedSchema()
 }
 
 /* virtual */
-const TfType &
+const TfType&
 UsdVrmColliderAPI::_GetTfType() const
 {
     return _GetStaticTfType();
@@ -92,14 +91,11 @@ UsdVrmColliderAPI::GetVrmShapeAttr() const
 }
 
 UsdAttribute
-UsdVrmColliderAPI::CreateVrmShapeAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmColliderAPI::CreateVrmShapeAttr(VtValue const& defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmShape,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmShape, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -109,14 +105,11 @@ UsdVrmColliderAPI::GetVrmNodeAttr() const
 }
 
 UsdAttribute
-UsdVrmColliderAPI::CreateVrmNodeAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmColliderAPI::CreateVrmNodeAttr(VtValue const& defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmNode,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmNode, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -126,14 +119,11 @@ UsdVrmColliderAPI::GetVrmOffsetAttr() const
 }
 
 UsdAttribute
-UsdVrmColliderAPI::CreateVrmOffsetAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmColliderAPI::CreateVrmOffsetAttr(VtValue const& defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmOffset,
-                       SdfValueTypeNames->Float3,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmOffset, SdfValueTypeNames->Float3,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -143,14 +133,11 @@ UsdVrmColliderAPI::GetVrmRadiusAttr() const
 }
 
 UsdAttribute
-UsdVrmColliderAPI::CreateVrmRadiusAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmColliderAPI::CreateVrmRadiusAttr(VtValue const& defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmRadius,
-                       SdfValueTypeNames->Float,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmRadius, SdfValueTypeNames->Float,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -160,19 +147,17 @@ UsdVrmColliderAPI::GetVrmTailAttr() const
 }
 
 UsdAttribute
-UsdVrmColliderAPI::CreateVrmTailAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmColliderAPI::CreateVrmTailAttr(VtValue const& defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmTail,
-                       SdfValueTypeNames->Float3,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmTail, SdfValueTypeNames->Float3,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
-namespace {
+namespace
+{
 static inline TfTokenVector
-_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+_ConcatenateAttributeNames(const TfTokenVector& left, const TfTokenVector& right)
 {
     TfTokenVector result;
     result.reserve(left.size() + right.size());
@@ -180,23 +165,18 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
     result.insert(result.end(), right.begin(), right.end());
     return result;
 }
-}
+} // namespace
 
 /*static*/
 const TfTokenVector&
 UsdVrmColliderAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdVrmTokens->vrmShape,
-        UsdVrmTokens->vrmNode,
-        UsdVrmTokens->vrmOffset,
-        UsdVrmTokens->vrmRadius,
-        UsdVrmTokens->vrmTail,
+        UsdVrmTokens->vrmShape,  UsdVrmTokens->vrmNode, UsdVrmTokens->vrmOffset,
+        UsdVrmTokens->vrmRadius, UsdVrmTokens->vrmTail,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
-            UsdAPISchemaBase::GetSchemaAttributeNames(true),
-            localNames);
+        _ConcatenateAttributeNames(UsdAPISchemaBase::GetSchemaAttributeNames(true), localNames);
 
     if (includeInherited)
         return allNames;

@@ -105,8 +105,8 @@ NearlyEqual(float a, float b, float tolerance)
 bool
 NearVector(const pxr::GfVec3f& a, const pxr::GfVec3f& b, float tolerance)
 {
-    return NearlyEqual(a[0], b[0], tolerance) && NearlyEqual(a[1], b[1], tolerance)
-           && NearlyEqual(a[2], b[2], tolerance);
+    return NearlyEqual(a[0], b[0], tolerance) && NearlyEqual(a[1], b[1], tolerance) &&
+           NearlyEqual(a[2], b[2], tolerance);
 }
 
 // How far a rotated body's lateral axis leaves the horizontal plane, in
@@ -139,9 +139,8 @@ pxr::GfQuatf
 Mirrored(const pxr::GfQuatf& sender)
 {
     const pxr::GfVec3f imaginary = sender.GetImaginary();
-    pxr::GfQuatf canonical(
-        sender.GetReal(),
-        pxr::GfVec3f(imaginary[0], -imaginary[1], -imaginary[2]));
+    pxr::GfQuatf canonical(sender.GetReal(),
+                           pxr::GfVec3f(imaginary[0], -imaginary[1], -imaginary[2]));
     canonical.Normalize();
     return canonical;
 }
@@ -154,14 +153,12 @@ Mirrored(const pxr::GfQuatf& sender)
 pxr::GfQuatf
 YawInnermostRotation(const std::array<float, 3>& eulerDegrees)
 {
-    return Mirrored(AxisRotation(2, eulerDegrees[2])
-                    * AxisRotation(0, eulerDegrees[0])
-                    * AxisRotation(1, eulerDegrees[1]));
+    return Mirrored(AxisRotation(2, eulerDegrees[2]) * AxisRotation(0, eulerDegrees[0]) *
+                    AxisRotation(1, eulerDegrees[1]));
 }
 
 TrackerMessage
-MakeMessage(std::string_view segment, TrackerChannel channel,
-            const std::array<float, 3>& values)
+MakeMessage(std::string_view segment, TrackerChannel channel, const std::array<float, 3>& values)
 {
     TrackerMessage message;
     message.tracker.segment = segment;
@@ -204,7 +201,8 @@ void
 TestOnlyTheFirstComponentIsMirrored()
 {
     for (const std::array<float, 3>& sample :
-         {kRestHead, kRestHips, kRestFootA, kRestFootB, kWalkFrom, kWalkTo}) {
+         {kRestHead, kRestHips, kRestFootA, kRestFootB, kWalkFrom, kWalkTo})
+    {
         const pxr::GfVec3f canonical = ToCanonicalPosition(sample);
         assert(NearlyEqual(canonical[0], -sample[0], 1e-6f));
         assert(NearlyEqual(canonical[1], sample[1], 1e-6f));
@@ -250,9 +248,9 @@ TestALabelledLeftTurnFacesTheAvatarsLeft()
     // And the two holds either side of them are the same head, facing forward:
     // the still and centred readings stay within 15 degrees of +Z, which is the
     // pitch the operator held throughout rather than any yaw.
-    for (const std::array<float, 3>& sample : {kHeadStill, kHeadCentred}) {
-        const pxr::GfVec3f facing =
-            ToCanonicalRotation(sample).Transform(kCanonicalForward);
+    for (const std::array<float, 3>& sample : {kHeadStill, kHeadCentred})
+    {
+        const pxr::GfVec3f facing = ToCanonicalRotation(sample).Transform(kCanonicalForward);
         assert(facing[2] > 0.95f);
         assert(std::fabs(facing[0]) < 0.1f);
     }
@@ -273,9 +271,8 @@ TestASenderYawBecomesTheOppositeCanonicalYaw()
     assert(NearVector(facing, pxr::GfVec3f(-1.0f, 0.0f, 0.0f), 1e-5f));
     // The vertical axis is the mirror's fixed axis, so it is untouched.
     assert(NearVector(canonical.Transform(kCanonicalUp), kCanonicalUp, 1e-5f));
-    assert(motion::AngleBetween(canonical,
-                                AxisRotation(1, -90.0f))
-           < motion::MotionTolerance{}.angle);
+    assert(motion::AngleBetween(canonical, AxisRotation(1, -90.0f)) <
+           motion::MotionTolerance{}.angle);
 }
 
 // **The Euler order, as far as this session measures it.** The head does not
@@ -290,15 +287,15 @@ TestASenderYawBecomesTheOppositeCanonicalYaw()
 void
 TestTheYawIsOutermost()
 {
-    for (const std::array<float, 3>& sample : {kHeadStill, kHeadCentred}) {
+    for (const std::array<float, 3>& sample : {kHeadStill, kHeadCentred})
+    {
         assert(LateralTiltDegrees(ToCanonicalRotation(sample)) < 2.0f);
-        assert(std::fabs(LateralTiltDegrees(ToCanonicalRotation(sample))
-                         - LateralTiltDegrees(YawInnermostRotation(sample)))
-               < 1.0f);
+        assert(std::fabs(LateralTiltDegrees(ToCanonicalRotation(sample)) -
+                         LateralTiltDegrees(YawInnermostRotation(sample))) < 1.0f);
     }
 
-    for (const std::array<float, 3>& sample :
-         {kHeadTurnedLeft, kHeadTurnedRight}) {
+    for (const std::array<float, 3>& sample : {kHeadTurnedLeft, kHeadTurnedRight})
+    {
         assert(LateralTiltDegrees(ToCanonicalRotation(sample)) < 3.0f);
         assert(LateralTiltDegrees(YawInnermostRotation(sample)) > 10.0f);
     }
@@ -312,23 +309,20 @@ void
 TestTheAngleUnitIsDegreesAndTheWrapIsNotADiscontinuity()
 {
     const pxr::GfQuatf identity = ToCanonicalRotation({{0.0f, 0.0f, 0.0f}});
-    assert(motion::AngleBetween(identity, pxr::GfQuatf::GetIdentity())
-           < motion::MotionTolerance{}.angle);
+    assert(motion::AngleBetween(identity, pxr::GfQuatf::GetIdentity()) <
+           motion::MotionTolerance{}.angle);
 
-    const pxr::GfQuatf justUnder =
-        ToCanonicalRotation({{359.9942f, 359.9942f, 359.9942f}});
-    const pxr::GfQuatf justOver =
-        ToCanonicalRotation({{-0.0058f, -0.0058f, -0.0058f}});
-    assert(motion::AngleBetween(justUnder, justOver)
-           < motion::MotionTolerance{}.angle);
+    const pxr::GfQuatf justUnder = ToCanonicalRotation({{359.9942f, 359.9942f, 359.9942f}});
+    const pxr::GfQuatf justOver = ToCanonicalRotation({{-0.0058f, -0.0058f, -0.0058f}});
+    assert(motion::AngleBetween(justUnder, justOver) < motion::MotionTolerance{}.angle);
 
     // A radian reading of the same numbers would put this sample most of a full
     // turn away from where a degree reading puts it. 30 degrees is 0.52 rad, so
     // the two readings differ by 29.5 degrees of yaw and the check is that the
     // conversion lands on the first.
     const pxr::GfQuatf thirtyDegrees = ToCanonicalRotation({{0.0f, 30.0f, 0.0f}});
-    assert(motion::AngleBetween(thirtyDegrees, AxisRotation(1, -30.0f))
-           < motion::MotionTolerance{}.angle);
+    assert(motion::AngleBetween(thirtyDegrees, AxisRotation(1, -30.0f)) <
+           motion::MotionTolerance{}.angle);
 }
 
 // Every rotation this layer produces is an orientation: unit length, for any
@@ -339,7 +333,8 @@ TestEveryRotationIsUnitLength()
     for (const std::array<float, 3>& sample :
          {kHeadStill, kHeadTurnedLeft, kHeadCentred, kHeadTurnedRight,
           std::array<float, 3>{{359.9942f, 180.0f, -0.0053f}},
-          std::array<float, 3>{{720.0f, -540.0f, 45.0f}}}) {
+          std::array<float, 3>{{720.0f, -540.0f, 45.0f}}})
+    {
         const pxr::GfQuatf canonical = ToCanonicalRotation(sample);
         assert(NearlyEqual(canonical.GetLength(), 1.0f, 1e-5f));
     }
@@ -361,14 +356,16 @@ TestThePublishedConstantsDescribeTheArithmetic()
 
     // One unit along each axis converts to that many metres, and exactly the
     // named component comes back negated.
-    for (int axis = 0; axis < 3; ++axis) {
+    for (int axis = 0; axis < 3; ++axis)
+    {
         std::array<float, 3> unit = {{0.0f, 0.0f, 0.0f}};
         unit[static_cast<std::size_t>(axis)] = 1.0f;
         const pxr::GfVec3f canonical = ToCanonicalPosition(unit);
 
         const float sign = axis == TrackingSpaceMirroredComponent ? -1.0f : 1.0f;
         const float metres = sign * static_cast<float>(TrackingSpaceUnitInMeters);
-        for (int slot = 0; slot < 3; ++slot) {
+        for (int slot = 0; slot < 3; ++slot)
+        {
             const float expected = slot == axis ? metres : 0.0f;
             assert(NearlyEqual(canonical[slot], expected, 1e-6f));
         }
@@ -379,7 +376,8 @@ TestThePublishedConstantsDescribeTheArithmetic()
     // so the sign of each is the determinant times the mirror's own sign —
     // written from the constants rather than from the answer.
     const float quarterTurn = static_cast<float>(90.0 / TrackingSpaceAngleUnitInDegrees);
-    for (int axis = 0; axis < 3; ++axis) {
+    for (int axis = 0; axis < 3; ++axis)
+    {
         std::array<float, 3> angles = {{0.0f, 0.0f, 0.0f}};
         angles[static_cast<std::size_t>(axis)] = quarterTurn;
         const pxr::GfQuatf canonical = ToCanonicalRotation(angles);
@@ -388,9 +386,9 @@ TestThePublishedConstantsDescribeTheArithmetic()
         const float sign = static_cast<float>(TrackingSpaceDeterminant * mirror);
         const float half = std::sin(45.0f * kDegreesToRadians);
 
-        assert(NearlyEqual(canonical.GetReal(), std::cos(45.0f * kDegreesToRadians),
-                           1e-5f));
-        for (int slot = 0; slot < 3; ++slot) {
+        assert(NearlyEqual(canonical.GetReal(), std::cos(45.0f * kDegreesToRadians), 1e-5f));
+        for (int slot = 0; slot < 3; ++slot)
+        {
             const float expected = slot == axis ? sign * half : 0.0f;
             assert(NearlyEqual(canonical.GetImaginary()[slot], expected, 1e-5f));
         }
@@ -408,11 +406,10 @@ void
 TestTheSubjectIsTheAddressTheMessageCameFrom()
 {
     assert(vrmAdapterVrchatOsc::TrackerMessageAddress(
-               MakeMessage("head", TrackerChannel::Rotation, {{0, 0, 0}}))
-           == "/tracking/trackers/head/rotation");
-    assert(vrmAdapterVrchatOsc::TrackerMessageAddress(
-               MakeMessage("3", TrackerChannel::Position, {{0, 0, 0}}))
-           == "/tracking/trackers/3/position");
+               MakeMessage("head", TrackerChannel::Rotation, {{0, 0, 0}})) ==
+           "/tracking/trackers/head/rotation");
+    assert(vrmAdapterVrchatOsc::TrackerMessageAddress(MakeMessage(
+               "3", TrackerChannel::Position, {{0, 0, 0}})) == "/tracking/trackers/3/position");
 }
 
 // A position handed to the rotation conversion is a caller's mistake and not a
@@ -424,8 +421,7 @@ TestTheSubjectIsTheAddressTheMessageCameFrom()
 void
 TestTheChannelGuardRefusesAValueItCouldNotTellApart()
 {
-    const TrackerMessage position =
-        MakeMessage("1", TrackerChannel::Position, kRestHips);
+    const TrackerMessage position = MakeMessage("1", TrackerChannel::Position, kRestHips);
 
     pxr::GfQuatf rotation = pxr::GfQuatf::GetIdentity();
     Diagnostic diagnostic;
@@ -448,8 +444,8 @@ TestTheChannelGuardRefusesAValueItCouldNotTellApart()
     assert(MapTrackerPosition(position, &point));
     assert(NearVector(point, ToCanonicalPosition(kRestHips), 1e-6f));
     assert(MapTrackerRotation(rotationMessage, &rotation));
-    assert(motion::AngleBetween(rotation, ToCanonicalRotation(kHeadTurnedLeft))
-           < motion::MotionTolerance{}.angle);
+    assert(motion::AngleBetween(rotation, ToCanonicalRotation(kHeadTurnedLeft)) <
+           motion::MotionTolerance{}.angle);
 }
 
 // The one refusal about a *value*, which the wire path cannot produce because
@@ -462,20 +458,18 @@ TestANonFiniteComponentIsRefusedHereToo()
     const float infinity = std::numeric_limits<float>::infinity();
 
     for (const std::array<float, 3>& values :
-         {std::array<float, 3>{{nan, 0.0f, 0.0f}},
-          std::array<float, 3>{{0.0f, infinity, 0.0f}},
-          std::array<float, 3>{{0.0f, 0.0f, -infinity}}}) {
+         {std::array<float, 3>{{nan, 0.0f, 0.0f}}, std::array<float, 3>{{0.0f, infinity, 0.0f}},
+          std::array<float, 3>{{0.0f, 0.0f, -infinity}}})
+    {
         pxr::GfVec3f point(0.0f);
         Diagnostic diagnostic;
-        assert(!MapTrackerPosition(
-            MakeMessage("2", TrackerChannel::Position, values), &point,
-            &diagnostic));
+        assert(!MapTrackerPosition(MakeMessage("2", TrackerChannel::Position, values), &point,
+                                   &diagnostic));
         assert(diagnostic.code == DiagnosticCode::CoordinateInvalid);
 
         pxr::GfQuatf rotation = pxr::GfQuatf::GetIdentity();
-        assert(!MapTrackerRotation(
-            MakeMessage("2", TrackerChannel::Rotation, values), &rotation,
-            &diagnostic));
+        assert(!MapTrackerRotation(MakeMessage("2", TrackerChannel::Rotation, values), &rotation,
+                                   &diagnostic));
         assert(diagnostic.code == DiagnosticCode::CoordinateInvalid);
     }
 }
@@ -487,18 +481,15 @@ void
 TestTheStructuralGuardRefusesRatherThanDereference()
 {
     Diagnostic diagnostic;
-    assert(!MapTrackerPosition(
-        MakeMessage("1", TrackerChannel::Position, kRestHips), nullptr,
-        &diagnostic));
+    assert(!MapTrackerPosition(MakeMessage("1", TrackerChannel::Position, kRestHips), nullptr,
+                               &diagnostic));
     assert(diagnostic.code == DiagnosticCode::PacketMalformed);
-    assert(!MapTrackerRotation(
-        MakeMessage("1", TrackerChannel::Rotation, kHeadStill), nullptr,
-        &diagnostic));
+    assert(!MapTrackerRotation(MakeMessage("1", TrackerChannel::Rotation, kHeadStill), nullptr,
+                               &diagnostic));
     assert(diagnostic.code == DiagnosticCode::PacketMalformed);
 
     // And a refusal with nowhere to report it still refuses.
-    assert(!MapTrackerPosition(
-        MakeMessage("1", TrackerChannel::Rotation, kRestHips), nullptr));
+    assert(!MapTrackerPosition(MakeMessage("1", TrackerChannel::Rotation, kRestHips), nullptr));
 }
 
 // ---------------------------------------------------------------------------
@@ -510,13 +501,15 @@ CheckCorpus(const std::filesystem::path& root)
 {
     std::vector<std::filesystem::path> captures;
     for (const std::filesystem::directory_entry& entry :
-         std::filesystem::recursive_directory_iterator(root)) {
-        if (entry.is_regular_file()
-            && entry.path().extension() == ".vrchatoscpackets") {
+         std::filesystem::recursive_directory_iterator(root))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == ".vrchatoscpackets")
+        {
             captures.push_back(entry.path());
         }
     }
-    if (captures.empty()) {
+    if (captures.empty())
+    {
         std::fprintf(stderr, "no captures under %s\n", root.string().c_str());
         return 1;
     }
@@ -526,46 +519,50 @@ CheckCorpus(const std::filesystem::path& root)
     std::size_t positions = 0;
     int failures = 0;
 
-    for (const std::filesystem::path& path : captures) {
+    for (const std::filesystem::path& path : captures)
+    {
         PacketCapture capture;
         vrmAdapterVrchatOsc::PacketCaptureError error;
-        if (!vrmAdapterVrchatOsc::ReadPacketCaptureFile(path.string(), &capture,
-                                                        &error)) {
-            std::fprintf(stderr, "%s:%zu: %s\n", path.string().c_str(),
-                         error.line, error.message.c_str());
+        if (!vrmAdapterVrchatOsc::ReadPacketCaptureFile(path.string(), &capture, &error))
+        {
+            std::fprintf(stderr, "%s:%zu: %s\n", path.string().c_str(), error.line,
+                         error.message.c_str());
             ++failures;
             continue;
         }
 
-        for (const vrmAdapterVrchatOsc::RecordedDatagram& datagram :
-             capture.datagrams) {
+        for (const vrmAdapterVrchatOsc::RecordedDatagram& datagram : capture.datagrams)
+        {
             const vrmAdapterVrchatOsc::TrackerPacket packet =
                 vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram.bytes);
-            for (const TrackerMessage& message : packet.messages) {
+            for (const TrackerMessage& message : packet.messages)
+            {
                 Diagnostic diagnostic;
                 bool ok = false;
-                if (message.channel == TrackerChannel::Position) {
+                if (message.channel == TrackerChannel::Position)
+                {
                     pxr::GfVec3f point(0.0f);
                     ok = MapTrackerPosition(message, &point, &diagnostic);
-                    if (ok && point != pxr::GfVec3f(0.0f)) {
+                    if (ok && point != pxr::GfVec3f(0.0f))
+                    {
                         ++positions;
                     }
-                } else {
+                }
+                else
+                {
                     pxr::GfQuatf rotation = pxr::GfQuatf::GetIdentity();
                     ok = MapTrackerRotation(message, &rotation, &diagnostic);
-                    if (ok
-                        && motion::AngleBetween(rotation,
-                                                pxr::GfQuatf::GetIdentity())
-                               > motion::MotionTolerance{}.angle) {
+                    if (ok && motion::AngleBetween(rotation, pxr::GfQuatf::GetIdentity()) >
+                                  motion::MotionTolerance{}.angle)
+                    {
                         ++rotations;
                     }
                 }
-                if (!ok) {
+                if (!ok)
+                {
                     std::fprintf(stderr, "%s: %s refused a decoded message\n",
                                  path.string().c_str(),
-                                 vrmAdapterVrchatOsc::TrackerMessageAddress(
-                                     message)
-                                     .c_str());
+                                 vrmAdapterVrchatOsc::TrackerMessageAddress(message).c_str());
                     ++failures;
                     continue;
                 }
@@ -576,7 +573,8 @@ CheckCorpus(const std::filesystem::path& root)
 
     // A conversion that returned identity and zero for everything would pass
     // every loop above, so the corpus has to have moved something.
-    if (rotations == 0 || positions == 0) {
+    if (rotations == 0 || positions == 0)
+    {
         std::fprintf(stderr,
                      "the corpus produced %zu non-identity rotation(s) and %zu "
                      "non-zero position(s); the conversion would pass this "
@@ -585,14 +583,14 @@ CheckCorpus(const std::filesystem::path& root)
         ++failures;
     }
 
-    if (failures != 0) {
+    if (failures != 0)
+    {
         std::fprintf(stderr, "%d corpus failure(s)\n", failures);
         return 1;
     }
-    std::printf(
-        "VRChat OSC tracking space: %zu message(s) converted from %zu "
-        "capture(s)\n",
-        converted, captures.size());
+    std::printf("VRChat OSC tracking space: %zu message(s) converted from %zu "
+                "capture(s)\n",
+                converted, captures.size());
     return 0;
 }
 
@@ -601,7 +599,8 @@ CheckCorpus(const std::filesystem::path& root)
 int
 main(int argc, char** argv)
 {
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
 

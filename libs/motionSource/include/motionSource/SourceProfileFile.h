@@ -133,10 +133,8 @@ struct SourceProfileParseError
 // carries the reason and the line.
 //
 // On success `profile` satisfies `ValidateSourceProfile` — see the header note.
-MOTIONSOURCE_API bool ParseSourceProfileText(std::string_view text,
-                                             SourceProfile* profile,
-                                             SourceProfileParseError* error
-                                             = nullptr);
+MOTIONSOURCE_API bool ParseSourceProfileText(std::string_view text, SourceProfile* profile,
+                                             SourceProfileParseError* error = nullptr);
 
 // Reads the file and parses it. A file that cannot be opened or read is a
 // refusal at line 0 naming the path — there is no line, and the document this
@@ -146,7 +144,6 @@ MOTIONSOURCE_API bool ParseSourceProfileText(std::string_view text,
 // refusal that does not say which file.
 MOTIONSOURCE_API bool ParseSourceProfileFile(const std::filesystem::path& path,
                                              SourceProfile* profile,
-                                             SourceProfileParseError* error
-                                             = nullptr);
+                                             SourceProfileParseError* error = nullptr);
 
 } // namespace motionSource

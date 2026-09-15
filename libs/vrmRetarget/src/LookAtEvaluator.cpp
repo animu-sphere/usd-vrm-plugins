@@ -31,11 +31,13 @@ constexpr const char* kLookDown = "lookDown";
 void
 RecordWarning(LookAtDiagnostics* diagnostics, std::string warning)
 {
-    if (!diagnostics) {
+    if (!diagnostics)
+    {
         return;
     }
     std::vector<std::string>& warnings = diagnostics->warnings;
-    if (std::find(warnings.begin(), warnings.end(), warning) == warnings.end()) {
+    if (std::find(warnings.begin(), warnings.end(), warning) == warnings.end())
+    {
         warnings.push_back(std::move(warning));
     }
 }
@@ -50,26 +52,32 @@ RecordWarning(LookAtDiagnostics* diagnostics, std::string warning)
 float
 EvaluateCurve(const std::vector<LookAtCurveKey>& keys, float t)
 {
-    if (keys.empty()) {
+    if (keys.empty())
+    {
         return t;
     }
-    if (keys.size() == 1) {
+    if (keys.size() == 1)
+    {
         return keys.front().value;
     }
-    if (t <= keys.front().time) {
+    if (t <= keys.front().time)
+    {
         return keys.front().value;
     }
-    if (t >= keys.back().time) {
+    if (t >= keys.back().time)
+    {
         return keys.back().value;
     }
     std::size_t index = 0;
-    while (index + 2 < keys.size() && t >= keys[index + 1].time) {
+    while (index + 2 < keys.size() && t >= keys[index + 1].time)
+    {
         ++index;
     }
     const LookAtCurveKey& a = keys[index];
     const LookAtCurveKey& b = keys[index + 1];
     const float span = b.time - a.time;
-    if (!(span > 0.0f)) {
+    if (!(span > 0.0f))
+    {
         // Two keys at one time state a step. Taking the later value is the only
         // reading that does not divide by the span.
         return b.value;
@@ -77,18 +85,15 @@ EvaluateCurve(const std::vector<LookAtCurveKey>& keys, float t)
     const float u = (t - a.time) / span;
     const float u2 = u * u;
     const float u3 = u2 * u;
-    return (2.0f * u3 - 3.0f * u2 + 1.0f) * a.value
-        + (u3 - 2.0f * u2 + u) * span * a.outTangent
-        + (-2.0f * u3 + 3.0f * u2) * b.value
-        + (u3 - u2) * span * b.inTangent;
+    return (2.0f * u3 - 3.0f * u2 + 1.0f) * a.value + (u3 - 2.0f * u2 + u) * span * a.outTangent +
+           (-2.0f * u3 + 3.0f * u2) * b.value + (u3 - u2) * span * b.inTangent;
 }
 
 pxr::GfQuatf
 AxisRotation(const pxr::GfVec3f& axis, float degrees)
 {
     const float radians = degrees * kDegreesToRadians;
-    return pxr::GfQuatf(std::cos(radians * 0.5f),
-                        axis * std::sin(radians * 0.5f));
+    return pxr::GfQuatf(std::cos(radians * 0.5f), axis * std::sin(radians * 0.5f));
 }
 
 // The eye's rotation for one resolved pair of angles, in the head's own space.
@@ -102,14 +107,15 @@ AxisRotation(const pxr::GfVec3f& axis, float degrees)
 pxr::GfQuatf
 EyeRotation(float yawDegrees, float pitchDegrees)
 {
-    return AxisRotation(pxr::GfVec3f(0.0f, 1.0f, 0.0f), yawDegrees)
-        * AxisRotation(pxr::GfVec3f(1.0f, 0.0f, 0.0f), -pitchDegrees);
+    return AxisRotation(pxr::GfVec3f(0.0f, 1.0f, 0.0f), yawDegrees) *
+           AxisRotation(pxr::GfVec3f(1.0f, 0.0f, 0.0f), -pitchDegrees);
 }
 
 float
 ClampUnit(float weight)
 {
-    if (std::isnan(weight)) {
+    if (std::isnan(weight))
+    {
         return 0.0f;
     }
     return std::min(1.0f, std::max(0.0f, weight));
@@ -127,15 +133,17 @@ IsOutsideUnitRange(float weight)
 bool
 SameMap(const LookAtRangeMap& a, const LookAtRangeMap& b)
 {
-    if (a.inputMaxValue != b.inputMaxValue || a.outputScale != b.outputScale
-        || a.curve.size() != b.curve.size()) {
+    if (a.inputMaxValue != b.inputMaxValue || a.outputScale != b.outputScale ||
+        a.curve.size() != b.curve.size())
+    {
         return false;
     }
-    for (std::size_t i = 0; i < a.curve.size(); ++i) {
-        if (a.curve[i].time != b.curve[i].time
-            || a.curve[i].value != b.curve[i].value
-            || a.curve[i].inTangent != b.curve[i].inTangent
-            || a.curve[i].outTangent != b.curve[i].outTangent) {
+    for (std::size_t i = 0; i < a.curve.size(); ++i)
+    {
+        if (a.curve[i].time != b.curve[i].time || a.curve[i].value != b.curve[i].value ||
+            a.curve[i].inTangent != b.curve[i].inTangent ||
+            a.curve[i].outTangent != b.curve[i].outTangent)
+        {
             return false;
         }
     }
@@ -159,18 +167,22 @@ Find(const pxr::JsObject& object, const char* key)
 bool
 AsFloat(const pxr::JsValue* value, float* out)
 {
-    if (!value) {
+    if (!value)
+    {
         return false;
     }
-    if (value->IsReal()) {
+    if (value->IsReal())
+    {
         *out = static_cast<float>(value->GetReal());
         return true;
     }
-    if (value->IsInt()) {
+    if (value->IsInt())
+    {
         *out = static_cast<float>(value->GetInt());
         return true;
     }
-    if (value->IsUInt64()) {
+    if (value->IsUInt64())
+    {
         *out = static_cast<float>(value->GetUInt64());
         return true;
     }
@@ -180,16 +192,20 @@ AsFloat(const pxr::JsValue* value, float* out)
 bool
 AsVec3(const pxr::JsValue* value, pxr::GfVec3f* out)
 {
-    if (!value || !value->IsArray()) {
+    if (!value || !value->IsArray())
+    {
         return false;
     }
     const pxr::JsArray& array = value->GetJsArray();
-    if (array.size() != 3) {
+    if (array.size() != 3)
+    {
         return false;
     }
     pxr::GfVec3f parsed(0.0f);
-    for (std::size_t i = 0; i < 3; ++i) {
-        if (!AsFloat(&array[i], &parsed[i])) {
+    for (std::size_t i = 0; i < 3; ++i)
+    {
+        if (!AsFloat(&array[i], &parsed[i]))
+        {
             return false;
         }
     }
@@ -203,24 +219,28 @@ ReadRangeMap1(const pxr::JsObject& block, const char* key, LookAtRangeMap* map,
               std::vector<std::string>* warnings)
 {
     const pxr::JsValue* value = Find(block, key);
-    if (!value || !value->IsObject()) {
+    if (!value || !value->IsObject())
+    {
         return;
     }
     const pxr::JsObject& object = value->GetJsObject();
     float number = 0.0f;
-    if (AsFloat(Find(object, "inputMaxValue"), &number)) {
+    if (AsFloat(Find(object, "inputMaxValue"), &number))
+    {
         map->inputMaxValue = number;
     }
-    if (AsFloat(Find(object, "outputScale"), &number)) {
+    if (AsFloat(Find(object, "outputScale"), &number))
+    {
         map->outputScale = number;
     }
     // A 1.0 range map is linear by definition, so any curve a 0.x block left in
     // the same rig would be read against a range it was not authored for.
     map->curve.clear();
-    if (!(map->inputMaxValue > 0.0f) && warnings) {
-        warnings->push_back(std::string("look-at range map '") + key
-                            + "' states an inputMaxValue that is not positive; "
-                              "it maps every angle to zero");
+    if (!(map->inputMaxValue > 0.0f) && warnings)
+    {
+        warnings->push_back(std::string("look-at range map '") + key +
+                            "' states an inputMaxValue that is not positive; "
+                            "it maps every angle to zero");
     }
 }
 
@@ -232,57 +252,69 @@ ReadRangeMap0(const pxr::JsObject& block, const char* key, LookAtRangeMap* map,
               std::vector<std::string>* warnings)
 {
     const pxr::JsValue* value = Find(block, key);
-    if (!value || !value->IsObject()) {
+    if (!value || !value->IsObject())
+    {
         return;
     }
     const pxr::JsObject& object = value->GetJsObject();
     float number = 0.0f;
-    if (AsFloat(Find(object, "xRange"), &number)) {
+    if (AsFloat(Find(object, "xRange"), &number))
+    {
         map->inputMaxValue = number;
     }
-    if (AsFloat(Find(object, "yRange"), &number)) {
+    if (AsFloat(Find(object, "yRange"), &number))
+    {
         map->outputScale = number;
     }
     map->curve.clear();
-    if (const pxr::JsValue* curve = Find(object, "curve")) {
-        if (curve->IsArray()) {
+    if (const pxr::JsValue* curve = Find(object, "curve"))
+    {
+        if (curve->IsArray())
+        {
             const pxr::JsArray& array = curve->GetJsArray();
-            if (array.size() % 4 != 0) {
-                if (warnings) {
-                    warnings->push_back(
-                        std::string("look-at curve '") + key
-                        + "' is not a whole number of four-float keys; it is "
-                          "read as the linear map instead");
+            if (array.size() % 4 != 0)
+            {
+                if (warnings)
+                {
+                    warnings->push_back(std::string("look-at curve '") + key +
+                                        "' is not a whole number of four-float keys; it is "
+                                        "read as the linear map instead");
                 }
-            } else {
+            }
+            else
+            {
                 bool complete = true;
-                for (std::size_t i = 0; i + 3 < array.size(); i += 4) {
+                for (std::size_t i = 0; i + 3 < array.size(); i += 4)
+                {
                     LookAtCurveKey point;
-                    complete = AsFloat(&array[i], &point.time)
-                        && AsFloat(&array[i + 1], &point.value)
-                        && AsFloat(&array[i + 2], &point.inTangent)
-                        && AsFloat(&array[i + 3], &point.outTangent);
-                    if (!complete) {
+                    complete = AsFloat(&array[i], &point.time) &&
+                               AsFloat(&array[i + 1], &point.value) &&
+                               AsFloat(&array[i + 2], &point.inTangent) &&
+                               AsFloat(&array[i + 3], &point.outTangent);
+                    if (!complete)
+                    {
                         break;
                     }
                     map->curve.push_back(point);
                 }
-                if (!complete) {
+                if (!complete)
+                {
                     map->curve.clear();
-                    if (warnings) {
-                        warnings->push_back(
-                            std::string("look-at curve '") + key
-                            + "' holds a value that is not a number; it is "
-                              "read as the linear map instead");
+                    if (warnings)
+                    {
+                        warnings->push_back(std::string("look-at curve '") + key +
+                                            "' holds a value that is not a number; it is "
+                                            "read as the linear map instead");
                     }
                 }
             }
         }
     }
-    if (!(map->inputMaxValue > 0.0f) && warnings) {
-        warnings->push_back(std::string("look-at range map '") + key
-                            + "' states an xRange that is not positive; it "
-                              "maps every angle to zero");
+    if (!(map->inputMaxValue > 0.0f) && warnings)
+    {
+        warnings->push_back(std::string("look-at range map '") + key +
+                            "' states an xRange that is not positive; it "
+                            "maps every angle to zero");
     }
 }
 
@@ -291,32 +323,35 @@ ReadRangeMap0(const pxr::JsObject& block, const char* key, LookAtRangeMap* map,
 float
 LookAtRangeMap::Map(float inputDegrees) const
 {
-    if (!(inputMaxValue > 0.0f)) {
+    if (!(inputMaxValue > 0.0f))
+    {
         return 0.0f;
     }
     // The negation catches a NaN as well as a negative, and a magnitude is what
     // this takes: the sign of the angle has already chosen which map runs.
     float input = !(inputDegrees > 0.0f) ? 0.0f : inputDegrees;
-    if (input > inputMaxValue) {
+    if (input > inputMaxValue)
+    {
         input = inputMaxValue;
     }
     return EvaluateCurve(curve, input / inputMaxValue) * outputScale;
 }
 
 bool
-ParseLookAtRangeMaps(const std::string& rawJson, LookAtRig* rig,
-                     std::vector<std::string>* warnings)
+ParseLookAtRangeMaps(const std::string& rawJson, LookAtRig* rig, std::vector<std::string>* warnings)
 {
-    if (!rig || rawJson.empty()) {
+    if (!rig || rawJson.empty())
+    {
         return false;
     }
     pxr::JsParseError error;
     const pxr::JsValue parsed = pxr::JsParseString(rawJson, &error);
-    if (parsed.IsNull() || !parsed.IsObject()) {
-        if (warnings) {
-            warnings->push_back(
-                "the avatar's preserved look-at block is not a JSON object; "
-                "its range maps keep their defaults");
+    if (parsed.IsNull() || !parsed.IsObject())
+    {
+        if (warnings)
+        {
+            warnings->push_back("the avatar's preserved look-at block is not a JSON object; "
+                                "its range maps keep their defaults");
         }
         return false;
     }
@@ -328,48 +363,54 @@ ParseLookAtRangeMaps(const std::string& rawJson, LookAtRig* rig,
     // `firstPerson` -- so the two key families never appear together in a file
     // this reader is given, and a file that somehow held both would be read as
     // 1.0, which is the newer contract.
-    const bool isVrm1 = Find(block, "rangeMapHorizontalInner")
-        || Find(block, "rangeMapHorizontalOuter")
-        || Find(block, "rangeMapVerticalDown") || Find(block, "rangeMapVerticalUp")
-        || Find(block, "offsetFromHeadBone");
+    const bool isVrm1 = Find(block, "rangeMapHorizontalInner") ||
+                        Find(block, "rangeMapHorizontalOuter") ||
+                        Find(block, "rangeMapVerticalDown") || Find(block, "rangeMapVerticalUp") ||
+                        Find(block, "offsetFromHeadBone");
 
-    if (isVrm1) {
-        ReadRangeMap1(block, "rangeMapHorizontalInner", &rig->horizontalInner,
-                      warnings);
-        ReadRangeMap1(block, "rangeMapHorizontalOuter", &rig->horizontalOuter,
-                      warnings);
-        ReadRangeMap1(block, "rangeMapVerticalDown", &rig->verticalDown,
-                      warnings);
+    if (isVrm1)
+    {
+        ReadRangeMap1(block, "rangeMapHorizontalInner", &rig->horizontalInner, warnings);
+        ReadRangeMap1(block, "rangeMapHorizontalOuter", &rig->horizontalOuter, warnings);
+        ReadRangeMap1(block, "rangeMapVerticalDown", &rig->verticalDown, warnings);
         ReadRangeMap1(block, "rangeMapVerticalUp", &rig->verticalUp, warnings);
 
         pxr::GfVec3f offset(0.0f);
-        if (AsVec3(Find(block, "offsetFromHeadBone"), &offset)) {
+        if (AsVec3(Find(block, "offsetFromHeadBone"), &offset))
+        {
             rig->offsetFromHeadBone = offset;
         }
-        if (const pxr::JsValue* type = Find(block, "type")) {
-            if (type->IsString() && type->GetString() == "expression") {
+        if (const pxr::JsValue* type = Find(block, "type"))
+        {
+            if (type->IsString() && type->GetString() == "expression")
+            {
                 rig->type = LookAtType::Expression;
-            } else if (type->IsString() && type->GetString() == "bone") {
+            }
+            else if (type->IsString() && type->GetString() == "bone")
+            {
                 rig->type = LookAtType::Bone;
             }
         }
         return true;
     }
 
-    ReadRangeMap0(block, "lookAtHorizontalInner", &rig->horizontalInner,
-                  warnings);
-    ReadRangeMap0(block, "lookAtHorizontalOuter", &rig->horizontalOuter,
-                  warnings);
+    ReadRangeMap0(block, "lookAtHorizontalInner", &rig->horizontalInner, warnings);
+    ReadRangeMap0(block, "lookAtHorizontalOuter", &rig->horizontalOuter, warnings);
     ReadRangeMap0(block, "lookAtVerticalDown", &rig->verticalDown, warnings);
     ReadRangeMap0(block, "lookAtVerticalUp", &rig->verticalUp, warnings);
-    if (const pxr::JsValue* type = Find(block, "lookAtTypeName")) {
-        if (type->IsString()) {
+    if (const pxr::JsValue* type = Find(block, "lookAtTypeName"))
+    {
+        if (type->IsString())
+        {
             // 0.x spells the two types "Bone" and "BlendShape"; the second is
             // the same rig 1.0 calls `expression`, which is the name the rest of
             // this library uses.
-            if (type->GetString() == "BlendShape") {
+            if (type->GetString() == "BlendShape")
+            {
                 rig->type = LookAtType::Expression;
-            } else if (type->GetString() == "Bone") {
+            }
+            else if (type->GetString() == "Bone")
+            {
                 rig->type = LookAtType::Bone;
             }
         }
@@ -383,83 +424,87 @@ ParseLookAtRangeMaps(const std::string& rawJson, LookAtRig* rig,
 }
 
 LookAtEvaluator::LookAtEvaluator(LookAtRig rig, LookAtEvaluateOptions options)
-    : _rig(std::move(rig))
-    , _options(options)
+    : _rig(std::move(rig)), _options(options)
 {
 }
 
 bool
-LookAtEvaluator::Aim(const LookAtInput& input, float* yawDegrees,
-                     float* pitchDegrees, LookAtDiagnostics* diagnostics) const
+LookAtEvaluator::Aim(const LookAtInput& input, float* yawDegrees, float* pitchDegrees,
+                     LookAtDiagnostics* diagnostics) const
 {
-    if (!input.target) {
+    if (!input.target)
+    {
         return false;
     }
 
     pxr::GfVec3f offset(0.0f);
-    if (_rig.offsetFromHeadBone) {
+    if (_rig.offsetFromHeadBone)
+    {
         offset = *_rig.offsetFromHeadBone;
-    } else if (_options.clipOffsetFromHeadBone) {
+    }
+    else if (_options.clipOffsetFromHeadBone)
+    {
         offset = *_options.clipOffsetFromHeadBone;
-        RecordWarning(diagnostics,
-                      "this avatar states no offsetFromHeadBone, so the gaze "
-                      "starts at the offset the source clip measured on its "
-                      "own rig; the two rigs' eye heights are assumed equal");
-    } else {
-        RecordWarning(diagnostics,
-                      "neither this avatar nor the source clip states an "
-                      "offsetFromHeadBone, so the gaze starts at the head "
-                      "joint itself rather than at the eyes");
+        RecordWarning(diagnostics, "this avatar states no offsetFromHeadBone, so the gaze "
+                                   "starts at the offset the source clip measured on its "
+                                   "own rig; the two rigs' eye heights are assumed equal");
+    }
+    else
+    {
+        RecordWarning(diagnostics, "neither this avatar nor the source clip states an "
+                                   "offsetFromHeadBone, so the gaze starts at the head "
+                                   "joint itself rather than at the eyes");
     }
 
     // Normalizing costs one square root a sample and buys the guarantee the
     // rest of this depends on: an orientation that is not unit-length rotates
     // and *scales*, so an un-normalized head would move the eye origin.
     const pxr::GfQuatf orientation = input.head.orientation.GetNormalized();
-    const pxr::GfVec3f origin
-        = input.head.position + orientation.Transform(offset);
-    const pxr::GfVec3f local
-        = orientation.GetInverse().Transform(*input.target - origin);
+    const pxr::GfVec3f origin = input.head.position + orientation.Transform(offset);
+    const pxr::GfVec3f local = orientation.GetInverse().Transform(*input.target - origin);
 
     const float length = local.GetLength();
-    if (!(length >= _options.minimumGazeDistance)) {
+    if (!(length >= _options.minimumGazeDistance))
+    {
         // A target at the eyes has no direction, and one a micrometre away has
         // a direction that is numerically meaningless. Both are answered as no
         // gaze rather than as a forward one, for the reason an absent target
         // is: this layer does not invent a direction nobody named.
-        RecordWarning(diagnostics,
-                      "a look-at target sits on the eye origin, so it names no "
-                      "direction; those samples resolve to no gaze");
+        RecordWarning(diagnostics, "a look-at target sits on the eye origin, so it names no "
+                                   "direction; those samples resolve to no gaze");
         return false;
     }
 
-    if (yawDegrees) {
+    if (yawDegrees)
+    {
         // +X is the character's own left in the glTF basis VRM inherits, and
         // +Z is forward, so this is positive when the character looks left.
         *yawDegrees = std::atan2(local[0], local[2]) * kRadiansToDegrees;
     }
-    if (pitchDegrees) {
-        const float horizontal
-            = std::sqrt(local[0] * local[0] + local[2] * local[2]);
+    if (pitchDegrees)
+    {
+        const float horizontal = std::sqrt(local[0] * local[0] + local[2] * local[2]);
         *pitchDegrees = std::atan2(local[1], horizontal) * kRadiansToDegrees;
     }
     return true;
 }
 
 ResolvedLookAt
-LookAtEvaluator::Evaluate(const LookAtInput& input,
-                          LookAtDiagnostics* diagnostics) const
+LookAtEvaluator::Evaluate(const LookAtInput& input, LookAtDiagnostics* diagnostics) const
 {
     ResolvedLookAt result;
     result.timestamp = input.timestamp;
-    if (diagnostics) {
+    if (diagnostics)
+    {
         ++diagnostics->samplesEvaluated;
     }
 
     float yaw = 0.0f;
     float pitch = 0.0f;
-    if (!Aim(input, &yaw, &pitch, diagnostics)) {
-        if (diagnostics) {
+    if (!Aim(input, &yaw, &pitch, diagnostics))
+    {
+        if (diagnostics)
+        {
             ++diagnostics->samplesWithoutTarget;
         }
         return result;
@@ -472,10 +517,10 @@ LookAtEvaluator::Evaluate(const LookAtInput& input,
     const float horizontalMagnitude = std::fabs(yaw);
     const bool toTheLeft = yaw >= 0.0f;
     const bool upward = pitch >= 0.0f;
-    const float vertical = upward ? _rig.verticalUp.Map(pitch)
-                                  : -_rig.verticalDown.Map(-pitch);
+    const float vertical = upward ? _rig.verticalUp.Map(pitch) : -_rig.verticalDown.Map(-pitch);
 
-    if (_rig.type == LookAtType::Bone) {
+    if (_rig.type == LookAtType::Bone)
+    {
         const float inner = _rig.horizontalInner.Map(horizontalMagnitude);
         const float outer = _rig.horizontalOuter.Map(horizontalMagnitude);
         // The eye on the side the gaze goes to turns outward, away from the
@@ -484,22 +529,23 @@ LookAtEvaluator::Evaluate(const LookAtInput& input,
         const float left = toTheLeft ? outer : -inner;
         const float right = toTheLeft ? inner : -outer;
 
-        if (!_rig.leftEyeJoint.empty()) {
-            result.eyeRotations.push_back(
-                {_rig.leftEyeJoint, EyeRotation(left, vertical)});
+        if (!_rig.leftEyeJoint.empty())
+        {
+            result.eyeRotations.push_back({_rig.leftEyeJoint, EyeRotation(left, vertical)});
         }
-        if (!_rig.rightEyeJoint.empty()) {
-            result.eyeRotations.push_back(
-                {_rig.rightEyeJoint, EyeRotation(right, vertical)});
+        if (!_rig.rightEyeJoint.empty())
+        {
+            result.eyeRotations.push_back({_rig.rightEyeJoint, EyeRotation(right, vertical)});
         }
-        if (result.eyeRotations.empty()) {
-            RecordWarning(diagnostics,
-                          "this avatar's look-at is bone-driven and names no "
-                          "eye joint, so its gaze resolves to no rotation");
-        } else if (_rig.leftEyeJoint.empty() || _rig.rightEyeJoint.empty()) {
-            RecordWarning(diagnostics,
-                          "this avatar's look-at names one eye joint and not "
-                          "the other; only the named eye is driven");
+        if (result.eyeRotations.empty())
+        {
+            RecordWarning(diagnostics, "this avatar's look-at is bone-driven and names no "
+                                       "eye joint, so its gaze resolves to no rotation");
+        }
+        else if (_rig.leftEyeJoint.empty() || _rig.rightEyeJoint.empty())
+        {
+            RecordWarning(diagnostics, "this avatar's look-at names one eye joint and not "
+                                       "the other; only the named eye is driven");
         }
         return result;
     }
@@ -508,11 +554,11 @@ LookAtEvaluator::Evaluate(const LookAtInput& input,
     // to distinguish and the horizontal curve is the outer one. The inner map
     // is unreachable for this rig type, which is worth saying out loud when the
     // rig bothered to state a different one.
-    if (!SameMap(_rig.horizontalInner, _rig.horizontalOuter)) {
-        RecordWarning(diagnostics,
-                      "this avatar's look-at is expression-driven and states a "
-                      "horizontal inner map different from its outer one; one "
-                      "weight drives both eyes, so only the outer map is read");
+    if (!SameMap(_rig.horizontalInner, _rig.horizontalOuter))
+    {
+        RecordWarning(diagnostics, "this avatar's look-at is expression-driven and states a "
+                                   "horizontal inner map different from its outer one; one "
+                                   "weight drives both eyes, so only the outer map is read");
     }
     const float horizontal = _rig.horizontalOuter.Map(horizontalMagnitude);
 
@@ -525,23 +571,25 @@ LookAtEvaluator::Evaluate(const LookAtInput& input,
         {kLookUp, upward ? vertical : 0.0f},
         {kLookDown, upward ? 0.0f : -vertical},
     };
-    for (const auto& entry : weights) {
+    for (const auto& entry : weights)
+    {
         float weight = entry.second;
-        if (IsOutsideUnitRange(weight)) {
-            if (_options.clampExpressionWeights) {
+        if (IsOutsideUnitRange(weight))
+        {
+            if (_options.clampExpressionWeights)
+            {
                 weight = ClampUnit(weight);
-                RecordWarning(
-                    diagnostics,
-                    std::string("look-at expression '") + entry.first
-                        + "' resolves outside [0, 1] and is clamped; a VRM 0.x "
-                          "BlendShape rig states its weight range in the same "
-                          "key a Bone rig states degrees in");
-            } else {
-                RecordWarning(
-                    diagnostics,
-                    std::string("look-at expression '") + entry.first
-                        + "' resolves outside [0, 1] and clamping is off; it "
-                          "is carried to the binds unchanged");
+                RecordWarning(diagnostics,
+                              std::string("look-at expression '") + entry.first +
+                                  "' resolves outside [0, 1] and is clamped; a VRM 0.x "
+                                  "BlendShape rig states its weight range in the same "
+                                  "key a Bone rig states degrees in");
+            }
+            else
+            {
+                RecordWarning(diagnostics, std::string("look-at expression '") + entry.first +
+                                               "' resolves outside [0, 1] and clamping is off; it "
+                                               "is carried to the binds unchanged");
             }
         }
         result.expressions.Set(entry.first, weight);
@@ -550,8 +598,7 @@ LookAtEvaluator::Evaluate(const LookAtInput& input,
 }
 
 ResolvedLookAt
-LookAtEvaluator::Evaluate(const motion::HumanoidPose& pose,
-                          const LookAtHead& head,
+LookAtEvaluator::Evaluate(const motion::HumanoidPose& pose, const LookAtHead& head,
                           LookAtDiagnostics* diagnostics) const
 {
     LookAtInput input;

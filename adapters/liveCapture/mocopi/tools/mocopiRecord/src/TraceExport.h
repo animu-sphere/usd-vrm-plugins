@@ -140,7 +140,7 @@ struct HipsMotion
 // delivered.
 class TraceCollector
 {
-public:
+  public:
     // `frames` is a push's worth, as `GetFramesFromLastPush()` returns them.
     //
     // `metadata` is passed on every call for symmetry with the sibling and for
@@ -154,7 +154,11 @@ public:
                  const motion::MotionSourceMetadata& metadata);
 
     // How many frames are held, across every session.
-    std::size_t GetFrameCount() const noexcept { return _frames; }
+    std::size_t
+    GetFrameCount() const noexcept
+    {
+        return _frames;
+    }
 
     // Finalises every session: the time range from its own first and last
     // sample, and a frame rate measured from them. Idempotent.
@@ -170,7 +174,8 @@ public:
     void Close();
 
     // Valid after `Close`. Sessions that produced no frame are not among them.
-    const std::vector<motion::HumanoidAnimation>& GetSessions() const noexcept
+    const std::vector<motion::HumanoidAnimation>&
+    GetSessions() const noexcept
     {
         return _sessions;
     }
@@ -178,12 +183,13 @@ public:
     // The hips motion of the session at the same index, which is the part of
     // that session the trace does not carry. Indices match `GetSessions()`
     // after `Close`, including the empty-session pruning.
-    const std::vector<HipsMotion>& GetHipsMotion() const noexcept
+    const std::vector<HipsMotion>&
+    GetHipsMotion() const noexcept
     {
         return _hips;
     }
 
-private:
+  private:
     std::vector<motion::HumanoidAnimation> _sessions;
     std::vector<HipsMotion> _hips;
     // Per open session, carried alongside rather than inside `HipsMotion`: the

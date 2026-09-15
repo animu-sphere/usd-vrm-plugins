@@ -146,30 +146,28 @@ VRMADAPTERMOCOPI_API std::string PacketChunkTagText(std::string_view tag);
 // `baseOffset` is added to every `PacketChunk::offset` and to the byte position a
 // refusal quotes, so a payload walked out of the middle of a datagram still
 // reports datagram-absolute positions. Zero is right for a whole datagram.
-VRMADAPTERMOCOPI_API bool DecodePacketChunks(
-    const std::uint8_t* bytes, std::size_t size,
-    std::vector<PacketChunk>* chunks, std::string_view context = "datagram",
-    Diagnostic* diagnostic = nullptr, std::size_t baseOffset = 0);
+VRMADAPTERMOCOPI_API bool DecodePacketChunks(const std::uint8_t* bytes, std::size_t size,
+                                             std::vector<PacketChunk>* chunks,
+                                             std::string_view context = "datagram",
+                                             Diagnostic* diagnostic = nullptr,
+                                             std::size_t baseOffset = 0);
 
 // Walks the payload of a chunk another walk produced, which is the only way this
 // container is descended. The base is that chunk's own offset plus its header, so
 // offsets accumulate down the tree instead of restarting at every level.
-inline bool DecodePacketChunks(const PacketChunk& chunk,
-                               std::vector<PacketChunk>* chunks,
-                               Diagnostic* diagnostic = nullptr)
+inline bool
+DecodePacketChunks(const PacketChunk& chunk, std::vector<PacketChunk>* chunks,
+                   Diagnostic* diagnostic = nullptr)
 {
-    return DecodePacketChunks(chunk.bytes, chunk.size, chunks,
-                              PacketChunkTagText(chunk.tag), diagnostic,
-                              chunk.offset + PacketChunkHeaderBytes);
+    return DecodePacketChunks(chunk.bytes, chunk.size, chunks, PacketChunkTagText(chunk.tag),
+                              diagnostic, chunk.offset + PacketChunkHeaderBytes);
 }
 
-inline bool DecodePacketChunks(const std::vector<std::uint8_t>& datagram,
-                               std::vector<PacketChunk>* chunks,
-                               std::string_view context = "datagram",
-                               Diagnostic* diagnostic = nullptr)
+inline bool
+DecodePacketChunks(const std::vector<std::uint8_t>& datagram, std::vector<PacketChunk>* chunks,
+                   std::string_view context = "datagram", Diagnostic* diagnostic = nullptr)
 {
-    return DecodePacketChunks(datagram.data(), datagram.size(), chunks, context,
-                              diagnostic);
+    return DecodePacketChunks(datagram.data(), datagram.size(), chunks, context, diagnostic);
 }
 
 // Walking a temporary is always a bug: every chunk's `tag` and `bytes` point
@@ -182,8 +180,7 @@ inline bool DecodePacketChunks(const std::vector<std::uint8_t>& datagram,
 // The default argument is load-bearing: without it a two-argument call would not
 // consider this overload at all, and the temporary would bind to the reference
 // above.
-bool DecodePacketChunks(std::vector<std::uint8_t>&& datagram,
-                        std::vector<PacketChunk>* chunks,
+bool DecodePacketChunks(std::vector<std::uint8_t>&& datagram, std::vector<PacketChunk>* chunks,
                         std::string_view context = "datagram",
                         Diagnostic* diagnostic = nullptr) = delete;
 
@@ -191,13 +188,13 @@ bool DecodePacketChunks(std::vector<std::uint8_t>&& datagram,
 // refusing a duplicate: whether two `fram` chunks in one datagram are a protocol
 // violation is not a question the container can answer, and the packet decoder
 // above does answer it.
-VRMADAPTERMOCOPI_API const PacketChunk* FindPacketChunk(
-    const std::vector<PacketChunk>& chunks, std::string_view tag) noexcept;
+VRMADAPTERMOCOPI_API const PacketChunk* FindPacketChunk(const std::vector<PacketChunk>& chunks,
+                                                        std::string_view tag) noexcept;
 
 // How many chunks carry `tag`. The packet decoder uses this to refuse a
 // duplicate of a field it reads exactly once.
-VRMADAPTERMOCOPI_API std::size_t CountPacketChunks(
-    const std::vector<PacketChunk>& chunks, std::string_view tag) noexcept;
+VRMADAPTERMOCOPI_API std::size_t CountPacketChunks(const std::vector<PacketChunk>& chunks,
+                                                   std::string_view tag) noexcept;
 
 // Little-endian scalar reads of a leaf payload. Each returns false when the
 // payload's length is not exactly the type's width — which is
@@ -211,9 +208,7 @@ VRMADAPTERMOCOPI_API bool ReadPacketChunkI16(const PacketChunk& chunk,
                                              std::int16_t* value) noexcept;
 VRMADAPTERMOCOPI_API bool ReadPacketChunkU32(const PacketChunk& chunk,
                                              std::uint32_t* value) noexcept;
-VRMADAPTERMOCOPI_API bool ReadPacketChunkF32(const PacketChunk& chunk,
-                                             float* value) noexcept;
-VRMADAPTERMOCOPI_API bool ReadPacketChunkF64(const PacketChunk& chunk,
-                                             double* value) noexcept;
+VRMADAPTERMOCOPI_API bool ReadPacketChunkF32(const PacketChunk& chunk, float* value) noexcept;
+VRMADAPTERMOCOPI_API bool ReadPacketChunkF64(const PacketChunk& chunk, double* value) noexcept;
 
 } // namespace vrmAdapterMocopi

@@ -141,10 +141,8 @@ struct LookAtRig
 // which includes the empty string a rig with no preserved curves carries. A map
 // the JSON does not mention keeps the value it already had, so an incomplete
 // block leaves the defaults standing rather than zeroing a curve to nothing.
-VRMRETARGET_API bool ParseLookAtRangeMaps(const std::string& rawJson,
-                                          LookAtRig* rig,
-                                          std::vector<std::string>* warnings
-                                              = nullptr);
+VRMRETARGET_API bool ParseLookAtRangeMaps(const std::string& rawJson, LookAtRig* rig,
+                                          std::vector<std::string>* warnings = nullptr);
 
 // Where the target avatar's head is for one sample, in the same space as the
 // clip's target point. The caller computes it: on a bake that is the
@@ -232,7 +230,11 @@ struct LookAtDiagnostics
     std::size_t samplesEvaluated = 0;
     std::size_t samplesWithoutTarget = 0;
 
-    bool IsClean() const { return warnings.empty(); }
+    bool
+    IsClean() const
+    {
+        return warnings.empty();
+    }
 };
 
 struct LookAtEvaluateOptions
@@ -264,13 +266,17 @@ struct LookAtEvaluateOptions
 // Evaluates a clip's gaze against one avatar's look-at configuration.
 class VRMRETARGET_API LookAtEvaluator
 {
-public:
+  public:
     explicit LookAtEvaluator(LookAtRig rig,
-                             LookAtEvaluateOptions options
-                                 = LookAtEvaluateOptions());
+                             LookAtEvaluateOptions options = LookAtEvaluateOptions());
 
-    const LookAtRig& GetRig() const noexcept { return _rig; }
-    const LookAtEvaluateOptions& GetOptions() const noexcept
+    const LookAtRig&
+    GetRig() const noexcept
+    {
+        return _rig;
+    }
+    const LookAtEvaluateOptions&
+    GetOptions() const noexcept
     {
         return _options;
     }
@@ -292,11 +298,10 @@ public:
     // The same, taking the target and the timestamp off a pose -- the call a
     // consumer walking a retargeted clip actually makes, with `head` the head
     // transform that clip's own body produced at that sample.
-    ResolvedLookAt Evaluate(const motion::HumanoidPose& pose,
-                            const LookAtHead& head,
+    ResolvedLookAt Evaluate(const motion::HumanoidPose& pose, const LookAtHead& head,
                             LookAtDiagnostics* diagnostics = nullptr) const;
 
-private:
+  private:
     LookAtRig _rig;
     LookAtEvaluateOptions _options;
 };

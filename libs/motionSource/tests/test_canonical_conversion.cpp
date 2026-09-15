@@ -91,10 +91,8 @@ NearRotation(const pxr::GfQuatf& actual, const pxr::GfQuatf& expected)
 pxr::GfQuatf
 AboutY(float degrees)
 {
-    const float half =
-        static_cast<float>(degrees * 3.14159265358979323846 / 360.0);
-    return pxr::GfQuatf(std::cos(half),
-                        pxr::GfVec3f(0.0f, std::sin(half), 0.0f));
+    const float half = static_cast<float>(degrees * 3.14159265358979323846 / 360.0);
+    return pxr::GfQuatf(std::cos(half), pxr::GfVec3f(0.0f, std::sin(half), 0.0f));
 }
 
 // A right-handed source that already agrees with canonical about everything but
@@ -175,7 +173,8 @@ SplitRootSkeleton()
     root.restTranslation = Vec(0.0f, 90.0f, -400.0f);
     SourceSkeleton base = BaseSkeleton();
     skeleton.joints = {reference, root};
-    for (std::size_t index = 1; index < base.joints.size(); ++index) {
+    for (std::size_t index = 1; index < base.joints.size(); ++index)
+    {
         SourceJoint joint = base.joints[index];
         joint.parent += 1;
         skeleton.joints.push_back(joint);
@@ -228,8 +227,7 @@ SplitRootAnimation()
     SourceJointTrack reference =
         RotationTrack({Angles(0.0f, 0.0f, 0.0f), Angles(0.0f, 0.0f, 0.0f)});
     reference.translations = {Vec(0.0f, 0.0f, 0.0f), Vec(0.0f, 0.0f, 20.0f)};
-    SourceJointTrack root = RotationTrack({Angles(0.0f, 0.0f, 45.0f),
-                                           Angles(0.0f, 0.0f, 45.0f)});
+    SourceJointTrack root = RotationTrack({Angles(0.0f, 0.0f, 45.0f), Angles(0.0f, 0.0f, 45.0f)});
     root.translations = {Vec(10.0f, 92.0f, 0.0f), Vec(10.0f, 92.0f, 0.0f)};
     animation.tracks.insert(animation.tracks.begin(), reference);
     animation.tracks[1] = root;
@@ -246,8 +244,7 @@ BaseAnimation()
     animation.provenance.format = "example";
     animation.provenance.sourceId = "capture.example";
 
-    SourceJointTrack root = RotationTrack({Angles(0.0f, 0.0f, 0.0f),
-                                           Angles(0.0f, 0.0f, 0.0f)});
+    SourceJointTrack root = RotationTrack({Angles(0.0f, 0.0f, 0.0f), Angles(0.0f, 0.0f, 0.0f)});
     root.translations = {Vec(0.0f, 90.0f, 0.0f), Vec(0.0f, 90.0f, 0.0f)};
     animation.tracks = {
         root,
@@ -280,12 +277,11 @@ TestBasisOfAnAgreeingSource()
 {
     const CanonicalBasis basis = *MakeCanonicalBasis(BaseProfile());
     assert(basis.determinant == 1);
-    assert(basis.component[0] == 0 && basis.component[1] == 1
-           && basis.component[2] == 2);
+    assert(basis.component[0] == 0 && basis.component[1] == 1 && basis.component[2] == 2);
     assert(!basis.negate[0] && !basis.negate[1] && !basis.negate[2]);
     // Centimetres, so the only thing this basis does is divide by a hundred.
-    assert(NearVector(ConvertPosition(basis, Vec(0.0f, 90.0f, 0.0f)),
-                      pxr::GfVec3f(0.0f, 0.9f, 0.0f)));
+    assert(
+        NearVector(ConvertPosition(basis, Vec(0.0f, 90.0f, 0.0f)), pxr::GfVec3f(0.0f, 0.9f, 0.0f)));
 }
 
 // A Z-up right-handed source: the up and forward axes swap, and the third axis
@@ -300,8 +296,8 @@ TestBasisOfAZUpSource()
     profile.translationUnit = SourceLengthUnit::Meters;
     const CanonicalBasis basis = *MakeCanonicalBasis(profile);
     assert(basis.determinant == 1);
-    assert(NearVector(ConvertPosition(basis, Vec(1.0f, 2.0f, 3.0f)),
-                      pxr::GfVec3f(-1.0f, 3.0f, 2.0f)));
+    assert(
+        NearVector(ConvertPosition(basis, Vec(1.0f, 2.0f, 3.0f)), pxr::GfVec3f(-1.0f, 3.0f, 2.0f)));
 }
 
 // A *negative* forward axis: a source that faces the other way. The profile
@@ -321,8 +317,8 @@ TestBasisOfABackwardFacingSource()
     // axis is what absorbs the flip.
     assert(basis.determinant == 1);
     // The source's forward is canonical's forward.
-    assert(NearVector(ConvertPosition(basis, Vec(0.0f, 0.0f, -1.0f)),
-                      pxr::GfVec3f(0.0f, 0.0f, 1.0f)));
+    assert(
+        NearVector(ConvertPosition(basis, Vec(0.0f, 0.0f, -1.0f)), pxr::GfVec3f(0.0f, 0.0f, 1.0f)));
     // And its own +X is canonical -X, because in a right-handed source with +Y
     // up and -Z forward, up x forward is -X.
     assert(NearVector(ConvertPosition(basis, Vec(1.0f, 2.0f, 3.0f)),
@@ -356,8 +352,8 @@ TestBasisOfALeftHandedSource()
     profile.translationUnit = SourceLengthUnit::Meters;
     const CanonicalBasis basis = *MakeCanonicalBasis(profile);
     assert(basis.determinant == -1);
-    assert(NearVector(ConvertPosition(basis, Vec(1.0f, 2.0f, 3.0f)),
-                      pxr::GfVec3f(-1.0f, 2.0f, 3.0f)));
+    assert(
+        NearVector(ConvertPosition(basis, Vec(1.0f, 2.0f, 3.0f)), pxr::GfVec3f(-1.0f, 2.0f, 3.0f)));
 
     // And the rotation half, checked physically. A positive turn about the up
     // axis in a left-handed source carries the character's forward direction
@@ -366,9 +362,8 @@ TestBasisOfALeftHandedSource()
     // has reversed the angle, which is precisely what a left-handed rotation
     // becomes once mirrored. A converter that also flipped the angle sign while
     // composing would land on +90 here and be right in every axis-aligned pose.
-    const SourceQuat turn = ComposeSourceRotation(
-        Angles(0.0f, 0.0f, 90.0f), SourceEulerOrder::ZXY,
-        SourceAngleUnit::Degrees);
+    const SourceQuat turn = ComposeSourceRotation(Angles(0.0f, 0.0f, 90.0f), SourceEulerOrder::ZXY,
+                                                  SourceAngleUnit::Degrees);
     const pxr::GfQuatf canonical = ConvertRotation(basis, turn);
     assert(NearRotation(canonical, AboutY(-90.0f)));
     assert(NearVector(canonical.Transform(pxr::GfVec3f(0.0f, 0.0f, 1.0f)),
@@ -381,9 +376,8 @@ void
 TestRightHandedRotationKeepsItsAngle()
 {
     const CanonicalBasis basis = *MakeCanonicalBasis(BaseProfile());
-    const SourceQuat turn = ComposeSourceRotation(
-        Angles(0.0f, 0.0f, 90.0f), SourceEulerOrder::ZXY,
-        SourceAngleUnit::Degrees);
+    const SourceQuat turn = ComposeSourceRotation(Angles(0.0f, 0.0f, 90.0f), SourceEulerOrder::ZXY,
+                                                  SourceAngleUnit::Degrees);
     assert(NearRotation(ConvertRotation(basis, turn), AboutY(90.0f)));
 }
 
@@ -416,13 +410,11 @@ TestARotationTooSmallToSquareIsStillNormalised()
     skeleton.joints[1].restRotation = tiny;
     SourceProfile profile = BaseProfile();
     profile.restPose = RestPoseSource::StatedRestRotations;
-    const SourceConversion result =
-        ConvertSourceToCanonical(skeleton, BaseAnimation(), profile);
+    const SourceConversion result = ConvertSourceToCanonical(skeleton, BaseAnimation(), profile);
     assert(result.Converted());
     const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
     assert(NearRotation(result.rest.localRotations[spine], AboutY(45.0f)));
-    assert(std::abs(result.rest.localRotations[spine].GetLength() - 1.0f)
-           <= kTolerance.angle);
+    assert(std::abs(result.rest.localRotations[spine].GetLength() - 1.0f) <= kTolerance.angle);
 }
 
 // --- angle composition -----------------------------------------------------
@@ -435,11 +427,9 @@ TestComposeUsesTheDeclaredOrder()
     const SourceEulerAngles angles = Angles(30.0f, 40.0f, 50.0f);
     const CanonicalBasis basis = *MakeCanonicalBasis(BaseProfile());
     const pxr::GfQuatf zxy = ConvertRotation(
-        basis, ComposeSourceRotation(angles, SourceEulerOrder::ZXY,
-                                     SourceAngleUnit::Degrees));
+        basis, ComposeSourceRotation(angles, SourceEulerOrder::ZXY, SourceAngleUnit::Degrees));
     const pxr::GfQuatf xyz = ConvertRotation(
-        basis, ComposeSourceRotation(angles, SourceEulerOrder::XYZ,
-                                     SourceAngleUnit::Degrees));
+        basis, ComposeSourceRotation(angles, SourceEulerOrder::XYZ, SourceAngleUnit::Degrees));
     assert(!NearRotation(zxy, xyz));
 }
 
@@ -455,8 +445,7 @@ TestCompositionOrderIsLastFirst()
     // Order XYZ: first is the X angle, third is the Z angle, so the rotation is
     // Rx * Rz and the Z turn happens first.
     const pxr::GfQuatf composed = ConvertRotation(
-        basis, ComposeSourceRotation(Angles(90.0f, 0.0f, 90.0f),
-                                     SourceEulerOrder::XYZ,
+        basis, ComposeSourceRotation(Angles(90.0f, 0.0f, 90.0f), SourceEulerOrder::XYZ,
                                      SourceAngleUnit::Degrees));
     // Rz(90) takes +X to +Y; Rx(90) then takes +Y to +Z.
     assert(NearVector(composed.Transform(pxr::GfVec3f(1.0f, 0.0f, 0.0f)),
@@ -468,14 +457,12 @@ TestAngleUnitIsTheTracksAnswer()
 {
     const CanonicalBasis basis = *MakeCanonicalBasis(BaseProfile());
     const pxr::GfQuatf degrees = ConvertRotation(
-        basis, ComposeSourceRotation(Angles(0.0f, 0.0f, 90.0f),
-                                     SourceEulerOrder::ZXY,
+        basis, ComposeSourceRotation(Angles(0.0f, 0.0f, 90.0f), SourceEulerOrder::ZXY,
                                      SourceAngleUnit::Degrees));
     const pxr::GfQuatf radians = ConvertRotation(
-        basis, ComposeSourceRotation(
-                   Angles(0.0f, 0.0f,
-                          static_cast<float>(3.14159265358979323846 / 2.0)),
-                   SourceEulerOrder::ZXY, SourceAngleUnit::Radians));
+        basis,
+        ComposeSourceRotation(Angles(0.0f, 0.0f, static_cast<float>(3.14159265358979323846 / 2.0)),
+                              SourceEulerOrder::ZXY, SourceAngleUnit::Radians));
     assert(NearRotation(degrees, radians));
 }
 
@@ -484,8 +471,8 @@ TestAngleUnitIsTheTracksAnswer()
 void
 TestRestPoseFromOffsets()
 {
-    const SourceConversion result = ConvertSourceToCanonical(
-        BaseSkeleton(), BaseAnimation(), BaseProfile());
+    const SourceConversion result =
+        ConvertSourceToCanonical(BaseSkeleton(), BaseAnimation(), BaseProfile());
     assert(result.Converted());
 
     const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
@@ -498,18 +485,14 @@ TestRestPoseFromOffsets()
 
     // `rest-offsets` states no rest rotation, so every canonical rest rotation
     // is identity -- and that is a reading of the file rather than a default.
-    assert(NearRotation(result.rest.localRotations[spine],
-                        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
+    assert(NearRotation(result.rest.localRotations[spine], pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
 
     // The hips sit at the root's own offset, in metres.
-    assert(NearVector(result.rest.localTranslations[hips],
-                      pxr::GfVec3f(0.0f, 0.9f, 0.0f)));
+    assert(NearVector(result.rest.localTranslations[hips], pxr::GfVec3f(0.0f, 0.9f, 0.0f)));
     // The spine is two source joints below it, and the segment nothing maps is
     // *on the path*: 10 + 10 centimetres.
-    assert(NearVector(result.rest.localTranslations[spine],
-                      pxr::GfVec3f(0.0f, 0.2f, 0.0f)));
-    assert(NearVector(result.rest.localTranslations[head],
-                      pxr::GfVec3f(0.0f, 0.3f, 0.0f)));
+    assert(NearVector(result.rest.localTranslations[spine], pxr::GfVec3f(0.0f, 0.2f, 0.0f)));
+    assert(NearVector(result.rest.localTranslations[head], pxr::GfVec3f(0.0f, 0.3f, 0.0f)));
 
     // Which bone absorbed a chain is reported, because a cross-source
     // comparison will want to know.
@@ -539,21 +522,18 @@ TestRestPoseFromStatedRotations()
 
     SourceProfile profile = BaseProfile();
     profile.restPose = RestPoseSource::StatedRestRotations;
-    const SourceConversion result =
-        ConvertSourceToCanonical(skeleton, BaseAnimation(), profile);
+    const SourceConversion result = ConvertSourceToCanonical(skeleton, BaseAnimation(), profile);
     assert(result.Converted());
 
     const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
     assert(NearRotation(result.rest.localRotations[spine], AboutY(45.0f)));
     // Normalised on the way in: the double-length quaternion above describes a
     // 45-degree turn and nothing else, and `GetLength` says so.
-    assert(std::abs(result.rest.localRotations[spine].GetLength() - 1.0f)
-           <= kTolerance.angle);
+    assert(std::abs(result.rest.localRotations[spine].GetLength() - 1.0f) <= kTolerance.angle);
     // The hips are above it and unaffected; the head is below a bound joint that
     // states nothing.
     const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
-    assert(NearRotation(result.rest.localRotations[hips],
-                        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
+    assert(NearRotation(result.rest.localRotations[hips], pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
 
     // The same rig read as `rest-offsets` states no rest rotation at all, which
     // is the difference between "the source has none" and "the source says
@@ -561,8 +541,8 @@ TestRestPoseFromStatedRotations()
     const SourceConversion offsets =
         ConvertSourceToCanonical(skeleton, BaseAnimation(), BaseProfile());
     assert(offsets.Converted());
-    assert(NearRotation(offsets.rest.localRotations[spine],
-                        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
+    assert(
+        NearRotation(offsets.rest.localRotations[spine], pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
 }
 
 // `first-frame`: the writer's first sample is the rest pose. The clip still
@@ -572,12 +552,10 @@ void
 TestRestPoseFromFirstFrame()
 {
     SourceAnimation animation = BaseAnimation();
-    animation.tracks[2] = RotationTrack({Angles(0.0f, 0.0f, 30.0f),
-                                         Angles(0.0f, 0.0f, 80.0f)});
+    animation.tracks[2] = RotationTrack({Angles(0.0f, 0.0f, 30.0f), Angles(0.0f, 0.0f, 80.0f)});
     SourceProfile profile = BaseProfile();
     profile.restPose = RestPoseSource::FirstFrame;
-    const SourceConversion result =
-        ConvertSourceToCanonical(BaseSkeleton(), animation, profile);
+    const SourceConversion result = ConvertSourceToCanonical(BaseSkeleton(), animation, profile);
     assert(result.Converted());
 
     const auto spine = static_cast<std::size_t>(motion::HumanBone::Spine);
@@ -585,26 +563,23 @@ TestRestPoseFromFirstFrame()
     assert(NearRotation(result.rest.localRotations[spine], AboutY(30.0f)));
     // And the samples are unchanged by that: frame 0 still reports 30, not the
     // zero a rest-relative clip would carry.
-    assert(NearRotation(result.animation.samples[0].localRotations[spine],
-                        AboutY(30.0f)));
-    assert(NearRotation(result.animation.samples[1].localRotations[spine],
-                        AboutY(80.0f)));
+    assert(NearRotation(result.animation.samples[0].localRotations[spine], AboutY(30.0f)));
+    assert(NearRotation(result.animation.samples[1].localRotations[spine], AboutY(80.0f)));
 
     // An empty clip has no first frame to read, and the rest falls back to the
     // offsets rather than to whatever an out-of-range read would return.
     SourceAnimation empty = BaseAnimation();
     empty.frameCount = 0;
-    for (SourceJointTrack& track : empty.tracks) {
+    for (SourceJointTrack& track : empty.tracks)
+    {
         track.translations.clear();
         track.eulerAngles.clear();
     }
     empty.frameTime = 0.0;
-    const SourceConversion none =
-        ConvertSourceToCanonical(BaseSkeleton(), empty, profile);
+    const SourceConversion none = ConvertSourceToCanonical(BaseSkeleton(), empty, profile);
     assert(none.Converted());
     assert(none.animation.samples.empty());
-    assert(NearRotation(none.rest.localRotations[spine],
-                        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
+    assert(NearRotation(none.rest.localRotations[spine], pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
 }
 
 // An absent bone is not an identity sample (MOTION_CONTRACT.md). A bone whose
@@ -640,10 +615,8 @@ TestUnmappedJointRotationIsComposedNotDropped()
     SourceAnimation animation = BaseAnimation();
     // The segment turns thirty degrees about the up axis; the joint below it
     // turns sixty. Nothing else moves.
-    animation.tracks[1] = RotationTrack({Angles(0.0f, 0.0f, 30.0f),
-                                         Angles(0.0f, 0.0f, 30.0f)});
-    animation.tracks[2] = RotationTrack({Angles(0.0f, 0.0f, 60.0f),
-                                         Angles(0.0f, 0.0f, 60.0f)});
+    animation.tracks[1] = RotationTrack({Angles(0.0f, 0.0f, 30.0f), Angles(0.0f, 0.0f, 30.0f)});
+    animation.tracks[2] = RotationTrack({Angles(0.0f, 0.0f, 60.0f), Angles(0.0f, 0.0f, 60.0f)});
     const SourceConversion result =
         ConvertSourceToCanonical(BaseSkeleton(), animation, BaseProfile());
     assert(result.Converted());
@@ -652,8 +625,7 @@ TestUnmappedJointRotationIsComposedNotDropped()
     // Ninety, not sixty: the segment's thirty degrees would otherwise be lost
     // and everything below it would sit thirty degrees wrong -- a subtly
     // misassembled body rather than a failure.
-    assert(NearRotation(result.animation.samples[0].localRotations[spine],
-                        AboutY(90.0f)));
+    assert(NearRotation(result.animation.samples[0].localRotations[spine], AboutY(90.0f)));
 
     // The head is directly under a bound joint, so nothing is composed into it.
     const auto head = static_cast<std::size_t>(motion::HumanBone::Head);
@@ -665,8 +637,7 @@ void
 TestRootTranslationPolicies()
 {
     SourceAnimation animation = BaseAnimation();
-    animation.tracks[0].translations = {Vec(0.0f, 90.0f, 0.0f),
-                                        Vec(5.0f, 95.0f, 0.0f)};
+    animation.tracks[0].translations = {Vec(0.0f, 90.0f, 0.0f), Vec(5.0f, 95.0f, 0.0f)};
 
     {
         // Absolute: the sample is the position, and 95 centimetres of height is
@@ -710,20 +681,16 @@ void
 TestRootRotationPolicies()
 {
     SourceAnimation animation = BaseAnimation();
-    animation.tracks[0] = RotationTrack({Angles(0.0f, 0.0f, 45.0f),
-                                         Angles(0.0f, 0.0f, 45.0f)});
-    animation.tracks[0].translations = {Vec(0.0f, 90.0f, 0.0f),
-                                        Vec(0.0f, 90.0f, 0.0f)};
+    animation.tracks[0] = RotationTrack({Angles(0.0f, 0.0f, 45.0f), Angles(0.0f, 0.0f, 45.0f)});
+    animation.tracks[0].translations = {Vec(0.0f, 90.0f, 0.0f), Vec(0.0f, 90.0f, 0.0f)};
     const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
     {
         const SourceConversion result =
             ConvertSourceToCanonical(BaseSkeleton(), animation, BaseProfile());
         assert(result.Converted());
         assert(result.animation.samples[0].root.hasOrientation);
-        assert(NearRotation(result.animation.samples[0].root.worldOrientation,
-                            AboutY(45.0f)));
-        assert(NearRotation(result.animation.samples[0].localRotations[hips],
-                            AboutY(45.0f)));
+        assert(NearRotation(result.animation.samples[0].root.worldOrientation, AboutY(45.0f)));
+        assert(NearRotation(result.animation.samples[0].localRotations[hips], AboutY(45.0f)));
     }
     {
         // A root whose rotation says nothing about the body: dropped from the
@@ -754,8 +721,8 @@ void
 TestRootPlacementComposesThePathToTheHips()
 {
     {
-        const SourceConversion result = ConvertSourceToCanonical(
-            SplitRootSkeleton(), SplitRootAnimation(), SplitRootProfile());
+        const SourceConversion result =
+            ConvertSourceToCanonical(SplitRootSkeleton(), SplitRootAnimation(), SplitRootProfile());
         assert(result.Converted());
 
         // 20 centimetres of Z from the reference node and the hips' own
@@ -771,20 +738,18 @@ TestRootPlacementComposesThePathToTheHips()
         // facing anywhere, which is motion that looks merely odd rather than
         // broken.
         assert(result.animation.samples[1].root.hasOrientation);
-        assert(NearRotation(result.animation.samples[1].root.worldOrientation,
-                            AboutY(45.0f)));
+        assert(NearRotation(result.animation.samples[1].root.worldOrientation, AboutY(45.0f)));
     }
     {
         // A composition, not a sum. Turning the reference node halfway round
         // must turn the offset the hips state underneath it; 180 degrees is
         // chosen because it negates X and Z whichever way the basis reads.
         SourceAnimation animation = SplitRootAnimation();
-        animation.tracks[0] = RotationTrack({Angles(0.0f, 0.0f, 180.0f),
-                                             Angles(0.0f, 0.0f, 180.0f)});
-        animation.tracks[0].translations = {Vec(0.0f, 0.0f, 0.0f),
-                                            Vec(0.0f, 0.0f, 20.0f)};
-        const SourceConversion result = ConvertSourceToCanonical(
-            SplitRootSkeleton(), animation, SplitRootProfile());
+        animation.tracks[0] =
+            RotationTrack({Angles(0.0f, 0.0f, 180.0f), Angles(0.0f, 0.0f, 180.0f)});
+        animation.tracks[0].translations = {Vec(0.0f, 0.0f, 0.0f), Vec(0.0f, 0.0f, 20.0f)};
+        const SourceConversion result =
+            ConvertSourceToCanonical(SplitRootSkeleton(), animation, SplitRootProfile());
         assert(result.Converted());
         assert(NearVector(result.animation.samples[1].root.worldPosition,
                           pxr::GfVec3f(-0.10f, 0.92f, 0.20f)));
@@ -800,27 +765,25 @@ TestRestFromFirstFrameTakesTranslationsToo()
 {
     const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
     {
-        const SourceConversion result = ConvertSourceToCanonical(
-            SplitRootSkeleton(), SplitRootAnimation(), SplitRootProfile());
+        const SourceConversion result =
+            ConvertSourceToCanonical(SplitRootSkeleton(), SplitRootAnimation(), SplitRootProfile());
         assert(result.Converted());
         // `rest-offsets` says the offsets are the rest and is taken at its
         // word, artefact and all: four metres of Z that no sample in the clip
         // goes anywhere near. A profile stating this of such a rig is wrong,
         // and the converter is not the layer that gets to decide so.
-        assert(NearVector(result.rest.localTranslations[hips],
-                          pxr::GfVec3f(0.0f, 0.90f, -4.0f)));
+        assert(NearVector(result.rest.localTranslations[hips], pxr::GfVec3f(0.0f, 0.90f, -4.0f)));
     }
     {
         SourceProfile profile = SplitRootProfile();
         profile.restPose = RestPoseSource::FirstFrame;
-        const SourceConversion result = ConvertSourceToCanonical(
-            SplitRootSkeleton(), SplitRootAnimation(), profile);
+        const SourceConversion result =
+            ConvertSourceToCanonical(SplitRootSkeleton(), SplitRootAnimation(), profile);
         assert(result.Converted());
         // Frame 0's translations. The four metres are gone, and they would
         // otherwise have reached `vrmRetarget` as a rest for it to subtract
         // from every frame of the clip.
-        assert(NearVector(result.rest.localTranslations[hips],
-                          pxr::GfVec3f(0.10f, 0.92f, 0.0f)));
+        assert(NearVector(result.rest.localTranslations[hips], pxr::GfVec3f(0.10f, 0.92f, 0.0f)));
     }
 }
 
@@ -832,8 +795,8 @@ void
 TestRootPathTranslationIsCarriedNotDropped()
 {
     {
-        const SourceConversion result = ConvertSourceToCanonical(
-            SplitRootSkeleton(), SplitRootAnimation(), SplitRootProfile());
+        const SourceConversion result =
+            ConvertSourceToCanonical(SplitRootSkeleton(), SplitRootAnimation(), SplitRootProfile());
         assert(result.Converted());
         assert(result.report.droppedTranslationJoints.empty());
         assert(result.report.restatedTranslationJoints.empty());
@@ -841,8 +804,8 @@ TestRootPathTranslationIsCarriedNotDropped()
     {
         SourceProfile profile = SplitRootProfile();
         profile.rootTranslation = RootTranslationPolicy::None;
-        const SourceConversion result = ConvertSourceToCanonical(
-            SplitRootSkeleton(), SplitRootAnimation(), profile);
+        const SourceConversion result =
+            ConvertSourceToCanonical(SplitRootSkeleton(), SplitRootAnimation(), profile);
         assert(result.Converted());
         assert(!result.animation.samples[1].root.hasPosition);
         // Both of them, because the policy drops the whole path's answer and
@@ -864,8 +827,8 @@ TestARootPathStatingNoTranslationHasNoPlacement()
     SourceAnimation animation = SplitRootAnimation();
     animation.tracks[0].translations.clear();
     animation.tracks[1].translations.clear();
-    const SourceConversion result = ConvertSourceToCanonical(
-        SplitRootSkeleton(), animation, SplitRootProfile());
+    const SourceConversion result =
+        ConvertSourceToCanonical(SplitRootSkeleton(), animation, SplitRootProfile());
     assert(result.Converted());
     assert(!result.animation.samples[0].root.hasPosition);
     // Orientation is the other question and the path still answers it.
@@ -886,7 +849,8 @@ SourceSkeleton
 BoneLocalSkeleton()
 {
     SourceSkeleton skeleton;
-    const auto joint = [](const char* name, int parent, float length) {
+    const auto joint = [](const char* name, int parent, float length)
+    {
         SourceJoint out;
         out.name = name;
         out.parent = parent;
@@ -933,7 +897,8 @@ HipsRootedSkeleton()
     skeleton.joints.erase(skeleton.joints.begin());
     skeleton.joints[0].parent = -1;
     skeleton.joints[0].restTranslation = Vec(0.0f, 90.0f, 0.0f);
-    for (std::size_t index = 1; index < skeleton.joints.size(); ++index) {
+    for (std::size_t index = 1; index < skeleton.joints.size(); ++index)
+    {
         skeleton.joints[index].parent -= 1;
     }
     return skeleton;
@@ -956,10 +921,8 @@ HipsRootedAnimation()
     animation.frameTime = 0.5;
     animation.provenance.format = "example";
     animation.provenance.sourceId = "capture.example";
-    animation.tracks.assign(
-        6, RotationTrack({Angles(0.0f, 0.0f, 0.0f), Angles(0.0f, 0.0f, 0.0f)}));
-    animation.tracks[0].translations = {Vec(0.0f, 90.0f, 0.0f),
-                                        Vec(0.0f, 90.0f, 0.0f)};
+    animation.tracks.assign(6, RotationTrack({Angles(0.0f, 0.0f, 0.0f), Angles(0.0f, 0.0f, 0.0f)}));
+    animation.tracks[0].translations = {Vec(0.0f, 90.0f, 0.0f), Vec(0.0f, 90.0f, 0.0f)};
     return animation;
 }
 
@@ -971,10 +934,8 @@ BoneLocalAnimation()
     animation.frameTime = 0.5;
     animation.provenance.format = "example";
     animation.provenance.sourceId = "capture.example";
-    animation.tracks.assign(
-        7, RotationTrack({Angles(0.0f, 0.0f, 0.0f), Angles(0.0f, 0.0f, 0.0f)}));
-    animation.tracks[0].translations = {Vec(0.0f, 90.0f, 0.0f),
-                                        Vec(0.0f, 90.0f, 0.0f)};
+    animation.tracks.assign(7, RotationTrack({Angles(0.0f, 0.0f, 0.0f), Angles(0.0f, 0.0f, 0.0f)}));
+    animation.tracks[0].translations = {Vec(0.0f, 90.0f, 0.0f), Vec(0.0f, 90.0f, 0.0f)};
     return animation;
 }
 
@@ -986,12 +947,14 @@ WorldRest(const motionSource::CanonicalRestPose& rest, motion::HumanBone bone)
 {
     std::vector<motion::HumanBone> chain;
     for (std::optional<motion::HumanBone> at = bone; at;
-         at = motion::NearestPresentAncestor(*at, rest.present)) {
+         at = motion::NearestPresentAncestor(*at, rest.present))
+    {
         chain.push_back(*at);
     }
     pxr::GfQuatf rotation(1.0f, pxr::GfVec3f(0.0f));
     pxr::GfVec3f position(0.0f);
-    for (auto step = chain.rbegin(); step != chain.rend(); ++step) {
+    for (auto step = chain.rbegin(); step != chain.rend(); ++step)
+    {
         const auto slot = static_cast<std::size_t>(*step);
         position += rotation.Transform(rest.localTranslations[slot]);
         rotation = rotation * rest.localRotations[slot];
@@ -1004,18 +967,14 @@ WorldRest(const motionSource::CanonicalRestPose& rest, motion::HumanBone bone)
 void
 TestTPoseRestStandsTheRigUp()
 {
-    const SourceConversion result = ConvertSourceToCanonical(
-        BoneLocalSkeleton(), BoneLocalAnimation(), BoneLocalProfile());
+    const SourceConversion result =
+        ConvertSourceToCanonical(BoneLocalSkeleton(), BoneLocalAnimation(), BoneLocalProfile());
     assert(result.Converted());
 
-    const pxr::GfVec3f hips =
-        WorldRest(result.rest, motion::HumanBone::Hips).second;
-    const pxr::GfVec3f spine =
-        WorldRest(result.rest, motion::HumanBone::Spine).second;
-    const pxr::GfVec3f head =
-        WorldRest(result.rest, motion::HumanBone::Head).second;
-    const pxr::GfVec3f hand =
-        WorldRest(result.rest, motion::HumanBone::LeftHand).second;
+    const pxr::GfVec3f hips = WorldRest(result.rest, motion::HumanBone::Hips).second;
+    const pxr::GfVec3f spine = WorldRest(result.rest, motion::HumanBone::Spine).second;
+    const pxr::GfVec3f head = WorldRest(result.rest, motion::HumanBone::Head).second;
+    const pxr::GfVec3f hand = WorldRest(result.rest, motion::HumanBone::LeftHand).second;
 
     // Centimetres in, metres out. The spine sits its own offset above the hips
     // and the head above that: 0.20 and 0.30 of the rig's own bone lengths,
@@ -1040,8 +999,8 @@ TestTPoseRestStandsTheRigUp()
     // every bone by a rest that is not a pose.
     SourceProfile offsets = BoneLocalProfile();
     offsets.restPose = RestPoseSource::RestOffsets;
-    const SourceConversion flat = ConvertSourceToCanonical(
-        BoneLocalSkeleton(), BoneLocalAnimation(), offsets);
+    const SourceConversion flat =
+        ConvertSourceToCanonical(BoneLocalSkeleton(), BoneLocalAnimation(), offsets);
     assert(flat.Converted());
     assert(NearVector(WorldRest(flat.rest, motion::HumanBone::Head).second,
                       pxr::GfVec3f(0.50f, 0.90f, 0.0f)));
@@ -1066,8 +1025,8 @@ TestTPoseRestObeysADroppedRootRotation()
 {
     SourceProfile profile = HipsRootedProfile();
     profile.rootRotation = RootRotationPolicy::None;
-    const SourceConversion result = ConvertSourceToCanonical(
-        HipsRootedSkeleton(), HipsRootedAnimation(), profile);
+    const SourceConversion result =
+        ConvertSourceToCanonical(HipsRootedSkeleton(), HipsRootedAnimation(), profile);
     assert(result.Converted());
 
     // The spine leaves the silenced hips along the rig's own +X and only then
@@ -1079,8 +1038,8 @@ TestTPoseRestObeysADroppedRootRotation()
 
     // And with the rotation kept, the same rig stands all the way up, which is
     // what says the difference above is the policy and not the construction.
-    const SourceConversion kept = ConvertSourceToCanonical(
-        HipsRootedSkeleton(), HipsRootedAnimation(), HipsRootedProfile());
+    const SourceConversion kept =
+        ConvertSourceToCanonical(HipsRootedSkeleton(), HipsRootedAnimation(), HipsRootedProfile());
     assert(kept.Converted());
     assert(NearVector(WorldRest(kept.rest, motion::HumanBone::Head).second,
                       pxr::GfVec3f(0.0f, 1.40f, 0.0f)));
@@ -1094,8 +1053,8 @@ TestTPoseRestKeepsTheRigsOwnProportions()
 {
     SourceSkeleton skeleton = BoneLocalSkeleton();
     skeleton.joints[3].restTranslation = Vec(45.0f, 0.0f, 0.0f); // a long neck
-    const SourceConversion result = ConvertSourceToCanonical(
-        skeleton, BoneLocalAnimation(), BoneLocalProfile());
+    const SourceConversion result =
+        ConvertSourceToCanonical(skeleton, BoneLocalAnimation(), BoneLocalProfile());
     assert(result.Converted());
     assert(NearVector(WorldRest(result.rest, motion::HumanBone::Head).second,
                       pxr::GfVec3f(0.0f, 1.55f, 0.0f)));
@@ -1109,10 +1068,8 @@ TestTranslationReportSeparatesLossFromNoise()
 {
     SourceAnimation animation = BaseAnimation();
     // `back` restates its own offset; `crown` actually moves.
-    animation.tracks[2].translations = {Vec(0.0f, 10.0f, 0.0f),
-                                        Vec(0.0f, 10.0f, 0.0f)};
-    animation.tracks[3].translations = {Vec(0.0f, 30.0f, 0.0f),
-                                        Vec(1.0f, 30.0f, 0.0f)};
+    animation.tracks[2].translations = {Vec(0.0f, 10.0f, 0.0f), Vec(0.0f, 10.0f, 0.0f)};
+    animation.tracks[3].translations = {Vec(0.0f, 30.0f, 0.0f), Vec(1.0f, 30.0f, 0.0f)};
     const SourceConversion result =
         ConvertSourceToCanonical(BaseSkeleton(), animation, BaseProfile());
     assert(result.Converted());
@@ -1127,14 +1084,12 @@ TestTranslationReportSeparatesLossFromNoise()
 void
 TestTiming()
 {
-    const SourceConversion result = ConvertSourceToCanonical(
-        BaseSkeleton(), BaseAnimation(), BaseProfile());
+    const SourceConversion result =
+        ConvertSourceToCanonical(BaseSkeleton(), BaseAnimation(), BaseProfile());
     assert(result.Converted());
     assert(result.animation.samples.size() == 2);
-    assert(std::abs(result.animation.samples[0].timestamp - 0.0)
-           <= kTolerance.time);
-    assert(std::abs(result.animation.samples[1].timestamp - 0.5)
-           <= kTolerance.time);
+    assert(std::abs(result.animation.samples[0].timestamp - 0.0) <= kTolerance.time);
+    assert(std::abs(result.animation.samples[1].timestamp - 0.5) <= kTolerance.time);
     assert(std::abs(result.animation.startTime - 0.0) <= kTolerance.time);
     // One sample is an instant: the span is between the first and last, not
     // frameCount * frameTime.
@@ -1145,8 +1100,8 @@ TestTiming()
 void
 TestProvenance()
 {
-    const SourceConversion result = ConvertSourceToCanonical(
-        BaseSkeleton(), BaseAnimation(), BaseProfile());
+    const SourceConversion result =
+        ConvertSourceToCanonical(BaseSkeleton(), BaseAnimation(), BaseProfile());
     assert(result.Converted());
     // The two answers only this layer holds: a reader states neither.
     assert(result.provenance.producer == "Example Producer");
@@ -1171,10 +1126,8 @@ TestDeterminism()
     const SourceSkeleton skeleton = BaseSkeleton();
     const SourceAnimation animation = BaseAnimation();
     const SourceProfile profile = BaseProfile();
-    const SourceConversion first =
-        ConvertSourceToCanonical(skeleton, animation, profile);
-    const SourceConversion second =
-        ConvertSourceToCanonical(skeleton, animation, profile);
+    const SourceConversion first = ConvertSourceToCanonical(skeleton, animation, profile);
+    const SourceConversion second = ConvertSourceToCanonical(skeleton, animation, profile);
     assert(first.Converted() && second.Converted());
     // `operator==` and not `NearlyEqual`: two runs over one input are the same
     // recorded values or they are a defect, not a tolerance question.
@@ -1236,11 +1189,9 @@ TestQuaternionTrackIsRefusedWithAReason()
 void
 TestRefusalNamesAreComplete()
 {
-    for (std::size_t index = 0;
-         index < motionSource::ConversionRefusalCount; ++index) {
-        assert(!motionSource::ConversionRefusalName(
-                    static_cast<ConversionRefusal>(index))
-                    .empty());
+    for (std::size_t index = 0; index < motionSource::ConversionRefusalCount; ++index)
+    {
+        assert(!motionSource::ConversionRefusalName(static_cast<ConversionRefusal>(index)).empty());
     }
 }
 

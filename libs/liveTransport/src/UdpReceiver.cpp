@@ -18,27 +18,27 @@
 #include <utility>
 
 #if defined(_WIN32)
-#    ifndef WIN32_LEAN_AND_MEAN
-#        define WIN32_LEAN_AND_MEAN
-#    endif
-#    ifndef NOMINMAX
-#        define NOMINMAX
-#    endif
-#    include <winsock2.h>
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <winsock2.h>
 // After winsock2.h, always: ws2tcpip.h needs its declarations and including the
 // two the other way round pulls the winsock 1.1 header through windows.h.
-#    include <ws2tcpip.h>
+#include <ws2tcpip.h>
 #else
-#    include <arpa/inet.h>
-#    include <cerrno>
-#    include <cstring>
-#    include <fcntl.h>
-#    include <netdb.h>
-#    include <netinet/in.h>
-#    include <poll.h>
-#    include <sys/socket.h>
-#    include <sys/types.h>
-#    include <unistd.h>
+#include <arpa/inet.h>
+#include <cerrno>
+#include <cstring>
+#include <fcntl.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 #endif
 
 namespace liveTransport
@@ -68,7 +68,8 @@ EnsureSocketsUsable()
         }
         ~Startup()
         {
-            if (ok) {
+            if (ok)
+            {
                 WSACleanup();
             }
         }
@@ -89,25 +90,26 @@ SocketErrorText(int code)
 {
     char* text = nullptr;
     const DWORD length = FormatMessageA(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
-            | FORMAT_MESSAGE_IGNORE_INSERTS,
-        nullptr, static_cast<DWORD>(code),
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr, static_cast<DWORD>(code), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         reinterpret_cast<char*>(&text), 0, nullptr);
     std::string message;
-    if (length != 0 && text) {
+    if (length != 0 && text)
+    {
         message.assign(text, length);
     }
-    if (text) {
+    if (text)
+    {
         LocalFree(text);
     }
     // FormatMessage ends its lines; a diagnostic is one line by contract.
-    while (!message.empty()
-           && (message.back() == '\n' || message.back() == '\r'
-               || message.back() == ' ')) {
+    while (!message.empty() &&
+           (message.back() == '\n' || message.back() == '\r' || message.back() == ' '))
+    {
         message.pop_back();
     }
-    if (message.empty()) {
+    if (message.empty())
+    {
         message = "socket error " + std::to_string(code);
     }
     return message;
@@ -129,8 +131,7 @@ SetNonBlocking(SocketHandle handle)
 int
 PollSockets(PollDescriptor* descriptors, int count, int timeoutMilliseconds)
 {
-    return WSAPoll(descriptors, static_cast<ULONG>(count),
-                   timeoutMilliseconds);
+    return WSAPoll(descriptors, static_cast<ULONG>(count), timeoutMilliseconds);
 }
 
 bool
@@ -153,8 +154,7 @@ ErrorIsInterrupted(int code)
 bool
 ErrorIsTransient(int code)
 {
-    return code == WSAECONNRESET || code == WSAENETRESET
-           || code == WSAETIMEDOUT;
+    return code == WSAECONNRESET || code == WSAENETRESET || code == WSAETIMEDOUT;
 }
 
 bool
@@ -197,7 +197,8 @@ bool
 SetNonBlocking(SocketHandle handle)
 {
     const int flags = ::fcntl(handle, F_GETFL, 0);
-    if (flags == -1) {
+    if (flags == -1)
+    {
         return false;
     }
     return ::fcntl(handle, F_SETFL, flags | O_NONBLOCK) == 0;
@@ -206,8 +207,7 @@ SetNonBlocking(SocketHandle handle)
 int
 PollSockets(PollDescriptor* descriptors, int count, int timeoutMilliseconds)
 {
-    return ::poll(descriptors, static_cast<nfds_t>(count),
-                  timeoutMilliseconds);
+    return ::poll(descriptors, static_cast<nfds_t>(count), timeoutMilliseconds);
 }
 
 bool
@@ -257,16 +257,19 @@ FormatEndpoint(const sockaddr* address, std::size_t length)
     // above what `NI_NUMERICHOST | NI_NUMERICSERV` can produce.
     char host[64] = {};
     char service[16] = {};
-    const int result = ::getnameinfo(
-        address, static_cast<socklen_t>(length), host, sizeof(host), service,
-        sizeof(service), NI_NUMERICHOST | NI_NUMERICSERV);
-    if (result != 0) {
+    const int result = ::getnameinfo(address, static_cast<socklen_t>(length), host, sizeof(host),
+                                     service, sizeof(service), NI_NUMERICHOST | NI_NUMERICSERV);
+    if (result != 0)
+    {
         return std::string();
     }
     std::string endpoint;
-    if (address->sa_family == AF_INET6) {
+    if (address->sa_family == AF_INET6)
+    {
         endpoint = "[" + std::string(host) + "]";
-    } else {
+    }
+    else
+    {
         endpoint = host;
     }
     endpoint += ":";
@@ -277,28 +280,30 @@ FormatEndpoint(const sockaddr* address, std::size_t length)
 bool
 AddressIsLoopbackOnly(const sockaddr* address)
 {
-    if (address->sa_family == AF_INET) {
+    if (address->sa_family == AF_INET)
+    {
         const auto* v4 = reinterpret_cast<const sockaddr_in*>(address);
         // 127.0.0.0/8, in host order.
         const std::uint32_t host = ntohl(v4->sin_addr.s_addr);
         return (host >> 24) == 127u;
     }
-    if (address->sa_family == AF_INET6) {
+    if (address->sa_family == AF_INET6)
+    {
         const auto* v6 = reinterpret_cast<const sockaddr_in6*>(address);
-        if (IN6_IS_ADDR_LOOPBACK(&v6->sin6_addr) != 0) {
+        if (IN6_IS_ADDR_LOOPBACK(&v6->sin6_addr) != 0)
+        {
             return true;
         }
         // `::ffff:127.0.0.1` is the same unreachable-from-the-LAN address
         // wearing the other family's clothes, and a dual-stack socket is how a
         // caller meets it. Reporting that one as reachable would be exactly
         // backwards for the question this answers.
-        if (IN6_IS_ADDR_V4MAPPED(&v6->sin6_addr) != 0) {
+        if (IN6_IS_ADDR_V4MAPPED(&v6->sin6_addr) != 0)
+        {
             // The last four bytes carry the IPv4 address; read them where they
             // are rather than through a member name that differs per platform.
             std::uint32_t mapped = 0;
-            std::memcpy(&mapped,
-                        reinterpret_cast<const std::uint8_t*>(&v6->sin6_addr)
-                            + 12,
+            std::memcpy(&mapped, reinterpret_cast<const std::uint8_t*>(&v6->sin6_addr) + 12,
                         sizeof(mapped));
             return (ntohl(mapped) >> 24) == 127u;
         }
@@ -317,8 +322,8 @@ double
 TicksToSeconds(std::int64_t ticks)
 {
     using Period = std::chrono::steady_clock::period;
-    return static_cast<double>(ticks) * static_cast<double>(Period::num)
-           / static_cast<double>(Period::den);
+    return static_cast<double>(ticks) * static_cast<double>(Period::num) /
+           static_cast<double>(Period::den);
 }
 
 // What the kernel says the receive buffer is, which is rarely what was asked
@@ -331,10 +336,10 @@ ReadReceiveBuffer(SocketHandle handle)
 {
     int granted = 0;
     socklen_t length = sizeof(granted);
-    if (::getsockopt(handle, SOL_SOCKET, SO_RCVBUF,
-                     reinterpret_cast<char*>(&granted), &length)
-            != 0
-        || granted < 0) {
+    if (::getsockopt(handle, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<char*>(&granted), &length) !=
+            0 ||
+        granted < 0)
+    {
         return 0;
     }
     return static_cast<std::size_t>(granted);
@@ -351,8 +356,7 @@ using internal::ClassifyPollWakeUp;
 using internal::PollWakeUp;
 using internal::TimeoutToMilliseconds;
 
-UdpReceiver::UdpReceiver()
-    : _epoch(SteadyTicks())
+UdpReceiver::UdpReceiver() : _epoch(SteadyTicks())
 {
 }
 
@@ -362,17 +366,17 @@ UdpReceiver::~UdpReceiver()
 }
 
 bool
-UdpReceiver::Open(const UdpReceiverConfig& config,
-                  std::vector<TransportEventReport>* events)
+UdpReceiver::Open(const UdpReceiverConfig& config, std::vector<TransportEventReport>* events)
 {
     Close();
 
-    const std::string requested =
-        config.listenAddress + ":" + std::to_string(config.listenPort);
+    const std::string requested = config.listenAddress + ":" + std::to_string(config.listenPort);
 
-    const auto fail = [&](const std::string& detail) {
+    const auto fail = [&](const std::string& detail)
+    {
         _lastError = detail;
-        if (events) {
+        if (events)
+        {
             TransportEventReport report;
             report.event = TransportEvent::BindFailed;
             report.subject = requested;
@@ -383,7 +387,8 @@ UdpReceiver::Open(const UdpReceiverConfig& config,
         return false;
     };
 
-    if (!EnsureSocketsUsable()) {
+    if (!EnsureSocketsUsable())
+    {
         return fail("the platform's socket layer could not be initialised");
     }
 
@@ -398,11 +403,11 @@ UdpReceiver::Open(const UdpReceiverConfig& config,
 
     addrinfo* resolved = nullptr;
     const std::string port = std::to_string(config.listenPort);
-    const int status =
-        ::getaddrinfo(config.listenAddress.c_str(), port.c_str(), &hints,
-                      &resolved);
-    if (status != 0 || !resolved) {
-        if (resolved) {
+    const int status = ::getaddrinfo(config.listenAddress.c_str(), port.c_str(), &hints, &resolved);
+    if (status != 0 || !resolved)
+    {
+        if (resolved)
+        {
             ::freeaddrinfo(resolved);
         }
         return fail("the listen address is not a numeric address this host "
@@ -410,35 +415,38 @@ UdpReceiver::Open(const UdpReceiverConfig& config,
     }
 
     std::string error;
-    for (const addrinfo* candidate = resolved; candidate;
-         candidate = candidate->ai_next) {
-        const SocketHandle handle = ::socket(
-            candidate->ai_family, candidate->ai_socktype,
-            candidate->ai_protocol);
-        if (static_cast<std::intptr_t>(handle) == kInvalidSocket) {
+    for (const addrinfo* candidate = resolved; candidate; candidate = candidate->ai_next)
+    {
+        const SocketHandle handle =
+            ::socket(candidate->ai_family, candidate->ai_socktype, candidate->ai_protocol);
+        if (static_cast<std::intptr_t>(handle) == kInvalidSocket)
+        {
             error = SocketErrorText(LastSocketError());
             continue;
         }
 
-        if (config.reuseAddress) {
+        if (config.reuseAddress)
+        {
             const int on = 1;
-            ::setsockopt(handle, SOL_SOCKET, SO_REUSEADDR,
-                         reinterpret_cast<const char*>(&on), sizeof(on));
+            ::setsockopt(handle, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&on),
+                         sizeof(on));
         }
-        if (config.receiveBufferBytes != 0) {
-            const int size = static_cast<int>(std::min<std::size_t>(
-                config.receiveBufferBytes, 0x7fffffffu));
-            ::setsockopt(handle, SOL_SOCKET, SO_RCVBUF,
-                         reinterpret_cast<const char*>(&size), sizeof(size));
+        if (config.receiveBufferBytes != 0)
+        {
+            const int size =
+                static_cast<int>(std::min<std::size_t>(config.receiveBufferBytes, 0x7fffffffu));
+            ::setsockopt(handle, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&size),
+                         sizeof(size));
         }
 
-        if (::bind(handle, candidate->ai_addr,
-                   static_cast<socklen_t>(candidate->ai_addrlen)) != 0) {
+        if (::bind(handle, candidate->ai_addr, static_cast<socklen_t>(candidate->ai_addrlen)) != 0)
+        {
             error = SocketErrorText(LastSocketError());
             CloseSocket(handle);
             continue;
         }
-        if (!SetNonBlocking(handle)) {
+        if (!SetNonBlocking(handle))
+        {
             // Every wait in this class is a poll followed by a non-blocking
             // read; a socket that will not go non-blocking would turn a zero
             // timeout into an indefinite one, which is the one behaviour a
@@ -453,9 +461,9 @@ UdpReceiver::Open(const UdpReceiverConfig& config,
     }
     ::freeaddrinfo(resolved);
 
-    if (_socket == -1) {
-        return fail(error.empty() ? std::string("the address could not be bound")
-                                  : error);
+    if (_socket == -1)
+    {
+        return fail(error.empty() ? std::string("the address could not be bound") : error);
     }
 
     // Sized once, and never resized again: this is where a datagram is read
@@ -467,14 +475,14 @@ UdpReceiver::Open(const UdpReceiverConfig& config,
 
     sockaddr_storage bound = {};
     socklen_t boundLength = sizeof(bound);
-    if (::getsockname(ToHandle(_socket),
-                      reinterpret_cast<sockaddr*>(&bound), &boundLength) == 0) {
-        _boundEndpoint =
-            FormatEndpoint(reinterpret_cast<const sockaddr*>(&bound),
-                           static_cast<std::size_t>(boundLength));
-        _loopbackOnly =
-            AddressIsLoopbackOnly(reinterpret_cast<const sockaddr*>(&bound));
-    } else {
+    if (::getsockname(ToHandle(_socket), reinterpret_cast<sockaddr*>(&bound), &boundLength) == 0)
+    {
+        _boundEndpoint = FormatEndpoint(reinterpret_cast<const sockaddr*>(&bound),
+                                        static_cast<std::size_t>(boundLength));
+        _loopbackOnly = AddressIsLoopbackOnly(reinterpret_cast<const sockaddr*>(&bound));
+    }
+    else
+    {
         _boundEndpoint = requested;
     }
 
@@ -499,7 +507,8 @@ UdpReceiver::Open(const UdpReceiverConfig& config,
 void
 UdpReceiver::Close() noexcept
 {
-    if (_socket != -1) {
+    if (_socket != -1)
+    {
         CloseSocket(ToHandle(_socket));
         _socket = -1;
     }
@@ -529,7 +538,8 @@ UdpReceiver::Now() const noexcept
 void
 UdpReceiver::_ReportSilence(std::vector<TransportEventReport>* events)
 {
-    if (_config.silenceTimeoutSeconds <= 0.0 || _silenceReported) {
+    if (_config.silenceTimeoutSeconds <= 0.0 || _silenceReported)
+    {
         return;
     }
     // Measured from the last accepted datagram, or from `Open` when none has
@@ -540,13 +550,15 @@ UdpReceiver::_ReportSilence(std::vector<TransportEventReport>* events)
     // members rather than from `_stats`, which a caller may zero at any moment
     // (UdpReceiver.h).
     const double since = Now() - _lastTrafficTime;
-    if (since < _config.silenceTimeoutSeconds) {
+    if (since < _config.silenceTimeoutSeconds)
+    {
         return;
     }
 
     _silenceReported = true;
     ++_stats.silenceReports;
-    if (!events) {
+    if (!events)
+    {
         // Counted even when nobody asked for the report: the tally is what a
         // session report reads, and it must not depend on whether the loop that
         // noticed had somewhere to put a message.
@@ -565,10 +577,9 @@ UdpReceiver::_ReportSilence(std::vector<TransportEventReport>* events)
     TransportEventReport report;
     report.event = TransportEvent::Silence;
     report.source = _boundEndpoint;
-    report.detail =
-        (_sawTraffic ? "the source stopped sending "
-                     : "no datagram has arrived since the receiver was opened ")
-        + FormatSeconds(since) + "s ago";
+    report.detail = (_sawTraffic ? "the source stopped sending "
+                                 : "no datagram has arrived since the receiver was opened ") +
+                    FormatSeconds(since) + "s ago";
     events->push_back(std::move(report));
 }
 
@@ -576,10 +587,12 @@ ReceiveStatus
 UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
                      std::vector<TransportEventReport>* events)
 {
-    if (!datagram) {
+    if (!datagram)
+    {
         return ReceiveStatus::Failed;
     }
-    if (_socket == -1) {
+    if (_socket == -1)
+    {
         return ReceiveStatus::Closed;
     }
 
@@ -599,12 +612,13 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
     // it reaches zero the poll stops blocking, so a socket that reports
     // readable and then yields nothing would turn the retry below into a tight
     // loop.
-    const auto spend = [&]() {
-        if (timeoutSeconds < 0.0) {
+    const auto spend = [&]()
+    {
+        if (timeoutSeconds < 0.0)
+        {
             return true;
         }
-        remaining = std::max(
-            0.0, timeoutSeconds - TicksToSeconds(SteadyTicks() - start));
+        remaining = std::max(0.0, timeoutSeconds - TicksToSeconds(SteadyTicks() - start));
         return remaining > 0.0;
     };
 
@@ -615,26 +629,31 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
     // found something waiting, so counting it as idle would tally it twice and
     // then diagnose "the source stopped sending" about a source that had
     // demonstrably just sent.
-    const auto quiet = [&]() {
+    const auto quiet = [&]()
+    {
         ++_stats.idleReceives;
         _ReportSilence(events);
         return ReceiveStatus::Idle;
     };
 
-    for (;;) {
+    for (;;)
+    {
         PollDescriptor descriptor = {};
         descriptor.fd = ToHandle(_socket);
         descriptor.events = POLLIN;
 
-        const int ready =
-            PollSockets(&descriptor, 1, TimeoutToMilliseconds(remaining));
-        if (ready == 0) {
+        const int ready = PollSockets(&descriptor, 1, TimeoutToMilliseconds(remaining));
+        if (ready == 0)
+        {
             return quiet();
         }
-        if (ready < 0) {
+        if (ready < 0)
+        {
             const int code = LastSocketError();
-            if (ErrorIsInterrupted(code)) {
-                if (!spend()) {
+            if (ErrorIsInterrupted(code))
+            {
+                if (!spend())
+                {
                     return quiet();
                 }
                 continue;
@@ -646,8 +665,8 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
         // `revents` is checked rather than assumed, and the reason is a spin
         // rather than tidiness. PollTimeout.h states it in full, and its unit
         // test is where the wake-ups no socket produces on demand are exercised.
-        if (ClassifyPollWakeUp(descriptor.revents, POLLIN)
-            != PollWakeUp::Readable) {
+        if (ClassifyPollWakeUp(descriptor.revents, POLLIN) != PollWakeUp::Readable)
+        {
             _lastError = "the socket reported an error condition rather than a "
                          "readable datagram";
             return ReceiveStatus::Failed;
@@ -655,12 +674,12 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
 
         sockaddr_storage from = {};
         socklen_t fromLength = sizeof(from);
-        const auto received = ::recvfrom(
-            ToHandle(_socket), reinterpret_cast<char*>(_buffer.data()),
-            static_cast<int>(_buffer.size()), 0,
-            reinterpret_cast<sockaddr*>(&from), &fromLength);
+        const auto received = ::recvfrom(ToHandle(_socket), reinterpret_cast<char*>(_buffer.data()),
+                                         static_cast<int>(_buffer.size()), 0,
+                                         reinterpret_cast<sockaddr*>(&from), &fromLength);
 
-        if (received >= 0) {
+        if (received >= 0)
+        {
             const std::size_t size = static_cast<std::size_t>(received);
             // The buffer holds one byte more than the bound precisely so this
             // comparison can exist. POSIX truncates silently — a short read and
@@ -668,11 +687,13 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
             // rests the difference between refusing an over-long datagram and
             // writing a packet the source never sent into a fixture. Windows
             // reaches the same counter through WSAEMSGSIZE below.
-            if (size > MaxDatagramBytes) {
+            if (size > MaxDatagramBytes)
+            {
                 ++_stats.datagramsTruncated;
                 _lastError = "a datagram larger than the protocol's maximum was "
                              "dropped rather than passed on half-read";
-                if (!spend()) {
+                if (!spend())
+                {
                     return ReceiveStatus::Idle;
                 }
                 continue;
@@ -685,11 +706,11 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
             // and reuses the caller's capacity exactly as before.
             datagram->bytes.assign(_buffer.data(), _buffer.data() + size);
             datagram->receiveTime = TicksToSeconds(SteadyTicks() - _epoch);
-            datagram->peer =
-                FormatEndpoint(reinterpret_cast<const sockaddr*>(&from),
-                               static_cast<std::size_t>(fromLength));
+            datagram->peer = FormatEndpoint(reinterpret_cast<const sockaddr*>(&from),
+                                            static_cast<std::size_t>(fromLength));
 
-            if (_stats.datagramsReceived == 0) {
+            if (_stats.datagramsReceived == 0)
+            {
                 _stats.firstReceiveTime = datagram->receiveTime;
             }
             ++_stats.datagramsReceived;
@@ -708,7 +729,8 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
         }
 
         const int code = LastSocketError();
-        if (ErrorIsWouldBlock(code) || ErrorIsInterrupted(code)) {
+        if (ErrorIsWouldBlock(code) || ErrorIsInterrupted(code))
+        {
             // The poll said readable and the read found nothing — the kernel
             // discarded the datagram between the two, or a signal arrived. The
             // caller asked to wait for a datagram, so keep waiting out what is
@@ -716,16 +738,22 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
             // not ask about. Neither is a receive error: a caller polling with
             // a zero timeout meets both routinely and can do nothing with the
             // count.
-            if (!spend()) {
+            if (!spend())
+            {
                 return quiet();
             }
             continue;
         }
-        if (ErrorIsTruncation(code)) {
+        if (ErrorIsTruncation(code))
+        {
             ++_stats.datagramsTruncated;
-        } else if (ErrorIsTransient(code)) {
+        }
+        else if (ErrorIsTransient(code))
+        {
             ++_stats.receiveErrors;
-        } else {
+        }
+        else
+        {
             _lastError = SocketErrorText(code);
             return ReceiveStatus::Failed;
         }
@@ -735,14 +763,14 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
         // that met something is neither an idle poll nor evidence of silence.
         // Reporting it as either would let a session log say a source had
         // stopped sending in the same breath as counting what it sent.
-        if (!spend()) {
+        if (!spend())
+        {
             return ReceiveStatus::Idle;
         }
     }
 }
 
-DatagramQueue::DatagramQueue(const DatagramQueueConfig& config)
-    : _config(config)
+DatagramQueue::DatagramQueue(const DatagramQueueConfig& config) : _config(config)
 {
 }
 
@@ -753,9 +781,9 @@ DatagramQueue::Push(ReceivedDatagram datagram)
 
     std::lock_guard<std::mutex> lock(_mutex);
     bool displaced = false;
-    while (!_queued.empty()
-           && (_queued.size() + 1 > _config.maxDatagrams
-               || _queuedBytes + size > _config.maxBytes)) {
+    while (!_queued.empty() &&
+           (_queued.size() + 1 > _config.maxDatagrams || _queuedBytes + size > _config.maxBytes))
+    {
         _queuedBytes -= _queued.front().bytes.size();
         _queued.pop_front();
         ++_stats.dropped;
@@ -772,7 +800,8 @@ DatagramQueue::Push(ReceivedDatagram datagram)
 std::size_t
 DatagramQueue::Drain(std::vector<ReceivedDatagram>* out)
 {
-    if (!out) {
+    if (!out)
+    {
         return 0;
     }
 
@@ -789,7 +818,8 @@ DatagramQueue::Drain(std::vector<ReceivedDatagram>* out)
     // this class.
     const std::size_t count = taken.size();
     out->reserve(out->size() + count);
-    for (ReceivedDatagram& datagram : taken) {
+    for (ReceivedDatagram& datagram : taken)
+    {
         out->push_back(std::move(datagram));
     }
     return count;

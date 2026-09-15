@@ -30,15 +30,14 @@ NearlyEqual(float a, float b)
 bool
 NearlyEqual(const pxr::GfVec3f& a, const pxr::GfVec3f& b)
 {
-    return NearlyEqual(a[0], b[0]) && NearlyEqual(a[1], b[1])
-        && NearlyEqual(a[2], b[2]);
+    return NearlyEqual(a[0], b[0]) && NearlyEqual(a[1], b[1]) && NearlyEqual(a[2], b[2]);
 }
 
 bool
 NearlyEqual(const pxr::GfVec4f& a, const pxr::GfVec4f& b)
 {
-    return NearlyEqual(a[0], b[0]) && NearlyEqual(a[1], b[1])
-        && NearlyEqual(a[2], b[2]) && NearlyEqual(a[3], b[3]);
+    return NearlyEqual(a[0], b[0]) && NearlyEqual(a[1], b[1]) && NearlyEqual(a[2], b[2]) &&
+           NearlyEqual(a[3], b[3]);
 }
 
 // Compares orientations, not representations: q and -q are the same rotation.
@@ -47,21 +46,21 @@ SameOrientation(const pxr::GfQuatf& a, const pxr::GfQuatf& b)
 {
     const pxr::GfQuatf na = a.GetNormalized();
     pxr::GfQuatf nb = b.GetNormalized();
-    if (pxr::GfDot(na, nb) < 0.0f) {
+    if (pxr::GfDot(na, nb) < 0.0f)
+    {
         nb = pxr::GfQuatf(-nb.GetReal(), -nb.GetImaginary());
     }
-    return NearlyEqual(na.GetReal(), nb.GetReal())
-        && NearlyEqual(na.GetImaginary()[0], nb.GetImaginary()[0])
-        && NearlyEqual(na.GetImaginary()[1], nb.GetImaginary()[1])
-        && NearlyEqual(na.GetImaginary()[2], nb.GetImaginary()[2]);
+    return NearlyEqual(na.GetReal(), nb.GetReal()) &&
+           NearlyEqual(na.GetImaginary()[0], nb.GetImaginary()[0]) &&
+           NearlyEqual(na.GetImaginary()[1], nb.GetImaginary()[1]) &&
+           NearlyEqual(na.GetImaginary()[2], nb.GetImaginary()[2]);
 }
 
 pxr::GfQuatf
 Rotation(const pxr::GfVec3f& axis, float degrees)
 {
     const float radians = degrees * 3.14159265358979324f / 180.0f;
-    return pxr::GfQuatf(std::cos(radians * 0.5f),
-                        axis.GetNormalized() * std::sin(radians * 0.5f));
+    return pxr::GfQuatf(std::cos(radians * 0.5f), axis.GetNormalized() * std::sin(radians * 0.5f));
 }
 
 const pxr::GfVec3f kAxisX(1.0f, 0.0f, 0.0f);
@@ -105,10 +104,8 @@ DesignMap(const vrmRetarget::TargetSkeleton& skeleton)
 {
     vrmRetarget::HumanoidMap map;
     assert(map.SetJointToken(motion::HumanBone::Hips, "Root/Pelvis", skeleton));
-    assert(map.SetJointToken(motion::HumanBone::Spine, "Root/Pelvis/SpineA",
-                             skeleton));
-    assert(map.SetJointToken(motion::HumanBone::Chest,
-                             "Root/Pelvis/SpineA/ChestA", skeleton));
+    assert(map.SetJointToken(motion::HumanBone::Spine, "Root/Pelvis/SpineA", skeleton));
+    assert(map.SetJointToken(motion::HumanBone::Chest, "Root/Pelvis/SpineA/ChestA", skeleton));
     return map;
 }
 
@@ -145,8 +142,7 @@ TestSkeletonParentsComeFromJointPaths()
     stray.token = "Missing/Child";
     orphaned.AddJoint(stray);
     orphaned.ResolveParentsFromTokens();
-    assert(orphaned.GetJoints()[0].parent
-           == vrmRetarget::TargetSkeleton::kNoParent);
+    assert(orphaned.GetJoints()[0].parent == vrmRetarget::TargetSkeleton::kNoParent);
 }
 
 void
@@ -158,24 +154,19 @@ TestHumanoidMapReportsGapsAndCollisions()
     assert(map.GetMappedCount() == 3);
     assert(map.IsMapped(motion::HumanBone::Hips));
     assert(!map.IsMapped(motion::HumanBone::Head));
-    assert(map.GetJointIndex(motion::HumanBone::Head)
-           == vrmRetarget::HumanoidMap::kUnmapped);
+    assert(map.GetJointIndex(motion::HumanBone::Head) == vrmRetarget::HumanoidMap::kUnmapped);
 
     // An unknown token leaves the bone unmapped instead of guessing.
     assert(!map.SetJointToken(motion::HumanBone::Head, "NoSuchJoint", skeleton));
     assert(!map.IsMapped(motion::HumanBone::Head));
 
-    const std::vector<motion::HumanBone> missing =
-        map.FindMissingRequiredBones();
+    const std::vector<motion::HumanBone> missing = map.FindMissingRequiredBones();
     assert(!missing.empty());
-    assert(std::find(missing.begin(), missing.end(), motion::HumanBone::Head)
-           != missing.end());
-    assert(std::find(missing.begin(), missing.end(), motion::HumanBone::Hips)
-           == missing.end());
+    assert(std::find(missing.begin(), missing.end(), motion::HumanBone::Head) != missing.end());
+    assert(std::find(missing.begin(), missing.end(), motion::HumanBone::Hips) == missing.end());
 
     assert(map.FindDuplicateJointIndices().empty());
-    assert(map.SetJointToken(motion::HumanBone::UpperChest,
-                             "Root/Pelvis/SpineA/ChestA", skeleton));
+    assert(map.SetJointToken(motion::HumanBone::UpperChest, "Root/Pelvis/SpineA/ChestA", skeleton));
     const std::vector<int> duplicates = map.FindDuplicateJointIndices();
     assert(duplicates.size() == 1 && duplicates[0] == 3);
 }
@@ -205,8 +196,7 @@ TestRigValuesCompareExactly()
     // values -- the conservative answer, and HumanoidPose's.
     joints = skeleton.GetJoints();
     joints[1].restRotation = pxr::GfQuatf(-1.0f, pxr::GfVec3f(0.0f));
-    assert(SameOrientation(joints[1].restRotation,
-                           skeleton.GetJoints()[1].restRotation));
+    assert(SameOrientation(joints[1].restRotation, skeleton.GetJoints()[1].restRotation));
     assert(vrmRetarget::TargetSkeleton(joints) != skeleton);
 
     // The joint ORDER is part of the value: it is what a map's indices count
@@ -220,15 +210,13 @@ TestRigValuesCompareExactly()
     assert(map != vrmRetarget::HumanoidMap());
 
     vrmRetarget::HumanoidMap moved = DesignMap(skeleton);
-    assert(moved.SetJointToken(motion::HumanBone::Chest, "Root/Pelvis/SpineA",
-                               skeleton));
+    assert(moved.SetJointToken(motion::HumanBone::Chest, "Root/Pelvis/SpineA", skeleton));
     assert(moved != map);
 
     // A rejected binding of a bone that was never mapped leaves the map as it
     // was, and so equal to it.
     vrmRetarget::HumanoidMap rejected = DesignMap(skeleton);
-    assert(!rejected.SetJointToken(motion::HumanBone::Head, "NoSuchJoint",
-                                   skeleton));
+    assert(!rejected.SetJointToken(motion::HumanBone::Head, "NoSuchJoint", skeleton));
     assert(rejected == map);
 
     // The correction, for `vrm.computeRestPoseCorrection`: a rig whose hips
@@ -240,9 +228,7 @@ TestRigValuesCompareExactly()
         vrmRetarget::ComputeRestPoseCorrection(DesignSourceRest(), turned, map);
     const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
     assert(!correction.identity[hips]);
-    assert(correction
-           == vrmRetarget::ComputeRestPoseCorrection(DesignSourceRest(), turned,
-                                                     map));
+    assert(correction == vrmRetarget::ComputeRestPoseCorrection(DesignSourceRest(), turned, map));
     assert(correction != vrmRetarget::RestPoseCorrection());
 
     // Each of the three halves is part of the value.
@@ -260,8 +246,8 @@ TestRigValuesCompareExactly()
 
     // A negated half applies identically and is a different value.
     changed = correction;
-    changed.pre[hips] = pxr::GfQuatf(-correction.pre[hips].GetReal(),
-                                     -correction.pre[hips].GetImaginary());
+    changed.pre[hips] =
+        pxr::GfQuatf(-correction.pre[hips].GetReal(), -correction.pre[hips].GetImaginary());
     const pxr::GfQuatf sample = Rotation(kAxisX, 20.0f);
     assert(SameOrientation(changed.Apply(motion::HumanBone::Hips, sample),
                            correction.Apply(motion::HumanBone::Hips, sample)));
@@ -275,8 +261,7 @@ TestRigValuesCompareExactly()
     source.validRotations.set(hips);
     source.root.worldPosition = pxr::GfVec3f(0.1f, 1.0f, 0.0f);
     source.root.hasPosition = true;
-    const vrmRetarget::PoseRetargeter retargeter(turned, map,
-                                                 DesignSourceRest());
+    const vrmRetarget::PoseRetargeter retargeter(turned, map, DesignSourceRest());
     const vrmRetarget::RetargetedPose pose = retargeter.Retarget(source);
     assert(pose == retargeter.Retarget(source));
     assert(!(pose != retargeter.Retarget(source)));
@@ -295,8 +280,8 @@ TestRigValuesCompareExactly()
 
     // A negated rotation poses the joint identically and is a different value.
     other = pose;
-    other.rotations[1] = pxr::GfQuatf(-pose.rotations[1].GetReal(),
-                                      -pose.rotations[1].GetImaginary());
+    other.rotations[1] =
+        pxr::GfQuatf(-pose.rotations[1].GetReal(), -pose.rotations[1].GetImaginary());
     assert(SameOrientation(other.rotations[1], pose.rotations[1]));
     assert(other != pose);
 
@@ -310,7 +295,8 @@ TestRigValuesCompareExactly()
     // and one identity scale per joint.
     vrmRetarget::JointLocalTransforms baked;
     baked.timestamp = pose.timestamp;
-    for (const vrmRetarget::TargetJoint& joint : turned.GetJoints()) {
+    for (const vrmRetarget::TargetJoint& joint : turned.GetJoints())
+    {
         baked.joints.push_back(joint.token);
     }
     baked.translations = pose.translations;
@@ -334,8 +320,8 @@ TestRigValuesCompareExactly()
     changedBaked.translations[1][0] += 1e-6f;
     assert(changedBaked != baked);
     changedBaked = baked;
-    changedBaked.rotations[1] = pxr::GfQuatf(-pose.rotations[1].GetReal(),
-                                             -pose.rotations[1].GetImaginary());
+    changedBaked.rotations[1] =
+        pxr::GfQuatf(-pose.rotations[1].GetReal(), -pose.rotations[1].GetImaginary());
     assert(changedBaked != baked);
     changedBaked = baked;
     changedBaked.scales[1] = pxr::GfVec3h(2.0f);
@@ -358,17 +344,14 @@ TestARejectedRebindingUnmapsTheBone()
 
     vrmRetarget::HumanoidMap byToken = DesignMap(skeleton);
     assert(byToken.IsMapped(motion::HumanBone::Spine));
-    assert(!byToken.SetJointToken(motion::HumanBone::Spine, "NoSuchJoint",
-                                  skeleton));
+    assert(!byToken.SetJointToken(motion::HumanBone::Spine, "NoSuchJoint", skeleton));
     assert(!byToken.IsMapped(motion::HumanBone::Spine) &&
            "a failed token lookup left the earlier binding standing");
-    assert(byToken.GetJointIndex(motion::HumanBone::Spine)
-           == vrmRetarget::HumanoidMap::kUnmapped);
+    assert(byToken.GetJointIndex(motion::HumanBone::Spine) == vrmRetarget::HumanoidMap::kUnmapped);
     assert(byToken.GetMappedCount() == 2);
 
     vrmRetarget::HumanoidMap byIndex = DesignMap(skeleton);
-    assert(!byIndex.SetJointIndex(motion::HumanBone::Spine, 99,
-                                  skeleton.GetSize()));
+    assert(!byIndex.SetJointIndex(motion::HumanBone::Spine, 99, skeleton.GetSize()));
     assert(!byIndex.IsMapped(motion::HumanBone::Spine));
 
     // Both routes land on the same map.
@@ -381,12 +364,10 @@ TestIdentityRestPosesPassRotationsThrough()
     const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
     const vrmRetarget::HumanoidMap map = DesignMap(skeleton);
     const vrmRetarget::RestPoseCorrection correction =
-        vrmRetarget::ComputeRestPoseCorrection(DesignSourceRest(), skeleton,
-                                               map);
+        vrmRetarget::ComputeRestPoseCorrection(DesignSourceRest(), skeleton, map);
 
     const pxr::GfQuatf sample = Rotation(kAxisY, 90.0f);
-    assert(SameOrientation(correction.Apply(motion::HumanBone::Hips, sample),
-                           sample));
+    assert(SameOrientation(correction.Apply(motion::HumanBone::Hips, sample), sample));
     assert(correction.identity[static_cast<std::size_t>(motion::HumanBone::Hips)]);
 }
 
@@ -413,10 +394,9 @@ TestRestPoseCorrectionPreservesTheWorldDelta()
     skeleton.ResolveParentsFromTokens();
 
     vrmRetarget::SourceRestPose sourceRestPose;
-    sourceRestPose.localRotations[static_cast<std::size_t>(
-        motion::HumanBone::Hips)] = sourceParentRest;
-    sourceRestPose.localRotations[static_cast<std::size_t>(
-        motion::HumanBone::Spine)] = sourceRest;
+    sourceRestPose.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] =
+        sourceParentRest;
+    sourceRestPose.localRotations[static_cast<std::size_t>(motion::HumanBone::Spine)] = sourceRest;
     sourceRestPose.SetParent(motion::HumanBone::Spine, motion::HumanBone::Hips);
 
     vrmRetarget::HumanoidMap map;
@@ -425,26 +405,21 @@ TestRestPoseCorrectionPreservesTheWorldDelta()
 
     const vrmRetarget::RestPoseCorrection correction =
         vrmRetarget::ComputeRestPoseCorrection(sourceRestPose, skeleton, map);
-    assert(!correction.identity[static_cast<std::size_t>(
-        motion::HumanBone::Spine)]);
+    assert(!correction.identity[static_cast<std::size_t>(motion::HumanBone::Spine)]);
 
     const pxr::GfQuatf animated = Rotation(kAxisY, 42.0f) * sourceRest;
-    const pxr::GfQuatf retargeted =
-        correction.Apply(motion::HumanBone::Spine, animated);
+    const pxr::GfQuatf retargeted = correction.Apply(motion::HumanBone::Spine, animated);
 
     // World delta = worldAnimated * worldRest^-1, with world = parent * local
     // (OpenUSD composition: `a * b` applies `b` first).
     const pxr::GfQuatf sourceDelta =
-        (sourceParentRest * animated)
-        * (sourceParentRest * sourceRest).GetInverse();
+        (sourceParentRest * animated) * (sourceParentRest * sourceRest).GetInverse();
     const pxr::GfQuatf targetDelta =
-        (targetParentRest * retargeted)
-        * (targetParentRest * targetRest).GetInverse();
+        (targetParentRest * retargeted) * (targetParentRest * targetRest).GetInverse();
     assert(SameOrientation(sourceDelta, targetDelta));
 
     // A sample sitting at the source rest must land exactly on the target rest.
-    assert(SameOrientation(
-        correction.Apply(motion::HumanBone::Spine, sourceRest), targetRest));
+    assert(SameOrientation(correction.Apply(motion::HumanBone::Spine, sourceRest), targetRest));
 }
 
 // The same invariant one level deeper. A grandparent's rest rotation reaches
@@ -476,25 +451,20 @@ TestRestPoseCorrectionAccountsForTheWholeAncestorChain()
     skeleton.ResolveParentsFromTokens();
 
     vrmRetarget::SourceRestPose sourceRest;
-    sourceRest.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] =
-        sourceHipsRest;
-    sourceRest.localRotations[static_cast<std::size_t>(motion::HumanBone::Spine)] =
-        sourceSpineRest;
-    sourceRest.localRotations[static_cast<std::size_t>(motion::HumanBone::Chest)] =
-        sourceChestRest;
+    sourceRest.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] = sourceHipsRest;
+    sourceRest.localRotations[static_cast<std::size_t>(motion::HumanBone::Spine)] = sourceSpineRest;
+    sourceRest.localRotations[static_cast<std::size_t>(motion::HumanBone::Chest)] = sourceChestRest;
     sourceRest.SetParent(motion::HumanBone::Spine, motion::HumanBone::Hips);
     sourceRest.SetParent(motion::HumanBone::Chest, motion::HumanBone::Spine);
 
     // Both accumulators compose root-first.
     assert(SameOrientation(skeleton.GetWorldRestRotation(2),
                            targetHipsRest * targetSpineRest * targetChestRest));
-    assert(SameOrientation(
-        sourceRest.GetWorldRestRotation(motion::HumanBone::Chest),
-        sourceHipsRest * sourceSpineRest * sourceChestRest));
+    assert(SameOrientation(sourceRest.GetWorldRestRotation(motion::HumanBone::Chest),
+                           sourceHipsRest * sourceSpineRest * sourceChestRest));
     // A root joint's absent parent contributes identity, not a dangling index.
-    assert(SameOrientation(
-        skeleton.GetWorldRestRotation(vrmRetarget::TargetSkeleton::kNoParent),
-        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
+    assert(SameOrientation(skeleton.GetWorldRestRotation(vrmRetarget::TargetSkeleton::kNoParent),
+                           pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
 
     vrmRetarget::HumanoidMap map;
     map.SetJointToken(motion::HumanBone::Hips, "Hips", skeleton);
@@ -505,23 +475,19 @@ TestRestPoseCorrectionAccountsForTheWholeAncestorChain()
         vrmRetarget::ComputeRestPoseCorrection(sourceRest, skeleton, map);
 
     const pxr::GfQuatf animated = Rotation(kAxisY, 42.0f) * sourceChestRest;
-    const pxr::GfQuatf retargeted =
-        correction.Apply(motion::HumanBone::Chest, animated);
+    const pxr::GfQuatf retargeted = correction.Apply(motion::HumanBone::Chest, animated);
 
     const pxr::GfQuatf sourceParentWorld = sourceHipsRest * sourceSpineRest;
     const pxr::GfQuatf targetParentWorld = targetHipsRest * targetSpineRest;
     const pxr::GfQuatf sourceDelta =
-        (sourceParentWorld * animated)
-        * (sourceParentWorld * sourceChestRest).GetInverse();
+        (sourceParentWorld * animated) * (sourceParentWorld * sourceChestRest).GetInverse();
     const pxr::GfQuatf targetDelta =
-        (targetParentWorld * retargeted)
-        * (targetParentWorld * targetChestRest).GetInverse();
+        (targetParentWorld * retargeted) * (targetParentWorld * targetChestRest).GetInverse();
     assert(SameOrientation(sourceDelta, targetDelta));
 
     // And the rest pose itself still maps onto the target's rest pose.
-    assert(SameOrientation(
-        correction.Apply(motion::HumanBone::Chest, sourceChestRest),
-        targetChestRest));
+    assert(SameOrientation(correction.Apply(motion::HumanBone::Chest, sourceChestRest),
+                           targetChestRest));
 }
 
 void
@@ -533,30 +499,27 @@ TestRootMotionModes()
 
     vrmRetarget::RootMotionOptions options;
     options.mode = vrmRetarget::RootMotionMode::Ignore;
-    assert(NearlyEqual(vrmRetarget::ResolveRootTranslation(
-                           options, sourceNow, sourceRest, targetRest),
-                       targetRest));
+    assert(
+        NearlyEqual(vrmRetarget::ResolveRootTranslation(options, sourceNow, sourceRest, targetRest),
+                    targetRest));
 
     // The delta carries, not the absolute height: a 1.0 m rig drives a 1.6 m
     // one without the avatar snapping to the source's hip height.
     options.mode = vrmRetarget::RootMotionMode::Hips;
-    assert(NearlyEqual(
-        vrmRetarget::ResolveRootTranslation(options, sourceNow, sourceRest,
-                                            targetRest),
-        pxr::GfVec3f(0.0f, 1.8f, 0.5f)));
+    assert(
+        NearlyEqual(vrmRetarget::ResolveRootTranslation(options, sourceNow, sourceRest, targetRest),
+                    pxr::GfVec3f(0.0f, 1.8f, 0.5f)));
 
     options.translationScale = 2.0f;
-    assert(NearlyEqual(
-        vrmRetarget::ResolveRootTranslation(options, sourceNow, sourceRest,
-                                            targetRest),
-        pxr::GfVec3f(0.0f, 2.0f, 1.0f)));
+    assert(
+        NearlyEqual(vrmRetarget::ResolveRootTranslation(options, sourceNow, sourceRest, targetRest),
+                    pxr::GfVec3f(0.0f, 2.0f, 1.0f)));
 
     options.translationScale = 1.0f;
     options.preserveTargetHeight = true;
-    assert(NearlyEqual(
-        vrmRetarget::ResolveRootTranslation(options, sourceNow, sourceRest,
-                                            targetRest),
-        pxr::GfVec3f(0.0f, 1.6f, 0.5f)));
+    assert(
+        NearlyEqual(vrmRetarget::ResolveRootTranslation(options, sourceNow, sourceRest, targetRest),
+                    pxr::GfVec3f(0.0f, 1.6f, 0.5f)));
 }
 
 motion::HumanoidAnimation
@@ -600,12 +563,10 @@ void
 TestDesignTripletHandOff()
 {
     const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
-    const vrmRetarget::PoseRetargeter retargeter(skeleton, DesignMap(skeleton),
-                                                 DesignSourceRest());
+    const vrmRetarget::PoseRetargeter retargeter(skeleton, DesignMap(skeleton), DesignSourceRest());
 
     vrmRetarget::RetargetDiagnostics diagnostics;
-    const vrmRetarget::RetargetedAnimation result =
-        retargeter.Retarget(DesignClip(), &diagnostics);
+    const vrmRetarget::RetargetedAnimation result = retargeter.Retarget(DesignClip(), &diagnostics);
 
     assert(result.joints.size() == 4);
     assert(result.joints[0] == "Root");
@@ -613,7 +574,8 @@ TestDesignTripletHandOff()
     assert(result.samples.size() == 2);
 
     const vrmRetarget::RetargetedPose& first = result.samples.front();
-    for (const pxr::GfQuatf& rotation : first.rotations) {
+    for (const pxr::GfQuatf& rotation : first.rotations)
+    {
         assert(SameOrientation(rotation, pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))));
     }
     assert(NearlyEqual(first.translations[0], pxr::GfVec3f(0.0f)));
@@ -636,8 +598,7 @@ TestDesignTripletHandOff()
     // reported, one each and in vocabulary order -- and nothing the clip drives
     // is unbound.
     using Code = vrmRetarget::RetargetDiagnosticCode;
-    const std::vector<std::string> missing =
-        diagnostics.Subjects(Code::MissingRequiredBone);
+    const std::vector<std::string> missing = diagnostics.Subjects(Code::MissingRequiredBone);
     assert(missing.size() == 14);
     assert(missing.front() == "neck");
     assert(missing.back() == "rightHand");
@@ -653,11 +614,9 @@ TestUnmappedJointsStayAtRestAndAreReported()
     // Bind hips only: the clip also drives spine and chest.
     map.SetJointToken(motion::HumanBone::Hips, "Root/Pelvis", skeleton);
 
-    const vrmRetarget::PoseRetargeter retargeter(skeleton, map,
-                                                 DesignSourceRest());
+    const vrmRetarget::PoseRetargeter retargeter(skeleton, map, DesignSourceRest());
     vrmRetarget::RetargetDiagnostics diagnostics;
-    const vrmRetarget::RetargetedAnimation result =
-        retargeter.Retarget(DesignClip(), &diagnostics);
+    const vrmRetarget::RetargetedAnimation result = retargeter.Retarget(DesignClip(), &diagnostics);
 
     const vrmRetarget::RetargetedPose& last = result.samples.back();
     // SpineA and ChestA keep their rest transforms rather than collapsing.
@@ -666,8 +625,8 @@ TestUnmappedJointsStayAtRestAndAreReported()
     assert(NearlyEqual(last.translations[3], pxr::GfVec3f(0.0f, 0.5f, 0.0f)));
 
     // Two bones driven on both samples, reported once each.
-    const std::vector<std::string> unbound = diagnostics.Subjects(
-        vrmRetarget::RetargetDiagnosticCode::UnboundDrivenBone);
+    const std::vector<std::string> unbound =
+        diagnostics.Subjects(vrmRetarget::RetargetDiagnosticCode::UnboundDrivenBone);
     assert((unbound == std::vector<std::string>{"spine", "chest"}));
 }
 
@@ -677,17 +636,15 @@ TestResampleOptionDrivesSampleCount()
     const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
     vrmRetarget::RetargetOptions options;
     options.resampleRate = 4.0;
-    const vrmRetarget::PoseRetargeter retargeter(
-        skeleton, DesignMap(skeleton), DesignSourceRest(), options);
+    const vrmRetarget::PoseRetargeter retargeter(skeleton, DesignMap(skeleton), DesignSourceRest(),
+                                                 options);
 
-    const vrmRetarget::RetargetedAnimation result =
-        retargeter.Retarget(DesignClip());
+    const vrmRetarget::RetargetedAnimation result = retargeter.Retarget(DesignClip());
     assert(result.samples.size() == 5);
     assert(NearlyEqual(static_cast<float>(result.frameRate), 4.0f));
     assert(NearlyEqual(static_cast<float>(result.endTime), 1.0f));
     // Midpoint of a 0 -> 0.5 m hips advance.
-    assert(NearlyEqual(result.samples[2].translations[1],
-                       pxr::GfVec3f(0.0f, 1.0f, 0.25f)));
+    assert(NearlyEqual(result.samples[2].translations[1], pxr::GfVec3f(0.0f, 1.0f, 0.25f)));
 }
 
 void
@@ -697,11 +654,10 @@ TestRootJointModeMovesTheReceiver()
     vrmRetarget::RetargetOptions options;
     options.rootMotion.mode = vrmRetarget::RootMotionMode::RootJoint;
     options.rootMotion.rootJointIndex = 0;
-    const vrmRetarget::PoseRetargeter retargeter(
-        skeleton, DesignMap(skeleton), DesignSourceRest(), options);
+    const vrmRetarget::PoseRetargeter retargeter(skeleton, DesignMap(skeleton), DesignSourceRest(),
+                                                 options);
 
-    const vrmRetarget::RetargetedAnimation result =
-        retargeter.Retarget(DesignClip());
+    const vrmRetarget::RetargetedAnimation result = retargeter.Retarget(DesignClip());
     const vrmRetarget::RetargetedPose& last = result.samples.back();
     // Root takes the delta; Pelvis stays at its rest translation.
     assert(NearlyEqual(last.translations[0], pxr::GfVec3f(0.0f, 0.0f, 0.5f)));
@@ -709,17 +665,14 @@ TestRootJointModeMovesTheReceiver()
 
     // An invalid root index degrades to "author nothing" and says so.
     options.rootMotion.rootJointIndex = -1;
-    const vrmRetarget::PoseRetargeter degraded(
-        skeleton, DesignMap(skeleton), DesignSourceRest(), options);
+    const vrmRetarget::PoseRetargeter degraded(skeleton, DesignMap(skeleton), DesignSourceRest(),
+                                               options);
     vrmRetarget::RetargetDiagnostics diagnostics;
-    const vrmRetarget::RetargetedAnimation fallback =
-        degraded.Retarget(DesignClip(), &diagnostics);
-    assert(NearlyEqual(fallback.samples.back().translations[1],
-                       pxr::GfVec3f(0.0f, 1.0f, 0.0f)));
+    const vrmRetarget::RetargetedAnimation fallback = degraded.Retarget(DesignClip(), &diagnostics);
+    assert(NearlyEqual(fallback.samples.back().translations[1], pxr::GfVec3f(0.0f, 1.0f, 0.0f)));
     // Once, from the rig's report, although both samples dropped a root.
-    assert(diagnostics.Subjects(
-               vrmRetarget::RetargetDiagnosticCode::InvalidRootJoint)
-           == std::vector<std::string>{"-1"});
+    assert(diagnostics.Subjects(vrmRetarget::RetargetDiagnosticCode::InvalidRootJoint) ==
+           std::vector<std::string>{"-1"});
 }
 
 // ---------------------------------------------------------------------------
@@ -736,17 +689,14 @@ TestTheRetargetCodeTableIsClosedAndStable()
 {
     using Code = vrmRetarget::RetargetDiagnosticCode;
     const std::vector<std::string> expected = {
-        "VRM_RETARGET_MISSING_REQUIRED_BONE",
-        "VRM_RETARGET_UNBOUND_DRIVEN_BONE",
-        "VRM_RETARGET_DUPLICATE_TARGET",
-        "VRM_RETARGET_INVALID_HIERARCHY",
-        "VRM_RETARGET_INVALID_ROOT_JOINT",
-        "VRM_RETARGET_NON_UNIT_SCALE",
-        "VRM_RETARGET_TIME_RANGE_DERIVED",
-        "VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT",
+        "VRM_RETARGET_MISSING_REQUIRED_BONE", "VRM_RETARGET_UNBOUND_DRIVEN_BONE",
+        "VRM_RETARGET_DUPLICATE_TARGET",      "VRM_RETARGET_INVALID_HIERARCHY",
+        "VRM_RETARGET_INVALID_ROOT_JOINT",    "VRM_RETARGET_NON_UNIT_SCALE",
+        "VRM_RETARGET_TIME_RANGE_DERIVED",    "VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT",
     };
     assert(expected.size() == vrmRetarget::RetargetDiagnosticCodeCount);
-    for (std::size_t i = 0; i < expected.size(); ++i) {
+    for (std::size_t i = 0; i < expected.size(); ++i)
+    {
         const auto code = static_cast<Code>(i);
         assert(vrmRetarget::RetargetDiagnosticCodeString(code) == expected[i]);
         assert(vrmRetarget::FindRetargetDiagnosticCode(expected[i]) == code);
@@ -758,19 +708,18 @@ TestTheRetargetCodeTableIsClosedAndStable()
 
     // Only a collision stops a retarget, and only a derived time range is
     // merely informative.
-    for (std::size_t i = 0; i < expected.size(); ++i) {
+    for (std::size_t i = 0; i < expected.size(); ++i)
+    {
         const auto code = static_cast<Code>(i);
-        assert(vrmRetarget::RetargetDiagnosticIsRecoverable(code)
-               == (code != Code::OutputCollidesWithInput));
+        assert(vrmRetarget::RetargetDiagnosticIsRecoverable(code) ==
+               (code != Code::OutputCollidesWithInput));
     }
-    assert(vrmRetarget::RetargetDiagnosticDefaultSeverity(
-               Code::OutputCollidesWithInput)
-           == vrmRetarget::RetargetDiagnosticSeverity::Error);
-    assert(vrmRetarget::RetargetDiagnosticDefaultSeverity(Code::TimeRangeDerived)
-           == vrmRetarget::RetargetDiagnosticSeverity::Info);
-    assert(vrmRetarget::RetargetDiagnosticDefaultSeverity(
-               Code::UnboundDrivenBone)
-           == vrmRetarget::RetargetDiagnosticSeverity::Warning);
+    assert(vrmRetarget::RetargetDiagnosticDefaultSeverity(Code::OutputCollidesWithInput) ==
+           vrmRetarget::RetargetDiagnosticSeverity::Error);
+    assert(vrmRetarget::RetargetDiagnosticDefaultSeverity(Code::TimeRangeDerived) ==
+           vrmRetarget::RetargetDiagnosticSeverity::Info);
+    assert(vrmRetarget::RetargetDiagnosticDefaultSeverity(Code::UnboundDrivenBone) ==
+           vrmRetarget::RetargetDiagnosticSeverity::Warning);
 }
 
 // A diagnostic built from a code takes the table's severity, and its line is
@@ -780,20 +729,18 @@ TestARetargetDiagnosticFormatsOneStableLine()
 {
     using Code = vrmRetarget::RetargetDiagnosticCode;
     const vrmRetarget::RetargetDiagnostic unbound =
-        vrmRetarget::MakeRetargetDiagnostic(Code::UnboundDrivenBone,
-                                            "upperChest", "no joint");
+        vrmRetarget::MakeRetargetDiagnostic(Code::UnboundDrivenBone, "upperChest", "no joint");
     assert(unbound.severity == vrmRetarget::RetargetDiagnosticSeverity::Warning);
     assert(unbound.recoverable);
-    assert(vrmRetarget::FormatRetargetDiagnostic(unbound)
-           == "[VRM_RETARGET_UNBOUND_DRIVEN_BONE] warning recoverable "
-              "subject=upperChest: no joint");
+    assert(vrmRetarget::FormatRetargetDiagnostic(unbound) ==
+           "[VRM_RETARGET_UNBOUND_DRIVEN_BONE] warning recoverable "
+           "subject=upperChest: no joint");
 
     const vrmRetarget::RetargetDiagnostic collision =
-        vrmRetarget::MakeRetargetDiagnostic(Code::OutputCollidesWithInput,
-                                            "clip.usda");
-    assert(vrmRetarget::FormatRetargetDiagnostic(collision)
-           == "[VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT] error "
-              "subject=clip.usda");
+        vrmRetarget::MakeRetargetDiagnostic(Code::OutputCollidesWithInput, "clip.usda");
+    assert(vrmRetarget::FormatRetargetDiagnostic(collision) ==
+           "[VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT] error "
+           "subject=clip.usda");
 }
 
 // A code and a subject are reported once, the first report wins, and two lists
@@ -809,8 +756,8 @@ TestADiagnosticIsReportedOncePerCodeAndSubject()
     assert(!diagnostics.Report(
         vrmRetarget::MakeRetargetDiagnostic(Code::UnboundDrivenBone, "jaw", "b")));
     // The same subject under another code is another fact.
-    assert(diagnostics.Report(vrmRetarget::MakeRetargetDiagnostic(
-        Code::MissingRequiredBone, "jaw", "c")));
+    assert(diagnostics.Report(
+        vrmRetarget::MakeRetargetDiagnostic(Code::MissingRequiredBone, "jaw", "c")));
     assert(diagnostics.reported.size() == 2);
     assert(diagnostics.reported[0].detail == "a");
     assert(diagnostics.Has(Code::UnboundDrivenBone, "jaw"));
@@ -836,15 +783,12 @@ TestTheRigIsDiagnosedBeforeAnyClip()
     using Code = vrmRetarget::RetargetDiagnosticCode;
     const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
     vrmRetarget::HumanoidMap map = DesignMap(skeleton);
-    assert(map.SetJointToken(motion::HumanBone::UpperChest,
-                             "Root/Pelvis/SpineA/ChestA", skeleton));
+    assert(map.SetJointToken(motion::HumanBone::UpperChest, "Root/Pelvis/SpineA/ChestA", skeleton));
 
-    const vrmRetarget::RetargetDiagnostics rig =
-        vrmRetarget::DiagnoseRig(skeleton, map);
-    assert(rig.Subjects(Code::DuplicateTarget)
-           == std::vector<std::string>{"Root/Pelvis/SpineA/ChestA"});
-    const std::string& duplicate =
-        rig.reported[rig.reported.size() - 1].detail;
+    const vrmRetarget::RetargetDiagnostics rig = vrmRetarget::DiagnoseRig(skeleton, map);
+    assert(rig.Subjects(Code::DuplicateTarget) ==
+           std::vector<std::string>{"Root/Pelvis/SpineA/ChestA"});
+    const std::string& duplicate = rig.reported[rig.reported.size() - 1].detail;
     assert(duplicate.find("'chest'") != std::string::npos);
     assert(duplicate.find("'upperChest'") != std::string::npos);
     assert(rig.Subjects(Code::InvalidHierarchy).empty());
@@ -858,26 +802,22 @@ TestTheRigIsDiagnosedBeforeAnyClip()
     const vrmRetarget::TargetSkeleton unordered(joints);
     const vrmRetarget::RetargetDiagnostics hierarchy =
         vrmRetarget::DiagnoseRig(unordered, vrmRetarget::HumanoidMap());
-    assert(hierarchy.Subjects(Code::InvalidHierarchy)
-           == std::vector<std::string>{"Root/Pelvis/SpineA"});
+    assert(hierarchy.Subjects(Code::InvalidHierarchy) ==
+           std::vector<std::string>{"Root/Pelvis/SpineA"});
 
     // No hips: under 'hips' the root lands nowhere, and the detail says so;
     // under 'ignore' the same bone is only a missing bone.
     vrmRetarget::HumanoidMap noHips;
-    assert(noHips.SetJointToken(motion::HumanBone::Spine, "Root/Pelvis/SpineA",
-                                skeleton));
-    const vrmRetarget::RetargetDiagnostics underHips =
-        vrmRetarget::DiagnoseRig(skeleton, noHips);
+    assert(noHips.SetJointToken(motion::HumanBone::Spine, "Root/Pelvis/SpineA", skeleton));
+    const vrmRetarget::RetargetDiagnostics underHips = vrmRetarget::DiagnoseRig(skeleton, noHips);
     assert(underHips.reported.front().subject == "hips");
-    assert(underHips.reported.front().detail.find("root motion was dropped")
-           != std::string::npos);
+    assert(underHips.reported.front().detail.find("root motion was dropped") != std::string::npos);
     vrmRetarget::RetargetOptions ignore;
     ignore.rootMotion.mode = vrmRetarget::RootMotionMode::Ignore;
     const vrmRetarget::RetargetDiagnostics underIgnore =
         vrmRetarget::DiagnoseRig(skeleton, noHips, ignore);
     assert(underIgnore.reported.front().subject == "hips");
-    assert(underIgnore.reported.front().detail.find("root motion")
-           == std::string::npos);
+    assert(underIgnore.reported.front().detail.find("root motion") == std::string::npos);
 }
 
 // A clip whose every driven bone is bound reports exactly what the rig does, so
@@ -888,17 +828,16 @@ TestAClipReportsTheRigThenWhatItDrives()
 {
     const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
     const vrmRetarget::HumanoidMap map = DesignMap(skeleton);
-    const vrmRetarget::PoseRetargeter retargeter(skeleton, map,
-                                                 DesignSourceRest());
+    const vrmRetarget::PoseRetargeter retargeter(skeleton, map, DesignSourceRest());
 
     vrmRetarget::RetargetDiagnostics clip;
     retargeter.Retarget(DesignClip(), &clip);
     assert(clip == vrmRetarget::DiagnoseRig(skeleton, map));
 
-    vrmRetarget::RetargetDiagnostics perPose =
-        vrmRetarget::DiagnoseRig(skeleton, map);
+    vrmRetarget::RetargetDiagnostics perPose = vrmRetarget::DiagnoseRig(skeleton, map);
     const motion::HumanoidAnimation animation = DesignClip();
-    for (const motion::HumanoidPose& pose : animation.samples) {
+    for (const motion::HumanoidPose& pose : animation.samples)
+    {
         retargeter.Retarget(pose, &perPose);
     }
     assert(perPose == clip);
@@ -918,37 +857,30 @@ TestHipsBoundOutsideTheRigAreReportedWithTheDroppedRoot()
     assert(foreign.SetJointIndex(motion::HumanBone::Hips, 7, 10));
     assert(foreign.IsMapped(motion::HumanBone::Hips));
 
-    const vrmRetarget::RetargetDiagnostics rig =
-        vrmRetarget::DiagnoseRig(skeleton, foreign);
+    const vrmRetarget::RetargetDiagnostics rig = vrmRetarget::DiagnoseRig(skeleton, foreign);
     assert(rig.reported.front().code == Code::MissingRequiredBone);
     assert(rig.reported.front().subject == "hips");
-    assert(rig.reported.front().detail.find("root motion was dropped")
-           != std::string::npos);
+    assert(rig.reported.front().detail.find("root motion was dropped") != std::string::npos);
 
-    const vrmRetarget::PoseRetargeter retargeter(skeleton, foreign,
-                                                 DesignSourceRest());
+    const vrmRetarget::PoseRetargeter retargeter(skeleton, foreign, DesignSourceRest());
     vrmRetarget::RetargetDiagnostics clip;
-    const vrmRetarget::RetargetedAnimation result =
-        retargeter.Retarget(DesignClip(), &clip);
+    const vrmRetarget::RetargetedAnimation result = retargeter.Retarget(DesignClip(), &clip);
     // The rig's report, then the one thing the clip adds: it drives the hips,
     // which reach no joint -- exactly what an unmapped hips would report.
-    assert(clip.Subjects(Code::MissingRequiredBone)
-           == rig.Subjects(Code::MissingRequiredBone));
-    assert(clip.Subjects(Code::UnboundDrivenBone)
-           == std::vector<std::string>{"hips"});
+    assert(clip.Subjects(Code::MissingRequiredBone) == rig.Subjects(Code::MissingRequiredBone));
+    assert(clip.Subjects(Code::UnboundDrivenBone) == std::vector<std::string>{"hips"});
     assert(clip.reported.size() == rig.reported.size() + 1);
     // Every joint keeps its rest translation: the root landed nowhere.
-    assert(NearlyEqual(result.samples.back().translations[1],
-                       pxr::GfVec3f(0.0f, 1.0f, 0.0f)));
+    assert(NearlyEqual(result.samples.back().translations[1], pxr::GfVec3f(0.0f, 1.0f, 0.0f)));
 
     // One pose at a time reaches the same single report.
     vrmRetarget::RetargetDiagnostics perPose;
     const motion::HumanoidAnimation animation = DesignClip();
-    for (const motion::HumanoidPose& pose : animation.samples) {
+    for (const motion::HumanoidPose& pose : animation.samples)
+    {
         retargeter.Retarget(pose, &perPose);
     }
-    assert(perPose.Subjects(Code::MissingRequiredBone)
-           == std::vector<std::string>{"hips"});
+    assert(perPose.Subjects(Code::MissingRequiredBone) == std::vector<std::string>{"hips"});
 }
 
 // A bone the clip starts driving on a later sample is reported like one it
@@ -958,19 +890,15 @@ void
 TestABoneDrivenOnlyLaterIsStillReported()
 {
     const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
-    const vrmRetarget::PoseRetargeter retargeter(skeleton, DesignMap(skeleton),
-                                                 DesignSourceRest());
+    const vrmRetarget::PoseRetargeter retargeter(skeleton, DesignMap(skeleton), DesignSourceRest());
     motion::HumanoidAnimation animation = DesignClip();
-    animation.samples.back().validRotations.set(
-        static_cast<std::size_t>(motion::HumanBone::Jaw));
+    animation.samples.back().validRotations.set(static_cast<std::size_t>(motion::HumanBone::Jaw));
 
     vrmRetarget::RetargetDiagnostics diagnostics;
     retargeter.Retarget(animation, &diagnostics);
-    assert(diagnostics.Subjects(
-               vrmRetarget::RetargetDiagnosticCode::UnboundDrivenBone)
-           == std::vector<std::string>{"jaw"});
+    assert(diagnostics.Subjects(vrmRetarget::RetargetDiagnosticCode::UnboundDrivenBone) ==
+           std::vector<std::string>{"jaw"});
 }
-
 
 // ---------------------------------------------------------------------------
 // ExpressionResolve: a producer reports a name and a weight, the avatar carries
@@ -1006,7 +934,8 @@ motion::ExpressionWeights
 Weights(std::initializer_list<std::pair<const char*, float>> entries)
 {
     motion::ExpressionWeights weights;
-    for (const auto& entry : entries) {
+    for (const auto& entry : entries)
+    {
         weights.Set(entry.first, entry.second);
     }
     return weights;
@@ -1025,8 +954,7 @@ TestExpressionRigDeclaresANameOnce()
     duplicate.morphTargets.push_back({"/Asset/Meshes/Face/Other", 1.0f});
     assert(!rig.Add(duplicate));
     assert(rig.GetSize() == 2);
-    assert(rig.Find("happy")->morphTargets[0].target
-           == "/Asset/Meshes/Face/Smile");
+    assert(rig.Find("happy")->morphTargets[0].target == "/Asset/Meshes/Face/Smile");
 
     // A nameless expression cannot be joined on, so it is not a definition.
     vrmRetarget::ExpressionDefinition nameless;
@@ -1074,8 +1002,7 @@ TestReportedZeroIsAuthoredAndUnreportedIsAbsent()
     // A reported zero is a statement -- "this expression is off now" -- so its
     // targets are authored at zero. Dropping them would leave the previous
     // sample's weight standing on the rig.
-    const vrmRetarget::ResolvedExpressions off =
-        resolver.Resolve(Weights({{"happy", 0.0f}}));
+    const vrmRetarget::ResolvedExpressions off = resolver.Resolve(Weights({{"happy", 0.0f}}));
     assert(off.morphTargets.size() == 2);
     assert(NearlyEqual(off.morphTargets[0].weight, 0.0f));
     assert(off.materialColors.size() == 1);
@@ -1087,7 +1014,8 @@ TestReportedZeroIsAuthoredAndUnreportedIsAbsent()
     // `blink` was not reported, so its target is absent rather than zero: an
     // unreported name is not a zero weight, and this layer does not invent one
     // for the binds behind it either.
-    for (const vrmRetarget::ResolvedMorphTarget& target : off.morphTargets) {
+    for (const vrmRetarget::ResolvedMorphTarget& target : off.morphTargets)
+    {
         assert(target.target != "/Asset/Meshes/Face/EyeClose");
     }
 
@@ -1117,8 +1045,7 @@ TestBinaryRoundsAndOutOfRangeIsClamped()
     // is told which name it was.
     vrmRetarget::ExpressionDiagnostics diagnostics;
     const vrmRetarget::ResolvedExpressions resolved =
-        resolver.Resolve(Weights({{"happy", 1.5f}, {"blink", -0.2f}}),
-                         &diagnostics);
+        resolver.Resolve(Weights({{"happy", 1.5f}, {"blink", -0.2f}}), &diagnostics);
     assert(NearlyEqual(resolved.morphTargets[2].weight, 1.0f));
     assert(diagnostics.clampedNames.size() == 2);
     assert(diagnostics.clampedNames[0] == "blink");
@@ -1132,23 +1059,17 @@ TestBinaryRoundsAndOutOfRangeIsClamped()
     // ResolveWeight: a partly-open eyelid is exactly what `isBinary` says this
     // rig cannot show, so 0.4 reaches the target as 0 and 0.6 as 1. Written
     // because the suite passed once with this line deleted from Resolve.
-    const vrmRetarget::ResolvedExpressions ajar =
-        resolver.Resolve(Weights({{"blink", 0.4f}}));
+    const vrmRetarget::ResolvedExpressions ajar = resolver.Resolve(Weights({{"blink", 0.4f}}));
     assert(ajar.morphTargets.size() == 1);
     assert(ajar.morphTargets[0].target == "/Asset/Meshes/Face/EyeClose");
     assert(NearlyEqual(ajar.morphTargets[0].weight, 0.0f));
-    assert(NearlyEqual(
-        resolver.Resolve(Weights({{"blink", 0.6f}})).morphTargets[0].weight,
-        1.0f));
+    assert(NearlyEqual(resolver.Resolve(Weights({{"blink", 0.6f}})).morphTargets[0].weight, 1.0f));
 
     // Turning the clamp off resolves what the producer actually said.
     vrmRetarget::ExpressionResolveOptions verbatim;
     verbatim.clampWeights = false;
-    const vrmRetarget::ExpressionResolver unclamped(DesignExpressionRig(),
-                                                    verbatim);
-    assert(NearlyEqual(
-        unclamped.Resolve(Weights({{"happy", 1.5f}})).morphTargets[1].weight,
-        1.5f));
+    const vrmRetarget::ExpressionResolver unclamped(DesignExpressionRig(), verbatim);
+    assert(NearlyEqual(unclamped.Resolve(Weights({{"happy", 1.5f}})).morphTargets[1].weight, 1.5f));
 }
 
 void
@@ -1173,8 +1094,7 @@ TestExpressionsAccumulateOnOneTarget()
     const vrmRetarget::ExpressionResolver resolver(rig);
     vrmRetarget::ExpressionDiagnostics diagnostics;
     const vrmRetarget::ResolvedExpressions resolved =
-        resolver.Resolve(Weights({{"happy", 1.0f}, {"aa", 1.0f}}),
-                         &diagnostics);
+        resolver.Resolve(Weights({{"happy", 1.0f}, {"aa", 1.0f}}), &diagnostics);
 
     assert(resolved.morphTargets.size() == 1);
     assert(NearlyEqual(resolved.morphTargets[0].weight, 1.6f));
@@ -1209,9 +1129,9 @@ TestAnUnresolvedNameIsNamedOnceForAWholeClip()
     pose.expressions.Set("照れ", 1.0f);
 
     vrmRetarget::ExpressionDiagnostics diagnostics;
-    for (int sample = 0; sample < 3; ++sample) {
-        const vrmRetarget::ResolvedExpressions resolved =
-            resolver.Resolve(pose, &diagnostics);
+    for (int sample = 0; sample < 3; ++sample)
+    {
+        const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(pose, &diagnostics);
         // The pose overload carries the sample's own time through.
         assert(NearlyEqual(static_cast<float>(resolved.timestamp), 0.5f));
         assert(resolved.morphTargets.size() == 2);
@@ -1253,9 +1173,7 @@ TestANonNumberIsNotAWeight()
     // gave; it is here so the two cannot drift apart.
     vrmRetarget::ExpressionDiagnostics infinite;
     assert(NearlyEqual(
-        resolver.Resolve(Weights({{"happy", HUGE_VALF}}), &infinite)
-            .morphTargets[1].weight,
-        1.0f));
+        resolver.Resolve(Weights({{"happy", HUGE_VALF}}), &infinite).morphTargets[1].weight, 1.0f));
     assert(infinite.clampedNames.size() == 1);
 
     // With clamping off the value reaches the binds, because that mode
@@ -1263,8 +1181,7 @@ TestANonNumberIsNotAWeight()
     // an avatar must not read as a clean one.
     vrmRetarget::ExpressionResolveOptions verbatim;
     verbatim.clampWeights = false;
-    const vrmRetarget::ExpressionResolver unclamped(DesignExpressionRig(),
-                                                    verbatim);
+    const vrmRetarget::ExpressionResolver unclamped(DesignExpressionRig(), verbatim);
     vrmRetarget::ExpressionDiagnostics carried;
     const vrmRetarget::ResolvedExpressions raw =
         unclamped.Resolve(Weights({{"happy", notANumber}}), &carried);
@@ -1288,15 +1205,13 @@ TestABindWithNoIdentifierIsSkippedAndNamed()
     broken.name = "happy";
     broken.morphTargets.push_back({"", 1.0f});
     broken.morphTargets.push_back({"/Asset/Meshes/Face/Smile", 1.0f});
-    broken.materialColors.push_back(
-        {"", "color", pxr::GfVec4f(1.0f, 0.0f, 0.0f, 1.0f)});
+    broken.materialColors.push_back({"", "color", pxr::GfVec4f(1.0f, 0.0f, 0.0f, 1.0f)});
     broken.materialColors.push_back(
         {"/Asset/Materials/Face", "", pxr::GfVec4f(1.0f, 0.0f, 0.0f, 1.0f)});
     broken.materialColors.push_back(
         {"/Asset/Materials/Face", "", pxr::GfVec4f(0.0f, 1.0f, 0.0f, 1.0f)});
     broken.materialColors.push_back(
-        {"/Asset/Materials/Face", "emissionColor",
-         pxr::GfVec4f(0.0f, 0.0f, 1.0f, 1.0f)});
+        {"/Asset/Materials/Face", "emissionColor", pxr::GfVec4f(0.0f, 0.0f, 1.0f, 1.0f)});
     rig.Add(broken);
 
     const vrmRetarget::ExpressionResolver resolver(rig);
@@ -1339,8 +1254,7 @@ TestATargetDrivenBelowZeroIsReportedToo()
     // every bind of the expression negative.
     vrmRetarget::ExpressionResolveOptions verbatim;
     verbatim.clampWeights = false;
-    const vrmRetarget::ExpressionResolver unclamped(DesignExpressionRig(),
-                                                    verbatim);
+    const vrmRetarget::ExpressionResolver unclamped(DesignExpressionRig(), verbatim);
     vrmRetarget::ExpressionDiagnostics carried;
     const vrmRetarget::ResolvedExpressions raw =
         unclamped.Resolve(Weights({{"happy", -0.5f}}), &carried);
@@ -1368,10 +1282,8 @@ TestATargetDrivenBelowZeroIsReportedToo()
 // so a rule that reached the wrong set has somewhere to show it. `happy` is the
 // one that arbitrates; every other expression declares nothing.
 vrmRetarget::ExpressionRig
-DesignOverrideRig(vrmRetarget::ExpressionOverride blink,
-                  vrmRetarget::ExpressionOverride lookAt,
-                  vrmRetarget::ExpressionOverride mouth,
-                  bool binaryBlink = false)
+DesignOverrideRig(vrmRetarget::ExpressionOverride blink, vrmRetarget::ExpressionOverride lookAt,
+                  vrmRetarget::ExpressionOverride mouth, bool binaryBlink = false)
 {
     vrmRetarget::ExpressionRig rig;
 
@@ -1414,11 +1326,12 @@ DesignOverrideRig(vrmRetarget::ExpressionOverride blink,
 // The resolved weight of one target of the sample, by path. -1 means the target
 // is absent, which is a different answer from a weight of zero.
 float
-WeightOf(const vrmRetarget::ResolvedExpressions& resolved,
-         const std::string& target)
+WeightOf(const vrmRetarget::ResolvedExpressions& resolved, const std::string& target)
 {
-    for (const vrmRetarget::ResolvedMorphTarget& entry : resolved.morphTargets) {
-        if (entry.target == target) {
+    for (const vrmRetarget::ResolvedMorphTarget& entry : resolved.morphTargets)
+    {
+        if (entry.target == target)
+        {
             return entry.weight;
         }
     }
@@ -1430,17 +1343,13 @@ TestABlockingOverrideTakesTheWholeCategory()
 {
     // `happy` blocks the mouth and arbitrates nothing else.
     const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
-        vrmRetarget::ExpressionOverride::None,
-        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::None, vrmRetarget::ExpressionOverride::None,
         vrmRetarget::ExpressionOverride::Block));
 
     vrmRetarget::ExpressionDiagnostics diagnostics;
     const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(
-        Weights({{"happy", 0.2f},
-                 {"blink", 1.0f},
-                 {"aa", 1.0f},
-                 {"lookLeft", 1.0f},
-                 {"wink", 1.0f}}),
+        Weights(
+            {{"happy", 0.2f}, {"blink", 1.0f}, {"aa", 1.0f}, {"lookLeft", 1.0f}, {"wink", 1.0f}}),
         &diagnostics);
 
     // Block is a switch, not a steep blend: 0.2 of `happy` takes all of `aa`.
@@ -1465,13 +1374,12 @@ void
 TestABlendingOverrideLeavesTheRestOfTheCategory()
 {
     const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
-        vrmRetarget::ExpressionOverride::Blend,
-        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::Blend, vrmRetarget::ExpressionOverride::None,
         vrmRetarget::ExpressionOverride::None));
 
     vrmRetarget::ExpressionDiagnostics diagnostics;
-    const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(
-        Weights({{"happy", 0.4f}, {"blink", 1.0f}}), &diagnostics);
+    const vrmRetarget::ResolvedExpressions resolved =
+        resolver.Resolve(Weights({{"happy", 0.4f}, {"blink", 1.0f}}), &diagnostics);
 
     // 40% of the way to a full override leaves 60% of the blink standing --
     // which is the whole difference from `block`, where the same 0.4 would have
@@ -1485,11 +1393,10 @@ TestABlendingOverrideLeavesTheRestOfTheCategory()
 
     // At zero weight it arbitrates nothing, and says nothing either.
     vrmRetarget::ExpressionDiagnostics quiet;
-    assert(NearlyEqual(
-        WeightOf(resolver.Resolve(Weights({{"happy", 0.0f}, {"blink", 1.0f}}),
-                                  &quiet),
-                 "/Asset/Meshes/Face/EyeClose"),
-        1.0f));
+    assert(
+        NearlyEqual(WeightOf(resolver.Resolve(Weights({{"happy", 0.0f}, {"blink", 1.0f}}), &quiet),
+                             "/Asset/Meshes/Face/EyeClose"),
+                    1.0f));
     assert(quiet.suppressedNames.empty());
 }
 
@@ -1500,10 +1407,9 @@ TestTheStrongestOverrideWinsAndTheyDoNotStack()
     // rate is the largest any of them asked for. Multiplying them would leave
     // 0.5 * 0.2 = 0.1 of the blink, which is a face neither expression asked
     // for and the number this test exists to refuse.
-    vrmRetarget::ExpressionRig rig = DesignOverrideRig(
-        vrmRetarget::ExpressionOverride::Blend,
-        vrmRetarget::ExpressionOverride::None,
-        vrmRetarget::ExpressionOverride::None);
+    vrmRetarget::ExpressionRig rig = DesignOverrideRig(vrmRetarget::ExpressionOverride::Blend,
+                                                       vrmRetarget::ExpressionOverride::None,
+                                                       vrmRetarget::ExpressionOverride::None);
     vrmRetarget::ExpressionDefinition relaxed;
     relaxed.name = "relaxed";
     relaxed.overrideBlink = vrmRetarget::ExpressionOverride::Blend;
@@ -1513,8 +1419,7 @@ TestTheStrongestOverrideWinsAndTheyDoNotStack()
     const vrmRetarget::ExpressionResolver resolver(std::move(rig));
     vrmRetarget::ExpressionDiagnostics diagnostics;
     const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(
-        Weights({{"happy", 0.5f}, {"relaxed", 0.8f}, {"blink", 1.0f}}),
-        &diagnostics);
+        Weights({{"happy", 0.5f}, {"relaxed", 0.8f}, {"blink", 1.0f}}), &diagnostics);
 
     assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeClose"), 0.2f));
     // And the report names the one that decided it, not both.
@@ -1531,39 +1436,35 @@ TestAnExpressionThatIsOffOverridesNothing()
     // instead would let an expression contributing nothing to the face take the
     // whole blink with it.
     const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
-        vrmRetarget::ExpressionOverride::Block,
-        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::Block, vrmRetarget::ExpressionOverride::None,
         vrmRetarget::ExpressionOverride::None));
-    assert(NearlyEqual(
-        WeightOf(resolver.Resolve(Weights({{"happy", 0.0f}, {"blink", 1.0f}})),
-                 "/Asset/Meshes/Face/EyeClose"),
-        1.0f));
+    assert(NearlyEqual(WeightOf(resolver.Resolve(Weights({{"happy", 0.0f}, {"blink", 1.0f}})),
+                                "/Asset/Meshes/Face/EyeClose"),
+                       1.0f));
 
     // The same rig with a binary `happy`.
-    vrmRetarget::ExpressionRig source = DesignOverrideRig(
-        vrmRetarget::ExpressionOverride::Block,
-        vrmRetarget::ExpressionOverride::None,
-        vrmRetarget::ExpressionOverride::None);
+    vrmRetarget::ExpressionRig source = DesignOverrideRig(vrmRetarget::ExpressionOverride::Block,
+                                                          vrmRetarget::ExpressionOverride::None,
+                                                          vrmRetarget::ExpressionOverride::None);
     vrmRetarget::ExpressionRig rebuilt;
-    for (const vrmRetarget::ExpressionDefinition& definition :
-         source.GetExpressions()) {
+    for (const vrmRetarget::ExpressionDefinition& definition : source.GetExpressions())
+    {
         vrmRetarget::ExpressionDefinition copy = definition;
-        if (copy.name == "happy") {
+        if (copy.name == "happy")
+        {
             copy.isBinary = true;
         }
         rebuilt.Add(std::move(copy));
     }
     const vrmRetarget::ExpressionResolver binary(std::move(rebuilt));
     // 0.4 rounds to off, so the block it declares is not in force here.
-    assert(NearlyEqual(
-        WeightOf(binary.Resolve(Weights({{"happy", 0.4f}, {"blink", 1.0f}})),
-                 "/Asset/Meshes/Face/EyeClose"),
-        1.0f));
+    assert(NearlyEqual(WeightOf(binary.Resolve(Weights({{"happy", 0.4f}, {"blink", 1.0f}})),
+                                "/Asset/Meshes/Face/EyeClose"),
+                       1.0f));
     // At 0.6 it is on -- fully on, since it is binary -- and the block bites.
-    assert(NearlyEqual(
-        WeightOf(binary.Resolve(Weights({{"happy", 0.6f}, {"blink", 1.0f}})),
-                 "/Asset/Meshes/Face/EyeClose"),
-        0.0f));
+    assert(NearlyEqual(WeightOf(binary.Resolve(Weights({{"happy", 0.6f}, {"blink", 1.0f}})),
+                                "/Asset/Meshes/Face/EyeClose"),
+                       0.0f));
 }
 
 void
@@ -1575,19 +1476,16 @@ TestABinaryEyelidIsShutOrOpenUnderABlend()
     // which is the line this test measures: without it the eyelid would land on
     // 0.6 and 0.3, values the flag says the rig cannot show.
     const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
-        vrmRetarget::ExpressionOverride::Blend,
-        vrmRetarget::ExpressionOverride::None,
+        vrmRetarget::ExpressionOverride::Blend, vrmRetarget::ExpressionOverride::None,
         vrmRetarget::ExpressionOverride::None,
         /*binaryBlink=*/true));
 
-    assert(NearlyEqual(
-        WeightOf(resolver.Resolve(Weights({{"happy", 0.4f}, {"blink", 1.0f}})),
-                 "/Asset/Meshes/Face/EyeClose"),
-        1.0f));
-    assert(NearlyEqual(
-        WeightOf(resolver.Resolve(Weights({{"happy", 0.7f}, {"blink", 1.0f}})),
-                 "/Asset/Meshes/Face/EyeClose"),
-        0.0f));
+    assert(NearlyEqual(WeightOf(resolver.Resolve(Weights({{"happy", 0.4f}, {"blink", 1.0f}})),
+                                "/Asset/Meshes/Face/EyeClose"),
+                       1.0f));
+    assert(NearlyEqual(WeightOf(resolver.Resolve(Weights({{"happy", 0.7f}, {"blink", 1.0f}})),
+                                "/Asset/Meshes/Face/EyeClose"),
+                       0.0f));
 }
 
 void
@@ -1618,45 +1516,39 @@ void
 TestTheOverrideVocabularyIsThreeTokensAndThreeSets()
 {
     bool recognized = false;
-    assert(vrmRetarget::ParseExpressionOverride("block", &recognized)
-           == vrmRetarget::ExpressionOverride::Block);
+    assert(vrmRetarget::ParseExpressionOverride("block", &recognized) ==
+           vrmRetarget::ExpressionOverride::Block);
     assert(recognized);
-    assert(vrmRetarget::ParseExpressionOverride("blend", &recognized)
-           == vrmRetarget::ExpressionOverride::Blend);
+    assert(vrmRetarget::ParseExpressionOverride("blend", &recognized) ==
+           vrmRetarget::ExpressionOverride::Blend);
     assert(recognized);
     // An absent value and an explicit "none" are the same statement.
-    assert(vrmRetarget::ParseExpressionOverride("none", &recognized)
-           == vrmRetarget::ExpressionOverride::None);
+    assert(vrmRetarget::ParseExpressionOverride("none", &recognized) ==
+           vrmRetarget::ExpressionOverride::None);
     assert(recognized);
-    assert(vrmRetarget::ParseExpressionOverride("", &recognized)
-           == vrmRetarget::ExpressionOverride::None);
+    assert(vrmRetarget::ParseExpressionOverride("", &recognized) ==
+           vrmRetarget::ExpressionOverride::None);
     assert(recognized);
     // A token this layer does not know is not an arbitration it can perform,
     // and guessing which one was meant would suppress a face on a spelling.
-    assert(vrmRetarget::ParseExpressionOverride("Block", &recognized)
-           == vrmRetarget::ExpressionOverride::None);
+    assert(vrmRetarget::ParseExpressionOverride("Block", &recognized) ==
+           vrmRetarget::ExpressionOverride::None);
     assert(!recognized);
     assert(std::string(vrmRetarget::ExpressionOverrideToken(
-               vrmRetarget::ExpressionOverride::Blend))
-           == "blend");
+               vrmRetarget::ExpressionOverride::Blend)) == "blend");
 
     // The categories are the preset sets, in the VRM 1.0 spelling a VRM 0.x rig
     // also arrives in -- the importer migrates `blink_l` to `blinkLeft` and `a`
     // to `aa` on the way through.
     using vrmRetarget::ExpressionCategory;
-    assert(vrmRetarget::ExpressionCategoryOf("blinkLeft")
-           == ExpressionCategory::Blink);
-    assert(vrmRetarget::ExpressionCategoryOf("lookDown")
-           == ExpressionCategory::LookAt);
+    assert(vrmRetarget::ExpressionCategoryOf("blinkLeft") == ExpressionCategory::Blink);
+    assert(vrmRetarget::ExpressionCategoryOf("lookDown") == ExpressionCategory::LookAt);
     assert(vrmRetarget::ExpressionCategoryOf("oh") == ExpressionCategory::Mouth);
     // `happy` arbitrates the categories and is in none of them; a custom name
     // is in none either, whatever it is called.
-    assert(vrmRetarget::ExpressionCategoryOf("happy")
-           == ExpressionCategory::None);
-    assert(vrmRetarget::ExpressionCategoryOf("wink")
-           == ExpressionCategory::None);
-    assert(vrmRetarget::ExpressionCategoryOf("Blink")
-           == ExpressionCategory::None);
+    assert(vrmRetarget::ExpressionCategoryOf("happy") == ExpressionCategory::None);
+    assert(vrmRetarget::ExpressionCategoryOf("wink") == ExpressionCategory::None);
+    assert(vrmRetarget::ExpressionCategoryOf("Blink") == ExpressionCategory::None);
 }
 
 void
@@ -1668,15 +1560,15 @@ TestASuppressedExpressionStillOverrides()
     // the answer depend on the order the three categories are settled in, and
     // the rig below -- where `aa` blocks the blink and `happy` blocks the mouth
     // -- would then have two defensible answers and no reason to prefer either.
-    vrmRetarget::ExpressionRig rig = DesignOverrideRig(
-        vrmRetarget::ExpressionOverride::None,
-        vrmRetarget::ExpressionOverride::None,
-        vrmRetarget::ExpressionOverride::Block);
+    vrmRetarget::ExpressionRig rig = DesignOverrideRig(vrmRetarget::ExpressionOverride::None,
+                                                       vrmRetarget::ExpressionOverride::None,
+                                                       vrmRetarget::ExpressionOverride::Block);
     vrmRetarget::ExpressionRig rebuilt;
-    for (const vrmRetarget::ExpressionDefinition& definition :
-         rig.GetExpressions()) {
+    for (const vrmRetarget::ExpressionDefinition& definition : rig.GetExpressions())
+    {
         vrmRetarget::ExpressionDefinition copy = definition;
-        if (copy.name == "aa") {
+        if (copy.name == "aa")
+        {
             copy.overrideBlink = vrmRetarget::ExpressionOverride::Block;
         }
         rebuilt.Add(std::move(copy));
@@ -1684,9 +1576,8 @@ TestASuppressedExpressionStillOverrides()
 
     const vrmRetarget::ExpressionResolver resolver(std::move(rebuilt));
     vrmRetarget::ExpressionDiagnostics diagnostics;
-    const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(
-        Weights({{"happy", 1.0f}, {"aa", 1.0f}, {"blink", 1.0f}}),
-        &diagnostics);
+    const vrmRetarget::ResolvedExpressions resolved =
+        resolver.Resolve(Weights({{"happy", 1.0f}, {"aa", 1.0f}, {"blink", 1.0f}}), &diagnostics);
 
     // `happy` blocks the mouth, so `aa` resolves to nothing --
     assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/MouthOpen"), 0.0f));
@@ -1715,25 +1606,24 @@ TestAnOverrideRateNeverInvertsAWeight()
         verbatim);
 
     // Past 1 the rate saturates: fully suppressed, never inverted.
-    const vrmRetarget::ResolvedExpressions past = resolver.Resolve(
-        Weights({{"happy", 1.5f}, {"blink", 1.0f}}));
+    const vrmRetarget::ResolvedExpressions past =
+        resolver.Resolve(Weights({{"happy", 1.5f}, {"blink", 1.0f}}));
     assert(NearlyEqual(WeightOf(past, "/Asset/Meshes/Face/EyeClose"), 0.0f));
     // `happy` itself still reaches its own binds verbatim, which is what that
     // mode is for -- the bound is on the rate and not on the weight.
     assert(NearlyEqual(WeightOf(past, "/Asset/Meshes/Face/Smile"), 1.5f));
 
     // Below 0 it suppresses nothing rather than amplifying.
-    const vrmRetarget::ResolvedExpressions below = resolver.Resolve(
-        Weights({{"happy", -0.5f}, {"blink", 1.0f}}));
+    const vrmRetarget::ResolvedExpressions below =
+        resolver.Resolve(Weights({{"happy", -0.5f}, {"blink", 1.0f}}));
     assert(NearlyEqual(WeightOf(below, "/Asset/Meshes/Face/EyeClose"), 1.0f));
 
     // And a weight that is not a number arbitrates nothing, for the same
     // reason it is a weight of zero: every comparison against it is false, so
     // an unguarded `1 - rate` would carry the NaN into the blink's binds.
-    const vrmRetarget::ResolvedExpressions notANumber = resolver.Resolve(
-        Weights({{"happy", std::nanf("")}, {"blink", 1.0f}}));
-    assert(NearlyEqual(WeightOf(notANumber, "/Asset/Meshes/Face/EyeClose"),
-                       1.0f));
+    const vrmRetarget::ResolvedExpressions notANumber =
+        resolver.Resolve(Weights({{"happy", std::nanf("")}, {"blink", 1.0f}}));
+    assert(NearlyEqual(WeightOf(notANumber, "/Asset/Meshes/Face/EyeClose"), 1.0f));
 }
 
 void
@@ -1744,14 +1634,12 @@ TestAGazeExpressionIsSuppressedLikeAnyOther()
     // arbitrates a rig's gaze through exactly the path it arbitrates its face,
     // and needs no second mechanism.
     const vrmRetarget::ExpressionResolver resolver(DesignOverrideRig(
-        vrmRetarget::ExpressionOverride::None,
-        vrmRetarget::ExpressionOverride::Blend,
+        vrmRetarget::ExpressionOverride::None, vrmRetarget::ExpressionOverride::Blend,
         vrmRetarget::ExpressionOverride::None));
 
     vrmRetarget::ExpressionDiagnostics diagnostics;
     const vrmRetarget::ResolvedExpressions resolved = resolver.Resolve(
-        Weights({{"happy", 0.25f}, {"lookLeft", 0.8f}, {"blink", 1.0f}}),
-        &diagnostics);
+        Weights({{"happy", 0.25f}, {"lookLeft", 0.8f}, {"blink", 1.0f}}), &diagnostics);
     assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeLeft"), 0.6f));
     assert(NearlyEqual(WeightOf(resolved, "/Asset/Meshes/Face/EyeClose"), 1.0f));
     assert(diagnostics.suppressedNames.size() == 1);
@@ -1769,7 +1657,8 @@ TestAJointsWorldTransformComposesItsWholeChain()
     // further up.
     const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
     vrmRetarget::RetargetedPose pose;
-    for (const vrmRetarget::TargetJoint& joint : skeleton.GetJoints()) {
+    for (const vrmRetarget::TargetJoint& joint : skeleton.GetJoints())
+    {
         pose.rotations.push_back(joint.restRotation);
         pose.translations.push_back(joint.restTranslation);
     }
@@ -1778,8 +1667,7 @@ TestAJointsWorldTransformComposesItsWholeChain()
     assert(chest >= 0);
     pxr::GfQuatf orientation(1.0f);
     pxr::GfVec3f position(0.0f);
-    assert(vrmRetarget::GetJointWorldTransform(skeleton, pose, chest,
-                                               &orientation, &position));
+    assert(vrmRetarget::GetJointWorldTransform(skeleton, pose, chest, &orientation, &position));
     // 1 m to the pelvis plus two half-metre segments, all straight up.
     assert(NearlyEqual(position, pxr::GfVec3f(0.0f, 2.0f, 0.0f)));
     assert(SameOrientation(orientation, pxr::GfQuatf(1.0f)));
@@ -1788,8 +1676,7 @@ TestAJointsWorldTransformComposesItsWholeChain()
     // vertical onto +Z, and the pelvis's own metre of height stays.
     const int pelvis = skeleton.FindJoint("Root/Pelvis");
     pose.rotations[static_cast<std::size_t>(pelvis)] = Rotation(kAxisX, 90.0f);
-    assert(vrmRetarget::GetJointWorldTransform(skeleton, pose, chest,
-                                               &orientation, &position));
+    assert(vrmRetarget::GetJointWorldTransform(skeleton, pose, chest, &orientation, &position));
     assert(NearlyEqual(position, pxr::GfVec3f(0.0f, 1.0f, 1.0f)));
     assert(SameOrientation(orientation, Rotation(kAxisX, 90.0f)));
 
@@ -1797,10 +1684,9 @@ TestAJointsWorldTransformComposesItsWholeChain()
     // reading past the end of it, and neither output is touched.
     vrmRetarget::RetargetedPose truncated = pose;
     truncated.rotations.pop_back();
-    assert(!vrmRetarget::GetJointWorldTransform(skeleton, truncated, chest,
-                                                &orientation, &position));
-    assert(!vrmRetarget::GetJointWorldTransform(skeleton, pose, -1,
-                                                &orientation, &position));
+    assert(
+        !vrmRetarget::GetJointWorldTransform(skeleton, truncated, chest, &orientation, &position));
+    assert(!vrmRetarget::GetJointWorldTransform(skeleton, pose, -1, &orientation, &position));
     assert(NearlyEqual(position, pxr::GfVec3f(0.0f, 1.0f, 1.0f)));
 }
 
@@ -1872,16 +1758,15 @@ TestAnIdentityRangeMapReproducesTheAim()
     const vrmRetarget::LookAtEvaluator evaluator(IdentityBoneRig());
     vrmRetarget::LookAtDiagnostics diagnostics;
     const pxr::GfVec3f target(1.0f, 1.0f, 1.0f);
-    const vrmRetarget::ResolvedLookAt resolved =
-        evaluator.Evaluate(GazeAt(target), &diagnostics);
+    const vrmRetarget::ResolvedLookAt resolved = evaluator.Evaluate(GazeAt(target), &diagnostics);
 
     assert(resolved.hasGaze);
     assert(NearlyEqual(resolved.yawDegrees, 45.0f));
     assert(NearlyEqual(resolved.pitchDegrees, 35.26439f));
     assert(resolved.eyeRotations.size() == 2);
-    for (const vrmRetarget::LookAtEyeRotation& eye : resolved.eyeRotations) {
-        assert(NearlyEqual(eye.rotation.Transform(kAxisZ),
-                           target.GetNormalized()));
+    for (const vrmRetarget::LookAtEyeRotation& eye : resolved.eyeRotations)
+    {
+        assert(NearlyEqual(eye.rotation.Transform(kAxisZ), target.GetNormalized()));
     }
     // An absent target is the only thing this counts as a sample without one,
     // and there was none.
@@ -1958,18 +1843,14 @@ TestInnerAndOuterAreChosenBySide()
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 0.0f)));
     assert(NearlyEqual(left.yawDegrees, 90.0f));
     assert(left.eyeRotations[0].joint == rig.leftEyeJoint);
-    assert(SameOrientation(left.eyeRotations[0].rotation,
-                           Rotation(kAxisY, 10.0f)));
-    assert(SameOrientation(left.eyeRotations[1].rotation,
-                           Rotation(kAxisY, 5.0f)));
+    assert(SameOrientation(left.eyeRotations[0].rotation, Rotation(kAxisY, 10.0f)));
+    assert(SameOrientation(left.eyeRotations[1].rotation, Rotation(kAxisY, 5.0f)));
 
     const vrmRetarget::ResolvedLookAt right =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(-1.0f, 0.0f, 0.0f)));
     assert(NearlyEqual(right.yawDegrees, -90.0f));
-    assert(SameOrientation(right.eyeRotations[0].rotation,
-                           Rotation(kAxisY, -5.0f)));
-    assert(SameOrientation(right.eyeRotations[1].rotation,
-                           Rotation(kAxisY, -10.0f)));
+    assert(SameOrientation(right.eyeRotations[0].rotation, Rotation(kAxisY, -5.0f)));
+    assert(SameOrientation(right.eyeRotations[1].rotation, Rotation(kAxisY, -10.0f)));
 
     // Past the map's input range the eye stops rather than extrapolating: a
     // target behind the character's shoulder is 135 degrees of aim and still
@@ -1977,8 +1858,7 @@ TestInnerAndOuterAreChosenBySide()
     const vrmRetarget::ResolvedLookAt behind =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, -1.0f)));
     assert(NearlyEqual(behind.yawDegrees, 135.0f));
-    assert(SameOrientation(behind.eyeRotations[0].rotation,
-                           Rotation(kAxisY, 10.0f)));
+    assert(SameOrientation(behind.eyeRotations[0].rotation, Rotation(kAxisY, 10.0f)));
 }
 
 void
@@ -1997,16 +1877,13 @@ TestVerticalIsSharedAndSignedByDirection()
     const vrmRetarget::ResolvedLookAt up =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 1.0f, 0.0f)));
     assert(NearlyEqual(up.pitchDegrees, 90.0f));
-    assert(SameOrientation(up.eyeRotations[0].rotation,
-                           Rotation(kAxisX, -12.0f)));
-    assert(SameOrientation(up.eyeRotations[1].rotation,
-                           Rotation(kAxisX, -12.0f)));
+    assert(SameOrientation(up.eyeRotations[0].rotation, Rotation(kAxisX, -12.0f)));
+    assert(SameOrientation(up.eyeRotations[1].rotation, Rotation(kAxisX, -12.0f)));
 
     const vrmRetarget::ResolvedLookAt down =
         evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, -1.0f, 0.0f)));
     assert(NearlyEqual(down.pitchDegrees, -90.0f));
-    assert(SameOrientation(down.eyeRotations[0].rotation,
-                           Rotation(kAxisX, 6.0f)));
+    assert(SameOrientation(down.eyeRotations[0].rotation, Rotation(kAxisX, 6.0f)));
 }
 
 void
@@ -2050,8 +1927,7 @@ TestATargetOnTheEyesNamesNoDirection()
     vrmRetarget::LookAtDiagnostics diagnostics;
 
     const vrmRetarget::ResolvedLookAt resolved =
-        evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.06f, 0.0f)),
-                           &diagnostics);
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, 0.06f, 0.0f)), &diagnostics);
     assert(!resolved.hasGaze);
     assert(diagnostics.samplesWithoutTarget == 1);
     assert(diagnostics.warnings.size() == 1);
@@ -2114,8 +1990,7 @@ TestAnExpressionRigReportsAllFourNames()
 
     vrmRetarget::LookAtDiagnostics diagnostics;
     const vrmRetarget::ResolvedLookAt left =
-        evaluator.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 0.0f)),
-                           &diagnostics);
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 0.0f)), &diagnostics);
     assert(left.hasGaze);
     // No eye is rotated: an expression rig drives its gaze through the face.
     assert(left.eyeRotations.empty());
@@ -2126,8 +2001,7 @@ TestAnExpressionRigReportsAllFourNames()
     assert(NearlyEqual(*left.expressions.Find("lookDown"), 0.0f));
 
     const vrmRetarget::ResolvedLookAt down =
-        evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, -1.0f, 0.0f)),
-                           &diagnostics);
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(0.0f, -1.0f, 0.0f)), &diagnostics);
     assert(NearlyEqual(*down.expressions.Find("lookDown"), 1.0f));
     assert(NearlyEqual(*down.expressions.Find("lookUp"), 0.0f));
     // A downward gaze is straight down, so its horizontal weights are both
@@ -2145,8 +2019,7 @@ TestAnExpressionRigReportsAllFourNames()
     lookDown.morphTargets.push_back({"/Asset/Meshes/Face/EyesDown", 1.0f});
     binds.Add(lookDown);
     const vrmRetarget::ExpressionResolver resolver(binds);
-    const vrmRetarget::ResolvedExpressions applied =
-        resolver.Resolve(down.expressions);
+    const vrmRetarget::ResolvedExpressions applied = resolver.Resolve(down.expressions);
     assert(applied.morphTargets.size() == 1);
     assert(NearlyEqual(applied.morphTargets[0].weight, 1.0f));
 }
@@ -2168,8 +2041,7 @@ TestAnExpressionWeightOutsideTheRangeIsClampedAndNamed()
 
     vrmRetarget::LookAtDiagnostics diagnostics;
     const vrmRetarget::ResolvedLookAt clamped =
-        evaluator.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 0.0f)),
-                           &diagnostics);
+        evaluator.Evaluate(GazeAt(pxr::GfVec3f(1.0f, 0.0f, 0.0f)), &diagnostics);
     assert(NearlyEqual(*clamped.expressions.Find("lookLeft"), 1.0f));
     assert(diagnostics.warnings.size() == 1);
 
@@ -2224,8 +2096,7 @@ TestThePoseOverloadCarriesTheSampleThrough()
 
     vrmRetarget::LookAtHead head;
     head.position = pxr::GfVec3f(0.0f, 1.5f, 0.0f);
-    const vrmRetarget::ResolvedLookAt silent =
-        evaluator.Evaluate(pose, head);
+    const vrmRetarget::ResolvedLookAt silent = evaluator.Evaluate(pose, head);
     assert(!silent.hasGaze);
     assert(silent.timestamp == 1.25);
 
@@ -2254,9 +2125,8 @@ TestBothVrmSpellingsParseToOneValue()
         &one, &warnings));
     assert(warnings.empty());
     assert(one.type == vrmRetarget::LookAtType::Bone);
-    assert(one.offsetFromHeadBone
-           && NearlyEqual(*one.offsetFromHeadBone,
-                          pxr::GfVec3f(0.0f, 0.06f, 0.0f)));
+    assert(one.offsetFromHeadBone &&
+           NearlyEqual(*one.offsetFromHeadBone, pxr::GfVec3f(0.0f, 0.06f, 0.0f)));
     assert(NearlyEqual(one.horizontalInner.outputScale, 5.0f));
     assert(NearlyEqual(one.horizontalOuter.Map(45.0f), 5.0f));
     assert(one.horizontalOuter.curve.empty());
@@ -2265,11 +2135,11 @@ TestBothVrmSpellingsParseToOneValue()
     assert(NearlyEqual(one.verticalUp.inputMaxValue, 90.0f));
 
     vrmRetarget::LookAtRig zero;
-    assert(vrmRetarget::ParseLookAtRangeMaps(
-        R"({"lookAtTypeName":"BlendShape",)"
-        R"("lookAtHorizontalOuter":{"curve":[0,0,0,1,1,1,1,0],)"
-        R"("xRange":90,"yRange":1.0}})",
-        &zero, &warnings));
+    assert(
+        vrmRetarget::ParseLookAtRangeMaps(R"({"lookAtTypeName":"BlendShape",)"
+                                          R"("lookAtHorizontalOuter":{"curve":[0,0,0,1,1,1,1,0],)"
+                                          R"("xRange":90,"yRange":1.0}})",
+                                          &zero, &warnings));
     assert(warnings.empty());
     // "BlendShape" is the name 0.x gives the rig 1.0 calls `expression`, and
     // the rest of this library speaks the newer one.
@@ -2279,17 +2149,16 @@ TestBothVrmSpellingsParseToOneValue()
 
     vrmRetarget::LookAtRangeMap implicitlyLinear = zero.horizontalOuter;
     implicitlyLinear.curve.clear();
-    for (const float degrees : {0.0f, 12.5f, 45.0f, 71.25f, 90.0f, 180.0f}) {
-        assert(NearlyEqual(zero.horizontalOuter.Map(degrees),
-                           implicitlyLinear.Map(degrees)));
+    for (const float degrees : {0.0f, 12.5f, 45.0f, 71.25f, 90.0f, 180.0f})
+    {
+        assert(NearlyEqual(zero.horizontalOuter.Map(degrees), implicitlyLinear.Map(degrees)));
     }
 
     // A curve that is not the linear default is read as the curve it is.
     vrmRetarget::LookAtRig curved;
-    assert(vrmRetarget::ParseLookAtRangeMaps(
-        R"({"lookAtVerticalUp":{"curve":[0,0,0,0,1,1,0,0],)"
-        R"("xRange":90,"yRange":10}})",
-        &curved, &warnings));
+    assert(vrmRetarget::ParseLookAtRangeMaps(R"({"lookAtVerticalUp":{"curve":[0,0,0,0,1,1,0,0],)"
+                                             R"("xRange":90,"yRange":10}})",
+                                             &curved, &warnings));
     // Flat tangents at both ends: the smoothstep, which is 0.5 at the middle
     // and visibly not `t` on either side of it.
     assert(NearlyEqual(curved.verticalUp.Map(45.0f), 5.0f));
@@ -2316,8 +2185,7 @@ TestAnUnreadableLookAtBlockLeavesTheDefaultsStanding()
     // nothing instead, and says so.
     warnings.clear();
     assert(vrmRetarget::ParseLookAtRangeMaps(
-        R"({"rangeMapVerticalUp":{"inputMaxValue":0,"outputScale":10}})", &rig,
-        &warnings));
+        R"({"rangeMapVerticalUp":{"inputMaxValue":0,"outputScale":10}})", &rig, &warnings));
     assert(warnings.size() == 1);
     assert(rig.verticalUp.Map(45.0f) == 0.0f);
 

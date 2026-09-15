@@ -108,21 +108,17 @@ enum class OpenExecDiagnosticSeverity : std::uint8_t
 
 // The stable string, e.g. "VRM_OPENEXEC_TYPE_MISMATCH". Empty for a value
 // outside the enum.
-std::string_view OpenExecDiagnosticCodeString(
-    OpenExecDiagnosticCode code) noexcept;
+std::string_view OpenExecDiagnosticCodeString(OpenExecDiagnosticCode code) noexcept;
 
-std::optional<OpenExecDiagnosticCode> FindOpenExecDiagnosticCode(
-    std::string_view name) noexcept;
+std::optional<OpenExecDiagnosticCode> FindOpenExecDiagnosticCode(std::string_view name) noexcept;
 
-OpenExecDiagnosticSeverity OpenExecDiagnosticDefaultSeverity(
-    OpenExecDiagnosticCode code) noexcept;
+OpenExecDiagnosticSeverity OpenExecDiagnosticDefaultSeverity(OpenExecDiagnosticCode code) noexcept;
 
 // Whether the frame it is reported in still answered. Only `Invalidated` is:
 // the driver recovers from it itself.
 bool OpenExecDiagnosticIsRecoverable(OpenExecDiagnosticCode code) noexcept;
 
-std::string_view OpenExecDiagnosticSeverityString(
-    OpenExecDiagnosticSeverity severity) noexcept;
+std::string_view OpenExecDiagnosticSeverityString(OpenExecDiagnosticSeverity severity) noexcept;
 
 struct OpenExecDiagnostic
 {
@@ -136,14 +132,11 @@ struct OpenExecDiagnostic
     std::string detail;
 };
 
-bool operator==(const OpenExecDiagnostic& a,
-                const OpenExecDiagnostic& b) noexcept;
-bool operator!=(const OpenExecDiagnostic& a,
-                const OpenExecDiagnostic& b) noexcept;
+bool operator==(const OpenExecDiagnostic& a, const OpenExecDiagnostic& b) noexcept;
+bool operator!=(const OpenExecDiagnostic& a, const OpenExecDiagnostic& b) noexcept;
 
 // Fills `severity` and `recoverable` from the code's defaults.
-OpenExecDiagnostic MakeOpenExecDiagnostic(OpenExecDiagnosticCode code,
-                                          std::string subject,
+OpenExecDiagnostic MakeOpenExecDiagnostic(OpenExecDiagnosticCode code, std::string subject,
                                           std::string detail = {});
 
 // One line, in the retarget's and the adapters' shape:
@@ -165,7 +158,11 @@ struct OpenExecDiagnostics
     bool Has(OpenExecDiagnosticCode code, std::string_view subject) const;
     std::vector<std::string> Subjects(OpenExecDiagnosticCode code) const;
     bool HasError() const noexcept;
-    bool IsClean() const noexcept { return reported.empty(); }
+    bool
+    IsClean() const noexcept
+    {
+        return reported.empty();
+    }
 };
 
 // ---------------------------------------------------------------------------
@@ -188,7 +185,8 @@ struct Key
     const std::type_info* type = nullptr;
 
     template <class T>
-    static Key Of(PXR_NS::SdfPath provider, PXR_NS::TfToken computation)
+    static Key
+    Of(PXR_NS::SdfPath provider, PXR_NS::TfToken computation)
     {
         return Key{std::move(provider), std::move(computation), &typeid(T)};
     }
@@ -229,15 +227,18 @@ struct Frame
     // that is unavailable is reported in every frame that asks for it.
     OpenExecDiagnostics diagnostics;
 
-    bool Failed() const noexcept
+    bool
+    Failed() const noexcept
     {
         return diagnostics.HasError() || !errors.empty();
     }
 
     template <class T>
-    const T* Get(std::size_t index) const
+    const T*
+    Get(std::size_t index) const
     {
-        if (index >= values.size() || !values[index].IsHolding<T>()) {
+        if (index >= values.size() || !values[index].IsHolding<T>())
+        {
             return nullptr;
         }
         return &values[index].UncheckedGet<T>();
@@ -252,7 +253,7 @@ struct Frame
 // once and reused -- upstream's own rule (the migration report §6).
 class Driver
 {
-public:
+  public:
     using RequestId = std::size_t;
 
     explicit Driver(const PXR_NS::UsdStageRefPtr& stage);
@@ -281,15 +282,15 @@ public:
     // that expires a request behind its back, a harness that times it.
     PXR_NS::ExecUsdSystem& System() noexcept;
 
-private:
+  private:
     struct Request;
 
     // One compute's answer, in exec's index space.
     struct Computed
     {
         std::vector<PXR_NS::VtValue> values;
-        std::vector<std::string> refusals;    // runtime errors
-        std::vector<std::string> complaints;  // every other error
+        std::vector<std::string> refusals;   // runtime errors
+        std::vector<std::string> complaints; // every other error
     };
 
     // Builds `request` over its available keys and arms it with the frame's
@@ -297,15 +298,14 @@ private:
     // that answered nothing when the arm posted a coding error. Appends the
     // refusals to `frame` and returns the arm, whose complaints are the
     // caller's to classify.
-    Computed _Build(Request& request, const std::vector<Override>& overrides,
-                    Frame* frame);
+    Computed _Build(Request& request, const std::vector<Override>& overrides, Frame* frame);
 
     // Computes `request` as built, with `overrides` whose keys it holds.
     Computed _Compute(Request& request, const std::vector<Override>& overrides);
 
-    PXR_NS::ExecUsdValueOverrideVector _Handed(
-        const Request& request, const std::vector<Override>& overrides,
-        std::vector<Key>* keys) const;
+    PXR_NS::ExecUsdValueOverrideVector _Handed(const Request& request,
+                                               const std::vector<Override>& overrides,
+                                               std::vector<Key>* keys) const;
 
     PXR_NS::UsdPrim _Provider(const Key& key) const;
     std::vector<bool> _Availability(const std::vector<Key>& keys) const;

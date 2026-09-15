@@ -7,8 +7,7 @@
 namespace motion
 {
 
-CaptureRecorder::CaptureRecorder(double frameRate)
-    : _frameRate(frameRate > 0.0 ? frameRate : 30.0)
+CaptureRecorder::CaptureRecorder(double frameRate) : _frameRate(frameRate > 0.0 ? frameRate : 30.0)
 {
 }
 
@@ -18,7 +17,8 @@ CaptureRecorder::Record(const PoseSampleResult& result)
     ++_report.ticks;
     _report.peakLagSeconds = std::max(_report.peakLagSeconds, result.lag);
 
-    switch (result.status) {
+    switch (result.status)
+    {
     case PoseSampleStatus::Sampled:
         ++_report.sampled;
         break;
@@ -33,11 +33,13 @@ CaptureRecorder::Record(const PoseSampleResult& result)
         break;
     }
 
-    if (!result.pose) {
+    if (!result.pose)
+    {
         return false;
     }
-    if (!_animation.samples.empty()
-        && result.pose->timestamp <= _animation.samples.back().timestamp) {
+    if (!_animation.samples.empty() &&
+        result.pose->timestamp <= _animation.samples.back().timestamp)
+    {
         ++_report.rejected;
         return false;
     }
@@ -53,10 +55,12 @@ CaptureRecorder::Take()
     _animation = HumanoidAnimation();
 
     clip.nominalFrameRate = _frameRate;
-    if (!clip.samples.empty()) {
+    if (!clip.samples.empty())
+    {
         clip.startTime = clip.samples.front().timestamp;
         clip.endTime = clip.samples.back().timestamp;
-        if (clip.samples.front().source) {
+        if (clip.samples.front().source)
+        {
             clip.source = *clip.samples.front().source;
         }
     }

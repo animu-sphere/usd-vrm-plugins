@@ -24,12 +24,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 GfMatrix4d VrmConvertGltfMatrix(const float* gltfColumnMajor16);
 
 // Compose a node-local transform from glTF TRS. Quaternion is (x,y,z,w).
-GfMatrix4d VrmComposeTrs(const float translation[3],
-                         const float rotationXyzw[4],
+GfMatrix4d VrmComposeTrs(const float translation[3], const float rotationXyzw[4],
                          const float scale[3]);
 
 // glTF UV (top-left origin) -> USD st (bottom-left origin).
-inline GfVec2f VrmConvertUv(const GfVec2f& gltfUv)
+inline GfVec2f
+VrmConvertUv(const GfVec2f& gltfUv)
 {
     return GfVec2f(gltfUv[0], 1.0f - gltfUv[1]);
 }

@@ -119,8 +119,7 @@ enum class SourceAxis : std::uint8_t
     Count,
 };
 
-inline constexpr std::size_t SourceAxisCount =
-    static_cast<std::size_t>(SourceAxis::Count);
+inline constexpr std::size_t SourceAxisCount = static_cast<std::size_t>(SourceAxis::Count);
 
 enum class SourceLengthUnit : std::uint8_t
 {
@@ -232,8 +231,7 @@ enum class RestPoseSource : std::uint8_t
     Count,
 };
 
-inline constexpr std::size_t RestPoseSourceCount =
-    static_cast<std::size_t>(RestPoseSource::Count);
+inline constexpr std::size_t RestPoseSourceCount = static_cast<std::size_t>(RestPoseSource::Count);
 
 // What a source joint the profile maps nothing to means. `Ignore` is silent,
 // `Report` expects a recoverable diagnostic per joint, and `Refuse` stops the
@@ -251,53 +249,43 @@ enum class UnmappedJointPolicy : std::uint8_t
 inline constexpr std::size_t UnmappedJointPolicyCount =
     static_cast<std::size_t>(UnmappedJointPolicy::Count);
 
-MOTIONSOURCE_API std::string_view SourceHandednessName(
-    SourceHandedness handedness) noexcept;
-MOTIONSOURCE_API std::optional<SourceHandedness> FindSourceHandedness(
-    std::string_view name) noexcept;
+MOTIONSOURCE_API std::string_view SourceHandednessName(SourceHandedness handedness) noexcept;
+MOTIONSOURCE_API std::optional<SourceHandedness>
+FindSourceHandedness(std::string_view name) noexcept;
 
 // The canonical spelling carries the sign, e.g. "+Y".
 MOTIONSOURCE_API std::string_view SourceAxisName(SourceAxis axis) noexcept;
 // ASCII case-insensitive, and "Y" reads as "+Y". See the enum's note.
-MOTIONSOURCE_API std::optional<SourceAxis> FindSourceAxis(
-    std::string_view name) noexcept;
+MOTIONSOURCE_API std::optional<SourceAxis> FindSourceAxis(std::string_view name) noexcept;
 // Which axis, ignoring the sign: 0 for X, 1 for Y, 2 for Z. Nullopt for
 // `Unspecified` and for a non-enumerator.
-MOTIONSOURCE_API std::optional<int> SourceAxisComponent(
-    SourceAxis axis) noexcept;
+MOTIONSOURCE_API std::optional<int> SourceAxisComponent(SourceAxis axis) noexcept;
 MOTIONSOURCE_API bool SourceAxisIsNegative(SourceAxis axis) noexcept;
 
-MOTIONSOURCE_API std::string_view SourceLengthUnitName(
-    SourceLengthUnit unit) noexcept;
+MOTIONSOURCE_API std::string_view SourceLengthUnitName(SourceLengthUnit unit) noexcept;
 // Also accepts the `-tre` spellings: a unit spelled the other way is the same
 // unit, and a profile refused over an `e` and an `r` teaches nobody anything.
-MOTIONSOURCE_API std::optional<SourceLengthUnit> FindSourceLengthUnit(
-    std::string_view name) noexcept;
+MOTIONSOURCE_API std::optional<SourceLengthUnit>
+FindSourceLengthUnit(std::string_view name) noexcept;
 // How many meters one unit is. Nullopt for `Unspecified` and for a
 // non-enumerator — the value a converter multiplies by, and the one number in
 // this header that is arithmetic rather than vocabulary.
-MOTIONSOURCE_API std::optional<double> SourceLengthUnitInMeters(
-    SourceLengthUnit unit) noexcept;
+MOTIONSOURCE_API std::optional<double> SourceLengthUnitInMeters(SourceLengthUnit unit) noexcept;
 
-MOTIONSOURCE_API std::string_view RootTranslationPolicyName(
-    RootTranslationPolicy policy) noexcept;
-MOTIONSOURCE_API std::optional<RootTranslationPolicy> FindRootTranslationPolicy(
-    std::string_view name) noexcept;
+MOTIONSOURCE_API std::string_view RootTranslationPolicyName(RootTranslationPolicy policy) noexcept;
+MOTIONSOURCE_API std::optional<RootTranslationPolicy>
+FindRootTranslationPolicy(std::string_view name) noexcept;
 
-MOTIONSOURCE_API std::string_view RootRotationPolicyName(
-    RootRotationPolicy policy) noexcept;
-MOTIONSOURCE_API std::optional<RootRotationPolicy> FindRootRotationPolicy(
-    std::string_view name) noexcept;
+MOTIONSOURCE_API std::string_view RootRotationPolicyName(RootRotationPolicy policy) noexcept;
+MOTIONSOURCE_API std::optional<RootRotationPolicy>
+FindRootRotationPolicy(std::string_view name) noexcept;
 
-MOTIONSOURCE_API std::string_view RestPoseSourceName(
-    RestPoseSource source) noexcept;
-MOTIONSOURCE_API std::optional<RestPoseSource> FindRestPoseSource(
-    std::string_view name) noexcept;
+MOTIONSOURCE_API std::string_view RestPoseSourceName(RestPoseSource source) noexcept;
+MOTIONSOURCE_API std::optional<RestPoseSource> FindRestPoseSource(std::string_view name) noexcept;
 
-MOTIONSOURCE_API std::string_view UnmappedJointPolicyName(
-    UnmappedJointPolicy policy) noexcept;
-MOTIONSOURCE_API std::optional<UnmappedJointPolicy> FindUnmappedJointPolicy(
-    std::string_view name) noexcept;
+MOTIONSOURCE_API std::string_view UnmappedJointPolicyName(UnmappedJointPolicy policy) noexcept;
+MOTIONSOURCE_API std::optional<UnmappedJointPolicy>
+FindUnmappedJointPolicy(std::string_view name) noexcept;
 
 // One line of a profile's joint map.
 struct SourceJointMapping
@@ -316,10 +304,10 @@ struct SourceJointMapping
     // `vrmRetarget`'s question, one pipeline stage further on.
     bool required = false;
 
-    MOTIONSOURCE_API friend bool operator==(
-        const SourceJointMapping& lhs, const SourceJointMapping& rhs) noexcept;
-    MOTIONSOURCE_API friend bool operator!=(
-        const SourceJointMapping& lhs, const SourceJointMapping& rhs) noexcept;
+    MOTIONSOURCE_API friend bool operator==(const SourceJointMapping& lhs,
+                                            const SourceJointMapping& rhs) noexcept;
+    MOTIONSOURCE_API friend bool operator!=(const SourceJointMapping& lhs,
+                                            const SourceJointMapping& rhs) noexcept;
 };
 
 // One producer *and export preset*. A producer is not a profile: one
@@ -381,10 +369,8 @@ struct SourceProfile
 
     // Index into `joints`, or nullopt. Names are unique in a valid profile, so
     // unlike a rig's joints this really is a key.
-    MOTIONSOURCE_API std::optional<std::size_t> FindMapping(
-        std::string_view sourceName) const;
-    MOTIONSOURCE_API std::optional<std::size_t> FindBoneMapping(
-        motion::HumanBone bone) const;
+    MOTIONSOURCE_API std::optional<std::size_t> FindMapping(std::string_view sourceName) const;
+    MOTIONSOURCE_API std::optional<std::size_t> FindBoneMapping(motion::HumanBone bone) const;
     MOTIONSOURCE_API bool IgnoresJoint(std::string_view sourceName) const;
 
     // How many mappings this profile declares required. The denominator of a
@@ -447,8 +433,7 @@ enum class SourceProfileRefusal : std::uint8_t
 inline constexpr std::size_t SourceProfileRefusalCount =
     static_cast<std::size_t>(SourceProfileRefusal::Count);
 
-MOTIONSOURCE_API std::string_view SourceProfileRefusalName(
-    SourceProfileRefusal refusal) noexcept;
+MOTIONSOURCE_API std::string_view SourceProfileRefusalName(SourceProfileRefusal refusal) noexcept;
 
 // One bone the profile bound to one joint of the rig.
 struct SourceProfileBinding
@@ -464,14 +449,14 @@ struct SourceProfileBinding
     // print. `BoundRequiredCount()` is the numerator; the subtraction is not.
     bool required = false;
 
-    friend bool operator==(const SourceProfileBinding& lhs,
-                           const SourceProfileBinding& rhs) noexcept
+    friend bool
+    operator==(const SourceProfileBinding& lhs, const SourceProfileBinding& rhs) noexcept
     {
-        return lhs.bone == rhs.bone && lhs.jointIndex == rhs.jointIndex
-               && lhs.required == rhs.required;
+        return lhs.bone == rhs.bone && lhs.jointIndex == rhs.jointIndex &&
+               lhs.required == rhs.required;
     }
-    friend bool operator!=(const SourceProfileBinding& lhs,
-                           const SourceProfileBinding& rhs) noexcept
+    friend bool
+    operator!=(const SourceProfileBinding& lhs, const SourceProfileBinding& rhs) noexcept
     {
         return !(lhs == rhs);
     }
@@ -504,14 +489,14 @@ struct SourceProfileMatch
     // Whether the rig roots at the joint the profile names.
     bool rootMatched = false;
 
-    bool Matched() const noexcept
+    bool
+    Matched() const noexcept
     {
         return refusal == SourceProfileRefusal::None;
     }
 
     // The rig joint bound to `bone`, or nullopt when nothing was.
-    MOTIONSOURCE_API std::optional<std::size_t> JointFor(
-        motion::HumanBone bone) const;
+    MOTIONSOURCE_API std::optional<std::size_t> JointFor(motion::HumanBone bone) const;
 
     // How many of the profile's *required* mappings actually bound — the
     // numerator of a detector's "required joints matched: n/m", whose
@@ -533,7 +518,7 @@ struct SourceProfileMatch
 // No frame is read and none is needed: a profile is matched against a rig
 // (SourceSkeleton.h), which is what lets a conversion refuse before decoding a
 // clip and lets a detector report on a file it has only skimmed.
-MOTIONSOURCE_API SourceProfileMatch MatchSourceProfile(
-    const SourceProfile& profile, const SourceSkeleton& skeleton);
+MOTIONSOURCE_API SourceProfileMatch MatchSourceProfile(const SourceProfile& profile,
+                                                       const SourceSkeleton& skeleton);
 
 } // namespace motionSource

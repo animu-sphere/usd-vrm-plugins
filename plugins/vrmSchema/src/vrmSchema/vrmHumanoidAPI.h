@@ -35,10 +35,14 @@ class SdfAssetPath;
 
 /// \class UsdVrmHumanoidAPI
 ///
-/// Maps VRM humanoid bones to USD skeleton joints. Apply to the
-/// /Asset/rig/Humanoid prim. `vrm:skeleton` resolves to the UsdSkelSkeleton; each
-/// `vrm:humanBones:<bone>` token holds the joint's path token within
-/// Skeleton.joints. Bones absent from the source VRM are simply not authored;
+/// Maps VRM humanoid bones to USD skeleton joints. Apply to the
+
+/// /Asset/rig/Humanoid prim. `vrm:skeleton` resolves to the UsdSkelSkeleton; each
+
+/// `vrm:humanBones:<bone>` token holds the joint's path token within
+
+/// Skeleton.joints. Bones absent from the source VRM are simply not authored;
+
 /// non-standard bones outside this set are preserved as custom attributes.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
@@ -48,7 +52,7 @@ class SdfAssetPath;
 ///
 class UsdVrmHumanoidAPI : public UsdAPISchemaBase
 {
-public:
+  public:
     /// Compile time constant representing what kind of schema this class is.
     ///
     /// \sa UsdSchemaKind
@@ -58,16 +62,14 @@ public:
     /// Equivalent to UsdVrmHumanoidAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdVrmHumanoidAPI(const UsdPrim& prim=UsdPrim())
-        : UsdAPISchemaBase(prim)
+    explicit UsdVrmHumanoidAPI(const UsdPrim& prim = UsdPrim()) : UsdAPISchemaBase(prim)
     {
     }
 
     /// Construct a UsdVrmHumanoidAPI on the prim held by \p schemaObj .
     /// Should be preferred over UsdVrmHumanoidAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdVrmHumanoidAPI(const UsdSchemaBase& schemaObj)
-        : UsdAPISchemaBase(schemaObj)
+    explicit UsdVrmHumanoidAPI(const UsdSchemaBase& schemaObj) : UsdAPISchemaBase(schemaObj)
     {
     }
 
@@ -79,8 +81,7 @@ public:
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
     USDVRM_API
-    static const TfTokenVector &
-    GetSchemaAttributeNames(bool includeInherited=true);
+    static const TfTokenVector& GetSchemaAttributeNames(bool includeInherited = true);
 
     /// Return a UsdVrmHumanoidAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
@@ -92,20 +93,18 @@ public:
     /// \endcode
     ///
     USDVRM_API
-    static UsdVrmHumanoidAPI
-    Get(const UsdStagePtr &stage, const SdfPath &path);
+    static UsdVrmHumanoidAPI Get(const UsdStagePtr& stage, const SdfPath& path);
 
-
-    /// Returns true if this <b>single-apply</b> API schema can be applied to 
-    /// the given \p prim. If this schema can not be a applied to the prim, 
-    /// this returns false and, if provided, populates \p whyNot with the 
+    /// Returns true if this <b>single-apply</b> API schema can be applied to
+    /// the given \p prim. If this schema can not be a applied to the prim,
+    /// this returns false and, if provided, populates \p whyNot with the
     /// reason it can not be applied.
-    /// 
+    ///
     /// Note that if CanApply returns false, that does not necessarily imply
     /// that calling Apply will fail. Callers are expected to call CanApply
-    /// before calling Apply if they want to ensure that it is valid to 
+    /// before calling Apply if they want to ensure that it is valid to
     /// apply a schema.
-    /// 
+    ///
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
     /// \sa UsdPrim::CanApplyAPI()
@@ -113,18 +112,17 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDVRM_API
-    static bool 
-    CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
+    static bool CanApply(const UsdPrim& prim, std::string* whyNot = nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "VrmHumanoidAPI" to the 
+    /// This information is stored by adding "VrmHumanoidAPI" to the
     /// token-valued, listOp metadata \em apiSchemas on the prim.
-    /// 
-    /// \return A valid UsdVrmHumanoidAPI object is returned upon success. 
-    /// An invalid (or empty) UsdVrmHumanoidAPI object is returned upon 
-    /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
-    /// resulting in failure. 
-    /// 
+    ///
+    /// \return A valid UsdVrmHumanoidAPI object is returned upon success.
+    /// An invalid (or empty) UsdVrmHumanoidAPI object is returned upon
+    /// failure. See \ref UsdPrim::ApplyAPI() for conditions
+    /// resulting in failure.
+    ///
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
     /// \sa UsdPrim::CanApplyAPI()
@@ -132,31 +130,30 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDVRM_API
-    static UsdVrmHumanoidAPI 
-    Apply(const UsdPrim &prim);
+    static UsdVrmHumanoidAPI Apply(const UsdPrim& prim);
 
-protected:
+  protected:
     /// Returns the kind of schema this class belongs to.
     ///
     /// \sa UsdSchemaKind
     USDVRM_API
     UsdSchemaKind _GetSchemaKind() const override;
 
-private:
+  private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
     USDVRM_API
-    static const TfType &_GetStaticTfType();
+    static const TfType& _GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
     USDVRM_API
-    const TfType &_GetTfType() const override;
+    const TfType& _GetTfType() const override;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESHIPS 
+    // VRMHUMANBONESHIPS
     // --------------------------------------------------------------------- //
     /// VRM human bone 'hips'.
     ///
@@ -169,17 +166,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesHipsAttr() const;
 
-    /// See GetVrmHumanBonesHipsAttr(), and also 
+    /// See GetVrmHumanBonesHipsAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesHipsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesHipsAttr(VtValue const& defaultValue = VtValue(),
+                                             bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESSPINE 
+    // VRMHUMANBONESSPINE
     // --------------------------------------------------------------------- //
     /// VRM human bone 'spine'.
     ///
@@ -192,17 +190,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesSpineAttr() const;
 
-    /// See GetVrmHumanBonesSpineAttr(), and also 
+    /// See GetVrmHumanBonesSpineAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesSpineAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesSpineAttr(VtValue const& defaultValue = VtValue(),
+                                              bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESCHEST 
+    // VRMHUMANBONESCHEST
     // --------------------------------------------------------------------- //
     /// VRM human bone 'chest'.
     ///
@@ -215,17 +214,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesChestAttr() const;
 
-    /// See GetVrmHumanBonesChestAttr(), and also 
+    /// See GetVrmHumanBonesChestAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesChestAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesChestAttr(VtValue const& defaultValue = VtValue(),
+                                              bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESUPPERCHEST 
+    // VRMHUMANBONESUPPERCHEST
     // --------------------------------------------------------------------- //
     /// VRM human bone 'upperChest'.
     ///
@@ -238,17 +238,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesUpperChestAttr() const;
 
-    /// See GetVrmHumanBonesUpperChestAttr(), and also 
+    /// See GetVrmHumanBonesUpperChestAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesUpperChestAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesUpperChestAttr(VtValue const& defaultValue = VtValue(),
+                                                   bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESNECK 
+    // VRMHUMANBONESNECK
     // --------------------------------------------------------------------- //
     /// VRM human bone 'neck'.
     ///
@@ -261,17 +262,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesNeckAttr() const;
 
-    /// See GetVrmHumanBonesNeckAttr(), and also 
+    /// See GetVrmHumanBonesNeckAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesNeckAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesNeckAttr(VtValue const& defaultValue = VtValue(),
+                                             bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESHEAD 
+    // VRMHUMANBONESHEAD
     // --------------------------------------------------------------------- //
     /// VRM human bone 'head'.
     ///
@@ -284,17 +286,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesHeadAttr() const;
 
-    /// See GetVrmHumanBonesHeadAttr(), and also 
+    /// See GetVrmHumanBonesHeadAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesHeadAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesHeadAttr(VtValue const& defaultValue = VtValue(),
+                                             bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTEYE 
+    // VRMHUMANBONESLEFTEYE
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftEye'.
     ///
@@ -307,17 +310,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftEyeAttr() const;
 
-    /// See GetVrmHumanBonesLeftEyeAttr(), and also 
+    /// See GetVrmHumanBonesLeftEyeAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftEyeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftEyeAttr(VtValue const& defaultValue = VtValue(),
+                                                bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTEYE 
+    // VRMHUMANBONESRIGHTEYE
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightEye'.
     ///
@@ -330,17 +334,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightEyeAttr() const;
 
-    /// See GetVrmHumanBonesRightEyeAttr(), and also 
+    /// See GetVrmHumanBonesRightEyeAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightEyeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightEyeAttr(VtValue const& defaultValue = VtValue(),
+                                                 bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESJAW 
+    // VRMHUMANBONESJAW
     // --------------------------------------------------------------------- //
     /// VRM human bone 'jaw'.
     ///
@@ -353,17 +358,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesJawAttr() const;
 
-    /// See GetVrmHumanBonesJawAttr(), and also 
+    /// See GetVrmHumanBonesJawAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesJawAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesJawAttr(VtValue const& defaultValue = VtValue(),
+                                            bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTUPPERLEG 
+    // VRMHUMANBONESLEFTUPPERLEG
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftUpperLeg'.
     ///
@@ -376,17 +382,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftUpperLegAttr() const;
 
-    /// See GetVrmHumanBonesLeftUpperLegAttr(), and also 
+    /// See GetVrmHumanBonesLeftUpperLegAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftUpperLegAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftUpperLegAttr(VtValue const& defaultValue = VtValue(),
+                                                     bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTLOWERLEG 
+    // VRMHUMANBONESLEFTLOWERLEG
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftLowerLeg'.
     ///
@@ -399,17 +406,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftLowerLegAttr() const;
 
-    /// See GetVrmHumanBonesLeftLowerLegAttr(), and also 
+    /// See GetVrmHumanBonesLeftLowerLegAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftLowerLegAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftLowerLegAttr(VtValue const& defaultValue = VtValue(),
+                                                     bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTFOOT 
+    // VRMHUMANBONESLEFTFOOT
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftFoot'.
     ///
@@ -422,17 +430,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftFootAttr() const;
 
-    /// See GetVrmHumanBonesLeftFootAttr(), and also 
+    /// See GetVrmHumanBonesLeftFootAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftFootAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftFootAttr(VtValue const& defaultValue = VtValue(),
+                                                 bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTTOES 
+    // VRMHUMANBONESLEFTTOES
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftToes'.
     ///
@@ -445,17 +454,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftToesAttr() const;
 
-    /// See GetVrmHumanBonesLeftToesAttr(), and also 
+    /// See GetVrmHumanBonesLeftToesAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftToesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftToesAttr(VtValue const& defaultValue = VtValue(),
+                                                 bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTUPPERLEG 
+    // VRMHUMANBONESRIGHTUPPERLEG
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightUpperLeg'.
     ///
@@ -468,17 +478,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightUpperLegAttr() const;
 
-    /// See GetVrmHumanBonesRightUpperLegAttr(), and also 
+    /// See GetVrmHumanBonesRightUpperLegAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightUpperLegAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightUpperLegAttr(VtValue const& defaultValue = VtValue(),
+                                                      bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTLOWERLEG 
+    // VRMHUMANBONESRIGHTLOWERLEG
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightLowerLeg'.
     ///
@@ -491,17 +502,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightLowerLegAttr() const;
 
-    /// See GetVrmHumanBonesRightLowerLegAttr(), and also 
+    /// See GetVrmHumanBonesRightLowerLegAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightLowerLegAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightLowerLegAttr(VtValue const& defaultValue = VtValue(),
+                                                      bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTFOOT 
+    // VRMHUMANBONESRIGHTFOOT
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightFoot'.
     ///
@@ -514,17 +526,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightFootAttr() const;
 
-    /// See GetVrmHumanBonesRightFootAttr(), and also 
+    /// See GetVrmHumanBonesRightFootAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightFootAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightFootAttr(VtValue const& defaultValue = VtValue(),
+                                                  bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTTOES 
+    // VRMHUMANBONESRIGHTTOES
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightToes'.
     ///
@@ -537,17 +550,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightToesAttr() const;
 
-    /// See GetVrmHumanBonesRightToesAttr(), and also 
+    /// See GetVrmHumanBonesRightToesAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightToesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightToesAttr(VtValue const& defaultValue = VtValue(),
+                                                  bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTSHOULDER 
+    // VRMHUMANBONESLEFTSHOULDER
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftShoulder'.
     ///
@@ -560,17 +574,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftShoulderAttr() const;
 
-    /// See GetVrmHumanBonesLeftShoulderAttr(), and also 
+    /// See GetVrmHumanBonesLeftShoulderAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftShoulderAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftShoulderAttr(VtValue const& defaultValue = VtValue(),
+                                                     bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTUPPERARM 
+    // VRMHUMANBONESLEFTUPPERARM
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftUpperArm'.
     ///
@@ -583,17 +598,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftUpperArmAttr() const;
 
-    /// See GetVrmHumanBonesLeftUpperArmAttr(), and also 
+    /// See GetVrmHumanBonesLeftUpperArmAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftUpperArmAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftUpperArmAttr(VtValue const& defaultValue = VtValue(),
+                                                     bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTLOWERARM 
+    // VRMHUMANBONESLEFTLOWERARM
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftLowerArm'.
     ///
@@ -606,17 +622,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftLowerArmAttr() const;
 
-    /// See GetVrmHumanBonesLeftLowerArmAttr(), and also 
+    /// See GetVrmHumanBonesLeftLowerArmAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftLowerArmAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftLowerArmAttr(VtValue const& defaultValue = VtValue(),
+                                                     bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTHAND 
+    // VRMHUMANBONESLEFTHAND
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftHand'.
     ///
@@ -629,17 +646,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftHandAttr() const;
 
-    /// See GetVrmHumanBonesLeftHandAttr(), and also 
+    /// See GetVrmHumanBonesLeftHandAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftHandAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftHandAttr(VtValue const& defaultValue = VtValue(),
+                                                 bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTSHOULDER 
+    // VRMHUMANBONESRIGHTSHOULDER
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightShoulder'.
     ///
@@ -652,17 +670,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightShoulderAttr() const;
 
-    /// See GetVrmHumanBonesRightShoulderAttr(), and also 
+    /// See GetVrmHumanBonesRightShoulderAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightShoulderAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightShoulderAttr(VtValue const& defaultValue = VtValue(),
+                                                      bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTUPPERARM 
+    // VRMHUMANBONESRIGHTUPPERARM
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightUpperArm'.
     ///
@@ -675,17 +694,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightUpperArmAttr() const;
 
-    /// See GetVrmHumanBonesRightUpperArmAttr(), and also 
+    /// See GetVrmHumanBonesRightUpperArmAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightUpperArmAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightUpperArmAttr(VtValue const& defaultValue = VtValue(),
+                                                      bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTLOWERARM 
+    // VRMHUMANBONESRIGHTLOWERARM
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightLowerArm'.
     ///
@@ -698,17 +718,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightLowerArmAttr() const;
 
-    /// See GetVrmHumanBonesRightLowerArmAttr(), and also 
+    /// See GetVrmHumanBonesRightLowerArmAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightLowerArmAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightLowerArmAttr(VtValue const& defaultValue = VtValue(),
+                                                      bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTHAND 
+    // VRMHUMANBONESRIGHTHAND
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightHand'.
     ///
@@ -721,17 +742,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightHandAttr() const;
 
-    /// See GetVrmHumanBonesRightHandAttr(), and also 
+    /// See GetVrmHumanBonesRightHandAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightHandAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightHandAttr(VtValue const& defaultValue = VtValue(),
+                                                  bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTTHUMBMETACARPAL 
+    // VRMHUMANBONESLEFTTHUMBMETACARPAL
     // --------------------------------------------------------------------- //
     /// VRM 1.0 human bone 'leftThumbMetacarpal'.
     ///
@@ -744,17 +766,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftThumbMetacarpalAttr() const;
 
-    /// See GetVrmHumanBonesLeftThumbMetacarpalAttr(), and also 
+    /// See GetVrmHumanBonesLeftThumbMetacarpalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftThumbMetacarpalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftThumbMetacarpalAttr(VtValue const& defaultValue = VtValue(),
+                                                            bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTTHUMBPROXIMAL 
+    // VRMHUMANBONESLEFTTHUMBPROXIMAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftThumbProximal'.
     ///
@@ -767,17 +790,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftThumbProximalAttr() const;
 
-    /// See GetVrmHumanBonesLeftThumbProximalAttr(), and also 
+    /// See GetVrmHumanBonesLeftThumbProximalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftThumbProximalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftThumbProximalAttr(VtValue const& defaultValue = VtValue(),
+                                                          bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTTHUMBDISTAL 
+    // VRMHUMANBONESLEFTTHUMBDISTAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftThumbDistal'.
     ///
@@ -790,17 +814,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftThumbDistalAttr() const;
 
-    /// See GetVrmHumanBonesLeftThumbDistalAttr(), and also 
+    /// See GetVrmHumanBonesLeftThumbDistalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftThumbDistalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftThumbDistalAttr(VtValue const& defaultValue = VtValue(),
+                                                        bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTINDEXPROXIMAL 
+    // VRMHUMANBONESLEFTINDEXPROXIMAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftIndexProximal'.
     ///
@@ -813,17 +838,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftIndexProximalAttr() const;
 
-    /// See GetVrmHumanBonesLeftIndexProximalAttr(), and also 
+    /// See GetVrmHumanBonesLeftIndexProximalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftIndexProximalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftIndexProximalAttr(VtValue const& defaultValue = VtValue(),
+                                                          bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTINDEXINTERMEDIATE 
+    // VRMHUMANBONESLEFTINDEXINTERMEDIATE
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftIndexIntermediate'.
     ///
@@ -836,17 +862,19 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftIndexIntermediateAttr() const;
 
-    /// See GetVrmHumanBonesLeftIndexIntermediateAttr(), and also 
+    /// See GetVrmHumanBonesLeftIndexIntermediateAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftIndexIntermediateAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute
+    CreateVrmHumanBonesLeftIndexIntermediateAttr(VtValue const& defaultValue = VtValue(),
+                                                 bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTINDEXDISTAL 
+    // VRMHUMANBONESLEFTINDEXDISTAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftIndexDistal'.
     ///
@@ -859,17 +887,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftIndexDistalAttr() const;
 
-    /// See GetVrmHumanBonesLeftIndexDistalAttr(), and also 
+    /// See GetVrmHumanBonesLeftIndexDistalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftIndexDistalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftIndexDistalAttr(VtValue const& defaultValue = VtValue(),
+                                                        bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTMIDDLEPROXIMAL 
+    // VRMHUMANBONESLEFTMIDDLEPROXIMAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftMiddleProximal'.
     ///
@@ -882,17 +911,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftMiddleProximalAttr() const;
 
-    /// See GetVrmHumanBonesLeftMiddleProximalAttr(), and also 
+    /// See GetVrmHumanBonesLeftMiddleProximalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftMiddleProximalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftMiddleProximalAttr(VtValue const& defaultValue = VtValue(),
+                                                           bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTMIDDLEINTERMEDIATE 
+    // VRMHUMANBONESLEFTMIDDLEINTERMEDIATE
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftMiddleIntermediate'.
     ///
@@ -905,17 +935,19 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftMiddleIntermediateAttr() const;
 
-    /// See GetVrmHumanBonesLeftMiddleIntermediateAttr(), and also 
+    /// See GetVrmHumanBonesLeftMiddleIntermediateAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftMiddleIntermediateAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute
+    CreateVrmHumanBonesLeftMiddleIntermediateAttr(VtValue const& defaultValue = VtValue(),
+                                                  bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTMIDDLEDISTAL 
+    // VRMHUMANBONESLEFTMIDDLEDISTAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftMiddleDistal'.
     ///
@@ -928,17 +960,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftMiddleDistalAttr() const;
 
-    /// See GetVrmHumanBonesLeftMiddleDistalAttr(), and also 
+    /// See GetVrmHumanBonesLeftMiddleDistalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftMiddleDistalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftMiddleDistalAttr(VtValue const& defaultValue = VtValue(),
+                                                         bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTRINGPROXIMAL 
+    // VRMHUMANBONESLEFTRINGPROXIMAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftRingProximal'.
     ///
@@ -951,17 +984,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftRingProximalAttr() const;
 
-    /// See GetVrmHumanBonesLeftRingProximalAttr(), and also 
+    /// See GetVrmHumanBonesLeftRingProximalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftRingProximalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftRingProximalAttr(VtValue const& defaultValue = VtValue(),
+                                                         bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTRINGINTERMEDIATE 
+    // VRMHUMANBONESLEFTRINGINTERMEDIATE
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftRingIntermediate'.
     ///
@@ -974,17 +1008,19 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftRingIntermediateAttr() const;
 
-    /// See GetVrmHumanBonesLeftRingIntermediateAttr(), and also 
+    /// See GetVrmHumanBonesLeftRingIntermediateAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftRingIntermediateAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute
+    CreateVrmHumanBonesLeftRingIntermediateAttr(VtValue const& defaultValue = VtValue(),
+                                                bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTRINGDISTAL 
+    // VRMHUMANBONESLEFTRINGDISTAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftRingDistal'.
     ///
@@ -997,17 +1033,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftRingDistalAttr() const;
 
-    /// See GetVrmHumanBonesLeftRingDistalAttr(), and also 
+    /// See GetVrmHumanBonesLeftRingDistalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftRingDistalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftRingDistalAttr(VtValue const& defaultValue = VtValue(),
+                                                       bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTLITTLEPROXIMAL 
+    // VRMHUMANBONESLEFTLITTLEPROXIMAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftLittleProximal'.
     ///
@@ -1020,17 +1057,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftLittleProximalAttr() const;
 
-    /// See GetVrmHumanBonesLeftLittleProximalAttr(), and also 
+    /// See GetVrmHumanBonesLeftLittleProximalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftLittleProximalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftLittleProximalAttr(VtValue const& defaultValue = VtValue(),
+                                                           bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTLITTLEINTERMEDIATE 
+    // VRMHUMANBONESLEFTLITTLEINTERMEDIATE
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftLittleIntermediate'.
     ///
@@ -1043,17 +1081,19 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftLittleIntermediateAttr() const;
 
-    /// See GetVrmHumanBonesLeftLittleIntermediateAttr(), and also 
+    /// See GetVrmHumanBonesLeftLittleIntermediateAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftLittleIntermediateAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute
+    CreateVrmHumanBonesLeftLittleIntermediateAttr(VtValue const& defaultValue = VtValue(),
+                                                  bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESLEFTLITTLEDISTAL 
+    // VRMHUMANBONESLEFTLITTLEDISTAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'leftLittleDistal'.
     ///
@@ -1066,17 +1106,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesLeftLittleDistalAttr() const;
 
-    /// See GetVrmHumanBonesLeftLittleDistalAttr(), and also 
+    /// See GetVrmHumanBonesLeftLittleDistalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesLeftLittleDistalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesLeftLittleDistalAttr(VtValue const& defaultValue = VtValue(),
+                                                         bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTTHUMBMETACARPAL 
+    // VRMHUMANBONESRIGHTTHUMBMETACARPAL
     // --------------------------------------------------------------------- //
     /// VRM 1.0 human bone 'rightThumbMetacarpal'.
     ///
@@ -1089,17 +1130,19 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightThumbMetacarpalAttr() const;
 
-    /// See GetVrmHumanBonesRightThumbMetacarpalAttr(), and also 
+    /// See GetVrmHumanBonesRightThumbMetacarpalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightThumbMetacarpalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute
+    CreateVrmHumanBonesRightThumbMetacarpalAttr(VtValue const& defaultValue = VtValue(),
+                                                bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTTHUMBPROXIMAL 
+    // VRMHUMANBONESRIGHTTHUMBPROXIMAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightThumbProximal'.
     ///
@@ -1112,17 +1155,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightThumbProximalAttr() const;
 
-    /// See GetVrmHumanBonesRightThumbProximalAttr(), and also 
+    /// See GetVrmHumanBonesRightThumbProximalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightThumbProximalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightThumbProximalAttr(VtValue const& defaultValue = VtValue(),
+                                                           bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTTHUMBDISTAL 
+    // VRMHUMANBONESRIGHTTHUMBDISTAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightThumbDistal'.
     ///
@@ -1135,17 +1179,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightThumbDistalAttr() const;
 
-    /// See GetVrmHumanBonesRightThumbDistalAttr(), and also 
+    /// See GetVrmHumanBonesRightThumbDistalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightThumbDistalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightThumbDistalAttr(VtValue const& defaultValue = VtValue(),
+                                                         bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTINDEXPROXIMAL 
+    // VRMHUMANBONESRIGHTINDEXPROXIMAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightIndexProximal'.
     ///
@@ -1158,17 +1203,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightIndexProximalAttr() const;
 
-    /// See GetVrmHumanBonesRightIndexProximalAttr(), and also 
+    /// See GetVrmHumanBonesRightIndexProximalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightIndexProximalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightIndexProximalAttr(VtValue const& defaultValue = VtValue(),
+                                                           bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTINDEXINTERMEDIATE 
+    // VRMHUMANBONESRIGHTINDEXINTERMEDIATE
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightIndexIntermediate'.
     ///
@@ -1181,17 +1227,19 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightIndexIntermediateAttr() const;
 
-    /// See GetVrmHumanBonesRightIndexIntermediateAttr(), and also 
+    /// See GetVrmHumanBonesRightIndexIntermediateAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightIndexIntermediateAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute
+    CreateVrmHumanBonesRightIndexIntermediateAttr(VtValue const& defaultValue = VtValue(),
+                                                  bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTINDEXDISTAL 
+    // VRMHUMANBONESRIGHTINDEXDISTAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightIndexDistal'.
     ///
@@ -1204,17 +1252,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightIndexDistalAttr() const;
 
-    /// See GetVrmHumanBonesRightIndexDistalAttr(), and also 
+    /// See GetVrmHumanBonesRightIndexDistalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightIndexDistalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightIndexDistalAttr(VtValue const& defaultValue = VtValue(),
+                                                         bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTMIDDLEPROXIMAL 
+    // VRMHUMANBONESRIGHTMIDDLEPROXIMAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightMiddleProximal'.
     ///
@@ -1227,17 +1276,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightMiddleProximalAttr() const;
 
-    /// See GetVrmHumanBonesRightMiddleProximalAttr(), and also 
+    /// See GetVrmHumanBonesRightMiddleProximalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightMiddleProximalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightMiddleProximalAttr(VtValue const& defaultValue = VtValue(),
+                                                            bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTMIDDLEINTERMEDIATE 
+    // VRMHUMANBONESRIGHTMIDDLEINTERMEDIATE
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightMiddleIntermediate'.
     ///
@@ -1250,17 +1300,19 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightMiddleIntermediateAttr() const;
 
-    /// See GetVrmHumanBonesRightMiddleIntermediateAttr(), and also 
+    /// See GetVrmHumanBonesRightMiddleIntermediateAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightMiddleIntermediateAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute
+    CreateVrmHumanBonesRightMiddleIntermediateAttr(VtValue const& defaultValue = VtValue(),
+                                                   bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTMIDDLEDISTAL 
+    // VRMHUMANBONESRIGHTMIDDLEDISTAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightMiddleDistal'.
     ///
@@ -1273,17 +1325,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightMiddleDistalAttr() const;
 
-    /// See GetVrmHumanBonesRightMiddleDistalAttr(), and also 
+    /// See GetVrmHumanBonesRightMiddleDistalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightMiddleDistalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightMiddleDistalAttr(VtValue const& defaultValue = VtValue(),
+                                                          bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTRINGPROXIMAL 
+    // VRMHUMANBONESRIGHTRINGPROXIMAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightRingProximal'.
     ///
@@ -1296,17 +1349,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightRingProximalAttr() const;
 
-    /// See GetVrmHumanBonesRightRingProximalAttr(), and also 
+    /// See GetVrmHumanBonesRightRingProximalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightRingProximalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightRingProximalAttr(VtValue const& defaultValue = VtValue(),
+                                                          bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTRINGINTERMEDIATE 
+    // VRMHUMANBONESRIGHTRINGINTERMEDIATE
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightRingIntermediate'.
     ///
@@ -1319,17 +1373,19 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightRingIntermediateAttr() const;
 
-    /// See GetVrmHumanBonesRightRingIntermediateAttr(), and also 
+    /// See GetVrmHumanBonesRightRingIntermediateAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightRingIntermediateAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute
+    CreateVrmHumanBonesRightRingIntermediateAttr(VtValue const& defaultValue = VtValue(),
+                                                 bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTRINGDISTAL 
+    // VRMHUMANBONESRIGHTRINGDISTAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightRingDistal'.
     ///
@@ -1342,17 +1398,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightRingDistalAttr() const;
 
-    /// See GetVrmHumanBonesRightRingDistalAttr(), and also 
+    /// See GetVrmHumanBonesRightRingDistalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightRingDistalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightRingDistalAttr(VtValue const& defaultValue = VtValue(),
+                                                        bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTLITTLEPROXIMAL 
+    // VRMHUMANBONESRIGHTLITTLEPROXIMAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightLittleProximal'.
     ///
@@ -1365,17 +1422,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightLittleProximalAttr() const;
 
-    /// See GetVrmHumanBonesRightLittleProximalAttr(), and also 
+    /// See GetVrmHumanBonesRightLittleProximalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightLittleProximalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightLittleProximalAttr(VtValue const& defaultValue = VtValue(),
+                                                            bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTLITTLEINTERMEDIATE 
+    // VRMHUMANBONESRIGHTLITTLEINTERMEDIATE
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightLittleIntermediate'.
     ///
@@ -1388,17 +1446,19 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightLittleIntermediateAttr() const;
 
-    /// See GetVrmHumanBonesRightLittleIntermediateAttr(), and also 
+    /// See GetVrmHumanBonesRightLittleIntermediateAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightLittleIntermediateAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute
+    CreateVrmHumanBonesRightLittleIntermediateAttr(VtValue const& defaultValue = VtValue(),
+                                                   bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHUMANBONESRIGHTLITTLEDISTAL 
+    // VRMHUMANBONESRIGHTLITTLEDISTAL
     // --------------------------------------------------------------------- //
     /// VRM human bone 'rightLittleDistal'.
     ///
@@ -1411,35 +1471,36 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHumanBonesRightLittleDistalAttr() const;
 
-    /// See GetVrmHumanBonesRightLittleDistalAttr(), and also 
+    /// See GetVrmHumanBonesRightLittleDistalAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHumanBonesRightLittleDistalAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHumanBonesRightLittleDistalAttr(VtValue const& defaultValue = VtValue(),
+                                                          bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMSKELETON 
+    // VRMSKELETON
     // --------------------------------------------------------------------- //
     /// The UsdSkelSkeleton whose joints the human bones name.
     ///
     USDVRM_API
     UsdRelationship GetVrmSkeletonRel() const;
 
-    /// See GetVrmSkeletonRel(), and also 
+    /// See GetVrmSkeletonRel(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
     USDVRM_API
     UsdRelationship CreateVrmSkeletonRel() const;
 
-public:
+  public:
     // ===================================================================== //
-    // Feel free to add custom code below this line, it will be preserved by 
-    // the code generator. 
+    // Feel free to add custom code below this line, it will be preserved by
+    // the code generator.
     //
-    // Just remember to: 
-    //  - Close the class declaration with }; 
+    // Just remember to:
+    //  - Close the class declaration with };
     //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
     //  - Close the include guard with #endif
     // ===================================================================== //

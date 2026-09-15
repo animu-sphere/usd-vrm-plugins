@@ -52,7 +52,8 @@ int failures = 0;
 bool
 Check(bool condition, const std::string& what)
 {
-    if (!condition) {
+    if (!condition)
+    {
         std::fprintf(stderr, "%s\n", what.c_str());
         ++failures;
     }
@@ -82,8 +83,7 @@ constexpr std::size_t kBoundBones = 22;
 constexpr float kHipHeightCm = 95.9893f;
 
 int
-Run(const std::filesystem::path& recordedDir,
-    const std::filesystem::path& profileDir)
+Run(const std::filesystem::path& recordedDir, const std::filesystem::path& profileDir)
 {
     const std::filesystem::path bvhPath = recordedDir / kRecordedFile;
     const std::filesystem::path profilePath = profileDir / kProfileFile;
@@ -91,8 +91,8 @@ Run(const std::filesystem::path& recordedDir,
     BvhDocument document;
     motionBvh::Diagnostic diagnostic;
     if (!Check(motionBvh::ParseBvhFile(bvhPath, &document, &diagnostic),
-               "the recorded export did not parse: "
-                   + motionBvh::FormatDiagnostic(diagnostic))) {
+               "the recorded export did not parse: " + motionBvh::FormatDiagnostic(diagnostic)))
+    {
         return 1;
     }
     Check(document.joints.size() == kJointCount, "joint count moved");
@@ -102,40 +102,38 @@ Run(const std::filesystem::path& recordedDir,
     SourceAnimation animation;
     BvhExtractOptions options;
     options.sourceId = kRecordedFile;
-    if (!Check(motionBvh::ExtractBvhSource(document, &skeleton, &animation,
-                                           &diagnostic, options),
-               "extraction refused the recorded export: "
-                   + motionBvh::FormatDiagnostic(diagnostic))) {
+    if (!Check(motionBvh::ExtractBvhSource(document, &skeleton, &animation, &diagnostic, options),
+               "extraction refused the recorded export: " +
+                   motionBvh::FormatDiagnostic(diagnostic)))
+    {
         return 1;
     }
     Check(skeleton.joints.size() == kJointCount, "extracted joint count moved");
     Check(animation.frameCount == kFrameCount, "extracted frame count moved");
-    Check(std::abs(animation.frameTime - kFrameTime) <= kTolerance.time,
-          "frame time moved");
+    Check(std::abs(animation.frameTime - kFrameTime) <= kTolerance.time, "frame time moved");
 
     SourceProfile profile;
     motionSource::SourceProfileParseError profileError;
-    if (!Check(motionSource::ParseSourceProfileFile(profilePath, &profile,
-                                                    &profileError),
-               "the shipped profile did not load: " + profileError.reason)) {
+    if (!Check(motionSource::ParseSourceProfileFile(profilePath, &profile, &profileError),
+               "the shipped profile did not load: " + profileError.reason))
+    {
         return 1;
     }
 
     const SourceConversion result =
         motionSource::ConvertSourceToCanonical(skeleton, animation, profile);
     if (!Check(result.Converted(),
-               "the profile did not convert its own producer's export: "
-                   + std::string(motionSource::ConversionRefusalName(
-                         result.refusal))
-                   + " " + result.detail)) {
+               "the profile did not convert its own producer's export: " +
+                   std::string(motionSource::ConversionRefusalName(result.refusal)) + " " +
+                   result.detail))
+    {
         return 1;
     }
 
     Check(result.match.bound.size() == kBoundBones, "bound bone count moved");
     Check(result.rest.present.count() == kBoundBones,
           "rest pose covers a different set of bones than the match bound");
-    Check(result.animation.samples.size() == kFrameCount,
-          "the clip lost or gained frames");
+    Check(result.animation.samples.size() == kFrameCount, "the clip lost or gained frames");
 
     // --- the rest pose, against the hierarchy's own numbers -----------------
     //
@@ -147,13 +145,11 @@ Run(const std::filesystem::path& recordedDir,
                      pxr::GfVec3f(0.0f, kHipHeightCm / 100.0f, 0.0f)),
           "the hips rest is not the root's offset in metres");
     Check(motion::AngleBetween(result.rest.localRotations[hips],
-                               pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f)))
-              <= kTolerance.angle,
+                               pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))) <= kTolerance.angle,
           "a rest-offsets profile produced a non-identity rest rotation");
     // The upper arm is one joint below a bound one, so its rest is that joint's
     // own offset: 13.3291, 3.34342, -3.36319 centimetres.
-    const auto leftUpperArm =
-        static_cast<std::size_t>(motion::HumanBone::LeftUpperArm);
+    const auto leftUpperArm = static_cast<std::size_t>(motion::HumanBone::LeftUpperArm);
     Check(NearVector(result.rest.localTranslations[leftUpperArm],
                      pxr::GfVec3f(0.133291f, 0.0334342f, -0.0336319f)),
           "the left upper arm's rest moved");
@@ -170,15 +166,16 @@ Run(const std::filesystem::path& recordedDir,
     // second of two neck ones. Measured from the hierarchy, not from the
     // conversion.
     const std::vector<motion::HumanBone> expectedComposed = {
-        motion::HumanBone::Spine, motion::HumanBone::Chest,
-        motion::HumanBone::UpperChest, motion::HumanBone::Head,
+        motion::HumanBone::Spine,
+        motion::HumanBone::Chest,
+        motion::HumanBone::UpperChest,
+        motion::HumanBone::Head,
     };
     std::vector<motion::HumanBone> composed = result.report.composedBones;
     std::sort(composed.begin(), composed.end());
     std::vector<motion::HumanBone> expected = expectedComposed;
     std::sort(expected.begin(), expected.end());
-    Check(composed == expected,
-          "a different set of bones absorbed a chain of source joints");
+    Check(composed == expected, "a different set of bones absorbed a chain of source joints");
 
     // --- what the clip could not carry -------------------------------------
     //
@@ -216,26 +213,29 @@ Run(const std::filesystem::path& recordedDir,
     // failures a mishandled basis actually produces.
     const std::vector<motionSource::SourceEulerAngles>& rootAngles =
         animation.tracks[0].eulerAngles;
-    if (Check(rootAngles.size() == kFrameCount, "the root carries no angles")) {
+    if (Check(rootAngles.size() == kFrameCount, "the root carries no angles"))
+    {
         std::size_t lowest = 0;
         std::size_t highest = 0;
-        for (std::size_t index = 0; index < rootAngles.size(); ++index) {
-            if (rootAngles[index].third < rootAngles[lowest].third) {
+        for (std::size_t index = 0; index < rootAngles.size(); ++index)
+        {
+            if (rootAngles[index].third < rootAngles[lowest].third)
+            {
                 lowest = index;
             }
-            if (rootAngles[index].third > rootAngles[highest].third) {
+            if (rootAngles[index].third > rootAngles[highest].third)
+            {
                 highest = index;
             }
         }
-        const double span = static_cast<double>(rootAngles[highest].third)
-                            - static_cast<double>(rootAngles[lowest].third);
-        const float carried = motion::AngleBetween(
-            result.animation.samples[lowest].localRotations[hips],
-            result.animation.samples[highest].localRotations[hips]);
+        const double span = static_cast<double>(rootAngles[highest].third) -
+                            static_cast<double>(rootAngles[lowest].third);
+        const float carried =
+            motion::AngleBetween(result.animation.samples[lowest].localRotations[hips],
+                                 result.animation.samples[highest].localRotations[hips]);
         const double expectedRadians = span * 3.14159265358979323846 / 180.0;
         Check(span > 90.0, "the session no longer turns");
-        Check(std::abs(carried - expectedRadians) < 10.0 * 3.14159265358979323846
-                                                        / 180.0,
+        Check(std::abs(carried - expectedRadians) < 10.0 * 3.14159265358979323846 / 180.0,
               "the turn the hips carry is not the turn the root states");
     }
 
@@ -252,12 +252,11 @@ Run(const std::filesystem::path& recordedDir,
     // --- determinism --------------------------------------------------------
     const SourceConversion again =
         motionSource::ConvertSourceToCanonical(skeleton, animation, profile);
-    Check(again.animation == result.animation,
-          "two conversions of one input differ");
+    Check(again.animation == result.animation, "two conversions of one input differ");
 
-    if (failures > 0) {
-        std::fprintf(stderr, "%d recorded-conversion check(s) failed\n",
-                     failures);
+    if (failures > 0)
+    {
+        std::fprintf(stderr, "%d recorded-conversion check(s) failed\n", failures);
         return 1;
     }
     std::printf("motionBvh conversion: %zu frames over %zu bones verified\n",
@@ -270,10 +269,9 @@ Run(const std::filesystem::path& recordedDir,
 int
 main(int argc, char** argv)
 {
-    if (argc < 3) {
-        std::fprintf(stderr,
-                     "usage: %s <recorded-corpus-dir> <profiles-dir>\n",
-                     argv[0]);
+    if (argc < 3)
+    {
+        std::fprintf(stderr, "usage: %s <recorded-corpus-dir> <profiles-dir>\n", argv[0]);
         return 2;
     }
     return Run(argv[1], argv[2]);

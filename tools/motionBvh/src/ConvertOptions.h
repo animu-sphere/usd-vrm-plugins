@@ -55,9 +55,8 @@ struct ConvertOptions
 // --help `showHelp` is set and the caller should print usage and exit 0.
 //
 // A missing `--profile` is not a failure here. See the field's note.
-bool ParseConvertOptions(const std::vector<std::string>& arguments,
-                         ConvertOptions* options, bool* showHelp,
-                         std::string* error);
+bool ParseConvertOptions(const std::vector<std::string>& arguments, ConvertOptions* options,
+                         bool* showHelp, std::string* error);
 
 const char* GetConvertUsage();
 

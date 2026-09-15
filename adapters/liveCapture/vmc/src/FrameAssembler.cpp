@@ -11,8 +11,7 @@
 namespace vrmAdapterVmc
 {
 
-VmcFrameAssembler::VmcFrameAssembler(const VmcFrameConfig& config)
-    : _config(config)
+VmcFrameAssembler::VmcFrameAssembler(const VmcFrameConfig& config) : _config(config)
 {
     _lastSeen.fill(0.0);
     _metadata.kind = motion::MotionSourceKind::LiveCapture;
@@ -39,11 +38,12 @@ VmcFrameAssembler::Reset()
 }
 
 void
-VmcFrameAssembler::_Report(std::vector<Diagnostic>* diagnostics,
-                           DiagnosticCode code, std::string_view subject,
-                           std::optional<double> timestamp, std::string detail)
+VmcFrameAssembler::_Report(std::vector<Diagnostic>* diagnostics, DiagnosticCode code,
+                           std::string_view subject, std::optional<double> timestamp,
+                           std::string detail)
 {
-    if (!diagnostics) {
+    if (!diagnostics)
+    {
         return;
     }
     Diagnostic diagnostic = MakeDiagnostic(code, std::move(detail));
@@ -63,10 +63,10 @@ VmcFrameAssembler::_Open(double receiveTime)
 }
 
 bool
-VmcFrameAssembler::_Close(std::vector<VmcFrame>* frames,
-                          std::vector<Diagnostic>* diagnostics)
+VmcFrameAssembler::_Close(std::vector<VmcFrame>* frames, std::vector<Diagnostic>* diagnostics)
 {
-    if (!_frame.open) {
+    if (!_frame.open)
+    {
         return false;
     }
     // Taken before anything can fail, so every path below leaves the assembler
@@ -76,42 +76,42 @@ VmcFrameAssembler::_Close(std::vector<VmcFrame>* frames,
 
     // Expressions count as content: a pose can hold them, so a frame carrying
     // only them is carrying motion rather than an empty boundary.
-    if (!frame.pose.validRotations.any() && !frame.hasRoot
-        && frame.pose.expressions.IsEmpty()) {
+    if (!frame.pose.validRotations.any() && !frame.hasRoot && frame.pose.expressions.IsEmpty())
+    {
         ++_stats.framesRefusedEmpty;
-        _Report(diagnostics, DiagnosticCode::IncompleteFrame, {},
-                frame.senderTime,
+        _Report(diagnostics, DiagnosticCode::IncompleteFrame, {}, frame.senderTime,
                 "frame boundary carried neither a bone, a root, nor an "
                 "expression");
         return false;
     }
 
-    const double timestamp =
-        frame.senderTime ? *frame.senderTime : frame.receiveTime;
+    const double timestamp = frame.senderTime ? *frame.senderTime : frame.receiveTime;
 
     bool restart = false;
-    if (_lastAccepted && timestamp <= *_lastAccepted) {
+    if (_lastAccepted && timestamp <= *_lastAccepted)
+    {
         const double backwards = *_lastAccepted - timestamp;
-        if (_config.restartBackwardsSeconds > 0.0
-            && backwards > _config.restartBackwardsSeconds) {
+        if (_config.restartBackwardsSeconds > 0.0 && backwards > _config.restartBackwardsSeconds)
+        {
             restart = true;
-        } else {
+        }
+        else
+        {
             ++_stats.framesRefusedOutOfOrder;
-            _Report(diagnostics, DiagnosticCode::TimestampRegression, {},
-                    timestamp,
-                    "frame at " + std::to_string(timestamp)
-                        + " s does not advance on the last accepted frame at "
-                        + std::to_string(*_lastAccepted) + " s");
+            _Report(diagnostics, DiagnosticCode::TimestampRegression, {}, timestamp,
+                    "frame at " + std::to_string(timestamp) +
+                        " s does not advance on the last accepted frame at " +
+                        std::to_string(*_lastAccepted) + " s");
             return false;
         }
     }
 
-    if (restart) {
+    if (restart)
+    {
         ++_stats.sessionRestarts;
         _Report(diagnostics, DiagnosticCode::SourceRestarted, {}, timestamp,
-                "the sender's clock began again "
-                    + std::to_string(*_lastAccepted - timestamp)
-                    + " s before the last accepted frame");
+                "the sender's clock began again " + std::to_string(*_lastAccepted - timestamp) +
+                    " s before the last accepted frame");
         // Everything the old session taught is about a stream that has ended.
         // Keeping the observed rig across a restart would report the new
         // session's first frames as incomplete for bones a different sender may
@@ -133,14 +133,18 @@ VmcFrameAssembler::_Close(std::vector<VmcFrame>* frames,
     // Measured against the rig observed *before* this frame, so a bone appearing
     // for the first time is not also reported as having been missing.
     out.missing = _observed & ~out.pose.validRotations;
-    if (_config.stalenessSeconds > 0.0) {
-        for (std::size_t index = 0; index != motion::HumanBoneCount; ++index) {
-            if (!out.missing.test(index)
-                || timestamp - _lastSeen[index] <= _config.stalenessSeconds) {
+    if (_config.stalenessSeconds > 0.0)
+    {
+        for (std::size_t index = 0; index != motion::HumanBoneCount; ++index)
+        {
+            if (!out.missing.test(index) ||
+                timestamp - _lastSeen[index] <= _config.stalenessSeconds)
+            {
                 continue;
             }
             out.stale.set(index);
-            if (_reportedStale.test(index)) {
+            if (_reportedStale.test(index))
+            {
                 continue;
             }
             _reportedStale.set(index);
@@ -149,15 +153,15 @@ VmcFrameAssembler::_Close(std::vector<VmcFrame>* frames,
             // this adapter raises: an operator comparing a diagnostic against a
             // capture is reading Unity's spelling, not VRM 1.0's.
             _Report(diagnostics, DiagnosticCode::StaleJoint,
-                    VmcHumanBoneName(static_cast<motion::HumanBone>(index)),
-                    timestamp,
-                    "no update for "
-                        + std::to_string(timestamp - _lastSeen[index]) + " s");
+                    VmcHumanBoneName(static_cast<motion::HumanBone>(index)), timestamp,
+                    "no update for " + std::to_string(timestamp - _lastSeen[index]) + " s");
         }
     }
 
-    for (std::size_t index = 0; index != motion::HumanBoneCount; ++index) {
-        if (!out.pose.validRotations.test(index)) {
+    for (std::size_t index = 0; index != motion::HumanBoneCount; ++index)
+    {
+        if (!out.pose.validRotations.test(index))
+        {
             continue;
         }
         _observed.set(index);
@@ -165,55 +169,66 @@ VmcFrameAssembler::_Close(std::vector<VmcFrame>* frames,
         _reportedStale.reset(index);
     }
 
-    if (out.missing.any()) {
+    if (out.missing.any())
+    {
         ++_stats.framesIncomplete;
         _Report(diagnostics, DiagnosticCode::IncompleteFrame, {}, timestamp,
-                std::to_string(out.missing.count()) + " of "
-                    + std::to_string(_observed.count())
-                    + " observed bone(s) absent from this frame");
+                std::to_string(out.missing.count()) + " of " + std::to_string(_observed.count()) +
+                    " observed bone(s) absent from this frame");
     }
 
     _lastAccepted = timestamp;
     ++_stats.framesEmitted;
-    if (frames) {
+    if (frames)
+    {
         frames->push_back(std::move(out));
     }
     return true;
 }
 
 std::size_t
-VmcFrameAssembler::Push(const VmcPacket& packet, double receiveTime,
-                        std::vector<VmcFrame>* frames,
+VmcFrameAssembler::Push(const VmcPacket& packet, double receiveTime, std::vector<VmcFrame>* frames,
                         std::vector<Diagnostic>* diagnostics)
 {
     ++_packetSerial;
     std::size_t completed = 0;
 
-    for (const VmcMessage& message : packet.messages) {
-        switch (message.kind) {
-        case VmcMessageKind::Time: {
+    for (const VmcMessage& message : packet.messages)
+    {
+        switch (message.kind)
+        {
+        case VmcMessageKind::Time:
+        {
             // A second clock cannot describe the frame the first one already
             // stamped, whichever end of the frame each arrived at.
-            if (_frame.open && _frame.senderTime) {
+            if (_frame.open && _frame.senderTime)
+            {
                 completed += _Close(frames, diagnostics) ? 1 : 0;
             }
-            if (!_frame.open) {
+            if (!_frame.open)
+            {
                 _Open(receiveTime);
             }
             _frame.senderTime = message.seconds;
             break;
         }
 
-        case VmcMessageKind::BoneTransform: {
+        case VmcMessageKind::BoneTransform:
+        {
             VmcBoneSample sample;
             Diagnostic refusal;
-            if (!MapVmcBoneTransform(message, &sample, &refusal)) {
-                if (refusal.code == DiagnosticCode::UnsupportedMessage) {
+            if (!MapVmcBoneTransform(message, &sample, &refusal))
+            {
+                if (refusal.code == DiagnosticCode::UnsupportedMessage)
+                {
                     ++_stats.bonesUnsupported;
-                } else {
+                }
+                else
+                {
                     ++_stats.bonesMalformed;
                 }
-                if (diagnostics) {
+                if (diagnostics)
+                {
                     refusal.source = _source;
                     refusal.sequence = _packetSerial;
                     refusal.timestamp = _frame.senderTime;
@@ -222,38 +237,45 @@ VmcFrameAssembler::Push(const VmcPacket& packet, double receiveTime,
                 break;
             }
             const std::size_t index = static_cast<std::size_t>(sample.bone);
-            if (_frame.open && _frame.pose.validRotations.test(index)) {
-                if (_frame.bonePacket[index] == _packetSerial) {
+            if (_frame.open && _frame.pose.validRotations.test(index))
+            {
+                if (_frame.bonePacket[index] == _packetSerial)
+                {
                     // One delivery cannot be two frames' worth of this bone.
                     ++_frame.duplicateBones;
                     ++_stats.bonesDuplicated;
-                    _Report(diagnostics, DiagnosticCode::DuplicateBone,
-                            message.name, _frame.senderTime,
+                    _Report(diagnostics, DiagnosticCode::DuplicateBone, message.name,
+                            _frame.senderTime,
                             "already carried by this frame from the same "
                             "datagram; the first value stands");
                     break;
                 }
                 completed += _Close(frames, diagnostics) ? 1 : 0;
             }
-            if (!_frame.open) {
+            if (!_frame.open)
+            {
                 _Open(receiveTime);
             }
             _frame.pose.localRotations[index] = sample.localRotation;
             _frame.pose.validRotations.set(index);
             _frame.bonePacket[index] = _packetSerial;
-            if (sample.bone == motion::HumanBone::Hips) {
+            if (sample.bone == motion::HumanBone::Hips)
+            {
                 _frame.hipsOffset = sample.localPosition;
             }
             ++_stats.bonesAccepted;
             break;
         }
 
-        case VmcMessageKind::RootTransform: {
+        case VmcMessageKind::RootTransform:
+        {
             motion::RootMotion root;
             Diagnostic refusal;
-            if (!MapVmcRootTransform(message, &root, &refusal)) {
+            if (!MapVmcRootTransform(message, &root, &refusal))
+            {
                 ++_stats.rootsMalformed;
-                if (diagnostics) {
+                if (diagnostics)
+                {
                     refusal.source = _source;
                     refusal.sequence = _packetSerial;
                     refusal.timestamp = _frame.senderTime;
@@ -261,8 +283,10 @@ VmcFrameAssembler::Push(const VmcPacket& packet, double receiveTime,
                 }
                 break;
             }
-            if (_frame.open && _frame.hasRoot) {
-                if (_frame.rootPacket == _packetSerial) {
+            if (_frame.open && _frame.hasRoot)
+            {
+                if (_frame.rootPacket == _packetSerial)
+                {
                     // `VRM_VMC_DUPLICATE_BONE` reads oddly for the root and is
                     // still the right code: the set is frozen (Diagnostics.h),
                     // and the root occupies the same one-per-frame slot a bone
@@ -271,16 +295,15 @@ VmcFrameAssembler::Push(const VmcPacket& packet, double receiveTime,
                     ++_frame.duplicateBones;
                     ++_stats.bonesDuplicated;
                     _Report(diagnostics, DiagnosticCode::DuplicateBone,
-                            VmcMessageKindAddress(
-                                VmcMessageKind::RootTransform),
-                            _frame.senderTime,
+                            VmcMessageKindAddress(VmcMessageKind::RootTransform), _frame.senderTime,
                             "already carried by this frame from the same "
                             "datagram; the first value stands");
                     break;
                 }
                 completed += _Close(frames, diagnostics) ? 1 : 0;
             }
-            if (!_frame.open) {
+            if (!_frame.open)
+            {
                 _Open(receiveTime);
             }
             _frame.pose.root = root;
@@ -297,7 +320,8 @@ VmcFrameAssembler::Push(const VmcPacket& packet, double receiveTime,
             ++_stats.messagesIgnored;
             break;
 
-        case VmcMessageKind::BlendValue: {
+        case VmcMessageKind::BlendValue:
+        {
             // The name is the sender's, and this layer has no vocabulary to
             // check it against (motionCore/Humanoid.h): the only thing that can
             // be wrong with it here is arriving twice.
@@ -310,28 +334,33 @@ VmcFrameAssembler::Push(const VmcPacket& packet, double receiveTime,
             // replaces the map, so anything still pointing into it would
             // dangle. The bone path reads its serial the same way.
             std::optional<std::uint64_t> carriedBy;
-            if (_frame.open) {
+            if (_frame.open)
+            {
                 const auto seen = _frame.expressionPacket.find(name);
-                if (seen != _frame.expressionPacket.end()) {
+                if (seen != _frame.expressionPacket.end())
+                {
                     carriedBy = seen->second;
                 }
             }
-            if (carriedBy) {
-                if (*carriedBy == _packetSerial) {
+            if (carriedBy)
+            {
+                if (*carriedBy == _packetSerial)
+                {
                     // Same reading as a repeated bone, and the same code: the
                     // set is frozen (Diagnostics.h), and a blend shape occupies
                     // the same one-per-frame slot a bone does.
                     ++_frame.duplicateBones;
                     ++_stats.expressionsDuplicated;
-                    _Report(diagnostics, DiagnosticCode::DuplicateBone,
-                            message.name, _frame.senderTime,
+                    _Report(diagnostics, DiagnosticCode::DuplicateBone, message.name,
+                            _frame.senderTime,
                             "already carried by this frame from the same "
                             "datagram; the first value stands");
                     break;
                 }
                 completed += _Close(frames, diagnostics) ? 1 : 0;
             }
-            if (!_frame.open) {
+            if (!_frame.open)
+            {
                 _Open(receiveTime);
             }
             _frame.pose.expressions.Set(name, message.value);
@@ -357,8 +386,7 @@ VmcFrameAssembler::Push(const VmcPacket& packet, double receiveTime,
 }
 
 std::size_t
-VmcFrameAssembler::Flush(std::vector<VmcFrame>* frames,
-                         std::vector<Diagnostic>* diagnostics)
+VmcFrameAssembler::Flush(std::vector<VmcFrame>* frames, std::vector<Diagnostic>* diagnostics)
 {
     return _Close(frames, diagnostics) ? 1 : 0;
 }

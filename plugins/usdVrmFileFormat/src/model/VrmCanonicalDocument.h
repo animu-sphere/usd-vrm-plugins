@@ -22,35 +22,38 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-enum class VrmVersion {
+enum class VrmVersion
+{
     Unknown,
     Vrm0,
     Vrm1,
 };
 
 // A single morph target (blend shape) on a mesh primitive.
-struct VrmMorphTarget {
-    std::string name;                 // may be empty; uniquified at author time
+struct VrmMorphTarget
+{
+    std::string name; // may be empty; uniquified at author time
     std::vector<GfVec3f> positionDeltas;
     std::vector<GfVec3f> normalDeltas; // optional, may be empty
 };
 
 // One renderable mesh. We follow the plan's "one USD Mesh per glTF primitive"
 // rule, so this maps 1:1 to a (mesh, primitive) pair.
-struct VrmMeshPrimitive {
-    std::string name;                 // human-meaningful; sanitized/uniquified later
+struct VrmMeshPrimitive
+{
+    std::string name; // human-meaningful; sanitized/uniquified later
     int sourceMeshIndex = -1;
     int sourcePrimitiveIndex = -1;
-    int sourceNodeIndex = -1;         // node that instantiates the mesh
+    int sourceNodeIndex = -1; // node that instantiates the mesh
     std::string sourceNodeName;
 
     std::vector<GfVec3f> points;
-    std::vector<GfVec3f> normals;     // optional
-    std::vector<GfVec2f> uvs;         // TEXCOORD_0, optional (flipped to USD)
+    std::vector<GfVec3f> normals; // optional
+    std::vector<GfVec2f> uvs;     // TEXCOORD_0, optional (flipped to USD)
     std::vector<int> faceVertexIndices;
     std::vector<int> faceVertexCounts; // all 3s for triangles
 
-    int materialIndex = -1;           // index into VrmCanonicalDocument::materials
+    int materialIndex = -1; // index into VrmCanonicalDocument::materials
 
     // World transform of the instancing glTF node (USD convention). For a
     // non-skinned mesh this is its placement and must be authored, or node-placed
@@ -70,13 +73,14 @@ struct VrmMeshPrimitive {
 };
 
 // A reference to a texture image asset plus its sampler/UV state.
-struct VrmTextureRef {
+struct VrmTextureRef
+{
     bool present = false;
-    std::string filePath;              // USD asset path (external or .vrm package path)
-    int uvSet = 0;                     // TEXCOORD_<n>; only 0 is wired in Phase 2
-    std::string wrapS = "repeat";      // repeat | clamp | mirror
+    std::string filePath;         // USD asset path (external or .vrm package path)
+    int uvSet = 0;                // TEXCOORD_<n>; only 0 is wired in Phase 2
+    std::string wrapS = "repeat"; // repeat | clamp | mirror
     std::string wrapT = "repeat";
-    float scale = 1.0f;                // normalTexture.scale / occlusion strength
+    float scale = 1.0f; // normalTexture.scale / occlusion strength
     // KHR_texture_transform (identity unless hasTransform).
     bool hasTransform = false;
     GfVec2f uvOffset = GfVec2f(0.0f, 0.0f);
@@ -85,7 +89,8 @@ struct VrmTextureRef {
 };
 
 // glTF PBR metallic-roughness, normalized to what UsdPreviewSurface needs.
-struct VrmMaterial {
+struct VrmMaterial
+{
     std::string name;
     int sourceMaterialIndex = -1;
 
@@ -95,8 +100,8 @@ struct VrmMaterial {
     float roughness = 1.0f;
     GfVec3f emissiveColor = GfVec3f(0.0f);
     bool doubleSided = false;
-    bool unlit = false;                // KHR_materials_unlit (VRM is unlit/toon)
-    std::string alphaMode = "OPAQUE";  // OPAQUE | MASK | BLEND
+    bool unlit = false;               // KHR_materials_unlit (VRM is unlit/toon)
+    std::string alphaMode = "OPAQUE"; // OPAQUE | MASK | BLEND
     float alphaCutoff = 0.5f;
 
     VrmTextureRef baseColorTex;
@@ -107,28 +112,31 @@ struct VrmMaterial {
 
     // MToon / VRM shader metadata is preserved verbatim as JSON for later phases.
     bool isMToon = false;
-    std::string rawShaderJson;         // VRM material extension JSON, if any
+    std::string rawShaderJson; // VRM material extension JSON, if any
 };
 
 // One joint in the skeleton, in glTF skin joint order.
-struct VrmJoint {
-    std::string name;                  // sanitized segment used in the joint path
+struct VrmJoint
+{
+    std::string name; // sanitized segment used in the joint path
     int sourceNodeIndex = -1;
-    int parentJointIndex = -1;         // index into VrmCanonicalDocument::joints, -1 = root
-    GfMatrix4d restTransform = GfMatrix4d(1.0);  // local-space, USD convention
-    GfMatrix4d bindTransform = GfMatrix4d(1.0);  // world-space, USD convention
+    int parentJointIndex = -1; // index into VrmCanonicalDocument::joints, -1 = root
+    GfMatrix4d restTransform = GfMatrix4d(1.0); // local-space, USD convention
+    GfMatrix4d bindTransform = GfMatrix4d(1.0); // world-space, USD convention
 };
 
 // VRM humanoid bone -> skeleton joint mapping.
-struct VrmHumanoidBone {
-    std::string semanticName;          // e.g. "hips", "leftUpperArm"
-    int jointIndex = -1;               // index into VrmCanonicalDocument::joints
+struct VrmHumanoidBone
+{
+    std::string semanticName; // e.g. "hips", "leftUpperArm"
+    int jointIndex = -1;      // index into VrmCanonicalDocument::joints
 };
 
 // VRM 0.x BlendShapeGroup / VRM 1.0 Expression (binding info only; evaluation is
 // out of scope for the file-format plugin).
-struct VrmExpression {
-    std::string name;                  // preset or custom name
+struct VrmExpression
+{
+    std::string name; // preset or custom name
     bool isPreset = false;
     bool isBinary = false;
     // VRM 1.0 overrideBlink / overrideLookAt / overrideMouth: what this
@@ -142,37 +150,49 @@ struct VrmExpression {
     std::string overrideLookAt;
     std::string overrideMouth;
     // Morph-target bindings expressed as (mesh primitive index, morph index, weight).
-    struct MorphBind { int meshPrimitiveIndex; int morphTargetIndex; float weight; };
+    struct MorphBind
+    {
+        int meshPrimitiveIndex;
+        int morphTargetIndex;
+        float weight;
+    };
     std::vector<MorphBind> morphBinds;
     // Material-color bindings: the expression drives a material color to a target
     // value (VRM 1.0 materialColorBinds). `type` is the VRM color slot name
     // ("color", "emissionColor", "shadeColor", ...); evaluation is out of scope.
-    struct MaterialColorBind { int materialIndex; std::string type; GfVec4f targetValue; };
+    struct MaterialColorBind
+    {
+        int materialIndex;
+        std::string type;
+        GfVec4f targetValue;
+    };
     std::vector<MaterialColorBind> materialColorBinds;
 };
 
 // VRMC_node_constraint: a node's local rotation is driven by a source node
 // (roll / aim / rotation). Imported as data only — no evaluation. VRM 0.x has no
 // node-constraint equivalent, so this is VRM 1.0 only.
-struct VrmConstraint {
-    std::string type;                  // "roll" | "aim" | "rotation"
-    int constrainedNodeIndex = -1;     // node carrying the constraint
+struct VrmConstraint
+{
+    std::string type;              // "roll" | "aim" | "rotation"
+    int constrainedNodeIndex = -1; // node carrying the constraint
     std::string constrainedNodeName;
-    int constrainedJoint = -1;         // constrained node -> skeleton joint, or -1
-    int sourceNodeIndex = -1;          // the driving node
+    int constrainedJoint = -1; // constrained node -> skeleton joint, or -1
+    int sourceNodeIndex = -1;  // the driving node
     std::string sourceNodeName;
-    int sourceJoint = -1;              // source node -> skeleton joint, or -1
-    std::string axis;                  // rollAxis / aimAxis; empty for "rotation"
+    int sourceJoint = -1; // source node -> skeleton joint, or -1
+    std::string axis;     // rollAxis / aimAxis; empty for "rotation"
     float weight = 1.0f;
-    std::string rawJson;               // the node's VRMC_node_constraint block
+    std::string rawJson; // the node's VRMC_node_constraint block
 };
 
 // A skeletal animation clip, resampled onto a single shared timeline so it maps
 // directly to UsdSkelAnimation (which stores parallel per-joint arrays). The
 // reader does the resampling; the authorer just writes time samples.
-struct VrmAnimation {
+struct VrmAnimation
+{
     std::string name;
-    std::vector<float> times;          // shared sample times, seconds
+    std::vector<float> times; // shared sample times, seconds
 
     // Animated joints (indices into VrmCanonicalDocument::joints) and their
     // local TRS at each time: translations[t][j], rotations[t][j], scales[t][j].
@@ -191,35 +211,39 @@ struct VrmAnimation {
 // VRM lookAt configuration. Curve/range-map parameters differ between 0.x and
 // 1.0, so they're preserved verbatim as JSON; the normalized fields below carry
 // the semantics the authorer needs.
-struct VrmLookAt {
+struct VrmLookAt
+{
     bool present = false;
-    std::string type;                  // "bone" | "expression"
-    int leftEyeJoint = -1;             // into joints (from the humanoid mapping)
+    std::string type;      // "bone" | "expression"
+    int leftEyeJoint = -1; // into joints (from the humanoid mapping)
     int rightEyeJoint = -1;
-    std::string rawJson;               // full lookAt / firstPerson block
+    std::string rawJson; // full lookAt / firstPerson block
 };
 
 // Secondary motion (VRM SpringBone): jiggle for hair / cloth. Imported as data
 // only — no simulation. Node references resolve to skeleton joints where they are
 // skin joints; otherwise the source node index/name is kept for a runtime to map.
-struct VrmCollider {
-    int jointIndex = -1;               // attachment node -> skeleton joint, or -1
+struct VrmCollider
+{
+    int jointIndex = -1; // attachment node -> skeleton joint, or -1
     int sourceNodeIndex = -1;
     std::string sourceNodeName;
-    std::string shape;                 // "sphere" | "capsule"
+    std::string shape; // "sphere" | "capsule"
     GfVec3f offset = GfVec3f(0.0f);
     float radius = 0.0f;
-    GfVec3f tail = GfVec3f(0.0f);      // capsule only
+    GfVec3f tail = GfVec3f(0.0f); // capsule only
 };
 
-struct VrmColliderGroup {
+struct VrmColliderGroup
+{
     std::string name;
-    std::vector<int> colliderIndices;  // into VrmSecondaryMotion::colliders
+    std::vector<int> colliderIndices; // into VrmSecondaryMotion::colliders
 };
 
 // One spring-chain joint with its physics parameters (VRM 1.0 stores these per
 // joint; VRM 0.x per group — the reader replicates the group values per joint).
-struct VrmSpringJoint {
+struct VrmSpringJoint
+{
     int jointIndex = -1;
     int sourceNodeIndex = -1;
     std::string sourceNodeName;
@@ -230,30 +254,33 @@ struct VrmSpringJoint {
     GfVec3f gravityDir = GfVec3f(0.0f, -1.0f, 0.0f);
 };
 
-struct VrmSpring {
+struct VrmSpring
+{
     std::string name;
     int centerJoint = -1;
     int centerSourceNodeIndex = -1;
     std::string centerSourceNodeName;
     std::vector<VrmSpringJoint> joints;
-    std::vector<int> colliderGroupIndices;  // into VrmSecondaryMotion::colliderGroups
+    std::vector<int> colliderGroupIndices; // into VrmSecondaryMotion::colliderGroups
 };
 
-struct VrmSecondaryMotion {
+struct VrmSecondaryMotion
+{
     bool present = false;
     std::vector<VrmCollider> colliders;
     std::vector<VrmColliderGroup> colliderGroups;
     std::vector<VrmSpring> springs;
-    std::string rawJson;               // full springBone / secondaryAnimation block
+    std::string rawJson; // full springBone / secondaryAnimation block
 };
 
-struct VrmCanonicalDocument {
+struct VrmCanonicalDocument
+{
     VrmVersion version = VrmVersion::Unknown;
-    std::string specVersion;           // e.g. "0.0", "1.0"
+    std::string specVersion; // e.g. "0.0", "1.0"
 
     std::vector<VrmMeshPrimitive> meshes;
     std::vector<VrmMaterial> materials;
-    std::vector<VrmJoint> joints;      // empty => no skeleton
+    std::vector<VrmJoint> joints; // empty => no skeleton
     std::vector<VrmHumanoidBone> humanoidBones;
     std::vector<VrmExpression> expressions;
     std::vector<VrmAnimation> animations;
@@ -262,8 +289,8 @@ struct VrmCanonicalDocument {
     std::vector<VrmConstraint> constraints;
 
     // Raw VRM blocks preserved as JSON on /Asset.customData (lossless preservation).
-    std::string metaJson;              // meta / license / permissions
-    std::string rawVrmExtensionJson;   // full VRM(C_vrm) extension JSON
+    std::string metaJson;            // meta / license / permissions
+    std::string rawVrmExtensionJson; // full VRM(C_vrm) extension JSON
 
     // Non-fatal diagnostics gathered while reading.
     std::vector<std::string> warnings;

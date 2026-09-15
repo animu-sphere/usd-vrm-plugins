@@ -57,7 +57,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace
+{
 
 const TfToken kFilterPose("motion.filterPose");
 const TfToken kSampleAnimation("motion.sampleAnimation");
@@ -86,13 +87,14 @@ constexpr double kSecond = 1.0;
 // distinguishable in the assertions below.
 constexpr double kStep = 0.02;
 
-bool Has(const motion::HumanoidPose& pose, motion::HumanBone bone)
+bool
+Has(const motion::HumanoidPose& pose, motion::HumanBone bone)
 {
     return pose.validRotations.test(static_cast<std::size_t>(bone));
 }
 
-const GfQuatf& RotationOf(const motion::HumanoidPose& pose,
-                          motion::HumanBone bone)
+const GfQuatf&
+RotationOf(const motion::HumanoidPose& pose, motion::HumanBone bone)
 {
     return pose.localRotations[static_cast<std::size_t>(bone)];
 }
@@ -100,23 +102,25 @@ const GfQuatf& RotationOf(const motion::HumanoidPose& pose,
 // The angle of a unit quaternion, in degrees; formed in double precision for
 // the reason motionCore's own comparison documents (acos turns a float's last
 // bit into a milliradian near zero).
-double AngleDegrees(const GfQuatf& q)
+double
+AngleDegrees(const GfQuatf& q)
 {
     const GfQuatf n = q.GetNormalized();
     const double w = std::min(1.0, std::max(-1.0, double(n.GetReal())));
     return 2.0 * std::acos(w) * 180.0 / M_PI;
 }
 
-bool NearlyEqual(double a, double b, double tolerance)
+bool
+NearlyEqual(double a, double b, double tolerance)
 {
     return std::abs(a - b) <= tolerance;
 }
 
-bool NearlyEqual(const GfVec3f& a, const GfVec3f& b, double tolerance)
+bool
+NearlyEqual(const GfVec3f& a, const GfVec3f& b, double tolerance)
 {
-    return NearlyEqual(a[0], b[0], tolerance)
-        && NearlyEqual(a[1], b[1], tolerance)
-        && NearlyEqual(a[2], b[2], tolerance);
+    return NearlyEqual(a[0], b[0], tolerance) && NearlyEqual(a[1], b[1], tolerance) &&
+           NearlyEqual(a[2], b[2], tolerance);
 }
 
 // `motion::PoseFilter`'s step weight, written out rather than called.
@@ -127,10 +131,12 @@ bool NearlyEqual(const GfVec3f& a, const GfVec3f& b, double tolerance)
 // This is the exponential-smoothing weight from the library's documented
 // definition -- frame-rate independent, derived from the elapsed time -- and a
 // change to that definition should reach this suite as a red result.
-double StepWeight(double cutoffHz, double dt)
+double
+StepWeight(double cutoffHz, double dt)
 {
     constexpr double kTwoPi = 6.2831853071795862;
-    if (cutoffHz <= 0.0 || dt <= 0.0) {
+    if (cutoffHz <= 0.0 || dt <= 0.0)
+    {
         return 1.0;
     }
     return 1.0 - std::exp(-kTwoPi * cutoffHz * dt);
@@ -141,14 +147,14 @@ double StepWeight(double cutoffHz, double dt)
 // The four bones are the ones the fixtures name, all at identity, with the hips
 // at the origin -- so the sampled pose at frame 50 differs from it in both a
 // rotation and a translation, and one step of the filter has to move both.
-motion::HumanoidPose PriorPose(double timestamp)
+motion::HumanoidPose
+PriorPose(double timestamp)
 {
     motion::HumanoidPose pose;
     pose.timestamp = timestamp;
-    for (const motion::HumanBone bone : {motion::HumanBone::Hips,
-                                         motion::HumanBone::Spine,
-                                         motion::HumanBone::Chest,
-                                         motion::HumanBone::Head}) {
+    for (const motion::HumanBone bone : {motion::HumanBone::Hips, motion::HumanBone::Spine,
+                                         motion::HumanBone::Chest, motion::HumanBone::Head})
+    {
         pose.validRotations.set(static_cast<std::size_t>(bone));
     }
     pose.root.worldPosition = GfVec3f(0.0f);
@@ -156,31 +162,30 @@ motion::HumanoidPose PriorPose(double timestamp)
     return pose;
 }
 
-motion::HumanoidPose PoseAt(const ExecUsdCacheView& view, int index)
+motion::HumanoidPose
+PoseAt(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
-    assert(!value.IsEmpty() &&
-           "no value came back -- if the plugInfo is unstaged this is what it "
-           "looks like, not a load error");
+    assert(!value.IsEmpty() && "no value came back -- if the plugInfo is unstaged this is what it "
+                               "looks like, not a load error");
     assert(value.IsHolding<motion::HumanoidPose>() &&
            "the canonical aggregate did not survive the boundary");
     return value.UncheckedGet<motion::HumanoidPose>();
 }
 
-ExecUsdValueOverrideVector PriorOverride(const UsdPrim& clip,
-                                         const motion::HumanoidPose& pose)
+ExecUsdValueOverrideVector
+PriorOverride(const UsdPrim& clip, const motion::HumanoidPose& pose)
 {
     ExecUsdValueOverrideVector overrides;
-    overrides.push_back(
-        ExecUsdValueOverride{ExecUsdValueKey(clip, kPriorPose),
-                             VtValue(pose)});
+    overrides.push_back(ExecUsdValueOverride{ExecUsdValueKey(clip, kPriorPose), VtValue(pose)});
     return overrides;
 }
 
 // ---------------------------------------------------------------------------
 // The clip that states a policy
 // ---------------------------------------------------------------------------
-void TestAClipWithAPolicy(const std::string& fixture)
+void
+TestAClipWithAPolicy(const std::string& fixture)
 {
     UsdStageRefPtr stage = UsdStage::Open(fixture);
     assert(stage && "the policy fixture did not open");
@@ -204,12 +209,11 @@ void TestAClipWithAPolicy(const std::string& fixture)
     keys.emplace_back(clip, kSampleAnimation);
     keys.emplace_back(clip, kPriorPose);
     ExecUsdRequest request = system.BuildRequest(
-        std::move(keys),
-        [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
-        [&](const ExecRequestIndexSet& indices) {
+        std::move(keys), [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
+        [&](const ExecRequestIndexSet& indices)
+        {
             ++timeInvalidations;
-            filteredReported =
-                filteredReported || indices.count(kFiltered) > 0;
+            filteredReported = filteredReported || indices.count(kFiltered) > 0;
         });
     assert(request.IsValid() &&
            "the request did not compile -- a computation that consumes another "
@@ -237,11 +241,9 @@ void TestAClipWithAPolicy(const std::string& fixture)
     // when the frame moves, because the pose it consumes is -- so a dependent
     // value key inherits the time dependency of the node it reads, and a filter
     // does not have to ask for the clock to be re-evaluated with it.
-    assert(timeInvalidations > 0 &&
-           "moving the frame reached no value key at all");
-    assert(filteredReported &&
-           "motion.filterPose was NOT reported when the frame moved, although "
-           "the pose it consumes is time dependent");
+    assert(timeInvalidations > 0 && "moving the frame reached no value key at all");
+    assert(filteredReported && "motion.filterPose was NOT reported when the frame moved, although "
+                               "the pose it consumes is time dependent");
 
     // ---- un-overridden, the filter is the sampler -------------------------
     // `motion.priorPose` forwards the clip's own pose, so the filter smooths the
@@ -255,12 +257,10 @@ void TestAClipWithAPolicy(const std::string& fixture)
         const motion::HumanoidPose filtered = PoseAt(view, kFiltered);
 
         assert(NearlyEqual(sampled.timestamp, kSecond, 1e-12));
-        assert(NearlyEqual(AngleDegrees(RotationOf(sampled,
-                                                   motion::HumanBone::Head)),
-                           45.0, 1e-2) &&
-               "the fixture is not the sampled clip's frame 50 after all");
-        assert(prior == sampled &&
-               "motion.priorPose did not forward the sampled pose unchanged");
+        assert(
+            NearlyEqual(AngleDegrees(RotationOf(sampled, motion::HumanBone::Head)), 45.0, 1e-2) &&
+            "the fixture is not the sampled clip's frame 50 after all");
+        assert(prior == sampled && "motion.priorPose did not forward the sampled pose unchanged");
         assert(filtered == sampled &&
                "an un-overridden filter changed the pose, so a prior pose was "
                "invented from somewhere");
@@ -270,8 +270,7 @@ void TestAClipWithAPolicy(const std::string& fixture)
     const motion::HumanoidPose prior = PriorPose(kSecond - kStep);
     const double weight = StepWeight(12.0, kStep);
     {
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, PriorOverride(clip, prior));
+        ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
 
         const motion::HumanoidPose filtered = PoseAt(view, kFiltered);
         const motion::HumanoidPose sampled = PoseAt(view, kSampled);
@@ -281,17 +280,15 @@ void TestAClipWithAPolicy(const std::string& fixture)
         // inferred from the filtered pose, because everything below depends on
         // it and a mechanism that silently ignored the override would otherwise
         // look like a filter that did nothing.
-        assert(seen == prior &&
-               "the override did not reach motion.priorPose");
+        assert(seen == prior && "the override did not reach motion.priorPose");
 
         // ...and only that one. `motion.sampleAnimation` is the same value it
         // computes without overrides, which is what makes the filtered pose
         // below a step between two known poses rather than between two unknown
         // ones.
-        assert(NearlyEqual(AngleDegrees(RotationOf(sampled,
-                                                   motion::HumanBone::Head)),
-                           45.0, 1e-2) &&
-               "the override leaked into motion.sampleAnimation");
+        assert(
+            NearlyEqual(AngleDegrees(RotationOf(sampled, motion::HumanBone::Head)), 45.0, 1e-2) &&
+            "the override leaked into motion.sampleAnimation");
 
         // A quaternion slerp between two rotations about the same axis moves
         // the angle linearly, so the head lands at `weight` of the 45 degrees
@@ -299,18 +296,14 @@ void TestAClipWithAPolicy(const std::string& fixture)
         // *clip* authored reached `motion::PoseFilter`: at the library's
         // default of 6 Hz the same step lands somewhere else, and the two are
         // checked apart below.
-        assert(NearlyEqual(AngleDegrees(RotationOf(filtered,
-                                                   motion::HumanBone::Head)),
+        assert(NearlyEqual(AngleDegrees(RotationOf(filtered, motion::HumanBone::Head)),
                            45.0 * weight, 1e-2) &&
                "the head did not land one filter step from the prior pose");
 
         // The hips are lerped, not slerped, and by the same weight.
         assert(filtered.root.hasPosition);
         assert(NearlyEqual(filtered.root.worldPosition,
-                           GfVec3f(0.0f,
-                                   float(0.5 * weight),
-                                   float(1.0 * weight)),
-                           1e-4) &&
+                           GfVec3f(0.0f, float(0.5 * weight), float(1.0 * weight)), 1e-4) &&
                "the root position did not take the same step as the rotations");
 
         // The result is stamped with the pose it filtered, not with the state
@@ -338,8 +331,7 @@ void TestAClipWithAPolicy(const std::string& fixture)
     // did not move here would be a stale cache rather than a wrong policy.
     assert(clip.GetAttribute(kCutoffHz).Set(0.0f));
     {
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, PriorOverride(clip, prior));
+        ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
         assert(PoseAt(view, kFiltered) == PoseAt(view, kSampled) &&
                "a non-positive cutoff smoothed the pose anyway, or the authored "
                "value never reached the computation");
@@ -352,14 +344,11 @@ void TestAClipWithAPolicy(const std::string& fixture)
     // field it names.
     assert(clip.GetAttribute(kRootPosition).Set(false));
     {
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, PriorOverride(clip, prior));
+        ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
         const motion::HumanoidPose filtered = PoseAt(view, kFiltered);
-        assert(NearlyEqual(filtered.root.worldPosition,
-                           GfVec3f(0.0f, 0.5f, 1.0f), 1e-6) &&
+        assert(NearlyEqual(filtered.root.worldPosition, GfVec3f(0.0f, 0.5f, 1.0f), 1e-6) &&
                "the root position was smoothed although the clip said not to");
-        assert(NearlyEqual(AngleDegrees(RotationOf(filtered,
-                                                   motion::HumanBone::Head)),
+        assert(NearlyEqual(AngleDegrees(RotationOf(filtered, motion::HumanBone::Head)),
                            45.0 * weight, 1e-2) &&
                "turning off root filtering stopped the rotations too");
     }
@@ -374,8 +363,7 @@ void TestAClipWithAPolicy(const std::string& fixture)
     assert(clip.GetAttribute(kRootOrientation).Get(&authoredRootOrientation));
     assert(!authoredRootOrientation);
     {
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, PriorOverride(clip, prior));
+        ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
         assert(!PoseAt(view, kFiltered).root.hasOrientation &&
                "a clip-sourced pose grew a root orientation");
     }
@@ -387,7 +375,8 @@ void TestAClipWithAPolicy(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // The clip that states none
 // ---------------------------------------------------------------------------
-void TestAClipWithNoPolicy(const std::string& fixture)
+void
+TestAClipWithNoPolicy(const std::string& fixture)
 {
     UsdStageRefPtr stage = UsdStage::Open(fixture);
     assert(stage && "the sampled fixture did not open");
@@ -414,8 +403,7 @@ void TestAClipWithNoPolicy(const std::string& fixture)
     system.ChangeTime(UsdTimeCode(kFrame));
 
     const motion::HumanoidPose prior = PriorPose(kSecond - kStep);
-    ExecUsdCacheView view = system.ComputeWithOverrides(
-        request, PriorOverride(clip, prior));
+    ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
     const motion::HumanoidPose filtered = PoseAt(view, kFiltered);
 
     // `motion::PoseFilter::Options`' own default is 6 Hz, and that is what a
@@ -425,8 +413,7 @@ void TestAClipWithNoPolicy(const std::string& fixture)
     // carried the last clip's.
     const double defaultWeight = StepWeight(6.0, kStep);
     const double policyWeight = StepWeight(12.0, kStep);
-    const double head =
-        AngleDegrees(RotationOf(filtered, motion::HumanBone::Head));
+    const double head = AngleDegrees(RotationOf(filtered, motion::HumanBone::Head));
     assert(NearlyEqual(head, 45.0 * defaultWeight, 1e-2) &&
            "a clip stating no cutoff was not filtered at the library's own "
            "default of 6 Hz");
@@ -437,9 +424,7 @@ void TestAClipWithNoPolicy(const std::string& fixture)
     // The other two defaults are true, so the hips take the step here.
     assert(filtered.root.hasPosition);
     assert(NearlyEqual(filtered.root.worldPosition,
-                       GfVec3f(0.0f,
-                               float(0.5 * defaultWeight),
-                               float(1.0 * defaultWeight)),
+                       GfVec3f(0.0f, float(0.5 * defaultWeight), float(1.0 * defaultWeight)),
                        1e-4) &&
            "a clip stating nothing did not get PoseFilter's root defaults");
 
@@ -449,10 +434,10 @@ void TestAClipWithNoPolicy(const std::string& fixture)
 
 } // namespace
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
-    assert(argc == 3 &&
-           "usage: execMotion_filter <filtered_clip.usda> <sampled_clip.usda>");
+    assert(argc == 3 && "usage: execMotion_filter <filtered_clip.usda> <sampled_clip.usda>");
     TestAClipWithAPolicy(argv[1]);
     TestAClipWithNoPolicy(argv[2]);
     std::printf("execMotion filter: all checks passed\n");

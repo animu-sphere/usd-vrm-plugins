@@ -39,17 +39,18 @@ constexpr std::array<RefusalTerm, ConversionRefusalCount> kRefusals = {{
 constexpr bool
 RefusalsAreInEnumOrder() noexcept
 {
-    for (std::size_t index = 0; index < kRefusals.size(); ++index) {
-        if (static_cast<std::size_t>(kRefusals[index].value) != index
-            || kRefusals[index].name.empty()) {
+    for (std::size_t index = 0; index < kRefusals.size(); ++index)
+    {
+        if (static_cast<std::size_t>(kRefusals[index].value) != index ||
+            kRefusals[index].name.empty())
+        {
             return false;
         }
     }
     return true;
 }
 
-static_assert(RefusalsAreInEnumOrder(),
-              "kRefusals must be in enumerator order, one name each");
+static_assert(RefusalsAreInEnumOrder(), "kRefusals must be in enumerator order, one name each");
 
 constexpr double kPi = 3.14159265358979323846;
 
@@ -67,13 +68,16 @@ int
 PermutationSign(int a, int b, int c) noexcept
 {
     int sign = 1;
-    if (a > b) {
+    if (a > b)
+    {
         sign = -sign;
     }
-    if (b > c) {
+    if (b > c)
+    {
         sign = -sign;
     }
-    if (a > c) {
+    if (a > c)
+    {
         sign = -sign;
     }
     return sign;
@@ -118,11 +122,11 @@ Multiply(const SourceQuat& a, const SourceQuat& b) noexcept
 SourceQuat
 SourceRotationAt(const SourceJointTrack& track, std::size_t frame) noexcept
 {
-    if (frame >= track.eulerAngles.size()) {
+    if (frame >= track.eulerAngles.size())
+    {
         return SourceQuat();
     }
-    return ComposeSourceRotation(track.eulerAngles[frame], track.eulerOrder,
-                                 track.angleUnit);
+    return ComposeSourceRotation(track.eulerAngles[frame], track.eulerOrder, track.angleUnit);
 }
 
 // The chain from just below `jointIndex`'s nearest bound ancestor down to
@@ -131,20 +135,22 @@ SourceRotationAt(const SourceJointTrack& track, std::size_t frame) noexcept
 // bound bone below it — and is exactly why `RootRotationPolicy::None` has to
 // act before this walk rather than after it.
 std::vector<std::size_t>
-PathFromNearestBoundAncestor(const SourceSkeleton& skeleton,
-                             std::size_t jointIndex,
+PathFromNearestBoundAncestor(const SourceSkeleton& skeleton, std::size_t jointIndex,
                              const std::vector<bool>& bound)
 {
     std::vector<std::size_t> path;
     std::size_t walker = jointIndex;
-    while (true) {
+    while (true)
+    {
         path.push_back(walker);
         const int parent = skeleton.joints[walker].parent;
-        if (parent < 0) {
+        if (parent < 0)
+        {
             break;
         }
         const auto parentIndex = static_cast<std::size_t>(parent);
-        if (bound[parentIndex]) {
+        if (bound[parentIndex])
+        {
             break;
         }
         walker = parentIndex;
@@ -167,45 +173,46 @@ TPoseDirection(motion::HumanBone bone) noexcept
     const pxr::GfVec3f up(0.0f, 1.0f, 0.0f);
     const pxr::GfVec3f left(1.0f, 0.0f, 0.0f);
     const pxr::GfVec3f forward(0.0f, 0.0f, 1.0f);
-    switch (bone) {
-        case motion::HumanBone::Hips:
-        case motion::HumanBone::Spine:
-        case motion::HumanBone::Chest:
-        case motion::HumanBone::UpperChest:
-        case motion::HumanBone::Neck:
-            return up;
-        case motion::HumanBone::LeftShoulder:
-        case motion::HumanBone::LeftUpperArm:
-        case motion::HumanBone::LeftLowerArm:
-            return left;
-        case motion::HumanBone::RightShoulder:
-        case motion::HumanBone::RightUpperArm:
-        case motion::HumanBone::RightLowerArm:
-            return -left;
-        case motion::HumanBone::LeftUpperLeg:
-        case motion::HumanBone::LeftLowerLeg:
-        case motion::HumanBone::RightUpperLeg:
-        case motion::HumanBone::RightLowerLeg:
-            return -up;
-        case motion::HumanBone::LeftFoot:
-        case motion::HumanBone::RightFoot:
-            return forward;
-        // The chain-ending bones. Their own segment still has a direction in a
-        // T-pose -- a skull rises, a hand continues outward, a toe points
-        // ahead -- and stating it is what lets the walk above recognise which
-        // child *continues* a bone when the alternatives leave it sideways. A
-        // rig that ends a chain here simply has no child to aim.
-        case motion::HumanBone::Head:
-            return up;
-        case motion::HumanBone::LeftHand:
-            return left;
-        case motion::HumanBone::RightHand:
-            return -left;
-        case motion::HumanBone::LeftToes:
-        case motion::HumanBone::RightToes:
-            return forward;
-        default:
-            return pxr::GfVec3f(0.0f);
+    switch (bone)
+    {
+    case motion::HumanBone::Hips:
+    case motion::HumanBone::Spine:
+    case motion::HumanBone::Chest:
+    case motion::HumanBone::UpperChest:
+    case motion::HumanBone::Neck:
+        return up;
+    case motion::HumanBone::LeftShoulder:
+    case motion::HumanBone::LeftUpperArm:
+    case motion::HumanBone::LeftLowerArm:
+        return left;
+    case motion::HumanBone::RightShoulder:
+    case motion::HumanBone::RightUpperArm:
+    case motion::HumanBone::RightLowerArm:
+        return -left;
+    case motion::HumanBone::LeftUpperLeg:
+    case motion::HumanBone::LeftLowerLeg:
+    case motion::HumanBone::RightUpperLeg:
+    case motion::HumanBone::RightLowerLeg:
+        return -up;
+    case motion::HumanBone::LeftFoot:
+    case motion::HumanBone::RightFoot:
+        return forward;
+    // The chain-ending bones. Their own segment still has a direction in a
+    // T-pose -- a skull rises, a hand continues outward, a toe points
+    // ahead -- and stating it is what lets the walk above recognise which
+    // child *continues* a bone when the alternatives leave it sideways. A
+    // rig that ends a chain here simply has no child to aim.
+    case motion::HumanBone::Head:
+        return up;
+    case motion::HumanBone::LeftHand:
+        return left;
+    case motion::HumanBone::RightHand:
+        return -left;
+    case motion::HumanBone::LeftToes:
+    case motion::HumanBone::RightToes:
+        return forward;
+    default:
+        return pxr::GfVec3f(0.0f);
     }
 }
 
@@ -218,15 +225,18 @@ pxr::GfQuatf
 ShortestRotation(const pxr::GfVec3f& from, const pxr::GfVec3f& to) noexcept
 {
     const float dot = pxr::GfDot(from, to);
-    if (dot > 0.999999f) {
+    if (dot > 0.999999f)
+    {
         return Identity();
     }
-    if (dot < -0.999999f) {
+    if (dot < -0.999999f)
+    {
         // Opposed: any axis perpendicular to `from` is a half turn, and one has
         // to be chosen. Taking the larger cross product of the two coordinate
         // axes keeps it away from the degenerate one.
         pxr::GfVec3f axis = pxr::GfCross(from, pxr::GfVec3f(1.0f, 0.0f, 0.0f));
-        if (axis.GetLength() < 1e-3f) {
+        if (axis.GetLength() < 1e-3f)
+        {
             axis = pxr::GfCross(from, pxr::GfVec3f(0.0f, 1.0f, 0.0f));
         }
         axis.Normalize();
@@ -269,14 +279,12 @@ std::optional<CanonicalBasis>
 MakeCanonicalBasis(const SourceProfile& profile)
 {
     const std::optional<int> upComponent = SourceAxisComponent(profile.upAxis);
-    const std::optional<int> forwardComponent =
-        SourceAxisComponent(profile.forwardAxis);
-    const std::optional<double> unit =
-        SourceLengthUnitInMeters(profile.translationUnit);
-    if (!upComponent || !forwardComponent || !unit
-        || *upComponent == *forwardComponent
-        || profile.handedness == SourceHandedness::Unspecified
-        || profile.handedness >= SourceHandedness::Count) {
+    const std::optional<int> forwardComponent = SourceAxisComponent(profile.forwardAxis);
+    const std::optional<double> unit = SourceLengthUnitInMeters(profile.translationUnit);
+    if (!upComponent || !forwardComponent || !unit || *upComponent == *forwardComponent ||
+        profile.handedness == SourceHandedness::Unspecified ||
+        profile.handedness >= SourceHandedness::Count)
+    {
         return std::nullopt;
     }
 
@@ -285,15 +293,12 @@ MakeCanonicalBasis(const SourceProfile& profile)
     const int sideComponent = 3 - *upComponent - *forwardComponent;
     const int upSign = SourceAxisIsNegative(profile.upAxis) ? -1 : 1;
     const int forwardSign = SourceAxisIsNegative(profile.forwardAxis) ? -1 : 1;
-    const int target =
-        profile.handedness == SourceHandedness::Right ? 1 : -1;
+    const int target = profile.handedness == SourceHandedness::Right ? 1 : -1;
     // The third row's sign is not free: it is whatever makes the determinant
     // come out at `target`, which is how the mirror a left-handed source needs
     // gets applied without a second step to forget. See CanonicalConversion.h.
-    const int sideSign = target
-                         * PermutationSign(sideComponent, *upComponent,
-                                           *forwardComponent)
-                         * upSign * forwardSign;
+    const int sideSign = target * PermutationSign(sideComponent, *upComponent, *forwardComponent) *
+                         upSign * forwardSign;
 
     CanonicalBasis basis;
     basis.component = {sideComponent, *upComponent, *forwardComponent};
@@ -308,14 +313,16 @@ ConvertPosition(const CanonicalBasis& basis, const SourceVec3& value)
 {
     const float components[3] = {value.x, value.y, value.z};
     pxr::GfVec3f out(0.0f);
-    for (std::size_t index = 0; index < 3; ++index) {
+    for (std::size_t index = 0; index < 3; ++index)
+    {
         const int source = basis.component[index];
-        if (source < 0 || source > 2) {
+        if (source < 0 || source > 2)
+        {
             continue;
         }
         const double read = static_cast<double>(components[source]);
-        out[static_cast<int>(index)] = static_cast<float>(
-            (basis.negate[index] ? -read : read) * basis.scale);
+        out[static_cast<int>(index)] =
+            static_cast<float>((basis.negate[index] ? -read : read) * basis.scale);
     }
     return out;
 }
@@ -325,9 +332,11 @@ ConvertRotation(const CanonicalBasis& basis, const SourceQuat& value)
 {
     const float components[3] = {value.x, value.y, value.z};
     pxr::GfVec3f imaginary(0.0f);
-    for (std::size_t index = 0; index < 3; ++index) {
+    for (std::size_t index = 0; index < 3; ++index)
+    {
         const int source = basis.component[index];
-        if (source < 0 || source > 2) {
+        if (source < 0 || source > 2)
+        {
             continue;
         }
         const float read = components[source];
@@ -335,7 +344,8 @@ ConvertRotation(const CanonicalBasis& basis, const SourceQuat& value)
     }
     // A mirror negates the angle and leaves the axis where the permutation put
     // it, which for a quaternion is one sign on the imaginary part.
-    if (basis.determinant < 0) {
+    if (basis.determinant < 0)
+    {
         imaginary = -imaginary;
     }
     // The length is formed in double and the division is done in it too, then
@@ -347,19 +357,19 @@ ConvertRotation(const CanonicalBasis& basis, const SourceQuat& value)
     // then enters. Narrowing after the divide instead of before it keeps that
     // whole range representable. This project has already paid once for two
     // magnitudes formed in different precisions (motionCore/Compare.h).
-    const double parts[4] = {static_cast<double>(imaginary[0]),
-                             static_cast<double>(imaginary[1]),
-                             static_cast<double>(imaginary[2]),
-                             static_cast<double>(value.w)};
+    const double parts[4] = {static_cast<double>(imaginary[0]), static_cast<double>(imaginary[1]),
+                             static_cast<double>(imaginary[2]), static_cast<double>(value.w)};
     double lengthSquared = 0.0;
-    for (const double part : parts) {
+    for (const double part : parts)
+    {
         lengthSquared += part * part;
     }
     const double length = std::sqrt(lengthSquared);
     // Left alone when there is nothing to divide by: the validators this
     // conversion runs first have already refused a zero-magnitude rotation, and
     // repairing one here would put an identity where a refusal belongs.
-    if (!std::isfinite(length) || length <= 0.0) {
+    if (!std::isfinite(length) || length <= 0.0)
+    {
         return pxr::GfQuatf(value.w, imaginary);
     }
     const double inverse = 1.0 / length;
@@ -375,55 +385,55 @@ ComposeSourceRotation(const SourceEulerAngles& angles, SourceEulerOrder order,
 {
     const float values[3] = {angles.first, angles.second, angles.third};
     SourceQuat composed;
-    for (std::size_t component = 0; component < 3; ++component) {
+    for (std::size_t component = 0; component < 3; ++component)
+    {
         const std::optional<int> axis = SourceEulerAxis(order, component);
-        if (!axis) {
+        if (!axis)
+        {
             return SourceQuat();
         }
-        composed = Multiply(
-            composed, AxisRotation(*axis, AngleInRadians(values[component],
-                                                         unit)));
+        composed = Multiply(composed, AxisRotation(*axis, AngleInRadians(values[component], unit)));
     }
     return composed;
 }
 
 SourceConversion
-ConvertSourceToCanonical(const SourceSkeleton& skeleton,
-                         const SourceAnimation& animation,
+ConvertSourceToCanonical(const SourceSkeleton& skeleton, const SourceAnimation& animation,
                          const SourceProfile& profile)
 {
     SourceConversion result;
     result.match = MatchSourceProfile(profile, skeleton);
-    if (!result.match.Matched()) {
+    if (!result.match.Matched())
+    {
         // Built before the move rather than in the argument list: argument
         // evaluation order is unspecified, so reading `result` beside a
         // `std::move(result)` is reading a moved-from value on some compilers
         // and not on others.
-        std::string detail =
-            result.match.detail.empty()
-                ? std::string(SourceProfileRefusalName(result.match.refusal))
-                : result.match.detail;
-        return Refuse(std::move(result), ConversionRefusal::ProfileMismatch,
-                      std::move(detail));
+        std::string detail = result.match.detail.empty()
+                                 ? std::string(SourceProfileRefusalName(result.match.refusal))
+                                 : result.match.detail;
+        return Refuse(std::move(result), ConversionRefusal::ProfileMismatch, std::move(detail));
     }
 
     std::string reason;
-    if (!ValidateSourceAnimation(animation, skeleton, &reason)) {
-        return Refuse(std::move(result), ConversionRefusal::AnimationInvalid,
-                      std::move(reason));
+    if (!ValidateSourceAnimation(animation, skeleton, &reason))
+    {
+        return Refuse(std::move(result), ConversionRefusal::AnimationInvalid, std::move(reason));
     }
-    for (std::size_t index = 0; index < animation.tracks.size(); ++index) {
-        if (!animation.tracks[index].rotations.empty()) {
-            return Refuse(
-                std::move(result), ConversionRefusal::UnsupportedRotationForm,
-                "joint '" + skeleton.joints[index].name
-                    + "' states its rotation as quaternions, which no reader "
-                      "writes yet");
+    for (std::size_t index = 0; index < animation.tracks.size(); ++index)
+    {
+        if (!animation.tracks[index].rotations.empty())
+        {
+            return Refuse(std::move(result), ConversionRefusal::UnsupportedRotationForm,
+                          "joint '" + skeleton.joints[index].name +
+                              "' states its rotation as quaternions, which no reader "
+                              "writes yet");
         }
     }
 
     const std::optional<CanonicalBasis> basis = MakeCanonicalBasis(profile);
-    if (!basis) {
+    if (!basis)
+    {
         // Unreachable through a matched profile -- `MatchSourceProfile` runs
         // `ValidateSourceProfile` first and every convention this needs is one
         // of its checks. Handled anyway, and reported as the profile's problem,
@@ -435,10 +445,10 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
 
     // Which rig joint carries which bone, and the inverse question the path
     // walk asks per joint.
-    std::vector<motion::HumanBone> boneForJoint(
-        skeleton.joints.size(), motion::HumanBone::Count);
+    std::vector<motion::HumanBone> boneForJoint(skeleton.joints.size(), motion::HumanBone::Count);
     std::vector<bool> bound(skeleton.joints.size(), false);
-    for (const SourceProfileBinding& binding : result.match.bound) {
+    for (const SourceProfileBinding& binding : result.match.bound)
+    {
         boneForJoint[binding.jointIndex] = binding.bone;
         bound[binding.jointIndex] = true;
         result.rest.present.set(static_cast<std::size_t>(binding.bone));
@@ -454,8 +464,7 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
     // has to happen before every path walk rather than after, because a scene
     // node's rotation otherwise reaches the first bound bone underneath it.
     constexpr std::size_t kRootJoint = 0;
-    const bool dropRootRotation =
-        profile.rootRotation == RootRotationPolicy::None;
+    const bool dropRootRotation = profile.rootRotation == RootRotationPolicy::None;
 
     // One path per bound joint, walked once: it serves the rest pose and every
     // frame, and two walks that can disagree would show up as a constant
@@ -474,21 +483,25 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
     };
     std::vector<BoundPath> paths;
     paths.reserve(result.match.bound.size());
-    for (const SourceProfileBinding& binding : result.match.bound) {
+    for (const SourceProfileBinding& binding : result.match.bound)
+    {
         BoundPath path;
         path.bone = binding.bone;
-        path.joints =
-            PathFromNearestBoundAncestor(skeleton, binding.jointIndex, bound);
-        for (const std::size_t jointIndex : path.joints) {
-            if (jointIndex == kRootJoint && dropRootRotation) {
+        path.joints = PathFromNearestBoundAncestor(skeleton, binding.jointIndex, bound);
+        for (const std::size_t jointIndex : path.joints)
+        {
+            if (jointIndex == kRootJoint && dropRootRotation)
+            {
                 continue;
             }
-            if (animation.tracks[jointIndex].HasRotation()) {
+            if (animation.tracks[jointIndex].HasRotation())
+            {
                 path.rotated = true;
                 break;
             }
         }
-        if (path.joints.size() > 1) {
+        if (path.joints.size() > 1)
+        {
             result.report.composedBones.push_back(binding.bone);
         }
         paths.push_back(std::move(path));
@@ -508,26 +521,29 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
     // day somebody appends to it, which is a class of bug worth more than the
     // handful of indices this costs once per conversion.
     std::vector<std::size_t> rootPath;
-    for (const BoundPath& path : paths) {
-        if (path.bone == motion::HumanBone::Hips) {
+    for (const BoundPath& path : paths)
+    {
+        if (path.bone == motion::HumanBone::Hips)
+        {
             rootPath = path.joints;
             break;
         }
     }
-    if (rootPath.empty()) {
+    if (rootPath.empty())
+    {
         // Unreachable: `ValidateSourceProfile` refuses a profile that does not
         // map the hips or maps them optionally, and a required bone that did
         // not bind has already been refused above as a profile mismatch.
         // Handled rather than asserted, because the alternative is a null
         // dereference if either of those two ever stops being true.
         return Refuse(std::move(result), ConversionRefusal::ProfileMismatch,
-                      "the profile binds no "
-                          + std::string(motion::HumanBoneName(
-                              motion::HumanBone::Hips))
-                          + ", so the body has no placement");
+                      "the profile binds no " +
+                          std::string(motion::HumanBoneName(motion::HumanBone::Hips)) +
+                          ", so the body has no placement");
     }
     std::vector<bool> onRootPath(skeleton.joints.size(), false);
-    for (const std::size_t jointIndex : rootPath) {
+    for (const std::size_t jointIndex : rootPath)
+    {
         onRootPath[jointIndex] = true;
     }
 
@@ -544,21 +560,22 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
     // (`ValidateSourceAnimation`), so the bounds check here is the same
     // question as `HasTranslation()` and is written as the one that cannot be
     // wrong.
-    const bool restRelative =
-        profile.rootTranslation == RootTranslationPolicy::RestRelative;
+    const bool restRelative = profile.rootTranslation == RootTranslationPolicy::RestRelative;
     const auto localTranslation = [&](std::size_t joint, std::size_t frame,
-                                      bool rootPolicy) -> SourceVec3 {
+                                      bool rootPolicy) -> SourceVec3
+    {
         const SourceJointTrack& track = animation.tracks[joint];
         const SourceVec3& rest = skeleton.joints[joint].restTranslation;
-        if (frame >= track.translations.size()) {
+        if (frame >= track.translations.size())
+        {
             return rest;
         }
         const SourceVec3& sample = track.translations[frame];
-        if (!rootPolicy || !restRelative) {
+        if (!rootPolicy || !restRelative)
+        {
             return sample;
         }
-        return SourceVec3{rest.x + sample.x, rest.y + sample.y,
-                          rest.z + sample.z};
+        return SourceVec3{rest.x + sample.x, rest.y + sample.y, rest.z + sample.z};
     };
 
     // --- the rest pose -----------------------------------------------------
@@ -566,14 +583,19 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
     // Which rotations are the rest is the profile's answer; composing them is
     // this file's, and it is the same composition the frames get.
     std::vector<pxr::GfQuatf> restRotations(skeleton.joints.size(), Identity());
-    if (profile.restPose == RestPoseSource::StatedRestRotations) {
-        for (std::size_t index = 0; index < skeleton.joints.size(); ++index) {
-            if (skeleton.joints[index].restRotation) {
+    if (profile.restPose == RestPoseSource::StatedRestRotations)
+    {
+        for (std::size_t index = 0; index < skeleton.joints.size(); ++index)
+        {
+            if (skeleton.joints[index].restRotation)
+            {
                 restRotations[index] =
                     ConvertRotation(*basis, *skeleton.joints[index].restRotation);
             }
         }
-    } else if (profile.restPose == RestPoseSource::TPose) {
+    }
+    else if (profile.restPose == RestPoseSource::TPose)
+    {
         // The rig's neutral is the T-pose, and the file states neither it nor
         // the joint orientations that would reach it. What it does state is
         // every bone's *direction in its own parent's frame* -- the rest
@@ -590,17 +612,19 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
         // nobody wrote if that ever stopped being true.
         std::vector<pxr::GfQuatf> worldRest(skeleton.joints.size(), Identity());
         std::vector<std::vector<std::size_t>> children(skeleton.joints.size());
-        for (std::size_t index = 0; index < skeleton.joints.size(); ++index) {
+        for (std::size_t index = 0; index < skeleton.joints.size(); ++index)
+        {
             const int parent = skeleton.joints[index].parent;
-            if (parent >= 0) {
+            if (parent >= 0)
+            {
                 children[static_cast<std::size_t>(parent)].push_back(index);
             }
         }
-        for (std::size_t index = 0; index < skeleton.joints.size(); ++index) {
+        for (std::size_t index = 0; index < skeleton.joints.size(); ++index)
+        {
             const int parent = skeleton.joints[index].parent;
             const pxr::GfQuatf inherited =
-                parent >= 0 ? worldRest[static_cast<std::size_t>(parent)]
-                            : Identity();
+                parent >= 0 ? worldRest[static_cast<std::size_t>(parent)] : Identity();
             worldRest[index] = inherited;
 
             // A root whose rotation the profile drops is dropped here too, and
@@ -611,15 +635,16 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
             // there -- a rest that is no longer the T-pose it just built, for a
             // profile pairing `t-pose` with `rotation: none`, which is a pair
             // nothing forbids.
-            if (index == kRootJoint && dropRootRotation) {
+            if (index == kRootJoint && dropRootRotation)
+            {
                 continue;
             }
 
-            const pxr::GfVec3f wanted =
-                boneForJoint[index] != motion::HumanBone::Count
-                    ? TPoseDirection(boneForJoint[index])
-                    : pxr::GfVec3f(0.0f);
-            if (wanted == pxr::GfVec3f(0.0f) || children[index].empty()) {
+            const pxr::GfVec3f wanted = boneForJoint[index] != motion::HumanBone::Count
+                                            ? TPoseDirection(boneForJoint[index])
+                                            : pxr::GfVec3f(0.0f);
+            if (wanted == pxr::GfVec3f(0.0f) || children[index].empty())
+            {
                 continue;
             }
             // Which child continues *this* bone. A hips joint parents the spine
@@ -629,24 +654,27 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
             // that child, and a joint with a single child has no such question
             // to answer.
             std::size_t follower = children[index].front();
-            if (children[index].size() > 1) {
+            if (children[index].size() > 1)
+            {
                 bool found = false;
-                for (const std::size_t child : children[index]) {
+                for (const std::size_t child : children[index])
+                {
                     const motion::HumanBone bone = boneForJoint[child];
-                    if (bone != motion::HumanBone::Count
-                        && TPoseDirection(bone) == wanted) {
+                    if (bone != motion::HumanBone::Count && TPoseDirection(bone) == wanted)
+                    {
                         follower = child;
                         found = true;
                         break;
                     }
                 }
-                if (!found) {
+                if (!found)
+                {
                     continue;
                 }
             }
-            pxr::GfVec3f along = ConvertPosition(
-                *basis, skeleton.joints[follower].restTranslation);
-            if (along.GetLength() < 1e-9f) {
+            pxr::GfVec3f along = ConvertPosition(*basis, skeleton.joints[follower].restTranslation);
+            if (along.GetLength() < 1e-9f)
+            {
                 continue;
             }
             along.Normalize();
@@ -666,21 +694,24 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
             // replaced here.
             const pxr::GfQuatf posed =
                 animation.frameCount > 0
-                    ? inherited * ConvertRotation(
-                          *basis, SourceRotationAt(animation.tracks[index], 0))
+                    ? inherited *
+                          ConvertRotation(*basis, SourceRotationAt(animation.tracks[index], 0))
                     : inherited;
             const pxr::GfVec3f aimed = posed.Transform(along);
             worldRest[index] = ShortestRotation(aimed, wanted) * posed;
             restRotations[index] = inherited.GetInverse() * worldRest[index];
         }
-    } else if (profile.restPose == RestPoseSource::FirstFrame
-               && animation.frameCount > 0) {
-        for (std::size_t index = 0; index < skeleton.joints.size(); ++index) {
-            restRotations[index] = ConvertRotation(
-                *basis, SourceRotationAt(animation.tracks[index], 0));
+    }
+    else if (profile.restPose == RestPoseSource::FirstFrame && animation.frameCount > 0)
+    {
+        for (std::size_t index = 0; index < skeleton.joints.size(); ++index)
+        {
+            restRotations[index] =
+                ConvertRotation(*basis, SourceRotationAt(animation.tracks[index], 0));
         }
     }
-    if (dropRootRotation) {
+    if (dropRootRotation)
+    {
         restRotations[kRootJoint] = Identity();
     }
 
@@ -693,25 +724,25 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
     // export for which the mixture is wrong: its root offset can be where the
     // capture volume happened to put the performer.
     const bool restFromFirstFrame =
-        profile.restPose == RestPoseSource::FirstFrame
-        && animation.frameCount > 0;
+        profile.restPose == RestPoseSource::FirstFrame && animation.frameCount > 0;
     std::vector<pxr::GfVec3f> restOffsets;
     restOffsets.reserve(skeleton.joints.size());
-    for (std::size_t index = 0; index < skeleton.joints.size(); ++index) {
+    for (std::size_t index = 0; index < skeleton.joints.size(); ++index)
+    {
         restOffsets.push_back(ConvertPosition(
-            *basis,
-            restFromFirstFrame
-                ? localTranslation(index, 0, onRootPath[index])
-                : skeleton.joints[index].restTranslation));
+            *basis, restFromFirstFrame ? localTranslation(index, 0, onRootPath[index])
+                                       : skeleton.joints[index].restTranslation));
     }
 
-    for (const BoundPath& path : paths) {
+    for (const BoundPath& path : paths)
+    {
         const auto slot = static_cast<std::size_t>(path.bone);
         pxr::GfQuatf rotation = Identity();
         pxr::GfVec3f translation(0.0f);
         // Root-first, so each joint's own offset is stated in the frame the
         // rotations composed so far have already established.
-        for (const std::size_t jointIndex : path.joints) {
+        for (const std::size_t jointIndex : path.joints)
+        {
             translation += rotation.Transform(restOffsets[jointIndex]);
             rotation = rotation * restRotations[jointIndex];
         }
@@ -720,9 +751,11 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
     }
 
     // --- what the clip could not carry -------------------------------------
-    for (std::size_t index = 0; index < skeleton.joints.size(); ++index) {
+    for (std::size_t index = 0; index < skeleton.joints.size(); ++index)
+    {
         const SourceJointTrack& track = animation.tracks[index];
-        if (!track.HasTranslation()) {
+        if (!track.HasTranslation())
+        {
             continue;
         }
         // Carried, not dropped, for every joint on the root path: the body's
@@ -731,20 +764,21 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
         // second of them as dropped is what this converter did before the path
         // rule, and it was the honest half of getting that export wrong.
         const bool carried =
-            onRootPath[index]
-            && profile.rootTranslation != RootTranslationPolicy::None;
-        if (carried) {
+            onRootPath[index] && profile.rootTranslation != RootTranslationPolicy::None;
+        if (carried)
+        {
             continue;
         }
         const SourceVec3& rest = skeleton.joints[index].restTranslation;
         const bool restated =
             std::all_of(track.translations.begin(), track.translations.end(),
-                        [&rest](const SourceVec3& value) {
-                            return value == rest;
-                        });
-        if (restated) {
+                        [&rest](const SourceVec3& value) { return value == rest; });
+        if (restated)
+        {
             result.report.restatedTranslationJoints.push_back(index);
-        } else {
+        }
+        else
+        {
             result.report.droppedTranslationJoints.push_back(index);
         }
     }
@@ -753,7 +787,8 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
     motion::HumanoidAnimation& clip = result.animation;
     clip.startTime = animation.startTime;
     clip.endTime = animation.EndTime();
-    if (const std::optional<double> rate = animation.FrameRate()) {
+    if (const std::optional<double> rate = animation.FrameRate())
+    {
         clip.nominalFrameRate = *rate;
     }
 
@@ -767,29 +802,33 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
     // no placement, and a clip that reported one would be claiming the rig sat
     // at its own offsets rather than admitting the source never said.
     const bool rootPathTranslates =
-        std::any_of(rootPath.begin(), rootPath.end(),
-                    [&animation](std::size_t jointIndex) {
-                        return animation.tracks[jointIndex].HasTranslation();
-                    });
+        std::any_of(rootPath.begin(), rootPath.end(), [&animation](std::size_t jointIndex)
+                    { return animation.tracks[jointIndex].HasTranslation(); });
     std::vector<pxr::GfQuatf> jointRotations(skeleton.joints.size());
     clip.samples.reserve(animation.frameCount);
-    for (std::size_t frame = 0; frame < animation.frameCount; ++frame) {
-        for (std::size_t index = 0; index < skeleton.joints.size(); ++index) {
-            if (index == kRootJoint && dropRootRotation) {
+    for (std::size_t frame = 0; frame < animation.frameCount; ++frame)
+    {
+        for (std::size_t index = 0; index < skeleton.joints.size(); ++index)
+        {
+            if (index == kRootJoint && dropRootRotation)
+            {
                 jointRotations[index] = Identity();
                 continue;
             }
-            jointRotations[index] = ConvertRotation(
-                *basis, SourceRotationAt(animation.tracks[index], frame));
+            jointRotations[index] =
+                ConvertRotation(*basis, SourceRotationAt(animation.tracks[index], frame));
         }
 
         motion::HumanoidPose pose;
-        if (const std::optional<double> time = animation.Time(frame)) {
+        if (const std::optional<double> time = animation.Time(frame))
+        {
             pose.timestamp = *time;
         }
-        for (const BoundPath& path : paths) {
+        for (const BoundPath& path : paths)
+        {
             pxr::GfQuatf rotation = Identity();
-            for (const std::size_t jointIndex : path.joints) {
+            for (const std::size_t jointIndex : path.joints)
+            {
                 rotation = rotation * jointRotations[jointIndex];
             }
             const auto slot = static_cast<std::size_t>(path.bone);
@@ -797,7 +836,8 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
             // Not unconditional: see `BoundPath::rotated`. The rest pose still
             // carries the bone, because the rig has it -- what the clip does not
             // claim is that the source said anything about how it turned.
-            if (path.rotated) {
+            if (path.rotated)
+            {
                 pose.validRotations.set(slot);
             }
         }
@@ -810,17 +850,19 @@ ConvertSourceToCanonical(const SourceSkeleton& skeleton,
         // its hips, reduces to reading that joint's sample.
         pxr::GfVec3f position(0.0f);
         pxr::GfQuatf orientation = Identity();
-        for (const std::size_t jointIndex : rootPath) {
-            position += orientation.Transform(ConvertPosition(
-                *basis, localTranslation(jointIndex, frame, true)));
+        for (const std::size_t jointIndex : rootPath)
+        {
+            position += orientation.Transform(
+                ConvertPosition(*basis, localTranslation(jointIndex, frame, true)));
             orientation = orientation * jointRotations[jointIndex];
         }
-        if (profile.rootTranslation != RootTranslationPolicy::None
-            && rootPathTranslates) {
+        if (profile.rootTranslation != RootTranslationPolicy::None && rootPathTranslates)
+        {
             pose.root.worldPosition = position;
             pose.root.hasPosition = true;
         }
-        if (!dropRootRotation) {
+        if (!dropRootRotation)
+        {
             pose.root.worldOrientation = orientation;
             pose.root.hasOrientation = true;
         }

@@ -41,8 +41,8 @@ using motionSource::RootTranslationPolicyCount;
 using motionSource::RootTranslationPolicyName;
 using motionSource::SourceAxis;
 using motionSource::SourceAxisComponent;
-using motionSource::SourceAxisIsNegative;
 using motionSource::SourceAxisCount;
+using motionSource::SourceAxisIsNegative;
 using motionSource::SourceAxisName;
 using motionSource::SourceHandedness;
 using motionSource::SourceHandednessCount;
@@ -50,8 +50,8 @@ using motionSource::SourceHandednessName;
 using motionSource::SourceJoint;
 using motionSource::SourceJointMapping;
 using motionSource::SourceLengthUnit;
-using motionSource::SourceLengthUnitInMeters;
 using motionSource::SourceLengthUnitCount;
+using motionSource::SourceLengthUnitInMeters;
 using motionSource::SourceLengthUnitName;
 using motionSource::SourceProfile;
 using motionSource::SourceProfileMatch;
@@ -135,14 +135,10 @@ MakeProfile()
     profile.restPose = RestPoseSource::RestOffsets;
     profile.unmappedJoints = UnmappedJointPolicy::Report;
     profile.joints = {
-        Map("hip", Bone::Hips, true),
-        Map("spine", Bone::Spine, true),
-        Map("chest", Bone::Chest, false),
-        Map("neck", Bone::Neck, false),
-        Map("head", Bone::Head, true),
-        Map("shoulderL", Bone::LeftShoulder, false),
-        Map("armL", Bone::LeftUpperArm, true),
-        Map("foreArmL", Bone::LeftLowerArm, true),
+        Map("hip", Bone::Hips, true),          Map("spine", Bone::Spine, true),
+        Map("chest", Bone::Chest, false),      Map("neck", Bone::Neck, false),
+        Map("head", Bone::Head, true),         Map("shoulderL", Bone::LeftShoulder, false),
+        Map("armL", Bone::LeftUpperArm, true), Map("foreArmL", Bone::LeftLowerArm, true),
         Map("handL", Bone::LeftHand, true),
     };
     // The scene root carries no bone and the profile says so, which is what lets
@@ -186,32 +182,27 @@ TestVocabulary()
     assert(!SourceAxisIsNegative(SourceAxis::PlusX));
     assert(SourceAxisIsNegative(SourceAxis::MinusX));
 
-    assert(SourceLengthUnitName(SourceLengthUnit::Centimeters)
-           == "centimeters");
+    assert(SourceLengthUnitName(SourceLengthUnit::Centimeters) == "centimeters");
     assert(FindSourceLengthUnit("centimetres") == SourceLengthUnit::Centimeters);
     assert(FindSourceLengthUnit("Meters") == SourceLengthUnit::Meters);
     assert(FindSourceLengthUnit("furlongs") == std::nullopt);
     assert(SourceLengthUnitInMeters(SourceLengthUnit::Meters) == 1.0);
     assert(SourceLengthUnitInMeters(SourceLengthUnit::Centimeters) == 0.01);
     assert(SourceLengthUnitInMeters(SourceLengthUnit::Inches) == 0.0254);
-    assert(SourceLengthUnitInMeters(SourceLengthUnit::Unspecified)
-           == std::nullopt);
+    assert(SourceLengthUnitInMeters(SourceLengthUnit::Unspecified) == std::nullopt);
 
-    assert(RootTranslationPolicyName(RootTranslationPolicy::AbsolutePosition)
-           == "absolute-position");
-    assert(FindRootTranslationPolicy("rest-relative")
-           == RootTranslationPolicy::RestRelative);
-    assert(RootRotationPolicyName(RootRotationPolicy::BodyOrientation)
-           == "body-orientation");
+    assert(RootTranslationPolicyName(RootTranslationPolicy::AbsolutePosition) ==
+           "absolute-position");
+    assert(FindRootTranslationPolicy("rest-relative") == RootTranslationPolicy::RestRelative);
+    assert(RootRotationPolicyName(RootRotationPolicy::BodyOrientation) == "body-orientation");
     assert(FindRootRotationPolicy("none") == RootRotationPolicy::None);
-    assert(RestPoseSourceName(RestPoseSource::StatedRestRotations)
-           == "stated-rest-rotations");
+    assert(RestPoseSourceName(RestPoseSource::StatedRestRotations) == "stated-rest-rotations");
     assert(FindRestPoseSource("first-frame") == RestPoseSource::FirstFrame);
     assert(UnmappedJointPolicyName(UnmappedJointPolicy::Refuse) == "refuse");
     assert(FindUnmappedJointPolicy("report") == UnmappedJointPolicy::Report);
 
-    assert(SourceProfileRefusalName(SourceProfileRefusal::HierarchyMismatch)
-           == "hierarchy-mismatch");
+    assert(SourceProfileRefusalName(SourceProfileRefusal::HierarchyMismatch) ==
+           "hierarchy-mismatch");
 
     // `Count` is not a value and names nothing, in every vocabulary -- the same
     // assertion the animation model's enums carry, and the one that would catch
@@ -229,48 +220,51 @@ TestVocabulary()
     // Every enumerator below Count has a spelling, and every spelling finds its
     // way back to it. The static_assert in the implementation makes a missing
     // row a compile error; this makes an *empty* one a test failure.
-    for (std::size_t i = 0; i < SourceAxisCount; ++i) {
+    for (std::size_t i = 0; i < SourceAxisCount; ++i)
+    {
         const auto axis = static_cast<SourceAxis>(i);
         assert(!SourceAxisName(axis).empty());
         assert(FindSourceAxis(SourceAxisName(axis)) == axis);
     }
-    for (std::size_t i = 0; i < SourceLengthUnitCount; ++i) {
+    for (std::size_t i = 0; i < SourceLengthUnitCount; ++i)
+    {
         const auto unit = static_cast<SourceLengthUnit>(i);
         assert(!SourceLengthUnitName(unit).empty());
         assert(FindSourceLengthUnit(SourceLengthUnitName(unit)) == unit);
     }
-    for (std::size_t i = 0; i < RootTranslationPolicyCount; ++i) {
+    for (std::size_t i = 0; i < RootTranslationPolicyCount; ++i)
+    {
         const auto policy = static_cast<RootTranslationPolicy>(i);
         assert(!RootTranslationPolicyName(policy).empty());
-        assert(FindRootTranslationPolicy(RootTranslationPolicyName(policy))
-               == policy);
+        assert(FindRootTranslationPolicy(RootTranslationPolicyName(policy)) == policy);
     }
-    for (std::size_t i = 0; i < RootRotationPolicyCount; ++i) {
+    for (std::size_t i = 0; i < RootRotationPolicyCount; ++i)
+    {
         const auto policy = static_cast<RootRotationPolicy>(i);
         assert(!RootRotationPolicyName(policy).empty());
-        assert(FindRootRotationPolicy(RootRotationPolicyName(policy))
-               == policy);
+        assert(FindRootRotationPolicy(RootRotationPolicyName(policy)) == policy);
     }
-    for (std::size_t i = 0; i < RestPoseSourceCount; ++i) {
+    for (std::size_t i = 0; i < RestPoseSourceCount; ++i)
+    {
         const auto rest = static_cast<RestPoseSource>(i);
         assert(!RestPoseSourceName(rest).empty());
         assert(FindRestPoseSource(RestPoseSourceName(rest)) == rest);
     }
-    for (std::size_t i = 0; i < UnmappedJointPolicyCount; ++i) {
+    for (std::size_t i = 0; i < UnmappedJointPolicyCount; ++i)
+    {
         const auto policy = static_cast<UnmappedJointPolicy>(i);
         assert(!UnmappedJointPolicyName(policy).empty());
-        assert(FindUnmappedJointPolicy(UnmappedJointPolicyName(policy))
-               == policy);
+        assert(FindUnmappedJointPolicy(UnmappedJointPolicyName(policy)) == policy);
     }
-    for (std::size_t i = 0; i < SourceHandednessCount; ++i) {
+    for (std::size_t i = 0; i < SourceHandednessCount; ++i)
+    {
         const auto handedness = static_cast<SourceHandedness>(i);
         assert(!SourceHandednessName(handedness).empty());
-        assert(FindSourceHandedness(SourceHandednessName(handedness))
-               == handedness);
+        assert(FindSourceHandedness(SourceHandednessName(handedness)) == handedness);
     }
-    for (std::size_t i = 0; i < SourceProfileRefusalCount; ++i) {
-        assert(!SourceProfileRefusalName(
-                    static_cast<SourceProfileRefusal>(i)).empty());
+    for (std::size_t i = 0; i < SourceProfileRefusalCount; ++i)
+    {
+        assert(!SourceProfileRefusalName(static_cast<SourceProfileRefusal>(i)).empty());
     }
 }
 
@@ -473,8 +467,7 @@ TestOptionalJointMissing()
     SourceProfile profile = MakeProfile();
     profile.joints.push_back(Map("toesL", Bone::LeftToes, false));
 
-    const SourceProfileMatch match =
-        MatchSourceProfile(profile, MakeSkeleton());
+    const SourceProfileMatch match = MatchSourceProfile(profile, MakeSkeleton());
     assert(match.Matched());
     assert(match.missingOptional == std::vector<Bone>{Bone::LeftToes});
     assert(match.missingRequired.empty());
@@ -487,8 +480,7 @@ TestRootJointMismatch()
     profile.rootJoint = "reference";
     profile.ignoredJoints = {"reference", "root"};
 
-    const SourceProfileMatch match =
-        MatchSourceProfile(profile, MakeSkeleton());
+    const SourceProfileMatch match = MatchSourceProfile(profile, MakeSkeleton());
     assert(!match.Matched());
     assert(match.refusal == SourceProfileRefusal::RootJointMismatch);
     assert(!match.rootMatched);
@@ -504,8 +496,7 @@ TestAmbiguousJointName()
     SourceSkeleton skeleton = MakeSkeleton();
     skeleton.joints.push_back(MakeJoint("handL", 3));
 
-    const SourceProfileMatch match =
-        MatchSourceProfile(MakeProfile(), skeleton);
+    const SourceProfileMatch match = MatchSourceProfile(MakeProfile(), skeleton);
     assert(!match.Matched());
     assert(match.refusal == SourceProfileRefusal::AmbiguousJointName);
     assert(match.ambiguousNames == std::vector<std::string>{"handL"});
@@ -562,15 +553,12 @@ TestBoundRequiredCountSurvivesAmbiguity()
 void
 TestBindingsCarryRequired()
 {
-    const SourceProfileMatch match =
-        MatchSourceProfile(MakeProfile(), MakeSkeleton());
-    for (const auto& binding : match.bound) {
-        const bool expected = binding.bone == Bone::Hips
-                              || binding.bone == Bone::Spine
-                              || binding.bone == Bone::Head
-                              || binding.bone == Bone::LeftUpperArm
-                              || binding.bone == Bone::LeftLowerArm
-                              || binding.bone == Bone::LeftHand;
+    const SourceProfileMatch match = MatchSourceProfile(MakeProfile(), MakeSkeleton());
+    for (const auto& binding : match.bound)
+    {
+        const bool expected = binding.bone == Bone::Hips || binding.bone == Bone::Spine ||
+                              binding.bone == Bone::Head || binding.bone == Bone::LeftUpperArm ||
+                              binding.bone == Bone::LeftLowerArm || binding.bone == Bone::LeftHand;
         assert(binding.required == expected);
     }
 }
@@ -581,8 +569,7 @@ TestRequiredJointMissing()
     SourceSkeleton skeleton = MakeSkeleton();
     skeleton.joints[9].name = "handLeft";
 
-    const SourceProfileMatch match =
-        MatchSourceProfile(MakeProfile(), skeleton);
+    const SourceProfileMatch match = MatchSourceProfile(MakeProfile(), skeleton);
     assert(!match.Matched());
     assert(match.refusal == SourceProfileRefusal::RequiredJointMissing);
     assert(match.missingRequired == std::vector<Bone>{Bone::LeftHand});
@@ -601,8 +588,7 @@ TestHierarchyMismatch()
     SourceSkeleton skeleton = MakeSkeleton();
     skeleton.joints[5].parent = 1; // head hung off the hips
 
-    const SourceProfileMatch match =
-        MatchSourceProfile(MakeProfile(), skeleton);
+    const SourceProfileMatch match = MatchSourceProfile(MakeProfile(), skeleton);
     assert(!match.Matched());
     assert(match.refusal == SourceProfileRefusal::HierarchyMismatch);
     assert(match.detail.find("'head'") != std::string::npos);
@@ -618,8 +604,7 @@ TestHierarchyMismatch()
 void
 TestUnsolvedAncestorIsNotAMismatch()
 {
-    const SourceProfileMatch match =
-        MatchSourceProfile(MakeProfile(), MakeSkeleton());
+    const SourceProfileMatch match = MatchSourceProfile(MakeProfile(), MakeSkeleton());
     // shoulderL sits under chest, and LeftShoulder's canonical parent is the
     // upper chest, which this profile does not map at all.
     assert(match.Matched());
@@ -684,8 +669,7 @@ TestFactsSurviveARefusal()
     skeleton.joints[9].name = "handLeft";
     skeleton.joints[0].name = "reference";
 
-    const SourceProfileMatch match =
-        MatchSourceProfile(MakeProfile(), skeleton);
+    const SourceProfileMatch match = MatchSourceProfile(MakeProfile(), skeleton);
     // The outermost refusal wins ...
     assert(match.refusal == SourceProfileRefusal::RootJointMismatch);
     // ... and everything a candidate report is made of is still there.
@@ -700,7 +684,7 @@ void
 TestRefusalOrder()
 {
     SourceSkeleton skeleton = MakeSkeleton();
-    skeleton.joints[9].name = "handLeft";     // required missing
+    skeleton.joints[9].name = "handLeft";             // required missing
     skeleton.joints.push_back(MakeJoint("spine", 3)); // ambiguous
 
     SourceProfile profile = MakeProfile();

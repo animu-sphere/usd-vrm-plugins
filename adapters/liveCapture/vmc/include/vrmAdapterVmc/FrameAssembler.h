@@ -296,16 +296,24 @@ struct VmcFrameStats
 // lose that distinction before this class could use it.
 class VRMADAPTERVMC_API VmcFrameAssembler
 {
-public:
+  public:
     explicit VmcFrameAssembler(const VmcFrameConfig& config = {});
 
-    const VmcFrameConfig& GetConfig() const noexcept { return _config; }
+    const VmcFrameConfig&
+    GetConfig() const noexcept
+    {
+        return _config;
+    }
 
     // The endpoint or fixture name stamped on every diagnostic this assembler
     // raises, so a session replayed from a capture reports the same `source` a
     // live one would.
     void SetSource(std::string source);
-    const std::string& GetSource() const noexcept { return _source; }
+    const std::string&
+    GetSource() const noexcept
+    {
+        return _source;
+    }
 
     // Accepts one decoded datagram. `receiveTime` is the receiver's clock — the
     // `d` record's time on a replayed capture — and is used only to stamp a
@@ -320,8 +328,7 @@ public:
     // check then refuses closed one and returns zero, so the count is always the
     // growth of `frames` and never an announcement that a boundary was reached.
     // `GetStats()` is where a caller reads the difference.
-    std::size_t Push(const VmcPacket& packet, double receiveTime,
-                     std::vector<VmcFrame>* frames,
+    std::size_t Push(const VmcPacket& packet, double receiveTime, std::vector<VmcFrame>* frames,
                      std::vector<Diagnostic>* diagnostics = nullptr);
 
     // Closes the frame still open at the end of a stream. Returns 1 when that
@@ -339,7 +346,8 @@ public:
     // The model *path* is deliberately not carried. It names a file on the
     // sender's own machine, which this adapter may not resolve (§2) and has no
     // reason to propagate.
-    const motion::MotionSourceMetadata& GetSourceMetadata() const noexcept
+    const motion::MotionSourceMetadata&
+    GetSourceMetadata() const noexcept
     {
         return _metadata;
     }
@@ -348,20 +356,29 @@ public:
     // completeness and staleness checks are measured against, and it is learned
     // from the stream rather than configured: a capture rig that solves no
     // fingers should not be reported as sending an incomplete frame forever.
-    const std::bitset<motion::HumanBoneCount>& GetObservedBones() const noexcept
+    const std::bitset<motion::HumanBoneCount>&
+    GetObservedBones() const noexcept
     {
         return _observed;
     }
 
-    const VmcFrameStats& GetStats() const noexcept { return _stats; }
-    void ResetStats() noexcept { _stats = VmcFrameStats(); }
+    const VmcFrameStats&
+    GetStats() const noexcept
+    {
+        return _stats;
+    }
+    void
+    ResetStats() noexcept
+    {
+        _stats = VmcFrameStats();
+    }
 
     // Drops the open frame, the observed rig, the clock history, and the source
     // metadata — everything a restart invalidates. Stats survive, because they
     // describe the session the caller is judging rather than the stream's state.
     void Reset();
 
-private:
+  private:
     // The frame being accumulated. Separate from `VmcFrame` because what is
     // under construction and what is finished are not the same thing: this one
     // has no timestamp yet, and may never become a frame at all.
@@ -387,11 +404,9 @@ private:
     void _Open(double receiveTime);
     // Closes the open frame, appending it when it is acceptable. Returns whether
     // a frame was emitted.
-    bool _Close(std::vector<VmcFrame>* frames,
-                std::vector<Diagnostic>* diagnostics);
+    bool _Close(std::vector<VmcFrame>* frames, std::vector<Diagnostic>* diagnostics);
     void _Report(std::vector<Diagnostic>* diagnostics, DiagnosticCode code,
-                 std::string_view subject, std::optional<double> timestamp,
-                 std::string detail);
+                 std::string_view subject, std::optional<double> timestamp, std::string detail);
 
     VmcFrameConfig _config;
     std::string _source;

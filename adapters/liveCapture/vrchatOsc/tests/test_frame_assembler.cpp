@@ -48,14 +48,13 @@ constexpr double kFrameSeconds = 0.017;
 constexpr double kBurstSeconds = 0.000008;
 
 TrackerMessage
-Message(std::string_view identity, TrackerChannel channel, float x, float y,
-        float z)
+Message(std::string_view identity, TrackerChannel channel, float x, float y, float z)
 {
     TrackerMessage message;
     message.tracker.segment = identity;
-    if (identity.size() == 1 && identity[0] >= '1' && identity[0] <= '8') {
-        message.tracker.index =
-            static_cast<std::uint8_t>(identity[0] - '0');
+    if (identity.size() == 1 && identity[0] >= '1' && identity[0] <= '8')
+    {
+        message.tracker.index = static_cast<std::uint8_t>(identity[0] - '0');
     }
     message.channel = channel;
     message.values = {{x, y, z}};
@@ -79,50 +78,51 @@ struct Session
     std::vector<TrackerFrame> frames;
     std::vector<Diagnostic> diagnostics;
 
-    explicit Session(const TrackerFrameConfig& config = {})
-        : assembler(config)
+    explicit Session(const TrackerFrameConfig& config = {}) : assembler(config)
     {
         assembler.SetSource("fixture");
     }
 
-    void Send(std::string_view identity, TrackerChannel channel, double time,
-              std::string_view peer = {}, float x = 0.0f, float y = 1.0f,
-              float z = 0.0f)
+    void
+    Send(std::string_view identity, TrackerChannel channel, double time, std::string_view peer = {},
+         float x = 0.0f, float y = 1.0f, float z = 0.0f)
     {
-        assembler.Push(Datagram(Message(identity, channel, x, y, z)), time,
-                       peer, &frames, &diagnostics);
+        assembler.Push(Datagram(Message(identity, channel, x, y, z)), time, peer, &frames,
+                       &diagnostics);
     }
 
     // One turn of the measured cycle, as eight single-message datagrams inside
     // a burst.
-    void Burst(double time, std::string_view peer = {},
-               const std::vector<std::string_view>& identities = {"head", "1",
-                                                                  "2", "3"},
-               float shift = 0.0f)
+    void
+    Burst(double time, std::string_view peer = {},
+          const std::vector<std::string_view>& identities = {"head", "1", "2", "3"},
+          float shift = 0.0f)
     {
         int step = 0;
-        for (std::string_view identity : identities) {
-            Send(identity, TrackerChannel::Rotation, time + step++ * kBurstSeconds,
-                 peer, 0.0f, 90.0f, 0.0f);
-            Send(identity, TrackerChannel::Position, time + step++ * kBurstSeconds,
-                 peer, shift, 1.5f, shift);
+        for (std::string_view identity : identities)
+        {
+            Send(identity, TrackerChannel::Rotation, time + step++ * kBurstSeconds, peer, 0.0f,
+                 90.0f, 0.0f);
+            Send(identity, TrackerChannel::Position, time + step++ * kBurstSeconds, peer, shift,
+                 1.5f, shift);
         }
     }
 
-    std::size_t Count(DiagnosticCode code) const
+    std::size_t
+    Count(DiagnosticCode code) const
     {
-        return static_cast<std::size_t>(
-            std::count_if(diagnostics.begin(), diagnostics.end(),
-                          [code](const Diagnostic& diagnostic) {
-                              return diagnostic.code == code;
-                          }));
+        return static_cast<std::size_t>(std::count_if(diagnostics.begin(), diagnostics.end(),
+                                                      [code](const Diagnostic& diagnostic)
+                                                      { return diagnostic.code == code; }));
     }
 
-    const TrackerSample* Find(const TrackerFrame& frame,
-                              std::string_view identity) const
+    const TrackerSample*
+    Find(const TrackerFrame& frame, std::string_view identity) const
     {
-        for (const TrackerSample& sample : frame.samples) {
-            if (sample.tracker == identity) {
+        for (const TrackerSample& sample : frame.samples)
+        {
+            if (sample.tracker == identity)
+            {
                 return &sample;
             }
         }
@@ -161,7 +161,8 @@ TestABurstIsOneFrameAndTheNextBurstEndsIt()
     assert(session.frames.size() == 2);
     assert(session.assembler.GetStats().framesClosedByFlush == 1);
 
-    for (const TrackerFrame& frame : session.frames) {
+    for (const TrackerFrame& frame : session.frames)
+    {
         assert(frame.samples.size() == 4);
         assert(frame.partial == 0);
         assert(frame.duplicates == 0);
@@ -201,7 +202,8 @@ TestTheGapRuleClosesWhatNoRepeatWould()
 
     Session windowed;
     Session repeated{noWindow};
-    for (int index = 0; index < 4; ++index) {
+    for (int index = 0; index < 4; ++index)
+    {
         windowed.Burst(index * kFrameSeconds);
         repeated.Burst(index * kFrameSeconds);
     }
@@ -215,17 +217,16 @@ TestTheGapRuleClosesWhatNoRepeatWould()
 
     // Same frames, sample for sample and stamp for stamp.
     assert(windowed.frames.size() == repeated.frames.size());
-    for (std::size_t index = 0; index < windowed.frames.size(); ++index) {
+    for (std::size_t index = 0; index < windowed.frames.size(); ++index)
+    {
         const TrackerFrame& left = windowed.frames[index];
         const TrackerFrame& right = repeated.frames[index];
         assert(left.receiveTime == right.receiveTime);
         assert(left.samples.size() == right.samples.size());
-        for (std::size_t sample = 0; sample < left.samples.size();
-             ++sample) {
-            assert(left.samples[sample].tracker
-                   == right.samples[sample].tracker);
-            assert(left.samples[sample].position
-                   == right.samples[sample].position);
+        for (std::size_t sample = 0; sample < left.samples.size(); ++sample)
+        {
+            assert(left.samples[sample].tracker == right.samples[sample].tracker);
+            assert(left.samples[sample].position == right.samples[sample].position);
         }
     }
 }
@@ -239,15 +240,12 @@ TestARepeatInsideOneDatagramIsADuplicate()
     // the *last* would produce the same frame count and the wrong pose.
     TrackerPacket bundle;
     bundle.bundled = true;
-    bundle.messages.push_back(
-        Message("1", TrackerChannel::Position, 0.25f, 1.0f, 0.0f));
-    bundle.messages.push_back(
-        Message("1", TrackerChannel::Position, 9.75f, 1.0f, 0.0f));
+    bundle.messages.push_back(Message("1", TrackerChannel::Position, 0.25f, 1.0f, 0.0f));
+    bundle.messages.push_back(Message("1", TrackerChannel::Position, 9.75f, 1.0f, 0.0f));
     bundle.messagesSeen = 2;
 
     Session session;
-    session.assembler.Push(bundle, 0.0, {}, &session.frames,
-                           &session.diagnostics);
+    session.assembler.Push(bundle, 0.0, {}, &session.frames, &session.diagnostics);
     session.assembler.Flush(&session.frames, &session.diagnostics);
 
     assert(session.frames.size() == 1);
@@ -349,10 +347,12 @@ TestMissingBecomesStaleOnceAndComesBack()
     Session session;
     // Five frames with everyone, then forty without tracker 3 -- which at
     // 17 ms a frame crosses the half-second horizon partway through.
-    for (int index = 0; index < 5; ++index) {
+    for (int index = 0; index < 5; ++index)
+    {
         session.Burst(index * kFrameSeconds);
     }
-    for (int index = 5; index < 45; ++index) {
+    for (int index = 5; index < 45; ++index)
+    {
         session.Burst(index * kFrameSeconds, {}, {"head", "1", "2"});
     }
     session.assembler.Flush(&session.frames, &session.diagnostics);
@@ -372,10 +372,12 @@ TestMissingBecomesStaleOnceAndComesBack()
 
     // It comes back, and goes away again: a second crossing, not a silence
     // swallowed by the first.
-    for (int index = 45; index < 50; ++index) {
+    for (int index = 45; index < 50; ++index)
+    {
         session.Burst(index * kFrameSeconds);
     }
-    for (int index = 50; index < 95; ++index) {
+    for (int index = 50; index < 95; ++index)
+    {
         session.Burst(index * kFrameSeconds, {}, {"head", "1", "2"});
     }
     session.assembler.Flush(&session.frames, &session.diagnostics);
@@ -433,8 +435,7 @@ TestASilenceIsNotARestart()
     // carried across, so the new session's first frame is complete rather than
     // reporting a head that belonged to a session that ended.
     assert(restarted.frames[2].missing.empty());
-    assert(restarted.assembler.GetObservedTrackers()
-           == std::vector<std::string>({"1", "2", "3"}));
+    assert(restarted.assembler.GetObservedTrackers() == std::vector<std::string>({"1", "2", "3"}));
     // And the positions go with it: every tracker moved four metres across the
     // restart, which is a recalibration's shape exactly -- but the session that
     // was being compared against has ended, so there is nothing to compare and
@@ -470,8 +471,7 @@ TestSimultaneityIsWhatMakesItACalibration()
     recalibrated.Burst(0.000);
     recalibrated.Burst(kFrameSeconds);
     recalibrated.Burst(2 * kFrameSeconds, {}, {"head", "1", "2", "3"}, 1.2f);
-    recalibrated.assembler.Flush(&recalibrated.frames,
-                                 &recalibrated.diagnostics);
+    recalibrated.assembler.Flush(&recalibrated.frames, &recalibrated.diagnostics);
 
     assert(recalibrated.frames.size() == 3);
     assert(!recalibrated.frames[1].followsDiscontinuity);
@@ -488,13 +488,12 @@ TestSimultaneityIsWhatMakesItACalibration()
     glitch.Burst(0.000);
     glitch.Burst(kFrameSeconds);
     glitch.Send("head", TrackerChannel::Rotation, 2 * kFrameSeconds);
-    glitch.Send("head", TrackerChannel::Position, 2 * kFrameSeconds + 0.000008,
-                {}, 1.2f, 1.5f, 1.2f);
-    for (std::string_view identity : {"1", "2", "3"}) {
-        glitch.Send(identity, TrackerChannel::Rotation,
-                    2 * kFrameSeconds + 0.000016);
-        glitch.Send(identity, TrackerChannel::Position,
-                    2 * kFrameSeconds + 0.000024);
+    glitch.Send("head", TrackerChannel::Position, 2 * kFrameSeconds + 0.000008, {}, 1.2f, 1.5f,
+                1.2f);
+    for (std::string_view identity : {"1", "2", "3"})
+    {
+        glitch.Send(identity, TrackerChannel::Rotation, 2 * kFrameSeconds + 0.000016);
+        glitch.Send(identity, TrackerChannel::Position, 2 * kFrameSeconds + 0.000024);
     }
     glitch.assembler.Flush(&glitch.frames, &glitch.diagnostics);
     assert(glitch.frames.size() == 3);
@@ -506,8 +505,7 @@ TestSimultaneityIsWhatMakesItACalibration()
     // calibration's name.
     Session alone;
     alone.Send("1", TrackerChannel::Position, 0.000, {}, 0.0f, 1.0f, 0.0f);
-    alone.Send("1", TrackerChannel::Position, kFrameSeconds, {}, 40.0f, 1.0f,
-               0.0f);
+    alone.Send("1", TrackerChannel::Position, kFrameSeconds, {}, 40.0f, 1.0f, 0.0f);
     alone.assembler.Flush(&alone.frames, &alone.diagnostics);
     assert(alone.frames.size() == 2);
     assert(!alone.frames[1].followsDiscontinuity);
@@ -539,9 +537,7 @@ TestAnEmptyFrameIsNeverEmitted()
     TrackerPacket empty;
     empty.messagesSeen = 3;
     empty.unsupported = 3;
-    assert(session.assembler.Push(empty, 0.0, {}, &session.frames,
-                                  &session.diagnostics)
-           == 0);
+    assert(session.assembler.Push(empty, 0.0, {}, &session.frames, &session.diagnostics) == 0);
     assert(session.assembler.Flush(&session.frames, &session.diagnostics) == 0);
     assert(session.frames.empty());
     assert(session.assembler.GetStats().framesEmitted == 0);
@@ -565,8 +561,8 @@ TestARestartSurvivesADatagramThisLayerReadsNothingIn()
     TrackerPacket foreign;
     foreign.messagesSeen = 1;
     foreign.unsupported = 1;
-    session.assembler.Push(foreign, 5.000, "192.168.1.8:50035",
-                           &session.frames, &session.diagnostics);
+    session.assembler.Push(foreign, 5.000, "192.168.1.8:50035", &session.frames,
+                           &session.diagnostics);
     session.Burst(5.017, "192.168.1.8:50035");
     session.assembler.Flush(&session.frames, &session.diagnostics);
 
@@ -587,8 +583,7 @@ TestACallerBuiltMessageWithNoChannelIsRefused()
     // which the partial and empty cases above both do. The channel indexes
     // two fixed-width arrays, so without the guard this reads and then
     // writes past the end of both.
-    TrackerMessage broken =
-        Message("1", TrackerChannel::Position, 0.0f, 1.0f, 0.0f);
+    TrackerMessage broken = Message("1", TrackerChannel::Position, 0.0f, 1.0f, 0.0f);
     broken.channel = TrackerChannel::Count;
 
     // The frame is opened first, and carrying *that tracker*, because that is
@@ -597,8 +592,7 @@ TestACallerBuiltMessageWithNoChannelIsRefused()
     // so the out-of-range read needs a sample to match against.
     Session session;
     session.Send("1", TrackerChannel::Position, 0.0, {}, 0.5f, 1.5f, 0.25f);
-    session.assembler.Push(Datagram(broken), 0.000008, {}, &session.frames,
-                           &session.diagnostics);
+    session.assembler.Push(Datagram(broken), 0.000008, {}, &session.frames, &session.diagnostics);
     session.assembler.Flush(&session.frames, &session.diagnostics);
 
     // Refused as a caller's mistake, which is what every caller-precondition
@@ -709,38 +703,43 @@ constexpr Expected kExpected[] = {
 int
 CheckCorpus(const std::filesystem::path& directory)
 {
-    if (!std::filesystem::is_directory(directory)) {
-        std::fprintf(stderr, "corpus directory not found: %s\n",
-                     directory.string().c_str());
+    if (!std::filesystem::is_directory(directory))
+    {
+        std::fprintf(stderr, "corpus directory not found: %s\n", directory.string().c_str());
         return 1;
     }
 
     std::vector<std::filesystem::path> captures;
     for (const std::filesystem::directory_entry& entry :
-         std::filesystem::recursive_directory_iterator(directory)) {
-        if (entry.is_regular_file()
-            && entry.path().extension() == ".vrchatoscpackets") {
+         std::filesystem::recursive_directory_iterator(directory))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == ".vrchatoscpackets")
+        {
             captures.push_back(entry.path());
         }
     }
     std::sort(captures.begin(), captures.end());
-    if (captures.empty()) {
-        std::fprintf(stderr, "no .vrchatoscpackets fixtures in %s\n",
-                     directory.string().c_str());
+    if (captures.empty())
+    {
+        std::fprintf(stderr, "no .vrchatoscpackets fixtures in %s\n", directory.string().c_str());
         return 1;
     }
 
     int failures = 0;
-    for (const std::filesystem::path& path : captures) {
+    for (const std::filesystem::path& path : captures)
+    {
         const std::string name = path.filename().string();
         const Expected* expected = nullptr;
-        for (const Expected& candidate : kExpected) {
-            if (name == candidate.file) {
+        for (const Expected& candidate : kExpected)
+        {
+            if (name == candidate.file)
+            {
                 expected = &candidate;
                 break;
             }
         }
-        if (!expected) {
+        if (!expected)
+        {
             std::fprintf(stderr,
                          "%s: no expected assembly in this test -- add one, or "
                          "the capture is in the corpus and assembled by "
@@ -752,10 +751,9 @@ CheckCorpus(const std::filesystem::path& directory)
 
         vrmAdapterVrchatOsc::PacketCapture capture;
         vrmAdapterVrchatOsc::PacketCaptureError error;
-        if (!vrmAdapterVrchatOsc::ReadPacketCaptureFile(path.string(), &capture,
-                                                        &error)) {
-            std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line,
-                         error.message.c_str());
+        if (!vrmAdapterVrchatOsc::ReadPacketCaptureFile(path.string(), &capture, &error))
+        {
+            std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line, error.message.c_str());
             ++failures;
             continue;
         }
@@ -764,21 +762,20 @@ CheckCorpus(const std::filesystem::path& directory)
         assembler.SetSource(name);
         std::vector<TrackerFrame> frames;
         std::vector<Diagnostic> diagnostics;
-        for (const vrmAdapterVrchatOsc::RecordedDatagram& datagram :
-             capture.datagrams) {
+        for (const vrmAdapterVrchatOsc::RecordedDatagram& datagram : capture.datagrams)
+        {
             // The record's own peer, which is what makes a restart readable
             // from a file at all: this wire marks one with a source port and
             // with nothing else.
-            const TrackerPacket packet =
-                vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram.bytes);
-            assembler.Push(packet, datagram.receiveTime, datagram.peer, &frames,
-                           &diagnostics);
+            const TrackerPacket packet = vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram.bytes);
+            assembler.Push(packet, datagram.receiveTime, datagram.peer, &frames, &diagnostics);
         }
         assembler.Flush(&frames, &diagnostics);
 
         std::size_t samples = 0;
         std::size_t partial = 0;
-        for (const TrackerFrame& frame : frames) {
+        for (const TrackerFrame& frame : frames)
+        {
             samples += frame.samples.size();
             partial += frame.partial;
         }
@@ -794,27 +791,25 @@ CheckCorpus(const std::filesystem::path& directory)
             {"frames", frames.size(), expected->frames},
             {"samples", samples, expected->samples},
             {"partial", partial, expected->partial},
-            {"restarts", static_cast<std::size_t>(stats.sessionRestarts),
-             expected->restarts},
-            {"timeouts", static_cast<std::size_t>(stats.sourceTimeouts),
-             expected->timeouts},
-            {"discontinuities",
-             static_cast<std::size_t>(stats.calibrationDiscontinuities),
+            {"restarts", static_cast<std::size_t>(stats.sessionRestarts), expected->restarts},
+            {"timeouts", static_cast<std::size_t>(stats.sourceTimeouts), expected->timeouts},
+            {"discontinuities", static_cast<std::size_t>(stats.calibrationDiscontinuities),
              expected->discontinuities},
-            {"stale crossings",
-             static_cast<std::size_t>(stats.stalenessCrossings),
+            {"stale crossings", static_cast<std::size_t>(stats.stalenessCrossings),
              expected->staleCrossings},
         };
         bool ok = true;
-        for (const Check& check : checks) {
-            if (check.actual != check.claimed) {
-                std::fprintf(stderr, "%s: %s is %zu, expected %zu\n",
-                             name.c_str(), check.what, check.actual,
-                             check.claimed);
+        for (const Check& check : checks)
+        {
+            if (check.actual != check.claimed)
+            {
+                std::fprintf(stderr, "%s: %s is %zu, expected %zu\n", name.c_str(), check.what,
+                             check.actual, check.claimed);
                 ok = false;
             }
         }
-        if (!ok) {
+        if (!ok)
+        {
             ++failures;
             continue;
         }
@@ -825,12 +820,12 @@ CheckCorpus(const std::filesystem::path& directory)
                     static_cast<unsigned long long>(stats.sessionRestarts));
     }
 
-    if (failures != 0) {
+    if (failures != 0)
+    {
         std::fprintf(stderr, "%d corpus capture(s) failed\n", failures);
         return 1;
     }
-    std::printf("VRChat OSC frame corpus: %zu capture(s) assembled\n",
-                captures.size());
+    std::printf("VRChat OSC frame corpus: %zu capture(s) assembled\n", captures.size());
     return 0;
 }
 
@@ -839,7 +834,8 @@ CheckCorpus(const std::filesystem::path& directory)
 int
 main(int argc, char** argv)
 {
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
 

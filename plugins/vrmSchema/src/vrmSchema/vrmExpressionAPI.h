@@ -35,10 +35,14 @@ class SdfAssetPath;
 
 /// \class UsdVrmExpressionAPI
 ///
-/// A VRM expression (VRM 1.0 Expression / VRM 0.x BlendShapeGroup). Apply
-/// to each /Asset/rig/Expressions/<name> prim. Morph-target and material-color
-/// bindings are authored as relationships with parallel value arrays; evaluation is
-/// a downstream-runtime concern. Per-expression curves and unmapped data stay in
+/// A VRM expression (VRM 1.0 Expression / VRM 0.x BlendShapeGroup). Apply
+
+/// to each /Asset/rig/Expressions/<name> prim. Morph-target and material-color
+
+/// bindings are authored as relationships with parallel value arrays; evaluation is
+
+/// a downstream-runtime concern. Per-expression curves and unmapped data stay in
+
 /// customData.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
@@ -48,7 +52,7 @@ class SdfAssetPath;
 ///
 class UsdVrmExpressionAPI : public UsdAPISchemaBase
 {
-public:
+  public:
     /// Compile time constant representing what kind of schema this class is.
     ///
     /// \sa UsdSchemaKind
@@ -58,16 +62,14 @@ public:
     /// Equivalent to UsdVrmExpressionAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdVrmExpressionAPI(const UsdPrim& prim=UsdPrim())
-        : UsdAPISchemaBase(prim)
+    explicit UsdVrmExpressionAPI(const UsdPrim& prim = UsdPrim()) : UsdAPISchemaBase(prim)
     {
     }
 
     /// Construct a UsdVrmExpressionAPI on the prim held by \p schemaObj .
     /// Should be preferred over UsdVrmExpressionAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdVrmExpressionAPI(const UsdSchemaBase& schemaObj)
-        : UsdAPISchemaBase(schemaObj)
+    explicit UsdVrmExpressionAPI(const UsdSchemaBase& schemaObj) : UsdAPISchemaBase(schemaObj)
     {
     }
 
@@ -79,8 +81,7 @@ public:
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
     USDVRM_API
-    static const TfTokenVector &
-    GetSchemaAttributeNames(bool includeInherited=true);
+    static const TfTokenVector& GetSchemaAttributeNames(bool includeInherited = true);
 
     /// Return a UsdVrmExpressionAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
@@ -92,20 +93,18 @@ public:
     /// \endcode
     ///
     USDVRM_API
-    static UsdVrmExpressionAPI
-    Get(const UsdStagePtr &stage, const SdfPath &path);
+    static UsdVrmExpressionAPI Get(const UsdStagePtr& stage, const SdfPath& path);
 
-
-    /// Returns true if this <b>single-apply</b> API schema can be applied to 
-    /// the given \p prim. If this schema can not be a applied to the prim, 
-    /// this returns false and, if provided, populates \p whyNot with the 
+    /// Returns true if this <b>single-apply</b> API schema can be applied to
+    /// the given \p prim. If this schema can not be a applied to the prim,
+    /// this returns false and, if provided, populates \p whyNot with the
     /// reason it can not be applied.
-    /// 
+    ///
     /// Note that if CanApply returns false, that does not necessarily imply
     /// that calling Apply will fail. Callers are expected to call CanApply
-    /// before calling Apply if they want to ensure that it is valid to 
+    /// before calling Apply if they want to ensure that it is valid to
     /// apply a schema.
-    /// 
+    ///
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
     /// \sa UsdPrim::CanApplyAPI()
@@ -113,18 +112,17 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDVRM_API
-    static bool 
-    CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
+    static bool CanApply(const UsdPrim& prim, std::string* whyNot = nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "VrmExpressionAPI" to the 
+    /// This information is stored by adding "VrmExpressionAPI" to the
     /// token-valued, listOp metadata \em apiSchemas on the prim.
-    /// 
-    /// \return A valid UsdVrmExpressionAPI object is returned upon success. 
-    /// An invalid (or empty) UsdVrmExpressionAPI object is returned upon 
-    /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
-    /// resulting in failure. 
-    /// 
+    ///
+    /// \return A valid UsdVrmExpressionAPI object is returned upon success.
+    /// An invalid (or empty) UsdVrmExpressionAPI object is returned upon
+    /// failure. See \ref UsdPrim::ApplyAPI() for conditions
+    /// resulting in failure.
+    ///
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
     /// \sa UsdPrim::CanApplyAPI()
@@ -132,37 +130,41 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDVRM_API
-    static UsdVrmExpressionAPI 
-    Apply(const UsdPrim &prim);
+    static UsdVrmExpressionAPI Apply(const UsdPrim& prim);
 
-protected:
+  protected:
     /// Returns the kind of schema this class belongs to.
     ///
     /// \sa UsdSchemaKind
     USDVRM_API
     UsdSchemaKind _GetSchemaKind() const override;
 
-private:
+  private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
     USDVRM_API
-    static const TfType &_GetStaticTfType();
+    static const TfType& _GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
     USDVRM_API
-    const TfType &_GetTfType() const override;
+    const TfType& _GetTfType() const override;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMEXPRESSIONNAME 
+    // VRMEXPRESSIONNAME
     // --------------------------------------------------------------------- //
-    /// The expression name exactly as the source VRM spelled it. The prim
-    /// name is a sanitized, uniquified identifier and is not a join key: a clip
-    /// and an avatar sanitize independently, so a non-ASCII or colliding name
-    /// lands on a different prim name on each side. This attribute is the key
-    /// that survives, and it is the same one a .vrma clip authors on
+    /// The expression name exactly as the source VRM spelled it. The prim
+
+    /// name is a sanitized, uniquified identifier and is not a join key: a clip
+
+    /// and an avatar sanitize independently, so a non-ASCII or colliding name
+
+    /// lands on a different prim name on each side. This attribute is the key
+
+    /// that survives, and it is the same one a .vrma clip authors on
+
     /// /Animation/Expressions/<name>.
     ///
     /// | ||
@@ -174,17 +176,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmExpressionNameAttr() const;
 
-    /// See GetVrmExpressionNameAttr(), and also 
+    /// See GetVrmExpressionNameAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmExpressionNameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmExpressionNameAttr(VtValue const& defaultValue = VtValue(),
+                                             bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMEXPRESSIONTYPE 
+    // VRMEXPRESSIONTYPE
     // --------------------------------------------------------------------- //
     /// 'preset' for a standard VRM expression, 'custom' otherwise.
     ///
@@ -197,17 +200,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmExpressionTypeAttr() const;
 
-    /// See GetVrmExpressionTypeAttr(), and also 
+    /// See GetVrmExpressionTypeAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmExpressionTypeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmExpressionTypeAttr(VtValue const& defaultValue = VtValue(),
+                                             bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMISBINARY 
+    // VRMISBINARY
     // --------------------------------------------------------------------- //
     /// Whether the expression value is clamped to 0/1 (binary).
     ///
@@ -220,28 +224,39 @@ public:
     USDVRM_API
     UsdAttribute GetVrmIsBinaryAttr() const;
 
-    /// See GetVrmIsBinaryAttr(), and also 
+    /// See GetVrmIsBinaryAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmIsBinaryAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmIsBinaryAttr(VtValue const& defaultValue = VtValue(),
+                                       bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMOVERRIDEBLINK 
+    // VRMOVERRIDEBLINK
     // --------------------------------------------------------------------- //
-    /// What this expression does to the blink expressions while on.
-    /// 'none', 'block' (they are off whenever this one is on at all) or 'blend'
-    /// (they are attenuated by this expression's own weight). VRM 1.0's
-    /// `overrideBlink`, and the only mechanism the specification gives for two
-    /// co-active expressions whose morph targets displace the same vertices --
-    /// their offsets otherwise sum, and an eyelid driven by a blink and a smile
-    /// at once is driven roughly twice as far as shut. Authored only when the
-    /// source file states it; VRM 0.x has no such field. The token is carried
-    /// as the file spelled it and is not constrained by an allowedTokens list,
-    /// so a value outside the three reaches a consumer as data rather than
+    /// What this expression does to the blink expressions while on.
+
+    /// 'none', 'block' (they are off whenever this one is on at all) or 'blend'
+
+    /// (they are attenuated by this expression's own weight). VRM 1.0's
+
+    /// `overrideBlink`, and the only mechanism the specification gives for two
+
+    /// co-active expressions whose morph targets displace the same vertices --
+
+    /// their offsets otherwise sum, and an eyelid driven by a blink and a smile
+
+    /// at once is driven roughly twice as far as shut. Authored only when the
+
+    /// source file states it; VRM 0.x has no such field. The token is carried
+
+    /// as the file spelled it and is not constrained by an allowedTokens list,
+
+    /// so a value outside the three reaches a consumer as data rather than
+
     /// failing schema validation.
     ///
     /// | ||
@@ -253,21 +268,25 @@ public:
     USDVRM_API
     UsdAttribute GetVrmOverrideBlinkAttr() const;
 
-    /// See GetVrmOverrideBlinkAttr(), and also 
+    /// See GetVrmOverrideBlinkAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmOverrideBlinkAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmOverrideBlinkAttr(VtValue const& defaultValue = VtValue(),
+                                            bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMOVERRIDELOOKAT 
+    // VRMOVERRIDELOOKAT
     // --------------------------------------------------------------------- //
-    /// What this expression does to the look-at expressions while on.
-    /// The same three tokens, over lookUp, lookDown, lookLeft and lookRight --
-    /// which is how one expression arbitrates the gaze of a rig that aims its
+    /// What this expression does to the look-at expressions while on.
+
+    /// The same three tokens, over lookUp, lookDown, lookLeft and lookRight --
+
+    /// which is how one expression arbitrates the gaze of a rig that aims its
+
     /// eyes with expressions rather than with bones.
     ///
     /// | ||
@@ -279,19 +298,21 @@ public:
     USDVRM_API
     UsdAttribute GetVrmOverrideLookAtAttr() const;
 
-    /// See GetVrmOverrideLookAtAttr(), and also 
+    /// See GetVrmOverrideLookAtAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmOverrideLookAtAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmOverrideLookAtAttr(VtValue const& defaultValue = VtValue(),
+                                             bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMOVERRIDEMOUTH 
+    // VRMOVERRIDEMOUTH
     // --------------------------------------------------------------------- //
-    /// What this expression does to the mouth expressions while on.
+    /// What this expression does to the mouth expressions while on.
+
     /// The same three tokens, over aa, ih, ou, ee and oh.
     ///
     /// | ||
@@ -303,17 +324,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmOverrideMouthAttr() const;
 
-    /// See GetVrmOverrideMouthAttr(), and also 
+    /// See GetVrmOverrideMouthAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmOverrideMouthAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmOverrideMouthAttr(VtValue const& defaultValue = VtValue(),
+                                            bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMMORPHTARGETWEIGHTS 
+    // VRMMORPHTARGETWEIGHTS
     // --------------------------------------------------------------------- //
     /// Per-target weights, parallel to vrm:morphTargets.
     ///
@@ -326,17 +348,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmMorphTargetWeightsAttr() const;
 
-    /// See GetVrmMorphTargetWeightsAttr(), and also 
+    /// See GetVrmMorphTargetWeightsAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmMorphTargetWeightsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmMorphTargetWeightsAttr(VtValue const& defaultValue = VtValue(),
+                                                 bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMMATERIALCOLORTYPES 
+    // VRMMATERIALCOLORTYPES
     // --------------------------------------------------------------------- //
     /// Color slot per target (e.g. color, emission), parallel to vrm:materialColorTargets.
     ///
@@ -349,17 +372,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmMaterialColorTypesAttr() const;
 
-    /// See GetVrmMaterialColorTypesAttr(), and also 
+    /// See GetVrmMaterialColorTypesAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmMaterialColorTypesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmMaterialColorTypesAttr(VtValue const& defaultValue = VtValue(),
+                                                 bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMMATERIALCOLORVALUES 
+    // VRMMATERIALCOLORVALUES
     // --------------------------------------------------------------------- //
     /// Target RGBA per material color bind, parallel to vrm:materialColorTargets.
     ///
@@ -372,49 +396,50 @@ public:
     USDVRM_API
     UsdAttribute GetVrmMaterialColorValuesAttr() const;
 
-    /// See GetVrmMaterialColorValuesAttr(), and also 
+    /// See GetVrmMaterialColorValuesAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmMaterialColorValuesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmMaterialColorValuesAttr(VtValue const& defaultValue = VtValue(),
+                                                  bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMMORPHTARGETS 
+    // VRMMORPHTARGETS
     // --------------------------------------------------------------------- //
     /// The UsdSkelBlendShape prims this expression drives.
     ///
     USDVRM_API
     UsdRelationship GetVrmMorphTargetsRel() const;
 
-    /// See GetVrmMorphTargetsRel(), and also 
+    /// See GetVrmMorphTargetsRel(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
     USDVRM_API
     UsdRelationship CreateVrmMorphTargetsRel() const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMMATERIALCOLORTARGETS 
+    // VRMMATERIALCOLORTARGETS
     // --------------------------------------------------------------------- //
     /// The materials whose colors this expression overrides.
     ///
     USDVRM_API
     UsdRelationship GetVrmMaterialColorTargetsRel() const;
 
-    /// See GetVrmMaterialColorTargetsRel(), and also 
+    /// See GetVrmMaterialColorTargetsRel(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
     USDVRM_API
     UsdRelationship CreateVrmMaterialColorTargetsRel() const;
 
-public:
+  public:
     // ===================================================================== //
-    // Feel free to add custom code below this line, it will be preserved by 
-    // the code generator. 
+    // Feel free to add custom code below this line, it will be preserved by
+    // the code generator.
     //
-    // Just remember to: 
-    //  - Close the class declaration with }; 
+    // Just remember to:
+    //  - Close the class declaration with };
     //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
     //  - Close the include guard with #endif
     // ===================================================================== //

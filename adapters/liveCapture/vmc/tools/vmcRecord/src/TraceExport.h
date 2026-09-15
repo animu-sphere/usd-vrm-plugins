@@ -82,7 +82,7 @@ namespace vmcRecordTool
 // advance is not something the adapter delivered.
 class TraceCollector
 {
-public:
+  public:
     // `frames` is a push's worth, as `GetFramesFromLastPush()` returns them.
     // `metadata` is the source's as of now, which is why it is passed on every
     // call rather than once: `/VMC/Ext/VRM` may arrive at any point in a
@@ -95,7 +95,11 @@ public:
     // How many frames are held, across every session. The caller's stop
     // condition reads this rather than the report's frame count, which counts
     // frames a session emitted before an export was ever asked for.
-    std::size_t GetFrameCount() const noexcept { return _frames; }
+    std::size_t
+    GetFrameCount() const noexcept
+    {
+        return _frames;
+    }
 
     // Finalises every session: the time range from its own first and last
     // sample, and a frame rate measured from them. Idempotent.
@@ -108,12 +112,13 @@ public:
     void Close();
 
     // Valid after `Close`. Sessions that produced no frame are not among them.
-    const std::vector<motion::HumanoidAnimation>& GetSessions() const noexcept
+    const std::vector<motion::HumanoidAnimation>&
+    GetSessions() const noexcept
     {
         return _sessions;
     }
 
-private:
+  private:
     std::vector<motion::HumanoidAnimation> _sessions;
     std::size_t _frames = 0;
     bool _closed = false;

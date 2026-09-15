@@ -87,8 +87,7 @@ enum class DiagnosticCode : std::uint8_t
     Count,
 };
 
-inline constexpr std::size_t DiagnosticCodeCount =
-    static_cast<std::size_t>(DiagnosticCode::Count);
+inline constexpr std::size_t DiagnosticCodeCount = static_cast<std::size_t>(DiagnosticCode::Count);
 
 // The syntax codes are the leading run, so a range check is the layer check.
 inline constexpr std::size_t SyntaxDiagnosticCodeCount =
@@ -103,14 +102,11 @@ enum class DiagnosticSeverity : std::uint8_t
 
 // The stable string, e.g. "VRM_BVH_FRAME_WIDTH_MISMATCH". This is the contract;
 // the enumerator spelling is not.
-MOTIONBVH_API std::string_view DiagnosticCodeString(
-    DiagnosticCode code) noexcept;
+MOTIONBVH_API std::string_view DiagnosticCodeString(DiagnosticCode code) noexcept;
 
-MOTIONBVH_API std::optional<DiagnosticCode> FindDiagnosticCode(
-    std::string_view name) noexcept;
+MOTIONBVH_API std::optional<DiagnosticCode> FindDiagnosticCode(std::string_view name) noexcept;
 
-MOTIONBVH_API DiagnosticSeverity DiagnosticDefaultSeverity(
-    DiagnosticCode code) noexcept;
+MOTIONBVH_API DiagnosticSeverity DiagnosticDefaultSeverity(DiagnosticCode code) noexcept;
 
 // Whether the code belongs to the syntax half — the only half a reader may
 // raise. A caller pairing a document with a profile is on the other side of
@@ -125,8 +121,7 @@ MOTIONBVH_API bool DiagnosticIsSyntax(DiagnosticCode code) noexcept;
 // half-read file for a caller to continue from.
 MOTIONBVH_API bool DiagnosticIsRecoverable(DiagnosticCode code) noexcept;
 
-MOTIONBVH_API std::string_view DiagnosticSeverityString(
-    DiagnosticSeverity severity) noexcept;
+MOTIONBVH_API std::string_view DiagnosticSeverityString(DiagnosticSeverity severity) noexcept;
 
 // One reported diagnostic. Every optional field is optional because the layer
 // that raises it genuinely may not have it: a missing `MOTION` section has no
@@ -152,8 +147,7 @@ struct Diagnostic
 
 // Fills `severity` and `recoverable` from the code's defaults, so the two
 // cannot silently disagree with the table above.
-MOTIONBVH_API Diagnostic MakeDiagnostic(
-    DiagnosticCode code, std::string detail = {});
+MOTIONBVH_API Diagnostic MakeDiagnostic(DiagnosticCode code, std::string detail = {});
 
 // A single deterministic line, stable enough for a golden test to compare:
 //

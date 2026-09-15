@@ -53,11 +53,13 @@ struct BvhVec3
     float y = 0.0f;
     float z = 0.0f;
 
-    friend bool operator==(const BvhVec3& lhs, const BvhVec3& rhs) noexcept
+    friend bool
+    operator==(const BvhVec3& lhs, const BvhVec3& rhs) noexcept
     {
         return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
     }
-    friend bool operator!=(const BvhVec3& lhs, const BvhVec3& rhs) noexcept
+    friend bool
+    operator!=(const BvhVec3& lhs, const BvhVec3& rhs) noexcept
     {
         return !(lhs == rhs);
     }
@@ -80,8 +82,7 @@ enum class BvhChannel : std::uint8_t
     Count,
 };
 
-inline constexpr std::size_t BvhChannelCount =
-    static_cast<std::size_t>(BvhChannel::Count);
+inline constexpr std::size_t BvhChannelCount = static_cast<std::size_t>(BvhChannel::Count);
 
 // The canonical spelling, e.g. "Xrotation". Files disagree about case and the
 // parser accepts any of them; what this returns is the one this library prints.
@@ -89,8 +90,7 @@ MOTIONBVH_API std::string_view BvhChannelName(BvhChannel channel) noexcept;
 
 // ASCII case-insensitive, because writers disagree about case and a case
 // difference is not a meaning difference.
-MOTIONBVH_API std::optional<BvhChannel> FindBvhChannel(
-    std::string_view token) noexcept;
+MOTIONBVH_API std::optional<BvhChannel> FindBvhChannel(std::string_view token) noexcept;
 
 MOTIONBVH_API bool BvhChannelIsPosition(BvhChannel channel) noexcept;
 MOTIONBVH_API bool BvhChannelIsRotation(BvhChannel channel) noexcept;
@@ -139,20 +139,17 @@ struct BvhDocument
     // `frameIndex` — so `channelIndex` is an index into that joint's `channels`
     // vector, not one of the six `BvhChannel` values. Nullopt when any index is
     // out of range.
-    MOTIONBVH_API std::optional<float> ChannelValue(
-        std::size_t frameIndex, std::size_t jointIndex,
-        std::size_t channelIndex) const noexcept;
+    MOTIONBVH_API std::optional<float> ChannelValue(std::size_t frameIndex, std::size_t jointIndex,
+                                                    std::size_t channelIndex) const noexcept;
 
     // The first joint with this name, exactly as the file spelled it. Nullopt
     // when there is none.
-    MOTIONBVH_API std::optional<std::size_t> FindJoint(
-        std::string_view name) const;
+    MOTIONBVH_API std::optional<std::size_t> FindJoint(std::string_view name) const;
 
     // Every joint with this name. A profile matching joints by name needs to
     // see an ambiguity rather than silently take the first one, which is the
     // whole reason this exists beside `FindJoint`.
-    MOTIONBVH_API std::vector<std::size_t> FindJoints(
-        std::string_view name) const;
+    MOTIONBVH_API std::vector<std::size_t> FindJoints(std::string_view name) const;
 
     MOTIONBVH_API bool HasUniqueJointNames() const;
 

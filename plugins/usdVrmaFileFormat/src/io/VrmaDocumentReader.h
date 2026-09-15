@@ -10,13 +10,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class VrmaDocumentReader {
-public:
+class VrmaDocumentReader
+{
+  public:
     virtual ~VrmaDocumentReader() = default;
-    virtual bool Read(const std::string& resolvedPath,
-                      const std::vector<std::byte>& bytes,
-                      VrmaCanonicalDocument* outDocument,
-                      std::string* outError) = 0;
+    virtual bool Read(const std::string& resolvedPath, const std::vector<std::byte>& bytes,
+                      VrmaCanonicalDocument* outDocument, std::string* outError) = 0;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

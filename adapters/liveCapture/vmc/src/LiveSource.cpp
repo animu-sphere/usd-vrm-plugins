@@ -10,9 +10,7 @@ namespace vrmAdapterVmc
 {
 
 VmcLiveSource::VmcLiveSource(const VmcLiveSourceConfig& config)
-    : _assembler(config.frame)
-    , _intake(config.intake)
-    , _restart(config.restart)
+    : _assembler(config.frame), _intake(config.intake), _restart(config.restart)
 {
     // Before a frame exists, so the first pose out of the buffer already says it
     // arrived over VMC from a live capture. The model's title joins it when the
@@ -31,10 +29,13 @@ std::size_t
 VmcLiveSource::_Deliver()
 {
     std::size_t admitted = 0;
-    for (const VmcFrame& frame : _frames) {
-        if (frame.beginsNewSession) {
+    for (const VmcFrame& frame : _frames)
+    {
+        if (frame.beginsNewSession)
+        {
             _restartPending = true;
-            if (_restart == SessionRestartPolicy::Reset) {
+            if (_restart == SessionRestartPolicy::Reset)
+            {
                 // Before the frame is pushed, so it is admitted as the first of
                 // the new buffer rather than refused against the old one's head.
                 _intake.Reset();
@@ -45,18 +46,21 @@ VmcLiveSource::_Deliver()
         // The handshake can arrive at any point in a session, including between
         // two frames. Comparing rather than assigning keeps a 30 Hz stream from
         // re-stamping the intake sixty times a second to say the same thing.
-        const motion::MotionSourceMetadata& metadata =
-            _assembler.GetSourceMetadata();
-        if (metadata != _metadata) {
+        const motion::MotionSourceMetadata& metadata = _assembler.GetSourceMetadata();
+        if (metadata != _metadata)
+        {
             _metadata = metadata;
             _intake.SetSourceMetadata(_metadata);
         }
 
         ++_stats.framesDelivered;
-        if (_intake.Push(frame.pose)) {
+        if (_intake.Push(frame.pose))
+        {
             ++_stats.framesAdmitted;
             ++admitted;
-        } else {
+        }
+        else
+        {
             ++_stats.framesRefused;
         }
     }
@@ -64,13 +68,14 @@ VmcLiveSource::_Deliver()
 }
 
 void
-VmcLiveSource::_StampDatagram(std::vector<Diagnostic>* diagnostics,
-                              std::size_t from) const
+VmcLiveSource::_StampDatagram(std::vector<Diagnostic>* diagnostics, std::size_t from) const
 {
-    if (!diagnostics) {
+    if (!diagnostics)
+    {
         return;
     }
-    for (std::size_t index = from; index != diagnostics->size(); ++index) {
+    for (std::size_t index = from; index != diagnostics->size(); ++index)
+    {
         (*diagnostics)[index].source = _assembler.GetSource();
         // Overwrites the assembler's own serial on the lines it raised, which
         // is the point: it counts packets it was handed and this counts
@@ -81,8 +86,7 @@ VmcLiveSource::_StampDatagram(std::vector<Diagnostic>* diagnostics,
 }
 
 std::size_t
-VmcLiveSource::PushDatagram(const std::uint8_t* bytes, std::size_t size,
-                            double receiveTime,
+VmcLiveSource::PushDatagram(const std::uint8_t* bytes, std::size_t size, double receiveTime,
                             std::vector<Diagnostic>* diagnostics)
 {
     ++_datagramSerial;
@@ -90,7 +94,8 @@ VmcLiveSource::PushDatagram(const std::uint8_t* bytes, std::size_t size,
 
     OscPacket osc;
     Diagnostic refusal;
-    if (!DecodeOscPacket(bytes, size, &osc, &refusal)) {
+    if (!DecodeOscPacket(bytes, size, &osc, &refusal))
+    {
         ++_stats.datagramsRefused;
         // The previous push's frames must not survive a datagram this one
         // refused. `GetFramesFromLastPush()` is a window on the delivery that
@@ -98,7 +103,8 @@ VmcLiveSource::PushDatagram(const std::uint8_t* bytes, std::size_t size,
         // the frame before last as though it had just arrived — which is exactly
         // the evidence path this window exists to serve.
         _frames.clear();
-        if (diagnostics) {
+        if (diagnostics)
+        {
             diagnostics->push_back(std::move(refusal));
             _StampDatagram(diagnostics, before);
         }

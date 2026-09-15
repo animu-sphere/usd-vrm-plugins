@@ -26,8 +26,7 @@ using motionBvh::Diagnostic;
 using motionBvh::DiagnosticCode;
 
 BvhJoint
-MakeJoint(std::string name, int parent, std::vector<BvhChannel> channels,
-          std::size_t channelOffset)
+MakeJoint(std::string name, int parent, std::vector<BvhChannel> channels, std::size_t channelOffset)
 {
     BvhJoint joint;
     joint.name = std::move(name);
@@ -38,24 +37,23 @@ MakeJoint(std::string name, int parent, std::vector<BvhChannel> channels,
 }
 
 // Hips (6 channels) -> Spine (3 channels), two frames.
-BvhDocument MakeDocument()
+BvhDocument
+MakeDocument()
 {
     BvhDocument document;
+    document.joints.push_back(
+        MakeJoint("Hips", -1,
+                  {BvhChannel::Xposition, BvhChannel::Yposition, BvhChannel::Zposition,
+                   BvhChannel::Zrotation, BvhChannel::Xrotation, BvhChannel::Yrotation},
+                  0));
     document.joints.push_back(MakeJoint(
-        "Hips", -1,
-        {BvhChannel::Xposition, BvhChannel::Yposition, BvhChannel::Zposition,
-         BvhChannel::Zrotation, BvhChannel::Xrotation, BvhChannel::Yrotation},
-        0));
-    document.joints.push_back(MakeJoint(
-        "Spine", 0,
-        {BvhChannel::Zrotation, BvhChannel::Xrotation, BvhChannel::Yrotation},
-        6));
+        "Spine", 0, {BvhChannel::Zrotation, BvhChannel::Xrotation, BvhChannel::Yrotation}, 6));
     document.joints[1].endSiteOffset = BvhVec3{0.0f, 5.0f, 0.0f};
     document.channelCount = 9;
     document.frameCount = 2;
     document.frameTime = 0.5;
     document.values = {
-        0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f,
+        0.0f, 1.0f,  2.0f,  3.0f,  4.0f,  5.0f,  6.0f,  7.0f,  8.0f,
         9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f, 17.0f,
     };
     return document;
@@ -80,12 +78,12 @@ TestChannelVocabulary()
     assert(!motionBvh::FindBvhChannel("Xrotation "));
     assert(!motionBvh::FindBvhChannel(""));
 
-    for (std::size_t index = 0; index < motionBvh::BvhChannelCount; ++index) {
+    for (std::size_t index = 0; index < motionBvh::BvhChannelCount; ++index)
+    {
         const auto channel = static_cast<BvhChannel>(index);
-        assert(motionBvh::BvhChannelIsPosition(channel)
-               != motionBvh::BvhChannelIsRotation(channel));
-        assert(motionBvh::FindBvhChannel(motionBvh::BvhChannelName(channel))
-               == channel);
+        assert(motionBvh::BvhChannelIsPosition(channel) !=
+               motionBvh::BvhChannelIsRotation(channel));
+        assert(motionBvh::FindBvhChannel(motionBvh::BvhChannelName(channel)) == channel);
     }
 }
 
@@ -232,8 +230,7 @@ TestValidationRefusals()
     }
     {
         BvhDocument document = MakeDocument();
-        document.joints[1].endSiteOffset->z =
-            -std::numeric_limits<float>::infinity();
+        document.joints[1].endSiteOffset->z = -std::numeric_limits<float>::infinity();
         assert(!motionBvh::ValidateBvhDocument(document, &diagnostic));
         assert(diagnostic.code == DiagnosticCode::NonFiniteValue);
         assert(diagnostic.subject == "Spine");

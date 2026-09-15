@@ -37,8 +37,7 @@ struct SourceRestPose
     // humanoid taxonomy. A producer with a non-identity rest pose fills it in.
     std::array<std::size_t, motion::HumanBoneCount> parents;
 
-    VRMRETARGET_API void SetParent(motion::HumanBone bone,
-                                   motion::HumanBone parent);
+    VRMRETARGET_API void SetParent(motion::HumanBone bone, motion::HumanBone parent);
 
     // The bone's rest orientation in the clip's own root space: its local rest
     // rotation with every ancestor's composed on the left, root-first. The
@@ -46,8 +45,7 @@ struct SourceRestPose
     // contributes even though it is not the bone's parent — reading the
     // parent's *local* rotation instead is only right when the parent is
     // itself a root.
-    VRMRETARGET_API pxr::GfQuatf GetWorldRestRotation(
-        motion::HumanBone bone) const;
+    VRMRETARGET_API pxr::GfQuatf GetWorldRestRotation(motion::HumanBone bone) const;
 };
 
 // Per-bone correction carrying a rest-relative rotation from the source rig
@@ -76,8 +74,7 @@ struct RestPoseCorrection
     std::array<bool, motion::HumanBoneCount> identity;
 
     // Returns `rotation` unchanged when the bone's correction is identity.
-    VRMRETARGET_API pxr::GfQuatf Apply(motion::HumanBone bone,
-                                       const pxr::GfQuatf& rotation) const;
+    VRMRETARGET_API pxr::GfQuatf Apply(motion::HumanBone bone, const pxr::GfQuatf& rotation) const;
 };
 
 // Exact, bone by bone: the same `pre`, `post` and `identity` in every slot. It
@@ -90,14 +87,12 @@ struct RestPoseCorrection
 // exec computation and the one `TargetSkeleton` gives. The `identity` flags are
 // compared too: they are what `Apply` reads first, so two corrections that
 // differ only there answer differently for the same rotation.
-VRMRETARGET_API bool operator==(const RestPoseCorrection& a,
-                                const RestPoseCorrection& b) noexcept;
-VRMRETARGET_API bool operator!=(const RestPoseCorrection& a,
-                                const RestPoseCorrection& b) noexcept;
+VRMRETARGET_API bool operator==(const RestPoseCorrection& a, const RestPoseCorrection& b) noexcept;
+VRMRETARGET_API bool operator!=(const RestPoseCorrection& a, const RestPoseCorrection& b) noexcept;
 
 // Builds the correction for every mapped bone; unmapped bones stay identity.
-VRMRETARGET_API RestPoseCorrection ComputeRestPoseCorrection(
-    const SourceRestPose& source, const TargetSkeleton& target,
-    const HumanoidMap& map);
+VRMRETARGET_API RestPoseCorrection ComputeRestPoseCorrection(const SourceRestPose& source,
+                                                             const TargetSkeleton& target,
+                                                             const HumanoidMap& map);
 
 } // namespace vrmRetarget

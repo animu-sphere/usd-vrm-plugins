@@ -16,7 +16,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // Parser-independent VRMA representation. Unlike the VRM importer's private
 // document, its motion values are the public motionCore contract.
-struct VrmaJoint {
+struct VrmaJoint
+{
     motion::HumanBone bone;
     std::string path;
     GfMatrix4d restTransform = GfMatrix4d(1.0);
@@ -37,7 +38,8 @@ struct VrmaJoint {
 // touches it -- a constant weight, since glTF leaves an un-animated node at its
 // own TRS -- or the node states no translation at all, which is a weight the
 // clip never gave and not a weight of zero.
-struct VrmaExpression {
+struct VrmaExpression
+{
     std::string name;
     bool isPreset = true;
 
@@ -64,7 +66,8 @@ struct VrmaExpression {
 // channel drives the node, or the node states a position nothing animates --
 // one target for the whole clip -- or it states none, which is a gaze the file
 // never gave and not a gaze at the origin.
-struct VrmaLookAt {
+struct VrmaLookAt
+{
     bool present = false;
 
     // Source-rig measurement, in the clip's own space. Zero when the file
@@ -81,7 +84,8 @@ struct VrmaLookAt {
     std::optional<GfVec3f> constantTarget;
 };
 
-struct VrmaCanonicalDocument {
+struct VrmaCanonicalDocument
+{
     std::string specVersion;
     std::string clipName;
     std::string rawExtensionJson;

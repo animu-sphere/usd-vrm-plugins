@@ -41,10 +41,11 @@ namespace
 Diagnostic
 Translate(const liveTransport::TransportEventReport& report)
 {
-    switch (report.event) {
-    case liveTransport::TransportEvent::Silence: {
-        Diagnostic diagnostic =
-            MakeDiagnostic(DiagnosticCode::SourceTimeout, report.detail);
+    switch (report.event)
+    {
+    case liveTransport::TransportEvent::Silence:
+    {
+        Diagnostic diagnostic = MakeDiagnostic(DiagnosticCode::SourceTimeout, report.detail);
         diagnostic.source = report.source;
         diagnostic.subject = report.subject;
         return diagnostic;
@@ -52,8 +53,7 @@ Translate(const liveTransport::TransportEventReport& report)
     case liveTransport::TransportEvent::BindFailed:
         break;
     }
-    Diagnostic diagnostic =
-        MakeDiagnostic(DiagnosticCode::SocketBindFailed, report.detail);
+    Diagnostic diagnostic = MakeDiagnostic(DiagnosticCode::SocketBindFailed, report.detail);
     diagnostic.source = report.source;
     diagnostic.subject = report.subject;
     return diagnostic;
@@ -63,10 +63,12 @@ void
 Append(const std::vector<liveTransport::TransportEventReport>& events,
        std::vector<Diagnostic>* diagnostics)
 {
-    if (!diagnostics) {
+    if (!diagnostics)
+    {
         return;
     }
-    for (const liveTransport::TransportEventReport& report : events) {
+    for (const liveTransport::TransportEventReport& report : events)
+    {
         diagnostics->push_back(Translate(report));
     }
 }
@@ -74,8 +76,7 @@ Append(const std::vector<liveTransport::TransportEventReport>& events,
 } // namespace
 
 bool
-UdpReceiver::Open(const UdpReceiverConfig& config,
-                  std::vector<Diagnostic>* diagnostics)
+UdpReceiver::Open(const UdpReceiverConfig& config, std::vector<Diagnostic>* diagnostics)
 {
     liveTransport::UdpReceiverConfig transport;
     transport.listenAddress = config.listenAddress;
@@ -99,13 +100,13 @@ UdpReceiver::Receive(ReceivedDatagram* datagram, double timeoutSeconds,
     // session report reads, and it must not depend on whether the loop that
     // noticed had somewhere to put a message -- so a null `diagnostics` here
     // still moves `silenceReports`.
-    if (!diagnostics) {
+    if (!diagnostics)
+    {
         return _receiver.Receive(datagram, timeoutSeconds);
     }
 
     std::vector<liveTransport::TransportEventReport> events;
-    const ReceiveStatus status =
-        _receiver.Receive(datagram, timeoutSeconds, &events);
+    const ReceiveStatus status = _receiver.Receive(datagram, timeoutSeconds, &events);
     Append(events, diagnostics);
     return status;
 }

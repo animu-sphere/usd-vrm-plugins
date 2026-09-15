@@ -185,8 +185,7 @@ enum class MotionPacketKind : std::uint8_t
 };
 
 // The tag the kind is carried under, e.g. "fram". Empty for Count.
-VRMADAPTERMOCOPI_API std::string_view MotionPacketKindTag(
-    MotionPacketKind kind) noexcept;
+VRMADAPTERMOCOPI_API std::string_view MotionPacketKindTag(MotionPacketKind kind) noexcept;
 
 // A transform exactly as the wire carries it: the device's own axes and units,
 // and a quaternion in the scalar-last component order this protocol serialises
@@ -330,16 +329,15 @@ struct MotionPacket
 //
 // The codes this layer raises, and no others: `VRM_MOCOPI_PACKET_MALFORMED`,
 // `VRM_MOCOPI_NON_FINITE_TRANSFORM`, `VRM_MOCOPI_TIMESTAMP_INVALID`.
-VRMADAPTERMOCOPI_API bool DecodeMotionPacket(
-    const std::uint8_t* bytes, std::size_t size, MotionPacket* packet,
-    std::vector<Diagnostic>* diagnostics = nullptr);
+VRMADAPTERMOCOPI_API bool DecodeMotionPacket(const std::uint8_t* bytes, std::size_t size,
+                                             MotionPacket* packet,
+                                             std::vector<Diagnostic>* diagnostics = nullptr);
 
-inline bool DecodeMotionPacket(const std::vector<std::uint8_t>& datagram,
-                               MotionPacket* packet,
-                               std::vector<Diagnostic>* diagnostics = nullptr)
+inline bool
+DecodeMotionPacket(const std::vector<std::uint8_t>& datagram, MotionPacket* packet,
+                   std::vector<Diagnostic>* diagnostics = nullptr)
 {
-    return DecodeMotionPacket(datagram.data(), datagram.size(), packet,
-                              diagnostics);
+    return DecodeMotionPacket(datagram.data(), datagram.size(), packet, diagnostics);
 }
 
 // Deleted for the reason `DecodePacketChunks`' overload is: `formatType` and
@@ -347,8 +345,7 @@ inline bool DecodeMotionPacket(const std::vector<std::uint8_t>& datagram,
 // them dangling. The bone data does not — it is copied out of the wire into
 // floats — which makes this the more dangerous case rather than the less, since
 // a caller that only reads bones will never notice.
-bool DecodeMotionPacket(std::vector<std::uint8_t>&& datagram,
-                        MotionPacket* packet,
+bool DecodeMotionPacket(std::vector<std::uint8_t>&& datagram, MotionPacket* packet,
                         std::vector<Diagnostic>* diagnostics = nullptr) = delete;
 
 } // namespace vrmAdapterMocopi

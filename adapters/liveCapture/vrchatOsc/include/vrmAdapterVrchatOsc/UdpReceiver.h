@@ -152,7 +152,7 @@ struct UdpReceiverConfig
 // A bound UDP socket, reporting this adapter's codes.
 class VRMADAPTERVRCHATOSC_API UdpReceiver final
 {
-public:
+  public:
     UdpReceiver() = default;
     ~UdpReceiver() = default;
 
@@ -172,16 +172,24 @@ public:
     // subject and the platform's own message as its detail. That covers the
     // three causes worth telling apart: the port is already served, the address
     // is not one this host holds, and the address does not parse.
-    bool Open(const UdpReceiverConfig& config,
-              std::vector<Diagnostic>* diagnostics = nullptr);
+    bool Open(const UdpReceiverConfig& config, std::vector<Diagnostic>* diagnostics = nullptr);
 
-    void Close() noexcept { _receiver.Close(); }
-    bool IsOpen() const noexcept { return _receiver.IsOpen(); }
+    void
+    Close() noexcept
+    {
+        _receiver.Close();
+    }
+    bool
+    IsOpen() const noexcept
+    {
+        return _receiver.IsOpen();
+    }
 
     // What the socket actually got, which is not always what was asked for: a
     // configured port of 0 is bound by the OS, and a test that wants two
     // receivers on one machine has to read the number back from here.
-    const std::string& GetBoundEndpoint() const noexcept
+    const std::string&
+    GetBoundEndpoint() const noexcept
     {
         return _receiver.GetBoundEndpoint();
     }
@@ -189,12 +197,17 @@ public:
     // Whether the bound address can only be reached from this machine. A fact
     // rather than a verdict here, unlike the mocopi adapter's: a sender on this
     // machine is a legitimate configuration for this protocol.
-    bool IsLoopbackOnly() const noexcept { return _receiver.IsLoopbackOnly(); }
+    bool
+    IsLoopbackOnly() const noexcept
+    {
+        return _receiver.IsLoopbackOnly();
+    }
 
     // What the kernel actually granted for the receive buffer, read back at
     // `Open` rather than assumed from the request. 0 when the socket is closed
     // or the platform would not say.
-    std::size_t GetReceiveBufferBytes() const noexcept
+    std::size_t
+    GetReceiveBufferBytes() const noexcept
     {
         return _receiver.GetReceiveBufferBytes();
     }
@@ -213,25 +226,30 @@ public:
     // this is the call that knows time passed — a caller that had to remember a
     // second one would discover silence only in the sessions where it happened
     // to remember.
-    ReceiveStatus Receive(ReceivedDatagram* datagram,
-                          double timeoutSeconds = 0.0,
+    ReceiveStatus Receive(ReceivedDatagram* datagram, double timeoutSeconds = 0.0,
                           std::vector<Diagnostic>* diagnostics = nullptr);
 
     // The receive clock, read without receiving: seconds since `Open`, on the
     // same monotonic timeline every `receiveTime` is stamped from. A loop
     // measures how long it has been quiet with this, and stamps its own events
     // on the same axis as the traffic.
-    double Now() const noexcept { return _receiver.Now(); }
+    double
+    Now() const noexcept
+    {
+        return _receiver.Now();
+    }
 
     // The platform's message for the last failure, bind or receive. Empty until
     // something fails; not cleared by a subsequent success, because a caller
     // reads it after a status told it to.
-    const std::string& GetLastErrorText() const noexcept
+    const std::string&
+    GetLastErrorText() const noexcept
     {
         return _receiver.GetLastErrorText();
     }
 
-    const UdpReceiverStats& GetStats() const noexcept
+    const UdpReceiverStats&
+    GetStats() const noexcept
     {
         return _receiver.GetStats();
     }
@@ -240,9 +258,13 @@ public:
     // silence report as well as zeroing the tally, and does not move the point
     // silence is measured from — both are `liveTransport`'s contract, argued in
     // its header.
-    void ResetStats() noexcept { _receiver.ResetStats(); }
+    void
+    ResetStats() noexcept
+    {
+        _receiver.ResetStats();
+    }
 
-private:
+  private:
     liveTransport::UdpReceiver _receiver;
 };
 

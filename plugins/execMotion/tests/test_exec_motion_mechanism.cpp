@@ -46,18 +46,21 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace
+{
 
 const TfToken kIdentityPose("motion.identityPose");
 
-bool Has(const motion::HumanoidPose& pose, motion::HumanBone bone)
+bool
+Has(const motion::HumanoidPose& pose, motion::HumanBone bone)
 {
     return pose.validRotations.test(static_cast<std::size_t>(bone));
 }
 
 } // namespace
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
     assert(argc == 2 && "usage: execMotion_mechanism <identity_clip.usda>");
     const std::string fixture = argv[1];
@@ -69,8 +72,7 @@ int main(int argc, char** argv)
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     assert(stage && "no in-memory stage");
     stage->GetRootLayer()->GetSubLayerPaths().push_back(fixture);
-    assert(stage->GetRootLayer()->GetNumSubLayerPaths() == 1 &&
-           "the fixture was not sublayered");
+    assert(stage->GetRootLayer()->GetNumSubLayerPaths() == 1 && "the fixture was not sublayered");
 
     // Authored so the pose can be checked for NOT carrying a converted time:
     // 50 time codes per second is a rate a computation cannot see, and a pose
@@ -92,23 +94,20 @@ int main(int argc, char** argv)
     keys.emplace_back(clip, kIdentityPose);
     ExecUsdRequest request = system.BuildRequest(
         std::move(keys),
-        [&valueInvalidations](const ExecRequestIndexSet&,
-                              const EfTimeInterval&) {
+        [&valueInvalidations](const ExecRequestIndexSet&, const EfTimeInterval&)
+        {
             // Calling back into execution from here is forbidden by the header,
             // so this counts and returns.
             ++valueInvalidations;
         },
-        [&timeInvalidations](const ExecRequestIndexSet&) {
-            ++timeInvalidations;
-        });
+        [&timeInvalidations](const ExecRequestIndexSet&) { ++timeInvalidations; });
     assert(request.IsValid() && "the request did not compile");
 
     // ---- compute ----------------------------------------------------------
     ExecUsdCacheView view = system.Compute(request);
     VtValue value = view.Get(0);
-    assert(!value.IsEmpty() &&
-           "no value came back -- if the plugInfo is unstaged this is what it "
-           "looks like, not a load error");
+    assert(!value.IsEmpty() && "no value came back -- if the plugInfo is unstaged this is what it "
+                               "looks like, not a load error");
     assert(value.IsHolding<motion::HumanoidPose>() &&
            "the canonical aggregate did not survive the boundary");
 
@@ -143,8 +142,7 @@ int main(int argc, char** argv)
     ExecUsdCacheView view3 = system.Compute(request);
     const VtValue value3 = view3.Get(0);
     assert(value3.IsHolding<motion::HumanoidPose>());
-    const motion::HumanoidPose second =
-        value3.UncheckedGet<motion::HumanoidPose>();
+    const motion::HumanoidPose second = value3.UncheckedGet<motion::HumanoidPose>();
     assert(second.validRotations.count() == 5);
     assert(Has(second, motion::HumanBone::LeftShoulder));
 
@@ -194,10 +192,8 @@ int main(int argc, char** argv)
     {
         TfErrorMark expired;
         ExecUsdCacheView stale = system.Compute(request);
-        assert(stale.Get(0).IsEmpty() &&
-               "an expired request computed a value after all");
-        assert(!expired.IsClean() &&
-               "an expired request failed silently, which is worse");
+        assert(stale.Get(0).IsEmpty() && "an expired request computed a value after all");
+        assert(!expired.IsClean() && "an expired request failed silently, which is worse");
         expired.Clear();
     }
 
@@ -214,7 +210,7 @@ int main(int argc, char** argv)
            "InvalidateAll lost an authored change");
 
     assert(value5.UncheckedGet<motion::HumanoidPose>() ==
-           value4.UncheckedGet<motion::HumanoidPose>() &&
+               value4.UncheckedGet<motion::HumanoidPose>() &&
            "an explicit invalidation changed the answer");
 
     // **InvalidateAll also resets the system's time**, and this suite can no
@@ -235,10 +231,8 @@ int main(int argc, char** argv)
         missingKeys.emplace_back(clip, TfToken("motion.noSuchComputation"));
         ExecUsdRequest missing = system.BuildRequest(std::move(missingKeys));
         ExecUsdCacheView missingView = system.Compute(missing);
-        assert(missingView.Get(0).IsEmpty() &&
-               "an unregistered computation returned a value");
-        assert(!mark.IsClean() &&
-               "an unregistered computation was silent");
+        assert(missingView.Get(0).IsEmpty() && "an unregistered computation returned a value");
+        assert(!mark.IsClean() && "an unregistered computation was silent");
         mark.Clear();
     }
 

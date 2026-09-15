@@ -72,8 +72,7 @@ namespace motion
 //
 // NaN when either quaternion has no length -- a zero quaternion is not an
 // orientation, and answering "0 radians from identity" would be inventing one.
-MOTIONCORE_API float AngleBetween(const pxr::GfQuatf& a,
-                                  const pxr::GfQuatf& b) noexcept;
+MOTIONCORE_API float AngleBetween(const pxr::GfQuatf& a, const pxr::GfQuatf& b) noexcept;
 
 // How far apart two samples may be and still describe the same motion.
 //
@@ -140,8 +139,7 @@ MOTIONCORE_API bool NearlyEqual(const HumanoidPose& a, const HumanoidPose& b,
 // Sample counts must match exactly. Two clips of the same motion at different
 // rates are not near each other; resampling one onto the other's timeline is a
 // `motionRuntime` operation and the caller's decision to make.
-MOTIONCORE_API bool NearlyEqual(const HumanoidAnimation& a,
-                                const HumanoidAnimation& b,
+MOTIONCORE_API bool NearlyEqual(const HumanoidAnimation& a, const HumanoidAnimation& b,
                                 const MotionTolerance& tolerance = {},
                                 std::string* difference = nullptr);
 

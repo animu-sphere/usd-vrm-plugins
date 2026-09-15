@@ -30,8 +30,7 @@ constexpr std::array<DiagnosticCodeEntry, DiagnosticCodeCount> kCodes{{
     {"VRM_VMC_STALE_JOINT", DiagnosticSeverity::Warning, true},
 }};
 
-constexpr liveTransport::DiagnosticCodeTable<DiagnosticCode> kTable{
-    kCodes.data(), kCodes.size()};
+constexpr liveTransport::DiagnosticCodeTable<DiagnosticCode> kTable{kCodes.data(), kCodes.size()};
 
 } // namespace
 
@@ -75,8 +74,7 @@ FormatDiagnostic(const Diagnostic& diagnostic)
 {
     // Resolving the code is the one step only this adapter can take, so it is
     // the one argument the shared formatter cannot supply itself.
-    return liveTransport::FormatDiagnostic(DiagnosticCodeString(diagnostic.code),
-                                           diagnostic);
+    return liveTransport::FormatDiagnostic(DiagnosticCodeString(diagnostic.code), diagnostic);
 }
 
 } // namespace vrmAdapterVmc

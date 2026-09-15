@@ -126,17 +126,22 @@ struct LiveCaptureStats
 
 class MOTIONRUNTIME_API LiveCaptureSource final : public IMotionSource
 {
-public:
+  public:
     explicit LiveCaptureSource(const LiveCaptureConfig& config = {});
 
-    const LiveCaptureConfig& GetConfig() const noexcept { return _config; }
+    const LiveCaptureConfig&
+    GetConfig() const noexcept
+    {
+        return _config;
+    }
     // Applying a config re-seats the buffer capacity and the filter. Buffered
     // history survives; the smoothing state does not, because a cutoff change
     // mid-stream would otherwise blend two different filters.
     void SetConfig(const LiveCaptureConfig& config);
 
     void SetSourceMetadata(const MotionSourceMetadata& metadata);
-    MotionSourceMetadata GetSourceMetadata() const override
+    MotionSourceMetadata
+    GetSourceMetadata() const override
     {
         return _metadata;
     }
@@ -148,11 +153,16 @@ public:
 
     // captureTime = evaluationTime + clockOffset. An adapter that knows its
     // stream's epoch sets this directly; one that does not calls AlignClock().
-    void SetClockOffset(double clockOffset) noexcept
+    void
+    SetClockOffset(double clockOffset) noexcept
     {
         _clockOffset = clockOffset;
     }
-    double GetClockOffset() const noexcept { return _clockOffset; }
+    double
+    GetClockOffset() const noexcept
+    {
+        return _clockOffset;
+    }
 
     // Pins the newest buffered frame to `evaluationTime`, so that evaluation
     // consumes the stream from its current head. A deliberate playback delay is
@@ -163,25 +173,42 @@ public:
     PoseSampleResult Sample(double evaluationTime) override;
     bool GetTimeRange(double* startTime, double* endTime) const override;
 
-    const PoseBuffer& GetBuffer() const noexcept { return _buffer; }
-    bool IsEmpty() const noexcept { return _buffer.IsEmpty(); }
+    const PoseBuffer&
+    GetBuffer() const noexcept
+    {
+        return _buffer;
+    }
+    bool
+    IsEmpty() const noexcept
+    {
+        return _buffer.IsEmpty();
+    }
 
     // Bones this session has ever observed at or above the confidence floor.
     // A capture rig that solves no fingers reports it here rather than in a
     // per-frame diff.
-    const std::bitset<HumanBoneCount>& GetObservedBones() const noexcept
+    const std::bitset<HumanBoneCount>&
+    GetObservedBones() const noexcept
     {
         return _observedBones;
     }
 
-    const LiveCaptureStats& GetStats() const noexcept { return _stats; }
-    void ResetStats() noexcept { _stats = LiveCaptureStats(); }
+    const LiveCaptureStats&
+    GetStats() const noexcept
+    {
+        return _stats;
+    }
+    void
+    ResetStats() noexcept
+    {
+        _stats = LiveCaptureStats();
+    }
 
     // Drops buffered history, the held-bone state, and the smoothing state.
     // Stats and the clock offset survive; use ResetStats() for those.
     void Reset();
 
-private:
+  private:
     HumanoidPose _Condition(const HumanoidPose& pose);
 
     LiveCaptureConfig _config;

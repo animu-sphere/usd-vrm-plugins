@@ -26,10 +26,8 @@ namespace
 constexpr float kEpsilon = 1e-4f;
 
 constexpr std::size_t kHips = static_cast<std::size_t>(motion::HumanBone::Hips);
-constexpr std::size_t kSpine =
-    static_cast<std::size_t>(motion::HumanBone::Spine);
-constexpr std::size_t kLeftHand =
-    static_cast<std::size_t>(motion::HumanBone::LeftHand);
+constexpr std::size_t kSpine = static_cast<std::size_t>(motion::HumanBone::Spine);
+constexpr std::size_t kLeftHand = static_cast<std::size_t>(motion::HumanBone::LeftHand);
 
 bool
 NearlyEqual(float a, float b)
@@ -40,8 +38,7 @@ NearlyEqual(float a, float b)
 bool
 NearlyEqual(const pxr::GfVec3f& a, const pxr::GfVec3f& b)
 {
-    return NearlyEqual(a[0], b[0]) && NearlyEqual(a[1], b[1])
-        && NearlyEqual(a[2], b[2]);
+    return NearlyEqual(a[0], b[0]) && NearlyEqual(a[1], b[1]) && NearlyEqual(a[2], b[2]);
 }
 
 bool
@@ -49,11 +46,12 @@ SameOrientation(const pxr::GfQuatf& a, const pxr::GfQuatf& b)
 {
     const pxr::GfQuatf na = a.GetNormalized();
     pxr::GfQuatf nb = b.GetNormalized();
-    if (pxr::GfDot(na, nb) < 0.0f) {
+    if (pxr::GfDot(na, nb) < 0.0f)
+    {
         nb = pxr::GfQuatf(-nb.GetReal(), -nb.GetImaginary());
     }
-    return NearlyEqual(na.GetReal(), nb.GetReal())
-        && NearlyEqual(na.GetImaginary(), nb.GetImaginary());
+    return NearlyEqual(na.GetReal(), nb.GetReal()) &&
+           NearlyEqual(na.GetImaginary(), nb.GetImaginary());
 }
 
 pxr::GfQuatf
@@ -83,7 +81,8 @@ MakeFrame(double timestamp, float hipsDegrees, const pxr::GfVec3f& rootPosition)
 void
 SetConfidence(motion::HumanoidPose* pose, std::size_t bone, float score)
 {
-    if (!pose->confidence) {
+    if (!pose->confidence)
+    {
         std::array<float, motion::HumanBoneCount> scores{};
         scores.fill(1.0f);
         pose->confidence = scores;
@@ -103,31 +102,32 @@ MakeTrace(std::size_t frames = 12)
     trace.source.protocol = "replay";
     trace.source.sourceId = "walk-01";
 
-    for (std::size_t index = 0; index < frames; ++index) {
+    for (std::size_t index = 0; index < frames; ++index)
+    {
         const double timestamp = static_cast<double>(index) / 30.0;
-        motion::HumanoidPose pose = MakeFrame(
-            timestamp, 10.0f * std::sin(static_cast<float>(index) * 0.5f),
-            pxr::GfVec3f(0.0f, 0.9f, static_cast<float>(timestamp)));
+        motion::HumanoidPose pose =
+            MakeFrame(timestamp, 10.0f * std::sin(static_cast<float>(index) * 0.5f),
+                      pxr::GfVec3f(0.0f, 0.9f, static_cast<float>(timestamp)));
         motion::ContactState contacts;
-        contacts.leftFoot = (index % 2 == 0) ? motion::FootContact::InContact
-                                             : motion::FootContact::NotInContact;
-        contacts.rightFoot = (index % 2 == 0)
-            ? motion::FootContact::NotInContact
-            : motion::FootContact::InContact;
+        contacts.leftFoot =
+            (index % 2 == 0) ? motion::FootContact::InContact : motion::FootContact::NotInContact;
+        contacts.rightFoot =
+            (index % 2 == 0) ? motion::FootContact::NotInContact : motion::FootContact::InContact;
         pose.contacts = contacts;
         // A face channel on the same timeline, and one name that only some
         // frames report -- so the round trip below covers both an expression
         // that is always there and the absent/zero distinction.
         pose.expressions.Set("happy", 0.25f);
-        if (index % 3 == 0) {
+        if (index % 3 == 0)
+        {
             pose.expressions.Set("blink", 1.0f);
         }
         // A gaze on some frames and not others, for the same reason: the round
         // trip has to keep "looked nowhere" distinct from "looked at the
         // origin", and only a trace where both occur can show it.
-        if (index % 2 == 0) {
-            pose.lookAtTarget = pxr::GfVec3f(
-                0.0f, 1.4f, -2.0f + static_cast<float>(index) * 0.01f);
+        if (index % 2 == 0)
+        {
+            pose.lookAtTarget = pxr::GfVec3f(0.0f, 1.4f, -2.0f + static_cast<float>(index) * 0.01f);
         }
         pose.source = trace.source;
         trace.samples.push_back(pose);
@@ -160,10 +160,8 @@ TestConfidenceGateResolvesThroughTheMissingBonePolicy()
     const motion::PoseSampleResult result = source.Sample(1.0);
     assert(result.IsValid());
     assert(result.pose->validRotations.test(kSpine));
-    assert(SameOrientation(result.pose->localRotations[kSpine],
-                           RotationX(15.0f)));
-    assert(SameOrientation(result.pose->localRotations[kHips],
-                           RotationX(60.0f)));
+    assert(SameOrientation(result.pose->localRotations[kSpine], RotationX(15.0f)));
+    assert(SameOrientation(result.pose->localRotations[kHips], RotationX(60.0f)));
     assert(source.GetStats().bonesGatedByConfidence == 1);
     assert(source.GetStats().bonesHeld >= 1);
 
@@ -211,8 +209,7 @@ TestRootMotionIntakeModes()
     const motion::PoseSampleResult derived = source.Sample(0.5);
     assert(derived.IsValid());
     assert(derived.pose->root.hasLinearVelocity);
-    assert(NearlyEqual(derived.pose->root.linearVelocity,
-                       pxr::GfVec3f(0.0f, 0.0f, 2.0f)));
+    assert(NearlyEqual(derived.pose->root.linearVelocity, pxr::GfVec3f(0.0f, 0.0f, 2.0f)));
     assert(source.GetStats().rootVelocitiesDerived == 1);
     assert(source.GetStats().rootSamplesObserved == 2);
 
@@ -274,11 +271,11 @@ TestClockAlignmentAndSampleStatus()
     motion::LiveCaptureSource source(config);
     assert(!source.AlignClock(0.0)); // nothing buffered yet
 
-    for (std::size_t index = 0; index < 4; ++index) {
+    for (std::size_t index = 0; index < 4; ++index)
+    {
         const double timestamp = 100.0 + static_cast<double>(index) / 30.0;
-        assert(source.Push(MakeFrame(timestamp, 0.0f,
-                                     pxr::GfVec3f(0.0f, 0.9f,
-                                                  static_cast<float>(index)))));
+        assert(source.Push(
+            MakeFrame(timestamp, 0.0f, pxr::GfVec3f(0.0f, 0.9f, static_cast<float>(index)))));
     }
 
     // The capture clock starts at 100 s; the consumer's starts at 0. Aligning
@@ -290,8 +287,7 @@ TestClockAlignmentAndSampleStatus()
     assert(NearlyEqual(head.pose->timestamp, 0.0));
 
     // Inside the buffered window: a real interpolation.
-    assert(source.Sample(-1.0 / 60.0).status
-           == motion::PoseSampleStatus::Sampled);
+    assert(source.Sample(-1.0 / 60.0).status == motion::PoseSampleStatus::Sampled);
 
     // Before the window: the oldest pose is held, never extrapolated backwards.
     const motion::PoseSampleResult before = source.Sample(-10.0);
@@ -318,9 +314,9 @@ TestClockAlignmentAndSampleStatus()
     // One counter per PoseSampleStatus and nothing else, so the four sum to the
     // number of Sample() calls made above -- five.
     const motion::LiveCaptureStats& stats = source.GetStats();
-    assert(stats.samplesSampled + stats.samplesHeld + stats.samplesExtrapolated
-               + stats.samplesUnavailable
-           == 5);
+    assert(stats.samplesSampled + stats.samplesHeld + stats.samplesExtrapolated +
+               stats.samplesUnavailable ==
+           5);
 }
 
 void
@@ -343,7 +339,8 @@ void
 TestASampleResultComparesOnEveryField()
 {
     motion::HumanoidAnimation clip;
-    for (const double t : {0.0, 1.0}) {
+    for (const double t : {0.0, 1.0})
+    {
         motion::HumanoidPose pose;
         pose.timestamp = t;
         pose.validRotations.set(kHips);
@@ -388,7 +385,8 @@ TestCaptureTraceRoundTripsByteIdentically()
     motion::HumanoidAnimation parsed;
     motion::CaptureTraceError error;
     std::istringstream input(text);
-    if (!motion::ReadCaptureTrace(input, &parsed, &error)) {
+    if (!motion::ReadCaptureTrace(input, &parsed, &error))
+    {
         std::fprintf(stderr, "trace parse failed at line %zu: %s\n", error.line,
                      error.message.c_str());
         assert(false);
@@ -401,11 +399,11 @@ TestCaptureTraceRoundTripsByteIdentically()
     assert(parsed.source.kind == motion::MotionSourceKind::LiveCapture);
     assert(NearlyEqual(static_cast<float>(parsed.nominalFrameRate), 30.0f));
 
-    for (std::size_t index = 0; index < trace.samples.size(); ++index) {
+    for (std::size_t index = 0; index < trace.samples.size(); ++index)
+    {
         const motion::HumanoidPose& a = trace.samples[index];
         const motion::HumanoidPose& b = parsed.samples[index];
-        assert(NearlyEqual(static_cast<float>(a.timestamp),
-                           static_cast<float>(b.timestamp)));
+        assert(NearlyEqual(static_cast<float>(a.timestamp), static_cast<float>(b.timestamp)));
         assert(a.validRotations == b.validRotations);
         assert(SameOrientation(a.localRotations[kHips], b.localRotations[kHips]));
         assert(a.root.hasPosition == b.root.hasPosition);
@@ -419,7 +417,8 @@ TestCaptureTraceRoundTripsByteIdentically()
         // And a frame that named no target still names none, rather than the
         // origin.
         assert(a.lookAtTarget.has_value() == b.lookAtTarget.has_value());
-        if (a.lookAtTarget) {
+        if (a.lookAtTarget)
+        {
             assert(NearlyEqual(*a.lookAtTarget, *b.lookAtTarget));
         }
     }
@@ -444,29 +443,21 @@ TestCaptureTraceRejectsMalformedInput()
     const Case cases[] = {
         {"no magic", "provider x\nt 0.0\nb hips 1 0 0 0\n"},
         {"wrong version", "!motion-capture-trace 99\nt 0.0\nb hips 1 0 0 0\n"},
-        {"unknown bone",
-         "!motion-capture-trace 1\nt 0.0\nb elbow 1 0 0 0\n"},
-        {"duplicate bone",
-         "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0\nb hips 1 0 0 0\n"},
-        {"non-increasing time",
-         "!motion-capture-trace 1\nt 1.0\nb hips 1 0 0 0\nt 0.5\n"
-         "b hips 1 0 0 0\n"},
-        {"zero-length rotation",
-         "!motion-capture-trace 1\nt 0.0\nb hips 0 0 0 0\n"},
-        {"confidence out of range",
-         "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0 1.5\n"},
-        {"unknown header key",
-         "!motion-capture-trace 1\nnonsense 3\nt 0.0\nb hips 1 0 0 0\n"},
+        {"unknown bone", "!motion-capture-trace 1\nt 0.0\nb elbow 1 0 0 0\n"},
+        {"duplicate bone", "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0\nb hips 1 0 0 0\n"},
+        {"non-increasing time", "!motion-capture-trace 1\nt 1.0\nb hips 1 0 0 0\nt 0.5\n"
+                                "b hips 1 0 0 0\n"},
+        {"zero-length rotation", "!motion-capture-trace 1\nt 0.0\nb hips 0 0 0 0\n"},
+        {"confidence out of range", "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0 1.5\n"},
+        {"unknown header key", "!motion-capture-trace 1\nnonsense 3\nt 0.0\nb hips 1 0 0 0\n"},
         {"no frames", "!motion-capture-trace 1\nprovider x\n"},
         // A rotation that is not one. Accepting it would hand UsdSkel a joint
         // basis that quietly skews or scales the limb.
-        {"non-unit rotation",
-         "!motion-capture-trace 1\nt 0.0\nb hips 2 0 0 0\n"},
+        {"non-unit rotation", "!motion-capture-trace 1\nt 0.0\nb hips 2 0 0 0\n"},
         // 0.5 0.5 0.5 0.5 would be a *unit* quaternion (|q|^2 = 4 * 0.25); the
         // 0.9 is what makes this one 1.56 long.
-        {"non-unit root rotation",
-         "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0\n"
-         "root rot 0.5 0.5 0.5 0.9\n"},
+        {"non-unit root rotation", "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0\n"
+                                   "root rot 0.5 0.5 0.5 0.9\n"},
         // Text left over after a line's operands. Every one of these used to
         // parse: the tail was simply dropped, so a typo read as good data.
         {"trailing text after a rotation",
@@ -475,12 +466,10 @@ TestCaptureTraceRejectsMalformedInput()
          "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0 0.9 extra\n"},
         {"trailing text after a timestamp",
          "!motion-capture-trace 1\nt 0.0 later\nb hips 1 0 0 0\n"},
-        {"trailing text after a root vector",
-         "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0\n"
-         "root pos 0 0 0 0\n"},
-        {"trailing text after a contact pair",
-         "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0\n"
-         "contacts contact free contact\n"},
+        {"trailing text after a root vector", "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0\n"
+                                              "root pos 0 0 0 0\n"},
+        {"trailing text after a contact pair", "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0\n"
+                                               "contacts contact free contact\n"},
         {"trailing text after a header value",
          "!motion-capture-trace 1\nframeRate 30 60\nt 0.0\nb hips 1 0 0 0\n"},
         // A version is a claim about content. Reading this leniently would let
@@ -490,11 +479,9 @@ TestCaptureTraceRejectsMalformedInput()
          "!motion-capture-trace 1\nt 0.0\nb hips 1 0 0 0\ne happy 0.5\n"},
         // The same defect a repeated bone is: two values for one channel in one
         // frame, with no rule saying which wins.
-        {"duplicate expression",
-         "!motion-capture-trace 2\nt 0.0\nb hips 1 0 0 0\ne happy 0.5\n"
-         "e happy 0.25\n"},
-        {"expression with no weight",
-         "!motion-capture-trace 2\nt 0.0\nb hips 1 0 0 0\ne happy\n"},
+        {"duplicate expression", "!motion-capture-trace 2\nt 0.0\nb hips 1 0 0 0\ne happy 0.5\n"
+                                 "e happy 0.25\n"},
+        {"expression with no weight", "!motion-capture-trace 2\nt 0.0\nb hips 1 0 0 0\ne happy\n"},
         {"trailing text after an expression weight",
          "!motion-capture-trace 2\nt 0.0\nb hips 1 0 0 0\ne happy 0.5 extra\n"},
         {"non-finite expression weight",
@@ -513,14 +500,15 @@ TestCaptureTraceRejectsMalformedInput()
          "!motion-capture-trace 3\nt 0.0\nb hips 1 0 0 0\nlookat 0 nan -2\n"},
     };
 
-    for (const Case& testCase : cases) {
+    for (const Case& testCase : cases)
+    {
         motion::HumanoidAnimation parsed;
         motion::CaptureTraceError error;
         std::istringstream input(testCase.text);
         const bool ok = motion::ReadCaptureTrace(input, &parsed, &error);
-        if (ok) {
-            std::fprintf(stderr, "malformed trace was accepted: %s\n",
-                         testCase.name);
+        if (ok)
+        {
+            std::fprintf(stderr, "malformed trace was accepted: %s\n", testCase.name);
             assert(false);
         }
         // A rejection has to say what and where, or a corpus fixture cannot be
@@ -537,8 +525,7 @@ TestCaptureTraceVersioningAndUnwritableNames()
     // recording lost, so format 1 still parses -- it simply carries no `e`.
     motion::HumanoidAnimation old;
     motion::CaptureTraceError error;
-    std::istringstream input(
-        "!motion-capture-trace 1\nprovider x\nt 0.0\nb hips 1 0 0 0\n");
+    std::istringstream input("!motion-capture-trace 1\nprovider x\nt 0.0\nb hips 1 0 0 0\n");
     assert(motion::ReadCaptureTrace(input, &old, &error));
     assert(old.samples.size() == 1);
     assert(old.samples.front().expressions.IsEmpty());
@@ -556,7 +543,8 @@ TestCaptureTraceVersioningAndUnwritableNames()
     // or as none. The refusal happens before the first byte, so a caller that
     // is refused still has an untouched stream rather than a plausible file
     // holding the frames that happened to come first.
-    for (const char* unwritable : {"pursed lips", "", "tab\there"}) {
+    for (const char* unwritable : {"pursed lips", "", "tab\there"})
+    {
         motion::HumanoidAnimation broken = MakeTrace(3);
         broken.samples[1].expressions.Set(unwritable, 0.5f);
         std::ostringstream refused;
@@ -584,9 +572,10 @@ TestCaptureTraceCarriesProvenanceWithSpaces()
     motion::HumanoidAnimation parsed;
     motion::CaptureTraceError error;
     std::istringstream input(first.str());
-    if (!motion::ReadCaptureTrace(input, &parsed, &error)) {
-        std::fprintf(stderr, "provenance round trip failed at line %zu: %s\n",
-                     error.line, error.message.c_str());
+    if (!motion::ReadCaptureTrace(input, &parsed, &error))
+    {
+        std::fprintf(stderr, "provenance round trip failed at line %zu: %s\n", error.line,
+                     error.message.c_str());
         assert(false);
     }
     assert(parsed.source.provider == "Studio Example, Inc.");
@@ -602,8 +591,8 @@ TestCaptureTraceCarriesProvenanceWithSpaces()
     // the same reason an expression name is. Padding is in this list because
     // trimming it on the way back in would be a silent edit to somebody's
     // recorded provenance, which is worse than a refusal for being invisible.
-    for (const char* unwritable : {"two\nlines", " leading", "trailing ",
-                                   "carriage\rreturn"}) {
+    for (const char* unwritable : {"two\nlines", " leading", "trailing ", "carriage\rreturn"})
+    {
         motion::HumanoidAnimation broken = MakeTrace(3);
         broken.source.sourceId = unwritable;
         std::ostringstream refused;
@@ -627,8 +616,8 @@ TestReplayIsDeterministicAndFeedsTheSameInterface()
 
     // A tick schedule that deliberately runs the consumer slightly ahead of
     // delivery, so holds and extrapolations actually occur.
-    const auto replay = [&trace](motion::HumanoidAnimation* recorded,
-                                 motion::RecordReport* report) {
+    const auto replay = [&trace](motion::HumanoidAnimation* recorded, motion::RecordReport* report)
+    {
         motion::LiveCaptureConfig config;
         config.maxExtrapolationSeconds = 0.05;
         motion::LiveCaptureSource source(config);
@@ -641,11 +630,13 @@ TestReplayIsDeterministicAndFeedsTheSameInterface()
         motion::ReplaySender sender(trace, &source);
         motion::CaptureRecorder recorder(60.0);
 
-        for (std::size_t tick = 0; tick < 40; ++tick) {
+        for (std::size_t tick = 0; tick < 40; ++tick)
+        {
             const double now = static_cast<double>(tick) / 60.0;
             // Frames "arrive" a fixed 20 ms behind the tick they belong to.
             sender.Advance(now - 0.02);
-            if (source.IsEmpty()) {
+            if (source.IsEmpty())
+            {
                 continue;
             }
             recorder.Record(source.Sample(now));
@@ -669,7 +660,8 @@ TestReplayIsDeterministicAndFeedsTheSameInterface()
     assert(firstReport.held == secondReport.held);
     assert(firstReport.extrapolated == secondReport.extrapolated);
 
-    for (std::size_t index = 0; index < firstRun.samples.size(); ++index) {
+    for (std::size_t index = 0; index < firstRun.samples.size(); ++index)
+    {
         const motion::HumanoidPose& a = firstRun.samples[index];
         const motion::HumanoidPose& b = secondRun.samples[index];
         assert(a.timestamp == b.timestamp);
@@ -688,14 +680,12 @@ TestReplayIsDeterministicAndFeedsTheSameInterface()
     // downstream can tell the two apart -- which is the point of Phase D.
     motion::ClipSource clip(firstRun);
     motion::IMotionSource& asInterface = clip;
-    const motion::PoseSampleResult sampled =
-        asInterface.Sample(firstRun.samples.front().timestamp);
+    const motion::PoseSampleResult sampled = asInterface.Sample(firstRun.samples.front().timestamp);
     assert(sampled.IsValid());
     assert(sampled.status == motion::PoseSampleStatus::Sampled);
     assert(SameOrientation(sampled.pose->localRotations[kHips],
                            firstRun.samples.front().localRotations[kHips]));
-    assert(clip.GetSourceMetadata().kind
-           == motion::MotionSourceKind::LiveCapture);
+    assert(clip.GetSourceMetadata().kind == motion::MotionSourceKind::LiveCapture);
 }
 
 void
@@ -713,13 +703,13 @@ TestAQuantisedTraceStillSamplesOnItsOwnTicks()
     // poses.
     motion::HumanoidAnimation trace;
     trace.nominalFrameRate = 30.0;
-    for (std::size_t index = 0; index < 30; ++index) {
+    for (std::size_t index = 0; index < 30; ++index)
+    {
         // Quantise the way the trace writer does.
         const double exact = static_cast<double>(index) / 30.0;
         const double stored = std::round(exact * 1e6) / 1e6;
-        trace.samples.push_back(
-            MakeFrame(stored, static_cast<float>(index),
-                      pxr::GfVec3f(0.0f, 0.9f, static_cast<float>(index))));
+        trace.samples.push_back(MakeFrame(stored, static_cast<float>(index),
+                                          pxr::GfVec3f(0.0f, 0.9f, static_cast<float>(index))));
     }
     trace.startTime = trace.samples.front().timestamp;
     trace.endTime = trace.samples.back().timestamp;
@@ -728,10 +718,12 @@ TestAQuantisedTraceStillSamplesOnItsOwnTicks()
     motion::ReplaySender sender(trace, &source);
     motion::CaptureRecorder recorder(30.0);
 
-    for (std::size_t tick = 0; tick < trace.samples.size(); ++tick) {
+    for (std::size_t tick = 0; tick < trace.samples.size(); ++tick)
+    {
         const double now = static_cast<double>(tick) / 30.0;
         sender.Advance(now);
-        if (source.IsEmpty()) {
+        if (source.IsEmpty())
+        {
             continue;
         }
         recorder.Record(source.Sample(now));
@@ -752,7 +744,8 @@ TestRecorderCountsWhatItCouldNotSample()
 
     // Three ticks before any frame arrives: recorded as unavailable, and no
     // pose is invented to paper over them.
-    for (std::size_t tick = 0; tick < 3; ++tick) {
+    for (std::size_t tick = 0; tick < 3; ++tick)
+    {
         assert(!recorder.Record(source.Sample(static_cast<double>(tick))));
     }
     assert(recorder.GetReport().unavailable == 3);
@@ -796,8 +789,7 @@ TestSmoothingIsOptionalAndDoesNotInventBones()
     assert(result.IsValid());
     assert(!result.pose->validRotations.test(kSpine));
     // Smoothed, so the hips lag the raw 90 degrees rather than snapping to it.
-    assert(!SameOrientation(result.pose->localRotations[kHips],
-                            RotationX(90.0f)));
+    assert(!SameOrientation(result.pose->localRotations[kHips], RotationX(90.0f)));
 }
 
 // Corpus mode. Every committed trace must parse, and re-emitting it must
@@ -806,33 +798,36 @@ TestSmoothingIsOptionalAndDoesNotInventBones()
 int
 CheckCorpus(const std::filesystem::path& directory)
 {
-    if (!std::filesystem::is_directory(directory)) {
-        std::fprintf(stderr, "corpus directory not found: %s\n",
-                     directory.string().c_str());
+    if (!std::filesystem::is_directory(directory))
+    {
+        std::fprintf(stderr, "corpus directory not found: %s\n", directory.string().c_str());
         return 1;
     }
 
     std::vector<std::filesystem::path> traces;
     for (const std::filesystem::directory_entry& entry :
-         std::filesystem::directory_iterator(directory)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".trace") {
+         std::filesystem::directory_iterator(directory))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == ".trace")
+        {
             traces.push_back(entry.path());
         }
     }
     std::sort(traces.begin(), traces.end());
 
-    if (traces.empty()) {
-        std::fprintf(stderr, "no .trace fixtures in %s\n",
-                     directory.string().c_str());
+    if (traces.empty())
+    {
+        std::fprintf(stderr, "no .trace fixtures in %s\n", directory.string().c_str());
         return 1;
     }
 
     int failures = 0;
-    for (const std::filesystem::path& path : traces) {
+    for (const std::filesystem::path& path : traces)
+    {
         std::ifstream file(path, std::ios::binary);
-        if (!file) {
-            std::fprintf(stderr, "%s: could not open\n",
-                         path.filename().string().c_str());
+        if (!file)
+        {
+            std::fprintf(stderr, "%s: could not open\n", path.filename().string().c_str());
             ++failures;
             continue;
         }
@@ -843,17 +838,17 @@ CheckCorpus(const std::filesystem::path& directory)
         motion::HumanoidAnimation parsed;
         motion::CaptureTraceError error;
         std::istringstream input(original);
-        if (!motion::ReadCaptureTrace(input, &parsed, &error)) {
-            std::fprintf(stderr, "%s:%zu: %s\n",
-                         path.filename().string().c_str(), error.line,
+        if (!motion::ReadCaptureTrace(input, &parsed, &error))
+        {
+            std::fprintf(stderr, "%s:%zu: %s\n", path.filename().string().c_str(), error.line,
                          error.message.c_str());
             ++failures;
             continue;
         }
 
         std::ostringstream rewritten;
-        if (!motion::WriteCaptureTrace(rewritten, parsed)
-            || rewritten.str() != original) {
+        if (!motion::WriteCaptureTrace(rewritten, parsed) || rewritten.str() != original)
+        {
             std::fprintf(stderr, "%s: does not round trip byte-identically\n",
                          path.filename().string().c_str());
             ++failures;
@@ -863,19 +858,20 @@ CheckCorpus(const std::filesystem::path& directory)
         // A trace nothing can be driven from is not a fixture.
         motion::LiveCaptureSource source;
         motion::ReplaySender sender(parsed, &source);
-        if (sender.Flush() != parsed.samples.size()) {
+        if (sender.Flush() != parsed.samples.size())
+        {
             std::fprintf(stderr, "%s: replay did not accept every frame\n",
                          path.filename().string().c_str());
             ++failures;
             continue;
         }
 
-        std::printf("%s: %zu frames, %.2f Hz, round trip ok\n",
-                    path.filename().string().c_str(), parsed.samples.size(),
-                    parsed.nominalFrameRate);
+        std::printf("%s: %zu frames, %.2f Hz, round trip ok\n", path.filename().string().c_str(),
+                    parsed.samples.size(), parsed.nominalFrameRate);
     }
 
-    if (failures != 0) {
+    if (failures != 0)
+    {
         std::fprintf(stderr, "%d corpus trace(s) failed\n", failures);
         return 1;
     }
@@ -888,7 +884,8 @@ CheckCorpus(const std::filesystem::path& directory)
 int
 main(int argc, char** argv)
 {
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
 

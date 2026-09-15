@@ -117,15 +117,15 @@ constexpr double kProgressSeconds = 1.0;
 // that raises it, so the sibling's filter would suppress the only mid-session
 // message an operator actually waits for.
 void
-ReportDiagnostics(const std::vector<vrmAdapterMocopi::Diagnostic>& log,
-                  bool quiet)
+ReportDiagnostics(const std::vector<vrmAdapterMocopi::Diagnostic>& log, bool quiet)
 {
-    if (quiet) {
+    if (quiet)
+    {
         return;
     }
-    for (const vrmAdapterMocopi::Diagnostic& diagnostic : log) {
-        std::cerr << "mocopi_record: "
-                  << vrmAdapterMocopi::FormatDiagnostic(diagnostic) << "\n";
+    for (const vrmAdapterMocopi::Diagnostic& diagnostic : log)
+    {
+        std::cerr << "mocopi_record: " << vrmAdapterMocopi::FormatDiagnostic(diagnostic) << "\n";
     }
 }
 
@@ -166,8 +166,8 @@ ExportTrace(const mocopiRecordTool::Options& options,
     // not the same file" and "one of them is not there" are the same answer
     // here.
     std::error_code aliased;
-    if (std::filesystem::equivalent(options.inspectPath,
-                                    options.traceExportPath, aliased)) {
+    if (std::filesystem::equivalent(options.inspectPath, options.traceExportPath, aliased))
+    {
         std::cerr << "mocopi_record: " << options.traceExportPath
                   << " is the capture being read, named differently; writing "
                      "the trace there would destroy it\n";
@@ -178,8 +178,7 @@ ExportTrace(const mocopiRecordTool::Options& options,
     // The capture's own peer, so a replayed session's diagnostics name what the
     // live one's would have named. A capture that recorded none falls back to
     // its path, which is what the corpus tests use.
-    source.SetSource(capture.peerEndpoint.empty() ? options.inspectPath
-                                                  : capture.peerEndpoint);
+    source.SetSource(capture.peerEndpoint.empty() ? options.inspectPath : capture.peerEndpoint);
 
     // The provenance the adapter refuses to invent, and the operator already
     // stated. `MocopiFrameAssembler::GetSourceMetadata` leaves `provider` and
@@ -200,15 +199,16 @@ ExportTrace(const mocopiRecordTool::Options& options,
     // First of each code, and how many there were. A frame short of one bone
     // raises one diagnostic per frame, so a 2000-frame session with a sensor off
     // would otherwise write 2000 lines over the report an operator ran this for.
-    std::map<vrmAdapterMocopi::DiagnosticCode, std::pair<std::string, std::size_t>>
-        seen;
-    for (const vrmAdapterMocopi::RecordedDatagram& datagram :
-         capture.datagrams) {
+    std::map<vrmAdapterMocopi::DiagnosticCode, std::pair<std::string, std::size_t>> seen;
+    for (const vrmAdapterMocopi::RecordedDatagram& datagram : capture.datagrams)
+    {
         source.PushDatagram(datagram.bytes, datagram.receiveTime, &log);
         trace.Observe(source.GetFramesFromLastPush(), metadata);
-        for (const vrmAdapterMocopi::Diagnostic& diagnostic : log) {
+        for (const vrmAdapterMocopi::Diagnostic& diagnostic : log)
+        {
             auto& entry = seen[diagnostic.code];
-            if (entry.second == 0) {
+            if (entry.second == 0)
+            {
                 entry.first = vrmAdapterMocopi::FormatDiagnostic(diagnostic);
             }
             ++entry.second;
@@ -223,65 +223,71 @@ ExportTrace(const mocopiRecordTool::Options& options,
     trace.Close();
     const std::vector<motion::HumanoidAnimation>& sessions = trace.GetSessions();
 
-    if (!options.quiet) {
-        for (const auto& entry : seen) {
+    if (!options.quiet)
+    {
+        for (const auto& entry : seen)
+        {
             std::cerr << "mocopi_record: " << entry.second.first;
-            if (entry.second.second > 1) {
-                std::cerr << " (and " << (entry.second.second - 1)
-                          << " more of "
-                          << vrmAdapterMocopi::DiagnosticCodeString(entry.first)
-                          << ")";
+            if (entry.second.second > 1)
+            {
+                std::cerr << " (and " << (entry.second.second - 1) << " more of "
+                          << vrmAdapterMocopi::DiagnosticCodeString(entry.first) << ")";
             }
             std::cerr << "\n";
         }
     }
 
-    if (sessions.empty()) {
+    if (sessions.empty())
+    {
         std::cerr << "mocopi_record: nothing decoded into a frame, so there is "
                      "no trace to write\n";
         return false;
     }
 
     std::size_t index = 0;
-    if (options.sourceSession != 0) {
-        if (options.sourceSession > sessions.size()) {
-            std::cerr << "mocopi_record: --source-session "
-                      << options.sourceSession << ": this capture holds "
-                      << sessions.size() << " session(s)\n";
+    if (options.sourceSession != 0)
+    {
+        if (options.sourceSession > sessions.size())
+        {
+            std::cerr << "mocopi_record: --source-session " << options.sourceSession
+                      << ": this capture holds " << sessions.size() << " session(s)\n";
             return false;
         }
         index = options.sourceSession - 1;
-    } else if (sessions.size() > 1) {
+    }
+    else if (sessions.size() > 1)
+    {
         // Refused rather than resolved. Picking the first would silently discard
         // a recording, and concatenating them would manufacture a continuity the
         // device's own clock denies (TraceExport.h).
         std::cerr << "mocopi_record: the source restarted, so this capture "
-                     "holds " << sessions.size()
+                     "holds "
+                  << sessions.size()
                   << " sessions whose stream clocks overlap; one trace is one "
                      "session, so name the one to export with --source-session "
-                     "1.." << sessions.size() << "\n";
+                     "1.."
+                  << sessions.size() << "\n";
         return false;
     }
 
     const motion::HumanoidAnimation& session = sessions[index];
-    if (!motion::WriteCaptureTraceFile(options.traceExportPath, session)) {
+    if (!motion::WriteCaptureTraceFile(options.traceExportPath, session))
+    {
         // The writer refuses before its first byte when a value cannot be
         // spelled in that format, so a refusal here leaves the path untouched
         // rather than half-written.
-        std::cerr << "mocopi_record: could not write " << options.traceExportPath
-                  << "\n";
+        std::cerr << "mocopi_record: could not write " << options.traceExportPath << "\n";
         return false;
     }
-    if (!options.quiet) {
-        std::cerr << "mocopi_record: wrote " << session.samples.size()
-                  << " delivered frame(s)";
-        if (sessions.size() > 1) {
-            std::cerr << " of session " << (index + 1) << " of "
-                      << sessions.size();
+    if (!options.quiet)
+    {
+        std::cerr << "mocopi_record: wrote " << session.samples.size() << " delivered frame(s)";
+        if (sessions.size() > 1)
+        {
+            std::cerr << " of session " << (index + 1) << " of " << sessions.size();
         }
-        std::cerr << " over " << (session.endTime - session.startTime)
-                  << " s at " << session.nominalFrameRate << " Hz to "
-                  << options.traceExportPath << "\n";
+        std::cerr << " over " << (session.endTime - session.startTime) << " s at "
+                  << session.nominalFrameRate << " Hz to " << options.traceExportPath << "\n";
 
         // The largest thing the trace carries beside the rotations, said at the
         // point it crosses. It was printed here as a *loss* until the root/hips
@@ -296,10 +302,10 @@ ExportTrace(const mocopiRecordTool::Options& options,
         // and a line that appeared only above some threshold would leave a
         // reader unable to tell a still session from an unmeasured one.
         const mocopiRecordTool::HipsMotion& hips = trace.GetHipsMotion()[index];
-        std::cerr << "mocopi_record: the trace carries " << hips.pathMetres
-                  << " m of hips path (" << hips.netMetres
-                  << " m net) as root motion";
-        if (hips.framesWithoutHips != 0) {
+        std::cerr << "mocopi_record: the trace carries " << hips.pathMetres << " m of hips path ("
+                  << hips.netMetres << " m net) as root motion";
+        if (hips.framesWithoutHips != 0)
+        {
             std::cerr << "; " << hips.framesWithoutHips
                       << " frame(s) carried no hips record and are not in that "
                          "sum";
@@ -314,10 +320,11 @@ RunInspect(const mocopiRecordTool::Options& options)
 {
     vrmAdapterMocopi::PacketCapture capture;
     vrmAdapterMocopi::PacketCaptureError captureError;
-    if (!vrmAdapterMocopi::ReadPacketCaptureFile(options.inspectPath, &capture,
-                                                 &captureError)) {
+    if (!vrmAdapterMocopi::ReadPacketCaptureFile(options.inspectPath, &capture, &captureError))
+    {
         std::cerr << "mocopi_record: " << options.inspectPath;
-        if (captureError.line != 0) {
+        if (captureError.line != 0)
+        {
             std::cerr << ":" << captureError.line;
         }
         std::cerr << ": " << captureError.message << "\n";
@@ -325,18 +332,17 @@ RunInspect(const mocopiRecordTool::Options& options)
     }
 
     mocopiRecordTool::SessionReport report;
-    for (const vrmAdapterMocopi::RecordedDatagram& datagram :
-         capture.datagrams) {
+    for (const vrmAdapterMocopi::RecordedDatagram& datagram : capture.datagrams)
+    {
         // The record's own peer where the capture carries one, and the
         // header's where it does not.
-        report.ObserveDatagram(datagram.peer.empty() ? capture.peerEndpoint
-                                                     : datagram.peer,
-                               datagram.bytes.data(), datagram.bytes.size(),
-                               datagram.receiveTime);
+        report.ObserveDatagram(datagram.peer.empty() ? capture.peerEndpoint : datagram.peer,
+                               datagram.bytes.data(), datagram.bytes.size(), datagram.receiveTime);
     }
 
     bool exported = true;
-    if (!options.traceExportPath.empty()) {
+    if (!options.traceExportPath.empty())
+    {
         exported = ExportTrace(options, capture);
     }
 
@@ -353,21 +359,23 @@ RunRecord(const mocopiRecordTool::Options& options)
 {
     vrmAdapterMocopi::UdpReceiver receiver;
     std::vector<vrmAdapterMocopi::Diagnostic> log;
-    if (!receiver.Open(options.receiver, &log)) {
-        for (const vrmAdapterMocopi::Diagnostic& diagnostic : log) {
-            std::cerr << "mocopi_record: "
-                      << vrmAdapterMocopi::FormatDiagnostic(diagnostic) << "\n";
+    if (!receiver.Open(options.receiver, &log))
+    {
+        for (const vrmAdapterMocopi::Diagnostic& diagnostic : log)
+        {
+            std::cerr << "mocopi_record: " << vrmAdapterMocopi::FormatDiagnostic(diagnostic)
+                      << "\n";
         }
         return 1;
     }
     log.clear();
 
-    if (!options.quiet) {
+    if (!options.quiet)
+    {
         // Before anything is received, and on stderr, because it is the one line
         // a script waiting to start a source has to read — and because a
         // `--port 0` session cannot be reached until this says where it landed.
-        std::cerr << "mocopi_record: listening on "
-                  << receiver.GetBoundEndpoint() << "\n";
+        std::cerr << "mocopi_record: listening on " << receiver.GetBoundEndpoint() << "\n";
 
         // The two ways a bind can be right for the socket and useless for this
         // product, warned about *now* rather than in the report. Both are
@@ -377,12 +385,14 @@ RunRecord(const mocopiRecordTool::Options& options)
         // tool's inferences, which is why they live here and not in
         // `UdpReceiver`: refusing an address because a *product* does not send
         // to it would be a socket inventing a restriction on itself.
-        if (receiver.IsLoopbackOnly()) {
+        if (receiver.IsLoopbackOnly())
+        {
             std::cerr << "mocopi_record: warning: loopback only, which no "
                          "device can reach; the vendor documents 'localhost' "
                          "as an unsupported destination\n";
         }
-        if (EndpointIsIpv6(receiver.GetBoundEndpoint())) {
+        if (EndpointIsIpv6(receiver.GetBoundEndpoint()))
+        {
             std::cerr << "mocopi_record: warning: this is an IPv6 endpoint and "
                          "the product sends to IPv4 only\n";
         }
@@ -401,33 +411,37 @@ RunRecord(const mocopiRecordTool::Options& options)
     double lastArrival = 0.0;
     double lastProgress = 0.0;
     bool running = true;
-    while (running) {
-        if (gInterrupted != 0) {
+    while (running)
+    {
+        if (gInterrupted != 0)
+        {
             report.SetStopReason(mocopiRecordTool::StopReason::Interrupted);
             break;
         }
 
         const vrmAdapterMocopi::ReceiveStatus status =
             receiver.Receive(&datagram, kPollSeconds, &log);
-        switch (status) {
-        case vrmAdapterMocopi::ReceiveStatus::Received: {
+        switch (status)
+        {
+        case vrmAdapterMocopi::ReceiveStatus::Received:
+        {
             // Recorded first. See the header: with no decoder in this process
             // the rule costs nothing to keep, and it is the rule the file's
             // whole value rests on.
             capture.datagrams.push_back(vrmAdapterMocopi::RecordedDatagram{
                 datagram.receiveTime, datagram.peer, datagram.bytes});
-            if (capture.peerEndpoint.empty()) {
+            if (capture.peerEndpoint.empty())
+            {
                 capture.peerEndpoint = datagram.peer;
             }
             lastArrival = datagram.receiveTime;
 
-            report.ObserveDatagram(datagram.peer, datagram.bytes.data(),
-                                   datagram.bytes.size(),
+            report.ObserveDatagram(datagram.peer, datagram.bytes.data(), datagram.bytes.size(),
                                    datagram.receiveTime);
 
-            if (report.GetDatagramCount() >= options.maxDatagrams) {
-                report.SetStopReason(
-                    mocopiRecordTool::StopReason::MaxDatagrams);
+            if (report.GetDatagramCount() >= options.maxDatagrams)
+            {
+                report.SetStopReason(mocopiRecordTool::StopReason::MaxDatagrams);
                 running = false;
             }
             break;
@@ -445,8 +459,8 @@ RunRecord(const mocopiRecordTool::Options& options)
             running = false;
             break;
         case vrmAdapterMocopi::ReceiveStatus::Failed:
-            std::cerr << "mocopi_record: the socket failed: "
-                      << receiver.GetLastErrorText() << "\n";
+            std::cerr << "mocopi_record: the socket failed: " << receiver.GetLastErrorText()
+                      << "\n";
             report.SetStopReason(mocopiRecordTool::StopReason::ReceiveFailed);
             running = false;
             break;
@@ -464,25 +478,24 @@ RunRecord(const mocopiRecordTool::Options& options)
         // `Now()` rather than the last datagram's stamp: a session that stops
         // receiving still has to notice its own duration passing.
         const double now = receiver.Now();
-        if (running && options.durationSeconds > 0.0
-            && now >= options.durationSeconds) {
+        if (running && options.durationSeconds > 0.0 && now >= options.durationSeconds)
+        {
             report.SetStopReason(mocopiRecordTool::StopReason::Duration);
             running = false;
         }
-        if (running && options.idleSeconds > 0.0
-            && now - lastArrival >= options.idleSeconds) {
+        if (running && options.idleSeconds > 0.0 && now - lastArrival >= options.idleSeconds)
+        {
             // Measured from `Open` until the first datagram, so a source that
             // never starts times out exactly as one that stops does.
             report.SetStopReason(mocopiRecordTool::StopReason::IdleTimeout);
             running = false;
         }
 
-        if (!options.quiet && now - lastProgress >= kProgressSeconds) {
+        if (!options.quiet && now - lastProgress >= kProgressSeconds)
+        {
             lastProgress = now;
-            std::fprintf(stderr,
-                         "mocopi_record: %6.1f s  %llu datagram(s)\n", now,
-                         static_cast<unsigned long long>(
-                             report.GetDatagramCount()));
+            std::fprintf(stderr, "mocopi_record: %6.1f s  %llu datagram(s)\n", now,
+                         static_cast<unsigned long long>(report.GetDatagramCount()));
         }
     }
 
@@ -491,7 +504,8 @@ RunRecord(const mocopiRecordTool::Options& options)
     // of the facts the report is about to print — and the socket's own
     // destructor releases it a few lines later anyway.
 
-    if (!options.quiet && report.HasMultiplePeers()) {
+    if (!options.quiet && report.HasMultiplePeers())
+    {
         // The capture header names one peer, so a mixed session's provenance is
         // true of some of its datagrams and not the rest. Worth an operator's
         // attention before the file becomes a fixture.
@@ -499,7 +513,8 @@ RunRecord(const mocopiRecordTool::Options& options)
                      "one peer; the capture header names only "
                   << capture.peerEndpoint << "\n";
     }
-    if (!options.quiet && report.GetDatagramCount() == 0) {
+    if (!options.quiet && report.GetDatagramCount() == 0)
+    {
         std::cerr << "mocopi_record: warning: nothing arrived\n";
     }
 
@@ -508,8 +523,10 @@ RunRecord(const mocopiRecordTool::Options& options)
     // this report — and returning early on a full disk would destroy both at
     // once, which is the moment an operator most needs to be told what they had.
     bool written = true;
-    if (!options.dryRun) {
-        if (report.GetDatagramCount() == 0) {
+    if (!options.dryRun)
+    {
+        if (report.GetDatagramCount() == 0)
+        {
             // Declined rather than written, because the format has no
             // datagram-less form: `WritePacketCapture` will happily emit a
             // header and stop, and `ReadPacketCapture` refuses the result at
@@ -518,18 +535,20 @@ RunRecord(const mocopiRecordTool::Options& options)
             // rejects, and they would find out at the point they tried to use
             // it. Said on stderr whatever `--quiet` says: it is the reason for
             // a non-zero exit, not a warning about the session.
-            std::cerr << "mocopi_record: nothing arrived, so "
-                      << options.outputPath
+            std::cerr << "mocopi_record: nothing arrived, so " << options.outputPath
                       << " was not written: a capture carrying no datagrams is "
                          "one this adapter's reader refuses\n";
             written = false;
-        } else {
-            written = vrmAdapterMocopi::WritePacketCaptureFile(
-                options.outputPath, capture);
-            if (!written) {
-                std::cerr << "mocopi_record: could not write "
-                          << options.outputPath << "\n";
-            } else if (!options.quiet) {
+        }
+        else
+        {
+            written = vrmAdapterMocopi::WritePacketCaptureFile(options.outputPath, capture);
+            if (!written)
+            {
+                std::cerr << "mocopi_record: could not write " << options.outputPath << "\n";
+            }
+            else if (!options.quiet)
+            {
                 std::cerr << "mocopi_record: wrote " << capture.datagrams.size()
                           << " datagram(s) to " << options.outputPath << "\n";
 
@@ -542,18 +561,22 @@ RunRecord(const mocopiRecordTool::Options& options)
                 // exploratory recording is a legitimate thing to want, and the
                 // first session against a new device is exactly that.
                 std::string missing;
-                if (capture.sender.empty()) {
+                if (capture.sender.empty())
+                {
                     missing += " --sender";
                 }
-                if (capture.sourceId.empty()) {
+                if (capture.sourceId.empty())
+                {
                     missing += " --source-id";
                 }
-                if (!missing.empty()) {
+                if (!missing.empty())
+                {
                     std::cerr << "mocopi_record: warning: no" << missing
                               << ", which the corpus check requires of a "
                                  "committed fixture\n";
                 }
-                if (capture.device.empty()) {
+                if (capture.device.empty())
+                {
                     // Not required by that check, and named separately for the
                     // reason this adapter exists: `device` is the one header key
                     // this format has that the sibling's does not, and a capture
@@ -574,9 +597,8 @@ RunRecord(const mocopiRecordTool::Options& options)
     // distinction at all to the script that wrapped this tool, and this file's own
     // header says a capture cannot tell the two apart afterwards. So the one
     // machine-readable channel carries it.
-    const bool completed =
-        report.GetStopReason() != mocopiRecordTool::StopReason::ReceiveFailed
-        && report.GetStopReason() != mocopiRecordTool::StopReason::SocketClosed;
+    const bool completed = report.GetStopReason() != mocopiRecordTool::StopReason::ReceiveFailed &&
+                           report.GetStopReason() != mocopiRecordTool::StopReason::SocketClosed;
     return written && completed ? 0 : 1;
 }
 
@@ -590,18 +612,19 @@ main(int argc, char** argv)
     mocopiRecordTool::Options options;
     bool showHelp = false;
     std::string error;
-    if (!mocopiRecordTool::ParseOptions(arguments, &options, &showHelp,
-                                        &error)) {
-        std::cerr << "mocopi_record: " << error << "\n\n"
-                  << mocopiRecordTool::GetUsage();
+    if (!mocopiRecordTool::ParseOptions(arguments, &options, &showHelp, &error))
+    {
+        std::cerr << "mocopi_record: " << error << "\n\n" << mocopiRecordTool::GetUsage();
         return 2;
     }
-    if (showHelp) {
+    if (showHelp)
+    {
         std::fputs(mocopiRecordTool::GetUsage(), stdout);
         return 0;
     }
 
-    if (!options.inspectPath.empty()) {
+    if (!options.inspectPath.empty())
+    {
         return RunInspect(options);
     }
 

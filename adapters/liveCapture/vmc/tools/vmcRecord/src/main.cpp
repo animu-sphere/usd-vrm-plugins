@@ -88,20 +88,21 @@ constexpr double kPollSeconds = 0.2;
 constexpr double kProgressSeconds = 1.0;
 
 void
-ReportDiagnostics(const std::vector<vrmAdapterVmc::Diagnostic>& log,
-                  std::size_t from, bool quiet)
+ReportDiagnostics(const std::vector<vrmAdapterVmc::Diagnostic>& log, std::size_t from, bool quiet)
 {
-    if (quiet) {
+    if (quiet)
+    {
         return;
     }
-    for (std::size_t i = from; i < log.size(); ++i) {
+    for (std::size_t i = from; i < log.size(); ++i)
+    {
         // Only the ones a session cannot continue past reach stderr as they
         // happen. A 30 Hz sender missing one bone would otherwise write a
         // thousand recoverable lines a minute over the progress line, and the
         // report at the end counts every one of them by code anyway.
-        if (!log[i].recoverable) {
-            std::cerr << "vmc_record: "
-                      << vrmAdapterVmc::FormatDiagnostic(log[i]) << "\n";
+        if (!log[i].recoverable)
+        {
+            std::cerr << "vmc_record: " << vrmAdapterVmc::FormatDiagnostic(log[i]) << "\n";
         }
     }
 }
@@ -114,31 +115,33 @@ ReportDiagnostics(const std::vector<vrmAdapterVmc::Diagnostic>& log,
 // first would silently discard a recording, and concatenating them would
 // manufacture a continuity the sender's clock denies (TraceExport.h).
 bool
-WriteTrace(const vmcRecordTool::Options& options,
-           vmcRecordTool::TraceCollector& collector, bool quiet)
+WriteTrace(const vmcRecordTool::Options& options, vmcRecordTool::TraceCollector& collector,
+           bool quiet)
 {
     collector.Close();
-    const std::vector<motion::HumanoidAnimation>& sessions =
-        collector.GetSessions();
+    const std::vector<motion::HumanoidAnimation>& sessions = collector.GetSessions();
 
-    if (sessions.empty()) {
+    if (sessions.empty())
+    {
         std::cerr << "vmc_record: nothing decoded into a frame, so there is no "
                      "trace to write\n";
         return false;
     }
 
     std::size_t index = 0;
-    if (options.senderSession != 0) {
-        if (options.senderSession > sessions.size()) {
+    if (options.senderSession != 0)
+    {
+        if (options.senderSession > sessions.size())
+        {
             std::cerr << "vmc_record: --sender-session " << options.senderSession
-                      << ": this recording holds " << sessions.size()
-                      << " session(s)\n";
+                      << ": this recording holds " << sessions.size() << " session(s)\n";
             return false;
         }
         index = options.senderSession - 1;
-    } else if (sessions.size() > 1) {
-        std::cerr << "vmc_record: the sender restarted, so this recording holds "
-                  << sessions.size()
+    }
+    else if (sessions.size() > 1)
+    {
+        std::cerr << "vmc_record: the sender restarted, so this recording holds " << sessions.size()
                   << " sessions whose clocks overlap; one trace is one session, "
                      "so name the one to export with --sender-session 1.."
                   << sessions.size() << "\n";
@@ -146,20 +149,20 @@ WriteTrace(const vmcRecordTool::Options& options,
     }
 
     const motion::HumanoidAnimation& session = sessions[index];
-    if (!motion::WriteCaptureTraceFile(options.traceExportPath, session)) {
+    if (!motion::WriteCaptureTraceFile(options.traceExportPath, session))
+    {
         // The writer refuses before its first byte when a frame carries an
         // expression name the format cannot spell, so a refusal here leaves the
         // path untouched rather than half-written.
-        std::cerr << "vmc_record: could not write " << options.traceExportPath
-                  << "\n";
+        std::cerr << "vmc_record: could not write " << options.traceExportPath << "\n";
         return false;
     }
-    if (!quiet) {
-        std::cerr << "vmc_record: wrote " << session.samples.size()
-                  << " delivered frame(s)";
-        if (sessions.size() > 1) {
-            std::cerr << " of session " << (index + 1) << " of "
-                      << sessions.size();
+    if (!quiet)
+    {
+        std::cerr << "vmc_record: wrote " << session.samples.size() << " delivered frame(s)";
+        if (sessions.size() > 1)
+        {
+            std::cerr << " of session " << (index + 1) << " of " << sessions.size();
         }
         std::cerr << " to " << options.traceExportPath << "\n";
     }
@@ -171,10 +174,11 @@ RunInspect(const vmcRecordTool::Options& options)
 {
     vrmAdapterVmc::PacketCapture capture;
     vrmAdapterVmc::PacketCaptureError captureError;
-    if (!vrmAdapterVmc::ReadPacketCaptureFile(options.inspectPath, &capture,
-                                              &captureError)) {
+    if (!vrmAdapterVmc::ReadPacketCaptureFile(options.inspectPath, &capture, &captureError))
+    {
         std::cerr << "vmc_record: " << options.inspectPath;
-        if (captureError.line != 0) {
+        if (captureError.line != 0)
+        {
             std::cerr << ":" << captureError.line;
         }
         std::cerr << ": " << captureError.message << "\n";
@@ -187,22 +191,20 @@ RunInspect(const vmcRecordTool::Options& options)
     // The capture's own peer, so a replayed session's diagnostics name what the
     // live one's would have named. A capture that recorded none falls back to
     // its path, which is what the corpus tests use.
-    source.SetSource(capture.peerEndpoint.empty() ? options.inspectPath
-                                                  : capture.peerEndpoint);
+    source.SetSource(capture.peerEndpoint.empty() ? options.inspectPath : capture.peerEndpoint);
 
     vmcRecordTool::SessionReport report;
     vmcRecordTool::TraceCollector trace;
     std::vector<vrmAdapterVmc::Diagnostic> log;
-    for (const vrmAdapterVmc::RecordedDatagram& datagram : capture.datagrams) {
+    for (const vrmAdapterVmc::RecordedDatagram& datagram : capture.datagrams)
+    {
         // The record's own peer where the capture carries one, and the
         // header's where it does not.
-        report.ObserveDatagram(datagram.peer.empty() ? capture.peerEndpoint
-                                                     : datagram.peer,
+        report.ObserveDatagram(datagram.peer.empty() ? capture.peerEndpoint : datagram.peer,
                                datagram.bytes.size(), datagram.receiveTime);
         source.PushDatagram(datagram.bytes, datagram.receiveTime, &log);
         report.ObserveFrames(source.GetFramesFromLastPush());
-        trace.Observe(source.GetFramesFromLastPush(),
-                      source.GetSourceMetadata());
+        trace.Observe(source.GetFramesFromLastPush(), source.GetSourceMetadata());
         report.ObserveDiagnostics(log, 0);
         ReportDiagnostics(log, 0, options.quiet);
         // Cleared per datagram, exactly as the record loop does it: the report
@@ -220,7 +222,8 @@ RunInspect(const vmcRecordTool::Options& options)
     report.ObserveDiagnostics(log, 0);
 
     bool exported = true;
-    if (!options.traceExportPath.empty()) {
+    if (!options.traceExportPath.empty())
+    {
         exported = WriteTrace(options, trace, options.quiet);
     }
 
@@ -234,22 +237,23 @@ RunRecord(const vmcRecordTool::Options& options)
 {
     vrmAdapterVmc::UdpReceiver receiver;
     std::vector<vrmAdapterVmc::Diagnostic> log;
-    if (!receiver.Open(options.receiver, &log)) {
-        for (const vrmAdapterVmc::Diagnostic& diagnostic : log) {
-            std::cerr << "vmc_record: "
-                      << vrmAdapterVmc::FormatDiagnostic(diagnostic) << "\n";
+    if (!receiver.Open(options.receiver, &log))
+    {
+        for (const vrmAdapterVmc::Diagnostic& diagnostic : log)
+        {
+            std::cerr << "vmc_record: " << vrmAdapterVmc::FormatDiagnostic(diagnostic) << "\n";
         }
         return 1;
     }
     log.clear();
 
-    if (!options.quiet) {
+    if (!options.quiet)
+    {
         // Before anything is received, and on stderr, because it is the one
         // line a script waiting to start a sender has to read — and because a
         // `--port 0` session cannot be reached until this says where it landed.
         std::cerr << "vmc_record: listening on " << receiver.GetBoundEndpoint()
-                  << (receiver.IsLoopbackOnly() ? " (loopback only)" : "")
-                  << "\n";
+                  << (receiver.IsLoopbackOnly() ? " (loopback only)" : "") << "\n";
     }
 
     vrmAdapterVmc::VmcLiveSourceConfig config;
@@ -270,42 +274,42 @@ RunRecord(const vmcRecordTool::Options& options)
     double lastArrival = 0.0;
     double lastProgress = 0.0;
     bool running = true;
-    while (running) {
-        if (gInterrupted != 0) {
+    while (running)
+    {
+        if (gInterrupted != 0)
+        {
             report.SetStopReason(vmcRecordTool::StopReason::Interrupted);
             break;
         }
 
-        const vrmAdapterVmc::ReceiveStatus status =
-            receiver.Receive(&datagram, kPollSeconds);
-        switch (status) {
-        case vrmAdapterVmc::ReceiveStatus::Received: {
+        const vrmAdapterVmc::ReceiveStatus status = receiver.Receive(&datagram, kPollSeconds);
+        switch (status)
+        {
+        case vrmAdapterVmc::ReceiveStatus::Received:
+        {
             // Recorded first. See the header: this order is the rule.
-            capture.datagrams.push_back(
-                vrmAdapterVmc::RecordedDatagram{datagram.receiveTime,
-                                                datagram.peer,
-                                                datagram.bytes});
-            if (capture.peerEndpoint.empty()) {
+            capture.datagrams.push_back(vrmAdapterVmc::RecordedDatagram{
+                datagram.receiveTime, datagram.peer, datagram.bytes});
+            if (capture.peerEndpoint.empty())
+            {
                 capture.peerEndpoint = datagram.peer;
             }
             lastArrival = datagram.receiveTime;
 
             const std::size_t seen = log.size();
-            report.ObserveDatagram(datagram.peer, datagram.bytes.size(),
-                                   datagram.receiveTime);
+            report.ObserveDatagram(datagram.peer, datagram.bytes.size(), datagram.receiveTime);
             source.PushDatagram(datagram.bytes, datagram.receiveTime, &log);
             report.ObserveFrames(source.GetFramesFromLastPush());
-            trace.Observe(source.GetFramesFromLastPush(),
-                          source.GetSourceMetadata());
+            trace.Observe(source.GetFramesFromLastPush(), source.GetSourceMetadata());
             report.ObserveDiagnostics(log, seen);
             ReportDiagnostics(log, seen, options.quiet);
             // The list is a session's worth of history nobody reads twice: the
             // report has counted these and kept the first of each code.
             log.clear();
 
-            if (report.GetDatagramCount() >= options.maxDatagrams) {
-                report.SetStopReason(
-                    vmcRecordTool::StopReason::MaxDatagrams);
+            if (report.GetDatagramCount() >= options.maxDatagrams)
+            {
+                report.SetStopReason(vmcRecordTool::StopReason::MaxDatagrams);
                 running = false;
             }
             // The second bound, and only while there is a second thing being
@@ -313,8 +317,9 @@ RunRecord(const vmcRecordTool::Options& options)
             // below so it reads next to the bound it parallels -- both are
             // about what this process is holding, not about how long it has
             // been running.
-            if (running && !options.traceExportPath.empty()
-                && trace.GetFrameCount() >= options.maxFrames) {
+            if (running && !options.traceExportPath.empty() &&
+                trace.GetFrameCount() >= options.maxFrames)
+            {
                 report.SetStopReason(vmcRecordTool::StopReason::MaxFrames);
                 running = false;
             }
@@ -324,8 +329,7 @@ RunRecord(const vmcRecordTool::Options& options)
             break;
         case vrmAdapterVmc::ReceiveStatus::Closed:
         case vrmAdapterVmc::ReceiveStatus::Failed:
-            std::cerr << "vmc_record: the socket failed: "
-                      << receiver.GetLastErrorText() << "\n";
+            std::cerr << "vmc_record: the socket failed: " << receiver.GetLastErrorText() << "\n";
             report.SetStopReason(vmcRecordTool::StopReason::ReceiveFailed);
             running = false;
             break;
@@ -334,29 +338,27 @@ RunRecord(const vmcRecordTool::Options& options)
         // `Now()` rather than the last datagram's stamp: a session that stops
         // receiving still has to notice its own duration passing.
         const double now = receiver.Now();
-        if (running && options.durationSeconds > 0.0
-            && now >= options.durationSeconds) {
+        if (running && options.durationSeconds > 0.0 && now >= options.durationSeconds)
+        {
             report.SetStopReason(vmcRecordTool::StopReason::Duration);
             running = false;
         }
-        if (running && options.idleSeconds > 0.0
-            && now - lastArrival >= options.idleSeconds) {
+        if (running && options.idleSeconds > 0.0 && now - lastArrival >= options.idleSeconds)
+        {
             // Measured from `Open` until the first datagram, so a sender that
             // never starts times out exactly as one that stops does.
             report.SetStopReason(vmcRecordTool::StopReason::IdleTimeout);
             running = false;
         }
 
-        if (!options.quiet && now - lastProgress >= kProgressSeconds) {
+        if (!options.quiet && now - lastProgress >= kProgressSeconds)
+        {
             lastProgress = now;
             std::fprintf(stderr,
                          "vmc_record: %6.1f s  %llu datagram(s)  "
                          "%llu frame(s)\n",
-                         now,
-                         static_cast<unsigned long long>(
-                             report.GetDatagramCount()),
-                         static_cast<unsigned long long>(
-                             report.GetFrameCount()));
+                         now, static_cast<unsigned long long>(report.GetDatagramCount()),
+                         static_cast<unsigned long long>(report.GetFrameCount()));
         }
     }
 
@@ -374,7 +376,8 @@ RunRecord(const vmcRecordTool::Options& options)
     // of the facts the report is about to print — and the socket's own
     // destructor releases it a few lines later anyway.
 
-    if (!options.quiet && report.HasMultiplePeers()) {
+    if (!options.quiet && report.HasMultiplePeers())
+    {
         // The capture header names one peer, so a mixed session's provenance is
         // true of some of its datagrams and not the rest. Worth an operator's
         // attention before the file becomes a fixture.
@@ -382,7 +385,8 @@ RunRecord(const vmcRecordTool::Options& options)
                      "peer; the capture header names only "
                   << capture.peerEndpoint << "\n";
     }
-    if (!options.quiet && report.GetDatagramCount() == 0) {
+    if (!options.quiet && report.GetDatagramCount() == 0)
+    {
         std::cerr << "vmc_record: warning: nothing arrived"
                   << (receiver.IsLoopbackOnly()
                           ? "; the socket was bound to loopback, which no other "
@@ -397,15 +401,17 @@ RunRecord(const vmcRecordTool::Options& options)
     // once, which is the moment an operator most needs to be told what they
     // had.
     bool written = true;
-    if (!options.dryRun) {
-        written = vrmAdapterVmc::WritePacketCaptureFile(options.outputPath,
-                                                        capture);
-        if (!written) {
-            std::cerr << "vmc_record: could not write " << options.outputPath
-                      << "\n";
-        } else if (!options.quiet) {
-            std::cerr << "vmc_record: wrote " << capture.datagrams.size()
-                      << " datagram(s) to " << options.outputPath << "\n";
+    if (!options.dryRun)
+    {
+        written = vrmAdapterVmc::WritePacketCaptureFile(options.outputPath, capture);
+        if (!written)
+        {
+            std::cerr << "vmc_record: could not write " << options.outputPath << "\n";
+        }
+        else if (!options.quiet)
+        {
+            std::cerr << "vmc_record: wrote " << capture.datagrams.size() << " datagram(s) to "
+                      << options.outputPath << "\n";
         }
     }
 
@@ -414,7 +420,8 @@ RunRecord(const vmcRecordTool::Options& options)
     // written again from the capture by `--inspect --export-trace`. So the
     // derived artifact never gets to be the reason the raw one was not written.
     bool exported = true;
-    if (!options.traceExportPath.empty()) {
+    if (!options.traceExportPath.empty())
+    {
         exported = WriteTrace(options, trace, options.quiet);
     }
 
@@ -432,17 +439,19 @@ main(int argc, char** argv)
     vmcRecordTool::Options options;
     bool showHelp = false;
     std::string error;
-    if (!vmcRecordTool::ParseOptions(arguments, &options, &showHelp, &error)) {
-        std::cerr << "vmc_record: " << error << "\n\n"
-                  << vmcRecordTool::GetUsage();
+    if (!vmcRecordTool::ParseOptions(arguments, &options, &showHelp, &error))
+    {
+        std::cerr << "vmc_record: " << error << "\n\n" << vmcRecordTool::GetUsage();
         return 2;
     }
-    if (showHelp) {
+    if (showHelp)
+    {
         std::fputs(vmcRecordTool::GetUsage(), stdout);
         return 0;
     }
 
-    if (!options.inspectPath.empty()) {
+    if (!options.inspectPath.empty())
+    {
         return RunInspect(options);
     }
 

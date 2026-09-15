@@ -64,16 +64,13 @@ using motionBvh::DiagnosticCode;
 void
 PrintDiagnostic(const motionBvh::Diagnostic& diagnostic)
 {
-    std::cerr << "motion_bvh_convert: " << motionBvh::FormatDiagnostic(diagnostic)
-              << "\n";
+    std::cerr << "motion_bvh_convert: " << motionBvh::FormatDiagnostic(diagnostic) << "\n";
 }
 
 motionBvh::Diagnostic
-Raise(DiagnosticCode code, const std::string& source, std::string detail,
-      std::string subject = {})
+Raise(DiagnosticCode code, const std::string& source, std::string detail, std::string subject = {})
 {
-    motionBvh::Diagnostic diagnostic =
-        motionBvh::MakeDiagnostic(code, std::move(detail));
+    motionBvh::Diagnostic diagnostic = motionBvh::MakeDiagnostic(code, std::move(detail));
     diagnostic.source = source;
     diagnostic.subject = std::move(subject);
     return diagnostic;
@@ -91,7 +88,8 @@ Raise(DiagnosticCode code, const std::string& source, std::string detail,
 DiagnosticCode
 CodeForProfileRefusal(motionSource::SourceProfileRefusal refusal)
 {
-    switch (refusal) {
+    switch (refusal)
+    {
     case motionSource::SourceProfileRefusal::RequiredJointMissing:
         return DiagnosticCode::RequiredJointMissing;
     case motionSource::SourceProfileRefusal::UnmappedJointRefused:
@@ -127,8 +125,10 @@ std::string
 BoneList(const std::vector<motion::HumanBone>& bones)
 {
     std::string text;
-    for (const motion::HumanBone bone : bones) {
-        if (!text.empty()) {
+    for (const motion::HumanBone bone : bones)
+    {
+        if (!text.empty())
+        {
             text += ", ";
         }
         text += std::string(motion::HumanBoneName(bone));
@@ -138,22 +138,18 @@ BoneList(const std::vector<motion::HumanBone>& bones)
 
 void
 PrintReport(const motionSource::SourceConversion& conversion,
-            const motionSource::SourceProfile& profile,
-            const motionBvh::BvhDocument& document, const std::string& sourceId,
-            const std::string& outputPath)
+            const motionSource::SourceProfile& profile, const motionBvh::BvhDocument& document,
+            const std::string& sourceId, const std::string& outputPath)
 {
     const std::size_t bound = conversion.match.bound.size();
     std::printf("source:   %s\n", sourceId.c_str());
-    std::printf("profile:  %s (%s)\n", profile.id.c_str(),
-                profile.producer.c_str());
-    std::printf("joints:   %zu read, %zu bound, %zu ignored\n",
-                document.joints.size(), bound, profile.ignoredJoints.size());
+    std::printf("profile:  %s (%s)\n", profile.id.c_str(), profile.producer.c_str());
+    std::printf("joints:   %zu read, %zu bound, %zu ignored\n", document.joints.size(), bound,
+                profile.ignoredJoints.size());
     const double rate = conversion.animation.nominalFrameRate;
-    std::printf("frames:   %zu at %s Hz (%s s)\n",
-                conversion.animation.samples.size(), Number(rate).c_str(),
-                Number(conversion.animation.endTime
-                       - conversion.animation.startTime)
-                    .c_str());
+    std::printf("frames:   %zu at %s Hz (%s s)\n", conversion.animation.samples.size(),
+                Number(rate).c_str(),
+                Number(conversion.animation.endTime - conversion.animation.startTime).c_str());
 
     // Both halves of what the conversion could not carry, never one word for
     // the two: a rig restating its rest geometry every frame lost nothing,
@@ -164,7 +160,8 @@ PrintReport(const motionSource::SourceConversion& conversion,
                 report.droppedTranslationJoints.size());
     std::printf("restated: %zu joint(s) restating rest geometry\n",
                 report.restatedTranslationJoints.size());
-    if (!report.composedBones.empty()) {
+    if (!report.composedBones.empty())
+    {
         std::printf("composed: %s\n", BoneList(report.composedBones).c_str());
     }
     std::printf("output:   %s\n", outputPath.c_str());
@@ -180,13 +177,13 @@ main(int argc, char** argv)
     motionBvhTool::ConvertOptions options;
     bool showHelp = false;
     std::string error;
-    if (!motionBvhTool::ParseConvertOptions(arguments, &options, &showHelp,
-                                            &error)) {
-        std::cerr << "motion_bvh_convert: " << error << "\n\n"
-                  << motionBvhTool::GetConvertUsage();
+    if (!motionBvhTool::ParseConvertOptions(arguments, &options, &showHelp, &error))
+    {
+        std::cerr << "motion_bvh_convert: " << error << "\n\n" << motionBvhTool::GetConvertUsage();
         return 2;
     }
-    if (showHelp) {
+    if (showHelp)
+    {
         std::fputs(motionBvhTool::GetConvertUsage(), stdout);
         return 0;
     }
@@ -196,9 +193,9 @@ main(int argc, char** argv)
     // Deliberately first. A conversion with no profile refuses whatever the
     // file turns out to be, and parsing a 60 MB recording to then say "name a
     // profile" would be work done to reach an answer that was already known.
-    if (options.profile.empty()) {
-        PrintDiagnostic(Raise(DiagnosticCode::ProfileRequired,
-                              options.inputPath,
+    if (options.profile.empty())
+    {
+        PrintDiagnostic(Raise(DiagnosticCode::ProfileRequired, options.inputPath,
                               "no profile was named. A BVH file states no "
                               "producer, and there is no default profile and "
                               "no automatic fallback; pass --profile <id>"));
@@ -206,38 +203,38 @@ main(int argc, char** argv)
     }
 
     std::filesystem::path profilePath;
-    if (!motionBvhTool::ResolveProfilePath(options.profile,
-                                           options.profileDirs, &profilePath,
-                                           &error)) {
+    if (!motionBvhTool::ResolveProfilePath(options.profile, options.profileDirs, &profilePath,
+                                           &error))
+    {
         std::cerr << "motion_bvh_convert: " << error << "\n";
         return 2;
     }
 
     motionSource::SourceProfile profile;
     motionSource::SourceProfileParseError profileError;
-    if (!motionSource::ParseSourceProfileFile(profilePath, &profile,
-                                              &profileError)) {
+    if (!motionSource::ParseSourceProfileFile(profilePath, &profile, &profileError))
+    {
         // A malformed profile file is not an event in the reader's diagnostic
         // set (SourceProfileFile.h), and it has exactly one candidate there: a
         // profile nobody could read is a conversion with no profile, which is
         // the state `VRM_BVH_PROFILE_REQUIRED` names.
         std::string detail = profilePath.string() + ": " + profileError.reason;
-        if (profileError.line != 0) {
+        if (profileError.line != 0)
+        {
             detail += " (line " + std::to_string(profileError.line) + ")";
         }
-        PrintDiagnostic(Raise(DiagnosticCode::ProfileRequired,
-                              options.inputPath, std::move(detail)));
+        PrintDiagnostic(
+            Raise(DiagnosticCode::ProfileRequired, options.inputPath, std::move(detail)));
         return 2;
     }
 
     // The id a file states must be the id that was asked for. See
     // ProfileLocator.h: a renamed file would otherwise let this conversion
     // record a profile id it never read.
-    if (!motionBvhTool::ProfileRequestIsPath(options.profile)
-        && profile.id != options.profile) {
-        std::cerr << "motion_bvh_convert: " << profilePath.string()
-                  << " states id '" << profile.id << "', not '"
-                  << options.profile << "' as asked for\n";
+    if (!motionBvhTool::ProfileRequestIsPath(options.profile) && profile.id != options.profile)
+    {
+        std::cerr << "motion_bvh_convert: " << profilePath.string() << " states id '" << profile.id
+                  << "', not '" << options.profile << "' as asked for\n";
         return 2;
     }
 
@@ -246,13 +243,12 @@ main(int argc, char** argv)
     // than by reading that validator's prose, because picking a code out of a
     // sentence is the thing roadmap §10 rejected -- and because this is the one
     // raiser `VRM_BVH_INVALID_ROOT_POLICY` has.
-    if (profile.rootTranslation == motionSource::RootTranslationPolicy::Unspecified
-        || profile.rootRotation == motionSource::RootRotationPolicy::Unspecified) {
-        PrintDiagnostic(Raise(DiagnosticCode::InvalidRootPolicy,
-                              options.inputPath,
-                              profilePath.string()
-                                  + " states no root translation or rotation "
-                                    "policy",
+    if (profile.rootTranslation == motionSource::RootTranslationPolicy::Unspecified ||
+        profile.rootRotation == motionSource::RootRotationPolicy::Unspecified)
+    {
+        PrintDiagnostic(Raise(DiagnosticCode::InvalidRootPolicy, options.inputPath,
+                              profilePath.string() + " states no root translation or rotation "
+                                                     "policy",
                               profile.id));
         return 2;
     }
@@ -265,8 +261,8 @@ main(int argc, char** argv)
 
     motionBvh::BvhDocument document;
     motionBvh::Diagnostic diagnostic;
-    if (!motionBvh::ParseBvhFile(options.inputPath, &document, &diagnostic,
-                                 parseOptions)) {
+    if (!motionBvh::ParseBvhFile(options.inputPath, &document, &diagnostic, parseOptions))
+    {
         PrintDiagnostic(diagnostic);
         return 1;
     }
@@ -275,15 +271,14 @@ main(int argc, char** argv)
     // was read from. A clip is a deliverable that gets compared, and an
     // absolute path would make the same conversion of the same bytes differ
     // between two machines in its provenance and nowhere else.
-    const std::string sourceId =
-        std::filesystem::path(options.inputPath).filename().string();
+    const std::string sourceId = std::filesystem::path(options.inputPath).filename().string();
 
     motionSource::SourceSkeleton skeleton;
     motionSource::SourceAnimation animation;
     motionBvh::BvhExtractOptions extractOptions;
     extractOptions.sourceId = sourceId;
-    if (!motionBvh::ExtractBvhSource(document, &skeleton, &animation,
-                                     &diagnostic, extractOptions)) {
+    if (!motionBvh::ExtractBvhSource(document, &skeleton, &animation, &diagnostic, extractOptions))
+    {
         PrintDiagnostic(diagnostic);
         return 1;
     }
@@ -291,10 +286,12 @@ main(int argc, char** argv)
     // --- the crossing ------------------------------------------------------
     const motionSource::SourceConversion conversion =
         motionSource::ConvertSourceToCanonical(skeleton, animation, profile);
-    if (!conversion.Converted()) {
+    if (!conversion.Converted())
+    {
         DiagnosticCode code = DiagnosticCode::ParseFailed;
         std::string subject;
-        switch (conversion.refusal) {
+        switch (conversion.refusal)
+        {
         case motionSource::ConversionRefusal::ProfileMismatch:
             code = CodeForProfileRefusal(conversion.match.refusal);
             subject = profile.id;
@@ -315,8 +312,7 @@ main(int argc, char** argv)
         case motionSource::ConversionRefusal::Count:
             break;
         }
-        PrintDiagnostic(Raise(code, options.inputPath, conversion.detail,
-                              std::move(subject)));
+        PrintDiagnostic(Raise(code, options.inputPath, conversion.detail, std::move(subject)));
         return 1;
     }
 
@@ -324,10 +320,11 @@ main(int argc, char** argv)
     // it: `Ignore` is silent and `Refuse` already stopped the conversion above
     // (SourceProfile.h). These go to stderr while the report goes to stdout,
     // so a run that is piped somewhere keeps the two apart.
-    if (profile.unmappedJoints == motionSource::UnmappedJointPolicy::Report) {
-        for (const std::size_t index : conversion.match.unmappedJoints) {
-            PrintDiagnostic(Raise(DiagnosticCode::UnmappedJoint,
-                                  options.inputPath,
+    if (profile.unmappedJoints == motionSource::UnmappedJointPolicy::Report)
+    {
+        for (const std::size_t index : conversion.match.unmappedJoints)
+        {
+            PrintDiagnostic(Raise(DiagnosticCode::UnmappedJoint, options.inputPath,
                                   "the profile maps and ignores neither",
                                   skeleton.joints[index].name));
         }
@@ -337,14 +334,14 @@ main(int argc, char** argv)
     std::map<std::string, std::string> provenance;
     provenance["kind"] = "recordedClip";
     provenance["producer"] = conversion.provenance.producer;
-    if (!conversion.provenance.producerVersion.empty()) {
+    if (!conversion.provenance.producerVersion.empty())
+    {
         provenance["producerVersion"] = conversion.provenance.producerVersion;
     }
     provenance["profileId"] = conversion.provenance.profileId;
     provenance["format"] = conversion.provenance.format;
     provenance["sourceId"] = conversion.provenance.sourceId;
-    provenance["frames"] =
-        std::to_string(conversion.animation.samples.size());
+    provenance["frames"] = std::to_string(conversion.animation.samples.size());
     provenance["frameRate"] = Number(conversion.animation.nominalFrameRate);
     provenance["boundBones"] = std::to_string(conversion.match.bound.size());
     // Which bones absorbed a chain of unmapped joints. Recorded rather than
@@ -355,17 +352,16 @@ main(int argc, char** argv)
     provenance["droppedTranslationJoints"] =
         std::to_string(conversion.report.droppedTranslationJoints.size());
 
-    if (!motionBvhTool::WriteSemanticClip(options.outputPath,
-                                          conversion.animation, conversion.rest,
-                                          options.clipName, provenance,
-                                          &error)) {
+    if (!motionBvhTool::WriteSemanticClip(options.outputPath, conversion.animation, conversion.rest,
+                                          options.clipName, provenance, &error))
+    {
         std::cerr << "motion_bvh_convert: " << error << "\n";
         return 1;
     }
 
-    if (!options.quiet) {
-        PrintReport(conversion, profile, document, sourceId,
-                    options.outputPath);
+    if (!options.quiet)
+    {
+        PrintReport(conversion, profile, document, sourceId, options.outputPath);
     }
     return 0;
 }

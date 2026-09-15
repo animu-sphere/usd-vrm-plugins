@@ -96,13 +96,13 @@ struct TrackerObservation
     bool hasPosition = false;
     bool hasRotation = false;
 
-    friend bool operator==(const TrackerObservation& lhs,
-                           const TrackerObservation& rhs) noexcept
+    friend bool
+    operator==(const TrackerObservation& lhs, const TrackerObservation& rhs) noexcept
     {
         // Exact, and gated on the flags. See the header note: a value under an
         // unset flag is not an observation, so it is not one here either.
-        if (lhs.tracker != rhs.tracker || lhs.hasPosition != rhs.hasPosition
-            || lhs.hasRotation != rhs.hasRotation)
+        if (lhs.tracker != rhs.tracker || lhs.hasPosition != rhs.hasPosition ||
+            lhs.hasRotation != rhs.hasRotation)
         {
             return false;
         }
@@ -112,8 +112,8 @@ struct TrackerObservation
         }
         return !lhs.hasRotation || lhs.rotation == rhs.rotation;
     }
-    friend bool operator!=(const TrackerObservation& lhs,
-                           const TrackerObservation& rhs) noexcept
+    friend bool
+    operator!=(const TrackerObservation& lhs, const TrackerObservation& rhs) noexcept
     {
         return !(lhs == rhs);
     }
@@ -130,7 +130,7 @@ struct TrackerObservation
 // refuses an index it cannot resolve rather than trusting the caller did it.
 //
 // The views borrow from `observed`, so it must outlive them.
-MOTIONTRACKING_API std::vector<std::string_view> TrackerIdentities(
-    const std::vector<TrackerObservation>& observed);
+MOTIONTRACKING_API std::vector<std::string_view>
+TrackerIdentities(const std::vector<TrackerObservation>& observed);
 
 } // namespace motionTracking

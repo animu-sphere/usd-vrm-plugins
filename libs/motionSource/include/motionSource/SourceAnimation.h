@@ -74,18 +74,17 @@ inline constexpr std::size_t SourceEulerOrderCount =
     static_cast<std::size_t>(SourceEulerOrder::Count);
 
 // The canonical spelling, e.g. "ZXY".
-MOTIONSOURCE_API std::string_view SourceEulerOrderName(
-    SourceEulerOrder order) noexcept;
+MOTIONSOURCE_API std::string_view SourceEulerOrderName(SourceEulerOrder order) noexcept;
 
 // ASCII case-insensitive: writers disagree about case and a case difference is
 // not a meaning difference.
-MOTIONSOURCE_API std::optional<SourceEulerOrder> FindSourceEulerOrder(
-    std::string_view name) noexcept;
+MOTIONSOURCE_API std::optional<SourceEulerOrder>
+FindSourceEulerOrder(std::string_view name) noexcept;
 
 // The axis of the `component`-th angle (0, 1, 2) under `order`: 0 for X, 1 for
 // Y, 2 for Z. Nullopt for an out-of-range component or a non-enumerator order.
-MOTIONSOURCE_API std::optional<int> SourceEulerAxis(
-    SourceEulerOrder order, std::size_t component) noexcept;
+MOTIONSOURCE_API std::optional<int> SourceEulerAxis(SourceEulerOrder order,
+                                                    std::size_t component) noexcept;
 
 enum class SourceAngleUnit : std::uint8_t
 {
@@ -95,10 +94,8 @@ enum class SourceAngleUnit : std::uint8_t
     Count,
 };
 
-MOTIONSOURCE_API std::string_view SourceAngleUnitName(
-    SourceAngleUnit unit) noexcept;
-MOTIONSOURCE_API std::optional<SourceAngleUnit> FindSourceAngleUnit(
-    std::string_view name) noexcept;
+MOTIONSOURCE_API std::string_view SourceAngleUnitName(SourceAngleUnit unit) noexcept;
+MOTIONSOURCE_API std::optional<SourceAngleUnit> FindSourceAngleUnit(std::string_view name) noexcept;
 
 // Three angles in the track's order and unit. Named by position rather than by
 // axis, because which axis `first` is depends on the order beside it and a field
@@ -109,14 +106,13 @@ struct SourceEulerAngles
     float second = 0.0f;
     float third = 0.0f;
 
-    friend bool operator==(const SourceEulerAngles& lhs,
-                           const SourceEulerAngles& rhs) noexcept
+    friend bool
+    operator==(const SourceEulerAngles& lhs, const SourceEulerAngles& rhs) noexcept
     {
-        return lhs.first == rhs.first && lhs.second == rhs.second
-               && lhs.third == rhs.third;
+        return lhs.first == rhs.first && lhs.second == rhs.second && lhs.third == rhs.third;
     }
-    friend bool operator!=(const SourceEulerAngles& lhs,
-                           const SourceEulerAngles& rhs) noexcept
+    friend bool
+    operator!=(const SourceEulerAngles& lhs, const SourceEulerAngles& rhs) noexcept
     {
         return !(lhs == rhs);
     }
@@ -152,20 +148,26 @@ struct SourceJointTrack
     SourceEulerOrder eulerOrder = SourceEulerOrder::XYZ;
     SourceAngleUnit angleUnit = SourceAngleUnit::Degrees;
 
-    bool HasTranslation() const noexcept { return !translations.empty(); }
-    bool HasRotation() const noexcept
+    bool
+    HasTranslation() const noexcept
+    {
+        return !translations.empty();
+    }
+    bool
+    HasRotation() const noexcept
     {
         return !eulerAngles.empty() || !rotations.empty();
     }
-    bool IsEmpty() const noexcept
+    bool
+    IsEmpty() const noexcept
     {
         return !HasTranslation() && !HasRotation();
     }
 
-    MOTIONSOURCE_API friend bool operator==(
-        const SourceJointTrack& lhs, const SourceJointTrack& rhs) noexcept;
-    MOTIONSOURCE_API friend bool operator!=(
-        const SourceJointTrack& lhs, const SourceJointTrack& rhs) noexcept;
+    MOTIONSOURCE_API friend bool operator==(const SourceJointTrack& lhs,
+                                            const SourceJointTrack& rhs) noexcept;
+    MOTIONSOURCE_API friend bool operator!=(const SourceJointTrack& lhs,
+                                            const SourceJointTrack& rhs) noexcept;
 };
 
 struct SourceAnimation
@@ -192,8 +194,7 @@ struct SourceAnimation
     SourceProvenance provenance;
 
     // The instant of `frameIndex`, or nullopt when it is out of range.
-    MOTIONSOURCE_API std::optional<double> Time(
-        std::size_t frameIndex) const noexcept;
+    MOTIONSOURCE_API std::optional<double> Time(std::size_t frameIndex) const noexcept;
 
     // The instant of the last frame, or `startTime` for an empty clip.
     MOTIONSOURCE_API double EndTime() const noexcept;
@@ -208,10 +209,10 @@ struct SourceAnimation
     // interval to derive one from.
     MOTIONSOURCE_API std::optional<double> FrameRate() const noexcept;
 
-    MOTIONSOURCE_API friend bool operator==(
-        const SourceAnimation& lhs, const SourceAnimation& rhs) noexcept;
-    MOTIONSOURCE_API friend bool operator!=(
-        const SourceAnimation& lhs, const SourceAnimation& rhs) noexcept;
+    MOTIONSOURCE_API friend bool operator==(const SourceAnimation& lhs,
+                                            const SourceAnimation& rhs) noexcept;
+    MOTIONSOURCE_API friend bool operator!=(const SourceAnimation& lhs,
+                                            const SourceAnimation& rhs) noexcept;
 };
 
 // Whether an animation is internally consistent and describes `skeleton`: one

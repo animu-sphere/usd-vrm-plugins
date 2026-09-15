@@ -29,7 +29,7 @@ namespace motion
 
 class MOTIONRUNTIME_API ReplaySender
 {
-public:
+  public:
     // `sink` must outlive the sender. The trace is copied: a replay is
     // restartable, and a caller that mutates its animation mid-replay would
     // otherwise silently change history.
@@ -48,20 +48,37 @@ public:
     // accepted.
     std::size_t Flush();
 
-    bool IsExhausted() const noexcept
+    bool
+    IsExhausted() const noexcept
     {
         return _next >= _trace.samples.size();
     }
-    std::size_t GetSentCount() const noexcept { return _next; }
-    std::size_t GetFrameCount() const noexcept { return _trace.samples.size(); }
+    std::size_t
+    GetSentCount() const noexcept
+    {
+        return _next;
+    }
+    std::size_t
+    GetFrameCount() const noexcept
+    {
+        return _trace.samples.size();
+    }
 
-    const HumanoidAnimation& GetTrace() const noexcept { return _trace; }
+    const HumanoidAnimation&
+    GetTrace() const noexcept
+    {
+        return _trace;
+    }
 
     // Rewinds to the first frame. The sink is left alone -- clearing it is the
     // caller's decision, because a seek and a restart want different things.
-    void Rewind() noexcept { _next = 0; }
+    void
+    Rewind() noexcept
+    {
+        _next = 0;
+    }
 
-private:
+  private:
     HumanoidAnimation _trace;
     LiveCaptureSource* _sink;
     std::size_t _next = 0;

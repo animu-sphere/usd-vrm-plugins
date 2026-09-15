@@ -87,20 +87,18 @@ ignoredJoints: [reference, propHandle]
 // line of it: a `joints:` key with a value on its line leaves its former
 // children indented under nothing, and the refusal that produces is about the
 // indentation rather than about the key.
-constexpr std::string_view kJointsBlock =
-    "joints:\n"
-    "  hip:      { bone: hips, required: true }\n"
-    "  spine:    { bone: spine, required: true }\n"
-    "  chest:    { bone: chest }\n"
-    "  neck:     { bone: neck, required: false }\n"
-    "  head:     { bone: head, required: true }";
+constexpr std::string_view kJointsBlock = "joints:\n"
+                                          "  hip:      { bone: hips, required: true }\n"
+                                          "  spine:    { bone: spine, required: true }\n"
+                                          "  chest:    { bone: chest }\n"
+                                          "  neck:     { bone: neck, required: false }\n"
+                                          "  head:     { bone: head, required: true }";
 
-constexpr std::string_view kCoordinatesBlock =
-    "coordinates:\n"
-    "  handedness: right\n"
-    "  upAxis: +Y\n"
-    "  forwardAxis: +Z\n"
-    "  translationUnit: centimeters";
+constexpr std::string_view kCoordinatesBlock = "coordinates:\n"
+                                               "  handedness: right\n"
+                                               "  upAxis: +Y\n"
+                                               "  forwardAxis: +Z\n"
+                                               "  translationUnit: centimeters";
 
 SourceJointMapping
 Map(std::string sourceName, Bone bone, bool required)
@@ -131,10 +129,8 @@ ExpectedProfile()
     profile.restPose = RestPoseSource::RestOffsets;
     profile.unmappedJoints = UnmappedJointPolicy::Report;
     profile.joints = {
-        Map("hip", Bone::Hips, true),
-        Map("spine", Bone::Spine, true),
-        Map("chest", Bone::Chest, false),
-        Map("neck", Bone::Neck, false),
+        Map("hip", Bone::Hips, true),     Map("spine", Bone::Spine, true),
+        Map("chest", Bone::Chest, false), Map("neck", Bone::Neck, false),
         Map("head", Bone::Head, true),
     };
     profile.ignoredJoints = {"reference", "propHandle"};
@@ -146,9 +142,9 @@ Parse(std::string_view text)
 {
     SourceProfile profile;
     SourceProfileParseError error;
-    if (!ParseSourceProfileText(text, &profile, &error)) {
-        std::printf("unexpected refusal at line %zu: %s\n", error.line,
-                    error.reason.c_str());
+    if (!ParseSourceProfileText(text, &profile, &error))
+    {
+        std::printf("unexpected refusal at line %zu: %s\n", error.line, error.reason.c_str());
         assert(false);
     }
     return profile;
@@ -166,13 +162,13 @@ Refuses(std::string_view text, std::size_t line, std::string_view fragment)
     SourceProfile profile = ExpectedProfile();
     SourceProfileParseError error;
     const bool parsed = ParseSourceProfileText(text, &profile, &error);
-    if (parsed) {
-        std::printf("expected a refusal naming '%s'\n",
-                    std::string(fragment).c_str());
+    if (parsed)
+    {
+        std::printf("expected a refusal naming '%s'\n", std::string(fragment).c_str());
         assert(false);
     }
-    if (error.line != line
-        || error.reason.find(std::string(fragment)) == std::string::npos) {
+    if (error.line != line || error.reason.find(std::string(fragment)) == std::string::npos)
+    {
         std::printf("line %zu: %s (wanted line %zu naming '%s')\n", error.line,
                     error.reason.c_str(), line, std::string(fragment).c_str());
         assert(false);
@@ -219,39 +215,38 @@ TestTheKeys()
 void
 TestTheOtherShapes()
 {
-    const std::string text =
-        "\xEF\xBB\xBF"
-        "schemaVersion: 1\r\n"
-        "id: example-recorder-bvh-neutral-v1\r\n"
-        "producer: Example Recorder\r\n"
-        "coordinates:\r\n"
-        "  handedness: right\r\n"
-        "  upAxis: Y\r\n"          // the unsigned spelling is the positive one
-        "  forwardAxis: +Z\r\n"
-        "  translationUnit: centimetres\r\n" // the other spelling of one unit
-        "root:\r\n"
-        "  joint: reference\r\n"
-        "  translation: absolute-position\r\n"
-        "  rotation: body-orientation\r\n"
-        "restPose: rest-offsets\r\n"
-        "unmappedJoints: report\r\n"
-        "joints:\r\n"
-        "  hip:\r\n"
-        "    bone: hips\r\n"
-        "    required: TRUE\r\n"
-        "  spine:\r\n"
-        "    bone: spine\r\n"
-        "    required: true\r\n"
-        "  chest:\r\n"
-        "    bone: chest\r\n"
-        "  neck:\r\n"
-        "    bone: neck\r\n"
-        "  \"head\":\r\n"
-        "    bone: head\r\n"
-        "    required: true\r\n"
-        "ignoredJoints:\r\n"
-        "  - reference\r\n"
-        "  - propHandle\r\n";
+    const std::string text = "\xEF\xBB\xBF"
+                             "schemaVersion: 1\r\n"
+                             "id: example-recorder-bvh-neutral-v1\r\n"
+                             "producer: Example Recorder\r\n"
+                             "coordinates:\r\n"
+                             "  handedness: right\r\n"
+                             "  upAxis: Y\r\n" // the unsigned spelling is the positive one
+                             "  forwardAxis: +Z\r\n"
+                             "  translationUnit: centimetres\r\n" // the other spelling of one unit
+                             "root:\r\n"
+                             "  joint: reference\r\n"
+                             "  translation: absolute-position\r\n"
+                             "  rotation: body-orientation\r\n"
+                             "restPose: rest-offsets\r\n"
+                             "unmappedJoints: report\r\n"
+                             "joints:\r\n"
+                             "  hip:\r\n"
+                             "    bone: hips\r\n"
+                             "    required: TRUE\r\n"
+                             "  spine:\r\n"
+                             "    bone: spine\r\n"
+                             "    required: true\r\n"
+                             "  chest:\r\n"
+                             "    bone: chest\r\n"
+                             "  neck:\r\n"
+                             "    bone: neck\r\n"
+                             "  \"head\":\r\n"
+                             "    bone: head\r\n"
+                             "    required: true\r\n"
+                             "ignoredJoints:\r\n"
+                             "  - reference\r\n"
+                             "  - propHandle\r\n";
     assert(Parse(text) == ExpectedProfile());
 }
 
@@ -263,14 +258,12 @@ void
 TestASequenceAtItsKeysIndentation()
 {
     assert(Parse(With("ignoredJoints: [reference, propHandle]",
-                      "ignoredJoints:\n- reference\n- propHandle"))
-           == ExpectedProfile());
+                      "ignoredJoints:\n- reference\n- propHandle")) == ExpectedProfile());
 
     // What ends such a sequence is the next key, not an error: the whole point
     // is that this indentation belongs to the mapping too. So the same list,
     // moved into the middle of the file, has to read the same.
-    constexpr std::string_view kTrailing =
-        "ignoredJoints: [reference, propHandle]\n";
+    constexpr std::string_view kTrailing = "ignoredJoints: [reference, propHandle]\n";
     std::string moved(kProfileText);
     moved.erase(moved.find(kTrailing), kTrailing.size());
     moved.insert(moved.find("restPose: rest-offsets"),
@@ -291,7 +284,8 @@ void
 TestNestingIsBounded()
 {
     std::string deep = "schemaVersion: 1\nid: x\n";
-    for (std::size_t level = 0; level < 64; ++level) {
+    for (std::size_t level = 0; level < 64; ++level)
+    {
         deep += std::string(level * 2, ' ') + "nest:\n";
     }
     deep += std::string(64 * 2, ' ') + "leaf: 1\n";
@@ -306,17 +300,14 @@ TestNestingIsBounded()
 void
 TestQuotingAndComments()
 {
-    const std::string text =
-        With("producer: Example Recorder",
-             "producer: \"Example Recorder #2, \\\"studio\\\" build\"");
+    const std::string text = With("producer: Example Recorder",
+                                  "producer: \"Example Recorder #2, \\\"studio\\\" build\"");
     const SourceProfile profile = Parse(text);
     assert(profile.producer == "Example Recorder #2, \"studio\" build");
 
     // Not a comment: a `#` that opens no word belongs to the value.
-    assert(Parse(With("id: example-recorder-bvh-neutral-v1",
-                      "id: example#2-bvh-neutral-v1"))
-               .id
-           == "example#2-bvh-neutral-v1");
+    assert(Parse(With("id: example-recorder-bvh-neutral-v1", "id: example#2-bvh-neutral-v1")).id ==
+           "example#2-bvh-neutral-v1");
 
     // An unquoted name may carry a colon: only a colon that ends a word ends a
     // key.
@@ -325,8 +316,7 @@ TestQuotingAndComments()
     assert(colons.joints[2].sourceName == "rig:chest");
     // ... and a quoted one may carry anything.
     const SourceProfile quoted =
-        Parse(With("  chest:    { bone: chest }",
-                   "  \"chest [1]\": { bone: chest }"));
+        Parse(With("  chest:    { bone: chest }", "  \"chest [1]\": { bone: chest }"));
     assert(quoted.joints[2].sourceName == "chest [1]");
 }
 
@@ -336,16 +326,12 @@ TestQuotingAndComments()
 void
 TestUnknownKeysAreRefused()
 {
-    Refuses(With("restPose: rest-offsets", "restpose: rest-offsets"), 17,
-            "'restpose'");
-    Refuses(With("  handedness: right", "  handednes: right"), 7,
-            "'handednes'");
-    Refuses(With("  joint: reference", "  jointName: reference"), 13,
-            "'jointName'");
-    Refuses(With("{ bone: hips, required: true }", "{ bone: hips, requred: true }"),
-            21, "'requred'");
-    Refuses(With("unmappedJoints: report",
-                 "unmappedJoints: report\nunmappedJointPolicy: report"),
+    Refuses(With("restPose: rest-offsets", "restpose: rest-offsets"), 17, "'restpose'");
+    Refuses(With("  handedness: right", "  handednes: right"), 7, "'handednes'");
+    Refuses(With("  joint: reference", "  jointName: reference"), 13, "'jointName'");
+    Refuses(With("{ bone: hips, required: true }", "{ bone: hips, requred: true }"), 21,
+            "'requred'");
+    Refuses(With("unmappedJoints: report", "unmappedJoints: report\nunmappedJointPolicy: report"),
             19, "'unmappedJointPolicy'");
 }
 
@@ -355,28 +341,24 @@ TestMissingKeys()
     // Line 0: a key the document does not state is about the document. Pointing
     // at a line would send a reader to one with nothing wrong on it.
     Refuses(With("producer: Example Recorder\n", ""), 0, "states no 'producer'");
-    Refuses(With("unmappedJoints: report\n", ""), 0,
-            "states no 'unmappedJoints'");
+    Refuses(With("unmappedJoints: report\n", ""), 0, "states no 'unmappedJoints'");
     // A key missing from a nested mapping is about the key that opened it.
     Refuses(With("  forwardAxis: +Z\n", ""), 6, "states no 'forwardAxis'");
-    Refuses(With("  rotation: body-orientation\n", ""), 12,
-            "states no 'rotation'");
+    Refuses(With("  rotation: body-orientation\n", ""), 12, "states no 'rotation'");
     Refuses(With("{ bone: chest }", "{ required: true }"), 23, "states no 'bone'");
 }
 
 void
 TestDuplicateKeys()
 {
-    Refuses(With("restPose: rest-offsets",
-                 "restPose: rest-offsets\nrestPose: first-frame"),
-            18, "stated twice");
+    Refuses(With("restPose: rest-offsets", "restPose: rest-offsets\nrestPose: first-frame"), 18,
+            "stated twice");
     Refuses(With("  spine:    { bone: spine, required: true }",
                  "  spine:    { bone: spine, required: true }\n"
                  "  spine:    { bone: chest }"),
             23, "stated twice");
-    Refuses(With("{ bone: hips, required: true }",
-                 "{ bone: hips, bone: spine }"),
-            21, "stated twice");
+    Refuses(With("{ bone: hips, required: true }", "{ bone: hips, bone: spine }"), 21,
+            "stated twice");
 }
 
 // Every word on a right-hand side is one `SourceProfile.h` defines, and the
@@ -388,18 +370,17 @@ TestUnknownVocabulary()
     Refuses(With("  handedness: right", "  handedness: clockwise"), 7,
             "'clockwise' is not one of right, left");
     Refuses(With("  upAxis: +Y", "  upAxis: +W"), 8, "+X, -X, +Y, -Y, +Z, -Z");
-    Refuses(With("  translationUnit: centimeters", "  translationUnit: furlongs"),
-            10, "meters, centimeters, millimeters, inches");
-    Refuses(With("  translation: absolute-position", "  translation: root-motion"),
-            14, "absolute-position, rest-relative, none");
+    Refuses(With("  translationUnit: centimeters", "  translationUnit: furlongs"), 10,
+            "meters, centimeters, millimeters, inches");
+    Refuses(With("  translation: absolute-position", "  translation: root-motion"), 14,
+            "absolute-position, rest-relative, none");
     // `a-pose` rather than `t-pose`: this case wants a word that is plausible
     // and absent, and `t-pose` stopped being absent when a producer whose rig
     // has one arrived. A near-miss is the point -- a refusal that only caught
     // nonsense would not catch the profile somebody nearly wrote.
     Refuses(With("restPose: rest-offsets", "restPose: a-pose"), 17,
             "rest-offsets, stated-rest-rotations, first-frame, t-pose");
-    Refuses(With("unmappedJoints: report", "unmappedJoints: warn"), 18,
-            "ignore, report, refuse");
+    Refuses(With("unmappedJoints: report", "unmappedJoints: warn"), 18, "ignore, report, refuse");
 
     // `unspecified` is a word the vocabulary has and no profile may state: it is
     // what a profile nobody finished carries, so a file writing it is refused
@@ -416,25 +397,19 @@ TestUnknownVocabulary()
 void
 TestValueShapes()
 {
-    Refuses(With("required: true }", "required: yes }"), 21,
-            "'yes' is not true or false");
-    Refuses(With(kCoordinatesBlock, "coordinates: right"), 6,
-            "coordinates must be a mapping");
-    Refuses(With("ignoredJoints: [reference, propHandle]",
-                 "ignoredJoints: reference"),
-            27, "ignoredJoints must be a sequence");
-    Refuses(With("  hip:      { bone: hips, required: true }",
-                 "  hip:      hips"),
-            21, "must be a mapping");
-    Refuses(With(kJointsBlock, "joints: none"), 20,
-            "joints must be a mapping");
+    Refuses(With("required: true }", "required: yes }"), 21, "'yes' is not true or false");
+    Refuses(With(kCoordinatesBlock, "coordinates: right"), 6, "coordinates must be a mapping");
+    Refuses(With("ignoredJoints: [reference, propHandle]", "ignoredJoints: reference"), 27,
+            "ignoredJoints must be a sequence");
+    Refuses(With("  hip:      { bone: hips, required: true }", "  hip:      hips"), 21,
+            "must be a mapping");
+    Refuses(With(kJointsBlock, "joints: none"), 20, "joints must be a mapping");
 }
 
 void
 TestSchemaVersion()
 {
-    Refuses(With("schemaVersion: 1", "schemaVersion: 2"), 2,
-            "schemaVersion '2' is not 1");
+    Refuses(With("schemaVersion: 1", "schemaVersion: 2"), 2, "schemaVersion '2' is not 1");
     // Compared as text: `1.0` is a file written against a different idea of this
     // key, and reading it as the number 1 would make the version the one field
     // this reader guesses at.
@@ -449,17 +424,13 @@ TestMalformedText()
     Refuses(With("  upAxis: +Y", "\tupAxis: +Y"), 8, "indentation carries a tab");
     Refuses(With("  upAxis: +Y", "    upAxis: +Y"), 8, "unexpected indentation");
     Refuses(With("restPose: rest-offsets", "restPose"), 17, "expected 'key: value'");
-    Refuses(With("coordinates:\n", "coordinates:\nrestPose: first-frame\n"), 6,
-            "states no value");
-    Refuses(With("producer: Example Recorder", "producer: \"Example Recorder"),
-            4, "no closing '\"'");
-    Refuses(With("{ bone: hips, required: true }", "{ bone: hips"), 21,
-            "expected a closing '}'");
-    Refuses(With("ignoredJoints: [reference, propHandle]",
-                 "ignoredJoints: [reference, ]"),
-            27, "is empty");
-    Refuses(With("schemaVersion: 1", "  schemaVersion: 1"), 2,
-            "the first line is indented");
+    Refuses(With("coordinates:\n", "coordinates:\nrestPose: first-frame\n"), 6, "states no value");
+    Refuses(With("producer: Example Recorder", "producer: \"Example Recorder"), 4,
+            "no closing '\"'");
+    Refuses(With("{ bone: hips, required: true }", "{ bone: hips"), 21, "expected a closing '}'");
+    Refuses(With("ignoredJoints: [reference, propHandle]", "ignoredJoints: [reference, ]"), 27,
+            "is empty");
+    Refuses(With("schemaVersion: 1", "  schemaVersion: 1"), 2, "the first line is indented");
     Refuses("", 0, "states nothing");
     Refuses("# nothing but a comment\n", 0, "states nothing");
 }
@@ -470,17 +441,14 @@ TestMalformedText()
 void
 TestAWellFormedFileThatIsNotAProfile()
 {
-    Refuses(With("  hip:      { bone: hips, required: true }\n", ""), 0,
-            "maps no hips");
+    Refuses(With("  hip:      { bone: hips, required: true }\n", ""), 0, "maps no hips");
     Refuses(With("{ bone: hips, required: true }", "{ bone: hips }"), 0,
             "maps the canonical root and is not required");
     Refuses(With("  chest:    { bone: chest }", "  chest:    { bone: spine }"), 0,
             "map the same bone spine");
-    Refuses(With("ignoredJoints: [reference, propHandle]",
-                 "ignoredJoints: [reference, head]"),
-            0, "is both mapped and ignored");
-    Refuses(With("  forwardAxis: +Z", "  forwardAxis: -Y"), 0,
-            "are the same axis");
+    Refuses(With("ignoredJoints: [reference, propHandle]", "ignoredJoints: [reference, head]"), 0,
+            "is both mapped and ignored");
+    Refuses(With("  forwardAxis: +Z", "  forwardAxis: -Y"), 0, "are the same axis");
 }
 
 // The loaded value is the one the rest of this layer takes, not a lookalike:
@@ -489,7 +457,8 @@ void
 TestALoadedProfileMatchesARig()
 {
     SourceSkeleton skeleton;
-    const auto joint = [&skeleton](std::string name, int parent) {
+    const auto joint = [&skeleton](std::string name, int parent)
+    {
         SourceJoint added;
         added.name = std::move(name);
         added.parent = parent;
@@ -504,8 +473,7 @@ TestALoadedProfileMatchesARig()
     joint("propHandle", 0);
 
     const SourceProfile profile = Parse(kProfileText);
-    const motionSource::SourceProfileMatch match =
-        MatchSourceProfile(profile, skeleton);
+    const motionSource::SourceProfileMatch match = MatchSourceProfile(profile, skeleton);
     assert(match.refusal == SourceProfileRefusal::None);
     assert(match.bound.size() == 5);
     assert(match.BoundRequiredCount() == profile.RequiredMappingCount());
@@ -517,8 +485,7 @@ void
 TestFiles()
 {
     const std::filesystem::path path =
-        std::filesystem::temp_directory_path()
-        / "motionSource_profile_file_test.yaml";
+        std::filesystem::temp_directory_path() / "motionSource_profile_file_test.yaml";
     {
         std::ofstream file(path, std::ios::binary);
         file << kProfileText;
@@ -551,48 +518,55 @@ TestFiles()
 int
 CheckShippedProfiles(const std::filesystem::path& directory)
 {
-    if (!std::filesystem::is_directory(directory)) {
+    if (!std::filesystem::is_directory(directory))
+    {
         std::printf("not a directory: %s\n", directory.string().c_str());
         return 1;
     }
     std::vector<std::filesystem::path> files;
     for (const std::filesystem::directory_entry& entry :
-         std::filesystem::directory_iterator(directory)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".yaml") {
+         std::filesystem::directory_iterator(directory))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == ".yaml")
+        {
             files.push_back(entry.path());
         }
     }
     // Sorted, so the report is the same on every filesystem.
     std::sort(files.begin(), files.end());
-    if (files.empty()) {
+    if (files.empty())
+    {
         std::printf("no profile in %s\n", directory.string().c_str());
         return 1;
     }
 
     int failures = 0;
-    for (const std::filesystem::path& file : files) {
+    for (const std::filesystem::path& file : files)
+    {
         SourceProfile profile;
         SourceProfileParseError error;
-        if (!ParseSourceProfileFile(file, &profile, &error)) {
-            std::printf("%s:%zu: %s\n", file.filename().string().c_str(),
-                        error.line, error.reason.c_str());
+        if (!ParseSourceProfileFile(file, &profile, &error))
+        {
+            std::printf("%s:%zu: %s\n", file.filename().string().c_str(), error.line,
+                        error.reason.c_str());
             ++failures;
             continue;
         }
         // The id is the name a conversion records and a caller asks for, so a
         // file whose name and id disagree is a profile nobody can reach twice.
-        if (profile.id != file.stem().string()) {
+        if (profile.id != file.stem().string())
+        {
             std::printf("%s: states id '%s'\n", file.filename().string().c_str(),
                         profile.id.c_str());
             ++failures;
             continue;
         }
-        std::printf("%s: %zu joints, %zu required, %zu ignored\n",
-                    profile.id.c_str(), profile.joints.size(),
-                    profile.RequiredMappingCount(),
+        std::printf("%s: %zu joints, %zu required, %zu ignored\n", profile.id.c_str(),
+                    profile.joints.size(), profile.RequiredMappingCount(),
                     profile.ignoredJoints.size());
     }
-    if (failures != 0) {
+    if (failures != 0)
+    {
         return 1;
     }
     std::printf("motionSource shipped profiles: %zu verified\n", files.size());
@@ -604,7 +578,8 @@ CheckShippedProfiles(const std::filesystem::path& directory)
 int
 main(int argc, char** argv)
 {
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckShippedProfiles(argv[1]);
     }
 

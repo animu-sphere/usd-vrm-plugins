@@ -95,8 +95,7 @@ enum class DiagnosticCode : std::uint8_t
     Count,
 };
 
-inline constexpr std::size_t DiagnosticCodeCount =
-    static_cast<std::size_t>(DiagnosticCode::Count);
+inline constexpr std::size_t DiagnosticCodeCount = static_cast<std::size_t>(DiagnosticCode::Count);
 
 // The severity scale is shared, because "info / warning / error" is not a
 // statement about this protocol.
@@ -105,14 +104,12 @@ using liveTransport::DiagnosticSeverityString;
 
 // The stable string, e.g. "VRM_MOCOPI_PACKET_MALFORMED". This is the contract;
 // the enumerator spelling is not.
-VRMADAPTERMOCOPI_API std::string_view DiagnosticCodeString(
-    DiagnosticCode code) noexcept;
+VRMADAPTERMOCOPI_API std::string_view DiagnosticCodeString(DiagnosticCode code) noexcept;
 
-VRMADAPTERMOCOPI_API std::optional<DiagnosticCode> FindDiagnosticCode(
-    std::string_view name) noexcept;
+VRMADAPTERMOCOPI_API std::optional<DiagnosticCode>
+FindDiagnosticCode(std::string_view name) noexcept;
 
-VRMADAPTERMOCOPI_API DiagnosticSeverity DiagnosticDefaultSeverity(
-    DiagnosticCode code) noexcept;
+VRMADAPTERMOCOPI_API DiagnosticSeverity DiagnosticDefaultSeverity(DiagnosticCode code) noexcept;
 
 // Whether a live session can continue past this code by default. A caller may
 // still escalate — a flood of recoverable diagnostics is its own signal — but
@@ -134,13 +131,11 @@ VRMADAPTERMOCOPI_API bool DiagnosticIsRecoverable(DiagnosticCode code) noexcept;
 // zero, because it is `PacketMalformed` in both adapters and that is enumerator
 // 6 in this set and 0 in the sibling's — a default-constructed diagnostic has
 // to keep meaning what it meant.
-using Diagnostic = liveTransport::Diagnostic<DiagnosticCode,
-                                             DiagnosticCode::PacketMalformed>;
+using Diagnostic = liveTransport::Diagnostic<DiagnosticCode, DiagnosticCode::PacketMalformed>;
 
 // Fills `severity` and `recoverable` from the code's defaults, so the two
 // cannot silently disagree with the table above.
-VRMADAPTERMOCOPI_API Diagnostic MakeDiagnostic(
-    DiagnosticCode code, std::string detail = {});
+VRMADAPTERMOCOPI_API Diagnostic MakeDiagnostic(DiagnosticCode code, std::string detail = {});
 
 // A single deterministic line, stable enough for a golden test to compare:
 //

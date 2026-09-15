@@ -25,8 +25,8 @@ Describe(motion::HumanBone bone)
 std::string
 MissingRequiredDetail(motion::HumanBone bone, const RootMotionOptions& options)
 {
-    if (bone == motion::HumanBone::Hips
-        && options.mode == RootMotionMode::Hips) {
+    if (bone == motion::HumanBone::Hips && options.mode == RootMotionMode::Hips)
+    {
         return "the target rig binds no joint for this required bone, and "
                "root-motion mode 'hips' lands the root on it, so root motion "
                "was dropped";
@@ -39,21 +39,22 @@ ReportInvalidRootJoint(const RootMotionOptions& options, std::size_t jointCount,
                        RetargetDiagnostics* diagnostics)
 {
     const std::string subject = std::to_string(options.rootJointIndex);
-    if (diagnostics->Has(RetargetDiagnosticCode::InvalidRootJoint, subject)) {
+    if (diagnostics->Has(RetargetDiagnosticCode::InvalidRootJoint, subject))
+    {
         return;
     }
     diagnostics->Report(MakeRetargetDiagnostic(
         RetargetDiagnosticCode::InvalidRootJoint, subject,
         "root-motion mode 'root' names this joint index and the target rig "
-        "has " + std::to_string(jointCount)
-            + " joints, so no root translation was authored"));
+        "has " +
+            std::to_string(jointCount) + " joints, so no root translation was authored"));
 }
 
 bool
 IsValidRootJoint(const RootMotionOptions& options, std::size_t jointCount)
 {
-    return options.rootJointIndex >= 0
-        && static_cast<std::size_t>(options.rootJointIndex) < jointCount;
+    return options.rootJointIndex >= 0 &&
+           static_cast<std::size_t>(options.rootJointIndex) < jointCount;
 }
 
 } // namespace
@@ -61,8 +62,8 @@ IsValidRootJoint(const RootMotionOptions& options, std::size_t jointCount)
 bool
 operator==(const RetargetedPose& a, const RetargetedPose& b) noexcept
 {
-    return a.timestamp == b.timestamp && a.rotations == b.rotations
-        && a.translations == b.translations;
+    return a.timestamp == b.timestamp && a.rotations == b.rotations &&
+           a.translations == b.translations;
 }
 
 bool
@@ -74,9 +75,8 @@ operator!=(const RetargetedPose& a, const RetargetedPose& b) noexcept
 bool
 operator==(const JointLocalTransforms& a, const JointLocalTransforms& b) noexcept
 {
-    return a.timestamp == b.timestamp && a.joints == b.joints
-        && a.translations == b.translations && a.rotations == b.rotations
-        && a.scales == b.scales;
+    return a.timestamp == b.timestamp && a.joints == b.joints && a.translations == b.translations &&
+           a.rotations == b.rotations && a.scales == b.scales;
 }
 
 bool
@@ -86,14 +86,14 @@ operator!=(const JointLocalTransforms& a, const JointLocalTransforms& b) noexcep
 }
 
 bool
-GetJointWorldTransform(const TargetSkeleton& skeleton,
-                       const RetargetedPose& pose, int jointIndex,
+GetJointWorldTransform(const TargetSkeleton& skeleton, const RetargetedPose& pose, int jointIndex,
                        pxr::GfQuatf* orientation, pxr::GfVec3f* position)
 {
     const std::vector<TargetJoint>& joints = skeleton.GetJoints();
     const std::size_t count = joints.size();
-    if (jointIndex < 0 || static_cast<std::size_t>(jointIndex) >= count
-        || pose.rotations.size() != count || pose.translations.size() != count) {
+    if (jointIndex < 0 || static_cast<std::size_t>(jointIndex) >= count ||
+        pose.rotations.size() != count || pose.translations.size() != count)
+    {
         return false;
     }
 
@@ -104,9 +104,10 @@ GetJointWorldTransform(const TargetSkeleton& skeleton,
     std::vector<int> chain;
     chain.reserve(count);
     for (int walk = jointIndex; walk != TargetSkeleton::kNoParent;
-         walk = joints[static_cast<std::size_t>(walk)].parent) {
-        if (walk < 0 || static_cast<std::size_t>(walk) >= count
-            || chain.size() == count) {
+         walk = joints[static_cast<std::size_t>(walk)].parent)
+    {
+        if (walk < 0 || static_cast<std::size_t>(walk) >= count || chain.size() == count)
+        {
             return false;
         }
         chain.push_back(walk);
@@ -114,31 +115,29 @@ GetJointWorldTransform(const TargetSkeleton& skeleton,
 
     pxr::GfQuatf composedRotation(1.0f);
     pxr::GfVec3f composedPosition(0.0f);
-    for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
+    for (auto it = chain.rbegin(); it != chain.rend(); ++it)
+    {
         const auto slot = static_cast<std::size_t>(*it);
-        composedPosition
-            += composedRotation.Transform(pose.translations[slot]);
-        composedRotation
-            = (composedRotation * pose.rotations[slot]).GetNormalized();
+        composedPosition += composedRotation.Transform(pose.translations[slot]);
+        composedRotation = (composedRotation * pose.rotations[slot]).GetNormalized();
     }
 
-    if (orientation) {
+    if (orientation)
+    {
         *orientation = composedRotation;
     }
-    if (position) {
+    if (position)
+    {
         *position = composedPosition;
     }
     return true;
 }
 
-PoseRetargeter::PoseRetargeter(TargetSkeleton skeleton, HumanoidMap map,
-                               SourceRestPose sourceRest,
+PoseRetargeter::PoseRetargeter(TargetSkeleton skeleton, HumanoidMap map, SourceRestPose sourceRest,
                                RetargetOptions options)
-    : _skeleton(std::move(skeleton))
-    , _map(std::move(map))
-    , _sourceRest(std::move(sourceRest))
-    , _options(std::move(options))
-    , _correction(ComputeRestPoseCorrection(_sourceRest, _skeleton, _map))
+    : _skeleton(std::move(skeleton)), _map(std::move(map)), _sourceRest(std::move(sourceRest)),
+      _options(std::move(options)),
+      _correction(ComputeRestPoseCorrection(_sourceRest, _skeleton, _map))
 {
 }
 
@@ -149,7 +148,8 @@ PoseRetargeter::_RestPose() const
     const std::vector<TargetJoint>& joints = _skeleton.GetJoints();
     rest.rotations.reserve(joints.size());
     rest.translations.reserve(joints.size());
-    for (const TargetJoint& joint : joints) {
+    for (const TargetJoint& joint : joints)
+    {
         rest.rotations.push_back(joint.restRotation);
         rest.translations.push_back(joint.restTranslation);
     }
@@ -157,8 +157,7 @@ PoseRetargeter::_RestPose() const
 }
 
 RetargetedPose
-PoseRetargeter::Retarget(const motion::HumanoidPose& pose,
-                         RetargetDiagnostics* diagnostics) const
+PoseRetargeter::Retarget(const motion::HumanoidPose& pose, RetargetDiagnostics* diagnostics) const
 {
     // Joints the clip does not drive stay at rest rather than collapsing to
     // identity, so a partial clip leaves the rest of the rig alone.
@@ -166,18 +165,21 @@ PoseRetargeter::Retarget(const motion::HumanoidPose& pose,
     result.timestamp = pose.timestamp;
     const std::size_t jointCount = _skeleton.GetSize();
 
-    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot) {
-        if (!pose.validRotations.test(slot)) {
+    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+    {
+        if (!pose.validRotations.test(slot))
+        {
             continue;
         }
         const auto bone = static_cast<motion::HumanBone>(slot);
         const int jointIndex = _map.GetJointIndex(bone);
-        if (jointIndex < 0 || static_cast<std::size_t>(jointIndex) >= jointCount) {
+        if (jointIndex < 0 || static_cast<std::size_t>(jointIndex) >= jointCount)
+        {
             // Checked before the detail is built: a clip reports the same bone
             // on every sample, and only the first report is kept.
-            if (diagnostics
-                && !diagnostics->Has(RetargetDiagnosticCode::UnboundDrivenBone,
-                                     motion::HumanBoneName(bone))) {
+            if (diagnostics && !diagnostics->Has(RetargetDiagnosticCode::UnboundDrivenBone,
+                                                 motion::HumanBoneName(bone)))
+            {
                 diagnostics->Report(MakeRetargetDiagnostic(
                     RetargetDiagnosticCode::UnboundDrivenBone, Describe(bone),
                     "the clip drives it and the target rig binds no joint for "
@@ -193,43 +195,46 @@ PoseRetargeter::Retarget(const motion::HumanoidPose& pose,
     // contract, "Coordinates and time"), so the hips slot is the source
     // regardless of which joint finally receives it.
     const RootMotionOptions& rootOptions = _options.rootMotion;
-    if (rootOptions.mode != RootMotionMode::Ignore) {
-        const auto hipsSlot =
-            static_cast<std::size_t>(motion::HumanBone::Hips);
+    if (rootOptions.mode != RootMotionMode::Ignore)
+    {
+        const auto hipsSlot = static_cast<std::size_t>(motion::HumanBone::Hips);
         const int hipsJoint = _map.GetJointIndex(motion::HumanBone::Hips);
 
         int receiver = hipsJoint;
-        if (rootOptions.mode == RootMotionMode::RootJoint) {
+        if (rootOptions.mode == RootMotionMode::RootJoint)
+        {
             receiver = rootOptions.rootJointIndex;
-            if (!IsValidRootJoint(rootOptions, jointCount)) {
-                if (diagnostics) {
+            if (!IsValidRootJoint(rootOptions, jointCount))
+            {
+                if (diagnostics)
+                {
                     ReportInvalidRootJoint(rootOptions, jointCount, diagnostics);
                 }
                 receiver = TargetSkeleton::kNoParent;
             }
         }
 
-        if (receiver >= 0 && static_cast<std::size_t>(receiver) < jointCount) {
-            pxr::GfVec3f sourceTranslation =
-                _sourceRest.localTranslations[hipsSlot];
+        if (receiver >= 0 && static_cast<std::size_t>(receiver) < jointCount)
+        {
+            pxr::GfVec3f sourceTranslation = _sourceRest.localTranslations[hipsSlot];
             bool haveSource = false;
-            if (pose.root.hasPosition) {
+            if (pose.root.hasPosition)
+            {
                 sourceTranslation = pose.root.worldPosition;
                 haveSource = true;
             }
-            if (haveSource) {
+            if (haveSource)
+            {
                 const std::vector<TargetJoint>& joints = _skeleton.GetJoints();
-                result.translations[static_cast<std::size_t>(receiver)] =
-                    ResolveRootTranslation(
-                        rootOptions, sourceTranslation,
-                        _sourceRest.localTranslations[hipsSlot],
-                        joints[static_cast<std::size_t>(receiver)]
-                            .restTranslation);
+                result.translations[static_cast<std::size_t>(receiver)] = ResolveRootTranslation(
+                    rootOptions, sourceTranslation, _sourceRest.localTranslations[hipsSlot],
+                    joints[static_cast<std::size_t>(receiver)].restTranslation);
             }
-        } else if (rootOptions.mode == RootMotionMode::Hips && diagnostics
-                   && !diagnostics->Has(
-                       RetargetDiagnosticCode::MissingRequiredBone,
-                       motion::HumanBoneName(motion::HumanBone::Hips))) {
+        }
+        else if (rootOptions.mode == RootMotionMode::Hips && diagnostics &&
+                 !diagnostics->Has(RetargetDiagnosticCode::MissingRequiredBone,
+                                   motion::HumanBoneName(motion::HumanBone::Hips)))
+        {
             // Under 'root' the hips are not where the root lands, so their
             // absence costs no root motion and the invalid index above is the
             // whole report. Under 'hips' the receiver is out of this rig either
@@ -238,8 +243,7 @@ PoseRetargeter::Retarget(const motion::HumanoidPose& pose,
             // skeleton -- and both drop the root. Checked before the detail is
             // built, since every sample of a clip lands here.
             diagnostics->Report(MakeRetargetDiagnostic(
-                RetargetDiagnosticCode::MissingRequiredBone,
-                Describe(motion::HumanBone::Hips),
+                RetargetDiagnosticCode::MissingRequiredBone, Describe(motion::HumanBone::Hips),
                 MissingRequiredDetail(motion::HumanBone::Hips, rootOptions)));
         }
     }
@@ -248,8 +252,7 @@ PoseRetargeter::Retarget(const motion::HumanoidPose& pose,
 }
 
 RetargetDiagnostics
-DiagnoseRig(const TargetSkeleton& skeleton, const HumanoidMap& map,
-            const RetargetOptions& options)
+DiagnoseRig(const TargetSkeleton& skeleton, const HumanoidMap& map, const RetargetOptions& options)
 {
     RetargetDiagnostics diagnostics;
     const std::vector<TargetJoint>& joints = skeleton.GetJoints();
@@ -259,35 +262,38 @@ DiagnoseRig(const TargetSkeleton& skeleton, const HumanoidMap& map,
     // them against, so one built against another rig binds a bone the
     // retarget can only drop -- and `FindMissingRequiredBones`, which reads
     // the map alone, cannot see that.
-    for (const motion::HumanBone bone : HumanoidMap::GetRequiredBones()) {
+    for (const motion::HumanBone bone : HumanoidMap::GetRequiredBones())
+    {
         const int jointIndex = map.GetJointIndex(bone);
-        if (jointIndex >= 0
-            && static_cast<std::size_t>(jointIndex) < joints.size()) {
+        if (jointIndex >= 0 && static_cast<std::size_t>(jointIndex) < joints.size())
+        {
             continue;
         }
-        diagnostics.Report(MakeRetargetDiagnostic(
-            RetargetDiagnosticCode::MissingRequiredBone, Describe(bone),
-            MissingRequiredDetail(bone, options.rootMotion)));
+        diagnostics.Report(MakeRetargetDiagnostic(RetargetDiagnosticCode::MissingRequiredBone,
+                                                  Describe(bone),
+                                                  MissingRequiredDetail(bone, options.rootMotion)));
     }
 
-    for (const int duplicate : map.FindDuplicateJointIndices()) {
+    for (const int duplicate : map.FindDuplicateJointIndices())
+    {
         // Named by the rig's own token where the index is one of its joints,
         // since a subject is what two implementations are compared on and an
         // index means nothing without the rig beside it.
-        const bool inRig =
-            duplicate >= 0 && static_cast<std::size_t>(duplicate) < joints.size();
-        const std::string subject = inRig
-            ? joints[static_cast<std::size_t>(duplicate)].token
-            : std::to_string(duplicate);
+        const bool inRig = duplicate >= 0 && static_cast<std::size_t>(duplicate) < joints.size();
+        const std::string subject =
+            inRig ? joints[static_cast<std::size_t>(duplicate)].token : std::to_string(duplicate);
         std::vector<motion::HumanBone> bound;
-        for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot) {
+        for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+        {
             const auto bone = static_cast<motion::HumanBone>(slot);
-            if (map.GetJointIndex(bone) == duplicate) {
+            if (map.GetJointIndex(bone) == duplicate)
+            {
                 bound.push_back(bone);
             }
         }
         std::string names;
-        for (const motion::HumanBone bone : bound) {
+        for (const motion::HumanBone bone : bound)
+        {
             names += names.empty() ? "'" : ", '";
             names += Describe(bone);
             names += "'";
@@ -300,24 +306,28 @@ DiagnoseRig(const TargetSkeleton& skeleton, const HumanoidMap& map,
                     "last in the vocabulary is the one it keeps"));
     }
 
-    if (!skeleton.IsTopologicallyOrdered()) {
-        for (std::size_t i = 0; i < joints.size(); ++i) {
+    if (!skeleton.IsTopologicallyOrdered())
+    {
+        for (std::size_t i = 0; i < joints.size(); ++i)
+        {
             const int parent = joints[i].parent;
-            if (parent == TargetSkeleton::kNoParent
-                || (parent >= 0 && static_cast<std::size_t>(parent) < i)) {
+            if (parent == TargetSkeleton::kNoParent ||
+                (parent >= 0 && static_cast<std::size_t>(parent) < i))
+            {
                 continue;
             }
-            diagnostics.Report(MakeRetargetDiagnostic(
-                RetargetDiagnosticCode::InvalidHierarchy, joints[i].token,
-                "this joint's parent index is " + std::to_string(parent)
-                    + ", which does not precede it; a skeleton states its "
-                      "joints in parent-before-child order"));
+            diagnostics.Report(
+                MakeRetargetDiagnostic(RetargetDiagnosticCode::InvalidHierarchy, joints[i].token,
+                                       "this joint's parent index is " + std::to_string(parent) +
+                                           ", which does not precede it; a skeleton states its "
+                                           "joints in parent-before-child order"));
             break;
         }
     }
 
-    if (options.rootMotion.mode == RootMotionMode::RootJoint
-        && !IsValidRootJoint(options.rootMotion, joints.size())) {
+    if (options.rootMotion.mode == RootMotionMode::RootJoint &&
+        !IsValidRootJoint(options.rootMotion, joints.size()))
+    {
         ReportInvalidRootJoint(options.rootMotion, joints.size(), &diagnostics);
     }
     return diagnostics;
@@ -328,7 +338,8 @@ PoseRetargeter::Retarget(const motion::HumanoidAnimation& animation,
                          RetargetDiagnostics* diagnostics) const
 {
     RetargetedAnimation result;
-    for (const TargetJoint& joint : _skeleton.GetJoints()) {
+    for (const TargetJoint& joint : _skeleton.GetJoints())
+    {
         result.joints.push_back(joint.token);
     }
     result.startTime = animation.startTime;
@@ -336,13 +347,15 @@ PoseRetargeter::Retarget(const motion::HumanoidAnimation& animation,
     result.frameRate = animation.nominalFrameRate;
     result.source = animation.source;
 
-    if (diagnostics) {
+    if (diagnostics)
+    {
         diagnostics->Merge(DiagnoseRig(_skeleton, _map, _options));
     }
 
     const motion::HumanoidAnimation* source = &animation;
     motion::HumanoidAnimation resampled;
-    if (_options.resampleRate > 0.0) {
+    if (_options.resampleRate > 0.0)
+    {
         resampled = motion::Resample(animation, _options.resampleRate);
         result.frameRate = _options.resampleRate;
         source = &resampled;
@@ -352,11 +365,13 @@ PoseRetargeter::Retarget(const motion::HumanoidAnimation& animation,
     // Every sample reports into one list, which keeps each bone once. Until
     // P1-1 only the first sample was asked, which kept each bone once as well
     // and missed any bone the clip started driving later.
-    for (const motion::HumanoidPose& pose : source->samples) {
+    for (const motion::HumanoidPose& pose : source->samples)
+    {
         result.samples.push_back(Retarget(pose, diagnostics));
     }
 
-    if (!result.samples.empty()) {
+    if (!result.samples.empty())
+    {
         result.startTime = result.samples.front().timestamp;
         result.endTime = result.samples.back().timestamp;
     }

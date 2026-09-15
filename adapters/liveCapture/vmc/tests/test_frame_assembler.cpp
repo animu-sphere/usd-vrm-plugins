@@ -102,20 +102,21 @@ ModelMessage()
 
 // A short rig, so a test states which bones it is talking about rather than
 // looping over fifty-five.
-constexpr std::array<HumanBone, 4> kRig = {HumanBone::Hips, HumanBone::Spine,
-                                           HumanBone::Chest, HumanBone::Head};
+constexpr std::array<HumanBone, 4> kRig = {HumanBone::Hips, HumanBone::Spine, HumanBone::Chest,
+                                           HumanBone::Head};
 
 // The bundled sender's shape: the clock opens the frame, the root and the bones
 // follow, and the whole frame is one datagram.
 VmcPacket
-BundledFrame(double seconds, std::initializer_list<HumanBone> bones = {
-                                 HumanBone::Hips, HumanBone::Spine,
-                                 HumanBone::Chest, HumanBone::Head})
+BundledFrame(double seconds,
+             std::initializer_list<HumanBone> bones = {HumanBone::Hips, HumanBone::Spine,
+                                                       HumanBone::Chest, HumanBone::Head})
 {
     VmcPacket packet;
     packet.messages.push_back(TimeMessage(seconds));
     packet.messages.push_back(RootMessage());
-    for (const HumanBone bone : bones) {
+    for (const HumanBone bone : bones)
+    {
         packet.messages.push_back(BoneMessage(bone));
     }
     return packet;
@@ -145,8 +146,10 @@ std::size_t
 CountCode(const std::vector<Diagnostic>& diagnostics, DiagnosticCode code)
 {
     std::size_t count = 0;
-    for (const Diagnostic& diagnostic : diagnostics) {
-        if (diagnostic.code == code) {
+    for (const Diagnostic& diagnostic : diagnostics)
+    {
+        if (diagnostic.code == code)
+        {
             ++count;
         }
     }
@@ -156,8 +159,10 @@ CountCode(const std::vector<Diagnostic>& diagnostics, DiagnosticCode code)
 const Diagnostic*
 FirstOfCode(const std::vector<Diagnostic>& diagnostics, DiagnosticCode code)
 {
-    for (const Diagnostic& diagnostic : diagnostics) {
-        if (diagnostic.code == code) {
+    for (const Diagnostic& diagnostic : diagnostics)
+    {
+        if (diagnostic.code == code)
+        {
             return &diagnostic;
         }
     }
@@ -181,14 +186,12 @@ TestABundledSenderIsClosedByTheNextClock()
     std::vector<VmcFrame> frames;
     std::vector<Diagnostic> diagnostics;
 
-    assert(assembler.Push(BundledFrame(12.5), 0.010, &frames, &diagnostics)
-           == 0);
+    assert(assembler.Push(BundledFrame(12.5), 0.010, &frames, &diagnostics) == 0);
     // Nothing is emitted until the sender proves the frame is over: a frame
     // held open is a frame that can still gain a bone.
     assert(frames.empty());
 
-    assert(assembler.Push(BundledFrame(12.533), 0.043, &frames, &diagnostics)
-           == 1);
+    assert(assembler.Push(BundledFrame(12.533), 0.043, &frames, &diagnostics) == 1);
     assert(frames.size() == 1);
     assert(Near(frames[0].pose.timestamp, 12.5));
     assert(frames[0].timestampFromSender);
@@ -214,19 +217,16 @@ TestAnUnbundledSenderIsClosedByARepeat()
     std::vector<VmcFrame> frames;
     std::vector<Diagnostic> diagnostics;
 
-    for (int index = 0; index != 2; ++index) {
+    for (int index = 0; index != 2; ++index)
+    {
         const double seconds = 20.0 + index / 30.0;
-        assert(assembler.Push(OneMessage(RootMessage()), 0.0, &frames,
-                              &diagnostics)
-               == (index == 0 ? 0u : 1u));
-        for (const HumanBone bone : kRig) {
-            assert(assembler.Push(OneMessage(BoneMessage(bone)), 0.0, &frames,
-                                  &diagnostics)
-                   == 0);
+        assert(assembler.Push(OneMessage(RootMessage()), 0.0, &frames, &diagnostics) ==
+               (index == 0 ? 0u : 1u));
+        for (const HumanBone bone : kRig)
+        {
+            assert(assembler.Push(OneMessage(BoneMessage(bone)), 0.0, &frames, &diagnostics) == 0);
         }
-        assert(assembler.Push(OneMessage(TimeMessage(seconds)), 0.0, &frames,
-                              &diagnostics)
-               == 0);
+        assert(assembler.Push(OneMessage(TimeMessage(seconds)), 0.0, &frames, &diagnostics) == 0);
     }
     assert(assembler.Flush(&frames, &diagnostics) == 1);
 
@@ -296,15 +296,11 @@ TestAFrameBoundaryCarryingNothingIsRefused()
     std::vector<VmcFrame> frames;
     std::vector<Diagnostic> diagnostics;
 
-    assert(assembler.Push(OneMessage(TimeMessage(1.0)), 0.0, &frames,
-                          &diagnostics)
-           == 0);
+    assert(assembler.Push(OneMessage(TimeMessage(1.0)), 0.0, &frames, &diagnostics) == 0);
     // A clock with no content behind it: the second one closes a frame that
     // never had anything in it, and an empty pose downstream is
     // indistinguishable from a rig that reports nothing.
-    assert(assembler.Push(OneMessage(TimeMessage(2.0)), 0.0, &frames,
-                          &diagnostics)
-           == 0);
+    assert(assembler.Push(OneMessage(TimeMessage(2.0)), 0.0, &frames, &diagnostics) == 0);
     assert(frames.empty());
     assert(assembler.GetStats().framesRefusedEmpty == 1);
     assert(CountCode(diagnostics, DiagnosticCode::IncompleteFrame) == 1);
@@ -334,9 +330,8 @@ TestABlendValueIsAssembledLikeABone()
 
     // The same name in a *later* datagram: the sender has moved on, so it ends
     // the frame exactly as a repeated bone does.
-    assert(assembler.Push(OneMessage(BlendMessage("Joy", 0.1f)), 0.033, &frames,
-                          &diagnostics)
-           == 1);
+    assert(assembler.Push(OneMessage(BlendMessage("Joy", 0.1f)), 0.033, &frames, &diagnostics) ==
+           1);
     assert(frames.size() == 1);
 
     // The first value stood, and the reported zero is a value: a reader that
@@ -491,7 +486,8 @@ TestANewBoneJoinsTheFrameThatIsOpenEvenAfterItsClock()
     VmcFrameAssembler assembler;
     std::vector<VmcFrame> frames;
 
-    for (const HumanBone bone : {HumanBone::Hips, HumanBone::Spine}) {
+    for (const HumanBone bone : {HumanBone::Hips, HumanBone::Spine})
+    {
         assembler.Push(OneMessage(BoneMessage(bone)), 0.0, &frames);
     }
     assembler.Push(OneMessage(TimeMessage(1.0)), 0.0, &frames);
@@ -503,8 +499,7 @@ TestANewBoneJoinsTheFrameThatIsOpenEvenAfterItsClock()
 
     assert(frames.size() == 2);
     assert(frames[0].pose.validRotations.count() == 3);
-    assert(frames[0].pose.validRotations.test(
-        static_cast<std::size_t>(HumanBone::Head)));
+    assert(frames[0].pose.validRotations.test(static_cast<std::size_t>(HumanBone::Head)));
     assert(frames[1].pose.validRotations.count() == 1);
 
     // Narrow in practice for the reason the header gives: a Unity sender walks
@@ -512,18 +507,19 @@ TestANewBoneJoinsTheFrameThatIsOpenEvenAfterItsClock()
     // still sorts behind one that repeats first, and the frames come out whole.
     VmcFrameAssembler ordered;
     std::vector<VmcFrame> recovered;
-    for (const HumanBone bone : {HumanBone::Hips, HumanBone::Spine,
-                                 HumanBone::Chest}) {
+    for (const HumanBone bone : {HumanBone::Hips, HumanBone::Spine, HumanBone::Chest})
+    {
         ordered.Push(OneMessage(BoneMessage(bone)), 0.0, &recovered);
     }
     ordered.Push(OneMessage(TimeMessage(1.0)), 0.0, &recovered);
     // `Chest` drops out for a frame and comes back in the next.
-    for (const HumanBone bone : {HumanBone::Hips, HumanBone::Spine}) {
+    for (const HumanBone bone : {HumanBone::Hips, HumanBone::Spine})
+    {
         ordered.Push(OneMessage(BoneMessage(bone)), 0.0, &recovered);
     }
     ordered.Push(OneMessage(TimeMessage(1.033)), 0.0, &recovered);
-    for (const HumanBone bone : {HumanBone::Hips, HumanBone::Spine,
-                                 HumanBone::Chest}) {
+    for (const HumanBone bone : {HumanBone::Hips, HumanBone::Spine, HumanBone::Chest})
+    {
         ordered.Push(OneMessage(BoneMessage(bone)), 0.0, &recovered);
     }
     ordered.Push(OneMessage(TimeMessage(1.066)), 0.0, &recovered);
@@ -548,8 +544,8 @@ TestAMissingBoneIsReportedAndTheFrameIsKept()
     std::vector<Diagnostic> diagnostics;
 
     assembler.Push(BundledFrame(1.0), 0.0, &frames, &diagnostics);
-    assembler.Push(BundledFrame(1.033, {HumanBone::Hips, HumanBone::Spine}), 0.0,
-                   &frames, &diagnostics);
+    assembler.Push(BundledFrame(1.033, {HumanBone::Hips, HumanBone::Spine}), 0.0, &frames,
+                   &diagnostics);
     assembler.Flush(&frames, &diagnostics);
 
     assert(frames.size() == 2);
@@ -561,8 +557,7 @@ TestAMissingBoneIsReportedAndTheFrameIsKept()
     // And the assembler holds nothing forward itself, or the missing bones
     // would arrive downstream looking like fresh samples.
     assert(frames[1].pose.validRotations.count() == 2);
-    assert(!frames[1].pose.validRotations.test(
-        static_cast<std::size_t>(HumanBone::Chest)));
+    assert(!frames[1].pose.validRotations.test(static_cast<std::size_t>(HumanBone::Chest)));
     assert(frames[1].stale.none());
     assert(assembler.GetStats().framesIncomplete == 1);
     assert(CountCode(diagnostics, DiagnosticCode::IncompleteFrame) == 1);
@@ -587,10 +582,10 @@ TestAStaleBoneIsReportedOnceAndRecovers()
     std::vector<Diagnostic> diagnostics;
 
     assembler.Push(BundledFrame(1.0), 0.0, &frames, &diagnostics);
-    for (int index = 1; index != 6; ++index) {
-        assembler.Push(BundledFrame(1.0 + index * 0.05,
-                                    {HumanBone::Hips, HumanBone::Spine}),
-                       0.0, &frames, &diagnostics);
+    for (int index = 1; index != 6; ++index)
+    {
+        assembler.Push(BundledFrame(1.0 + index * 0.05, {HumanBone::Hips, HumanBone::Spine}), 0.0,
+                       &frames, &diagnostics);
     }
     assembler.Push(BundledFrame(1.3), 0.0, &frames, &diagnostics);
     assembler.Flush(&frames, &diagnostics);
@@ -609,8 +604,7 @@ TestAStaleBoneIsReportedOnceAndRecovers()
     // Every frame that dropped a bone also reported itself incomplete, so the
     // stale one is found by its code rather than by its position: the two say
     // different things about the same gap and both are worth having.
-    const Diagnostic* stale =
-        FirstOfCode(diagnostics, DiagnosticCode::StaleJoint);
+    const Diagnostic* stale = FirstOfCode(diagnostics, DiagnosticCode::StaleJoint);
     assert(stale != nullptr);
     assert(stale->severity == DiagnosticSeverity::Warning);
     assert(stale->recoverable);
@@ -620,10 +614,8 @@ TestAStaleBoneIsReportedOnceAndRecovers()
 
     // The bones come back, and the horizon is armed again rather than spent.
     assert(frames[6].missing.none() && frames[6].stale.none());
-    assembler.Push(BundledFrame(1.6, {HumanBone::Hips}), 0.0, &frames,
-                   &diagnostics);
-    assembler.Push(BundledFrame(1.9, {HumanBone::Hips}), 0.0, &frames,
-                   &diagnostics);
+    assembler.Push(BundledFrame(1.6, {HumanBone::Hips}), 0.0, &frames, &diagnostics);
+    assembler.Push(BundledFrame(1.9, {HumanBone::Hips}), 0.0, &frames, &diagnostics);
     assembler.Flush(&frames, &diagnostics);
     assert(assembler.GetStats().stalenessCrossings == 5);
 }
@@ -644,8 +636,7 @@ TestTheModelBecomesProvenanceAndThePathDoesNot()
     // A handshake is not a frame: it carries no bone, no root, and no clock.
     assert(frames.empty());
 
-    const motion::MotionSourceMetadata& metadata =
-        assembler.GetSourceMetadata();
+    const motion::MotionSourceMetadata& metadata = assembler.GetSourceMetadata();
     assert(metadata.kind == motion::MotionSourceKind::LiveCapture);
     assert(metadata.protocol == "vmc");
     assert(metadata.sourceId == "Example Avatar");
@@ -715,7 +706,8 @@ TestARefusedSampleCostsItselfAndNotTheFrame()
     // packet it was reading; the ones it passes through from the skeleton map
     // are stamped the same way, or a caller could not tell where either came
     // from.
-    for (const Diagnostic& diagnostic : diagnostics) {
+    for (const Diagnostic& diagnostic : diagnostics)
+    {
         assert(diagnostic.sequence.has_value() && *diagnostic.sequence == 1);
     }
 }
@@ -733,12 +725,12 @@ TestTheSourceIsStampedOnEveryDiagnostic()
     assembler.Flush(&frames, &diagnostics);
 
     assert(!diagnostics.empty());
-    for (const Diagnostic& diagnostic : diagnostics) {
+    for (const Diagnostic& diagnostic : diagnostics)
+    {
         assert(diagnostic.source == "127.0.0.1:39539");
     }
-    assert(vrmAdapterVmc::FormatDiagnostic(diagnostics[0])
-               .find("source=127.0.0.1:39539")
-           != std::string::npos);
+    assert(vrmAdapterVmc::FormatDiagnostic(diagnostics[0]).find("source=127.0.0.1:39539") !=
+           std::string::npos);
 }
 
 void
@@ -841,16 +833,19 @@ Replay(const std::filesystem::path& path, std::vector<VmcFrame>* frames,
 {
     vrmAdapterVmc::PacketCapture capture;
     vrmAdapterVmc::PacketCaptureError error;
-    if (!vrmAdapterVmc::ReadPacketCaptureFile(path.string(), &capture, &error)) {
-        std::fprintf(stderr, "%s:%zu: %s\n", path.filename().string().c_str(),
-                     error.line, error.message.c_str());
+    if (!vrmAdapterVmc::ReadPacketCaptureFile(path.string(), &capture, &error))
+    {
+        std::fprintf(stderr, "%s:%zu: %s\n", path.filename().string().c_str(), error.line,
+                     error.message.c_str());
         return false;
     }
     assembler->SetSource(capture.sourceId);
 
-    for (const vrmAdapterVmc::RecordedDatagram& datagram : capture.datagrams) {
+    for (const vrmAdapterVmc::RecordedDatagram& datagram : capture.datagrams)
+    {
         vrmAdapterVmc::OscPacket osc;
-        if (!vrmAdapterVmc::DecodeOscPacket(datagram.bytes, &osc)) {
+        if (!vrmAdapterVmc::DecodeOscPacket(datagram.bytes, &osc))
+        {
             continue;
         }
         vrmAdapterVmc::VmcPacket vmc;
@@ -864,11 +859,11 @@ Replay(const std::filesystem::path& path, std::vector<VmcFrame>* frames,
 // The claim the corpus exists to make at this layer: two senders that put their
 // clock at opposite ends of a frame produce the same frames at the same rate.
 int
-CheckTheTwoSenderShapesAgree(
-    const std::vector<VmcFrame>& bundled,
-    const std::vector<VmcFrame>& unbundled)
+CheckTheTwoSenderShapesAgree(const std::vector<VmcFrame>& bundled,
+                             const std::vector<VmcFrame>& unbundled)
 {
-    if (bundled.size() != unbundled.size()) {
+    if (bundled.size() != unbundled.size())
+    {
         std::fprintf(stderr,
                      "the bundled sender produced %zu frame(s) and the "
                      "unbundled one %zu -- the boundary rule reads one of the "
@@ -877,16 +872,18 @@ CheckTheTwoSenderShapesAgree(
         return 1;
     }
     int failures = 0;
-    for (std::size_t index = 1; index != bundled.size(); ++index) {
+    for (std::size_t index = 1; index != bundled.size(); ++index)
+    {
         const double bundledStep =
             bundled[index].pose.timestamp - bundled[index - 1].pose.timestamp;
-        const double unbundledStep = unbundled[index].pose.timestamp
-            - unbundled[index - 1].pose.timestamp;
+        const double unbundledStep =
+            unbundled[index].pose.timestamp - unbundled[index - 1].pose.timestamp;
         // Six decimals is what the capture format records, so a cadence
         // recovered to better than that would be a claim about the fixture's
         // precision rather than about the assembler.
-        if (std::abs(bundledStep - 1.0 / 30.0) > 1e-5
-            || std::abs(unbundledStep - 1.0 / 30.0) > 1e-5) {
+        if (std::abs(bundledStep - 1.0 / 30.0) > 1e-5 ||
+            std::abs(unbundledStep - 1.0 / 30.0) > 1e-5)
+        {
             std::fprintf(stderr,
                          "frame %zu steps %f s (bundled) and %f s (unbundled), "
                          "not the 30 Hz both were recorded at\n",
@@ -901,22 +898,23 @@ int
 CheckCorpus(const std::filesystem::path& directory)
 {
     std::vector<std::filesystem::path> captures;
-    if (!std::filesystem::is_directory(directory)) {
-        std::fprintf(stderr, "corpus directory not found: %s\n",
-                     directory.string().c_str());
+    if (!std::filesystem::is_directory(directory))
+    {
+        std::fprintf(stderr, "corpus directory not found: %s\n", directory.string().c_str());
         return 1;
     }
     for (const std::filesystem::directory_entry& file :
-         std::filesystem::directory_iterator(directory)) {
-        if (file.is_regular_file()
-            && file.path().extension() == ".vmcpackets") {
+         std::filesystem::directory_iterator(directory))
+    {
+        if (file.is_regular_file() && file.path().extension() == ".vmcpackets")
+        {
             captures.push_back(file.path());
         }
     }
     std::sort(captures.begin(), captures.end());
-    if (captures.empty()) {
-        std::fprintf(stderr, "no .vmcpackets fixtures in %s\n",
-                     directory.string().c_str());
+    if (captures.empty())
+    {
+        std::fprintf(stderr, "no .vmcpackets fixtures in %s\n", directory.string().c_str());
         return 1;
     }
 
@@ -925,16 +923,20 @@ CheckCorpus(const std::filesystem::path& directory)
     std::vector<VmcFrame> bundled;
     std::vector<VmcFrame> unbundled;
 
-    for (const std::filesystem::path& path : captures) {
+    for (const std::filesystem::path& path : captures)
+    {
         const std::string name = path.filename().string();
         const Expected* entry = nullptr;
-        for (const Expected& candidate : kExpected) {
-            if (name == candidate.file) {
+        for (const Expected& candidate : kExpected)
+        {
+            if (name == candidate.file)
+            {
                 entry = &candidate;
                 break;
             }
         }
-        if (!entry) {
+        if (!entry)
+        {
             std::fprintf(stderr,
                          "%s: no expected assembly in this test -- add one, or "
                          "the capture is in the corpus and assembled by "
@@ -950,41 +952,36 @@ CheckCorpus(const std::filesystem::path& directory)
         VmcFrameAssembler assembler(config);
         std::vector<VmcFrame> frames;
         std::vector<Diagnostic> diagnostics;
-        if (!Replay(path, &frames, &diagnostics, &assembler)) {
+        if (!Replay(path, &frames, &diagnostics, &assembler))
+        {
             ++failures;
             continue;
         }
 
         const vrmAdapterVmc::VmcFrameStats& stats = assembler.GetStats();
-        if (frames.size() != entry->frames
-            || stats.framesRefusedOutOfOrder != entry->refusedOutOfOrder
-            || stats.framesIncomplete != entry->incomplete
-            || stats.sessionRestarts != entry->restarts
-            || stats.stalenessCrossings != entry->staleCrossings
-            || stats.bonesAccepted != entry->bones
-            || stats.rootsAccepted != entry->roots
-            || stats.expressionsAccepted != entry->expressions) {
+        if (frames.size() != entry->frames ||
+            stats.framesRefusedOutOfOrder != entry->refusedOutOfOrder ||
+            stats.framesIncomplete != entry->incomplete ||
+            stats.sessionRestarts != entry->restarts ||
+            stats.stalenessCrossings != entry->staleCrossings ||
+            stats.bonesAccepted != entry->bones || stats.rootsAccepted != entry->roots ||
+            stats.expressionsAccepted != entry->expressions)
+        {
             std::fprintf(stderr,
                          "%s: %zu frame(s), %llu out of order, %llu "
                          "incomplete, %llu restart(s), %llu stale, %llu "
                          "bone(s), %llu root(s), %llu expression(s) -- "
                          "expected %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu\n",
                          name.c_str(), frames.size(),
-                         static_cast<unsigned long long>(
-                             stats.framesRefusedOutOfOrder),
-                         static_cast<unsigned long long>(
-                             stats.framesIncomplete),
+                         static_cast<unsigned long long>(stats.framesRefusedOutOfOrder),
+                         static_cast<unsigned long long>(stats.framesIncomplete),
                          static_cast<unsigned long long>(stats.sessionRestarts),
-                         static_cast<unsigned long long>(
-                             stats.stalenessCrossings),
+                         static_cast<unsigned long long>(stats.stalenessCrossings),
                          static_cast<unsigned long long>(stats.bonesAccepted),
                          static_cast<unsigned long long>(stats.rootsAccepted),
-                         static_cast<unsigned long long>(
-                             stats.expressionsAccepted),
-                         entry->frames, entry->refusedOutOfOrder,
-                         entry->incomplete, entry->restarts,
-                         entry->staleCrossings, entry->bones, entry->roots,
-                         entry->expressions);
+                         static_cast<unsigned long long>(stats.expressionsAccepted), entry->frames,
+                         entry->refusedOutOfOrder, entry->incomplete, entry->restarts,
+                         entry->staleCrossings, entry->bones, entry->roots, entry->expressions);
             ++failures;
             continue;
         }
@@ -994,15 +991,13 @@ CheckCorpus(const std::filesystem::path& directory)
         // A committed capture that started duplicating inside a bundle would
         // change the frame count above, so this says which of the two rules is
         // doing the work.
-        if (stats.bonesDuplicated != 0 || stats.expressionsDuplicated != 0) {
+        if (stats.bonesDuplicated != 0 || stats.expressionsDuplicated != 0)
+        {
             std::fprintf(stderr,
                          "%s: %llu bone and %llu expression duplicate(s) "
                          "inside one datagram\n",
-                         name.c_str(),
-                         static_cast<unsigned long long>(
-                             stats.bonesDuplicated),
-                         static_cast<unsigned long long>(
-                             stats.expressionsDuplicated));
+                         name.c_str(), static_cast<unsigned long long>(stats.bonesDuplicated),
+                         static_cast<unsigned long long>(stats.expressionsDuplicated));
             ++failures;
         }
 
@@ -1010,8 +1005,10 @@ CheckCorpus(const std::filesystem::path& directory)
         // the arrival-time fallback is never reached here -- it is unit-tested
         // instead, which is the honest place for a phenomenon no sender in this
         // corpus produces.
-        for (const VmcFrame& frame : frames) {
-            if (!frame.timestampFromSender) {
+        for (const VmcFrame& frame : frames)
+        {
+            if (!frame.timestampFromSender)
+            {
                 std::fprintf(stderr,
                              "%s: a frame at %f was stamped from the receive "
                              "clock\n",
@@ -1026,18 +1023,19 @@ CheckCorpus(const std::filesystem::path& directory)
         // is what a count cannot: `A` is sent as 0.0 every frame, and a reader
         // that treated a zero weight as "not sent" would land on two names here
         // while the count above still read nine.
-        if (name == "mixed-traffic-30hz.vmcpackets") {
-            for (std::size_t index = 0; index != frames.size(); ++index) {
-                const motion::ExpressionWeights& weights =
-                    frames[index].pose.expressions;
+        if (name == "mixed-traffic-30hz.vmcpackets")
+        {
+            for (std::size_t index = 0; index != frames.size(); ++index)
+            {
+                const motion::ExpressionWeights& weights = frames[index].pose.expressions;
                 const float* joy = weights.Find("Joy");
                 const float* blink = weights.Find("Blink");
                 const float* a = weights.Find("A");
                 const float expected = 0.25f * static_cast<float>(index);
-                if (weights.entries.size() != 3 || !joy || !blink || !a
-                    || std::abs(*joy - expected) > 1e-6f
-                    || std::abs(*blink - (1.0f - expected)) > 1e-6f
-                    || *a != 0.0f) {
+                if (weights.entries.size() != 3 || !joy || !blink || !a ||
+                    std::abs(*joy - expected) > 1e-6f ||
+                    std::abs(*blink - (1.0f - expected)) > 1e-6f || *a != 0.0f)
+                {
                     std::fprintf(stderr,
                                  "%s: frame %zu carried %zu expression(s), not "
                                  "Joy/Blink/A at the recorded weights\n",
@@ -1047,9 +1045,9 @@ CheckCorpus(const std::filesystem::path& directory)
                 }
                 // Sent under the sender's own spelling, not normalised to a VRM
                 // preset name: the vocabulary is the model's.
-                if (weights.entries[0].name != "A"
-                    || weights.entries[1].name != "Blink"
-                    || weights.entries[2].name != "Joy") {
+                if (weights.entries[0].name != "A" || weights.entries[1].name != "Blink" ||
+                    weights.entries[2].name != "Joy")
+                {
                     std::fprintf(stderr,
                                  "%s: frame %zu did not carry the sender's own "
                                  "names in name order\n",
@@ -1060,22 +1058,22 @@ CheckCorpus(const std::filesystem::path& directory)
             }
         }
 
-        if (name == "neutral-standing-30hz.vmcpackets") {
+        if (name == "neutral-standing-30hz.vmcpackets")
+        {
             bundled = frames;
             // The pose survives assembly as the pose the layer below decoded:
             // every bone of the full torso rig, every rotation identity, the
             // root at the origin. A boundary rule that split a frame in two
             // would still satisfy the identity check one layer down.
-            for (const VmcFrame& frame : frames) {
-                if (frame.pose.validRotations.count() != 22
-                    || !frame.pose.root.hasPosition
-                    || frame.pose.root.worldPosition.GetLength() != 0.0f
-                    || frame.missing.any()) {
+            for (const VmcFrame& frame : frames)
+            {
+                if (frame.pose.validRotations.count() != 22 || !frame.pose.root.hasPosition ||
+                    frame.pose.root.worldPosition.GetLength() != 0.0f || frame.missing.any())
+                {
                     std::fprintf(stderr,
                                  "%s: a frame carried %zu bone(s) and %zu "
                                  "missing, not the whole 22-bone rig\n",
-                                 name.c_str(),
-                                 frame.pose.validRotations.count(),
+                                 name.c_str(), frame.pose.validRotations.count(),
                                  frame.missing.count());
                     ++failures;
                     break;
@@ -1088,22 +1086,21 @@ CheckCorpus(const std::filesystem::path& directory)
         // pins that they landed one per frame and in the order they were sent,
         // which is the thing a frame boundary can get wrong while every
         // individual rotation stays correct.
-        if (name == "arm-raise-30hz.vmcpackets") {
+        if (name == "arm-raise-30hz.vmcpackets")
+        {
             unbundled = frames;
             const pxr::GfQuatf identity(1.0f, pxr::GfVec3f(0.0f));
-            const std::size_t arm =
-                static_cast<std::size_t>(HumanBone::LeftUpperArm);
-            for (std::size_t index = 0; index != frames.size(); ++index) {
-                const float expected = static_cast<float>(
-                    15.0 * index * 3.14159265358979323846 / 180.0);
-                if (!frames[index].pose.validRotations.test(arm)
-                    || std::abs(motion::AngleBetween(
-                                    frames[index].pose.localRotations[arm],
-                                    identity)
-                                - expected)
-                        > 1e-4f) {
-                    std::fprintf(stderr,
-                                 "%s: frame %zu is not the arm at %f degrees\n",
+            const std::size_t arm = static_cast<std::size_t>(HumanBone::LeftUpperArm);
+            for (std::size_t index = 0; index != frames.size(); ++index)
+            {
+                const float expected =
+                    static_cast<float>(15.0 * index * 3.14159265358979323846 / 180.0);
+                if (!frames[index].pose.validRotations.test(arm) ||
+                    std::abs(
+                        motion::AngleBetween(frames[index].pose.localRotations[arm], identity) -
+                        expected) > 1e-4f)
+                {
+                    std::fprintf(stderr, "%s: frame %zu is not the arm at %f degrees\n",
                                  name.c_str(), index, 15.0 * index);
                     ++failures;
                     break;
@@ -1111,17 +1108,20 @@ CheckCorpus(const std::filesystem::path& directory)
             }
         }
 
-        if (name == "sender-restart-30hz.vmcpackets") {
+        if (name == "sender-restart-30hz.vmcpackets")
+        {
             // The four phenomena this capture was recorded for, read off the
             // frames rather than off the counters above: the duplicate delivery
             // produced no second pose, the truncated frame is missing exactly
             // the bones it did not carry and every one of them is stale, and
             // the restart is flagged on the one frame whose clock went back.
             std::set<double> instants;
-            for (const VmcFrame& frame : frames) {
+            for (const VmcFrame& frame : frames)
+            {
                 instants.insert(frame.pose.timestamp);
             }
-            if (instants.size() != frames.size()) {
+            if (instants.size() != frames.size())
+            {
                 std::fprintf(stderr,
                              "%s: %zu frame(s) at %zu distinct instant(s) -- a "
                              "duplicated datagram became a duplicated pose\n",
@@ -1129,39 +1129,34 @@ CheckCorpus(const std::filesystem::path& directory)
                 ++failures;
             }
             const VmcFrame& truncated = frames[3];
-            if (truncated.pose.validRotations.count() != 6
-                || truncated.missing.count() != 15
-                || truncated.stale != truncated.missing) {
+            if (truncated.pose.validRotations.count() != 6 || truncated.missing.count() != 15 ||
+                truncated.stale != truncated.missing)
+            {
                 std::fprintf(stderr,
                              "%s: the truncated frame carried %zu bone(s), %zu "
                              "missing, %zu stale -- expected 6, 15, 15\n",
-                             name.c_str(),
-                             truncated.pose.validRotations.count(),
-                             truncated.missing.count(),
-                             truncated.stale.count());
+                             name.c_str(), truncated.pose.validRotations.count(),
+                             truncated.missing.count(), truncated.stale.count());
                 ++failures;
             }
-            if (!frames[4].beginsNewSession
-                || frames[4].pose.timestamp >= frames[3].pose.timestamp
-                || frames[4].missing.any()) {
+            if (!frames[4].beginsNewSession ||
+                frames[4].pose.timestamp >= frames[3].pose.timestamp || frames[4].missing.any())
+            {
                 std::fprintf(stderr,
                              "%s: the frame after the restart is not flagged, "
                              "or did not begin a session of its own\n",
                              name.c_str());
                 ++failures;
             }
-            if (CountCode(diagnostics, DiagnosticCode::SourceRestarted) != 1
-                || CountCode(diagnostics, DiagnosticCode::TimestampRegression)
-                    != 2
-                || CountCode(diagnostics, DiagnosticCode::StaleJoint) != 15) {
+            if (CountCode(diagnostics, DiagnosticCode::SourceRestarted) != 1 ||
+                CountCode(diagnostics, DiagnosticCode::TimestampRegression) != 2 ||
+                CountCode(diagnostics, DiagnosticCode::StaleJoint) != 15)
+            {
                 std::fprintf(stderr,
                              "%s: %zu restart, %zu regression, %zu stale "
                              "diagnostic(s) -- expected 1, 2, 15\n",
-                             name.c_str(),
-                             CountCode(diagnostics,
-                                       DiagnosticCode::SourceRestarted),
-                             CountCode(diagnostics,
-                                       DiagnosticCode::TimestampRegression),
+                             name.c_str(), CountCode(diagnostics, DiagnosticCode::SourceRestarted),
+                             CountCode(diagnostics, DiagnosticCode::TimestampRegression),
                              CountCode(diagnostics, DiagnosticCode::StaleJoint));
                 ++failures;
             }
@@ -1170,42 +1165,46 @@ CheckCorpus(const std::filesystem::path& directory)
         // A missing bone that is *not* stale, which is the contrast the
         // staleness horizon exists to draw: the same `Chest` gap, a frame
         // apart, on the other side of it.
-        if (name == "malformed-forms.vmcpackets") {
-            if (frames[1].missing.count() != 1 || frames[1].stale.any()
-                || !frames[1].missing.test(
-                    static_cast<std::size_t>(HumanBone::Chest))) {
+        if (name == "malformed-forms.vmcpackets")
+        {
+            if (frames[1].missing.count() != 1 || frames[1].stale.any() ||
+                !frames[1].missing.test(static_cast<std::size_t>(HumanBone::Chest)))
+            {
                 std::fprintf(stderr,
                              "%s: the second frame is missing %zu bone(s) and "
                              "stale on %zu -- expected the Chest, and nothing "
                              "stale\n",
-                             name.c_str(), frames[1].missing.count(),
-                             frames[1].stale.count());
+                             name.c_str(), frames[1].missing.count(), frames[1].stale.count());
                 ++failures;
             }
         }
 
-        std::printf("%s: %zu frame(s) assembled\n", name.c_str(),
-                    frames.size());
+        std::printf("%s: %zu frame(s) assembled\n", name.c_str(), frames.size());
     }
 
-    for (const Expected& entry : kExpected) {
-        if (covered.find(entry.file) == covered.end()) {
-            std::fprintf(stderr, "%s: expected in this test, absent from %s\n",
-                         entry.file, directory.string().c_str());
+    for (const Expected& entry : kExpected)
+    {
+        if (covered.find(entry.file) == covered.end())
+        {
+            std::fprintf(stderr, "%s: expected in this test, absent from %s\n", entry.file,
+                         directory.string().c_str());
             ++failures;
         }
     }
 
-    if (bundled.empty() || unbundled.empty()) {
-        std::fprintf(stderr,
-                     "the corpus lost one of its two sender shapes; the "
-                     "boundary rule is then pinned by neither\n");
+    if (bundled.empty() || unbundled.empty())
+    {
+        std::fprintf(stderr, "the corpus lost one of its two sender shapes; the "
+                             "boundary rule is then pinned by neither\n");
         ++failures;
-    } else {
+    }
+    else
+    {
         failures += CheckTheTwoSenderShapesAgree(bundled, unbundled);
     }
 
-    if (failures != 0) {
+    if (failures != 0)
+    {
         std::fprintf(stderr, "%d corpus capture(s) failed\n", failures);
         return 1;
     }
@@ -1220,7 +1219,8 @@ CheckCorpus(const std::filesystem::path& directory)
 int
 main(int argc, char** argv)
 {
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
 

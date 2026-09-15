@@ -62,19 +62,19 @@
 #include <vector>
 
 #if defined(_WIN32)
-#    ifndef WIN32_LEAN_AND_MEAN
-#        define WIN32_LEAN_AND_MEAN
-#    endif
-#    ifndef NOMINMAX
-#        define NOMINMAX
-#    endif
-#    include <winsock2.h>
-#    include <ws2tcpip.h>
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #else
-#    include <netdb.h>
-#    include <netinet/in.h>
-#    include <sys/socket.h>
-#    include <unistd.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
 #endif
 
 namespace
@@ -122,12 +122,14 @@ bool
 SplitEndpoint(const std::string& endpoint, std::string* host, std::string* port)
 {
     const std::size_t colon = endpoint.rfind(':');
-    if (colon == std::string::npos) {
+    if (colon == std::string::npos)
+    {
         return false;
     }
     *host = endpoint.substr(0, colon);
     *port = endpoint.substr(colon + 1);
-    if (host->size() >= 2 && host->front() == '[' && host->back() == ']') {
+    if (host->size() >= 2 && host->front() == '[' && host->back() == ']')
+    {
         *host = host->substr(1, host->size() - 2);
     }
     return !host->empty() && !port->empty();
@@ -135,15 +137,20 @@ SplitEndpoint(const std::string& endpoint, std::string* host, std::string* port)
 
 class LoopbackSender
 {
-public:
-    ~LoopbackSender() { Close(); }
+  public:
+    ~LoopbackSender()
+    {
+        Close();
+    }
 
-    bool Open(const std::string& endpoint)
+    bool
+    Open(const std::string& endpoint)
     {
         Close();
         std::string host;
         std::string port;
-        if (!SplitEndpoint(endpoint, &host, &port)) {
+        if (!SplitEndpoint(endpoint, &host, &port))
+        {
             return false;
         }
 
@@ -154,22 +161,22 @@ public:
         hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
 
         addrinfo* resolved = nullptr;
-        if (::getaddrinfo(host.c_str(), port.c_str(), &hints, &resolved) != 0
-            || !resolved) {
+        if (::getaddrinfo(host.c_str(), port.c_str(), &hints, &resolved) != 0 || !resolved)
+        {
             return false;
         }
-        for (const addrinfo* it = resolved; it; it = it->ai_next) {
-            const RawSocket handle =
-                ::socket(it->ai_family, it->ai_socktype, it->ai_protocol);
-            if (handle == kNoSocket) {
+        for (const addrinfo* it = resolved; it; it = it->ai_next)
+        {
+            const RawSocket handle = ::socket(it->ai_family, it->ai_socktype, it->ai_protocol);
+            if (handle == kNoSocket)
+            {
                 continue;
             }
             // Connected, so a send is one call and a peer is one value. The
             // receiver never sends, so nothing here depends on the reverse
             // direction working.
-            if (::connect(handle, it->ai_addr,
-                          static_cast<socklen_t>(it->ai_addrlen))
-                != 0) {
+            if (::connect(handle, it->ai_addr, static_cast<socklen_t>(it->ai_addrlen)) != 0)
+            {
                 CloseRaw(handle);
                 continue;
             }
@@ -180,26 +187,29 @@ public:
         return _socket != kNoSocket;
     }
 
-    bool Send(const std::vector<std::uint8_t>& bytes) const
+    bool
+    Send(const std::vector<std::uint8_t>& bytes) const
     {
-        if (_socket == kNoSocket) {
+        if (_socket == kNoSocket)
+        {
             return false;
         }
-        const auto sent = ::send(
-            _socket, reinterpret_cast<const char*>(bytes.data()),
-            static_cast<int>(bytes.size()), 0);
+        const auto sent = ::send(_socket, reinterpret_cast<const char*>(bytes.data()),
+                                 static_cast<int>(bytes.size()), 0);
         return sent == static_cast<decltype(sent)>(bytes.size());
     }
 
-    void Close()
+    void
+    Close()
     {
-        if (_socket != kNoSocket) {
+        if (_socket != kNoSocket)
+        {
             CloseRaw(_socket);
             _socket = kNoSocket;
         }
     }
 
-private:
+  private:
     RawSocket _socket = kNoSocket;
 };
 
@@ -222,7 +232,8 @@ std::vector<std::uint8_t>
 Payload(std::size_t size, std::uint8_t seed)
 {
     std::vector<std::uint8_t> bytes(size);
-    for (std::size_t index = 0; index != size; ++index) {
+    for (std::size_t index = 0; index != size; ++index)
+    {
         bytes[index] = static_cast<std::uint8_t>(seed + index);
     }
     return bytes;
@@ -367,8 +378,7 @@ TestADatagramArrivesWholeWithItsSenderAndItsInstant()
     assert(sender.Send(small));
 
     ReceivedDatagram datagram;
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes == small);
     assert(datagram.peer.rfind("127.0.0.1:", 0) == 0);
     assert(datagram.receiveTime >= before);
@@ -377,15 +387,13 @@ TestADatagramArrivesWholeWithItsSenderAndItsInstant()
     // leaving the previous datagram's tail behind.
     const std::vector<std::uint8_t> large = Payload(2000, 0x01);
     assert(sender.Send(large));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes == large);
     const double second = datagram.receiveTime;
 
     // And smaller again, which is the direction a stale tail would survive.
     assert(sender.Send(small));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes == small);
     assert(datagram.receiveTime >= second);
 
@@ -394,8 +402,7 @@ TestADatagramArrivesWholeWithItsSenderAndItsInstant()
     // `Idle` would hide it from the decoder that does not exist yet — which is
     // exactly the sort of hole a corpus recorded today would carry into it.
     assert(sender.Send(std::vector<std::uint8_t>()));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes.empty());
 
     const vrmAdapterVrchatOsc::UdpReceiverStats& stats = receiver.GetStats();
@@ -425,10 +432,10 @@ PollUntilSilenceReports(UdpReceiver& receiver, std::uint64_t expected,
 {
     ReceivedDatagram datagram;
     const double deadline = receiver.Now() + kSilenceGiveUp;
-    while (receiver.GetStats().silenceReports < expected) {
+    while (receiver.GetStats().silenceReports < expected)
+    {
         assert(receiver.Now() < deadline);
-        assert(receiver.Receive(&datagram, 0.02, diagnostics)
-               == ReceiveStatus::Idle);
+        assert(receiver.Receive(&datagram, 0.02, diagnostics) == ReceiveStatus::Idle);
     }
 }
 
@@ -441,9 +448,9 @@ TestSilenceIsNotReportedUntilACallerSaysHowMuchIsTooMuch()
 
     ReceivedDatagram datagram;
     std::vector<Diagnostic> diagnostics;
-    for (int poll = 0; poll != 5; ++poll) {
-        assert(receiver.Receive(&datagram, 0.02, &diagnostics)
-               == ReceiveStatus::Idle);
+    for (int poll = 0; poll != 5; ++poll)
+    {
+        assert(receiver.Receive(&datagram, 0.02, &diagnostics) == ReceiveStatus::Idle);
     }
     assert(diagnostics.empty());
     assert(receiver.GetStats().silenceReports == 0);
@@ -479,9 +486,9 @@ TestSilenceIsReportedOncePerEpisodeAndRearmedByADatagram()
 
     // Still quiet, still one report. A loop that noticed silence a hundred times
     // a second would fill a session log with the loop rather than the session.
-    for (int poll = 0; poll != 5; ++poll) {
-        assert(receiver.Receive(&datagram, 0.02, &diagnostics)
-               == ReceiveStatus::Idle);
+    for (int poll = 0; poll != 5; ++poll)
+    {
+        assert(receiver.Receive(&datagram, 0.02, &diagnostics) == ReceiveStatus::Idle);
     }
     assert(diagnostics.size() == 1);
     assert(receiver.GetStats().silenceReports == 1);
@@ -491,8 +498,7 @@ TestSilenceIsReportedOncePerEpisodeAndRearmedByADatagram()
     LoopbackSender sender;
     assert(sender.Open(receiver.GetBoundEndpoint()));
     assert(sender.Send(Payload(8, 0x10)));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout, &diagnostics)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout, &diagnostics) == ReceiveStatus::Received);
     assert(diagnostics.size() == 1);
 
     PollUntilSilenceReports(receiver, 2, &diagnostics);
@@ -553,13 +559,15 @@ CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
     config.listenPort = 0;
 
     UdpReceiver receiver;
-    if (!receiver.Open(config)) {
+    if (!receiver.Open(config))
+    {
         std::puts("skipped: no IPv6 loopback on this host");
         return kSkipExitCode;
     }
 
     LoopbackSender sender;
-    if (!sender.Open(receiver.GetBoundEndpoint())) {
+    if (!sender.Open(receiver.GetBoundEndpoint()))
+    {
         std::puts("skipped: could not reach the IPv6 loopback endpoint");
         return kSkipExitCode;
     }
@@ -568,7 +576,8 @@ CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
     // maximum. One byte over would do; a handful makes the intent legible.
     const std::vector<std::uint8_t> overlong =
         Payload(vrmAdapterVrchatOsc::MaxDatagramBytes + 8, 0x00);
-    if (!sender.Send(overlong)) {
+    if (!sender.Send(overlong))
+    {
         std::puts("skipped: this host will not send an over-long datagram");
         return kSkipExitCode;
     }
@@ -590,8 +599,7 @@ CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
     // And the socket still works afterwards: a refusal is not a shutdown.
     const std::vector<std::uint8_t> ordinary = Payload(24, 0x61);
     assert(sender.Send(ordinary));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes == ordinary);
 
     std::puts("an over-long datagram was dropped rather than recorded");
@@ -620,11 +628,8 @@ TestWhatCameOffTheSocketIsWhatACaptureKeeps()
     // the printable range and out of it, and one that is not a multiple of the
     // sixteen bytes a hex line carries.
     const std::vector<std::vector<std::uint8_t>> sent = {
-        std::vector<std::uint8_t>(),
-        Payload(1, 0x00),
-        Payload(16, 0x20),
-        Payload(37, 0x7d),
-        Payload(256, 0x00),
+        std::vector<std::uint8_t>(), Payload(1, 0x00),   Payload(16, 0x20),
+        Payload(37, 0x7d),           Payload(256, 0x00),
     };
 
     PacketCapture capture;
@@ -634,10 +639,10 @@ TestWhatCameOffTheSocketIsWhatACaptureKeeps()
     capture.listenEndpoint = receiver.GetBoundEndpoint();
 
     ReceivedDatagram datagram;
-    for (const std::vector<std::uint8_t>& bytes : sent) {
+    for (const std::vector<std::uint8_t>& bytes : sent)
+    {
         assert(sender.Send(bytes));
-        assert(receiver.Receive(&datagram, kLoopbackTimeout)
-               == ReceiveStatus::Received);
+        assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
 
         // What a recording tool does, and all it does: copy the bytes and the
         // instant across, and keep the peer for its own diagnosis. The capture
@@ -653,9 +658,9 @@ TestWhatCameOffTheSocketIsWhatACaptureKeeps()
     // monotonic clock is what makes that a guarantee rather than a hope. A wall
     // clock would satisfy this assertion on almost every run and fail it on the
     // one where NTP stepped mid-session.
-    for (std::size_t index = 1; index != capture.datagrams.size(); ++index) {
-        assert(capture.datagrams[index].receiveTime
-               >= capture.datagrams[index - 1].receiveTime);
+    for (std::size_t index = 1; index != capture.datagrams.size(); ++index)
+    {
+        assert(capture.datagrams[index].receiveTime >= capture.datagrams[index - 1].receiveTime);
     }
 
     std::ostringstream written;
@@ -664,14 +669,15 @@ TestWhatCameOffTheSocketIsWhatACaptureKeeps()
     PacketCapture reread;
     std::istringstream input(written.str());
     vrmAdapterVrchatOsc::PacketCaptureError error;
-    if (!vrmAdapterVrchatOsc::ReadPacketCapture(input, &reread, &error)) {
-        std::fprintf(stderr, "line %zu: %s\n", error.line,
-                     error.message.c_str());
+    if (!vrmAdapterVrchatOsc::ReadPacketCapture(input, &reread, &error))
+    {
+        std::fprintf(stderr, "line %zu: %s\n", error.line, error.message.c_str());
         assert(false);
     }
 
     assert(reread.datagrams.size() == sent.size());
-    for (std::size_t index = 0; index != sent.size(); ++index) {
+    for (std::size_t index = 0; index != sent.size(); ++index)
+    {
         assert(reread.datagrams[index].bytes == sent[index]);
     }
     assert(reread.listenEndpoint == capture.listenEndpoint);
@@ -703,101 +709,105 @@ ReplayOneCapture(const std::filesystem::path& path)
     const std::string name = path.filename().string();
     PacketCapture fromFile;
     vrmAdapterVrchatOsc::PacketCaptureError error;
-    if (!vrmAdapterVrchatOsc::ReadPacketCaptureFile(path.string(), &fromFile,
-                                                    &error)) {
-        std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line,
-                     error.message.c_str());
+    if (!vrmAdapterVrchatOsc::ReadPacketCaptureFile(path.string(), &fromFile, &error))
+    {
+        std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line, error.message.c_str());
         return false;
     }
 
     UdpReceiver receiver;
-    if (!receiver.Open(LoopbackConfig())) {
-        std::fprintf(stderr, "%s: could not bind a loopback receiver\n",
-                     name.c_str());
+    if (!receiver.Open(LoopbackConfig()))
+    {
+        std::fprintf(stderr, "%s: could not bind a loopback receiver\n", name.c_str());
         return false;
     }
     LoopbackSender sender;
-    if (!sender.Open(receiver.GetBoundEndpoint())) {
-        std::fprintf(stderr, "%s: could not reach the loopback endpoint\n",
-                     name.c_str());
+    if (!sender.Open(receiver.GetBoundEndpoint()))
+    {
+        std::fprintf(stderr, "%s: could not reach the loopback endpoint\n", name.c_str());
         return false;
     }
 
     std::vector<std::vector<std::uint8_t>> received;
     received.reserve(fromFile.datagrams.size());
     double previous = -1.0;
-    for (const RecordedDatagram& recorded : fromFile.datagrams) {
+    for (const RecordedDatagram& recorded : fromFile.datagrams)
+    {
         // One at a time rather than a burst: a kernel receive buffer is finite,
         // and a corpus large enough to overflow it would fail this pass for a
         // reason that is not about the receiver.
-        if (!sender.Send(recorded.bytes)) {
-            std::fprintf(stderr, "%s: could not send a recorded datagram\n",
-                         name.c_str());
+        if (!sender.Send(recorded.bytes))
+        {
+            std::fprintf(stderr, "%s: could not send a recorded datagram\n", name.c_str());
             return false;
         }
         ReceivedDatagram live;
-        if (receiver.Receive(&live, kLoopbackTimeout)
-            != ReceiveStatus::Received) {
-            std::fprintf(stderr, "%s: a recorded datagram did not arrive\n",
-                         name.c_str());
+        if (receiver.Receive(&live, kLoopbackTimeout) != ReceiveStatus::Received)
+        {
+            std::fprintf(stderr, "%s: a recorded datagram did not arrive\n", name.c_str());
             return false;
         }
-        if (live.receiveTime < previous) {
-            std::fprintf(stderr, "%s: arrival order was not preserved\n",
-                         name.c_str());
+        if (live.receiveTime < previous)
+        {
+            std::fprintf(stderr, "%s: arrival order was not preserved\n", name.c_str());
             return false;
         }
         previous = live.receiveTime;
         received.push_back(live.bytes);
     }
 
-    for (std::size_t index = 0; index != received.size(); ++index) {
-        if (received[index] != fromFile.datagrams[index].bytes) {
-            std::fprintf(stderr, "%s: datagram %zu differs after a round trip\n",
-                         name.c_str(), index);
+    for (std::size_t index = 0; index != received.size(); ++index)
+    {
+        if (received[index] != fromFile.datagrams[index].bytes)
+        {
+            std::fprintf(stderr, "%s: datagram %zu differs after a round trip\n", name.c_str(),
+                         index);
             return false;
         }
     }
 
-    std::printf("%s: %zu datagram(s) replayed through a socket unchanged\n",
-                name.c_str(), received.size());
+    std::printf("%s: %zu datagram(s) replayed through a socket unchanged\n", name.c_str(),
+                received.size());
     return true;
 }
 
 int
 CheckCorpus(const std::filesystem::path& directory)
 {
-    if (!std::filesystem::is_directory(directory)) {
-        std::fprintf(stderr, "corpus directory not found: %s\n",
-                     directory.string().c_str());
+    if (!std::filesystem::is_directory(directory))
+    {
+        std::fprintf(stderr, "corpus directory not found: %s\n", directory.string().c_str());
         return 1;
     }
 
     std::vector<std::filesystem::path> captures;
     for (const std::filesystem::directory_entry& entry :
-         std::filesystem::recursive_directory_iterator(directory)) {
-        if (entry.is_regular_file()
-            && entry.path().extension() == ".vrchatoscpackets") {
+         std::filesystem::recursive_directory_iterator(directory))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == ".vrchatoscpackets")
+        {
             captures.push_back(entry.path());
         }
     }
     std::sort(captures.begin(), captures.end());
 
-    if (captures.empty()) {
-        std::fprintf(stderr, "no .vrchatoscpackets fixtures in %s\n",
-                     directory.string().c_str());
+    if (captures.empty())
+    {
+        std::fprintf(stderr, "no .vrchatoscpackets fixtures in %s\n", directory.string().c_str());
         return 1;
     }
 
     int failures = 0;
-    for (const std::filesystem::path& path : captures) {
-        if (!ReplayOneCapture(path)) {
+    for (const std::filesystem::path& path : captures)
+    {
+        if (!ReplayOneCapture(path))
+        {
             ++failures;
         }
     }
-    if (failures != 0) {
-        std::fprintf(stderr, "%d capture(s) did not replay unchanged\n",
-                     failures);
+    if (failures != 0)
+    {
+        std::fprintf(stderr, "%d capture(s) did not replay unchanged\n", failures);
         return 1;
     }
     std::printf("VRChat OSC loopback: %zu capture(s) replayed through a "
@@ -827,12 +837,14 @@ main(int argc, char** argv)
     // One case is split off behind an argument because it is the one that may
     // legitimately not run here (see `kSkipExitCode`). Everything else is
     // unconditional.
-    if (argc > 1 && std::string(argv[1]) == "truncation") {
+    if (argc > 1 && std::string(argv[1]) == "truncation")
+    {
         return CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole();
     }
     // Any other argument is a corpus directory, which is the convention every
     // other test binary in this repository's adapters already follows.
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
 

@@ -38,23 +38,35 @@ struct TargetJoint
 
 class VRMRETARGET_API TargetSkeleton
 {
-public:
+  public:
     static constexpr int kNoParent = -1;
 
     TargetSkeleton() = default;
-    explicit TargetSkeleton(std::vector<TargetJoint> joints)
-        : _joints(std::move(joints))
+    explicit TargetSkeleton(std::vector<TargetJoint> joints) : _joints(std::move(joints))
     {
     }
 
-    const std::vector<TargetJoint>& GetJoints() const noexcept
+    const std::vector<TargetJoint>&
+    GetJoints() const noexcept
     {
         return _joints;
     }
-    std::size_t GetSize() const noexcept { return _joints.size(); }
-    bool IsEmpty() const noexcept { return _joints.empty(); }
+    std::size_t
+    GetSize() const noexcept
+    {
+        return _joints.size();
+    }
+    bool
+    IsEmpty() const noexcept
+    {
+        return _joints.empty();
+    }
 
-    void AddJoint(const TargetJoint& joint) { _joints.push_back(joint); }
+    void
+    AddJoint(const TargetJoint& joint)
+    {
+        _joints.push_back(joint);
+    }
 
     // Returns the joint's index, or kNoParent when no joint carries the token.
     // Matching is exact on the full joint path.
@@ -76,7 +88,7 @@ public:
     // joint's absent parent contributes to a rest-pose correction.
     pxr::GfQuatf GetWorldRestRotation(int jointIndex) const;
 
-private:
+  private:
     std::vector<TargetJoint> _joints;
 };
 
@@ -93,13 +105,9 @@ private:
 // wasteful and never wrong -- and it is the same one `HumanoidPose` gives. There
 // is no `NearlyEqual`: nothing yet asks whether two rigs are the same rig, and a
 // parity check compares the poses retargeted onto them.
-VRMRETARGET_API bool operator==(const TargetJoint& a,
-                                const TargetJoint& b) noexcept;
-VRMRETARGET_API bool operator!=(const TargetJoint& a,
-                                const TargetJoint& b) noexcept;
-VRMRETARGET_API bool operator==(const TargetSkeleton& a,
-                                const TargetSkeleton& b) noexcept;
-VRMRETARGET_API bool operator!=(const TargetSkeleton& a,
-                                const TargetSkeleton& b) noexcept;
+VRMRETARGET_API bool operator==(const TargetJoint& a, const TargetJoint& b) noexcept;
+VRMRETARGET_API bool operator!=(const TargetJoint& a, const TargetJoint& b) noexcept;
+VRMRETARGET_API bool operator==(const TargetSkeleton& a, const TargetSkeleton& b) noexcept;
+VRMRETARGET_API bool operator!=(const TargetSkeleton& a, const TargetSkeleton& b) noexcept;
 
 } // namespace vrmRetarget

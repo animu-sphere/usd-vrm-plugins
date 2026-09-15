@@ -68,8 +68,7 @@ TestEquality()
 void
 TestCanonicalMapping()
 {
-    const motion::MotionSourceMetadata metadata =
-        CanonicalMetadata(MakeProvenance());
+    const motion::MotionSourceMetadata metadata = CanonicalMetadata(MakeProvenance());
 
     // A recorded file is a clip by the time anything here sees it. `LiveCapture`
     // says values arrived over time from a running source, which is the property
@@ -102,8 +101,7 @@ TestNarrowingIsDeliberate()
 void
 TestEmptyProvenance()
 {
-    const motion::MotionSourceMetadata metadata =
-        CanonicalMetadata(SourceProvenance{});
+    const motion::MotionSourceMetadata metadata = CanonicalMetadata(SourceProvenance{});
     assert(metadata.kind == motion::MotionSourceKind::Clip);
     assert(metadata.provider.empty());
     assert(metadata.protocol.empty());

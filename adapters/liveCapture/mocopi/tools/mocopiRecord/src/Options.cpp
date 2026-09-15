@@ -59,10 +59,11 @@ constexpr double kMaxDurationSeconds = 7200.0;
 // `UdpReceiver.h` established for it.
 
 bool
-TakeValue(const std::vector<std::string>& arguments, std::size_t* index,
-          const std::string& flag, std::string* value, std::string* error)
+TakeValue(const std::vector<std::string>& arguments, std::size_t* index, const std::string& flag,
+          std::string* value, std::string* error)
 {
-    if (*index + 1 >= arguments.size()) {
+    if (*index + 1 >= arguments.size())
+    {
         *error = flag + " requires a value";
         return false;
     }
@@ -72,26 +73,32 @@ TakeValue(const std::vector<std::string>& arguments, std::size_t* index,
 }
 
 bool
-TakeDouble(const std::vector<std::string>& arguments, std::size_t* index,
-           const std::string& flag, double* value, std::string* error)
+TakeDouble(const std::vector<std::string>& arguments, std::size_t* index, const std::string& flag,
+           double* value, std::string* error)
 {
     std::string text;
-    if (!TakeValue(arguments, index, flag, &text, error)) {
+    if (!TakeValue(arguments, index, flag, &text, error))
+    {
         return false;
     }
-    try {
+    try
+    {
         std::size_t consumed = 0;
         const double parsed = std::stod(text, &consumed);
-        if (consumed != text.size()) {
+        if (consumed != text.size())
+        {
             throw std::invalid_argument("trailing characters");
         }
         // `stod` accepts "nan" and "inf", and every range check below is a
         // comparison -- which NaN passes by failing to be on either side of it.
-        if (!std::isfinite(parsed)) {
+        if (!std::isfinite(parsed))
+        {
             throw std::invalid_argument("not a finite number");
         }
         *value = parsed;
-    } catch (const std::exception&) {
+    }
+    catch (const std::exception&)
+    {
         *error = flag + " expects a number, got '" + text + "'";
         return false;
     }
@@ -103,18 +110,19 @@ TakeDouble(const std::vector<std::string>& arguments, std::size_t* index,
 // check below the range check is a flag that answers "expects a whole number
 // between 0 and 10000000" and then refuses 0.
 bool
-TakeCount(const std::vector<std::string>& arguments, std::size_t* index,
-          const std::string& flag, double minimum, double limit,
-          std::size_t* value, std::string* error)
+TakeCount(const std::vector<std::string>& arguments, std::size_t* index, const std::string& flag,
+          double minimum, double limit, std::size_t* value, std::string* error)
 {
     double parsed = 0.0;
-    if (!TakeDouble(arguments, index, flag, &parsed, error)) {
+    if (!TakeDouble(arguments, index, flag, &parsed, error))
+    {
         return false;
     }
-    if (parsed < minimum || parsed > limit || parsed != std::floor(parsed)) {
-        *error = flag + " expects a whole number between "
-            + std::to_string(static_cast<long long>(minimum)) + " and "
-            + std::to_string(static_cast<long long>(limit));
+    if (parsed < minimum || parsed > limit || parsed != std::floor(parsed))
+    {
+        *error = flag + " expects a whole number between " +
+                 std::to_string(static_cast<long long>(minimum)) + " and " +
+                 std::to_string(static_cast<long long>(limit));
         return false;
     }
     *value = static_cast<std::size_t>(parsed);
@@ -138,20 +146,22 @@ TakeCount(const std::vector<std::string>& arguments, std::size_t* index,
 // it would land in the file as another header or record line.
 bool
 TakeHeaderValue(const std::vector<std::string>& arguments, std::size_t* index,
-                const std::string& flag, std::string* value,
-                std::string* error)
+                const std::string& flag, std::string* value, std::string* error)
 {
     std::string text;
-    if (!TakeValue(arguments, index, flag, &text, error)) {
+    if (!TakeValue(arguments, index, flag, &text, error))
+    {
         return false;
     }
     const std::size_t space = text.find_first_of(" \t\r\n\v\f");
-    if (space != std::string::npos) {
-        *error = flag + " is written into the capture's header, which carries "
-                        "one whitespace-delimited token per key, so '"
-            + text
-            + "' would produce a file this adapter's own reader refuses; join "
-              "the words with '-' or '_'";
+    if (space != std::string::npos)
+    {
+        *error = flag +
+                 " is written into the capture's header, which carries "
+                 "one whitespace-delimited token per key, so '" +
+                 text +
+                 "' would produce a file this adapter's own reader refuses; join "
+                 "the words with '-' or '_'";
         return false;
     }
     *value = text;
@@ -163,16 +173,19 @@ TakeHeaderValue(const std::vector<std::string>& arguments, std::size_t* index,
 // is this tool's own -- so the check is a function rather than three copies of
 // the same two comparisons.
 bool
-TakeSeconds(const std::vector<std::string>& arguments, std::size_t* index,
-            const std::string& flag, double* value, std::string* error)
+TakeSeconds(const std::vector<std::string>& arguments, std::size_t* index, const std::string& flag,
+            double* value, std::string* error)
 {
-    if (!TakeDouble(arguments, index, flag, value, error)) {
+    if (!TakeDouble(arguments, index, flag, value, error))
+    {
         return false;
     }
-    if (*value < 0.0 || *value > kMaxDurationSeconds) {
-        *error = flag + " expects a non-negative number of seconds no greater "
-                        "than "
-            + std::to_string(static_cast<long long>(kMaxDurationSeconds));
+    if (*value < 0.0 || *value > kMaxDurationSeconds)
+    {
+        *error = flag +
+                 " expects a non-negative number of seconds no greater "
+                 "than " +
+                 std::to_string(static_cast<long long>(kMaxDurationSeconds));
         return false;
     }
     return true;
@@ -190,8 +203,7 @@ TakeSeconds(const std::vector<std::string>& arguments, std::size_t* index,
 // said either way -- a silent default is the one outcome an argument parser must
 // not reach, because it is indistinguishable from being obeyed.
 bool
-SplitEndpoint(const std::string& text, std::string* address, std::string* port,
-              std::string* error)
+SplitEndpoint(const std::string& text, std::string* address, std::string* port, std::string* error)
 {
     address->clear();
     port->clear();
@@ -200,43 +212,55 @@ SplitEndpoint(const std::string& text, std::string* address, std::string* port,
     // colon rather than offering "a port" and leaving the reader to find out at
     // the bind that it meant something else.
     const char* const shape = " expects ADDR, ADDR:PORT, or :PORT";
-    if (text.empty()) {
+    if (text.empty())
+    {
         *error = std::string("--listen") + shape;
         return false;
     }
-    if (text.front() == '[') {
+    if (text.front() == '[')
+    {
         const std::size_t close = text.find(']');
-        if (close == std::string::npos) {
-            *error = "--listen: '" + text + "' opens a bracketed address and "
+        if (close == std::string::npos)
+        {
+            *error = "--listen: '" + text +
+                     "' opens a bracketed address and "
                      "never closes it";
             return false;
         }
         *address = text.substr(1, close - 1);
-        if (close + 1 < text.size()) {
-            if (text[close + 1] != ':') {
-                *error = "--listen: '" + text + "' has trailing characters "
+        if (close + 1 < text.size())
+        {
+            if (text[close + 1] != ':')
+            {
+                *error = "--listen: '" + text +
+                         "' has trailing characters "
                          "after the address";
                 return false;
             }
             *port = text.substr(close + 2);
         }
-        if (address->empty()) {
+        if (address->empty())
+        {
             *error = "--listen: '" + text + "' brackets an empty address";
             return false;
         }
-        if (text.size() > close + 1 && port->empty()) {
+        if (text.size() > close + 1 && port->empty())
+        {
             *error = "--listen: '" + text + "' ends with a ':' and names no port";
             return false;
         }
         return true;
     }
     const std::size_t colon = text.find(':');
-    if (colon == std::string::npos) {
+    if (colon == std::string::npos)
+    {
         *address = text;
         return true;
     }
-    if (text.find(':', colon + 1) != std::string::npos) {
-        *error = "--listen: '" + text + "' looks like an IPv6 address with a "
+    if (text.find(':', colon + 1) != std::string::npos)
+    {
+        *error = "--listen: '" + text +
+                 "' looks like an IPv6 address with a "
                  "port; bracket it as [address]:port";
         return false;
     }
@@ -245,7 +269,8 @@ SplitEndpoint(const std::string& text, std::string* address, std::string* port,
     // An empty *address* is legal and documented -- ":12351" is how a port is
     // given alone -- so only the port half is checked here. That also covers ":"
     // on its own, which names neither.
-    if (port->empty()) {
+    if (port->empty())
+    {
         *error = "--listen: '" + text + "' ends with a ':' and names no port";
         return false;
     }
@@ -255,14 +280,18 @@ SplitEndpoint(const std::string& text, std::string* address, std::string* port,
 bool
 ParsePort(const std::string& text, std::uint16_t* port, std::string* error)
 {
-    try {
+    try
+    {
         std::size_t consumed = 0;
         const long parsed = std::stol(text, &consumed);
-        if (consumed != text.size() || parsed < 0 || parsed > 65535) {
+        if (consumed != text.size() || parsed < 0 || parsed > 65535)
+        {
             throw std::invalid_argument("out of range");
         }
         *port = static_cast<std::uint16_t>(parsed);
-    } catch (const std::exception&) {
+    }
+    catch (const std::exception&)
+    {
         *error = "expected a port in [0, 65535], got '" + text + "'";
         return false;
     }
@@ -274,113 +303,112 @@ ParsePort(const std::string& text, std::uint16_t* port, std::string* error)
 const char*
 GetUsage()
 {
-    return
-        "mocopi_record - record a native mocopi session, and say what arrived\n"
-        "\n"
-        "Writes the datagrams a source delivered, verbatim, in the\n"
-        "mocopi-packet-capture format this adapter's corpus is written in.\n"
-        "Nothing here decodes one: this protocol has no published\n"
-        "specification, so the file is the evidence a decoder will be built\n"
-        "from and this tool's job is to obtain it without having an opinion\n"
-        "about it. What the report says is therefore what a socket can see -\n"
-        "how much arrived, from whom, how fast, and in how many distinct\n"
-        "shapes - and not what any of it means.\n"
-        "\n"
-        "Usage:\n"
-        "  mocopi_record --output <session.mocopipackets> [options]\n"
-        "  mocopi_record --dry-run [options]\n"
-        "  mocopi_record --inspect <capture.mocopipackets>\n"
-        "\n"
-        "Listening:\n"
-        "  --listen ADDR[:PORT]   Bind address, numeric (default 0.0.0.0).\n"
-        "                         '0.0.0.0' every IPv4 interface, '127.0.0.1'\n"
-        "                         this machine only - which no device can\n"
-        "                         reach, because the vendor documents\n"
-        "                         'localhost' as unsupported. ':PORT' gives a\n"
-        "                         port alone; an IPv6 address must be\n"
-        "                         bracketed, as '[::1]' or '[::1]:12351'.\n"
-        "  --port N               Listen port (default 12351, the product's\n"
-        "                         own). 0 lets the OS choose and is reported\n"
-        "                         back.\n"
-        "  --reuse-address        Allow binding a port another socket holds.\n"
-        "                         Off by default: a second recorder that\n"
-        "                         silently takes half the traffic is a failure\n"
-        "                         with no symptom.\n"
-        "  --receive-buffer BYTES Kernel receive buffer to request. What was\n"
-        "                         granted is reported, which is not always what\n"
-        "                         was asked for.\n"
-        "\n"
-        "Recording:\n"
-        "  --output PATH          Capture to write. A session that received\n"
-        "                         nothing writes no file and exits 1: the\n"
-        "                         format has no datagram-less form, so the\n"
-        "                         alternative is a file this adapter's own\n"
-        "                         reader refuses.\n"
-        "  --sender NAME          Application that sent the packets, recorded\n"
-        "                         as provenance.\n"
-        "  --device NAME          Hardware behind it, recorded as provenance.\n"
-        "                         This format's own header key: a capture that\n"
-        "                         cannot say which device produced it cannot\n"
-        "                         support this adapter's claim to keep device\n"
-        "                         state a relay drops.\n"
-        "  --source-id ID         Name for this capture, recorded as\n"
-        "                         provenance.\n"
-        "                         These three become capture header values, and\n"
-        "                         the format carries one token per key - so a\n"
-        "                         value with a space in it is refused here\n"
-        "                         rather than written into a file the reader\n"
-        "                         would then refuse. Join words with '-'.\n"
-        "  --dry-run              Listen and report, write nothing.\n"
-        "\n"
-        "Noticing a device that is not there:\n"
-        "  --silence-timeout S    Report VRM_MOCOPI_DEVICE_UNAVAILABLE after S\n"
-        "                         seconds with nothing arriving, once per\n"
-        "                         episode, and keep listening. Off by default,\n"
-        "                         because how long a device may take to start\n"
-        "                         is a property of the session and not of the\n"
-        "                         socket. This does not stop the recording -\n"
-        "                         --idle-timeout is the flag that does.\n"
-        "\n"
-        "Stopping (a session always has at least one):\n"
-        "  --duration S           Stop after S seconds of session.\n"
-        "  --idle-timeout S       Stop after S seconds with nothing arriving.\n"
-        "  --max-datagrams N      Stop after N datagrams (1..10000000, default\n"
-        "                         1000000). The capture is held in memory until\n"
-        "                         it is written, so this bound is on memory.\n"
-        "  Ctrl-C stops at any point and still writes what was recorded.\n"
-        "  A session the socket cut short writes what it had and exits 1, so a\n"
-        "  script can tell a complete recording from a truncated one.\n"
-        "\n"
-        "Reading:\n"
-        "  --inspect PATH         Read a recorded capture and report on it.\n"
-        "                         Opens no socket, records nothing, and prints\n"
-        "                         the same report a live session prints minus\n"
-        "                         the lines that describe a socket.\n"
-        "\n"
-        "Exporting (with --inspect, and only there):\n"
-        "  --export-trace PATH    Write what the adapter delivered as a\n"
-        "                         motion-capture-trace, which the product's own\n"
-        "                         motion_capture replays knowing nothing about\n"
-        "                         mocopi. This is the one thing here that\n"
-        "                         decodes, and it is why it runs against a file:\n"
-        "                         a recording stays decoder-free, and a trace\n"
-        "                         exported from committed bytes is the same\n"
-        "                         trace on any machine.\n"
-        "  --source-session N     Which of the capture's sessions to export,\n"
-        "                         counting from 1. One trace is one session, so\n"
-        "                         a capture the source restarted during is\n"
-        "                         refused until this names a half - the two\n"
-        "                         clocks overlap and splicing them would invent\n"
-        "                         a continuity the device denies.\n"
-        "  --quiet                Suppress the progress line and the warnings\n"
-        "                         on stderr. The report is what this tool\n"
-        "                         produces and always goes to stdout.\n"
-        "  -h, --help             Show this message.\n";
+    return "mocopi_record - record a native mocopi session, and say what arrived\n"
+           "\n"
+           "Writes the datagrams a source delivered, verbatim, in the\n"
+           "mocopi-packet-capture format this adapter's corpus is written in.\n"
+           "Nothing here decodes one: this protocol has no published\n"
+           "specification, so the file is the evidence a decoder will be built\n"
+           "from and this tool's job is to obtain it without having an opinion\n"
+           "about it. What the report says is therefore what a socket can see -\n"
+           "how much arrived, from whom, how fast, and in how many distinct\n"
+           "shapes - and not what any of it means.\n"
+           "\n"
+           "Usage:\n"
+           "  mocopi_record --output <session.mocopipackets> [options]\n"
+           "  mocopi_record --dry-run [options]\n"
+           "  mocopi_record --inspect <capture.mocopipackets>\n"
+           "\n"
+           "Listening:\n"
+           "  --listen ADDR[:PORT]   Bind address, numeric (default 0.0.0.0).\n"
+           "                         '0.0.0.0' every IPv4 interface, '127.0.0.1'\n"
+           "                         this machine only - which no device can\n"
+           "                         reach, because the vendor documents\n"
+           "                         'localhost' as unsupported. ':PORT' gives a\n"
+           "                         port alone; an IPv6 address must be\n"
+           "                         bracketed, as '[::1]' or '[::1]:12351'.\n"
+           "  --port N               Listen port (default 12351, the product's\n"
+           "                         own). 0 lets the OS choose and is reported\n"
+           "                         back.\n"
+           "  --reuse-address        Allow binding a port another socket holds.\n"
+           "                         Off by default: a second recorder that\n"
+           "                         silently takes half the traffic is a failure\n"
+           "                         with no symptom.\n"
+           "  --receive-buffer BYTES Kernel receive buffer to request. What was\n"
+           "                         granted is reported, which is not always what\n"
+           "                         was asked for.\n"
+           "\n"
+           "Recording:\n"
+           "  --output PATH          Capture to write. A session that received\n"
+           "                         nothing writes no file and exits 1: the\n"
+           "                         format has no datagram-less form, so the\n"
+           "                         alternative is a file this adapter's own\n"
+           "                         reader refuses.\n"
+           "  --sender NAME          Application that sent the packets, recorded\n"
+           "                         as provenance.\n"
+           "  --device NAME          Hardware behind it, recorded as provenance.\n"
+           "                         This format's own header key: a capture that\n"
+           "                         cannot say which device produced it cannot\n"
+           "                         support this adapter's claim to keep device\n"
+           "                         state a relay drops.\n"
+           "  --source-id ID         Name for this capture, recorded as\n"
+           "                         provenance.\n"
+           "                         These three become capture header values, and\n"
+           "                         the format carries one token per key - so a\n"
+           "                         value with a space in it is refused here\n"
+           "                         rather than written into a file the reader\n"
+           "                         would then refuse. Join words with '-'.\n"
+           "  --dry-run              Listen and report, write nothing.\n"
+           "\n"
+           "Noticing a device that is not there:\n"
+           "  --silence-timeout S    Report VRM_MOCOPI_DEVICE_UNAVAILABLE after S\n"
+           "                         seconds with nothing arriving, once per\n"
+           "                         episode, and keep listening. Off by default,\n"
+           "                         because how long a device may take to start\n"
+           "                         is a property of the session and not of the\n"
+           "                         socket. This does not stop the recording -\n"
+           "                         --idle-timeout is the flag that does.\n"
+           "\n"
+           "Stopping (a session always has at least one):\n"
+           "  --duration S           Stop after S seconds of session.\n"
+           "  --idle-timeout S       Stop after S seconds with nothing arriving.\n"
+           "  --max-datagrams N      Stop after N datagrams (1..10000000, default\n"
+           "                         1000000). The capture is held in memory until\n"
+           "                         it is written, so this bound is on memory.\n"
+           "  Ctrl-C stops at any point and still writes what was recorded.\n"
+           "  A session the socket cut short writes what it had and exits 1, so a\n"
+           "  script can tell a complete recording from a truncated one.\n"
+           "\n"
+           "Reading:\n"
+           "  --inspect PATH         Read a recorded capture and report on it.\n"
+           "                         Opens no socket, records nothing, and prints\n"
+           "                         the same report a live session prints minus\n"
+           "                         the lines that describe a socket.\n"
+           "\n"
+           "Exporting (with --inspect, and only there):\n"
+           "  --export-trace PATH    Write what the adapter delivered as a\n"
+           "                         motion-capture-trace, which the product's own\n"
+           "                         motion_capture replays knowing nothing about\n"
+           "                         mocopi. This is the one thing here that\n"
+           "                         decodes, and it is why it runs against a file:\n"
+           "                         a recording stays decoder-free, and a trace\n"
+           "                         exported from committed bytes is the same\n"
+           "                         trace on any machine.\n"
+           "  --source-session N     Which of the capture's sessions to export,\n"
+           "                         counting from 1. One trace is one session, so\n"
+           "                         a capture the source restarted during is\n"
+           "                         refused until this names a half - the two\n"
+           "                         clocks overlap and splicing them would invent\n"
+           "                         a continuity the device denies.\n"
+           "  --quiet                Suppress the progress line and the warnings\n"
+           "                         on stderr. The report is what this tool\n"
+           "                         produces and always goes to stdout.\n"
+           "  -h, --help             Show this message.\n";
 }
 
 bool
-ParseOptions(const std::vector<std::string>& arguments, Options* options,
-             bool* showHelp, std::string* error)
+ParseOptions(const std::vector<std::string>& arguments, Options* options, bool* showHelp,
+             std::string* error)
 {
     *showHelp = false;
     // The first flag seen that only means something to a live session. Tracked
@@ -388,121 +416,163 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
     // indistinguishable afterwards from their own defaults -- `--port 12351`
     // and `--duration 0` both parse to what the struct already held.
     const char* sessionFlag = nullptr;
-    const auto session = [&sessionFlag](const char* flag) {
-        if (!sessionFlag) {
+    const auto session = [&sessionFlag](const char* flag)
+    {
+        if (!sessionFlag)
+        {
             sessionFlag = flag;
         }
     };
 
-    for (std::size_t i = 0; i < arguments.size(); ++i) {
+    for (std::size_t i = 0; i < arguments.size(); ++i)
+    {
         const std::string& argument = arguments[i];
-        if (argument == "-h" || argument == "--help") {
+        if (argument == "-h" || argument == "--help")
+        {
             *showHelp = true;
             return true;
-        } else if (argument == "--listen") {
+        }
+        else if (argument == "--listen")
+        {
             session("--listen");
             std::string text;
-            if (!TakeValue(arguments, &i, argument, &text, error)) {
+            if (!TakeValue(arguments, &i, argument, &text, error))
+            {
                 return false;
             }
             std::string address;
             std::string port;
-            if (!SplitEndpoint(text, &address, &port, error)) {
+            if (!SplitEndpoint(text, &address, &port, error))
+            {
                 return false;
             }
-            if (!address.empty()) {
+            if (!address.empty())
+            {
                 options->receiver.listenAddress = address;
             }
-            if (!port.empty()) {
+            if (!port.empty())
+            {
                 std::string reason;
-                if (!ParsePort(port, &options->receiver.listenPort, &reason)) {
+                if (!ParsePort(port, &options->receiver.listenPort, &reason))
+                {
                     *error = "--listen: " + reason;
                     return false;
                 }
             }
-        } else if (argument == "--port") {
+        }
+        else if (argument == "--port")
+        {
             session("--port");
             std::string text;
-            if (!TakeValue(arguments, &i, argument, &text, error)) {
+            if (!TakeValue(arguments, &i, argument, &text, error))
+            {
                 return false;
             }
             std::string reason;
-            if (!ParsePort(text, &options->receiver.listenPort, &reason)) {
+            if (!ParsePort(text, &options->receiver.listenPort, &reason))
+            {
                 *error = "--port: " + reason;
                 return false;
             }
-        } else if (argument == "--reuse-address") {
+        }
+        else if (argument == "--reuse-address")
+        {
             session("--reuse-address");
             options->receiver.reuseAddress = true;
-        } else if (argument == "--receive-buffer") {
+        }
+        else if (argument == "--receive-buffer")
+        {
             session("--receive-buffer");
             // 256 MB. Every platform clamps this far lower, so the bound is
             // only here to refuse a typo before the socket does. 0 is a real
             // value here and means "leave the platform default".
             if (!TakeCount(arguments, &i, argument, 0.0, 268435456.0,
-                           &options->receiver.receiveBufferBytes, error)) {
+                           &options->receiver.receiveBufferBytes, error))
+            {
                 return false;
             }
-        } else if (argument == "--silence-timeout") {
+        }
+        else if (argument == "--silence-timeout")
+        {
             session("--silence-timeout");
-            if (!TakeSeconds(arguments, &i, argument,
-                             &options->receiver.silenceTimeoutSeconds, error)) {
+            if (!TakeSeconds(arguments, &i, argument, &options->receiver.silenceTimeoutSeconds,
+                             error))
+            {
                 return false;
             }
-        } else if (argument == "--output") {
+        }
+        else if (argument == "--output")
+        {
             session("--output");
-            if (!TakeValue(arguments, &i, argument, &options->outputPath,
-                           error)) {
+            if (!TakeValue(arguments, &i, argument, &options->outputPath, error))
+            {
                 return false;
             }
-        } else if (argument == "--inspect") {
-            if (!TakeValue(arguments, &i, argument, &options->inspectPath,
-                           error)) {
+        }
+        else if (argument == "--inspect")
+        {
+            if (!TakeValue(arguments, &i, argument, &options->inspectPath, error))
+            {
                 return false;
             }
-        } else if (argument == "--sender") {
+        }
+        else if (argument == "--sender")
+        {
             session("--sender");
-            if (!TakeHeaderValue(arguments, &i, argument, &options->sender,
-                                 error)) {
+            if (!TakeHeaderValue(arguments, &i, argument, &options->sender, error))
+            {
                 return false;
             }
-        } else if (argument == "--device") {
+        }
+        else if (argument == "--device")
+        {
             session("--device");
-            if (!TakeHeaderValue(arguments, &i, argument, &options->device,
-                                 error)) {
+            if (!TakeHeaderValue(arguments, &i, argument, &options->device, error))
+            {
                 return false;
             }
-        } else if (argument == "--source-id") {
+        }
+        else if (argument == "--source-id")
+        {
             session("--source-id");
-            if (!TakeHeaderValue(arguments, &i, argument, &options->sourceId,
-                                 error)) {
+            if (!TakeHeaderValue(arguments, &i, argument, &options->sourceId, error))
+            {
                 return false;
             }
-        } else if (argument == "--duration") {
+        }
+        else if (argument == "--duration")
+        {
             session("--duration");
-            if (!TakeSeconds(arguments, &i, argument,
-                             &options->durationSeconds, error)) {
+            if (!TakeSeconds(arguments, &i, argument, &options->durationSeconds, error))
+            {
                 return false;
             }
-        } else if (argument == "--idle-timeout") {
+        }
+        else if (argument == "--idle-timeout")
+        {
             session("--idle-timeout");
-            if (!TakeSeconds(arguments, &i, argument, &options->idleSeconds,
-                             error)) {
+            if (!TakeSeconds(arguments, &i, argument, &options->idleSeconds, error))
+            {
                 return false;
             }
-        } else if (argument == "--max-datagrams") {
+        }
+        else if (argument == "--max-datagrams")
+        {
             session("--max-datagrams");
             // A minimum of 1, stated in the range rather than enforced under it:
             // a session with no bound at all is not offered, because the capture
             // is held in memory until it is written.
             if (!TakeCount(arguments, &i, argument, 1.0,
-                           static_cast<double>(kDefaultMaxDatagrams) * 10.0,
-                           &options->maxDatagrams, error)) {
+                           static_cast<double>(kDefaultMaxDatagrams) * 10.0, &options->maxDatagrams,
+                           error))
+            {
                 return false;
             }
-        } else if (argument == "--export-trace") {
-            if (!TakeValue(arguments, &i, argument, &options->traceExportPath,
-                           error)) {
+        }
+        else if (argument == "--export-trace")
+        {
+            if (!TakeValue(arguments, &i, argument, &options->traceExportPath, error))
+            {
                 return false;
             }
             // Present-but-empty is refused rather than ignored, which is the
@@ -512,35 +582,46 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
             // tool would read the capture, write nothing, and exit 0 — a silent
             // default, which is the one outcome an argument parser must not
             // reach because it cannot be told apart from being obeyed.
-            if (options->traceExportPath.empty()) {
+            if (options->traceExportPath.empty())
+            {
                 *error = "--export-trace names the trace to write and was "
                          "given an empty path";
                 return false;
             }
-        } else if (argument == "--source-session") {
+        }
+        else if (argument == "--source-session")
+        {
             // The count's own minimum, so the range in the message is the range
             // enforced: a capture cannot hold a zeroth session, and the sibling
             // had to refuse 0 in a second check below its range check.
-            if (!TakeCount(arguments, &i, argument, 1.0, 1000000.0,
-                           &options->sourceSession, error)) {
+            if (!TakeCount(arguments, &i, argument, 1.0, 1000000.0, &options->sourceSession, error))
+            {
                 return false;
             }
-        } else if (argument == "--dry-run") {
+        }
+        else if (argument == "--dry-run")
+        {
             session("--dry-run");
             options->dryRun = true;
-        } else if (argument == "--quiet") {
+        }
+        else if (argument == "--quiet")
+        {
             options->quiet = true;
-        } else {
+        }
+        else
+        {
             *error = "unknown argument '" + argument + "'";
             return false;
         }
     }
 
-    if (options->maxDatagrams == 0) {
+    if (options->maxDatagrams == 0)
+    {
         options->maxDatagrams = kDefaultMaxDatagrams;
     }
 
-    if (options->sourceSession != 0 && options->traceExportPath.empty()) {
+    if (options->sourceSession != 0 && options->traceExportPath.empty())
+    {
         *error = "--source-session says which session to export, so it needs "
                  "--export-trace";
         return false;
@@ -562,15 +643,16 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
     // `ExportTrace` therefore asks the filesystem, which is the check that
     // catches every spelling. This one stays because it is the one that can
     // refuse at the prompt, before a byte is read, naming both flags.
-    if (!options->traceExportPath.empty()
-        && options->traceExportPath == options->inspectPath) {
+    if (!options->traceExportPath.empty() && options->traceExportPath == options->inspectPath)
+    {
         *error = "--export-trace names the same path as --inspect, and writing "
                  "the trace there would destroy the capture it was derived "
                  "from";
         return false;
     }
 
-    if (!options->inspectPath.empty()) {
+    if (!options->inspectPath.empty())
+    {
         // --inspect opens no socket and records nothing, so every flag about
         // either is a mistake worth naming rather than a setting that silently
         // does nothing.
@@ -583,16 +665,18 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
         // so a flag only earns an exception by having a file to act on.
         // `--quiet` is not in this class at all: it is about the two output
         // streams, which both modes have.
-        if (sessionFlag) {
+        if (sessionFlag)
+        {
             *error = std::string("--inspect reads a recorded capture and opens "
-                                 "no socket, so ")
-                + sessionFlag + " has nothing to act on";
+                                 "no socket, so ") +
+                     sessionFlag + " has nothing to act on";
             return false;
         }
         return true;
     }
 
-    if (!options->traceExportPath.empty()) {
+    if (!options->traceExportPath.empty())
+    {
         // The line this tool is built on, enforced at the prompt rather than
         // explained afterwards: a recording runs no decoder, so there is
         // nothing in a live session for this flag to read (TraceExport.h). The
@@ -606,12 +690,14 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
         return false;
     }
 
-    if (options->outputPath.empty() && !options->dryRun) {
+    if (options->outputPath.empty() && !options->dryRun)
+    {
         *error = "--output is required (or use --dry-run to listen and report "
                  "without writing, or --inspect to read a capture)";
         return false;
     }
-    if (!options->outputPath.empty() && options->dryRun) {
+    if (!options->outputPath.empty() && options->dryRun)
+    {
         *error = "--dry-run writes nothing, so --output has nothing to act on";
         return false;
     }

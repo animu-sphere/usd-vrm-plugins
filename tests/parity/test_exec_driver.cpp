@@ -55,7 +55,8 @@ using execdriver::OpenExecDiagnostic;
 using execdriver::OpenExecDiagnosticCode;
 using execdriver::Override;
 
-namespace {
+namespace
+{
 
 const SdfPath kClip("/Clip");
 const TfToken kSample("motion.sampleAnimation");
@@ -69,7 +70,8 @@ std::string gFixture;
 
 // The fixture sublayered into an in-memory stage, so an authored edit lands
 // in a layer with no file behind it.
-UsdStageRefPtr Open()
+UsdStageRefPtr
+Open()
 {
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     stage->GetRootLayer()->GetSubLayerPaths().push_back(gFixture);
@@ -78,26 +80,32 @@ UsdStageRefPtr Open()
     return stage;
 }
 
-bool Contains(const std::string& text, const std::string& part)
+bool
+Contains(const std::string& text, const std::string& part)
 {
     return text.find(part) != std::string::npos;
 }
 
-bool AnyContains(const std::vector<std::string>& lines, const std::string& part)
+bool
+AnyContains(const std::vector<std::string>& lines, const std::string& part)
 {
-    for (const std::string& line : lines) {
-        if (Contains(line, part)) {
+    for (const std::string& line : lines)
+    {
+        if (Contains(line, part))
+        {
             return true;
         }
     }
     return false;
 }
 
-const OpenExecDiagnostic* Find(const Frame& frame, OpenExecDiagnosticCode code,
-                               const std::string& subject)
+const OpenExecDiagnostic*
+Find(const Frame& frame, OpenExecDiagnosticCode code, const std::string& subject)
 {
-    for (const OpenExecDiagnostic& d : frame.diagnostics.reported) {
-        if (d.code == code && d.subject == subject) {
+    for (const OpenExecDiagnostic& d : frame.diagnostics.reported)
+    {
+        if (d.code == code && d.subject == subject)
+        {
             return &d;
         }
     }
@@ -111,22 +119,22 @@ const std::string kHistoryName = "/Clip [motion.poseHistory]";
 
 // ---------------------------------------------------------------------------
 
-void TheTable()
+void
+TheTable()
 {
     using execdriver::FindOpenExecDiagnosticCode;
     using execdriver::OpenExecDiagnosticCodeString;
-    assert(OpenExecDiagnosticCodeString(
-               OpenExecDiagnosticCode::ComputationUnavailable)
-           == "VRM_OPENEXEC_COMPUTATION_UNAVAILABLE");
-    assert(OpenExecDiagnosticCodeString(OpenExecDiagnosticCode::TypeMismatch)
-           == "VRM_OPENEXEC_TYPE_MISMATCH");
-    assert(OpenExecDiagnosticCodeString(OpenExecDiagnosticCode::Invalidated)
-           == "VRM_OPENEXEC_INVALIDATED");
+    assert(OpenExecDiagnosticCodeString(OpenExecDiagnosticCode::ComputationUnavailable) ==
+           "VRM_OPENEXEC_COMPUTATION_UNAVAILABLE");
+    assert(OpenExecDiagnosticCodeString(OpenExecDiagnosticCode::TypeMismatch) ==
+           "VRM_OPENEXEC_TYPE_MISMATCH");
+    assert(OpenExecDiagnosticCodeString(OpenExecDiagnosticCode::Invalidated) ==
+           "VRM_OPENEXEC_INVALIDATED");
     assert(OpenExecDiagnosticCodeString(OpenExecDiagnosticCode::Count).empty());
-    for (std::size_t i = 0; i < execdriver::OpenExecDiagnosticCodeCount; ++i) {
+    for (std::size_t i = 0; i < execdriver::OpenExecDiagnosticCodeCount; ++i)
+    {
         const auto code = static_cast<OpenExecDiagnosticCode>(i);
-        assert(FindOpenExecDiagnosticCode(OpenExecDiagnosticCodeString(code))
-               == code);
+        assert(FindOpenExecDiagnosticCode(OpenExecDiagnosticCodeString(code)) == code);
     }
     assert(!FindOpenExecDiagnosticCode("VRM_RETARGET_UNBOUND_DRIVEN_BONE") &&
            "the two namespaces are separate");
@@ -134,40 +142,38 @@ void TheTable()
     // Two errors that end a frame, one warning the driver recovered from.
     assert(!execdriver::OpenExecDiagnosticIsRecoverable(
         OpenExecDiagnosticCode::ComputationUnavailable));
-    assert(!execdriver::OpenExecDiagnosticIsRecoverable(
-        OpenExecDiagnosticCode::TypeMismatch));
-    assert(execdriver::OpenExecDiagnosticIsRecoverable(
-        OpenExecDiagnosticCode::Invalidated));
-    assert(execdriver::OpenExecDiagnosticDefaultSeverity(
-               OpenExecDiagnosticCode::Invalidated)
-           == execdriver::OpenExecDiagnosticSeverity::Warning);
+    assert(!execdriver::OpenExecDiagnosticIsRecoverable(OpenExecDiagnosticCode::TypeMismatch));
+    assert(execdriver::OpenExecDiagnosticIsRecoverable(OpenExecDiagnosticCode::Invalidated));
+    assert(execdriver::OpenExecDiagnosticDefaultSeverity(OpenExecDiagnosticCode::Invalidated) ==
+           execdriver::OpenExecDiagnosticSeverity::Warning);
 
     assert(execdriver::FormatOpenExecDiagnostic(execdriver::MakeOpenExecDiagnostic(
-               OpenExecDiagnosticCode::Invalidated, kSampleName, "rebuilt"))
-           == "[VRM_OPENEXEC_INVALIDATED] warning recoverable "
-              "subject=/Clip [motion.sampleAnimation]: rebuilt");
+               OpenExecDiagnosticCode::Invalidated, kSampleName, "rebuilt")) ==
+           "[VRM_OPENEXEC_INVALIDATED] warning recoverable "
+           "subject=/Clip [motion.sampleAnimation]: rebuilt");
     assert(execdriver::FormatOpenExecDiagnostic(execdriver::MakeOpenExecDiagnostic(
-               OpenExecDiagnosticCode::TypeMismatch, kPriorName))
-           == "[VRM_OPENEXEC_TYPE_MISMATCH] error "
-              "subject=/Clip [motion.priorPose]");
+               OpenExecDiagnosticCode::TypeMismatch, kPriorName)) ==
+           "[VRM_OPENEXEC_TYPE_MISMATCH] error "
+           "subject=/Clip [motion.priorPose]");
 
     execdriver::OpenExecDiagnostics list;
-    assert(list.Report(execdriver::MakeOpenExecDiagnostic(
-        OpenExecDiagnosticCode::TypeMismatch, kPriorName, "first")));
-    assert(!list.Report(execdriver::MakeOpenExecDiagnostic(
-               OpenExecDiagnosticCode::TypeMismatch, kPriorName, "second")) &&
+    assert(list.Report(execdriver::MakeOpenExecDiagnostic(OpenExecDiagnosticCode::TypeMismatch,
+                                                          kPriorName, "first")));
+    assert(!list.Report(execdriver::MakeOpenExecDiagnostic(OpenExecDiagnosticCode::TypeMismatch,
+                                                           kPriorName, "second")) &&
            "a code and subject are reported once");
     assert(list.reported.size() == 1 && list.reported[0].detail == "first");
     assert(list.HasError());
 }
 
 // Contract: arm each request with one compute, and keep what it posted.
-void ArmingKeepsItsRefusals()
+void
+ArmingKeepsItsRefusals()
 {
     Driver driver(Open());
     Frame arming;
-    const Driver::RequestId id = driver.Add(
-        {Key::Of<motion::PoseSampleResult>(kClip, kInterpolate)}, &arming);
+    const Driver::RequestId id =
+        driver.Add({Key::Of<motion::PoseSampleResult>(kClip, kInterpolate)}, &arming);
 
     // The arm runs at the default time code, where the history sampler refuses
     // by design -- so the refusal is posted, kept, and is not a failure.
@@ -184,21 +190,19 @@ void ArmingKeepsItsRefusals()
 }
 
 // VRM_OPENEXEC_COMPUTATION_UNAVAILABLE, from a name nobody registers.
-void AComputationNobodyRegisters()
+void
+AComputationNobodyRegisters()
 {
     Driver driver(Open());
     Frame arming;
-    const Driver::RequestId id = driver.Add(
-        {Key::Of<motion::HumanoidPose>(kClip, kSample),
-         Key::Of<motion::HumanoidPose>(kClip, kNobody)},
-        &arming);
+    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidPose>(kClip, kSample),
+                                             Key::Of<motion::HumanoidPose>(kClip, kNobody)},
+                                            &arming);
 
-    const OpenExecDiagnostic* missing =
-        Find(arming, OpenExecDiagnosticCode::ComputationUnavailable,
-             "/Clip [motion.noSuchComputation]");
+    const OpenExecDiagnostic* missing = Find(arming, OpenExecDiagnosticCode::ComputationUnavailable,
+                                             "/Clip [motion.noSuchComputation]");
     assert(missing && "a computation nobody registers was not named");
-    assert(arming.diagnostics.reported.size() == 1 &&
-           "the key that exists was named as well");
+    assert(arming.diagnostics.reported.size() == 1 && "the key that exists was named as well");
     // Exec's own words travel in the detail, for a person; the code came
     // from the driver's probe, not from them.
     assert(Contains(missing->detail, "Failed to find computation"));
@@ -218,25 +222,24 @@ void AComputationNobodyRegisters()
 }
 
 // VRM_OPENEXEC_COMPUTATION_UNAVAILABLE, from a provider exec would expire.
-void AProviderThatIsNotThere()
+void
+AProviderThatIsNotThere()
 {
     Driver driver(Open());
     Frame arming;
-    driver.Add({Key::Of<motion::HumanoidPose>(SdfPath("/NoSuchPrim"), kSample)},
-               &arming);
-    const OpenExecDiagnostic* missing =
-        Find(arming, OpenExecDiagnosticCode::ComputationUnavailable,
-             "/NoSuchPrim [motion.sampleAnimation]");
+    driver.Add({Key::Of<motion::HumanoidPose>(SdfPath("/NoSuchPrim"), kSample)}, &arming);
+    const OpenExecDiagnostic* missing = Find(arming, OpenExecDiagnosticCode::ComputationUnavailable,
+                                             "/NoSuchPrim [motion.sampleAnimation]");
     assert(missing && Contains(missing->detail, "there is no prim"));
-    assert(arming.errors.empty() &&
-           "a key on no prim reached exec, which posts at every compile");
+    assert(arming.errors.empty() && "a key on no prim reached exec, which posts at every compile");
 }
 
 // A provider deactivated, then active again: unavailable while it is gone,
 // silent when it is back, and INVALIDATED when it goes and comes back between
 // two frames. Two clips, and only the second moves, because exec reports an
 // expiry through IsValid() only while some key of the request is still live.
-void AProviderThatGoesAndComesBack()
+void
+AProviderThatGoesAndComesBack()
 {
     UsdStageRefPtr stage = Open();
     // The second clip is the first, referenced: its own prim, its own
@@ -246,9 +249,8 @@ void AProviderThatGoesAndComesBack()
     const std::string otherName = "/Other [motion.sampleAnimation]";
 
     Driver driver(stage);
-    const Driver::RequestId id =
-        driver.Add({Key::Of<motion::HumanoidPose>(kClip, kSample),
-                    Key::Of<motion::HumanoidPose>(other, kSample)});
+    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidPose>(kClip, kSample),
+                                             Key::Of<motion::HumanoidPose>(other, kSample)});
     const Frame before = driver.Evaluate(id, UsdTimeCode(50.0));
     assert(before.Get<motion::HumanoidPose>(0) && before.Get<motion::HumanoidPose>(1));
     const motion::HumanoidPose answered = *before.Get<motion::HumanoidPose>(1);
@@ -256,8 +258,8 @@ void AProviderThatGoesAndComesBack()
 
     stage->GetPrimAtPath(other).SetActive(false);
     const Frame gone = driver.Evaluate(id, UsdTimeCode(50.0));
-    const OpenExecDiagnostic* missing = Find(
-        gone, OpenExecDiagnosticCode::ComputationUnavailable, otherName);
+    const OpenExecDiagnostic* missing =
+        Find(gone, OpenExecDiagnosticCode::ComputationUnavailable, otherName);
     assert(missing && Contains(missing->detail, "not active"));
     assert(gone.Get<motion::HumanoidPose>(0) && gone.values[1].IsEmpty());
     assert(gone.errors.empty() && gone.Failed());
@@ -265,8 +267,7 @@ void AProviderThatGoesAndComesBack()
     stage->GetPrimAtPath(other).SetActive(true);
     const Frame back = driver.Evaluate(id, UsdTimeCode(50.0));
     assert(back.diagnostics.IsClean() && back.errors.empty());
-    assert(back.Get<motion::HumanoidPose>(1)
-           && *back.Get<motion::HumanoidPose>(1) == answered);
+    assert(back.Get<motion::HumanoidPose>(1) && *back.Get<motion::HumanoidPose>(1) == answered);
 
     stage->GetPrimAtPath(other).SetActive(false);
     stage->GetPrimAtPath(other).SetActive(true);
@@ -281,21 +282,20 @@ void AProviderThatGoesAndComesBack()
     assert(Contains(invalidated->detail, "reported the request invalid"));
     assert(invalidated->recoverable && !resynced.Failed());
     assert(resynced.errors.empty());
-    assert(resynced.Get<motion::HumanoidPose>(1)
-           && *resynced.Get<motion::HumanoidPose>(1) == answered &&
+    assert(resynced.Get<motion::HumanoidPose>(1) &&
+           *resynced.Get<motion::HumanoidPose>(1) == answered &&
            "the rebuilt request did not answer what the old one did");
 
     // Why the second clip: a request whose EVERY key expires is discarded,
     // and discarding clears the bits IsValid() reads. Measured on the raw
     // system, so the day upstream reports it is a red test.
     ExecUsdSystem& system = driver.System();
-    ExecUsdRequest lone = system.BuildRequest(
-        {ExecUsdValueKey(stage->GetPrimAtPath(other), kSample)});
+    ExecUsdRequest lone =
+        system.BuildRequest({ExecUsdValueKey(stage->GetPrimAtPath(other), kSample)});
     system.Compute(lone);
     stage->GetPrimAtPath(other).SetActive(false);
-    assert(lone.IsValid() &&
-           "exec now reports a request whose every key expired; the driver "
-           "can see that route before computing, as it does the other");
+    assert(lone.IsValid() && "exec now reports a request whose every key expired; the driver "
+                             "can see that route before computing, as it does the other");
     stage->GetPrimAtPath(other).SetActive(true);
 
     // The same expiry in a frame that also names a key for the first time,
@@ -304,51 +304,47 @@ void AProviderThatGoesAndComesBack()
     stage->GetPrimAtPath(other).SetActive(true);
     const Frame joined = driver.Evaluate(
         id, UsdTimeCode(50.0),
-        {Override{Key::Of<motion::HumanoidPose>(kClip, kPrior),
-                  VtValue(answered)}});
+        {Override{Key::Of<motion::HumanoidPose>(kClip, kPrior), VtValue(answered)}});
     const OpenExecDiagnostic* alongside =
         Find(joined, OpenExecDiagnosticCode::Invalidated, otherName);
     assert(alongside && "an expiry was rebuilt in silence because the frame "
                         "rebuilt the request for another reason");
     assert(Contains(alongside->detail, "reported the request invalid"));
-    assert(!joined.Failed() && joined.Get<motion::HumanoidPose>(1)
-           && *joined.Get<motion::HumanoidPose>(1) == answered);
+    assert(!joined.Failed() && joined.Get<motion::HumanoidPose>(1) &&
+           *joined.Get<motion::HumanoidPose>(1) == answered);
 
     // And through the driver that route still ends in a rebuilt request, found
     // after the fact, the way an InvalidateAll is.
-    const Driver::RequestId single =
-        driver.Add({Key::Of<motion::HumanoidPose>(other, kSample)});
+    const Driver::RequestId single = driver.Add({Key::Of<motion::HumanoidPose>(other, kSample)});
     driver.Evaluate(single, UsdTimeCode(50.0));
     stage->GetPrimAtPath(other).SetActive(false);
     stage->GetPrimAtPath(other).SetActive(true);
     const Frame whole = driver.Evaluate(single, UsdTimeCode(50.0));
     const OpenExecDiagnostic* discarded =
         Find(whole, OpenExecDiagnosticCode::Invalidated, otherName);
-    assert(discarded
-           && Contains(discarded->detail, "still reported itself valid"));
-    assert(!whole.Failed() && whole.Get<motion::HumanoidPose>(0)
-           && *whole.Get<motion::HumanoidPose>(0) == answered);
+    assert(discarded && Contains(discarded->detail, "still reported itself valid"));
+    assert(!whole.Failed() && whole.Get<motion::HumanoidPose>(0) &&
+           *whole.Get<motion::HumanoidPose>(0) == answered);
 }
 
 // Contract: an override holds exactly its key's type, checked before exec
 // sees it -- and here is why.
-void AMistypedOverride()
+void
+AMistypedOverride()
 {
     UsdStageRefPtr stage = Open();
     Driver driver(stage);
-    const Driver::RequestId id =
-        driver.Add({Key::Of<motion::HumanoidPose>(kClip, kFilter)});
+    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidPose>(kClip, kFilter)});
     const Key prior = Key::Of<motion::HumanoidPose>(kClip, kPrior);
 
-    const Frame frame = driver.Evaluate(
-        id, UsdTimeCode(50.0), {Override{prior, VtValue(motion::HumanoidAnimation{})}});
+    const Frame frame = driver.Evaluate(id, UsdTimeCode(50.0),
+                                        {Override{prior, VtValue(motion::HumanoidAnimation{})}});
     const OpenExecDiagnostic* mismatch =
         Find(frame, OpenExecDiagnosticCode::TypeMismatch, kPriorName);
     assert(mismatch && Contains(mismatch->detail, "HumanoidAnimation"));
     assert(frame.Failed() && frame.values[0].IsEmpty() && frame.errors.empty());
 
-    const Frame empty =
-        driver.Evaluate(id, UsdTimeCode(50.0), {Override{prior, VtValue()}});
+    const Frame empty = driver.Evaluate(id, UsdTimeCode(50.0), {Override{prior, VtValue()}});
     const OpenExecDiagnostic* absence =
         Find(empty, OpenExecDiagnosticCode::TypeMismatch, kPriorName);
     assert(absence && Contains(absence->detail, "empty value"));
@@ -357,17 +353,16 @@ void AMistypedOverride()
     // Why: handed the same override directly, exec answers anyway -- a coding
     // error, and the filter run against the key's ordinary value.
     ExecUsdSystem& system = driver.System();
-    ExecUsdRequest raw = system.BuildRequest(
-        {ExecUsdValueKey(stage->GetPrimAtPath(kClip), kFilter)});
+    ExecUsdRequest raw =
+        system.BuildRequest({ExecUsdValueKey(stage->GetPrimAtPath(kClip), kFilter)});
     system.ChangeTime(UsdTimeCode(50.0));
     system.Compute(raw);
     TfErrorMark mark;
     const VtValue answered =
         system
             .ComputeWithOverrides(
-                raw, {ExecUsdValueOverride{
-                         ExecUsdValueKey(stage->GetPrimAtPath(kClip), kPrior),
-                         VtValue(motion::HumanoidAnimation{})}})
+                raw, {ExecUsdValueOverride{ExecUsdValueKey(stage->GetPrimAtPath(kClip), kPrior),
+                                           VtValue(motion::HumanoidAnimation{})}})
             .Get(0);
     assert(answered.IsHolding<motion::HumanoidPose>() &&
            "exec now refuses a mistyped override; the driver's check is "
@@ -379,7 +374,8 @@ void AMistypedOverride()
 // VRM_OPENEXEC_TYPE_MISMATCH, from exec: an override that holds the declared
 // type, when the declaration is wrong. Of two overrides, only that one is
 // named.
-void AnOverrideExecRejects()
+void
+AnOverrideExecRejects()
 {
     Driver driver(Open());
     const Driver::RequestId id =
@@ -394,8 +390,7 @@ void AnOverrideExecRejects()
         id, UsdTimeCode(50.0),
         {Override{Key::Of<motion::HumanoidAnimation>(kClip, kPrior),
                   VtValue(motion::HumanoidAnimation{})},
-         Override{Key::Of<motion::HumanoidAnimation>(kClip, kHistory),
-                  VtValue(history)}});
+         Override{Key::Of<motion::HumanoidAnimation>(kClip, kHistory), VtValue(history)}});
     const OpenExecDiagnostic* mismatch =
         Find(frame, OpenExecDiagnosticCode::TypeMismatch, kPriorName);
     assert(mismatch && "exec's own type check was not attributed");
@@ -412,18 +407,17 @@ void AnOverrideExecRejects()
         id, UsdTimeCode(50.0),
         {Override{Key::Of<motion::HumanoidAnimation>(kClip, kPrior),
                   VtValue(motion::HumanoidAnimation{})},
-         Override{Key::Of<motion::HumanoidAnimation>(kClip, kHistory),
-                  VtValue(history)}});
-    assert(Find(again, OpenExecDiagnosticCode::TypeMismatch, kPriorName)
-           && again.diagnostics.reported.size() == 1 && again.Failed());
+         Override{Key::Of<motion::HumanoidAnimation>(kClip, kHistory), VtValue(history)}});
+    assert(Find(again, OpenExecDiagnosticCode::TypeMismatch, kPriorName) &&
+           again.diagnostics.reported.size() == 1 && again.Failed());
 }
 
 // VRM_OPENEXEC_TYPE_MISMATCH, from an answer.
-void AnAnswerOfAnotherType()
+void
+AnAnswerOfAnotherType()
 {
     Driver driver(Open());
-    const Driver::RequestId id =
-        driver.Add({Key::Of<motion::HumanoidAnimation>(kClip, kSample)});
+    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidAnimation>(kClip, kSample)});
     const Frame frame = driver.Evaluate(id, UsdTimeCode(50.0));
     const OpenExecDiagnostic* mismatch =
         Find(frame, OpenExecDiagnosticCode::TypeMismatch, kSampleName);
@@ -433,7 +427,8 @@ void AnAnswerOfAnotherType()
 
 // Contract: exec skips an override of a key nothing compiled, without a word,
 // and the driver requests every key it overrides so exec has compiled it.
-void AnOverrideNothingCompiled()
+void
+AnOverrideNothingCompiled()
 {
     UsdStageRefPtr stage = Open();
     {
@@ -441,41 +436,37 @@ void AnOverrideNothingCompiled()
         // reads motion.priorPose: a MISTYPED override of it passes in silence,
         // because the type check is reached only for a compiled output.
         ExecUsdSystem system(stage);
-        ExecUsdRequest raw = system.BuildRequest(
-            {ExecUsdValueKey(stage->GetPrimAtPath(kClip), kSample)});
+        ExecUsdRequest raw =
+            system.BuildRequest({ExecUsdValueKey(stage->GetPrimAtPath(kClip), kSample)});
         system.ChangeTime(UsdTimeCode(50.0));
         system.Compute(raw);
         TfErrorMark mark;
         system.ComputeWithOverrides(
-            raw, {ExecUsdValueOverride{
-                     ExecUsdValueKey(stage->GetPrimAtPath(kClip), kPrior),
-                     VtValue(motion::HumanoidAnimation{})}});
-        assert(mark.IsClean() &&
-               "exec now reports an override of a key it has not compiled; "
-               "the driver no longer has to request every key it overrides");
+            raw, {ExecUsdValueOverride{ExecUsdValueKey(stage->GetPrimAtPath(kClip), kPrior),
+                                       VtValue(motion::HumanoidAnimation{})}});
+        assert(mark.IsClean() && "exec now reports an override of a key it has not compiled; "
+                                 "the driver no longer has to request every key it overrides");
     }
 
     // Through the driver the key joins the request, so the same mistaken
     // declaration meets exec's check and is named.
     Driver driver(stage);
-    const Driver::RequestId id =
-        driver.Add({Key::Of<motion::HumanoidPose>(kClip, kSample)});
-    const Frame frame = driver.Evaluate(
-        id, UsdTimeCode(50.0),
-        {Override{Key::Of<motion::HumanoidAnimation>(kClip, kPrior),
-                  VtValue(motion::HumanoidAnimation{})}});
+    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidPose>(kClip, kSample)});
+    const Frame frame = driver.Evaluate(id, UsdTimeCode(50.0),
+                                        {Override{Key::Of<motion::HumanoidAnimation>(kClip, kPrior),
+                                                  VtValue(motion::HumanoidAnimation{})}});
     assert(Find(frame, OpenExecDiagnosticCode::TypeMismatch, kPriorName) &&
            "an override of a key the request does not read went unchecked");
     assert(frame.Failed());
 }
 
 // VRM_OPENEXEC_INVALIDATED: an InvalidateAll behind the driver's back.
-void ARequestExecStoppedAnswering()
+void
+ARequestExecStoppedAnswering()
 {
     Driver driver(Open());
-    const Driver::RequestId id =
-        driver.Add({Key::Of<motion::HumanoidPose>(kClip, kSample),
-                    Key::Of<motion::HumanoidPose>(kClip, kFilter)});
+    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidPose>(kClip, kSample),
+                                             Key::Of<motion::HumanoidPose>(kClip, kFilter)});
     const Frame before = driver.Evaluate(id, UsdTimeCode(50.0));
     assert(before.Get<motion::HumanoidPose>(0) && before.Get<motion::HumanoidPose>(1));
 
@@ -484,7 +475,8 @@ void ARequestExecStoppedAnswering()
         diagnostics.InvalidateAll();
     }
     const Frame after = driver.Evaluate(id, UsdTimeCode(50.0));
-    for (const std::string& name : {kSampleName, kFilterName}) {
+    for (const std::string& name : {kSampleName, kFilterName})
+    {
         const OpenExecDiagnostic* invalidated =
             Find(after, OpenExecDiagnosticCode::Invalidated, name);
         assert(invalidated && "an expired request was not reported");
@@ -493,9 +485,8 @@ void ARequestExecStoppedAnswering()
     assert(!after.Failed() && after.errors.empty());
     // The time was restated: InvalidateAll put the system at the default time
     // code, where the sampler answers an empty pose.
-    assert(*after.Get<motion::HumanoidPose>(0) == *before.Get<motion::HumanoidPose>(0)
-           && *after.Get<motion::HumanoidPose>(1)
-                  == *before.Get<motion::HumanoidPose>(1));
+    assert(*after.Get<motion::HumanoidPose>(0) == *before.Get<motion::HumanoidPose>(0) &&
+           *after.Get<motion::HumanoidPose>(1) == *before.Get<motion::HumanoidPose>(1));
 
     const Frame settled = driver.Evaluate(id, UsdTimeCode(50.0));
     assert(settled.diagnostics.IsClean() && settled.errors.empty());
@@ -505,48 +496,45 @@ void ARequestExecStoppedAnswering()
 // A frame's refusals are its own. A frame that builds the request arms it with
 // its own overrides, so what the graph would refuse WITHOUT them is not
 // reported beside the answer it gave with them.
-void AFrameReportsItsOwnRefusals()
+void
+AFrameReportsItsOwnRefusals()
 {
     // The clip that states no rate: its sampler refuses, and so does every
     // node that reads it -- until a driver hands the sample in.
     std::string unrated = gFixture;
     const std::string name = "filtered_clip.usda";
-    assert(unrated.size() >= name.size()
-           && unrated.compare(unrated.size() - name.size(), name.size(), name) == 0);
+    assert(unrated.size() >= name.size() &&
+           unrated.compare(unrated.size() - name.size(), name.size(), name) == 0);
     unrated.replace(unrated.size() - name.size(), name.size(), "unrated_clip.usda");
     UsdStageRefPtr stage = UsdStage::Open(unrated);
     assert(stage && stage->GetPrimAtPath(kClip));
 
     Driver driver(stage);
-    const Driver::RequestId id =
-        driver.Add({Key::Of<motion::HumanoidPose>(kClip, kFilter)});
+    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidPose>(kClip, kFilter)});
     const Frame plain = driver.Evaluate(id, UsdTimeCode(50.0));
-    assert(plain.values[0].IsEmpty()
-           && AnyContains(plain.refusals, "motion.sampleAnimation") &&
+    assert(plain.values[0].IsEmpty() && AnyContains(plain.refusals, "motion.sampleAnimation") &&
            "the unrated clip no longer refuses, so this proves nothing");
 
     motion::HumanoidPose handed;
     handed.timestamp = 1.0;
-    const Frame driven = driver.Evaluate(
-        id, UsdTimeCode(50.0),
-        {Override{Key::Of<motion::HumanoidPose>(kClip, kSample),
-                  VtValue(handed)}});
-    assert(driven.Get<motion::HumanoidPose>(0) &&
-           "the sample handed in did not reach the filter");
+    const Frame driven =
+        driver.Evaluate(id, UsdTimeCode(50.0),
+                        {Override{Key::Of<motion::HumanoidPose>(kClip, kSample), VtValue(handed)}});
+    assert(driven.Get<motion::HumanoidPose>(0) && "the sample handed in did not reach the filter");
     assert(driven.refusals.empty() &&
            "the frame carried refusals only the un-overridden graph posts");
     assert(!driven.Failed());
 }
 
 // A stage computation: its provider is the pseudo-root, which exec accepts.
-void AStageComputation()
+void
+AStageComputation()
 {
     Driver driver(Open());
-    const Driver::RequestId id = driver.Add({Key::Of<EfTime>(
-        SdfPath::AbsoluteRootPath(), ExecBuiltinComputations->computeTime)});
+    const Driver::RequestId id = driver.Add(
+        {Key::Of<EfTime>(SdfPath::AbsoluteRootPath(), ExecBuiltinComputations->computeTime)});
     const Frame frame = driver.Evaluate(id, UsdTimeCode(50.0));
-    assert(frame.diagnostics.IsClean() &&
-           "a key on the pseudo-root was reported unavailable");
+    assert(frame.diagnostics.IsClean() && "a key on the pseudo-root was reported unavailable");
     const auto* time = frame.Get<EfTime>(0);
     assert(time && time->GetTimeCode() == UsdTimeCode(50.0));
     assert(!frame.Failed());
@@ -554,12 +542,12 @@ void AStageComputation()
 
 // Contract: one previous answer per prim, substituted through one call. The
 // positive control for every override above.
-void AnOverrideReachesItsDependent()
+void
+AnOverrideReachesItsDependent()
 {
     Driver driver(Open());
-    const Driver::RequestId id =
-        driver.Add({Key::Of<motion::HumanoidPose>(kClip, kSample),
-                    Key::Of<motion::HumanoidPose>(kClip, kFilter)});
+    const Driver::RequestId id = driver.Add({Key::Of<motion::HumanoidPose>(kClip, kSample),
+                                             Key::Of<motion::HumanoidPose>(kClip, kFilter)});
     const Frame earlier = driver.Evaluate(id, UsdTimeCode(49.0));
     const motion::HumanoidPose previous = *earlier.Get<motion::HumanoidPose>(0);
 
@@ -579,7 +567,8 @@ void AnOverrideReachesItsDependent()
 
 } // namespace
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
     assert(argc == 2 && "usage: exec_driver_contract <filtered_clip.usda>");
     gFixture = argv[1];

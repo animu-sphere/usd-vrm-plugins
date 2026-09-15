@@ -34,7 +34,8 @@ struct RecordReport
 
     // Ticks that produced a pose from real bracketing data. A session whose
     // `sampled` count is far below `ticks` was evaluated ahead of its data.
-    std::size_t Recorded() const noexcept
+    std::size_t
+    Recorded() const noexcept
     {
         return sampled + held + extrapolated;
     }
@@ -42,7 +43,7 @@ struct RecordReport
 
 class MOTIONRUNTIME_API CaptureRecorder
 {
-public:
+  public:
     explicit CaptureRecorder(double frameRate = 30.0);
 
     // Appends the pose the result carries. A tick the source could not answer
@@ -51,8 +52,13 @@ public:
     // timestamp did not advance.
     bool Record(const PoseSampleResult& result);
 
-    const RecordReport& GetReport() const noexcept { return _report; }
-    std::size_t GetFrameCount() const noexcept
+    const RecordReport&
+    GetReport() const noexcept
+    {
+        return _report;
+    }
+    std::size_t
+    GetFrameCount() const noexcept
     {
         return _animation.samples.size();
     }
@@ -65,7 +71,7 @@ public:
 
     void Clear();
 
-private:
+  private:
     HumanoidAnimation _animation;
     RecordReport _report;
     double _frameRate;

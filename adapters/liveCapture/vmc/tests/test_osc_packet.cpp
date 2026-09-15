@@ -49,30 +49,35 @@ struct Bytes
 {
     std::vector<std::uint8_t> data;
 
-    Bytes& Raw(std::initializer_list<std::uint8_t> values)
+    Bytes&
+    Raw(std::initializer_list<std::uint8_t> values)
     {
         data.insert(data.end(), values);
         return *this;
     }
 
-    Bytes& Append(const std::vector<std::uint8_t>& values)
+    Bytes&
+    Append(const std::vector<std::uint8_t>& values)
     {
         data.insert(data.end(), values.begin(), values.end());
         return *this;
     }
 
     // A NUL-terminated string padded to four bytes -- always at least one NUL.
-    Bytes& Str(std::string_view text)
+    Bytes&
+    Str(std::string_view text)
     {
         data.insert(data.end(), text.begin(), text.end());
         data.push_back(0);
-        while (data.size() % 4 != 0) {
+        while (data.size() % 4 != 0)
+        {
             data.push_back(0);
         }
         return *this;
     }
 
-    Bytes& U32(std::uint32_t value)
+    Bytes&
+    U32(std::uint32_t value)
     {
         data.push_back(static_cast<std::uint8_t>(value >> 24));
         data.push_back(static_cast<std::uint8_t>(value >> 16));
@@ -81,7 +86,8 @@ struct Bytes
         return *this;
     }
 
-    Bytes& F32(float value)
+    Bytes&
+    F32(float value)
     {
         std::uint32_t bits = 0;
         std::memcpy(&bits, &value, sizeof(bits));
@@ -90,8 +96,7 @@ struct Bytes
 };
 
 std::vector<std::uint8_t>
-Message(std::string_view address, std::string_view tags,
-        const std::vector<std::uint8_t>& body = {})
+Message(std::string_view address, std::string_view tags, const std::vector<std::uint8_t>& body = {})
 {
     Bytes out;
     out.Str(address);
@@ -108,8 +113,7 @@ TestARefusalArrivesAsThisAdaptersCode()
     // four fields only this adapter can supply.
     Bytes oneFloat;
     oneFloat.F32(0.5f);
-    const std::vector<std::uint8_t> datagram =
-        Message("/VMC/Ext/T", "ff", oneFloat.data);
+    const std::vector<std::uint8_t> datagram = Message("/VMC/Ext/T", "ff", oneFloat.data);
 
     OscPacket packet;
     packet.messages.push_back({});
@@ -121,9 +125,8 @@ TestARefusalArrivesAsThisAdaptersCode()
     // what makes that impossible, and this is what checks it happened.
     assert(diagnostic.code == DiagnosticCode::PacketMalformed);
     assert(diagnostic.recoverable);
-    assert(diagnostic.severity
-           == vrmAdapterVmc::DiagnosticDefaultSeverity(
-               DiagnosticCode::PacketMalformed));
+    assert(diagnostic.severity ==
+           vrmAdapterVmc::DiagnosticDefaultSeverity(DiagnosticCode::PacketMalformed));
 
     // The subject and the detail are the shared decoder's, carried across
     // rather than reworded: the address it had read, and the byte it stopped
@@ -135,8 +138,7 @@ TestARefusalArrivesAsThisAdaptersCode()
 
     // And the string a golden test compares. This is the one assertion the
     // extraction existed to leave standing.
-    assert(vrmAdapterVmc::FormatDiagnostic(diagnostic).find(
-               "[VRM_VMC_PACKET_MALFORMED]") == 0);
+    assert(vrmAdapterVmc::FormatDiagnostic(diagnostic).find("[VRM_VMC_PACKET_MALFORMED]") == 0);
 
     // A refused datagram leaves the caller's packet as it was.
     assert(packet.messages.size() == 1);
@@ -209,37 +211,42 @@ CheckCorpus(const std::filesystem::path& directory)
     // own expectations would skip a capture added later in silence -- and the
     // corpus README tells an author to check that a new capture appears here.
     std::vector<std::filesystem::path> captures;
-    if (!std::filesystem::is_directory(directory)) {
-        std::fprintf(stderr, "corpus directory not found: %s\n",
-                     directory.string().c_str());
+    if (!std::filesystem::is_directory(directory))
+    {
+        std::fprintf(stderr, "corpus directory not found: %s\n", directory.string().c_str());
         return 1;
     }
     for (const std::filesystem::directory_entry& file :
-         std::filesystem::directory_iterator(directory)) {
-        if (file.is_regular_file()
-            && file.path().extension() == ".vmcpackets") {
+         std::filesystem::directory_iterator(directory))
+    {
+        if (file.is_regular_file() && file.path().extension() == ".vmcpackets")
+        {
             captures.push_back(file.path());
         }
     }
     std::sort(captures.begin(), captures.end());
-    if (captures.empty()) {
-        std::fprintf(stderr, "no .vmcpackets fixtures in %s\n",
-                     directory.string().c_str());
+    if (captures.empty())
+    {
+        std::fprintf(stderr, "no .vmcpackets fixtures in %s\n", directory.string().c_str());
         return 1;
     }
 
     int failures = 0;
     std::set<std::string> covered;
-    for (const std::filesystem::path& path : captures) {
+    for (const std::filesystem::path& path : captures)
+    {
         const std::string name = path.filename().string();
         const Expected* entry = nullptr;
-        for (const Expected& candidate : expected) {
-            if (name == candidate.file) {
+        for (const Expected& candidate : expected)
+        {
+            if (name == candidate.file)
+            {
                 entry = &candidate;
                 break;
             }
         }
-        if (!entry) {
+        if (!entry)
+        {
             std::fprintf(stderr,
                          "%s: no expected decode in this test -- add one, or "
                          "the capture is in the corpus and decoded by nobody\n",
@@ -251,10 +258,9 @@ CheckCorpus(const std::filesystem::path& directory)
 
         vrmAdapterVmc::PacketCapture capture;
         vrmAdapterVmc::PacketCaptureError error;
-        if (!vrmAdapterVmc::ReadPacketCaptureFile(path.string(), &capture,
-                                                  &error)) {
-            std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line,
-                         error.message.c_str());
+        if (!vrmAdapterVmc::ReadPacketCaptureFile(path.string(), &capture, &error))
+        {
+            std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line, error.message.c_str());
             ++failures;
             continue;
         }
@@ -263,63 +269,69 @@ CheckCorpus(const std::filesystem::path& directory)
         std::size_t messages = 0;
         std::size_t bundles = 0;
         std::set<std::string> addresses;
-        for (std::size_t index = 0; index < capture.datagrams.size(); ++index) {
+        for (std::size_t index = 0; index < capture.datagrams.size(); ++index)
+        {
             OscPacket packet;
             Diagnostic diagnostic;
-            if (!vrmAdapterVmc::DecodeOscPacket(capture.datagrams[index].bytes,
-                                                &packet, &diagnostic)) {
-                if (!refused.empty()) {
+            if (!vrmAdapterVmc::DecodeOscPacket(capture.datagrams[index].bytes, &packet,
+                                                &diagnostic))
+            {
+                if (!refused.empty())
+                {
                     refused += ',';
                 }
                 refused += std::to_string(index);
-                if (std::string_view(entry->refused).empty()) {
+                if (std::string_view(entry->refused).empty())
+                {
                     std::fprintf(stderr, "%s: %s\n", name.c_str(),
-                                 vrmAdapterVmc::FormatDiagnostic(diagnostic)
-                                     .c_str());
+                                 vrmAdapterVmc::FormatDiagnostic(diagnostic).c_str());
                 }
                 continue;
             }
             messages += packet.messages.size();
             bundles += packet.bundled ? 1 : 0;
-            for (const vrmAdapterVmc::OscMessage& message : packet.messages) {
+            for (const vrmAdapterVmc::OscMessage& message : packet.messages)
+            {
                 addresses.insert(std::string(message.address));
             }
         }
 
-        const bool ok = capture.datagrams.size() == entry->datagrams
-            && refused == entry->refused && messages == entry->messages
-            && addresses.size() == entry->addresses
-            && (bundles != 0) == entry->bundled;
-        if (!ok) {
+        const bool ok = capture.datagrams.size() == entry->datagrams && refused == entry->refused &&
+                        messages == entry->messages && addresses.size() == entry->addresses &&
+                        (bundles != 0) == entry->bundled;
+        if (!ok)
+        {
             std::fprintf(stderr,
                          "%s: %zu datagram(s), refused [%s], %zu message(s), "
                          "%zu address(es), %zu bundle(s) -- expected %zu, [%s], "
                          "%zu, %zu, bundled=%d\n",
-                         name.c_str(), capture.datagrams.size(),
-                         refused.c_str(), messages, addresses.size(), bundles,
-                         entry->datagrams, entry->refused, entry->messages,
-                         entry->addresses, entry->bundled ? 1 : 0);
+                         name.c_str(), capture.datagrams.size(), refused.c_str(), messages,
+                         addresses.size(), bundles, entry->datagrams, entry->refused,
+                         entry->messages, entry->addresses, entry->bundled ? 1 : 0);
             ++failures;
             continue;
         }
 
         std::printf("%s: %zu datagram(s), refused [%s], %zu message(s), %zu "
                     "address(es)\n",
-                    name.c_str(), capture.datagrams.size(), refused.c_str(),
-                    messages, addresses.size());
+                    name.c_str(), capture.datagrams.size(), refused.c_str(), messages,
+                    addresses.size());
     }
 
     // The other direction: an expectation whose capture is gone would otherwise
     // pass by never being visited.
-    for (const Expected& entry : expected) {
-        if (covered.find(entry.file) == covered.end()) {
-            std::fprintf(stderr, "%s: expected in this test, absent from %s\n",
-                         entry.file, directory.string().c_str());
+    for (const Expected& entry : expected)
+    {
+        if (covered.find(entry.file) == covered.end())
+        {
+            std::fprintf(stderr, "%s: expected in this test, absent from %s\n", entry.file,
+                         directory.string().c_str());
             ++failures;
         }
     }
 
-    if (failures != 0) {
+    if (failures != 0)
+    {
         std::fprintf(stderr, "%d corpus capture(s) failed\n", failures);
         return 1;
     }
@@ -332,7 +344,8 @@ CheckCorpus(const std::filesystem::path& directory)
 int
 main(int argc, char** argv)
 {
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
 

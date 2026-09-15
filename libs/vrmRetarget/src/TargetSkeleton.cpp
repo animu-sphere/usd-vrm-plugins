@@ -9,8 +9,10 @@ namespace vrmRetarget
 int
 TargetSkeleton::FindJoint(const std::string& token) const
 {
-    for (std::size_t i = 0; i < _joints.size(); ++i) {
-        if (_joints[i].token == token) {
+    for (std::size_t i = 0; i < _joints.size(); ++i)
+    {
+        if (_joints[i].token == token)
+        {
             return static_cast<int>(i);
         }
     }
@@ -22,14 +24,17 @@ TargetSkeleton::ResolveParentsFromTokens()
 {
     std::unordered_map<std::string, int> byToken;
     byToken.reserve(_joints.size());
-    for (std::size_t i = 0; i < _joints.size(); ++i) {
+    for (std::size_t i = 0; i < _joints.size(); ++i)
+    {
         byToken.emplace(_joints[i].token, static_cast<int>(i));
     }
 
-    for (std::size_t i = 0; i < _joints.size(); ++i) {
+    for (std::size_t i = 0; i < _joints.size(); ++i)
+    {
         TargetJoint& joint = _joints[i];
         const std::size_t separator = joint.token.rfind('/');
-        if (separator == std::string::npos) {
+        if (separator == std::string::npos)
+        {
             joint.parent = kNoParent;
             continue;
         }
@@ -50,9 +55,9 @@ TargetSkeleton::GetWorldRestRotation(int jointIndex) const
     pxr::GfQuatf world = identity;
     int cursor = jointIndex;
     for (std::size_t depth = 0;
-         depth < _joints.size() && cursor >= 0
-         && static_cast<std::size_t>(cursor) < _joints.size();
-         ++depth) {
+         depth < _joints.size() && cursor >= 0 && static_cast<std::size_t>(cursor) < _joints.size();
+         ++depth)
+    {
         const TargetJoint& joint = _joints[static_cast<std::size_t>(cursor)];
         world = joint.restRotation.GetNormalized() * world;
         cursor = joint.parent;
@@ -63,12 +68,15 @@ TargetSkeleton::GetWorldRestRotation(int jointIndex) const
 bool
 TargetSkeleton::IsTopologicallyOrdered() const
 {
-    for (std::size_t i = 0; i < _joints.size(); ++i) {
+    for (std::size_t i = 0; i < _joints.size(); ++i)
+    {
         const int parent = _joints[i].parent;
-        if (parent == kNoParent) {
+        if (parent == kNoParent)
+        {
             continue;
         }
-        if (parent < 0 || parent >= static_cast<int>(i)) {
+        if (parent < 0 || parent >= static_cast<int>(i))
+        {
             return false;
         }
     }
@@ -78,9 +86,8 @@ TargetSkeleton::IsTopologicallyOrdered() const
 bool
 operator==(const TargetJoint& a, const TargetJoint& b) noexcept
 {
-    return a.token == b.token && a.parent == b.parent
-        && a.restRotation == b.restRotation
-        && a.restTranslation == b.restTranslation;
+    return a.token == b.token && a.parent == b.parent && a.restRotation == b.restRotation &&
+           a.restTranslation == b.restTranslation;
 }
 
 bool

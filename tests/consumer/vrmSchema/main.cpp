@@ -34,9 +34,9 @@ main()
     // included. A schema that shipped a header and an empty library would
     // return an empty vector here rather than fail to link, which is why the
     // count is checked and not merely the call.
-    const pxr::TfTokenVector& names =
-        pxr::UsdVrmHumanoidAPI::GetSchemaAttributeNames(true);
-    if (names.empty()) {
+    const pxr::TfTokenVector& names = pxr::UsdVrmHumanoidAPI::GetSchemaAttributeNames(true);
+    if (names.empty())
+    {
         std::fprintf(stderr, "consumer: the installed package declares no "
                              "humanoid attributes\n");
         return 1;
@@ -46,14 +46,16 @@ main()
     // hips are the bone every VRM humanoid must define, so a table that came
     // back without them would be a different build behind a matching header.
     const pxr::TfToken& hips = pxr::UsdVrmTokens->vrmHumanBonesHips;
-    if (hips.IsEmpty()) {
+    if (hips.IsEmpty())
+    {
         std::fprintf(stderr, "consumer: the installed token table has no "
                              "hips\n");
         return 1;
     }
 
-    std::fprintf(stdout, "consumer: read %zu attribute name(s) and the token "
-                         "%s through the installed package\n",
+    std::fprintf(stdout,
+                 "consumer: read %zu attribute name(s) and the token "
+                 "%s through the installed package\n",
                  names.size(), hips.GetText());
     return 0;
 }

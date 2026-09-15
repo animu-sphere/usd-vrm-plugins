@@ -105,7 +105,6 @@ struct AddressInventory
 // Inventories a capture. Never fails: an undecodable datagram is a row in
 // `diagnostics` and a session that carried nothing decodable is an inventory
 // with no rows, which is a finding rather than an error.
-VRMADAPTERVRCHATOSC_API AddressInventory InventoryAddresses(
-    const PacketCapture& capture);
+VRMADAPTERVRCHATOSC_API AddressInventory InventoryAddresses(const PacketCapture& capture);
 
 } // namespace vrmAdapterVrchatOsc

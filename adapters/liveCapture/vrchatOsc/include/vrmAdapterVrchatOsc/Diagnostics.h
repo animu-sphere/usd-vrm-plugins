@@ -111,8 +111,7 @@ enum class DiagnosticCode : std::uint8_t
     Count,
 };
 
-inline constexpr std::size_t DiagnosticCodeCount =
-    static_cast<std::size_t>(DiagnosticCode::Count);
+inline constexpr std::size_t DiagnosticCodeCount = static_cast<std::size_t>(DiagnosticCode::Count);
 
 // The severity scale is shared, because "info / warning / error" is not a
 // statement about this protocol.
@@ -121,20 +120,17 @@ using liveTransport::DiagnosticSeverityString;
 
 // The stable string, e.g. "VRM_VRCHAT_OSC_PACKET_MALFORMED". This is the
 // contract; the enumerator spelling is not.
-VRMADAPTERVRCHATOSC_API std::string_view DiagnosticCodeString(
-    DiagnosticCode code) noexcept;
+VRMADAPTERVRCHATOSC_API std::string_view DiagnosticCodeString(DiagnosticCode code) noexcept;
 
-VRMADAPTERVRCHATOSC_API std::optional<DiagnosticCode> FindDiagnosticCode(
-    std::string_view name) noexcept;
+VRMADAPTERVRCHATOSC_API std::optional<DiagnosticCode>
+FindDiagnosticCode(std::string_view name) noexcept;
 
-VRMADAPTERVRCHATOSC_API DiagnosticSeverity DiagnosticDefaultSeverity(
-    DiagnosticCode code) noexcept;
+VRMADAPTERVRCHATOSC_API DiagnosticSeverity DiagnosticDefaultSeverity(DiagnosticCode code) noexcept;
 
 // Whether a live session can continue past this code by default. A caller may
 // still escalate — a flood of recoverable diagnostics is its own signal — but it
 // never has to guess which class a code belongs to.
-VRMADAPTERVRCHATOSC_API bool DiagnosticIsRecoverable(
-    DiagnosticCode code) noexcept;
+VRMADAPTERVRCHATOSC_API bool DiagnosticIsRecoverable(DiagnosticCode code) noexcept;
 
 // One reported diagnostic: this adapter's code, in the shared vehicle.
 //
@@ -144,13 +140,11 @@ VRMADAPTERVRCHATOSC_API bool DiagnosticIsRecoverable(
 // `vrmAdapterMocopi`'s. A default that reads as "whatever is first" is one
 // reordering away from silently changing what a default-constructed diagnostic
 // means, which is the behaviour change OSC-2 came closest to shipping unnoticed.
-using Diagnostic = liveTransport::Diagnostic<DiagnosticCode,
-                                             DiagnosticCode::PacketMalformed>;
+using Diagnostic = liveTransport::Diagnostic<DiagnosticCode, DiagnosticCode::PacketMalformed>;
 
 // Fills `severity` and `recoverable` from the code's defaults, so the two cannot
 // silently disagree with the table.
-VRMADAPTERVRCHATOSC_API Diagnostic MakeDiagnostic(
-    DiagnosticCode code, std::string detail = {});
+VRMADAPTERVRCHATOSC_API Diagnostic MakeDiagnostic(DiagnosticCode code, std::string detail = {});
 
 // A single deterministic line, stable enough for a golden test to compare:
 //
@@ -168,7 +162,6 @@ VRMADAPTERVRCHATOSC_API Diagnostic MakeDiagnostic(
 // this wire says `/tracking/trackers/4/position` rather than `leftHand`. A bone
 // name in this field would be a humanoid claim made by a layer that has not made
 // one.
-VRMADAPTERVRCHATOSC_API std::string FormatDiagnostic(
-    const Diagnostic& diagnostic);
+VRMADAPTERVRCHATOSC_API std::string FormatDiagnostic(const Diagnostic& diagnostic);
 
 } // namespace vrmAdapterVrchatOsc

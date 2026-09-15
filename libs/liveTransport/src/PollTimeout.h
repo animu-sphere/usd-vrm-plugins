@@ -39,11 +39,13 @@ inline constexpr int kPollMaxMilliseconds = 2147483647;
 inline int
 TimeoutToMilliseconds(double seconds)
 {
-    if (seconds < 0.0) {
+    if (seconds < 0.0)
+    {
         return kPollForever;
     }
     const double milliseconds = seconds * 1000.0;
-    if (milliseconds >= static_cast<double>(kPollMaxMilliseconds)) {
+    if (milliseconds >= static_cast<double>(kPollMaxMilliseconds))
+    {
         return kPollMaxMilliseconds;
     }
     // Rounded up, so a timeout smaller than the platform's resolution waits a
@@ -72,8 +74,7 @@ enum class PollWakeUp : std::uint8_t
 constexpr PollWakeUp
 ClassifyPollWakeUp(int revents, int readableBit) noexcept
 {
-    return (revents & readableBit) != 0 ? PollWakeUp::Readable
-                                        : PollWakeUp::ErrorCondition;
+    return (revents & readableBit) != 0 ? PollWakeUp::Readable : PollWakeUp::ErrorCondition;
 }
 
 } // namespace internal
