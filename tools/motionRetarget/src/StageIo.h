@@ -92,8 +92,7 @@ struct Clip
 // Reads a `humanBone -> joint token` JSON object, e.g.
 // `{"hips": "Root/Pelvis", "spine": "Root/Pelvis/SpineA"}`. Every refusal is
 // `InvalidUserInput`: the file's format is this tool's own option.
-bool ReadHumanoidMapFile(const std::string& path,
-                         std::map<std::string, std::string>* entries,
+bool ReadHumanoidMapFile(const std::string& path, std::map<std::string, std::string>* entries,
                          Failure* failure);
 
 // Opens the avatar and resolves its target skeleton plus humanoid mapping.
@@ -101,15 +100,14 @@ bool ReadHumanoidMapFile(const std::string& path,
 // applied over anything found on the stage. A rig the stage itself leaves
 // short is `RetargetContractViolation`; one an option named wrongly is
 // `InvalidUserInput`.
-bool ReadAvatar(const std::string& path,
-                const std::string& skeletonPathOverride,
-                const std::map<std::string, std::string>& extraMappings,
-                Avatar* avatar, Failure* failure);
+bool ReadAvatar(const std::string& path, const std::string& skeletonPathOverride,
+                const std::map<std::string, std::string>& extraMappings, Avatar* avatar,
+                Failure* failure);
 
 // Opens the clip and reads its semantic humanoid animation. A clip this tool
 // cannot read as one is `UnsupportedSourceFeature`.
-bool ReadClip(const std::string& path, const std::string& skeletonPathOverride,
-              Clip* clip, Failure* failure);
+bool ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip* clip,
+              Failure* failure);
 
 // What the write put on the stage, for the caller's summary and diagnostics.
 //
@@ -133,10 +131,10 @@ struct WriteResult
 // are `InvalidUserInput` -- the arguments contradict themselves -- and are
 // refused before anything is written. Everything after that is
 // `OutputAuthoringFailure`.
-bool WriteRetargetedAnimation(
-    const std::string& outputPath, const Avatar& avatar, const Clip& clip,
-    const vrmRetarget::RetargetedAnimation& animation,
-    const std::vector<vrmRetarget::ResolvedExpressions>& expressions,
-    const std::string& animationName, WriteResult* result, Failure* failure);
+bool WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar, const Clip& clip,
+                              const vrmRetarget::RetargetedAnimation& animation,
+                              const std::vector<vrmRetarget::ResolvedExpressions>& expressions,
+                              const std::string& animationName, WriteResult* result,
+                              Failure* failure);
 
 } // namespace motionRetargetTool

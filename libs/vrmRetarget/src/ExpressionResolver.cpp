@@ -27,13 +27,16 @@ IsOutsideUnitRange(float weight)
 float
 ClampUnit(float weight)
 {
-    if (std::isnan(weight)) {
+    if (std::isnan(weight))
+    {
         return 0.0f;
     }
-    if (weight < 0.0f) {
+    if (weight < 0.0f)
+    {
         return 0.0f;
     }
-    if (weight > 1.0f) {
+    if (weight > 1.0f)
+    {
         return 1.0f;
     }
     return weight;
@@ -45,7 +48,8 @@ void
 RecordName(std::vector<std::string>& names, const std::string& name)
 {
     const auto it = std::lower_bound(names.begin(), names.end(), name);
-    if (it == names.end() || *it != name) {
+    if (it == names.end() || *it != name)
+    {
         names.insert(it, name);
     }
 }
@@ -56,7 +60,8 @@ RecordName(std::vector<std::string>& names, const std::string& name)
 void
 RecordWarning(std::vector<std::string>& warnings, std::string warning)
 {
-    if (std::find(warnings.begin(), warnings.end(), warning) == warnings.end()) {
+    if (std::find(warnings.begin(), warnings.end(), warning) == warnings.end())
+    {
         warnings.push_back(std::move(warning));
     }
 }
@@ -67,7 +72,8 @@ RecordWarning(std::vector<std::string>& warnings, std::string warning)
 ExpressionOverride
 OverrideFor(const ExpressionDefinition& definition, ExpressionCategory category)
 {
-    switch (category) {
+    switch (category)
+    {
     case ExpressionCategory::Blink:
         return definition.overrideBlink;
     case ExpressionCategory::LookAt:
@@ -83,7 +89,8 @@ OverrideFor(const ExpressionDefinition& definition, ExpressionCategory category)
 const char*
 CategoryName(ExpressionCategory category)
 {
-    switch (category) {
+    switch (category)
+    {
     case ExpressionCategory::Blink:
         return "blink";
     case ExpressionCategory::LookAt:
@@ -113,11 +120,13 @@ OverrideRate(ExpressionOverride mode, float weight)
 {
     // False for NaN, which is the point: every comparison against it is.
     const bool isOn = weight > 0.0f;
-    switch (mode) {
+    switch (mode)
+    {
     case ExpressionOverride::Block:
         return isOn ? 1.0f : 0.0f;
     case ExpressionOverride::Blend:
-        if (!isOn) {
+        if (!isOn)
+        {
             return 0.0f;
         }
         return weight < 1.0f ? weight : 1.0f;
@@ -147,18 +156,12 @@ ExpressionCategoryOf(const std::string& name)
     // in: the importer migrates `presetName` on the way through, so `blink_l`
     // is `blinkLeft` and `a` is `aa` by the time a definition exists.
     static const std::map<std::string, ExpressionCategory> kCategories = {
-        {"blink", ExpressionCategory::Blink},
-        {"blinkLeft", ExpressionCategory::Blink},
-        {"blinkRight", ExpressionCategory::Blink},
-        {"lookUp", ExpressionCategory::LookAt},
-        {"lookDown", ExpressionCategory::LookAt},
-        {"lookLeft", ExpressionCategory::LookAt},
-        {"lookRight", ExpressionCategory::LookAt},
-        {"aa", ExpressionCategory::Mouth},
-        {"ih", ExpressionCategory::Mouth},
-        {"ou", ExpressionCategory::Mouth},
-        {"ee", ExpressionCategory::Mouth},
-        {"oh", ExpressionCategory::Mouth},
+        {"blink", ExpressionCategory::Blink},      {"blinkLeft", ExpressionCategory::Blink},
+        {"blinkRight", ExpressionCategory::Blink}, {"lookUp", ExpressionCategory::LookAt},
+        {"lookDown", ExpressionCategory::LookAt},  {"lookLeft", ExpressionCategory::LookAt},
+        {"lookRight", ExpressionCategory::LookAt}, {"aa", ExpressionCategory::Mouth},
+        {"ih", ExpressionCategory::Mouth},         {"ou", ExpressionCategory::Mouth},
+        {"ee", ExpressionCategory::Mouth},         {"oh", ExpressionCategory::Mouth},
     };
     const auto it = kCategories.find(name);
     return it == kCategories.end() ? ExpressionCategory::None : it->second;
@@ -167,22 +170,27 @@ ExpressionCategoryOf(const std::string& name)
 ExpressionOverride
 ParseExpressionOverride(const std::string& token, bool* recognized)
 {
-    if (recognized) {
+    if (recognized)
+    {
         *recognized = true;
     }
     // An absent value and an explicit "none" are the same statement, so the
     // empty string is recognized rather than reported: a stage authors these
     // only when the source file stated one.
-    if (token.empty() || token == "none") {
+    if (token.empty() || token == "none")
+    {
         return ExpressionOverride::None;
     }
-    if (token == "block") {
+    if (token == "block")
+    {
         return ExpressionOverride::Block;
     }
-    if (token == "blend") {
+    if (token == "blend")
+    {
         return ExpressionOverride::Blend;
     }
-    if (recognized) {
+    if (recognized)
+    {
         *recognized = false;
     }
     return ExpressionOverride::None;
@@ -191,7 +199,8 @@ ParseExpressionOverride(const std::string& token, bool* recognized)
 const char*
 ExpressionOverrideToken(ExpressionOverride mode)
 {
-    switch (mode) {
+    switch (mode)
+    {
     case ExpressionOverride::Block:
         return "block";
     case ExpressionOverride::Blend:
@@ -211,15 +220,16 @@ ResolvedMaterialColor::Apply(const pxr::GfVec4f& base) const
 bool
 ExpressionRig::Add(ExpressionDefinition definition)
 {
-    if (definition.name.empty()) {
+    if (definition.name.empty())
+    {
         return false;
     }
-    const auto it = std::lower_bound(
-        _expressions.begin(), _expressions.end(), definition.name,
-        [](const ExpressionDefinition& expression, const std::string& name) {
-            return expression.name < name;
-        });
-    if (it != _expressions.end() && it->name == definition.name) {
+    const auto it =
+        std::lower_bound(_expressions.begin(), _expressions.end(), definition.name,
+                         [](const ExpressionDefinition& expression, const std::string& name)
+                         { return expression.name < name; });
+    if (it != _expressions.end() && it->name == definition.name)
+    {
         return false;
     }
     _expressions.insert(it, std::move(definition));
@@ -229,37 +239,36 @@ ExpressionRig::Add(ExpressionDefinition definition)
 const ExpressionDefinition*
 ExpressionRig::Find(const std::string& name) const noexcept
 {
-    const auto it = std::lower_bound(
-        _expressions.begin(), _expressions.end(), name,
-        [](const ExpressionDefinition& expression, const std::string& key) {
-            return expression.name < key;
-        });
-    if (it == _expressions.end() || it->name != name) {
+    const auto it = std::lower_bound(_expressions.begin(), _expressions.end(), name,
+                                     [](const ExpressionDefinition& expression,
+                                        const std::string& key) { return expression.name < key; });
+    if (it == _expressions.end() || it->name != name)
+    {
         return nullptr;
     }
     return &*it;
 }
 
-ExpressionResolver::ExpressionResolver(ExpressionRig rig,
-                                       ExpressionResolveOptions options)
-    : _rig(std::move(rig))
-    , _options(options)
+ExpressionResolver::ExpressionResolver(ExpressionRig rig, ExpressionResolveOptions options)
+    : _rig(std::move(rig)), _options(options)
 {
 }
 
 bool
-ExpressionResolver::ResolveWeight(const std::string& name, float reported,
-                                  float* resolved) const
+ExpressionResolver::ResolveWeight(const std::string& name, float reported, float* resolved) const
 {
     const ExpressionDefinition* definition = _rig.Find(name);
-    if (!definition) {
+    if (!definition)
+    {
         return false;
     }
     float weight = _options.clampWeights ? ClampUnit(reported) : reported;
-    if (definition->isBinary) {
+    if (definition->isBinary)
+    {
         weight = weight >= _options.binaryThreshold ? 1.0f : 0.0f;
     }
-    if (resolved) {
+    if (resolved)
+    {
         *resolved = weight;
     }
     return true;
@@ -288,39 +297,47 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
     std::vector<Contribution> contributions;
     contributions.reserve(weights.entries.size());
 
-    for (const motion::ExpressionWeight& reported : weights.entries) {
+    for (const motion::ExpressionWeight& reported : weights.entries)
+    {
         const ExpressionDefinition* definition = _rig.Find(reported.name);
-        if (!definition) {
+        if (!definition)
+        {
             // The clip animates an expression this avatar does not declare.
             // That is not an error -- a clip is authored against no avatar in
             // particular -- but it is exactly the loss an operator has to be
             // able to see, so it is named rather than counted.
-            if (diagnostics) {
+            if (diagnostics)
+            {
                 RecordName(diagnostics->unresolvedNames, reported.name);
             }
             continue;
         }
 
         float weight = reported.weight;
-        if (IsOutsideUnitRange(weight)) {
-            if (_options.clampWeights) {
+        if (IsOutsideUnitRange(weight))
+        {
+            if (_options.clampWeights)
+            {
                 weight = ClampUnit(weight);
-                if (diagnostics) {
+                if (diagnostics)
+                {
                     RecordName(diagnostics->clampedNames, reported.name);
                 }
-            } else if (diagnostics && !std::isfinite(weight)) {
+            }
+            else if (diagnostics && !std::isfinite(weight))
+            {
                 // Verbatim mode resolves what the producer said, and a value
                 // that is not finite is still what it said. It reaches the
                 // binds -- but silently would make this mode indistinguishable
                 // from a rig that resolved cleanly, so the report says so.
-                RecordWarning(diagnostics->warnings,
-                              "expression '" + reported.name
-                                  + "' reported a weight that is not finite "
-                                    "and clamping is off; it is carried into "
-                                    "the binds unchanged");
+                RecordWarning(diagnostics->warnings, "expression '" + reported.name +
+                                                         "' reported a weight that is not finite "
+                                                         "and clamping is off; it is carried into "
+                                                         "the binds unchanged");
             }
         }
-        if (definition->isBinary) {
+        if (definition->isBinary)
+        {
             weight = weight >= _options.binaryThreshold ? 1.0f : 0.0f;
         }
         contributions.push_back(Contribution{definition, weight});
@@ -343,8 +360,10 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
     // weights the sample resolved to, is the rule -- the same one the reference
     // runtime applies -- and `TestASuppressedExpressionStillOverrides` pins it.
     CategoryOverride overrides[3];
-    const auto slotOf = [](ExpressionCategory category) {
-        switch (category) {
+    const auto slotOf = [](ExpressionCategory category)
+    {
+        switch (category)
+        {
         case ExpressionCategory::Blink:
             return 0;
         case ExpressionCategory::LookAt:
@@ -356,44 +375,45 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
         }
         return -1;
     };
-    for (const Contribution& contribution : contributions) {
+    for (const Contribution& contribution : contributions)
+    {
         for (const ExpressionCategory category :
-             {ExpressionCategory::Blink, ExpressionCategory::LookAt,
-              ExpressionCategory::Mouth}) {
-            const float rate = OverrideRate(
-                OverrideFor(*contribution.definition, category),
-                contribution.weight);
+             {ExpressionCategory::Blink, ExpressionCategory::LookAt, ExpressionCategory::Mouth})
+        {
+            const float rate =
+                OverrideRate(OverrideFor(*contribution.definition, category), contribution.weight);
             CategoryOverride& winner = overrides[slotOf(category)];
-            if (rate > winner.rate) {
+            if (rate > winner.rate)
+            {
                 winner.rate = rate;
                 winner.source = contribution.definition->name;
             }
         }
     }
 
-    for (const Contribution& contribution : contributions) {
+    for (const Contribution& contribution : contributions)
+    {
         const ExpressionDefinition* definition = contribution.definition;
         float weight = contribution.weight;
 
-        const ExpressionCategory category
-            = ExpressionCategoryOf(definition->name);
+        const ExpressionCategory category = ExpressionCategoryOf(definition->name);
         const int slot = slotOf(category);
-        if (slot >= 0 && overrides[slot].rate > 0.0f) {
+        if (slot >= 0 && overrides[slot].rate > 0.0f)
+        {
             // An expression that overrides the category it is itself in
             // suppresses itself, and is not exempted here. The rig said so --
             // and exempting it would make an override mean one thing for
             // `happy` and another for `blink`, which is a rule an operator
             // cannot predict from the file. Reported, because it is far more
             // likely to be an authoring slip than an intent.
-            if (diagnostics
-                && OverrideFor(*definition, category)
-                    != ExpressionOverride::None
-                && contribution.weight > 0.0f) {
-                RecordWarning(diagnostics->warnings,
-                              "expression '" + definition->name
-                                  + "' overrides the '" + CategoryName(category)
-                                  + "' expressions and is one of them, so it "
-                                    "suppresses itself");
+            if (diagnostics && OverrideFor(*definition, category) != ExpressionOverride::None &&
+                contribution.weight > 0.0f)
+            {
+                RecordWarning(diagnostics->warnings, "expression '" + definition->name +
+                                                         "' overrides the '" +
+                                                         CategoryName(category) +
+                                                         "' expressions and is one of them, so it "
+                                                         "suppresses itself");
             }
             weight *= 1.0f - overrides[slot].rate;
             // A binary expression has no intermediate state, so a partial
@@ -401,23 +421,26 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
             // half-shut eyelid is exactly what the flag says this rig cannot
             // show. The rounding is re-applied rather than skipped, which is
             // why it is here and not only above.
-            if (definition->isBinary) {
+            if (definition->isBinary)
+            {
                 weight = weight >= _options.binaryThreshold ? 1.0f : 0.0f;
             }
-            if (diagnostics && weight != contribution.weight) {
+            if (diagnostics && weight != contribution.weight)
+            {
                 RecordName(diagnostics->suppressedNames,
-                           definition->name + " (by " + overrides[slot].source
-                               + ")");
+                           definition->name + " (by " + overrides[slot].source + ")");
             }
         }
 
-        for (const MorphTargetBind& bind : definition->morphTargets) {
-            if (bind.target.empty()) {
-                if (diagnostics) {
-                    RecordWarning(diagnostics->warnings,
-                                  "expression '" + definition->name
-                                      + "' binds a morph target with no "
-                                        "identifier; the bind is skipped");
+        for (const MorphTargetBind& bind : definition->morphTargets)
+        {
+            if (bind.target.empty())
+            {
+                if (diagnostics)
+                {
+                    RecordWarning(diagnostics->warnings, "expression '" + definition->name +
+                                                             "' binds a morph target with no "
+                                                             "identifier; the bind is skipped");
                 }
                 continue;
             }
@@ -426,32 +449,34 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
             morphTargets[bind.target] += weight * bind.weight;
         }
 
-        for (const MaterialColorBind& bind : definition->materialColors) {
-            if (bind.material.empty()) {
-                if (diagnostics) {
-                    RecordWarning(diagnostics->warnings,
-                                  "expression '" + definition->name
-                                      + "' binds a material colour with no "
-                                        "material; the bind is skipped");
+        for (const MaterialColorBind& bind : definition->materialColors)
+        {
+            if (bind.material.empty())
+            {
+                if (diagnostics)
+                {
+                    RecordWarning(diagnostics->warnings, "expression '" + definition->name +
+                                                             "' binds a material colour with no "
+                                                             "material; the bind is skipped");
                 }
                 continue;
             }
-            if (bind.colorType.empty()) {
+            if (bind.colorType.empty())
+            {
                 // The slot is half the key. Accepting an empty one would merge
                 // two binds of one material into a single accumulator and hand
                 // the caller a colour it cannot map back to a shader input.
-                if (diagnostics) {
-                    RecordWarning(diagnostics->warnings,
-                                  "expression '" + definition->name
-                                      + "' binds a colour of material '"
-                                      + bind.material
-                                      + "' with no colour slot; the bind is "
-                                        "skipped");
+                if (diagnostics)
+                {
+                    RecordWarning(diagnostics->warnings, "expression '" + definition->name +
+                                                             "' binds a colour of material '" +
+                                                             bind.material +
+                                                             "' with no colour slot; the bind is "
+                                                             "skipped");
                 }
                 continue;
             }
-            ResolvedMaterialColor& color
-                = colors[std::make_pair(bind.material, bind.colorType)];
+            ResolvedMaterialColor& color = colors[std::make_pair(bind.material, bind.colorType)];
             color.material = bind.material;
             color.colorType = bind.colorType;
             color.totalWeight += weight;
@@ -461,7 +486,8 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
 
     ResolvedExpressions result;
     result.morphTargets.reserve(morphTargets.size());
-    for (const auto& entry : morphTargets) {
+    for (const auto& entry : morphTargets)
+    {
         ResolvedMorphTarget target;
         target.target = entry.first;
         target.weight = entry.second;
@@ -469,23 +495,24 @@ ExpressionResolver::Resolve(const motion::ExpressionWeights& weights,
         // negative bind weight, or a negative report with clamping off -- one
         // that drives a target below 0. Neither is corrected, and a report that
         // named only the first would leave the other looking clean.
-        if (diagnostics && IsOutsideUnitRange(target.weight)) {
-            RecordWarning(diagnostics->warnings,
-                          "morph target '" + target.target
-                              + "' is driven outside [0, 1]; the sum is "
-                                "carried through rather than clamped");
+        if (diagnostics && IsOutsideUnitRange(target.weight))
+        {
+            RecordWarning(diagnostics->warnings, "morph target '" + target.target +
+                                                     "' is driven outside [0, 1]; the sum is "
+                                                     "carried through rather than clamped");
         }
         result.morphTargets.push_back(std::move(target));
     }
 
     result.materialColors.reserve(colors.size());
-    for (const auto& entry : colors) {
-        if (diagnostics && IsOutsideUnitRange(entry.second.totalWeight)) {
-            RecordWarning(diagnostics->warnings,
-                          "material colour '" + entry.second.material + "'."
-                              + entry.second.colorType
-                              + " is driven to a total weight outside [0, 1]; "
-                                "Apply extrapolates rather than clamping");
+    for (const auto& entry : colors)
+    {
+        if (diagnostics && IsOutsideUnitRange(entry.second.totalWeight))
+        {
+            RecordWarning(diagnostics->warnings, "material colour '" + entry.second.material +
+                                                     "'." + entry.second.colorType +
+                                                     " is driven to a total weight outside [0, 1]; "
+                                                     "Apply extrapolates rather than clamping");
         }
         result.materialColors.push_back(entry.second);
     }

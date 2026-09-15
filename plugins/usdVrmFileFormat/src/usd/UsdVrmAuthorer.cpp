@@ -57,21 +57,27 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+namespace
+{
 
 // The vrm:humanBones:* attributes the VrmHumanoidAPI schema defines, looked up
 // once from the schema registry (no hard-coded duplicate of schema/schema.usda).
 // Used to author standard bones as schema builtins and let non-standard bones
 // fall back to custom attributes.
-const std::set<TfToken>& _VrmHumanoidSchemaBones()
+const std::set<TfToken>&
+_VrmHumanoidSchemaBones()
 {
-    static const std::set<TfToken> bones = [] {
+    static const std::set<TfToken> bones = []
+    {
         std::set<TfToken> result;
         if (const UsdPrimDefinition* def =
                 UsdSchemaRegistry::GetInstance().FindAppliedAPIPrimDefinition(
-                    TfToken("VrmHumanoidAPI"))) {
-            for (const TfToken& name : def->GetPropertyNames()) {
-                if (TfStringStartsWith(name.GetString(), "vrm:humanBones:")) {
+                    TfToken("VrmHumanoidAPI")))
+        {
+            for (const TfToken& name : def->GetPropertyNames())
+            {
+                if (TfStringStartsWith(name.GetString(), "vrm:humanBones:"))
+                {
                     result.insert(name);
                 }
             }
@@ -94,11 +100,14 @@ const char* const _kMtlxVersion = "1.39";
 // word and the enum is not validated at author time, so "repeat" would sail
 // through and mean nothing. The input is typed `string`, not `token`, so this
 // never needs to become a TfToken.
-const char* _MtlxAddressMode(const std::string& wrap)
+const char*
+_MtlxAddressMode(const std::string& wrap)
 {
-    if (wrap == "clamp") return "clamp";
-    if (wrap == "mirror") return "mirror";
-    return "periodic";  // glTF "repeat"
+    if (wrap == "clamp")
+        return "clamp";
+    if (wrap == "mirror")
+        return "mirror";
+    return "periodic"; // glTF "repeat"
 }
 
 // The base colour factor's alpha, under glTF's alpha-coverage rule: OPAQUE
@@ -107,7 +116,8 @@ const char* _MtlxAddressMode(const std::string& wrap)
 // transparent. Shared by both realizations because MaterialX's gltf_pbr
 // enforces it inside its own graph — leaving /preview to apply the factor
 // would make the two disagree about the same source material.
-float _GltfOpacity(const VrmMaterial& vm)
+float
+_GltfOpacity(const VrmMaterial& vm)
 {
     return vm.alphaMode == "OPAQUE" ? 1.0f : vm.opacity;
 }
@@ -139,17 +149,18 @@ float _GltfOpacity(const VrmMaterial& vm)
 // verified against glTF's own matrix in check_texture_transform, since on an
 // identity transform (which is every transform in the corpus) every wrong
 // answer coincides with the right one.
-struct _UvTransform {
+struct _UvTransform
+{
     GfVec2f scale;
     float rotationDegrees;
     GfVec2f translation;
 };
 
-_UvTransform _GltfUvTransform(const VrmTextureRef& ref)
+_UvTransform
+_GltfUvTransform(const VrmTextureRef& ref)
 {
-    const float r = ref.uvRotation;  // radians, per KHR_texture_transform
-    return {ref.uvScale,
-            static_cast<float>(GfRadiansToDegrees(r)),
+    const float r = ref.uvRotation; // radians, per KHR_texture_transform
+    return {ref.uvScale, static_cast<float>(GfRadiansToDegrees(r)),
             GfVec2f(ref.uvOffset[0] + ref.uvScale[1] * std::sin(r),
                     1.0f - ref.uvOffset[1] - ref.uvScale[1] * std::cos(r))};
 }
@@ -185,15 +196,15 @@ _UvTransform _GltfUvTransform(const VrmTextureRef& ref)
 // that the file's `colorSpace` metadata requests — the same order /preview gets
 // from folding the factor into UsdUVTexture.scale, so the two realizations
 // agree on the value while disagreeing on the shading model.
-void _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat,
-                      const VrmMaterial& vm)
+void
+_AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat, const VrmMaterial& vm)
 {
     const SdfPath mtlxPath = mat.GetPath().AppendChild(TfToken("mtlx"));
     UsdShadeNodeGraph graph = UsdShadeNodeGraph::Define(stage, mtlxPath);
 
-    auto node = [&](const char* name, const char* id) {
-        UsdShadeShader s =
-            UsdShadeShader::Define(stage, mtlxPath.AppendChild(TfToken(name)));
+    auto node = [&](const char* name, const char* id)
+    {
+        UsdShadeShader s = UsdShadeShader::Define(stage, mtlxPath.AppendChild(TfToken(name)));
         s.CreateIdAttr(VtValue(TfToken(id)));
         return s;
     };
@@ -201,8 +212,7 @@ void _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat,
     UsdShadeShader surface = node("surface", "ND_gltf_pbr_surfaceshader");
     // No lit response: no diffuse albedo and no specular lobe. Leaving specular
     // at its default puts a highlight on a toon face.
-    surface.CreateInput(TfToken("base_color"), SdfValueTypeNames->Color3f)
-        .Set(GfVec3f(0.0f));
+    surface.CreateInput(TfToken("base_color"), SdfValueTypeNames->Color3f).Set(GfVec3f(0.0f));
     surface.CreateInput(TfToken("metallic"), SdfValueTypeNames->Float).Set(0.0f);
     surface.CreateInput(TfToken("roughness"), SdfValueTypeNames->Float).Set(1.0f);
     surface.CreateInput(TfToken("specular"), SdfValueTypeNames->Float).Set(0.0f);
@@ -211,22 +221,20 @@ void _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat,
     // of the texture chain.
     UsdShadeInput emissionColor =
         surface.CreateInput(TfToken("emissive"), SdfValueTypeNames->Color3f);
-    UsdShadeInput opacity =
-        surface.CreateInput(TfToken("alpha"), SdfValueTypeNames->Float);
+    UsdShadeInput opacity = surface.CreateInput(TfToken("alpha"), SdfValueTypeNames->Float);
 
     // glTF alpha coverage, verbatim: 0 OPAQUE, 1 MASK, 2 BLEND. The renderer
     // reads this to choose opaque / cutout / blended drawing, so it is authored
     // even when it is the default.
-    const int alphaMode =
-        vm.alphaMode == "MASK" ? 1 : (vm.alphaMode == "BLEND" ? 2 : 0);
-    surface.CreateInput(TfToken("alpha_mode"), SdfValueTypeNames->Int)
-        .Set(alphaMode);
-    if (alphaMode == 1) {
-        surface.CreateInput(TfToken("alpha_cutoff"), SdfValueTypeNames->Float)
-            .Set(vm.alphaCutoff);
+    const int alphaMode = vm.alphaMode == "MASK" ? 1 : (vm.alphaMode == "BLEND" ? 2 : 0);
+    surface.CreateInput(TfToken("alpha_mode"), SdfValueTypeNames->Int).Set(alphaMode);
+    if (alphaMode == 1)
+    {
+        surface.CreateInput(TfToken("alpha_cutoff"), SdfValueTypeNames->Float).Set(vm.alphaCutoff);
     }
 
-    if (vm.baseColorTex.present) {
+    if (vm.baseColorTex.present)
+    {
         const VrmTextureRef& ref = vm.baseColorTex;
 
         UsdShadeShader st = node("st", "ND_texcoord_vector2");
@@ -235,8 +243,7 @@ void _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat,
         // (VRM121). Naming a set the geometry does not carry would turn that
         // warning into a renderer sampling an undefined stream.
         st.CreateInput(TfToken("index"), SdfValueTypeNames->Int).Set(0);
-        UsdShadeOutput uv =
-            st.CreateOutput(TfToken("out"), SdfValueTypeNames->Float2);
+        UsdShadeOutput uv = st.CreateOutput(TfToken("out"), SdfValueTypeNames->Float2);
 
         // KHR_texture_transform. place2d is not UsdTransform2d spelled
         // differently: its SRT form computes rotate2d(uv / scale, rotate) -
@@ -244,25 +251,22 @@ void _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat,
         // it adds, and not negating the rotation the way UsdTransform2d does.
         // The shared st-space map is therefore inverted into this node's
         // vocabulary rather than passed through.
-        if (ref.hasTransform) {
+        if (ref.hasTransform)
+        {
             const _UvTransform t = _GltfUvTransform(ref);
             UsdShadeShader place = node("baseColorPlace", "ND_place2d_vector2");
-            place.CreateInput(TfToken("texcoord"), SdfValueTypeNames->Float2)
-                .ConnectToSource(uv);
+            place.CreateInput(TfToken("texcoord"), SdfValueTypeNames->Float2).ConnectToSource(uv);
             place.CreateInput(TfToken("scale"), SdfValueTypeNames->Float2)
                 .Set(GfVec2f(1.0f / t.scale[0], 1.0f / t.scale[1]));
-            place.CreateInput(TfToken("rotate"), SdfValueTypeNames->Float)
-                .Set(-t.rotationDegrees);
-            place.CreateInput(TfToken("offset"), SdfValueTypeNames->Float2)
-                .Set(-t.translation);
+            place.CreateInput(TfToken("rotate"), SdfValueTypeNames->Float).Set(-t.rotationDegrees);
+            place.CreateInput(TfToken("offset"), SdfValueTypeNames->Float2).Set(-t.translation);
             uv = place.CreateOutput(TfToken("out"), SdfValueTypeNames->Float2);
         }
 
         // color4 in one fetch: the alpha has to come from the same sample as
         // the colour, and MaterialX has no multi-output image node.
         UsdShadeShader image = node("baseColorImage", "ND_image_color4");
-        UsdShadeInput file =
-            image.CreateInput(TfToken("file"), SdfValueTypeNames->Asset);
+        UsdShadeInput file = image.CreateInput(TfToken("file"), SdfValueTypeNames->Asset);
         file.Set(SdfAssetPath(ref.filePath));
         // sRGB is metadata on the asset here, not an input as in /preview.
         file.GetAttr().SetColorSpace(TfToken("srgb_texture"));
@@ -272,8 +276,7 @@ void _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat,
         // is what /preview falls back to and what reads as a texture problem.
         image.CreateInput(TfToken("default"), SdfValueTypeNames->Color4f)
             .Set(GfVec4f(0.0f, 0.0f, 0.0f, 1.0f));
-        image.CreateInput(TfToken("texcoord"), SdfValueTypeNames->Float2)
-            .ConnectToSource(uv);
+        image.CreateInput(TfToken("texcoord"), SdfValueTypeNames->Float2).ConnectToSource(uv);
         image.CreateInput(TfToken("uaddressmode"), SdfValueTypeNames->String)
             .Set(std::string(_MtlxAddressMode(ref.wrapS)));
         image.CreateInput(TfToken("vaddressmode"), SdfValueTypeNames->String)
@@ -281,40 +284,37 @@ void _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat,
 
         UsdShadeShader factor = node("baseColorFactor", "ND_multiply_color4");
         factor.CreateInput(TfToken("in1"), SdfValueTypeNames->Color4f)
-            .ConnectToSource(
-                image.CreateOutput(TfToken("out"), SdfValueTypeNames->Color4f));
+            .ConnectToSource(image.CreateOutput(TfToken("out"), SdfValueTypeNames->Color4f));
         factor.CreateInput(TfToken("in2"), SdfValueTypeNames->Color4f)
-            .Set(GfVec4f(vm.baseColor[0], vm.baseColor[1], vm.baseColor[2],
-                         vm.opacity));
+            .Set(GfVec4f(vm.baseColor[0], vm.baseColor[1], vm.baseColor[2], vm.opacity));
 
         UsdShadeShader split = node("baseColorSplit", "ND_separate4_color4");
         split.CreateInput(TfToken("in"), SdfValueTypeNames->Color4f)
-            .ConnectToSource(factor.CreateOutput(TfToken("out"),
-                                                 SdfValueTypeNames->Color4f));
-        UsdShadeOutput r =
-            split.CreateOutput(TfToken("outr"), SdfValueTypeNames->Float);
-        UsdShadeOutput g =
-            split.CreateOutput(TfToken("outg"), SdfValueTypeNames->Float);
-        UsdShadeOutput b =
-            split.CreateOutput(TfToken("outb"), SdfValueTypeNames->Float);
-        UsdShadeOutput a =
-            split.CreateOutput(TfToken("outa"), SdfValueTypeNames->Float);
+            .ConnectToSource(factor.CreateOutput(TfToken("out"), SdfValueTypeNames->Color4f));
+        UsdShadeOutput r = split.CreateOutput(TfToken("outr"), SdfValueTypeNames->Float);
+        UsdShadeOutput g = split.CreateOutput(TfToken("outg"), SdfValueTypeNames->Float);
+        UsdShadeOutput b = split.CreateOutput(TfToken("outb"), SdfValueTypeNames->Float);
+        UsdShadeOutput a = split.CreateOutput(TfToken("outa"), SdfValueTypeNames->Float);
 
         UsdShadeShader rgb = node("baseColorRgb", "ND_combine3_color3");
         rgb.CreateInput(TfToken("in1"), SdfValueTypeNames->Float).ConnectToSource(r);
         rgb.CreateInput(TfToken("in2"), SdfValueTypeNames->Float).ConnectToSource(g);
         rgb.CreateInput(TfToken("in3"), SdfValueTypeNames->Float).ConnectToSource(b);
-        emissionColor.ConnectToSource(
-            rgb.CreateOutput(TfToken("out"), SdfValueTypeNames->Color3f));
+        emissionColor.ConnectToSource(rgb.CreateOutput(TfToken("out"), SdfValueTypeNames->Color3f));
 
         // The sampled alpha only reaches the surface where glTF says it counts;
         // OPAQUE ignores it, exactly as /preview leaves opacity unconnected.
-        if (alphaMode == 0) {
+        if (alphaMode == 0)
+        {
             opacity.Set(_GltfOpacity(vm));
-        } else {
+        }
+        else
+        {
             opacity.ConnectToSource(a);
         }
-    } else {
+    }
+    else
+    {
         emissionColor.Set(vm.baseColor);
         opacity.Set(_GltfOpacity(vm));
     }
@@ -322,10 +322,8 @@ void _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat,
     // Terminal: material -> graph -> internal shader, as for /preview (§4.1).
     // The render-context name is what a MaterialX-aware renderer looks for, and
     // it wins over the universal terminal wherever both exist.
-    UsdShadeOutput graphOut =
-        graph.CreateOutput(TfToken("surface"), SdfValueTypeNames->Token);
-    graphOut.ConnectToSource(
-        surface.CreateOutput(TfToken("surface"), SdfValueTypeNames->Token));
+    UsdShadeOutput graphOut = graph.CreateOutput(TfToken("surface"), SdfValueTypeNames->Token);
+    graphOut.ConnectToSource(surface.CreateOutput(TfToken("surface"), SdfValueTypeNames->Token));
     mat.CreateSurfaceOutput(TfToken("mtlx")).ConnectToSource(graphOut);
 
     // Say which MaterialX the graph was written against, the way UsdMtlx does
@@ -333,10 +331,11 @@ void _AuthorMtlxUnlit(const UsdStagePtr& stage, const UsdShadeMaterial& mat,
     // than from anything this bundle links, so an apply that fails means the
     // runtime is missing it — author nothing rather than leave an undeclared
     // builtin behind on a prim that has no such schema.
-    if (mat.GetPrim().ApplyAPI(TfToken("MaterialXConfigAPI"))) {
+    if (mat.GetPrim().ApplyAPI(TfToken("MaterialXConfigAPI")))
+    {
         mat.GetPrim()
-            .CreateAttribute(TfToken("config:mtlx:version"),
-                             SdfValueTypeNames->String, /*custom=*/false)
+            .CreateAttribute(TfToken("config:mtlx:version"), SdfValueTypeNames->String,
+                             /*custom=*/false)
             .Set(std::string(_kMtlxVersion));
     }
 }
@@ -349,33 +348,40 @@ _BuildJointPaths(const std::vector<VrmJoint>& joints)
 {
     std::vector<std::string> paths(joints.size());
     std::vector<bool> done(joints.size(), false);
-    std::function<const std::string&(int)> resolve = [&](int i) -> const std::string& {
-        if (!done[i]) {
+    std::function<const std::string&(int)> resolve = [&](int i) -> const std::string&
+    {
+        if (!done[i])
+        {
             const VrmJoint& j = joints[i];
-            if (j.parentJointIndex >= 0 &&
-                j.parentJointIndex < static_cast<int>(joints.size()) &&
-                j.parentJointIndex != i) {
+            if (j.parentJointIndex >= 0 && j.parentJointIndex < static_cast<int>(joints.size()) &&
+                j.parentJointIndex != i)
+            {
                 paths[i] = resolve(j.parentJointIndex) + "/" + j.name;
-            } else {
+            }
+            else
+            {
                 paths[i] = j.name;
             }
             done[i] = true;
         }
         return paths[i];
     };
-    for (size_t i = 0; i < joints.size(); ++i) resolve(static_cast<int>(i));
+    for (size_t i = 0; i < joints.size(); ++i)
+        resolve(static_cast<int>(i));
     return paths;
 }
 
 // Rotate a position by `m` (front-bake is rotation-only, so translation is moot).
-GfVec3f _Rotate(const GfMatrix4d& m, const GfVec3f& p)
+GfVec3f
+_Rotate(const GfMatrix4d& m, const GfVec3f& p)
 {
     GfVec3d r = m.Transform(GfVec3d(p[0], p[1], p[2]));
     return GfVec3f(r[0], r[1], r[2]);
 }
 
 // Rotate a direction/delta by `m` (no translation).
-GfVec3f _RotateDir(const GfMatrix4d& m, const GfVec3f& d)
+GfVec3f
+_RotateDir(const GfMatrix4d& m, const GfVec3f& d)
 {
     GfVec3d r = m.TransformDir(GfVec3d(d[0], d[1], d[2]));
     return GfVec3f(r[0], r[1], r[2]);
@@ -383,18 +389,19 @@ GfVec3f _RotateDir(const GfMatrix4d& m, const GfVec3f& d)
 
 // Compose a joint-local matrix the way UsdSkel reads (t,r,s): S * R * T, so the
 // result round-trips through GfTransform back to the same (t,r,s).
-GfMatrix4d _MakeLocal(const GfVec3f& t, const GfQuatf& r, const GfVec3f& s)
+GfMatrix4d
+_MakeLocal(const GfVec3f& t, const GfQuatf& r, const GfVec3f& s)
 {
     GfMatrix4d S(1.0), R(1.0), T(1.0);
     S.SetScale(GfVec3d(s[0], s[1], s[2]));
-    R.SetRotate(GfQuatd(r.GetReal(), GfVec3d(r.GetImaginary()[0],
-                                             r.GetImaginary()[1],
-                                             r.GetImaginary()[2])));
+    R.SetRotate(GfQuatd(r.GetReal(),
+                        GfVec3d(r.GetImaginary()[0], r.GetImaginary()[1], r.GetImaginary()[2])));
     T.SetTranslate(GfVec3d(t[0], t[1], t[2]));
     return S * R * T;
 }
 
-void _SetSourceMetadata(const UsdPrim& prim, const VrmMeshPrimitive& m)
+void
+_SetSourceMetadata(const UsdPrim& prim, const VrmMeshPrimitive& m)
 {
     if (m.sourceNodeIndex >= 0)
         prim.SetCustomDataByKey(TfToken("vrm:sourceNodeIndex"), VtValue(m.sourceNodeIndex));
@@ -403,27 +410,30 @@ void _SetSourceMetadata(const UsdPrim& prim, const VrmMeshPrimitive& m)
     if (m.sourceMeshIndex >= 0)
         prim.SetCustomDataByKey(TfToken("vrm:sourceMeshIndex"), VtValue(m.sourceMeshIndex));
     if (m.sourcePrimitiveIndex >= 0)
-        prim.SetCustomDataByKey(TfToken("vrm:sourcePrimitiveIndex"), VtValue(m.sourcePrimitiveIndex));
+        prim.SetCustomDataByKey(TfToken("vrm:sourcePrimitiveIndex"),
+                                VtValue(m.sourcePrimitiveIndex));
 }
 
 } // namespace
 
 bool
-UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
-                              std::string* outUsda,
+UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc, std::string* outUsda,
                               std::vector<std::string>* outWarnings) const
 {
     // Diagnostics surfaced on the stage (vrm:warnings): seed with the reader's
     // warnings, then collect any authoring-time ones via warn() below.
     std::vector<std::string> diagnostics(doc.warnings.begin(), doc.warnings.end());
-    auto warn = [&](const std::string& w) {
-        if (outWarnings) outWarnings->push_back(w);
+    auto warn = [&](const std::string& w)
+    {
+        if (outWarnings)
+            outWarnings->push_back(w);
         diagnostics.push_back(w);
     };
 
     SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
     UsdStageRefPtr stage = UsdStage::Open(layer);
-    if (!stage) {
+    if (!stage)
+    {
         return false;
     }
     UsdGeomSetStageUpAxis(stage, UsdGeomTokens->y);
@@ -441,9 +451,12 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     // ancestor enclosing the skinned meshes and the skeleton), otherwise a plain
     // Xform. Either way kind=component and the stage's default prim.
     UsdPrim assetPrim;
-    if (hasSkel) {
+    if (hasSkel)
+    {
         assetPrim = UsdSkelRoot::Define(stage, assetPath).GetPrim();
-    } else {
+    }
+    else
+    {
         assetPrim = UsdGeomXform::Define(stage, assetPath).GetPrim();
     }
     UsdModelAPI(assetPrim).SetKind(KindTokens->component);
@@ -452,7 +465,7 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     // VRM provenance + lossless preservation on /Asset.customData.
     const char* srcVer = doc.version == VrmVersion::Vrm1   ? "1.0"
                          : doc.version == VrmVersion::Vrm0 ? "0.x"
-                                                          : "unknown";
+                                                           : "unknown";
     assetPrim.SetCustomDataByKey(TfToken("vrm:sourceFormat"), VtValue(std::string("VRM")));
     assetPrim.SetCustomDataByKey(TfToken("vrm:schemaContractVersion"),
                                  VtValue(_kSchemaContractVersion));
@@ -464,8 +477,7 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     // Lossless preservation: keep the full VRM/VRMC_vrm extension block verbatim
     // so later phases (and external tools) can recover anything not yet mapped.
     if (!doc.rawVrmExtensionJson.empty())
-        assetPrim.SetCustomDataByKey(TfToken("vrm:rawExtension"),
-                                     VtValue(doc.rawVrmExtensionJson));
+        assetPrim.SetCustomDataByKey(TfToken("vrm:rawExtension"), VtValue(doc.rawVrmExtensionJson));
 
     // Front-direction normalization. VRM 0.x avatars face -Z; VRM 1.0
     // standardized on +Z. Rather than a single root xformOp (which faces the mesh
@@ -481,21 +493,20 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     frontBake.SetRotate(GfRotation(GfVec3d(0, 1, 0), 180.0));
     const char* frontAxis = doc.version == VrmVersion::Vrm0   ? "-Z"
                             : doc.version == VrmVersion::Vrm1 ? "+Z"
-                                                             : "unknown";
-    assetPrim.SetCustomDataByKey(TfToken("vrm:sourceFrontAxis"),
-                                 VtValue(std::string(frontAxis)));
+                                                              : "unknown";
+    assetPrim.SetCustomDataByKey(TfToken("vrm:sourceFrontAxis"), VtValue(std::string(frontAxis)));
     // VRM 0.x is normalized to +Z by baking the rotation into the data (no root
     // transform). Record the flag for every version so consumers never have to
     // distinguish "not normalized" from "key absent".
-    assetPrim.SetCustomDataByKey(TfToken("vrm:frontAxisNormalized"),
-                                 VtValue(bakeFront));
+    assetPrim.SetCustomDataByKey(TfToken("vrm:frontAxisNormalized"), VtValue(bakeFront));
 
     // -----------------------------------------------------------------------
     // Materials.
     // -----------------------------------------------------------------------
     UsdGeomScope::Define(stage, mtlPath);
     std::vector<SdfPath> materialPaths(doc.materials.size());
-    for (size_t i = 0; i < doc.materials.size(); ++i) {
+    for (size_t i = 0; i < doc.materials.size(); ++i)
+    {
         const VrmMaterial& vm = doc.materials[i];
         SdfPath matPath = mtlPath.AppendChild(TfToken(vm.name));
         materialPaths[i] = matPath;
@@ -512,8 +523,8 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         const SdfPath previewPath = matPath.AppendChild(TfToken("preview"));
         UsdShadeNodeGraph preview = UsdShadeNodeGraph::Define(stage, previewPath);
 
-        UsdShadeShader shader = UsdShadeShader::Define(
-            stage, previewPath.AppendChild(TfToken("surface")));
+        UsdShadeShader shader =
+            UsdShadeShader::Define(stage, previewPath.AppendChild(TfToken("surface")));
         shader.CreateIdAttr(VtValue(TfToken("UsdPreviewSurface")));
         // VRM materials are unlit (KHR_materials_unlit) / toon. Render unlit as
         // base color through emissive with no lit response, so scene lights
@@ -527,9 +538,9 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             .Set(unlit ? 0.0f : vm.metallic);
         shader.CreateInput(TfToken("roughness"), SdfValueTypeNames->Float)
             .Set(unlit ? 1.0f : vm.roughness);
-        shader.CreateInput(TfToken("opacity"), SdfValueTypeNames->Float)
-            .Set(_GltfOpacity(vm));
-        if (vm.alphaMode == "MASK") {
+        shader.CreateInput(TfToken("opacity"), SdfValueTypeNames->Float).Set(_GltfOpacity(vm));
+        if (vm.alphaMode == "MASK")
+        {
             shader.CreateInput(TfToken("opacityThreshold"), SdfValueTypeNames->Float)
                 .Set(vm.alphaCutoff);
         }
@@ -548,53 +559,50 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         // matching UsdPreviewSurface input. (glTF's factor*texture multiply is
         // approximated by the texture alone — a follow-up may insert multiplies.)
         bool anyTex = vm.baseColorTex.present || vm.metallicRoughnessTex.present ||
-                      vm.normalTex.present || vm.emissiveTex.present ||
-                      vm.occlusionTex.present;
+                      vm.normalTex.present || vm.emissiveTex.present || vm.occlusionTex.present;
         UsdShadeShader stReader;
-        if (anyTex) {
-            stReader = UsdShadeShader::Define(
-                stage, previewPath.AppendChild(TfToken("stReader")));
+        if (anyTex)
+        {
+            stReader = UsdShadeShader::Define(stage, previewPath.AppendChild(TfToken("stReader")));
             stReader.CreateIdAttr(VtValue(TfToken("UsdPrimvarReader_float2")));
-            stReader.CreateInput(TfToken("varname"), SdfValueTypeNames->Token)
-                .Set(TfToken("st"));
+            stReader.CreateInput(TfToken("varname"), SdfValueTypeNames->Token).Set(TfToken("st"));
             stReader.CreateOutput(TfToken("result"), SdfValueTypeNames->Float2);
         }
 
         auto makeTexture = [&](const VrmTextureRef& ref, const char* nodeName,
-                               bool color) -> UsdShadeShader {
-            UsdShadeShader tex = UsdShadeShader::Define(
-                stage, previewPath.AppendChild(TfToken(nodeName)));
+                               bool color) -> UsdShadeShader
+        {
+            UsdShadeShader tex =
+                UsdShadeShader::Define(stage, previewPath.AppendChild(TfToken(nodeName)));
             tex.CreateIdAttr(VtValue(TfToken("UsdUVTexture")));
             tex.CreateInput(TfToken("file"), SdfValueTypeNames->Asset)
                 .Set(SdfAssetPath(ref.filePath));
-            tex.CreateInput(TfToken("wrapS"), SdfValueTypeNames->Token)
-                .Set(TfToken(ref.wrapS));
-            tex.CreateInput(TfToken("wrapT"), SdfValueTypeNames->Token)
-                .Set(TfToken(ref.wrapT));
+            tex.CreateInput(TfToken("wrapS"), SdfValueTypeNames->Token).Set(TfToken(ref.wrapS));
+            tex.CreateInput(TfToken("wrapT"), SdfValueTypeNames->Token).Set(TfToken(ref.wrapT));
             tex.CreateInput(TfToken("sourceColorSpace"), SdfValueTypeNames->Token)
                 .Set(TfToken(color ? "sRGB" : "raw"));
-            UsdShadeInput st =
-                tex.CreateInput(TfToken("st"), SdfValueTypeNames->Float2);
+            UsdShadeInput st = tex.CreateInput(TfToken("st"), SdfValueTypeNames->Float2);
             // KHR_texture_transform -> UsdTransform2d between the reader and st.
             // The node computes rotate2d(in * scale, -rotation) + translation,
             // and rotate2d turns clockwise, so the two negations cancel and the
             // shared st-space rotation is authored as-is.
-            if (ref.hasTransform) {
+            if (ref.hasTransform)
+            {
                 const _UvTransform uv = _GltfUvTransform(ref);
-                UsdShadeShader xf = UsdShadeShader::Define(stage,
-                    previewPath.AppendChild(TfToken(std::string(nodeName) + "_xf")));
+                UsdShadeShader xf = UsdShadeShader::Define(
+                    stage, previewPath.AppendChild(TfToken(std::string(nodeName) + "_xf")));
                 xf.CreateIdAttr(VtValue(TfToken("UsdTransform2d")));
                 xf.CreateInput(TfToken("in"), SdfValueTypeNames->Float2)
                     .ConnectToSource(stReader.GetOutput(TfToken("result")));
                 xf.CreateInput(TfToken("translation"), SdfValueTypeNames->Float2)
                     .Set(uv.translation);
-                xf.CreateInput(TfToken("scale"), SdfValueTypeNames->Float2)
-                    .Set(uv.scale);
+                xf.CreateInput(TfToken("scale"), SdfValueTypeNames->Float2).Set(uv.scale);
                 xf.CreateInput(TfToken("rotation"), SdfValueTypeNames->Float)
                     .Set(uv.rotationDegrees);
-                st.ConnectToSource(
-                    xf.CreateOutput(TfToken("result"), SdfValueTypeNames->Float2));
-            } else {
+                st.ConnectToSource(xf.CreateOutput(TfToken("result"), SdfValueTypeNames->Float2));
+            }
+            else
+            {
                 st.ConnectToSource(stReader.GetOutput(TfToken("result")));
             }
             tex.CreateOutput(TfToken("rgb"), SdfValueTypeNames->Float3);
@@ -605,53 +613,53 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             return tex;
         };
 
-        if (vm.baseColorTex.present) {
+        if (vm.baseColorTex.present)
+        {
             UsdShadeShader t = makeTexture(vm.baseColorTex, "baseColorTexture", true);
             // glTF defines base color as factor * texture. UsdUVTexture's
             // scale input preserves that relation without an extra shader node.
             t.CreateInput(TfToken("scale"), SdfValueTypeNames->Float4)
-                .Set(GfVec4f(vm.baseColor[0], vm.baseColor[1], vm.baseColor[2],
-                             vm.opacity));
+                .Set(GfVec4f(vm.baseColor[0], vm.baseColor[1], vm.baseColor[2], vm.opacity));
             // Unlit routes base color to emissive (flat); lit routes to diffuse.
             shader.GetInput(TfToken(unlit ? "emissiveColor" : "diffuseColor"))
                 .ConnectToSource(t.GetOutput(TfToken("rgb")));
-            if (vm.alphaMode != "OPAQUE") {
-                shader.GetInput(TfToken("opacity"))
-                    .ConnectToSource(t.GetOutput(TfToken("a")));
+            if (vm.alphaMode != "OPAQUE")
+            {
+                shader.GetInput(TfToken("opacity")).ConnectToSource(t.GetOutput(TfToken("a")));
             }
         }
         // Lit-only slots (metallicRoughness / emissive / occlusion / normal) are
         // ignored by KHR_materials_unlit, so skip them on an unlit surface. This
         // also keeps the emissive texture from clobbering the base-color->emissive
         // connection authored above (a single UsdShade input takes one source).
-        if (!unlit && vm.metallicRoughnessTex.present) {
+        if (!unlit && vm.metallicRoughnessTex.present)
+        {
             UsdShadeShader t =
                 makeTexture(vm.metallicRoughnessTex, "metallicRoughnessTexture", false);
             // glTF packs roughness in G, metalness in B.
-            shader.GetInput(TfToken("roughness"))
-                .ConnectToSource(t.GetOutput(TfToken("g")));
-            shader.GetInput(TfToken("metallic"))
-                .ConnectToSource(t.GetOutput(TfToken("b")));
+            shader.GetInput(TfToken("roughness")).ConnectToSource(t.GetOutput(TfToken("g")));
+            shader.GetInput(TfToken("metallic")).ConnectToSource(t.GetOutput(TfToken("b")));
         }
-        if (!unlit && vm.emissiveTex.present) {
+        if (!unlit && vm.emissiveTex.present)
+        {
             UsdShadeShader t = makeTexture(vm.emissiveTex, "emissiveTexture", true);
-            shader.GetInput(TfToken("emissiveColor"))
-                .ConnectToSource(t.GetOutput(TfToken("rgb")));
+            shader.GetInput(TfToken("emissiveColor")).ConnectToSource(t.GetOutput(TfToken("rgb")));
         }
-        if (!unlit && vm.occlusionTex.present) {
+        if (!unlit && vm.occlusionTex.present)
+        {
             UsdShadeShader t = makeTexture(vm.occlusionTex, "occlusionTexture", false);
             // glTF occlusion strength: ao = 1 + strength * (sampled - 1), i.e.
             // out.r = sampled*strength + (1 - strength). Fold into the texture
             // scale/bias so the strength is honored, not dropped.
             const float os = vm.occlusionTex.scale;
-            t.CreateInput(TfToken("scale"), SdfValueTypeNames->Float4)
-                .Set(GfVec4f(os, os, os, os));
+            t.CreateInput(TfToken("scale"), SdfValueTypeNames->Float4).Set(GfVec4f(os, os, os, os));
             t.CreateInput(TfToken("bias"), SdfValueTypeNames->Float4)
                 .Set(GfVec4f(1.0f - os, 1.0f - os, 1.0f - os, 1.0f - os));
             shader.CreateInput(TfToken("occlusion"), SdfValueTypeNames->Float)
                 .ConnectToSource(t.GetOutput(TfToken("r")));
         }
-        if (!unlit && vm.normalTex.present) {
+        if (!unlit && vm.normalTex.present)
+        {
             UsdShadeShader t = makeTexture(vm.normalTex, "normalTexture", false);
             // Decode tangent-space normals ([0,1] -> [-1,1]) and fold in glTF's
             // normalTexture.scale, which scales only the X/Y components:
@@ -679,11 +687,14 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         // MToon: keep the glTF/UsdPreviewSurface approximation, tag the shader
         // model, and preserve the raw extension block for a later MaterialX /
         // dedicated shader-graph pass.
-        if (vm.isMToon) {
-            mat.GetPrim().CreateAttribute(TfToken("vrm:shaderModel"),
-                SdfValueTypeNames->Token, true, SdfVariabilityUniform)
+        if (vm.isMToon)
+        {
+            mat.GetPrim()
+                .CreateAttribute(TfToken("vrm:shaderModel"), SdfValueTypeNames->Token, true,
+                                 SdfVariabilityUniform)
                 .Set(TfToken("MToon"));
-            if (!vm.rawShaderJson.empty()) {
+            if (!vm.rawShaderJson.empty())
+            {
                 mat.GetPrim().SetCustomDataByKey(TfToken("vrm:mtoon:raw"),
                                                  VtValue(vm.rawShaderJson));
             }
@@ -698,7 +709,8 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     // Geometry.
     // -----------------------------------------------------------------------
     UsdGeomScope::Define(stage, geoPath);
-    for (const VrmMeshPrimitive& m : doc.meshes) {
+    for (const VrmMeshPrimitive& m : doc.meshes)
+    {
         SdfPath meshPath = geoPath.AppendChild(TfToken(m.name));
         UsdGeomMesh mesh = UsdGeomMesh::Define(stage, meshPath);
 
@@ -718,40 +730,40 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
 
         // Extent (from the possibly-rotated points).
         GfRange3f range;
-        for (const GfVec3f& p : points) range.UnionWith(p);
-        if (!range.IsEmpty()) {
+        for (const GfVec3f& p : points)
+            range.UnionWith(p);
+        if (!range.IsEmpty())
+        {
             VtVec3fArray extent(2);
             extent[0] = range.GetMin();
             extent[1] = range.GetMax();
             mesh.CreateExtentAttr(VtValue(extent));
         }
 
-        if (!m.normals.empty()) {
+        if (!m.normals.empty())
+        {
             // Author normals as primvars:normals (not the plain `normals`
             // attribute): UsdSkelImaging only skins normals expressed as a
             // primvar, and Hydra otherwise recomputes them from the skinned
             // points — which hardens shading at the source's split vertices
             // (UV / material seams). The primvar keeps the authored smoothing.
             UsdGeomPrimvar normals = UsdGeomPrimvarsAPI(mesh).CreatePrimvar(
-                TfToken("normals"), SdfValueTypeNames->Normal3fArray,
-                UsdGeomTokens->vertex);
+                TfToken("normals"), SdfValueTypeNames->Normal3fArray, UsdGeomTokens->vertex);
             VtVec3fArray nrm(m.normals.size());
             for (size_t ni = 0; ni < m.normals.size(); ++ni)
-                nrm[ni] = bakeMesh ? _RotateDir(frontBake, m.normals[ni])
-                                   : m.normals[ni];
+                nrm[ni] = bakeMesh ? _RotateDir(frontBake, m.normals[ni]) : m.normals[ni];
             normals.Set(nrm);
         }
-        if (!m.uvs.empty()) {
+        if (!m.uvs.empty())
+        {
             UsdGeomPrimvar st = UsdGeomPrimvarsAPI(mesh).CreatePrimvar(
-                TfToken("st"), SdfValueTypeNames->TexCoord2fArray,
-                UsdGeomTokens->vertex);
+                TfToken("st"), SdfValueTypeNames->TexCoord2fArray, UsdGeomTokens->vertex);
             st.Set(VtVec2fArray(m.uvs.begin(), m.uvs.end()));
         }
 
-        if (m.materialIndex >= 0 &&
-            m.materialIndex < static_cast<int>(materialPaths.size())) {
-            UsdShadeMaterialBindingAPI binding =
-                UsdShadeMaterialBindingAPI::Apply(mesh.GetPrim());
+        if (m.materialIndex >= 0 && m.materialIndex < static_cast<int>(materialPaths.size()))
+        {
+            UsdShadeMaterialBindingAPI binding = UsdShadeMaterialBindingAPI::Apply(mesh.GetPrim());
             binding.Bind(UsdShadeMaterial::Get(stage, materialPaths[m.materialIndex]));
         }
 
@@ -759,21 +771,23 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         // not (glTF ignores the node transform for skinning — verts are in
         // skel-root space and geomBindTransform is identity). The front bake is
         // applied to the placement so the accessory rotates with the avatar.
-        if (!m.skinned) {
-            GfMatrix4d nodeXf = bakeFront ? m.nodeWorldTransform * frontBake
-                                          : m.nodeWorldTransform;
+        if (!m.skinned)
+        {
+            GfMatrix4d nodeXf = bakeFront ? m.nodeWorldTransform * frontBake : m.nodeWorldTransform;
             if (!GfIsClose(nodeXf, GfMatrix4d(1.0), 1e-9))
                 mesh.AddTransformOp().Set(nodeXf);
         }
 
-        if (m.skinned && hasSkel) {
+        if (m.skinned && hasSkel)
+        {
             UsdSkelBindingAPI binding = UsdSkelBindingAPI::Apply(mesh.GetPrim());
             binding.CreateSkeletonRel().SetTargets({skelPath});
 
             VtIntArray jointIndices(m.jointIndices.begin(), m.jointIndices.end());
             VtFloatArray jointWeights;
             jointWeights.reserve(m.jointWeights.size() * 4);
-            for (const GfVec4f& w : m.jointWeights) {
+            for (const GfVec4f& w : m.jointWeights)
+            {
                 jointWeights.push_back(w[0]);
                 jointWeights.push_back(w[1]);
                 jointWeights.push_back(w[2]);
@@ -793,7 +807,8 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     // Skeleton.
     // -----------------------------------------------------------------------
     std::vector<std::string> jointPaths;
-    if (hasSkel) {
+    if (hasSkel)
+    {
         UsdGeomScope::Define(stage, skelScopePath);
         UsdSkelSkeleton skel = UsdSkelSkeleton::Define(stage, skelPath);
 
@@ -803,7 +818,8 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         VtMatrix4dArray bindXforms;
         VtMatrix4dArray restXforms;
         jointTokens.reserve(doc.joints.size());
-        for (size_t i = 0; i < doc.joints.size(); ++i) {
+        for (size_t i = 0; i < doc.joints.size(); ++i)
+        {
             const VrmJoint& j = doc.joints[i];
             jointTokens.push_back(TfToken(jointPaths[i]));
             jointNames.push_back(TfToken(j.name));
@@ -811,11 +827,9 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             // local-to-parent, so only root joints (relative to skel space) take
             // the rotation — descendants are already correct via their parents.
             const bool isRoot = j.parentJointIndex < 0;
-            bindXforms.push_back(bakeFront ? j.bindTransform * frontBake
-                                           : j.bindTransform);
-            restXforms.push_back((bakeFront && isRoot)
-                                     ? j.restTransform * frontBake
-                                     : j.restTransform);
+            bindXforms.push_back(bakeFront ? j.bindTransform * frontBake : j.bindTransform);
+            restXforms.push_back((bakeFront && isRoot) ? j.restTransform * frontBake
+                                                       : j.restTransform);
         }
         skel.CreateJointsAttr(VtValue(jointTokens));
         skel.CreateJointNamesAttr(VtValue(jointNames));
@@ -833,39 +847,51 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     // -----------------------------------------------------------------------
     std::vector<std::vector<SdfPath>> blendPath(doc.meshes.size());
     bool anyMorph = false;
-    for (const VrmMeshPrimitive& m : doc.meshes) {
-        if (!m.morphTargets.empty()) { anyMorph = true; break; }
+    for (const VrmMeshPrimitive& m : doc.meshes)
+    {
+        if (!m.morphTargets.empty())
+        {
+            anyMorph = true;
+            break;
+        }
     }
-    if (anyMorph && hasSkel) {
+    if (anyMorph && hasSkel)
+    {
         const SdfPath blendScopePath = skelScopePath.AppendChild(TfToken("BlendShapes"));
         UsdGeomScope::Define(stage, blendScopePath);
 
         // Uniquify blend-shape names across every (mesh, morph) pair.
         std::vector<std::string> rawNames;
-        for (const VrmMeshPrimitive& m : doc.meshes) {
-            for (size_t t = 0; t < m.morphTargets.size(); ++t) {
+        for (const VrmMeshPrimitive& m : doc.meshes)
+        {
+            for (size_t t = 0; t < m.morphTargets.size(); ++t)
+            {
                 const std::string& mn = m.morphTargets[t].name;
-                rawNames.push_back(m.name + "_" +
-                    (mn.empty() ? "morph" + std::to_string(t) : mn));
+                rawNames.push_back(m.name + "_" + (mn.empty() ? "morph" + std::to_string(t) : mn));
             }
         }
-        std::vector<std::string> blendNames =
-            VrmMakeUniqueNames(rawNames, "Morph");
+        std::vector<std::string> blendNames = VrmMakeUniqueNames(rawNames, "Morph");
 
         size_t cursor = 0;
-        for (size_t mi = 0; mi < doc.meshes.size(); ++mi) {
+        for (size_t mi = 0; mi < doc.meshes.size(); ++mi)
+        {
             const VrmMeshPrimitive& m = doc.meshes[mi];
-            if (m.morphTargets.empty()) continue;
-            UsdGeomMesh mesh =
-                UsdGeomMesh::Get(stage, geoPath.AppendChild(TfToken(m.name)));
-            if (!mesh) { cursor += m.morphTargets.size(); continue; }
+            if (m.morphTargets.empty())
+                continue;
+            UsdGeomMesh mesh = UsdGeomMesh::Get(stage, geoPath.AppendChild(TfToken(m.name)));
+            if (!mesh)
+            {
+                cursor += m.morphTargets.size();
+                continue;
+            }
 
             VtTokenArray names;
             SdfPathVector targets;
             // Morph deltas live in the same space as the mesh points, so they
             // take the front bake too when the owning mesh is skinned+baked.
             const bool bakeMorph = bakeFront && m.skinned;
-            for (size_t t = 0; t < m.morphTargets.size(); ++t) {
+            for (size_t t = 0; t < m.morphTargets.size(); ++t)
+            {
                 const VrmMorphTarget& mt = m.morphTargets[t];
                 const TfToken name(blendNames[cursor++]);
                 SdfPath bsPath = blendScopePath.AppendChild(name);
@@ -878,11 +904,13 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
                 // author empty offsets while normalOffsets is per-point; UsdSkel
                 // requires the two to be length-aligned, so pad offsets with
                 // zeros to match.
-                if (offsets.empty() && !mt.normalDeltas.empty()) {
+                if (offsets.empty() && !mt.normalDeltas.empty())
+                {
                     offsets.assign(mt.normalDeltas.size(), GfVec3f(0.0f));
                 }
                 bs.CreateOffsetsAttr(VtValue(offsets));
-                if (!mt.normalDeltas.empty()) {
+                if (!mt.normalDeltas.empty())
+                {
                     VtVec3fArray nrm(mt.normalDeltas.size());
                     for (size_t pi = 0; pi < mt.normalDeltas.size(); ++pi)
                         nrm[pi] = bakeMorph ? _RotateDir(frontBake, mt.normalDeltas[pi])
@@ -900,20 +928,24 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             // SkelAnimation, so a morph-only (non-skinned) mesh still needs a
             // skel:skeleton relationship or the blend shapes can't be evaluated.
             // Idempotent for skinned meshes that already set it.
-            if (!m.skinned) {
+            if (!m.skinned)
+            {
                 binding.CreateSkeletonRel().SetTargets({skelPath});
             }
         }
-    } else if (anyMorph) {
+    }
+    else if (anyMorph)
+    {
         warn(VrmDiagMsg(VrmDiag::MorphNoSkeleton,
-            "morph targets present but no skeleton/SkelRoot; blend shapes skipped"));
+                        "morph targets present but no skeleton/SkelRoot; blend shapes skipped"));
     }
 
     // -----------------------------------------------------------------------
     // Rig / Humanoid (control semantics; not a bone hierarchy duplicate).
     // -----------------------------------------------------------------------
     UsdGeomScope::Define(stage, rigPath);
-    if (!doc.humanoidBones.empty() && hasSkel) {
+    if (!doc.humanoidBones.empty() && hasSkel)
+    {
         SdfPath humanoidPath = rigPath.AppendChild(TfToken("Humanoid"));
         UsdPrim humanoid = UsdGeomScope::Define(stage, humanoidPath).GetPrim();
         // Apply the typed VrmHumanoidAPI (Phase 4): it formalizes the skeleton
@@ -929,21 +961,23 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         // VRM-0.x-only or non-standard bone — falls back to a custom attribute,
         // keeping the mapping lossless.
         const std::set<TfToken>& schemaBones = _VrmHumanoidSchemaBones();
-        for (const VrmHumanoidBone& b : doc.humanoidBones) {
-            if (b.jointIndex < 0 ||
-                b.jointIndex >= static_cast<int>(jointPaths.size())) {
+        for (const VrmHumanoidBone& b : doc.humanoidBones)
+        {
+            if (b.jointIndex < 0 || b.jointIndex >= static_cast<int>(jointPaths.size()))
+            {
                 continue;
             }
             const TfToken boneAttr("vrm:humanBones:" + b.semanticName);
             UsdAttribute attr = humanoid.CreateAttribute(
                 boneAttr, SdfValueTypeNames->Token,
-                /*custom=*/schemaBones.count(boneAttr) == 0,
-                SdfVariabilityUniform);
+                /*custom=*/schemaBones.count(boneAttr) == 0, SdfVariabilityUniform);
             attr.Set(TfToken(jointPaths[b.jointIndex]));
         }
-    } else if (!doc.humanoidBones.empty()) {
+    }
+    else if (!doc.humanoidBones.empty())
+    {
         warn(VrmDiagMsg(VrmDiag::HumanoidNoSkeleton,
-            "humanoid bones present but no skeleton was imported; mapping skipped"));
+                        "humanoid bones present but no skeleton was imported; mapping skipped"));
     }
 
     // -----------------------------------------------------------------------
@@ -951,21 +985,24 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     // authors the morph-target bindings as relationships to the blend-shape
     // prims + weights; evaluation is left to a downstream runtime.
     // -----------------------------------------------------------------------
-    if (!doc.expressions.empty()) {
+    if (!doc.expressions.empty())
+    {
         SdfPath exprScopePath = rigPath.AppendChild(TfToken("Expressions"));
         UsdGeomScope::Define(stage, exprScopePath);
 
         std::vector<std::string> rawNames;
         rawNames.reserve(doc.expressions.size());
-        for (const VrmExpression& e : doc.expressions) rawNames.push_back(e.name);
-        std::vector<std::string> exprNames =
-            VrmMakeUniqueNames(rawNames, "Expression");
+        for (const VrmExpression& e : doc.expressions)
+            rawNames.push_back(e.name);
+        std::vector<std::string> exprNames = VrmMakeUniqueNames(rawNames, "Expression");
 
-        for (size_t i = 0; i < doc.expressions.size(); ++i) {
+        for (size_t i = 0; i < doc.expressions.size(); ++i)
+        {
             const VrmExpression& e = doc.expressions[i];
-            UsdPrim p = UsdGeomScope::Define(
-                stage, exprScopePath.AppendChild(TfToken(exprNames[i]))).GetPrim();
-            UsdVrmExpressionAPI::Apply(p);  // typed schema; attrs below are builtins
+            UsdPrim p =
+                UsdGeomScope::Define(stage, exprScopePath.AppendChild(TfToken(exprNames[i])))
+                    .GetPrim();
+            UsdVrmExpressionAPI::Apply(p); // typed schema; attrs below are builtins
             // The prim name is sanitized and uniquified, so it is not a join
             // key: a `.vrma` clip lays its expressions out the same way but
             // sanitizes with its own table, and any name outside ASCII -- or any
@@ -973,25 +1010,26 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             // prim name on each side. `vrm:expressionName` is the name the file
             // used, which is what `ExpressionResolve` joins a clip's weight to
             // this avatar's binds by.
-            p.CreateAttribute(TfToken("vrm:expressionName"),
-                              SdfValueTypeNames->Token, false, SdfVariabilityUniform)
+            p.CreateAttribute(TfToken("vrm:expressionName"), SdfValueTypeNames->Token, false,
+                              SdfVariabilityUniform)
                 .Set(TfToken(e.name));
-            p.CreateAttribute(TfToken("vrm:expressionType"),
-                              SdfValueTypeNames->Token, false, SdfVariabilityUniform)
+            p.CreateAttribute(TfToken("vrm:expressionType"), SdfValueTypeNames->Token, false,
+                              SdfVariabilityUniform)
                 .Set(TfToken(e.isPreset ? "preset" : "custom"));
-            p.CreateAttribute(TfToken("vrm:isBinary"),
-                              SdfValueTypeNames->Bool, false, SdfVariabilityUniform)
+            p.CreateAttribute(TfToken("vrm:isBinary"), SdfValueTypeNames->Bool, false,
+                              SdfVariabilityUniform)
                 .Set(e.isBinary);
             // The three override fields, authored only where the source stated
             // one. An unauthored attribute and an authored "none" mean the same
             // thing to a consumer, and only one of them is a claim the file
             // made -- so a VRM 0.x rig, which has no such field, carries none of
             // the three rather than three tokens it never said.
-            const auto authorOverride = [&](const char* attribute,
-                                            const std::string& value) {
-                if (value.empty()) return;
-                p.CreateAttribute(TfToken(attribute), SdfValueTypeNames->Token,
-                                  false, SdfVariabilityUniform)
+            const auto authorOverride = [&](const char* attribute, const std::string& value)
+            {
+                if (value.empty())
+                    return;
+                p.CreateAttribute(TfToken(attribute), SdfValueTypeNames->Token, false,
+                                  SdfVariabilityUniform)
                     .Set(TfToken(value));
             };
             authorOverride("vrm:overrideBlink", e.overrideBlink);
@@ -1000,25 +1038,26 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
 
             SdfPathVector targets;
             VtFloatArray weights;
-            for (const VrmExpression::MorphBind& b : e.morphBinds) {
+            for (const VrmExpression::MorphBind& b : e.morphBinds)
+            {
                 if (b.meshPrimitiveIndex < 0 ||
-                    b.meshPrimitiveIndex >= static_cast<int>(blendPath.size())) {
+                    b.meshPrimitiveIndex >= static_cast<int>(blendPath.size()))
+                {
                     continue;
                 }
                 const std::vector<SdfPath>& paths = blendPath[b.meshPrimitiveIndex];
-                if (b.morphTargetIndex < 0 ||
-                    b.morphTargetIndex >= static_cast<int>(paths.size())) {
+                if (b.morphTargetIndex < 0 || b.morphTargetIndex >= static_cast<int>(paths.size()))
+                {
                     continue;
                 }
                 targets.push_back(paths[b.morphTargetIndex]);
                 weights.push_back(b.weight);
             }
-            if (!targets.empty()) {
-                p.CreateRelationship(TfToken("vrm:morphTargets"), false)
-                    .SetTargets(targets);
-                p.CreateAttribute(TfToken("vrm:morphTargetWeights"),
-                                  SdfValueTypeNames->FloatArray, false,
-                                  SdfVariabilityUniform)
+            if (!targets.empty())
+            {
+                p.CreateRelationship(TfToken("vrm:morphTargets"), false).SetTargets(targets);
+                p.CreateAttribute(TfToken("vrm:morphTargetWeights"), SdfValueTypeNames->FloatArray,
+                                  false, SdfVariabilityUniform)
                     .Set(weights);
             }
 
@@ -1027,25 +1066,26 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             SdfPathVector colorTargets;
             VtTokenArray colorTypes;
             VtVec4fArray colorValues;
-            for (const VrmExpression::MaterialColorBind& mb : e.materialColorBinds) {
+            for (const VrmExpression::MaterialColorBind& mb : e.materialColorBinds)
+            {
                 if (mb.materialIndex < 0 ||
-                    mb.materialIndex >= static_cast<int>(materialPaths.size())) {
+                    mb.materialIndex >= static_cast<int>(materialPaths.size()))
+                {
                     continue;
                 }
                 colorTargets.push_back(materialPaths[mb.materialIndex]);
                 colorTypes.push_back(TfToken(mb.type));
                 colorValues.push_back(mb.targetValue);
             }
-            if (!colorTargets.empty()) {
+            if (!colorTargets.empty())
+            {
                 p.CreateRelationship(TfToken("vrm:materialColorTargets"), false)
                     .SetTargets(colorTargets);
-                p.CreateAttribute(TfToken("vrm:materialColorTypes"),
-                                  SdfValueTypeNames->TokenArray, false,
-                                  SdfVariabilityUniform)
+                p.CreateAttribute(TfToken("vrm:materialColorTypes"), SdfValueTypeNames->TokenArray,
+                                  false, SdfVariabilityUniform)
                     .Set(colorTypes);
                 p.CreateAttribute(TfToken("vrm:materialColorValues"),
-                                  SdfValueTypeNames->Float4Array, false,
-                                  SdfVariabilityUniform)
+                                  SdfValueTypeNames->Float4Array, false, SdfVariabilityUniform)
                     .Set(colorValues);
             }
         }
@@ -1056,29 +1096,34 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     // attributes (joints are tokens, not prims); curve/range-map parameters are
     // preserved verbatim in customData for a downstream runtime.
     // -----------------------------------------------------------------------
-    if (doc.lookAt.present) {
-        UsdPrim lookAt = UsdGeomScope::Define(
-            stage, rigPath.AppendChild(TfToken("LookAt"))).GetPrim();
-        UsdVrmLookAtAPI::Apply(lookAt);  // typed schema; attrs below are builtins
-        lookAt.CreateAttribute(TfToken("vrm:type"), SdfValueTypeNames->Token,
-                               false, SdfVariabilityUniform)
+    if (doc.lookAt.present)
+    {
+        UsdPrim lookAt =
+            UsdGeomScope::Define(stage, rigPath.AppendChild(TfToken("LookAt"))).GetPrim();
+        UsdVrmLookAtAPI::Apply(lookAt); // typed schema; attrs below are builtins
+        lookAt
+            .CreateAttribute(TfToken("vrm:type"), SdfValueTypeNames->Token, false,
+                             SdfVariabilityUniform)
             .Set(TfToken(doc.lookAt.type));
-        if (hasSkel) {
-            lookAt.CreateRelationship(TfToken("vrm:skeleton"), false)
-                .SetTargets({skelPath});
+        if (hasSkel)
+        {
+            lookAt.CreateRelationship(TfToken("vrm:skeleton"), false).SetTargets({skelPath});
         }
-        auto authorEye = [&](const char* name, int joint) {
-            if (joint >= 0 && joint < static_cast<int>(jointPaths.size())) {
-                lookAt.CreateAttribute(TfToken(name), SdfValueTypeNames->Token,
-                                       false, SdfVariabilityUniform)
+        auto authorEye = [&](const char* name, int joint)
+        {
+            if (joint >= 0 && joint < static_cast<int>(jointPaths.size()))
+            {
+                lookAt
+                    .CreateAttribute(TfToken(name), SdfValueTypeNames->Token, false,
+                                     SdfVariabilityUniform)
                     .Set(TfToken(jointPaths[joint]));
             }
         };
         authorEye("vrm:leftEye", doc.lookAt.leftEyeJoint);
         authorEye("vrm:rightEye", doc.lookAt.rightEyeJoint);
-        if (!doc.lookAt.rawJson.empty()) {
-            lookAt.SetCustomDataByKey(TfToken("vrm:lookAt:raw"),
-                                      VtValue(doc.lookAt.rawJson));
+        if (!doc.lookAt.rawJson.empty())
+        {
+            lookAt.SetCustomDataByKey(TfToken("vrm:lookAt:raw"), VtValue(doc.lookAt.rawJson));
         }
     }
 
@@ -1087,7 +1132,8 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     // /Asset/skel/Animations; the first is bound to the skeleton so it plays in
     // usdview. Times are authored as timecodes at a fixed 30 fps.
     // -----------------------------------------------------------------------
-    if (hasSkel && !doc.animations.empty()) {
+    if (hasSkel && !doc.animations.empty())
+    {
         const double fps = 30.0;
         SdfPath animScopePath = skelScopePath.AppendChild(TfToken("Animations"));
         UsdGeomScope::Define(stage, animScopePath);
@@ -1095,16 +1141,19 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         double startTc = 0.0, endTc = 0.0;
         bool haveRange = false;
         SdfPath firstClip;
-        for (size_t i = 0; i < doc.animations.size(); ++i) {
+        for (size_t i = 0; i < doc.animations.size(); ++i)
+        {
             const VrmAnimation& a = doc.animations[i];
-            if (a.jointIndices.empty() || a.times.empty()) continue;
+            if (a.jointIndices.empty() || a.times.empty())
+                continue;
             // Clip names are already sanitized + uniquified by the reader.
             SdfPath clipPath = animScopePath.AppendChild(TfToken(a.name));
             UsdSkelAnimation anim = UsdSkelAnimation::Define(stage, clipPath);
 
             VtTokenArray joints;
             joints.reserve(a.jointIndices.size());
-            for (int j : a.jointIndices) joints.push_back(TfToken(jointPaths[j]));
+            for (int j : a.jointIndices)
+                joints.push_back(TfToken(jointPaths[j]));
             anim.CreateJointsAttr(VtValue(joints));
 
             // Front bake applies to a clip's *root* joints: their local transform
@@ -1118,35 +1167,40 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             UsdAttribute tAttr = anim.CreateTranslationsAttr();
             UsdAttribute rAttr = anim.CreateRotationsAttr();
             UsdAttribute sAttr = anim.CreateScalesAttr();
-            for (size_t ti = 0; ti < a.times.size(); ++ti) {
+            for (size_t ti = 0; ti < a.times.size(); ++ti)
+            {
                 const double tc = a.times[ti] * fps;
-                VtVec3fArray trans(a.translations[ti].begin(),
-                                   a.translations[ti].end());
+                VtVec3fArray trans(a.translations[ti].begin(), a.translations[ti].end());
                 VtQuatfArray rots(a.rotations[ti].begin(), a.rotations[ti].end());
                 VtVec3hArray scales(a.scales[ti].size());
                 for (size_t k = 0; k < a.scales[ti].size(); ++k)
                     scales[k] = GfVec3h(a.scales[ti][k]);
-                if (bakeFront) {
-                    for (size_t k = 0; k < trans.size(); ++k) {
-                        if (!rootJoint[k]) continue;
+                if (bakeFront)
+                {
+                    for (size_t k = 0; k < trans.size(); ++k)
+                    {
+                        if (!rootJoint[k])
+                            continue;
                         // local' = (S*R*T) * frontBake, re-decomposed. Scale is
                         // unchanged by appending a pure rotation.
-                        GfTransform xf(_MakeLocal(trans[k], rots[k],
-                            GfVec3f(scales[k][0], scales[k][1], scales[k][2]))
-                            * frontBake);
+                        GfTransform xf(
+                            _MakeLocal(trans[k], rots[k],
+                                       GfVec3f(scales[k][0], scales[k][1], scales[k][2])) *
+                            frontBake);
                         GfVec3d t = xf.GetTranslation();
                         trans[k] = GfVec3f(t[0], t[1], t[2]);
                         GfQuaternion q = xf.GetRotation().GetQuaternion();
-                        rots[k] = GfQuatf(q.GetReal(),
-                            GfVec3f(q.GetImaginary()[0], q.GetImaginary()[1],
-                                    q.GetImaginary()[2]));
+                        rots[k] =
+                            GfQuatf(q.GetReal(), GfVec3f(q.GetImaginary()[0], q.GetImaginary()[1],
+                                                         q.GetImaginary()[2]));
                     }
                 }
                 tAttr.Set(trans, tc);
                 rAttr.Set(rots, tc);
                 sAttr.Set(scales, tc);
             }
-            if (firstClip.IsEmpty()) {
+            if (firstClip.IsEmpty())
+            {
                 firstClip = clipPath;
                 // Stage time range follows the bound (first) clip only; a.times
                 // is sorted ascending by the reader.
@@ -1156,12 +1210,14 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
             }
         }
 
-        if (!firstClip.IsEmpty()) {
+        if (!firstClip.IsEmpty())
+        {
             UsdSkelBindingAPI::Apply(stage->GetPrimAtPath(skelPath))
                 .CreateAnimationSourceRel()
                 .SetTargets({firstClip});
         }
-        if (haveRange) {
+        if (haveRange)
+        {
             stage->SetTimeCodesPerSecond(fps);
             stage->SetFramesPerSecond(fps);
             stage->SetStartTimeCode(startTc);
@@ -1175,18 +1231,19 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     // groups, joints referenced by token (skeleton joint path where resolvable).
     // -----------------------------------------------------------------------
     const VrmSecondaryMotion& sm = doc.secondaryMotion;
-    if (sm.present && (!sm.springs.empty() || !sm.colliders.empty())) {
+    if (sm.present && (!sm.springs.empty() || !sm.colliders.empty()))
+    {
         SdfPath smPath = rigPath.AppendChild(TfToken("SecondaryMotion"));
         UsdPrim smPrim = UsdGeomScope::Define(stage, smPath).GetPrim();
         if (!sm.rawJson.empty())
-            smPrim.SetCustomDataByKey(TfToken("vrm:springBone:raw"),
-                                      VtValue(sm.rawJson));
+            smPrim.SetCustomDataByKey(TfToken("vrm:springBone:raw"), VtValue(sm.rawJson));
 
-        auto jointTok = [&](int jointIndex, const std::string& srcName,
-                            int srcIdx) -> TfToken {
+        auto jointTok = [&](int jointIndex, const std::string& srcName, int srcIdx) -> TfToken
+        {
             if (jointIndex >= 0 && jointIndex < static_cast<int>(jointPaths.size()))
                 return TfToken(jointPaths[jointIndex]);
-            if (!srcName.empty()) return TfToken(srcName);
+            if (!srcName.empty())
+                return TfToken(srcName);
             return TfToken("node_" + std::to_string(srcIdx));
         };
 
@@ -1195,35 +1252,41 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         UsdGeomScope::Define(stage, colScopePath);
         std::vector<std::string> rawGrp;
         rawGrp.reserve(sm.colliderGroups.size());
-        for (const VrmColliderGroup& g : sm.colliderGroups) rawGrp.push_back(g.name);
-        std::vector<std::string> grpNames =
-            VrmMakeUniqueNames(rawGrp, "ColliderGroup");
+        for (const VrmColliderGroup& g : sm.colliderGroups)
+            rawGrp.push_back(g.name);
+        std::vector<std::string> grpNames = VrmMakeUniqueNames(rawGrp, "ColliderGroup");
         std::vector<SdfPath> grpPaths(sm.colliderGroups.size());
-        for (size_t gi = 0; gi < sm.colliderGroups.size(); ++gi) {
+        for (size_t gi = 0; gi < sm.colliderGroups.size(); ++gi)
+        {
             SdfPath gp = colScopePath.AppendChild(TfToken(grpNames[gi]));
             UsdGeomScope::Define(stage, gp);
             grpPaths[gi] = gp;
             int ci = 0;
-            for (int idx : sm.colliderGroups[gi].colliderIndices) {
-                if (idx < 0 || idx >= static_cast<int>(sm.colliders.size())) continue;
+            for (int idx : sm.colliderGroups[gi].colliderIndices)
+            {
+                if (idx < 0 || idx >= static_cast<int>(sm.colliders.size()))
+                    continue;
                 const VrmCollider& c = sm.colliders[idx];
                 UsdPrim cp = UsdGeomScope::Define(
-                    stage, gp.AppendChild(
-                        TfToken("Collider_" + std::to_string(ci++)))).GetPrim();
-                UsdVrmColliderAPI::Apply(cp);  // typed schema; attrs below are builtins
-                cp.CreateAttribute(TfToken("vrm:shape"), SdfValueTypeNames->Token,
-                                   false, SdfVariabilityUniform)
+                                 stage, gp.AppendChild(TfToken("Collider_" + std::to_string(ci++))))
+                                 .GetPrim();
+                UsdVrmColliderAPI::Apply(cp); // typed schema; attrs below are builtins
+                cp.CreateAttribute(TfToken("vrm:shape"), SdfValueTypeNames->Token, false,
+                                   SdfVariabilityUniform)
                     .Set(TfToken(c.shape.empty() ? "sphere" : c.shape));
-                cp.CreateAttribute(TfToken("vrm:node"), SdfValueTypeNames->Token,
-                                   false, SdfVariabilityUniform)
+                cp.CreateAttribute(TfToken("vrm:node"), SdfValueTypeNames->Token, false,
+                                   SdfVariabilityUniform)
                     .Set(jointTok(c.jointIndex, c.sourceNodeName, c.sourceNodeIndex));
-                cp.CreateAttribute(TfToken("vrm:offset"), SdfValueTypeNames->Float3,
-                                   false, SdfVariabilityUniform).Set(c.offset);
-                cp.CreateAttribute(TfToken("vrm:radius"), SdfValueTypeNames->Float,
-                                   false, SdfVariabilityUniform).Set(c.radius);
+                cp.CreateAttribute(TfToken("vrm:offset"), SdfValueTypeNames->Float3, false,
+                                   SdfVariabilityUniform)
+                    .Set(c.offset);
+                cp.CreateAttribute(TfToken("vrm:radius"), SdfValueTypeNames->Float, false,
+                                   SdfVariabilityUniform)
+                    .Set(c.radius);
                 if (c.shape == "capsule")
-                    cp.CreateAttribute(TfToken("vrm:tail"), SdfValueTypeNames->Float3,
-                                       false, SdfVariabilityUniform).Set(c.tail);
+                    cp.CreateAttribute(TfToken("vrm:tail"), SdfValueTypeNames->Float3, false,
+                                       SdfVariabilityUniform)
+                        .Set(c.tail);
             }
         }
 
@@ -1232,20 +1295,22 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
         UsdGeomScope::Define(stage, sbScopePath);
         std::vector<std::string> rawSp;
         rawSp.reserve(sm.springs.size());
-        for (const VrmSpring& s : sm.springs) rawSp.push_back(s.name);
+        for (const VrmSpring& s : sm.springs)
+            rawSp.push_back(s.name);
         std::vector<std::string> spNames = VrmMakeUniqueNames(rawSp, "Spring");
-        for (size_t si = 0; si < sm.springs.size(); ++si) {
+        for (size_t si = 0; si < sm.springs.size(); ++si)
+        {
             const VrmSpring& s = sm.springs[si];
-            UsdPrim sp = UsdGeomScope::Define(
-                stage, sbScopePath.AppendChild(TfToken(spNames[si]))).GetPrim();
-            UsdVrmSpringBoneAPI::Apply(sp);  // typed schema; attrs below are builtins
+            UsdPrim sp = UsdGeomScope::Define(stage, sbScopePath.AppendChild(TfToken(spNames[si])))
+                             .GetPrim();
+            UsdVrmSpringBoneAPI::Apply(sp); // typed schema; attrs below are builtins
 
             VtTokenArray jtoks;
             VtFloatArray stiff, gpow, drag, hit;
             VtVec3fArray gdir;
-            for (const VrmSpringJoint& j : s.joints) {
-                jtoks.push_back(jointTok(j.jointIndex, j.sourceNodeName,
-                                         j.sourceNodeIndex));
+            for (const VrmSpringJoint& j : s.joints)
+            {
+                jtoks.push_back(jointTok(j.jointIndex, j.sourceNodeName, j.sourceNodeIndex));
                 stiff.push_back(j.stiffness);
                 gpow.push_back(j.gravityPower);
                 drag.push_back(j.dragForce);
@@ -1254,35 +1319,29 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
                 // bake too (a non-vertical "wind" dir would otherwise point
                 // backwards relative to the now-+Z avatar; the default (0,-1,0)
                 // is Y-invariant and unaffected).
-                gdir.push_back(bakeFront ? _RotateDir(frontBake, j.gravityDir)
-                                         : j.gravityDir);
+                gdir.push_back(bakeFront ? _RotateDir(frontBake, j.gravityDir) : j.gravityDir);
             }
-            auto arr = [&](const char* n, const SdfValueTypeName& t,
-                           const VtValue& v) {
-                sp.CreateAttribute(TfToken(n), t, false, SdfVariabilityUniform).Set(v);
-            };
+            auto arr = [&](const char* n, const SdfValueTypeName& t, const VtValue& v)
+            { sp.CreateAttribute(TfToken(n), t, false, SdfVariabilityUniform).Set(v); };
             arr("vrm:joints", SdfValueTypeNames->TokenArray, VtValue(jtoks));
             arr("vrm:stiffness", SdfValueTypeNames->FloatArray, VtValue(stiff));
             arr("vrm:gravityPower", SdfValueTypeNames->FloatArray, VtValue(gpow));
             arr("vrm:dragForce", SdfValueTypeNames->FloatArray, VtValue(drag));
             arr("vrm:hitRadius", SdfValueTypeNames->FloatArray, VtValue(hit));
             arr("vrm:gravityDir", SdfValueTypeNames->Float3Array, VtValue(gdir));
-            if ((s.centerJoint >= 0 &&
-                 s.centerJoint < static_cast<int>(jointPaths.size())) ||
-                s.centerSourceNodeIndex >= 0 ||
-                !s.centerSourceNodeName.empty()) {
-                sp.CreateAttribute(TfToken("vrm:center"), SdfValueTypeNames->Token,
-                                   false, SdfVariabilityUniform)
-                    .Set(jointTok(s.centerJoint, s.centerSourceNodeName,
-                                  s.centerSourceNodeIndex));
+            if ((s.centerJoint >= 0 && s.centerJoint < static_cast<int>(jointPaths.size())) ||
+                s.centerSourceNodeIndex >= 0 || !s.centerSourceNodeName.empty())
+            {
+                sp.CreateAttribute(TfToken("vrm:center"), SdfValueTypeNames->Token, false,
+                                   SdfVariabilityUniform)
+                    .Set(jointTok(s.centerJoint, s.centerSourceNodeName, s.centerSourceNodeIndex));
             }
             SdfPathVector cgTargets;
             for (int gi : s.colliderGroupIndices)
                 if (gi >= 0 && gi < static_cast<int>(grpPaths.size()))
                     cgTargets.push_back(grpPaths[gi]);
             if (!cgTargets.empty())
-                sp.CreateRelationship(TfToken("vrm:colliderGroups"), false)
-                    .SetTargets(cgTargets);
+                sp.CreateRelationship(TfToken("vrm:colliderGroups"), false).SetTargets(cgTargets);
         }
     }
 
@@ -1291,58 +1350,66 @@ UsdVrmAuthorer::WriteToString(const VrmCanonicalDocument& doc,
     // only: type/source/axis/weight, joints referenced by token (skeleton joint
     // path where resolvable), full block preserved as raw JSON.
     // -----------------------------------------------------------------------
-    if (!doc.constraints.empty()) {
+    if (!doc.constraints.empty())
+    {
         SdfPath conScopePath = rigPath.AppendChild(TfToken("Constraints"));
         UsdGeomScope::Define(stage, conScopePath);
 
         std::vector<std::string> rawNames;
         rawNames.reserve(doc.constraints.size());
-        for (const VrmConstraint& c : doc.constraints) {
-            rawNames.push_back(c.constrainedNodeName.empty()
-                ? c.type : c.constrainedNodeName + "_" + c.type);
+        for (const VrmConstraint& c : doc.constraints)
+        {
+            rawNames.push_back(
+                c.constrainedNodeName.empty() ? c.type : c.constrainedNodeName + "_" + c.type);
         }
-        std::vector<std::string> conNames =
-            VrmMakeUniqueNames(rawNames, "Constraint");
+        std::vector<std::string> conNames = VrmMakeUniqueNames(rawNames, "Constraint");
 
-        auto jointTok = [&](int joint, const std::string& name, int idx) -> TfToken {
+        auto jointTok = [&](int joint, const std::string& name, int idx) -> TfToken
+        {
             if (joint >= 0 && joint < static_cast<int>(jointPaths.size()))
                 return TfToken(jointPaths[joint]);
-            if (!name.empty()) return TfToken(name);
+            if (!name.empty())
+                return TfToken(name);
             return TfToken("node_" + std::to_string(idx));
         };
 
-        for (size_t i = 0; i < doc.constraints.size(); ++i) {
+        for (size_t i = 0; i < doc.constraints.size(); ++i)
+        {
             const VrmConstraint& c = doc.constraints[i];
-            UsdPrim p = UsdGeomScope::Define(
-                stage, conScopePath.AppendChild(TfToken(conNames[i]))).GetPrim();
-            UsdVrmConstraintAPI::Apply(p);  // typed schema; attrs below are builtins
-            auto tokAttr = [&](const char* n, const TfToken& v) {
+            UsdPrim p = UsdGeomScope::Define(stage, conScopePath.AppendChild(TfToken(conNames[i])))
+                            .GetPrim();
+            UsdVrmConstraintAPI::Apply(p); // typed schema; attrs below are builtins
+            auto tokAttr = [&](const char* n, const TfToken& v)
+            {
                 p.CreateAttribute(TfToken(n), SdfValueTypeNames->Token, false,
-                                  SdfVariabilityUniform).Set(v);
+                                  SdfVariabilityUniform)
+                    .Set(v);
             };
             tokAttr("vrm:type", TfToken(c.type));
             tokAttr("vrm:constrained",
-                    jointTok(c.constrainedJoint, c.constrainedNodeName,
-                             c.constrainedNodeIndex));
-            tokAttr("vrm:source",
-                    jointTok(c.sourceJoint, c.sourceNodeName, c.sourceNodeIndex));
-            if (!c.axis.empty()) tokAttr("vrm:axis", TfToken(c.axis));
-            p.CreateAttribute(TfToken("vrm:weight"), SdfValueTypeNames->Float,
-                              false, SdfVariabilityUniform).Set(c.weight);
+                    jointTok(c.constrainedJoint, c.constrainedNodeName, c.constrainedNodeIndex));
+            tokAttr("vrm:source", jointTok(c.sourceJoint, c.sourceNodeName, c.sourceNodeIndex));
+            if (!c.axis.empty())
+                tokAttr("vrm:axis", TfToken(c.axis));
+            p.CreateAttribute(TfToken("vrm:weight"), SdfValueTypeNames->Float, false,
+                              SdfVariabilityUniform)
+                .Set(c.weight);
             if (!c.rawJson.empty())
-                p.SetCustomDataByKey(TfToken("vrm:constraint:raw"),
-                                     VtValue(c.rawJson));
+                p.SetCustomDataByKey(TfToken("vrm:constraint:raw"), VtValue(c.rawJson));
         }
     }
 
     // Diagnostic report: surface dropped/unsupported features (reader + authoring
     // warnings) on the asset so downstream tools can audit what wasn't mapped.
-    if (!diagnostics.empty()) {
-        assetPrim.SetCustomDataByKey(TfToken("vrm:warnings"),
+    if (!diagnostics.empty())
+    {
+        assetPrim.SetCustomDataByKey(
+            TfToken("vrm:warnings"),
             VtValue(VtStringArray(diagnostics.begin(), diagnostics.end())));
     }
 
-    if (!stage->ExportToString(outUsda)) {
+    if (!stage->ExportToString(outUsda))
+    {
         return false;
     }
     return true;

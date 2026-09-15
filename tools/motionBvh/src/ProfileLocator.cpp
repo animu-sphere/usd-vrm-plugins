@@ -8,11 +8,11 @@
 #include <system_error>
 
 #if defined(_WIN32)
-#    include <windows.h>
+#include <windows.h>
 #elif defined(__APPLE__)
-#    include <mach-o/dyld.h>
+#include <mach-o/dyld.h>
 #else
-#    include <unistd.h>
+#include <unistd.h>
 #endif
 
 namespace motionBvhTool
@@ -39,13 +39,16 @@ ExecutableDirectory()
     std::error_code code;
 #if defined(_WIN32)
     std::wstring buffer(MAX_PATH, L'\0');
-    for (;;) {
-        const DWORD written = ::GetModuleFileNameW(
-            nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
-        if (written == 0) {
+    for (;;)
+    {
+        const DWORD written =
+            ::GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
+        if (written == 0)
+        {
             return {};
         }
-        if (written < buffer.size()) {
+        if (written < buffer.size())
+        {
             buffer.resize(written);
             break;
         }
@@ -58,40 +61,43 @@ ExecutableDirectory()
     std::uint32_t size = 0;
     ::_NSGetExecutablePath(nullptr, &size);
     std::vector<char> buffer(size + 1, '\0');
-    if (::_NSGetExecutablePath(buffer.data(), &size) != 0) {
+    if (::_NSGetExecutablePath(buffer.data(), &size) != 0)
+    {
         return {};
     }
     const std::filesystem::path self(buffer.data());
 #else
-    const std::filesystem::path self =
-        std::filesystem::read_symlink("/proc/self/exe", code);
-    if (code) {
+    const std::filesystem::path self = std::filesystem::read_symlink("/proc/self/exe", code);
+    if (code)
+    {
         return {};
     }
 #endif
-    const std::filesystem::path resolved =
-        std::filesystem::weakly_canonical(self, code);
+    const std::filesystem::path resolved = std::filesystem::weakly_canonical(self, code);
     const std::filesystem::path& executable = code ? self : resolved;
     return executable.parent_path();
 }
 
 void
-AppendPathList(const char* value,
-               std::vector<std::filesystem::path>* directories)
+AppendPathList(const char* value, std::vector<std::filesystem::path>* directories)
 {
-    if (value == nullptr) {
+    if (value == nullptr)
+    {
         return;
     }
     const std::string list(value);
     std::size_t start = 0;
-    while (start <= list.size()) {
+    while (start <= list.size())
+    {
         const std::size_t end = list.find(kPathListSeparator, start);
-        const std::string entry = list.substr(
-            start, end == std::string::npos ? std::string::npos : end - start);
-        if (!entry.empty()) {
+        const std::string entry =
+            list.substr(start, end == std::string::npos ? std::string::npos : end - start);
+        if (!entry.empty())
+        {
             directories->emplace_back(entry);
         }
-        if (end == std::string::npos) {
+        if (end == std::string::npos)
+        {
             break;
         }
         start = end + 1;
@@ -103,8 +109,8 @@ AppendPathList(const char* value,
 bool
 ProfileRequestIsPath(const std::string& request)
 {
-    if (request.find('/') != std::string::npos
-        || request.find('\\') != std::string::npos) {
+    if (request.find('/') != std::string::npos || request.find('\\') != std::string::npos)
+    {
         return true;
     }
     const std::filesystem::path candidate(request);
@@ -117,7 +123,8 @@ ProfileSearchPath(const std::vector<std::string>& extraDirs)
 {
     std::vector<std::filesystem::path> directories;
     directories.reserve(extraDirs.size() + 4);
-    for (const std::string& directory : extraDirs) {
+    for (const std::string& directory : extraDirs)
+    {
         directories.emplace_back(directory);
     }
 #if defined(_MSC_VER)
@@ -125,7 +132,8 @@ ProfileSearchPath(const std::vector<std::string>& extraDirs)
     // allocates, and this reads one variable once at startup.
     std::size_t length = 0;
     char* value = nullptr;
-    if (::_dupenv_s(&value, &length, "USDVRM_MOTION_PROFILE_PATH") == 0) {
+    if (::_dupenv_s(&value, &length, "USDVRM_MOTION_PROFILE_PATH") == 0)
+    {
         AppendPathList(value, &directories);
         std::free(value);
     }
@@ -134,11 +142,12 @@ ProfileSearchPath(const std::vector<std::string>& extraDirs)
 #endif
 
     const std::filesystem::path executableDir = ExecutableDirectory();
-    if (!executableDir.empty()) {
+    if (!executableDir.empty())
+    {
         // <prefix>/bin/<exe> -> <prefix>/share/... : a `cmake --install`
         // prefix, and a member archive unpacked on its own.
-        directories.push_back(executableDir.parent_path() / "share"
-                              / "usd-vrm-plugins" / "profiles" / "motion");
+        directories.push_back(executableDir.parent_path() / "share" / "usd-vrm-plugins" /
+                              "profiles" / "motion");
         // <prefix>/tools/<member>/bin/<exe> -> <prefix>/share/... : an
         // installed product, and this repository's own build tree. The two
         // installed layouts agree about where the data is relative to the
@@ -158,11 +167,11 @@ ProfileSearchPath(const std::vector<std::string>& extraDirs)
         // a profile only at `a/share/...` converted instead of refusing.
         const std::filesystem::path memberDir = executableDir.parent_path();
         const std::filesystem::path toolsDir = memberDir.parent_path();
-        if (executableDir.filename() == "bin" && toolsDir.filename() == "tools"
-            && !memberDir.filename().empty()) {
+        if (executableDir.filename() == "bin" && toolsDir.filename() == "tools" &&
+            !memberDir.filename().empty())
+        {
             const std::filesystem::path prefix = toolsDir.parent_path();
-            directories.push_back(prefix / "share" / "usd-vrm-plugins"
-                                  / "profiles" / "motion");
+            directories.push_back(prefix / "share" / "usd-vrm-plugins" / "profiles" / "motion");
             // tools/<member>/bin/<exe> -> the repository root's
             // profiles/motion.
             directories.push_back(prefix / "profiles" / "motion");
@@ -172,13 +181,14 @@ ProfileSearchPath(const std::vector<std::string>& extraDirs)
 }
 
 bool
-ResolveProfilePath(const std::string& request,
-                   const std::vector<std::string>& extraDirs,
+ResolveProfilePath(const std::string& request, const std::vector<std::string>& extraDirs,
                    std::filesystem::path* path, std::string* error)
 {
-    if (ProfileRequestIsPath(request)) {
+    if (ProfileRequestIsPath(request))
+    {
         std::error_code code;
-        if (!std::filesystem::is_regular_file(request, code)) {
+        if (!std::filesystem::is_regular_file(request, code))
+        {
             *error = "no profile file at '" + request + "'";
             return false;
         }
@@ -186,24 +196,26 @@ ResolveProfilePath(const std::string& request,
         return true;
     }
 
-    const std::vector<std::filesystem::path> directories =
-        ProfileSearchPath(extraDirs);
+    const std::vector<std::filesystem::path> directories = ProfileSearchPath(extraDirs);
     const std::string fileName = request + ".yaml";
-    for (const std::filesystem::path& directory : directories) {
+    for (const std::filesystem::path& directory : directories)
+    {
         std::error_code code;
         const std::filesystem::path candidate = directory / fileName;
-        if (std::filesystem::is_regular_file(candidate, code)) {
+        if (std::filesystem::is_regular_file(candidate, code))
+        {
             *path = candidate;
             return true;
         }
     }
 
-    *error = "no profile '" + request + "' was found. Looked for '" + fileName
-        + "' in:";
-    for (const std::filesystem::path& directory : directories) {
+    *error = "no profile '" + request + "' was found. Looked for '" + fileName + "' in:";
+    for (const std::filesystem::path& directory : directories)
+    {
         *error += "\n  " + directory.string();
     }
-    if (directories.empty()) {
+    if (directories.empty())
+    {
         *error += "\n  (nowhere: pass --profile-dir, set "
                   "USDVRM_MOTION_PROFILE_PATH, or name a file)";
     }

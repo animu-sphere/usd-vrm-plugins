@@ -79,7 +79,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace
+{
 
 using motion::HumanBone;
 
@@ -128,32 +129,36 @@ constexpr std::size_t kJointCount = 7;
 
 const char* const kRootJointToken = "Root";
 
-TfToken BoneAttribute(HumanBone bone)
+TfToken
+BoneAttribute(HumanBone bone)
 {
     return TfToken("vrm:humanBones:" + std::string(motion::HumanBoneName(bone)));
 }
 
-std::size_t Slot(HumanBone bone)
+std::size_t
+Slot(HumanBone bone)
 {
     return static_cast<std::size_t>(bone);
 }
 
 // Orientation, not representation: q and -q are one rotation.
-bool SameOrientation(const GfQuatf& a, const GfQuatf& b)
+bool
+SameOrientation(const GfQuatf& a, const GfQuatf& b)
 {
     const GfQuatf na = a.GetNormalized();
     const GfQuatf nb = b.GetNormalized();
     return std::abs(std::abs(GfDot(na, nb)) - 1.0f) <= 1e-6f;
 }
 
-bool Near(const GfVec3f& a, const GfVec3f& b, float tolerance = 1e-6f)
+bool
+Near(const GfVec3f& a, const GfVec3f& b, float tolerance = 1e-6f)
 {
-    return std::abs(a[0] - b[0]) <= tolerance
-        && std::abs(a[1] - b[1]) <= tolerance
-        && std::abs(a[2] - b[2]) <= tolerance;
+    return std::abs(a[0] - b[0]) <= tolerance && std::abs(a[1] - b[1]) <= tolerance &&
+           std::abs(a[2] - b[2]) <= tolerance;
 }
 
-GfQuatf About(const GfVec3f& axis, float degrees)
+GfQuatf
+About(const GfVec3f& axis, float degrees)
 {
     const float half = degrees * 3.14159265358979324f / 360.0f;
     return GfQuatf(std::cos(half), axis * std::sin(half));
@@ -166,15 +171,19 @@ const GfVec3f kZ(0, 0, 1);
 
 // Whether an error in `mark` says `what`. When none does, every error posted is
 // printed, so a red run says what was reported instead.
-bool MarkNames(const TfErrorMark& mark, const std::string& what)
+bool
+MarkNames(const TfErrorMark& mark, const std::string& what)
 {
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
-        if (it->GetCommentary().find(what) != std::string::npos) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
+        if (it->GetCommentary().find(what) != std::string::npos)
+        {
             return true;
         }
     }
     std::fprintf(stderr, "no error said \"%s\"; posted:\n", what.c_str());
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
         std::fprintf(stderr, "  %s\n", it->GetCommentary().c_str());
     }
     return false;
@@ -185,34 +194,47 @@ bool MarkNames(const TfErrorMark& mark, const std::string& what)
 // output. Errors and statuses are printed rather than swallowed.
 class Warnings : public TfDiagnosticMgr::Delegate
 {
-public:
-    Warnings() { TfDiagnosticMgr::GetInstance().AddDelegate(this); }
-    ~Warnings() override { TfDiagnosticMgr::GetInstance().RemoveDelegate(this); }
+  public:
+    Warnings()
+    {
+        TfDiagnosticMgr::GetInstance().AddDelegate(this);
+    }
+    ~Warnings() override
+    {
+        TfDiagnosticMgr::GetInstance().RemoveDelegate(this);
+    }
 
-    void IssueError(const TfError& error) override
+    void
+    IssueError(const TfError& error) override
     {
         std::fprintf(stderr, "error: %s\n", error.GetCommentary().c_str());
     }
-    void IssueFatalError(const TfCallContext&, const std::string& message) override
+    void
+    IssueFatalError(const TfCallContext&, const std::string& message) override
     {
         std::fprintf(stderr, "fatal: %s\n", message.c_str());
     }
-    void IssueStatus(const TfStatus& status) override
+    void
+    IssueStatus(const TfStatus& status) override
     {
         std::fprintf(stderr, "status: %s\n", status.GetCommentary().c_str());
     }
-    void IssueWarning(const TfWarning& warning) override
+    void
+    IssueWarning(const TfWarning& warning) override
     {
         std::lock_guard<std::mutex> lock(_mutex);
         _seen.push_back(warning.GetCommentary());
     }
 
-    std::vector<std::string> Take(const std::string& what)
+    std::vector<std::string>
+    Take(const std::string& what)
     {
         std::lock_guard<std::mutex> lock(_mutex);
         std::vector<std::string> matching;
-        for (const std::string& seen : _seen) {
-            if (seen.find(what) != std::string::npos) {
+        for (const std::string& seen : _seen)
+        {
+            if (seen.find(what) != std::string::npos)
+            {
                 matching.push_back(seen);
             }
         }
@@ -220,7 +242,7 @@ public:
         return matching;
     }
 
-private:
+  private:
     std::mutex _mutex;
     std::vector<std::string> _seen;
 };
@@ -237,7 +259,8 @@ struct Rig
 };
 
 // Opened directly and edited in memory, never saved -- each case opens its own.
-Rig Open(const std::string& fixture)
+Rig
+Open(const std::string& fixture)
 {
     Rig rig;
     rig.stage = UsdStage::Open(fixture);
@@ -248,13 +271,13 @@ Rig Open(const std::string& fixture)
     rig.clipAnimation = rig.stage->GetPrimAtPath(kClipAnimationPath);
     rig.posed = rig.stage->GetPrimAtPath(kPosedPath);
     rig.posedAnimation = rig.stage->GetPrimAtPath(kPosedAnimationPath);
-    assert(rig.target && rig.humanoid && rig.clip && rig.clipAnimation &&
-           rig.posed && rig.posedAnimation &&
-           "the retargeted rig fixture is missing a prim");
+    assert(rig.target && rig.humanoid && rig.clip && rig.clipAnimation && rig.posed &&
+           rig.posedAnimation && "the retargeted rig fixture is missing a prim");
     return rig;
 }
 
-std::vector<ExecUsdValueKey> KeysFor(const Rig& rig)
+std::vector<ExecUsdValueKey>
+KeysFor(const Rig& rig)
 {
     std::vector<ExecUsdValueKey> keys;
     keys.emplace_back(rig.target, kTargetSkeleton);
@@ -267,28 +290,32 @@ std::vector<ExecUsdValueKey> KeysFor(const Rig& rig)
 }
 
 template <class T>
-T ValueAt(const ExecUsdCacheView& view, int index, const char* what)
+T
+ValueAt(const ExecUsdCacheView& view, int index, const char* what)
 {
     const VtValue value = view.Get(index);
-    if (value.IsEmpty() || !value.IsHolding<T>()) {
+    if (value.IsEmpty() || !value.IsHolding<T>())
+    {
         std::fprintf(stderr, "no %s came back\n", what);
         assert(false && "a value this case needs did not come back");
     }
     return value.UncheckedGet<T>();
 }
 
-vrmRetarget::RetargetedPose RetargetAt(const ExecUsdCacheView& view,
-                                       int index = kRetargetKey)
+vrmRetarget::RetargetedPose
+RetargetAt(const ExecUsdCacheView& view, int index = kRetargetKey)
 {
     return ValueAt<vrmRetarget::RetargetedPose>(view, index, "retargeted pose");
 }
 
-motion::HumanoidPose PoseAt(const ExecUsdCacheView& view, int index)
+motion::HumanoidPose
+PoseAt(const ExecUsdCacheView& view, int index)
 {
     return ValueAt<motion::HumanoidPose>(view, index, "pose");
 }
 
-void AssertRefused(const ExecUsdCacheView& view, int index)
+void
+AssertRefused(const ExecUsdCacheView& view, int index)
 {
     assert(view.Get(index).IsEmpty() &&
            "a refusal came back carrying a value, which puts it back where a "
@@ -299,7 +326,8 @@ void AssertRefused(const ExecUsdCacheView& view, int index)
 // retarget refuses by design -- and moves the system to `frame`. The refusal
 // posted while arming is the one TestTheRetargetComputes asserts; here it is
 // cleared, so the case reads only what its own frame posts.
-void ArmAt(ExecUsdSystem& system, ExecUsdRequest& request, double frame)
+void
+ArmAt(ExecUsdSystem& system, ExecUsdRequest& request, double frame)
 {
     {
         TfErrorMark mark;
@@ -314,7 +342,8 @@ void ArmAt(ExecUsdSystem& system, ExecUsdRequest& request, double frame)
 // ---------------------------------------------------------------------------
 
 // /Clip/HumanoidSkeleton: identity rests, the semantic chain its paths state.
-vrmRetarget::SourceRestPose ClipRest()
+vrmRetarget::SourceRestPose
+ClipRest()
 {
     vrmRetarget::SourceRestPose rest;
     rest.localTranslations[Slot(HumanBone::Hips)] = GfVec3f(0, 1, 0);
@@ -322,10 +351,8 @@ vrmRetarget::SourceRestPose ClipRest()
     rest.localTranslations[Slot(HumanBone::Chest)] = GfVec3f(0, 0.15f, 0);
     rest.localTranslations[Slot(HumanBone::Neck)] = GfVec3f(0, 0.2f, 0);
     rest.localTranslations[Slot(HumanBone::Head)] = GfVec3f(0, 0.1f, 0);
-    rest.localTranslations[Slot(HumanBone::LeftUpperArm)] =
-        GfVec3f(0.1f, 0.15f, 0);
-    rest.localTranslations[Slot(HumanBone::RightUpperArm)] =
-        GfVec3f(-0.1f, 0.15f, 0);
+    rest.localTranslations[Slot(HumanBone::LeftUpperArm)] = GfVec3f(0.1f, 0.15f, 0);
+    rest.localTranslations[Slot(HumanBone::RightUpperArm)] = GfVec3f(-0.1f, 0.15f, 0);
     rest.SetParent(HumanBone::Spine, HumanBone::Hips);
     rest.SetParent(HumanBone::Chest, HumanBone::Spine);
     rest.SetParent(HumanBone::Neck, HumanBone::Chest);
@@ -336,25 +363,39 @@ vrmRetarget::SourceRestPose ClipRest()
 }
 
 // The target rig's rest, joint by joint.
-GfQuatf TargetRestRotation(std::size_t joint)
+GfQuatf
+TargetRestRotation(std::size_t joint)
 {
-    switch (joint) {
-    case kHipsJoint: return About(kY, 90.0f);
-    case kArmJoint: return About(kZ, 90.0f);
-    default: return kIdentity;
+    switch (joint)
+    {
+    case kHipsJoint:
+        return About(kY, 90.0f);
+    case kArmJoint:
+        return About(kZ, 90.0f);
+    default:
+        return kIdentity;
     }
 }
 
-GfVec3f TargetRestTranslation(std::size_t joint)
+GfVec3f
+TargetRestTranslation(std::size_t joint)
 {
-    switch (joint) {
-    case kHipsJoint: return GfVec3f(0, 1, 0);
-    case kSpineJoint: return GfVec3f(0, 0.1f, 0);
-    case kChestJoint: return GfVec3f(0, 0.15f, 0);
-    case kNeckJoint: return GfVec3f(0, 0.2f, 0);
-    case kHeadJoint: return GfVec3f(0, 0.1f, 0);
-    case kArmJoint: return GfVec3f(0.1f, 0.15f, 0);
-    default: return GfVec3f(0.0f);
+    switch (joint)
+    {
+    case kHipsJoint:
+        return GfVec3f(0, 1, 0);
+    case kSpineJoint:
+        return GfVec3f(0, 0.1f, 0);
+    case kChestJoint:
+        return GfVec3f(0, 0.15f, 0);
+    case kNeckJoint:
+        return GfVec3f(0, 0.2f, 0);
+    case kHeadJoint:
+        return GfVec3f(0, 0.1f, 0);
+    case kArmJoint:
+        return GfVec3f(0.1f, 0.15f, 0);
+    default:
+        return GfVec3f(0.0f);
     }
 }
 
@@ -364,10 +405,9 @@ struct Binding
     HumanBone bone;
     std::size_t joint;
 };
-const Binding kBindings[] = {
-    {HumanBone::Hips, kHipsJoint},   {HumanBone::Spine, kSpineJoint},
-    {HumanBone::Chest, kChestJoint}, {HumanBone::Neck, kNeckJoint},
-    {HumanBone::Head, kHeadJoint},   {HumanBone::LeftUpperArm, kArmJoint}};
+const Binding kBindings[] = {{HumanBone::Hips, kHipsJoint},   {HumanBone::Spine, kSpineJoint},
+                             {HumanBone::Chest, kChestJoint}, {HumanBone::Neck, kNeckJoint},
+                             {HumanBone::Head, kHeadJoint},   {HumanBone::LeftUpperArm, kArmJoint}};
 
 // The clip at frame 24, as its text states it.
 const GfQuatf kSpineAt24 = About(kX, 30.0f);
@@ -378,7 +418,8 @@ const GfVec3f kHipsRest(0, 1, 0);
 // ---------------------------------------------------------------------------
 // The retarget the fixture states
 // ---------------------------------------------------------------------------
-void TestTheRetargetComputes(const std::string& fixture)
+void
+TestTheRetargetComputes(const std::string& fixture)
 {
     Warnings warnings;
     const Rig rig = Open(fixture);
@@ -386,11 +427,9 @@ void TestTheRetargetComputes(const std::string& fixture)
 
     std::set<int> timeReported;
     ExecUsdRequest request = system.BuildRequest(
-        KeysFor(rig),
-        [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
-        [&](const ExecRequestIndexSet& indices) {
-            timeReported.insert(indices.begin(), indices.end());
-        });
+        KeysFor(rig), [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
+        [&](const ExecRequestIndexSet& indices)
+        { timeReported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid());
 
     // ---- the default time code, which every request is armed at -----------
@@ -402,8 +441,7 @@ void TestTheRetargetComputes(const std::string& fixture)
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
         const motion::HumanoidPose empty = PoseAt(view, kSampledKey);
-        assert(empty.validRotations.none() && !empty.root.hasPosition &&
-               empty.timestamp == 0.0 &&
+        assert(empty.validRotations.none() && !empty.root.hasPosition && empty.timestamp == 0.0 &&
                "the sampler no longer answers an empty pose at the default "
                "time code; revisit the retarget's refusal");
         assert(PoseAt(view, kBoundKey) == empty);
@@ -429,15 +467,13 @@ void TestTheRetargetComputes(const std::string& fixture)
     {
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
-        target = ValueAt<vrmRetarget::TargetSkeleton>(view, kTargetKey,
-                                                      "target skeleton");
+        target = ValueAt<vrmRetarget::TargetSkeleton>(view, kTargetKey, "target skeleton");
         map = ValueAt<vrmRetarget::HumanoidMap>(view, kMapKey, "humanoid map");
-        correction = ValueAt<vrmRetarget::RestPoseCorrection>(
-            view, kCorrectionKey, "rest-pose correction");
+        correction =
+            ValueAt<vrmRetarget::RestPoseCorrection>(view, kCorrectionKey, "rest-pose correction");
         sampled = PoseAt(view, kSampledKey);
         // The pose crossed from one bundle to the other unchanged.
-        assert(PoseAt(view, kBoundKey) == sampled &&
-               "the bound pose is not the sampler's pose");
+        assert(PoseAt(view, kBoundKey) == sampled && "the bound pose is not the sampler's pose");
         retargeted = RetargetAt(view);
         assert(mark.IsClean() && "the fixture's retarget posted an error");
     }
@@ -445,32 +481,29 @@ void TestTheRetargetComputes(const std::string& fixture)
     // ---- the wrapper claim --------------------------------------------------
     // The node IS PoseRetargeter over the rig, the map, the clip's rest and the
     // library's default options, asked for the sampler's pose: bit for bit.
-    assert(retargeted ==
-               vrmRetarget::PoseRetargeter(target, map, ClipRest())
-                   .Retarget(sampled) &&
+    assert(retargeted == vrmRetarget::PoseRetargeter(target, map, ClipRest()).Retarget(sampled) &&
            "the node's pose is not the library's over the same values");
 
     // ---- and the cost: the correction it recomputes is the cached one -------
     // Every mapped joint's rotation is the cached correction applied to the
     // clip's, exactly -- so the value vrm.computeRestPoseCorrection holds is
     // the one this node computed again, for this frame.
-    for (const Binding& b : kBindings) {
+    for (const Binding& b : kBindings)
+    {
         assert(retargeted.rotations[b.joint] ==
                    correction.Apply(b.bone, sampled.localRotations[Slot(b.bone)]) &&
                "the retarget's correction is not the cached one");
     }
 
     // ---- what it means, from the definition --------------------------------
-    assert(retargeted.timestamp == 1.0 &&
-           "frame 24 at 24 per second is not one second");
+    assert(retargeted.timestamp == 1.0 && "frame 24 at 24 per second is not one second");
     assert(retargeted.rotations.size() == kJointCount &&
            retargeted.translations.size() == kJointCount);
 
     // The spine keeps its world-space delta under the turned hips.
     {
         const GfQuatf parent = About(kY, 90.0f);
-        const GfQuatf delta =
-            (parent * retargeted.rotations[kSpineJoint]) * parent.GetInverse();
+        const GfQuatf delta = (parent * retargeted.rotations[kSpineJoint]) * parent.GetInverse();
         assert(SameOrientation(delta, kSpineAt24) &&
                "the spine's world delta did not survive the retarget");
     }
@@ -479,16 +512,14 @@ void TestTheRetargetComputes(const std::string& fixture)
         const GfQuatf parent = About(kY, 90.0f);
         const GfQuatf rest = TargetRestRotation(kArmJoint);
         const GfQuatf delta =
-            (parent * retargeted.rotations[kArmJoint] * rest.GetInverse())
-            * parent.GetInverse();
+            (parent * retargeted.rotations[kArmJoint] * rest.GetInverse()) * parent.GetInverse();
         assert(SameOrientation(delta, kArmAt24) &&
                "the arm's world delta did not survive the retarget");
     }
     // A bone at its clip rest lands on the rig's rest.
-    for (const std::size_t joint : {kHipsJoint, kChestJoint, kNeckJoint,
-                                    kHeadJoint}) {
-        assert(SameOrientation(retargeted.rotations[joint],
-                               TargetRestRotation(joint)));
+    for (const std::size_t joint : {kHipsJoint, kChestJoint, kNeckJoint, kHeadJoint})
+    {
+        assert(SameOrientation(retargeted.rotations[joint], TargetRestRotation(joint)));
     }
     // The joint no bone binds stays at rest, and the right upper arm the clip
     // drives -- which the humanoid does not bind -- moved nothing.
@@ -503,8 +534,8 @@ void TestTheRetargetComputes(const std::string& fixture)
     assert(Near(retargeted.translations[kHipsJoint],
                 TargetRestTranslation(kHipsJoint) + (kHipsAt24 - kHipsRest)) &&
            "the hips did not carry the clip's root motion");
-    for (const std::size_t joint : {kSpineJoint, kChestJoint, kNeckJoint,
-                                    kHeadJoint, kArmJoint}) {
+    for (const std::size_t joint : {kSpineJoint, kChestJoint, kNeckJoint, kHeadJoint, kArmJoint})
+    {
         assert(retargeted.translations[joint] == TargetRestTranslation(joint));
     }
 
@@ -522,8 +553,7 @@ void TestTheRetargetComputes(const std::string& fixture)
         const motion::HumanoidPose between = PoseAt(view, kSampledKey);
         assert(between.timestamp == 0.5);
         assert(RetargetAt(view) ==
-               vrmRetarget::PoseRetargeter(target, map, ClipRest())
-                   .Retarget(between));
+               vrmRetarget::PoseRetargeter(target, map, ClipRest()).Retarget(between));
     }
     std::printf("execVrm retarget: the node is PoseRetargeter over the sampler's "
                 "pose, its correction is the cached one, and a frame change "
@@ -533,7 +563,8 @@ void TestTheRetargetComputes(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // The four root-motion statements
 // ---------------------------------------------------------------------------
-void TestTheRootMotionStatementsAreTheToolsFlags(const std::string& fixture)
+void
+TestTheRootMotionStatementsAreTheToolsFlags(const std::string& fixture)
 {
     struct Case
     {
@@ -548,44 +579,40 @@ void TestTheRootMotionStatementsAreTheToolsFlags(const std::string& fixture)
     const GfVec3f delta = kHipsAt24 - kHipsRest;
     const Case cases[] = {
         {"ignore", "ignore", nullptr, 1.0f, false, kHipsRest, GfVec3f(0.0f)},
-        {"hips, stated", "hips", nullptr, 1.0f, false, kHipsRest + delta,
-         GfVec3f(0.0f)},
-        {"root onto Root", "root", kRootJointToken, 1.0f, false, kHipsRest,
-         delta},
-        {"a scale of 2", nullptr, nullptr, 2.0f, false, kHipsRest + delta * 2.0f,
-         GfVec3f(0.0f)},
+        {"hips, stated", "hips", nullptr, 1.0f, false, kHipsRest + delta, GfVec3f(0.0f)},
+        {"root onto Root", "root", kRootJointToken, 1.0f, false, kHipsRest, delta},
+        {"a scale of 2", nullptr, nullptr, 2.0f, false, kHipsRest + delta * 2.0f, GfVec3f(0.0f)},
         {"the target's height", nullptr, nullptr, 1.0f, true,
          kHipsRest + GfVec3f(delta[0], 0.0f, delta[2]), GfVec3f(0.0f)},
         // A root joint stated beside a mode that does not read it is not read,
         // as `--root-joint` is not.
-        {"a root joint under hips", "hips", "NoSuchJoint", 1.0f, false,
-         kHipsRest + delta, GfVec3f(0.0f)},
+        {"a root joint under hips", "hips", "NoSuchJoint", 1.0f, false, kHipsRest + delta,
+         GfVec3f(0.0f)},
     };
 
-    for (const Case& c : cases) {
+    for (const Case& c : cases)
+    {
         const Rig rig = Open(fixture);
         UsdPrim humanoid = rig.humanoid;
-        if (c.mode) {
-            assert(humanoid
-                       .CreateAttribute(kRootMotion, SdfValueTypeNames->Token)
+        if (c.mode)
+        {
+            assert(humanoid.CreateAttribute(kRootMotion, SdfValueTypeNames->Token)
                        .Set(TfToken(c.mode)));
         }
-        if (c.rootJoint) {
-            assert(humanoid
-                       .CreateAttribute(kRootJoint, SdfValueTypeNames->Token)
+        if (c.rootJoint)
+        {
+            assert(humanoid.CreateAttribute(kRootJoint, SdfValueTypeNames->Token)
                        .Set(TfToken(c.rootJoint)));
         }
-        if (c.scale != 1.0f) {
-            assert(humanoid
-                       .CreateAttribute(kTranslationScale,
-                                        SdfValueTypeNames->Float)
-                       .Set(c.scale));
+        if (c.scale != 1.0f)
+        {
+            assert(
+                humanoid.CreateAttribute(kTranslationScale, SdfValueTypeNames->Float).Set(c.scale));
         }
-        if (c.preserve) {
-            assert(humanoid
-                       .CreateAttribute(kPreserveTargetHeight,
-                                        SdfValueTypeNames->Bool)
-                       .Set(true));
+        if (c.preserve)
+        {
+            assert(
+                humanoid.CreateAttribute(kPreserveTargetHeight, SdfValueTypeNames->Bool).Set(true));
         }
 
         ExecUsdSystem system(rig.stage);
@@ -596,13 +623,11 @@ void TestTheRootMotionStatementsAreTheToolsFlags(const std::string& fixture)
         const vrmRetarget::RetargetedPose pose = RetargetAt(view);
         assert(mark.IsClean());
         if (!Near(pose.translations[kHipsJoint], c.hips) ||
-            !Near(pose.translations[kRootJointSlot], c.root)) {
-            std::fprintf(stderr,
-                         "%s: hips (%g %g %g), root (%g %g %g)\n", c.what,
-                         pose.translations[kHipsJoint][0],
-                         pose.translations[kHipsJoint][1],
-                         pose.translations[kHipsJoint][2],
-                         pose.translations[kRootJointSlot][0],
+            !Near(pose.translations[kRootJointSlot], c.root))
+        {
+            std::fprintf(stderr, "%s: hips (%g %g %g), root (%g %g %g)\n", c.what,
+                         pose.translations[kHipsJoint][0], pose.translations[kHipsJoint][1],
+                         pose.translations[kHipsJoint][2], pose.translations[kRootJointSlot][0],
                          pose.translations[kRootJointSlot][1],
                          pose.translations[kRootJointSlot][2]);
             assert(false && "a root-motion statement landed somewhere else");
@@ -615,17 +640,16 @@ void TestTheRootMotionStatementsAreTheToolsFlags(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // Invalidation
 // ---------------------------------------------------------------------------
-void TestInvalidationReachesTheRetarget(const std::string& fixture)
+void
+TestInvalidationReachesTheRetarget(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
     ExecUsdSystem system(rig.stage);
 
     std::set<int> reported;
     ExecUsdRequest request = system.BuildRequest(
-        KeysFor(rig),
-        [&](const ExecRequestIndexSet& indices, const EfTimeInterval&) {
-            reported.insert(indices.begin(), indices.end());
-        });
+        KeysFor(rig), [&](const ExecRequestIndexSet& indices, const EfTimeInterval&)
+        { reported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid());
     ArmAt(system, request, 24.0);
     vrmRetarget::RetargetedPose pose = RetargetAt(system.Compute(request));
@@ -634,14 +658,13 @@ void TestInvalidationReachesTheRetarget(const std::string& fixture)
     reported.clear();
     {
         UsdPrim humanoid = rig.humanoid;
-        assert(humanoid.CreateAttribute(kRootMotion, SdfValueTypeNames->Token)
-                   .Set(TfToken("ignore")));
+        assert(
+            humanoid.CreateAttribute(kRootMotion, SdfValueTypeNames->Token).Set(TfToken("ignore")));
     }
     assert(reported == std::set<int>({kRetargetKey}) &&
            "a root-motion statement reported more than the retarget");
     {
-        const vrmRetarget::RetargetedPose ignored =
-            RetargetAt(system.Compute(request));
+        const vrmRetarget::RetargetedPose ignored = RetargetAt(system.Compute(request));
         assert(ignored.translations[kHipsJoint] == kHipsRest);
         assert(ignored.rotations == pose.rotations);
         pose = ignored;
@@ -653,28 +676,24 @@ void TestInvalidationReachesTheRetarget(const std::string& fixture)
         UsdAttribute rotations = rig.clipAnimation.GetAttribute(kRotations);
         VtArray<GfQuatf> values;
         assert(rotations.Get(&values, UsdTimeCode(24.0)));
-        values[4] = About(kY, 45.0f);  // the head
+        values[4] = About(kY, 45.0f); // the head
         assert(rotations.Set(values, UsdTimeCode(24.0)));
     }
     assert(reported.count(kSampledKey) && reported.count(kBoundKey) &&
-           reported.count(kRetargetKey) &&
-           "a key of the clip did not reach the retarget");
+           reported.count(kRetargetKey) && "a key of the clip did not reach the retarget");
     assert(!reported.count(kCorrectionKey) && !reported.count(kMapKey) &&
            "a key of the clip reported a rig statement");
     {
-        const vrmRetarget::RetargetedPose turned =
-            RetargetAt(system.Compute(request));
+        const vrmRetarget::RetargetedPose turned = RetargetAt(system.Compute(request));
         const GfQuatf parent = About(kY, 90.0f);
-        assert(SameOrientation(
-            (parent * turned.rotations[kHeadJoint]) * parent.GetInverse(),
-            About(kY, 45.0f)));
+        assert(SameOrientation((parent * turned.rotations[kHeadJoint]) * parent.GetInverse(),
+                               About(kY, 45.0f)));
         pose = turned;
     }
 
     // ---- the binding: the clip skeleton bound to the posed animation --------
     reported.clear();
-    assert(rig.clip.GetRelationship(kAnimationSourceRel)
-               .SetTargets({kPosedAnimationPath}));
+    assert(rig.clip.GetRelationship(kAnimationSourceRel).SetTargets({kPosedAnimationPath}));
     assert(reported.count(kBoundKey) && reported.count(kRetargetKey) &&
            "rebinding the clip skeleton did not reach the retarget");
     assert(!reported.count(kSampledKey) && !reported.count(kCorrectionKey));
@@ -683,9 +702,8 @@ void TestInvalidationReachesTheRetarget(const std::string& fixture)
         // The posed animation names its bones under `Reference`, and the
         // sampler reads them by leaf.
         const motion::HumanoidPose bound = PoseAt(view, kBoundKey);
-        assert(SameOrientation(
-            bound.localRotations[Slot(HumanBone::LeftUpperArm)],
-            About(kZ, -90.0f)));
+        assert(SameOrientation(bound.localRotations[Slot(HumanBone::LeftUpperArm)],
+                               About(kZ, -90.0f)));
         pose = RetargetAt(view);
     }
 
@@ -701,11 +719,10 @@ void TestInvalidationReachesTheRetarget(const std::string& fixture)
            "retarget");
     assert(!reported.count(kMapKey));
     {
-        const vrmRetarget::RetargetedPose posed =
-            RetargetAt(system.Compute(request));
-        for (const Binding& b : kBindings) {
-            assert(SameOrientation(posed.rotations[b.joint],
-                                   TargetRestRotation(b.joint)) &&
+        const vrmRetarget::RetargetedPose posed = RetargetAt(system.Compute(request));
+        for (const Binding& b : kBindings)
+        {
+            assert(SameOrientation(posed.rotations[b.joint], TargetRestRotation(b.joint)) &&
                    "a clip at its rest did not land on the rig's rest");
         }
         // Ignore, stated above: the hips keep the rig's rest translation.
@@ -718,7 +735,8 @@ void TestInvalidationReachesTheRetarget(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // A driver's pose, crossing both bundles
 // ---------------------------------------------------------------------------
-void TestADriversPoseReachesTheRetarget(const std::string& fixture)
+void
+TestADriversPoseReachesTheRetarget(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
     ExecUsdSystem system(rig.stage);
@@ -726,8 +744,7 @@ void TestADriversPoseReachesTheRetarget(const std::string& fixture)
     ArmAt(system, request, 24.0);
     ExecUsdCacheView plain = system.Compute(request);
     const vrmRetarget::TargetSkeleton target =
-        ValueAt<vrmRetarget::TargetSkeleton>(plain, kTargetKey,
-                                             "target skeleton");
+        ValueAt<vrmRetarget::TargetSkeleton>(plain, kTargetKey, "target skeleton");
     const vrmRetarget::HumanoidMap map =
         ValueAt<vrmRetarget::HumanoidMap>(plain, kMapKey, "humanoid map");
     const vrmRetarget::RetargetedPose unchanged = RetargetAt(plain);
@@ -740,19 +757,17 @@ void TestADriversPoseReachesTheRetarget(const std::string& fixture)
     held.root.worldPosition = GfVec3f(-0.3f, 0.95f, 0.0f);
     held.root.hasPosition = true;
 
-    for (const ExecUsdValueKey& key :
-         {ExecUsdValueKey(rig.clipAnimation, kSampleAnimation),
-          ExecUsdValueKey(rig.clip, kBoundPose)}) {
+    for (const ExecUsdValueKey& key : {ExecUsdValueKey(rig.clipAnimation, kSampleAnimation),
+                                       ExecUsdValueKey(rig.clip, kBoundPose)})
+    {
         std::vector<ExecUsdValueOverride> overrides;
         overrides.push_back(ExecUsdValueOverride{key, VtValue(held)});
         TfErrorMark mark;
-        ExecUsdCacheView view =
-            system.ComputeWithOverrides(request, std::move(overrides));
+        ExecUsdCacheView view = system.ComputeWithOverrides(request, std::move(overrides));
         assert(mark.IsClean());
         assert(PoseAt(view, kBoundKey) == held);
         assert(RetargetAt(view) ==
-                   vrmRetarget::PoseRetargeter(target, map, ClipRest())
-                       .Retarget(held) &&
+                   vrmRetarget::PoseRetargeter(target, map, ClipRest()).Retarget(held) &&
                "an overridden pose did not reach the retarget");
     }
 
@@ -765,8 +780,8 @@ void TestADriversPoseReachesTheRetarget(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // Refusals
 // ---------------------------------------------------------------------------
-void TestTheRootMotionStatementsAreRefusedWhenUnhonourable(
-    const std::string& fixture)
+void
+TestTheRootMotionStatementsAreRefusedWhenUnhonourable(const std::string& fixture)
 {
     struct Case
     {
@@ -790,24 +805,24 @@ void TestTheRootMotionStatementsAreRefusedWhenUnhonourable(
          "'vrm:retarget:translationScale' is not a finite number"},
     };
 
-    for (const Case& c : cases) {
+    for (const Case& c : cases)
+    {
         const Rig rig = Open(fixture);
         UsdPrim humanoid = rig.humanoid;
-        if (c.mode) {
-            assert(humanoid
-                       .CreateAttribute(kRootMotion, SdfValueTypeNames->Token)
+        if (c.mode)
+        {
+            assert(humanoid.CreateAttribute(kRootMotion, SdfValueTypeNames->Token)
                        .Set(TfToken(c.mode)));
         }
-        if (c.rootJoint) {
-            assert(humanoid
-                       .CreateAttribute(kRootJoint, SdfValueTypeNames->Token)
+        if (c.rootJoint)
+        {
+            assert(humanoid.CreateAttribute(kRootJoint, SdfValueTypeNames->Token)
                        .Set(TfToken(c.rootJoint)));
         }
-        if (c.scale != 1.0f) {
-            assert(humanoid
-                       .CreateAttribute(kTranslationScale,
-                                        SdfValueTypeNames->Float)
-                       .Set(c.scale));
+        if (c.scale != 1.0f)
+        {
+            assert(
+                humanoid.CreateAttribute(kTranslationScale, SdfValueTypeNames->Float).Set(c.scale));
         }
 
         ExecUsdSystem system(rig.stage);
@@ -816,11 +831,10 @@ void TestTheRootMotionStatementsAreRefusedWhenUnhonourable(
         ExecUsdCacheView view = system.Compute(request);
         AssertRefused(view, kRetargetKey);
         // The correction reads none of it, and answers.
-        ValueAt<vrmRetarget::RestPoseCorrection>(view, kCorrectionKey,
-                                                 "rest-pose correction");
-        if (!MarkNames(mark, c.message)) {
-            std::fprintf(stderr, "%s: expected an error naming \"%s\"\n",
-                         c.what, c.message);
+        ValueAt<vrmRetarget::RestPoseCorrection>(view, kCorrectionKey, "rest-pose correction");
+        if (!MarkNames(mark, c.message))
+        {
+            std::fprintf(stderr, "%s: expected an error naming \"%s\"\n", c.what, c.message);
             assert(false && "a root-motion statement was not refused");
         }
         mark.Clear();
@@ -829,7 +843,8 @@ void TestTheRootMotionStatementsAreRefusedWhenUnhonourable(
                 "unknown one, and a scale that is no number are refused\n");
 }
 
-void TestAClipTheSkeletonCannotReachIsRefused(const std::string& fixture)
+void
+TestAClipTheSkeletonCannotReachIsRefused(const std::string& fixture)
 {
     struct Case
     {
@@ -839,28 +854,36 @@ void TestAClipTheSkeletonCannotReachIsRefused(const std::string& fixture)
         const char* message;
     };
     const Case cases[] = {
-        {"no binding", true, {},
+        {"no binding", true, {}, "vrm.computeBoundPose: 'skel:animationSource' reaches nothing"},
+        {"a binding to nothing",
+         false,
+         {SdfPath("/Clip/Nowhere")},
          "vrm.computeBoundPose: 'skel:animationSource' reaches nothing"},
-        {"a binding to nothing", false, {SdfPath("/Clip/Nowhere")},
-         "vrm.computeBoundPose: 'skel:animationSource' reaches nothing"},
-        {"two animations", false, {kClipAnimationPath, kPosedAnimationPath},
+        {"two animations",
+         false,
+         {kClipAnimationPath, kPosedAnimationPath},
          "'skel:animationSource' reaches 2 objects"},
         // Not an animation: the SkelRoot provides no motion.sampleAnimation
         // and is dropped from the fan-in while the network compiles.
-        {"a binding to something that is not an animation", false,
+        {"a binding to something that is not an animation",
+         false,
          {SdfPath("/Clip")},
          "'skel:animationSource' targets </Clip>, which answered no "
          "motion.sampleAnimation"},
     };
 
-    for (const Case& c : cases) {
+    for (const Case& c : cases)
+    {
         const Rig rig = Open(fixture);
         UsdRelationship binding = rig.clip.GetRelationship(kAnimationSourceRel);
         assert(binding);
-        if (c.clear) {
+        if (c.clear)
+        {
             UsdPrim clip = rig.clip;
             assert(clip.RemoveProperty(kAnimationSourceRel));
-        } else {
+        }
+        else
+        {
             assert(binding.SetTargets(c.targets));
         }
 
@@ -870,12 +893,12 @@ void TestAClipTheSkeletonCannotReachIsRefused(const std::string& fixture)
         ExecUsdCacheView view = system.Compute(request);
         AssertRefused(view, kBoundKey);
         AssertRefused(view, kRetargetKey);
-        ValueAt<vrmRetarget::RestPoseCorrection>(view, kCorrectionKey,
-                                                 "rest-pose correction");
+        ValueAt<vrmRetarget::RestPoseCorrection>(view, kCorrectionKey, "rest-pose correction");
         if (!MarkNames(mark, c.message) ||
             !MarkNames(mark, "vrm.humanoidRetarget: the source skeleton "
                              "</Clip/HumanoidSkeleton> answered no "
-                             "vrm.computeBoundPose")) {
+                             "vrm.computeBoundPose"))
+        {
             std::fprintf(stderr, "%s: not refused as expected\n", c.what);
             assert(false && "a clip the skeleton cannot reach was answered");
         }
@@ -885,8 +908,8 @@ void TestAClipTheSkeletonCannotReachIsRefused(const std::string& fixture)
                 "one that is not an animation are each refused, twice\n");
 }
 
-void TestASamplerThatRefusedIsRefusedAcrossBothBundles(
-    const std::string& fixture)
+void
+TestASamplerThatRefusedIsRefusedAcrossBothBundles(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
     rig.clipAnimation.GetAttribute(kRate).Block();
@@ -908,8 +931,8 @@ void TestASamplerThatRefusedIsRefusedAcrossBothBundles(
                 "bound pose and the retarget in turn\n");
 }
 
-void TestTheSourceAndTheRigAreRefusedAsTheCorrectionRefusesThem(
-    const std::string& fixture)
+void
+TestTheSourceAndTheRigAreRefusedAsTheCorrectionRefusesThem(const std::string& fixture)
 {
     {
         const Rig rig = Open(fixture);
@@ -926,8 +949,7 @@ void TestTheSourceAndTheRigAreRefusedAsTheCorrectionRefusesThem(
     }
     {
         const Rig rig = Open(fixture);
-        assert(rig.humanoid.GetRelationship(kSourceRel).SetTargets(
-            {kClipPath, kPosedPath}));
+        assert(rig.humanoid.GetRelationship(kSourceRel).SetTargets({kClipPath, kPosedPath}));
         ExecUsdSystem system(rig.stage);
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
         TfErrorMark mark;
@@ -939,8 +961,7 @@ void TestTheSourceAndTheRigAreRefusedAsTheCorrectionRefusesThem(
     }
     {
         const Rig rig = Open(fixture);
-        assert(rig.humanoid.GetRelationship(kSourceRel).SetTargets(
-            {kTargetPath}));
+        assert(rig.humanoid.GetRelationship(kSourceRel).SetTargets({kTargetPath}));
         ExecUsdSystem system(rig.stage);
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
         TfErrorMark mark;
@@ -952,8 +973,8 @@ void TestTheSourceAndTheRigAreRefusedAsTheCorrectionRefusesThem(
     }
     {
         const Rig rig = Open(fixture);
-        assert(rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Hips))
-                   .Set(TfToken("J_Bip_C_Hips")));
+        assert(
+            rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Hips)).Set(TfToken("J_Bip_C_Hips")));
         ExecUsdSystem system(rig.stage);
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
         TfErrorMark mark;
@@ -974,7 +995,8 @@ void TestTheSourceAndTheRigAreRefusedAsTheCorrectionRefusesThem(
 // Every other request here also asks for the correction, which states the same
 // reason -- so this one asks for the retarget alone. A retarget that pointed at
 // the correction's message would point at a message nobody posted.
-void TestTheRetargetStatesWhyASourceIsNotAClip(const std::string& fixture)
+void
+TestTheRetargetStatesWhyASourceIsNotAClip(const std::string& fixture)
 {
     struct Case
     {
@@ -986,13 +1008,14 @@ void TestTheRetargetStatesWhyASourceIsNotAClip(const std::string& fixture)
         {"the target rig as its own source", false,
          "vrm.humanoidRetarget: the source skeleton </Asset/skel/Skeleton> "
          "names no human bone"},
-        {"one bone at two joints", true,
-         "hips at 'hips', hips at 'Reference/hips'"},
+        {"one bone at two joints", true, "hips at 'hips', hips at 'Reference/hips'"},
     };
 
-    for (const Case& c : cases) {
+    for (const Case& c : cases)
+    {
         const Rig rig = Open(fixture);
-        if (c.duplicate) {
+        if (c.duplicate)
+        {
             UsdAttribute joints = rig.clip.GetAttribute(kJoints);
             UsdAttribute rest = rig.clip.GetAttribute(kRestTransforms);
             VtArray<TfToken> tokens;
@@ -1003,9 +1026,10 @@ void TestTheRetargetStatesWhyASourceIsNotAClip(const std::string& fixture)
             matrices.push_back(GfMatrix4d(1.0));
             matrices.push_back(GfMatrix4d(1.0));
             assert(joints.Set(tokens) && rest.Set(matrices));
-        } else {
-            assert(rig.humanoid.GetRelationship(kSourceRel).SetTargets(
-                {kTargetPath}));
+        }
+        else
+        {
+            assert(rig.humanoid.GetRelationship(kSourceRel).SetTargets({kTargetPath}));
         }
 
         ExecUsdSystem system(rig.stage);
@@ -1015,14 +1039,14 @@ void TestTheRetargetStatesWhyASourceIsNotAClip(const std::string& fixture)
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
         AssertRefused(view, 0);
-        if (!MarkNames(mark, c.message)) {
+        if (!MarkNames(mark, c.message))
+        {
             std::fprintf(stderr, "%s: the retarget did not say why\n", c.what);
             assert(false && "the retarget's refusal named no reason");
         }
-        for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd();
-             ++it) {
-            assert(it->GetCommentary().find("vrm.computeRestPoseCorrection")
-                       == std::string::npos &&
+        for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+        {
+            assert(it->GetCommentary().find("vrm.computeRestPoseCorrection") == std::string::npos &&
                    "an error named a computation this request never asked for");
         }
         mark.Clear();
@@ -1040,27 +1064,30 @@ void TestTheRetargetStatesWhyASourceIsNotAClip(const std::string& fixture)
 // follows that walk through `vrm.computeBindingPose` and NamespaceAncestor.
 
 // The retarget at frame 24, over whatever the rig's stage now states.
-vrmRetarget::RetargetedPose RetargetAt24(const Rig& rig)
+vrmRetarget::RetargetedPose
+RetargetAt24(const Rig& rig)
 {
     ExecUsdSystem system(rig.stage);
     ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
     ArmAt(system, request, 24.0);
     TfErrorMark mark;
     const vrmRetarget::RetargetedPose pose = RetargetAt(system.Compute(request));
-    if (!mark.IsClean()) {
+    if (!mark.IsClean())
+    {
         MarkNames(mark, "(nothing: this case expected no error)");
         assert(false && "an inherited binding posted an error");
     }
     return pose;
 }
 
-void TestTheBindingIsInheritedAsUsdSkelInheritsIt(const std::string& fixture)
+void
+TestTheBindingIsInheritedAsUsdSkelInheritsIt(const std::string& fixture)
 {
     const vrmRetarget::RetargetedPose clip = RetargetAt24(Open(fixture));
-    const vrmRetarget::RetargetedPose posed = [&fixture] {
+    const vrmRetarget::RetargetedPose posed = [&fixture]
+    {
         const Rig rig = Open(fixture);
-        assert(rig.clip.GetRelationship(kAnimationSourceRel)
-                   .SetTargets({kPosedAnimationPath}));
+        assert(rig.clip.GetRelationship(kAnimationSourceRel).SetTargets({kPosedAnimationPath}));
         return RetargetAt24(rig);
     }();
     assert(clip != posed && "the two animations no longer differ at frame 24");
@@ -1073,10 +1100,9 @@ void TestTheBindingIsInheritedAsUsdSkelInheritsIt(const std::string& fixture)
         UsdSkelBindingAPI root =
             UsdSkelBindingAPI::Apply(rig.stage->GetPrimAtPath(SdfPath("/Clip")));
         assert(root.CreateAnimationSourceRel().SetTargets({kClipAnimationPath}));
-        assert(UsdSkelBindingAPI(rig.clip).GetInheritedAnimationSource()
-                   .GetPath() == kClipAnimationPath);
-        assert(RetargetAt24(rig) == clip &&
-               "a clip bound on its SkelRoot was not retargeted");
+        assert(UsdSkelBindingAPI(rig.clip).GetInheritedAnimationSource().GetPath() ==
+               kClipAnimationPath);
+        assert(RetargetAt24(rig) == clip && "a clip bound on its SkelRoot was not retargeted");
     }
 
     // ---- the skeleton's own binding shadows the SkelRoot's -----------------
@@ -1085,8 +1111,7 @@ void TestTheBindingIsInheritedAsUsdSkelInheritsIt(const std::string& fixture)
         UsdSkelBindingAPI root =
             UsdSkelBindingAPI::Apply(rig.stage->GetPrimAtPath(SdfPath("/Clip")));
         assert(root.CreateAnimationSourceRel().SetTargets({kPosedAnimationPath}));
-        assert(RetargetAt24(rig) == clip &&
-               "an ancestor's binding won over the skeleton's own");
+        assert(RetargetAt24(rig) == clip && "an ancestor's binding won over the skeleton's own");
     }
 
     // ---- an ancestor without the API applied is not read -------------------
@@ -1097,8 +1122,7 @@ void TestTheBindingIsInheritedAsUsdSkelInheritsIt(const std::string& fixture)
         UsdPrim skeleton = rig.clip;
         assert(skeleton.RemoveProperty(kAnimationSourceRel));
         UsdPrim root = rig.stage->GetPrimAtPath(SdfPath("/Clip"));
-        assert(root.CreateRelationship(kAnimationSourceRel)
-                   .SetTargets({kClipAnimationPath}));
+        assert(root.CreateRelationship(kAnimationSourceRel).SetTargets({kClipAnimationPath}));
         assert(!UsdSkelBindingAPI(rig.clip).GetInheritedAnimationSource());
 
         ExecUsdSystem system(rig.stage);
@@ -1117,29 +1141,21 @@ void TestTheBindingIsInheritedAsUsdSkelInheritsIt(const std::string& fixture)
     // and says nothing, and its own NamespaceAncestor reaches the SkelRoot.
     {
         const Rig rig = Open(fixture);
-        UsdPrim deep = rig.stage->DefinePrim(SdfPath("/Deep"),
-                                             TfToken("SkelRoot"));
-        UsdSkelBindingAPI::Apply(deep).CreateAnimationSourceRel().SetTargets(
-            {kClipAnimationPath});
-        UsdPrim scope = rig.stage->DefinePrim(SdfPath("/Deep/Rig"),
-                                              TfToken("Scope"));
+        UsdPrim deep = rig.stage->DefinePrim(SdfPath("/Deep"), TfToken("SkelRoot"));
+        UsdSkelBindingAPI::Apply(deep).CreateAnimationSourceRel().SetTargets({kClipAnimationPath});
+        UsdPrim scope = rig.stage->DefinePrim(SdfPath("/Deep/Rig"), TfToken("Scope"));
         UsdSkelBindingAPI::Apply(scope);
-        UsdPrim skeleton = rig.stage->DefinePrim(SdfPath("/Deep/Rig/Skeleton"),
-                                                 TfToken("Skeleton"));
+        UsdPrim skeleton =
+            rig.stage->DefinePrim(SdfPath("/Deep/Rig/Skeleton"), TfToken("Skeleton"));
         VtArray<TfToken> tokens;
         VtArray<GfMatrix4d> matrices;
         assert(rig.clip.GetAttribute(kJoints).Get(&tokens));
         assert(rig.clip.GetAttribute(kRestTransforms).Get(&matrices));
-        assert(skeleton.CreateAttribute(kJoints, SdfValueTypeNames->TokenArray)
-                   .Set(tokens));
-        assert(skeleton
-                   .CreateAttribute(kRestTransforms,
-                                    SdfValueTypeNames->Matrix4dArray)
+        assert(skeleton.CreateAttribute(kJoints, SdfValueTypeNames->TokenArray).Set(tokens));
+        assert(skeleton.CreateAttribute(kRestTransforms, SdfValueTypeNames->Matrix4dArray)
                    .Set(matrices));
-        assert(rig.humanoid.GetRelationship(kSourceRel).SetTargets(
-            {skeleton.GetPath()}));
-        assert(RetargetAt24(rig) == clip &&
-               "a binding two levels up was not reached");
+        assert(rig.humanoid.GetRelationship(kSourceRel).SetTargets({skeleton.GetPath()}));
+        assert(RetargetAt24(rig) == clip && "a binding two levels up was not reached");
     }
 
     // ---- an edit of the inherited binding reaches the retarget -------------
@@ -1155,10 +1171,8 @@ void TestTheBindingIsInheritedAsUsdSkelInheritsIt(const std::string& fixture)
         ExecUsdSystem system(rig.stage);
         std::set<int> reported;
         ExecUsdRequest request = system.BuildRequest(
-            KeysFor(rig),
-            [&](const ExecRequestIndexSet& indices, const EfTimeInterval&) {
-                reported.insert(indices.begin(), indices.end());
-            });
+            KeysFor(rig), [&](const ExecRequestIndexSet& indices, const EfTimeInterval&)
+            { reported.insert(indices.begin(), indices.end()); });
         ArmAt(system, request, 24.0);
         assert(RetargetAt(system.Compute(request)) == clip);
 
@@ -1204,7 +1218,8 @@ void TestTheBindingIsInheritedAsUsdSkelInheritsIt(const std::string& fixture)
 //     pinned at the rig's rest with nothing but the executor's warning to say
 //     why. Pinned, because an authored zero is the same value and
 //     `motion_retarget --translation-scale 0` accepts one.
-void TestAStatementDeclaredWithNoValueIsTheFallback(const std::string& fixture)
+void
+TestAStatementDeclaredWithNoValueIsTheFallback(const std::string& fixture)
 {
     {
         const Rig rig = Open(fixture);
@@ -1219,13 +1234,14 @@ void TestAStatementDeclaredWithNoValueIsTheFallback(const std::string& fixture)
         mark.Clear();
     }
 
-    for (const bool block : {false, true}) {
+    for (const bool block : {false, true})
+    {
         const Rig rig = Open(fixture);
         UsdPrim humanoid = rig.humanoid;
-        UsdAttribute scale =
-            humanoid.CreateAttribute(kTranslationScale, SdfValueTypeNames->Float);
+        UsdAttribute scale = humanoid.CreateAttribute(kTranslationScale, SdfValueTypeNames->Float);
         assert(scale);
-        if (block) {
+        if (block)
+        {
             assert(scale.Set(2.0f));
             scale.Block();
         }
@@ -1235,17 +1251,15 @@ void TestAStatementDeclaredWithNoValueIsTheFallback(const std::string& fixture)
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
         ArmAt(system, request, 24.0);
         TfErrorMark mark;
-        const vrmRetarget::RetargetedPose pose =
-            RetargetAt(system.Compute(request));
+        const vrmRetarget::RetargetedPose pose = RetargetAt(system.Compute(request));
         assert(mark.IsClean());
         assert(pose.translations[kHipsJoint] == kHipsRest &&
                "a valueless scale is no longer the fallback 0 -- the pin is "
                "gone, and the node may now be able to default it instead");
         bool warned = false;
-        for (const std::string& warning :
-             warnings.Take("No value set for output")) {
-            warned = warned || warning.find("vrm:retarget:translationScale")
-                                   != std::string::npos;
+        for (const std::string& warning : warnings.Take("No value set for output"))
+        {
+            warned = warned || warning.find("vrm:retarget:translationScale") != std::string::npos;
         }
         assert(warned && "the executor did not warn about the fallback");
     }
@@ -1261,7 +1275,8 @@ void TestAStatementDeclaredWithNoValueIsTheFallback(const std::string& fixture)
 // `motion.sampleAnimation` registered in the session, which is the edge
 // `requires.bundles` states. So this is what composing execVrm without the
 // bundle it reads looks like.
-void TestWithoutExecMotionThePoseIsNotFound(const std::string& fixture)
+void
+TestWithoutExecMotionThePoseIsNotFound(const std::string& fixture)
 {
     assert(!PlugRegistry::GetInstance().GetPluginWithName("ExecMotion") &&
            "execMotion is registered after all, so this run measures nothing");
@@ -1284,7 +1299,8 @@ void TestWithoutExecMotionThePoseIsNotFound(const std::string& fixture)
     ValueAt<vrmRetarget::RestPoseCorrection>(view, 0, "rest-pose correction");
     AssertRefused(view, 1);
     AssertRefused(view, 2);
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
         std::printf("  posted: %s\n", it->GetCommentary().c_str());
     }
     // The animation is dropped from the fan-in as a prim providing no
@@ -1299,17 +1315,18 @@ void TestWithoutExecMotionThePoseIsNotFound(const std::string& fixture)
 
 } // namespace
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
-    assert((argc == 2 || argc == 3) &&
-           "usage: execVrm_retarget <retargeted_rig.usda> "
-           "[--without-exec-motion]");
+    assert((argc == 2 || argc == 3) && "usage: execVrm_retarget <retargeted_rig.usda> "
+                                       "[--without-exec-motion]");
     const std::string fixture = argv[1];
 
     // The map leaves 49 bones unbound; see the humanoid suite.
     Warnings all;
 
-    if (argc == 3) {
+    if (argc == 3)
+    {
         assert(std::string(argv[2]) == "--without-exec-motion");
         TestWithoutExecMotionThePoseIsNotFound(fixture);
         std::puts("execVrm retarget (without execMotion): all checks passed");
@@ -1328,8 +1345,10 @@ int main(int argc, char** argv)
     TestTheRetargetStatesWhyASourceIsNotAClip(fixture);
     TestTheBindingIsInheritedAsUsdSkelInheritsIt(fixture);
 
-    for (const std::string& warning : all.Take("")) {
-        if (warning.find("No value set for output") == std::string::npos) {
+    for (const std::string& warning : all.Take(""))
+    {
+        if (warning.find("No value set for output") == std::string::npos)
+        {
             std::printf("  also warned: %s\n", warning.c_str());
         }
     }

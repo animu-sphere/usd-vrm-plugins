@@ -14,8 +14,7 @@ namespace
 bool
 CarriesAnything(const HumanoidPose& pose)
 {
-    return pose.validRotations.any() || pose.root.hasPosition
-        || pose.root.hasOrientation;
+    return pose.validRotations.any() || pose.root.hasPosition || pose.root.hasOrientation;
 }
 
 } // namespace
@@ -56,12 +55,13 @@ LiveCaptureSource::_Condition(const HumanoidPose& pose)
     // 1. Confidence gate. A frame that reports no confidence at all is trusted
     //    as given -- an adapter that cannot measure confidence must not lose
     //    its bones for saying so.
-    if (conditioned.confidence && _config.confidenceFloor > 0.0f) {
-        const std::array<float, HumanBoneCount>& scores =
-            *conditioned.confidence;
-        for (std::size_t bone = 0; bone < HumanBoneCount; ++bone) {
-            if (conditioned.validRotations.test(bone)
-                && scores[bone] < _config.confidenceFloor) {
+    if (conditioned.confidence && _config.confidenceFloor > 0.0f)
+    {
+        const std::array<float, HumanBoneCount>& scores = *conditioned.confidence;
+        for (std::size_t bone = 0; bone < HumanBoneCount; ++bone)
+        {
+            if (conditioned.validRotations.test(bone) && scores[bone] < _config.confidenceFloor)
+            {
                 conditioned.validRotations.reset(bone);
                 ++_stats.bonesGatedByConfidence;
             }
@@ -69,8 +69,10 @@ LiveCaptureSource::_Condition(const HumanoidPose& pose)
     }
 
     // 2. Whatever survived the gate is a real observation.
-    for (std::size_t bone = 0; bone < HumanBoneCount; ++bone) {
-        if (conditioned.validRotations.test(bone)) {
+    for (std::size_t bone = 0; bone < HumanBoneCount; ++bone)
+    {
+        if (conditioned.validRotations.test(bone))
+        {
             _observedBones.set(bone);
             ++_stats.bonesObserved;
         }
@@ -80,41 +82,47 @@ LiveCaptureSource::_Condition(const HumanoidPose& pose)
     //    last accepted frame, so a dropout freezes one limb rather than
     //    reverting it toward rest -- the same invariant PoseBuffer keeps for a
     //    missing sample.
-    for (std::size_t bone = 0; bone < HumanBoneCount; ++bone) {
-        if (conditioned.validRotations.test(bone)) {
+    for (std::size_t bone = 0; bone < HumanBoneCount; ++bone)
+    {
+        if (conditioned.validRotations.test(bone))
+        {
             continue;
         }
-        if (_config.missingBones == MissingBonePolicy::HoldLast
-            && _lastAccepted && _lastAccepted->validRotations.test(bone)) {
+        if (_config.missingBones == MissingBonePolicy::HoldLast && _lastAccepted &&
+            _lastAccepted->validRotations.test(bone))
+        {
             conditioned.localRotations[bone] = _lastAccepted->localRotations[bone];
             conditioned.validRotations.set(bone);
             ++_stats.bonesHeld;
-        } else {
+        }
+        else
+        {
             ++_stats.bonesUnbound;
         }
     }
 
     // 4. Root motion.
-    switch (_config.rootMotion) {
+    switch (_config.rootMotion)
+    {
     case RootMotionIntake::Ignore:
         conditioned.root = RootMotion();
         break;
     case RootMotionIntake::Passthrough:
     case RootMotionIntake::DeriveVelocity:
-        if (conditioned.root.hasPosition) {
+        if (conditioned.root.hasPosition)
+        {
             ++_stats.rootSamplesObserved;
         }
-        if (_config.rootMotion == RootMotionIntake::DeriveVelocity
-            && conditioned.root.hasPosition
-            && !conditioned.root.hasLinearVelocity && _lastAccepted
-            && _lastAccepted->root.hasPosition) {
-            const double delta =
-                conditioned.timestamp - _lastAccepted->timestamp;
-            if (delta > 0.0) {
+        if (_config.rootMotion == RootMotionIntake::DeriveVelocity &&
+            conditioned.root.hasPosition && !conditioned.root.hasLinearVelocity && _lastAccepted &&
+            _lastAccepted->root.hasPosition)
+        {
+            const double delta = conditioned.timestamp - _lastAccepted->timestamp;
+            if (delta > 0.0)
+            {
                 conditioned.root.linearVelocity =
-                    (conditioned.root.worldPosition
-                     - _lastAccepted->root.worldPosition)
-                    / static_cast<float>(delta);
+                    (conditioned.root.worldPosition - _lastAccepted->root.worldPosition) /
+                    static_cast<float>(delta);
                 conditioned.root.hasLinearVelocity = true;
                 ++_stats.rootVelocitiesDerived;
             }
@@ -128,7 +136,8 @@ LiveCaptureSource::_Condition(const HumanoidPose& pose)
 
     // 6. Smoothing runs last, on the fully resolved frame, so a held bone is
     //    smoothed on the same terms as an observed one.
-    if (_config.smoothingCutoffHz > 0.0f) {
+    if (_config.smoothingCutoffHz > 0.0f)
+    {
         conditioned = _filter.Apply(conditioned);
     }
     return conditioned;
@@ -137,18 +146,23 @@ LiveCaptureSource::_Condition(const HumanoidPose& pose)
 bool
 LiveCaptureSource::Push(const HumanoidPose& pose)
 {
-    if (!CarriesAnything(pose)) {
+    if (!CarriesAnything(pose))
+    {
         ++_stats.framesRejectedEmpty;
         return false;
     }
 
-    if (_lastAccepted) {
+    if (_lastAccepted)
+    {
         const double delta = pose.timestamp - _lastAccepted->timestamp;
-        if (delta <= 0.0) {
-            if (_config.staleFrameSeconds > 0.0
-                && -delta > _config.staleFrameSeconds) {
+        if (delta <= 0.0)
+        {
+            if (_config.staleFrameSeconds > 0.0 && -delta > _config.staleFrameSeconds)
+            {
                 ++_stats.framesRejectedStale;
-            } else {
+            }
+            else
+            {
                 ++_stats.framesRejectedOutOfOrder;
             }
             return false;
@@ -156,7 +170,8 @@ LiveCaptureSource::Push(const HumanoidPose& pose)
     }
 
     const HumanoidPose conditioned = _Condition(pose);
-    if (!_buffer.Push(conditioned)) {
+    if (!_buffer.Push(conditioned))
+    {
         // Unreachable while _lastAccepted tracks the buffer head, but the
         // buffer -- not this class -- owns the ordering rule, so defer to it.
         ++_stats.framesRejectedOutOfOrder;
@@ -172,7 +187,8 @@ bool
 LiveCaptureSource::AlignClock(double evaluationTime) noexcept
 {
     double newest = 0.0;
-    if (!_buffer.GetTimeRange(nullptr, &newest)) {
+    if (!_buffer.GetTimeRange(nullptr, &newest))
+    {
         return false;
     }
     _clockOffset = newest - evaluationTime;
@@ -186,7 +202,8 @@ LiveCaptureSource::Sample(double evaluationTime)
 
     double oldest = 0.0;
     double newest = 0.0;
-    if (!_buffer.GetTimeRange(&oldest, &newest)) {
+    if (!_buffer.GetTimeRange(&oldest, &newest))
+    {
         ++_stats.samplesUnavailable;
         return result;
     }
@@ -197,9 +214,10 @@ LiveCaptureSource::Sample(double evaluationTime)
 
     std::optional<HumanoidPose> pose =
         _config.maxExtrapolationSeconds > 0.0
-        ? _buffer.SampleExtrapolated(captureTime, _config.maxExtrapolationSeconds)
-        : _buffer.Sample(captureTime);
-    if (!pose) {
+            ? _buffer.SampleExtrapolated(captureTime, _config.maxExtrapolationSeconds)
+            : _buffer.Sample(captureTime);
+    if (!pose)
+    {
         ++_stats.samplesUnavailable;
         return result;
     }
@@ -208,22 +226,27 @@ LiveCaptureSource::Sample(double evaluationTime)
     // observed sample to within the timeline's own precision *is* that sample,
     // and reporting it as extrapolated would make a clean session look like a
     // failing one.
-    if (captureTime < oldest - PoseSampleTimeTolerance
-        || captureTime > newest + PoseSampleTimeTolerance) {
+    if (captureTime < oldest - PoseSampleTimeTolerance ||
+        captureTime > newest + PoseSampleTimeTolerance)
+    {
         // Extrapolation only ever moves the root; when the newest frame had no
         // usable velocity nothing advanced and this is an ordinary hold. Report
         // what happened, not what was requested.
-        const bool advanced = captureTime > newest + PoseSampleTimeTolerance
-            && pose->root.hasPosition
-            && pose->root.worldPosition != _buffer.GetNewest().root.worldPosition;
-        result.status = advanced ? PoseSampleStatus::Extrapolated
-                                 : PoseSampleStatus::Held;
-        if (advanced) {
+        const bool advanced = captureTime > newest + PoseSampleTimeTolerance &&
+                              pose->root.hasPosition &&
+                              pose->root.worldPosition != _buffer.GetNewest().root.worldPosition;
+        result.status = advanced ? PoseSampleStatus::Extrapolated : PoseSampleStatus::Held;
+        if (advanced)
+        {
             ++_stats.samplesExtrapolated;
-        } else {
+        }
+        else
+        {
             ++_stats.samplesHeld;
         }
-    } else {
+    }
+    else
+    {
         result.status = PoseSampleStatus::Sampled;
         ++_stats.samplesSampled;
     }
@@ -241,13 +264,16 @@ LiveCaptureSource::GetTimeRange(double* startTime, double* endTime) const
 {
     double oldest = 0.0;
     double newest = 0.0;
-    if (!_buffer.GetTimeRange(&oldest, &newest)) {
+    if (!_buffer.GetTimeRange(&oldest, &newest))
+    {
         return false;
     }
-    if (startTime) {
+    if (startTime)
+    {
         *startTime = oldest - _clockOffset;
     }
-    if (endTime) {
+    if (endTime)
+    {
         *endTime = newest - _clockOffset;
     }
     return true;

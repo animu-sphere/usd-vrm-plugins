@@ -78,8 +78,7 @@ MOTIONBVH_API bool ParseBvhText(std::string_view text, BvhDocument* document,
 // `VRM_BVH_PARSE_FAILED` with the reason in `detail`: this layer has no code of
 // its own for I/O, and inventing one would widen the frozen set for a failure
 // that is not about BVH.
-MOTIONBVH_API bool ParseBvhFile(const std::filesystem::path& path,
-                                BvhDocument* document,
+MOTIONBVH_API bool ParseBvhFile(const std::filesystem::path& path, BvhDocument* document,
                                 Diagnostic* diagnostic = nullptr,
                                 const BvhParseOptions& options = {});
 

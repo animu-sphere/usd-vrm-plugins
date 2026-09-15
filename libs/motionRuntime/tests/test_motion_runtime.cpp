@@ -23,8 +23,7 @@ NearlyEqual(float a, float b)
 bool
 NearlyEqual(const pxr::GfVec3f& a, const pxr::GfVec3f& b)
 {
-    return NearlyEqual(a[0], b[0]) && NearlyEqual(a[1], b[1])
-        && NearlyEqual(a[2], b[2]);
+    return NearlyEqual(a[0], b[0]) && NearlyEqual(a[1], b[1]) && NearlyEqual(a[2], b[2]);
 }
 
 // Compares orientations, not representations: q and -q are the same rotation.
@@ -33,11 +32,12 @@ SameOrientation(const pxr::GfQuatf& a, const pxr::GfQuatf& b)
 {
     const pxr::GfQuatf na = a.GetNormalized();
     pxr::GfQuatf nb = b.GetNormalized();
-    if (pxr::GfDot(na, nb) < 0.0f) {
+    if (pxr::GfDot(na, nb) < 0.0f)
+    {
         nb = pxr::GfQuatf(-nb.GetReal(), -nb.GetImaginary());
     }
-    return NearlyEqual(na.GetReal(), nb.GetReal())
-        && NearlyEqual(na.GetImaginary(), nb.GetImaginary());
+    return NearlyEqual(na.GetReal(), nb.GetReal()) &&
+           NearlyEqual(na.GetImaginary(), nb.GetImaginary());
 }
 
 pxr::GfQuatf
@@ -53,8 +53,7 @@ MakePose(double timestamp, float hipsDegrees, const pxr::GfVec3f& rootPosition)
 {
     motion::HumanoidPose pose;
     pose.timestamp = timestamp;
-    pose.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] =
-        RotationX(hipsDegrees);
+    pose.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] = RotationX(hipsDegrees);
     pose.validRotations.set(static_cast<std::size_t>(motion::HumanBone::Hips));
     pose.root.worldPosition = rootPosition;
     pose.root.hasPosition = true;
@@ -69,17 +68,14 @@ TestSlerpTakesTheShortArc()
     const pxr::GfQuatf ninetyFlipped(-ninety.GetReal(), -ninety.GetImaginary());
 
     const pxr::GfQuatf direct = motion::SlerpShortest(identity, ninety, 0.5f);
-    const pxr::GfQuatf viaFlipped =
-        motion::SlerpShortest(identity, ninetyFlipped, 0.5f);
+    const pxr::GfQuatf viaFlipped = motion::SlerpShortest(identity, ninetyFlipped, 0.5f);
 
     assert(SameOrientation(direct, RotationX(45.0f)));
     // The sign-flipped representative must not spin the long way round.
     assert(SameOrientation(direct, viaFlipped));
 
-    assert(SameOrientation(motion::SlerpShortest(identity, ninety, -1.0f),
-                           identity));
-    assert(SameOrientation(motion::SlerpShortest(identity, ninety, 2.0f),
-                           ninety));
+    assert(SameOrientation(motion::SlerpShortest(identity, ninety, -1.0f), identity));
+    assert(SameOrientation(motion::SlerpShortest(identity, ninety, 2.0f), ninety));
 }
 
 void
@@ -221,14 +217,11 @@ TestPoseBufferOrderingAndSampling()
     assert(mid.has_value());
     const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
     assert(SameOrientation(mid->localRotations[hips], RotationX(45.0f)));
-    assert(NearlyEqual(mid->root.worldPosition,
-                       pxr::GfVec3f(0.0f, 0.0f, 0.5f)));
+    assert(NearlyEqual(mid->root.worldPosition, pxr::GfVec3f(0.0f, 0.0f, 0.5f)));
 
     // Outside the buffered range the boundary pose is held.
-    assert(SameOrientation(buffer.Sample(-5.0)->localRotations[hips],
-                           RotationX(0.0f)));
-    assert(SameOrientation(buffer.Sample(5.0)->localRotations[hips],
-                           RotationX(90.0f)));
+    assert(SameOrientation(buffer.Sample(-5.0)->localRotations[hips], RotationX(0.0f)));
+    assert(SameOrientation(buffer.Sample(5.0)->localRotations[hips], RotationX(90.0f)));
 
     // Capacity evicts oldest-first.
     assert(buffer.Push(MakePose(2.0, 90.0f, pxr::GfVec3f(0.0f, 0.0f, 2.0f))));
@@ -248,16 +241,14 @@ TestPoseBufferExtrapolatesPositionOnly()
     const auto lead = buffer.SampleExtrapolated(1.1, 0.2);
     assert(lead.has_value());
     // 1 m/s derived from the last two samples, advanced by 0.1 s.
-    assert(NearlyEqual(lead->root.worldPosition,
-                       pxr::GfVec3f(0.0f, 0.0f, 1.1f)));
+    assert(NearlyEqual(lead->root.worldPosition, pxr::GfVec3f(0.0f, 0.0f, 1.1f)));
     // Rotation is held, never extrapolated.
     const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
     assert(SameOrientation(lead->localRotations[hips], RotationX(90.0f)));
 
     // The lead is capped.
     const auto capped = buffer.SampleExtrapolated(5.0, 0.2);
-    assert(NearlyEqual(capped->root.worldPosition,
-                       pxr::GfVec3f(0.0f, 0.0f, 1.2f)));
+    assert(NearlyEqual(capped->root.worldPosition, pxr::GfVec3f(0.0f, 0.0f, 1.2f)));
 
     // Before the newest sample it behaves exactly like Sample.
     const auto inside = buffer.SampleExtrapolated(0.5, 0.2);
@@ -272,30 +263,25 @@ TestResampleCoversTheWholeInterval()
     animation.endTime = 1.0;
     animation.nominalFrameRate = 30.0;
     animation.samples.push_back(MakePose(0.0, 0.0f, pxr::GfVec3f(0.0f)));
-    animation.samples.push_back(
-        MakePose(1.0, 90.0f, pxr::GfVec3f(0.0f, 0.0f, 1.0f)));
+    animation.samples.push_back(MakePose(1.0, 90.0f, pxr::GfVec3f(0.0f, 0.0f, 1.0f)));
 
     const motion::HumanoidAnimation uniform = motion::Resample(animation, 4.0);
     assert(uniform.samples.size() == 5);
     assert(NearlyEqual(static_cast<float>(uniform.nominalFrameRate), 4.0f));
     const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
-    assert(SameOrientation(uniform.samples[1].localRotations[hips],
-                           RotationX(22.5f)));
-    assert(NearlyEqual(static_cast<float>(uniform.samples.back().timestamp),
-                       1.0f));
+    assert(SameOrientation(uniform.samples[1].localRotations[hips], RotationX(22.5f)));
+    assert(NearlyEqual(static_cast<float>(uniform.samples.back().timestamp), 1.0f));
 
     // A duration that is not a multiple of the step still ends on endTime.
     animation.endTime = 0.7;
     const motion::HumanoidAnimation ragged = motion::Resample(animation, 4.0);
-    assert(NearlyEqual(static_cast<float>(ragged.samples.back().timestamp),
-                       0.7f));
+    assert(NearlyEqual(static_cast<float>(ragged.samples.back().timestamp), 0.7f));
 
     // A clip that carries samples but never declared its interval falls back to
     // the sample timestamps instead of collapsing to a single pose.
     motion::HumanoidAnimation undeclared;
     undeclared.samples = animation.samples;
-    const motion::HumanoidAnimation recovered =
-        motion::Resample(undeclared, 4.0);
+    const motion::HumanoidAnimation recovered = motion::Resample(undeclared, 4.0);
     assert(recovered.samples.size() == 5);
     assert(NearlyEqual(static_cast<float>(recovered.endTime), 1.0f));
 
@@ -312,16 +298,14 @@ TestFilterIsFrameRateIndependentAndTolerantOfDropouts()
     motion::PoseFilter passthrough(options);
     const motion::HumanoidPose raw = MakePose(0.0, 90.0f, pxr::GfVec3f(0.0f));
     const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
-    assert(SameOrientation(passthrough.Apply(raw).localRotations[hips],
-                           RotationX(90.0f)));
+    assert(SameOrientation(passthrough.Apply(raw).localRotations[hips], RotationX(90.0f)));
 
     options.cutoffHz = 1.0f;
     motion::PoseFilter filter(options);
     // The first pose seeds the state and passes through untouched.
-    assert(SameOrientation(
-        filter.Apply(MakePose(0.0, 0.0f, pxr::GfVec3f(0.0f)))
-            .localRotations[hips],
-        RotationX(0.0f)));
+    assert(
+        SameOrientation(filter.Apply(MakePose(0.0, 0.0f, pxr::GfVec3f(0.0f))).localRotations[hips],
+                        RotationX(0.0f)));
 
     const motion::HumanoidPose smoothed =
         filter.Apply(MakePose(0.1, 90.0f, pxr::GfVec3f(0.0f, 0.0f, 1.0f)));
@@ -347,22 +331,18 @@ void
 TestBlendWeightsAndUnitLength()
 {
     const motion::HumanoidPose a = MakePose(0.0, 0.0f, pxr::GfVec3f(0.0f));
-    const motion::HumanoidPose b =
-        MakePose(0.0, 90.0f, pxr::GfVec3f(0.0f, 0.0f, 1.0f));
+    const motion::HumanoidPose b = MakePose(0.0, 90.0f, pxr::GfVec3f(0.0f, 0.0f, 1.0f));
     const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
 
-    assert(SameOrientation(motion::BlendPoses(a, b, 0.0f).localRotations[hips],
-                           RotationX(0.0f)));
-    assert(SameOrientation(motion::BlendPoses(a, b, 1.0f).localRotations[hips],
-                           RotationX(90.0f)));
+    assert(SameOrientation(motion::BlendPoses(a, b, 0.0f).localRotations[hips], RotationX(0.0f)));
+    assert(SameOrientation(motion::BlendPoses(a, b, 1.0f).localRotations[hips], RotationX(90.0f)));
 
     const motion::HumanoidPose even = motion::BlendPoses({{a, 1.0f}, {b, 1.0f}});
     assert(SameOrientation(even.localRotations[hips], RotationX(45.0f)));
     assert(NearlyEqual(even.localRotations[hips].GetLength(), 1.0f));
 
     // Non-positive weights drop out; the surviving pose wins outright.
-    const motion::HumanoidPose skewed =
-        motion::BlendPoses({{a, 0.0f}, {b, 2.0f}, {a, -1.0f}});
+    const motion::HumanoidPose skewed = motion::BlendPoses({{a, 0.0f}, {b, 2.0f}, {a, -1.0f}});
     assert(SameOrientation(skewed.localRotations[hips], RotationX(90.0f)));
 
     assert(!motion::BlendPoses({}).validRotations.any());

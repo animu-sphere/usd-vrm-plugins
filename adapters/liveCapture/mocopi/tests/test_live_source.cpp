@@ -156,7 +156,8 @@ TestTheMissingBonePolicyIsTheIntakes()
     // The same input under the two policies, so the answer visibly changes with
     // the runtime's configuration rather than with the adapter. An adapter that
     // resolved a missing bone itself would make these two identical.
-    const auto run = [](motion::MissingBonePolicy policy) {
+    const auto run = [](motion::MissingBonePolicy policy)
+    {
         MocopiLiveSourceConfig config;
         config.intake.missingBones = policy;
         MocopiLiveSource source(config);
@@ -237,21 +238,23 @@ RunRestart(SessionRestartPolicy policy, MocopiLiveSource* source)
     source->SetRestartPolicy(policy);
     std::size_t admitted = 0;
     source->PushPacket(SkeletonPacket(), 0.0);
-    for (std::uint32_t index = 0; index < 3; ++index) {
+    for (std::uint32_t index = 0; index < 3; ++index)
+    {
         const double seconds = kSessionStart + index / kFrameRate;
         admitted += source->PushPacket(FrameAt(4000 + index, seconds), seconds);
     }
     // The restart: the counter goes back and the stream clock returns to zero,
     // while `uttm` carries on from where the old session left it.
     admitted += source->PushPacket(FramePacket(1, 0.0, kResumedUnix), 0.0);
-    admitted += source->PushPacket(
-        FramePacket(2, 1.0 / kFrameRate, kResumedUnix + 1.0 / kFrameRate), 0.0);
+    admitted +=
+        source->PushPacket(FramePacket(2, 1.0 / kFrameRate, kResumedUnix + 1.0 / kFrameRate), 0.0);
     // The new session declares its rig, and is a session again.
     source->PushPacket(SkeletonPacket(), 0.0);
-    for (std::uint32_t index = 2; index < 4; ++index) {
+    for (std::uint32_t index = 2; index < 4; ++index)
+    {
         const double seconds = index / kFrameRate;
-        admitted += source->PushPacket(
-            FramePacket(1 + index, seconds, kResumedUnix + seconds), seconds);
+        admitted +=
+            source->PushPacket(FramePacket(1 + index, seconds, kResumedUnix + seconds), seconds);
     }
     return admitted;
 }
@@ -311,14 +314,12 @@ TestTheRestartLatchFiresOnTheFrameAndNotOnTheDetection()
     assert(!source.ConsumeSessionRestart());
 
     // Still nothing: the rig has not been re-declared.
-    source.PushPacket(
-        FramePacket(2, 1.0 / kFrameRate, kResumedUnix + 1.0 / kFrameRate), 0.0);
+    source.PushPacket(FramePacket(2, 1.0 / kFrameRate, kResumedUnix + 1.0 / kFrameRate), 0.0);
     assert(!source.ConsumeSessionRestart());
 
     // The rig arrives, the next frame is emitted, and the flag lands on it.
     source.PushPacket(SkeletonPacket(), 0.0);
-    source.PushPacket(
-        FramePacket(3, 2.0 / kFrameRate, kResumedUnix + 2.0 / kFrameRate), 0.0);
+    source.PushPacket(FramePacket(3, 2.0 / kFrameRate, kResumedUnix + 2.0 / kFrameRate), 0.0);
     assert(source.GetFramesFromLastPush().size() == 1);
     assert(source.GetFramesFromLastPush()[0].beginsNewSession);
     assert(source.ConsumeSessionRestart());
@@ -342,8 +343,7 @@ TestTheClockOffsetIsHandedBackRatherThanRepaired()
 
     source.PushPacket(FramePacket(1, 0.0, kResumedUnix), 0.0);
     source.PushPacket(SkeletonPacket(), 0.0);
-    source.PushPacket(
-        FramePacket(2, 1.0 / kFrameRate, kResumedUnix + 1.0 / kFrameRate), 0.0);
+    source.PushPacket(FramePacket(2, 1.0 / kFrameRate, kResumedUnix + 1.0 / kFrameRate), 0.0);
 
     // Nothing repaired the offset, so the source now reads as far ahead of its
     // data: the stale offset is still adding twenty seconds.
@@ -368,8 +368,7 @@ TestUnderRefuseTheAlignWouldHideTheStallItExistsToShow()
     RunRestart(SessionRestartPolicy::Refuse, &source);
 
     // The stall is visible: the source is behind and falling further behind.
-    const motion::PoseSampleResult stalled =
-        source.Sample(kSessionStart + 10.0);
+    const motion::PoseSampleResult stalled = source.Sample(kSessionStart + 10.0);
     assert(stalled.status != motion::PoseSampleStatus::Sampled);
     assert(stalled.lag > 0.0);
 
@@ -460,9 +459,8 @@ TestTheIntakesRootPolicyIsNoLongerInert()
         // Half a metre in one frame at 60 Hz is 30 m/s, which is what the two
         // samples say rather than a number this test chose.
         assert(result.pose->root.hasLinearVelocity);
-        assert(std::fabs(result.pose->root.linearVelocity[2]
-                         - static_cast<float>(0.5 / step))
-               < 1e-3f);
+        assert(std::fabs(result.pose->root.linearVelocity[2] - static_cast<float>(0.5 / step)) <
+               1e-3f);
         assert(source.GetIntake().GetStats().rootVelocitiesDerived != 0);
     }
 }
@@ -623,8 +621,7 @@ Failed(const std::string& name, const std::string& detail)
 }
 
 ReplayedCapture
-Replay(const vrmAdapterMocopi::PacketCapture& capture,
-       SessionRestartPolicy policy)
+Replay(const vrmAdapterMocopi::PacketCapture& capture, SessionRestartPolicy policy)
 {
     MocopiLiveSourceConfig config;
     config.restart = policy;
@@ -639,23 +636,22 @@ Replay(const vrmAdapterMocopi::PacketCapture& capture,
     // results rather than by an assertion about pointers, and the discipline is
     // the shared call's rather than this loop's to get right.
     std::vector<std::uint8_t> buffer;
-    for (const vrmAdapterMocopi::RecordedDatagram& datagram :
-         capture.datagrams) {
+    for (const vrmAdapterMocopi::RecordedDatagram& datagram : capture.datagrams)
+    {
         buffer.assign(datagram.bytes.begin(), datagram.bytes.end());
-        const vrmAdapterMocopiTests::PushedDatagram pushed =
-            vrmAdapterMocopiTests::PushDatagram(&source, &buffer,
-                                                datagram.receiveTime,
-                                                &out.diagnostics);
-        if (pushed.restartLatched) {
+        const vrmAdapterMocopiTests::PushedDatagram pushed = vrmAdapterMocopiTests::PushDatagram(
+            &source, &buffer, datagram.receiveTime, &out.diagnostics);
+        if (pushed.restartLatched)
+        {
             ++out.restartsLatched;
         }
-        if (pushed.sampled) {
+        if (pushed.sampled)
+        {
             out.delivered.push_back(*pushed.sampled);
         }
     }
 
-    const vrmAdapterMocopiTests::ReplayStats stats =
-        vrmAdapterMocopiTests::ReadStats(source);
+    const vrmAdapterMocopiTests::ReplayStats stats = vrmAdapterMocopiTests::ReadStats(source);
     out.stats = stats.source;
     out.frameStats = stats.frame;
     out.intakeStats = stats.intake;
@@ -669,29 +665,35 @@ Replay(const vrmAdapterMocopi::PacketCapture& capture,
 int
 CheckTheTwoHalvesMeet(const ReplayedCapture& replayed, const std::string& name)
 {
-    if (replayed.stats.framesDelivered != replayed.frameStats.framesEmitted) {
+    if (replayed.stats.framesDelivered != replayed.frameStats.framesEmitted)
+    {
         return Failed(name, "a frame the assembler emitted was not delivered "
                             "to the intake");
     }
-    if (replayed.stats.framesRefused != 0
-        || replayed.stats.framesAdmitted != replayed.stats.framesDelivered) {
+    if (replayed.stats.framesRefused != 0 ||
+        replayed.stats.framesAdmitted != replayed.stats.framesDelivered)
+    {
         return Failed(name, "the intake refused a frame the assembler emitted");
     }
-    if (replayed.intakeStats.framesAccepted != replayed.stats.framesAdmitted) {
+    if (replayed.intakeStats.framesAccepted != replayed.stats.framesAdmitted)
+    {
         return Failed(name, "the intake's tally and this layer's disagree");
     }
     // Every admitted pose came back out at its own timestamp. A pose that went
     // in and could not be sampled would be a buffer this layer filled and
     // nothing could read.
-    if (replayed.delivered.size() != replayed.stats.framesAdmitted) {
+    if (replayed.delivered.size() != replayed.stats.framesAdmitted)
+    {
         return Failed(name, "an admitted pose could not be sampled back");
     }
     // The two halves of a placement are composed from one hips record, so they
     // may never disagree. This is the invariant; whether a pose has a placement
     // at all is the next paragraph's question, and conflating the two would let
     // a half-composed root pass as a missing one.
-    for (const motion::HumanoidPose& pose : replayed.delivered) {
-        if (pose.root.hasPosition != pose.root.hasOrientation) {
+    for (const motion::HumanoidPose& pose : replayed.delivered)
+    {
+        if (pose.root.hasPosition != pose.root.hasOrientation)
+        {
             return Failed(name, "a pose carries half a RootMotion, so the "
                                 "position and the orientation stopped reading "
                                 "one hips record");
@@ -703,8 +705,10 @@ CheckTheTwoHalvesMeet(const ReplayedCapture& replayed, const std::string& name)
     // A frame that composes none is a shape `vrmAdapterMocopi_frameAssembler`
     // has to construct deliberately, by dropping joint 0. So an absence here
     // means the composition stopped, not that a record went missing.
-    for (const motion::HumanoidPose& pose : replayed.delivered) {
-        if (!pose.root.hasPosition) {
+    for (const motion::HumanoidPose& pose : replayed.delivered)
+    {
+        if (!pose.root.hasPosition)
+        {
             return Failed(name, "a pose carries no placement, and every frame "
                                 "in this corpus sends a hips record");
         }
@@ -720,19 +724,19 @@ CheckTheTwoHalvesMeet(const ReplayedCapture& replayed, const std::string& name)
     // Four of the nine captures deliver nothing by design -- they are the
     // malformed ones -- so this is a claim about the sessions that produced
     // poses, and the counter checks above are what cover the rest.
-    if (!replayed.delivered.empty()) {
-        if (replayed.delivered.front().root.hasLinearVelocity) {
+    if (!replayed.delivered.empty())
+    {
+        if (replayed.delivered.front().root.hasLinearVelocity)
+        {
             return Failed(name, "the first pose of the session carries a "
                                 "velocity, which nothing had two samples to "
                                 "derive");
         }
-        const bool derived =
-            std::any_of(replayed.delivered.begin() + 1,
-                        replayed.delivered.end(),
-                        [](const motion::HumanoidPose& pose) {
-                            return pose.root.hasLinearVelocity;
-                        });
-        if (replayed.delivered.size() > 1 && !derived) {
+        const bool derived = std::any_of(replayed.delivered.begin() + 1, replayed.delivered.end(),
+                                         [](const motion::HumanoidPose& pose)
+                                         { return pose.root.hasLinearVelocity; });
+        if (replayed.delivered.size() > 1 && !derived)
+        {
             return Failed(name, "no velocity was derived from any of the poses "
                                 "that followed it");
         }
@@ -743,46 +747,54 @@ CheckTheTwoHalvesMeet(const ReplayedCapture& replayed, const std::string& name)
 int
 CheckNeutralStanding(const ReplayedCapture& replayed, const std::string& name)
 {
-    if (replayed.stats.framesAdmitted != 5 || replayed.restartsLatched != 0) {
+    if (replayed.stats.framesAdmitted != 5 || replayed.restartsLatched != 0)
+    {
         return Failed(name, "five poses and no restart were expected");
     }
-    for (const motion::HumanoidPose& pose : replayed.delivered) {
-        if (pose.validRotations.count() != kCanonicalBoneCount) {
+    for (const motion::HumanoidPose& pose : replayed.delivered)
+    {
+        if (pose.validRotations.count() != kCanonicalBoneCount)
+        {
             return Failed(name, "a delivered pose did not carry the whole rig");
         }
     }
-    if (!replayed.diagnostics.empty()) {
+    if (!replayed.diagnostics.empty())
+    {
         return Failed(name, "a clean session produced a diagnostic");
     }
     // The counterpart to the incomplete-frame assertion: a clean session refuses
     // no bone record, so the tally distinguishes the two captures rather than
     // merely being non-zero somewhere.
-    if (replayed.stats.bonesRefused != 0) {
+    if (replayed.stats.bonesRefused != 0)
+    {
         return Failed(name, "a clean session reported a refused bone record");
     }
     return 0;
 }
 
 int
-CheckSessionRestart(const vrmAdapterMocopi::PacketCapture& capture,
-                    const ReplayedCapture& replayed, const std::string& name)
+CheckSessionRestart(const vrmAdapterMocopi::PacketCapture& capture, const ReplayedCapture& replayed,
+                    const std::string& name)
 {
     // The capture this file needed. Under the default policy the stream
     // continues across the restart.
-    if (replayed.stats.framesAdmitted != 5) {
+    if (replayed.stats.framesAdmitted != 5)
+    {
         return Failed(name, "the stream did not continue across the restart");
     }
-    if (replayed.restartsLatched != 1) {
+    if (replayed.restartsLatched != 1)
+    {
         return Failed(name, "the restart was not latched exactly once");
     }
-    if (replayed.stats.sessionsReset != 1) {
+    if (replayed.stats.sessionsReset != 1)
+    {
         return Failed(name, "the restart policy did not reset the intake");
     }
     // The rig went with the old session and two frames were refused waiting for
     // a new one — the cost this protocol's restart has and the sibling's does
     // not.
-    if (replayed.frameStats.framesRefusedNoRig != 2
-        || replayed.frameStats.skeletonsAccepted != 2) {
+    if (replayed.frameStats.framesRefusedNoRig != 2 || replayed.frameStats.skeletonsAccepted != 2)
+    {
         return Failed(name, "the restart did not cost the rig, or the session "
                             "did not recover");
     }
@@ -792,13 +804,16 @@ CheckSessionRestart(const vrmAdapterMocopi::PacketCapture& capture,
     // behind everything the intake holds, so the session stops where the other
     // continues.
     const ReplayedCapture refused = Replay(capture, SessionRestartPolicy::Refuse);
-    if (refused.stats.framesDelivered != replayed.stats.framesDelivered) {
+    if (refused.stats.framesDelivered != replayed.stats.framesDelivered)
+    {
         return Failed(name, "the policy changed what the assembler emitted");
     }
-    if (refused.stats.framesAdmitted != 3 || refused.stats.framesRefused != 2) {
+    if (refused.stats.framesAdmitted != 3 || refused.stats.framesRefused != 2)
+    {
         return Failed(name, "under Refuse the session did not visibly stop");
     }
-    if (refused.stats.sessionsReset != 0 || refused.restartsLatched != 1) {
+    if (refused.stats.sessionsReset != 0 || refused.restartsLatched != 1)
+    {
         return Failed(name, "under Refuse the restart was hidden as well as "
                             "declined");
     }
@@ -807,8 +822,7 @@ CheckSessionRestart(const vrmAdapterMocopi::PacketCapture& capture,
 
 int
 CheckRestartWithoutRecovery(const vrmAdapterMocopi::PacketCapture& capture,
-                            const ReplayedCapture& replayed,
-                            const std::string& name)
+                            const ReplayedCapture& replayed, const std::string& name)
 {
     // `frame-loss-01`, and the assertion is what it *cannot* show. Its restart
     // never reaches a frame, so nothing here acts on it — the latch never fires
@@ -816,18 +830,22 @@ CheckRestartWithoutRecovery(const vrmAdapterMocopi::PacketCapture& capture,
     // left implicit, because it is the whole reason `session-restart-01` had to
     // be added, and a capture that quietly started exercising the policy would
     // make the new one look redundant.
-    if (replayed.frameStats.sessionRestarts != 1) {
+    if (replayed.frameStats.sessionRestarts != 1)
+    {
         return Failed(name, "the assembler did not see the restart");
     }
-    if (replayed.restartsLatched != 0 || replayed.stats.sessionsReset != 0) {
+    if (replayed.restartsLatched != 0 || replayed.stats.sessionsReset != 0)
+    {
         return Failed(name, "a restart that reached no frame was acted on");
     }
-    if (replayed.stats.framesAdmitted != 5) {
+    if (replayed.stats.framesAdmitted != 5)
+    {
         return Failed(name, "five poses were expected");
     }
     const ReplayedCapture refused = Replay(capture, SessionRestartPolicy::Refuse);
-    if (refused.stats.framesAdmitted != replayed.stats.framesAdmitted
-        || refused.stats.framesRefused != replayed.stats.framesRefused) {
+    if (refused.stats.framesAdmitted != replayed.stats.framesAdmitted ||
+        refused.stats.framesRefused != replayed.stats.framesRefused)
+    {
         return Failed(name, "this capture can tell the two policies apart, so "
                             "session-restart-01 is no longer the only one that "
                             "can");
@@ -842,7 +860,8 @@ CheckIncompleteFrame(const ReplayedCapture& replayed, const std::string& name)
     // layer rests on: the assembler reported what was missing and did not
     // refuse the frame, and `MissingBonePolicy` — HoldLast by default — is what
     // decides the three bones' fate.
-    if (replayed.stats.framesAdmitted != 2) {
+    if (replayed.stats.framesAdmitted != 2)
+    {
         return Failed(name, "an incomplete frame was not admitted as a pose");
     }
     // Read off the delivered poses rather than off a bone counter, because the
@@ -850,8 +869,9 @@ CheckIncompleteFrame(const ReplayedCapture& replayed, const std::string& name)
     // carries 22 — every frame of every capture "unbinds" the 33 bones the
     // device never had, so a tally there could not tell three missing bones
     // from a rig that ends at the wrists.
-    if (replayed.delivered[0].validRotations.count() != kCanonicalBoneCount - 3
-        || replayed.delivered[1].validRotations.count() != kCanonicalBoneCount) {
+    if (replayed.delivered[0].validRotations.count() != kCanonicalBoneCount - 3 ||
+        replayed.delivered[1].validRotations.count() != kCanonicalBoneCount)
+    {
         return Failed(name, "the damaged frame did not arrive as an incomplete "
                             "pose followed by a whole one");
     }
@@ -860,7 +880,8 @@ CheckIncompleteFrame(const ReplayedCapture& replayed, const std::string& name)
     // packet is a local of `PushDatagram` and dies with the call, so a bridge
     // that did not carry the count forward would make `MotionPacket::refusedBones`
     // reachable only by bypassing this class.
-    if (replayed.stats.bonesRefused != 3) {
+    if (replayed.stats.bonesRefused != 3)
+    {
         return Failed(name, "the decoder's refused bone records did not reach "
                             "this layer's statistics");
     }
@@ -870,17 +891,18 @@ CheckIncompleteFrame(const ReplayedCapture& replayed, const std::string& name)
     // holding is not available to it. A session that begins mid-dropout starts
     // unbound however it is configured, which is worth pinning because it is the
     // one arrangement where the two policies agree.
-    if (replayed.intakeStats.bonesHeld != 0) {
+    if (replayed.intakeStats.bonesHeld != 0)
+    {
         return Failed(name, "a bone was held from a frame that never arrived");
     }
     return 0;
 }
 
 int
-CheckNothingIsDelivered(const ReplayedCapture& replayed,
-                        const std::string& name)
+CheckNothingIsDelivered(const ReplayedCapture& replayed, const std::string& name)
 {
-    if (replayed.stats.framesAdmitted != 0 || !replayed.delivered.empty()) {
+    if (replayed.stats.framesAdmitted != 0 || !replayed.delivered.empty())
+    {
         return Failed(name, "a capture with no readable frame delivered a pose");
     }
     return 0;
@@ -890,82 +912,93 @@ int
 CheckCorpus(const std::filesystem::path& directory)
 {
     std::vector<std::filesystem::path> files;
-    if (!vrmAdapterMocopiTests::CollectCaptures(directory, &files)) {
+    if (!vrmAdapterMocopiTests::CollectCaptures(directory, &files))
+    {
         return 1;
     }
 
     int failures = 0;
-    for (const std::filesystem::path& file : files) {
+    for (const std::filesystem::path& file : files)
+    {
         const std::string name = file.filename().string();
         vrmAdapterMocopi::PacketCapture capture;
         vrmAdapterMocopi::PacketCaptureError error;
-        if (!vrmAdapterMocopi::ReadPacketCaptureFile(file.string(), &capture,
-                                                     &error)) {
-            failures += Failed(name, "line " + std::to_string(error.line) + ": "
-                                         + error.message);
+        if (!vrmAdapterMocopi::ReadPacketCaptureFile(file.string(), &capture, &error))
+        {
+            failures += Failed(name, "line " + std::to_string(error.line) + ": " + error.message);
             continue;
         }
 
-        const ReplayedCapture replayed =
-            Replay(capture, SessionRestartPolicy::Reset);
+        const ReplayedCapture replayed = Replay(capture, SessionRestartPolicy::Reset);
 
         int result = CheckTheTwoHalvesMeet(replayed, name);
-        if (result == 0) {
-            if (capture.sourceId == "neutral-standing-01") {
+        if (result == 0)
+        {
+            if (capture.sourceId == "neutral-standing-01")
+            {
                 result = CheckNeutralStanding(replayed, name);
-            } else if (capture.sourceId == "session-restart-01") {
+            }
+            else if (capture.sourceId == "session-restart-01")
+            {
                 result = CheckSessionRestart(capture, replayed, name);
-            } else if (capture.sourceId == "frame-loss-01") {
+            }
+            else if (capture.sourceId == "frame-loss-01")
+            {
                 result = CheckRestartWithoutRecovery(capture, replayed, name);
-            } else if (capture.sourceId == "arms-lowered-01") {
+            }
+            else if (capture.sourceId == "arms-lowered-01")
+            {
                 // Three frames of motion and nothing remarkable; the root/hips
                 // assertion this capture exists for is made against the frame
                 // window in `CheckTheTwoHalvesMeet` above, for every capture.
                 result = replayed.stats.framesAdmitted == 3
                              ? 0
                              : Failed(name, "three poses were expected");
-            } else if (capture.sourceId == "incomplete-frame-01") {
+            }
+            else if (capture.sourceId == "incomplete-frame-01")
+            {
                 result = CheckIncompleteFrame(replayed, name);
-            } else if (capture.sourceId == "refused-bones-01"
-                       || capture.sourceId == "extended-form-01"
-                       || capture.sourceId == "malformed-container-01"
-                       || capture.sourceId == "malformed-packets-01") {
+            }
+            else if (capture.sourceId == "refused-bones-01" ||
+                     capture.sourceId == "extended-form-01" ||
+                     capture.sourceId == "malformed-container-01" ||
+                     capture.sourceId == "malformed-packets-01")
+            {
                 // No rig is ever declared in any of these, so no frame can be
                 // read. Registered rather than skipped, because "this capture
                 // delivers nothing" is a claim that can stop being true.
                 result = CheckNothingIsDelivered(replayed, name);
-            } else {
-                result = Failed(name, "no assertion is registered for sourceId '"
-                                          + capture.sourceId + "'");
+            }
+            else
+            {
+                result = Failed(name, "no assertion is registered for sourceId '" +
+                                          capture.sourceId + "'");
             }
         }
 
-        if (result == 0
-            && std::count_if(replayed.diagnostics.begin(),
-                             replayed.diagnostics.end(),
-                             [](const Diagnostic& diagnostic) {
-                                 return diagnostic.code
-                                        == DiagnosticCode::TrackingLost;
-                             })
-                   != 0) {
+        if (result == 0 &&
+            std::count_if(replayed.diagnostics.begin(), replayed.diagnostics.end(),
+                          [](const Diagnostic& diagnostic)
+                          { return diagnostic.code == DiagnosticCode::TrackingLost; }) != 0)
+        {
             result = Failed(name, "a capture raised a tracking state the "
                                   "grammar does not carry");
         }
 
         failures += result;
-        if (result == 0) {
+        if (result == 0)
+        {
             std::printf("%s: %llu pose(s) delivered\n", name.c_str(),
-                        static_cast<unsigned long long>(
-                            replayed.stats.framesAdmitted));
+                        static_cast<unsigned long long>(replayed.stats.framesAdmitted));
         }
     }
 
-    if (failures != 0) {
+    if (failures != 0)
+    {
         std::fprintf(stderr, "%d corpus capture(s) failed\n", failures);
         return 1;
     }
-    std::printf("mocopi live source corpus: %zu capture(s) verified\n",
-                files.size());
+    std::printf("mocopi live source corpus: %zu capture(s) verified\n", files.size());
     return 0;
 }
 
@@ -974,7 +1007,8 @@ CheckCorpus(const std::filesystem::path& directory)
 int
 main(int argc, char** argv)
 {
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
 

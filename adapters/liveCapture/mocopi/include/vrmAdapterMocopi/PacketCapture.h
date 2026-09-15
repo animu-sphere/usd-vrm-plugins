@@ -75,19 +75,16 @@ using liveTransport::PacketCaptureGutter;
 // Parses a capture. On failure `capture` is left untouched and `error`, when
 // given, names the line and the reason.
 inline bool
-ReadPacketCapture(std::istream& input, PacketCapture* capture,
-                  PacketCaptureError* error = nullptr)
+ReadPacketCapture(std::istream& input, PacketCapture* capture, PacketCaptureError* error = nullptr)
 {
-    return liveTransport::ReadPacketCapture(PacketCaptureMagic, input, capture,
-                                            error);
+    return liveTransport::ReadPacketCapture(PacketCaptureMagic, input, capture, error);
 }
 
 inline bool
 ReadPacketCaptureFile(const std::string& path, PacketCapture* capture,
                       PacketCaptureError* error = nullptr)
 {
-    return liveTransport::ReadPacketCaptureFile(PacketCaptureMagic, path,
-                                                capture, error);
+    return liveTransport::ReadPacketCaptureFile(PacketCaptureMagic, path, capture, error);
 }
 
 // Writes `capture`. Emission is deterministic, so re-reading and rewriting a
@@ -96,15 +93,13 @@ ReadPacketCaptureFile(const std::string& path, PacketCapture* capture,
 inline bool
 WritePacketCapture(std::ostream& output, const PacketCapture& capture)
 {
-    return liveTransport::WritePacketCapture(PacketCaptureMagic, output,
-                                             capture);
+    return liveTransport::WritePacketCapture(PacketCaptureMagic, output, capture);
 }
 
 inline bool
 WritePacketCaptureFile(const std::string& path, const PacketCapture& capture)
 {
-    return liveTransport::WritePacketCaptureFile(PacketCaptureMagic, path,
-                                                 capture);
+    return liveTransport::WritePacketCaptureFile(PacketCaptureMagic, path, capture);
 }
 
 } // namespace vrmAdapterMocopi

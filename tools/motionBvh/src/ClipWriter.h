@@ -61,11 +61,8 @@ namespace motionBvhTool
 // produced it. Neither this function nor its caller may branch on any of it:
 // a producer name reaching an `if` is the failure the profile design exists to
 // prevent (WORKSPACE.md §1).
-bool WriteSemanticClip(const std::string& outputPath,
-                       const motion::HumanoidAnimation& animation,
-                       const motionSource::CanonicalRestPose& rest,
-                       const std::string& clipName,
-                       const std::map<std::string, std::string>& provenance,
-                       std::string* error);
+bool WriteSemanticClip(const std::string& outputPath, const motion::HumanoidAnimation& animation,
+                       const motionSource::CanonicalRestPose& rest, const std::string& clipName,
+                       const std::map<std::string, std::string>& provenance, std::string* error);
 
 } // namespace motionBvhTool

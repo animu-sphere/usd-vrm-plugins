@@ -92,7 +92,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace
+{
 
 const TfToken kSampleAnimation("motion.sampleAnimation");
 const TfToken kRootTransform("motion:root:transform");
@@ -122,13 +123,17 @@ constexpr double kTolerance = 1e-6;
 // A placement with no rotation or scale in it, at `translation`. Every
 // transform this fixture produces is one: the clip states no root orientation,
 // and nothing on the stage rotates.
-bool IsTranslation(const GfMatrix4d& m, const GfVec3d& translation)
+bool
+IsTranslation(const GfMatrix4d& m, const GfVec3d& translation)
 {
     GfMatrix4d expected(1.0);
     expected.SetTranslateOnly(translation);
-    for (int r = 0; r < 4; ++r) {
-        for (int c = 0; c < 4; ++c) {
-            if (std::abs(m[r][c] - expected[r][c]) > kTolerance) {
+    for (int r = 0; r < 4; ++r)
+    {
+        for (int c = 0; c < 4; ++c)
+        {
+            if (std::abs(m[r][c] - expected[r][c]) > kTolerance)
+            {
                 return false;
             }
         }
@@ -136,7 +141,8 @@ bool IsTranslation(const GfMatrix4d& m, const GfVec3d& translation)
     return true;
 }
 
-std::string Describe(const GfMatrix4d& m)
+std::string
+Describe(const GfMatrix4d& m)
 {
     const GfVec3d t = m.ExtractTranslation();
     char buffer[128];
@@ -159,46 +165,49 @@ std::string Describe(const GfMatrix4d& m)
 //
 // Returns the Xformables that break it, so a caller can assert on a stage that
 // should pass and on one that should not.
-std::vector<SdfPath> TransformOnlyViolations(const UsdStageRefPtr& stage,
-                                             std::size_t* checked)
+std::vector<SdfPath>
+TransformOnlyViolations(const UsdStageRefPtr& stage, std::size_t* checked)
 {
     std::vector<SdfPath> violations;
     std::size_t count = 0;
-    for (const UsdPrim& prim : stage->Traverse()) {
+    for (const UsdPrim& prim : stage->Traverse())
+    {
         const UsdGeomXformable xformable(prim);
-        if (!xformable) {
+        if (!xformable)
+        {
             continue;
         }
         ++count;
 
         bool resets = false;
-        const std::vector<UsdGeomXformOp> ops =
-            xformable.GetOrderedXformOps(&resets);
+        const std::vector<UsdGeomXformOp> ops = xformable.GetOrderedXformOps(&resets);
         const UsdAttribute transform = prim.GetAttribute(kXformOpTransform);
-        const bool statesTransform = transform
-            && (transform.HasAuthoredValue() || transform.HasAuthoredConnections());
+        const bool statesTransform =
+            transform && (transform.HasAuthoredValue() || transform.HasAuthoredConnections());
 
         const bool noOps = ops.empty() && !statesTransform;
-        const bool transformOnly = ops.size() == 1
-            && ops[0].GetOpType() == UsdGeomXformOp::TypeTransform
-            && ops[0].GetName() == kXformOpTransform
-            && !ops[0].IsInverseOp();
-        if (resets || !(noOps || transformOnly)) {
+        const bool transformOnly = ops.size() == 1 &&
+                                   ops[0].GetOpType() == UsdGeomXformOp::TypeTransform &&
+                                   ops[0].GetName() == kXformOpTransform && !ops[0].IsInverseOp();
+        if (resets || !(noOps || transformOnly))
+        {
             violations.push_back(prim.GetPath());
         }
     }
-    if (checked) {
+    if (checked)
+    {
         *checked = count;
     }
     return violations;
 }
 
-void TestTheFixtureStatesTransformOnly(const UsdStageRefPtr& stage)
+void
+TestTheFixtureStatesTransformOnly(const UsdStageRefPtr& stage)
 {
     std::size_t checked = 0;
-    const std::vector<SdfPath> violations =
-        TransformOnlyViolations(stage, &checked);
-    for (const SdfPath& path : violations) {
+    const std::vector<SdfPath> violations = TransformOnlyViolations(stage, &checked);
+    for (const SdfPath& path : violations)
+    {
         std::fprintf(stderr, "  not transform-only: %s\n", path.GetText());
     }
     assert(violations.empty() &&
@@ -216,7 +225,8 @@ void TestTheFixtureStatesTransformOnly(const UsdStageRefPtr& stage)
 //
 // The dataflow before any imaging: `execGeom`'s computation, on prims this
 // bundle registers nothing for, answering the clip's root motion.
-void TestExecPlacesTheProp(const UsdStageRefPtr& stage)
+void
+TestExecPlacesTheProp(const UsdStageRefPtr& stage)
 {
     const UsdPrim clip = stage->GetPrimAtPath(kClip);
     const UsdAttribute rootTransform = clip.GetAttribute(kRootTransform);
@@ -229,22 +239,21 @@ void TestExecPlacesTheProp(const UsdStageRefPtr& stage)
     int valueInvalidations = 0;
     std::set<int> valueReported;
 
-    const TfToken& localToWorld =
-        ExecGeomXformableTokens->computeLocalToWorldTransform;
+    const TfToken& localToWorld = ExecGeomXformableTokens->computeLocalToWorldTransform;
     std::vector<ExecUsdValueKey> keys;
-    keys.emplace_back(stage->GetPrimAtPath(kProp), localToWorld);    // 0
-    keys.emplace_back(stage->GetPrimAtPath(kMarker), localToWorld);  // 1
-    keys.emplace_back(stage->GetPrimAtPath(kWorld), localToWorld);   // 2
-    keys.emplace_back(rootTransform);                                // 3
+    keys.emplace_back(stage->GetPrimAtPath(kProp), localToWorld);   // 0
+    keys.emplace_back(stage->GetPrimAtPath(kMarker), localToWorld); // 1
+    keys.emplace_back(stage->GetPrimAtPath(kWorld), localToWorld);  // 2
+    keys.emplace_back(rootTransform);                               // 3
     ExecUsdRequest request = system.BuildRequest(
         std::move(keys),
-        [&](const ExecRequestIndexSet& indices, const EfTimeInterval&) {
+        [&](const ExecRequestIndexSet& indices, const EfTimeInterval&)
+        {
             ++valueInvalidations;
             valueReported.insert(indices.begin(), indices.end());
         },
-        [&](const ExecRequestIndexSet& indices) {
-            timeReported.insert(indices.begin(), indices.end());
-        });
+        [&](const ExecRequestIndexSet& indices)
+        { timeReported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid());
 
     // An unstaged bundle does NOT show up here. Without the expression the
@@ -254,7 +263,8 @@ void TestExecPlacesTheProp(const UsdStageRefPtr& stage)
     // 2). That is where the root is at the default time code and at frame 0,
     // so the first frame that can tell is 50; `AssertBundleRegistered` in
     // main is what names the cause before any of this runs.
-    auto matrixAt = [](const ExecUsdCacheView& view, int index) {
+    auto matrixAt = [](const ExecUsdCacheView& view, int index)
+    {
         const VtValue value = view.Get(index);
         assert(value.IsHolding<GfMatrix4d>() &&
                "no matrix came back from execGeom or the attribute");
@@ -278,7 +288,8 @@ void TestExecPlacesTheProp(const UsdStageRefPtr& stage)
     // ---- three frames ------------------------------------------------------
     const std::pair<double, GfVec3d> frames[] = {
         {0.0, kHipsAt0}, {50.0, kHipsAt50}, {100.0, kHipsAt100}};
-    for (const auto& [frame, hips] : frames) {
+    for (const auto& [frame, hips] : frames)
+    {
         timeReported.clear();
         system.ChangeTime(UsdTimeCode(frame));
         const ExecUsdCacheView view = system.Compute(request);
@@ -287,9 +298,9 @@ void TestExecPlacesTheProp(const UsdStageRefPtr& stage)
         const GfMatrix4d marker = matrixAt(view, 1);
         const GfMatrix4d world = matrixAt(view, 2);
         const GfMatrix4d root = matrixAt(view, 3);
-        std::printf("  frame %g: root %s, prop %s, marker %s, world %s\n",
-                    frame, Describe(root).c_str(), Describe(prop).c_str(),
-                    Describe(marker).c_str(), Describe(world).c_str());
+        std::printf("  frame %g: root %s, prop %s, marker %s, world %s\n", frame,
+                    Describe(root).c_str(), Describe(prop).c_str(), Describe(marker).c_str(),
+                    Describe(world).c_str());
 
         // The attribute alone: the root motion as a matrix, no parent in it.
         // An identity here at frame 50 or 100 is the expression not running.
@@ -309,12 +320,10 @@ void TestExecPlacesTheProp(const UsdStageRefPtr& stage)
     // Time dependence reaches the prim this bundle registered nothing for, and
     // its child, and stops at a prim the clip does not reach. The last frame
     // change is the one measured.
-    assert(timeReported.count(0) && timeReported.count(1) &&
-           timeReported.count(3) &&
+    assert(timeReported.count(0) && timeReported.count(1) && timeReported.count(3) &&
            "a frame change did not reach execGeom's computation through the "
            "connection");
-    assert(!timeReported.count(2) &&
-           "/World reads nothing time dependent and was reported anyway");
+    assert(!timeReported.count(2) && "/World reads nothing time dependent and was reported anyway");
 
     // ---- an unrelated material edit invalidates nothing --------------------
     //
@@ -323,9 +332,7 @@ void TestExecPlacesTheProp(const UsdStageRefPtr& stage)
     // material edit reached no part of the motion network.
     const int before = valueInvalidations;
     valueReported.clear();
-    stage->GetPrimAtPath(kSurface)
-        .GetAttribute(kDiffuseColor)
-        .Set(GfVec3f(0.1f, 0.8f, 0.1f));
+    stage->GetPrimAtPath(kSurface).GetAttribute(kDiffuseColor).Set(GfVec3f(0.1f, 0.8f, 0.1f));
     {
         const ExecUsdCacheView view = system.Compute(request);
         assert(IsTranslation(matrixAt(view, 0), kHipsAt100 + kParent));
@@ -336,17 +343,16 @@ void TestExecPlacesTheProp(const UsdStageRefPtr& stage)
     // ---- the motion input: one edit of the clip reaches the prop -----------
     stage->GetPrimAtPath(kClip)
         .GetAttribute(kTranslations)
-        .Set(VtVec3fArray{GfVec3f(3, 0, 0), GfVec3f(0, 0.1f, 0),
-                          GfVec3f(0, 0.2f, 0), GfVec3f(0, 0.3f, 0),
-                          GfVec3f(9, 9, 9)},
+        .Set(VtVec3fArray{GfVec3f(3, 0, 0), GfVec3f(0, 0.1f, 0), GfVec3f(0, 0.2f, 0),
+                          GfVec3f(0, 0.3f, 0), GfVec3f(9, 9, 9)},
              UsdTimeCode(100.0));
     {
         const ExecUsdCacheView view = system.Compute(request);
         assert(IsTranslation(matrixAt(view, 0), GfVec3d(13.0, 0.0, 0.0)) &&
                "an edit of the clip did not reach the prop");
     }
-    assert(valueReported.count(0) && valueReported.count(1) &&
-           valueReported.count(3) && !valueReported.count(2));
+    assert(valueReported.count(0) && valueReported.count(1) && valueReported.count(3) &&
+           !valueReported.count(2));
 
     // ---- an orientation, which no clip states ------------------------------
     //
@@ -366,10 +372,9 @@ void TestExecPlacesTheProp(const UsdStageRefPtr& stage)
         pose.root.hasOrientation = true;
 
         ExecUsdValueOverrideVector overrides;
-        overrides.push_back(ExecUsdValueOverride{
-            ExecUsdValueKey(clip, kSampleAnimation), VtValue(pose)});
-        const ExecUsdCacheView view =
-            system.ComputeWithOverrides(request, std::move(overrides));
+        overrides.push_back(
+            ExecUsdValueOverride{ExecUsdValueKey(clip, kSampleAnimation), VtValue(pose)});
+        const ExecUsdCacheView view = system.ComputeWithOverrides(request, std::move(overrides));
         const GfMatrix4d prop = matrixAt(view, 0);
 
         // A point a metre along the prop's +X lands a metre along -Z of the
@@ -378,9 +383,8 @@ void TestExecPlacesTheProp(const UsdStageRefPtr& stage)
         std::printf("  a driver's root turned about +Y at (1, 0, 0): prop "
                     "origin %s, its +X at (%g, %g, %g)\n",
                     Describe(prop).c_str(), moved[0], moved[1], moved[2]);
-        assert(std::abs(moved[0] - 11.0) <= kTolerance
-               && std::abs(moved[1]) <= kTolerance
-               && std::abs(moved[2] + 1.0) <= kTolerance &&
+        assert(std::abs(moved[0] - 11.0) <= kTolerance && std::abs(moved[1]) <= kTolerance &&
+               std::abs(moved[2] + 1.0) <= kTolerance &&
                "a root orientation did not reach execGeom as a turn about "
                "the root's own origin");
         assert(IsTranslation(matrixAt(view, 2), kParent));
@@ -396,41 +400,49 @@ void TestExecPlacesTheProp(const UsdStageRefPtr& stage)
 // Stands where Hydra would: every notice the exec scene index sends.
 class Observer : public HdSceneIndexObserver
 {
-public:
-    void PrimsAdded(const HdSceneIndexBase&, const AddedPrimEntries&) override
+  public:
+    void
+    PrimsAdded(const HdSceneIndexBase&, const AddedPrimEntries&) override
     {
         ++added;
     }
-    void PrimsRemoved(const HdSceneIndexBase&,
-                      const RemovedPrimEntries&) override
+    void
+    PrimsRemoved(const HdSceneIndexBase&, const RemovedPrimEntries&) override
     {
         ++removed;
     }
-    void PrimsDirtied(const HdSceneIndexBase&,
-                      const DirtiedPrimEntries& entries) override
+    void
+    PrimsDirtied(const HdSceneIndexBase&, const DirtiedPrimEntries& entries) override
     {
         dirtied.insert(dirtied.end(), entries.begin(), entries.end());
     }
-    void PrimsRenamed(const HdSceneIndexBase&,
-                      const RenamedPrimEntries&) override
+    void
+    PrimsRenamed(const HdSceneIndexBase&, const RenamedPrimEntries&) override
     {
         ++renamed;
     }
 
     // Whether `path` was dirtied at its transform since the last Clear.
-    bool TransformDirtied(const SdfPath& path) const
+    bool
+    TransformDirtied(const SdfPath& path) const
     {
         static const HdDataSourceLocator matrix(HdXformSchemaTokens->xform,
                                                 HdXformSchemaTokens->matrix);
-        for (const DirtiedPrimEntry& entry : dirtied) {
-            if (entry.primPath == path && entry.dirtyLocators.Intersects(matrix)) {
+        for (const DirtiedPrimEntry& entry : dirtied)
+        {
+            if (entry.primPath == path && entry.dirtyLocators.Intersects(matrix))
+            {
                 return true;
             }
         }
         return false;
     }
 
-    void Clear() { dirtied.clear(); }
+    void
+    Clear()
+    {
+        dirtied.clear();
+    }
 
     std::vector<DirtiedPrimEntry> dirtied;
     int added = 0;
@@ -440,8 +452,8 @@ public:
 
 // The matrix the exec scene index hands Hydra for `path`: `HdXformSchema`'s
 // `matrix`, which is what a renderer reads.
-GfMatrix4d Drawn(const UsdExecImagingStageSceneIndexInterfaceRefPtr& sceneIndex,
-                 const SdfPath& path)
+GfMatrix4d
+Drawn(const UsdExecImagingStageSceneIndexInterfaceRefPtr& sceneIndex, const SdfPath& path)
 {
     const HdSceneIndexPrim prim = sceneIndex->GetPrim(path);
     assert(prim.dataSource && "the exec scene index has no data for this prim");
@@ -455,13 +467,13 @@ GfMatrix4d Drawn(const UsdExecImagingStageSceneIndexInterfaceRefPtr& sceneIndex,
     return matrix->GetTypedValue(0.0f);
 }
 
-void TestTheSceneIndexDrawsIt(const UsdStageRefPtr& stage)
+void
+TestTheSceneIndexDrawsIt(const UsdStageRefPtr& stage)
 {
     const UsdExecImagingStageSceneIndexInterfaceRefPtr sceneIndex =
         UsdExecImagingCreateStageSceneIndex();
-    assert(sceneIndex &&
-           "null: this OpenUSD was built with PXR_BUILD_EXEC off, which the "
-           "capability probe should have refused at configure time");
+    assert(sceneIndex && "null: this OpenUSD was built with PXR_BUILD_EXEC off, which the "
+                         "capability probe should have refused at configure time");
 
     Observer observer;
     sceneIndex->AddObserver(HdSceneIndexObserverPtr(&observer));
@@ -478,8 +490,7 @@ void TestTheSceneIndexDrawsIt(const UsdStageRefPtr& stage)
 
     observer.Clear();
     sceneIndex->SetTime(UsdTimeCode(50.0));
-    assert(observer.TransformDirtied(kProp) &&
-           "a frame change did not dirty the prop's transform");
+    assert(observer.TransformDirtied(kProp) && "a frame change did not dirty the prop's transform");
     assert(observer.TransformDirtied(kMarker));
     assert(!observer.TransformDirtied(kWorld) &&
            "a frame change dirtied a transform that reads nothing of the clip");
@@ -492,12 +503,9 @@ void TestTheSceneIndexDrawsIt(const UsdStageRefPtr& stage)
 
     // ---- an unrelated material edit ---------------------------------------
     observer.Clear();
-    stage->GetPrimAtPath(kSurface)
-        .GetAttribute(kDiffuseColor)
-        .Set(GfVec3f(0.1f, 0.1f, 0.8f));
+    stage->GetPrimAtPath(kSurface).GetAttribute(kDiffuseColor).Set(GfVec3f(0.1f, 0.1f, 0.8f));
     sceneIndex->ApplyPendingUpdates();
-    assert(observer.dirtied.empty() &&
-           "a material edit dirtied a prim in the exec scene index");
+    assert(observer.dirtied.empty() && "a material edit dirtied a prim in the exec scene index");
     assert(IsTranslation(Drawn(sceneIndex, kProp), kHipsAt50 + kParent));
 
     // ---- the motion input --------------------------------------------------
@@ -507,8 +515,7 @@ void TestTheSceneIndexDrawsIt(const UsdStageRefPtr& stage)
     // the observer at the edit itself.
     observer.Clear();
     const UsdPrim clip = stage->GetPrimAtPath(kClip);
-    UsdAttribute intake = clip.CreateAttribute(kRootIntake,
-                                               SdfValueTypeNames->Token);
+    UsdAttribute intake = clip.CreateAttribute(kRootIntake, SdfValueTypeNames->Token);
     intake.Set(TfToken("ignore"));
     assert(observer.dirtied.empty() &&
            "the exec scene index sent a notice before ApplyPendingUpdates");
@@ -516,8 +523,7 @@ void TestTheSceneIndexDrawsIt(const UsdStageRefPtr& stage)
     assert(observer.TransformDirtied(kProp) &&
            "an edit of the clip's policy did not dirty the prop");
     const GfMatrix4d ignored = Drawn(sceneIndex, kProp);
-    assert(IsTranslation(ignored, kParent) &&
-           "`ignore` should leave the prop at its parent");
+    assert(IsTranslation(ignored, kParent) && "`ignore` should leave the prop at its parent");
 
     // ---- a refusal draws exactly where `ignore` does -----------------------
     //
@@ -532,15 +538,13 @@ void TestTheSceneIndexDrawsIt(const UsdStageRefPtr& stage)
         intake.Set(TfToken("ignroe"));
         sceneIndex->ApplyPendingUpdates();
         const GfMatrix4d refused = Drawn(sceneIndex, kProp);
-        assert(refused == ignored &&
-               "a refusal drew somewhere other than `ignore` -- the finding "
-               "this block records has changed, and the report with it");
+        assert(refused == ignored && "a refusal drew somewhere other than `ignore` -- the finding "
+                                     "this block records has changed, and the report with it");
         bool named = false;
-        for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd();
-             ++it) {
-            named = named
-                || it->GetCommentary().find("motion.extractRootMotion")
-                       != std::string::npos;
+        for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+        {
+            named =
+                named || it->GetCommentary().find("motion.extractRootMotion") != std::string::npos;
         }
         assert(named && "the refusal posted no error naming the node, so "
                         "nothing at all distinguishes it from `ignore`");
@@ -555,10 +559,8 @@ void TestTheSceneIndexDrawsIt(const UsdStageRefPtr& stage)
     // `computeValue` follows exactly one connection to a valid attribute of
     // the same type. Anything else and the prop's own authored value is what
     // exec answers -- drawn, with no diagnostic.
-    UsdAttribute transform =
-        stage->GetPrimAtPath(kProp).GetAttribute(kXformOpTransform);
-    const SdfPathVector connected = {
-        kClip.AppendProperty(kRootTransform)};
+    UsdAttribute transform = stage->GetPrimAtPath(kProp).GetAttribute(kXformOpTransform);
+    const SdfPathVector connected = {kClip.AppendProperty(kRootTransform)};
     const GfVec3d fallback = kAuthoredProp + kParent;
 
     struct Route
@@ -570,29 +572,26 @@ void TestTheSceneIndexDrawsIt(const UsdStageRefPtr& stage)
         {"a connection to an attribute the clip does not declare",
          {kClip.AppendProperty(TfToken("motion:root:transfrom"))}},
         {"two connections, both to the declared attribute's type",
-         {kClip.AppendProperty(kRootTransform),
-          kWorld.AppendProperty(kXformOpTransform)}},
+         {kClip.AppendProperty(kRootTransform), kWorld.AppendProperty(kXformOpTransform)}},
         {"a connection to an attribute of another type",
          {kClip.AppendProperty(TfToken("motion:timeCodesPerSecond"))}},
     };
-    for (const Route& route : routes) {
+    for (const Route& route : routes)
+    {
         observer.Clear();
         TfErrorMark mark;
         transform.SetConnections(route.targets);
         sceneIndex->ApplyPendingUpdates();
         const GfMatrix4d drawn = Drawn(sceneIndex, kProp);
-        std::printf("  %s: drawn %s, %zu error(s)\n", route.what,
-                    Describe(drawn).c_str(),
-                    static_cast<std::size_t>(
-                        std::distance(mark.GetBegin(), mark.GetEnd())));
+        std::printf("  %s: drawn %s, %zu error(s)\n", route.what, Describe(drawn).c_str(),
+                    static_cast<std::size_t>(std::distance(mark.GetBegin(), mark.GetEnd())));
         assert(observer.TransformDirtied(kProp) &&
                "re-routing the connection did not dirty the prop");
         assert(IsTranslation(drawn, fallback) &&
                "a broken route drew somewhere other than the prop's own "
                "authored value");
-        assert(mark.IsClean() &&
-               "a broken route now posts an error -- better than 26.08, and "
-               "this suite should say so");
+        assert(mark.IsClean() && "a broken route now posts an error -- better than 26.08, and "
+                                 "this suite should say so");
         mark.Clear();
     }
     transform.SetConnections(connected);
@@ -617,7 +616,8 @@ void TestTheSceneIndexDrawsIt(const UsdStageRefPtr& stage)
 // fixture stays one that passes. Each is compared through exec and through
 // `UsdGeomXformable::ComputeLocalToWorldTransform`, which is what every
 // renderer not running exec uses -- and the precondition check must flag both.
-void TestThePreconditionIsTwoSided()
+void
+TestThePreconditionIsTwoSided()
 {
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdGeomXform parent = UsdGeomXform::Define(stage, SdfPath("/Parent"));
@@ -631,8 +631,7 @@ void TestThePreconditionIsTwoSided()
 
     // A transform the order does not list: the other direction. UsdGeom
     // ignores it, and exec reads `xformOp:transform` by name, so exec does not.
-    UsdGeomXform unordered =
-        UsdGeomXform::Define(stage, SdfPath("/Parent/Unordered"));
+    UsdGeomXform unordered = UsdGeomXform::Define(stage, SdfPath("/Parent/Unordered"));
     GfMatrix4d unorderedMatrix(1.0);
     unorderedMatrix.SetTranslateOnly(GfVec3d(0.0, 0.0, 7.0));
     unordered.GetPrim()
@@ -640,17 +639,14 @@ void TestThePreconditionIsTwoSided()
         .Set(unorderedMatrix);
 
     std::size_t checked = 0;
-    const std::vector<SdfPath> violations =
-        TransformOnlyViolations(stage, &checked);
+    const std::vector<SdfPath> violations = TransformOnlyViolations(stage, &checked);
     assert(checked == 3);
-    assert(violations.size() == 2 &&
-           violations[0] == SdfPath("/Parent/Nudged") &&
+    assert(violations.size() == 2 && violations[0] == SdfPath("/Parent/Nudged") &&
            violations[1] == SdfPath("/Parent/Unordered") &&
            "the precondition check missed a prim that draws differently");
 
     ExecUsdSystem system(stage);
-    const TfToken& localToWorld =
-        ExecGeomXformableTokens->computeLocalToWorldTransform;
+    const TfToken& localToWorld = ExecGeomXformableTokens->computeLocalToWorldTransform;
     std::vector<ExecUsdValueKey> keys;
     keys.emplace_back(nudged.GetPrim(), localToWorld);
     keys.emplace_back(unordered.GetPrim(), localToWorld);
@@ -659,12 +655,10 @@ void TestThePreconditionIsTwoSided()
     const GfMatrix4d nudgedExec = view.Get(0).Get<GfMatrix4d>();
     const GfMatrix4d unorderedExec = view.Get(1).Get<GfMatrix4d>();
 
-    const GfMatrix4d nudgedUsd =
-        nudged.ComputeLocalToWorldTransform(UsdTimeCode::Default());
-    const GfMatrix4d unorderedUsd =
-        unordered.ComputeLocalToWorldTransform(UsdTimeCode::Default());
-    std::printf("  xformOp:translate only:     exec %s, UsdGeom %s\n",
-                Describe(nudgedExec).c_str(), Describe(nudgedUsd).c_str());
+    const GfMatrix4d nudgedUsd = nudged.ComputeLocalToWorldTransform(UsdTimeCode::Default());
+    const GfMatrix4d unorderedUsd = unordered.ComputeLocalToWorldTransform(UsdTimeCode::Default());
+    std::printf("  xformOp:translate only:     exec %s, UsdGeom %s\n", Describe(nudgedExec).c_str(),
+                Describe(nudgedUsd).c_str());
     std::printf("  xformOp:transform unlisted: exec %s, UsdGeom %s\n",
                 Describe(unorderedExec).c_str(), Describe(unorderedUsd).c_str());
 
@@ -683,21 +677,22 @@ void TestThePreconditionIsTwoSided()
 // fallback is the identity -- and the first assertion to fail is a placement
 // at frame 50. So the registration is asserted first, by the plugin name the
 // staged plugInfo.json declares.
-void AssertBundleRegistered()
+void
+AssertBundleRegistered()
 {
-    const PlugPluginPtr plugin =
-        PlugRegistry::GetInstance().GetPluginWithName("ExecMotion");
-    assert(plugin &&
-           "the ExecMotion plugin is not registered: PXR_PLUGINPATH_NAME does "
-           "not reach its staged plugInfo.json, and without it every "
-           "transform below falls back to the identity rather than failing");
+    const PlugPluginPtr plugin = PlugRegistry::GetInstance().GetPluginWithName("ExecMotion");
+    assert(plugin && "the ExecMotion plugin is not registered: PXR_PLUGINPATH_NAME does "
+                     "not reach its staged plugInfo.json, and without it every "
+                     "transform below falls back to the identity rather than failing");
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
-    if (argc != 2) {
+    if (argc != 2)
+    {
         std::fprintf(stderr, "usage: %s displayed_clip.usda\n", argv[0]);
         return 2;
     }
@@ -709,7 +704,8 @@ int main(int argc, char** argv)
     // Every edit goes to the stage's own session layer, so the fixture's layer
     // -- shared between the three stages through the layer registry -- is never
     // touched and no test can see another's edits.
-    auto open = [&]() {
+    auto open = [&]()
+    {
         UsdStageRefPtr stage = UsdStage::Open(argv[1]);
         assert(stage && "could not open the display fixture");
         stage->SetEditTarget(stage->GetSessionLayer());

@@ -207,31 +207,28 @@ struct PacketCaptureError
 
 // Parses a capture whose first token must be `magic`. On failure `capture` is
 // left untouched and `error`, when given, names the line and the reason.
-LIVETRANSPORT_API bool ReadPacketCapture(
-    std::string_view magic, std::istream& input, PacketCapture* capture,
-    PacketCaptureError* error = nullptr);
+LIVETRANSPORT_API bool ReadPacketCapture(std::string_view magic, std::istream& input,
+                                         PacketCapture* capture,
+                                         PacketCaptureError* error = nullptr);
 
-LIVETRANSPORT_API bool ReadPacketCaptureFile(
-    std::string_view magic, const std::string& path, PacketCapture* capture,
-    PacketCaptureError* error = nullptr);
+LIVETRANSPORT_API bool ReadPacketCaptureFile(std::string_view magic, const std::string& path,
+                                             PacketCapture* capture,
+                                             PacketCaptureError* error = nullptr);
 
 // Writes `capture` under `magic`. Emission is deterministic — fixed precision,
 // lowercase hex, sixteen bytes a line, a gutter on every line, and only the
 // header fields the capture actually carries — so re-reading and rewriting a
 // capture this writer produced is byte-identical, which is what lets a
 // committed fixture be compared rather than merely parsed.
-LIVETRANSPORT_API bool WritePacketCapture(
-    std::string_view magic, std::ostream& output,
-    const PacketCapture& capture);
+LIVETRANSPORT_API bool WritePacketCapture(std::string_view magic, std::ostream& output,
+                                          const PacketCapture& capture);
 
-LIVETRANSPORT_API bool WritePacketCaptureFile(
-    std::string_view magic, const std::string& path,
-    const PacketCapture& capture);
+LIVETRANSPORT_API bool WritePacketCaptureFile(std::string_view magic, const std::string& path,
+                                              const PacketCapture& capture);
 
 // The gutter rendering: printable ASCII as itself, everything else as '.'. The
 // reader checks a gutter against this, so it is part of the format rather than
 // a courtesy of the writer.
-LIVETRANSPORT_API std::string PacketCaptureGutter(
-    const std::uint8_t* bytes, std::size_t count);
+LIVETRANSPORT_API std::string PacketCaptureGutter(const std::uint8_t* bytes, std::size_t count);
 
 } // namespace liveTransport

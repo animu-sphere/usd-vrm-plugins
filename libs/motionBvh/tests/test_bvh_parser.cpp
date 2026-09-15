@@ -73,8 +73,7 @@ Refusal(std::string_view text, const BvhParseOptions& options = {})
 {
     BvhDocument document;
     Diagnostic diagnostic;
-    const bool parsed =
-        motionBvh::ParseBvhText(text, &document, &diagnostic, options);
+    const bool parsed = motionBvh::ParseBvhText(text, &document, &diagnostic, options);
     assert(!parsed);
     // Every refusal this layer raises is a syntax code: it does not know what a
     // profile is, so it cannot be the layer that disagrees with one.
@@ -104,8 +103,7 @@ TestMinimalDocument()
     assert(document.joints[1].channels.size() == 3);
     assert(document.joints[1].channelOffset == 6);
     assert(document.joints[1].endSiteOffset);
-    assert((*document.joints[1].endSiteOffset
-            == motionBvh::BvhVec3{0.0f, 5.25f, 0.0f}));
+    assert((*document.joints[1].endSiteOffset == motionBvh::BvhVec3{0.0f, 5.25f, 0.0f}));
 
     assert(document.channelCount == 9);
     assert(document.frameCount == 2);
@@ -151,8 +149,10 @@ void
 TestWriterVariation()
 {
     std::string crlf;
-    for (const char c : kMinimal) {
-        if (c == '\n') {
+    for (const char c : kMinimal)
+    {
+        if (c == '\n')
+        {
             crlf += '\r';
         }
         crlf += c;
@@ -173,23 +173,22 @@ TestWriterVariation()
     assert(motionBvh::ParseBvhText(bom, &fromBom));
     assert(fromBom.values == fromLf.values);
 
-    const std::string_view lowercase =
-        "hierarchy\n"
-        "root hips\n"
-        "{\n"
-        "  offset 0 0 0\n"
-        "  channels 3 zrotation xrotation yrotation\n"
-        "  end site\n"
-        "  {\n"
-        "    offset 0 1 0\n"
-        "  }\n"
-        "}\n"
-        "motion\n"
-        "Frames : 1\n"
-        "Frame Time : 0.04\n"
-        "\n"
-        "   1.0   2.0   3.0   \n"
-        "\n";
+    const std::string_view lowercase = "hierarchy\n"
+                                       "root hips\n"
+                                       "{\n"
+                                       "  offset 0 0 0\n"
+                                       "  channels 3 zrotation xrotation yrotation\n"
+                                       "  end site\n"
+                                       "  {\n"
+                                       "    offset 0 1 0\n"
+                                       "  }\n"
+                                       "}\n"
+                                       "motion\n"
+                                       "Frames : 1\n"
+                                       "Frame Time : 0.04\n"
+                                       "\n"
+                                       "   1.0   2.0   3.0   \n"
+                                       "\n";
     BvhDocument lowered;
     assert(motionBvh::ParseBvhText(lowercase, &lowered));
     assert(lowered.joints.size() == 1);
@@ -205,22 +204,21 @@ TestWriterVariation()
 void
 TestStaticJointAndEmptyMotion()
 {
-    const std::string_view staticJoint =
-        "HIERARCHY\n"
-        "ROOT Hips\n"
-        "{\n"
-        "OFFSET 0 0 0\n"
-        "CHANNELS 3 Zrotation Xrotation Yrotation\n"
-        "JOINT Prop\n"
-        "{\n"
-        "OFFSET 1 2 3\n"
-        "CHANNELS 0\n"
-        "}\n"
-        "}\n"
-        "MOTION\n"
-        "Frames: 1\n"
-        "Frame Time: 0.04\n"
-        "1 2 3\n";
+    const std::string_view staticJoint = "HIERARCHY\n"
+                                         "ROOT Hips\n"
+                                         "{\n"
+                                         "OFFSET 0 0 0\n"
+                                         "CHANNELS 3 Zrotation Xrotation Yrotation\n"
+                                         "JOINT Prop\n"
+                                         "{\n"
+                                         "OFFSET 1 2 3\n"
+                                         "CHANNELS 0\n"
+                                         "}\n"
+                                         "}\n"
+                                         "MOTION\n"
+                                         "Frames: 1\n"
+                                         "Frame Time: 0.04\n"
+                                         "1 2 3\n";
     BvhDocument document;
     assert(motionBvh::ParseBvhText(staticJoint, &document));
     assert(document.joints.size() == 2);
@@ -228,16 +226,15 @@ TestStaticJointAndEmptyMotion()
     assert(document.joints[1].channelOffset == 3);
     assert(document.channelCount == 3);
 
-    const std::string_view empty =
-        "HIERARCHY\n"
-        "ROOT Hips\n"
-        "{\n"
-        "OFFSET 0 0 0\n"
-        "CHANNELS 3 Zrotation Xrotation Yrotation\n"
-        "}\n"
-        "MOTION\n"
-        "Frames: 0\n"
-        "Frame Time: 0.0333333\n";
+    const std::string_view empty = "HIERARCHY\n"
+                                   "ROOT Hips\n"
+                                   "{\n"
+                                   "OFFSET 0 0 0\n"
+                                   "CHANNELS 3 Zrotation Xrotation Yrotation\n"
+                                   "}\n"
+                                   "MOTION\n"
+                                   "Frames: 0\n"
+                                   "Frame Time: 0.0333333\n";
     BvhDocument none;
     assert(motionBvh::ParseBvhText(empty, &none));
     assert(none.frameCount == 0);
@@ -251,139 +248,126 @@ TestSyntaxRefusals()
     // Not a BVH file at all.
     assert(Refusal("").code == DiagnosticCode::ParseFailed);
     assert(Refusal("MOTION\n").code == DiagnosticCode::ParseFailed);
-    assert(Refusal("HIERARCHY\nJOINT Hips\n").code
-           == DiagnosticCode::ParseFailed);
+    assert(Refusal("HIERARCHY\nJOINT Hips\n").code == DiagnosticCode::ParseFailed);
     assert(Refusal("HIERARCHY\nROOT\n{\n").code == DiagnosticCode::ParseFailed);
 
-    const std::string prefix =
-        "HIERARCHY\n"
-        "ROOT Hips\n"
-        "{\n";
-    const std::string body =
-        "OFFSET 0 0 0\n"
-        "CHANNELS 3 Zrotation Xrotation Yrotation\n";
-    const std::string motion =
-        "MOTION\n"
-        "Frames: 1\n"
-        "Frame Time: 0.04\n"
-        "1 2 3\n";
+    const std::string prefix = "HIERARCHY\n"
+                               "ROOT Hips\n"
+                               "{\n";
+    const std::string body = "OFFSET 0 0 0\n"
+                             "CHANNELS 3 Zrotation Xrotation Yrotation\n";
+    const std::string motion = "MOTION\n"
+                               "Frames: 1\n"
+                               "Frame Time: 0.04\n"
+                               "1 2 3\n";
 
     // An unbalanced brace, and a joint that never closes.
     assert(Refusal(prefix + body).code == DiagnosticCode::ParseFailed);
-    assert(Refusal(prefix + body + "JOINT Spine\n{\n" + body + "}\n" + motion)
-               .code
-           == DiagnosticCode::ParseFailed);
+    assert(Refusal(prefix + body + "JOINT Spine\n{\n" + body + "}\n" + motion).code ==
+           DiagnosticCode::ParseFailed);
 
     // A channel this format model cannot represent. Refused rather than
     // retained as an unknown column: nothing above could attribute its values.
-    const Diagnostic channel = Refusal(
-        prefix + "OFFSET 0 0 0\nCHANNELS 4 Zrotation Xrotation Yrotation "
-                 "Wrotation\n}\n" + motion);
+    const Diagnostic channel = Refusal(prefix +
+                                       "OFFSET 0 0 0\nCHANNELS 4 Zrotation Xrotation Yrotation "
+                                       "Wrotation\n}\n" +
+                                       motion);
     assert(channel.code == DiagnosticCode::UnsupportedChannel);
     assert(channel.subject == "Wrotation");
     assert(channel.line == 5);
 
     // A CHANNELS count the list does not carry. Reporting `JOINT` as an
     // unsupported channel name would send the reader looking for a channel.
-    const Diagnostic count =
-        Refusal(prefix + "OFFSET 0 0 0\nCHANNELS 6 Zrotation Xrotation "
-                         "Yrotation\nJOINT Spine\n{\n" + body + "}\n}\n"
-                + motion);
+    const Diagnostic count = Refusal(prefix +
+                                     "OFFSET 0 0 0\nCHANNELS 6 Zrotation Xrotation "
+                                     "Yrotation\nJOINT Spine\n{\n" +
+                                     body + "}\n}\n" + motion);
     assert(count.code == DiagnosticCode::ParseFailed);
     assert(count.subject == "JOINT");
 
     // No OFFSET at all: a joint with no offset is not a bone.
-    assert(Refusal(prefix + "CHANNELS 3 Zrotation Xrotation Yrotation\n}\n"
-                   + motion)
-               .code
-           == DiagnosticCode::ParseFailed);
+    assert(Refusal(prefix + "CHANNELS 3 Zrotation Xrotation Yrotation\n}\n" + motion).code ==
+           DiagnosticCode::ParseFailed);
     // And each of OFFSET, CHANNELS and End Site at most once, because the model
     // holds one of each and silently keeping the last would lose the file's
     // disagreement with itself.
-    assert(Refusal(prefix + body + "OFFSET 1 1 1\n}\n" + motion).code
-           == DiagnosticCode::ParseFailed);
-    assert(Refusal(prefix + body + "CHANNELS 3 Zrotation Xrotation Yrotation\n"
-                                   "}\n" + motion)
-               .code
-           == DiagnosticCode::ParseFailed);
-    assert(Refusal(prefix + body + "End Site\n{\nOFFSET 0 1 0\n}\n"
-                                   "End Site\n{\nOFFSET 0 2 0\n}\n}\n" + motion)
-               .code
-           == DiagnosticCode::ParseFailed);
+    assert(Refusal(prefix + body + "OFFSET 1 1 1\n}\n" + motion).code ==
+           DiagnosticCode::ParseFailed);
+    assert(Refusal(prefix + body +
+                   "CHANNELS 3 Zrotation Xrotation Yrotation\n"
+                   "}\n" +
+                   motion)
+               .code == DiagnosticCode::ParseFailed);
+    assert(Refusal(prefix + body +
+                   "End Site\n{\nOFFSET 0 1 0\n}\n"
+                   "End Site\n{\nOFFSET 0 2 0\n}\n}\n" +
+                   motion)
+               .code == DiagnosticCode::ParseFailed);
 }
 
 void
 TestMotionRefusals()
 {
-    const std::string head =
-        "HIERARCHY\n"
-        "ROOT Hips\n"
-        "{\n"
-        "OFFSET 0 0 0\n"
-        "CHANNELS 3 Zrotation Xrotation Yrotation\n"
-        "}\n"
-        "MOTION\n";
+    const std::string head = "HIERARCHY\n"
+                             "ROOT Hips\n"
+                             "{\n"
+                             "OFFSET 0 0 0\n"
+                             "CHANNELS 3 Zrotation Xrotation Yrotation\n"
+                             "}\n"
+                             "MOTION\n";
 
     // A short row is reported on the row that is short, not at the end of the
     // file -- which is the whole reason the motion section is read as lines.
-    const Diagnostic narrow =
-        Refusal(head + "Frames: 3\nFrame Time: 0.04\n1 2 3\n1 2\n1 2 3\n");
+    const Diagnostic narrow = Refusal(head + "Frames: 3\nFrame Time: 0.04\n1 2 3\n1 2\n1 2 3\n");
     assert(narrow.code == DiagnosticCode::FrameWidthMismatch);
     assert(narrow.line == 11);
     assert(narrow.subject == "frame 1");
 
-    const Diagnostic wide =
-        Refusal(head + "Frames: 2\nFrame Time: 0.04\n1 2 3\n1 2 3 4\n");
+    const Diagnostic wide = Refusal(head + "Frames: 2\nFrame Time: 0.04\n1 2 3\n1 2 3 4\n");
     assert(wide.code == DiagnosticCode::FrameWidthMismatch);
     assert(wide.line == 11);
 
     // There is no frame-count code, and inventing one the moment a parser meets
     // this file is exactly the drift a frozen set prevents.
-    const Diagnostic tooFew =
-        Refusal(head + "Frames: 3\nFrame Time: 0.04\n1 2 3\n1 2 3\n");
+    const Diagnostic tooFew = Refusal(head + "Frames: 3\nFrame Time: 0.04\n1 2 3\n1 2 3\n");
     assert(tooFew.code == DiagnosticCode::ParseFailed);
     assert(tooFew.detail.find("declared 3") != std::string::npos);
 
-    const Diagnostic tooMany =
-        Refusal(head + "Frames: 1\nFrame Time: 0.04\n1 2 3\n1 2 3\n");
+    const Diagnostic tooMany = Refusal(head + "Frames: 1\nFrame Time: 0.04\n1 2 3\n1 2 3\n");
     assert(tooMany.code == DiagnosticCode::ParseFailed);
     assert(tooMany.line == 11);
 
     // Frame time: absent, unreadable, negative, or zero across more than one
     // frame.
-    assert(Refusal(head + "Frames: 1\nFrame Time:\n").code
-           == DiagnosticCode::ParseFailed);
-    assert(Refusal(head + "Frames: 1\nFrame Time: soon\n1 2 3\n").code
-           == DiagnosticCode::InvalidFrameTime);
-    assert(Refusal(head + "Frames: 1\nFrame Time: -0.04\n1 2 3\n").code
-           == DiagnosticCode::InvalidFrameTime);
-    assert(Refusal(head + "Frames: 2\nFrame Time: 0.0\n1 2 3\n1 2 3\n").code
-           == DiagnosticCode::InvalidFrameTime);
+    assert(Refusal(head + "Frames: 1\nFrame Time:\n").code == DiagnosticCode::ParseFailed);
+    assert(Refusal(head + "Frames: 1\nFrame Time: soon\n1 2 3\n").code ==
+           DiagnosticCode::InvalidFrameTime);
+    assert(Refusal(head + "Frames: 1\nFrame Time: -0.04\n1 2 3\n").code ==
+           DiagnosticCode::InvalidFrameTime);
+    assert(Refusal(head + "Frames: 2\nFrame Time: 0.0\n1 2 3\n1 2 3\n").code ==
+           DiagnosticCode::InvalidFrameTime);
     // ... but a single pose has no interval to describe.
     assert(Parses(head + "Frames: 1\nFrame Time: 0.0\n1 2 3\n"));
     assert(Parses(head + "Frames: 0\nFrame Time: 0.0\n"));
 
-    assert(Refusal(head + "Frames: many\nFrame Time: 0.04\n").code
-           == DiagnosticCode::ParseFailed);
-    assert(Refusal(head + "Frames: -1\nFrame Time: 0.04\n").code
-           == DiagnosticCode::ParseFailed);
+    assert(Refusal(head + "Frames: many\nFrame Time: 0.04\n").code == DiagnosticCode::ParseFailed);
+    assert(Refusal(head + "Frames: -1\nFrame Time: 0.04\n").code == DiagnosticCode::ParseFailed);
 
     // A number that is not one, and numbers that are not finite. An overflowing
     // literal is the same refusal as a literal `inf`: neither has an
     // interpretation at any layer above.
-    assert(Refusal(head + "Frames: 1\nFrame Time: 0.04\n1 two 3\n").code
-           == DiagnosticCode::ParseFailed);
-    assert(Refusal(head + "Frames: 1\nFrame Time: 0.04\n1 nan 3\n").code
-           == DiagnosticCode::NonFiniteValue);
-    assert(Refusal(head + "Frames: 1\nFrame Time: 0.04\n1 -inf 3\n").code
-           == DiagnosticCode::NonFiniteValue);
-    assert(Refusal(head + "Frames: 1\nFrame Time: 0.04\n1 1e400 3\n").code
-           == DiagnosticCode::NonFiniteValue);
+    assert(Refusal(head + "Frames: 1\nFrame Time: 0.04\n1 two 3\n").code ==
+           DiagnosticCode::ParseFailed);
+    assert(Refusal(head + "Frames: 1\nFrame Time: 0.04\n1 nan 3\n").code ==
+           DiagnosticCode::NonFiniteValue);
+    assert(Refusal(head + "Frames: 1\nFrame Time: 0.04\n1 -inf 3\n").code ==
+           DiagnosticCode::NonFiniteValue);
+    assert(Refusal(head + "Frames: 1\nFrame Time: 0.04\n1 1e400 3\n").code ==
+           DiagnosticCode::NonFiniteValue);
     assert(Refusal("HIERARCHY\nROOT Hips\n{\nOFFSET 0 nan 0\n"
                    "CHANNELS 3 Zrotation Xrotation Yrotation\n}\n"
                    "MOTION\nFrames: 1\nFrame Time: 0.04\n1 2 3\n")
-               .code
-           == DiagnosticCode::NonFiniteValue);
+               .code == DiagnosticCode::NonFiniteValue);
 }
 
 // Refusals of the pathological case, checked by lowering the limit rather than
@@ -392,11 +376,14 @@ void
 TestLimits()
 {
     std::string deep = "HIERARCHY\nROOT J0\n{\nOFFSET 0 0 0\nCHANNELS 0\n";
-    for (int level = 1; level < 6; ++level) {
-        deep += "JOINT J" + std::to_string(level) + "\n{\nOFFSET 0 1 0\n"
+    for (int level = 1; level < 6; ++level)
+    {
+        deep += "JOINT J" + std::to_string(level) +
+                "\n{\nOFFSET 0 1 0\n"
                 "CHANNELS 0\n";
     }
-    for (int level = 0; level < 6; ++level) {
+    for (int level = 0; level < 6; ++level)
+    {
         deep += "}\n";
     }
     deep += "MOTION\nFrames: 0\nFrame Time: 0.04\n";
@@ -415,9 +402,8 @@ TestLimits()
     fewFrames.limits.maxFrames = 1;
     // A declared count is refused before it is trusted, so this allocates
     // nothing.
-    const std::string many =
-        "HIERARCHY\nROOT Hips\n{\nOFFSET 0 0 0\nCHANNELS 0\n}\n"
-        "MOTION\nFrames: 2000000000\nFrame Time: 0.04\n";
+    const std::string many = "HIERARCHY\nROOT Hips\n{\nOFFSET 0 0 0\nCHANNELS 0\n}\n"
+                             "MOTION\nFrames: 2000000000\nFrame Time: 0.04\n";
     const Diagnostic refused = Refusal(many, fewFrames);
     assert(refused.code == DiagnosticCode::ParseFailed);
     assert(refused.subject == "2000000000");
@@ -433,8 +419,7 @@ TestFailureLeavesTheDocumentUntouched()
     const BvhDocument before = document;
 
     Diagnostic diagnostic;
-    assert(!motionBvh::ParseBvhText("HIERARCHY\nROOT Hips\n{\n", &document,
-                                    &diagnostic));
+    assert(!motionBvh::ParseBvhText("HIERARCHY\nROOT Hips\n{\n", &document, &diagnostic));
     assert(document.joints.size() == before.joints.size());
     assert(document.values == before.values);
     assert(document.frameCount == before.frameCount);
@@ -451,12 +436,12 @@ TestDeterminism()
     assert(first.values == second.values);
     assert(first.channelCount == second.channelCount);
     assert(first.frameTime == second.frameTime);
-    for (std::size_t index = 0; index < first.joints.size(); ++index) {
+    for (std::size_t index = 0; index < first.joints.size(); ++index)
+    {
         assert(first.joints[index].name == second.joints[index].name);
         assert(first.joints[index].offset == second.joints[index].offset);
         assert(first.joints[index].channels == second.joints[index].channels);
-        assert(first.joints[index].channelOffset
-               == second.joints[index].channelOffset);
+        assert(first.joints[index].channelOffset == second.joints[index].channelOffset);
     }
 }
 
@@ -518,13 +503,10 @@ CorpusExpectations(const std::string& half)
         {"valid-static-joint.bvh", {true, {}, 2, 6, 2, 0.0333333}},
         {"valid-duplicate-joint-names.bvh", {true, {}, 3, 12, 1, 0.0333333}},
 
-        {"malformed-missing-hierarchy.bvh",
-         {false, DiagnosticCode::ParseFailed}},
+        {"malformed-missing-hierarchy.bvh", {false, DiagnosticCode::ParseFailed}},
         {"malformed-unclosed-joint.bvh", {false, DiagnosticCode::ParseFailed}},
-        {"malformed-unsupported-channel.bvh",
-         {false, DiagnosticCode::UnsupportedChannel}},
-        {"malformed-frame-width.bvh",
-         {false, DiagnosticCode::FrameWidthMismatch}},
+        {"malformed-unsupported-channel.bvh", {false, DiagnosticCode::UnsupportedChannel}},
+        {"malformed-frame-width.bvh", {false, DiagnosticCode::FrameWidthMismatch}},
         {"malformed-frame-count.bvh", {false, DiagnosticCode::ParseFailed}},
         {"malformed-frame-time.bvh", {false, DiagnosticCode::InvalidFrameTime}},
         {"malformed-non-finite.bvh", {false, DiagnosticCode::NonFiniteValue}},
@@ -538,9 +520,9 @@ CorpusExpectations(const std::string& half)
 int
 RunCorpus(const std::filesystem::path& directory, const std::string& half)
 {
-    if (!std::filesystem::is_directory(directory)) {
-        std::fprintf(stderr, "corpus directory not found: %s\n",
-                     directory.string().c_str());
+    if (!std::filesystem::is_directory(directory))
+    {
+        std::fprintf(stderr, "corpus directory not found: %s\n", directory.string().c_str());
         return 1;
     }
 
@@ -548,28 +530,30 @@ RunCorpus(const std::filesystem::path& directory, const std::string& half)
     std::size_t verified = 0;
     std::set<std::string> seen;
     for (const std::filesystem::directory_entry& entry :
-         std::filesystem::directory_iterator(directory)) {
-        if (!entry.is_regular_file() || entry.path().extension() != ".bvh") {
+         std::filesystem::directory_iterator(directory))
+    {
+        if (!entry.is_regular_file() || entry.path().extension() != ".bvh")
+        {
             continue;
         }
         const std::string name = entry.path().filename().string();
         seen.insert(name);
 
         const auto expectation = CorpusExpectations(half).find(name);
-        if (expectation == CorpusExpectations(half).end()) {
+        if (expectation == CorpusExpectations(half).end())
+        {
             // A fixture nobody stated an expectation for is a fixture that
             // proves nothing, so adding one without a row here fails.
-            std::fprintf(stderr, "%s: no expectation in the table\n",
-                         name.c_str());
+            std::fprintf(stderr, "%s: no expectation in the table\n", name.c_str());
             ++failures;
             continue;
         }
 
         BvhDocument document;
         Diagnostic diagnostic;
-        const bool parsed =
-            motionBvh::ParseBvhFile(entry.path(), &document, &diagnostic);
-        if (parsed != expectation->second.parses) {
+        const bool parsed = motionBvh::ParseBvhFile(entry.path(), &document, &diagnostic);
+        if (parsed != expectation->second.parses)
+        {
             std::fprintf(stderr, "%s: expected %s, got %s (%s)\n", name.c_str(),
                          expectation->second.parses ? "a document" : "a refusal",
                          parsed ? "a document" : "a refusal",
@@ -578,21 +562,22 @@ RunCorpus(const std::filesystem::path& directory, const std::string& half)
             continue;
         }
 
-        if (!parsed) {
-            if (diagnostic.code != expectation->second.code) {
-                std::fprintf(stderr, "%s: expected %s, got %s\n", name.c_str(),
-                             std::string(motionBvh::DiagnosticCodeString(
-                                             expectation->second.code))
-                                 .c_str(),
-                             FormatDiagnostic(diagnostic).c_str());
+        if (!parsed)
+        {
+            if (diagnostic.code != expectation->second.code)
+            {
+                std::fprintf(
+                    stderr, "%s: expected %s, got %s\n", name.c_str(),
+                    std::string(motionBvh::DiagnosticCodeString(expectation->second.code)).c_str(),
+                    FormatDiagnostic(diagnostic).c_str());
                 ++failures;
                 continue;
             }
             // Every refusal names where it happened; a refusal without a place
             // sends the reader through the whole file.
-            if (!diagnostic.line) {
-                std::fprintf(stderr, "%s: refusal carries no line\n",
-                             name.c_str());
+            if (!diagnostic.line)
+            {
+                std::fprintf(stderr, "%s: refusal carries no line\n", name.c_str());
                 ++failures;
                 continue;
             }
@@ -602,54 +587,62 @@ RunCorpus(const std::filesystem::path& directory, const std::string& half)
 
         const Expectation& want = expectation->second;
         bool ok = true;
-        if (document.joints.size() != want.joints) {
+        if (document.joints.size() != want.joints)
+        {
             std::fprintf(stderr, "%s: %zu joints, expected %zu\n", name.c_str(),
                          document.joints.size(), want.joints);
             ok = false;
         }
-        if (document.channelCount != want.channels) {
-            std::fprintf(stderr, "%s: %zu channels, expected %zu\n",
-                         name.c_str(), document.channelCount, want.channels);
+        if (document.channelCount != want.channels)
+        {
+            std::fprintf(stderr, "%s: %zu channels, expected %zu\n", name.c_str(),
+                         document.channelCount, want.channels);
             ok = false;
         }
-        if (document.frameCount != want.frames) {
+        if (document.frameCount != want.frames)
+        {
             std::fprintf(stderr, "%s: %zu frames, expected %zu\n", name.c_str(),
                          document.frameCount, want.frames);
             ok = false;
         }
-        if (document.frameTime != want.frameTime) {
-            std::fprintf(stderr, "%s: frame time %.9g, expected %.9g\n",
-                         name.c_str(), document.frameTime, want.frameTime);
+        if (document.frameTime != want.frameTime)
+        {
+            std::fprintf(stderr, "%s: frame time %.9g, expected %.9g\n", name.c_str(),
+                         document.frameTime, want.frameTime);
             ok = false;
         }
-        if (document.values.size() != want.frames * want.channels) {
+        if (document.values.size() != want.frames * want.channels)
+        {
             std::fprintf(stderr, "%s: %zu values, expected %zu\n", name.c_str(),
                          document.values.size(), want.frames * want.channels);
             ok = false;
         }
         Diagnostic validation;
-        if (!motionBvh::ValidateBvhDocument(document, &validation)) {
-            std::fprintf(stderr, "%s: %s\n", name.c_str(),
-                         FormatDiagnostic(validation).c_str());
+        if (!motionBvh::ValidateBvhDocument(document, &validation))
+        {
+            std::fprintf(stderr, "%s: %s\n", name.c_str(), FormatDiagnostic(validation).c_str());
             ok = false;
         }
-        if (!ok) {
+        if (!ok)
+        {
             ++failures;
             continue;
         }
         ++verified;
     }
 
-    for (const auto& [name, expectation] : CorpusExpectations(half)) {
+    for (const auto& [name, expectation] : CorpusExpectations(half))
+    {
         (void)expectation;
-        if (seen.find(name) == seen.end()) {
-            std::fprintf(stderr, "%s: expected fixture is missing\n",
-                         name.c_str());
+        if (seen.find(name) == seen.end())
+        {
+            std::fprintf(stderr, "%s: expected fixture is missing\n", name.c_str());
             ++failures;
         }
     }
 
-    if (failures > 0) {
+    if (failures > 0)
+    {
         std::fprintf(stderr, "%d corpus fixture(s) failed\n", failures);
         return 1;
     }
@@ -662,7 +655,8 @@ RunCorpus(const std::filesystem::path& directory, const std::string& half)
 int
 main(int argc, char** argv)
 {
-    if (argc > 1) {
+    if (argc > 1)
+    {
         // A second argument names the half; without one this is the generated
         // corpus, which is what every existing caller means.
         return RunCorpus(argv[1], argc > 2 ? argv[2] : "generated");

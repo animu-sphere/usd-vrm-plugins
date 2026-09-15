@@ -50,20 +50,14 @@ struct GlbView
 };
 
 VRMCONTAINER_API bool HasGlbMagic(ByteView bytes) noexcept;
-VRMCONTAINER_API bool ParseGlb(
-    ByteView bytes, GlbView* out, Error* error = nullptr) noexcept;
-VRMCONTAINER_API bool MakeBufferView(
-    ByteView buffer,
-    std::size_t offset,
-    std::size_t length,
-    ByteView* out,
-    Error* error = nullptr) noexcept;
+VRMCONTAINER_API bool ParseGlb(ByteView bytes, GlbView* out, Error* error = nullptr) noexcept;
+VRMCONTAINER_API bool MakeBufferView(ByteView buffer, std::size_t offset, std::size_t length,
+                                     ByteView* out, Error* error = nullptr) noexcept;
 VRMCONTAINER_API const char* ErrorMessage(ErrorCode code) noexcept;
 
 // Embedded-resource names are content-addressed. This intentionally preserves
 // the hash seed used by usdVrm before vrmContainer was extracted.
 VRMCONTAINER_API std::uint64_t HashBytes(ByteView bytes) noexcept;
-VRMCONTAINER_API std::string MakeEmbeddedResourcePath(
-    ByteView bytes, const char* extension);
+VRMCONTAINER_API std::string MakeEmbeddedResourcePath(ByteView bytes, const char* extension);
 
 } // namespace vrmContainer

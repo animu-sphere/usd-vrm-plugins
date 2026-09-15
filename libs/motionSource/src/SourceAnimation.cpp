@@ -29,7 +29,8 @@ constexpr std::array<std::string_view, SourceEulerOrderCount> kEulerNames = {
 };
 
 constexpr std::array<std::string_view, 2> kAngleUnitNames = {
-    "degrees", "radians",
+    "degrees",
+    "radians",
 };
 
 char
@@ -41,11 +42,14 @@ LowerAscii(char c) noexcept
 bool
 EqualsAscii(std::string_view a, std::string_view b) noexcept
 {
-    if (a.size() != b.size()) {
+    if (a.size() != b.size())
+    {
         return false;
     }
-    for (std::size_t i = 0; i < a.size(); ++i) {
-        if (LowerAscii(a[i]) != LowerAscii(b[i])) {
+    for (std::size_t i = 0; i < a.size(); ++i)
+    {
+        if (LowerAscii(a[i]) != LowerAscii(b[i]))
+        {
             return false;
         }
     }
@@ -55,35 +59,33 @@ EqualsAscii(std::string_view a, std::string_view b) noexcept
 bool
 IsFinite(const SourceVec3& value) noexcept
 {
-    return std::isfinite(value.x) && std::isfinite(value.y)
-           && std::isfinite(value.z);
+    return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
 }
 
 bool
 IsFinite(const SourceEulerAngles& value) noexcept
 {
-    return std::isfinite(value.first) && std::isfinite(value.second)
-           && std::isfinite(value.third);
+    return std::isfinite(value.first) && std::isfinite(value.second) && std::isfinite(value.third);
 }
 
 bool
 IsFinite(const SourceQuat& value) noexcept
 {
-    return std::isfinite(value.w) && std::isfinite(value.x)
-           && std::isfinite(value.y) && std::isfinite(value.z);
+    return std::isfinite(value.w) && std::isfinite(value.x) && std::isfinite(value.y) &&
+           std::isfinite(value.z);
 }
 
 bool
 IsZero(const SourceQuat& value) noexcept
 {
-    return value.w == 0.0f && value.x == 0.0f && value.y == 0.0f
-           && value.z == 0.0f;
+    return value.w == 0.0f && value.x == 0.0f && value.y == 0.0f && value.z == 0.0f;
 }
 
 bool
 Fail(std::string* reason, std::string text)
 {
-    if (reason) {
+    if (reason)
+    {
         *reason = std::move(text);
     }
     return false;
@@ -95,7 +97,8 @@ TrackLabel(const SourceSkeleton& skeleton, std::size_t index)
     char buffer[32];
     std::snprintf(buffer, sizeof(buffer), "track %zu", index);
     std::string label(buffer);
-    if (index < skeleton.joints.size()) {
+    if (index < skeleton.joints.size())
+    {
         label += " '" + skeleton.joints[index].name + "'";
     }
     return label;
@@ -113,8 +116,10 @@ SourceEulerOrderName(SourceEulerOrder order) noexcept
 std::optional<SourceEulerOrder>
 FindSourceEulerOrder(std::string_view name) noexcept
 {
-    for (std::size_t i = 0; i < kEulerNames.size(); ++i) {
-        if (EqualsAscii(name, kEulerNames[i])) {
+    for (std::size_t i = 0; i < kEulerNames.size(); ++i)
+    {
+        if (EqualsAscii(name, kEulerNames[i]))
+        {
             return static_cast<SourceEulerOrder>(i);
         }
     }
@@ -125,7 +130,8 @@ std::optional<int>
 SourceEulerAxis(SourceEulerOrder order, std::size_t component) noexcept
 {
     const auto index = static_cast<std::size_t>(order);
-    if (index >= kEulerAxes.size() || component >= 3) {
+    if (index >= kEulerAxes.size() || component >= 3)
+    {
         return std::nullopt;
     }
     return kEulerAxes[index][component];
@@ -135,15 +141,16 @@ std::string_view
 SourceAngleUnitName(SourceAngleUnit unit) noexcept
 {
     const auto index = static_cast<std::size_t>(unit);
-    return index < kAngleUnitNames.size() ? kAngleUnitNames[index]
-                                          : std::string_view();
+    return index < kAngleUnitNames.size() ? kAngleUnitNames[index] : std::string_view();
 }
 
 std::optional<SourceAngleUnit>
 FindSourceAngleUnit(std::string_view name) noexcept
 {
-    for (std::size_t i = 0; i < kAngleUnitNames.size(); ++i) {
-        if (EqualsAscii(name, kAngleUnitNames[i])) {
+    for (std::size_t i = 0; i < kAngleUnitNames.size(); ++i)
+    {
+        if (EqualsAscii(name, kAngleUnitNames[i]))
+        {
             return static_cast<SourceAngleUnit>(i);
         }
     }
@@ -158,13 +165,13 @@ operator==(const SourceJointTrack& lhs, const SourceJointTrack& rhs) noexcept
     // describe the same motion whatever those defaults happen to be — which is
     // the header's claim that the fields mean nothing without angles beside
     // them, made true rather than merely written down.
-    if (!lhs.eulerAngles.empty()
-        && (lhs.eulerOrder != rhs.eulerOrder || lhs.angleUnit != rhs.angleUnit)) {
+    if (!lhs.eulerAngles.empty() &&
+        (lhs.eulerOrder != rhs.eulerOrder || lhs.angleUnit != rhs.angleUnit))
+    {
         return false;
     }
-    return lhs.translations == rhs.translations
-           && lhs.eulerAngles == rhs.eulerAngles
-           && lhs.rotations == rhs.rotations;
+    return lhs.translations == rhs.translations && lhs.eulerAngles == rhs.eulerAngles &&
+           lhs.rotations == rhs.rotations;
 }
 
 bool
@@ -176,7 +183,8 @@ operator!=(const SourceJointTrack& lhs, const SourceJointTrack& rhs) noexcept
 std::optional<double>
 SourceAnimation::Time(std::size_t frameIndex) const noexcept
 {
-    if (frameIndex >= frameCount) {
+    if (frameIndex >= frameCount)
+    {
         return std::nullopt;
     }
     return startTime + static_cast<double>(frameIndex) * frameTime;
@@ -191,14 +199,14 @@ SourceAnimation::EndTime() const noexcept
 double
 SourceAnimation::Duration() const noexcept
 {
-    return frameCount < 2 ? 0.0
-                          : static_cast<double>(frameCount - 1) * frameTime;
+    return frameCount < 2 ? 0.0 : static_cast<double>(frameCount - 1) * frameTime;
 }
 
 std::optional<double>
 SourceAnimation::FrameRate() const noexcept
 {
-    if (frameTime <= 0.0) {
+    if (frameTime <= 0.0)
+    {
         return std::nullopt;
     }
     return 1.0 / frameTime;
@@ -207,9 +215,9 @@ SourceAnimation::FrameRate() const noexcept
 bool
 operator==(const SourceAnimation& lhs, const SourceAnimation& rhs) noexcept
 {
-    return lhs.frameCount == rhs.frameCount && lhs.frameTime == rhs.frameTime
-           && lhs.startTime == rhs.startTime && lhs.provenance == rhs.provenance
-           && lhs.tracks == rhs.tracks;
+    return lhs.frameCount == rhs.frameCount && lhs.frameTime == rhs.frameTime &&
+           lhs.startTime == rhs.startTime && lhs.provenance == rhs.provenance &&
+           lhs.tracks == rhs.tracks;
 }
 
 bool
@@ -219,97 +227,103 @@ operator!=(const SourceAnimation& lhs, const SourceAnimation& rhs) noexcept
 }
 
 bool
-ValidateSourceAnimation(const SourceAnimation& animation,
-                        const SourceSkeleton& skeleton, std::string* reason)
+ValidateSourceAnimation(const SourceAnimation& animation, const SourceSkeleton& skeleton,
+                        std::string* reason)
 {
     std::string skeletonReason;
-    if (!ValidateSourceSkeleton(skeleton, &skeletonReason)) {
+    if (!ValidateSourceSkeleton(skeleton, &skeletonReason))
+    {
         return Fail(reason, "skeleton is invalid: " + skeletonReason);
     }
 
-    if (animation.tracks.size() != skeleton.joints.size()) {
+    if (animation.tracks.size() != skeleton.joints.size())
+    {
         char buffer[96];
-        std::snprintf(buffer, sizeof(buffer),
-                      "%zu track(s) for %zu joint(s)", animation.tracks.size(),
-                      skeleton.joints.size());
+        std::snprintf(buffer, sizeof(buffer), "%zu track(s) for %zu joint(s)",
+                      animation.tracks.size(), skeleton.joints.size());
         return Fail(reason, buffer);
     }
 
-    if (!std::isfinite(animation.frameTime) || animation.frameTime < 0.0) {
+    if (!std::isfinite(animation.frameTime) || animation.frameTime < 0.0)
+    {
         return Fail(reason, "frame time is not a non-negative interval");
     }
-    if (animation.frameCount >= 2 && animation.frameTime <= 0.0) {
-        return Fail(reason,
-                    "frame time is zero for a clip carrying two or more "
-                    "frames");
+    if (animation.frameCount >= 2 && animation.frameTime <= 0.0)
+    {
+        return Fail(reason, "frame time is zero for a clip carrying two or more "
+                            "frames");
     }
-    if (!std::isfinite(animation.startTime)) {
+    if (!std::isfinite(animation.startTime))
+    {
         return Fail(reason, "start time is not finite");
     }
 
-    for (std::size_t i = 0; i < animation.tracks.size(); ++i) {
+    for (std::size_t i = 0; i < animation.tracks.size(); ++i)
+    {
         const SourceJointTrack& track = animation.tracks[i];
 
-        if (!track.eulerAngles.empty() && !track.rotations.empty()) {
+        if (!track.eulerAngles.empty() && !track.rotations.empty())
+        {
             return Fail(reason,
-                        TrackLabel(skeleton, i)
-                            + " carries both angle and quaternion rotations");
+                        TrackLabel(skeleton, i) + " carries both angle and quaternion rotations");
         }
-        if (static_cast<std::size_t>(track.eulerOrder) >= SourceEulerOrderCount) {
-            return Fail(reason,
-                        TrackLabel(skeleton, i) + " has no known Euler order");
+        if (static_cast<std::size_t>(track.eulerOrder) >= SourceEulerOrderCount)
+        {
+            return Fail(reason, TrackLabel(skeleton, i) + " has no known Euler order");
         }
-        if (static_cast<std::size_t>(track.angleUnit)
-            >= static_cast<std::size_t>(SourceAngleUnit::Count)) {
-            return Fail(reason,
-                        TrackLabel(skeleton, i) + " has no known angle unit");
+        if (static_cast<std::size_t>(track.angleUnit) >=
+            static_cast<std::size_t>(SourceAngleUnit::Count))
+        {
+            return Fail(reason, TrackLabel(skeleton, i) + " has no known angle unit");
         }
 
-        const auto checkLength = [&](std::size_t size,
-                                     const char* what) -> bool {
-            if (size == 0 || size == animation.frameCount) {
+        const auto checkLength = [&](std::size_t size, const char* what) -> bool
+        {
+            if (size == 0 || size == animation.frameCount)
+            {
                 return true;
             }
             char buffer[96];
-            std::snprintf(buffer, sizeof(buffer),
-                          " carries %zu %s for %zu frame(s)", size, what,
+            std::snprintf(buffer, sizeof(buffer), " carries %zu %s for %zu frame(s)", size, what,
                           animation.frameCount);
             return Fail(reason, TrackLabel(skeleton, i) + buffer);
         };
-        if (!checkLength(track.translations.size(), "translation(s)")
-            || !checkLength(track.eulerAngles.size(), "angle sample(s)")
-            || !checkLength(track.rotations.size(), "rotation(s)")) {
+        if (!checkLength(track.translations.size(), "translation(s)") ||
+            !checkLength(track.eulerAngles.size(), "angle sample(s)") ||
+            !checkLength(track.rotations.size(), "rotation(s)"))
+        {
             return false;
         }
 
-        for (const SourceVec3& translation : track.translations) {
-            if (!IsFinite(translation)) {
-                return Fail(reason,
-                            TrackLabel(skeleton, i)
-                                + " has a non-finite translation");
+        for (const SourceVec3& translation : track.translations)
+        {
+            if (!IsFinite(translation))
+            {
+                return Fail(reason, TrackLabel(skeleton, i) + " has a non-finite translation");
             }
         }
-        for (const SourceEulerAngles& angles : track.eulerAngles) {
-            if (!IsFinite(angles)) {
-                return Fail(reason,
-                            TrackLabel(skeleton, i) + " has a non-finite angle");
+        for (const SourceEulerAngles& angles : track.eulerAngles)
+        {
+            if (!IsFinite(angles))
+            {
+                return Fail(reason, TrackLabel(skeleton, i) + " has a non-finite angle");
             }
         }
-        for (const SourceQuat& rotation : track.rotations) {
-            if (!IsFinite(rotation)) {
-                return Fail(reason,
-                            TrackLabel(skeleton, i)
-                                + " has a non-finite rotation");
+        for (const SourceQuat& rotation : track.rotations)
+        {
+            if (!IsFinite(rotation))
+            {
+                return Fail(reason, TrackLabel(skeleton, i) + " has a non-finite rotation");
             }
-            if (IsZero(rotation)) {
-                return Fail(reason,
-                            TrackLabel(skeleton, i)
-                                + " has a zero-magnitude rotation");
+            if (IsZero(rotation))
+            {
+                return Fail(reason, TrackLabel(skeleton, i) + " has a zero-magnitude rotation");
             }
         }
     }
 
-    if (reason) {
+    if (reason)
+    {
         reason->clear();
     }
     return true;

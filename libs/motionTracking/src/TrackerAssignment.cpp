@@ -10,13 +10,11 @@ namespace motionTracking
 namespace
 {
 
-constexpr std::array<std::string_view,
-                     static_cast<std::size_t>(UnplacedTrackerPolicy::Count)>
+constexpr std::array<std::string_view, static_cast<std::size_t>(UnplacedTrackerPolicy::Count)>
     kPolicyNames = {"refuse", "ignore", "hold"};
 
-constexpr std::array<std::string_view, TrackerAssignmentRefusalCount>
-    kRefusalNames = {"None",         "SpecInvalid",   "ObservationInvalid",
-                     "UnplacedTracker", "Held",       "NothingPlaced"};
+constexpr std::array<std::string_view, TrackerAssignmentRefusalCount> kRefusalNames = {
+    "None", "SpecInvalid", "ObservationInvalid", "UnplacedTracker", "Held", "NothingPlaced"};
 
 static_assert(kRefusalNames.size() == TrackerAssignmentRefusalCount,
               "every refusal needs a name a report can print");
@@ -24,8 +22,7 @@ static_assert(kRefusalNames.size() == TrackerAssignmentRefusalCount,
 bool
 IsSpace(char c) noexcept
 {
-    return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\f'
-           || c == '\v';
+    return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\f' || c == '\v';
 }
 
 // An identity a `ParseTrackerAssignmentSpec` round trip can carry. See
@@ -106,8 +103,7 @@ TrackerAssignmentRefusalName(TrackerAssignmentRefusal refusal) noexcept
 }
 
 bool
-ValidateTrackerAssignmentSpec(const TrackerAssignmentSpec& spec,
-                              std::string* reason)
+ValidateTrackerAssignmentSpec(const TrackerAssignmentSpec& spec, std::string* reason)
 {
     if (spec.statements.empty())
     {
@@ -115,8 +111,8 @@ ValidateTrackerAssignmentSpec(const TrackerAssignmentSpec& spec,
                      "observation would be NothingPlaced");
         return false;
     }
-    if (static_cast<std::size_t>(spec.unplaced)
-        >= static_cast<std::size_t>(UnplacedTrackerPolicy::Count))
+    if (static_cast<std::size_t>(spec.unplaced) >=
+        static_cast<std::size_t>(UnplacedTrackerPolicy::Count))
     {
         Fail(reason, "the unplaced-tracker policy is outside the enum");
         return false;
@@ -127,23 +123,22 @@ ValidateTrackerAssignmentSpec(const TrackerAssignmentSpec& spec,
         const TrackerRegionStatement& statement = spec.statements[i];
         if (statement.tracker.empty())
         {
-            Fail(reason, "statement " + std::to_string(i)
-                             + " names no tracker");
+            Fail(reason, "statement " + std::to_string(i) + " names no tracker");
             return false;
         }
         if (!IsWritableIdentity(statement.tracker))
         {
-            Fail(reason, "tracker " + Quote(statement.tracker)
-                             + " carries whitespace or a separator, so no "
-                               "operator could have written this statement "
-                               "down");
+            Fail(reason, "tracker " + Quote(statement.tracker) +
+                             " carries whitespace or a separator, so no "
+                             "operator could have written this statement "
+                             "down");
             return false;
         }
         if (TrackerRegionName(statement.region).empty())
         {
-            Fail(reason, "tracker " + Quote(statement.tracker)
-                             + " is stated onto no region this vocabulary "
-                               "carries");
+            Fail(reason, "tracker " + Quote(statement.tracker) +
+                             " is stated onto no region this vocabulary "
+                             "carries");
             return false;
         }
 
@@ -151,16 +146,13 @@ ValidateTrackerAssignmentSpec(const TrackerAssignmentSpec& spec,
         {
             if (spec.statements[j].tracker == statement.tracker)
             {
-                Fail(reason, "tracker " + Quote(statement.tracker)
-                                 + " is stated twice");
+                Fail(reason, "tracker " + Quote(statement.tracker) + " is stated twice");
                 return false;
             }
             if (spec.statements[j].region == statement.region)
             {
-                Fail(reason,
-                     "region "
-                         + Quote(TrackerRegionName(statement.region))
-                         + " is stated for two trackers");
+                Fail(reason, "region " + Quote(TrackerRegionName(statement.region)) +
+                                 " is stated for two trackers");
                 return false;
             }
         }
@@ -169,8 +161,7 @@ ValidateTrackerAssignmentSpec(const TrackerAssignmentSpec& spec,
 }
 
 bool
-ParseTrackerAssignmentSpec(std::string_view text, TrackerAssignmentSpec* out,
-                           std::string* reason)
+ParseTrackerAssignmentSpec(std::string_view text, TrackerAssignmentSpec* out, std::string* reason)
 {
     if (out == nullptr)
     {
@@ -203,8 +194,7 @@ ParseTrackerAssignmentSpec(std::string_view text, TrackerAssignmentSpec* out,
         }
 
         const std::size_t begin = i;
-        while (i < text.size() && !IsSpace(text[i]) && text[i] != ','
-               && text[i] != '#')
+        while (i < text.size() && !IsSpace(text[i]) && text[i] != ',' && text[i] != '#')
         {
             ++i;
         }
@@ -227,8 +217,7 @@ ParseTrackerAssignmentSpec(std::string_view text, TrackerAssignmentSpec* out,
         const std::optional<TrackerRegion> resolved = ParseTrackerRegion(region);
         if (!resolved.has_value())
         {
-            Fail(reason, Quote(region)
-                             + " is not a region this vocabulary carries");
+            Fail(reason, Quote(region) + " is not a region this vocabulary carries");
             return false;
         }
 
@@ -276,8 +265,7 @@ TrackerAssignment::RegionFor(std::size_t observedIndex) const
 }
 
 TrackerAssignment
-AssignTrackers(const TrackerAssignmentSpec& spec,
-               const std::vector<std::string_view>& observed)
+AssignTrackers(const TrackerAssignmentSpec& spec, const std::vector<std::string_view>& observed)
 {
     TrackerAssignment assignment;
 
@@ -337,18 +325,15 @@ AssignTrackers(const TrackerAssignmentSpec& spec,
         if (observed[i].empty())
         {
             assignment.refusal = TrackerAssignmentRefusal::ObservationInvalid;
-            assignment.detail =
-                "observed tracker " + std::to_string(i) + " has no identity";
+            assignment.detail = "observed tracker " + std::to_string(i) + " has no identity";
             return assignment;
         }
         for (std::size_t j = 0; j < i; ++j)
         {
             if (observed[j] == observed[i])
             {
-                assignment.refusal =
-                    TrackerAssignmentRefusal::ObservationInvalid;
-                assignment.detail = "tracker " + Quote(observed[i])
-                                    + " is observed twice";
+                assignment.refusal = TrackerAssignmentRefusal::ObservationInvalid;
+                assignment.detail = "tracker " + Quote(observed[i]) + " is observed twice";
                 return assignment;
             }
         }
@@ -359,26 +344,23 @@ AssignTrackers(const TrackerAssignmentSpec& spec,
     // coming up is short of a *stated* tracker, not carrying an extra one — so a
     // Hold that only watched `unplaced` would never fire for the case it exists
     // for, and would fire for the case waiting cannot fix.
-    if (spec.unplaced == UnplacedTrackerPolicy::Hold
-        && (!assignment.unplaced.empty() || !assignment.absent.empty()))
+    if (spec.unplaced == UnplacedTrackerPolicy::Hold &&
+        (!assignment.unplaced.empty() || !assignment.absent.empty()))
     {
         assignment.refusal = TrackerAssignmentRefusal::Held;
-        assignment.detail =
-            !assignment.absent.empty()
-                ? "region " + Quote(TrackerRegionName(assignment.absent.front()))
-                      + " has no tracker in this observation yet"
-                : "tracker " + Quote(observed[assignment.unplaced.front()])
-                      + " is on no region this statement names";
+        assignment.detail = !assignment.absent.empty()
+                                ? "region " + Quote(TrackerRegionName(assignment.absent.front())) +
+                                      " has no tracker in this observation yet"
+                                : "tracker " + Quote(observed[assignment.unplaced.front()]) +
+                                      " is on no region this statement names";
         return assignment;
     }
 
-    if (spec.unplaced == UnplacedTrackerPolicy::Refuse
-        && !assignment.unplaced.empty())
+    if (spec.unplaced == UnplacedTrackerPolicy::Refuse && !assignment.unplaced.empty())
     {
         assignment.refusal = TrackerAssignmentRefusal::UnplacedTracker;
-        assignment.detail =
-            "tracker " + Quote(observed[assignment.unplaced.front()])
-            + " is on no region this statement names";
+        assignment.detail = "tracker " + Quote(observed[assignment.unplaced.front()]) +
+                            " is on no region this statement names";
         return assignment;
     }
 
@@ -389,9 +371,8 @@ AssignTrackers(const TrackerAssignmentSpec& spec,
     if (assignment.bound.empty())
     {
         assignment.refusal = TrackerAssignmentRefusal::NothingPlaced;
-        assignment.detail = "this statement places none of the "
-                            + std::to_string(observed.size())
-                            + " observed trackers";
+        assignment.detail = "this statement places none of the " + std::to_string(observed.size()) +
+                            " observed trackers";
         return assignment;
     }
 

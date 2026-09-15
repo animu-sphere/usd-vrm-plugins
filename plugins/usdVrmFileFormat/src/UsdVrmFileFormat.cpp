@@ -34,11 +34,8 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 UsdVrmFileFormat::UsdVrmFileFormat()
-    : SdfFileFormat(
-          UsdVrmFileFormatTokens->Id,
-          UsdVrmFileFormatTokens->Version,
-          UsdVrmFileFormatTokens->Target,
-          UsdVrmFileFormatTokens->Extension)
+    : SdfFileFormat(UsdVrmFileFormatTokens->Id, UsdVrmFileFormatTokens->Version,
+                    UsdVrmFileFormatTokens->Target, UsdVrmFileFormatTokens->Extension)
 {
 }
 
@@ -47,7 +44,8 @@ UsdVrmFileFormat::~UsdVrmFileFormat() = default;
 bool
 UsdVrmFileFormat::CanRead(const std::string& file) const
 {
-    if (SdfFileFormat::GetFileExtension(file) != "vrm") {
+    if (SdfFileFormat::GetFileExtension(file) != "vrm")
+    {
         return false;
     }
     // .vrm is a GLB container; sniff the 4-byte GLB header magic "glTF".
@@ -56,36 +54,34 @@ UsdVrmFileFormat::CanRead(const std::string& file) const
     // every platform, and a narrow std::ifstream on Windows reads it in the
     // host process's code page instead -- so a .vrm under a non-ASCII directory
     // opened in no host at all, usdview and Python included.
-    const std::shared_ptr<ArAsset> asset =
-        ArGetResolver().OpenAsset(ArResolvedPath(file));
-    if (!asset) {
+    const std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(ArResolvedPath(file));
+    if (!asset)
+    {
         return false;
     }
     std::byte magic[4] = {};
     return asset->Read(magic, sizeof(magic), 0) == sizeof(magic) &&
-        vrmContainer::HasGlbMagic({magic, sizeof(magic)});
+           vrmContainer::HasGlbMagic({magic, sizeof(magic)});
 }
 
 bool
-UsdVrmFileFormat::Read(
-    SdfLayer* layer,
-    const std::string& resolvedPath,
-    bool metadataOnly) const
+UsdVrmFileFormat::Read(SdfLayer* layer, const std::string& resolvedPath, bool metadataOnly) const
 {
     (void)metadataOnly;
 
     // Slurp the whole .vrm/GLB into memory; cgltf parses from the buffer and
     // keeps the embedded bin chunk alive for the duration of Read(). Through
     // Ar for the reason CanRead gives.
-    const std::shared_ptr<ArAsset> asset =
-        ArGetResolver().OpenAsset(ArResolvedPath(resolvedPath));
-    if (!asset) {
+    const std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(ArResolvedPath(resolvedPath));
+    if (!asset)
+    {
         TF_RUNTIME_ERROR("usdVrmFileFormat: could not open '%s'", resolvedPath.c_str());
         return false;
     }
     const size_t size = asset->GetSize();
     std::vector<std::byte> bytes(size);
-    if (size > 0 && asset->Read(bytes.data(), size, 0) != size) {
+    if (size > 0 && asset->Read(bytes.data(), size, 0) != size)
+    {
         TF_RUNTIME_ERROR("usdVrmFileFormat: could not read '%s'", resolvedPath.c_str());
         return false;
     }
@@ -93,12 +89,16 @@ UsdVrmFileFormat::Read(
     VrmCanonicalDocument document;
     std::string error;
     CgltfVrmDocumentReader reader;
-    if (!reader.Read(resolvedPath, bytes, &document, &error)) {
-        TF_RUNTIME_ERROR("usdVrmFileFormat: %s", VrmDiagMsg(VrmDiag::ContainerUnreadable,
-            "failed to read '" + resolvedPath + "': " + error).c_str());
+    if (!reader.Read(resolvedPath, bytes, &document, &error))
+    {
+        TF_RUNTIME_ERROR("usdVrmFileFormat: %s",
+                         VrmDiagMsg(VrmDiag::ContainerUnreadable,
+                                    "failed to read '" + resolvedPath + "': " + error)
+                             .c_str());
         return false;
     }
-    for (const std::string& w : document.warnings) {
+    for (const std::string& w : document.warnings)
+    {
         TF_WARN("usdVrmFileFormat: %s", w.c_str());
     }
 
@@ -109,30 +109,30 @@ UsdVrmFileFormat::Read(
     std::string usda;
     std::vector<std::string> writerWarnings;
     UsdVrmAuthorer authorer;
-    auto task = std::async(std::launch::async,
-        [&authorer, &document, &usda, &writerWarnings]() {
-            return authorer.WriteToString(document, &usda, &writerWarnings);
-        });
-    if (!task.get()) {
-        TF_RUNTIME_ERROR("usdVrmFileFormat: failed to author USD for '%s'",
-            resolvedPath.c_str());
+    auto task = std::async(std::launch::async, [&authorer, &document, &usda, &writerWarnings]()
+                           { return authorer.WriteToString(document, &usda, &writerWarnings); });
+    if (!task.get())
+    {
+        TF_RUNTIME_ERROR("usdVrmFileFormat: failed to author USD for '%s'", resolvedPath.c_str());
         return false;
     }
-    for (const std::string& w : writerWarnings) {
+    for (const std::string& w : writerWarnings)
+    {
         TF_WARN("usdVrmFileFormat: %s", w.c_str());
     }
 
     SdfFileFormatConstPtr usdaFormat = SdfFileFormat::FindByExtension("usda");
     SdfLayerRefPtr generated = SdfLayer::CreateAnonymous(
-        "usdVrmFileFormat.generated.usda",
-        usdaFormat ? usdaFormat : SdfFileFormatConstPtr());
-    if (!generated || !generated->ImportFromString(usda)) {
-        if (const char* dumpPath = std::getenv("USDVRM_DUMP_GENERATED_USDA")) {
+        "usdVrmFileFormat.generated.usda", usdaFormat ? usdaFormat : SdfFileFormatConstPtr());
+    if (!generated || !generated->ImportFromString(usda))
+    {
+        if (const char* dumpPath = std::getenv("USDVRM_DUMP_GENERATED_USDA"))
+        {
             std::ofstream dump(dumpPath, std::ios::binary);
             dump << usda;
         }
         TF_RUNTIME_ERROR("usdVrmFileFormat: generated USD for '%s' could not be parsed",
-            resolvedPath.c_str());
+                         resolvedPath.c_str());
         return false;
     }
 
@@ -141,13 +141,12 @@ UsdVrmFileFormat::Read(
 }
 
 bool
-UsdVrmFileFormat::WriteToString(
-    const SdfLayer& layer,
-    std::string* str,
-    const std::string& comment) const
+UsdVrmFileFormat::WriteToString(const SdfLayer& layer, std::string* str,
+                                const std::string& comment) const
 {
     SdfFileFormatConstPtr usda = SdfFileFormat::FindByExtension("usda");
-    if (usda) {
+    if (usda)
+    {
         return usda->WriteToString(layer, str, comment);
     }
     return layer.ExportToString(str);

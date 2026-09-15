@@ -16,9 +16,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdVrmLookAtAPI,
-        TfType::Bases< UsdAPISchemaBase > >();
-    
+    TfType::Define<UsdVrmLookAtAPI, TfType::Bases<UsdAPISchemaBase>>();
 }
 
 /* virtual */
@@ -28,42 +26,43 @@ UsdVrmLookAtAPI::~UsdVrmLookAtAPI()
 
 /* static */
 UsdVrmLookAtAPI
-UsdVrmLookAtAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdVrmLookAtAPI::Get(const UsdStagePtr& stage, const SdfPath& path)
 {
-    if (!stage) {
+    if (!stage)
+    {
         TF_CODING_ERROR("Invalid stage");
         return UsdVrmLookAtAPI();
     }
     return UsdVrmLookAtAPI(stage->GetPrimAtPath(path));
 }
 
-
 /* virtual */
-UsdSchemaKind UsdVrmLookAtAPI::_GetSchemaKind() const
+UsdSchemaKind
+UsdVrmLookAtAPI::_GetSchemaKind() const
 {
     return UsdVrmLookAtAPI::schemaKind;
 }
 
 /* static */
 bool
-UsdVrmLookAtAPI::CanApply(
-    const UsdPrim &prim, std::string *whyNot)
+UsdVrmLookAtAPI::CanApply(const UsdPrim& prim, std::string* whyNot)
 {
     return prim.CanApplyAPI<UsdVrmLookAtAPI>(whyNot);
 }
 
 /* static */
 UsdVrmLookAtAPI
-UsdVrmLookAtAPI::Apply(const UsdPrim &prim)
+UsdVrmLookAtAPI::Apply(const UsdPrim& prim)
 {
-    if (prim.ApplyAPI<UsdVrmLookAtAPI>()) {
+    if (prim.ApplyAPI<UsdVrmLookAtAPI>())
+    {
         return UsdVrmLookAtAPI(prim);
     }
     return UsdVrmLookAtAPI();
 }
 
 /* static */
-const TfType &
+const TfType&
 UsdVrmLookAtAPI::_GetStaticTfType()
 {
     static TfType tfType = TfType::Find<UsdVrmLookAtAPI>();
@@ -71,7 +70,7 @@ UsdVrmLookAtAPI::_GetStaticTfType()
 }
 
 /* static */
-bool 
+bool
 UsdVrmLookAtAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
@@ -79,7 +78,7 @@ UsdVrmLookAtAPI::_IsTypedSchema()
 }
 
 /* virtual */
-const TfType &
+const TfType&
 UsdVrmLookAtAPI::_GetTfType() const
 {
     return _GetStaticTfType();
@@ -92,14 +91,11 @@ UsdVrmLookAtAPI::GetVrmTypeAttr() const
 }
 
 UsdAttribute
-UsdVrmLookAtAPI::CreateVrmTypeAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmLookAtAPI::CreateVrmTypeAttr(VtValue const& defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmType,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmType, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -109,14 +105,11 @@ UsdVrmLookAtAPI::GetVrmLeftEyeAttr() const
 }
 
 UsdAttribute
-UsdVrmLookAtAPI::CreateVrmLeftEyeAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmLookAtAPI::CreateVrmLeftEyeAttr(VtValue const& defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmLeftEye,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmLeftEye, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -126,14 +119,11 @@ UsdVrmLookAtAPI::GetVrmRightEyeAttr() const
 }
 
 UsdAttribute
-UsdVrmLookAtAPI::CreateVrmRightEyeAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmLookAtAPI::CreateVrmRightEyeAttr(VtValue const& defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmRightEye,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmRightEye, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdRelationship
@@ -146,12 +136,13 @@ UsdRelationship
 UsdVrmLookAtAPI::CreateVrmSkeletonRel() const
 {
     return GetPrim().CreateRelationship(UsdVrmTokens->vrmSkeleton,
-                       /* custom = */ false);
+                                        /* custom = */ false);
 }
 
-namespace {
+namespace
+{
 static inline TfTokenVector
-_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+_ConcatenateAttributeNames(const TfTokenVector& left, const TfTokenVector& right)
 {
     TfTokenVector result;
     result.reserve(left.size() + right.size());
@@ -159,7 +150,7 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
     result.insert(result.end(), right.begin(), right.end());
     return result;
 }
-}
+} // namespace
 
 /*static*/
 const TfTokenVector&
@@ -171,9 +162,7 @@ UsdVrmLookAtAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdVrmTokens->vrmRightEye,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
-            UsdAPISchemaBase::GetSchemaAttributeNames(true),
-            localNames);
+        _ConcatenateAttributeNames(UsdAPISchemaBase::GetSchemaAttributeNames(true), localNames);
 
     if (includeInherited)
         return allNames;

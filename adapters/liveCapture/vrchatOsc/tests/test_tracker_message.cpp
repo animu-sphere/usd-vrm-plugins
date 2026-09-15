@@ -56,17 +56,20 @@ struct Bytes
 {
     std::vector<std::uint8_t> data;
 
-    Bytes& Str(std::string_view text)
+    Bytes&
+    Str(std::string_view text)
     {
         data.insert(data.end(), text.begin(), text.end());
         data.push_back(0);
-        while (data.size() % 4 != 0) {
+        while (data.size() % 4 != 0)
+        {
             data.push_back(0);
         }
         return *this;
     }
 
-    Bytes& U32(std::uint32_t value)
+    Bytes&
+    U32(std::uint32_t value)
     {
         data.push_back(static_cast<std::uint8_t>(value >> 24));
         data.push_back(static_cast<std::uint8_t>(value >> 16));
@@ -75,27 +78,31 @@ struct Bytes
         return *this;
     }
 
-    Bytes& U64(std::uint64_t value)
+    Bytes&
+    U64(std::uint64_t value)
     {
         U32(static_cast<std::uint32_t>(value >> 32));
         return U32(static_cast<std::uint32_t>(value));
     }
 
-    Bytes& F32(float value)
+    Bytes&
+    F32(float value)
     {
         std::uint32_t bits = 0;
         std::memcpy(&bits, &value, sizeof(bits));
         return U32(bits);
     }
 
-    Bytes& F64(double value)
+    Bytes&
+    F64(double value)
     {
         std::uint64_t bits = 0;
         std::memcpy(&bits, &value, sizeof(bits));
         return U64(bits);
     }
 
-    Bytes& Append(const std::vector<std::uint8_t>& values)
+    Bytes&
+    Append(const std::vector<std::uint8_t>& values)
     {
         data.insert(data.end(), values.begin(), values.end());
         return *this;
@@ -125,7 +132,8 @@ Bundle(const std::vector<std::vector<std::uint8_t>>& elements)
 {
     Bytes out;
     out.Str("#bundle").U64(1);
-    for (const std::vector<std::uint8_t>& element : elements) {
+    for (const std::vector<std::uint8_t>& element : elements)
+    {
         out.U32(static_cast<std::uint32_t>(element.size()));
         out.Append(element);
     }
@@ -150,10 +158,8 @@ TestTheIdentityHoldsANumberAndAName()
         Message("/tracking/trackers/1/position", 0.5f, 1.0f, -0.25f);
     const std::vector<std::uint8_t> namedBytes =
         Message("/tracking/trackers/head/position", 0.5f, 1.0f, -0.25f);
-    const TrackerPacket numbered =
-        vrmAdapterVrchatOsc::DecodeTrackerDatagram(numberedBytes);
-    const TrackerPacket named =
-        vrmAdapterVrchatOsc::DecodeTrackerDatagram(namedBytes);
+    const TrackerPacket numbered = vrmAdapterVrchatOsc::DecodeTrackerDatagram(numberedBytes);
+    const TrackerPacket named = vrmAdapterVrchatOsc::DecodeTrackerDatagram(namedBytes);
 
     assert(numbered.messages.size() == 1);
     assert(named.messages.size() == 1);
@@ -178,37 +184,34 @@ TestEveryIdentityAndChannelTheSurfaceDefines()
 {
     // 1 through 8 and the head, both channels: the whole surface, and nothing
     // in it needs a capture to have been seen for it to be legal.
-    for (int index = 1; index <= 8; ++index) {
+    for (int index = 1; index <= 8; ++index)
+    {
         const std::string segment = std::to_string(index);
-        for (const std::string_view channel : {"position", "rotation"}) {
+        for (const std::string_view channel : {"position", "rotation"})
+        {
             const std::string address =
                 "/tracking/trackers/" + segment + "/" + std::string(channel);
-            const std::vector<std::uint8_t> datagram =
-                Message(address, 1.0f, 2.0f, 3.0f);
-            const TrackerPacket packet =
-                vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
+            const std::vector<std::uint8_t> datagram = Message(address, 1.0f, 2.0f, 3.0f);
+            const TrackerPacket packet = vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
             assert(packet.messages.size() == 1);
             assert(packet.diagnostics.empty());
             assert(packet.messages[0].tracker.segment == segment);
             assert(*packet.messages[0].tracker.index == index);
-            assert(vrmAdapterVrchatOsc::TrackerChannelString(
-                       packet.messages[0].channel)
-                   == channel);
+            assert(vrmAdapterVrchatOsc::TrackerChannelString(packet.messages[0].channel) ==
+                   channel);
         }
     }
 
     // The channel table is whole and round-trips, so a channel added later
     // cannot be spelled two ways.
-    for (std::size_t slot = 0; slot < vrmAdapterVrchatOsc::TrackerChannelCount;
-         ++slot) {
+    for (std::size_t slot = 0; slot < vrmAdapterVrchatOsc::TrackerChannelCount; ++slot)
+    {
         const auto channel = static_cast<TrackerChannel>(slot);
-        const std::string_view name =
-            vrmAdapterVrchatOsc::TrackerChannelString(channel);
+        const std::string_view name = vrmAdapterVrchatOsc::TrackerChannelString(channel);
         assert(!name.empty());
         assert(vrmAdapterVrchatOsc::FindTrackerChannel(name) == channel);
     }
-    assert(vrmAdapterVrchatOsc::TrackerChannelString(TrackerChannel::Count)
-               .empty());
+    assert(vrmAdapterVrchatOsc::TrackerChannelString(TrackerChannel::Count).empty());
     assert(!vrmAdapterVrchatOsc::FindTrackerChannel("Position").has_value());
 }
 
@@ -221,8 +224,7 @@ TestNothingIsConvertedOnTheWayThrough()
     // comparison rather than a tolerance.
     const std::vector<std::uint8_t> datagram =
         Message("/tracking/trackers/2/rotation", -90.0f, 0.5f, 45.25f);
-    const TrackerPacket packet =
-        vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
+    const TrackerPacket packet = vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
     assert(packet.messages.size() == 1);
     const TrackerMessage& message = packet.messages[0];
     assert(message.channel == TrackerChannel::Rotation);
@@ -235,8 +237,7 @@ TestNothingIsConvertedOnTheWayThrough()
     // channel it did not read.
     const std::vector<std::uint8_t> restBytes =
         Message("/tracking/trackers/2/rotation", 0.0f, 0.0f, 0.0f);
-    const TrackerPacket rest =
-        vrmAdapterVrchatOsc::DecodeTrackerDatagram(restBytes);
+    const TrackerPacket rest = vrmAdapterVrchatOsc::DecodeTrackerDatagram(restBytes);
     assert(rest.messages.size() == 1);
     assert(rest.messages[0].values[0] == 0.0f);
     assert(rest.messages[0].values[1] == 0.0f);
@@ -262,11 +263,10 @@ TestUnimplementedAddressesAreUnsupportedNotMalformed()
         "/tracking/trackersfoo/1/position",
     };
 
-    for (const std::string& address : addresses) {
-        const std::vector<std::uint8_t> datagram =
-            Message(address, 1.0f, 2.0f, 3.0f);
-        const TrackerPacket packet =
-            vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
+    for (const std::string& address : addresses)
+    {
+        const std::vector<std::uint8_t> datagram = Message(address, 1.0f, 2.0f, 3.0f);
+        const TrackerPacket packet = vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
         assert(packet.messages.empty());
         assert(packet.diagnostics.size() == 1);
         assert(packet.unsupported == 1);
@@ -274,8 +274,7 @@ TestUnimplementedAddressesAreUnsupportedNotMalformed()
         // Info and recoverable: a session carrying VRChat's wider surface
         // beside tracker data is the ordinary case, not a fault.
         assert(packet.diagnostics[0].recoverable);
-        assert(packet.diagnostics[0].severity
-               == vrmAdapterVrchatOsc::DiagnosticSeverity::Info);
+        assert(packet.diagnostics[0].severity == vrmAdapterVrchatOsc::DiagnosticSeverity::Info);
         // The subject is the address, because that is what this layer knows. A
         // bone name here would be a humanoid claim from a layer that has made
         // none.
@@ -303,13 +302,11 @@ TestAnIdentityThisAdapterCannotReadIsNotAnUnsupportedAddress()
         "1.0",
     };
 
-    for (const std::string& segment : segments) {
-        const std::string address =
-            "/tracking/trackers/" + segment + "/position";
-        const std::vector<std::uint8_t> datagram =
-            Message(address, 1.0f, 2.0f, 3.0f);
-        const TrackerPacket packet =
-            vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
+    for (const std::string& segment : segments)
+    {
+        const std::string address = "/tracking/trackers/" + segment + "/position";
+        const std::vector<std::uint8_t> datagram = Message(address, 1.0f, 2.0f, 3.0f);
+        const TrackerPacket packet = vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
         assert(packet.messages.empty());
         assert(packet.diagnostics.size() == 1);
         assert(packet.unsupported == 0);
@@ -317,9 +314,9 @@ TestAnIdentityThisAdapterCannotReadIsNotAnUnsupportedAddress()
         assert(packet.diagnostics[0].subject == address);
         // The detail names the segment it could not read, so an operator does
         // not have to re-read the address to find out which part was wrong.
-        if (!segment.empty()) {
-            assert(packet.diagnostics[0].detail.find(segment)
-                   != std::string::npos);
+        if (!segment.empty())
+        {
+            assert(packet.diagnostics[0].detail.find(segment) != std::string::npos);
         }
     }
 
@@ -328,12 +325,10 @@ TestAnIdentityThisAdapterCannotReadIsNotAnUnsupportedAddress()
     // a vague one, and this is the one input where the two readings differ.
     const std::vector<std::uint8_t> leadingZero =
         Message("/tracking/trackers/01/position", 1.0f, 2.0f, 3.0f);
-    const TrackerPacket packet =
-        vrmAdapterVrchatOsc::DecodeTrackerDatagram(leadingZero);
+    const TrackerPacket packet = vrmAdapterVrchatOsc::DecodeTrackerDatagram(leadingZero);
     assert(packet.diagnostics.size() == 1);
     assert(packet.diagnostics[0].detail.find("outside") == std::string::npos);
-    assert(packet.diagnostics[0].detail.find("leading zero")
-           != std::string::npos);
+    assert(packet.diagnostics[0].detail.find("leading zero") != std::string::npos);
 }
 
 void
@@ -360,28 +355,25 @@ TestAKnownAddressWithTheWrongArgumentsIsAMismatch()
     integers.Str(address).Str(",iii").U32(1).U32(2).U32(3);
 
     const std::vector<std::vector<std::uint8_t>> datagrams = {
-        shortForm.data, quaternion.data,   doubles.data,
-        named.data,     integers.data,     Bare(address),
+        shortForm.data, quaternion.data, doubles.data, named.data, integers.data, Bare(address),
     };
 
-    for (const std::vector<std::uint8_t>& datagram : datagrams) {
-        const TrackerPacket packet =
-            vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
+    for (const std::vector<std::uint8_t>& datagram : datagrams)
+    {
+        const TrackerPacket packet = vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
         assert(packet.messages.empty());
         assert(packet.diagnostics.size() == 1);
         assert(packet.diagnostics[0].code == DiagnosticCode::ArgumentMismatch);
         assert(packet.diagnostics[0].subject == address);
         // Both tag strings are in the detail, with their commas, so the count
         // and the types are legible without a second lookup.
-        assert(packet.diagnostics[0].detail.find("\",fff\"")
-               != std::string::npos);
+        assert(packet.diagnostics[0].detail.find("\",fff\"") != std::string::npos);
     }
 
     // The one that would be silently plausible: the refusal quotes what it saw.
     const TrackerPacket quaternionPacket =
         vrmAdapterVrchatOsc::DecodeTrackerDatagram(quaternion.data);
-    assert(quaternionPacket.diagnostics[0].detail.find("\",ffff\"")
-           != std::string::npos);
+    assert(quaternionPacket.diagnostics[0].detail.find("\",ffff\"") != std::string::npos);
 }
 
 void
@@ -394,21 +386,20 @@ TestANonFiniteComponentIsRefused()
         -std::numeric_limits<float>::infinity(),
     };
 
-    for (const float value : values) {
-        for (std::size_t slot = 0; slot < 3; ++slot) {
+    for (const float value : values)
+    {
+        for (std::size_t slot = 0; slot < 3; ++slot)
+        {
             float components[3] = {0.0f, 0.0f, 0.0f};
             components[slot] = value;
-            const std::vector<std::uint8_t> datagram = Message(
-                address, components[0], components[1], components[2]);
-            const TrackerPacket packet =
-                vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
+            const std::vector<std::uint8_t> datagram =
+                Message(address, components[0], components[1], components[2]);
+            const TrackerPacket packet = vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
             assert(packet.messages.empty());
             assert(packet.diagnostics.size() == 1);
-            assert(packet.diagnostics[0].code
-                   == DiagnosticCode::CoordinateInvalid);
+            assert(packet.diagnostics[0].code == DiagnosticCode::CoordinateInvalid);
             // Which component, so an operator does not have to bisect for it.
-            assert(packet.diagnostics[0].detail.find(std::to_string(slot))
-                   != std::string::npos);
+            assert(packet.diagnostics[0].detail.find(std::to_string(slot)) != std::string::npos);
         }
     }
 }
@@ -429,12 +420,10 @@ TestAPacketRefusesMessagesNotTheDatagram()
 
     const std::vector<std::uint8_t> datagram =
         Bundle({Message("/tracking/trackers/head/rotation", 1.0f, 2.0f, 3.0f),
-                Message("/tracking/trackers/head/position", 4.0f, 5.0f, 6.0f),
-                quaternion.data,
+                Message("/tracking/trackers/head/position", 4.0f, 5.0f, 6.0f), quaternion.data,
                 Message("/tracking/trackers/1/position", 7.0f, 8.0f, 9.0f),
                 Message("/avatar/parameters/VRCEmote", 1.0f, 0.0f, 0.0f)});
-    const TrackerPacket packet =
-        vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
+    const TrackerPacket packet = vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
 
     assert(!packet.refused);
     assert(packet.bundled);
@@ -463,9 +452,9 @@ TestADatagramThatIsNotOscIsRefusedWhole()
         {'t', 'r', 'a', 'c'},
     };
 
-    for (const std::vector<std::uint8_t>& datagram : datagrams) {
-        const TrackerPacket packet =
-            vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
+    for (const std::vector<std::uint8_t>& datagram : datagrams)
+    {
+        const TrackerPacket packet = vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
         assert(packet.refused);
         assert(packet.messages.empty());
         assert(packet.messagesSeen == 0);
@@ -483,8 +472,7 @@ TestADatagramThatIsNotOscIsRefusedWhole()
         .U64(1)
         .U32(static_cast<std::uint32_t>(element.size() + 16))
         .Append(element);
-    const TrackerPacket packet =
-        vrmAdapterVrchatOsc::DecodeTrackerDatagram(overrun.data);
+    const TrackerPacket packet = vrmAdapterVrchatOsc::DecodeTrackerDatagram(overrun.data);
     assert(packet.refused);
     assert(packet.messages.empty());
 }
@@ -498,13 +486,12 @@ TestNoPartialIsRaisedByAMessageDecoder()
     // that code.
     const std::vector<std::uint8_t> datagram =
         Message("/tracking/trackers/1/position", 1.0f, 2.0f, 3.0f);
-    const TrackerPacket packet =
-        vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
+    const TrackerPacket packet = vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
     assert(packet.messages.size() == 1);
     assert(packet.diagnostics.empty());
 
-    for (std::size_t slot = 0; slot < vrmAdapterVrchatOsc::DiagnosticCodeCount;
-         ++slot) {
+    for (std::size_t slot = 0; slot < vrmAdapterVrchatOsc::DiagnosticCodeCount; ++slot)
+    {
         const auto code = static_cast<DiagnosticCode>(slot);
         assert(!vrmAdapterVrchatOsc::DiagnosticCodeString(code).empty());
     }
@@ -522,7 +509,8 @@ TestTheStructuralGuardsRefuseRatherThanDereference()
     message.address = "/tracking/trackers/1/position";
     message.typeTags = "fff";
     message.arguments.resize(3);
-    for (std::size_t slot = 0; slot < 3; ++slot) {
+    for (std::size_t slot = 0; slot < 3; ++slot)
+    {
         message.arguments[slot].tag = 'f';
         message.arguments[slot].real = 1.0 + static_cast<double>(slot);
     }
@@ -544,8 +532,7 @@ TestTheStructuralGuardsRefuseRatherThanDereference()
     starved.arguments.clear();
     assert(!vrmAdapterVrchatOsc::DecodeTrackerMessage(starved, &decoded, &error));
     assert(error.code == DiagnosticCode::PacketMalformed);
-    assert(error.detail.find("3 argument(s) and 0 were given")
-           != std::string::npos);
+    assert(error.detail.find("3 argument(s) and 0 were given") != std::string::npos);
 
     // And the other direction, which is harmless to read but is still a message
     // no OSC decoder produced.
@@ -564,14 +551,11 @@ TestTheFormattedLineNamesTheAddress()
 {
     const std::vector<std::uint8_t> datagram =
         Message("/tracking/trackers/1/velocity", 1.0f, 2.0f, 3.0f);
-    const TrackerPacket packet =
-        vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
+    const TrackerPacket packet = vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram);
     assert(packet.diagnostics.size() == 1);
-    const std::string line =
-        vrmAdapterVrchatOsc::FormatDiagnostic(packet.diagnostics[0]);
+    const std::string line = vrmAdapterVrchatOsc::FormatDiagnostic(packet.diagnostics[0]);
     assert(line.find("[VRM_VRCHAT_OSC_UNSUPPORTED_ADDRESS]") == 0);
-    assert(line.find("subject=/tracking/trackers/1/velocity")
-           != std::string::npos);
+    assert(line.find("subject=/tracking/trackers/1/velocity") != std::string::npos);
 }
 
 // ---------------------------------------------------------------------------
@@ -658,24 +642,25 @@ struct Decoded
 int
 CheckCorpus(const std::filesystem::path& directory)
 {
-    if (!std::filesystem::is_directory(directory)) {
-        std::fprintf(stderr, "corpus directory not found: %s\n",
-                     directory.string().c_str());
+    if (!std::filesystem::is_directory(directory))
+    {
+        std::fprintf(stderr, "corpus directory not found: %s\n", directory.string().c_str());
         return 1;
     }
 
     std::vector<std::filesystem::path> captures;
     for (const std::filesystem::directory_entry& entry :
-         std::filesystem::recursive_directory_iterator(directory)) {
-        if (entry.is_regular_file()
-            && entry.path().extension() == ".vrchatoscpackets") {
+         std::filesystem::recursive_directory_iterator(directory))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == ".vrchatoscpackets")
+        {
             captures.push_back(entry.path());
         }
     }
     std::sort(captures.begin(), captures.end());
-    if (captures.empty()) {
-        std::fprintf(stderr, "no .vrchatoscpackets fixtures in %s\n",
-                     directory.string().c_str());
+    if (captures.empty())
+    {
+        std::fprintf(stderr, "no .vrchatoscpackets fixtures in %s\n", directory.string().c_str());
         return 1;
     }
 
@@ -685,16 +670,20 @@ CheckCorpus(const std::filesystem::path& directory)
     // would also pass on a decoder that returned the first frame forever.
     bool anyValueMoved = false;
 
-    for (const std::filesystem::path& path : captures) {
+    for (const std::filesystem::path& path : captures)
+    {
         const std::string name = path.filename().string();
         const Expected* entry = nullptr;
-        for (const Expected& candidate : kExpected) {
-            if (name == candidate.file) {
+        for (const Expected& candidate : kExpected)
+        {
+            if (name == candidate.file)
+            {
                 entry = &candidate;
                 break;
             }
         }
-        if (!entry) {
+        if (!entry)
+        {
             std::fprintf(stderr,
                          "%s: no expected decode in this test -- add one, or "
                          "the capture is in the corpus and decoded by nobody\n",
@@ -706,19 +695,18 @@ CheckCorpus(const std::filesystem::path& directory)
 
         PacketCapture capture;
         vrmAdapterVrchatOsc::PacketCaptureError error;
-        if (!vrmAdapterVrchatOsc::ReadPacketCaptureFile(path.string(), &capture,
-                                                        &error)) {
-            std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line,
-                         error.message.c_str());
+        if (!vrmAdapterVrchatOsc::ReadPacketCaptureFile(path.string(), &capture, &error))
+        {
+            std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line, error.message.c_str());
             ++failures;
             continue;
         }
 
         Decoded actual;
         actual.datagrams = capture.datagrams.size();
-        for (const RecordedDatagram& datagram : capture.datagrams) {
-            const TrackerPacket packet =
-                vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram.bytes);
+        for (const RecordedDatagram& datagram : capture.datagrams)
+        {
+            const TrackerPacket packet = vrmAdapterVrchatOsc::DecodeTrackerDatagram(datagram.bytes);
             actual.refusedDatagrams += packet.refused ? 1 : 0;
             actual.bundledDatagrams += packet.bundled ? 1 : 0;
             actual.messagesSeen += packet.messagesSeen;
@@ -728,12 +716,13 @@ CheckCorpus(const std::filesystem::path& directory)
             // Every message is accounted for exactly once, whatever happened to
             // it. The tallies and the vectors are filled on separate paths, and
             // this is the only place the two can be caught disagreeing.
-            assert(packet.refused
-                   || packet.messages.size() + packet.diagnostics.size()
-                          == packet.messagesSeen);
+            assert(packet.refused ||
+                   packet.messages.size() + packet.diagnostics.size() == packet.messagesSeen);
 
-            for (const Diagnostic& diagnostic : packet.diagnostics) {
-                switch (diagnostic.code) {
+            for (const Diagnostic& diagnostic : packet.diagnostics)
+            {
+                switch (diagnostic.code)
+                {
                 case DiagnosticCode::TrackerIdInvalid:
                     ++actual.trackerIdInvalid;
                     break;
@@ -749,46 +738,44 @@ CheckCorpus(const std::filesystem::path& directory)
                 // Kept rather than printed as they arrive: a capture that is
                 // supposed to carry refusals would otherwise fill the log with
                 // its own expected output.
-                actual.refusals.push_back(
-                    vrmAdapterVrchatOsc::FormatDiagnostic(diagnostic));
+                actual.refusals.push_back(vrmAdapterVrchatOsc::FormatDiagnostic(diagnostic));
             }
 
-            for (const TrackerMessage& message : packet.messages) {
+            for (const TrackerMessage& message : packet.messages)
+            {
                 // The segment is copied out of the datagram here, which is the
                 // lifetime rule the header states meeting a caller that keeps a
                 // decoded message: `datagram.bytes` outlives this loop, and a
                 // receive loop's reusable buffer would not.
-                auto& slots =
-                    actual.perTracker[std::string(message.tracker.segment)];
+                auto& slots = actual.perTracker[std::string(message.tracker.segment)];
                 ++slots[static_cast<std::size_t>(message.channel)];
                 actual.messages.push_back(message);
             }
         }
 
-        if (actual.datagrams != entry->datagrams
-            || actual.refusedDatagrams != entry->refusedDatagrams
-            || actual.bundledDatagrams != entry->bundledDatagrams
-            || actual.messagesSeen != entry->messagesSeen
-            || actual.decoded != entry->decoded
-            || actual.unsupported != entry->unsupported
-            || actual.trackerIdInvalid != entry->trackerIdInvalid
-            || actual.argumentMismatch != entry->argumentMismatch
-            || actual.coordinateInvalid != entry->coordinateInvalid) {
-            std::fprintf(
-                stderr,
-                "%s: %zu datagrams (%zu refused, %zu bundled), %zu messages -> "
-                "%zu decoded, %zu unsupported, %zu bad id, %zu bad args, %zu "
-                "bad coordinate -- expected %zu (%zu, %zu), %zu -> %zu, %zu, "
-                "%zu, %zu, %zu\n",
-                name.c_str(), actual.datagrams, actual.refusedDatagrams,
-                actual.bundledDatagrams, actual.messagesSeen, actual.decoded,
-                actual.unsupported, actual.trackerIdInvalid,
-                actual.argumentMismatch, actual.coordinateInvalid,
-                entry->datagrams, entry->refusedDatagrams,
-                entry->bundledDatagrams, entry->messagesSeen, entry->decoded,
-                entry->unsupported, entry->trackerIdInvalid,
-                entry->argumentMismatch, entry->coordinateInvalid);
-            for (const std::string& refusal : actual.refusals) {
+        if (actual.datagrams != entry->datagrams ||
+            actual.refusedDatagrams != entry->refusedDatagrams ||
+            actual.bundledDatagrams != entry->bundledDatagrams ||
+            actual.messagesSeen != entry->messagesSeen || actual.decoded != entry->decoded ||
+            actual.unsupported != entry->unsupported ||
+            actual.trackerIdInvalid != entry->trackerIdInvalid ||
+            actual.argumentMismatch != entry->argumentMismatch ||
+            actual.coordinateInvalid != entry->coordinateInvalid)
+        {
+            std::fprintf(stderr,
+                         "%s: %zu datagrams (%zu refused, %zu bundled), %zu messages -> "
+                         "%zu decoded, %zu unsupported, %zu bad id, %zu bad args, %zu "
+                         "bad coordinate -- expected %zu (%zu, %zu), %zu -> %zu, %zu, "
+                         "%zu, %zu, %zu\n",
+                         name.c_str(), actual.datagrams, actual.refusedDatagrams,
+                         actual.bundledDatagrams, actual.messagesSeen, actual.decoded,
+                         actual.unsupported, actual.trackerIdInvalid, actual.argumentMismatch,
+                         actual.coordinateInvalid, entry->datagrams, entry->refusedDatagrams,
+                         entry->bundledDatagrams, entry->messagesSeen, entry->decoded,
+                         entry->unsupported, entry->trackerIdInvalid, entry->argumentMismatch,
+                         entry->coordinateInvalid);
+            for (const std::string& refusal : actual.refusals)
+            {
                 std::fprintf(stderr, "  %s\n", refusal.c_str());
             }
             ++failures;
@@ -797,40 +784,43 @@ CheckCorpus(const std::filesystem::path& directory)
 
         // The claims about *values and identities*, per capture, which no total
         // can make.
-        if (name == "one-tracker.vrchatoscpackets") {
+        if (name == "one-tracker.vrchatoscpackets")
+        {
             // Rotation precedes position, and both are exact. A decoder that
             // reflected an axis, reordered components, converted degrees to
             // radians or rescaled units fails on this equality.
-            const bool ok = actual.messages.size() == 6
-                && actual.messages[0].channel == TrackerChannel::Rotation
-                && actual.messages[0].values[0] == -90.0f
-                && actual.messages[0].values[1] == 0.5f
-                && actual.messages[0].values[2] == 45.25f
-                && actual.messages[1].channel == TrackerChannel::Position
-                && actual.messages[1].values[0] == 0.25f
-                && actual.messages[1].values[1] == -0.5f
-                && actual.messages[1].values[2] == 1.25f;
-            if (!ok) {
-                std::fprintf(stderr,
-                             "%s: the recorded values did not arrive verbatim\n",
+            const bool ok =
+                actual.messages.size() == 6 &&
+                actual.messages[0].channel == TrackerChannel::Rotation &&
+                actual.messages[0].values[0] == -90.0f && actual.messages[0].values[1] == 0.5f &&
+                actual.messages[0].values[2] == 45.25f &&
+                actual.messages[1].channel == TrackerChannel::Position &&
+                actual.messages[1].values[0] == 0.25f && actual.messages[1].values[1] == -0.5f &&
+                actual.messages[1].values[2] == 1.25f;
+            if (!ok)
+            {
+                std::fprintf(stderr, "%s: the recorded values did not arrive verbatim\n",
                              name.c_str());
                 ++failures;
             }
-            if (actual.messages[0].values[0] != actual.messages[2].values[0]) {
+            if (actual.messages[0].values[0] != actual.messages[2].values[0])
+            {
                 anyValueMoved = true;
             }
         }
 
-        if (name == "three-trackers-58hz.vrchatoscpackets") {
+        if (name == "three-trackers-58hz.vrchatoscpackets")
+        {
             // Seven frames survive, and tracker 1 is one rotation short of
             // them: the single-address loss the real session put 96 % of its
             // residual loss on.
-            const bool ok = actual.perTracker.size() == 4
-                && actual.perTracker["head"] == std::array<std::size_t, 2>{7, 7}
-                && actual.perTracker["1"] == std::array<std::size_t, 2>{7, 6}
-                && actual.perTracker["2"] == std::array<std::size_t, 2>{7, 7}
-                && actual.perTracker["3"] == std::array<std::size_t, 2>{7, 7};
-            if (!ok) {
+            const bool ok = actual.perTracker.size() == 4 &&
+                            actual.perTracker["head"] == std::array<std::size_t, 2>{7, 7} &&
+                            actual.perTracker["1"] == std::array<std::size_t, 2>{7, 6} &&
+                            actual.perTracker["2"] == std::array<std::size_t, 2>{7, 7} &&
+                            actual.perTracker["3"] == std::array<std::size_t, 2>{7, 7};
+            if (!ok)
+            {
                 std::fprintf(stderr,
                              "%s: per-tracker counts are not 7/7, 7/6, 7/7, "
                              "7/7 over four identities\n",
@@ -839,14 +829,17 @@ CheckCorpus(const std::filesystem::path& directory)
             }
         }
 
-        if (name == "head-absent.vrchatoscpackets") {
+        if (name == "head-absent.vrchatoscpackets")
+        {
             // No named identity anywhere: a session with no head is
             // well-formed, and nothing invents one.
             bool named = false;
-            for (const auto& row : actual.perTracker) {
+            for (const auto& row : actual.perTracker)
+            {
                 named = named || row.first == "head";
             }
-            if (named || actual.perTracker.size() != 3) {
+            if (named || actual.perTracker.size() != 3)
+            {
                 std::fprintf(stderr,
                              "%s: expected three numbered identities and no "
                              "head, got %zu identities\n",
@@ -855,15 +848,18 @@ CheckCorpus(const std::filesystem::path& directory)
             }
         }
 
-        if (name == "eight-trackers.vrchatoscpackets") {
+        if (name == "eight-trackers.vrchatoscpackets")
+        {
             // Nine identities: eight numbered and one named, and every numbered
             // one carries its index.
             bool ok = actual.perTracker.size() == 9;
-            for (const TrackerMessage& message : actual.messages) {
+            for (const TrackerMessage& message : actual.messages)
+            {
                 const bool head = message.tracker.segment == "head";
                 ok = ok && (head == message.tracker.named());
             }
-            if (!ok) {
+            if (!ok)
+            {
                 std::fprintf(stderr,
                              "%s: expected 1-8 plus a named head, got %zu "
                              "identities\n",
@@ -872,33 +868,33 @@ CheckCorpus(const std::filesystem::path& directory)
             }
         }
 
-        if (name == "position-only.vrchatoscpackets"
-            || name == "rotation-only.vrchatoscpackets") {
-            const auto channel = name[0] == 'p' ? TrackerChannel::Position
-                                                : TrackerChannel::Rotation;
+        if (name == "position-only.vrchatoscpackets" || name == "rotation-only.vrchatoscpackets")
+        {
+            const auto channel =
+                name[0] == 'p' ? TrackerChannel::Position : TrackerChannel::Rotation;
             bool ok = true;
-            for (const TrackerMessage& message : actual.messages) {
+            for (const TrackerMessage& message : actual.messages)
+            {
                 ok = ok && message.channel == channel;
             }
-            if (!ok) {
-                std::fprintf(stderr,
-                             "%s: a message arrived on the other channel\n",
-                             name.c_str());
+            if (!ok)
+            {
+                std::fprintf(stderr, "%s: a message arrived on the other channel\n", name.c_str());
                 ++failures;
             }
         }
 
-        if (name == "duplicate-and-reordered.vrchatoscpackets") {
+        if (name == "duplicate-and-reordered.vrchatoscpackets")
+        {
             // The duplicate is the last message and carries different values
             // from the frame's own, so "keep the first" and "keep the last" are
             // distinguishable downstream rather than only countable.
             const TrackerMessage& last = actual.messages.back();
-            const bool ok = last.tracker.segment == "1"
-                && last.channel == TrackerChannel::Position
-                && actual.perTracker["1"][static_cast<std::size_t>(
-                       TrackerChannel::Position)]
-                    == 4;
-            if (!ok) {
+            const bool ok =
+                last.tracker.segment == "1" && last.channel == TrackerChannel::Position &&
+                actual.perTracker["1"][static_cast<std::size_t>(TrackerChannel::Position)] == 4;
+            if (!ok)
+            {
                 std::fprintf(stderr,
                              "%s: the duplicated address is not where the "
                              "generator puts it\n",
@@ -907,12 +903,14 @@ CheckCorpus(const std::filesystem::path& directory)
             }
         }
 
-        if (name == "malformed-forms.vrchatoscpackets") {
+        if (name == "malformed-forms.vrchatoscpackets")
+        {
             // The headline claim as one number: the bundled frame's other seven
             // messages survive the one four-float rotation in it.
-            const auto rotations = actual.perTracker["1"][static_cast<
-                std::size_t>(TrackerChannel::Rotation)];
-            if (rotations != 1) {
+            const auto rotations =
+                actual.perTracker["1"][static_cast<std::size_t>(TrackerChannel::Rotation)];
+            if (rotations != 1)
+            {
                 std::fprintf(stderr,
                              "%s: tracker 1 yielded %zu rotation(s) -- expected "
                              "1, the clean frame's, with the bundled frame's "
@@ -924,33 +922,33 @@ CheckCorpus(const std::filesystem::path& directory)
 
         std::printf("%s: %zu datagram(s) -> %zu message(s), %zu decoded, %zu "
                     "refused\n",
-                    name.c_str(), actual.datagrams, actual.messagesSeen,
-                    actual.decoded,
-                    actual.messagesSeen - actual.decoded
-                        + actual.refusedDatagrams);
+                    name.c_str(), actual.datagrams, actual.messagesSeen, actual.decoded,
+                    actual.messagesSeen - actual.decoded + actual.refusedDatagrams);
     }
 
-    for (const Expected& entry : kExpected) {
-        if (covered.find(entry.file) == covered.end()) {
-            std::fprintf(stderr, "%s: expected in this test, absent from %s\n",
-                         entry.file, directory.string().c_str());
+    for (const Expected& entry : kExpected)
+    {
+        if (covered.find(entry.file) == covered.end())
+        {
+            std::fprintf(stderr, "%s: expected in this test, absent from %s\n", entry.file,
+                         directory.string().c_str());
             ++failures;
         }
     }
-    if (!anyValueMoved) {
-        std::fprintf(stderr,
-                     "no capture carries values that change between frames; "
-                     "the value checks would pass on a decoder that returned "
-                     "the first frame forever\n");
+    if (!anyValueMoved)
+    {
+        std::fprintf(stderr, "no capture carries values that change between frames; "
+                             "the value checks would pass on a decoder that returned "
+                             "the first frame forever\n");
         ++failures;
     }
 
-    if (failures != 0) {
+    if (failures != 0)
+    {
         std::fprintf(stderr, "%d corpus capture(s) failed\n", failures);
         return 1;
     }
-    std::printf("VRChat OSC tracker decode: %zu capture(s) verified\n",
-                captures.size());
+    std::printf("VRChat OSC tracker decode: %zu capture(s) verified\n", captures.size());
     return 0;
 }
 
@@ -959,7 +957,8 @@ CheckCorpus(const std::filesystem::path& directory)
 int
 main(int argc, char** argv)
 {
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
 

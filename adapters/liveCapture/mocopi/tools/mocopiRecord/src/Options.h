@@ -53,9 +53,9 @@ struct Options
     // There is no `--max-frames` here and there cannot be. The sibling needs a
     // second bound because it accumulates a second thing — one pose per decoded
     // frame — and this tool accumulates datagrams alone.
-    double durationSeconds = 0.0;  // 0: until interrupted
-    double idleSeconds = 0.0;      // 0: never
-    std::size_t maxDatagrams = 0;  // 0: the default, applied at parse
+    double durationSeconds = 0.0; // 0: until interrupted
+    double idleSeconds = 0.0;     // 0: never
+    std::size_t maxDatagrams = 0; // 0: the default, applied at parse
 
     bool dryRun = false;
 
@@ -67,8 +67,8 @@ struct Options
 
 // Parses argv. On failure `error` explains why and the result is false; on
 // --help `showHelp` is set and the caller should print usage and exit 0.
-bool ParseOptions(const std::vector<std::string>& arguments, Options* options,
-                  bool* showHelp, std::string* error);
+bool ParseOptions(const std::vector<std::string>& arguments, Options* options, bool* showHelp,
+                  std::string* error);
 
 const char* GetUsage();
 

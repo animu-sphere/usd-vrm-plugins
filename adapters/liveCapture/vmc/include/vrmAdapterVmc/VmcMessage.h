@@ -71,24 +71,21 @@ enum class VmcMessageKind : std::uint8_t
     Count,
 };
 
-inline constexpr std::size_t VmcMessageKindCount =
-    static_cast<std::size_t>(VmcMessageKind::Count);
+inline constexpr std::size_t VmcMessageKindCount = static_cast<std::size_t>(VmcMessageKind::Count);
 
 // The address pattern the kind decodes, e.g. "/VMC/Ext/Bone/Pos". Empty for
 // Count.
-VRMADAPTERVMC_API std::string_view VmcMessageKindAddress(
-    VmcMessageKind kind) noexcept;
+VRMADAPTERVMC_API std::string_view VmcMessageKindAddress(VmcMessageKind kind) noexcept;
 
 // The type tag string the kind's required arguments must begin with, without
 // its leading comma — "sfffffff" for a bone. Optional arguments are not in it;
 // `unreadArguments` covers everything past the known form.
-VRMADAPTERVMC_API std::string_view VmcMessageKindTypeTags(
-    VmcMessageKind kind) noexcept;
+VRMADAPTERVMC_API std::string_view VmcMessageKindTypeTags(VmcMessageKind kind) noexcept;
 
 // Exact match on the whole address. `/VMC/Ext/Bone` and `/VMC/Ext/Bone/Pos/2`
 // are not bone poses, and a prefix test would make both into one.
-VRMADAPTERVMC_API std::optional<VmcMessageKind> FindVmcMessageKind(
-    std::string_view address) noexcept;
+VRMADAPTERVMC_API std::optional<VmcMessageKind>
+FindVmcMessageKind(std::string_view address) noexcept;
 
 // A transform exactly as the wire carries it: the sender's own axes and units,
 // and a quaternion in the (x, y, z, w) component order VMC serialises rather
@@ -189,8 +186,7 @@ struct VmcPacket
 // this adapter implements (`VRM_VMC_UNSUPPORTED_MESSAGE`, with the address as
 // its subject) or when a known address carries arguments the protocol does not
 // describe (`VRM_VMC_PACKET_MALFORMED`). `out` is left untouched on either.
-VRMADAPTERVMC_API bool DecodeVmcMessage(const OscMessage& message,
-                                        VmcMessage* out,
+VRMADAPTERVMC_API bool DecodeVmcMessage(const OscMessage& message, VmcMessage* out,
                                         Diagnostic* diagnostic = nullptr);
 
 // Every message in a decoded datagram, in wire order. Returns false when at
@@ -201,8 +197,7 @@ VRMADAPTERVMC_API bool DecodeVmcMessage(const OscMessage& message,
 // loop can accumulate a datagram's worth or a session's. A null `out` is a
 // caller bug and is reported as `VRM_VMC_PACKET_MALFORMED` rather than
 // dereferenced.
-VRMADAPTERVMC_API bool DecodeVmcPacket(
-    const OscPacket& packet, VmcPacket* out,
-    std::vector<Diagnostic>* diagnostics = nullptr);
+VRMADAPTERVMC_API bool DecodeVmcPacket(const OscPacket& packet, VmcPacket* out,
+                                       std::vector<Diagnostic>* diagnostics = nullptr);
 
 } // namespace vrmAdapterVmc

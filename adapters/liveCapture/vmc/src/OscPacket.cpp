@@ -20,18 +20,19 @@ bool
 DecodeOscPacket(const std::uint8_t* bytes, std::size_t size, OscPacket* packet,
                 Diagnostic* diagnostic)
 {
-    if (!diagnostic) {
+    if (!diagnostic)
+    {
         return osc::DecodeOscPacket(bytes, size, packet);
     }
 
     osc::OscDecodeError error;
-    if (osc::DecodeOscPacket(bytes, size, packet, &error)) {
+    if (osc::DecodeOscPacket(bytes, size, packet, &error))
+    {
         return true;
     }
     // `MakeDiagnostic` fills severity and recoverability from the code's own
     // table row, so the two cannot disagree with it at a raise site.
-    *diagnostic =
-        MakeDiagnostic(DiagnosticCode::PacketMalformed, std::move(error.detail));
+    *diagnostic = MakeDiagnostic(DiagnosticCode::PacketMalformed, std::move(error.detail));
     diagnostic->subject = std::move(error.subject);
     return false;
 }

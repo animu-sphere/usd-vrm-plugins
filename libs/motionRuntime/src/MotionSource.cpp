@@ -11,7 +11,8 @@ IMotionSource::~IMotionSource() = default;
 const char*
 PoseSampleStatusName(PoseSampleStatus status) noexcept
 {
-    switch (status) {
+    switch (status)
+    {
     case PoseSampleStatus::Unavailable:
         return "unavailable";
     case PoseSampleStatus::Sampled:
@@ -36,8 +37,7 @@ operator!=(const PoseSampleResult& a, const PoseSampleResult& b) noexcept
     return !(a == b);
 }
 
-ClipSource::ClipSource(HumanoidAnimation animation)
-    : _animation(std::move(animation))
+ClipSource::ClipSource(HumanoidAnimation animation) : _animation(std::move(animation))
 {
 }
 
@@ -51,7 +51,8 @@ PoseSampleResult
 ClipSource::Sample(double evaluationTime)
 {
     PoseSampleResult result;
-    if (_animation.samples.empty()) {
+    if (_animation.samples.empty())
+    {
         return result;
     }
 
@@ -60,10 +61,10 @@ ClipSource::Sample(double evaluationTime)
     const double last = _animation.samples.back().timestamp;
 
     result.pose = SampleAnimation(_animation, clipTime);
-    result.status = (clipTime < first - PoseSampleTimeTolerance
-                     || clipTime > last + PoseSampleTimeTolerance)
-        ? PoseSampleStatus::Held
-        : PoseSampleStatus::Sampled;
+    result.status =
+        (clipTime < first - PoseSampleTimeTolerance || clipTime > last + PoseSampleTimeTolerance)
+            ? PoseSampleStatus::Held
+            : PoseSampleStatus::Sampled;
     result.lag = clipTime - last;
 
     // The pose is reported on the consumer's clock, not the clip's, so a
@@ -81,13 +82,16 @@ ClipSource::GetSourceMetadata() const
 bool
 ClipSource::GetTimeRange(double* startTime, double* endTime) const
 {
-    if (_animation.samples.empty()) {
+    if (_animation.samples.empty())
+    {
         return false;
     }
-    if (startTime) {
+    if (startTime)
+    {
         *startTime = _animation.samples.front().timestamp + _startOffset;
     }
-    if (endTime) {
+    if (endTime)
+    {
         *endTime = _animation.samples.back().timestamp + _startOffset;
     }
     return true;

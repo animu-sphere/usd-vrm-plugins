@@ -22,7 +22,8 @@ main()
 
     motion::HumanoidPose pose;
     assert(!pose.validRotations.any());
-    for (const pxr::GfQuatf& rotation : pose.localRotations) {
+    for (const pxr::GfQuatf& rotation : pose.localRotations)
+    {
         assert(rotation.GetReal() == 1.0f);
         assert(rotation.GetImaginary() == pxr::GfVec3f(0.0f));
     }

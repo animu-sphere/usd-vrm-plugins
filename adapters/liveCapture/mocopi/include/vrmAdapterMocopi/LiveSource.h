@@ -304,11 +304,16 @@ struct MocopiLiveSourceStats
 // to neither half, so it is the one this class keeps.
 class VRMADAPTERMOCOPI_API MocopiLiveSource final : public motion::IMotionSource
 {
-public:
+  public:
     explicit MocopiLiveSource(const MocopiLiveSourceConfig& config = {});
 
-    SessionRestartPolicy GetRestartPolicy() const noexcept { return _restart; }
-    void SetRestartPolicy(SessionRestartPolicy restart) noexcept
+    SessionRestartPolicy
+    GetRestartPolicy() const noexcept
+    {
+        return _restart;
+    }
+    void
+    SetRestartPolicy(SessionRestartPolicy restart) noexcept
     {
         _restart = restart;
     }
@@ -344,16 +349,14 @@ public:
     // numbering alone, since a caller decoding for itself has no other.
     //
     // `bytes` need not outlive the call (see the header).
-    std::size_t PushDatagram(const std::uint8_t* bytes, std::size_t size,
-                             double receiveTime,
+    std::size_t PushDatagram(const std::uint8_t* bytes, std::size_t size, double receiveTime,
                              std::vector<Diagnostic>* diagnostics = nullptr);
 
-    std::size_t PushDatagram(const std::vector<std::uint8_t>& datagram,
-                             double receiveTime,
-                             std::vector<Diagnostic>* diagnostics = nullptr)
+    std::size_t
+    PushDatagram(const std::vector<std::uint8_t>& datagram, double receiveTime,
+                 std::vector<Diagnostic>* diagnostics = nullptr)
     {
-        return PushDatagram(datagram.data(), datagram.size(), receiveTime,
-                            diagnostics);
+        return PushDatagram(datagram.data(), datagram.size(), receiveTime, diagnostics);
     }
 
     // The same, for a caller that has already decoded — the corpus tests, and a
@@ -382,13 +385,19 @@ public:
     motion::MotionSourceMetadata GetSourceMetadata() const override;
     bool GetTimeRange(double* startTime, double* endTime) const override;
 
-    motion::LiveCaptureSource& GetIntake() noexcept { return _intake; }
-    const motion::LiveCaptureSource& GetIntake() const noexcept
+    motion::LiveCaptureSource&
+    GetIntake() noexcept
+    {
+        return _intake;
+    }
+    const motion::LiveCaptureSource&
+    GetIntake() const noexcept
     {
         return _intake;
     }
 
-    const MocopiFrameAssembler& GetAssembler() const noexcept
+    const MocopiFrameAssembler&
+    GetAssembler() const noexcept
     {
         return _assembler;
     }
@@ -397,7 +406,8 @@ public:
     // and again after a restart until the next one arrives. A caller needs it to
     // interpret `MocopiFrame::missing`, and it carries the device's own rest
     // pose, which a relay cannot supply at all.
-    const SkeletonMap* GetSkeletonMap() const noexcept
+    const SkeletonMap*
+    GetSkeletonMap() const noexcept
     {
         return _assembler.GetSkeletonMap();
     }
@@ -412,16 +422,25 @@ public:
     // This is the window onto what a `HumanoidPose` cannot carry — see the
     // header. A caller that only wants poses never touches it; a recording tool
     // gathering the root/hips evidence v0.7.0 owes reads it after every push.
-    const std::vector<MocopiFrame>& GetFramesFromLastPush() const noexcept
+    const std::vector<MocopiFrame>&
+    GetFramesFromLastPush() const noexcept
     {
         return _frames;
     }
 
-    const MocopiLiveSourceStats& GetStats() const noexcept { return _stats; }
+    const MocopiLiveSourceStats&
+    GetStats() const noexcept
+    {
+        return _stats;
+    }
 
     // This layer's tally only. The assembler's and the intake's are reset
     // through their own objects, so a caller that wants one of them says so.
-    void ResetStats() noexcept { _stats = MocopiLiveSourceStats(); }
+    void
+    ResetStats() noexcept
+    {
+        _stats = MocopiLiveSourceStats();
+    }
 
     // A new session on the same object: both halves forget the stream, the rig
     // included. Stats survive, like everywhere else in this adapter — and so does
@@ -431,7 +450,7 @@ public:
     // first capture's is the same fault the latch exists to make visible.
     void Reset();
 
-private:
+  private:
     // Hands `_frames` to the intake, applying the restart policy on the way.
     // Returns how many were admitted.
     std::size_t _Deliver();
@@ -440,8 +459,7 @@ private:
     // appended. The decoder knows neither: it is reading bytes, and a caller
     // with one list must not have to tell which layer produced a line in order
     // to know what it is about.
-    void _StampDatagram(std::vector<Diagnostic>* diagnostics,
-                        std::size_t from) const;
+    void _StampDatagram(std::vector<Diagnostic>* diagnostics, std::size_t from) const;
 
     MocopiFrameAssembler _assembler;
     motion::LiveCaptureSource _intake;

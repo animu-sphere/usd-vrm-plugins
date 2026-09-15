@@ -48,14 +48,12 @@ void PrintChannelMap(std::ostream& out, const motionBvh::BvhDocument& document);
 
 // One motion row, by joint. `frameIndex` must be in range; the caller checks it
 // so the refusal can name the file's frame count.
-void PrintFrame(std::ostream& out, const motionBvh::BvhDocument& document,
-                std::size_t frameIndex);
+void PrintFrame(std::ostream& out, const motionBvh::BvhDocument& document, std::size_t frameIndex);
 
 // Per-column smallest and largest value across every frame. This is the block
 // BVH-0 measures a real producer's export with: whether a root translation is
 // in the tens or the hundredths is what separates one writer's unit from
 // another's, and it is a measurement rather than a conclusion.
-void PrintChannelRanges(std::ostream& out,
-                        const motionBvh::BvhDocument& document);
+void PrintChannelRanges(std::ostream& out, const motionBvh::BvhDocument& document);
 
 } // namespace motionBvhTool

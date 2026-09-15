@@ -46,8 +46,8 @@ using motionBvh::BvhJoint;
 using motionBvh::Diagnostic;
 using motionBvh::DiagnosticCode;
 using motionBvh::ExtractBvhSource;
-using motionSource::SourceAnimation;
 using motionSource::SourceAngleUnit;
+using motionSource::SourceAnimation;
 using motionSource::SourceEulerOrder;
 using motionSource::SourceSkeleton;
 
@@ -57,11 +57,11 @@ using motionSource::SourceSkeleton;
 // other in the one thing it is about.
 class DocumentBuilder
 {
-public:
+  public:
     // Returns the new joint's index.
-    std::size_t AddJoint(std::string name, int parent,
-                         motionBvh::BvhVec3 offset,
-                         std::vector<BvhChannel> channels)
+    std::size_t
+    AddJoint(std::string name, int parent, motionBvh::BvhVec3 offset,
+             std::vector<BvhChannel> channels)
     {
         BvhJoint joint;
         joint.name = std::move(name);
@@ -74,23 +74,33 @@ public:
         return _document.joints.size() - 1;
     }
 
-    void SetTip(std::size_t jointIndex, motionBvh::BvhVec3 offset)
+    void
+    SetTip(std::size_t jointIndex, motionBvh::BvhVec3 offset)
     {
         _document.joints[jointIndex].endSiteOffset = offset;
     }
 
-    void AddFrame(const std::vector<float>& row)
+    void
+    AddFrame(const std::vector<float>& row)
     {
         assert(row.size() == _document.channelCount);
         _document.values.insert(_document.values.end(), row.begin(), row.end());
         ++_document.frameCount;
     }
 
-    void SetFrameTime(double frameTime) { _document.frameTime = frameTime; }
+    void
+    SetFrameTime(double frameTime)
+    {
+        _document.frameTime = frameTime;
+    }
 
-    const BvhDocument& Document() const { return _document; }
+    const BvhDocument&
+    Document() const
+    {
+        return _document;
+    }
 
-private:
+  private:
     BvhDocument _document;
 };
 
@@ -105,8 +115,8 @@ Vec(float x, float y, float z)
 }
 
 bool
-Extracts(const BvhDocument& document, SourceSkeleton* skeleton,
-         SourceAnimation* animation, Diagnostic* diagnostic = nullptr)
+Extracts(const BvhDocument& document, SourceSkeleton* skeleton, SourceAnimation* animation,
+         Diagnostic* diagnostic = nullptr)
 {
     BvhExtractOptions options;
     options.sourceId = "fixture";
@@ -120,19 +130,15 @@ MinimalRig()
 {
     DocumentBuilder builder;
     builder.AddJoint("Root", -1, Vec(0.0f, 90.0f, 0.0f),
-                     {BvhChannel::Xposition, BvhChannel::Yposition,
-                      BvhChannel::Zposition, BvhChannel::Zrotation,
-                      BvhChannel::Xrotation, BvhChannel::Yrotation});
+                     {BvhChannel::Xposition, BvhChannel::Yposition, BvhChannel::Zposition,
+                      BvhChannel::Zrotation, BvhChannel::Xrotation, BvhChannel::Yrotation});
     const std::size_t child =
         builder.AddJoint("Child", 0, Vec(0.0f, 10.0f, 0.0f),
-                         {BvhChannel::Zrotation, BvhChannel::Xrotation,
-                          BvhChannel::Yrotation});
+                         {BvhChannel::Zrotation, BvhChannel::Xrotation, BvhChannel::Yrotation});
     builder.SetTip(child, Vec(0.0f, 5.0f, 0.0f));
     builder.SetFrameTime(0.5);
-    builder.AddFrame({1.0f, 91.0f, 2.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f,
-                      60.0f});
-    builder.AddFrame({3.0f, 92.0f, 4.0f, 11.0f, 21.0f, 31.0f, 41.0f, 51.0f,
-                      61.0f});
+    builder.AddFrame({1.0f, 91.0f, 2.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f});
+    builder.AddFrame({3.0f, 92.0f, 4.0f, 11.0f, 21.0f, 31.0f, 41.0f, 51.0f, 61.0f});
     return builder;
 }
 
@@ -213,7 +219,8 @@ TestEulerOrderFollowsDeclaration()
         {BvhChannel::Zrotation, BvhChannel::Yrotation, BvhChannel::Xrotation,
          SourceEulerOrder::ZYX},
     };
-    for (const Case& entry : cases) {
+    for (const Case& entry : cases)
+    {
         DocumentBuilder builder;
         builder.AddJoint("Root", -1, Vec(0.0f, 0.0f, 0.0f),
                          {entry.first, entry.second, entry.third});
@@ -236,9 +243,8 @@ TestInterleavedChannelsKeepTheirOrder()
 {
     DocumentBuilder builder;
     builder.AddJoint("Root", -1, Vec(0.0f, 0.0f, 0.0f),
-                     {BvhChannel::Xposition, BvhChannel::Zrotation,
-                      BvhChannel::Yposition, BvhChannel::Xrotation,
-                      BvhChannel::Yrotation, BvhChannel::Zposition});
+                     {BvhChannel::Xposition, BvhChannel::Zrotation, BvhChannel::Yposition,
+                      BvhChannel::Xrotation, BvhChannel::Yrotation, BvhChannel::Zposition});
     builder.AddFrame({1.0f, 10.0f, 2.0f, 20.0f, 30.0f, 3.0f});
     SourceSkeleton skeleton;
     SourceAnimation animation;
@@ -260,8 +266,8 @@ TestPartialPositionFallsBackToTheOffset()
 {
     DocumentBuilder builder;
     builder.AddJoint("Root", -1, Vec(4.0f, 5.0f, 6.0f),
-                     {BvhChannel::Yposition, BvhChannel::Zrotation,
-                      BvhChannel::Xrotation, BvhChannel::Yrotation});
+                     {BvhChannel::Yposition, BvhChannel::Zrotation, BvhChannel::Xrotation,
+                      BvhChannel::Yrotation});
     builder.AddFrame({50.0f, 0.0f, 0.0f, 0.0f});
     SourceSkeleton skeleton;
     SourceAnimation animation;
@@ -279,8 +285,7 @@ TestStaticJointIsAnEmptyTrack()
 {
     DocumentBuilder builder;
     builder.AddJoint("Root", -1, Vec(0.0f, 0.0f, 0.0f),
-                     {BvhChannel::Zrotation, BvhChannel::Xrotation,
-                      BvhChannel::Yrotation});
+                     {BvhChannel::Zrotation, BvhChannel::Xrotation, BvhChannel::Yrotation});
     builder.AddJoint("Prop", 0, Vec(1.0f, 2.0f, 3.0f), {});
     builder.AddFrame({1.0f, 2.0f, 3.0f});
     SourceSkeleton skeleton;
@@ -298,8 +303,7 @@ TestEmptyMotion()
 {
     DocumentBuilder builder;
     builder.AddJoint("Root", -1, Vec(0.0f, 0.0f, 0.0f),
-                     {BvhChannel::Zrotation, BvhChannel::Xrotation,
-                      BvhChannel::Yrotation});
+                     {BvhChannel::Zrotation, BvhChannel::Xrotation, BvhChannel::Yrotation});
     SourceSkeleton skeleton;
     SourceAnimation animation;
     assert(Extracts(builder.Document(), &skeleton, &animation));
@@ -315,12 +319,14 @@ Refuses(const BvhDocument& document, DiagnosticCode code)
     SourceSkeleton skeleton;
     SourceAnimation animation;
     Diagnostic diagnostic;
-    if (ExtractBvhSource(document, &skeleton, &animation, &diagnostic)) {
+    if (ExtractBvhSource(document, &skeleton, &animation, &diagnostic))
+    {
         return false;
     }
     // The parser's rule, for the parser's reason: a caller cannot tell which
     // half of a half-extracted document it got.
-    if (!skeleton.joints.empty() || !animation.tracks.empty()) {
+    if (!skeleton.joints.empty() || !animation.tracks.empty())
+    {
         return false;
     }
     return diagnostic.code == code;
@@ -337,29 +343,25 @@ TestRotationOrderRefusals()
         builder.AddJoint("Root", -1, Vec(0.0f, 0.0f, 0.0f),
                          {BvhChannel::Xrotation, BvhChannel::Yrotation});
         builder.AddFrame({1.0f, 2.0f});
-        assert(Refuses(builder.Document(),
-                       DiagnosticCode::InvalidRotationOrder));
+        assert(Refuses(builder.Document(), DiagnosticCode::InvalidRotationOrder));
     }
     {
         // Four is not an order either.
         DocumentBuilder builder;
         builder.AddJoint("Root", -1, Vec(0.0f, 0.0f, 0.0f),
-                         {BvhChannel::Xrotation, BvhChannel::Yrotation,
-                          BvhChannel::Zrotation, BvhChannel::Xrotation});
+                         {BvhChannel::Xrotation, BvhChannel::Yrotation, BvhChannel::Zrotation,
+                          BvhChannel::Xrotation});
         builder.AddFrame({1.0f, 2.0f, 3.0f, 4.0f});
-        assert(Refuses(builder.Document(),
-                       DiagnosticCode::InvalidRotationOrder));
+        assert(Refuses(builder.Document(), DiagnosticCode::InvalidRotationOrder));
     }
     {
         // Three channels naming two axes is not an order, and it is the case a
         // count check alone would pass.
         DocumentBuilder builder;
         builder.AddJoint("Root", -1, Vec(0.0f, 0.0f, 0.0f),
-                         {BvhChannel::Xrotation, BvhChannel::Xrotation,
-                          BvhChannel::Yrotation});
+                         {BvhChannel::Xrotation, BvhChannel::Xrotation, BvhChannel::Yrotation});
         builder.AddFrame({1.0f, 2.0f, 3.0f});
-        assert(Refuses(builder.Document(),
-                       DiagnosticCode::InvalidRotationOrder));
+        assert(Refuses(builder.Document(), DiagnosticCode::InvalidRotationOrder));
     }
 }
 
@@ -370,9 +372,8 @@ TestRepeatedPositionChannelIsRefused()
     // rather than a new code.
     DocumentBuilder builder;
     builder.AddJoint("Root", -1, Vec(0.0f, 0.0f, 0.0f),
-                     {BvhChannel::Xposition, BvhChannel::Xposition,
-                      BvhChannel::Zrotation, BvhChannel::Xrotation,
-                      BvhChannel::Yrotation});
+                     {BvhChannel::Xposition, BvhChannel::Xposition, BvhChannel::Zrotation,
+                      BvhChannel::Xrotation, BvhChannel::Yrotation});
     builder.AddFrame({1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
     assert(Refuses(builder.Document(), DiagnosticCode::ParseFailed));
 }
@@ -386,8 +387,7 @@ TestTipOnABranchingJointIsRefused()
 {
     DocumentBuilder builder;
     builder.AddJoint("Root", -1, Vec(0.0f, 0.0f, 0.0f),
-                     {BvhChannel::Zrotation, BvhChannel::Xrotation,
-                      BvhChannel::Yrotation});
+                     {BvhChannel::Zrotation, BvhChannel::Xrotation, BvhChannel::Yrotation});
     builder.AddJoint("Child", 0, Vec(0.0f, 1.0f, 0.0f), {});
     builder.SetTip(0, Vec(0.0f, 0.1f, 0.0f));
     builder.AddFrame({1.0f, 2.0f, 3.0f});
@@ -412,8 +412,7 @@ TestNoPlaceToPutTheResult()
     const DocumentBuilder builder = MinimalRig();
     SourceAnimation animation;
     Diagnostic diagnostic;
-    assert(!ExtractBvhSource(builder.Document(), nullptr, &animation,
-                             &diagnostic));
+    assert(!ExtractBvhSource(builder.Document(), nullptr, &animation, &diagnostic));
     assert(diagnostic.code == DiagnosticCode::ParseFailed);
     SourceSkeleton skeleton;
     assert(!ExtractBvhSource(builder.Document(), &skeleton, nullptr));

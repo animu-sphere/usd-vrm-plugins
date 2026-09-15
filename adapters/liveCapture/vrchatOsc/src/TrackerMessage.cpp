@@ -45,11 +45,14 @@ enum class IndexReading
 IndexReading
 ReadTrackerIndex(std::string_view segment, std::uint8_t* index)
 {
-    if (segment.empty()) {
+    if (segment.empty())
+    {
         return IndexReading::NotANumber;
     }
-    for (const char character : segment) {
-        if (character < '0' || character > '9') {
+    for (const char character : segment)
+    {
+        if (character < '0' || character > '9')
+        {
             return IndexReading::NotANumber;
         }
     }
@@ -58,20 +61,24 @@ ReadTrackerIndex(std::string_view segment, std::uint8_t* index)
     // text, so accepting "01" would give one tracker two identities that
     // compare unequal everywhere downstream. No sender spells an index that
     // way; one that did would be reported rather than silently merged.
-    if (segment.size() > 1 && segment.front() == '0') {
+    if (segment.size() > 1 && segment.front() == '0')
+    {
         return IndexReading::NotCanonical;
     }
     // Three digits is more than the surface's range can spell, and stopping
     // here keeps the accumulation below inside a `std::uint32_t` for any input.
-    if (segment.size() > 3) {
+    if (segment.size() > 3)
+    {
         return IndexReading::OutOfRange;
     }
 
     std::uint32_t value = 0;
-    for (const char character : segment) {
+    for (const char character : segment)
+    {
         value = value * 10 + static_cast<std::uint32_t>(character - '0');
     }
-    if (value < MinTrackerIndex || value > MaxTrackerIndex) {
+    if (value < MinTrackerIndex || value > MaxTrackerIndex)
+    {
         return IndexReading::OutOfRange;
     }
     *index = static_cast<std::uint8_t>(value);
@@ -79,10 +86,10 @@ ReadTrackerIndex(std::string_view segment, std::uint8_t* index)
 }
 
 bool
-Refuse(Diagnostic* error, DiagnosticCode code, std::string_view subject,
-       std::string detail)
+Refuse(Diagnostic* error, DiagnosticCode code, std::string_view subject, std::string detail)
 {
-    if (error != nullptr) {
+    if (error != nullptr)
+    {
         *error = MakeDiagnostic(code, std::move(detail));
         error->subject = std::string(subject);
     }
@@ -107,8 +114,10 @@ TrackerChannelString(TrackerChannel channel) noexcept
 std::optional<TrackerChannel>
 FindTrackerChannel(std::string_view segment) noexcept
 {
-    for (std::size_t slot = 0; slot < TrackerChannelCount; ++slot) {
-        if (kChannelNames[slot] == segment) {
+    for (std::size_t slot = 0; slot < TrackerChannelCount; ++slot)
+    {
+        if (kChannelNames[slot] == segment)
+        {
             return static_cast<TrackerChannel>(slot);
         }
     }
@@ -116,8 +125,7 @@ FindTrackerChannel(std::string_view segment) noexcept
 }
 
 bool
-DecodeTrackerMessage(const osc::OscMessage& message, TrackerMessage* out,
-                     Diagnostic* error)
+DecodeTrackerMessage(const osc::OscMessage& message, TrackerMessage* out, Diagnostic* error)
 {
     const std::string_view address = message.address;
 
@@ -127,7 +135,8 @@ DecodeTrackerMessage(const osc::OscMessage& message, TrackerMessage* out,
     // `PacketMalformed` because that is the code this adapter has for "these
     // bytes are not a message" — the sibling decoder answers both the same way
     // (vmc/src/VmcMessage.cpp).
-    if (!out) {
+    if (!out)
+    {
         return Refuse(error, DiagnosticCode::PacketMalformed, address,
                       "no output message was provided");
     }
@@ -136,28 +145,27 @@ DecodeTrackerMessage(const osc::OscMessage& message, TrackerMessage* out,
     // by tag index would then run off the end of `arguments` — the type tags
     // are checked against `"fff"` below and the vector is indexed on the
     // strength of that check, which is only sound while the two agree.
-    if (message.arguments.size() != message.typeTags.size()) {
+    if (message.arguments.size() != message.typeTags.size())
+    {
         return Refuse(error, DiagnosticCode::PacketMalformed, address,
-                      "the type tags describe "
-                          + std::to_string(message.typeTags.size())
-                          + " argument(s) and "
-                          + std::to_string(message.arguments.size())
-                          + " were given");
+                      "the type tags describe " + std::to_string(message.typeTags.size()) +
+                          " argument(s) and " + std::to_string(message.arguments.size()) +
+                          " were given");
     }
 
     // The address family. A prefix test rather than a pattern match, because
     // the family's shape is fixed and everything after it is what varies.
-    if (address.size() <= TrackerAddressPrefix.size()
-        || address.compare(0, TrackerAddressPrefix.size(),
-                           TrackerAddressPrefix)
-               != 0) {
+    if (address.size() <= TrackerAddressPrefix.size() ||
+        address.compare(0, TrackerAddressPrefix.size(), TrackerAddressPrefix) != 0)
+    {
         return Refuse(error, DiagnosticCode::UnsupportedAddress, address,
                       "not a VRChat OSC tracker address");
     }
 
     const std::string_view rest = address.substr(TrackerAddressPrefix.size());
     const std::size_t separator = rest.find('/');
-    if (separator == std::string_view::npos) {
+    if (separator == std::string_view::npos)
+    {
         // `/tracking/trackers/1` — an identity with no channel. Unsupported
         // rather than malformed: it is a well-formed address this adapter maps
         // to nothing, which is exactly what that code says.
@@ -167,47 +175,50 @@ DecodeTrackerMessage(const osc::OscMessage& message, TrackerMessage* out,
 
     const std::string_view segment = rest.substr(0, separator);
     const std::string_view channelText = rest.substr(separator + 1);
-    if (channelText.find('/') != std::string_view::npos) {
+    if (channelText.find('/') != std::string_view::npos)
+    {
         return Refuse(error, DiagnosticCode::UnsupportedAddress, address,
                       "a tracker address with a channel this adapter does not "
-                      "read: " + Quoted(channelText));
+                      "read: " +
+                          Quoted(channelText));
     }
 
     // The channel before the identity, which is the order the failures are
     // useful in: `/tracking/trackers/hip/velocity` is not a tracker channel at
     // all, so blaming its identity would name the wrong half of an address that
     // is wrong in both.
-    const std::optional<TrackerChannel> channel =
-        FindTrackerChannel(channelText);
-    if (!channel) {
+    const std::optional<TrackerChannel> channel = FindTrackerChannel(channelText);
+    if (!channel)
+    {
         return Refuse(error, DiagnosticCode::UnsupportedAddress, address,
                       "a tracker address with a channel this adapter does not "
-                      "read: " + Quoted(channelText));
+                      "read: " +
+                          Quoted(channelText));
     }
 
     TrackerId tracker;
     tracker.segment = segment;
     std::uint8_t index = 0;
-    switch (ReadTrackerIndex(segment, &index)) {
+    switch (ReadTrackerIndex(segment, &index))
+    {
     case IndexReading::Index:
         tracker.index = index;
         break;
     case IndexReading::OutOfRange:
         return Refuse(error, DiagnosticCode::TrackerIdInvalid, address,
-                      "tracker index " + Quoted(segment) + " is outside "
-                      + std::to_string(MinTrackerIndex) + "-"
-                      + std::to_string(MaxTrackerIndex));
+                      "tracker index " + Quoted(segment) + " is outside " +
+                          std::to_string(MinTrackerIndex) + "-" + std::to_string(MaxTrackerIndex));
     case IndexReading::NotCanonical:
         return Refuse(error, DiagnosticCode::TrackerIdInvalid, address,
-                      "tracker index " + Quoted(segment)
-                          + " has a leading zero, which would give one tracker "
-                            "two identities");
+                      "tracker index " + Quoted(segment) +
+                          " has a leading zero, which would give one tracker "
+                          "two identities");
     case IndexReading::NotANumber:
-        if (segment != HeadTrackerSegment) {
+        if (segment != HeadTrackerSegment)
+        {
             return Refuse(error, DiagnosticCode::TrackerIdInvalid, address,
-                          "tracker identity " + Quoted(segment)
-                              + " is neither a decimal index nor "
-                              + Quoted(HeadTrackerSegment));
+                          "tracker identity " + Quoted(segment) +
+                              " is neither a decimal index nor " + Quoted(HeadTrackerSegment));
         }
         break;
     }
@@ -216,25 +227,27 @@ DecodeTrackerMessage(const osc::OscMessage& message, TrackerMessage* out,
     // diagnostic reads the way an operator sees a type tag string written
     // anywhere else — and so that the count and the types are both legible in
     // one field: ",ff" and ",ddd" are different failures and this says which.
-    if (message.typeTags != kTrackerTypeTags) {
+    if (message.typeTags != kTrackerTypeTags)
+    {
         return Refuse(error, DiagnosticCode::ArgumentMismatch, address,
-                      "type tags " + Quoted("," + std::string(message.typeTags))
-                          + " where " + Quoted("," + std::string(kTrackerTypeTags))
-                          + " is this address's only form");
+                      "type tags " + Quoted("," + std::string(message.typeTags)) + " where " +
+                          Quoted("," + std::string(kTrackerTypeTags)) +
+                          " is this address's only form");
     }
 
     std::array<float, 3> values{{0.0f, 0.0f, 0.0f}};
-    for (std::size_t slot = 0; slot < values.size(); ++slot) {
+    for (std::size_t slot = 0; slot < values.size(); ++slot)
+    {
         const double value = message.arguments[slot].real;
         // Finiteness is checked and nothing else is. A component's magnitude,
         // its sign and its unit are all claims about a space this layer has not
         // established (VRC-3), but a NaN is unusable in any space: every
         // comparison against it is false, so a value that reached a solve would
         // make a tracker silently disappear from every test that had one.
-        if (!std::isfinite(value)) {
+        if (!std::isfinite(value))
+        {
             return Refuse(error, DiagnosticCode::CoordinateInvalid, address,
-                          "component " + std::to_string(slot)
-                              + " is not a finite number");
+                          "component " + std::to_string(slot) + " is not a finite number");
         }
         values[slot] = static_cast<float>(value);
     }
@@ -252,14 +265,17 @@ DecodeTrackerPacket(const osc::OscPacket& packet)
     decoded.bundled = packet.bundled;
     decoded.messagesSeen = packet.messages.size();
 
-    for (const osc::OscMessage& message : packet.messages) {
+    for (const osc::OscMessage& message : packet.messages)
+    {
         TrackerMessage tracker;
         Diagnostic error;
-        if (DecodeTrackerMessage(message, &tracker, &error)) {
+        if (DecodeTrackerMessage(message, &tracker, &error))
+        {
             decoded.messages.push_back(tracker);
             continue;
         }
-        if (error.code == DiagnosticCode::UnsupportedAddress) {
+        if (error.code == DiagnosticCode::UnsupportedAddress)
+        {
             ++decoded.unsupported;
         }
         decoded.diagnostics.push_back(std::move(error));
@@ -272,14 +288,15 @@ DecodeTrackerDatagram(const std::uint8_t* bytes, std::size_t size)
 {
     osc::OscPacket packet;
     osc::OscDecodeError error;
-    if (!osc::DecodeOscPacket(bytes, size, &packet, &error)) {
+    if (!osc::DecodeOscPacket(bytes, size, &packet, &error))
+    {
         // OSC-3's split, from this side: the shared decoder names the byte and
         // the address and carries no code, and this adapter — the one layer
         // that knows whose wire this is — supplies the code.
         TrackerPacket refused;
         refused.refused = true;
-        Diagnostic diagnostic = MakeDiagnostic(DiagnosticCode::PacketMalformed,
-                                               std::move(error.detail));
+        Diagnostic diagnostic =
+            MakeDiagnostic(DiagnosticCode::PacketMalformed, std::move(error.detail));
         diagnostic.subject = std::move(error.subject);
         refused.diagnostics.push_back(std::move(diagnostic));
         return refused;

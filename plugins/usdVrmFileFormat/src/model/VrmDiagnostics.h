@@ -18,39 +18,41 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace VrmDiag {
+namespace VrmDiag
+{
 
 // Reader (glTF / VRM ingest) codes.
-inline constexpr const char* NoVrmExtension            = "VRM001";
-inline constexpr const char* VrmJsonParseFailed        = "VRM002";
-inline constexpr const char* ContainerUnreadable       = "VRM003";
-inline constexpr const char* TextureFormatUnsupported  = "VRM101";
+inline constexpr const char* NoVrmExtension = "VRM001";
+inline constexpr const char* VrmJsonParseFailed = "VRM002";
+inline constexpr const char* ContainerUnreadable = "VRM003";
+inline constexpr const char* TextureFormatUnsupported = "VRM101";
 inline constexpr const char* TextureDataUriUnsupported = "VRM102";
 inline constexpr const char* TextureTexcoordUnsupported = "VRM103";
-inline constexpr const char* SkinIbmConflict           = "VRM110";
-inline constexpr const char* SkinJointIndexOutOfRange  = "VRM111";
-inline constexpr const char* PrimitiveNotTriangles     = "VRM120";
-inline constexpr const char* PrimitiveNoPosition       = "VRM121";
-inline constexpr const char* HumanoidBoneUnmapped      = "VRM140";
-inline constexpr const char* HumanoidBoneDuplicate     = "VRM141";
+inline constexpr const char* SkinIbmConflict = "VRM110";
+inline constexpr const char* SkinJointIndexOutOfRange = "VRM111";
+inline constexpr const char* PrimitiveNotTriangles = "VRM120";
+inline constexpr const char* PrimitiveNoPosition = "VRM121";
+inline constexpr const char* HumanoidBoneUnmapped = "VRM140";
+inline constexpr const char* HumanoidBoneDuplicate = "VRM141";
 inline constexpr const char* ExpressionVrm0MaterialValues = "VRM150";
 inline constexpr const char* ExpressionMorphIndexOutOfRange = "VRM151";
-inline constexpr const char* ExpressionDuplicateName    = "VRM152";
-inline constexpr const char* ExpressionOverrideUnknown  = "VRM153";
-inline constexpr const char* AnimationCubicSpline      = "VRM160";
-inline constexpr const char* ConstraintNoSource        = "VRM170";
+inline constexpr const char* ExpressionDuplicateName = "VRM152";
+inline constexpr const char* ExpressionOverrideUnknown = "VRM153";
+inline constexpr const char* AnimationCubicSpline = "VRM160";
+inline constexpr const char* ConstraintNoSource = "VRM170";
 inline constexpr const char* SpringColliderGroupOutOfRange = "VRM190";
 
 // Authorer (USD write) codes.
-inline constexpr const char* MorphNoSkeleton           = "VRM180";
-inline constexpr const char* HumanoidNoSkeleton        = "VRM181";
+inline constexpr const char* MorphNoSkeleton = "VRM180";
+inline constexpr const char* HumanoidNoSkeleton = "VRM181";
 
-}  // namespace VrmDiag
+} // namespace VrmDiag
 
 // Prefix a diagnostic message with its stable code: VrmDiagMsg("VRM101", "...")
 // -> "[VRM101] ...". The prefix is machine-parseable (^\[(VRM\d+)\]) while the
 // tail stays the same human-readable text the importer has always emitted.
-inline std::string VrmDiagMsg(const char* code, const std::string& message)
+inline std::string
+VrmDiagMsg(const char* code, const std::string& message)
 {
     return "[" + std::string(code) + "] " + message;
 }

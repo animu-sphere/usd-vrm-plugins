@@ -158,14 +158,14 @@ struct CanonicalBasis
     // tips alike, and to nothing angular.
     double scale = 1.0;
 
-    friend bool operator==(const CanonicalBasis& lhs,
-                           const CanonicalBasis& rhs) noexcept
+    friend bool
+    operator==(const CanonicalBasis& lhs, const CanonicalBasis& rhs) noexcept
     {
-        return lhs.component == rhs.component && lhs.negate == rhs.negate
-               && lhs.determinant == rhs.determinant && lhs.scale == rhs.scale;
+        return lhs.component == rhs.component && lhs.negate == rhs.negate &&
+               lhs.determinant == rhs.determinant && lhs.scale == rhs.scale;
     }
-    friend bool operator!=(const CanonicalBasis& lhs,
-                           const CanonicalBasis& rhs) noexcept
+    friend bool
+    operator!=(const CanonicalBasis& lhs, const CanonicalBasis& rhs) noexcept
     {
         return !(lhs == rhs);
     }
@@ -176,21 +176,18 @@ struct CanonicalBasis
 // axis. Every one of those is refused by `ValidateSourceProfile` too, so a
 // caller that matched a profile first will not see a nullopt here; the option
 // exists because this function is also the one worth calling on its own.
-MOTIONSOURCE_API std::optional<CanonicalBasis> MakeCanonicalBasis(
-    const SourceProfile& profile);
+MOTIONSOURCE_API std::optional<CanonicalBasis> MakeCanonicalBasis(const SourceProfile& profile);
 
 // `scale * M v`. Lengths and positions alike: the profile states one length
 // unit and applies it to both.
-MOTIONSOURCE_API pxr::GfVec3f ConvertPosition(const CanonicalBasis& basis,
-                                              const SourceVec3& value);
+MOTIONSOURCE_API pxr::GfVec3f ConvertPosition(const CanonicalBasis& basis, const SourceVec3& value);
 
 // `(w, det(M) · M v)`, normalised. A source may write a slightly-off-unit
 // quaternion and `SourceQuat` deliberately keeps it (SourceSkeleton.h), but
 // canonical motion is unit quaternions and the layer that changes basis is the
 // last one able to say so. A zero-magnitude rotation is refused before it
 // reaches here, by the validators this conversion runs first.
-MOTIONSOURCE_API pxr::GfQuatf ConvertRotation(const CanonicalBasis& basis,
-                                              const SourceQuat& value);
+MOTIONSOURCE_API pxr::GfQuatf ConvertRotation(const CanonicalBasis& basis, const SourceQuat& value);
 
 // Three angles composed into the rotation they describe, in the source's own
 // component space and by the right-hand rule — see the header note on why the
@@ -211,9 +208,9 @@ MOTIONSOURCE_API pxr::GfQuatf ConvertRotation(const CanonicalBasis& basis,
 // not describe, and that is a profile's problem to raise rather than a second
 // composition to keep here — a converter with two would need a producer to pick
 // between them, which is the one thing this layer may not have.
-MOTIONSOURCE_API SourceQuat ComposeSourceRotation(
-    const SourceEulerAngles& angles, SourceEulerOrder order,
-    SourceAngleUnit unit) noexcept;
+MOTIONSOURCE_API SourceQuat ComposeSourceRotation(const SourceEulerAngles& angles,
+                                                  SourceEulerOrder order,
+                                                  SourceAngleUnit unit) noexcept;
 
 // The clip's own rest pose, per canonical bone, in canonical basis and metres.
 //
@@ -255,8 +252,7 @@ enum class ConversionRefusal : std::uint8_t
 inline constexpr std::size_t ConversionRefusalCount =
     static_cast<std::size_t>(ConversionRefusal::Count);
 
-MOTIONSOURCE_API std::string_view ConversionRefusalName(
-    ConversionRefusal refusal) noexcept;
+MOTIONSOURCE_API std::string_view ConversionRefusalName(ConversionRefusal refusal) noexcept;
 
 // What the conversion could not carry, and what it composed to avoid dropping.
 //
@@ -306,7 +302,8 @@ struct SourceConversion
     // records beside the motion.
     SourceProvenance provenance;
 
-    bool Converted() const noexcept
+    bool
+    Converted() const noexcept
     {
         return refusal == ConversionRefusal::None;
     }
@@ -324,8 +321,8 @@ struct SourceConversion
 // whatever the reader left in `animation.provenance`. This is the one layer
 // holding both a recording and a statement of who wrote it, which is exactly why
 // a reader must not fill them in (SourceProvenance.h).
-MOTIONSOURCE_API SourceConversion ConvertSourceToCanonical(
-    const SourceSkeleton& skeleton, const SourceAnimation& animation,
-    const SourceProfile& profile);
+MOTIONSOURCE_API SourceConversion ConvertSourceToCanonical(const SourceSkeleton& skeleton,
+                                                           const SourceAnimation& animation,
+                                                           const SourceProfile& profile);
 
 } // namespace motionSource

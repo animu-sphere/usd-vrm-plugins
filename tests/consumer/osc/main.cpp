@@ -27,14 +27,15 @@ main()
 
     osc::OscPacket packet;
     osc::OscDecodeError error;
-    if (!osc::DecodeOscPacket(datagram, &packet, &error)) {
-        std::fprintf(stderr, "consumer: decode refused: %s (%s)\n",
-                     error.detail.c_str(), error.subject.c_str());
+    if (!osc::DecodeOscPacket(datagram, &packet, &error))
+    {
+        std::fprintf(stderr, "consumer: decode refused: %s (%s)\n", error.detail.c_str(),
+                     error.subject.c_str());
         return 1;
     }
-    if (packet.messages.size() != 1 || packet.messages[0].address != "/a") {
-        std::fprintf(stderr, "consumer: decoded %zu messages\n",
-                     packet.messages.size());
+    if (packet.messages.size() != 1 || packet.messages[0].address != "/a")
+    {
+        std::fprintf(stderr, "consumer: decoded %zu messages\n", packet.messages.size());
         return 1;
     }
 

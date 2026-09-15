@@ -27,27 +27,22 @@ using vrmAdapterVrchatOsc::DiagnosticSeverity;
 // quietly added code is a contract break that nothing else in the tree would
 // notice.
 constexpr const char* kExpectedCodes[] = {
-    "VRM_VRCHAT_OSC_PACKET_MALFORMED",
-    "VRM_VRCHAT_OSC_UNSUPPORTED_ADDRESS",
-    "VRM_VRCHAT_OSC_ARGUMENT_MISMATCH",
-    "VRM_VRCHAT_OSC_TRACKER_ID_INVALID",
-    "VRM_VRCHAT_OSC_TRACKER_PARTIAL",
-    "VRM_VRCHAT_OSC_SOURCE_TIMEOUT",
-    "VRM_VRCHAT_OSC_SOURCE_RESTARTED",
-    "VRM_VRCHAT_OSC_COORDINATE_INVALID",
-    "VRM_VRCHAT_OSC_SOCKET_BIND_FAILED",
-    "VRM_VRCHAT_OSC_CALIBRATION_REQUIRED",
+    "VRM_VRCHAT_OSC_PACKET_MALFORMED",   "VRM_VRCHAT_OSC_UNSUPPORTED_ADDRESS",
+    "VRM_VRCHAT_OSC_ARGUMENT_MISMATCH",  "VRM_VRCHAT_OSC_TRACKER_ID_INVALID",
+    "VRM_VRCHAT_OSC_TRACKER_PARTIAL",    "VRM_VRCHAT_OSC_SOURCE_TIMEOUT",
+    "VRM_VRCHAT_OSC_SOURCE_RESTARTED",   "VRM_VRCHAT_OSC_COORDINATE_INVALID",
+    "VRM_VRCHAT_OSC_SOCKET_BIND_FAILED", "VRM_VRCHAT_OSC_CALIBRATION_REQUIRED",
 };
 
 void
 TestEveryCodeIsNamedOnceAndRoundTrips()
 {
-    constexpr std::size_t expected =
-        sizeof(kExpectedCodes) / sizeof(kExpectedCodes[0]);
+    constexpr std::size_t expected = sizeof(kExpectedCodes) / sizeof(kExpectedCodes[0]);
     assert(DiagnosticCodeCount == expected);
 
     std::set<std::string> seen;
-    for (std::size_t i = 0; i < DiagnosticCodeCount; ++i) {
+    for (std::size_t i = 0; i < DiagnosticCodeCount; ++i)
+    {
         const auto code = static_cast<DiagnosticCode>(i);
         const std::string name(vrmAdapterVrchatOsc::DiagnosticCodeString(code));
 
@@ -60,8 +55,7 @@ TestEveryCodeIsNamedOnceAndRoundTrips()
 
     assert(!vrmAdapterVrchatOsc::FindDiagnosticCode("VRM_VRCHAT_OSC_NOT_A_CODE"));
     // The canonical layer's namespace is not this adapter's to emit (§8).
-    assert(!vrmAdapterVrchatOsc::FindDiagnosticCode(
-        "VRM_MOTION_NON_FINITE_TRANSFORM"));
+    assert(!vrmAdapterVrchatOsc::FindDiagnosticCode("VRM_MOTION_NON_FINITE_TRANSFORM"));
     // Neither is a sibling's, and this pair matters more here than the
     // equivalent assertion does in either sibling's suite: `vrmAdapterVmc`
     // decodes the *same wire format* one layer down, and §8's open question is
@@ -69,8 +63,7 @@ TestEveryCodeIsNamedOnceAndRoundTrips()
     // that is decided, the only thing keeping them apart is that neither answers
     // to the other's spelling.
     assert(!vrmAdapterVrchatOsc::FindDiagnosticCode("VRM_VMC_PACKET_MALFORMED"));
-    assert(!vrmAdapterVrchatOsc::FindDiagnosticCode(
-        "VRM_MOCOPI_PACKET_MALFORMED"));
+    assert(!vrmAdapterVrchatOsc::FindDiagnosticCode("VRM_MOCOPI_PACKET_MALFORMED"));
 }
 
 void
@@ -87,28 +80,24 @@ TestOnlyABindFailureStopsTheSession()
     // ordinary state of a receiver bound before its sender. And calibration is
     // something a user performs while the stream runs, so a session that ended
     // on it would end exactly when it was about to become usable.
-    for (std::size_t i = 0; i < DiagnosticCodeCount; ++i) {
+    for (std::size_t i = 0; i < DiagnosticCodeCount; ++i)
+    {
         const auto code = static_cast<DiagnosticCode>(i);
         const bool fatal = code == DiagnosticCode::SocketBindFailed;
         assert(vrmAdapterVrchatOsc::DiagnosticIsRecoverable(code) == !fatal);
-        assert((vrmAdapterVrchatOsc::DiagnosticDefaultSeverity(code)
-                == DiagnosticSeverity::Error)
-               == fatal);
+        assert((vrmAdapterVrchatOsc::DiagnosticDefaultSeverity(code) ==
+                DiagnosticSeverity::Error) == fatal);
     }
 
-    assert(vrmAdapterVrchatOsc::DiagnosticIsRecoverable(
-        DiagnosticCode::UnsupportedAddress));
-    assert(vrmAdapterVrchatOsc::DiagnosticIsRecoverable(
-        DiagnosticCode::SourceTimeout));
-    assert(vrmAdapterVrchatOsc::DiagnosticIsRecoverable(
-        DiagnosticCode::CalibrationRequired));
+    assert(vrmAdapterVrchatOsc::DiagnosticIsRecoverable(DiagnosticCode::UnsupportedAddress));
+    assert(vrmAdapterVrchatOsc::DiagnosticIsRecoverable(DiagnosticCode::SourceTimeout));
+    assert(vrmAdapterVrchatOsc::DiagnosticIsRecoverable(DiagnosticCode::CalibrationRequired));
 
     // And the one code whose severity is neither of the obvious two: traffic
     // this adapter maps to nothing is information, because warning about it
     // would train an operator to ignore the warnings that mean something.
-    assert(vrmAdapterVrchatOsc::DiagnosticDefaultSeverity(
-               DiagnosticCode::UnsupportedAddress)
-           == DiagnosticSeverity::Info);
+    assert(vrmAdapterVrchatOsc::DiagnosticDefaultSeverity(DiagnosticCode::UnsupportedAddress) ==
+           DiagnosticSeverity::Info);
 }
 
 void
@@ -138,8 +127,8 @@ TestMakeDiagnosticCannotDisagreeWithTheTable()
 void
 TestFormattingIsDeterministicAndOmitsAbsentFields()
 {
-    Diagnostic full = vrmAdapterVrchatOsc::MakeDiagnostic(
-        DiagnosticCode::TrackerPartial, "a rotation arrived with no position");
+    Diagnostic full = vrmAdapterVrchatOsc::MakeDiagnostic(DiagnosticCode::TrackerPartial,
+                                                          "a rotation arrived with no position");
     // The default listen endpoint, which is the port a session is observed on
     // rather than anything this test binds.
     full.source = "0.0.0.0:9000";
@@ -150,23 +139,26 @@ TestFormattingIsDeterministicAndOmitsAbsentFields()
     full.subject = "/tracking/trackers/4";
     full.sequence = 42;
 
-    assert(vrmAdapterVrchatOsc::FormatDiagnostic(full)
-           == "[VRM_VRCHAT_OSC_TRACKER_PARTIAL] warning recoverable"
-              " source=0.0.0.0:9000 t=1.500000 subject=/tracking/trackers/4"
-              " seq=42: a rotation arrived with no position");
+    assert(vrmAdapterVrchatOsc::FormatDiagnostic(full) ==
+           "[VRM_VRCHAT_OSC_TRACKER_PARTIAL] warning recoverable"
+           " source=0.0.0.0:9000 t=1.500000 subject=/tracking/trackers/4"
+           " seq=42: a rotation arrived with no position");
 
-    const Diagnostic bare =
-        vrmAdapterVrchatOsc::MakeDiagnostic(DiagnosticCode::SocketBindFailed);
-    assert(vrmAdapterVrchatOsc::FormatDiagnostic(bare)
-           == "[VRM_VRCHAT_OSC_SOCKET_BIND_FAILED] error fatal");
+    const Diagnostic bare = vrmAdapterVrchatOsc::MakeDiagnostic(DiagnosticCode::SocketBindFailed);
+    assert(vrmAdapterVrchatOsc::FormatDiagnostic(bare) ==
+           "[VRM_VRCHAT_OSC_SOCKET_BIND_FAILED] error fatal");
 }
 
 // A locale whose decimal point is a comma, constructed in-process so this test
 // depends on no system locale being installed anywhere.
 struct CommaDecimalPoint : std::numpunct<char>
 {
-protected:
-    char do_decimal_point() const override { return ','; }
+  protected:
+    char
+    do_decimal_point() const override
+    {
+        return ',';
+    }
 };
 
 void
@@ -176,18 +168,16 @@ TestFormattingSurvivesAHostileGlobalLocale()
     // a host that installs one -- a DCC calling setlocale is the realistic case
     // -- would otherwise turn `t=1.500000` into `t=1,500000` and make a
     // diagnostic disagree with the capture it refers to.
-    Diagnostic pinned = vrmAdapterVrchatOsc::MakeDiagnostic(
-        DiagnosticCode::CoordinateInvalid);
+    Diagnostic pinned = vrmAdapterVrchatOsc::MakeDiagnostic(DiagnosticCode::CoordinateInvalid);
     pinned.timestamp = 1.5;
 
-    const std::locale previous = std::locale::global(
-        std::locale(std::locale::classic(), new CommaDecimalPoint));
+    const std::locale previous =
+        std::locale::global(std::locale(std::locale::classic(), new CommaDecimalPoint));
     const std::string formatted = vrmAdapterVrchatOsc::FormatDiagnostic(pinned);
     std::locale::global(previous);
 
-    assert(formatted
-           == "[VRM_VRCHAT_OSC_COORDINATE_INVALID] warning recoverable"
-              " t=1.500000");
+    assert(formatted == "[VRM_VRCHAT_OSC_COORDINATE_INVALID] warning recoverable"
+                        " t=1.500000");
 }
 
 void
@@ -212,8 +202,7 @@ TestTheDeclaredDependencyEdgeIsReal()
     capture.datagrams.push_back(datagram);
     assert(capture.datagrams.size() == 1);
     assert(liveTransport::PacketCaptureGutter(capture.datagrams[0].bytes.data(),
-                                              capture.datagrams[0].bytes.size())
-           == "/");
+                                              capture.datagrams[0].bytes.size()) == "/");
 }
 
 } // namespace

@@ -35,9 +35,12 @@ class SdfAssetPath;
 
 /// \class UsdVrmSpringBoneAPI
 ///
-/// A VRM SpringBone chain (secondary motion, data only - no simulation).
-/// Apply to each /Asset/rig/SecondaryMotion/SpringBones/<name> prim. The per-joint
-/// parameter arrays are parallel to vrm:joints. gravityDir is model-space (it takes
+/// A VRM SpringBone chain (secondary motion, data only - no simulation).
+
+/// Apply to each /Asset/rig/SecondaryMotion/SpringBones/<name> prim. The per-joint
+
+/// parameter arrays are parallel to vrm:joints. gravityDir is model-space (it takes
+
 /// the VRM-0.x front bake). Colliders are referenced by relationship.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
@@ -47,7 +50,7 @@ class SdfAssetPath;
 ///
 class UsdVrmSpringBoneAPI : public UsdAPISchemaBase
 {
-public:
+  public:
     /// Compile time constant representing what kind of schema this class is.
     ///
     /// \sa UsdSchemaKind
@@ -57,16 +60,14 @@ public:
     /// Equivalent to UsdVrmSpringBoneAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdVrmSpringBoneAPI(const UsdPrim& prim=UsdPrim())
-        : UsdAPISchemaBase(prim)
+    explicit UsdVrmSpringBoneAPI(const UsdPrim& prim = UsdPrim()) : UsdAPISchemaBase(prim)
     {
     }
 
     /// Construct a UsdVrmSpringBoneAPI on the prim held by \p schemaObj .
     /// Should be preferred over UsdVrmSpringBoneAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdVrmSpringBoneAPI(const UsdSchemaBase& schemaObj)
-        : UsdAPISchemaBase(schemaObj)
+    explicit UsdVrmSpringBoneAPI(const UsdSchemaBase& schemaObj) : UsdAPISchemaBase(schemaObj)
     {
     }
 
@@ -78,8 +79,7 @@ public:
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
     USDVRM_API
-    static const TfTokenVector &
-    GetSchemaAttributeNames(bool includeInherited=true);
+    static const TfTokenVector& GetSchemaAttributeNames(bool includeInherited = true);
 
     /// Return a UsdVrmSpringBoneAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
@@ -91,20 +91,18 @@ public:
     /// \endcode
     ///
     USDVRM_API
-    static UsdVrmSpringBoneAPI
-    Get(const UsdStagePtr &stage, const SdfPath &path);
+    static UsdVrmSpringBoneAPI Get(const UsdStagePtr& stage, const SdfPath& path);
 
-
-    /// Returns true if this <b>single-apply</b> API schema can be applied to 
-    /// the given \p prim. If this schema can not be a applied to the prim, 
-    /// this returns false and, if provided, populates \p whyNot with the 
+    /// Returns true if this <b>single-apply</b> API schema can be applied to
+    /// the given \p prim. If this schema can not be a applied to the prim,
+    /// this returns false and, if provided, populates \p whyNot with the
     /// reason it can not be applied.
-    /// 
+    ///
     /// Note that if CanApply returns false, that does not necessarily imply
     /// that calling Apply will fail. Callers are expected to call CanApply
-    /// before calling Apply if they want to ensure that it is valid to 
+    /// before calling Apply if they want to ensure that it is valid to
     /// apply a schema.
-    /// 
+    ///
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
     /// \sa UsdPrim::CanApplyAPI()
@@ -112,18 +110,17 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDVRM_API
-    static bool 
-    CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
+    static bool CanApply(const UsdPrim& prim, std::string* whyNot = nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "VrmSpringBoneAPI" to the 
+    /// This information is stored by adding "VrmSpringBoneAPI" to the
     /// token-valued, listOp metadata \em apiSchemas on the prim.
-    /// 
-    /// \return A valid UsdVrmSpringBoneAPI object is returned upon success. 
-    /// An invalid (or empty) UsdVrmSpringBoneAPI object is returned upon 
-    /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
-    /// resulting in failure. 
-    /// 
+    ///
+    /// \return A valid UsdVrmSpringBoneAPI object is returned upon success.
+    /// An invalid (or empty) UsdVrmSpringBoneAPI object is returned upon
+    /// failure. See \ref UsdPrim::ApplyAPI() for conditions
+    /// resulting in failure.
+    ///
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
     /// \sa UsdPrim::CanApplyAPI()
@@ -131,31 +128,30 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDVRM_API
-    static UsdVrmSpringBoneAPI 
-    Apply(const UsdPrim &prim);
+    static UsdVrmSpringBoneAPI Apply(const UsdPrim& prim);
 
-protected:
+  protected:
     /// Returns the kind of schema this class belongs to.
     ///
     /// \sa UsdSchemaKind
     USDVRM_API
     UsdSchemaKind _GetSchemaKind() const override;
 
-private:
+  private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
     USDVRM_API
-    static const TfType &_GetStaticTfType();
+    static const TfType& _GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
     USDVRM_API
-    const TfType &_GetTfType() const override;
+    const TfType& _GetTfType() const override;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMJOINTS 
+    // VRMJOINTS
     // --------------------------------------------------------------------- //
     /// Ordered joint path tokens forming the spring chain.
     ///
@@ -168,17 +164,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmJointsAttr() const;
 
-    /// See GetVrmJointsAttr(), and also 
+    /// See GetVrmJointsAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmJointsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmJointsAttr(VtValue const& defaultValue = VtValue(),
+                                     bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMSTIFFNESS 
+    // VRMSTIFFNESS
     // --------------------------------------------------------------------- //
     /// Per-joint stiffness, parallel to vrm:joints.
     ///
@@ -191,17 +188,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmStiffnessAttr() const;
 
-    /// See GetVrmStiffnessAttr(), and also 
+    /// See GetVrmStiffnessAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmStiffnessAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmStiffnessAttr(VtValue const& defaultValue = VtValue(),
+                                        bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMGRAVITYPOWER 
+    // VRMGRAVITYPOWER
     // --------------------------------------------------------------------- //
     /// Per-joint gravity power, parallel to vrm:joints.
     ///
@@ -214,17 +212,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmGravityPowerAttr() const;
 
-    /// See GetVrmGravityPowerAttr(), and also 
+    /// See GetVrmGravityPowerAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmGravityPowerAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmGravityPowerAttr(VtValue const& defaultValue = VtValue(),
+                                           bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMDRAGFORCE 
+    // VRMDRAGFORCE
     // --------------------------------------------------------------------- //
     /// Per-joint drag force, parallel to vrm:joints.
     ///
@@ -237,17 +236,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmDragForceAttr() const;
 
-    /// See GetVrmDragForceAttr(), and also 
+    /// See GetVrmDragForceAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmDragForceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmDragForceAttr(VtValue const& defaultValue = VtValue(),
+                                        bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMHITRADIUS 
+    // VRMHITRADIUS
     // --------------------------------------------------------------------- //
     /// Per-joint hit radius, parallel to vrm:joints.
     ///
@@ -260,17 +260,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmHitRadiusAttr() const;
 
-    /// See GetVrmHitRadiusAttr(), and also 
+    /// See GetVrmHitRadiusAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmHitRadiusAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmHitRadiusAttr(VtValue const& defaultValue = VtValue(),
+                                        bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMGRAVITYDIR 
+    // VRMGRAVITYDIR
     // --------------------------------------------------------------------- //
     /// Per-joint gravity direction (model space), parallel to vrm:joints.
     ///
@@ -283,17 +284,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmGravityDirAttr() const;
 
-    /// See GetVrmGravityDirAttr(), and also 
+    /// See GetVrmGravityDirAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmGravityDirAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmGravityDirAttr(VtValue const& defaultValue = VtValue(),
+                                         bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMCENTER 
+    // VRMCENTER
     // --------------------------------------------------------------------- //
     /// Optional center joint token for inertial reference.
     ///
@@ -306,35 +308,36 @@ public:
     USDVRM_API
     UsdAttribute GetVrmCenterAttr() const;
 
-    /// See GetVrmCenterAttr(), and also 
+    /// See GetVrmCenterAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmCenterAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmCenterAttr(VtValue const& defaultValue = VtValue(),
+                                     bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMCOLLIDERGROUPS 
+    // VRMCOLLIDERGROUPS
     // --------------------------------------------------------------------- //
     /// The collider-group prims this chain collides against.
     ///
     USDVRM_API
     UsdRelationship GetVrmColliderGroupsRel() const;
 
-    /// See GetVrmColliderGroupsRel(), and also 
+    /// See GetVrmColliderGroupsRel(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
     USDVRM_API
     UsdRelationship CreateVrmColliderGroupsRel() const;
 
-public:
+  public:
     // ===================================================================== //
-    // Feel free to add custom code below this line, it will be preserved by 
-    // the code generator. 
+    // Feel free to add custom code below this line, it will be preserved by
+    // the code generator.
     //
-    // Just remember to: 
-    //  - Close the class declaration with }; 
+    // Just remember to:
+    //  - Close the class declaration with };
     //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
     //  - Close the include guard with #endif
     // ===================================================================== //

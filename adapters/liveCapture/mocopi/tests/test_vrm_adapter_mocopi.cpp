@@ -27,26 +27,22 @@ using vrmAdapterMocopi::DiagnosticSeverity;
 // two days before this directory existed, and a renamed, dropped or quietly
 // added code is a contract break that nothing else in the tree would notice.
 constexpr const char* kExpectedCodes[] = {
-    "VRM_MOCOPI_SOCKET_BIND_FAILED",
-    "VRM_MOCOPI_TRACKING_LOST",
-    "VRM_MOCOPI_DEVICE_UNAVAILABLE",
-    "VRM_MOCOPI_TIMESTAMP_INVALID",
-    "VRM_MOCOPI_UNSUPPORTED_JOINT",
-    "VRM_MOCOPI_SOURCE_RESTARTED",
-    "VRM_MOCOPI_PACKET_MALFORMED",
-    "VRM_MOCOPI_FRAME_INCOMPLETE",
+    "VRM_MOCOPI_SOCKET_BIND_FAILED",   "VRM_MOCOPI_TRACKING_LOST",
+    "VRM_MOCOPI_DEVICE_UNAVAILABLE",   "VRM_MOCOPI_TIMESTAMP_INVALID",
+    "VRM_MOCOPI_UNSUPPORTED_JOINT",    "VRM_MOCOPI_SOURCE_RESTARTED",
+    "VRM_MOCOPI_PACKET_MALFORMED",     "VRM_MOCOPI_FRAME_INCOMPLETE",
     "VRM_MOCOPI_NON_FINITE_TRANSFORM",
 };
 
 void
 TestEveryCodeIsNamedOnceAndRoundTrips()
 {
-    constexpr std::size_t expected =
-        sizeof(kExpectedCodes) / sizeof(kExpectedCodes[0]);
+    constexpr std::size_t expected = sizeof(kExpectedCodes) / sizeof(kExpectedCodes[0]);
     assert(DiagnosticCodeCount == expected);
 
     std::set<std::string> seen;
-    for (std::size_t i = 0; i < DiagnosticCodeCount; ++i) {
+    for (std::size_t i = 0; i < DiagnosticCodeCount; ++i)
+    {
         const auto code = static_cast<DiagnosticCode>(i);
         const std::string name(vrmAdapterMocopi::DiagnosticCodeString(code));
 
@@ -79,27 +75,24 @@ TestOnlyABindFailureStopsTheSession()
     // appears. A device that is not there yet is the ordinary state of a
     // receiver bound before the operator started the application, and tracking
     // loss is the device reporting on itself accurately.
-    for (std::size_t i = 0; i < DiagnosticCodeCount; ++i) {
+    for (std::size_t i = 0; i < DiagnosticCodeCount; ++i)
+    {
         const auto code = static_cast<DiagnosticCode>(i);
         const bool fatal = code == DiagnosticCode::SocketBindFailed;
         assert(vrmAdapterMocopi::DiagnosticIsRecoverable(code) == !fatal);
-        assert((vrmAdapterMocopi::DiagnosticDefaultSeverity(code)
-                == DiagnosticSeverity::Error)
-               == fatal);
+        assert((vrmAdapterMocopi::DiagnosticDefaultSeverity(code) == DiagnosticSeverity::Error) ==
+               fatal);
     }
 
-    assert(vrmAdapterMocopi::DiagnosticIsRecoverable(
-        DiagnosticCode::DeviceUnavailable));
-    assert(vrmAdapterMocopi::DiagnosticIsRecoverable(
-        DiagnosticCode::TrackingLost));
+    assert(vrmAdapterMocopi::DiagnosticIsRecoverable(DiagnosticCode::DeviceUnavailable));
+    assert(vrmAdapterMocopi::DiagnosticIsRecoverable(DiagnosticCode::TrackingLost));
 }
 
 void
 TestMakeDiagnosticCannotDisagreeWithTheTable()
 {
-    const Diagnostic lost =
-        vrmAdapterMocopi::MakeDiagnostic(DiagnosticCode::TrackingLost,
-                                         "the source stopped solving this joint");
+    const Diagnostic lost = vrmAdapterMocopi::MakeDiagnostic(
+        DiagnosticCode::TrackingLost, "the source stopped solving this joint");
     assert(lost.severity == DiagnosticSeverity::Warning);
     assert(lost.recoverable);
     assert(lost.detail == "the source stopped solving this joint");
@@ -110,9 +103,8 @@ TestMakeDiagnosticCannotDisagreeWithTheTable()
 void
 TestFormattingIsDeterministicAndOmitsAbsentFields()
 {
-    Diagnostic full =
-        vrmAdapterMocopi::MakeDiagnostic(DiagnosticCode::TrackingLost,
-                                         "the source stopped solving this joint");
+    Diagnostic full = vrmAdapterMocopi::MakeDiagnostic(DiagnosticCode::TrackingLost,
+                                                       "the source stopped solving this joint");
     // The default listen endpoint the source's own documentation states, which
     // is the port a session is observed on rather than anything this library
     // binds today.
@@ -123,23 +115,26 @@ TestFormattingIsDeterministicAndOmitsAbsentFields()
     full.subject = std::string(motion::HumanBoneName(motion::HumanBone::LeftHand));
     full.sequence = 42;
 
-    assert(vrmAdapterMocopi::FormatDiagnostic(full)
-           == "[VRM_MOCOPI_TRACKING_LOST] warning recoverable"
-              " source=0.0.0.0:12351 t=1.500000 subject=leftHand seq=42:"
-              " the source stopped solving this joint");
+    assert(vrmAdapterMocopi::FormatDiagnostic(full) ==
+           "[VRM_MOCOPI_TRACKING_LOST] warning recoverable"
+           " source=0.0.0.0:12351 t=1.500000 subject=leftHand seq=42:"
+           " the source stopped solving this joint");
 
-    const Diagnostic bare =
-        vrmAdapterMocopi::MakeDiagnostic(DiagnosticCode::SocketBindFailed);
-    assert(vrmAdapterMocopi::FormatDiagnostic(bare)
-           == "[VRM_MOCOPI_SOCKET_BIND_FAILED] error fatal");
+    const Diagnostic bare = vrmAdapterMocopi::MakeDiagnostic(DiagnosticCode::SocketBindFailed);
+    assert(vrmAdapterMocopi::FormatDiagnostic(bare) ==
+           "[VRM_MOCOPI_SOCKET_BIND_FAILED] error fatal");
 }
 
 // A locale whose decimal point is a comma, constructed in-process so this test
 // depends on no system locale being installed anywhere.
 struct CommaDecimalPoint : std::numpunct<char>
 {
-protected:
-    char do_decimal_point() const override { return ','; }
+  protected:
+    char
+    do_decimal_point() const override
+    {
+        return ',';
+    }
 };
 
 void
@@ -149,17 +144,15 @@ TestFormattingSurvivesAHostileGlobalLocale()
     // so a host that installs one — a DCC calling setlocale is the realistic
     // case — would otherwise turn `t=1.500000` into `t=1,500000` and make a
     // diagnostic disagree with the capture trace it refers to.
-    Diagnostic pinned =
-        vrmAdapterMocopi::MakeDiagnostic(DiagnosticCode::TimestampInvalid);
+    Diagnostic pinned = vrmAdapterMocopi::MakeDiagnostic(DiagnosticCode::TimestampInvalid);
     pinned.timestamp = 1.5;
 
-    const std::locale previous = std::locale::global(
-        std::locale(std::locale::classic(), new CommaDecimalPoint));
+    const std::locale previous =
+        std::locale::global(std::locale(std::locale::classic(), new CommaDecimalPoint));
     const std::string formatted = vrmAdapterMocopi::FormatDiagnostic(pinned);
     std::locale::global(previous);
 
-    assert(formatted
-           == "[VRM_MOCOPI_TIMESTAMP_INVALID] warning recoverable t=1.500000");
+    assert(formatted == "[VRM_MOCOPI_TIMESTAMP_INVALID] warning recoverable t=1.500000");
 }
 
 void
@@ -171,8 +164,7 @@ TestTheDeclaredDependencyEdgesAreReal()
     motion::LiveCaptureSource source;
     motion::HumanoidPose pose;
     pose.timestamp = 0.0;
-    pose.validRotations.set(
-        static_cast<std::size_t>(motion::HumanBone::Hips));
+    pose.validRotations.set(static_cast<std::size_t>(motion::HumanBone::Hips));
 
     assert(source.Push(pose));
     assert(!source.IsEmpty());

@@ -7,9 +7,8 @@ namespace mocopiRecordTool
 {
 
 void
-TraceCollector::Observe(
-    const std::vector<vrmAdapterMocopi::MocopiFrame>& frames,
-    const motion::MotionSourceMetadata& metadata)
+TraceCollector::Observe(const std::vector<vrmAdapterMocopi::MocopiFrame>& frames,
+                        const motion::MotionSourceMetadata& metadata)
 {
     // Observing after `Close` re-opens it, so the derived fields are recomputed
     // rather than left describing the frames this call did not know about. The
@@ -18,7 +17,8 @@ TraceCollector::Observe(
     // to not call `Close` at all, which `GetSessions` already documents.
     _closed = false;
 
-    for (const vrmAdapterMocopi::MocopiFrame& frame : frames) {
+    for (const vrmAdapterMocopi::MocopiFrame& frame : frames)
+    {
         // A restart opens a session only when there is one to close. The
         // assembler never marks the first frame of a capture, but a collector
         // that assumed so would produce an empty leading session the first time
@@ -32,8 +32,8 @@ TraceCollector::Observe(
         // frame stamped exactly 233/60 s into its own stream clock. That gap
         // belongs to neither session and reaches no trace: the frames in it
         // were refused, so nothing was delivered to observe.
-        if (_sessions.empty()
-            || (frame.beginsNewSession && !_sessions.back().samples.empty())) {
+        if (_sessions.empty() || (frame.beginsNewSession && !_sessions.back().samples.empty()))
+        {
             _sessions.emplace_back();
             _hips.emplace_back();
             _hipsFirst.emplace_back();
@@ -51,14 +51,18 @@ TraceCollector::Observe(
         // export prints and the one that stayed identical across the root/hips
         // record (see the header).
         HipsMotion& hips = _hips.back();
-        if (!frame.hipsPosition) {
+        if (!frame.hipsPosition)
+        {
             ++hips.framesWithoutHips;
             continue;
         }
         const pxr::GfVec3f& position = *frame.hipsPosition;
-        if (!_hipsFirst.back()) {
+        if (!_hipsFirst.back())
+        {
             _hipsFirst.back() = position;
-        } else {
+        }
+        else
+        {
             // Summed step by step rather than measured end to end: a session
             // that walks out and back travels twice the distance it displaces,
             // and the second number alone would call it stationary.
@@ -72,7 +76,8 @@ TraceCollector::Observe(
 void
 TraceCollector::Close()
 {
-    if (_closed) {
+    if (_closed)
+    {
         return;
     }
     _closed = true;
@@ -92,7 +97,8 @@ TraceCollector::Close()
     // the wrong frames rather than as a crash. Unreachable code that has to
     // stay correct in four places is worse than no code.
 
-    for (motion::HumanoidAnimation& session : _sessions) {
+    for (motion::HumanoidAnimation& session : _sessions)
+    {
         session.startTime = session.samples.front().timestamp;
         session.endTime = session.samples.back().timestamp;
 
@@ -101,9 +107,8 @@ TraceCollector::Close()
         // otherwise have measured, so the file is a fixed point.
         const double span = session.endTime - session.startTime;
         const std::size_t intervals = session.samples.size() - 1;
-        session.nominalFrameRate = (span > 0.0 && intervals > 0)
-            ? static_cast<double>(intervals) / span
-            : 30.0;
+        session.nominalFrameRate =
+            (span > 0.0 && intervals > 0) ? static_cast<double>(intervals) / span : 30.0;
     }
 }
 

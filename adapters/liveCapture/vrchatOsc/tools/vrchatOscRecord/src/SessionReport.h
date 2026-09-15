@@ -95,28 +95,43 @@ const char* StopReasonText(StopReason reason) noexcept;
 
 class SessionReport
 {
-public:
+  public:
     // One received datagram, whole. The bytes are read and not kept: the census
     // and the prefix are folded in here so that a session's memory is the
     // capture's and not twice the capture's.
-    void ObserveDatagram(const std::string& peer, const std::uint8_t* bytes,
-                         std::size_t count, double receiveTime);
+    void ObserveDatagram(const std::string& peer, const std::uint8_t* bytes, std::size_t count,
+                         double receiveTime);
 
     // The diagnostics one receive call appended, and only those: the caller
     // clears its list every iteration, so the whole of it is what the last call
     // added.
-    void ObserveDiagnostics(
-        const std::vector<vrmAdapterVrchatOsc::Diagnostic>& log);
+    void ObserveDiagnostics(const std::vector<vrmAdapterVrchatOsc::Diagnostic>& log);
 
-    void SetStopReason(StopReason reason) noexcept { _stop = reason; }
-    StopReason GetStopReason() const noexcept { return _stop; }
+    void
+    SetStopReason(StopReason reason) noexcept
+    {
+        _stop = reason;
+    }
+    StopReason
+    GetStopReason() const noexcept
+    {
+        return _stop;
+    }
 
-    std::uint64_t GetDatagramCount() const noexcept { return _datagrams; }
+    std::uint64_t
+    GetDatagramCount() const noexcept
+    {
+        return _datagrams;
+    }
 
     // Whether the session heard from more than one source. The capture format
     // names one peer in its header, so this is the difference between a
     // fixture's provenance being true and being the first of several.
-    bool HasMultiplePeers() const noexcept { return _distinctPeers.size() > 1; }
+    bool
+    HasMultiplePeers() const noexcept
+    {
+        return _distinctPeers.size() > 1;
+    }
 
     // Prints the block. `receiver` is null when the session came off a file: the
     // socket lines are then omitted rather than printed as zeroes, because a
@@ -129,7 +144,7 @@ public:
     void Print(std::FILE* out, const vrmAdapterVrchatOsc::UdpReceiver* receiver,
                const vrmAdapterVrchatOsc::PacketCapture* provenance) const;
 
-private:
+  private:
     void _ObservePrefix(const std::uint8_t* bytes, std::size_t count);
     void _PrintLengths(std::FILE* out) const;
     void _PrintPrefix(std::FILE* out) const;
@@ -194,12 +209,11 @@ private:
     // when the cap is what shortened it.
     std::size_t _shortestDatagram = 0;
 
-    std::array<std::uint64_t, vrmAdapterVrchatOsc::DiagnosticCodeCount>
-        _diagnostics{};
+    std::array<std::uint64_t, vrmAdapterVrchatOsc::DiagnosticCodeCount> _diagnostics{};
     // The first of each code, kept whole. A count says a session reported
     // silence twice; the first line says when.
-    std::array<vrmAdapterVrchatOsc::Diagnostic,
-               vrmAdapterVrchatOsc::DiagnosticCodeCount> _firstDiagnostic{};
+    std::array<vrmAdapterVrchatOsc::Diagnostic, vrmAdapterVrchatOsc::DiagnosticCodeCount>
+        _firstDiagnostic{};
 
     StopReason _stop = StopReason::EndOfCapture;
 };

@@ -26,13 +26,12 @@ namespace
 // inventing a second spelling of the sibling's is the contract change §8 has
 // not made.
 bool
-Translate(const liveTransport::TransportEventReport& report,
-          Diagnostic* diagnostic)
+Translate(const liveTransport::TransportEventReport& report, Diagnostic* diagnostic)
 {
-    switch (report.event) {
+    switch (report.event)
+    {
     case liveTransport::TransportEvent::BindFailed:
-        *diagnostic =
-            MakeDiagnostic(DiagnosticCode::SocketBindFailed, report.detail);
+        *diagnostic = MakeDiagnostic(DiagnosticCode::SocketBindFailed, report.detail);
         diagnostic->source = report.source;
         diagnostic->subject = report.subject;
         return true;
@@ -45,8 +44,7 @@ Translate(const liveTransport::TransportEventReport& report,
 } // namespace
 
 bool
-UdpReceiver::Open(const UdpReceiverConfig& config,
-                  std::vector<Diagnostic>* diagnostics)
+UdpReceiver::Open(const UdpReceiverConfig& config, std::vector<Diagnostic>* diagnostics)
 {
     liveTransport::UdpReceiverConfig transport;
     transport.listenAddress = config.listenAddress;
@@ -63,10 +61,13 @@ UdpReceiver::Open(const UdpReceiverConfig& config,
     std::vector<liveTransport::TransportEventReport> events;
     const bool opened = _receiver.Open(transport, &events);
 
-    if (diagnostics) {
-        for (const liveTransport::TransportEventReport& report : events) {
+    if (diagnostics)
+    {
+        for (const liveTransport::TransportEventReport& report : events)
+        {
             Diagnostic diagnostic;
-            if (Translate(report, &diagnostic)) {
+            if (Translate(report, &diagnostic))
+            {
                 diagnostics->push_back(std::move(diagnostic));
             }
         }

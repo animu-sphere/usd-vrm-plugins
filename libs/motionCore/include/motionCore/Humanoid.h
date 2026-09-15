@@ -89,13 +89,11 @@ enum class HumanBone : std::uint8_t
     Count,
 };
 
-inline constexpr std::size_t HumanBoneCount =
-    static_cast<std::size_t>(HumanBone::Count);
+inline constexpr std::size_t HumanBoneCount = static_cast<std::size_t>(HumanBone::Count);
 
 MOTIONCORE_API bool IsValidHumanBone(HumanBone bone) noexcept;
 MOTIONCORE_API std::string_view HumanBoneName(HumanBone bone) noexcept;
-MOTIONCORE_API std::optional<HumanBone> FindHumanBone(
-    std::string_view name) noexcept;
+MOTIONCORE_API std::optional<HumanBone> FindHumanBone(std::string_view name) noexcept;
 
 // The canonical VRM 1.0 humanoid hierarchy. Nullopt for Hips, which is the
 // root, and for Count.
@@ -104,21 +102,20 @@ MOTIONCORE_API std::optional<HumanBone> FindHumanBone(
 // humanoid taxonomy is a defect waiting to happen: the `.vrma` reader and the
 // live-capture path author the same semantic skeleton, and two tables that can
 // disagree would produce two skeletons that look alike and do not compose.
-MOTIONCORE_API std::optional<HumanBone> HumanBoneParent(
-    HumanBone bone) noexcept;
+MOTIONCORE_API std::optional<HumanBone> HumanBoneParent(HumanBone bone) noexcept;
 
 // The nearest ancestor of `bone` that `present` carries, skipping bones the
 // rig does not solve -- a capture rig with no `upperChest` still parents its
 // shoulders somewhere. Nullopt when no ancestor is present.
-MOTIONCORE_API std::optional<HumanBone> NearestPresentAncestor(
-    HumanBone bone, const std::bitset<HumanBoneCount>& present) noexcept;
+MOTIONCORE_API std::optional<HumanBone>
+NearestPresentAncestor(HumanBone bone, const std::bitset<HumanBoneCount>& present) noexcept;
 
 // The semantic joint path for `bone` within a rig carrying `present`, e.g.
 // "hips/spine/chest/neck/head". This is the token a `UsdSkelSkeleton` built
 // from humanoid semantics carries; the string is plain text, and authoring it
 // onto a stage stays with the consumer.
-MOTIONCORE_API std::string HumanBoneJointPath(
-    HumanBone bone, const std::bitset<HumanBoneCount>& present);
+MOTIONCORE_API std::string HumanBoneJointPath(HumanBone bone,
+                                              const std::bitset<HumanBoneCount>& present);
 
 enum class MotionSourceKind : std::uint8_t
 {
@@ -155,8 +152,7 @@ MOTIONCORE_API bool operator!=(const MotionSourceMetadata& a,
 struct RootMotion
 {
     pxr::GfVec3f worldPosition = pxr::GfVec3f(0.0f);
-    pxr::GfQuatf worldOrientation = pxr::GfQuatf(
-        1.0f, pxr::GfVec3f(0.0f));
+    pxr::GfQuatf worldOrientation = pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f));
     pxr::GfVec3f linearVelocity = pxr::GfVec3f(0.0f);
     pxr::GfVec3f angularVelocity = pxr::GfVec3f(0.0f);
 
@@ -166,10 +162,8 @@ struct RootMotion
     bool hasAngularVelocity = false;
 };
 
-MOTIONCORE_API bool operator==(const RootMotion& a,
-                               const RootMotion& b) noexcept;
-MOTIONCORE_API bool operator!=(const RootMotion& a,
-                               const RootMotion& b) noexcept;
+MOTIONCORE_API bool operator==(const RootMotion& a, const RootMotion& b) noexcept;
+MOTIONCORE_API bool operator!=(const RootMotion& a, const RootMotion& b) noexcept;
 
 enum class FootContact : std::uint8_t
 {
@@ -184,10 +178,8 @@ struct ContactState
     FootContact rightFoot = FootContact::Unknown;
 };
 
-MOTIONCORE_API bool operator==(const ContactState& a,
-                               const ContactState& b) noexcept;
-MOTIONCORE_API bool operator!=(const ContactState& a,
-                               const ContactState& b) noexcept;
+MOTIONCORE_API bool operator==(const ContactState& a, const ContactState& b) noexcept;
+MOTIONCORE_API bool operator!=(const ContactState& a, const ContactState& b) noexcept;
 
 // One expression weight, under the name its producer used.
 //
@@ -208,10 +200,8 @@ struct ExpressionWeight
     float weight = 0.0f;
 };
 
-MOTIONCORE_API bool operator==(const ExpressionWeight& a,
-                               const ExpressionWeight& b) noexcept;
-MOTIONCORE_API bool operator!=(const ExpressionWeight& a,
-                               const ExpressionWeight& b) noexcept;
+MOTIONCORE_API bool operator==(const ExpressionWeight& a, const ExpressionWeight& b) noexcept;
+MOTIONCORE_API bool operator!=(const ExpressionWeight& a, const ExpressionWeight& b) noexcept;
 
 // The expression weights one sample reported.
 //
@@ -237,13 +227,15 @@ struct ExpressionWeights
     // The weight reported for `name`, or null when it was not reported.
     MOTIONCORE_API const float* Find(std::string_view name) const noexcept;
 
-    bool IsEmpty() const noexcept { return entries.empty(); }
+    bool
+    IsEmpty() const noexcept
+    {
+        return entries.empty();
+    }
 };
 
-MOTIONCORE_API bool operator==(const ExpressionWeights& a,
-                               const ExpressionWeights& b) noexcept;
-MOTIONCORE_API bool operator!=(const ExpressionWeights& a,
-                               const ExpressionWeights& b) noexcept;
+MOTIONCORE_API bool operator==(const ExpressionWeights& a, const ExpressionWeights& b) noexcept;
+MOTIONCORE_API bool operator!=(const ExpressionWeights& a, const ExpressionWeights& b) noexcept;
 
 struct HumanoidPose
 {
@@ -299,10 +291,8 @@ struct HumanoidPose
     std::optional<MotionSourceMetadata> source;
 };
 
-MOTIONCORE_API bool operator==(const HumanoidPose& a,
-                               const HumanoidPose& b) noexcept;
-MOTIONCORE_API bool operator!=(const HumanoidPose& a,
-                               const HumanoidPose& b) noexcept;
+MOTIONCORE_API bool operator==(const HumanoidPose& a, const HumanoidPose& b) noexcept;
+MOTIONCORE_API bool operator!=(const HumanoidPose& a, const HumanoidPose& b) noexcept;
 
 struct HumanoidAnimation
 {
@@ -313,10 +303,8 @@ struct HumanoidAnimation
     MotionSourceMetadata source;
 };
 
-MOTIONCORE_API bool operator==(const HumanoidAnimation& a,
-                               const HumanoidAnimation& b) noexcept;
-MOTIONCORE_API bool operator!=(const HumanoidAnimation& a,
-                               const HumanoidAnimation& b) noexcept;
+MOTIONCORE_API bool operator==(const HumanoidAnimation& a, const HumanoidAnimation& b) noexcept;
+MOTIONCORE_API bool operator!=(const HumanoidAnimation& a, const HumanoidAnimation& b) noexcept;
 
 // Coordinate-space identifiers are values, not USD schema names. Stage
 // authoring and conversion live in the consuming file-format/retarget layers.

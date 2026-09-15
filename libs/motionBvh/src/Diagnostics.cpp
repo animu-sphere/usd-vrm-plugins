@@ -15,16 +15,11 @@ namespace
 // written out rather than derived from the enumerator spelling: a rename in the
 // enum must not silently rename a code a downstream tool matches on.
 constexpr std::array<std::string_view, DiagnosticCodeCount> kCodeStrings = {
-    "VRM_BVH_PARSE_FAILED",
-    "VRM_BVH_UNSUPPORTED_CHANNEL",
-    "VRM_BVH_FRAME_WIDTH_MISMATCH",
-    "VRM_BVH_INVALID_FRAME_TIME",
-    "VRM_BVH_NON_FINITE_VALUE",
-    "VRM_BVH_PROFILE_REQUIRED",
-    "VRM_BVH_PROFILE_MISMATCH",
-    "VRM_BVH_UNMAPPED_JOINT",
-    "VRM_BVH_REQUIRED_JOINT_MISSING",
-    "VRM_BVH_INVALID_ROTATION_ORDER",
+    "VRM_BVH_PARSE_FAILED",           "VRM_BVH_UNSUPPORTED_CHANNEL",
+    "VRM_BVH_FRAME_WIDTH_MISMATCH",   "VRM_BVH_INVALID_FRAME_TIME",
+    "VRM_BVH_NON_FINITE_VALUE",       "VRM_BVH_PROFILE_REQUIRED",
+    "VRM_BVH_PROFILE_MISMATCH",       "VRM_BVH_UNMAPPED_JOINT",
+    "VRM_BVH_REQUIRED_JOINT_MISSING", "VRM_BVH_INVALID_ROTATION_ORDER",
     "VRM_BVH_INVALID_ROOT_POLICY",
 };
 
@@ -34,7 +29,8 @@ std::string_view
 DiagnosticCodeString(DiagnosticCode code) noexcept
 {
     const auto index = static_cast<std::size_t>(code);
-    if (index >= DiagnosticCodeCount) {
+    if (index >= DiagnosticCodeCount)
+    {
         return {};
     }
     return kCodeStrings[index];
@@ -43,8 +39,10 @@ DiagnosticCodeString(DiagnosticCode code) noexcept
 std::optional<DiagnosticCode>
 FindDiagnosticCode(std::string_view name) noexcept
 {
-    for (std::size_t index = 0; index < DiagnosticCodeCount; ++index) {
-        if (kCodeStrings[index] == name) {
+    for (std::size_t index = 0; index < DiagnosticCodeCount; ++index)
+    {
+        if (kCodeStrings[index] == name)
+        {
             return static_cast<DiagnosticCode>(index);
         }
     }
@@ -57,7 +55,8 @@ DiagnosticDefaultSeverity(DiagnosticCode code) noexcept
     // Every code but one stops the read. `UnmappedJoint` is the exception
     // because a producer exporting props, markers, or a full-body rig beside
     // the humanoid is the normal case rather than a defect.
-    if (code == DiagnosticCode::UnmappedJoint) {
+    if (code == DiagnosticCode::UnmappedJoint)
+    {
         return DiagnosticSeverity::Warning;
     }
     return DiagnosticSeverity::Error;
@@ -78,7 +77,8 @@ DiagnosticIsRecoverable(DiagnosticCode code) noexcept
 std::string_view
 DiagnosticSeverityString(DiagnosticSeverity severity) noexcept
 {
-    switch (severity) {
+    switch (severity)
+    {
     case DiagnosticSeverity::Info:
         return "info";
     case DiagnosticSeverity::Warning:
@@ -108,23 +108,28 @@ FormatDiagnostic(const Diagnostic& diagnostic)
     line += DiagnosticCodeString(diagnostic.code);
     line += "] ";
     line += DiagnosticSeverityString(diagnostic.severity);
-    if (diagnostic.recoverable) {
+    if (diagnostic.recoverable)
+    {
         line += " recoverable";
     }
-    if (!diagnostic.source.empty()) {
+    if (!diagnostic.source.empty())
+    {
         line += " source=";
         line += diagnostic.source;
     }
-    if (diagnostic.line) {
+    if (diagnostic.line)
+    {
         char buffer[32];
         std::snprintf(buffer, sizeof(buffer), " line=%zu", *diagnostic.line);
         line += buffer;
     }
-    if (!diagnostic.subject.empty()) {
+    if (!diagnostic.subject.empty())
+    {
         line += " subject=";
         line += diagnostic.subject;
     }
-    if (!diagnostic.detail.empty()) {
+    if (!diagnostic.detail.empty())
+    {
         line += ": ";
         line += diagnostic.detail;
     }

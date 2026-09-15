@@ -26,9 +26,8 @@ constexpr double kPi = 3.14159265358979323846;
 pxr::GfQuatf
 AboutY(double radians)
 {
-    return pxr::GfQuatf(
-        static_cast<float>(std::cos(radians * 0.5)),
-        pxr::GfVec3f(0.0f, static_cast<float>(std::sin(radians * 0.5)), 0.0f));
+    return pxr::GfQuatf(static_cast<float>(std::cos(radians * 0.5)),
+                        pxr::GfVec3f(0.0f, static_cast<float>(std::sin(radians * 0.5)), 0.0f));
 }
 
 pxr::GfQuatf
@@ -42,16 +41,14 @@ Negated(const pxr::GfQuatf& q)
 float
 Rounded(float value)
 {
-    return static_cast<float>(std::round(static_cast<double>(value) * 1e6)
-                              / 1e6);
+    return static_cast<float>(std::round(static_cast<double>(value) * 1e6) / 1e6);
 }
 
 pxr::GfQuatf
 Rounded(const pxr::GfQuatf& q)
 {
     return pxr::GfQuatf(Rounded(q.GetReal()),
-                        pxr::GfVec3f(Rounded(q.GetImaginary()[0]),
-                                     Rounded(q.GetImaginary()[1]),
+                        pxr::GfVec3f(Rounded(q.GetImaginary()[0]), Rounded(q.GetImaginary()[1]),
                                      Rounded(q.GetImaginary()[2])));
 }
 
@@ -68,11 +65,9 @@ SamplePose()
     pose.root.linearVelocity = pxr::GfVec3f(0.0f, 0.0f, 1.2f);
     pose.root.hasLinearVelocity = true;
 
-    pose.localRotations[static_cast<std::size_t>(HumanBone::Hips)] =
-        AboutY(0.1);
+    pose.localRotations[static_cast<std::size_t>(HumanBone::Hips)] = AboutY(0.1);
     pose.validRotations.set(static_cast<std::size_t>(HumanBone::Hips));
-    pose.localRotations[static_cast<std::size_t>(HumanBone::LeftUpperArm)] =
-        AboutY(-0.75);
+    pose.localRotations[static_cast<std::size_t>(HumanBone::LeftUpperArm)] = AboutY(-0.75);
     pose.validRotations.set(static_cast<std::size_t>(HumanBone::LeftUpperArm));
 
     std::array<float, HumanBoneCount> confidence{};
@@ -98,11 +93,11 @@ HumanoidAnimation
 SampleAnimation()
 {
     HumanoidAnimation animation;
-    for (int frame = 0; frame != 3; ++frame) {
+    for (int frame = 0; frame != 3; ++frame)
+    {
         HumanoidPose pose = SamplePose();
         pose.timestamp = frame / 30.0;
-        pose.localRotations[static_cast<std::size_t>(HumanBone::Hips)] =
-            AboutY(0.1 * frame);
+        pose.localRotations[static_cast<std::size_t>(HumanBone::Hips)] = AboutY(0.1 * frame);
         animation.samples.push_back(pose);
     }
     animation.startTime = 0.0;
@@ -120,8 +115,7 @@ TestAngleBetween()
 
     // The double cover: the same orientation, the opposite components.
     const pxr::GfQuatf quarter = AboutY(kPi * 0.5);
-    assert(std::abs(motion::AngleBetween(identity, quarter) - kPi * 0.5)
-           < 1e-5);
+    assert(std::abs(motion::AngleBetween(identity, quarter) - kPi * 0.5) < 1e-5);
 
     // Antipodal orientations are pi apart, not 2pi: the arc is the short one.
     assert(std::abs(motion::AngleBetween(identity, AboutY(kPi)) - kPi) < 1e-5);
@@ -158,16 +152,14 @@ TestExactEquality()
     assert(!(pose != pose));
 
     HumanoidPose other = pose;
-    other.localRotations[static_cast<std::size_t>(HumanBone::Hips)] =
-        AboutY(0.100001);
+    other.localRotations[static_cast<std::size_t>(HumanBone::Hips)] = AboutY(0.100001);
     assert(other != pose);
 
     // A default-constructed pose claims no bones, so two of them are equal
     // whatever their rotation slots hold.
     HumanoidPose emptyA;
     HumanoidPose emptyB;
-    emptyB.localRotations[static_cast<std::size_t>(HumanBone::Head)] =
-        AboutY(1.0);
+    emptyB.localRotations[static_cast<std::size_t>(HumanBone::Head)] = AboutY(1.0);
     assert(emptyA == emptyB);
     assert(NearlyEqual(emptyA, emptyB));
 
@@ -237,12 +229,12 @@ TestTolerance()
     // A pose written through the trace format's six decimals and read back is
     // the same motion. This is the floor every default is derived from.
     HumanoidPose quantised = pose;
-    for (std::size_t index = 0; index != HumanBoneCount; ++index) {
+    for (std::size_t index = 0; index != HumanBoneCount; ++index)
+    {
         quantised.localRotations[index] = Rounded(pose.localRotations[index]);
     }
     quantised.root.worldPosition =
-        pxr::GfVec3f(Rounded(pose.root.worldPosition[0]),
-                     Rounded(pose.root.worldPosition[1]),
+        pxr::GfVec3f(Rounded(pose.root.worldPosition[0]), Rounded(pose.root.worldPosition[1]),
                      Rounded(pose.root.worldPosition[2]));
     quantised.timestamp = std::round(pose.timestamp * 1e6) / 1e6;
     assert(NearlyEqual(quantised, pose));
@@ -289,8 +281,7 @@ TestNonFinite()
 
     HumanoidPose broken = SamplePose();
     broken.localRotations[static_cast<std::size_t>(HumanBone::Hips)] =
-        pxr::GfQuatf(std::numeric_limits<float>::quiet_NaN(),
-                     pxr::GfVec3f(0.0f));
+        pxr::GfQuatf(std::numeric_limits<float>::quiet_NaN(), pxr::GfVec3f(0.0f));
     assert(broken != broken);
     assert(!NearlyEqual(broken, broken));
 }
@@ -306,8 +297,7 @@ TestDifferenceReport()
     assert(difference == "untouched");
 
     HumanoidPose nudged = pose;
-    nudged.localRotations[static_cast<std::size_t>(HumanBone::LeftUpperArm)] =
-        AboutY(-0.75 + 0.01);
+    nudged.localRotations[static_cast<std::size_t>(HumanBone::LeftUpperArm)] = AboutY(-0.75 + 0.01);
     assert(!NearlyEqual(nudged, pose, MotionTolerance{}, &difference));
     assert(difference.rfind("leftUpperArm rotation differs by ", 0) == 0);
 
@@ -318,8 +308,7 @@ TestDifferenceReport()
     assert(difference.rfind("timestamp differs by ", 0) == 0);
 
     HumanoidPose absent = pose;
-    absent.validRotations.reset(
-        static_cast<std::size_t>(HumanBone::LeftUpperArm));
+    absent.validRotations.reset(static_cast<std::size_t>(HumanBone::LeftUpperArm));
     assert(!NearlyEqual(absent, pose, MotionTolerance{}, &difference));
     assert(difference == "leftUpperArm is present only in the second pose");
     assert(!NearlyEqual(pose, absent, MotionTolerance{}, &difference));
@@ -342,8 +331,7 @@ TestAnimation()
 
     // A sample-level difference is reported with the sample that carried it.
     HumanoidAnimation bent = clip;
-    bent.samples[1].localRotations[static_cast<std::size_t>(HumanBone::Hips)] =
-        AboutY(0.5);
+    bent.samples[1].localRotations[static_cast<std::size_t>(HumanBone::Hips)] = AboutY(0.5);
     assert(bent != clip);
     assert(!NearlyEqual(bent, clip, MotionTolerance{}, &difference));
     assert(difference.rfind("sample 1: hips rotation differs by ", 0) == 0);
@@ -376,8 +364,7 @@ TestExpressions()
     std::string difference;
     assert(zeroed != reported);
     assert(!NearlyEqual(zeroed, reported, MotionTolerance{}, &difference));
-    assert(difference
-           == "expression 'blink' is reported only by the first pose");
+    assert(difference == "expression 'blink' is reported only by the first pose");
 
     // One set a strict prefix of the other. This reaches the comparison by a
     // different route than the case above -- every shared index agrees and only
@@ -398,8 +385,7 @@ TestExpressions()
     misspelt.expressions.entries[1].name = "happyy";
     assert(misspelt != reported);
     assert(!NearlyEqual(misspelt, reported, MotionTolerance{}, &difference));
-    assert(difference
-           == "expression 'happy' is reported only by the second pose");
+    assert(difference == "expression 'happy' is reported only by the second pose");
 
     // A weight does take one, and it has to be wide enough for the trace
     // format: these two are adjacent six-decimal values, so a fixture and the

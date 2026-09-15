@@ -48,7 +48,8 @@ main()
     const std::vector<std::byte> glb = MinimalGlb();
     const vrmContainer::ByteView view(glb.data(), glb.size());
 
-    if (!vrmContainer::HasGlbMagic(view)) {
+    if (!vrmContainer::HasGlbMagic(view))
+    {
         std::fprintf(stderr, "consumer: the installed package does not "
                              "recognise a glTF magic\n");
         return 1;
@@ -56,7 +57,8 @@ main()
 
     vrmContainer::GlbView parsed;
     vrmContainer::Error error;
-    if (!vrmContainer::ParseGlb(view, &parsed, &error)) {
+    if (!vrmContainer::ParseGlb(view, &parsed, &error))
+    {
         std::fprintf(stderr, "consumer: parse refused: %s (offset %zu)\n",
                      vrmContainer::ErrorMessage(error.code), error.offset);
         return 1;
@@ -66,17 +68,17 @@ main()
     // passed in. That is the property the header states, and it is the one a
     // consumer would lose to a package that shipped a differently built binary
     // behind a matching header.
-    if (parsed.version != vrmContainer::GlbVersion2 || parsed.json.size() != 4
-        || parsed.json.data() < glb.data()
-        || parsed.json.data() >= glb.data() + glb.size()) {
-        std::fprintf(stderr,
-                     "consumer: parsed version %u with a %zu-byte JSON chunk\n",
+    if (parsed.version != vrmContainer::GlbVersion2 || parsed.json.size() != 4 ||
+        parsed.json.data() < glb.data() || parsed.json.data() >= glb.data() + glb.size())
+    {
+        std::fprintf(stderr, "consumer: parsed version %u with a %zu-byte JSON chunk\n",
                      parsed.version, parsed.json.size());
         return 1;
     }
 
-    std::fprintf(stdout, "consumer: parsed a version %u container through the "
-                         "installed package\n",
+    std::fprintf(stdout,
+                 "consumer: parsed a version %u container through the "
+                 "installed package\n",
                  parsed.version);
     return 0;
 }

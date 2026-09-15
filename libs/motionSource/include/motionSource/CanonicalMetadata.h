@@ -44,7 +44,6 @@ namespace motionSource
 // where this repository's other clip readers already record the file facts of
 // their own sources — and a caller that needs them keeps the `SourceProvenance`
 // it converted from.
-MOTIONSOURCE_API motion::MotionSourceMetadata CanonicalMetadata(
-    const SourceProvenance& provenance);
+MOTIONSOURCE_API motion::MotionSourceMetadata CanonicalMetadata(const SourceProvenance& provenance);
 
 } // namespace motionSource

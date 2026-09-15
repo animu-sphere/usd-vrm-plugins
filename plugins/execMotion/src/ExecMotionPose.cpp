@@ -9,7 +9,8 @@
 #include <cstddef>
 #include <string_view>
 
-namespace execmotion {
+namespace execmotion
+{
 
 std::optional<motion::HumanBone>
 BoneForJointPath(const std::string& jointPath)
@@ -17,11 +18,11 @@ BoneForJointPath(const std::string& jointPath)
     // A joint path is `parent/child/leaf`; the bone is the leaf. A path with no
     // separator is already a leaf, which is what a flat rig authors.
     const std::size_t slash = jointPath.rfind('/');
-    const std::string_view leaf =
-        slash == std::string::npos
-            ? std::string_view(jointPath)
-            : std::string_view(jointPath).substr(slash + 1);
-    if (leaf.empty()) {
+    const std::string_view leaf = slash == std::string::npos
+                                      ? std::string_view(jointPath)
+                                      : std::string_view(jointPath).substr(slash + 1);
+    if (leaf.empty())
+    {
         return std::nullopt;
     }
     return motion::FindHumanBone(leaf);
@@ -34,9 +35,10 @@ IdentityPoseForJoints(const std::vector<std::string>& jointPaths)
     // HumanoidPose's default constructor already fills localRotations with the
     // identity quaternion and clears validRotations, so this loop only says
     // which bones the clip named -- it authors no rotation at all.
-    for (const std::string& jointPath : jointPaths) {
-        if (const std::optional<motion::HumanBone> bone =
-                BoneForJointPath(jointPath)) {
+    for (const std::string& jointPath : jointPaths)
+    {
+        if (const std::optional<motion::HumanBone> bone = BoneForJointPath(jointPath))
+        {
             pose.validRotations.set(static_cast<std::size_t>(*bone));
         }
     }
@@ -46,7 +48,8 @@ IdentityPoseForJoints(const std::vector<std::string>& jointPaths)
 std::optional<motion::HumanoidPose>
 PoseFromClipSample(const ClipSample& sample)
 {
-    if (!(sample.timeCodesPerSecond > 0.0)) {
+    if (!(sample.timeCodesPerSecond > 0.0))
+    {
         return std::nullopt;
     }
 
@@ -58,7 +61,8 @@ PoseFromClipSample(const ClipSample& sample)
     // zero converts to 0.0 at every rate -- so "no time" and "the first frame"
     // are the same value here whatever the clip's rate is. What differs between
     // the two is which values USD resolved, and that happened before this call.
-    if (sample.hasTimeCode) {
+    if (sample.hasTimeCode)
+    {
         pose.timestamp = sample.timeCode / sample.timeCodesPerSecond;
     }
 
@@ -66,15 +70,17 @@ PoseFromClipSample(const ClipSample& sample)
     const bool rotationsUsable = sample.rotations.size() == jointCount;
     const bool translationsUsable = sample.translations.size() == jointCount;
 
-    for (std::size_t i = 0; i < jointCount; ++i) {
-        const std::optional<motion::HumanBone> bone =
-            BoneForJointPath(sample.jointPaths[i]);
-        if (!bone) {
+    for (std::size_t i = 0; i < jointCount; ++i)
+    {
+        const std::optional<motion::HumanBone> bone = BoneForJointPath(sample.jointPaths[i]);
+        if (!bone)
+        {
             continue;
         }
         const auto slot = static_cast<std::size_t>(*bone);
 
-        if (rotationsUsable) {
+        if (rotationsUsable)
+        {
             // Normalized on the way in, like the offline reader: a clip may
             // author a quaternion that has drifted off the unit sphere, and
             // every consumer of a canonical pose is entitled to a rotation.
@@ -86,7 +92,8 @@ PoseFromClipSample(const ClipSample& sample)
         // one per joint, but the rest of it is the rest pose the source rig was
         // authored with, which a retargeter re-derives for the rig it is aiming
         // at (motion contract; tools/motionRetarget reads a clip the same way).
-        if (translationsUsable && *bone == motion::HumanBone::Hips) {
+        if (translationsUsable && *bone == motion::HumanBone::Hips)
+        {
             pose.root.worldPosition = sample.translations[i];
             pose.root.hasPosition = true;
         }
@@ -96,21 +103,23 @@ PoseFromClipSample(const ClipSample& sample)
 }
 
 motion::HumanoidPose
-FilteredPose(const motion::HumanoidPose& prior,
-             const motion::HumanoidPose& pose,
+FilteredPose(const motion::HumanoidPose& prior, const motion::HumanoidPose& pose,
              const FilterPolicy& policy)
 {
     // The library's defaults, then whatever the clip actually stated. Each
     // field is overwritten independently, so a clip that authors a cutoff and
     // nothing else keeps the library's answer for the other two.
     motion::PoseFilter::Options options;
-    if (policy.cutoffHz) {
+    if (policy.cutoffHz)
+    {
         options.cutoffHz = *policy.cutoffHz;
     }
-    if (policy.filterRootPosition) {
+    if (policy.filterRootPosition)
+    {
         options.filterRootPosition = *policy.filterRootPosition;
     }
-    if (policy.filterRootOrientation) {
+    if (policy.filterRootOrientation)
+    {
         options.filterRootOrientation = *policy.filterRootOrientation;
     }
 
@@ -133,21 +142,23 @@ RootIntakeForToken(std::string_view token)
     // Three spellings and no synonyms. A table rather than a chain of ifs
     // because the set is closed: it is `motion::RootMotionIntake`, and a fourth
     // policy is a change to the library that has to reach this list.
-    if (token == "passthrough") {
+    if (token == "passthrough")
+    {
         return motion::RootMotionIntake::Passthrough;
     }
-    if (token == "ignore") {
+    if (token == "ignore")
+    {
         return motion::RootMotionIntake::Ignore;
     }
-    if (token == "deriveVelocity") {
+    if (token == "deriveVelocity")
+    {
         return motion::RootMotionIntake::DeriveVelocity;
     }
     return std::nullopt;
 }
 
 motion::RootMotion
-RootMotionFrom(const motion::HumanoidPose& prior,
-               const motion::HumanoidPose& pose,
+RootMotionFrom(const motion::HumanoidPose& prior, const motion::HumanoidPose& pose,
                const RootPolicy& policy)
 {
     // The library's default, read from the library. `LiveCaptureConfig` is what
@@ -155,15 +166,16 @@ RootMotionFrom(const motion::HumanoidPose& prior,
     // nothing gets exactly what a live session that states nothing gets --
     // including on the day that default changes.
     const motion::RootMotionIntake intake =
-        policy.intake ? *policy.intake
-                      : motion::LiveCaptureConfig{}.rootMotion;
+        policy.intake ? *policy.intake : motion::LiveCaptureConfig{}.rootMotion;
 
-    if (intake == motion::RootMotionIntake::Ignore) {
+    if (intake == motion::RootMotionIntake::Ignore)
+    {
         return motion::RootMotion();
     }
 
     motion::RootMotion root = pose.root;
-    if (intake != motion::RootMotionIntake::DeriveVelocity) {
+    if (intake != motion::RootMotionIntake::DeriveVelocity)
+    {
         return root;
     }
 
@@ -173,14 +185,15 @@ RootMotionFrom(const motion::HumanoidPose& prior,
     // between the two. A pose that fails any of them keeps whatever the clip
     // stated -- nothing is invented, which is the same rule the rest of this
     // bundle keeps for a value nobody measured.
-    if (!root.hasPosition || root.hasLinearVelocity || !prior.root.hasPosition) {
+    if (!root.hasPosition || root.hasLinearVelocity || !prior.root.hasPosition)
+    {
         return root;
     }
     const double elapsed = pose.timestamp - prior.timestamp;
-    if (elapsed > 0.0) {
+    if (elapsed > 0.0)
+    {
         root.linearVelocity =
-            (root.worldPosition - prior.root.worldPosition)
-            / static_cast<float>(elapsed);
+            (root.worldPosition - prior.root.worldPosition) / static_cast<float>(elapsed);
         root.hasLinearVelocity = true;
     }
     return root;
@@ -191,7 +204,8 @@ RootTransform(const motion::RootMotion& root)
 {
     pxr::GfMatrix4d transform(1.0);
 
-    if (root.hasOrientation) {
+    if (root.hasOrientation)
+    {
         // In double precision before normalizing, so a unit quaternion stored in
         // float comes out as the rotation it states rather than one rounded
         // twice. The threshold is the one Gf normalizes against itself: shorter
@@ -199,16 +213,19 @@ RootTransform(const motion::RootMotion& root)
         // stated, which is the thing this function refuses to produce.
         const pxr::GfQuatd orientation(root.worldOrientation);
         const double length = orientation.GetLength();
-        if (!std::isfinite(length) || !(length > GF_MIN_VECTOR_LENGTH)) {
+        if (!std::isfinite(length) || !(length > GF_MIN_VECTOR_LENGTH))
+        {
             return std::nullopt;
         }
         transform.SetRotateOnly(orientation / length);
     }
 
-    if (root.hasPosition) {
+    if (root.hasPosition)
+    {
         const pxr::GfVec3d position(root.worldPosition);
-        if (!std::isfinite(position[0]) || !std::isfinite(position[1])
-            || !std::isfinite(position[2])) {
+        if (!std::isfinite(position[0]) || !std::isfinite(position[1]) ||
+            !std::isfinite(position[2]))
+        {
             return std::nullopt;
         }
         // Row-vector convention, as everywhere in Gf: the translation row
@@ -242,11 +259,14 @@ SampleHistory(const motion::HumanoidAnimation& history, double seconds)
     // sample would reach the caller as a NaN lag, which compares unequal even
     // to itself.
     const std::vector<motion::HumanoidPose>& samples = history.samples;
-    for (std::size_t i = 0; i < samples.size(); ++i) {
-        if (!std::isfinite(samples[i].timestamp)) {
+    for (std::size_t i = 0; i < samples.size(); ++i)
+    {
+        if (!std::isfinite(samples[i].timestamp))
+        {
             return std::nullopt;
         }
-        if (i > 0 && samples[i].timestamp < samples[i - 1].timestamp) {
+        if (i > 0 && samples[i].timestamp < samples[i - 1].timestamp)
+        {
             return std::nullopt;
         }
     }
@@ -271,20 +291,25 @@ BlendedPose(const BlendInputs& inputs)
     // compared once there is something to count, weights can only be judged
     // once they pair with the sources, and the instant and the total weight are
     // questions about a blend that is otherwise well formed.
-    if (inputs.sourceCount == 0) {
+    if (inputs.sourceCount == 0)
+    {
         outcome.refusal = BlendRefusal::NoSource;
         return outcome;
     }
-    if (inputs.poses.size() != inputs.sourceCount) {
+    if (inputs.poses.size() != inputs.sourceCount)
+    {
         outcome.refusal = BlendRefusal::SourceUnanswered;
         return outcome;
     }
-    if (inputs.weights.size() != inputs.sourceCount) {
+    if (inputs.weights.size() != inputs.sourceCount)
+    {
         outcome.refusal = BlendRefusal::WeightCount;
         return outcome;
     }
-    for (const float weight : inputs.weights) {
-        if (!std::isfinite(weight)) {
+    for (const float weight : inputs.weights)
+    {
+        if (!std::isfinite(weight))
+        {
             outcome.refusal = BlendRefusal::WeightNotFinite;
             return outcome;
         }
@@ -298,8 +323,10 @@ BlendedPose(const BlendInputs& inputs)
     // +inf agree with each other exactly. (A NaN never agrees, even with
     // itself, so equality would catch that one on its own.)
     const double instant = inputs.poses.front().timestamp;
-    for (const motion::HumanoidPose& pose : inputs.poses) {
-        if (!std::isfinite(pose.timestamp) || pose.timestamp != instant) {
+    for (const motion::HumanoidPose& pose : inputs.poses)
+    {
+        if (!std::isfinite(pose.timestamp) || pose.timestamp != instant)
+        {
             outcome.refusal = BlendRefusal::InstantsDisagree;
             return outcome;
         }
@@ -311,10 +338,12 @@ BlendedPose(const BlendInputs& inputs)
     // layer has to see before the call is the one where the call's answer would
     // carry a second nobody sampled; everything else is the library's.
     bool anythingWeighted = false;
-    for (const float weight : inputs.weights) {
+    for (const float weight : inputs.weights)
+    {
         anythingWeighted = anythingWeighted || weight > 0.0f;
     }
-    if (!anythingWeighted) {
+    if (!anythingWeighted)
+    {
         outcome.refusal = BlendRefusal::NothingWeighted;
         return outcome;
     }
@@ -323,9 +352,9 @@ BlendedPose(const BlendInputs& inputs)
     // authored order and the count check above are what make safe.
     std::vector<motion::WeightedPose> weighted;
     weighted.reserve(inputs.poses.size());
-    for (std::size_t i = 0; i < inputs.poses.size(); ++i) {
-        weighted.push_back(motion::WeightedPose{inputs.poses[i],
-                                                inputs.weights[i]});
+    for (std::size_t i = 0; i < inputs.poses.size(); ++i)
+    {
+        weighted.push_back(motion::WeightedPose{inputs.poses[i], inputs.weights[i]});
     }
     outcome.pose = motion::BlendPoses(weighted);
     return outcome;

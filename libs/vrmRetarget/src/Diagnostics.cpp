@@ -24,25 +24,17 @@ struct CodeRow
 // recoverability live here and nowhere else, so two raise sites cannot report
 // one code two ways.
 constexpr std::array<CodeRow, RetargetDiagnosticCodeCount> kCodes = {{
-    {"VRM_RETARGET_MISSING_REQUIRED_BONE",
-     RetargetDiagnosticSeverity::Warning, true},
-    {"VRM_RETARGET_UNBOUND_DRIVEN_BONE",
-     RetargetDiagnosticSeverity::Warning, true},
-    {"VRM_RETARGET_DUPLICATE_TARGET",
-     RetargetDiagnosticSeverity::Warning, true},
-    {"VRM_RETARGET_INVALID_HIERARCHY",
-     RetargetDiagnosticSeverity::Warning, true},
-    {"VRM_RETARGET_INVALID_ROOT_JOINT",
-     RetargetDiagnosticSeverity::Warning, true},
-    {"VRM_RETARGET_NON_UNIT_SCALE",
-     RetargetDiagnosticSeverity::Warning, true},
+    {"VRM_RETARGET_MISSING_REQUIRED_BONE", RetargetDiagnosticSeverity::Warning, true},
+    {"VRM_RETARGET_UNBOUND_DRIVEN_BONE", RetargetDiagnosticSeverity::Warning, true},
+    {"VRM_RETARGET_DUPLICATE_TARGET", RetargetDiagnosticSeverity::Warning, true},
+    {"VRM_RETARGET_INVALID_HIERARCHY", RetargetDiagnosticSeverity::Warning, true},
+    {"VRM_RETARGET_INVALID_ROOT_JOINT", RetargetDiagnosticSeverity::Warning, true},
+    {"VRM_RETARGET_NON_UNIT_SCALE", RetargetDiagnosticSeverity::Warning, true},
     // Info rather than a warning: a clip holding one pose is a legitimate clip,
     // and the code exists to say which instant the answer was placed at, not
     // that anything is wrong.
-    {"VRM_RETARGET_TIME_RANGE_DERIVED",
-     RetargetDiagnosticSeverity::Info, true},
-    {"VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT",
-     RetargetDiagnosticSeverity::Error, false},
+    {"VRM_RETARGET_TIME_RANGE_DERIVED", RetargetDiagnosticSeverity::Info, true},
+    {"VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT", RetargetDiagnosticSeverity::Error, false},
 }};
 
 const CodeRow*
@@ -64,8 +56,10 @@ RetargetDiagnosticCodeString(RetargetDiagnosticCode code) noexcept
 std::optional<RetargetDiagnosticCode>
 FindRetargetDiagnosticCode(std::string_view name) noexcept
 {
-    for (std::size_t index = 0; index < kCodes.size(); ++index) {
-        if (kCodes[index].name == name) {
+    for (std::size_t index = 0; index < kCodes.size(); ++index)
+    {
+        if (kCodes[index].name == name)
+        {
             return static_cast<RetargetDiagnosticCode>(index);
         }
     }
@@ -95,7 +89,8 @@ RetargetDiagnosticIsLibraryRaised(RetargetDiagnosticCode code) noexcept
 std::string_view
 RetargetDiagnosticSeverityString(RetargetDiagnosticSeverity severity) noexcept
 {
-    switch (severity) {
+    switch (severity)
+    {
     case RetargetDiagnosticSeverity::Info:
         return "info";
     case RetargetDiagnosticSeverity::Warning:
@@ -109,9 +104,8 @@ RetargetDiagnosticSeverityString(RetargetDiagnosticSeverity severity) noexcept
 bool
 operator==(const RetargetDiagnostic& a, const RetargetDiagnostic& b) noexcept
 {
-    return a.code == b.code && a.severity == b.severity
-        && a.recoverable == b.recoverable && a.subject == b.subject
-        && a.detail == b.detail;
+    return a.code == b.code && a.severity == b.severity && a.recoverable == b.recoverable &&
+           a.subject == b.subject && a.detail == b.detail;
 }
 
 bool
@@ -121,8 +115,7 @@ operator!=(const RetargetDiagnostic& a, const RetargetDiagnostic& b) noexcept
 }
 
 RetargetDiagnostic
-MakeRetargetDiagnostic(RetargetDiagnosticCode code, std::string subject,
-                       std::string detail)
+MakeRetargetDiagnostic(RetargetDiagnosticCode code, std::string subject, std::string detail)
 {
     RetargetDiagnostic diagnostic;
     diagnostic.code = code;
@@ -141,14 +134,17 @@ FormatRetargetDiagnostic(const RetargetDiagnostic& diagnostic)
     line += RetargetDiagnosticCodeString(diagnostic.code);
     line += "] ";
     line += RetargetDiagnosticSeverityString(diagnostic.severity);
-    if (diagnostic.recoverable) {
+    if (diagnostic.recoverable)
+    {
         line += " recoverable";
     }
-    if (!diagnostic.subject.empty()) {
+    if (!diagnostic.subject.empty())
+    {
         line += " subject=";
         line += diagnostic.subject;
     }
-    if (!diagnostic.detail.empty()) {
+    if (!diagnostic.detail.empty())
+    {
         line += ": ";
         line += diagnostic.detail;
     }
@@ -158,7 +154,8 @@ FormatRetargetDiagnostic(const RetargetDiagnostic& diagnostic)
 bool
 RetargetDiagnostics::Report(RetargetDiagnostic diagnostic)
 {
-    if (Has(diagnostic.code, diagnostic.subject)) {
+    if (Has(diagnostic.code, diagnostic.subject))
+    {
         return false;
     }
     reported.push_back(std::move(diagnostic));
@@ -168,17 +165,19 @@ RetargetDiagnostics::Report(RetargetDiagnostic diagnostic)
 void
 RetargetDiagnostics::Merge(const RetargetDiagnostics& other)
 {
-    for (const RetargetDiagnostic& diagnostic : other.reported) {
+    for (const RetargetDiagnostic& diagnostic : other.reported)
+    {
         Report(diagnostic);
     }
 }
 
 bool
-RetargetDiagnostics::Has(RetargetDiagnosticCode code,
-                         std::string_view subject) const
+RetargetDiagnostics::Has(RetargetDiagnosticCode code, std::string_view subject) const
 {
-    for (const RetargetDiagnostic& diagnostic : reported) {
-        if (diagnostic.code == code && diagnostic.subject == subject) {
+    for (const RetargetDiagnostic& diagnostic : reported)
+    {
+        if (diagnostic.code == code && diagnostic.subject == subject)
+        {
             return true;
         }
     }
@@ -189,8 +188,10 @@ std::vector<std::string>
 RetargetDiagnostics::Subjects(RetargetDiagnosticCode code) const
 {
     std::vector<std::string> subjects;
-    for (const RetargetDiagnostic& diagnostic : reported) {
-        if (diagnostic.code == code) {
+    for (const RetargetDiagnostic& diagnostic : reported)
+    {
+        if (diagnostic.code == code)
+        {
             subjects.push_back(diagnostic.subject);
         }
     }

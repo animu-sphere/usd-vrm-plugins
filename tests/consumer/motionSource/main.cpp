@@ -31,12 +31,12 @@ main()
     mirrored.negate[0] = true;
     mirrored.determinant = -1;
 
-    const pxr::GfVec3f position = motionSource::ConvertPosition(
-        mirrored, motionSource::SourceVec3{1.0f, 2.0f, 3.0f});
-    if (!(position[0] == -1.0f && position[1] == 2.0f
-          && position[2] == 3.0f)) {
-        std::fprintf(stderr, "consumer: converted position is (%f, %f, %f)\n",
-                     position[0], position[1], position[2]);
+    const pxr::GfVec3f position =
+        motionSource::ConvertPosition(mirrored, motionSource::SourceVec3{1.0f, 2.0f, 3.0f});
+    if (!(position[0] == -1.0f && position[1] == 2.0f && position[2] == 3.0f))
+    {
+        std::fprintf(stderr, "consumer: converted position is (%f, %f, %f)\n", position[0],
+                     position[1], position[2]);
         return 1;
     }
 
@@ -44,13 +44,13 @@ main()
     // negates the vector part twice over -- once for the permutation and once
     // for the handedness -- so a half turn about X survives it unchanged while
     // the position above did not. `SourceQuat` puts the real part first.
-    const pxr::GfQuatf rotation = motionSource::ConvertRotation(
-        mirrored, motionSource::SourceQuat{0.0f, 1.0f, 0.0f, 0.0f});
-    if (rotation.GetReal() != 0.0f
-        || rotation.GetImaginary()[0] != 1.0f) {
+    const pxr::GfQuatf rotation =
+        motionSource::ConvertRotation(mirrored, motionSource::SourceQuat{0.0f, 1.0f, 0.0f, 0.0f});
+    if (rotation.GetReal() != 0.0f || rotation.GetImaginary()[0] != 1.0f)
+    {
         std::fprintf(stderr, "consumer: converted rotation is (%f, %f, %f, %f)\n",
-                     rotation.GetReal(), rotation.GetImaginary()[0],
-                     rotation.GetImaginary()[1], rotation.GetImaginary()[2]);
+                     rotation.GetReal(), rotation.GetImaginary()[0], rotation.GetImaginary()[1],
+                     rotation.GetImaginary()[2]);
         return 1;
     }
 

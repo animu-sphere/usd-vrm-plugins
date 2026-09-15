@@ -73,18 +73,15 @@ enum class TrackerRegion : std::uint8_t
     Count,
 };
 
-inline constexpr std::size_t TrackerRegionCount =
-    static_cast<std::size_t>(TrackerRegion::Count);
+inline constexpr std::size_t TrackerRegionCount = static_cast<std::size_t>(TrackerRegion::Count);
 
 // The name an operator writes, in the lowerCamelCase every declarative file in
 // this repository uses. Empty for `Count` and for a value outside the enum,
 // which is what makes a printed assignment show a hole rather than invent one.
-MOTIONTRACKING_API std::string_view TrackerRegionName(
-    TrackerRegion region) noexcept;
+MOTIONTRACKING_API std::string_view TrackerRegionName(TrackerRegion region) noexcept;
 
 // The inverse, exact-match only. `nullopt` for anything this vocabulary does
 // not carry, including a differently-cased spelling of something it does.
-MOTIONTRACKING_API std::optional<TrackerRegion> ParseTrackerRegion(
-    std::string_view name) noexcept;
+MOTIONTRACKING_API std::optional<TrackerRegion> ParseTrackerRegion(std::string_view name) noexcept;
 
 } // namespace motionTracking

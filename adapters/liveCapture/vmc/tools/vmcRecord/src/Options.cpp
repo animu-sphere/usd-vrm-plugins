@@ -55,10 +55,11 @@ constexpr std::size_t kDefaultMaxFrames = 200000;
 constexpr double kMaxDurationSeconds = 7200.0;
 
 bool
-TakeValue(const std::vector<std::string>& arguments, std::size_t* index,
-          const std::string& flag, std::string* value, std::string* error)
+TakeValue(const std::vector<std::string>& arguments, std::size_t* index, const std::string& flag,
+          std::string* value, std::string* error)
 {
-    if (*index + 1 >= arguments.size()) {
+    if (*index + 1 >= arguments.size())
+    {
         *error = flag + " requires a value";
         return false;
     }
@@ -68,26 +69,32 @@ TakeValue(const std::vector<std::string>& arguments, std::size_t* index,
 }
 
 bool
-TakeDouble(const std::vector<std::string>& arguments, std::size_t* index,
-           const std::string& flag, double* value, std::string* error)
+TakeDouble(const std::vector<std::string>& arguments, std::size_t* index, const std::string& flag,
+           double* value, std::string* error)
 {
     std::string text;
-    if (!TakeValue(arguments, index, flag, &text, error)) {
+    if (!TakeValue(arguments, index, flag, &text, error))
+    {
         return false;
     }
-    try {
+    try
+    {
         std::size_t consumed = 0;
         const double parsed = std::stod(text, &consumed);
-        if (consumed != text.size()) {
+        if (consumed != text.size())
+        {
             throw std::invalid_argument("trailing characters");
         }
         // `stod` accepts "nan" and "inf", and every range check below is a
         // comparison -- which NaN passes by failing to be on either side of it.
-        if (!std::isfinite(parsed)) {
+        if (!std::isfinite(parsed))
+        {
             throw std::invalid_argument("not a finite number");
         }
         *value = parsed;
-    } catch (const std::exception&) {
+    }
+    catch (const std::exception&)
+    {
         *error = flag + " expects a number, got '" + text + "'";
         return false;
     }
@@ -95,17 +102,18 @@ TakeDouble(const std::vector<std::string>& arguments, std::size_t* index,
 }
 
 bool
-TakeCount(const std::vector<std::string>& arguments, std::size_t* index,
-          const std::string& flag, double limit, std::size_t* value,
-          std::string* error)
+TakeCount(const std::vector<std::string>& arguments, std::size_t* index, const std::string& flag,
+          double limit, std::size_t* value, std::string* error)
 {
     double parsed = 0.0;
-    if (!TakeDouble(arguments, index, flag, &parsed, error)) {
+    if (!TakeDouble(arguments, index, flag, &parsed, error))
+    {
         return false;
     }
-    if (parsed < 0.0 || parsed > limit || parsed != std::floor(parsed)) {
-        *error = flag + " expects a whole number between 0 and "
-            + std::to_string(static_cast<long long>(limit));
+    if (parsed < 0.0 || parsed > limit || parsed != std::floor(parsed))
+    {
+        *error = flag + " expects a whole number between 0 and " +
+                 std::to_string(static_cast<long long>(limit));
         return false;
     }
     *value = static_cast<std::size_t>(parsed);
@@ -117,26 +125,32 @@ TakeCount(const std::vector<std::string>& arguments, std::size_t* index,
 // colon in the string, and an unbracketed one carrying a port is refused rather
 // than guessed at: "::1:39539" is a valid address in its own right.
 bool
-SplitEndpoint(const std::string& text, std::string* address, std::string* port,
-              std::string* error)
+SplitEndpoint(const std::string& text, std::string* address, std::string* port, std::string* error)
 {
     address->clear();
     port->clear();
-    if (text.empty()) {
+    if (text.empty())
+    {
         *error = "--listen expects an address, a port, or address:port";
         return false;
     }
-    if (text.front() == '[') {
+    if (text.front() == '[')
+    {
         const std::size_t close = text.find(']');
-        if (close == std::string::npos) {
-            *error = "--listen: '" + text + "' opens a bracketed address and "
+        if (close == std::string::npos)
+        {
+            *error = "--listen: '" + text +
+                     "' opens a bracketed address and "
                      "never closes it";
             return false;
         }
         *address = text.substr(1, close - 1);
-        if (close + 1 < text.size()) {
-            if (text[close + 1] != ':') {
-                *error = "--listen: '" + text + "' has trailing characters "
+        if (close + 1 < text.size())
+        {
+            if (text[close + 1] != ':')
+            {
+                *error = "--listen: '" + text +
+                         "' has trailing characters "
                          "after the address";
                 return false;
             }
@@ -145,12 +159,15 @@ SplitEndpoint(const std::string& text, std::string* address, std::string* port,
         return true;
     }
     const std::size_t colon = text.find(':');
-    if (colon == std::string::npos) {
+    if (colon == std::string::npos)
+    {
         *address = text;
         return true;
     }
-    if (text.find(':', colon + 1) != std::string::npos) {
-        *error = "--listen: '" + text + "' looks like an IPv6 address with a "
+    if (text.find(':', colon + 1) != std::string::npos)
+    {
+        *error = "--listen: '" + text +
+                 "' looks like an IPv6 address with a "
                  "port; bracket it as [address]:port";
         return false;
     }
@@ -162,14 +179,18 @@ SplitEndpoint(const std::string& text, std::string* address, std::string* port,
 bool
 ParsePort(const std::string& text, std::uint16_t* port, std::string* error)
 {
-    try {
+    try
+    {
         std::size_t consumed = 0;
         const long parsed = std::stol(text, &consumed);
-        if (consumed != text.size() || parsed < 0 || parsed > 65535) {
+        if (consumed != text.size() || parsed < 0 || parsed > 65535)
+        {
             throw std::invalid_argument("out of range");
         }
         *port = static_cast<std::uint16_t>(parsed);
-    } catch (const std::exception&) {
+    }
+    catch (const std::exception&)
+    {
         *error = "expected a port in [0, 65535], got '" + text + "'";
         return false;
     }
@@ -181,86 +202,85 @@ ParsePort(const std::string& text, std::uint16_t* port, std::string* error)
 const char*
 GetUsage()
 {
-    return
-        "vmc_record - record a live VMC session, and say what it was\n"
-        "\n"
-        "Writes the datagrams a sender delivered, verbatim, in the\n"
-        "vmc-packet-capture format the adapter's corpus is written in - and\n"
-        "reports what they decoded to, so an operator learns whether the\n"
-        "session is worth committing before it is committed. Recording and\n"
-        "decoding are separate: the datagram reaches the file before the\n"
-        "decoder sees it, so nothing the decoder makes of it can change what\n"
-        "was recorded.\n"
-        "\n"
-        "Usage:\n"
-        "  vmc_record --output <session.vmcpackets> [options]\n"
-        "  vmc_record --dry-run [options]\n"
-        "  vmc_record --inspect <capture.vmcpackets>\n"
-        "  vmc_record --inspect <capture.vmcpackets> --export-trace <t.trace>\n"
-        "\n"
-        "Listening:\n"
-        "  --listen ADDR[:PORT]   Bind address, numeric (default 0.0.0.0).\n"
-        "                         '0.0.0.0' every IPv4 interface, '127.0.0.1'\n"
-        "                         this machine only, '[::]' every IPv6 one.\n"
-        "  --port N               Listen port (default 39539, VMC's own).\n"
-        "                         0 lets the OS choose and is reported back.\n"
-        "  --reuse-address        Allow binding a port another socket holds.\n"
-        "                         Off by default: a second recorder that\n"
-        "                         silently takes half the traffic is a failure\n"
-        "                         with no symptom.\n"
-        "  --receive-buffer BYTES Kernel receive buffer to request. What was\n"
-        "                         granted is reported, which is not always what\n"
-        "                         was asked for.\n"
-        "\n"
-        "Recording:\n"
-        "  --output PATH          Capture to write.\n"
-        "  --sender NAME          Sender application, recorded as provenance.\n"
-        "  --source-id ID         Name for this capture, recorded as\n"
-        "                         provenance. Never taken from the sender's\n"
-        "                         model title - see the report's 'model' line.\n"
-        "  --dry-run              Listen and report, write nothing.\n"
-        "\n"
-        "Exporting (works on a live session and on --inspect alike):\n"
-        "  --export-trace PATH    Write what the adapter delivered as a\n"
-        "                         motion-capture-trace - the canonical form\n"
-        "                         motion_capture replays, carrying no VMC\n"
-        "                         vocabulary. This is the whole of this\n"
-        "                         adapter's hand-off to the product's tools.\n"
-        "  --sender-session N     Which of the SENDER's sessions to export,\n"
-        "                         1-based. Needed only when the sender\n"
-        "                         restarted mid-recording: one trace is one\n"
-        "                         session, because two sessions' clocks overlap\n"
-        "                         and a spliced trace would stall on replay.\n"
-        "\n"
-        "Stopping (a session always has at least one):\n"
-        "  --duration S           Stop after S seconds of session.\n"
-        "  --idle-timeout S       Stop after S seconds with nothing arriving.\n"
-        "  --max-datagrams N      Stop after N datagrams (default 1000000).\n"
-        "  --max-frames N         Stop after N delivered frames (default\n"
-        "                         200000). Bounds what --export-trace holds in\n"
-        "                         memory, which the datagram bound cannot: a\n"
-        "                         bundled sender emits one frame per datagram\n"
-        "                         and a per-message one takes about fifty.\n"
-        "  Ctrl-C stops at any point and still writes what was recorded.\n"
-        "\n"
-        "Reading:\n"
-        "  --inspect PATH         Decode a recorded capture and report on it.\n"
-        "                         Opens no socket, records nothing, and prints\n"
-        "                         the same report a live session prints.\n"
-        "  --staleness S          Seconds before an unreported bone is called\n"
-        "                         stale (default 0.5; 0 disables).\n"
-        "  --restart-backwards S  A sender clock going back further than this\n"
-        "                         is a restart rather than a regression\n"
-        "                         (default 1.0; 0 disables restart detection).\n"
-        "  --quiet                Suppress the progress line and the warnings\n"
-        "                         on stderr. The report is what this tool\n"
-        "                         produces and always goes to stdout.\n"
-        "  -h, --help             Show this message.\n";
+    return "vmc_record - record a live VMC session, and say what it was\n"
+           "\n"
+           "Writes the datagrams a sender delivered, verbatim, in the\n"
+           "vmc-packet-capture format the adapter's corpus is written in - and\n"
+           "reports what they decoded to, so an operator learns whether the\n"
+           "session is worth committing before it is committed. Recording and\n"
+           "decoding are separate: the datagram reaches the file before the\n"
+           "decoder sees it, so nothing the decoder makes of it can change what\n"
+           "was recorded.\n"
+           "\n"
+           "Usage:\n"
+           "  vmc_record --output <session.vmcpackets> [options]\n"
+           "  vmc_record --dry-run [options]\n"
+           "  vmc_record --inspect <capture.vmcpackets>\n"
+           "  vmc_record --inspect <capture.vmcpackets> --export-trace <t.trace>\n"
+           "\n"
+           "Listening:\n"
+           "  --listen ADDR[:PORT]   Bind address, numeric (default 0.0.0.0).\n"
+           "                         '0.0.0.0' every IPv4 interface, '127.0.0.1'\n"
+           "                         this machine only, '[::]' every IPv6 one.\n"
+           "  --port N               Listen port (default 39539, VMC's own).\n"
+           "                         0 lets the OS choose and is reported back.\n"
+           "  --reuse-address        Allow binding a port another socket holds.\n"
+           "                         Off by default: a second recorder that\n"
+           "                         silently takes half the traffic is a failure\n"
+           "                         with no symptom.\n"
+           "  --receive-buffer BYTES Kernel receive buffer to request. What was\n"
+           "                         granted is reported, which is not always what\n"
+           "                         was asked for.\n"
+           "\n"
+           "Recording:\n"
+           "  --output PATH          Capture to write.\n"
+           "  --sender NAME          Sender application, recorded as provenance.\n"
+           "  --source-id ID         Name for this capture, recorded as\n"
+           "                         provenance. Never taken from the sender's\n"
+           "                         model title - see the report's 'model' line.\n"
+           "  --dry-run              Listen and report, write nothing.\n"
+           "\n"
+           "Exporting (works on a live session and on --inspect alike):\n"
+           "  --export-trace PATH    Write what the adapter delivered as a\n"
+           "                         motion-capture-trace - the canonical form\n"
+           "                         motion_capture replays, carrying no VMC\n"
+           "                         vocabulary. This is the whole of this\n"
+           "                         adapter's hand-off to the product's tools.\n"
+           "  --sender-session N     Which of the SENDER's sessions to export,\n"
+           "                         1-based. Needed only when the sender\n"
+           "                         restarted mid-recording: one trace is one\n"
+           "                         session, because two sessions' clocks overlap\n"
+           "                         and a spliced trace would stall on replay.\n"
+           "\n"
+           "Stopping (a session always has at least one):\n"
+           "  --duration S           Stop after S seconds of session.\n"
+           "  --idle-timeout S       Stop after S seconds with nothing arriving.\n"
+           "  --max-datagrams N      Stop after N datagrams (default 1000000).\n"
+           "  --max-frames N         Stop after N delivered frames (default\n"
+           "                         200000). Bounds what --export-trace holds in\n"
+           "                         memory, which the datagram bound cannot: a\n"
+           "                         bundled sender emits one frame per datagram\n"
+           "                         and a per-message one takes about fifty.\n"
+           "  Ctrl-C stops at any point and still writes what was recorded.\n"
+           "\n"
+           "Reading:\n"
+           "  --inspect PATH         Decode a recorded capture and report on it.\n"
+           "                         Opens no socket, records nothing, and prints\n"
+           "                         the same report a live session prints.\n"
+           "  --staleness S          Seconds before an unreported bone is called\n"
+           "                         stale (default 0.5; 0 disables).\n"
+           "  --restart-backwards S  A sender clock going back further than this\n"
+           "                         is a restart rather than a regression\n"
+           "                         (default 1.0; 0 disables restart detection).\n"
+           "  --quiet                Suppress the progress line and the warnings\n"
+           "                         on stderr. The report is what this tool\n"
+           "                         produces and always goes to stdout.\n"
+           "  -h, --help             Show this message.\n";
 }
 
 bool
-ParseOptions(const std::vector<std::string>& arguments, Options* options,
-             bool* showHelp, std::string* error)
+ParseOptions(const std::vector<std::string>& arguments, Options* options, bool* showHelp,
+             std::string* error)
 {
     *showHelp = false;
     // The first flag seen that only means something to a live session. Tracked
@@ -268,197 +288,258 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
     // indistinguishable afterwards from their own defaults -- `--port 39539`
     // and `--duration 0` both parse to what the struct already held.
     const char* sessionFlag = nullptr;
-    const auto session = [&sessionFlag](const char* flag) {
-        if (!sessionFlag) {
+    const auto session = [&sessionFlag](const char* flag)
+    {
+        if (!sessionFlag)
+        {
             sessionFlag = flag;
         }
     };
 
-    for (std::size_t i = 0; i < arguments.size(); ++i) {
+    for (std::size_t i = 0; i < arguments.size(); ++i)
+    {
         const std::string& argument = arguments[i];
-        if (argument == "-h" || argument == "--help") {
+        if (argument == "-h" || argument == "--help")
+        {
             *showHelp = true;
             return true;
-        } else if (argument == "--listen") {
+        }
+        else if (argument == "--listen")
+        {
             session("--listen");
             std::string text;
-            if (!TakeValue(arguments, &i, argument, &text, error)) {
+            if (!TakeValue(arguments, &i, argument, &text, error))
+            {
                 return false;
             }
             std::string address;
             std::string port;
-            if (!SplitEndpoint(text, &address, &port, error)) {
+            if (!SplitEndpoint(text, &address, &port, error))
+            {
                 return false;
             }
-            if (!address.empty()) {
+            if (!address.empty())
+            {
                 options->receiver.listenAddress = address;
             }
-            if (!port.empty()) {
+            if (!port.empty())
+            {
                 std::string reason;
-                if (!ParsePort(port, &options->receiver.listenPort, &reason)) {
+                if (!ParsePort(port, &options->receiver.listenPort, &reason))
+                {
                     *error = "--listen: " + reason;
                     return false;
                 }
             }
-        } else if (argument == "--port") {
+        }
+        else if (argument == "--port")
+        {
             session("--port");
             std::string text;
-            if (!TakeValue(arguments, &i, argument, &text, error)) {
+            if (!TakeValue(arguments, &i, argument, &text, error))
+            {
                 return false;
             }
             std::string reason;
-            if (!ParsePort(text, &options->receiver.listenPort, &reason)) {
+            if (!ParsePort(text, &options->receiver.listenPort, &reason))
+            {
                 *error = "--port: " + reason;
                 return false;
             }
-        } else if (argument == "--reuse-address") {
+        }
+        else if (argument == "--reuse-address")
+        {
             session("--reuse-address");
             options->receiver.reuseAddress = true;
-        } else if (argument == "--receive-buffer") {
+        }
+        else if (argument == "--receive-buffer")
+        {
             session("--receive-buffer");
             // 256 MB. Every platform clamps this far lower, so the bound is
             // only here to refuse a typo before the socket does.
             if (!TakeCount(arguments, &i, argument, 268435456.0,
-                           &options->receiver.receiveBufferBytes, error)) {
+                           &options->receiver.receiveBufferBytes, error))
+            {
                 return false;
             }
-        } else if (argument == "--output") {
+        }
+        else if (argument == "--output")
+        {
             session("--output");
-            if (!TakeValue(arguments, &i, argument, &options->outputPath,
-                           error)) {
+            if (!TakeValue(arguments, &i, argument, &options->outputPath, error))
+            {
                 return false;
             }
-        } else if (argument == "--inspect") {
-            if (!TakeValue(arguments, &i, argument, &options->inspectPath,
-                           error)) {
+        }
+        else if (argument == "--inspect")
+        {
+            if (!TakeValue(arguments, &i, argument, &options->inspectPath, error))
+            {
                 return false;
             }
-        } else if (argument == "--export-trace") {
+        }
+        else if (argument == "--export-trace")
+        {
             // Not a session flag: --inspect delivers the same frames a socket
             // does, and refusing to export from a capture would leave the CI
             // path unable to produce the artifact the live path produces.
-            if (!TakeValue(arguments, &i, argument, &options->traceExportPath,
-                           error)) {
+            if (!TakeValue(arguments, &i, argument, &options->traceExportPath, error))
+            {
                 return false;
             }
-        } else if (argument == "--sender-session") {
-            if (!TakeCount(arguments, &i, argument, 1000000.0,
-                           &options->senderSession, error)) {
+        }
+        else if (argument == "--sender-session")
+        {
+            if (!TakeCount(arguments, &i, argument, 1000000.0, &options->senderSession, error))
+            {
                 return false;
             }
-            if (options->senderSession == 0) {
+            if (options->senderSession == 0)
+            {
                 *error = "--sender-session counts from 1";
                 return false;
             }
-        } else if (argument == "--sender") {
+        }
+        else if (argument == "--sender")
+        {
             session("--sender");
-            if (!TakeValue(arguments, &i, argument, &options->sender, error)) {
+            if (!TakeValue(arguments, &i, argument, &options->sender, error))
+            {
                 return false;
             }
-        } else if (argument == "--source-id") {
+        }
+        else if (argument == "--source-id")
+        {
             session("--source-id");
-            if (!TakeValue(arguments, &i, argument, &options->sourceId,
-                           error)) {
+            if (!TakeValue(arguments, &i, argument, &options->sourceId, error))
+            {
                 return false;
             }
-        } else if (argument == "--duration") {
+        }
+        else if (argument == "--duration")
+        {
             session("--duration");
-            if (!TakeDouble(arguments, &i, argument, &options->durationSeconds,
-                            error)) {
+            if (!TakeDouble(arguments, &i, argument, &options->durationSeconds, error))
+            {
                 return false;
             }
-            if (options->durationSeconds < 0.0
-                || options->durationSeconds > kMaxDurationSeconds) {
+            if (options->durationSeconds < 0.0 || options->durationSeconds > kMaxDurationSeconds)
+            {
                 *error = "--duration expects a non-negative number of seconds "
-                         "no greater than "
-                    + std::to_string(static_cast<long long>(
-                          kMaxDurationSeconds));
+                         "no greater than " +
+                         std::to_string(static_cast<long long>(kMaxDurationSeconds));
                 return false;
             }
-        } else if (argument == "--idle-timeout") {
+        }
+        else if (argument == "--idle-timeout")
+        {
             session("--idle-timeout");
-            if (!TakeDouble(arguments, &i, argument, &options->idleSeconds,
-                            error)) {
+            if (!TakeDouble(arguments, &i, argument, &options->idleSeconds, error))
+            {
                 return false;
             }
-            if (options->idleSeconds < 0.0
-                || options->idleSeconds > kMaxDurationSeconds) {
+            if (options->idleSeconds < 0.0 || options->idleSeconds > kMaxDurationSeconds)
+            {
                 *error = "--idle-timeout expects a non-negative number of "
-                         "seconds no greater than "
-                    + std::to_string(static_cast<long long>(
-                          kMaxDurationSeconds));
+                         "seconds no greater than " +
+                         std::to_string(static_cast<long long>(kMaxDurationSeconds));
                 return false;
             }
-        } else if (argument == "--max-datagrams") {
+        }
+        else if (argument == "--max-datagrams")
+        {
             session("--max-datagrams");
             if (!TakeCount(arguments, &i, argument,
-                           static_cast<double>(kDefaultMaxDatagrams) * 10.0,
-                           &options->maxDatagrams, error)) {
+                           static_cast<double>(kDefaultMaxDatagrams) * 10.0, &options->maxDatagrams,
+                           error))
+            {
                 return false;
             }
-            if (options->maxDatagrams == 0) {
+            if (options->maxDatagrams == 0)
+            {
                 *error = "--max-datagrams expects at least 1; a session with no "
                          "bound at all is not offered, because the capture is "
                          "held in memory until it is written";
                 return false;
             }
-        } else if (argument == "--max-frames") {
+        }
+        else if (argument == "--max-frames")
+        {
             session("--max-frames");
-            if (!TakeCount(arguments, &i, argument,
-                           static_cast<double>(kDefaultMaxFrames) * 10.0,
-                           &options->maxFrames, error)) {
+            if (!TakeCount(arguments, &i, argument, static_cast<double>(kDefaultMaxFrames) * 10.0,
+                           &options->maxFrames, error))
+            {
                 return false;
             }
-            if (options->maxFrames == 0) {
+            if (options->maxFrames == 0)
+            {
                 *error = "--max-frames expects at least 1; the same reason "
                          "--max-datagrams does, for the poses the exported "
                          "trace holds";
                 return false;
             }
-        } else if (argument == "--staleness") {
+        }
+        else if (argument == "--staleness")
+        {
             double seconds = 0.0;
-            if (!TakeDouble(arguments, &i, argument, &seconds, error)) {
+            if (!TakeDouble(arguments, &i, argument, &seconds, error))
+            {
                 return false;
             }
-            if (seconds < 0.0) {
+            if (seconds < 0.0)
+            {
                 *error = "--staleness cannot be negative";
                 return false;
             }
             options->frame.stalenessSeconds = seconds;
-        } else if (argument == "--restart-backwards") {
+        }
+        else if (argument == "--restart-backwards")
+        {
             double seconds = 0.0;
-            if (!TakeDouble(arguments, &i, argument, &seconds, error)) {
+            if (!TakeDouble(arguments, &i, argument, &seconds, error))
+            {
                 return false;
             }
-            if (seconds < 0.0) {
+            if (seconds < 0.0)
+            {
                 *error = "--restart-backwards cannot be negative";
                 return false;
             }
             options->frame.restartBackwardsSeconds = seconds;
-        } else if (argument == "--dry-run") {
+        }
+        else if (argument == "--dry-run")
+        {
             session("--dry-run");
             options->dryRun = true;
-        } else if (argument == "--quiet") {
+        }
+        else if (argument == "--quiet")
+        {
             options->quiet = true;
-        } else {
+        }
+        else
+        {
             *error = "unknown argument '" + argument + "'";
             return false;
         }
     }
 
-    if (options->maxDatagrams == 0) {
+    if (options->maxDatagrams == 0)
+    {
         options->maxDatagrams = kDefaultMaxDatagrams;
     }
-    if (options->maxFrames == 0) {
+    if (options->maxFrames == 0)
+    {
         options->maxFrames = kDefaultMaxFrames;
     }
 
-    if (options->senderSession != 0 && options->traceExportPath.empty()) {
+    if (options->senderSession != 0 && options->traceExportPath.empty())
+    {
         *error = "--sender-session says which session to export, so it needs "
                  "--export-trace";
         return false;
     }
-    if (!options->traceExportPath.empty() && options->dryRun) {
+    if (!options->traceExportPath.empty() && options->dryRun)
+    {
         // The same rule --output already follows. A flag that writes a file is
         // not silently disabled by the flag that says nothing is written.
         *error = "--dry-run writes nothing, so --export-trace has nothing to "
@@ -466,7 +547,8 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
         return false;
     }
 
-    if (!options->inspectPath.empty()) {
+    if (!options->inspectPath.empty())
+    {
         // --inspect opens no socket and records nothing, so every flag about
         // either is a mistake worth naming rather than a setting that silently
         // does nothing. Three survive, and they are the three that are about
@@ -478,21 +560,24 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options,
         // stop condition, and a file has already stopped. Honouring it here
         // would silently truncate an export of a capture the operator can see
         // the whole of.
-        if (sessionFlag) {
+        if (sessionFlag)
+        {
             *error = std::string("--inspect reads a recorded capture and opens "
-                                 "no socket, so ")
-                + sessionFlag + " has nothing to act on";
+                                 "no socket, so ") +
+                     sessionFlag + " has nothing to act on";
             return false;
         }
         return true;
     }
 
-    if (options->outputPath.empty() && !options->dryRun) {
+    if (options->outputPath.empty() && !options->dryRun)
+    {
         *error = "--output is required (or use --dry-run to listen and report "
                  "without writing, or --inspect to read a capture)";
         return false;
     }
-    if (!options->outputPath.empty() && options->dryRun) {
+    if (!options->outputPath.empty() && options->dryRun)
+    {
         *error = "--dry-run writes nothing, so --output has nothing to act on";
         return false;
     }

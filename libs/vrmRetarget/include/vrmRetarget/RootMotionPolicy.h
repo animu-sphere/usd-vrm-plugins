@@ -57,10 +57,9 @@ struct RootMotionOptions
 // the delta rather than the absolute value is what lets a clip authored on a
 // 1.0 m rig drive a 1.6 m one without the avatar jumping to the source's hip
 // height.
-VRMRETARGET_API pxr::GfVec3f ResolveRootTranslation(
-    const RootMotionOptions& options,
-    const pxr::GfVec3f& sourceTranslation,
-    const pxr::GfVec3f& sourceRestTranslation,
-    const pxr::GfVec3f& targetRestTranslation);
+VRMRETARGET_API pxr::GfVec3f ResolveRootTranslation(const RootMotionOptions& options,
+                                                    const pxr::GfVec3f& sourceTranslation,
+                                                    const pxr::GfVec3f& sourceRestTranslation,
+                                                    const pxr::GfVec3f& targetRestTranslation);
 
 } // namespace vrmRetarget

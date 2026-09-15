@@ -39,16 +39,19 @@ main()
     // platform's socket calls to be linked, which is the half of this package's
     // contract that a header include cannot reach.
     liveTransport::UdpReceiver receiver;
-    if (receiver.IsOpen()) {
+    if (receiver.IsOpen())
+    {
         std::fprintf(stderr, "consumer: a fresh receiver reports itself open\n");
         return 1;
     }
 
     liveTransport::ReceivedDatagram datagram;
     const liveTransport::ReceiveStatus status = receiver.Receive(&datagram);
-    if (status != liveTransport::ReceiveStatus::Closed) {
-        std::fprintf(stderr, "consumer: receiving from a closed socket "
-                             "returned status %d\n",
+    if (status != liveTransport::ReceiveStatus::Closed)
+    {
+        std::fprintf(stderr,
+                     "consumer: receiving from a closed socket "
+                     "returned status %d\n",
                      static_cast<int>(status));
         return 1;
     }
@@ -56,16 +59,18 @@ main()
     // The diagnostic vehicle, from the header nothing else pulls in: a
     // severity is the one value this library names in its own vocabulary
     // rather than an adapter's.
-    const std::string severity(liveTransport::DiagnosticSeverityString(
-        liveTransport::DiagnosticSeverity::Error));
-    if (severity.empty()) {
+    const std::string severity(
+        liveTransport::DiagnosticSeverityString(liveTransport::DiagnosticSeverity::Error));
+    if (severity.empty())
+    {
         std::fprintf(stderr, "consumer: the installed package names no "
                              "severity string\n");
         return 1;
     }
 
-    std::fprintf(stdout, "consumer: a closed receiver and the `%s` severity "
-                         "came back through the installed package\n",
+    std::fprintf(stdout,
+                 "consumer: a closed receiver and the `%s` severity "
+                 "came back through the installed package\n",
                  severity.c_str());
     return 0;
 }

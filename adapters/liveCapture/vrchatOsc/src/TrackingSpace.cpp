@@ -39,10 +39,10 @@ AxisRotation(std::size_t axis, float degrees) noexcept
 // from two pieces. Building it before the guards would allocate and discard a
 // string for every message that converts, which is all of them.
 bool
-Refuse(Diagnostic* error, DiagnosticCode code, const TrackerMessage& message,
-       std::string detail)
+Refuse(Diagnostic* error, DiagnosticCode code, const TrackerMessage& message, std::string detail)
 {
-    if (error != nullptr) {
+    if (error != nullptr)
+    {
         *error = MakeDiagnostic(code, std::move(detail));
         error->subject = TrackerMessageAddress(message);
     }
@@ -57,34 +57,34 @@ std::string
 ChannelName(TrackerChannel channel)
 {
     const std::string_view name = TrackerChannelString(channel);
-    return name.empty()
-               ? "channel " + std::to_string(static_cast<int>(channel))
-               : std::string(name);
+    return name.empty() ? "channel " + std::to_string(static_cast<int>(channel))
+                        : std::string(name);
 }
 
 // Every guard both `Map` functions share: a caller's output, a caller's
 // channel, and the sender's three numbers. Returns false with `diagnostic`
 // filled, exactly as the public functions do.
 bool
-CheckMappable(const TrackerMessage& message, TrackerChannel expected,
-              const void* out, Diagnostic* diagnostic)
+CheckMappable(const TrackerMessage& message, TrackerChannel expected, const void* out,
+              Diagnostic* diagnostic)
 {
-    if (out == nullptr) {
+    if (out == nullptr)
+    {
         return Refuse(diagnostic, DiagnosticCode::PacketMalformed, message,
                       "no output value was provided");
     }
-    if (message.channel != expected) {
+    if (message.channel != expected)
+    {
         return Refuse(diagnostic, DiagnosticCode::PacketMalformed, message,
-                      "a " + ChannelName(message.channel)
-                          + " message was given to the "
-                          + ChannelName(expected) + " conversion");
+                      "a " + ChannelName(message.channel) + " message was given to the " +
+                          ChannelName(expected) + " conversion");
     }
-    for (std::size_t slot = 0; slot < message.values.size(); ++slot) {
-        if (!std::isfinite(message.values[slot])) {
-            return Refuse(diagnostic, DiagnosticCode::CoordinateInvalid,
-                          message,
-                          "component " + std::to_string(slot)
-                              + " is not a finite number");
+    for (std::size_t slot = 0; slot < message.values.size(); ++slot)
+    {
+        if (!std::isfinite(message.values[slot]))
+        {
+            return Refuse(diagnostic, DiagnosticCode::CoordinateInvalid, message,
+                          "component " + std::to_string(slot) + " is not a finite number");
         }
     }
     return true;
@@ -109,17 +109,15 @@ ToCanonicalRotation(const std::array<float, 3>& eulerDegrees) noexcept
     // the Y angle last. OpenUSD's quaternion product is the same order as the
     // matrix one -- `a * b` applies `b` first -- so this line reads as the
     // composition it is.
-    const pxr::GfQuatf sender = AxisRotation(1, eulerDegrees[1])
-                                * AxisRotation(0, eulerDegrees[0])
-                                * AxisRotation(2, eulerDegrees[2]);
+    const pxr::GfQuatf sender = AxisRotation(1, eulerDegrees[1]) *
+                                AxisRotation(0, eulerDegrees[0]) * AxisRotation(2, eulerDegrees[2]);
 
     // `(w, det(M) * M v)` for `M = diag(-1, 1, 1)`: the mirror negates the
     // first component and the determinant negates all three, which leaves the
     // first alone and flips the other two.
     const pxr::GfVec3f imaginary = sender.GetImaginary();
     pxr::GfQuatf canonical(sender.GetReal(),
-                           pxr::GfVec3f(imaginary[0], -imaginary[1],
-                                        -imaginary[2]));
+                           pxr::GfVec3f(imaginary[0], -imaginary[1], -imaginary[2]));
     canonical.Normalize();
     return canonical;
 }
@@ -135,10 +133,10 @@ TrackerMessageAddress(const TrackerMessage& message)
 }
 
 bool
-MapTrackerPosition(const TrackerMessage& message, pxr::GfVec3f* out,
-                   Diagnostic* diagnostic)
+MapTrackerPosition(const TrackerMessage& message, pxr::GfVec3f* out, Diagnostic* diagnostic)
 {
-    if (!CheckMappable(message, TrackerChannel::Position, out, diagnostic)) {
+    if (!CheckMappable(message, TrackerChannel::Position, out, diagnostic))
+    {
         return false;
     }
     *out = ToCanonicalPosition(message.values);
@@ -146,10 +144,10 @@ MapTrackerPosition(const TrackerMessage& message, pxr::GfVec3f* out,
 }
 
 bool
-MapTrackerRotation(const TrackerMessage& message, pxr::GfQuatf* out,
-                   Diagnostic* diagnostic)
+MapTrackerRotation(const TrackerMessage& message, pxr::GfQuatf* out, Diagnostic* diagnostic)
 {
-    if (!CheckMappable(message, TrackerChannel::Rotation, out, diagnostic)) {
+    if (!CheckMappable(message, TrackerChannel::Rotation, out, diagnostic))
+    {
         return false;
     }
     *out = ToCanonicalRotation(message.values);

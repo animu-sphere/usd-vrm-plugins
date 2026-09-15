@@ -30,10 +30,8 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 UsdVrmaFileFormat::UsdVrmaFileFormat()
-    : SdfFileFormat(UsdVrmaFileFormatTokens->Id,
-                    UsdVrmaFileFormatTokens->Version,
-                    UsdVrmaFileFormatTokens->Target,
-                    UsdVrmaFileFormatTokens->Extension)
+    : SdfFileFormat(UsdVrmaFileFormatTokens->Id, UsdVrmaFileFormatTokens->Version,
+                    UsdVrmaFileFormatTokens->Target, UsdVrmaFileFormatTokens->Extension)
 {
 }
 
@@ -42,33 +40,34 @@ UsdVrmaFileFormat::~UsdVrmaFileFormat() = default;
 bool
 UsdVrmaFileFormat::CanRead(const std::string& file) const
 {
-    if (SdfFileFormat::GetFileExtension(file) != "vrma") return false;
+    if (SdfFileFormat::GetFileExtension(file) != "vrma")
+        return false;
     // Through Ar, the way OpenUSD's own formats read: the path is UTF-8 on
     // every platform, and a narrow std::ifstream on Windows reads it in the
     // host process's code page, so a clip under a non-ASCII directory never
     // opened.
-    const std::shared_ptr<ArAsset> asset =
-        ArGetResolver().OpenAsset(ArResolvedPath(file));
-    if (!asset) return false;
+    const std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(ArResolvedPath(file));
+    if (!asset)
+        return false;
     std::byte magic[4] = {};
     return asset->Read(magic, sizeof(magic), 0) == sizeof(magic) &&
-        vrmContainer::HasGlbMagic({magic, sizeof(magic)});
+           vrmContainer::HasGlbMagic({magic, sizeof(magic)});
 }
 
 bool
-UsdVrmaFileFormat::Read(SdfLayer* layer, const std::string& resolvedPath,
-                        bool metadataOnly) const
+UsdVrmaFileFormat::Read(SdfLayer* layer, const std::string& resolvedPath, bool metadataOnly) const
 {
     (void)metadataOnly;
-    const std::shared_ptr<ArAsset> asset =
-        ArGetResolver().OpenAsset(ArResolvedPath(resolvedPath));
-    if (!asset) {
+    const std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(ArResolvedPath(resolvedPath));
+    if (!asset)
+    {
         TF_RUNTIME_ERROR("usdVrmaFileFormat: could not open '%s'", resolvedPath.c_str());
         return false;
     }
     const std::size_t size = asset->GetSize();
     std::vector<std::byte> bytes(size);
-    if (size == 0 || asset->Read(bytes.data(), size, 0) != size) {
+    if (size == 0 || asset->Read(bytes.data(), size, 0) != size)
+    {
         TF_RUNTIME_ERROR("usdVrmaFileFormat: could not read '%s'", resolvedPath.c_str());
         return false;
     }
@@ -76,29 +75,31 @@ UsdVrmaFileFormat::Read(SdfLayer* layer, const std::string& resolvedPath,
     VrmaCanonicalDocument document;
     std::string error;
     CgltfVrmaDocumentReader reader;
-    if (!reader.Read(resolvedPath, bytes, &document, &error)) {
+    if (!reader.Read(resolvedPath, bytes, &document, &error))
+    {
         TF_RUNTIME_ERROR("usdVrmaFileFormat: %s", error.c_str());
         return false;
     }
-    for (const std::string& warning : document.warnings) {
+    for (const std::string& warning : document.warnings)
+    {
         TF_WARN("usdVrmaFileFormat: %s", warning.c_str());
     }
 
     std::string usda;
     UsdVrmaAuthorer authorer;
-    auto task = std::async(std::launch::async, [&]() {
-        return authorer.WriteToString(document, &usda);
-    });
-    if (!task.get()) {
-        TF_RUNTIME_ERROR("usdVrmaFileFormat: failed to author USD for '%s'",
-                         resolvedPath.c_str());
+    auto task =
+        std::async(std::launch::async, [&]() { return authorer.WriteToString(document, &usda); });
+    if (!task.get())
+    {
+        TF_RUNTIME_ERROR("usdVrmaFileFormat: failed to author USD for '%s'", resolvedPath.c_str());
         return false;
     }
 
     const SdfFileFormatConstPtr usdaFormat = SdfFileFormat::FindByExtension("usda");
-    const SdfLayerRefPtr generated = SdfLayer::CreateAnonymous(
-        "usdVrmaFileFormat.generated.usda", usdaFormat);
-    if (!generated || !generated->ImportFromString(usda)) {
+    const SdfLayerRefPtr generated =
+        SdfLayer::CreateAnonymous("usdVrmaFileFormat.generated.usda", usdaFormat);
+    if (!generated || !generated->ImportFromString(usda))
+    {
         TF_RUNTIME_ERROR("usdVrmaFileFormat: generated USD for '%s' could not be parsed",
                          resolvedPath.c_str());
         return false;

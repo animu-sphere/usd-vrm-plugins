@@ -19,27 +19,29 @@
 #include <utility>
 #include <vector>
 
-namespace {
+namespace
+{
 
-std::size_t CountValid(const motion::HumanoidPose& pose)
+std::size_t
+CountValid(const motion::HumanoidPose& pose)
 {
     return pose.validRotations.count();
 }
 
-bool Has(const motion::HumanoidPose& pose, motion::HumanBone bone)
+bool
+Has(const motion::HumanoidPose& pose, motion::HumanBone bone)
 {
     return pose.validRotations.test(static_cast<std::size_t>(bone));
 }
 
-void TestLeafSegmentIsTheBone()
+void
+TestLeafSegmentIsTheBone()
 {
     // A joint path is UsdSkelAnimation's own spelling and the bone is its leaf:
     // "hips/spine/chest" is the chest, not something named after the whole path.
     assert(execmotion::BoneForJointPath("hips") == motion::HumanBone::Hips);
-    assert(execmotion::BoneForJointPath("hips/spine") ==
-           motion::HumanBone::Spine);
-    assert(execmotion::BoneForJointPath("hips/spine/chest/neck/head") ==
-           motion::HumanBone::Head);
+    assert(execmotion::BoneForJointPath("hips/spine") == motion::HumanBone::Spine);
+    assert(execmotion::BoneForJointPath("hips/spine/chest/neck/head") == motion::HumanBone::Head);
 
     // A path whose leaf is not a canonical bone maps to nothing, and so does a
     // trailing separator -- which names no leaf at all.
@@ -54,11 +56,11 @@ void TestLeafSegmentIsTheBone()
     assert(!execmotion::BoneForJointPath("Hips").has_value());
 }
 
-void TestIdentityPoseNamesOnlyWhatItRecognized()
+void
+TestIdentityPoseNamesOnlyWhatItRecognized()
 {
-    const std::vector<std::string> joints = {
-        "hips", "hips/spine", "hips/spine/chest",
-        "hips/spine/chest/neck/head", "prop"};
+    const std::vector<std::string> joints = {"hips", "hips/spine", "hips/spine/chest",
+                                             "hips/spine/chest/neck/head", "prop"};
 
     const motion::HumanoidPose pose = execmotion::IdentityPoseForJoints(joints);
 
@@ -78,12 +80,14 @@ void TestIdentityPoseNamesOnlyWhatItRecognized()
 
     // Every rotation is the identity, including the four this pose claims.
     // "Identity computation" is the literal description of what this returns.
-    for (const pxr::GfQuatf& rotation : pose.localRotations) {
+    for (const pxr::GfQuatf& rotation : pose.localRotations)
+    {
         assert(rotation == pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f)));
     }
 }
 
-void TestEmptyClipIsAPoseAndNotAFailure()
+void
+TestEmptyClipIsAPoseAndNotAFailure()
 {
     const motion::HumanoidPose pose = execmotion::IdentityPoseForJoints({});
     assert(CountValid(pose) == 0);
@@ -94,7 +98,8 @@ void TestEmptyClipIsAPoseAndNotAFailure()
     assert(pose == motion::HumanoidPose{});
 }
 
-void TestARepeatedJointIsNotCountedTwice()
+void
+TestARepeatedJointIsNotCountedTwice()
 {
     const motion::HumanoidPose pose =
         execmotion::IdentityPoseForJoints({"hips", "hips", "hips/spine"});
@@ -107,30 +112,28 @@ void TestARepeatedJointIsNotCountedTwice()
 
 // The fixture clip, as plain values: four canonical bones, one joint that names
 // none, and a rotation on the head so a pose that dropped the frame is visible.
-execmotion::ClipSample FourBonesAndAProp()
+execmotion::ClipSample
+FourBonesAndAProp()
 {
     execmotion::ClipSample sample;
-    sample.jointPaths = {"hips", "hips/spine", "hips/spine/chest",
-                         "hips/spine/chest/neck/head", "prop"};
-    sample.rotations = {
-        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f)),
-        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f)),
-        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f)),
-        pxr::GfQuatf(0.70710678f, pxr::GfVec3f(0.0f, 0.70710678f, 0.0f)),
-        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))};
-    sample.translations = {
-        pxr::GfVec3f(0.0f, 1.0f, 2.0f),
-        pxr::GfVec3f(0.0f, 0.1f, 0.0f),
-        pxr::GfVec3f(0.0f, 0.2f, 0.0f),
-        pxr::GfVec3f(0.0f, 0.3f, 0.0f),
-        pxr::GfVec3f(9.0f, 9.0f, 9.0f)};
+    sample.jointPaths = {"hips", "hips/spine", "hips/spine/chest", "hips/spine/chest/neck/head",
+                         "prop"};
+    sample.rotations = {pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f)),
+                        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f)),
+                        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f)),
+                        pxr::GfQuatf(0.70710678f, pxr::GfVec3f(0.0f, 0.70710678f, 0.0f)),
+                        pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f))};
+    sample.translations = {pxr::GfVec3f(0.0f, 1.0f, 2.0f), pxr::GfVec3f(0.0f, 0.1f, 0.0f),
+                           pxr::GfVec3f(0.0f, 0.2f, 0.0f), pxr::GfVec3f(0.0f, 0.3f, 0.0f),
+                           pxr::GfVec3f(9.0f, 9.0f, 9.0f)};
     sample.timeCode = 100.0;
     sample.hasTimeCode = true;
     sample.timeCodesPerSecond = 50.0;
     return sample;
 }
 
-void TestTheFrameBecomesASecond()
+void
+TestTheFrameBecomesASecond()
 {
     const std::optional<motion::HumanoidPose> pose =
         execmotion::PoseFromClipSample(FourBonesAndAProp());
@@ -152,7 +155,8 @@ void TestTheFrameBecomesASecond()
     assert(pose->root.worldPosition == pxr::GfVec3f(0.0f, 1.0f, 2.0f));
 }
 
-void TestNoRateIsARefusalAndNotAZero()
+void
+TestNoRateIsARefusalAndNotAZero()
 {
     execmotion::ClipSample sample = FourBonesAndAProp();
     sample.timeCodesPerSecond = 0.0;
@@ -170,30 +174,29 @@ void TestNoRateIsARefusalAndNotAZero()
     assert(execmotion::PoseFromClipSample(sample).has_value());
 }
 
-void TestTheDefaultTimeCodeCarriesNoSecond()
+void
+TestTheDefaultTimeCodeCarriesNoSecond()
 {
     execmotion::ClipSample sample = FourBonesAndAProp();
     sample.hasTimeCode = false;
-    sample.timeCode = 100.0;  // ignored: there is no numeric frame
+    sample.timeCode = 100.0; // ignored: there is no numeric frame
 
-    const std::optional<motion::HumanoidPose> pose =
-        execmotion::PoseFromClipSample(sample);
+    const std::optional<motion::HumanoidPose> pose = execmotion::PoseFromClipSample(sample);
     assert(pose.has_value());
-    assert(pose->timestamp == 0.0 &&
-           "a frame was read from a sample that says it has none");
+    assert(pose->timestamp == 0.0 && "a frame was read from a sample that says it has none");
 
     // The values themselves still come through: what USD resolved at the
     // default time is what the clip states there, and only the stamp is absent.
     assert(CountValid(*pose) == 4);
 }
 
-void TestAnArrayThatDoesNotFitTheJointsIsNotGuessedAt()
+void
+TestAnArrayThatDoesNotFitTheJointsIsNotGuessedAt()
 {
     execmotion::ClipSample sample = FourBonesAndAProp();
     sample.rotations.pop_back();
 
-    const std::optional<motion::HumanoidPose> pose =
-        execmotion::PoseFromClipSample(sample);
+    const std::optional<motion::HumanoidPose> pose = execmotion::PoseFromClipSample(sample);
     assert(pose.has_value());
 
     // Not four bones with one dropped: none at all. A clip whose rotation array
@@ -217,17 +220,16 @@ void TestAnArrayThatDoesNotFitTheJointsIsNotGuessedAt()
            "a clip with no translations reported a root position anyway");
 }
 
-void TestARotationIsNormalizedOnTheWayIn()
+void
+TestARotationIsNormalizedOnTheWayIn()
 {
     execmotion::ClipSample sample = FourBonesAndAProp();
     // Twice the length, same direction: a clip may author a quaternion that has
     // drifted, and every consumer of a canonical pose is entitled to a rotation
     // rather than to a scaled one.
-    sample.rotations[3] =
-        pxr::GfQuatf(1.4142136f, pxr::GfVec3f(0.0f, 1.4142136f, 0.0f));
+    sample.rotations[3] = pxr::GfQuatf(1.4142136f, pxr::GfVec3f(0.0f, 1.4142136f, 0.0f));
 
-    const std::optional<motion::HumanoidPose> pose =
-        execmotion::PoseFromClipSample(sample);
+    const std::optional<motion::HumanoidPose> pose = execmotion::PoseFromClipSample(sample);
     assert(pose.has_value());
     const pxr::GfQuatf& head =
         pose->localRotations[static_cast<std::size_t>(motion::HumanBone::Head)];
@@ -244,15 +246,14 @@ void TestARotationIsNormalizedOnTheWayIn()
 // that filtering against yourself is the identity, and that a step lands where
 // the library's own weight formula says.
 
-motion::HumanoidPose PoseWithHeadAndHips(double timestamp, float headAngleDeg,
-                                         const pxr::GfVec3f& hips)
+motion::HumanoidPose
+PoseWithHeadAndHips(double timestamp, float headAngleDeg, const pxr::GfVec3f& hips)
 {
     motion::HumanoidPose pose;
     pose.timestamp = timestamp;
     const float radians = headAngleDeg * float(M_PI) / 180.0f;
     pose.localRotations[static_cast<std::size_t>(motion::HumanBone::Head)] =
-        pxr::GfQuatf(std::cos(radians * 0.5f),
-                     pxr::GfVec3f(0.0f, std::sin(radians * 0.5f), 0.0f));
+        pxr::GfQuatf(std::cos(radians * 0.5f), pxr::GfVec3f(0.0f, std::sin(radians * 0.5f), 0.0f));
     pose.validRotations.set(static_cast<std::size_t>(motion::HumanBone::Head));
     pose.validRotations.set(static_cast<std::size_t>(motion::HumanBone::Hips));
     pose.root.worldPosition = hips;
@@ -260,16 +261,17 @@ motion::HumanoidPose PoseWithHeadAndHips(double timestamp, float headAngleDeg,
     return pose;
 }
 
-float HeadAngleDegrees(const motion::HumanoidPose& pose)
+float
+HeadAngleDegrees(const motion::HumanoidPose& pose)
 {
     const pxr::GfQuatf head =
-        pose.localRotations[static_cast<std::size_t>(motion::HumanBone::Head)]
-            .GetNormalized();
+        pose.localRotations[static_cast<std::size_t>(motion::HumanBone::Head)].GetNormalized();
     const double w = std::min(1.0, std::max(-1.0, double(head.GetReal())));
     return float(2.0 * std::acos(w) * 180.0 / M_PI);
 }
 
-void TestFilteringAgainstYourselfChangesNothing()
+void
+TestFilteringAgainstYourselfChangesNothing()
 {
     const motion::HumanoidPose pose =
         PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
@@ -283,15 +285,14 @@ void TestFilteringAgainstYourselfChangesNothing()
 
     // And so does a prior pose from the future, which is what a seek backwards
     // looks like.
-    const motion::HumanoidPose later =
-        PoseWithHeadAndHips(2.0, 0.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose later = PoseWithHeadAndHips(2.0, 0.0f, pxr::GfVec3f(0.0f));
     assert(execmotion::FilteredPose(later, pose, {}) == pose);
 }
 
-void TestAnAbsentPolicyIsTheLibrarysOwn()
+void
+TestAnAbsentPolicyIsTheLibrarysOwn()
 {
-    const motion::HumanoidPose prior =
-        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose prior = PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
     const motion::HumanoidPose pose =
         PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
 
@@ -308,8 +309,7 @@ void TestAnAbsentPolicyIsTheLibrarysOwn()
     // rotations about one axis moves the angle linearly.
     constexpr double kTwoPi = 6.2831853071795862;
     const double weight = 1.0 - std::exp(-kTwoPi * 6.0 * 0.02);
-    const motion::HumanoidPose filtered =
-        execmotion::FilteredPose(prior, pose, {});
+    const motion::HumanoidPose filtered = execmotion::FilteredPose(prior, pose, {});
     assert(std::abs(HeadAngleDegrees(filtered) - float(45.0 * weight)) < 1e-2f);
     assert(std::abs(filtered.root.worldPosition[2] - float(weight)) < 1e-4f);
 
@@ -318,10 +318,10 @@ void TestAnAbsentPolicyIsTheLibrarysOwn()
     assert(filtered.timestamp == pose.timestamp);
 }
 
-void TestEachPolicyFieldReachesTheOptionItNames()
+void
+TestEachPolicyFieldReachesTheOptionItNames()
 {
-    const motion::HumanoidPose prior =
-        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose prior = PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
     const motion::HumanoidPose pose =
         PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
 
@@ -343,12 +343,10 @@ void TestEachPolicyFieldReachesTheOptionItNames()
     // the head goes on taking its step.
     execmotion::FilterPolicy heldRoot;
     heldRoot.filterRootPosition = false;
-    const motion::HumanoidPose held =
-        execmotion::FilteredPose(prior, pose, heldRoot);
+    const motion::HumanoidPose held = execmotion::FilteredPose(prior, pose, heldRoot);
     assert(held.root.worldPosition == pose.root.worldPosition);
     assert(std::abs(HeadAngleDegrees(held) -
-                    HeadAngleDegrees(execmotion::FilteredPose(prior, pose, {})))
-           < 1e-4f);
+                    HeadAngleDegrees(execmotion::FilteredPose(prior, pose, {}))) < 1e-4f);
 }
 
 // ---------------------------------------------------------------------------
@@ -372,23 +370,22 @@ void TestEachPolicyFieldReachesTheOptionItNames()
 // has to hand back the state as well as the result, or a caller cannot carry the
 // history that makes a dropout survivable.
 
-motion::HumanoidPose PoseWithoutHead(double timestamp, const pxr::GfVec3f& hips)
+motion::HumanoidPose
+PoseWithoutHead(double timestamp, const pxr::GfVec3f& hips)
 {
     motion::HumanoidPose pose = PoseWithHeadAndHips(timestamp, 0.0f, hips);
     pose.validRotations.reset(static_cast<std::size_t>(motion::HumanBone::Head));
     return pose;
 }
 
-void TestADropoutDoesNotSurviveTheRoundTrip()
+void
+TestADropoutDoesNotSurviveTheRoundTrip()
 {
     // Three instants one frame apart at 50 Hz: the head is at identity, then
     // absent for one frame, then at 45 degrees.
-    const motion::HumanoidPose first =
-        PoseWithHeadAndHips(0.00, 0.0f, pxr::GfVec3f(0.0f));
-    const motion::HumanoidPose dropout =
-        PoseWithoutHead(0.02, pxr::GfVec3f(0.0f));
-    const motion::HumanoidPose back =
-        PoseWithHeadAndHips(0.04, 45.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose first = PoseWithHeadAndHips(0.00, 0.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose dropout = PoseWithoutHead(0.02, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose back = PoseWithHeadAndHips(0.04, 45.0f, pxr::GfVec3f(0.0f));
 
     // ---- what motion::PoseFilter does, driven as the streaming operator ----
     motion::PoseFilter streaming;
@@ -404,16 +401,12 @@ void TestADropoutDoesNotSurviveTheRoundTrip()
     // And the frame after it is smoothed from the head the filter kept.
     constexpr double kTwoPi = 6.2831853071795862;
     const double weight = 1.0 - std::exp(-kTwoPi * 6.0 * 0.02);
-    assert(std::abs(HeadAngleDegrees(streamedBack) - float(45.0 * weight))
-           < 1e-2f);
+    assert(std::abs(HeadAngleDegrees(streamedBack) - float(45.0 * weight)) < 1e-2f);
 
     // ---- what the node does, with the result fed back as the prior pose ----
-    const motion::HumanoidPose steppedFirst =
-        execmotion::FilteredPose(first, first, {});
-    const motion::HumanoidPose steppedDropout =
-        execmotion::FilteredPose(steppedFirst, dropout, {});
-    const motion::HumanoidPose steppedBack =
-        execmotion::FilteredPose(steppedDropout, back, {});
+    const motion::HumanoidPose steppedFirst = execmotion::FilteredPose(first, first, {});
+    const motion::HumanoidPose steppedDropout = execmotion::FilteredPose(steppedFirst, dropout, {});
+    const motion::HumanoidPose steppedBack = execmotion::FilteredPose(steppedDropout, back, {});
 
     assert(!Has(steppedDropout, motion::HumanBone::Head) &&
            "the seam invented a bone the pose did not report");
@@ -424,8 +417,7 @@ void TestADropoutDoesNotSurviveTheRoundTrip()
     assert(std::abs(HeadAngleDegrees(steppedBack) - 45.0f) < 1e-2f &&
            "a bone returning from a dropout was smoothed, so the seam is "
            "carrying history a pose cannot carry");
-    assert(std::abs(HeadAngleDegrees(steppedBack) -
-                    HeadAngleDegrees(streamedBack)) > 1.0f &&
+    assert(std::abs(HeadAngleDegrees(steppedBack) - HeadAngleDegrees(streamedBack)) > 1.0f &&
            "the two now agree -- either PoseFilter stopped retaining dropped "
            "bones, or the seam grew a state, and the parity note that says they "
            "differ (P0-6) is stale either way");
@@ -444,12 +436,11 @@ void TestADropoutDoesNotSurviveTheRoundTrip()
 // so these checks are written against the rule's definition rather than against
 // a call -- which is exactly why they are here rather than taken on trust.
 
-void TestTheIntakeTokenTableIsTheLibrarysEnum()
+void
+TestTheIntakeTokenTableIsTheLibrarysEnum()
 {
-    assert(execmotion::RootIntakeForToken("passthrough") ==
-           motion::RootMotionIntake::Passthrough);
-    assert(execmotion::RootIntakeForToken("ignore") ==
-           motion::RootMotionIntake::Ignore);
+    assert(execmotion::RootIntakeForToken("passthrough") == motion::RootMotionIntake::Passthrough);
+    assert(execmotion::RootIntakeForToken("ignore") == motion::RootMotionIntake::Ignore);
     assert(execmotion::RootIntakeForToken("deriveVelocity") ==
            motion::RootMotionIntake::DeriveVelocity);
 
@@ -462,10 +453,10 @@ void TestTheIntakeTokenTableIsTheLibrarysEnum()
     assert(!execmotion::RootIntakeForToken("smooth").has_value());
 }
 
-void TestAnAbsentIntakeIsTheLibrarysOwn()
+void
+TestAnAbsentIntakeIsTheLibrarysOwn()
 {
-    const motion::HumanoidPose prior =
-        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose prior = PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
     const motion::HumanoidPose pose =
         PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
 
@@ -486,10 +477,10 @@ void TestAnAbsentIntakeIsTheLibrarysOwn()
            execmotion::RootMotionFrom(prior, pose, passthrough));
 }
 
-void TestPassthroughIsThePoseSOwnRoot()
+void
+TestPassthroughIsThePoseSOwnRoot()
 {
-    const motion::HumanoidPose prior =
-        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose prior = PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
     const motion::HumanoidPose pose =
         PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
 
@@ -500,31 +491,30 @@ void TestPassthroughIsThePoseSOwnRoot()
            "something");
 }
 
-void TestIgnoreClearsRatherThanZeroes()
+void
+TestIgnoreClearsRatherThanZeroes()
 {
     const motion::HumanoidPose pose =
         PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
 
     execmotion::RootPolicy policy;
     policy.intake = motion::RootMotionIntake::Ignore;
-    const motion::RootMotion root = execmotion::RootMotionFrom(pose, pose,
-                                                               policy);
+    const motion::RootMotion root = execmotion::RootMotionFrom(pose, pose, policy);
 
     // The difference matters downstream: a cleared root says "this clip does
     // not place the body", and a zeroed position with `hasPosition` set says
     // "the body is at the origin". The first lets a rig keep its own placement.
     assert(root == motion::RootMotion{});
-    assert(!root.hasPosition &&
-           "ignore zeroed the position instead of clearing it");
+    assert(!root.hasPosition && "ignore zeroed the position instead of clearing it");
 }
 
-void TestAVelocityIsDerivedExactlyWhereTheLibraryDerivesOne()
+void
+TestAVelocityIsDerivedExactlyWhereTheLibraryDerivesOne()
 {
     execmotion::RootPolicy derive;
     derive.intake = motion::RootMotionIntake::DeriveVelocity;
 
-    const motion::HumanoidPose prior =
-        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
+    const motion::HumanoidPose prior = PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f));
     const motion::HumanoidPose pose =
         PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
 
@@ -532,11 +522,9 @@ void TestAVelocityIsDerivedExactlyWhereTheLibraryDerivesOne()
     // them. Written out rather than called, because the rule this wraps has no
     // call to make (ExecMotionPose.h).
     {
-        const motion::RootMotion root =
-            execmotion::RootMotionFrom(prior, pose, derive);
+        const motion::RootMotion root = execmotion::RootMotionFrom(prior, pose, derive);
         assert(root.hasLinearVelocity);
-        const pxr::GfVec3f expected =
-            (pose.root.worldPosition - prior.root.worldPosition) / 0.02f;
+        const pxr::GfVec3f expected = (pose.root.worldPosition - prior.root.worldPosition) / 0.02f;
         assert(std::abs(root.linearVelocity[1] - expected[1]) < 1e-2f);
         assert(std::abs(root.linearVelocity[2] - expected[2]) < 1e-2f);
         // The position it was derived from is untouched.
@@ -545,10 +533,8 @@ void TestAVelocityIsDerivedExactlyWhereTheLibraryDerivesOne()
 
     // The same instant twice, which is what an un-overridden node computes.
     {
-        const motion::RootMotion root =
-            execmotion::RootMotionFrom(pose, pose, derive);
-        assert(!root.hasLinearVelocity &&
-               "a velocity was derived between a pose and itself");
+        const motion::RootMotion root = execmotion::RootMotionFrom(pose, pose, derive);
+        assert(!root.hasLinearVelocity && "a velocity was derived between a pose and itself");
         assert(root == pose.root);
     }
 
@@ -557,8 +543,7 @@ void TestAVelocityIsDerivedExactlyWhereTheLibraryDerivesOne()
     {
         const motion::HumanoidPose later =
             PoseWithHeadAndHips(2.0, 0.0f, pxr::GfVec3f(0.0f, 9.0f, 9.0f));
-        assert(!execmotion::RootMotionFrom(later, pose, derive)
-                    .hasLinearVelocity);
+        assert(!execmotion::RootMotionFrom(later, pose, derive).hasLinearVelocity);
     }
 
     // A source that already reported one keeps it. The library derives a
@@ -568,8 +553,7 @@ void TestAVelocityIsDerivedExactlyWhereTheLibraryDerivesOne()
         motion::HumanoidPose reported = pose;
         reported.root.linearVelocity = pxr::GfVec3f(1.0f, 2.0f, 3.0f);
         reported.root.hasLinearVelocity = true;
-        const motion::RootMotion root =
-            execmotion::RootMotionFrom(prior, reported, derive);
+        const motion::RootMotion root = execmotion::RootMotionFrom(prior, reported, derive);
         assert(root.linearVelocity == pxr::GfVec3f(1.0f, 2.0f, 3.0f) &&
                "a reported velocity was replaced by a derived one");
     }
@@ -580,13 +564,11 @@ void TestAVelocityIsDerivedExactlyWhereTheLibraryDerivesOne()
     {
         motion::HumanoidPose noPosition = pose;
         noPosition.root = motion::RootMotion{};
-        assert(!execmotion::RootMotionFrom(prior, noPosition, derive)
-                    .hasLinearVelocity);
+        assert(!execmotion::RootMotionFrom(prior, noPosition, derive).hasLinearVelocity);
 
         motion::HumanoidPose priorNoPosition = prior;
         priorNoPosition.root = motion::RootMotion{};
-        assert(!execmotion::RootMotionFrom(priorNoPosition, pose, derive)
-                    .hasLinearVelocity);
+        assert(!execmotion::RootMotionFrom(priorNoPosition, pose, derive).hasLinearVelocity);
     }
 }
 
@@ -598,17 +580,18 @@ void TestAVelocityIsDerivedExactlyWhereTheLibraryDerivesOne()
 // the definition -- a point is turned about the root's own origin and then
 // carried to its position -- rather than built by the same Gf calls.
 
-void TestAClearedRootIsTheIdentity()
+void
+TestAClearedRootIsTheIdentity()
 {
     // `ignore`'s answer, and a clip whose hips carry no translation: nothing
     // stated, so nothing moves, and the Xformable stays at its parent.
     const std::optional<pxr::GfMatrix4d> transform =
         execmotion::RootTransform(motion::RootMotion{});
-    assert(transform && *transform == pxr::GfMatrix4d(1.0) &&
-           "an unstated root placed something");
+    assert(transform && *transform == pxr::GfMatrix4d(1.0) && "an unstated root placed something");
 }
 
-void TestTheOrientationTurnsInPlace()
+void
+TestTheOrientationTurnsInPlace()
 {
     motion::RootMotion root;
     root.worldPosition = pxr::GfVec3f(1.0f, 2.0f, 3.0f);
@@ -618,33 +601,30 @@ void TestTheOrientationTurnsInPlace()
     root.worldOrientation = pxr::GfQuatf(half, 0.0f, half, 0.0f);
     root.hasOrientation = true;
 
-    const std::optional<pxr::GfMatrix4d> transform =
-        execmotion::RootTransform(root);
+    const std::optional<pxr::GfMatrix4d> transform = execmotion::RootTransform(root);
     assert(transform);
 
     // The position is where the root is, whatever the orientation: turning
     // happens about the root's own origin and does not swing it.
     const pxr::GfVec3d translation = transform->ExtractTranslation();
-    assert(std::abs(translation[0] - 1.0) < 1e-6
-           && std::abs(translation[1] - 2.0) < 1e-6
-           && std::abs(translation[2] - 3.0) < 1e-6);
+    assert(std::abs(translation[0] - 1.0) < 1e-6 && std::abs(translation[1] - 2.0) < 1e-6 &&
+           std::abs(translation[2] - 3.0) < 1e-6);
 
     // A point a metre along +X of the root lands a metre along -Z of it.
     const pxr::GfVec3d moved = transform->Transform(pxr::GfVec3d(1.0, 0.0, 0.0));
-    assert(std::abs(moved[0] - 1.0) < 1e-6
-           && std::abs(moved[1] - 2.0) < 1e-6
-           && std::abs(moved[2] - 2.0) < 1e-6 &&
+    assert(std::abs(moved[0] - 1.0) < 1e-6 && std::abs(moved[1] - 2.0) < 1e-6 &&
+           std::abs(moved[2] - 2.0) < 1e-6 &&
            "the orientation and the position compose in the wrong order");
 
     // An orientation alone turns and does not move.
     motion::RootMotion turned = root;
     turned.hasPosition = false;
-    const std::optional<pxr::GfMatrix4d> onlyTurned =
-        execmotion::RootTransform(turned);
+    const std::optional<pxr::GfMatrix4d> onlyTurned = execmotion::RootTransform(turned);
     assert(onlyTurned && onlyTurned->ExtractTranslation() == pxr::GfVec3d(0.0));
 }
 
-void TestAnOrientationIsNormalizedAndNotScaled()
+void
+TestAnOrientationIsNormalizedAndNotScaled()
 {
     motion::RootMotion unit;
     unit.worldOrientation = pxr::GfQuatf(1.0f, 0.0f, 0.0f, 0.0f);
@@ -659,7 +639,8 @@ void TestAnOrientationIsNormalizedAndNotScaled()
     assert(a && b && *a == *b && *b == pxr::GfMatrix4d(1.0));
 }
 
-void TestAPlacementNobodyStatedIsRefused()
+void
+TestAPlacementNobodyStatedIsRefused()
 {
     const float nan = std::numeric_limits<float>::quiet_NaN();
     const float inf = std::numeric_limits<float>::infinity();
@@ -689,8 +670,7 @@ void TestAPlacementNobodyStatedIsRefused()
     unstated.worldOrientation = pxr::GfQuatf(0.0f, 0.0f, 0.0f, 0.0f);
     unstated.linearVelocity = pxr::GfVec3f(nan);
     unstated.hasLinearVelocity = true;
-    const std::optional<pxr::GfMatrix4d> transform =
-        execmotion::RootTransform(unstated);
+    const std::optional<pxr::GfMatrix4d> transform = execmotion::RootTransform(unstated);
     assert(transform && *transform == pxr::GfMatrix4d(1.0));
 }
 
@@ -705,14 +685,16 @@ void TestAPlacementNobodyStatedIsRefused()
 // suite here gives: an expected value produced by the code under test asserts
 // only that it equals itself.
 
-motion::HumanoidAnimation HistoryOf(std::vector<motion::HumanoidPose> samples)
+motion::HumanoidAnimation
+HistoryOf(std::vector<motion::HumanoidPose> samples)
 {
     motion::HumanoidAnimation history;
     history.samples = std::move(samples);
     return history;
 }
 
-void TestAHistoryOfOneAnswersItsOwnPose()
+void
+TestAHistoryOfOneAnswersItsOwnPose()
 {
     const motion::HumanoidPose pose =
         PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
@@ -736,18 +718,18 @@ void TestAHistoryOfOneAnswersItsOwnPose()
     assert(result->lag == 0.0);
 }
 
-void TestAnInstantBetweenTwoSamplesIsInterpolated()
+void
+TestAnInstantBetweenTwoSamplesIsInterpolated()
 {
     // A driver's snapshot: two samples four hundredths of a second apart,
     // bracketing the instant the system evaluates at. The head turns 90
     // degrees about +Y between them and the hips move from the origin to
     // (0, 1, 2).
-    const motion::HumanoidAnimation history = HistoryOf({
-        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f)),
-        PoseWithHeadAndHips(1.02, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f))});
+    const motion::HumanoidAnimation history =
+        HistoryOf({PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f)),
+                   PoseWithHeadAndHips(1.02, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f))});
 
-    const std::optional<motion::PoseSampleResult> result =
-        execmotion::SampleHistory(history, 1.0);
+    const std::optional<motion::PoseSampleResult> result = execmotion::SampleHistory(history, 1.0);
     assert(result.has_value() && result->pose);
     assert(result->status == motion::PoseSampleStatus::Sampled);
 
@@ -765,16 +747,16 @@ void TestAnInstantBetweenTwoSamplesIsInterpolated()
     assert(std::abs(result->lag - (1.0 - 1.02)) < 1e-12);
 }
 
-void TestAnInstantOutsideTheHistoryIsHeldAndSaysSo()
+void
+TestAnInstantOutsideTheHistoryIsHeldAndSaysSo()
 {
     // A source that stopped delivering at 0.9 s, asked about 1.0 s.
     const motion::HumanoidPose newest =
         PoseWithHeadAndHips(0.9, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f));
-    const motion::HumanoidAnimation history = HistoryOf({
-        PoseWithHeadAndHips(0.5, 0.0f, pxr::GfVec3f(0.0f)), newest});
+    const motion::HumanoidAnimation history =
+        HistoryOf({PoseWithHeadAndHips(0.5, 0.0f, pxr::GfVec3f(0.0f)), newest});
 
-    const std::optional<motion::PoseSampleResult> held =
-        execmotion::SampleHistory(history, 1.0);
+    const std::optional<motion::PoseSampleResult> held = execmotion::SampleHistory(history, 1.0);
     assert(held.has_value() && held->pose);
     assert(held->status == motion::PoseSampleStatus::Held &&
            "an instant past the newest sample was not reported as a hold");
@@ -793,35 +775,33 @@ void TestAnInstantOutsideTheHistoryIsHeldAndSaysSo()
            "this node returns the status as well needs restating");
 
     // And the other edge: before the oldest sample, the oldest is held.
-    const std::optional<motion::PoseSampleResult> early =
-        execmotion::SampleHistory(history, 0.1);
+    const std::optional<motion::PoseSampleResult> early = execmotion::SampleHistory(history, 0.1);
     assert(early.has_value() && early->pose);
     assert(early->status == motion::PoseSampleStatus::Held);
     assert(std::abs(HeadAngleDegrees(*early->pose)) < 1e-3f);
 }
 
-void TestAMissingBoneIsHeldAcrossTheBracket()
+void
+TestAMissingBoneIsHeldAcrossTheBracket()
 {
     // The library's rule, arriving through the wrapper unchanged: a bone one
     // bracketing sample reports and the other does not is held at the value it
     // was reported with, never faded toward identity.
-    motion::HumanoidPose headless =
-        PoseWithHeadAndHips(1.02, 0.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f));
-    headless.validRotations.reset(
-        static_cast<std::size_t>(motion::HumanBone::Head));
+    motion::HumanoidPose headless = PoseWithHeadAndHips(1.02, 0.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f));
+    headless.validRotations.reset(static_cast<std::size_t>(motion::HumanBone::Head));
 
-    const motion::HumanoidAnimation history = HistoryOf({
-        PoseWithHeadAndHips(0.98, 60.0f, pxr::GfVec3f(0.0f)), headless});
+    const motion::HumanoidAnimation history =
+        HistoryOf({PoseWithHeadAndHips(0.98, 60.0f, pxr::GfVec3f(0.0f)), headless});
 
-    const std::optional<motion::PoseSampleResult> result =
-        execmotion::SampleHistory(history, 1.0);
+    const std::optional<motion::PoseSampleResult> result = execmotion::SampleHistory(history, 1.0);
     assert(result.has_value() && result->pose);
     assert(Has(*result->pose, motion::HumanBone::Head));
     assert(std::abs(HeadAngleDegrees(*result->pose) - 60.0f) < 1e-3f &&
            "a bone only one sample reported was faded rather than held");
 }
 
-void TestAnEmptyHistoryIsAnAnswerAndNotARefusal()
+void
+TestAnEmptyHistoryIsAnAnswerAndNotARefusal()
 {
     // The library's `Unavailable`: a value, with no pose in it. It is an
     // *answer* -- the history holds nothing, and the type can say so -- which
@@ -829,49 +809,50 @@ void TestAnEmptyHistoryIsAnAnswerAndNotARefusal()
     // and so the first one with nothing for a refusal to protect.
     const std::optional<motion::PoseSampleResult> result =
         execmotion::SampleHistory(motion::HumanoidAnimation{}, 1.0);
-    assert(result.has_value() &&
-           "an empty history was refused, which spends the bundle's one "
-           "refusal on something the library already answers");
+    assert(result.has_value() && "an empty history was refused, which spends the bundle's one "
+                                 "refusal on something the library already answers");
     assert(result->status == motion::PoseSampleStatus::Unavailable);
     assert(!result->pose);
     assert(*result == motion::PoseSampleResult{});
 }
 
-void TestAHistoryOutOfOrderIsRefused()
+void
+TestAHistoryOutOfOrderIsRefused()
 {
     // Decreasing: the library's binary search would bracket the instant with
     // samples that do not surround it, and answer with a pose nobody measured.
-    const motion::HumanoidAnimation backwards = HistoryOf({
-        PoseWithHeadAndHips(1.02, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f)),
-        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f))});
+    const motion::HumanoidAnimation backwards =
+        HistoryOf({PoseWithHeadAndHips(1.02, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f)),
+                   PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f))});
     assert(!execmotion::SampleHistory(backwards, 1.0).has_value());
 
     // Repeated is not decreasing, and is not refused: the library answers it.
     // A stricter check would be this bundle's policy -- `PoseBuffer::Push`'s
     // strictly-increasing rule is about filling a buffer, not sampling one.
-    const motion::HumanoidAnimation repeated = HistoryOf({
-        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f)),
-        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f)),
-        PoseWithHeadAndHips(1.02, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f))});
-    const std::optional<motion::PoseSampleResult> result =
-        execmotion::SampleHistory(repeated, 1.0);
+    const motion::HumanoidAnimation repeated =
+        HistoryOf({PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f)),
+                   PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f)),
+                   PoseWithHeadAndHips(1.02, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f))});
+    const std::optional<motion::PoseSampleResult> result = execmotion::SampleHistory(repeated, 1.0);
     assert(result.has_value() && result->pose);
     assert(std::abs(HeadAngleDegrees(*result->pose) - 45.0f) < 1e-3f);
 }
 
-void TestARepeatedNewestSampleHoldsTheLastOfThePair()
+void
+TestARepeatedNewestSampleHoldsTheLastOfThePair()
 {
     // The case a driver repeating its newest sample produces: two samples at
     // the same instant at the END of the history, disagreeing about the head.
     // A request at or past that instant holds `samples.back()` -- the second of
     // the pair, not the first -- and either way the answer is a sample somebody
     // measured, which is why a repeat is answered rather than refused.
-    const motion::HumanoidAnimation history = HistoryOf({
-        PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f)),
-        PoseWithHeadAndHips(1.02, 60.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f)),
-        PoseWithHeadAndHips(1.02, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f))});
+    const motion::HumanoidAnimation history =
+        HistoryOf({PoseWithHeadAndHips(0.98, 0.0f, pxr::GfVec3f(0.0f)),
+                   PoseWithHeadAndHips(1.02, 60.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f)),
+                   PoseWithHeadAndHips(1.02, 90.0f, pxr::GfVec3f(0.0f, 1.0f, 2.0f))});
 
-    for (const double instant : {1.02, 1.1}) {
+    for (const double instant : {1.02, 1.1})
+    {
         const std::optional<motion::PoseSampleResult> result =
             execmotion::SampleHistory(history, instant);
         assert(result.has_value() && result->pose);
@@ -880,7 +861,8 @@ void TestARepeatedNewestSampleHoldsTheLastOfThePair()
     }
 }
 
-void TestATimestampThatIsNotFiniteIsRefused()
+void
+TestATimestampThatIsNotFiniteIsRefused()
 {
     // Every comparison with a NaN is false, so an ordering check alone lets one
     // through -- after which the library brackets the instant with samples that
@@ -892,18 +874,18 @@ void TestATimestampThatIsNotFiniteIsRefused()
     const pxr::GfVec3f origin(0.0f);
 
     const motion::HumanoidAnimation histories[] = {
-        HistoryOf({PoseWithHeadAndHips(0.98, 0.0f, origin),
-                   PoseWithHeadAndHips(nan, 30.0f, origin),
+        HistoryOf({PoseWithHeadAndHips(0.98, 0.0f, origin), PoseWithHeadAndHips(nan, 30.0f, origin),
                    PoseWithHeadAndHips(1.02, 60.0f, origin)}),
-        HistoryOf({PoseWithHeadAndHips(nan, 0.0f, origin),
-                   PoseWithHeadAndHips(1.02, 60.0f, origin)}),
-        HistoryOf({PoseWithHeadAndHips(0.98, 0.0f, origin),
-                   PoseWithHeadAndHips(nan, 60.0f, origin)}),
+        HistoryOf(
+            {PoseWithHeadAndHips(nan, 0.0f, origin), PoseWithHeadAndHips(1.02, 60.0f, origin)}),
+        HistoryOf(
+            {PoseWithHeadAndHips(0.98, 0.0f, origin), PoseWithHeadAndHips(nan, 60.0f, origin)}),
         HistoryOf({PoseWithHeadAndHips(nan, 0.0f, origin)}),
-        HistoryOf({PoseWithHeadAndHips(0.98, 0.0f, origin),
-                   PoseWithHeadAndHips(inf, 60.0f, origin)}),
+        HistoryOf(
+            {PoseWithHeadAndHips(0.98, 0.0f, origin), PoseWithHeadAndHips(inf, 60.0f, origin)}),
     };
-    for (const motion::HumanoidAnimation& history : histories) {
+    for (const motion::HumanoidAnimation& history : histories)
+    {
         assert(!execmotion::SampleHistory(history, 1.0).has_value() &&
                "a history carrying a timestamp that is not finite was "
                "sampled");
@@ -920,8 +902,8 @@ void TestATimestampThatIsNotFiniteIsRefused()
 // the running total, which for one head turning about one axis is an angle
 // interpolated linearly.
 
-execmotion::BlendInputs BlendOf(std::vector<motion::HumanoidPose> poses,
-                                std::vector<float> weights)
+execmotion::BlendInputs
+BlendOf(std::vector<motion::HumanoidPose> poses, std::vector<float> weights)
 {
     execmotion::BlendInputs inputs;
     inputs.sourceCount = poses.size();
@@ -930,7 +912,8 @@ execmotion::BlendInputs BlendOf(std::vector<motion::HumanoidPose> poses,
     return inputs;
 }
 
-void TestABlendIsTheLibrarysWeightedFold()
+void
+TestABlendIsTheLibrarysWeightedFold()
 {
     const motion::HumanoidPose walk =
         PoseWithHeadAndHips(1.0, 45.0f, pxr::GfVec3f(0.0f, 0.5f, 1.0f));
@@ -964,7 +947,8 @@ void TestABlendIsTheLibrarysWeightedFold()
            "a negative weight was not treated as the library's zero");
 }
 
-void TestTheOrderIsPartOfTheAnswer()
+void
+TestTheOrderIsPartOfTheAnswer()
 {
     // Three sources turning one bone about three different axes, at equal
     // weights. The library folds them in one at a time, so the order is an
@@ -974,7 +958,7 @@ void TestTheOrderIsPartOfTheAnswer()
     // relationship's order for more than the weights' sake, and why
     // `execMotion_blend` measures that it does.
     constexpr auto head = static_cast<std::size_t>(motion::HumanBone::Head);
-    const float half = float(M_PI) / 4.0f;  // half of a 90-degree turn
+    const float half = float(M_PI) / 4.0f; // half of a 90-degree turn
     motion::HumanoidPose aboutX;
     motion::HumanoidPose aboutY;
     motion::HumanoidPose aboutZ;
@@ -984,15 +968,16 @@ void TestTheOrderIsPartOfTheAnswer()
         pxr::GfQuatf(std::cos(half), pxr::GfVec3f(0.0f, std::sin(half), 0.0f));
     aboutZ.localRotations[head] =
         pxr::GfQuatf(std::cos(half), pxr::GfVec3f(0.0f, 0.0f, std::sin(half)));
-    for (motion::HumanoidPose* pose : {&aboutX, &aboutY, &aboutZ}) {
+    for (motion::HumanoidPose* pose : {&aboutX, &aboutY, &aboutZ})
+    {
         pose->validRotations.set(head);
         pose->timestamp = 1.0;
     }
 
-    const execmotion::BlendOutcome forward = execmotion::BlendedPose(
-        BlendOf({aboutX, aboutY, aboutZ}, {1.0f, 1.0f, 1.0f}));
-    const execmotion::BlendOutcome backward = execmotion::BlendedPose(
-        BlendOf({aboutZ, aboutY, aboutX}, {1.0f, 1.0f, 1.0f}));
+    const execmotion::BlendOutcome forward =
+        execmotion::BlendedPose(BlendOf({aboutX, aboutY, aboutZ}, {1.0f, 1.0f, 1.0f}));
+    const execmotion::BlendOutcome backward =
+        execmotion::BlendedPose(BlendOf({aboutZ, aboutY, aboutX}, {1.0f, 1.0f, 1.0f}));
     assert(forward.pose && backward.pose);
 
     const pxr::GfQuatf a = forward.pose->localRotations[head].GetNormalized();
@@ -1000,13 +985,14 @@ void TestTheOrderIsPartOfTheAnswer()
     const double dot = std::min(1.0, std::abs(double(pxr::GfDot(a, b))));
     const double apartDegrees = 2.0 * std::acos(dot) * 180.0 / M_PI;
     std::printf("execMotion pose: three sources folded in two orders land "
-                "%.3f degrees apart\n", apartDegrees);
-    assert(apartDegrees > 1.0 &&
-           "the library's fold no longer depends on the order -- the fan-in "
-           "order is then only a pairing question, and the header says more");
+                "%.3f degrees apart\n",
+                apartDegrees);
+    assert(apartDegrees > 1.0 && "the library's fold no longer depends on the order -- the fan-in "
+                                 "order is then only a pairing question, and the header says more");
 }
 
-void TestEachBlendRefusalIsTheOneThatApplies()
+void
+TestEachBlendRefusalIsTheOneThatApplies()
 {
     using execmotion::BlendRefusal;
     const motion::HumanoidPose walk =
@@ -1016,8 +1002,8 @@ void TestEachBlendRefusalIsTheOneThatApplies()
     const float nan = std::numeric_limits<float>::quiet_NaN();
     const float inf = std::numeric_limits<float>::infinity();
 
-    auto refused = [](const execmotion::BlendInputs& inputs,
-                      BlendRefusal expected) {
+    auto refused = [](const execmotion::BlendInputs& inputs, BlendRefusal expected)
+    {
         const execmotion::BlendOutcome outcome = execmotion::BlendedPose(inputs);
         return !outcome.pose && outcome.refusal == expected;
     };
@@ -1035,40 +1021,33 @@ void TestEachBlendRefusalIsTheOneThatApplies()
     // Weights that do not pair one to one, including none at all.
     assert(refused(BlendOf({walk, turn}, {1.0f}), BlendRefusal::WeightCount));
     assert(refused(BlendOf({walk, turn}, {}), BlendRefusal::WeightCount));
-    assert(refused(BlendOf({walk, turn}, {0.5f, 0.25f, 0.25f}),
-                   BlendRefusal::WeightCount));
+    assert(refused(BlendOf({walk, turn}, {0.5f, 0.25f, 0.25f}), BlendRefusal::WeightCount));
 
     // A weight that is not finite, wherever it sits.
-    assert(refused(BlendOf({walk, turn}, {nan, 1.0f}),
-                   BlendRefusal::WeightNotFinite));
-    assert(refused(BlendOf({walk, turn}, {1.0f, inf}),
-                   BlendRefusal::WeightNotFinite));
+    assert(refused(BlendOf({walk, turn}, {nan, 1.0f}), BlendRefusal::WeightNotFinite));
+    assert(refused(BlendOf({walk, turn}, {1.0f, inf}), BlendRefusal::WeightNotFinite));
 
     // Two instants, and one instant that is not finite -- an infinity agrees
     // with itself exactly, so equality alone would let it through.
     motion::HumanoidPose half = turn;
     half.timestamp = 0.5;
-    assert(refused(BlendOf({walk, half}, {0.5f, 0.5f}),
-                   BlendRefusal::InstantsDisagree));
+    assert(refused(BlendOf({walk, half}, {0.5f, 0.5f}), BlendRefusal::InstantsDisagree));
     motion::HumanoidPose never = walk;
     never.timestamp = std::numeric_limits<double>::infinity();
-    assert(refused(BlendOf({never, never}, {0.5f, 0.5f}),
-                   BlendRefusal::InstantsDisagree));
+    assert(refused(BlendOf({never, never}, {0.5f, 0.5f}), BlendRefusal::InstantsDisagree));
 
     // Nothing positive.
-    assert(refused(BlendOf({walk, turn}, {0.0f, 0.0f}),
-                   BlendRefusal::NothingWeighted));
-    assert(refused(BlendOf({walk, turn}, {-1.0f, 0.0f}),
-                   BlendRefusal::NothingWeighted));
+    assert(refused(BlendOf({walk, turn}, {0.0f, 0.0f}), BlendRefusal::NothingWeighted));
+    assert(refused(BlendOf({walk, turn}, {-1.0f, 0.0f}), BlendRefusal::NothingWeighted));
 
     // A timestamp disagreement on a source weighted zero still refuses: the
     // blend is over its sources, and a weight animating up from zero would
     // otherwise hit the refusal mid-sequence instead of from the first frame.
-    assert(refused(BlendOf({walk, half}, {1.0f, 0.0f}),
-                   BlendRefusal::InstantsDisagree));
+    assert(refused(BlendOf({walk, half}, {1.0f, 0.0f}), BlendRefusal::InstantsDisagree));
 }
 
-void TestWhatTheLibraryWouldHaveAnswered()
+void
+TestWhatTheLibraryWouldHaveAnswered()
 {
     // The two refusals that are about the library rather than the fan-in, and
     // so the boundary finding: what `motion::BlendPoses` answers where this node
@@ -1082,18 +1061,17 @@ void TestWhatTheLibraryWouldHaveAnswered()
     // Nothing weighted: a default pose, stamped 0.0 -- not at the 1.0 s both
     // sources were sampled at. A second nobody sampled, with nothing in the
     // value to say so.
-    const motion::HumanoidPose nothing = motion::BlendPoses(
-        std::vector<motion::WeightedPose>{{walk, 0.0f}, {turn, 0.0f}});
+    const motion::HumanoidPose nothing =
+        motion::BlendPoses(std::vector<motion::WeightedPose>{{walk, 0.0f}, {turn, 0.0f}});
     assert(nothing == motion::HumanoidPose{});
     assert(nothing.timestamp == 0.0 && walk.timestamp == 1.0);
 
     // A weight that is not a number: carried through the running total into
     // the rotation, which comes back NaN.
-    const motion::HumanoidPose poisoned = motion::BlendPoses(
-        std::vector<motion::WeightedPose>{
-            {walk, std::numeric_limits<float>::quiet_NaN()}, {turn, 1.0f}});
-    const pxr::GfQuatf head = poisoned.localRotations[
-        static_cast<std::size_t>(motion::HumanBone::Head)];
+    const motion::HumanoidPose poisoned = motion::BlendPoses(std::vector<motion::WeightedPose>{
+        {walk, std::numeric_limits<float>::quiet_NaN()}, {turn, 1.0f}});
+    const pxr::GfQuatf head =
+        poisoned.localRotations[static_cast<std::size_t>(motion::HumanBone::Head)];
     assert(std::isnan(head.GetReal()) &&
            "a NaN weight no longer poisons the library's blend -- the "
            "refusal may be redundant now");
@@ -1101,7 +1079,8 @@ void TestWhatTheLibraryWouldHaveAnswered()
 
 } // namespace
 
-int main()
+int
+main()
 {
     TestLeafSegmentIsTheBone();
     TestIdentityPoseNamesOnlyWhatItRecognized();

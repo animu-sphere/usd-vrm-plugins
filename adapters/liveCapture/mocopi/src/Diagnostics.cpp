@@ -41,8 +41,7 @@ constexpr std::array<DiagnosticCodeEntry, DiagnosticCodeCount> kCodes{{
     {"VRM_MOCOPI_NON_FINITE_TRANSFORM", DiagnosticSeverity::Warning, true},
 }};
 
-constexpr liveTransport::DiagnosticCodeTable<DiagnosticCode> kTable{
-    kCodes.data(), kCodes.size()};
+constexpr liveTransport::DiagnosticCodeTable<DiagnosticCode> kTable{kCodes.data(), kCodes.size()};
 
 } // namespace
 
@@ -90,8 +89,7 @@ FormatDiagnostic(const Diagnostic& diagnostic)
     // an improvement on "deliberately": an operator reading a session log with
     // both adapters in it does not have to learn a second line format to find
     // out which one complained.
-    return liveTransport::FormatDiagnostic(
-        DiagnosticCodeString(diagnostic.code), diagnostic);
+    return liveTransport::FormatDiagnostic(DiagnosticCodeString(diagnostic.code), diagnostic);
 }
 
 } // namespace vrmAdapterMocopi

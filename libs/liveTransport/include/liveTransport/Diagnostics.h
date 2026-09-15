@@ -44,8 +44,7 @@ enum class DiagnosticSeverity : std::uint8_t
     Error,
 };
 
-LIVETRANSPORT_API std::string_view DiagnosticSeverityString(
-    DiagnosticSeverity severity) noexcept;
+LIVETRANSPORT_API std::string_view DiagnosticSeverityString(DiagnosticSeverity severity) noexcept;
 
 // One row of an adapter's frozen code table: the stable string, and the two
 // defaults that must not be decided at a raise site. `name` is the contract —
@@ -92,8 +91,7 @@ struct DiagnosticFields
 // adapters disagree about it and both are right: each defaults to its own
 // `PacketMalformed`, which is enumerator 0 in one set and 6 in the other. A
 // default-constructed diagnostic must keep meaning what it meant.
-template <class Code, Code DefaultCode>
-struct Diagnostic : DiagnosticFields
+template <class Code, Code DefaultCode> struct Diagnostic : DiagnosticFields
 {
     Code code = DefaultCode;
 };
@@ -131,49 +129,53 @@ LIVETRANSPORT_API std::string FormatSeconds(double seconds);
 //
 // Constructed from a pointer and a count rather than templated on the array's
 // size, so that the type is one type per adapter and not one per table length.
-template <class Code>
-class DiagnosticCodeTable final
+template <class Code> class DiagnosticCodeTable final
 {
-public:
-    constexpr DiagnosticCodeTable(const DiagnosticCodeEntry* entries,
-                                  std::size_t count) noexcept
-        : _entries(entries)
-        , _count(count)
+  public:
+    constexpr DiagnosticCodeTable(const DiagnosticCodeEntry* entries, std::size_t count) noexcept
+        : _entries(entries), _count(count)
     {
     }
 
     // Empty for a code outside the table, which is what an out-of-range cast
     // produces and the one input this cannot reject at compile time.
-    std::string_view Name(Code code) const noexcept
+    std::string_view
+    Name(Code code) const noexcept
     {
         const DiagnosticCodeEntry* entry = _Entry(code);
         return entry ? entry->name : std::string_view();
     }
 
-    std::optional<Code> Find(std::string_view name) const noexcept
+    std::optional<Code>
+    Find(std::string_view name) const noexcept
     {
-        for (std::size_t i = 0; i < _count; ++i) {
-            if (_entries[i].name == name) {
+        for (std::size_t i = 0; i < _count; ++i)
+        {
+            if (_entries[i].name == name)
+            {
                 return static_cast<Code>(i);
             }
         }
         return std::nullopt;
     }
 
-    DiagnosticSeverity Severity(Code code) const noexcept
+    DiagnosticSeverity
+    Severity(Code code) const noexcept
     {
         const DiagnosticCodeEntry* entry = _Entry(code);
         return entry ? entry->severity : DiagnosticSeverity::Error;
     }
 
-    bool Recoverable(Code code) const noexcept
+    bool
+    Recoverable(Code code) const noexcept
     {
         const DiagnosticCodeEntry* entry = _Entry(code);
         return entry ? entry->recoverable : false;
     }
 
-private:
-    const DiagnosticCodeEntry* _Entry(Code code) const noexcept
+  private:
+    const DiagnosticCodeEntry*
+    _Entry(Code code) const noexcept
     {
         const auto index = static_cast<std::size_t>(code);
         return index < _count ? &_entries[index] : nullptr;

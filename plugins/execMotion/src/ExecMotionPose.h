@@ -27,7 +27,8 @@
 #include <string>
 #include <vector>
 
-namespace execmotion {
+namespace execmotion
+{
 
 /// The bone a `UsdSkelAnimation` joint path names, or nullopt.
 ///
@@ -53,8 +54,7 @@ std::optional<motion::HumanBone> BoneForJointPath(const std::string& jointPath);
 /// No sampling, no interpolation, no retarget. This is the identity, and it is
 /// what makes the first OpenExec computation attributable: a wrong result is a
 /// wrong mechanism, because there is no algorithm to blame.
-motion::HumanoidPose IdentityPoseForJoints(
-    const std::vector<std::string>& jointPaths);
+motion::HumanoidPose IdentityPoseForJoints(const std::vector<std::string>& jointPaths);
 
 /// What a `UsdSkelAnimation` states at one instant, as plain values.
 ///
@@ -192,8 +192,7 @@ struct FilterPolicy
 /// second algorithm the wrapper rule forbids, so the difference is recorded
 /// (P0-6 parity compares the two).
 motion::HumanoidPose FilteredPose(const motion::HumanoidPose& prior,
-                                  const motion::HumanoidPose& pose,
-                                  const FilterPolicy& policy);
+                                  const motion::HumanoidPose& pose, const FilterPolicy& policy);
 
 /// What a clip states about how its root is taken in.
 ///
@@ -226,8 +225,7 @@ struct RootPolicy
 ///
 /// The spellings are the enum's own names in lowerCamelCase, which is what a
 /// USD token attribute reads like: `passthrough`, `ignore`, `deriveVelocity`.
-std::optional<motion::RootMotionIntake> RootIntakeForToken(
-    std::string_view token);
+std::optional<motion::RootMotionIntake> RootIntakeForToken(std::string_view token);
 
 /// The root motion `pose` states, under `policy`, given the pose before it.
 ///
@@ -265,8 +263,7 @@ std::optional<motion::RootMotionIntake> RootIntakeForToken(
 /// a stateless `ConditionRootMotion(prior, pose, intake)` free function beside
 /// the session class, so the rule has one implementation again.
 motion::RootMotion RootMotionFrom(const motion::HumanoidPose& prior,
-                                  const motion::HumanoidPose& pose,
-                                  const RootPolicy& policy);
+                                  const motion::HumanoidPose& pose, const RootPolicy& policy);
 
 /// The transform `root` places something at, as a local-to-parent matrix: the
 /// orientation, then the position, each only where the root states it.
@@ -342,8 +339,8 @@ motion::HumanoidAnimation HistoryOfOne(const motion::HumanoidPose& pose);
 /// an interpolation between neighbours. A check stricter than that would be a
 /// policy of this bundle's -- `motion::PoseBuffer::Push`'s strictly-increasing
 /// rule is a property of how a buffer is *filled*, not of what can be sampled.
-std::optional<motion::PoseSampleResult> SampleHistory(
-    const motion::HumanoidAnimation& history, double seconds);
+std::optional<motion::PoseSampleResult> SampleHistory(const motion::HumanoidAnimation& history,
+                                                      double seconds);
 
 /// What a blend was handed, as plain values.
 ///

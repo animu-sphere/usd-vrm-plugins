@@ -16,9 +16,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdVrmHumanoidAPI,
-        TfType::Bases< UsdAPISchemaBase > >();
-    
+    TfType::Define<UsdVrmHumanoidAPI, TfType::Bases<UsdAPISchemaBase>>();
 }
 
 /* virtual */
@@ -28,42 +26,43 @@ UsdVrmHumanoidAPI::~UsdVrmHumanoidAPI()
 
 /* static */
 UsdVrmHumanoidAPI
-UsdVrmHumanoidAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdVrmHumanoidAPI::Get(const UsdStagePtr& stage, const SdfPath& path)
 {
-    if (!stage) {
+    if (!stage)
+    {
         TF_CODING_ERROR("Invalid stage");
         return UsdVrmHumanoidAPI();
     }
     return UsdVrmHumanoidAPI(stage->GetPrimAtPath(path));
 }
 
-
 /* virtual */
-UsdSchemaKind UsdVrmHumanoidAPI::_GetSchemaKind() const
+UsdSchemaKind
+UsdVrmHumanoidAPI::_GetSchemaKind() const
 {
     return UsdVrmHumanoidAPI::schemaKind;
 }
 
 /* static */
 bool
-UsdVrmHumanoidAPI::CanApply(
-    const UsdPrim &prim, std::string *whyNot)
+UsdVrmHumanoidAPI::CanApply(const UsdPrim& prim, std::string* whyNot)
 {
     return prim.CanApplyAPI<UsdVrmHumanoidAPI>(whyNot);
 }
 
 /* static */
 UsdVrmHumanoidAPI
-UsdVrmHumanoidAPI::Apply(const UsdPrim &prim)
+UsdVrmHumanoidAPI::Apply(const UsdPrim& prim)
 {
-    if (prim.ApplyAPI<UsdVrmHumanoidAPI>()) {
+    if (prim.ApplyAPI<UsdVrmHumanoidAPI>())
+    {
         return UsdVrmHumanoidAPI(prim);
     }
     return UsdVrmHumanoidAPI();
 }
 
 /* static */
-const TfType &
+const TfType&
 UsdVrmHumanoidAPI::_GetStaticTfType()
 {
     static TfType tfType = TfType::Find<UsdVrmHumanoidAPI>();
@@ -71,7 +70,7 @@ UsdVrmHumanoidAPI::_GetStaticTfType()
 }
 
 /* static */
-bool 
+bool
 UsdVrmHumanoidAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
@@ -79,7 +78,7 @@ UsdVrmHumanoidAPI::_IsTypedSchema()
 }
 
 /* virtual */
-const TfType &
+const TfType&
 UsdVrmHumanoidAPI::_GetTfType() const
 {
     return _GetStaticTfType();
@@ -92,14 +91,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesHipsAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesHipsAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesHipsAttr(VtValue const& defaultValue,
+                                               bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesHips,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesHips, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -109,14 +106,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesSpineAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesSpineAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesSpineAttr(VtValue const& defaultValue,
+                                                bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesSpine,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesSpine, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -126,14 +121,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesChestAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesChestAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesChestAttr(VtValue const& defaultValue,
+                                                bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesChest,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesChest, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -143,14 +136,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesUpperChestAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesUpperChestAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesUpperChestAttr(VtValue const& defaultValue,
+                                                     bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesUpperChest,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesUpperChest, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -160,14 +151,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesNeckAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesNeckAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesNeckAttr(VtValue const& defaultValue,
+                                               bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesNeck,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesNeck, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -177,14 +166,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesHeadAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesHeadAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesHeadAttr(VtValue const& defaultValue,
+                                               bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesHead,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesHead, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -194,14 +181,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftEyeAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftEyeAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftEyeAttr(VtValue const& defaultValue,
+                                                  bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftEye,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftEye, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -211,14 +196,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightEyeAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightEyeAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightEyeAttr(VtValue const& defaultValue,
+                                                   bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightEye,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightEye, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -228,14 +211,11 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesJawAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesJawAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesJawAttr(VtValue const& defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesJaw,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesJaw, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -245,14 +225,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftUpperLegAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftUpperLegAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftUpperLegAttr(VtValue const& defaultValue,
+                                                       bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftUpperLeg,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftUpperLeg, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -262,14 +240,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftLowerLegAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftLowerLegAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftLowerLegAttr(VtValue const& defaultValue,
+                                                       bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftLowerLeg,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftLowerLeg, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -279,14 +255,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftFootAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftFootAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftFootAttr(VtValue const& defaultValue,
+                                                   bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftFoot,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftFoot, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -296,14 +270,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftToesAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftToesAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftToesAttr(VtValue const& defaultValue,
+                                                   bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftToes,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftToes, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -313,14 +285,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightUpperLegAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightUpperLegAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightUpperLegAttr(VtValue const& defaultValue,
+                                                        bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightUpperLeg,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightUpperLeg, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -330,14 +300,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightLowerLegAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightLowerLegAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightLowerLegAttr(VtValue const& defaultValue,
+                                                        bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightLowerLeg,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightLowerLeg, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -347,14 +315,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightFootAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightFootAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightFootAttr(VtValue const& defaultValue,
+                                                    bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightFoot,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightFoot, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -364,14 +330,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightToesAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightToesAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightToesAttr(VtValue const& defaultValue,
+                                                    bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightToes,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightToes, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -381,14 +345,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftShoulderAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftShoulderAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftShoulderAttr(VtValue const& defaultValue,
+                                                       bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftShoulder,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftShoulder, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -398,14 +360,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftUpperArmAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftUpperArmAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftUpperArmAttr(VtValue const& defaultValue,
+                                                       bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftUpperArm,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftUpperArm, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -415,14 +375,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftLowerArmAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftLowerArmAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftLowerArmAttr(VtValue const& defaultValue,
+                                                       bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftLowerArm,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftLowerArm, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -432,14 +390,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftHandAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftHandAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftHandAttr(VtValue const& defaultValue,
+                                                   bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftHand,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftHand, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -449,14 +405,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightShoulderAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightShoulderAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightShoulderAttr(VtValue const& defaultValue,
+                                                        bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightShoulder,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightShoulder, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -466,14 +420,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightUpperArmAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightUpperArmAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightUpperArmAttr(VtValue const& defaultValue,
+                                                        bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightUpperArm,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightUpperArm, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -483,14 +435,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightLowerArmAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightLowerArmAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightLowerArmAttr(VtValue const& defaultValue,
+                                                        bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightLowerArm,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightLowerArm, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -500,14 +450,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightHandAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightHandAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightHandAttr(VtValue const& defaultValue,
+                                                    bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightHand,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightHand, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -517,14 +465,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftThumbMetacarpalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftThumbMetacarpalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftThumbMetacarpalAttr(VtValue const& defaultValue,
+                                                              bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftThumbMetacarpal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftThumbMetacarpal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -534,14 +480,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftThumbProximalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftThumbProximalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftThumbProximalAttr(VtValue const& defaultValue,
+                                                            bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftThumbProximal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftThumbProximal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -551,14 +495,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftThumbDistalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftThumbDistalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftThumbDistalAttr(VtValue const& defaultValue,
+                                                          bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftThumbDistal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftThumbDistal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -568,14 +510,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftIndexProximalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftIndexProximalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftIndexProximalAttr(VtValue const& defaultValue,
+                                                            bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftIndexProximal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftIndexProximal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -585,14 +525,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftIndexIntermediateAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftIndexIntermediateAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftIndexIntermediateAttr(VtValue const& defaultValue,
+                                                                bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftIndexIntermediate,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftIndexIntermediate, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -602,14 +540,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftIndexDistalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftIndexDistalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftIndexDistalAttr(VtValue const& defaultValue,
+                                                          bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftIndexDistal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftIndexDistal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -619,14 +555,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftMiddleProximalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftMiddleProximalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftMiddleProximalAttr(VtValue const& defaultValue,
+                                                             bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftMiddleProximal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftMiddleProximal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -636,14 +570,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftMiddleIntermediateAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftMiddleIntermediateAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftMiddleIntermediateAttr(VtValue const& defaultValue,
+                                                                 bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftMiddleIntermediate,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftMiddleIntermediate, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -653,14 +585,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftMiddleDistalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftMiddleDistalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftMiddleDistalAttr(VtValue const& defaultValue,
+                                                           bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftMiddleDistal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftMiddleDistal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -670,14 +600,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftRingProximalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftRingProximalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftRingProximalAttr(VtValue const& defaultValue,
+                                                           bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftRingProximal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftRingProximal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -687,14 +615,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftRingIntermediateAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftRingIntermediateAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftRingIntermediateAttr(VtValue const& defaultValue,
+                                                               bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftRingIntermediate,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftRingIntermediate, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -704,14 +630,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftRingDistalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftRingDistalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftRingDistalAttr(VtValue const& defaultValue,
+                                                         bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftRingDistal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftRingDistal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -721,14 +645,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftLittleProximalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftLittleProximalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftLittleProximalAttr(VtValue const& defaultValue,
+                                                             bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftLittleProximal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftLittleProximal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -738,14 +660,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftLittleIntermediateAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftLittleIntermediateAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftLittleIntermediateAttr(VtValue const& defaultValue,
+                                                                 bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftLittleIntermediate,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftLittleIntermediate, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -755,14 +675,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesLeftLittleDistalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftLittleDistalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesLeftLittleDistalAttr(VtValue const& defaultValue,
+                                                           bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesLeftLittleDistal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesLeftLittleDistal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -772,14 +690,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightThumbMetacarpalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightThumbMetacarpalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightThumbMetacarpalAttr(VtValue const& defaultValue,
+                                                               bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightThumbMetacarpal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightThumbMetacarpal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -789,14 +705,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightThumbProximalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightThumbProximalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightThumbProximalAttr(VtValue const& defaultValue,
+                                                             bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightThumbProximal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightThumbProximal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -806,14 +720,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightThumbDistalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightThumbDistalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightThumbDistalAttr(VtValue const& defaultValue,
+                                                           bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightThumbDistal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightThumbDistal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -823,14 +735,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightIndexProximalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightIndexProximalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightIndexProximalAttr(VtValue const& defaultValue,
+                                                             bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightIndexProximal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightIndexProximal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -840,14 +750,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightIndexIntermediateAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightIndexIntermediateAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightIndexIntermediateAttr(VtValue const& defaultValue,
+                                                                 bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightIndexIntermediate,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightIndexIntermediate, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -857,14 +765,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightIndexDistalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightIndexDistalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightIndexDistalAttr(VtValue const& defaultValue,
+                                                           bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightIndexDistal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightIndexDistal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -874,14 +780,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightMiddleProximalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightMiddleProximalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightMiddleProximalAttr(VtValue const& defaultValue,
+                                                              bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightMiddleProximal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightMiddleProximal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -891,14 +795,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightMiddleIntermediateAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightMiddleIntermediateAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightMiddleIntermediateAttr(VtValue const& defaultValue,
+                                                                  bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightMiddleIntermediate,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightMiddleIntermediate, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -908,14 +810,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightMiddleDistalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightMiddleDistalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightMiddleDistalAttr(VtValue const& defaultValue,
+                                                            bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightMiddleDistal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightMiddleDistal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -925,14 +825,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightRingProximalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightRingProximalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightRingProximalAttr(VtValue const& defaultValue,
+                                                            bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightRingProximal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightRingProximal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -942,14 +840,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightRingIntermediateAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightRingIntermediateAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightRingIntermediateAttr(VtValue const& defaultValue,
+                                                                bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightRingIntermediate,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightRingIntermediate, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -959,14 +855,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightRingDistalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightRingDistalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightRingDistalAttr(VtValue const& defaultValue,
+                                                          bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightRingDistal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightRingDistal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -976,14 +870,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightLittleProximalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightLittleProximalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightLittleProximalAttr(VtValue const& defaultValue,
+                                                              bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightLittleProximal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightLittleProximal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -993,14 +885,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightLittleIntermediateAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightLittleIntermediateAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightLittleIntermediateAttr(VtValue const& defaultValue,
+                                                                  bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightLittleIntermediate,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightLittleIntermediate, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -1010,14 +900,12 @@ UsdVrmHumanoidAPI::GetVrmHumanBonesRightLittleDistalAttr() const
 }
 
 UsdAttribute
-UsdVrmHumanoidAPI::CreateVrmHumanBonesRightLittleDistalAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmHumanoidAPI::CreateVrmHumanBonesRightLittleDistalAttr(VtValue const& defaultValue,
+                                                            bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmHumanBonesRightLittleDistal,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmHumanBonesRightLittleDistal, SdfValueTypeNames->Token,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdRelationship
@@ -1030,12 +918,13 @@ UsdRelationship
 UsdVrmHumanoidAPI::CreateVrmSkeletonRel() const
 {
     return GetPrim().CreateRelationship(UsdVrmTokens->vrmSkeleton,
-                       /* custom = */ false);
+                                        /* custom = */ false);
 }
 
-namespace {
+namespace
+{
 static inline TfTokenVector
-_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+_ConcatenateAttributeNames(const TfTokenVector& left, const TfTokenVector& right)
 {
     TfTokenVector result;
     result.reserve(left.size() + right.size());
@@ -1043,7 +932,7 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
     result.insert(result.end(), right.begin(), right.end());
     return result;
 }
-}
+} // namespace
 
 /*static*/
 const TfTokenVector&
@@ -1107,9 +996,7 @@ UsdVrmHumanoidAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdVrmTokens->vrmHumanBonesRightLittleDistal,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
-            UsdAPISchemaBase::GetSchemaAttributeNames(true),
-            localNames);
+        _ConcatenateAttributeNames(UsdAPISchemaBase::GetSchemaAttributeNames(true), localNames);
 
     if (includeInherited)
         return allNames;

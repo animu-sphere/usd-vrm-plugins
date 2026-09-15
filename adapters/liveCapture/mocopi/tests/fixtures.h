@@ -41,15 +41,13 @@ namespace vrmAdapterMocopiTests
 // The corpus generator's invented proportions, in bone order — round numbers
 // that are nobody's body.
 inline constexpr float kRestOffsets[vrmAdapterMocopi::MeasuredBoneCount][3] = {
-    {0.0f, 0.90f, 0.0f},     {0.0f, 0.06f, 0.0f},   {0.0f, 0.06f, 0.0f},
-    {0.0f, 0.06f, 0.0f},     {0.0f, 0.06f, 0.0f},   {0.0f, 0.06f, 0.0f},
-    {0.0f, 0.06f, 0.0f},     {0.0f, 0.10f, 0.0f},   {0.0f, 0.05f, 0.0f},
-    {0.0f, 0.05f, 0.0f},     {0.0f, 0.05f, 0.0f},   {0.02f, -0.08f, 0.08f},
-    {0.14f, 0.0f, 0.0f},     {0.30f, 0.0f, 0.0f},   {0.25f, 0.0f, 0.0f},
-    {-0.02f, -0.08f, 0.08f}, {-0.14f, 0.0f, 0.0f},  {-0.30f, 0.0f, 0.0f},
-    {-0.25f, 0.0f, 0.0f},    {0.09f, -0.05f, 0.0f}, {0.0f, -0.40f, 0.0f},
-    {0.0f, -0.42f, 0.0f},    {0.0f, -0.10f, 0.13f}, {-0.09f, -0.05f, 0.0f},
-    {0.0f, -0.40f, 0.0f},    {0.0f, -0.42f, 0.0f},  {0.0f, -0.10f, 0.13f},
+    {0.0f, 0.90f, 0.0f},  {0.0f, 0.06f, 0.0f},  {0.0f, 0.06f, 0.0f},   {0.0f, 0.06f, 0.0f},
+    {0.0f, 0.06f, 0.0f},  {0.0f, 0.06f, 0.0f},  {0.0f, 0.06f, 0.0f},   {0.0f, 0.10f, 0.0f},
+    {0.0f, 0.05f, 0.0f},  {0.0f, 0.05f, 0.0f},  {0.0f, 0.05f, 0.0f},   {0.02f, -0.08f, 0.08f},
+    {0.14f, 0.0f, 0.0f},  {0.30f, 0.0f, 0.0f},  {0.25f, 0.0f, 0.0f},   {-0.02f, -0.08f, 0.08f},
+    {-0.14f, 0.0f, 0.0f}, {-0.30f, 0.0f, 0.0f}, {-0.25f, 0.0f, 0.0f},  {0.09f, -0.05f, 0.0f},
+    {0.0f, -0.40f, 0.0f}, {0.0f, -0.42f, 0.0f}, {0.0f, -0.10f, 0.13f}, {-0.09f, -0.05f, 0.0f},
+    {0.0f, -0.40f, 0.0f}, {0.0f, -0.42f, 0.0f}, {0.0f, -0.10f, 0.13f},
 };
 
 // The canonical bones the measured rig carries: 27 joints, five of which are on
@@ -73,16 +71,15 @@ WireIdentity()
 inline std::array<float, 3>
 RestOffset(std::size_t jointId)
 {
-    return {{kRestOffsets[jointId][0], kRestOffsets[jointId][1],
-             kRestOffsets[jointId][2]}};
+    return {{kRestOffsets[jointId][0], kRestOffsets[jointId][1], kRestOffsets[jointId][2]}};
 }
 
 inline vrmAdapterMocopi::MotionPacket
 SkeletonPacket()
 {
     vrmAdapterMocopi::MotionSkeleton skeleton;
-    for (std::size_t jointId = 0; jointId < vrmAdapterMocopi::MeasuredBoneCount;
-         ++jointId) {
+    for (std::size_t jointId = 0; jointId < vrmAdapterMocopi::MeasuredBoneCount; ++jointId)
+    {
         vrmAdapterMocopi::BoneDefinition joint;
         joint.boneId = static_cast<std::uint16_t>(jointId);
         joint.parentBoneId = vrmAdapterMocopi::MeasuredParentColumn[jointId];
@@ -99,15 +96,14 @@ SkeletonPacket()
 // A frame that restates the rest pose, which is what every measured frame does
 // for every joint but the root.
 inline vrmAdapterMocopi::MotionPacket
-FramePacket(std::uint32_t frameNumber, double streamSeconds,
-            double senderUnixSeconds)
+FramePacket(std::uint32_t frameNumber, double streamSeconds, double senderUnixSeconds)
 {
     vrmAdapterMocopi::MotionFrame frame;
     frame.frameNumber = frameNumber;
     frame.streamSeconds = static_cast<float>(streamSeconds);
     frame.senderUnixSeconds = senderUnixSeconds;
-    for (std::size_t jointId = 0; jointId < vrmAdapterMocopi::MeasuredBoneCount;
-         ++jointId) {
+    for (std::size_t jointId = 0; jointId < vrmAdapterMocopi::MeasuredBoneCount; ++jointId)
+    {
         vrmAdapterMocopi::BoneFrame bone;
         bone.boneId = static_cast<std::uint16_t>(jointId);
         bone.transform.rotation = WireIdentity();
@@ -137,8 +133,10 @@ FrameAt(std::uint32_t frameNumber, double streamSeconds)
 inline void
 MoveHips(vrmAdapterMocopi::MotionPacket* packet, float x, float y, float z)
 {
-    for (vrmAdapterMocopi::BoneFrame& bone : packet->frame->bones) {
-        if (bone.boneId == 0) {
+    for (vrmAdapterMocopi::BoneFrame& bone : packet->frame->bones)
+    {
+        if (bone.boneId == 0)
+        {
             bone.transform.translation = {x, y, z};
             return;
         }
@@ -151,9 +149,8 @@ DropJoint(vrmAdapterMocopi::MotionPacket* packet, std::uint16_t boneId)
 {
     std::vector<vrmAdapterMocopi::BoneFrame>& bones = packet->frame->bones;
     bones.erase(std::remove_if(bones.begin(), bones.end(),
-                               [boneId](const vrmAdapterMocopi::BoneFrame& bone) {
-                                   return bone.boneId == boneId;
-                               }),
+                               [boneId](const vrmAdapterMocopi::BoneFrame& bone)
+                               { return bone.boneId == boneId; }),
                 bones.end());
 }
 

@@ -40,12 +40,13 @@ main(int argc, char** argv)
     motionBvhTool::Options options;
     bool showHelp = false;
     std::string error;
-    if (!motionBvhTool::ParseOptions(arguments, &options, &showHelp, &error)) {
-        std::cerr << "motion_bvh_inspect: " << error << "\n\n"
-                  << motionBvhTool::GetUsage();
+    if (!motionBvhTool::ParseOptions(arguments, &options, &showHelp, &error))
+    {
+        std::cerr << "motion_bvh_inspect: " << error << "\n\n" << motionBvhTool::GetUsage();
         return 2;
     }
-    if (showHelp) {
+    if (showHelp)
+    {
         std::fputs(motionBvhTool::GetUsage(), stdout);
         return 0;
     }
@@ -58,20 +59,19 @@ main(int argc, char** argv)
 
     motionBvh::BvhDocument document;
     motionBvh::Diagnostic diagnostic;
-    if (!motionBvh::ParseBvhFile(options.inputPath, &document, &diagnostic,
-                                 parseOptions)) {
-        std::cerr << "motion_bvh_inspect: "
-                  << motionBvh::FormatDiagnostic(diagnostic) << "\n";
+    if (!motionBvh::ParseBvhFile(options.inputPath, &document, &diagnostic, parseOptions))
+    {
+        std::cerr << "motion_bvh_inspect: " << motionBvh::FormatDiagnostic(diagnostic) << "\n";
         return 1;
     }
 
     // Checked here rather than in ParseOptions, because the file's frame count
     // is what makes the request wrong and no one knows it until the parse has
     // run. It is still a wrong command rather than a bad file: exit 2.
-    if (options.frame && *options.frame >= document.frameCount) {
+    if (options.frame && *options.frame >= document.frameCount)
+    {
         std::cerr << "motion_bvh_inspect: --frame " << *options.frame
-                  << " is out of range; the file carries "
-                  << document.frameCount << " frame(s)\n";
+                  << " is out of range; the file carries " << document.frameCount << " frame(s)\n";
         return 2;
     }
 
@@ -79,19 +79,23 @@ main(int argc, char** argv)
     // reader learns where to look: what the file is, then its shape, then how
     // to read a row, then a row, then what the rows do.
     motionBvhTool::PrintSummary(std::cout, document, options.inputPath);
-    if (options.hierarchy) {
+    if (options.hierarchy)
+    {
         std::cout << "\n";
         motionBvhTool::PrintHierarchy(std::cout, document);
     }
-    if (options.channelMap) {
+    if (options.channelMap)
+    {
         std::cout << "\n";
         motionBvhTool::PrintChannelMap(std::cout, document);
     }
-    if (options.frame) {
+    if (options.frame)
+    {
         std::cout << "\n";
         motionBvhTool::PrintFrame(std::cout, document, *options.frame);
     }
-    if (options.ranges) {
+    if (options.ranges)
+    {
         std::cout << "\n";
         motionBvhTool::PrintChannelRanges(std::cout, document);
     }

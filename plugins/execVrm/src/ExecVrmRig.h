@@ -29,7 +29,8 @@
 #include <utility>
 #include <vector>
 
-namespace execvrm {
+namespace execvrm
+{
 
 /// The attribute `VrmHumanoidAPI` names each canonical bone's joint under,
 /// `vrm:humanBones:<bone>`, indexed by `motion::HumanBone`.
@@ -300,8 +301,7 @@ struct SourceRestOutcome
 /// through `vrm.computeTargetSkeleton`, so the two rigs of a retarget are
 /// decomposed by one implementation -- and only the bone assignment is this
 /// function's.
-SourceRestOutcome SourceRestFromSkeleton(
-    const vrmRetarget::TargetSkeleton& skeleton);
+SourceRestOutcome SourceRestFromSkeleton(const vrmRetarget::TargetSkeleton& skeleton);
 
 /// What `vrm.computeRestPoseCorrection` reads, as plain values.
 ///
@@ -649,9 +649,8 @@ struct RetargetOutcome
 /// retargeting this one pose reported is appended to it -- the library's
 /// per-pose report, `PoseRetargeter::Retarget(pose, diagnostics)`, under its
 /// own once-per-code-and-subject rule. A refusal appends nothing.
-RetargetOutcome HumanoidRetargetFor(
-    const RetargetInputs& inputs,
-    vrmRetarget::RetargetDiagnostics* diagnostics = nullptr);
+RetargetOutcome HumanoidRetargetFor(const RetargetInputs& inputs,
+                                    vrmRetarget::RetargetDiagnostics* diagnostics = nullptr);
 
 /// What `vrm.computeRigDiagnostics` reads, as plain values: the retarget's
 /// inputs with everything about a clip taken away -- the map, the rig across
@@ -727,8 +726,8 @@ struct RetargetDiagnosticsOutcome
 /// `DiagnoseRig` would be the call this node wraps.
 ///
 /// `rig` is `vrm.computeRigDiagnostics`' value, null when it answered none.
-RetargetDiagnosticsOutcome RetargetDiagnosticsFor(
-    const RetargetInputs& inputs, const vrmRetarget::RetargetDiagnostics* rig);
+RetargetDiagnosticsOutcome RetargetDiagnosticsFor(const RetargetInputs& inputs,
+                                                  const vrmRetarget::RetargetDiagnostics* rig);
 
 /// What `vrm.computeJointLocalTransforms` reads, as plain values: the
 /// humanoid's own `vrm.humanoidRetarget`, and the rig across `vrm:skeleton`
@@ -805,7 +804,6 @@ struct JointTransformsOutcome
 /// registry; the rule stays two lines here and two lines in the tool, and the
 /// ask is that the tool author from the library's value, so P1-2's "OpenExec
 /// and offline behave identically" is one statement.
-JointTransformsOutcome JointLocalTransformsFor(
-    const JointTransformsInputs& inputs);
+JointTransformsOutcome JointLocalTransformsFor(const JointTransformsInputs& inputs);
 
 } // namespace execvrm

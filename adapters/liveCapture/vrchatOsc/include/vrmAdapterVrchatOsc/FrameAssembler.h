@@ -247,7 +247,11 @@ struct TrackerSample
     // there is, and it is the receiver's.
     double receiveTime = 0.0;
 
-    bool complete() const noexcept { return hasPosition && hasRotation; }
+    bool
+    complete() const noexcept
+    {
+        return hasPosition && hasRotation;
+    }
 };
 
 // One assembled frame: the observations, and the things an observation has
@@ -343,17 +347,25 @@ struct TrackerFrameStats
 // away before this class could use it.
 class VRMADAPTERVRCHATOSC_API TrackerFrameAssembler
 {
-public:
+  public:
     explicit TrackerFrameAssembler(const TrackerFrameConfig& config = {});
 
-    const TrackerFrameConfig& GetConfig() const noexcept { return _config; }
+    const TrackerFrameConfig&
+    GetConfig() const noexcept
+    {
+        return _config;
+    }
 
     // The endpoint or fixture name stamped on every diagnostic this assembler
     // raises, so a session replayed from a capture reports the same `source` a
     // live one would. This is the *listening* side; the peer below is the
     // sending side, and they are not the same string.
     void SetSource(std::string source);
-    const std::string& GetSource() const noexcept { return _source; }
+    const std::string&
+    GetSource() const noexcept
+    {
+        return _source;
+    }
 
     // Accepts one decoded packet.
     //
@@ -371,20 +383,19 @@ public:
     // Returns how many frames this packet emitted, which is how many were
     // appended — not how many it closed. A frame closed and then refused as
     // empty returns zero, and `GetStats()` is where the difference is read.
-    std::size_t Push(const TrackerPacket& packet, double receiveTime,
-                     std::string_view peer, std::vector<TrackerFrame>* frames,
+    std::size_t Push(const TrackerPacket& packet, double receiveTime, std::string_view peer,
+                     std::vector<TrackerFrame>* frames,
                      std::vector<Diagnostic>* diagnostics = nullptr);
 
     // The peerless overload, for a caller that has no identity to give — a
     // fixture, or a capture from before the `p` line. Spelled as its own
     // function rather than as a defaulted argument so that "this session cannot
     // see a restart" is a decision at the call site.
-    std::size_t Push(const TrackerPacket& packet, double receiveTime,
-                     std::vector<TrackerFrame>* frames,
-                     std::vector<Diagnostic>* diagnostics = nullptr)
+    std::size_t
+    Push(const TrackerPacket& packet, double receiveTime, std::vector<TrackerFrame>* frames,
+         std::vector<Diagnostic>* diagnostics = nullptr)
     {
-        return Push(packet, receiveTime, std::string_view(), frames,
-                    diagnostics);
+        return Push(packet, receiveTime, std::string_view(), frames, diagnostics);
     }
 
     // Closes the frame still open at the end of a stream. Returns 1 when that
@@ -397,17 +408,30 @@ public:
     // against, and it is learned from the stream rather than configured: a
     // three-point setup must not be reported as sending an incomplete frame
     // forever.
-    const std::vector<std::string>& GetObservedTrackers() const noexcept
+    const std::vector<std::string>&
+    GetObservedTrackers() const noexcept
     {
         return _observed;
     }
 
     // The peer this session is currently attributed to, or empty when no caller
     // has named one.
-    const std::string& GetPeer() const noexcept { return _peer; }
+    const std::string&
+    GetPeer() const noexcept
+    {
+        return _peer;
+    }
 
-    const TrackerFrameStats& GetStats() const noexcept { return _stats; }
-    void ResetStats() noexcept { _stats = TrackerFrameStats(); }
+    const TrackerFrameStats&
+    GetStats() const noexcept
+    {
+        return _stats;
+    }
+    void
+    ResetStats() noexcept
+    {
+        _stats = TrackerFrameStats();
+    }
 
     // Drops the open frame, the observed trackers, the clock history and the
     // peer — everything a restart invalidates. Stats survive, because they
@@ -415,7 +439,7 @@ public:
     // state.
     void Reset();
 
-private:
+  private:
     // What is under construction, which is not a `TrackerFrame`: this has no
     // completeness report yet and may never become a frame at all.
     struct OpenFrame
@@ -435,11 +459,10 @@ private:
     // Opens a frame and consumes `_pendingNewSession`, which is the only
     // place that flag is read.
     void _Open(double receiveTime, std::string peer);
-    bool _Close(std::vector<TrackerFrame>* frames,
-                std::vector<Diagnostic>* diagnostics, const char* reason);
+    bool _Close(std::vector<TrackerFrame>* frames, std::vector<Diagnostic>* diagnostics,
+                const char* reason);
     void _Report(std::vector<Diagnostic>* diagnostics, DiagnosticCode code,
-                 std::string_view subject, std::optional<double> timestamp,
-                 std::string detail);
+                 std::string_view subject, std::optional<double> timestamp, std::string detail);
     // The index of `tracker` in the open frame, adding it when it is not there.
     std::size_t _SampleFor(const TrackerId& tracker, double receiveTime);
 

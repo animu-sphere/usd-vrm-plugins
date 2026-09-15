@@ -16,8 +16,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Turn an arbitrary source string into a single valid USD identifier. Empty /
 // all-invalid input falls back to "<fallbackPrefix>_<hash>"; a leading digit is
 // prefixed. Deterministic for a given input.
-std::string VrmSanitizeIdentifier(const std::string& value,
-                                  const std::string& fallbackPrefix);
+std::string VrmSanitizeIdentifier(const std::string& value, const std::string& fallbackPrefix);
 
 // Sanitize a batch of source names and disambiguate collisions deterministically
 // by appending _2, _3, ... in input order. A suffixed name is itself checked

@@ -110,29 +110,26 @@ enum class RetargetDiagnosticSeverity : std::uint8_t
 
 // The stable string, e.g. "VRM_RETARGET_UNBOUND_DRIVEN_BONE". Empty for a
 // value outside the enum, which is what an out-of-range cast produces.
-VRMRETARGET_API std::string_view RetargetDiagnosticCodeString(
-    RetargetDiagnosticCode code) noexcept;
+VRMRETARGET_API std::string_view RetargetDiagnosticCodeString(RetargetDiagnosticCode code) noexcept;
 
-VRMRETARGET_API std::optional<RetargetDiagnosticCode> FindRetargetDiagnosticCode(
-    std::string_view name) noexcept;
+VRMRETARGET_API std::optional<RetargetDiagnosticCode>
+FindRetargetDiagnosticCode(std::string_view name) noexcept;
 
-VRMRETARGET_API RetargetDiagnosticSeverity RetargetDiagnosticDefaultSeverity(
-    RetargetDiagnosticCode code) noexcept;
+VRMRETARGET_API RetargetDiagnosticSeverity
+RetargetDiagnosticDefaultSeverity(RetargetDiagnosticCode code) noexcept;
 
 // Whether a retarget can continue past this code. Everything the library raises
 // can: each one names what the rig or the clip did not say and what the result
 // did instead. Only a collision cannot, because the answer to it is not to
 // write at all.
-VRMRETARGET_API bool RetargetDiagnosticIsRecoverable(
-    RetargetDiagnosticCode code) noexcept;
+VRMRETARGET_API bool RetargetDiagnosticIsRecoverable(RetargetDiagnosticCode code) noexcept;
 
 // Whether this library may raise the code. A caller holding a stage is on the
 // other side of this boundary and may raise either half.
-VRMRETARGET_API bool RetargetDiagnosticIsLibraryRaised(
-    RetargetDiagnosticCode code) noexcept;
+VRMRETARGET_API bool RetargetDiagnosticIsLibraryRaised(RetargetDiagnosticCode code) noexcept;
 
-VRMRETARGET_API std::string_view RetargetDiagnosticSeverityString(
-    RetargetDiagnosticSeverity severity) noexcept;
+VRMRETARGET_API std::string_view
+RetargetDiagnosticSeverityString(RetargetDiagnosticSeverity severity) noexcept;
 
 // One reported diagnostic.
 struct RetargetDiagnostic
@@ -151,15 +148,14 @@ struct RetargetDiagnostic
 // Exact, every field. A diagnostic is a value like the pose it is reported
 // beside, and `ExecTypeRegistry::RegisterType` will not register a type it
 // cannot compare.
-VRMRETARGET_API bool operator==(const RetargetDiagnostic& a,
-                                const RetargetDiagnostic& b) noexcept;
-VRMRETARGET_API bool operator!=(const RetargetDiagnostic& a,
-                                const RetargetDiagnostic& b) noexcept;
+VRMRETARGET_API bool operator==(const RetargetDiagnostic& a, const RetargetDiagnostic& b) noexcept;
+VRMRETARGET_API bool operator!=(const RetargetDiagnostic& a, const RetargetDiagnostic& b) noexcept;
 
 // Fills `severity` and `recoverable` from the code's defaults, so a raise site
 // cannot report a code differently from the table.
-VRMRETARGET_API RetargetDiagnostic MakeRetargetDiagnostic(
-    RetargetDiagnosticCode code, std::string subject, std::string detail = {});
+VRMRETARGET_API RetargetDiagnostic MakeRetargetDiagnostic(RetargetDiagnosticCode code,
+                                                          std::string subject,
+                                                          std::string detail = {});
 
 // A single deterministic line, stable enough for a golden test to compare:
 //
@@ -170,8 +166,7 @@ VRMRETARGET_API RetargetDiagnostic MakeRetargetDiagnostic(
 // The field order is fixed, an empty subject or detail is omitted rather than
 // printed empty, and `recoverable` is printed only when it is true -- the
 // convention of the BVH and live adapters' lines, so the three read alike.
-VRMRETARGET_API std::string FormatRetargetDiagnostic(
-    const RetargetDiagnostic& diagnostic);
+VRMRETARGET_API std::string FormatRetargetDiagnostic(const RetargetDiagnostic& diagnostic);
 
 // What a retarget reported, in the order it was raised, each code and subject
 // once.
@@ -197,7 +192,11 @@ struct VRMRETARGET_API RetargetDiagnostics
     // The subjects reported under `code`, in report order.
     std::vector<std::string> Subjects(RetargetDiagnosticCode code) const;
 
-    bool IsClean() const noexcept { return reported.empty(); }
+    bool
+    IsClean() const noexcept
+    {
+        return reported.empty();
+    }
 };
 
 // Exact, entry by entry and in order: two retargets that raised the same

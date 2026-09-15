@@ -15,42 +15,44 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace
+{
 
 int g_failures = 0;
 
-void _Check(bool ok, const char* expr, int line)
+void
+_Check(bool ok, const char* expr, int line)
 {
-    if (!ok) {
+    if (!ok)
+    {
         std::printf("  FAIL (line %d): %s\n", line, expr);
         ++g_failures;
     }
 }
 #define CHECK(expr) _Check((expr), #expr, __LINE__)
 
-bool _Close(double a, double b, double eps = 1e-9)
+bool
+_Close(double a, double b, double eps = 1e-9)
 {
     return std::fabs(a - b) <= eps;
 }
 
-bool _VecClose(const GfVec3d& a, const GfVec3d& b, double eps = 1e-9)
+bool
+_VecClose(const GfVec3d& a, const GfVec3d& b, double eps = 1e-9)
 {
-    return _Close(a[0], b[0], eps) && _Close(a[1], b[1], eps) &&
-           _Close(a[2], b[2], eps);
+    return _Close(a[0], b[0], eps) && _Close(a[1], b[1], eps) && _Close(a[2], b[2], eps);
 }
 
 // glTF transforms column vectors (M * v); USD transforms row vectors (v * M), so
 // the USD matrix is the transpose. The constructor reads glTF's column-major
 // array straight into row-major storage to do that for free.
-void TestConvertMatrix()
+void
+TestConvertMatrix()
 {
     // A column-major matrix that is NOT symmetric, so a missing transpose would
     // show. Columns: c0=(1,2,3,0) c1=(4,5,6,0) c2=(7,8,9,0) c3=(10,11,12,1).
     const float g[16] = {
-        1, 2, 3, 0,
-        4, 5, 6, 0,
-        7, 8, 9, 0,
-        10, 11, 12, 1,
+        1, 2, 3, 0, 4, 5, 6, 0, 7, 8, 9, 0, 10, 11, 12, 1,
     };
     GfMatrix4d m = VrmConvertGltfMatrix(g);
 
@@ -61,15 +63,15 @@ void TestConvertMatrix()
     CHECK(_VecClose(m.ExtractTranslation(), GfVec3d(10, 11, 12)));
 
     // Equivalence with the gf transpose of the naive (non-converting) load.
-    GfMatrix4d naive(
-        g[0], g[1], g[2], g[3], g[4], g[5], g[6], g[7],
-        g[8], g[9], g[10], g[11], g[12], g[13], g[14], g[15]);
-    CHECK(m == naive);  // the constructor already loaded row-major == transpose-free
+    GfMatrix4d naive(g[0], g[1], g[2], g[3], g[4], g[5], g[6], g[7], g[8], g[9], g[10], g[11],
+                     g[12], g[13], g[14], g[15]);
+    CHECK(m == naive); // the constructor already loaded row-major == transpose-free
 }
 
 // USD row-vector convention: v' = v * (S*R*T) applies scale, then rotation, then
 // translation, matching glTF's T*R*S*v on column vectors.
-void TestComposeTrs()
+void
+TestComposeTrs()
 {
     // Translation only — sign-unambiguous, so check the point action directly.
     {
@@ -90,10 +92,10 @@ void TestComposeTrs()
     // together, without depending on USD's own rotation sign convention. A
     // swapped quaternion order yields a different axis and this fails.
     {
-        const float c = 0.0f, s = 1.0f;  // cos/sin(90 deg)
+        const float c = 0.0f, s = 1.0f; // cos/sin(90 deg)
         const float t[3] = {0, 0, 0};
         const float r[4] = {0.0f, 0.0f, (float)std::sqrt(0.5),
-                            (float)std::sqrt(0.5)};  // +90 about Z, (x,y,z,w)
+                            (float)std::sqrt(0.5)}; // +90 about Z, (x,y,z,w)
         const float sc[3] = {1, 1, 1};
         // glTF column-major R_z(90): col0=(c,s,0,0), col1=(-s,c,0,0).
         const float gz[16] = {c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
@@ -105,21 +107,22 @@ void TestComposeTrs()
     {
         const float t[3] = {10, 20, 30};
         const float r[4] = {0.0f, 0.0f, (float)std::sqrt(0.5),
-                            (float)std::sqrt(0.5)};  // +90 about Z
+                            (float)std::sqrt(0.5)}; // +90 about Z
         const float s[3] = {2, 3, 4};
         // R_z(90) columns: c0=(0,1,0), c1=(-1,0,0), c2=(0,0,1); scale per column.
         const float g[16] = {
-            0, 2, 0, 0,      // s0 * c0
-            -3, 0, 0, 0,     // s1 * c1
-            0, 0, 4, 0,      // s2 * c2
-            10, 20, 30, 1,   // translation
+            0,  2,  0,  0, // s0 * c0
+            -3, 0,  0,  0, // s1 * c1
+            0,  0,  4,  0, // s2 * c2
+            10, 20, 30, 1, // translation
         };
         CHECK(GfIsClose(VrmComposeTrs(t, r, s), VrmConvertGltfMatrix(g), 1e-6));
     }
 }
 
 // glTF UV origin is top-left, USD st origin is bottom-left: V := 1 - V.
-void TestConvertUv()
+void
+TestConvertUv()
 {
     GfVec2f uv = VrmConvertUv(GfVec2f(0.25f, 0.1f));
     CHECK(_Close(uv[0], 0.25, 1e-6));
@@ -129,14 +132,16 @@ void TestConvertUv()
     CHECK(_Close(back[0], 0.25, 1e-6) && _Close(back[1], 0.1, 1e-6));
 }
 
-}  // namespace
+} // namespace
 
-int main()
+int
+main()
 {
     TestConvertMatrix();
     TestComposeTrs();
     TestConvertUv();
-    if (g_failures) {
+    if (g_failures)
+    {
         std::printf("TransformUtil unit tests: %d FAILED\n", g_failures);
         return 1;
     }

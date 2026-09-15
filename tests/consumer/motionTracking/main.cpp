@@ -29,27 +29,27 @@ main()
 {
     motionTracking::TrackerAssignmentSpec spec;
     std::string reason;
-    if (!motionTracking::ParseTrackerAssignmentSpec("a=head b=hips", &spec,
-                                                    &reason)) {
-        std::fprintf(stderr, "consumer: statement refused: %s\n",
-                     reason.c_str());
+    if (!motionTracking::ParseTrackerAssignmentSpec("a=head b=hips", &spec, &reason))
+    {
+        std::fprintf(stderr, "consumer: statement refused: %s\n", reason.c_str());
         return 1;
     }
 
     const std::vector<std::string_view> observed{"b", "a"};
     const motionTracking::TrackerAssignment assignment =
         motionTracking::AssignTrackers(spec, observed);
-    if (!assignment.Placed()) {
-        std::fprintf(stderr, "consumer: assignment refused: %s (%s)\n",
-                     std::string(motionTracking::TrackerAssignmentRefusalName(
-                                     assignment.refusal))
-                         .c_str(),
-                     assignment.detail.c_str());
+    if (!assignment.Placed())
+    {
+        std::fprintf(
+            stderr, "consumer: assignment refused: %s (%s)\n",
+            std::string(motionTracking::TrackerAssignmentRefusalName(assignment.refusal)).c_str(),
+            assignment.detail.c_str());
         return 1;
     }
 
     const auto head = assignment.ObservedFor(motionTracking::TrackerRegion::Head);
-    if (!head.has_value() || *head != 1) {
+    if (!head.has_value() || *head != 1)
+    {
         std::fprintf(stderr, "consumer: head bound to the wrong observation\n");
         return 1;
     }
@@ -65,20 +65,18 @@ main()
     observations[1].rotation = pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f));
     observations[1].hasRotation = true;
 
-    const motionTracking::TrackerSolve solve =
-        motionTracking::SolveTrackerPose(
-            motionTracking::AssignTrackers(
-                spec, motionTracking::TrackerIdentities(observations)),
-            observations, 0.0);
-    if (!solve.Solved()) {
+    const motionTracking::TrackerSolve solve = motionTracking::SolveTrackerPose(
+        motionTracking::AssignTrackers(spec, motionTracking::TrackerIdentities(observations)),
+        observations, 0.0);
+    if (!solve.Solved())
+    {
         std::fprintf(stderr, "consumer: solve refused: %s (%s)\n",
-                     std::string(motionTracking::TrackerSolveRefusalName(
-                                     solve.refusal))
-                         .c_str(),
+                     std::string(motionTracking::TrackerSolveRefusalName(solve.refusal)).c_str(),
                      solve.detail.c_str());
         return 1;
     }
-    if (solve.pose.validRotations.count() != 2) {
+    if (solve.pose.validRotations.count() != 2)
+    {
         std::fprintf(stderr, "consumer: the solve authored %zu rotation(s)\n",
                      solve.pose.validRotations.count());
         return 1;

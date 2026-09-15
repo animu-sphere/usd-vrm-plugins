@@ -70,8 +70,8 @@ Identity() noexcept
 bool
 IsFinite(const std::array<float, 3>& translation) noexcept
 {
-    return std::isfinite(translation[0]) && std::isfinite(translation[1])
-        && std::isfinite(translation[2]);
+    return std::isfinite(translation[0]) && std::isfinite(translation[1]) &&
+           std::isfinite(translation[2]);
 }
 
 // A transform that names an orientation: finite throughout, and a rotation with
@@ -81,13 +81,16 @@ IsFinite(const std::array<float, 3>& translation) noexcept
 bool
 NamesAnOrientation(const BoneTransform& transform) noexcept
 {
-    if (!IsFinite(transform.translation)) {
+    if (!IsFinite(transform.translation))
+    {
         return false;
     }
     const std::array<float, 4>& rotation = transform.rotation;
     double lengthSquared = 0.0;
-    for (const float component : rotation) {
-        if (!std::isfinite(component)) {
+    for (const float component : rotation)
+    {
+        if (!std::isfinite(component))
+        {
             return false;
         }
         lengthSquared += static_cast<double>(component) * component;
@@ -125,7 +128,8 @@ RigRefused(DiagnosticCode code, std::uint16_t boneId, std::string detail)
 void
 Report(std::vector<Diagnostic>* diagnostics, Diagnostic diagnostic)
 {
-    if (diagnostics) {
+    if (diagnostics)
+    {
         diagnostics->push_back(std::move(diagnostic));
     }
 }
@@ -138,16 +142,17 @@ Report(std::vector<Diagnostic>* diagnostics, Diagnostic diagnostic)
 constexpr bool
 ParentsPrecedeChildren() noexcept
 {
-    for (std::size_t index = 0; index < MeasuredParentColumn.size(); ++index) {
-        if (MeasuredParentColumn[index] >= static_cast<std::int16_t>(index)) {
+    for (std::size_t index = 0; index < MeasuredParentColumn.size(); ++index)
+    {
+        if (MeasuredParentColumn[index] >= static_cast<std::int16_t>(index))
+        {
             return false;
         }
     }
     return true;
 }
 
-static_assert(ParentsPrecedeChildren(),
-              "the measured parent column must be topologically ordered");
+static_assert(ParentsPrecedeChildren(), "the measured parent column must be topologically ordered");
 
 // The joints from just below `jointId`'s nearest bound ancestor down to
 // `jointId` itself, root-first — the path rule (MOTION_CONTRACT.md). The longest
@@ -165,20 +170,23 @@ PathFromNearestBoundAncestor(std::uint16_t jointId) noexcept
 {
     JointPath path;
     std::uint16_t walker = jointId;
-    while (true) {
+    while (true)
+    {
         path.joints[path.size++] = walker;
         const std::int16_t parent = MeasuredParentColumn[walker];
-        if (parent < 0) {
+        if (parent < 0)
+        {
             break;
         }
         const auto parentId = static_cast<std::uint16_t>(parent);
-        if (kMeasuredBones[parentId] != HumanBone::Count) {
+        if (kMeasuredBones[parentId] != HumanBone::Count)
+        {
             break;
         }
         walker = parentId;
     }
-    for (std::size_t front = 0, back = path.size - 1; front < back;
-         ++front, --back) {
+    for (std::size_t front = 0, back = path.size - 1; front < back; ++front, --back)
+    {
         const std::uint16_t swap = path.joints[front];
         path.joints[front] = path.joints[back];
         path.joints[back] = swap;
@@ -193,9 +201,9 @@ constexpr std::array<JointPath, MeasuredBoneCount>
 MeasuredPaths() noexcept
 {
     std::array<JointPath, MeasuredBoneCount> paths{};
-    for (std::size_t jointId = 0; jointId < MeasuredBoneCount; ++jointId) {
-        paths[jointId] =
-            PathFromNearestBoundAncestor(static_cast<std::uint16_t>(jointId));
+    for (std::size_t jointId = 0; jointId < MeasuredBoneCount; ++jointId)
+    {
+        paths[jointId] = PathFromNearestBoundAncestor(static_cast<std::uint16_t>(jointId));
     }
     return paths;
 }
@@ -207,11 +215,13 @@ constexpr std::array<JointPath, MeasuredBoneCount> kPaths = MeasuredPaths();
 std::optional<HumanBone>
 MeasuredHumanBone(std::uint16_t boneId) noexcept
 {
-    if (!IsMeasuredJoint(boneId)) {
+    if (!IsMeasuredJoint(boneId))
+    {
         return std::nullopt;
     }
     const HumanBone bone = kMeasuredBones[boneId];
-    if (bone == HumanBone::Count) {
+    if (bone == HumanBone::Count)
+    {
         return std::nullopt;
     }
     return bone;
@@ -250,24 +260,23 @@ ToCanonicalRotation(const std::array<float, 4>& rotation) noexcept
     // whole range representable. This project has already paid once for two
     // magnitudes formed in different precisions (motionCore/Compare.h).
     double lengthSquared = 0.0;
-    for (const float component : rotation) {
+    for (const float component : rotation)
+    {
         lengthSquared += static_cast<double>(component) * component;
     }
     const double length = std::sqrt(lengthSquared);
     // Left alone when there is nothing to divide by: the caller's boundary
     // check has already refused a zero or non-finite rotation, and repairing
     // one here would put an identity where a refusal belongs.
-    if (!std::isfinite(length) || length <= 0.0) {
-        return pxr::GfQuatf(
-            rotation[3],
-            pxr::GfVec3f(rotation[0], rotation[1], rotation[2]));
+    if (!std::isfinite(length) || length <= 0.0)
+    {
+        return pxr::GfQuatf(rotation[3], pxr::GfVec3f(rotation[0], rotation[1], rotation[2]));
     }
     const double inverse = 1.0 / length;
-    return pxr::GfQuatf(
-        static_cast<float>(rotation[3] * inverse),
-        pxr::GfVec3f(static_cast<float>(rotation[0] * inverse),
-                     static_cast<float>(rotation[1] * inverse),
-                     static_cast<float>(rotation[2] * inverse)));
+    return pxr::GfQuatf(static_cast<float>(rotation[3] * inverse),
+                        pxr::GfVec3f(static_cast<float>(rotation[0] * inverse),
+                                     static_cast<float>(rotation[1] * inverse),
+                                     static_cast<float>(rotation[2] * inverse)));
 }
 
 SkeletonMap::SkeletonMap()
@@ -279,7 +288,8 @@ SkeletonMap::SkeletonMap()
 std::optional<HumanBone>
 SkeletonMap::Bone(std::uint16_t boneId) const noexcept
 {
-    if (static_cast<std::size_t>(boneId) >= jointCount) {
+    if (static_cast<std::size_t>(boneId) >= jointCount)
+    {
         return std::nullopt;
     }
     return MeasuredHumanBone(boneId);
@@ -289,17 +299,17 @@ bool
 MakeSkeletonMap(const MotionSkeleton& skeleton, SkeletonMap* out,
                 std::vector<Diagnostic>* diagnostics)
 {
-    if (out == nullptr) {
+    if (out == nullptr)
+    {
         return false;
     }
-    if (skeleton.bones.size() < MeasuredBoneCount) {
-        Report(diagnostics,
-               RigRefused(
-                   DiagnosticCode::UnsupportedJoint,
-                   static_cast<std::uint16_t>(skeleton.bones.size()),
-                   "the rig ends here and the measured one has "
-                       + std::to_string(MeasuredBoneCount)
-                       + " joints, so no id in it has a measured meaning"));
+    if (skeleton.bones.size() < MeasuredBoneCount)
+    {
+        Report(diagnostics, RigRefused(DiagnosticCode::UnsupportedJoint,
+                                       static_cast<std::uint16_t>(skeleton.bones.size()),
+                                       "the rig ends here and the measured one has " +
+                                           std::to_string(MeasuredBoneCount) +
+                                           " joints, so no id in it has a measured meaning"));
         return false;
     }
 
@@ -310,33 +320,31 @@ MakeSkeletonMap(const MotionSkeleton& skeleton, SkeletonMap* out,
     // from the topology being the one those ids were measured on. Matching a
     // permuted list would be asking whether two graphs are isomorphic, and a
     // rig that answered yes would still not say which of its arms is the left.
-    for (std::size_t index = 0; index < MeasuredBoneCount; ++index) {
+    for (std::size_t index = 0; index < MeasuredBoneCount; ++index)
+    {
         const BoneDefinition& joint = skeleton.bones[index];
         const auto expectedId = static_cast<std::uint16_t>(index);
-        if (joint.boneId != expectedId) {
-            Report(diagnostics,
-                   RigRefused(DiagnosticCode::UnsupportedJoint, joint.boneId,
-                              "the measured rig carries bone "
-                                  + std::to_string(expectedId)
-                                  + " in this position"));
+        if (joint.boneId != expectedId)
+        {
+            Report(diagnostics, RigRefused(DiagnosticCode::UnsupportedJoint, joint.boneId,
+                                           "the measured rig carries bone " +
+                                               std::to_string(expectedId) + " in this position"));
             return false;
         }
-        if (joint.parentBoneId != MeasuredParentColumn[index]) {
-            Report(diagnostics,
-                   RigRefused(
-                       DiagnosticCode::UnsupportedJoint, joint.boneId,
-                       "its parent is "
-                           + std::to_string(joint.parentBoneId)
-                           + " and the measured rig's is "
-                           + std::to_string(MeasuredParentColumn[index])
-                           + ", so this is a different rig"));
+        if (joint.parentBoneId != MeasuredParentColumn[index])
+        {
+            Report(diagnostics, RigRefused(DiagnosticCode::UnsupportedJoint, joint.boneId,
+                                           "its parent is " + std::to_string(joint.parentBoneId) +
+                                               " and the measured rig's is " +
+                                               std::to_string(MeasuredParentColumn[index]) +
+                                               ", so this is a different rig"));
             return false;
         }
-        if (!NamesAnOrientation(joint.restTransform)) {
-            Report(diagnostics,
-                   RigRefused(DiagnosticCode::NonFiniteTransform, joint.boneId,
-                              "a rest transform that names no orientation "
-                              "leaves every bone below it unplaced"));
+        if (!NamesAnOrientation(joint.restTransform))
+        {
+            Report(diagnostics, RigRefused(DiagnosticCode::NonFiniteTransform, joint.boneId,
+                                           "a rest transform that names no orientation "
+                                           "leaves every bone below it unplaced"));
             return false;
         }
     }
@@ -353,48 +361,48 @@ MakeSkeletonMap(const MotionSkeleton& skeleton, SkeletonMap* out,
     // broken the identity every id above rests on, and the diagnostic would
     // otherwise name `bone 5` while bone 5 is a torso segment sitting where it
     // always was.
-    for (std::size_t index = MeasuredBoneCount; index < skeleton.bones.size();
-         ++index) {
+    for (std::size_t index = MeasuredBoneCount; index < skeleton.bones.size(); ++index)
+    {
         const BoneDefinition& joint = skeleton.bones[index];
-        if (IsMeasuredJoint(joint.boneId)) {
-            Report(diagnostics,
-                   RigRefused(DiagnosticCode::UnsupportedJoint, joint.boneId,
-                              "a joint beyond the measured rig claims an id "
-                              "inside it, so an id is no longer a position"));
+        if (IsMeasuredJoint(joint.boneId))
+        {
+            Report(diagnostics, RigRefused(DiagnosticCode::UnsupportedJoint, joint.boneId,
+                                           "a joint beyond the measured rig claims an id "
+                                           "inside it, so an id is no longer a position"));
             return false;
         }
-        Report(diagnostics,
-               JointDiagnostic(DiagnosticCode::UnsupportedJoint, joint.boneId,
-                               "beyond the measured rig, so this map carries no "
-                               "canonical bone for it"));
+        Report(diagnostics, JointDiagnostic(DiagnosticCode::UnsupportedJoint, joint.boneId,
+                                            "beyond the measured rig, so this map carries no "
+                                            "canonical bone for it"));
     }
 
     SkeletonMap map;
     map.jointCount = skeleton.bones.size();
-    for (std::size_t jointId = 0; jointId < MeasuredBoneCount; ++jointId) {
-        map.jointRestTranslations[jointId] =
-            skeleton.bones[jointId].restTransform.translation;
+    for (std::size_t jointId = 0; jointId < MeasuredBoneCount; ++jointId)
+    {
+        map.jointRestTranslations[jointId] = skeleton.bones[jointId].restTransform.translation;
     }
 
     // One walk, two callers: the rest pose here and every frame below take the
     // same paths, so they cannot disagree. A rest built by a second traversal
     // would differ from the frames by a constant per bone, which reads as a bad
     // capture rather than as a bug (MOTION_CONTRACT.md).
-    for (std::uint16_t jointId = 0; jointId < MeasuredBoneCount; ++jointId) {
+    for (std::uint16_t jointId = 0; jointId < MeasuredBoneCount; ++jointId)
+    {
         const std::optional<HumanBone> bone = MeasuredHumanBone(jointId);
-        if (!bone) {
+        if (!bone)
+        {
             continue;
         }
         const JointPath& path = kPaths[jointId];
         pxr::GfQuatf rotation = Identity();
         pxr::GfVec3f translation(0.0f);
-        for (std::size_t step = 0; step < path.size; ++step) {
-            const BoneTransform& rest =
-                skeleton.bones[path.joints[step]].restTransform;
+        for (std::size_t step = 0; step < path.size; ++step)
+        {
+            const BoneTransform& rest = skeleton.bones[path.joints[step]].restTransform;
             // Root-first, so each joint's own offset is stated in the frame the
             // rotations composed so far have already established.
-            translation += rotation.Transform(
-                ToCanonicalPosition(rest.translation));
+            translation += rotation.Transform(ToCanonicalPosition(rest.translation));
             rotation = rotation * ToCanonicalRotation(rest.rotation);
         }
         const auto slot = static_cast<std::size_t>(*bone);
@@ -408,10 +416,11 @@ MakeSkeletonMap(const MotionSkeleton& skeleton, SkeletonMap* out,
 }
 
 bool
-MapMotionFrame(const SkeletonMap& map, const MotionFrame& frame,
-               FrameMapping* out, std::vector<Diagnostic>* diagnostics)
+MapMotionFrame(const SkeletonMap& map, const MotionFrame& frame, FrameMapping* out,
+               std::vector<Diagnostic>* diagnostics)
 {
-    if (out == nullptr) {
+    if (out == nullptr)
+    {
         return false;
     }
 
@@ -422,17 +431,20 @@ MapMotionFrame(const SkeletonMap& map, const MotionFrame& frame,
     // else is a record this mapping cannot carry, which is what `unusedJoints`
     // counts.
     std::array<const BoneTransform*, MeasuredBoneCount> records{};
-    for (const BoneFrame& bone : frame.bones) {
+    for (const BoneFrame& bone : frame.bones)
+    {
         // A joint outside the measured rig, or one the session's own skeleton
         // packet never declared. A map nobody built declares none, so it lands
         // here for every record and produces an empty mapping rather than
         // reading a rig it does not have.
-        if (!IsMeasuredJoint(bone.boneId)
-            || static_cast<std::size_t>(bone.boneId) >= map.jointCount) {
+        if (!IsMeasuredJoint(bone.boneId) ||
+            static_cast<std::size_t>(bone.boneId) >= map.jointCount)
+        {
             ++mapping.unusedJoints;
             continue;
         }
-        if (records[bone.boneId] != nullptr) {
+        if (records[bone.boneId] != nullptr)
+        {
             // A repeat of an id already read. The decoder declines to judge
             // duplicates — in a fixed-position encoding the position is the
             // name, so there is no second joint for a second record to be — and
@@ -444,17 +456,16 @@ MapMotionFrame(const SkeletonMap& map, const MotionFrame& frame,
             ++mapping.unusedJoints;
             continue;
         }
-        if (!NamesAnOrientation(bone.transform)) {
+        if (!NamesAnOrientation(bone.transform))
+        {
             // Unreachable through `DecodeMotionPacket`, which refuses such a
             // record before it reaches a frame — and reachable through any
             // other caller, since this function takes structs rather than
             // datagrams. The joint is left absent, so every bone whose path
             // runs through it is absent too.
-            Report(diagnostics,
-                   JointDiagnostic(DiagnosticCode::NonFiniteTransform,
-                                   bone.boneId,
-                                   "a transform that names no orientation is "
-                                   "not a sample this joint can contribute"));
+            Report(diagnostics, JointDiagnostic(DiagnosticCode::NonFiniteTransform, bone.boneId,
+                                                "a transform that names no orientation is "
+                                                "not a sample this joint can contribute"));
             continue;
         }
         records[bone.boneId] = &bone.transform;
@@ -463,10 +474,10 @@ MapMotionFrame(const SkeletonMap& map, const MotionFrame& frame,
     // The body's placement: the hips joint's own translation, absolute and in
     // metres. There is no second root channel to compose it with, which is the
     // ambiguity the sibling adapter has and this one does not (SkeletonMap.h).
-    if (records[kRootJoint] != nullptr) {
+    if (records[kRootJoint] != nullptr)
+    {
         mapping.hasHipsPosition = true;
-        mapping.hipsPosition =
-            ToCanonicalPosition(records[kRootJoint]->translation);
+        mapping.hipsPosition = ToCanonicalPosition(records[kRootJoint]->translation);
     }
 
     // Every other joint restates its rest offset, in every measured session and
@@ -474,11 +485,14 @@ MapMotionFrame(const SkeletonMap& map, const MotionFrame& frame,
     // nowhere to put — only hips translation is body translation — so it is
     // dropped, and counted so that an operator can see a session doing what the
     // measurement says sessions do not do.
-    for (std::uint16_t jointId = 1; jointId < MeasuredBoneCount; ++jointId) {
-        if (records[jointId] == nullptr) {
+    for (std::uint16_t jointId = 1; jointId < MeasuredBoneCount; ++jointId)
+    {
+        if (records[jointId] == nullptr)
+        {
             continue;
         }
-        if (records[jointId]->translation != map.jointRestTranslations[jointId]) {
+        if (records[jointId]->translation != map.jointRestTranslations[jointId])
+        {
             ++mapping.droppedTranslations;
         }
     }
@@ -490,17 +504,21 @@ MapMotionFrame(const SkeletonMap& map, const MotionFrame& frame,
     // ahead of every leg. That is the kind of difference a consumer merging two
     // sorted lists finds as one silently wrong sample rather than as a failure.
     std::array<pxr::GfQuatf, motion::HumanBoneCount> composed;
-    for (std::uint16_t jointId = 0; jointId < MeasuredBoneCount; ++jointId) {
+    for (std::uint16_t jointId = 0; jointId < MeasuredBoneCount; ++jointId)
+    {
         const std::optional<HumanBone> bone = map.Bone(jointId);
-        if (!bone) {
+        if (!bone)
+        {
             continue;
         }
         const JointPath& path = kPaths[jointId];
         bool complete = true;
         pxr::GfQuatf rotation = Identity();
-        for (std::size_t step = 0; step < path.size; ++step) {
+        for (std::size_t step = 0; step < path.size; ++step)
+        {
             const BoneTransform* record = records[path.joints[step]];
-            if (record == nullptr) {
+            if (record == nullptr)
+            {
                 // A path is only as present as its joints: a bone composed from
                 // the part that arrived would be a rotation the device never
                 // sent, and an absent bone is not an identity sample.
@@ -509,7 +527,8 @@ MapMotionFrame(const SkeletonMap& map, const MotionFrame& frame,
             }
             rotation = rotation * ToCanonicalRotation(record->rotation);
         }
-        if (!complete) {
+        if (!complete)
+        {
             ++mapping.missingBones;
             continue;
         }
@@ -519,8 +538,10 @@ MapMotionFrame(const SkeletonMap& map, const MotionFrame& frame,
     }
 
     mapping.bones.reserve(mapping.present.count());
-    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot) {
-        if (!mapping.present.test(slot)) {
+    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+    {
+        if (!mapping.present.test(slot))
+        {
             continue;
         }
         BoneSample sample;

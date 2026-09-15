@@ -53,8 +53,7 @@ constexpr std::array<DiagnosticCodeEntry, DiagnosticCodeCount> kCodes{{
     {"VRM_VRCHAT_OSC_CALIBRATION_REQUIRED", DiagnosticSeverity::Warning, true},
 }};
 
-constexpr liveTransport::DiagnosticCodeTable<DiagnosticCode> kTable{
-    kCodes.data(), kCodes.size()};
+constexpr liveTransport::DiagnosticCodeTable<DiagnosticCode> kTable{kCodes.data(), kCodes.size()};
 
 } // namespace
 
@@ -102,8 +101,7 @@ FormatDiagnostic(const Diagnostic& diagnostic)
     // improvement on agreement: an operator reading a session log with more than
     // one adapter in it does not have to learn a third line format to find out
     // which one complained.
-    return liveTransport::FormatDiagnostic(
-        DiagnosticCodeString(diagnostic.code), diagnostic);
+    return liveTransport::FormatDiagnostic(DiagnosticCodeString(diagnostic.code), diagnostic);
 }
 
 } // namespace vrmAdapterVrchatOsc

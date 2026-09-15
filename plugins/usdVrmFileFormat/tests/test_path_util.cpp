@@ -14,25 +14,30 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace
+{
 
 int g_failures = 0;
 
-void _Check(bool ok, const char* expr, int line)
+void
+_Check(bool ok, const char* expr, int line)
 {
-    if (!ok) {
+    if (!ok)
+    {
         std::printf("  FAIL (line %d): %s\n", line, expr);
         ++g_failures;
     }
 }
 #define CHECK(expr) _Check((expr), #expr, __LINE__)
 
-bool _AllDistinct(const std::vector<std::string>& names)
+bool
+_AllDistinct(const std::vector<std::string>& names)
 {
     return std::set<std::string>(names.begin(), names.end()).size() == names.size();
 }
 
-void TestSanitize()
+void
+TestSanitize()
 {
     // Already an identifier: untouched.
     CHECK(VrmSanitizeIdentifier("Body", "Mesh") == "Body");
@@ -43,8 +48,8 @@ void TestSanitize()
     CHECK(VrmSanitizeIdentifier("Left Arm.001", "Mesh") == "Left_Arm_001");
     // No ASCII name char at all (and the empty name): a stable hashed fallback,
     // not "____", so two different non-ASCII names cannot collapse together.
-    const std::string kao = VrmSanitizeIdentifier("\xE9\xA1\x94", "Mesh");   // 顔
-    const std::string egao = VrmSanitizeIdentifier("\xE7\xAC\x91\xE9\xA1\x94", "Mesh");  // 笑顔
+    const std::string kao = VrmSanitizeIdentifier("\xE9\xA1\x94", "Mesh");              // 顔
+    const std::string egao = VrmSanitizeIdentifier("\xE7\xAC\x91\xE9\xA1\x94", "Mesh"); // 笑顔
     const std::string empty = VrmSanitizeIdentifier("", "Mesh");
     CHECK(kao.rfind("Mesh_", 0) == 0);
     CHECK(egao.rfind("Mesh_", 0) == 0);
@@ -54,21 +59,20 @@ void TestSanitize()
     CHECK(VrmSanitizeIdentifier("\xE9\xA1\x94", "Mesh") == kao);
 }
 
-void TestUniqueNamesSuffixes()
+void
+TestUniqueNamesSuffixes()
 {
-    const std::vector<std::string> out =
-        VrmMakeUniqueNames({"Body", "Body", "Body"}, "Mesh");
-    CHECK(out.size() == 3 && out[0] == "Body" && out[1] == "Body_2" &&
-          out[2] == "Body_3");
+    const std::vector<std::string> out = VrmMakeUniqueNames({"Body", "Body", "Body"}, "Mesh");
+    CHECK(out.size() == 3 && out[0] == "Body" && out[1] == "Body_2" && out[2] == "Body_3");
 }
 
 // The regression: a source name that already spells the suffix a duplicate is
 // about to be given. Counting occurrences per base hands "Body_2" to both the
 // second "Body" and to the entry actually named "Body_2".
-void TestUniqueNamesSuffixCollision()
+void
+TestUniqueNamesSuffixCollision()
 {
-    const std::vector<std::string> out =
-        VrmMakeUniqueNames({"Body", "Body", "Body_2"}, "Mesh");
+    const std::vector<std::string> out = VrmMakeUniqueNames({"Body", "Body", "Body_2"}, "Mesh");
     CHECK(out.size() == 3);
     CHECK(_AllDistinct(out));
     // Earlier entries keep the name they claimed; the loser moves on.
@@ -77,10 +81,10 @@ void TestUniqueNamesSuffixCollision()
 
 // The same trap from the other direction: the explicit "Body_2" comes first, so
 // it is the *duplicate* that has to move past it.
-void TestUniqueNamesSuffixTakenFirst()
+void
+TestUniqueNamesSuffixTakenFirst()
 {
-    const std::vector<std::string> out =
-        VrmMakeUniqueNames({"Body_2", "Body", "Body"}, "Mesh");
+    const std::vector<std::string> out = VrmMakeUniqueNames({"Body_2", "Body", "Body"}, "Mesh");
     CHECK(out.size() == 3);
     CHECK(_AllDistinct(out));
     CHECK(out[0] == "Body_2" && out[1] == "Body" && out[2] == "Body_3");
@@ -88,7 +92,8 @@ void TestUniqueNamesSuffixTakenFirst()
 
 // Distinct source names that sanitize to the same identifier still get one path
 // each — the uniquifier runs on the sanitized name, not on the source.
-void TestUniqueNamesAfterSanitize()
+void
+TestUniqueNamesAfterSanitize()
 {
     const std::vector<std::string> out =
         VrmMakeUniqueNames({"Left Arm", "Left.Arm", "Left/Arm"}, "Joint");
@@ -97,10 +102,11 @@ void TestUniqueNamesAfterSanitize()
     CHECK(out[0] == "Left_Arm" && out[1] == "Left_Arm_2" && out[2] == "Left_Arm_3");
 }
 
-void TestUniqueNamesEmptyAndNonAscii()
+void
+TestUniqueNamesEmptyAndNonAscii()
 {
-    const std::vector<std::string> out = VrmMakeUniqueNames(
-        {"", "", "\xE9\xA1\x94", "\xE9\xA1\x94"}, "Mesh");   // "", "", 顔, 顔
+    const std::vector<std::string> out =
+        VrmMakeUniqueNames({"", "", "\xE9\xA1\x94", "\xE9\xA1\x94"}, "Mesh"); // "", "", 顔, 顔
     CHECK(out.size() == 4);
     CHECK(_AllDistinct(out));
     // Same source name twice -> the second takes a suffix on the same base.
@@ -108,9 +114,10 @@ void TestUniqueNamesEmptyAndNonAscii()
     CHECK(out[3] == out[2] + "_2");
 }
 
-}  // namespace
+} // namespace
 
-int main()
+int
+main()
 {
     TestSanitize();
     TestUniqueNamesSuffixes();
@@ -118,7 +125,8 @@ int main()
     TestUniqueNamesSuffixTakenFirst();
     TestUniqueNamesAfterSanitize();
     TestUniqueNamesEmptyAndNonAscii();
-    if (g_failures) {
+    if (g_failures)
+    {
         std::printf("PathUtil unit tests: %d FAILED\n", g_failures);
         return 1;
     }

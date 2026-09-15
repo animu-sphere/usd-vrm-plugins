@@ -69,8 +69,7 @@ namespace vrmAdapterVrchatOsc
 
 // The first token of every capture this adapter reads or writes. A fixture's
 // type tag, in the sense above.
-inline constexpr std::string_view PacketCaptureMagic =
-    "!vrchat-osc-packet-capture";
+inline constexpr std::string_view PacketCaptureMagic = "!vrchat-osc-packet-capture";
 
 using liveTransport::MaxDatagramBytes;
 using liveTransport::PacketCaptureBytesPerLine;
@@ -85,19 +84,16 @@ using liveTransport::PacketCaptureGutter;
 // Parses a capture. On failure `capture` is left untouched and `error`, when
 // given, names the line and the reason.
 inline bool
-ReadPacketCapture(std::istream& input, PacketCapture* capture,
-                  PacketCaptureError* error = nullptr)
+ReadPacketCapture(std::istream& input, PacketCapture* capture, PacketCaptureError* error = nullptr)
 {
-    return liveTransport::ReadPacketCapture(PacketCaptureMagic, input, capture,
-                                            error);
+    return liveTransport::ReadPacketCapture(PacketCaptureMagic, input, capture, error);
 }
 
 inline bool
 ReadPacketCaptureFile(const std::string& path, PacketCapture* capture,
                       PacketCaptureError* error = nullptr)
 {
-    return liveTransport::ReadPacketCaptureFile(PacketCaptureMagic, path,
-                                                capture, error);
+    return liveTransport::ReadPacketCaptureFile(PacketCaptureMagic, path, capture, error);
 }
 
 // Writes `capture`. Emission is deterministic, so re-reading and rewriting a
@@ -106,15 +102,13 @@ ReadPacketCaptureFile(const std::string& path, PacketCapture* capture,
 inline bool
 WritePacketCapture(std::ostream& output, const PacketCapture& capture)
 {
-    return liveTransport::WritePacketCapture(PacketCaptureMagic, output,
-                                             capture);
+    return liveTransport::WritePacketCapture(PacketCaptureMagic, output, capture);
 }
 
 inline bool
 WritePacketCaptureFile(const std::string& path, const PacketCapture& capture)
 {
-    return liveTransport::WritePacketCaptureFile(PacketCaptureMagic, path,
-                                                 capture);
+    return liveTransport::WritePacketCaptureFile(PacketCaptureMagic, path, capture);
 }
 
 } // namespace vrmAdapterVrchatOsc

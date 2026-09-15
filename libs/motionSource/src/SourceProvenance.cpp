@@ -7,10 +7,9 @@ namespace motionSource
 bool
 operator==(const SourceProvenance& lhs, const SourceProvenance& rhs) noexcept
 {
-    return lhs.producer == rhs.producer
-           && lhs.producerVersion == rhs.producerVersion
-           && lhs.profileId == rhs.profileId && lhs.format == rhs.format
-           && lhs.sourceId == rhs.sourceId;
+    return lhs.producer == rhs.producer && lhs.producerVersion == rhs.producerVersion &&
+           lhs.profileId == rhs.profileId && lhs.format == rhs.format &&
+           lhs.sourceId == rhs.sourceId;
 }
 
 bool

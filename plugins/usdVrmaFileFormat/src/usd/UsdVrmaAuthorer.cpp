@@ -22,23 +22,22 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 bool
-UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document,
-                               std::string* outUsda) const
+UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document, std::string* outUsda) const
 {
-    if (!outUsda || document.joints.empty() || document.animation.samples.empty()) {
+    if (!outUsda || document.joints.empty() || document.animation.samples.empty())
+    {
         return false;
     }
     const UsdStageRefPtr stage = UsdStage::CreateInMemory();
-    if (!stage) return false;
+    if (!stage)
+        return false;
 
     UsdGeomSetStageUpAxis(stage, UsdGeomTokens->y);
     UsdGeomSetStageMetersPerUnit(stage, 1.0);
     stage->SetTimeCodesPerSecond(document.animation.nominalFrameRate);
     stage->SetFramesPerSecond(document.animation.nominalFrameRate);
-    stage->SetStartTimeCode(document.animation.startTime *
-                             document.animation.nominalFrameRate);
-    stage->SetEndTimeCode(document.animation.endTime *
-                           document.animation.nominalFrameRate);
+    stage->SetStartTimeCode(document.animation.startTime * document.animation.nominalFrameRate);
+    stage->SetEndTimeCode(document.animation.endTime * document.animation.nominalFrameRate);
 
     const SdfPath animationPath("/Animation");
     UsdPrim root = UsdGeomScope::Define(stage, animationPath).GetPrim();
@@ -55,7 +54,8 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document,
     VtMatrix4dArray restTransforms;
     joints.reserve(document.joints.size());
     restTransforms.reserve(document.joints.size());
-    for (const VrmaJoint& joint : document.joints) {
+    for (const VrmaJoint& joint : document.joints)
+    {
         joints.push_back(TfToken(joint.path));
         restTransforms.push_back(joint.restTransform);
     }
@@ -74,27 +74,27 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document,
     // identity array exists only so the clip evaluates.
     const VtVec3hArray identityScales(document.joints.size(), GfVec3h(1.0f));
     body.CreateScalesAttr(VtValue(identityScales));
-    for (const motion::HumanoidPose& pose : document.animation.samples) {
+    for (const motion::HumanoidPose& pose : document.animation.samples)
+    {
         VtVec3fArray valuesT;
         VtQuatfArray valuesR;
         valuesT.reserve(document.joints.size());
         valuesR.reserve(document.joints.size());
-        for (const VrmaJoint& joint : document.joints) {
+        for (const VrmaJoint& joint : document.joints)
+        {
             GfVec3f translation = joint.restTranslation;
-            if (joint.bone == motion::HumanBone::Hips && pose.root.hasPosition) {
+            if (joint.bone == motion::HumanBone::Hips && pose.root.hasPosition)
+            {
                 translation = pose.root.worldPosition;
             }
             valuesT.push_back(translation);
-            valuesR.push_back(pose.localRotations[
-                static_cast<std::size_t>(joint.bone)]);
+            valuesR.push_back(pose.localRotations[static_cast<std::size_t>(joint.bone)]);
         }
         const double timeCode = pose.timestamp * document.animation.nominalFrameRate;
         translations.Set(valuesT, timeCode);
         rotations.Set(valuesR, timeCode);
     }
-    UsdSkelBindingAPI::Apply(skeleton.GetPrim())
-        .CreateAnimationSourceRel()
-        .SetTargets({bodyPath});
+    UsdSkelBindingAPI::Apply(skeleton.GetPrim()).CreateAnimationSourceRel().SetTargets({bodyPath});
 
     // Expressions are named weights over time and nothing more here. A VRM
     // expression drives N morph targets across M meshes plus material colours,
@@ -109,12 +109,13 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document,
     // on each side. `vrm:expressionName` is the key that survives that, and the
     // avatar side authors it too since 2026-09-01 -- so `ExpressionResolve`
     // joins on this attribute and never on a prim name.
-    if (!document.expressions.empty()) {
-        const SdfPath expressionsPath =
-            animationPath.AppendChild(TfToken("Expressions"));
+    if (!document.expressions.empty())
+    {
+        const SdfPath expressionsPath = animationPath.AppendChild(TfToken("Expressions"));
         UsdGeomScope::Define(stage, expressionsPath);
         std::set<std::string> claimedNames;
-        for (const VrmaExpression& expression : document.expressions) {
+        for (const VrmaExpression& expression : document.expressions)
+        {
             // USD prim names are identifiers and expression names are not: the
             // preset vocabulary happens to be safe, and a custom name is
             // whatever an author typed. `vrm:expressionName` carries the name
@@ -127,32 +128,34 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document,
             // lets two declared expressions collapse into one, the second
             // silently overwriting the first's weights.
             std::string primName = base;
-            for (int suffix = 2; !claimedNames.insert(primName).second; ++suffix) {
+            for (int suffix = 2; !claimedNames.insert(primName).second; ++suffix)
+            {
                 primName = base + "_" + std::to_string(suffix);
             }
 
-            const UsdPrim prim = UsdGeomScope::Define(
-                stage, expressionsPath.AppendChild(TfToken(primName))).GetPrim();
-            prim.CreateAttribute(TfToken("vrm:expressionName"),
-                                 SdfValueTypeNames->Token, false,
+            const UsdPrim prim =
+                UsdGeomScope::Define(stage, expressionsPath.AppendChild(TfToken(primName)))
+                    .GetPrim();
+            prim.CreateAttribute(TfToken("vrm:expressionName"), SdfValueTypeNames->Token, false,
                                  SdfVariabilityUniform)
                 .Set(TfToken(expression.name));
-            prim.CreateAttribute(TfToken("vrm:expressionType"),
-                                 SdfValueTypeNames->Token, false,
+            prim.CreateAttribute(TfToken("vrm:expressionType"), SdfValueTypeNames->Token, false,
                                  SdfVariabilityUniform)
                 .Set(TfToken(expression.isPreset ? "preset" : "custom"));
 
-            if (expression.constantWeight) {
+            if (expression.constantWeight)
+            {
                 // The node stated a weight and nothing animates it. That is one
                 // value for the whole clip, so it is authored as a default --
                 // a run of identical time samples would claim the file keyed
                 // something it did not.
-                prim.CreateAttribute(TfToken("vrm:expressionWeight"),
-                                     SdfValueTypeNames->Float, false)
+                prim.CreateAttribute(TfToken("vrm:expressionWeight"), SdfValueTypeNames->Float,
+                                     false)
                     .Set(*expression.constantWeight);
                 continue;
             }
-            if (!expression.isAnimated) {
+            if (!expression.isAnimated)
+            {
                 // Declared, and the file gave no weight anywhere: no channel and
                 // no transform on the node to read one out of. The attribute
                 // stays unauthored rather than being written as zero, because an
@@ -161,12 +164,13 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document,
                 // did not.
                 continue;
             }
-            UsdAttribute weight = prim.CreateAttribute(
-                TfToken("vrm:expressionWeight"), SdfValueTypeNames->Float, false);
-            for (const motion::HumanoidPose& pose : document.animation.samples) {
-                if (const float* value = pose.expressions.Find(expression.name)) {
-                    weight.Set(*value,
-                               pose.timestamp * document.animation.nominalFrameRate);
+            UsdAttribute weight = prim.CreateAttribute(TfToken("vrm:expressionWeight"),
+                                                       SdfValueTypeNames->Float, false);
+            for (const motion::HumanoidPose& pose : document.animation.samples)
+            {
+                if (const float* value = pose.expressions.Find(expression.name))
+                {
+                    weight.Set(*value, pose.timestamp * document.animation.nominalFrameRate);
                 }
             }
         }
@@ -181,29 +185,33 @@ UsdVrmaAuthorer::WriteToString(const VrmaCanonicalDocument& document,
     // Namespaced attributes on a plain prim, like the expression half: this is
     // what a `VrmAnimationLookAtAPI` would carry anyway, so applying one later
     // moves no path and renames no attribute (motion policy 4.1).
-    if (document.lookAt.present) {
-        const UsdPrim prim = UsdGeomScope::Define(
-            stage, animationPath.AppendChild(TfToken("LookAt"))).GetPrim();
-        prim.CreateAttribute(TfToken("vrm:lookAtOffsetFromHeadBone"),
-                             SdfValueTypeNames->Float3, false,
-                             SdfVariabilityUniform)
+    if (document.lookAt.present)
+    {
+        const UsdPrim prim =
+            UsdGeomScope::Define(stage, animationPath.AppendChild(TfToken("LookAt"))).GetPrim();
+        prim.CreateAttribute(TfToken("vrm:lookAtOffsetFromHeadBone"), SdfValueTypeNames->Float3,
+                             false, SdfVariabilityUniform)
             .Set(document.lookAt.offsetFromHeadBone);
 
         // A point rather than a vector: it is a place in the clip's space, so
         // it translates with whatever the clip is placed into, and `point3f`
         // is what says so to every consumer that asks the type.
-        if (document.lookAt.constantTarget) {
+        if (document.lookAt.constantTarget)
+        {
             // Stated once by the node and never animated -- authored as a
             // default, because a run of identical time samples would claim the
             // file keyed something it did not.
-            prim.CreateAttribute(TfToken("vrm:lookAtTarget"),
-                                 SdfValueTypeNames->Point3f, false)
+            prim.CreateAttribute(TfToken("vrm:lookAtTarget"), SdfValueTypeNames->Point3f, false)
                 .Set(*document.lookAt.constantTarget);
-        } else if (document.lookAt.isAnimated) {
-            UsdAttribute target = prim.CreateAttribute(
-                TfToken("vrm:lookAtTarget"), SdfValueTypeNames->Point3f, false);
-            for (const motion::HumanoidPose& pose : document.animation.samples) {
-                if (pose.lookAtTarget) {
+        }
+        else if (document.lookAt.isAnimated)
+        {
+            UsdAttribute target = prim.CreateAttribute(TfToken("vrm:lookAtTarget"),
+                                                       SdfValueTypeNames->Point3f, false);
+            for (const motion::HumanoidPose& pose : document.animation.samples)
+            {
+                if (pose.lookAtTarget)
+                {
                     target.Set(*pose.lookAtTarget,
                                pose.timestamp * document.animation.nominalFrameRate);
                 }

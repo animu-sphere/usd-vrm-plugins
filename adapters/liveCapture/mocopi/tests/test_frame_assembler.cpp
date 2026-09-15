@@ -86,8 +86,10 @@ std::size_t
 Count(const std::vector<Diagnostic>& diagnostics, DiagnosticCode code)
 {
     std::size_t total = 0;
-    for (const Diagnostic& diagnostic : diagnostics) {
-        if (diagnostic.code == code) {
+    for (const Diagnostic& diagnostic : diagnostics)
+    {
+        if (diagnostic.code == code)
+        {
             ++total;
         }
     }
@@ -152,9 +154,10 @@ TestAFrameBeforeAnyRigIsRefusedAndReportedOnce()
     std::vector<MocopiFrame> frames;
     std::vector<Diagnostic> diagnostics;
 
-    for (std::uint32_t index = 0; index < 5; ++index) {
-        assert(!assembler.Push(FrameAt(3000 + index, index / kFrameRate), 0.0,
-                               &frames, &diagnostics));
+    for (std::uint32_t index = 0; index < 5; ++index)
+    {
+        assert(
+            !assembler.Push(FrameAt(3000 + index, index / kFrameRate), 0.0, &frames, &diagnostics));
     }
     assert(frames.empty());
     assert(assembler.GetStats().framesRefusedNoRig == 5);
@@ -165,8 +168,7 @@ TestAFrameBeforeAnyRigIsRefusedAndReportedOnce()
 
     // And the episode ends when the rig arrives.
     assembler.Push(SkeletonPacket(), 0.0, &frames, &diagnostics);
-    assert(assembler.Push(FrameAt(3005, 5.0 / kFrameRate), 0.0, &frames,
-                          &diagnostics));
+    assert(assembler.Push(FrameAt(3005, 5.0 / kFrameRate), 0.0, &frames, &diagnostics));
     assert(frames.size() == 1);
     assert(diagnostics.size() == 1);
 }
@@ -268,8 +270,7 @@ TestAStreamRestartIsDetectedByTheClock()
     // The measured shape: `time` returns to 0.0 while `fnum` keeps rising,
     // because the counter counts the application's frames rather than the
     // stream's. Four of the five measured sessions began this way.
-    assembler.Push(FramePacket(3121, 0.0, kEpoch + 30.0), 0.0, &frames,
-                   &diagnostics);
+    assembler.Push(FramePacket(3121, 0.0, kEpoch + 30.0), 0.0, &frames, &diagnostics);
     assert(assembler.GetStats().sessionRestarts == 1);
     assert(Count(diagnostics, DiagnosticCode::SourceRestarted) == 1);
 }
@@ -293,21 +294,18 @@ TestARestartDropsTheRigAndTheFlagLandsOnTheNextRealFrame()
     assert(frames.size() == 1);
 
     // Still dark until the device repeats its table.
-    assert(!assembler.Push(FrameAt(2, 1.0 / kFrameRate), 0.0, &frames,
-                           &diagnostics));
+    assert(!assembler.Push(FrameAt(2, 1.0 / kFrameRate), 0.0, &frames, &diagnostics));
     assert(assembler.GetStats().framesRefusedNoRig == 2);
 
     // And the flag outlives the frame it was raised on, landing on the first
     // frame the new session actually emits.
     assembler.Push(SkeletonPacket(), 0.0, &frames, &diagnostics);
-    assert(assembler.Push(FrameAt(3, 2.0 / kFrameRate), 0.0, &frames,
-                          &diagnostics));
+    assert(assembler.Push(FrameAt(3, 2.0 / kFrameRate), 0.0, &frames, &diagnostics));
     assert(frames.size() == 2);
     assert(frames[1].beginsNewSession);
 
     // And it is raised once, not on every frame of the new session.
-    assert(assembler.Push(FrameAt(4, 3.0 / kFrameRate), 0.0, &frames,
-                          &diagnostics));
+    assert(assembler.Push(FrameAt(4, 3.0 / kFrameRate), 0.0, &frames, &diagnostics));
     assert(!frames[2].beginsNewSession);
 }
 
@@ -326,8 +324,7 @@ TestATransportGapIsCountedAndNotRefused()
 
     // The measured Wi-Fi loss shape: the counter jumps by three and the clock
     // jumps by exactly three sixtieths, because the sender's clock never skipped.
-    assert(assembler.Push(FrameAt(3003, 3.0 / kFrameRate), 0.0, &frames,
-                          &diagnostics));
+    assert(assembler.Push(FrameAt(3003, 3.0 / kFrameRate), 0.0, &frames, &diagnostics));
     assert(frames.size() == 2);
     assert(frames[1].lostFrames == 2);
     assert(assembler.GetStats().framesLost == 2);
@@ -361,10 +358,8 @@ TestAnIncompleteFrameIsEmittedAndReported()
     // dropped the frame would have taken it.
     assert(frames.size() == 1);
     assert(frames[0].missing.count() == 1);
-    assert(frames[0].missing.test(static_cast<std::size_t>(
-        HumanBone::LeftLowerLeg)));
-    assert(frames[0].pose.validRotations.test(static_cast<std::size_t>(
-        HumanBone::LeftFoot)));
+    assert(frames[0].missing.test(static_cast<std::size_t>(HumanBone::LeftLowerLeg)));
+    assert(frames[0].pose.validRotations.test(static_cast<std::size_t>(HumanBone::LeftFoot)));
     assert(assembler.GetStats().framesIncomplete == 1);
     assert(Count(diagnostics, DiagnosticCode::FrameIncomplete) == 1);
 }
@@ -435,9 +430,8 @@ TestTheHipsTranslationIsTheBodysRootMotion()
     // roots at its hips — the root path is one joint, so the composition down
     // it is that joint.
     assert(frames[0].pose.root.hasOrientation);
-    assert(frames[0].pose.root.worldOrientation
-           == frames[0].pose.localRotations[static_cast<std::size_t>(
-               HumanBone::Hips)]);
+    assert(frames[0].pose.root.worldOrientation ==
+           frames[0].pose.localRotations[static_cast<std::size_t>(HumanBone::Hips)]);
 
     // The device reports no velocity and this layer derives none: that is the
     // intake's policy, and an assembler that did it would be a second runtime.
@@ -533,9 +527,9 @@ TestTheTwoClocksGiveADriftCheck()
 
     // A session whose two clocks agree, which is what the device sends: the
     // offset between them is the session's start instant and it is constant.
-    for (std::uint32_t index = 0; index < 3; ++index) {
-        assembler.Push(FrameAt(3000 + index, index / kFrameRate), 0.0, &frames,
-                       &diagnostics);
+    for (std::uint32_t index = 0; index < 3; ++index)
+    {
+        assembler.Push(FrameAt(3000 + index, index / kFrameRate), 0.0, &frames, &diagnostics);
     }
     assert(frames.size() == 3);
     // Zero on the first frame by construction: it is the frame that fixes the
@@ -543,21 +537,19 @@ TestTheTwoClocksGiveADriftCheck()
     // residue that is there is the binary32 stream clock against the binary64
     // absolute one rather than anything the sender did.
     assert(frames[0].clockDrift == 0.0);
-    for (const MocopiFrame& frame : frames) {
+    for (const MocopiFrame& frame : frames)
+    {
         assert(std::fabs(frame.clockDrift) < kClockAgreement);
     }
 
     // A sender whose absolute clock stepped half a second while its stream clock
     // did not. Nothing refuses it — it is not a frame ordering question — and the
     // number is put where an operator can see it.
-    assembler.Push(FramePacket(3003, 3.0 / kFrameRate,
-                               kEpoch + 3.0 / kFrameRate + 0.5),
-                   0.0, &frames, &diagnostics);
+    assembler.Push(FramePacket(3003, 3.0 / kFrameRate, kEpoch + 3.0 / kFrameRate + 0.5), 0.0,
+                   &frames, &diagnostics);
     assert(frames.size() == 4);
     assert(std::fabs(frames[3].clockDrift - 0.5) < 1e-6);
-    assert(std::fabs(frames[3].senderUnixSeconds
-                     - (kEpoch + 3.0 / kFrameRate + 0.5))
-           < 1e-6);
+    assert(std::fabs(frames[3].senderUnixSeconds - (kEpoch + 3.0 / kFrameRate + 0.5)) < 1e-6);
 }
 
 void
@@ -605,26 +597,32 @@ int
 CheckNeutralStanding(const AssembledCapture& capture, const std::string& name)
 {
     // The happy path: a rig, then five frames that each carry all of it.
-    if (capture.stats.skeletonsAccepted != 1 || capture.frames.size() != 5) {
+    if (capture.stats.skeletonsAccepted != 1 || capture.frames.size() != 5)
+    {
         return Failed(name, "a rig and five assembled frames were expected");
     }
-    for (const MocopiFrame& frame : capture.frames) {
-        if (frame.missing.any() || frame.lostFrames != 0
-            || frame.beginsNewSession) {
+    for (const MocopiFrame& frame : capture.frames)
+    {
+        if (frame.missing.any() || frame.lostFrames != 0 || frame.beginsNewSession)
+        {
             return Failed(name, "an unremarkable frame was reported as one");
         }
-        if (frame.pose.validRotations.count() != kCanonicalBoneCount) {
+        if (frame.pose.validRotations.count() != kCanonicalBoneCount)
+        {
             return Failed(name, "a frame did not carry the whole rig");
         }
-        if (std::fabs(frame.clockDrift) >= kClockAgreement) {
+        if (std::fabs(frame.clockDrift) >= kClockAgreement)
+        {
             return Failed(name, "the two clocks disagree by more than measured");
         }
     }
     // Sixty hertz, and the stream clock starts at zero.
-    if (capture.frames[0].pose.timestamp != 0.0) {
+    if (capture.frames[0].pose.timestamp != 0.0)
+    {
         return Failed(name, "the stream clock did not start at zero");
     }
-    if (!capture.diagnostics.empty()) {
+    if (!capture.diagnostics.empty())
+    {
         return Failed(name, "a clean session produced a diagnostic");
     }
     return 0;
@@ -633,35 +631,41 @@ CheckNeutralStanding(const AssembledCapture& capture, const std::string& name)
 int
 CheckArmsLowered(const AssembledCapture& capture, const std::string& name)
 {
-    if (capture.stats.skeletonsAccepted != 1 || capture.frames.size() != 3) {
+    if (capture.stats.skeletonsAccepted != 1 || capture.frames.size() != 3)
+    {
         return Failed(name, "a rig and three assembled frames were expected");
     }
     // The generator moves the root every frame, which is the one translation
     // this rig sends. It reaches the caller twice: as the body's placement on
     // the frame, and as the pose's root motion, which is the same value under
     // the policy the record chose.
-    for (const MocopiFrame& frame : capture.frames) {
-        if (!frame.hipsPosition || !frame.pose.root.hasPosition) {
+    for (const MocopiFrame& frame : capture.frames)
+    {
+        if (!frame.hipsPosition || !frame.pose.root.hasPosition)
+        {
             return Failed(name, "the hips translation did not reach a "
                                 "RootMotion");
         }
-        if (frame.pose.root.worldPosition != *frame.hipsPosition) {
+        if (frame.pose.root.worldPosition != *frame.hipsPosition)
+        {
             return Failed(name, "the root position was not the hips "
                                 "translation");
         }
-        if (!frame.pose.root.hasOrientation) {
+        if (!frame.pose.root.hasOrientation)
+        {
             return Failed(name, "the hips rotation did not reach the root's "
                                 "orientation");
         }
     }
-    if (!((*capture.frames[0].hipsPosition)[1]
-          > (*capture.frames[2].hipsPosition)[1])) {
+    if (!((*capture.frames[0].hipsPosition)[1] > (*capture.frames[2].hipsPosition)[1]))
+    {
         return Failed(name, "the body's placement did not move");
     }
     // And the movement survives the composition. Comparing the frame against
     // itself would pass on a root that was authored once and then held.
-    if (!(capture.frames[0].pose.root.worldPosition[1]
-          > capture.frames[2].pose.root.worldPosition[1])) {
+    if (!(capture.frames[0].pose.root.worldPosition[1] >
+          capture.frames[2].pose.root.worldPosition[1]))
+    {
         return Failed(name, "the root motion did not move");
     }
     return 0;
@@ -672,22 +676,26 @@ CheckFrameLoss(const AssembledCapture& capture, const std::string& name)
 {
     // The capture this file was waiting for. Seven frame datagrams, of which
     // five are frames, one is a duplicate delivery and one is a restart.
-    if (capture.frames.size() != 5) {
+    if (capture.frames.size() != 5)
+    {
         return Failed(name, "five of the seven frame datagrams were expected to "
                             "become frames");
     }
     // The measured Wi-Fi shape: `fnum` jumps by three and the clock jumps by
     // exactly three sixtieths, so two datagrams were lost and no frame was.
-    if (capture.frames[3].lostFrames != 2 || capture.stats.framesLost != 2) {
+    if (capture.frames[3].lostFrames != 2 || capture.stats.framesLost != 2)
+    {
         return Failed(name, "the transport gap was not counted as two lost "
                             "datagrams");
     }
-    if (Count(capture.diagnostics, DiagnosticCode::PacketMalformed) != 0) {
+    if (Count(capture.diagnostics, DiagnosticCode::PacketMalformed) != 0)
+    {
         return Failed(name, "a lost datagram was reported as a defect");
     }
     // The duplicate delivery.
-    if (capture.stats.framesRefusedOutOfOrder != 1
-        || Count(capture.diagnostics, DiagnosticCode::TimestampInvalid) != 1) {
+    if (capture.stats.framesRefusedOutOfOrder != 1 ||
+        Count(capture.diagnostics, DiagnosticCode::TimestampInvalid) != 1)
+    {
         return Failed(name, "the duplicate delivery was not refused exactly "
                             "once");
     }
@@ -695,13 +703,15 @@ CheckFrameLoss(const AssembledCapture& capture, const std::string& name)
     // stream clock goes back by only a tenth of a second here, so a clock-only
     // threshold reads it as a regression. The counter is what makes it a
     // restart.
-    if (capture.stats.sessionRestarts != 1
-        || Count(capture.diagnostics, DiagnosticCode::SourceRestarted) != 1) {
+    if (capture.stats.sessionRestarts != 1 ||
+        Count(capture.diagnostics, DiagnosticCode::SourceRestarted) != 1)
+    {
         return Failed(name, "the restart was not detected");
     }
     // And it dropped the rig, so the restart's own frame waits for a skeleton
     // packet the capture ends before sending.
-    if (capture.stats.framesRefusedNoRig != 1) {
+    if (capture.stats.framesRefusedNoRig != 1)
+    {
         return Failed(name, "the restart did not drop the session's rig");
     }
     return 0;
@@ -713,45 +723,51 @@ CheckSessionRestart(const AssembledCapture& capture, const std::string& name)
     // `frame-loss-01` restarts and stops; this one restarts and recovers, which
     // is the half of a restart that capture cannot show. Three frames, two
     // refused for want of a rig, then a rig again and two more.
-    if (capture.stats.skeletonsAccepted != 2 || capture.frames.size() != 5) {
+    if (capture.stats.skeletonsAccepted != 2 || capture.frames.size() != 5)
+    {
         return Failed(name, "two rigs and five assembled frames were expected");
     }
-    if (capture.stats.sessionRestarts != 1
-        || Count(capture.diagnostics, DiagnosticCode::SourceRestarted) != 1) {
+    if (capture.stats.sessionRestarts != 1 ||
+        Count(capture.diagnostics, DiagnosticCode::SourceRestarted) != 1)
+    {
         return Failed(name, "the restart was not detected exactly once");
     }
     // The cost, measured: the rig went with the old session and both frames
     // that arrived before the new one was declared were refused. Reported once
     // per episode, not twice.
-    if (capture.stats.framesRefusedNoRig != 2
-        || Count(capture.diagnostics, DiagnosticCode::FrameIncomplete) != 1) {
+    if (capture.stats.framesRefusedNoRig != 2 ||
+        Count(capture.diagnostics, DiagnosticCode::FrameIncomplete) != 1)
+    {
         return Failed(name, "the rig's loss was not counted twice and reported "
                             "once");
     }
     // The flag outlives the frames it was refused on and lands on the first
     // frame the new session actually emits — which is the frame a consumer can
     // act on, and the only one it could.
-    if (capture.frames[3].beginsNewSession != true
-        || capture.frames[2].beginsNewSession
-        || capture.frames[4].beginsNewSession) {
+    if (capture.frames[3].beginsNewSession != true || capture.frames[2].beginsNewSession ||
+        capture.frames[4].beginsNewSession)
+    {
         return Failed(name, "the new session's flag did not land on its first "
                             "emitted frame");
     }
     // The two streams are ordered against each other only by their own clocks,
     // and the new one is behind: that is what the layer above has to decide
     // about, and it is a property of these bytes rather than of the assembler.
-    if (!(capture.frames[2].pose.timestamp > capture.frames[3].pose.timestamp)) {
+    if (!(capture.frames[2].pose.timestamp > capture.frames[3].pose.timestamp))
+    {
         return Failed(name, "the new session's clock is not behind the old "
                             "session's");
     }
     // A restart is not a gap: the counter's difference across one means nothing
     // and is not counted as loss.
-    if (capture.stats.framesLost != 0 || capture.frames[3].lostFrames != 0) {
+    if (capture.stats.framesLost != 0 || capture.frames[3].lostFrames != 0)
+    {
         return Failed(name, "a restart was counted as transport loss");
     }
     // And the new session fixes its own clock offset, so drift is measured
     // within a session rather than across the discontinuity.
-    if (std::fabs(capture.frames[3].clockDrift) >= kClockAgreement) {
+    if (std::fabs(capture.frames[3].clockDrift) >= kClockAgreement)
+    {
         return Failed(name, "the new session did not re-fix its clock offset");
     }
     return 0;
@@ -764,14 +780,15 @@ CheckRefusedBones(const AssembledCapture& capture, const std::string& name)
     // loudly if a skeleton packet is ever added to this capture. The two frames
     // here are the damaged one and its clean twin, and to this layer they are
     // both frames of a session that has not declared a rig.
-    if (capture.stats.skeletonsAccepted != 0
-        || capture.stats.framesRefusedNoRig != 2
-        || !capture.frames.empty()) {
+    if (capture.stats.skeletonsAccepted != 0 || capture.stats.framesRefusedNoRig != 2 ||
+        !capture.frames.empty())
+    {
         return Failed(name, "a capture with no skeleton packet produced a "
                             "frame");
     }
     // Once per episode.
-    if (capture.diagnostics.size() != 1) {
+    if (capture.diagnostics.size() != 1)
+    {
         return Failed(name, "the missing rig was not reported exactly once");
     }
     return 0;
@@ -785,27 +802,31 @@ CheckIncompleteFrame(const AssembledCapture& capture, const std::string& name)
     // whole assertion is the difference that rig makes: the decoder and the map
     // treat the two identically (their corpus passes say so), and only here do
     // they diverge.
-    if (capture.stats.skeletonsAccepted != 1 || capture.frames.size() != 2) {
+    if (capture.stats.skeletonsAccepted != 1 || capture.frames.size() != 2)
+    {
         return Failed(name, "a rig and two assembled frames were expected");
     }
 
     // Emitted, not refused. Whether nineteen of twenty-two bones is usable is
     // `MissingBonePolicy`'s answer one layer up.
     const MocopiFrame& damaged = capture.frames[0];
-    if (damaged.missing.count() != 3
-        || damaged.pose.validRotations.count() != kCanonicalBoneCount - 3) {
+    if (damaged.missing.count() != 3 ||
+        damaged.pose.validRotations.count() != kCanonicalBoneCount - 3)
+    {
         return Failed(name, "three refused records did not cost three bones");
     }
-    const HumanBone missing[] = {HumanBone::UpperChest, HumanBone::Head,
-                                 HumanBone::LeftLowerLeg};
-    for (const HumanBone bone : missing) {
-        if (!damaged.missing.test(static_cast<std::size_t>(bone))) {
+    const HumanBone missing[] = {HumanBone::UpperChest, HumanBone::Head, HumanBone::LeftLowerLeg};
+    for (const HumanBone bone : missing)
+    {
+        if (!damaged.missing.test(static_cast<std::size_t>(bone)))
+        {
             return Failed(name, "a bone whose path lost a joint is not "
                                 "reported missing");
         }
     }
-    if (capture.stats.framesIncomplete != 1
-        || Count(capture.diagnostics, DiagnosticCode::FrameIncomplete) != 1) {
+    if (capture.stats.framesIncomplete != 1 ||
+        Count(capture.diagnostics, DiagnosticCode::FrameIncomplete) != 1)
+    {
         return Failed(name, "the incomplete frame was not reported exactly "
                             "once");
     }
@@ -814,16 +835,16 @@ CheckIncompleteFrame(const AssembledCapture& capture, const std::string& name)
     // datagram rather than to the session, which is what the clean frame after
     // it is for. `missing` is measured against the declared rig, so a rig-wide
     // fault and a one-frame fault could not otherwise be told apart.
-    if (capture.frames[1].missing.any()
-        || capture.frames[1].pose.validRotations.count()
-               != kCanonicalBoneCount) {
+    if (capture.frames[1].missing.any() ||
+        capture.frames[1].pose.validRotations.count() != kCanonicalBoneCount)
+    {
         return Failed(name, "the session did not recover on the clean frame");
     }
     // Nothing here is out of order or lost — the damage is inside a frame, not
     // between two.
-    if (capture.stats.framesRefusedOutOfOrder != 0
-        || capture.stats.framesRefusedEmpty != 0
-        || capture.stats.framesLost != 0) {
+    if (capture.stats.framesRefusedOutOfOrder != 0 || capture.stats.framesRefusedEmpty != 0 ||
+        capture.stats.framesLost != 0)
+    {
         return Failed(name, "a bone-scoped fault was read as a sequence fault");
     }
     return 0;
@@ -836,14 +857,16 @@ CheckExtendedForm(const AssembledCapture& capture, const std::string& name)
     // this session never declares a rig at all and none of its three frames can
     // be read. The frame that *does* map in the skeleton map's own corpus test
     // maps only because that test pre-seeds the measured rig; nothing here does.
-    if (capture.stats.skeletonsAccepted != 0
-        || capture.stats.skeletonsRefused != 1) {
+    if (capture.stats.skeletonsAccepted != 0 || capture.stats.skeletonsRefused != 1)
+    {
         return Failed(name, "a rig this map cannot read was accepted");
     }
-    if (!capture.frames.empty() || capture.stats.framesRefusedNoRig != 3) {
+    if (!capture.frames.empty() || capture.stats.framesRefusedNoRig != 3)
+    {
         return Failed(name, "a frame was assembled without a rig");
     }
-    if (Count(capture.diagnostics, DiagnosticCode::FrameIncomplete) != 1) {
+    if (Count(capture.diagnostics, DiagnosticCode::FrameIncomplete) != 1)
+    {
         return Failed(name, "the missing rig was not reported exactly once");
     }
     return 0;
@@ -855,8 +878,9 @@ CheckNothingAssembles(const AssembledCapture& capture, const std::string& name)
     // Every datagram in the two malformed captures is refused below this layer,
     // so nothing reaches it. Registered rather than skipped, because "this
     // capture pins nothing here" is a claim that can stop being true.
-    if (!capture.frames.empty() || capture.stats.skeletonsAccepted != 0
-        || capture.stats.framesRefusedNoRig != 0) {
+    if (!capture.frames.empty() || capture.stats.skeletonsAccepted != 0 ||
+        capture.stats.framesRefusedNoRig != 0)
+    {
         return Failed(name, "a malformed capture produced a rig or a frame");
     }
     return 0;
@@ -866,84 +890,102 @@ int
 CheckCorpus(const std::filesystem::path& directory)
 {
     std::vector<std::filesystem::path> files;
-    if (!vrmAdapterMocopiTests::CollectCaptures(directory, &files)) {
+    if (!vrmAdapterMocopiTests::CollectCaptures(directory, &files))
+    {
         return 1;
     }
 
     int failures = 0;
-    for (const std::filesystem::path& file : files) {
+    for (const std::filesystem::path& file : files)
+    {
         const std::string name = file.filename().string();
         vrmAdapterMocopi::PacketCapture capture;
         vrmAdapterMocopi::PacketCaptureError error;
-        if (!vrmAdapterMocopi::ReadPacketCaptureFile(file.string(), &capture,
-                                                     &error)) {
-            failures += Failed(name, "line " + std::to_string(error.line) + ": "
-                                         + error.message);
+        if (!vrmAdapterMocopi::ReadPacketCaptureFile(file.string(), &capture, &error))
+        {
+            failures += Failed(name, "line " + std::to_string(error.line) + ": " + error.message);
             continue;
         }
 
         AssembledCapture assembled;
         MocopiFrameAssembler assembler;
         assembler.SetSource(capture.sourceId);
-        for (const vrmAdapterMocopi::RecordedDatagram& datagram :
-             capture.datagrams) {
+        for (const vrmAdapterMocopi::RecordedDatagram& datagram : capture.datagrams)
+        {
             MotionPacket packet;
             // The decoder's own diagnostics are not this test's subject: its
             // corpus mode already pins them, and mixing the two lists would make
             // a refusal here indistinguishable from one there.
-            if (!vrmAdapterMocopi::DecodeMotionPacket(datagram.bytes, &packet)) {
+            if (!vrmAdapterMocopi::DecodeMotionPacket(datagram.bytes, &packet))
+            {
                 continue;
             }
-            assembler.Push(packet, datagram.receiveTime, &assembled.frames,
-                           &assembled.diagnostics);
+            assembler.Push(packet, datagram.receiveTime, &assembled.frames, &assembled.diagnostics);
         }
         assembled.stats = assembler.GetStats();
 
         int result = 0;
-        if (capture.sourceId == "neutral-standing-01") {
+        if (capture.sourceId == "neutral-standing-01")
+        {
             result = CheckNeutralStanding(assembled, name);
-        } else if (capture.sourceId == "arms-lowered-01") {
+        }
+        else if (capture.sourceId == "arms-lowered-01")
+        {
             result = CheckArmsLowered(assembled, name);
-        } else if (capture.sourceId == "frame-loss-01") {
+        }
+        else if (capture.sourceId == "frame-loss-01")
+        {
             result = CheckFrameLoss(assembled, name);
-        } else if (capture.sourceId == "session-restart-01") {
+        }
+        else if (capture.sourceId == "session-restart-01")
+        {
             result = CheckSessionRestart(assembled, name);
-        } else if (capture.sourceId == "refused-bones-01") {
+        }
+        else if (capture.sourceId == "refused-bones-01")
+        {
             result = CheckRefusedBones(assembled, name);
-        } else if (capture.sourceId == "incomplete-frame-01") {
+        }
+        else if (capture.sourceId == "incomplete-frame-01")
+        {
             result = CheckIncompleteFrame(assembled, name);
-        } else if (capture.sourceId == "extended-form-01") {
+        }
+        else if (capture.sourceId == "extended-form-01")
+        {
             result = CheckExtendedForm(assembled, name);
-        } else if (capture.sourceId == "malformed-container-01"
-                   || capture.sourceId == "malformed-packets-01") {
+        }
+        else if (capture.sourceId == "malformed-container-01" ||
+                 capture.sourceId == "malformed-packets-01")
+        {
             result = CheckNothingAssembles(assembled, name);
-        } else {
-            result = Failed(name, "no assertion is registered for sourceId '"
-                                      + capture.sourceId + "'");
+        }
+        else
+        {
+            result =
+                Failed(name, "no assertion is registered for sourceId '" + capture.sourceId + "'");
         }
 
         // Frozen and unraised everywhere, not just in the unit tests: the
         // measured grammar carries no tracking state, so no capture can produce
         // one.
-        if (result == 0
-            && Count(assembled.diagnostics, DiagnosticCode::TrackingLost) != 0) {
+        if (result == 0 && Count(assembled.diagnostics, DiagnosticCode::TrackingLost) != 0)
+        {
             result = Failed(name, "a capture raised a tracking state the "
                                   "grammar does not carry");
         }
 
         failures += result;
-        if (result == 0) {
-            std::printf("%s: %zu frame(s) assembled\n", name.c_str(),
-                        assembled.frames.size());
+        if (result == 0)
+        {
+            std::printf("%s: %zu frame(s) assembled\n", name.c_str(), assembled.frames.size());
         }
     }
 
-    if (failures != 0) {
+    if (failures != 0)
+    {
         std::fprintf(stderr, "%d corpus capture(s) failed\n", failures);
         return 1;
     }
-    std::printf("mocopi frame assembler corpus: %zu capture(s) verified\n",
-                files.size());
+    std::printf("mocopi frame assembler corpus: %zu capture(s) verified\n", files.size());
     return 0;
 }
 
@@ -952,7 +994,8 @@ CheckCorpus(const std::filesystem::path& directory)
 int
 main(int argc, char** argv)
 {
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
 

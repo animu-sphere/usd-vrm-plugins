@@ -34,40 +34,43 @@ main()
     skeleton.AddJoint(root);
 
     vrmRetarget::HumanoidMap map;
-    if (!map.SetJointToken(motion::HumanBone::Hips, "Root", skeleton)) {
+    if (!map.SetJointToken(motion::HumanBone::Hips, "Root", skeleton))
+    {
         std::fprintf(stderr, "consumer: the installed package would not bind "
                              "hips to the rig's only joint\n");
         return 1;
     }
 
     // A quarter turn about Y on the one bone the rig drives.
-    const pxr::GfQuatf quarter(0.70710678f,
-                               pxr::GfVec3f(0.0f, 0.70710678f, 0.0f));
+    const pxr::GfQuatf quarter(0.70710678f, pxr::GfVec3f(0.0f, 0.70710678f, 0.0f));
     motion::HumanoidPose pose;
     pose.timestamp = 0.25;
-    pose.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] =
-        quarter;
+    pose.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] = quarter;
     pose.validRotations.set(static_cast<std::size_t>(motion::HumanBone::Hips));
 
     const vrmRetarget::PoseRetargeter retargeter(skeleton, map);
     const vrmRetarget::RetargetedPose expanded = retargeter.Retarget(pose);
 
-    if (expanded.rotations.size() != skeleton.GetSize()
-        || expanded.translations.size() != skeleton.GetSize()) {
-        std::fprintf(stderr, "consumer: expanded %zu rotations for a %zu-joint "
-                             "rig\n",
+    if (expanded.rotations.size() != skeleton.GetSize() ||
+        expanded.translations.size() != skeleton.GetSize())
+    {
+        std::fprintf(stderr,
+                     "consumer: expanded %zu rotations for a %zu-joint "
+                     "rig\n",
                      expanded.rotations.size(), skeleton.GetSize());
         return 1;
     }
-    if (expanded.timestamp != pose.timestamp
-        || expanded.rotations[0].GetReal() != quarter.GetReal()) {
+    if (expanded.timestamp != pose.timestamp ||
+        expanded.rotations[0].GetReal() != quarter.GetReal())
+    {
         std::fprintf(stderr, "consumer: expanded to real part %f at t=%f\n",
                      expanded.rotations[0].GetReal(), expanded.timestamp);
         return 1;
     }
 
-    std::fprintf(stdout, "consumer: expanded a pose onto %zu joint(s) through "
-                         "the installed package\n",
+    std::fprintf(stdout,
+                 "consumer: expanded a pose onto %zu joint(s) through "
+                 "the installed package\n",
                  expanded.rotations.size());
     return 0;
 }

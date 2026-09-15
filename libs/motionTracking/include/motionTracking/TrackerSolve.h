@@ -166,8 +166,8 @@ namespace motionTracking
 // will reach needs it before it has a frame, on the same argument that makes
 // `motion_bvh_inspect` able to print a profile's bones without converting a
 // file.
-MOTIONTRACKING_API std::optional<motion::HumanBone> TrackerRegionBone(
-    TrackerRegion region) noexcept;
+MOTIONTRACKING_API std::optional<motion::HumanBone>
+TrackerRegionBone(TrackerRegion region) noexcept;
 
 struct TrackerSolveConfig
 {
@@ -215,8 +215,7 @@ enum class TrackerSolveRefusal : std::uint8_t
 inline constexpr std::size_t TrackerSolveRefusalCount =
     static_cast<std::size_t>(TrackerSolveRefusal::Count);
 
-MOTIONTRACKING_API std::string_view TrackerSolveRefusalName(
-    TrackerSolveRefusal refusal) noexcept;
+MOTIONTRACKING_API std::string_view TrackerSolveRefusalName(TrackerSolveRefusal refusal) noexcept;
 
 // What solving an assignment against an observation produced.
 //
@@ -279,7 +278,8 @@ struct TrackerSolve
     // would be answering the first question twice.
     std::vector<TrackerRegion> positionsUnused;
 
-    bool Solved() const noexcept
+    bool
+    Solved() const noexcept
     {
         return refusal == TrackerSolveRefusal::None;
     }
@@ -298,9 +298,9 @@ struct TrackerSolve
 // solved. It runs outermost-first, because an assignment that refused says
 // nothing about an observation and an assignment applied to the wrong array is
 // not addressed by any check below it.
-MOTIONTRACKING_API TrackerSolve SolveTrackerPose(
-    const TrackerAssignment& assignment,
-    const std::vector<TrackerObservation>& observed, double timestamp,
-    const TrackerSolveConfig& config = {});
+MOTIONTRACKING_API TrackerSolve SolveTrackerPose(const TrackerAssignment& assignment,
+                                                 const std::vector<TrackerObservation>& observed,
+                                                 double timestamp,
+                                                 const TrackerSolveConfig& config = {});
 
 } // namespace motionTracking

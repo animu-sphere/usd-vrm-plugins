@@ -58,16 +58,14 @@ using osc::OscTimeTagImmediate;
 //
 // The refusal's text is the shared decoder's verbatim; the code, the severity
 // and the recoverability are this adapter's, from its own table.
-VRMADAPTERVMC_API bool DecodeOscPacket(
-    const std::uint8_t* bytes, std::size_t size, OscPacket* packet,
-    Diagnostic* diagnostic = nullptr);
+VRMADAPTERVMC_API bool DecodeOscPacket(const std::uint8_t* bytes, std::size_t size,
+                                       OscPacket* packet, Diagnostic* diagnostic = nullptr);
 
 inline bool
 DecodeOscPacket(const std::vector<std::uint8_t>& datagram, OscPacket* packet,
                 Diagnostic* diagnostic = nullptr)
 {
-    return DecodeOscPacket(datagram.data(), datagram.size(), packet,
-                           diagnostic);
+    return DecodeOscPacket(datagram.data(), datagram.size(), packet, diagnostic);
 }
 
 // Decoding a temporary is always a bug: the decoded packet's `address`, `text`

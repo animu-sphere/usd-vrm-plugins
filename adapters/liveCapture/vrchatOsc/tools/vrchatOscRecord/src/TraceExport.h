@@ -154,8 +154,7 @@ struct SolveReport
     // tracker sent an orientation and a bone above it did not. An operator
     // reading a session wants the difference, because the two have different
     // fixes -- one is a strap, the other is the frame the strap arrived in.
-    std::array<std::size_t, motionTracking::TrackerRegionCount>
-        withheldWithParent{};
+    std::array<std::size_t, motionTracking::TrackerRegionCount> withheldWithParent{};
     std::array<std::size_t, motionTracking::TrackerRegionCount> positionsUnused{};
 
     // The assignment layer's two ways for an observation to miss a statement,
@@ -205,7 +204,7 @@ struct HipsMotion
 // adapter's output.
 class TraceCollector
 {
-public:
+  public:
     // The statement and the solve's own configuration, both fixed for the whole
     // export. An assignment that changed mid-capture would be a second
     // calibration nobody stated, and the operator who could state one is not at
@@ -220,7 +219,11 @@ public:
                  const motion::MotionSourceMetadata& metadata);
 
     // How many poses are held, across every session.
-    std::size_t GetFrameCount() const noexcept { return _poses; }
+    std::size_t
+    GetFrameCount() const noexcept
+    {
+        return _poses;
+    }
 
     // Finalises every session: the time range from its own first and last
     // sample, and a frame rate measured from them. Idempotent.
@@ -235,18 +238,24 @@ public:
 
     // Valid after `Close`. Sessions that produced no pose are not among them,
     // and `GetHipsMotion()` is indexed alongside.
-    const std::vector<motion::HumanoidAnimation>& GetSessions() const noexcept
+    const std::vector<motion::HumanoidAnimation>&
+    GetSessions() const noexcept
     {
         return _sessions;
     }
-    const std::vector<HipsMotion>& GetHipsMotion() const noexcept
+    const std::vector<HipsMotion>&
+    GetHipsMotion() const noexcept
     {
         return _hips;
     }
 
-    const SolveReport& GetReport() const noexcept { return _report; }
+    const SolveReport&
+    GetReport() const noexcept
+    {
+        return _report;
+    }
 
-private:
+  private:
     void _OpenSession();
 
     motionTracking::TrackerAssignmentSpec _assignment;

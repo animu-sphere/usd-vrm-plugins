@@ -94,12 +94,12 @@ const char* StopReasonText(StopReason reason) noexcept;
 
 class SessionReport
 {
-public:
+  public:
     // One received datagram, whole. The bytes are read and not kept: the census
     // and the prefix are folded in here so that a session's memory is the
     // capture's and not twice the capture's.
-    void ObserveDatagram(const std::string& peer, const std::uint8_t* bytes,
-                         std::size_t count, double receiveTime);
+    void ObserveDatagram(const std::string& peer, const std::uint8_t* bytes, std::size_t count,
+                         double receiveTime);
 
     // The diagnostics one receive call appended, and only those: the caller
     // clears its list every iteration, so the whole of it is what the last call
@@ -110,18 +110,30 @@ public:
     // ever be 0, so a reader has to go and verify the clear before they can tell
     // that the offset is inert. One of them had to go, and the clear is the one
     // that also bounds how much a long session accumulates.
-    void ObserveDiagnostics(
-        const std::vector<vrmAdapterMocopi::Diagnostic>& log);
+    void ObserveDiagnostics(const std::vector<vrmAdapterMocopi::Diagnostic>& log);
 
-    void SetStopReason(StopReason reason) noexcept { _stop = reason; }
-    StopReason GetStopReason() const noexcept { return _stop; }
+    void
+    SetStopReason(StopReason reason) noexcept
+    {
+        _stop = reason;
+    }
+    StopReason
+    GetStopReason() const noexcept
+    {
+        return _stop;
+    }
 
-    std::uint64_t GetDatagramCount() const noexcept { return _datagrams; }
+    std::uint64_t
+    GetDatagramCount() const noexcept
+    {
+        return _datagrams;
+    }
 
     // Whether the session heard from more than one source. The capture format
     // names one peer in its header, so this is the difference between a
     // fixture's provenance being true and being the first of several.
-    bool HasMultiplePeers() const noexcept
+    bool
+    HasMultiplePeers() const noexcept
     {
         return _distinctPeers.size() > 1;
     }
@@ -137,7 +149,7 @@ public:
     void Print(std::FILE* out, const vrmAdapterMocopi::UdpReceiver* receiver,
                const vrmAdapterMocopi::PacketCapture* provenance) const;
 
-private:
+  private:
     void _ObservePrefix(const std::uint8_t* bytes, std::size_t count);
     void _PrintLengths(std::FILE* out) const;
     void _PrintDiagnostics(std::FILE* out) const;
@@ -210,12 +222,11 @@ private:
     // "at least" would invite a reviewer to look for bytes that are not there.
     std::size_t _shortestDatagram = 0;
 
-    std::array<std::uint64_t, vrmAdapterMocopi::DiagnosticCodeCount>
-        _diagnostics{};
+    std::array<std::uint64_t, vrmAdapterMocopi::DiagnosticCodeCount> _diagnostics{};
     // The first of each code, kept whole. A count says a session reported
     // silence twice; the first line says when.
-    std::array<vrmAdapterMocopi::Diagnostic,
-               vrmAdapterMocopi::DiagnosticCodeCount> _firstDiagnostic{};
+    std::array<vrmAdapterMocopi::Diagnostic, vrmAdapterMocopi::DiagnosticCodeCount>
+        _firstDiagnostic{};
 
     StopReason _stop = StopReason::EndOfCapture;
 };

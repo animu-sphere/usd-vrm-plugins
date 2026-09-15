@@ -66,30 +66,31 @@ namespace vrmAdapterMocopiTests
 // read as one, since the corpus README invites an operator to drop a recording
 // in here by hand.
 inline bool
-CollectCaptures(const std::filesystem::path& directory,
-                std::vector<std::filesystem::path>* out)
+CollectCaptures(const std::filesystem::path& directory, std::vector<std::filesystem::path>* out)
 {
     // Checked rather than assumed, and with the non-throwing overload: this is
     // the crash described in the header, and any unrecognised argument to any of
     // the six binaries reaches this line.
     std::error_code failed;
-    if (!std::filesystem::is_directory(directory, failed)) {
-        std::fprintf(stderr, "not a corpus directory: %s\n",
-                     directory.string().c_str());
+    if (!std::filesystem::is_directory(directory, failed))
+    {
+        std::fprintf(stderr, "not a corpus directory: %s\n", directory.string().c_str());
         return false;
     }
 
     out->clear();
     for (const std::filesystem::directory_entry& entry :
-         std::filesystem::directory_iterator(directory)) {
-        if (entry.is_regular_file()
-            && entry.path().extension() == ".mocopipackets") {
+         std::filesystem::directory_iterator(directory))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == ".mocopipackets")
+        {
             out->push_back(entry.path());
         }
     }
     std::sort(out->begin(), out->end());
 
-    if (out->empty()) {
+    if (out->empty())
+    {
         std::fprintf(stderr, "no captures in %s\n", directory.string().c_str());
         return false;
     }
@@ -117,9 +118,8 @@ struct PushedDatagram
 // caller compares rather than by an assertion about pointers. It is a pointer
 // rather than a value for that reason alone.
 inline PushedDatagram
-PushDatagram(vrmAdapterMocopi::MocopiLiveSource* source,
-             std::vector<std::uint8_t>* bytes, double receiveTime,
-             std::vector<vrmAdapterMocopi::Diagnostic>* diagnostics)
+PushDatagram(vrmAdapterMocopi::MocopiLiveSource* source, std::vector<std::uint8_t>* bytes,
+             double receiveTime, std::vector<vrmAdapterMocopi::Diagnostic>* diagnostics)
 {
     PushedDatagram out;
     out.admitted = source->PushDatagram(*bytes, receiveTime, diagnostics);
@@ -127,7 +127,8 @@ PushDatagram(vrmAdapterMocopi::MocopiLiveSource* source,
 
     out.restartLatched = source->ConsumeSessionRestart();
     out.frames = source->GetFramesFromLastPush();
-    if (out.admitted == 0 || out.frames.empty()) {
+    if (out.admitted == 0 || out.frames.empty())
+    {
         return out;
     }
 
@@ -145,9 +146,9 @@ PushDatagram(vrmAdapterMocopi::MocopiLiveSource* source,
     // instant falls *between* two stored ones and the buffer interpolates —
     // which would compare one interpolation against another and measure the
     // arithmetic rather than the layer under test (MOTION_CONTRACT.md).
-    const motion::PoseSampleResult result =
-        source->Sample(out.frames.back().pose.timestamp);
-    if (result.pose) {
+    const motion::PoseSampleResult result = source->Sample(out.frames.back().pose.timestamp);
+    if (result.pose)
+    {
         out.sampled = *result.pose;
     }
     return out;

@@ -35,10 +35,14 @@ class SdfAssetPath;
 
 /// \class UsdVrmConstraintAPI
 ///
-/// A VRM node constraint (VRMC_node_constraint, data only - the constraint
-/// is not baked). Apply to each /Asset/rig/Constraints/<name> prim. The constrained
-/// and source nodes are named by joint path token (joints are Skeleton.joints tokens,
-/// not prims); the full constraint block is preserved as customData
+/// A VRM node constraint (VRMC_node_constraint, data only - the constraint
+
+/// is not baked). Apply to each /Asset/rig/Constraints/<name> prim. The constrained
+
+/// and source nodes are named by joint path token (joints are Skeleton.joints tokens,
+
+/// not prims); the full constraint block is preserved as customData
+
 /// (vrm:constraint:raw). VRM 1.0 only; VRM 0.x has no node-constraint equivalent.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
@@ -48,7 +52,7 @@ class SdfAssetPath;
 ///
 class UsdVrmConstraintAPI : public UsdAPISchemaBase
 {
-public:
+  public:
     /// Compile time constant representing what kind of schema this class is.
     ///
     /// \sa UsdSchemaKind
@@ -58,16 +62,14 @@ public:
     /// Equivalent to UsdVrmConstraintAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdVrmConstraintAPI(const UsdPrim& prim=UsdPrim())
-        : UsdAPISchemaBase(prim)
+    explicit UsdVrmConstraintAPI(const UsdPrim& prim = UsdPrim()) : UsdAPISchemaBase(prim)
     {
     }
 
     /// Construct a UsdVrmConstraintAPI on the prim held by \p schemaObj .
     /// Should be preferred over UsdVrmConstraintAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdVrmConstraintAPI(const UsdSchemaBase& schemaObj)
-        : UsdAPISchemaBase(schemaObj)
+    explicit UsdVrmConstraintAPI(const UsdSchemaBase& schemaObj) : UsdAPISchemaBase(schemaObj)
     {
     }
 
@@ -79,8 +81,7 @@ public:
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
     USDVRM_API
-    static const TfTokenVector &
-    GetSchemaAttributeNames(bool includeInherited=true);
+    static const TfTokenVector& GetSchemaAttributeNames(bool includeInherited = true);
 
     /// Return a UsdVrmConstraintAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
@@ -92,20 +93,18 @@ public:
     /// \endcode
     ///
     USDVRM_API
-    static UsdVrmConstraintAPI
-    Get(const UsdStagePtr &stage, const SdfPath &path);
+    static UsdVrmConstraintAPI Get(const UsdStagePtr& stage, const SdfPath& path);
 
-
-    /// Returns true if this <b>single-apply</b> API schema can be applied to 
-    /// the given \p prim. If this schema can not be a applied to the prim, 
-    /// this returns false and, if provided, populates \p whyNot with the 
+    /// Returns true if this <b>single-apply</b> API schema can be applied to
+    /// the given \p prim. If this schema can not be a applied to the prim,
+    /// this returns false and, if provided, populates \p whyNot with the
     /// reason it can not be applied.
-    /// 
+    ///
     /// Note that if CanApply returns false, that does not necessarily imply
     /// that calling Apply will fail. Callers are expected to call CanApply
-    /// before calling Apply if they want to ensure that it is valid to 
+    /// before calling Apply if they want to ensure that it is valid to
     /// apply a schema.
-    /// 
+    ///
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
     /// \sa UsdPrim::CanApplyAPI()
@@ -113,18 +112,17 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDVRM_API
-    static bool 
-    CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
+    static bool CanApply(const UsdPrim& prim, std::string* whyNot = nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "VrmConstraintAPI" to the 
+    /// This information is stored by adding "VrmConstraintAPI" to the
     /// token-valued, listOp metadata \em apiSchemas on the prim.
-    /// 
-    /// \return A valid UsdVrmConstraintAPI object is returned upon success. 
-    /// An invalid (or empty) UsdVrmConstraintAPI object is returned upon 
-    /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
-    /// resulting in failure. 
-    /// 
+    ///
+    /// \return A valid UsdVrmConstraintAPI object is returned upon success.
+    /// An invalid (or empty) UsdVrmConstraintAPI object is returned upon
+    /// failure. See \ref UsdPrim::ApplyAPI() for conditions
+    /// resulting in failure.
+    ///
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
     /// \sa UsdPrim::CanApplyAPI()
@@ -132,31 +130,30 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDVRM_API
-    static UsdVrmConstraintAPI 
-    Apply(const UsdPrim &prim);
+    static UsdVrmConstraintAPI Apply(const UsdPrim& prim);
 
-protected:
+  protected:
     /// Returns the kind of schema this class belongs to.
     ///
     /// \sa UsdSchemaKind
     USDVRM_API
     UsdSchemaKind _GetSchemaKind() const override;
 
-private:
+  private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
     USDVRM_API
-    static const TfType &_GetStaticTfType();
+    static const TfType& _GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
     USDVRM_API
-    const TfType &_GetTfType() const override;
+    const TfType& _GetTfType() const override;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMTYPE 
+    // VRMTYPE
     // --------------------------------------------------------------------- //
     /// Constraint type: 'roll', 'aim', or 'rotation'.
     ///
@@ -169,17 +166,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmTypeAttr() const;
 
-    /// See GetVrmTypeAttr(), and also 
+    /// See GetVrmTypeAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmTypeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmTypeAttr(VtValue const& defaultValue = VtValue(),
+                                   bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMCONSTRAINED 
+    // VRMCONSTRAINED
     // --------------------------------------------------------------------- //
     /// Joint path token of the constrained (driven) node.
     ///
@@ -192,17 +190,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmConstrainedAttr() const;
 
-    /// See GetVrmConstrainedAttr(), and also 
+    /// See GetVrmConstrainedAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmConstrainedAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmConstrainedAttr(VtValue const& defaultValue = VtValue(),
+                                          bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMSOURCE 
+    // VRMSOURCE
     // --------------------------------------------------------------------- //
     /// Joint path token of the source (driving) node.
     ///
@@ -215,17 +214,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmSourceAttr() const;
 
-    /// See GetVrmSourceAttr(), and also 
+    /// See GetVrmSourceAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmSourceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmSourceAttr(VtValue const& defaultValue = VtValue(),
+                                     bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMAXIS 
+    // VRMAXIS
     // --------------------------------------------------------------------- //
     /// Constraint axis ('X'/'Y'/'Z'); absent for rotation constraints.
     ///
@@ -238,17 +238,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmAxisAttr() const;
 
-    /// See GetVrmAxisAttr(), and also 
+    /// See GetVrmAxisAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmAxisAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmAxisAttr(VtValue const& defaultValue = VtValue(),
+                                   bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMWEIGHT 
+    // VRMWEIGHT
     // --------------------------------------------------------------------- //
     /// Constraint weight in [0,1].
     ///
@@ -261,21 +262,22 @@ public:
     USDVRM_API
     UsdAttribute GetVrmWeightAttr() const;
 
-    /// See GetVrmWeightAttr(), and also 
+    /// See GetVrmWeightAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmWeightAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmWeightAttr(VtValue const& defaultValue = VtValue(),
+                                     bool writeSparsely = false) const;
 
-public:
+  public:
     // ===================================================================== //
-    // Feel free to add custom code below this line, it will be preserved by 
-    // the code generator. 
+    // Feel free to add custom code below this line, it will be preserved by
+    // the code generator.
     //
-    // Just remember to: 
-    //  - Close the class declaration with }; 
+    // Just remember to:
+    //  - Close the class declaration with };
     //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
     //  - Close the include guard with #endif
     // ===================================================================== //

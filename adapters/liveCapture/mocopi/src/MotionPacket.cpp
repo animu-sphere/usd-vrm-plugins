@@ -11,7 +11,8 @@ namespace vrmAdapterMocopi
 namespace
 {
 
-void Append(std::vector<Diagnostic>* diagnostics, Diagnostic diagnostic)
+void
+Append(std::vector<Diagnostic>* diagnostics, Diagnostic diagnostic)
 {
     if (diagnostics != nullptr)
     {
@@ -19,10 +20,10 @@ void Append(std::vector<Diagnostic>* diagnostics, Diagnostic diagnostic)
     }
 }
 
-Diagnostic Malformed(std::string subject, std::string detail)
+Diagnostic
+Malformed(std::string subject, std::string detail)
 {
-    Diagnostic diagnostic =
-        MakeDiagnostic(DiagnosticCode::PacketMalformed, std::move(detail));
+    Diagnostic diagnostic = MakeDiagnostic(DiagnosticCode::PacketMalformed, std::move(detail));
     diagnostic.subject = std::move(subject);
     return diagnostic;
 }
@@ -32,10 +33,9 @@ Diagnostic Malformed(std::string subject, std::string detail)
 // chunk inside a bone record would otherwise report it 27 times per datagram,
 // which buries the one fact worth having: that the chunk exists, and inside
 // what.
-void CollectUnread(const std::vector<PacketChunk>& chunks,
-                   std::string_view container,
-                   const std::vector<std::string_view>& known,
-                   std::vector<UnreadChunk>* unread)
+void
+CollectUnread(const std::vector<PacketChunk>& chunks, std::string_view container,
+              const std::vector<std::string_view>& known, std::vector<UnreadChunk>* unread)
 {
     for (const PacketChunk& chunk : chunks)
     {
@@ -71,9 +71,9 @@ void CollectUnread(const std::vector<PacketChunk>& chunks,
 // Exactly one chunk carrying `tag`, or a refusal that says which of the two ways
 // it went wrong. Absent and duplicated are different bugs in a sender and a
 // single "could not read" message for both would hide that.
-const PacketChunk* RequireOne(const std::vector<PacketChunk>& chunks,
-                              std::string_view tag, std::string_view container,
-                              std::vector<Diagnostic>* diagnostics)
+const PacketChunk*
+RequireOne(const std::vector<PacketChunk>& chunks, std::string_view tag, std::string_view container,
+           std::vector<Diagnostic>* diagnostics)
 {
     // One pass, not `CountPacketChunks` then `FindPacketChunk`. This runs 59 times
     // per frame datagram -- twice at the top, five times inside `fram`, and twice
@@ -98,16 +98,15 @@ const PacketChunk* RequireOne(const std::vector<PacketChunk>& chunks,
     }
     Append(diagnostics,
            Malformed(std::string(tag),
-                     count == 0 ? std::string(container) + " carries no "
-                                      + std::string(tag) + " chunk"
-                                : std::string(container) + " carries "
-                                      + std::to_string(count) + " "
-                                      + std::string(tag)
-                                      + " chunks and must carry one"));
+                     count == 0
+                         ? std::string(container) + " carries no " + std::string(tag) + " chunk"
+                         : std::string(container) + " carries " + std::to_string(count) + " " +
+                               std::string(tag) + " chunks and must carry one"));
     return nullptr;
 }
 
-bool ReadU8(const PacketChunk& chunk, std::uint8_t* value)
+bool
+ReadU8(const PacketChunk& chunk, std::uint8_t* value)
 {
     if (chunk.bytes == nullptr || chunk.size != 1)
     {
@@ -120,17 +119,17 @@ bool ReadU8(const PacketChunk& chunk, std::uint8_t* value)
 // A field whose declared length disagrees with the type this decoder reads it
 // as. Quotes both widths, so a version change arrives as a legible diagnostic
 // rather than as a silently truncated read.
-Diagnostic BadWidth(std::string_view tag, std::size_t actual,
-                    std::size_t expected)
+Diagnostic
+BadWidth(std::string_view tag, std::size_t actual, std::size_t expected)
 {
-    return Malformed(std::string(tag),
-                     std::string(tag) + " declares " + std::to_string(actual)
-                         + " byte(s) and this decoder reads "
-                         + std::to_string(expected));
+    return Malformed(std::string(tag), std::string(tag) + " declares " + std::to_string(actual) +
+                                           " byte(s) and this decoder reads " +
+                                           std::to_string(expected));
 }
 
-bool ReadBoneTransform(const PacketChunk& chunk, BoneTransform* transform,
-                       std::vector<Diagnostic>* diagnostics)
+bool
+ReadBoneTransform(const PacketChunk& chunk, BoneTransform* transform,
+                  std::vector<Diagnostic>* diagnostics)
 {
     constexpr std::size_t kBytes = BoneTransformFloats * sizeof(float);
     if (chunk.size != kBytes)
@@ -154,8 +153,7 @@ bool ReadBoneTransform(const PacketChunk& chunk, BoneTransform* transform,
             // dropped datagram it cannot log. The diagnostic costs nothing and
             // survives a change to BoneTransformFloats or to the construction
             // above; without it, that change is silent.
-            Append(diagnostics,
-                   BadWidth(chunk.tag, component.size, sizeof(float)));
+            Append(diagnostics, BadWidth(chunk.tag, component.size, sizeof(float)));
             return false;
         }
         if (index < transform->rotation.size())
@@ -174,7 +172,8 @@ bool ReadBoneTransform(const PacketChunk& chunk, BoneTransform* transform,
 // `VRM_MOCOPI_NON_FINITE_TRANSFORM`'s description: a non-finite component, or a
 // rotation of zero length, whose only carry-on value is exactly the identity a
 // reader could not tell from a real sample.
-bool TransformIsUsable(const BoneTransform& transform, std::string* reason)
+bool
+TransformIsUsable(const BoneTransform& transform, std::string* reason)
 {
     for (const float value : transform.rotation)
     {
@@ -205,15 +204,12 @@ bool TransformIsUsable(const BoneTransform& transform, std::string* reason)
     return true;
 }
 
-bool DecodeProvenance(const std::vector<PacketChunk>& top,
-                      MotionPacketProvenance* provenance,
-                      std::vector<UnreadChunk>* unread,
-                      std::vector<Diagnostic>* diagnostics)
+bool
+DecodeProvenance(const std::vector<PacketChunk>& top, MotionPacketProvenance* provenance,
+                 std::vector<UnreadChunk>* unread, std::vector<Diagnostic>* diagnostics)
 {
-    const PacketChunk* head =
-        RequireOne(top, ChunkTag::Header, "the datagram", diagnostics);
-    const PacketChunk* sender =
-        RequireOne(top, ChunkTag::SenderInfo, "the datagram", diagnostics);
+    const PacketChunk* head = RequireOne(top, ChunkTag::Header, "the datagram", diagnostics);
+    const PacketChunk* sender = RequireOne(top, ChunkTag::SenderInfo, "the datagram", diagnostics);
     if (head == nullptr || sender == nullptr)
     {
         return false;
@@ -226,30 +222,29 @@ bool DecodeProvenance(const std::vector<PacketChunk>& top,
         Append(diagnostics, std::move(walkFailure));
         return false;
     }
-    CollectUnread(headChunks, ChunkTag::Header,
-                  {ChunkTag::FormatType, ChunkTag::FormatVersion}, unread);
+    CollectUnread(headChunks, ChunkTag::Header, {ChunkTag::FormatType, ChunkTag::FormatVersion},
+                  unread);
 
-    const PacketChunk* formatType = RequireOne(headChunks, ChunkTag::FormatType,
-                                               "head", diagnostics);
-    const PacketChunk* version = RequireOne(headChunks, ChunkTag::FormatVersion,
-                                            "head", diagnostics);
+    const PacketChunk* formatType =
+        RequireOne(headChunks, ChunkTag::FormatType, "head", diagnostics);
+    const PacketChunk* version =
+        RequireOne(headChunks, ChunkTag::FormatVersion, "head", diagnostics);
     if (formatType == nullptr || version == nullptr)
     {
         return false;
     }
 
-    provenance->formatType = std::string_view(
-        reinterpret_cast<const char*>(formatType->bytes), formatType->size);
+    provenance->formatType =
+        std::string_view(reinterpret_cast<const char*>(formatType->bytes), formatType->size);
     // The magic, and the reason a datagram of some other protocol handed to this
     // decoder is refused with one legible sentence rather than at whichever
     // field first looked wrong.
     if (provenance->formatType != MotionPacketFormatType)
     {
-        Append(diagnostics,
-               Malformed(std::string(ChunkTag::FormatType),
-                         "ftyp is \"" + std::string(provenance->formatType)
-                             + "\" and this decoder reads \""
-                             + std::string(MotionPacketFormatType) + "\""));
+        Append(diagnostics, Malformed(std::string(ChunkTag::FormatType),
+                                      "ftyp is \"" + std::string(provenance->formatType) +
+                                          "\" and this decoder reads \"" +
+                                          std::string(MotionPacketFormatType) + "\""));
         return false;
     }
 
@@ -262,13 +257,11 @@ bool DecodeProvenance(const std::vector<PacketChunk>& top,
     {
         // The one place this decoder refuses something for being newer than the
         // measurement; MotionPacket.h argues why.
-        Append(diagnostics,
-               Malformed(std::string(ChunkTag::FormatVersion),
-                         "vrsn is "
-                             + std::to_string(provenance->formatVersion)
-                             + " and this decoder has only measured version "
-                             + std::to_string(MotionPacketFormatVersion)
-                             + "; its field layout may differ"));
+        Append(diagnostics, Malformed(std::string(ChunkTag::FormatVersion),
+                                      "vrsn is " + std::to_string(provenance->formatVersion) +
+                                          " and this decoder has only measured version " +
+                                          std::to_string(MotionPacketFormatVersion) +
+                                          "; its field layout may differ"));
         return false;
     }
 
@@ -278,21 +271,18 @@ bool DecodeProvenance(const std::vector<PacketChunk>& top,
         Append(diagnostics, std::move(walkFailure));
         return false;
     }
-    CollectUnread(senderChunks, ChunkTag::SenderInfo,
-                  {ChunkTag::SenderId, ChunkTag::ReceivePort}, unread);
+    CollectUnread(senderChunks, ChunkTag::SenderInfo, {ChunkTag::SenderId, ChunkTag::ReceivePort},
+                  unread);
 
-    const PacketChunk* senderId =
-        RequireOne(senderChunks, ChunkTag::SenderId, "sndf", diagnostics);
-    const PacketChunk* port =
-        RequireOne(senderChunks, ChunkTag::ReceivePort, "sndf", diagnostics);
+    const PacketChunk* senderId = RequireOne(senderChunks, ChunkTag::SenderId, "sndf", diagnostics);
+    const PacketChunk* port = RequireOne(senderChunks, ChunkTag::ReceivePort, "sndf", diagnostics);
     if (senderId == nullptr || port == nullptr)
     {
         return false;
     }
     if (senderId->size != SenderIdBytes)
     {
-        Append(diagnostics,
-               BadWidth(ChunkTag::SenderId, senderId->size, SenderIdBytes));
+        Append(diagnostics, BadWidth(ChunkTag::SenderId, senderId->size, SenderIdBytes));
         return false;
     }
     for (std::size_t index = 0; index < SenderIdBytes; ++index)
@@ -301,9 +291,7 @@ bool DecodeProvenance(const std::vector<PacketChunk>& top,
     }
     if (!ReadPacketChunkU16(*port, &provenance->receivePort))
     {
-        Append(diagnostics,
-               BadWidth(ChunkTag::ReceivePort, port->size,
-                        sizeof(std::uint16_t)));
+        Append(diagnostics, BadWidth(ChunkTag::ReceivePort, port->size, sizeof(std::uint16_t)));
         return false;
     }
     return true;
@@ -321,9 +309,9 @@ bool DecodeProvenance(const std::vector<PacketChunk>& top,
 // `PacketChunk.h` explains the non-owning views exist to avoid, at the measured
 // 27 bones and 60 Hz.
 template <typename Visit>
-bool ForEachRecord(const PacketChunk& container, std::string_view recordTag,
-                   std::vector<UnreadChunk>* unread,
-                   std::vector<Diagnostic>* diagnostics, Visit visit)
+bool
+ForEachRecord(const PacketChunk& container, std::string_view recordTag,
+              std::vector<UnreadChunk>* unread, std::vector<Diagnostic>* diagnostics, Visit visit)
 {
     std::vector<PacketChunk> chunks;
     Diagnostic walkFailure;
@@ -344,8 +332,8 @@ bool ForEachRecord(const PacketChunk& container, std::string_view recordTag,
         }
         if (!DecodePacketChunks(chunk, &fields, &walkFailure))
         {
-            walkFailure.detail += " (record " + std::to_string(index) + " of "
-                                  + std::string(container.tag) + ")";
+            walkFailure.detail +=
+                " (record " + std::to_string(index) + " of " + std::string(container.tag) + ")";
             Append(diagnostics, std::move(walkFailure));
             return false;
         }
@@ -365,10 +353,9 @@ bool ForEachRecord(const PacketChunk& container, std::string_view recordTag,
 // reallocations, which is the wrong trade.
 constexpr std::size_t kBoneCapacityHint = MeasuredBoneCount;
 
-bool DecodeFrame(const PacketChunk& frameChunk, MotionFrame* frame,
-                 std::vector<UnreadChunk>* unread,
-                 std::size_t* refusedBones,
-                 std::vector<Diagnostic>* diagnostics)
+bool
+DecodeFrame(const PacketChunk& frameChunk, MotionFrame* frame, std::vector<UnreadChunk>* unread,
+            std::size_t* refusedBones, std::vector<Diagnostic>* diagnostics)
 {
     std::vector<PacketChunk> chunks;
     Diagnostic walkFailure;
@@ -378,49 +365,39 @@ bool DecodeFrame(const PacketChunk& frameChunk, MotionFrame* frame,
         return false;
     }
     CollectUnread(chunks, ChunkTag::Frame,
-                  {ChunkTag::FrameNumber, ChunkTag::StreamTime,
-                   ChunkTag::SenderUnixTime, ChunkTag::Timecode,
-                   ChunkTag::BoneTransforms},
+                  {ChunkTag::FrameNumber, ChunkTag::StreamTime, ChunkTag::SenderUnixTime,
+                   ChunkTag::Timecode, ChunkTag::BoneTransforms},
                   unread);
 
-    const PacketChunk* number =
-        RequireOne(chunks, ChunkTag::FrameNumber, "fram", diagnostics);
-    const PacketChunk* streamTime =
-        RequireOne(chunks, ChunkTag::StreamTime, "fram", diagnostics);
-    const PacketChunk* unixTime =
-        RequireOne(chunks, ChunkTag::SenderUnixTime, "fram", diagnostics);
-    const PacketChunk* timecode =
-        RequireOne(chunks, ChunkTag::Timecode, "fram", diagnostics);
-    const PacketChunk* bones =
-        RequireOne(chunks, ChunkTag::BoneTransforms, "fram", diagnostics);
-    if (number == nullptr || streamTime == nullptr || unixTime == nullptr
-        || timecode == nullptr || bones == nullptr)
+    const PacketChunk* number = RequireOne(chunks, ChunkTag::FrameNumber, "fram", diagnostics);
+    const PacketChunk* streamTime = RequireOne(chunks, ChunkTag::StreamTime, "fram", diagnostics);
+    const PacketChunk* unixTime = RequireOne(chunks, ChunkTag::SenderUnixTime, "fram", diagnostics);
+    const PacketChunk* timecode = RequireOne(chunks, ChunkTag::Timecode, "fram", diagnostics);
+    const PacketChunk* bones = RequireOne(chunks, ChunkTag::BoneTransforms, "fram", diagnostics);
+    if (number == nullptr || streamTime == nullptr || unixTime == nullptr || timecode == nullptr ||
+        bones == nullptr)
     {
         return false;
     }
 
     if (!ReadPacketChunkU32(*number, &frame->frameNumber))
     {
-        Append(diagnostics, BadWidth(ChunkTag::FrameNumber, number->size,
-                                     sizeof(std::uint32_t)));
+        Append(diagnostics, BadWidth(ChunkTag::FrameNumber, number->size, sizeof(std::uint32_t)));
         return false;
     }
     if (!ReadPacketChunkF32(*streamTime, &frame->streamSeconds))
     {
-        Append(diagnostics,
-               BadWidth(ChunkTag::StreamTime, streamTime->size, sizeof(float)));
+        Append(diagnostics, BadWidth(ChunkTag::StreamTime, streamTime->size, sizeof(float)));
         return false;
     }
     if (!ReadPacketChunkF64(*unixTime, &frame->senderUnixSeconds))
     {
-        Append(diagnostics, BadWidth(ChunkTag::SenderUnixTime, unixTime->size,
-                                     sizeof(double)));
+        Append(diagnostics, BadWidth(ChunkTag::SenderUnixTime, unixTime->size, sizeof(double)));
         return false;
     }
     if (timecode->size != TimecodeBytes)
     {
-        Append(diagnostics,
-               BadWidth(ChunkTag::Timecode, timecode->size, TimecodeBytes));
+        Append(diagnostics, BadWidth(ChunkTag::Timecode, timecode->size, TimecodeBytes));
         return false;
     }
     for (std::size_t index = 0; index < TimecodeBytes; ++index)
@@ -434,10 +411,9 @@ bool DecodeFrame(const PacketChunk& frameChunk, MotionFrame* frame,
     // a negative value is not a clock this decoder has a reading for.
     if (!std::isfinite(frame->streamSeconds) || frame->streamSeconds < 0.0f)
     {
-        Diagnostic diagnostic = MakeDiagnostic(
-            DiagnosticCode::TimestampInvalid,
-            "time is " + std::to_string(frame->streamSeconds)
-                + ", which names no instant in the stream");
+        Diagnostic diagnostic = MakeDiagnostic(DiagnosticCode::TimestampInvalid,
+                                               "time is " + std::to_string(frame->streamSeconds) +
+                                                   ", which names no instant in the stream");
         diagnostic.subject = std::string(ChunkTag::StreamTime);
         diagnostic.sequence = frame->frameNumber;
         Append(diagnostics, std::move(diagnostic));
@@ -446,8 +422,7 @@ bool DecodeFrame(const PacketChunk& frameChunk, MotionFrame* frame,
     if (!std::isfinite(frame->senderUnixSeconds))
     {
         Diagnostic diagnostic =
-            MakeDiagnostic(DiagnosticCode::TimestampInvalid,
-                           "uttm is not finite");
+            MakeDiagnostic(DiagnosticCode::TimestampInvalid, "uttm is not finite");
         diagnostic.subject = std::string(ChunkTag::SenderUnixTime);
         diagnostic.sequence = frame->frameNumber;
         Append(diagnostics, std::move(diagnostic));
@@ -457,11 +432,11 @@ bool DecodeFrame(const PacketChunk& frameChunk, MotionFrame* frame,
     frame->bones.reserve(kBoneCapacityHint);
     return ForEachRecord(
         *bones, ChunkTag::BoneTransformRecord, unread, diagnostics,
-        [&](const std::vector<PacketChunk>& fields) {
+        [&](const std::vector<PacketChunk>& fields)
+        {
             CollectUnread(fields, ChunkTag::BoneTransformRecord,
                           {ChunkTag::BoneId, ChunkTag::Transform}, unread);
-            const PacketChunk* id =
-                RequireOne(fields, ChunkTag::BoneId, "btdt", diagnostics);
+            const PacketChunk* id = RequireOne(fields, ChunkTag::BoneId, "btdt", diagnostics);
             const PacketChunk* transform =
                 RequireOne(fields, ChunkTag::Transform, "btdt", diagnostics);
             if (id == nullptr || transform == nullptr)
@@ -472,8 +447,7 @@ bool DecodeFrame(const PacketChunk& frameChunk, MotionFrame* frame,
             BoneFrame bone;
             if (!ReadPacketChunkU16(*id, &bone.boneId))
             {
-                Append(diagnostics, BadWidth(ChunkTag::BoneId, id->size,
-                                             sizeof(std::uint16_t)));
+                Append(diagnostics, BadWidth(ChunkTag::BoneId, id->size, sizeof(std::uint16_t)));
                 return false;
             }
             if (!ReadBoneTransform(*transform, &bone.transform, diagnostics))
@@ -485,8 +459,8 @@ bool DecodeFrame(const PacketChunk& frameChunk, MotionFrame* frame,
             if (!TransformIsUsable(bone.transform, &reason))
             {
                 // The bone, not the frame: MotionPacket.h's first rule.
-                Diagnostic diagnostic = MakeDiagnostic(
-                    DiagnosticCode::NonFiniteTransform, std::move(reason));
+                Diagnostic diagnostic =
+                    MakeDiagnostic(DiagnosticCode::NonFiniteTransform, std::move(reason));
                 diagnostic.subject = "bone " + std::to_string(bone.boneId);
                 diagnostic.timestamp = frame->streamSeconds;
                 diagnostic.sequence = frame->frameNumber;
@@ -502,9 +476,9 @@ bool DecodeFrame(const PacketChunk& frameChunk, MotionFrame* frame,
 // No `refusedBones` out-parameter, unlike `DecodeFrame`: this layer never returns
 // a skeleton with a bone missing, so a count of missing bones would only ever be
 // zero. See the refusal below.
-bool DecodeSkeleton(const PacketChunk& skeletonChunk, MotionSkeleton* skeleton,
-                    std::vector<UnreadChunk>* unread,
-                    std::vector<Diagnostic>* diagnostics)
+bool
+DecodeSkeleton(const PacketChunk& skeletonChunk, MotionSkeleton* skeleton,
+               std::vector<UnreadChunk>* unread, std::vector<Diagnostic>* diagnostics)
 {
     std::vector<PacketChunk> chunks;
     Diagnostic walkFailure;
@@ -513,11 +487,9 @@ bool DecodeSkeleton(const PacketChunk& skeletonChunk, MotionSkeleton* skeleton,
         Append(diagnostics, std::move(walkFailure));
         return false;
     }
-    CollectUnread(chunks, ChunkTag::Skeleton, {ChunkTag::BoneDefinitions},
-                  unread);
+    CollectUnread(chunks, ChunkTag::Skeleton, {ChunkTag::BoneDefinitions}, unread);
 
-    const PacketChunk* bones =
-        RequireOne(chunks, ChunkTag::BoneDefinitions, "skdf", diagnostics);
+    const PacketChunk* bones = RequireOne(chunks, ChunkTag::BoneDefinitions, "skdf", diagnostics);
     if (bones == nullptr)
     {
         return false;
@@ -526,67 +498,64 @@ bool DecodeSkeleton(const PacketChunk& skeletonChunk, MotionSkeleton* skeleton,
     skeleton->bones.reserve(kBoneCapacityHint);
     return ForEachRecord(
         *bones, ChunkTag::BoneDefinitionRecord, unread, diagnostics,
-        [&](const std::vector<PacketChunk>& fields) {
-        CollectUnread(fields, ChunkTag::BoneDefinitionRecord,
-                      {ChunkTag::BoneId, ChunkTag::ParentBoneId,
-                       ChunkTag::Transform},
-                      unread);
-        const PacketChunk* id =
-            RequireOne(fields, ChunkTag::BoneId, "bndt", diagnostics);
-        const PacketChunk* parent =
-            RequireOne(fields, ChunkTag::ParentBoneId, "bndt", diagnostics);
-        const PacketChunk* transform =
-            RequireOne(fields, ChunkTag::Transform, "bndt", diagnostics);
-        if (id == nullptr || parent == nullptr || transform == nullptr)
+        [&](const std::vector<PacketChunk>& fields)
         {
-            return false;
-        }
+            CollectUnread(fields, ChunkTag::BoneDefinitionRecord,
+                          {ChunkTag::BoneId, ChunkTag::ParentBoneId, ChunkTag::Transform}, unread);
+            const PacketChunk* id = RequireOne(fields, ChunkTag::BoneId, "bndt", diagnostics);
+            const PacketChunk* parent =
+                RequireOne(fields, ChunkTag::ParentBoneId, "bndt", diagnostics);
+            const PacketChunk* transform =
+                RequireOne(fields, ChunkTag::Transform, "bndt", diagnostics);
+            if (id == nullptr || parent == nullptr || transform == nullptr)
+            {
+                return false;
+            }
 
-        BoneDefinition bone;
-        if (!ReadPacketChunkU16(*id, &bone.boneId))
-        {
-            Append(diagnostics, BadWidth(ChunkTag::BoneId, id->size,
-                                         sizeof(std::uint16_t)));
-            return false;
-        }
-        if (!ReadPacketChunkI16(*parent, &bone.parentBoneId))
-        {
-            Append(diagnostics, BadWidth(ChunkTag::ParentBoneId, parent->size,
-                                         sizeof(std::int16_t)));
-            return false;
-        }
-        if (!ReadBoneTransform(*transform, &bone.restTransform, diagnostics))
-        {
-            return false;
-        }
+            BoneDefinition bone;
+            if (!ReadPacketChunkU16(*id, &bone.boneId))
+            {
+                Append(diagnostics, BadWidth(ChunkTag::BoneId, id->size, sizeof(std::uint16_t)));
+                return false;
+            }
+            if (!ReadPacketChunkI16(*parent, &bone.parentBoneId))
+            {
+                Append(diagnostics,
+                       BadWidth(ChunkTag::ParentBoneId, parent->size, sizeof(std::int16_t)));
+                return false;
+            }
+            if (!ReadBoneTransform(*transform, &bone.restTransform, diagnostics))
+            {
+                return false;
+            }
 
-        std::string reason;
-        if (!TransformIsUsable(bone.restTransform, &reason))
-        {
-            // **The skeleton is refused whole, and this is the deliberate
-            // asymmetry with a frame.** A frame is a set of independent samples,
-            // so dropping one costs one joint. A skeleton is a *tree*: every
-            // other bone's `pbid` names an id in this table, so a table with a
-            // hole in it has bones whose parent does not exist, and a consumer
-            // that indexes by position reads every bone after the hole as the
-            // wrong joint. There is no partial hierarchy to hand on, so nothing
-            // is handed on.
-            Diagnostic diagnostic = MakeDiagnostic(
-                DiagnosticCode::NonFiniteTransform,
-                std::move(reason)
-                    + "; a rest pose is a hierarchy and is refused whole");
-            diagnostic.subject = "bone " + std::to_string(bone.boneId);
-            Append(diagnostics, std::move(diagnostic));
-            return false;
-        }
-        skeleton->bones.push_back(bone);
-        return true;
+            std::string reason;
+            if (!TransformIsUsable(bone.restTransform, &reason))
+            {
+                // **The skeleton is refused whole, and this is the deliberate
+                // asymmetry with a frame.** A frame is a set of independent samples,
+                // so dropping one costs one joint. A skeleton is a *tree*: every
+                // other bone's `pbid` names an id in this table, so a table with a
+                // hole in it has bones whose parent does not exist, and a consumer
+                // that indexes by position reads every bone after the hole as the
+                // wrong joint. There is no partial hierarchy to hand on, so nothing
+                // is handed on.
+                Diagnostic diagnostic = MakeDiagnostic(
+                    DiagnosticCode::NonFiniteTransform,
+                    std::move(reason) + "; a rest pose is a hierarchy and is refused whole");
+                diagnostic.subject = "bone " + std::to_string(bone.boneId);
+                Append(diagnostics, std::move(diagnostic));
+                return false;
+            }
+            skeleton->bones.push_back(bone);
+            return true;
         });
 }
 
 } // namespace
 
-std::string_view MotionPacketKindTag(MotionPacketKind kind) noexcept
+std::string_view
+MotionPacketKindTag(MotionPacketKind kind) noexcept
 {
     switch (kind)
     {
@@ -600,9 +569,9 @@ std::string_view MotionPacketKindTag(MotionPacketKind kind) noexcept
     return {};
 }
 
-bool DecodeMotionPacket(const std::uint8_t* bytes, std::size_t size,
-                        MotionPacket* packet,
-                        std::vector<Diagnostic>* diagnostics)
+bool
+DecodeMotionPacket(const std::uint8_t* bytes, std::size_t size, MotionPacket* packet,
+                   std::vector<Diagnostic>* diagnostics)
 {
     if (packet == nullptr)
     {
@@ -625,24 +594,20 @@ bool DecodeMotionPacket(const std::uint8_t* bytes, std::size_t size,
         // carried exactly one payload chunk, and a datagram that carries a frame
         // *and* a skeleton does not say which clock the skeleton belongs to.
         Append(diagnostics,
-               Malformed("datagram",
-                         "the datagram carries " + std::to_string(frames)
-                             + " fram and " + std::to_string(skeletons)
-                             + " skdf chunk(s) and must carry exactly one of "
-                               "the two"));
+               Malformed("datagram", "the datagram carries " + std::to_string(frames) +
+                                         " fram and " + std::to_string(skeletons) +
+                                         " skdf chunk(s) and must carry exactly one of "
+                                         "the two"));
         return false;
     }
 
     MotionPacket decoded;
-    decoded.kind =
-        frames == 1 ? MotionPacketKind::Frame : MotionPacketKind::Skeleton;
+    decoded.kind = frames == 1 ? MotionPacketKind::Frame : MotionPacketKind::Skeleton;
     CollectUnread(top, "datagram",
-                  {ChunkTag::Header, ChunkTag::SenderInfo, ChunkTag::Frame,
-                   ChunkTag::Skeleton},
+                  {ChunkTag::Header, ChunkTag::SenderInfo, ChunkTag::Frame, ChunkTag::Skeleton},
                   &decoded.unread);
 
-    if (!DecodeProvenance(top, &decoded.provenance, &decoded.unread,
-                          diagnostics))
+    if (!DecodeProvenance(top, &decoded.provenance, &decoded.unread, diagnostics))
     {
         return false;
     }
@@ -650,8 +615,8 @@ bool DecodeMotionPacket(const std::uint8_t* bytes, std::size_t size,
     if (decoded.kind == MotionPacketKind::Frame)
     {
         MotionFrame frame;
-        if (!DecodeFrame(*FindPacketChunk(top, ChunkTag::Frame), &frame,
-                         &decoded.unread, &decoded.refusedBones, diagnostics))
+        if (!DecodeFrame(*FindPacketChunk(top, ChunkTag::Frame), &frame, &decoded.unread,
+                         &decoded.refusedBones, diagnostics))
         {
             return false;
         }
@@ -660,8 +625,8 @@ bool DecodeMotionPacket(const std::uint8_t* bytes, std::size_t size,
     else
     {
         MotionSkeleton skeleton;
-        if (!DecodeSkeleton(*FindPacketChunk(top, ChunkTag::Skeleton), &skeleton,
-                            &decoded.unread, diagnostics))
+        if (!DecodeSkeleton(*FindPacketChunk(top, ChunkTag::Skeleton), &skeleton, &decoded.unread,
+                            diagnostics))
         {
             return false;
         }

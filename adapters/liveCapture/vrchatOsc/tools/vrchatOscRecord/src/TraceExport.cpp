@@ -26,18 +26,18 @@ std::size_t
 RegionIndex(motionTracking::TrackerRegion region) noexcept
 {
     const auto index = static_cast<std::size_t>(region);
-    return index < motionTracking::TrackerRegionCount
-        ? index
-        : motionTracking::TrackerRegionCount;
+    return index < motionTracking::TrackerRegionCount ? index : motionTracking::TrackerRegionCount;
 }
 
 void
 Tally(std::array<std::size_t, motionTracking::TrackerRegionCount>& counts,
       const std::vector<motionTracking::TrackerRegion>& regions)
 {
-    for (const motionTracking::TrackerRegion region : regions) {
+    for (const motionTracking::TrackerRegion region : regions)
+    {
         const std::size_t index = RegionIndex(region);
-        if (index < counts.size()) {
+        if (index < counts.size())
+        {
             ++counts[index];
         }
     }
@@ -48,20 +48,21 @@ Tally(std::array<std::size_t, motionTracking::TrackerRegionCount>& counts,
 // line is empty read the same to somebody scrolling, and only one of them is a
 // measurement.
 void
-PrintRegionCounts(
-    std::FILE* out, const char* label,
-    const std::array<std::size_t, motionTracking::TrackerRegionCount>& counts)
+PrintRegionCounts(std::FILE* out, const char* label,
+                  const std::array<std::size_t, motionTracking::TrackerRegionCount>& counts)
 {
     std::fprintf(out, "  %s:", label);
     bool any = false;
-    for (std::size_t i = 0; i < counts.size(); ++i) {
-        if (counts[i] == 0) {
+    for (std::size_t i = 0; i < counts.size(); ++i)
+    {
+        if (counts[i] == 0)
+        {
             continue;
         }
-        const std::string_view name = motionTracking::TrackerRegionName(
-            static_cast<motionTracking::TrackerRegion>(i));
-        std::fprintf(out, "%s %.*s %zu", any ? "," : "",
-                     static_cast<int>(name.size()), name.data(), counts[i]);
+        const std::string_view name =
+            motionTracking::TrackerRegionName(static_cast<motionTracking::TrackerRegion>(i));
+        std::fprintf(out, "%s %.*s %zu", any ? "," : "", static_cast<int>(name.size()), name.data(),
+                     counts[i]);
         any = true;
     }
     std::fprintf(out, "%s\n", any ? "" : " none");
@@ -69,11 +70,9 @@ PrintRegionCounts(
 
 } // namespace
 
-TraceCollector::TraceCollector(
-    motionTracking::TrackerAssignmentSpec assignment,
-    motionTracking::TrackerSolveConfig solve)
-    : _assignment(std::move(assignment))
-    , _solve(solve)
+TraceCollector::TraceCollector(motionTracking::TrackerAssignmentSpec assignment,
+                               motionTracking::TrackerSolveConfig solve)
+    : _assignment(std::move(assignment)), _solve(solve)
 {
 }
 
@@ -84,9 +83,8 @@ TraceCollector::_OpenSession()
 }
 
 void
-TraceCollector::Observe(
-    const std::vector<vrmAdapterVrchatOsc::TrackerFrame>& frames,
-    const motion::MotionSourceMetadata& metadata)
+TraceCollector::Observe(const std::vector<vrmAdapterVrchatOsc::TrackerFrame>& frames,
+                        const motion::MotionSourceMetadata& metadata)
 {
     // Observing after `Close` re-opens it, which is the sibling collector's
     // rule and matters more here than it does there. `Close` sizes `_hips` to
@@ -99,7 +97,8 @@ TraceCollector::Observe(
     // all, which `GetSessions` already documents.
     _closed = false;
 
-    for (const vrmAdapterVrchatOsc::TrackerFrame& frame : frames) {
+    for (const vrmAdapterVrchatOsc::TrackerFrame& frame : frames)
+    {
         ++_report.framesObserved;
 
         // A restart opens a session only when there is one to close. The
@@ -108,8 +107,8 @@ TraceCollector::Observe(
         // that changed -- and a session whose every frame refused is not one to
         // close either, which is why the test is on the poses rather than on
         // the count.
-        if (_sessions.empty()
-            || (frame.beginsNewSession && !_sessions.back().samples.empty())) {
+        if (_sessions.empty() || (frame.beginsNewSession && !_sessions.back().samples.empty()))
+        {
             _OpenSession();
         }
 
@@ -117,7 +116,8 @@ TraceCollector::Observe(
         // arithmetic. See the header on the two that do not cross.
         std::vector<motionTracking::TrackerObservation> observed;
         observed.reserve(frame.samples.size());
-        for (const vrmAdapterVrchatOsc::TrackerSample& sample : frame.samples) {
+        for (const vrmAdapterVrchatOsc::TrackerSample& sample : frame.samples)
+        {
             motionTracking::TrackerObservation observation;
             observation.tracker = sample.tracker;
             observation.position = sample.position;
@@ -131,38 +131,40 @@ TraceCollector::Observe(
         // holds an index into the array the assignment was made from: building
         // the identities separately is how the two calls drift apart and bind a
         // region to a device nobody wore (TrackerObservation.h).
-        const motionTracking::TrackerAssignment assignment =
-            motionTracking::AssignTrackers(
-                _assignment, motionTracking::TrackerIdentities(observed));
+        const motionTracking::TrackerAssignment assignment = motionTracking::AssignTrackers(
+            _assignment, motionTracking::TrackerIdentities(observed));
 
         // Filled whatever the refusal, which is that layer's rule -- so these
         // are read before the solve rather than under its success. They
         // **accumulate**; see the header on what taking the last frame's said
         // instead.
         Tally(_report.absent, assignment.absent);
-        for (const std::size_t index : assignment.unplaced) {
-            if (index >= observed.size()) {
+        for (const std::size_t index : assignment.unplaced)
+        {
+            if (index >= observed.size())
+            {
                 continue;
             }
             const std::string& identity = observed[index].tracker;
-            if (std::find(_report.unplaced.begin(), _report.unplaced.end(),
-                          identity)
-                == _report.unplaced.end()) {
+            if (std::find(_report.unplaced.begin(), _report.unplaced.end(), identity) ==
+                _report.unplaced.end())
+            {
                 _report.unplaced.push_back(identity);
             }
         }
 
         const motionTracking::TrackerSolve solve =
-            motionTracking::SolveTrackerPose(assignment, observed,
-                                             frame.receiveTime, _solve);
+            motionTracking::SolveTrackerPose(assignment, observed, frame.receiveTime, _solve);
 
         const std::size_t refusal = RefusalIndex(solve.refusal);
         ++_report.refusals[refusal];
-        if (_report.firstDetail[refusal].empty() && !solve.detail.empty()) {
+        if (_report.firstDetail[refusal].empty() && !solve.detail.empty())
+        {
             _report.firstDetail[refusal] = solve.detail;
         }
 
-        if (!solve.Solved()) {
+        if (!solve.Solved())
+        {
             continue;
         }
 
@@ -183,7 +185,8 @@ TraceCollector::Observe(
 void
 TraceCollector::Close()
 {
-    if (_closed) {
+    if (_closed)
+    {
         return;
     }
     _closed = true;
@@ -191,15 +194,17 @@ TraceCollector::Close()
     // A restart can leave a session opened and never filled, and a capture
     // whose every frame refused leaves one and only one. Either way an empty
     // animation is not a recording.
-    for (std::size_t i = _sessions.size(); i-- != 0;) {
-        if (_sessions[i].samples.empty()) {
-            _sessions.erase(_sessions.begin()
-                            + static_cast<std::ptrdiff_t>(i));
+    for (std::size_t i = _sessions.size(); i-- != 0;)
+    {
+        if (_sessions[i].samples.empty())
+        {
+            _sessions.erase(_sessions.begin() + static_cast<std::ptrdiff_t>(i));
         }
     }
 
     _hips.assign(_sessions.size(), HipsMotion());
-    for (std::size_t i = 0; i < _sessions.size(); ++i) {
+    for (std::size_t i = 0; i < _sessions.size(); ++i)
+    {
         motion::HumanoidAnimation& session = _sessions[i];
         session.startTime = session.samples.front().timestamp;
         session.endTime = session.samples.back().timestamp;
@@ -209,9 +214,8 @@ TraceCollector::Close()
         // otherwise have measured, so the file is a fixed point.
         const double span = session.endTime - session.startTime;
         const std::size_t intervals = session.samples.size() - 1;
-        session.nominalFrameRate = (span > 0.0 && intervals > 0)
-            ? static_cast<double>(intervals) / span
-            : 30.0;
+        session.nominalFrameRate =
+            (span > 0.0 && intervals > 0) ? static_cast<double>(intervals) / span : 30.0;
 
         // The hips path, measured over the poses that carry one. A session
         // exported with `--no-root-motion` carries none at all and reports its
@@ -221,24 +225,28 @@ TraceCollector::Close()
         bool started = false;
         pxr::GfVec3f first(0.0f);
         pxr::GfVec3f previous(0.0f);
-        for (const motion::HumanoidPose& pose : session.samples) {
-            if (!pose.root.hasPosition) {
+        for (const motion::HumanoidPose& pose : session.samples)
+        {
+            if (!pose.root.hasPosition)
+            {
                 ++hips.framesWithoutRoot;
                 continue;
             }
-            if (!started) {
+            if (!started)
+            {
                 started = true;
                 first = pose.root.worldPosition;
-            } else {
+            }
+            else
+            {
                 hips.pathMetres +=
-                    static_cast<double>((pose.root.worldPosition - previous)
-                                            .GetLength());
+                    static_cast<double>((pose.root.worldPosition - previous).GetLength());
             }
             previous = pose.root.worldPosition;
         }
-        if (started) {
-            hips.netMetres =
-                static_cast<double>((previous - first).GetLength());
+        if (started)
+        {
+            hips.netMetres = static_cast<double>((previous - first).GetLength());
         }
     }
 }
@@ -246,22 +254,20 @@ TraceCollector::Close()
 void
 PrintSolveReport(std::FILE* out, const SolveReport& report)
 {
-    std::fprintf(out, "solve: %zu of %zu frame(s)\n", report.framesSolved,
-                 report.framesObserved);
+    std::fprintf(out, "solve: %zu of %zu frame(s)\n", report.framesSolved, report.framesObserved);
 
-    for (std::size_t i = 0; i < report.refusals.size(); ++i) {
-        const auto refusal =
-            static_cast<motionTracking::TrackerSolveRefusal>(i);
-        if (refusal == motionTracking::TrackerSolveRefusal::None
-            || report.refusals[i] == 0) {
+    for (std::size_t i = 0; i < report.refusals.size(); ++i)
+    {
+        const auto refusal = static_cast<motionTracking::TrackerSolveRefusal>(i);
+        if (refusal == motionTracking::TrackerSolveRefusal::None || report.refusals[i] == 0)
+        {
             continue;
         }
-        const std::string_view name =
-            motionTracking::TrackerSolveRefusalName(refusal);
-        std::fprintf(out, "  refused %.*s: %zu frame(s)",
-                     static_cast<int>(name.size()), name.data(),
-                     report.refusals[i]);
-        if (!report.firstDetail[i].empty()) {
+        const std::string_view name = motionTracking::TrackerSolveRefusalName(refusal);
+        std::fprintf(out, "  refused %.*s: %zu frame(s)", static_cast<int>(name.size()),
+                     name.data(), report.refusals[i]);
+        if (!report.firstDetail[i].empty())
+        {
             std::fprintf(out, "  first: %s", report.firstDetail[i].c_str());
         }
         std::fprintf(out, "\n");
@@ -284,12 +290,13 @@ PrintSolveReport(std::FILE* out, const SolveReport& report)
     PrintRegionCounts(out, "stated but absent", report.absent);
 
     std::fprintf(out, "  observed but unplaced:");
-    if (report.unplaced.empty()) {
+    if (report.unplaced.empty())
+    {
         std::fprintf(out, " none");
     }
-    for (std::size_t i = 0; i < report.unplaced.size(); ++i) {
-        std::fprintf(out, "%s %s", i == 0 ? "" : ",",
-                     report.unplaced[i].c_str());
+    for (std::size_t i = 0; i < report.unplaced.size(); ++i)
+    {
+        std::fprintf(out, "%s %s", i == 0 ? "" : ",", report.unplaced[i].c_str());
     }
     std::fprintf(out, "\n");
 }

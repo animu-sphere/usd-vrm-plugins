@@ -96,9 +96,9 @@ enum class ExpressionOverride
 enum class ExpressionCategory
 {
     None,
-    Blink,   // blink, blinkLeft, blinkRight
-    LookAt,  // lookUp, lookDown, lookLeft, lookRight
-    Mouth,   // aa, ih, ou, ee, oh
+    Blink,  // blink, blinkLeft, blinkRight
+    LookAt, // lookUp, lookDown, lookLeft, lookRight
+    Mouth,  // aa, ih, ou, ee, oh
 };
 
 // The category `name` belongs to, by the VRM 1.0 preset spelling. The importer
@@ -106,20 +106,18 @@ enum class ExpressionCategory
 // `blinkLeft`, `a` -> `aa`), so a 0.x rig lands in these sets too -- which
 // matters for a 0.x avatar animated by a clip whose *other* expressions carry
 // an override, since 0.x has no override fields of its own.
-VRMRETARGET_API ExpressionCategory
-ExpressionCategoryOf(const std::string& name);
+VRMRETARGET_API ExpressionCategory ExpressionCategoryOf(const std::string& name);
 
 // Parses the `none` / `block` / `blend` token a stage or a file carries. An
 // unrecognized token resolves to `None` and sets `*recognized` to false when
 // given -- a value this layer does not know is not an arbitration it can
 // perform, and guessing which one was meant would suppress a face on a
 // spelling.
-VRMRETARGET_API ExpressionOverride
-ParseExpressionOverride(const std::string& token, bool* recognized = nullptr);
+VRMRETARGET_API ExpressionOverride ParseExpressionOverride(const std::string& token,
+                                                           bool* recognized = nullptr);
 
 // The token for an override, for a diagnostic that has to name one.
-VRMRETARGET_API const char*
-ExpressionOverrideToken(ExpressionOverride mode);
+VRMRETARGET_API const char* ExpressionOverrideToken(ExpressionOverride mode);
 
 // One expression of the target rig, as the avatar declared it.
 struct ExpressionDefinition
@@ -157,7 +155,7 @@ struct ExpressionDefinition
 // already refuses on the way in. `Add` reports it rather than deciding.
 class VRMRETARGET_API ExpressionRig
 {
-public:
+  public:
     ExpressionRig() = default;
 
     // Declares `definition`. Returns false -- and changes nothing -- when the
@@ -171,14 +169,23 @@ public:
     // with no binds" are different rigs.
     const ExpressionDefinition* Find(const std::string& name) const noexcept;
 
-    const std::vector<ExpressionDefinition>& GetExpressions() const noexcept
+    const std::vector<ExpressionDefinition>&
+    GetExpressions() const noexcept
     {
         return _expressions;
     }
-    std::size_t GetSize() const noexcept { return _expressions.size(); }
-    bool IsEmpty() const noexcept { return _expressions.empty(); }
+    std::size_t
+    GetSize() const noexcept
+    {
+        return _expressions.size();
+    }
+    bool
+    IsEmpty() const noexcept
+    {
+        return _expressions.empty();
+    }
 
-private:
+  private:
     // Sorted by name, so a rig read from a stage in prim order and one read in
     // any other order are the same value.
     std::vector<ExpressionDefinition> _expressions;
@@ -242,7 +249,8 @@ struct ResolvedExpressions
     std::vector<ResolvedMorphTarget> morphTargets;
     std::vector<ResolvedMaterialColor> materialColors;
 
-    bool IsEmpty() const noexcept
+    bool
+    IsEmpty() const noexcept
     {
         return morphTargets.empty() && materialColors.empty();
     }
@@ -278,10 +286,10 @@ struct ExpressionDiagnostics
 
     std::vector<std::string> warnings;
 
-    bool IsClean() const
+    bool
+    IsClean() const
     {
-        return unresolvedNames.empty() && clampedNames.empty()
-            && warnings.empty();
+        return unresolvedNames.empty() && clampedNames.empty() && warnings.empty();
     }
 };
 
@@ -304,13 +312,17 @@ struct ExpressionResolveOptions
 // Joins a producer's named weights to a target rig's binds.
 class VRMRETARGET_API ExpressionResolver
 {
-public:
-    explicit ExpressionResolver(
-        ExpressionRig rig,
-        ExpressionResolveOptions options = ExpressionResolveOptions());
+  public:
+    explicit ExpressionResolver(ExpressionRig rig,
+                                ExpressionResolveOptions options = ExpressionResolveOptions());
 
-    const ExpressionRig& GetRig() const noexcept { return _rig; }
-    const ExpressionResolveOptions& GetOptions() const noexcept
+    const ExpressionRig&
+    GetRig() const noexcept
+    {
+        return _rig;
+    }
+    const ExpressionResolveOptions&
+    GetOptions() const noexcept
     {
         return _options;
     }
@@ -330,15 +342,13 @@ public:
     // answer depend on the order the categories are settled in, and two
     // expressions overriding each other's categories would have none at all.
     ResolvedExpressions Resolve(const motion::ExpressionWeights& weights,
-                                ExpressionDiagnostics* diagnostics
-                                    = nullptr) const;
+                                ExpressionDiagnostics* diagnostics = nullptr) const;
 
     // The same, taking the weights off a pose and carrying its timestamp
     // through -- expressions live on the pose, so this is the call a consumer
     // walking a clip actually makes.
     ResolvedExpressions Resolve(const motion::HumanoidPose& pose,
-                                ExpressionDiagnostics* diagnostics
-                                    = nullptr) const;
+                                ExpressionDiagnostics* diagnostics = nullptr) const;
 
     // The weight this rig applies for `name` given a `reported` one: the clamp
     // and the binary rounding, with no binds expanded. Returns false, leaving
@@ -350,10 +360,9 @@ public:
     // *another one's* weight, so it exists only for a whole sample. This
     // answers what the rig does to one number in isolation, which is what a
     // caller asking about a single name has.
-    bool ResolveWeight(const std::string& name, float reported,
-                       float* resolved) const;
+    bool ResolveWeight(const std::string& name, float reported, float* resolved) const;
 
-private:
+  private:
     ExpressionRig _rig;
     ExpressionResolveOptions _options;
 };

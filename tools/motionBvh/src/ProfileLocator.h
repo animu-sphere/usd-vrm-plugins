@@ -110,14 +110,12 @@ bool ProfileRequestIsPath(const std::string& request);
 // Every directory that would be searched for an id, in order. Directories that
 // do not exist are kept: a refusal that lists only the paths that happened to
 // be there tells whoever reads it nothing about where the tool looked.
-std::vector<std::filesystem::path> ProfileSearchPath(
-    const std::vector<std::string>& extraDirs);
+std::vector<std::filesystem::path> ProfileSearchPath(const std::vector<std::string>& extraDirs);
 
 // Resolves `request` to a file. On failure `error` says what was looked for and
 // where — the whole search path, one directory per line — because "profile not
 // found" with no list is the single least actionable thing this tool could say.
-bool ResolveProfilePath(const std::string& request,
-                        const std::vector<std::string>& extraDirs,
+bool ResolveProfilePath(const std::string& request, const std::vector<std::string>& extraDirs,
                         std::filesystem::path* path, std::string* error);
 
 } // namespace motionBvhTool

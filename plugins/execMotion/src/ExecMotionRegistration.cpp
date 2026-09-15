@@ -85,20 +85,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     // The plan's naming: a computation is `<layer>.<verb>`, and the layer is
     // what may not be a product name.
-    ((identityPose, "motion.identityPose"))
-    ((sampleAnimation, "motion.sampleAnimation"))
-    ((priorPose, "motion.priorPose"))
-    ((filterPose, "motion.filterPose"))
-    ((extractRootMotion, "motion.extractRootMotion"))
-    ((poseHistory, "motion.poseHistory"))
-    ((interpolatePose, "motion.interpolatePose"))
-    ((blendPoses, "motion.blendPoses"))
+    ((identityPose, "motion.identityPose"))((sampleAnimation, "motion.sampleAnimation"))(
+        (priorPose, "motion.priorPose"))((filterPose, "motion.filterPose"))(
+        (extractRootMotion, "motion.extractRootMotion"))((poseHistory, "motion.poseHistory"))(
+        (interpolatePose, "motion.interpolatePose"))((blendPoses, "motion.blendPoses"))
     // UsdSkelAnimation's own attributes. Each is declared with its ELEMENT
     // type below and read through an iterator, because an array-valued USD
     // input is boxed into a container of the element type on the way in.
-    (joints)
-    (rotations)
-    (translations)
+    (joints)(rotations)(translations)
     // The rate that turns the frame a computation is handed into the seconds a
     // canonical pose is stamped in. It is an attribute on the clip because exec
     // will not deliver the stage metadata that means the same thing: the
@@ -111,9 +105,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     // optional and an absent one keeps `motion::PoseFilter`'s own default --
     // see ExecMotionPose.h for why these are defaulted where the rate above is
     // refused.
-    ((cutoffHz, "motion:filter:cutoffHz"))
-    ((filterRootPosition, "motion:filter:rootPosition"))
-    ((filterRootOrientation, "motion:filter:rootOrientation"))
+    ((cutoffHz, "motion:filter:cutoffHz"))((filterRootPosition, "motion:filter:rootPosition"))(
+        (filterRootOrientation, "motion:filter:rootOrientation"))
     // What a clip states about how its root is taken in: one of
     // `motion::RootMotionIntake`'s three policies, spelled in lowerCamelCase.
     // Absent is the library's own default; a token naming no policy is refused
@@ -130,14 +123,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     // connections because fan-in is what a relationship carries in 26.08, and
     // `computeValue` over two connections silently falls back to the
     // attribute's own value (the migration audit section 5.1).
-    ((blendSources, "motion:blend:sources"))
-    ((blendWeights, "motion:blend:weights"))
+    ((blendSources, "motion:blend:sources"))((blendWeights, "motion:blend:weights"))
     // The two names the fan-in arrives under. Both inputs traverse the same
     // relationship, so each is named for what it carries rather than left at
     // the computation name it reads.
-    ((sourcePaths, "motion:blend:sourcePaths"))
-    ((sourcePoses, "motion:blend:sourcePoses"))
-);
+    ((sourcePaths, "motion:blend:sourcePaths"))((sourcePoses, "motion:blend:sourcePoses")));
 
 TF_REGISTRY_FUNCTION(ExecTypeRegistry)
 {
@@ -167,43 +157,44 @@ PXR_NAMESPACE_CLOSE_SCOPE
 EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
 {
     self.PrimComputation(_tokens->identityPose)
-        .Callback<motion::HumanoidPose>(+[](const VdfContext &ctx) {
-            std::vector<std::string> jointPaths;
-            VdfReadIterator<TfToken> joint(ctx, _tokens->joints);
-            jointPaths.reserve(joint.ComputeSize());
-            for (; !joint.IsAtEnd(); ++joint) {
-                jointPaths.push_back(joint->GetString());
-            }
+        .Callback<motion::HumanoidPose>(+[](const VdfContext& ctx)
+                                        {
+                                            std::vector<std::string> jointPaths;
+                                            VdfReadIterator<TfToken> joint(ctx, _tokens->joints);
+                                            jointPaths.reserve(joint.ComputeSize());
+                                            for (; !joint.IsAtEnd(); ++joint)
+                                            {
+                                                jointPaths.push_back(joint->GetString());
+                                            }
 
-            // Every input the callback reads arrives through .Inputs() below.
-            // A value read from anywhere else -- a clock, a global, a captured
-            // reference -- is invisible to invalidation and becomes a stale
-            // result no test would see (exec's own "cache safe" contract). This
-            // callback reads exactly one thing, and it is declared there.
-            //
-            // The pose carries NO timestamp, and that is a measurement rather
-            // than an omission. A time code is a FRAME; `HumanoidPose::timestamp`
-            // is SECONDS; converting needs the stage's `timeCodesPerSecond`, and
-            // a computation cannot reach it. `Stage().Metadata<double>()` for
-            // that field is accepted by the builder, is not refused even with
-            // `.Required()`, and still delivers no value -- so the only rate a
-            // callback could apply would be a guess, and a guessed rate is a
-            // wrong second that every consumer downstream would take at face
-            // value. `tools/motionRetarget` converts with the rate because it
-            // holds the stage; exec does not, which is why
-            // `motion.sampleAnimation` below is *given* one, as an attribute
-            // the clip states
-            // (docs/reports/openusd/26.08-openexec-mechanism.md §5).
-            //
-            // The identity pose is the same pose at every time, so this
-            // computation declares no time input either: reading `computeTime`
-            // and discarding it would tell exec this value changes with the
-            // frame, which is a false statement about a computation whose only
-            // input is a `uniform` array.
-            return execmotion::IdentityPoseForJoints(jointPaths);
-        })
-        .Inputs(
-            AttributeValue<TfToken>(_tokens->joints).Required());
+                                            // Every input the callback reads arrives through .Inputs() below.
+                                            // A value read from anywhere else -- a clock, a global, a captured
+                                            // reference -- is invisible to invalidation and becomes a stale
+                                            // result no test would see (exec's own "cache safe" contract). This
+                                            // callback reads exactly one thing, and it is declared there.
+                                            //
+                                            // The pose carries NO timestamp, and that is a measurement rather
+                                            // than an omission. A time code is a FRAME; `HumanoidPose::timestamp`
+                                            // is SECONDS; converting needs the stage's `timeCodesPerSecond`, and
+                                            // a computation cannot reach it. `Stage().Metadata<double>()` for
+                                            // that field is accepted by the builder, is not refused even with
+                                            // `.Required()`, and still delivers no value -- so the only rate a
+                                            // callback could apply would be a guess, and a guessed rate is a
+                                            // wrong second that every consumer downstream would take at face
+                                            // value. `tools/motionRetarget` converts with the rate because it
+                                            // holds the stage; exec does not, which is why
+                                            // `motion.sampleAnimation` below is *given* one, as an attribute
+                                            // the clip states
+                                            // (docs/reports/openusd/26.08-openexec-mechanism.md §5).
+                                            //
+                                            // The identity pose is the same pose at every time, so this
+                                            // computation declares no time input either: reading `computeTime`
+                                            // and discarding it would tell exec this value changes with the
+                                            // frame, which is a false statement about a computation whose only
+                                            // input is a `uniform` array.
+                                            return execmotion::IdentityPoseForJoints(jointPaths);
+                                        })
+        .Inputs(AttributeValue<TfToken>(_tokens->joints).Required());
 
     // -----------------------------------------------------------------------
     // motion.sampleAnimation -- the clip, at the frame the system is evaluating
@@ -223,80 +214,84 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
     // already resolved at one time. The two answers are compared at P0-6 rather
     // than assumed equal.
     self.PrimComputation(_tokens->sampleAnimation)
-        .Callback<motion::HumanoidPose>(+[](const VdfContext &ctx) {
-            execmotion::ClipSample sample;
+        .Callback<motion::HumanoidPose>(
+            +[](const VdfContext& ctx)
+            {
+                execmotion::ClipSample sample;
 
-            VdfReadIterator<TfToken> joint(ctx, _tokens->joints);
-            sample.jointPaths.reserve(joint.ComputeSize());
-            for (; !joint.IsAtEnd(); ++joint) {
-                sample.jointPaths.push_back(joint->GetString());
-            }
+                VdfReadIterator<TfToken> joint(ctx, _tokens->joints);
+                sample.jointPaths.reserve(joint.ComputeSize());
+                for (; !joint.IsAtEnd(); ++joint)
+                {
+                    sample.jointPaths.push_back(joint->GetString());
+                }
 
-            // Neither of the next two is `.Required()`, so an unconnected input
-            // is an iterator already at its end rather than an error -- which is
-            // how a clip that authors no translations reaches the seam as a pose
-            // with no root position instead of as a failure. The seam judges the
-            // two arrays separately, for the same reason.
-            VdfReadIterator<GfQuatf> rotation(ctx, _tokens->rotations);
-            sample.rotations.reserve(rotation.ComputeSize());
-            for (; !rotation.IsAtEnd(); ++rotation) {
-                sample.rotations.push_back(*rotation);
-            }
+                // Neither of the next two is `.Required()`, so an unconnected input
+                // is an iterator already at its end rather than an error -- which is
+                // how a clip that authors no translations reaches the seam as a pose
+                // with no root position instead of as a failure. The seam judges the
+                // two arrays separately, for the same reason.
+                VdfReadIterator<GfQuatf> rotation(ctx, _tokens->rotations);
+                sample.rotations.reserve(rotation.ComputeSize());
+                for (; !rotation.IsAtEnd(); ++rotation)
+                {
+                    sample.rotations.push_back(*rotation);
+                }
 
-            VdfReadIterator<GfVec3f> translation(ctx, _tokens->translations);
-            sample.translations.reserve(translation.ComputeSize());
-            for (; !translation.IsAtEnd(); ++translation) {
-                sample.translations.push_back(*translation);
-            }
+                VdfReadIterator<GfVec3f> translation(ctx, _tokens->translations);
+                sample.translations.reserve(translation.ComputeSize());
+                for (; !translation.IsAtEnd(); ++translation)
+                {
+                    sample.translations.push_back(*translation);
+                }
 
-            if (const double *const rate =
-                    ctx.GetInputValuePtr<double>(_tokens->timeCodesPerSecond)) {
-                sample.timeCodesPerSecond = *rate;
-            }
+                if (const double* const rate =
+                        ctx.GetInputValuePtr<double>(_tokens->timeCodesPerSecond))
+                {
+                    sample.timeCodesPerSecond = *rate;
+                }
 
-            // `EfTime` carries a `UsdTimeCode`, and `GetValue()` is a coding
-            // error on the default one -- which is what a system evaluates at
-            // until `ChangeTime` is called, so it is the common case and not an
-            // edge one. `IsNumeric()` is the check that has to come first.
-            const UsdTimeCode timeCode =
-                ctx.GetInputValue<EfTime>(
-                    ExecBuiltinComputations->computeTime).GetTimeCode();
-            if (timeCode.IsNumeric()) {
-                sample.timeCode = timeCode.GetValue();
-                sample.hasTimeCode = true;
-            }
+                // `EfTime` carries a `UsdTimeCode`, and `GetValue()` is a coding
+                // error on the default one -- which is what a system evaluates at
+                // until `ChangeTime` is called, so it is the common case and not an
+                // edge one. `IsNumeric()` is the check that has to come first.
+                const UsdTimeCode timeCode =
+                    ctx.GetInputValue<EfTime>(ExecBuiltinComputations->computeTime).GetTimeCode();
+                if (timeCode.IsNumeric())
+                {
+                    sample.timeCode = timeCode.GetValue();
+                    sample.hasTimeCode = true;
+                }
 
-            if (std::optional<motion::HumanoidPose> pose =
-                    execmotion::PoseFromClipSample(sample)) {
-                ctx.SetOutput(*pose);
-                return;
-            }
+                if (std::optional<motion::HumanoidPose> pose =
+                        execmotion::PoseFromClipSample(sample))
+                {
+                    ctx.SetOutput(*pose);
+                    return;
+                }
 
-            // The seam refuses exactly one thing, and this is it: without a
-            // positive rate the frame cannot become the second the canonical
-            // pose is stamped in. Reported rather than defaulted, because a
-            // pose carrying a guessed second is indistinguishable downstream
-            // from one carrying a measured one.
-            //
-            // And the refusal sets NO value rather than a default-constructed
-            // one, which is this bundle's one refusal shape (see the block
-            // above the registrations). An empty pose is a pose a clip can
-            // legitimately produce -- one whose `joints` name no canonical bone
-            // does -- so returning one would make a refusal indistinguishable
-            // from an answer for anyone not reading TfErrors.
-            TF_RUNTIME_ERROR(
-                "motion.sampleAnimation: the clip states no usable "
-                "'motion:timeCodesPerSecond', so the frame it is evaluated at "
-                "cannot be converted to seconds; no pose was sampled");
-            ctx.SetEmptyOutput();
-        })
-        .Inputs(
-            AttributeValue<TfToken>(_tokens->joints).Required(),
-            AttributeValue<GfQuatf>(_tokens->rotations),
-            AttributeValue<GfVec3f>(_tokens->translations),
-            AttributeValue<double>(_tokens->timeCodesPerSecond).Required(),
-            Stage().Computation<EfTime>(
-                ExecBuiltinComputations->computeTime).Required());
+                // The seam refuses exactly one thing, and this is it: without a
+                // positive rate the frame cannot become the second the canonical
+                // pose is stamped in. Reported rather than defaulted, because a
+                // pose carrying a guessed second is indistinguishable downstream
+                // from one carrying a measured one.
+                //
+                // And the refusal sets NO value rather than a default-constructed
+                // one, which is this bundle's one refusal shape (see the block
+                // above the registrations). An empty pose is a pose a clip can
+                // legitimately produce -- one whose `joints` name no canonical bone
+                // does -- so returning one would make a refusal indistinguishable
+                // from an answer for anyone not reading TfErrors.
+                TF_RUNTIME_ERROR("motion.sampleAnimation: the clip states no usable "
+                                 "'motion:timeCodesPerSecond', so the frame it is evaluated at "
+                                 "cannot be converted to seconds; no pose was sampled");
+                ctx.SetEmptyOutput();
+            })
+        .Inputs(AttributeValue<TfToken>(_tokens->joints).Required(),
+                AttributeValue<GfQuatf>(_tokens->rotations),
+                AttributeValue<GfVec3f>(_tokens->translations),
+                AttributeValue<double>(_tokens->timeCodesPerSecond).Required(),
+                Stage().Computation<EfTime>(ExecBuiltinComputations->computeTime).Required());
 
     // -----------------------------------------------------------------------
     // motion.priorPose -- the pose a filter step starts from
@@ -323,23 +318,23 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
     // returning it unchanged -- the pass-through falls out of `dt == 0` rather
     // than being special-cased anywhere in this bundle.
     self.PrimComputation(_tokens->priorPose)
-        .Callback<motion::HumanoidPose>(+[](const VdfContext &ctx) {
-            const motion::HumanoidPose *const pose =
-                ctx.GetInputValuePtr<motion::HumanoidPose>(
-                    _tokens->sampleAnimation);
-            if (!pose) {
-                // The node it forwards refused, and forwarding means forwarding
-                // that too: a default pose here would turn one node's refusal
-                // into another node's answer, and would be the value an
-                // override is compared against besides.
-                ctx.SetEmptyOutput();
-                return;
-            }
-            ctx.SetOutput(*pose);
-        })
-        .Inputs(
-            Computation<motion::HumanoidPose>(
-                _tokens->sampleAnimation).Required());
+        .Callback<motion::HumanoidPose>(+[](const VdfContext& ctx)
+                                        {
+                                            const motion::HumanoidPose* const pose =
+                                                ctx.GetInputValuePtr<motion::HumanoidPose>(
+                                                    _tokens->sampleAnimation);
+                                            if (!pose)
+                                            {
+                                                // The node it forwards refused, and forwarding means forwarding
+                                                // that too: a default pose here would turn one node's refusal
+                                                // into another node's answer, and would be the value an
+                                                // override is compared against besides.
+                                                ctx.SetEmptyOutput();
+                                                return;
+                                            }
+                                            ctx.SetOutput(*pose);
+                                        })
+        .Inputs(Computation<motion::HumanoidPose>(_tokens->sampleAnimation).Required());
 
     // -----------------------------------------------------------------------
     // motion.filterPose -- one step of motion::PoseFilter
@@ -358,52 +353,50 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
     // weight is derived from, which is the whole reason the rate had to enter
     // the graph one node earlier.
     self.PrimComputation(_tokens->filterPose)
-        .Callback<motion::HumanoidPose>(+[](const VdfContext &ctx) {
-            const motion::HumanoidPose *const pose =
-                ctx.GetInputValuePtr<motion::HumanoidPose>(
-                    _tokens->sampleAnimation);
-            if (!pose) {
-                // Required inputs are not guaranteed to arrive with a value
-                // (the sampling report section 2), so the one thing this node
-                // cannot compute without is checked rather than assumed. It
-                // has no other refusal: an absent policy is the library's
-                // default, and an absent prior pose is the pose itself.
-                TF_RUNTIME_ERROR(
-                    "motion.filterPose: no pose came back from "
-                    "motion.sampleAnimation, so there is nothing to filter");
-                ctx.SetEmptyOutput();
-                return;
-            }
+        .Callback<motion::HumanoidPose>(
+            +[](const VdfContext& ctx)
+            {
+                const motion::HumanoidPose* const pose =
+                    ctx.GetInputValuePtr<motion::HumanoidPose>(_tokens->sampleAnimation);
+                if (!pose)
+                {
+                    // Required inputs are not guaranteed to arrive with a value
+                    // (the sampling report section 2), so the one thing this node
+                    // cannot compute without is checked rather than assumed. It
+                    // has no other refusal: an absent policy is the library's
+                    // default, and an absent prior pose is the pose itself.
+                    TF_RUNTIME_ERROR("motion.filterPose: no pose came back from "
+                                     "motion.sampleAnimation, so there is nothing to filter");
+                    ctx.SetEmptyOutput();
+                    return;
+                }
 
-            const motion::HumanoidPose *const prior =
-                ctx.GetInputValuePtr<motion::HumanoidPose>(_tokens->priorPose);
+                const motion::HumanoidPose* const prior =
+                    ctx.GetInputValuePtr<motion::HumanoidPose>(_tokens->priorPose);
 
-            execmotion::FilterPolicy policy;
-            if (const float *const cutoff =
-                    ctx.GetInputValuePtr<float>(_tokens->cutoffHz)) {
-                policy.cutoffHz = *cutoff;
-            }
-            if (const bool *const root =
-                    ctx.GetInputValuePtr<bool>(_tokens->filterRootPosition)) {
-                policy.filterRootPosition = *root;
-            }
-            if (const bool *const root =
-                    ctx.GetInputValuePtr<bool>(
-                        _tokens->filterRootOrientation)) {
-                policy.filterRootOrientation = *root;
-            }
+                execmotion::FilterPolicy policy;
+                if (const float* const cutoff = ctx.GetInputValuePtr<float>(_tokens->cutoffHz))
+                {
+                    policy.cutoffHz = *cutoff;
+                }
+                if (const bool* const root =
+                        ctx.GetInputValuePtr<bool>(_tokens->filterRootPosition))
+                {
+                    policy.filterRootPosition = *root;
+                }
+                if (const bool* const root =
+                        ctx.GetInputValuePtr<bool>(_tokens->filterRootOrientation))
+                {
+                    policy.filterRootOrientation = *root;
+                }
 
-            ctx.SetOutput(
-                execmotion::FilteredPose(prior ? *prior : *pose, *pose,
-                                         policy));
-        })
-        .Inputs(
-            Computation<motion::HumanoidPose>(
-                _tokens->sampleAnimation).Required(),
-            Computation<motion::HumanoidPose>(_tokens->priorPose).Required(),
-            AttributeValue<float>(_tokens->cutoffHz),
-            AttributeValue<bool>(_tokens->filterRootPosition),
-            AttributeValue<bool>(_tokens->filterRootOrientation));
+                ctx.SetOutput(execmotion::FilteredPose(prior ? *prior : *pose, *pose, policy));
+            })
+        .Inputs(Computation<motion::HumanoidPose>(_tokens->sampleAnimation).Required(),
+                Computation<motion::HumanoidPose>(_tokens->priorPose).Required(),
+                AttributeValue<float>(_tokens->cutoffHz),
+                AttributeValue<bool>(_tokens->filterRootPosition),
+                AttributeValue<bool>(_tokens->filterRootOrientation));
 
     // -----------------------------------------------------------------------
     // motion.extractRootMotion -- where the body is, under the clip's policy
@@ -428,64 +421,61 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
     // feeds both nodes, because a velocity and a filter step want the identical
     // thing -- the previous frame's answer.
     self.PrimComputation(_tokens->extractRootMotion)
-        .Callback<motion::RootMotion>(+[](const VdfContext &ctx) {
-            const motion::HumanoidPose *const pose =
-                ctx.GetInputValuePtr<motion::HumanoidPose>(
-                    _tokens->sampleAnimation);
-            if (!pose) {
-                // The one thing this node cannot compute without, checked
-                // rather than assumed: a `.Required()` input is not guaranteed
-                // to arrive with a value (the sampling report section 2).
-                TF_RUNTIME_ERROR(
-                    "motion.extractRootMotion: no pose came back from "
-                    "motion.sampleAnimation, so there is no root to extract");
-                ctx.SetEmptyOutput();
-                return;
-            }
-
-            execmotion::RootPolicy policy;
-            if (const TfToken *const stated =
-                    ctx.GetInputValuePtr<TfToken>(_tokens->rootIntake)) {
-                policy.intake =
-                    execmotion::RootIntakeForToken(stated->GetString());
-                if (!policy.intake) {
-                    // Absent and unrecognized are different answers. An absent
-                    // attribute is a clip that said nothing and gets the
-                    // library's default; a token spelling no policy is a clip
-                    // that stated something this bundle cannot honour, and
-                    // defaulting there would hand a misspelled `Ignore` the
-                    // root motion it asked not to have.
-                    //
-                    // And this is the node where setting NO value rather than a
-                    // cleared one is load-bearing rather than tidy: a cleared
-                    // `motion::RootMotion` is `ignore`'s own legitimate answer,
-                    // bit for bit, so a refusal that produced one would hand a
-                    // misspelled `passthrough` the exact behaviour of a
-                    // deliberate `ignore` -- the mirror image of the mistake
-                    // the paragraph above refuses to make.
-                    TF_RUNTIME_ERROR(
-                        "motion.extractRootMotion: the clip states "
-                        "'motion:root:intake' = '%s', which names no "
-                        "motion::RootMotionIntake policy; no root motion was "
-                        "extracted",
-                        stated->GetText());
+        .Callback<motion::RootMotion>(
+            +[](const VdfContext& ctx)
+            {
+                const motion::HumanoidPose* const pose =
+                    ctx.GetInputValuePtr<motion::HumanoidPose>(_tokens->sampleAnimation);
+                if (!pose)
+                {
+                    // The one thing this node cannot compute without, checked
+                    // rather than assumed: a `.Required()` input is not guaranteed
+                    // to arrive with a value (the sampling report section 2).
+                    TF_RUNTIME_ERROR("motion.extractRootMotion: no pose came back from "
+                                     "motion.sampleAnimation, so there is no root to extract");
                     ctx.SetEmptyOutput();
                     return;
                 }
-            }
 
-            const motion::HumanoidPose *const prior =
-                ctx.GetInputValuePtr<motion::HumanoidPose>(_tokens->priorPose);
+                execmotion::RootPolicy policy;
+                if (const TfToken* const stated =
+                        ctx.GetInputValuePtr<TfToken>(_tokens->rootIntake))
+                {
+                    policy.intake = execmotion::RootIntakeForToken(stated->GetString());
+                    if (!policy.intake)
+                    {
+                        // Absent and unrecognized are different answers. An absent
+                        // attribute is a clip that said nothing and gets the
+                        // library's default; a token spelling no policy is a clip
+                        // that stated something this bundle cannot honour, and
+                        // defaulting there would hand a misspelled `Ignore` the
+                        // root motion it asked not to have.
+                        //
+                        // And this is the node where setting NO value rather than a
+                        // cleared one is load-bearing rather than tidy: a cleared
+                        // `motion::RootMotion` is `ignore`'s own legitimate answer,
+                        // bit for bit, so a refusal that produced one would hand a
+                        // misspelled `passthrough` the exact behaviour of a
+                        // deliberate `ignore` -- the mirror image of the mistake
+                        // the paragraph above refuses to make.
+                        TF_RUNTIME_ERROR("motion.extractRootMotion: the clip states "
+                                         "'motion:root:intake' = '%s', which names no "
+                                         "motion::RootMotionIntake policy; no root motion was "
+                                         "extracted",
+                                         stated->GetText());
+                        ctx.SetEmptyOutput();
+                        return;
+                    }
+                }
 
-            ctx.SetOutput(
-                execmotion::RootMotionFrom(prior ? *prior : *pose, *pose,
-                                           policy));
-        })
-        .Inputs(
-            Computation<motion::HumanoidPose>(
-                _tokens->sampleAnimation).Required(),
-            Computation<motion::HumanoidPose>(_tokens->priorPose).Required(),
-            AttributeValue<TfToken>(_tokens->rootIntake));
+                const motion::HumanoidPose* const prior =
+                    ctx.GetInputValuePtr<motion::HumanoidPose>(_tokens->priorPose);
+
+                ctx.SetOutput(execmotion::RootMotionFrom(prior ? *prior : *pose, *pose, policy));
+            })
+        .Inputs(Computation<motion::HumanoidPose>(_tokens->sampleAnimation).Required(),
+                Computation<motion::HumanoidPose>(_tokens->priorPose).Required(),
+                AttributeValue<TfToken>(_tokens->rootIntake));
 
     // -----------------------------------------------------------------------
     // motion.poseHistory -- the snapshot a driver's pose buffer supplies
@@ -505,23 +495,23 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
     // pass-through `motion.filterPose` has un-overridden, and special-cased in
     // neither.
     self.PrimComputation(_tokens->poseHistory)
-        .Callback<motion::HumanoidAnimation>(+[](const VdfContext &ctx) {
-            const motion::HumanoidPose *const pose =
-                ctx.GetInputValuePtr<motion::HumanoidPose>(
-                    _tokens->sampleAnimation);
-            if (!pose) {
-                // Forwarding the refusal, as `motion.priorPose` does: a history
-                // of one default pose would turn the sampler's refusal into a
-                // sample, and an empty history would turn it into the library's
-                // `Unavailable` -- an answer, and the wrong one.
-                ctx.SetEmptyOutput();
-                return;
-            }
-            ctx.SetOutput(execmotion::HistoryOfOne(*pose));
-        })
-        .Inputs(
-            Computation<motion::HumanoidPose>(
-                _tokens->sampleAnimation).Required());
+        .Callback<motion::HumanoidAnimation>(+[](const VdfContext& ctx)
+                                             {
+                                                 const motion::HumanoidPose* const pose =
+                                                     ctx.GetInputValuePtr<motion::HumanoidPose>(
+                                                         _tokens->sampleAnimation);
+                                                 if (!pose)
+                                                 {
+                                                     // Forwarding the refusal, as `motion.priorPose` does: a history
+                                                     // of one default pose would turn the sampler's refusal into a
+                                                     // sample, and an empty history would turn it into the library's
+                                                     // `Unavailable` -- an answer, and the wrong one.
+                                                     ctx.SetEmptyOutput();
+                                                     return;
+                                                 }
+                                                 ctx.SetOutput(execmotion::HistoryOfOne(*pose));
+                                             })
+        .Inputs(Computation<motion::HumanoidPose>(_tokens->sampleAnimation).Required());
 
     // -----------------------------------------------------------------------
     // motion.interpolatePose -- what the history states at the evaluated time
@@ -554,84 +544,79 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
     // instant or not, so the status is the only thing that tells a sample from a
     // hold -- and a stopped source answers `Held` forever.
     self.PrimComputation(_tokens->interpolatePose)
-        .Callback<motion::PoseSampleResult>(+[](const VdfContext &ctx) {
-            const motion::HumanoidPose *const pose =
-                ctx.GetInputValuePtr<motion::HumanoidPose>(
-                    _tokens->sampleAnimation);
-            if (!pose) {
-                TF_RUNTIME_ERROR(
-                    "motion.interpolatePose: no pose came back from "
-                    "motion.sampleAnimation, so there is no evaluated instant "
-                    "to sample the history at");
+        .Callback<motion::PoseSampleResult>(
+            +[](const VdfContext& ctx)
+            {
+                const motion::HumanoidPose* const pose =
+                    ctx.GetInputValuePtr<motion::HumanoidPose>(_tokens->sampleAnimation);
+                if (!pose)
+                {
+                    TF_RUNTIME_ERROR("motion.interpolatePose: no pose came back from "
+                                     "motion.sampleAnimation, so there is no evaluated instant "
+                                     "to sample the history at");
+                    ctx.SetEmptyOutput();
+                    return;
+                }
+
+                // The default time code is no instant. It is also what every request
+                // is armed at (the filtering report section 4), so this refusal is
+                // the common case of a driver's first compute rather than an edge
+                // one -- which is exactly why a guessed 0.0 here would be reached.
+                const UsdTimeCode timeCode =
+                    ctx.GetInputValue<EfTime>(ExecBuiltinComputations->computeTime).GetTimeCode();
+                if (!timeCode.IsNumeric())
+                {
+                    TF_RUNTIME_ERROR("motion.interpolatePose: the system is evaluating at the "
+                                     "default time code, which is no instant on a timeline; a "
+                                     "history cannot be sampled until ChangeTime names one");
+                    ctx.SetEmptyOutput();
+                    return;
+                }
+
+                const motion::HumanoidAnimation* const history =
+                    ctx.GetInputValuePtr<motion::HumanoidAnimation>(_tokens->poseHistory);
+                if (!history)
+                {
+                    // Not reachable from the graph as declared: `motion.poseHistory`
+                    // sets no value only when the pose above is absent, which
+                    // returned already, and a driver cannot override the key *to*
+                    // nothing -- an empty `VtValue` is a type mismatch exec drops,
+                    // computing the ordinary value instead (measured in
+                    // `execMotion_interpolate`). What does reach it is the input
+                    // below going **undeclared**: the callback then runs with a
+                    // null pointer and nothing else reports it (the root-motion
+                    // report section 3), so this refusal is the only thing that
+                    // does -- verified by deleting the declaration.
+                    //
+                    // An empty *history* is a different thing again: the library's
+                    // `Unavailable`, which is an answer.
+                    TF_RUNTIME_ERROR("motion.interpolatePose: no history came back from "
+                                     "motion.poseHistory, so there is nothing to sample");
+                    ctx.SetEmptyOutput();
+                    return;
+                }
+
+                if (std::optional<motion::PoseSampleResult> result =
+                        execmotion::SampleHistory(*history, pose->timestamp))
+                {
+                    ctx.SetOutput(*result);
+                    return;
+                }
+
+                // The one refusal the seam has: a history whose timestamps are not
+                // finite or not in time order, which the library's binary search
+                // would answer with a bracket nobody measured. A value of the
+                // result type cannot say that -- every one of them is an answer,
+                // `Unavailable` included -- so this sets none.
+                TF_RUNTIME_ERROR("motion.interpolatePose: the history's timestamps are not "
+                                 "finite and in time order, so the samples bracketing %g s "
+                                 "cannot be found; no pose was sampled",
+                                 pose->timestamp);
                 ctx.SetEmptyOutput();
-                return;
-            }
-
-            // The default time code is no instant. It is also what every request
-            // is armed at (the filtering report section 4), so this refusal is
-            // the common case of a driver's first compute rather than an edge
-            // one -- which is exactly why a guessed 0.0 here would be reached.
-            const UsdTimeCode timeCode =
-                ctx.GetInputValue<EfTime>(
-                    ExecBuiltinComputations->computeTime).GetTimeCode();
-            if (!timeCode.IsNumeric()) {
-                TF_RUNTIME_ERROR(
-                    "motion.interpolatePose: the system is evaluating at the "
-                    "default time code, which is no instant on a timeline; a "
-                    "history cannot be sampled until ChangeTime names one");
-                ctx.SetEmptyOutput();
-                return;
-            }
-
-            const motion::HumanoidAnimation *const history =
-                ctx.GetInputValuePtr<motion::HumanoidAnimation>(
-                    _tokens->poseHistory);
-            if (!history) {
-                // Not reachable from the graph as declared: `motion.poseHistory`
-                // sets no value only when the pose above is absent, which
-                // returned already, and a driver cannot override the key *to*
-                // nothing -- an empty `VtValue` is a type mismatch exec drops,
-                // computing the ordinary value instead (measured in
-                // `execMotion_interpolate`). What does reach it is the input
-                // below going **undeclared**: the callback then runs with a
-                // null pointer and nothing else reports it (the root-motion
-                // report section 3), so this refusal is the only thing that
-                // does -- verified by deleting the declaration.
-                //
-                // An empty *history* is a different thing again: the library's
-                // `Unavailable`, which is an answer.
-                TF_RUNTIME_ERROR(
-                    "motion.interpolatePose: no history came back from "
-                    "motion.poseHistory, so there is nothing to sample");
-                ctx.SetEmptyOutput();
-                return;
-            }
-
-            if (std::optional<motion::PoseSampleResult> result =
-                    execmotion::SampleHistory(*history, pose->timestamp)) {
-                ctx.SetOutput(*result);
-                return;
-            }
-
-            // The one refusal the seam has: a history whose timestamps are not
-            // finite or not in time order, which the library's binary search
-            // would answer with a bracket nobody measured. A value of the
-            // result type cannot say that -- every one of them is an answer,
-            // `Unavailable` included -- so this sets none.
-            TF_RUNTIME_ERROR(
-                "motion.interpolatePose: the history's timestamps are not "
-                "finite and in time order, so the samples bracketing %g s "
-                "cannot be found; no pose was sampled",
-                pose->timestamp);
-            ctx.SetEmptyOutput();
-        })
-        .Inputs(
-            Computation<motion::HumanoidPose>(
-                _tokens->sampleAnimation).Required(),
-            Computation<motion::HumanoidAnimation>(
-                _tokens->poseHistory).Required(),
-            Stage().Computation<EfTime>(
-                ExecBuiltinComputations->computeTime).Required());
+            })
+        .Inputs(Computation<motion::HumanoidPose>(_tokens->sampleAnimation).Required(),
+                Computation<motion::HumanoidAnimation>(_tokens->poseHistory).Required(),
+                Stage().Computation<EfTime>(ExecBuiltinComputations->computeTime).Required());
 
     // -----------------------------------------------------------------------
     // motion.blendPoses -- several clips, weighted, at the evaluated frame
@@ -665,106 +650,105 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
     // dependence reaches it across the fan-in from every source that has it
     // (measured, the filtering report section 2 across a relationship).
     self.PrimComputation(_tokens->blendPoses)
-        .Callback<motion::HumanoidPose>(+[](const VdfContext &ctx) {
-            execmotion::BlendInputs inputs;
+        .Callback<motion::HumanoidPose>(
+            +[](const VdfContext& ctx)
+            {
+                execmotion::BlendInputs inputs;
 
-            std::vector<SdfPath> targets;
-            for (VdfReadIterator<SdfPath> path(ctx, _tokens->sourcePaths);
-                 !path.IsAtEnd(); ++path) {
-                targets.push_back(*path);
-            }
-            inputs.sourceCount = targets.size();
+                std::vector<SdfPath> targets;
+                for (VdfReadIterator<SdfPath> path(ctx, _tokens->sourcePaths); !path.IsAtEnd();
+                     ++path)
+                {
+                    targets.push_back(*path);
+                }
+                inputs.sourceCount = targets.size();
 
-            for (VdfReadIterator<motion::HumanoidPose> pose(
-                     ctx, _tokens->sourcePoses);
-                 !pose.IsAtEnd(); ++pose) {
-                inputs.poses.push_back(*pose);
-            }
+                for (VdfReadIterator<motion::HumanoidPose> pose(ctx, _tokens->sourcePoses);
+                     !pose.IsAtEnd(); ++pose)
+                {
+                    inputs.poses.push_back(*pose);
+                }
 
-            for (VdfReadIterator<float> weight(ctx, _tokens->blendWeights);
-                 !weight.IsAtEnd(); ++weight) {
-                inputs.weights.push_back(*weight);
-            }
+                for (VdfReadIterator<float> weight(ctx, _tokens->blendWeights); !weight.IsAtEnd();
+                     ++weight)
+                {
+                    inputs.weights.push_back(*weight);
+                }
 
-            execmotion::BlendOutcome outcome = execmotion::BlendedPose(inputs);
-            if (outcome.pose) {
-                ctx.SetOutput(std::move(*outcome.pose));
-                return;
-            }
+                execmotion::BlendOutcome outcome = execmotion::BlendedPose(inputs);
+                if (outcome.pose)
+                {
+                    ctx.SetOutput(std::move(*outcome.pose));
+                    return;
+                }
 
-            // The targets by path, because the one refusal a reader will most
-            // want to act on -- a source that answered nothing -- cannot say
-            // which of them it was: the fan-in hands back values, not the
-            // objects they came from.
-            std::string named;
-            for (const SdfPath &target : targets) {
-                named += named.empty() ? "<" : ", <";
-                named += target.GetString();
-                named += ">";
-            }
+                // The targets by path, because the one refusal a reader will most
+                // want to act on -- a source that answered nothing -- cannot say
+                // which of them it was: the fan-in hands back values, not the
+                // objects they came from.
+                std::string named;
+                for (const SdfPath& target : targets)
+                {
+                    named += named.empty() ? "<" : ", <";
+                    named += target.GetString();
+                    named += ">";
+                }
 
-            switch (outcome.refusal) {
-            case execmotion::BlendRefusal::NoSource:
-                TF_RUNTIME_ERROR(
-                    "motion.blendPoses: 'motion:blend:sources' reaches "
-                    "nothing on the stage, so there is nothing to blend; no "
-                    "pose was blended");
-                break;
-            case execmotion::BlendRefusal::SourceUnanswered:
-                TF_RUNTIME_ERROR(
-                    "motion.blendPoses: %zu of the %zu objects "
-                    "'motion:blend:sources' targets (%s) answered no "
-                    "motion.sampleAnimation -- a target that is not a "
-                    "UsdSkelAnimation, or whose sampler refused, is dropped "
-                    "from the fan-in without a word, and a weight paired with "
-                    "what is left would land on the wrong clip; no pose was "
-                    "blended",
-                    inputs.sourceCount - inputs.poses.size(),
-                    inputs.sourceCount, named.c_str());
-                break;
-            case execmotion::BlendRefusal::WeightCount:
-                TF_RUNTIME_ERROR(
-                    "motion.blendPoses: the blend states %zu "
-                    "'motion:blend:weights' for the %zu objects "
-                    "'motion:blend:sources' targets (%s), and a weight is "
-                    "paired with its source by position; no pose was blended",
-                    inputs.weights.size(), inputs.sourceCount, named.c_str());
-                break;
-            case execmotion::BlendRefusal::WeightNotFinite:
-                TF_RUNTIME_ERROR(
-                    "motion.blendPoses: a 'motion:blend:weights' entry is not "
-                    "finite, and motion::BlendPoses would carry it into every "
-                    "rotation; no pose was blended");
-                break;
-            case execmotion::BlendRefusal::InstantsDisagree:
-                TF_RUNTIME_ERROR(
-                    "motion.blendPoses: the sources (%s) were not sampled at "
-                    "one finite instant -- two clips counting the same frame "
-                    "at different 'motion:timeCodesPerSecond', or a pose "
-                    "handed in stamped elsewhere -- and a blend would stamp "
-                    "a second between them that nobody sampled; no pose was "
-                    "blended",
-                    named.c_str());
-                break;
-            case execmotion::BlendRefusal::NothingWeighted:
-                TF_RUNTIME_ERROR(
-                    "motion.blendPoses: no 'motion:blend:weights' entry is "
-                    "positive, and motion::BlendPoses answers that with a "
-                    "default pose stamped 0.0 rather than at the instant the "
-                    "sources were sampled; no pose was blended");
-                break;
-            }
-            ctx.SetEmptyOutput();
-        })
-        .Inputs(
-            Relationship(_tokens->blendSources)
-                .TargetedObjects<SdfPath>(ExecBuiltinComputations->computePath)
-                .InputName(_tokens->sourcePaths),
-            Relationship(_tokens->blendSources)
-                .TargetedObjects<motion::HumanoidPose>(
-                    _tokens->sampleAnimation)
-                .InputName(_tokens->sourcePoses),
-            AttributeValue<float>(_tokens->blendWeights));
+                switch (outcome.refusal)
+                {
+                case execmotion::BlendRefusal::NoSource:
+                    TF_RUNTIME_ERROR("motion.blendPoses: 'motion:blend:sources' reaches "
+                                     "nothing on the stage, so there is nothing to blend; no "
+                                     "pose was blended");
+                    break;
+                case execmotion::BlendRefusal::SourceUnanswered:
+                    TF_RUNTIME_ERROR("motion.blendPoses: %zu of the %zu objects "
+                                     "'motion:blend:sources' targets (%s) answered no "
+                                     "motion.sampleAnimation -- a target that is not a "
+                                     "UsdSkelAnimation, or whose sampler refused, is dropped "
+                                     "from the fan-in without a word, and a weight paired with "
+                                     "what is left would land on the wrong clip; no pose was "
+                                     "blended",
+                                     inputs.sourceCount - inputs.poses.size(), inputs.sourceCount,
+                                     named.c_str());
+                    break;
+                case execmotion::BlendRefusal::WeightCount:
+                    TF_RUNTIME_ERROR("motion.blendPoses: the blend states %zu "
+                                     "'motion:blend:weights' for the %zu objects "
+                                     "'motion:blend:sources' targets (%s), and a weight is "
+                                     "paired with its source by position; no pose was blended",
+                                     inputs.weights.size(), inputs.sourceCount, named.c_str());
+                    break;
+                case execmotion::BlendRefusal::WeightNotFinite:
+                    TF_RUNTIME_ERROR("motion.blendPoses: a 'motion:blend:weights' entry is not "
+                                     "finite, and motion::BlendPoses would carry it into every "
+                                     "rotation; no pose was blended");
+                    break;
+                case execmotion::BlendRefusal::InstantsDisagree:
+                    TF_RUNTIME_ERROR("motion.blendPoses: the sources (%s) were not sampled at "
+                                     "one finite instant -- two clips counting the same frame "
+                                     "at different 'motion:timeCodesPerSecond', or a pose "
+                                     "handed in stamped elsewhere -- and a blend would stamp "
+                                     "a second between them that nobody sampled; no pose was "
+                                     "blended",
+                                     named.c_str());
+                    break;
+                case execmotion::BlendRefusal::NothingWeighted:
+                    TF_RUNTIME_ERROR("motion.blendPoses: no 'motion:blend:weights' entry is "
+                                     "positive, and motion::BlendPoses answers that with a "
+                                     "default pose stamped 0.0 rather than at the instant the "
+                                     "sources were sampled; no pose was blended");
+                    break;
+                }
+                ctx.SetEmptyOutput();
+            })
+        .Inputs(Relationship(_tokens->blendSources)
+                    .TargetedObjects<SdfPath>(ExecBuiltinComputations->computePath)
+                    .InputName(_tokens->sourcePaths),
+                Relationship(_tokens->blendSources)
+                    .TargetedObjects<motion::HumanoidPose>(_tokens->sampleAnimation)
+                    .InputName(_tokens->sourcePoses),
+                AttributeValue<float>(_tokens->blendWeights));
 
     // -----------------------------------------------------------------------
     // motion:root:transform -- the root's placement, where a display reads it
@@ -796,30 +780,29 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSkelAnimation)
     // No `computeTime`: the placement is time dependent through the root motion
     // it reads, and declaring the frame again would say nothing new.
     self.AttributeExpression(_tokens->rootTransform)
-        .Callback<GfMatrix4d>(+[](const VdfContext &ctx) {
-            const motion::RootMotion *const root =
-                ctx.GetInputValuePtr<motion::RootMotion>(
-                    _tokens->extractRootMotion);
-            if (!root) {
-                // Forwarding the refusal of the node it reads -- a sampler with
-                // no rate, or an intake token naming no policy. That node has
-                // already said why.
+        .Callback<GfMatrix4d>(
+            +[](const VdfContext& ctx)
+            {
+                const motion::RootMotion* const root =
+                    ctx.GetInputValuePtr<motion::RootMotion>(_tokens->extractRootMotion);
+                if (!root)
+                {
+                    // Forwarding the refusal of the node it reads -- a sampler with
+                    // no rate, or an intake token naming no policy. That node has
+                    // already said why.
+                    ctx.SetEmptyOutput();
+                    return;
+                }
+                if (std::optional<GfMatrix4d> transform = execmotion::RootTransform(*root))
+                {
+                    ctx.SetOutput(*transform);
+                    return;
+                }
+                TF_RUNTIME_ERROR("motion:root:transform: the root motion states a position or "
+                                 "orientation that is not finite, or an orientation too short "
+                                 "to normalize, so it names no placement; no transform was "
+                                 "computed");
                 ctx.SetEmptyOutput();
-                return;
-            }
-            if (std::optional<GfMatrix4d> transform =
-                    execmotion::RootTransform(*root)) {
-                ctx.SetOutput(*transform);
-                return;
-            }
-            TF_RUNTIME_ERROR(
-                "motion:root:transform: the root motion states a position or "
-                "orientation that is not finite, or an orientation too short "
-                "to normalize, so it names no placement; no transform was "
-                "computed");
-            ctx.SetEmptyOutput();
-        })
-        .Inputs(
-            Prim().Computation<motion::RootMotion>(
-                _tokens->extractRootMotion).Required());
+            })
+        .Inputs(Prim().Computation<motion::RootMotion>(_tokens->extractRootMotion).Required());
 }

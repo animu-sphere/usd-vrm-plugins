@@ -59,9 +59,9 @@ main()
 {
     motionBvh::BvhDocument document;
     motionBvh::Diagnostic diagnostic;
-    if (!motionBvh::ParseBvhText(kMinimal, &document, &diagnostic)) {
-        std::fprintf(stderr, "consumer: parse refused: %s\n",
-                     diagnostic.detail.c_str());
+    if (!motionBvh::ParseBvhText(kMinimal, &document, &diagnostic))
+    {
+        std::fprintf(stderr, "consumer: parse refused: %s\n", diagnostic.detail.c_str());
         return 1;
     }
 
@@ -69,27 +69,28 @@ main()
     // types from the layer below, which this fixture never names as a package.
     motionSource::SourceSkeleton skeleton;
     motionSource::SourceAnimation animation;
-    if (!motionBvh::ExtractBvhSource(document, &skeleton, &animation,
-                                     &diagnostic)) {
-        std::fprintf(stderr, "consumer: extraction refused: %s\n",
-                     diagnostic.detail.c_str());
+    if (!motionBvh::ExtractBvhSource(document, &skeleton, &animation, &diagnostic))
+    {
+        std::fprintf(stderr, "consumer: extraction refused: %s\n", diagnostic.detail.c_str());
         return 1;
     }
 
-    if (skeleton.joints.size() != 2 || animation.frameCount != 2
-        || animation.tracks.size() != skeleton.joints.size()) {
+    if (skeleton.joints.size() != 2 || animation.frameCount != 2 ||
+        animation.tracks.size() != skeleton.joints.size())
+    {
         std::fprintf(stderr, "consumer: extracted %zu joints and %zu frames\n",
                      skeleton.joints.size(), animation.frameCount);
         return 1;
     }
-    if (!skeleton.FindJoint("Spine")) {
+    if (!skeleton.FindJoint("Spine"))
+    {
         std::fprintf(stderr, "consumer: the extracted rig has no Spine\n");
         return 1;
     }
 
-    std::fprintf(stdout, "consumer: extracted %zu joints as %s through the "
-                         "installed package\n",
-                 skeleton.joints.size(),
-                 std::string(motionBvh::BvhFormatLabel()).c_str());
+    std::fprintf(stdout,
+                 "consumer: extracted %zu joints as %s through the "
+                 "installed package\n",
+                 skeleton.joints.size(), std::string(motionBvh::BvhFormatLabel()).c_str());
     return 0;
 }

@@ -43,17 +43,20 @@ struct Bytes
 {
     std::vector<std::uint8_t> data;
 
-    Bytes& Str(std::string_view text)
+    Bytes&
+    Str(std::string_view text)
     {
         data.insert(data.end(), text.begin(), text.end());
         data.push_back(0);
-        while (data.size() % 4 != 0) {
+        while (data.size() % 4 != 0)
+        {
             data.push_back(0);
         }
         return *this;
     }
 
-    Bytes& U32(std::uint32_t value)
+    Bytes&
+    U32(std::uint32_t value)
     {
         data.push_back(static_cast<std::uint8_t>(value >> 24));
         data.push_back(static_cast<std::uint8_t>(value >> 16));
@@ -62,20 +65,23 @@ struct Bytes
         return *this;
     }
 
-    Bytes& U64(std::uint64_t value)
+    Bytes&
+    U64(std::uint64_t value)
     {
         U32(static_cast<std::uint32_t>(value >> 32));
         return U32(static_cast<std::uint32_t>(value));
     }
 
-    Bytes& F32(float value)
+    Bytes&
+    F32(float value)
     {
         std::uint32_t bits = 0;
         std::memcpy(&bits, &value, sizeof(bits));
         return U32(bits);
     }
 
-    Bytes& Append(const std::vector<std::uint8_t>& values)
+    Bytes&
+    Append(const std::vector<std::uint8_t>& values)
     {
         data.insert(data.end(), values.begin(), values.end());
         return *this;
@@ -88,7 +94,8 @@ Message(std::string_view address, const std::vector<float>& values)
     Bytes out;
     out.Str(address);
     out.Str("," + std::string(values.size(), 'f'));
-    for (float value : values) {
+    for (float value : values)
+    {
         out.F32(value);
     }
     return out.data;
@@ -100,7 +107,8 @@ Bundle(const std::vector<std::vector<std::uint8_t>>& elements)
     Bytes out;
     out.Str("#bundle");
     out.U64(1);
-    for (const std::vector<std::uint8_t>& element : elements) {
+    for (const std::vector<std::uint8_t>& element : elements)
+    {
         out.U32(static_cast<std::uint32_t>(element.size()));
         out.Append(element);
     }
@@ -117,11 +125,12 @@ Record(PacketCapture* capture, double time, std::vector<std::uint8_t> bytes)
 }
 
 const AddressRow*
-Find(const AddressInventory& inventory, std::string_view address,
-     std::string_view tags)
+Find(const AddressInventory& inventory, std::string_view address, std::string_view tags)
 {
-    for (const AddressRow& row : inventory.rows) {
-        if (row.address == address && row.typeTags == tags) {
+    for (const AddressRow& row : inventory.rows)
+    {
+        if (row.address == address && row.typeTags == tags)
+        {
             return &row;
         }
     }
@@ -135,13 +144,12 @@ TestEveryAddressAppearsWhetherOrNotAnybodyExpectedIt()
 {
     PacketCapture capture;
     capture.peerEndpoint = "192.168.0.20:52001";
-    for (int frame = 0; frame < 3; ++frame) {
+    for (int frame = 0; frame < 3; ++frame)
+    {
         const double time = 0.1 * frame;
         Record(&capture, time,
-               Bundle({Message("/tracking/trackers/1/position",
-                               {0.0f, 1.0f, 0.0f}),
-                       Message("/tracking/trackers/1/rotation",
-                               {0.0f, 0.0f, 0.0f}),
+               Bundle({Message("/tracking/trackers/1/position", {0.0f, 1.0f, 0.0f}),
+                       Message("/tracking/trackers/1/rotation", {0.0f, 0.0f, 0.0f}),
                        // A different part of the same sender's surface.
                        Message("/avatar/parameters/VelocityY", {0.5f}),
                        // And one nothing in any document predicts. This is the
@@ -150,8 +158,7 @@ TestEveryAddressAppearsWhetherOrNotAnybodyExpectedIt()
                        Message("/an/address/nobody/documented", {1.0f})}));
     }
 
-    const AddressInventory inventory =
-        vrmAdapterVrchatOsc::InventoryAddresses(capture);
+    const AddressInventory inventory = vrmAdapterVrchatOsc::InventoryAddresses(capture);
 
     assert(inventory.datagrams == 3);
     assert(inventory.decoded == 3);
@@ -160,8 +167,7 @@ TestEveryAddressAppearsWhetherOrNotAnybodyExpectedIt()
     assert(inventory.messages == 12);
     assert(inventory.rows.size() == 4);
 
-    const AddressRow* undocumented =
-        Find(inventory, "/an/address/nobody/documented", "f");
+    const AddressRow* undocumented = Find(inventory, "/an/address/nobody/documented", "f");
     assert(undocumented);
     assert(undocumented->messages == 3);
     assert(undocumented->datagrams == 3);
@@ -169,7 +175,8 @@ TestEveryAddressAppearsWhetherOrNotAnybodyExpectedIt()
     // The counts are of datagrams and are not derived from the rows, so this
     // addition is a check on the inventory rather than a restatement of it.
     std::size_t summed = 0;
-    for (const AddressRow& row : inventory.rows) {
+    for (const AddressRow& row : inventory.rows)
+    {
         summed += row.messages;
     }
     assert(summed == inventory.messages);
@@ -177,12 +184,12 @@ TestEveryAddressAppearsWhetherOrNotAnybodyExpectedIt()
     // Sorted by address, then by tags. An operator diffs one session's report
     // against the next's, and a report whose order came out of a hash table
     // could not be diffed at all.
-    for (std::size_t i = 1; i < inventory.rows.size(); ++i) {
+    for (std::size_t i = 1; i < inventory.rows.size(); ++i)
+    {
         const AddressRow& previous = inventory.rows[i - 1];
         const AddressRow& current = inventory.rows[i];
-        assert(previous.address < current.address
-               || (previous.address == current.address
-                   && previous.typeTags < current.typeTags));
+        assert(previous.address < current.address ||
+               (previous.address == current.address && previous.typeTags < current.typeTags));
     }
 }
 
@@ -194,20 +201,15 @@ TestOneAddressWithTwoTypeTagsIsTwoRows()
     // them into one row and hide exactly the thing a decoder has to be built
     // around.
     PacketCapture capture;
-    Record(&capture, 0.0,
-           Message("/tracking/trackers/head/position", {0.0f, 1.7f, 0.0f}));
+    Record(&capture, 0.0, Message("/tracking/trackers/head/position", {0.0f, 1.7f, 0.0f}));
     Record(&capture, 1.0, Message("/tracking/trackers/head/position", {1.7f}));
-    Record(&capture, 2.0,
-           Message("/tracking/trackers/head/position", {0.0f, 1.7f, 0.1f}));
+    Record(&capture, 2.0, Message("/tracking/trackers/head/position", {0.0f, 1.7f, 0.1f}));
 
-    const AddressInventory inventory =
-        vrmAdapterVrchatOsc::InventoryAddresses(capture);
+    const AddressInventory inventory = vrmAdapterVrchatOsc::InventoryAddresses(capture);
 
     assert(inventory.rows.size() == 2);
-    const AddressRow* three =
-        Find(inventory, "/tracking/trackers/head/position", "fff");
-    const AddressRow* one =
-        Find(inventory, "/tracking/trackers/head/position", "f");
+    const AddressRow* three = Find(inventory, "/tracking/trackers/head/position", "fff");
+    const AddressRow* one = Find(inventory, "/tracking/trackers/head/position", "f");
     assert(three && one);
     assert(three->messages == 2);
     assert(one->messages == 1);
@@ -230,11 +232,9 @@ TestARepeatedAddressInOneBundleCountsOneDatagram()
     PacketCapture capture;
     Record(&capture, 0.0,
            Bundle({Message("/tracking/trackers/2/position", {0.0f, 0.0f, 0.0f}),
-                   Message("/tracking/trackers/2/position",
-                           {0.1f, 0.0f, 0.0f})}));
+                   Message("/tracking/trackers/2/position", {0.1f, 0.0f, 0.0f})}));
 
-    const AddressInventory inventory =
-        vrmAdapterVrchatOsc::InventoryAddresses(capture);
+    const AddressInventory inventory = vrmAdapterVrchatOsc::InventoryAddresses(capture);
 
     assert(inventory.rows.size() == 1);
     assert(inventory.rows.front().messages == 2);
@@ -257,12 +257,10 @@ TestARefusalArrivesAsThisAdaptersCode()
     // A well-formed one either side, so a refusal is shown not to poison the
     // session: the port is a well-known one and anything on the network may
     // send to it.
-    Record(&capture, 1.0,
-           Message("/tracking/trackers/1/position", {0.0f, 1.0f, 0.0f}));
+    Record(&capture, 1.0, Message("/tracking/trackers/1/position", {0.0f, 1.0f, 0.0f}));
     Record(&capture, 1.5, {0xde, 0xad, 0xbe, 0xef});
 
-    const AddressInventory inventory =
-        vrmAdapterVrchatOsc::InventoryAddresses(capture);
+    const AddressInventory inventory = vrmAdapterVrchatOsc::InventoryAddresses(capture);
 
     assert(inventory.datagrams == 3);
     assert(inventory.decoded == 1);
@@ -270,7 +268,8 @@ TestARefusalArrivesAsThisAdaptersCode()
     assert(inventory.rows.size() == 1);
     assert(inventory.diagnostics.size() == 2);
 
-    for (const auto& diagnostic : inventory.diagnostics) {
+    for (const auto& diagnostic : inventory.diagnostics)
+    {
         assert(diagnostic.code == DiagnosticCode::PacketMalformed);
         assert(diagnostic.recoverable);
         // The shared decoder's own text, carried across rather than reworded.
@@ -287,8 +286,7 @@ TestARefusalArrivesAsThisAdaptersCode()
 void
 TestAnEmptyCaptureIsAnInventoryAndNotAnError()
 {
-    const AddressInventory inventory =
-        vrmAdapterVrchatOsc::InventoryAddresses(PacketCapture());
+    const AddressInventory inventory = vrmAdapterVrchatOsc::InventoryAddresses(PacketCapture());
     assert(inventory.datagrams == 0);
     assert(inventory.rows.empty());
     assert(inventory.diagnostics.empty());
@@ -298,8 +296,7 @@ TestAnEmptyCaptureIsAnInventoryAndNotAnError()
     PacketCapture noise;
     Record(&noise, 0.0, {1, 2, 3, 4});
     Record(&noise, 0.1, {});
-    const AddressInventory refused =
-        vrmAdapterVrchatOsc::InventoryAddresses(noise);
+    const AddressInventory refused = vrmAdapterVrchatOsc::InventoryAddresses(noise);
     assert(refused.datagrams == 2);
     assert(refused.decoded == 0);
     assert(refused.rows.empty());

@@ -15,11 +15,14 @@
 #include <string_view>
 #include <utility>
 
-namespace execvrm {
+namespace execvrm
+{
 
-namespace {
+namespace
+{
 
-pxr::GfQuatf ToQuatf(const pxr::GfQuatd& q)
+pxr::GfQuatf
+ToQuatf(const pxr::GfQuatd& q)
 {
     return pxr::GfQuatf(static_cast<float>(q.GetReal()),
                         pxr::GfVec3f(static_cast<float>(q.GetImaginary()[0]),
@@ -27,7 +30,8 @@ pxr::GfQuatf ToQuatf(const pxr::GfQuatd& q)
                                      static_cast<float>(q.GetImaginary()[2])));
 }
 
-pxr::GfVec3f ToVec3f(const pxr::GfVec3d& v)
+pxr::GfVec3f
+ToVec3f(const pxr::GfVec3d& v)
 {
     return pxr::GfVec3f(static_cast<float>(v[0]), static_cast<float>(v[1]),
                         static_cast<float>(v[2]));
@@ -36,41 +40,46 @@ pxr::GfVec3f ToVec3f(const pxr::GfVec3d& v)
 // The bone a semantic joint path names: its leaf, looked up in the vocabulary.
 // tools/motionRetarget's `FindHumanBone(LeafToken(path))`, and execMotion's
 // `BoneForJointPath` -- a path with no separator is already a leaf.
-std::optional<motion::HumanBone> BoneForLeaf(const std::string& jointPath)
+std::optional<motion::HumanBone>
+BoneForLeaf(const std::string& jointPath)
 {
     const std::size_t separator = jointPath.rfind('/');
-    const std::string_view leaf =
-        separator == std::string::npos
-            ? std::string_view(jointPath)
-            : std::string_view(jointPath).substr(separator + 1);
+    const std::string_view leaf = separator == std::string::npos
+                                      ? std::string_view(jointPath)
+                                      : std::string_view(jointPath).substr(separator + 1);
     return motion::FindHumanBone(leaf);
 }
 
 } // namespace
 
-const std::array<pxr::TfToken, motion::HumanBoneCount>& HumanBoneAttributeNames()
+const std::array<pxr::TfToken, motion::HumanBoneCount>&
+HumanBoneAttributeNames()
 {
     // Immutable once built, so it is not the mutable global state a callback
     // may not read: the same list at every evaluation, derived from nothing a
     // stage can change.
-    static const std::array<pxr::TfToken, motion::HumanBoneCount> names = [] {
+    static const std::array<pxr::TfToken, motion::HumanBoneCount> names = []
+    {
         std::array<pxr::TfToken, motion::HumanBoneCount> result;
-        for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot) {
+        for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+        {
             result[slot] = pxr::TfToken(
-                "vrm:humanBones:"
-                + std::string(motion::HumanBoneName(
-                    static_cast<motion::HumanBone>(slot))));
+                "vrm:humanBones:" +
+                std::string(motion::HumanBoneName(static_cast<motion::HumanBone>(slot))));
         }
         return result;
     }();
     return names;
 }
 
-SkeletonOutcome TargetSkeletonFromRest(const SkeletonRest& rest)
+SkeletonOutcome
+TargetSkeletonFromRest(const SkeletonRest& rest)
 {
     SkeletonOutcome outcome;
-    for (const std::string& joint : rest.joints) {
-        if (joint.empty()) {
+    for (const std::string& joint : rest.joints)
+    {
+        if (joint.empty())
+        {
             outcome.refusal = SkeletonRefusal::EmptyJointToken;
             return outcome;
         }
@@ -80,18 +89,21 @@ SkeletonOutcome TargetSkeletonFromRest(const SkeletonRest& rest)
     // It is also the one reading under which `joints = []` beside an unauthored
     // `restTransforms` -- which arrives as one fallback matrix -- is answered
     // for what the stage states rather than refused over a count it did not.
-    if (rest.joints.empty()) {
+    if (rest.joints.empty())
+    {
         outcome.skeleton = vrmRetarget::TargetSkeleton();
         return outcome;
     }
-    if (rest.restTransforms.size() != rest.joints.size()) {
+    if (rest.restTransforms.size() != rest.joints.size())
+    {
         outcome.refusal = SkeletonRefusal::RestTransformCount;
         return outcome;
     }
 
     std::vector<vrmRetarget::TargetJoint> joints;
     joints.reserve(rest.joints.size());
-    for (std::size_t i = 0; i < rest.joints.size(); ++i) {
+    for (std::size_t i = 0; i < rest.joints.size(); ++i)
+    {
         vrmRetarget::TargetJoint joint;
         joint.token = rest.joints[i];
         // tools/motionRetarget's DecomposeRest, line for line: translation
@@ -102,8 +114,7 @@ SkeletonOutcome TargetSkeletonFromRest(const SkeletonRest& rest)
         const pxr::GfMatrix4d& matrix = rest.restTransforms[i];
         joint.restTranslation = ToVec3f(matrix.ExtractTranslation());
         joint.restRotation =
-            ToQuatf(matrix.RemoveScaleShear().ExtractRotationQuat())
-                .GetNormalized();
+            ToQuatf(matrix.RemoveScaleShear().ExtractRotationQuat()).GetNormalized();
         joints.push_back(std::move(joint));
     }
 
@@ -113,44 +124,55 @@ SkeletonOutcome TargetSkeletonFromRest(const SkeletonRest& rest)
     return outcome;
 }
 
-MapOutcome HumanoidMapFor(const HumanoidInputs& inputs)
+MapOutcome
+HumanoidMapFor(const HumanoidInputs& inputs)
 {
     MapOutcome outcome;
-    if (inputs.skeletonTargetCount == 0) {
+    if (inputs.skeletonTargetCount == 0)
+    {
         outcome.refusal = MapRefusal::NoSkeleton;
         return outcome;
     }
-    if (inputs.skeletonTargetCount > 1) {
+    if (inputs.skeletonTargetCount > 1)
+    {
         outcome.refusal = MapRefusal::SeveralSkeletons;
         return outcome;
     }
-    if (inputs.skeletons.size() != 1) {
+    if (inputs.skeletons.size() != 1)
+    {
         outcome.refusal = MapRefusal::SkeletonUnanswered;
         return outcome;
     }
     const vrmRetarget::TargetSkeleton& skeleton = inputs.skeletons.front();
 
     vrmRetarget::HumanoidMap map;
-    for (const auto& [bone, token] : inputs.bindings) {
-        if (token.empty()) {
+    for (const auto& [bone, token] : inputs.bindings)
+    {
+        if (token.empty())
+        {
             continue;
         }
-        if (!map.SetJointToken(bone, token, skeleton)) {
+        if (!map.SetJointToken(bone, token, skeleton))
+        {
             outcome.offending.emplace_back(bone, token);
         }
     }
-    if (!outcome.offending.empty()) {
+    if (!outcome.offending.empty())
+    {
         outcome.refusal = MapRefusal::UnknownJoint;
         return outcome;
     }
 
     const std::vector<int> duplicates = map.FindDuplicateJointIndices();
-    if (!duplicates.empty()) {
+    if (!duplicates.empty())
+    {
         // Name every bone on a shared joint, not only the second: the library
         // cannot say which binding the humanoid meant, and neither can this.
         const std::set<int> shared(duplicates.begin(), duplicates.end());
-        for (const auto& [bone, token] : inputs.bindings) {
-            if (map.IsMapped(bone) && shared.count(map.GetJointIndex(bone))) {
+        for (const auto& [bone, token] : inputs.bindings)
+        {
+            if (map.IsMapped(bone) && shared.count(map.GetJointIndex(bone)))
+            {
                 outcome.offending.emplace_back(bone, token);
             }
         }
@@ -162,8 +184,8 @@ MapOutcome HumanoidMapFor(const HumanoidInputs& inputs)
     return outcome;
 }
 
-SourceRestOutcome SourceRestFromSkeleton(
-    const vrmRetarget::TargetSkeleton& skeleton)
+SourceRestOutcome
+SourceRestFromSkeleton(const vrmRetarget::TargetSkeleton& skeleton)
 {
     SourceRestOutcome outcome;
     vrmRetarget::SourceRestPose rest;
@@ -172,18 +194,22 @@ SourceRestOutcome SourceRestFromSkeleton(
     std::array<const std::string*, motion::HumanBoneCount> namedBy{};
     std::size_t recognized = 0;
 
-    for (const vrmRetarget::TargetJoint& joint : skeleton.GetJoints()) {
+    for (const vrmRetarget::TargetJoint& joint : skeleton.GetJoints())
+    {
         const std::optional<motion::HumanBone> bone = BoneForLeaf(joint.token);
-        if (!bone) {
+        if (!bone)
+        {
             continue;
         }
         const auto slot = static_cast<std::size_t>(*bone);
-        if (namedBy[slot]) {
+        if (namedBy[slot])
+        {
             // Report the first naming once, then every later one.
-            const bool firstReported = std::any_of(
-                outcome.offending.begin(), outcome.offending.end(),
-                [&](const auto& named) { return named.first == *bone; });
-            if (!firstReported) {
+            const bool firstReported =
+                std::any_of(outcome.offending.begin(), outcome.offending.end(),
+                            [&](const auto& named) { return named.first == *bone; });
+            if (!firstReported)
+            {
                 outcome.offending.emplace_back(*bone, *namedBy[slot]);
             }
             outcome.offending.emplace_back(*bone, joint.token);
@@ -199,20 +225,24 @@ SourceRestOutcome SourceRestFromSkeleton(
         rest.localRotations[slot] = joint.restRotation;
         rest.localTranslations[slot] = joint.restTranslation;
         const std::size_t separator = joint.token.rfind('/');
-        if (separator == std::string::npos) {
+        if (separator == std::string::npos)
+        {
             continue;
         }
         if (const std::optional<motion::HumanBone> parent =
-                BoneForLeaf(joint.token.substr(0, separator))) {
+                BoneForLeaf(joint.token.substr(0, separator)))
+        {
             rest.SetParent(*bone, *parent);
         }
     }
 
-    if (!outcome.offending.empty()) {
+    if (!outcome.offending.empty())
+    {
         outcome.refusal = SourceRestRefusal::DuplicateBone;
         return outcome;
     }
-    if (recognized == 0) {
+    if (recognized == 0)
+    {
         outcome.refusal = SourceRestRefusal::NoHumanBone;
         return outcome;
     }
@@ -220,7 +250,8 @@ SourceRestOutcome SourceRestFromSkeleton(
     return outcome;
 }
 
-namespace {
+namespace
+{
 
 // What `vrm:retarget:sourceSkeleton` reached, judged once for both nodes that
 // read it -- the correction and the retarget refuse it identically, because
@@ -240,40 +271,45 @@ struct SourceOutcome
     SourceRestOutcome rest;
 };
 
-SourceOutcome SourceFor(std::size_t count,
-                        const std::vector<vrmRetarget::TargetSkeleton>& sources)
+SourceOutcome
+SourceFor(std::size_t count, const std::vector<vrmRetarget::TargetSkeleton>& sources)
 {
     SourceOutcome outcome;
-    if (count == 0) {
+    if (count == 0)
+    {
         outcome.check = SourceCheck::NoSource;
         return outcome;
     }
-    if (count > 1) {
+    if (count > 1)
+    {
         outcome.check = SourceCheck::SeveralSources;
         return outcome;
     }
-    if (sources.size() != 1) {
+    if (sources.size() != 1)
+    {
         outcome.check = SourceCheck::SourceUnanswered;
         return outcome;
     }
     outcome.rest = SourceRestFromSkeleton(sources.front());
-    outcome.check =
-        outcome.rest.rest ? SourceCheck::Answered : SourceCheck::SourceRest;
+    outcome.check = outcome.rest.rest ? SourceCheck::Answered : SourceCheck::SourceRest;
     return outcome;
 }
 
 } // namespace
 
-CorrectionOutcome RestPoseCorrectionFor(const CorrectionInputs& inputs)
+CorrectionOutcome
+RestPoseCorrectionFor(const CorrectionInputs& inputs)
 {
     CorrectionOutcome outcome;
-    if (!inputs.map || inputs.targets.size() != 1) {
+    if (!inputs.map || inputs.targets.size() != 1)
+    {
         outcome.refusal = CorrectionRefusal::RigUnanswered;
         return outcome;
     }
 
     SourceOutcome source = SourceFor(inputs.sourceTargetCount, inputs.sources);
-    switch (source.check) {
+    switch (source.check)
+    {
     case SourceCheck::Answered:
         break;
     case SourceCheck::NoSource:
@@ -298,23 +334,28 @@ CorrectionOutcome RestPoseCorrectionFor(const CorrectionInputs& inputs)
     return outcome;
 }
 
-BoundPoseOutcome BoundPoseFor(const BoundPoseInputs& inputs)
+BoundPoseOutcome
+BoundPoseFor(const BoundPoseInputs& inputs)
 {
     BoundPoseOutcome outcome;
-    if (inputs.animationTargetCount == 0) {
+    if (inputs.animationTargetCount == 0)
+    {
         // Nothing bound here: what an ancestor binds, UsdSkel's inheritance.
-        if (inputs.inherited) {
+        if (inputs.inherited)
+        {
             outcome.pose = *inputs.inherited;
             return outcome;
         }
         outcome.refusal = BoundPoseRefusal::NoAnimation;
         return outcome;
     }
-    if (inputs.animationTargetCount > 1) {
+    if (inputs.animationTargetCount > 1)
+    {
         outcome.refusal = BoundPoseRefusal::SeveralAnimations;
         return outcome;
     }
-    if (inputs.poses.size() != 1) {
+    if (inputs.poses.size() != 1)
+    {
         outcome.refusal = BoundPoseRefusal::AnimationUnanswered;
         return outcome;
     }
@@ -322,23 +363,32 @@ BoundPoseOutcome BoundPoseFor(const BoundPoseInputs& inputs)
     return outcome;
 }
 
-RootMotionOutcome RootMotionOptionsFor(const RootMotionStatements& statements,
-                                       const vrmRetarget::TargetSkeleton& target)
+RootMotionOutcome
+RootMotionOptionsFor(const RootMotionStatements& statements,
+                     const vrmRetarget::TargetSkeleton& target)
 {
     RootMotionOutcome outcome;
     vrmRetarget::RootMotionOptions options;
 
     // motion_retarget's `--root-motion`, word for word (tools/motionRetarget's
     // Options.cpp).
-    if (statements.mode) {
+    if (statements.mode)
+    {
         const std::string& mode = *statements.mode;
-        if (mode == "hips") {
+        if (mode == "hips")
+        {
             options.mode = vrmRetarget::RootMotionMode::Hips;
-        } else if (mode == "root") {
+        }
+        else if (mode == "root")
+        {
             options.mode = vrmRetarget::RootMotionMode::RootJoint;
-        } else if (mode == "ignore") {
+        }
+        else if (mode == "ignore")
+        {
             options.mode = vrmRetarget::RootMotionMode::Ignore;
-        } else {
+        }
+        else
+        {
             outcome.refusal = RootMotionRefusal::UnknownMode;
             return outcome;
         }
@@ -346,26 +396,32 @@ RootMotionOutcome RootMotionOptionsFor(const RootMotionStatements& statements,
 
     // And its `--root-joint`, resolved the way main.cpp resolves it: exactly,
     // on the full joint path, and only under `root`.
-    if (options.mode == vrmRetarget::RootMotionMode::RootJoint) {
-        if (!statements.rootJoint || statements.rootJoint->empty()) {
+    if (options.mode == vrmRetarget::RootMotionMode::RootJoint)
+    {
+        if (!statements.rootJoint || statements.rootJoint->empty())
+        {
             outcome.refusal = RootMotionRefusal::NoRootJoint;
             return outcome;
         }
         options.rootJointIndex = target.FindJoint(*statements.rootJoint);
-        if (options.rootJointIndex < 0) {
+        if (options.rootJointIndex < 0)
+        {
             outcome.refusal = RootMotionRefusal::UnknownRootJoint;
             return outcome;
         }
     }
 
-    if (statements.translationScale) {
-        if (!std::isfinite(*statements.translationScale)) {
+    if (statements.translationScale)
+    {
+        if (!std::isfinite(*statements.translationScale))
+        {
             outcome.refusal = RootMotionRefusal::TranslationScale;
             return outcome;
         }
         options.translationScale = *statements.translationScale;
     }
-    if (statements.preserveTargetHeight) {
+    if (statements.preserveTargetHeight)
+    {
         options.preserveTargetHeight = *statements.preserveTargetHeight;
     }
 
@@ -373,26 +429,28 @@ RootMotionOutcome RootMotionOptionsFor(const RootMotionStatements& statements,
     return outcome;
 }
 
-RetargetOutcome HumanoidRetargetFor(const RetargetInputs& inputs,
-                                    vrmRetarget::RetargetDiagnostics* diagnostics)
+RetargetOutcome
+HumanoidRetargetFor(const RetargetInputs& inputs, vrmRetarget::RetargetDiagnostics* diagnostics)
 {
     RetargetOutcome outcome;
-    if (!inputs.map || inputs.targets.size() != 1) {
+    if (!inputs.map || inputs.targets.size() != 1)
+    {
         outcome.refusal = RetargetRefusal::RigUnanswered;
         return outcome;
     }
     const vrmRetarget::TargetSkeleton& target = inputs.targets.front();
 
-    const RootMotionOutcome rootMotion =
-        RootMotionOptionsFor(inputs.rootMotion, target);
-    if (!rootMotion.options) {
+    const RootMotionOutcome rootMotion = RootMotionOptionsFor(inputs.rootMotion, target);
+    if (!rootMotion.options)
+    {
         outcome.refusal = RetargetRefusal::RootMotion;
         outcome.rootMotionRefusal = rootMotion.refusal;
         return outcome;
     }
 
     SourceOutcome source = SourceFor(inputs.sourceTargetCount, inputs.sources);
-    switch (source.check) {
+    switch (source.check)
+    {
     case SourceCheck::Answered:
         break;
     case SourceCheck::NoSource:
@@ -413,11 +471,13 @@ RetargetOutcome HumanoidRetargetFor(const RetargetInputs& inputs,
 
     // The count above covers this relationship for both reads of it, so a pose
     // missing here is the bound pose refusing, not a second object.
-    if (inputs.poses.size() != 1) {
+    if (inputs.poses.size() != 1)
+    {
         outcome.refusal = RetargetRefusal::PoseUnanswered;
         return outcome;
     }
-    if (!inputs.hasInstant) {
+    if (!inputs.hasInstant)
+    {
         outcome.refusal = RetargetRefusal::NoInstant;
         return outcome;
     }
@@ -427,24 +487,25 @@ RetargetOutcome HumanoidRetargetFor(const RetargetInputs& inputs,
     // computed, which is the cost this node reports rather than hides.
     vrmRetarget::RetargetOptions options;
     options.rootMotion = *rootMotion.options;
-    const vrmRetarget::PoseRetargeter retargeter(target, *inputs.map,
-                                                 *source.rest.rest, options);
+    const vrmRetarget::PoseRetargeter retargeter(target, *inputs.map, *source.rest.rest, options);
     outcome.pose = retargeter.Retarget(inputs.poses.front(), diagnostics);
     return outcome;
 }
 
-RigDiagnosticsOutcome RigDiagnosticsFor(const RigDiagnosticsInputs& inputs)
+RigDiagnosticsOutcome
+RigDiagnosticsFor(const RigDiagnosticsInputs& inputs)
 {
     RigDiagnosticsOutcome outcome;
-    if (!inputs.map || inputs.targets.size() != 1) {
+    if (!inputs.map || inputs.targets.size() != 1)
+    {
         outcome.refusal = RetargetRefusal::RigUnanswered;
         return outcome;
     }
     const vrmRetarget::TargetSkeleton& target = inputs.targets.front();
 
-    const RootMotionOutcome rootMotion =
-        RootMotionOptionsFor(inputs.rootMotion, target);
-    if (!rootMotion.options) {
+    const RootMotionOutcome rootMotion = RootMotionOptionsFor(inputs.rootMotion, target);
+    if (!rootMotion.options)
+    {
         outcome.refusal = RetargetRefusal::RootMotion;
         outcome.rootMotionRefusal = rootMotion.refusal;
         return outcome;
@@ -457,8 +518,8 @@ RigDiagnosticsOutcome RigDiagnosticsFor(const RigDiagnosticsInputs& inputs)
     return outcome;
 }
 
-RetargetDiagnosticsOutcome RetargetDiagnosticsFor(
-    const RetargetInputs& inputs, const vrmRetarget::RetargetDiagnostics* rig)
+RetargetDiagnosticsOutcome
+RetargetDiagnosticsFor(const RetargetInputs& inputs, const vrmRetarget::RetargetDiagnostics* rig)
 {
     RetargetDiagnosticsOutcome outcome;
 
@@ -467,16 +528,19 @@ RetargetDiagnosticsOutcome RetargetDiagnosticsFor(
     // 'hips', which every sample raises again -- stays where the rig put it:
     // the clip overload's order, exactly.
     vrmRetarget::RetargetDiagnostics diagnostics;
-    if (rig) {
+    if (rig)
+    {
         diagnostics = *rig;
     }
     outcome.retarget = HumanoidRetargetFor(inputs, &diagnostics);
-    if (!outcome.retarget.pose) {
+    if (!outcome.retarget.pose)
+    {
         return outcome;
     }
     // Answered: the pose is the retarget node's to answer, not this one's.
     outcome.retarget.pose.reset();
-    if (!rig) {
+    if (!rig)
+    {
         outcome.rigUnanswered = true;
         return outcome;
     }
@@ -484,22 +548,24 @@ RetargetDiagnosticsOutcome RetargetDiagnosticsFor(
     return outcome;
 }
 
-JointTransformsOutcome JointLocalTransformsFor(
-    const JointTransformsInputs& inputs)
+JointTransformsOutcome
+JointLocalTransformsFor(const JointTransformsInputs& inputs)
 {
     JointTransformsOutcome outcome;
-    if (!inputs.pose) {
+    if (!inputs.pose)
+    {
         outcome.refusal = JointTransformsRefusal::PoseUnanswered;
         return outcome;
     }
-    if (inputs.targets.size() != 1) {
+    if (inputs.targets.size() != 1)
+    {
         outcome.refusal = JointTransformsRefusal::RigUnanswered;
         return outcome;
     }
     const vrmRetarget::TargetSkeleton& target = inputs.targets.front();
     const vrmRetarget::RetargetedPose& pose = *inputs.pose;
-    if (pose.rotations.size() != target.GetSize()
-        || pose.translations.size() != target.GetSize()) {
+    if (pose.rotations.size() != target.GetSize() || pose.translations.size() != target.GetSize())
+    {
         outcome.refusal = JointTransformsRefusal::JointCount;
         outcome.joints = target.GetSize();
         outcome.rotations = pose.rotations.size();
@@ -513,7 +579,8 @@ JointTransformsOutcome JointLocalTransformsFor(
     vrmRetarget::JointLocalTransforms sample;
     sample.timestamp = pose.timestamp;
     sample.joints.reserve(target.GetSize());
-    for (const vrmRetarget::TargetJoint& joint : target.GetJoints()) {
+    for (const vrmRetarget::TargetJoint& joint : target.GetJoints())
+    {
         sample.joints.push_back(joint.token);
     }
     sample.translations = pose.translations;

@@ -36,8 +36,7 @@ enum class PoseSampleStatus : std::uint8_t
     Extrapolated,
 };
 
-MOTIONRUNTIME_API const char* PoseSampleStatusName(
-    PoseSampleStatus status) noexcept;
+MOTIONRUNTIME_API const char* PoseSampleStatusName(PoseSampleStatus status) noexcept;
 
 // How close to an observed sample a request must be to count as landing on it.
 //
@@ -68,8 +67,16 @@ struct PoseSampleResult
     // against. Zero when the source holds nothing.
     double lag = 0.0;
 
-    bool IsValid() const noexcept { return pose.has_value(); }
-    explicit operator bool() const noexcept { return IsValid(); }
+    bool
+    IsValid() const noexcept
+    {
+        return pose.has_value();
+    }
+    explicit
+    operator bool() const noexcept
+    {
+        return IsValid();
+    }
 };
 
 // Exact, field by field, with the pose compared by `HumanoidPose`'s own exact
@@ -80,14 +87,12 @@ struct PoseSampleResult
 // hands this value back whole rather than dropping the status the contract says
 // is part of the answer. There is no `NearlyEqual`: nothing yet asks whether two
 // sample results are the same motion, and a parity check compares the poses.
-MOTIONRUNTIME_API bool operator==(const PoseSampleResult& a,
-                                  const PoseSampleResult& b) noexcept;
-MOTIONRUNTIME_API bool operator!=(const PoseSampleResult& a,
-                                  const PoseSampleResult& b) noexcept;
+MOTIONRUNTIME_API bool operator==(const PoseSampleResult& a, const PoseSampleResult& b) noexcept;
+MOTIONRUNTIME_API bool operator!=(const PoseSampleResult& a, const PoseSampleResult& b) noexcept;
 
 class MOTIONRUNTIME_API IMotionSource
 {
-public:
+  public:
     virtual ~IMotionSource();
 
     IMotionSource(const IMotionSource&) = delete;
@@ -104,7 +109,7 @@ public:
     // may be null.
     virtual bool GetTimeRange(double* startTime, double* endTime) const = 0;
 
-protected:
+  protected:
     IMotionSource() = default;
 };
 
@@ -114,12 +119,13 @@ protected:
 // them apart, which is the point.
 class MOTIONRUNTIME_API ClipSource final : public IMotionSource
 {
-public:
+  public:
     ClipSource() = default;
     explicit ClipSource(HumanoidAnimation animation);
 
     void SetAnimation(HumanoidAnimation animation);
-    const HumanoidAnimation& GetAnimation() const noexcept
+    const HumanoidAnimation&
+    GetAnimation() const noexcept
     {
         return _animation;
     }
@@ -127,17 +133,22 @@ public:
     // Shifts the clip along the consumer's clock: an evaluation time `t`
     // resolves the clip at `t - startOffset`. Lets a clip and a live source be
     // driven from one timeline without rewriting either one's timestamps.
-    void SetStartOffset(double startOffset) noexcept
+    void
+    SetStartOffset(double startOffset) noexcept
     {
         _startOffset = startOffset;
     }
-    double GetStartOffset() const noexcept { return _startOffset; }
+    double
+    GetStartOffset() const noexcept
+    {
+        return _startOffset;
+    }
 
     PoseSampleResult Sample(double evaluationTime) override;
     MotionSourceMetadata GetSourceMetadata() const override;
     bool GetTimeRange(double* startTime, double* endTime) const override;
 
-private:
+  private:
     HumanoidAnimation _animation;
     double _startOffset = 0.0;
 };

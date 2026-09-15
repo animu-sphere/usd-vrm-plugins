@@ -42,10 +42,8 @@ struct RetargetedPose
 // `motion::HumanoidPose`'s `operator==` gives. There is no `NearlyEqual`: the
 // OpenExec plan's parity step (P0-6) decides whether it compares these values
 // or the arrays a bake authors from them, and asks for one if it is the first.
-VRMRETARGET_API bool operator==(const RetargetedPose& a,
-                                const RetargetedPose& b) noexcept;
-VRMRETARGET_API bool operator!=(const RetargetedPose& a,
-                                const RetargetedPose& b) noexcept;
+VRMRETARGET_API bool operator==(const RetargetedPose& a, const RetargetedPose& b) noexcept;
+VRMRETARGET_API bool operator!=(const RetargetedPose& a, const RetargetedPose& b) noexcept;
 
 struct RetargetedAnimation
 {
@@ -111,10 +109,8 @@ VRMRETARGET_API bool operator!=(const JointLocalTransforms& a,
 // terminate -- a parent cycle is a rig this cannot answer for, and looping on
 // one would be worse than refusing.
 VRMRETARGET_API bool GetJointWorldTransform(const TargetSkeleton& skeleton,
-                                            const RetargetedPose& pose,
-                                            int jointIndex,
-                                            pxr::GfQuatf* orientation,
-                                            pxr::GfVec3f* position);
+                                            const RetargetedPose& pose, int jointIndex,
+                                            pxr::GfQuatf* orientation, pxr::GfVec3f* position);
 
 struct RetargetOptions
 {
@@ -134,9 +130,9 @@ struct RetargetOptions
 // retargets one pose at a time -- `execVrm`, whose rig and map are computed
 // once per edit and whose pose is computed per frame -- reports them from here,
 // once per rig, and gets the same list the clip overload would have produced.
-VRMRETARGET_API RetargetDiagnostics DiagnoseRig(
-    const TargetSkeleton& skeleton, const HumanoidMap& map,
-    const RetargetOptions& options = RetargetOptions());
+VRMRETARGET_API RetargetDiagnostics DiagnoseRig(const TargetSkeleton& skeleton,
+                                                const HumanoidMap& map,
+                                                const RetargetOptions& options = RetargetOptions());
 
 // Expands semantic humanoid poses into a target rig's joint order.
 //
@@ -145,14 +141,26 @@ VRMRETARGET_API RetargetDiagnostics DiagnoseRig(
 // instead of collapsing it to identity.
 class VRMRETARGET_API PoseRetargeter
 {
-public:
+  public:
     PoseRetargeter(TargetSkeleton skeleton, HumanoidMap map,
                    SourceRestPose sourceRest = SourceRestPose(),
                    RetargetOptions options = RetargetOptions());
 
-    const TargetSkeleton& GetSkeleton() const noexcept { return _skeleton; }
-    const HumanoidMap& GetMap() const noexcept { return _map; }
-    const RetargetOptions& GetOptions() const noexcept { return _options; }
+    const TargetSkeleton&
+    GetSkeleton() const noexcept
+    {
+        return _skeleton;
+    }
+    const HumanoidMap&
+    GetMap() const noexcept
+    {
+        return _map;
+    }
+    const RetargetOptions&
+    GetOptions() const noexcept
+    {
+        return _options;
+    }
 
     // Expands one pose. `diagnostics` may be null. What one pose can say is
     // what it drives: a bone the rig does not bind, and the root motion a
@@ -168,7 +176,7 @@ public:
     RetargetedAnimation Retarget(const motion::HumanoidAnimation& animation,
                                  RetargetDiagnostics* diagnostics = nullptr) const;
 
-private:
+  private:
     RetargetedPose _RestPose() const;
 
     TargetSkeleton _skeleton;

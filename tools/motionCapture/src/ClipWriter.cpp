@@ -27,19 +27,19 @@ namespace motionCaptureTool
 {
 
 bool
-WriteSemanticClip(const std::string& outputPath,
-                  const motion::HumanoidAnimation& animation,
-                  const std::string& clipName,
-                  const std::map<std::string, std::string>& provenance,
+WriteSemanticClip(const std::string& outputPath, const motion::HumanoidAnimation& animation,
+                  const std::string& clipName, const std::map<std::string, std::string>& provenance,
                   std::string* error)
 {
-    if (animation.samples.empty()) {
+    if (animation.samples.empty())
+    {
         *error = "the recorded session produced no frames";
         return false;
     }
     // Checked before any work: a bad prim name is an argument error, and
     // discovering it after authoring the joint set only obscures that.
-    if (!pxr::TfIsValidIdentifier(clipName)) {
+    if (!pxr::TfIsValidIdentifier(clipName))
+    {
         *error = "'" + clipName + "' is not a valid prim name";
         return false;
     }
@@ -50,7 +50,8 @@ WriteSemanticClip(const std::string& outputPath,
     // from a joint that was never captured.
     std::bitset<motion::HumanBoneCount> present;
     bool observedRoot = false;
-    for (const motion::HumanoidPose& pose : animation.samples) {
+    for (const motion::HumanoidPose& pose : animation.samples)
+    {
         present |= pose.validRotations;
         observedRoot = observedRoot || pose.root.hasPosition;
     }
@@ -62,46 +63,53 @@ WriteSemanticClip(const std::string& outputPath,
     // the strength of the root observation; its rotation track falls back to
     // identity below, exactly as any unobserved bone's does.
     const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
-    if (observedRoot && !present.test(hips)) {
+    if (observedRoot && !present.test(hips))
+    {
         present.set(hips);
     }
 
-    if (!present.any()) {
+    if (!present.any())
+    {
         *error = "the recorded session observed no humanoid bone";
         return false;
     }
 
     std::vector<motion::HumanBone> bones;
     pxr::VtTokenArray joints;
-    for (std::size_t index = 0; index < motion::HumanBoneCount; ++index) {
-        if (!present.test(index)) {
+    for (std::size_t index = 0; index < motion::HumanBoneCount; ++index)
+    {
+        if (!present.test(index))
+        {
             continue;
         }
         const auto bone = static_cast<motion::HumanBone>(index);
         bones.push_back(bone);
-        joints.push_back(
-            pxr::TfToken(motion::HumanBoneJointPath(bone, present)));
+        joints.push_back(pxr::TfToken(motion::HumanBoneJointPath(bone, present)));
     }
 
-    const double frameRate =
-        animation.nominalFrameRate > 0.0 ? animation.nominalFrameRate : 30.0;
+    const double frameRate = animation.nominalFrameRate > 0.0 ? animation.nominalFrameRate : 30.0;
 
     // Re-running a session over a previous output is the normal case, so clear
     // an existing layer instead of failing the way UsdStage::CreateNew would.
     // Unlike motion_retarget there is no input stage to guard against here:
     // this tool's input is a text trace, not a USD layer.
     pxr::SdfLayerRefPtr layer = pxr::SdfLayer::FindOrOpen(outputPath);
-    if (layer) {
+    if (layer)
+    {
         layer->Clear();
-    } else {
+    }
+    else
+    {
         layer = pxr::SdfLayer::CreateNew(outputPath);
     }
-    if (!layer) {
+    if (!layer)
+    {
         *error = "could not create output layer: " + outputPath;
         return false;
     }
     const pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(layer);
-    if (!stage) {
+    if (!stage)
+    {
         *error = "could not open output layer as a stage: " + outputPath;
         return false;
     }
@@ -113,12 +121,11 @@ WriteSemanticClip(const std::string& outputPath,
     stage->SetEndTimeCode(animation.endTime * frameRate);
 
     const pxr::SdfPath rootPath("/Capture");
-    const pxr::UsdPrim root =
-        pxr::UsdGeomScope::Define(stage, rootPath).GetPrim();
+    const pxr::UsdPrim root = pxr::UsdGeomScope::Define(stage, rootPath).GetPrim();
     stage->SetDefaultPrim(root);
-    for (const auto& entry : provenance) {
-        root.SetCustomDataByKey(pxr::TfToken("capture:" + entry.first),
-                                pxr::VtValue(entry.second));
+    for (const auto& entry : provenance)
+    {
+        root.SetCustomDataByKey(pxr::TfToken("capture:" + entry.first), pxr::VtValue(entry.second));
     }
 
     // The trace carries no rest pose -- a capture stream reports rotations
@@ -129,24 +136,25 @@ WriteSemanticClip(const std::string& outputPath,
     // downstream as a delta from where the capture started rather than as an
     // absolute height (see MOTION_CONTRACT.md).
     pxr::GfVec3f hipsRest(0.0f);
-    for (const motion::HumanoidPose& pose : animation.samples) {
-        if (pose.root.hasPosition) {
+    for (const motion::HumanoidPose& pose : animation.samples)
+    {
+        if (pose.root.hasPosition)
+        {
             hipsRest = pose.root.worldPosition;
             break;
         }
     }
 
-    const pxr::SdfPath skeletonPath =
-        rootPath.AppendChild(pxr::TfToken("HumanoidSkeleton"));
-    const pxr::UsdSkelSkeleton skeleton =
-        pxr::UsdSkelSkeleton::Define(stage, skeletonPath);
+    const pxr::SdfPath skeletonPath = rootPath.AppendChild(pxr::TfToken("HumanoidSkeleton"));
+    const pxr::UsdSkelSkeleton skeleton = pxr::UsdSkelSkeleton::Define(stage, skeletonPath);
     pxr::VtMatrix4dArray restTransforms;
     restTransforms.reserve(bones.size());
-    for (const motion::HumanBone bone : bones) {
+    for (const motion::HumanBone bone : bones)
+    {
         pxr::GfMatrix4d rest(1.0);
-        if (bone == motion::HumanBone::Hips) {
-            rest.SetTranslate(pxr::GfVec3d(hipsRest[0], hipsRest[1],
-                                           hipsRest[2]));
+        if (bone == motion::HumanBone::Hips)
+        {
+            rest.SetTranslate(pxr::GfVec3d(hipsRest[0], hipsRest[1], hipsRest[2]));
         }
         restTransforms.push_back(rest);
     }
@@ -154,8 +162,7 @@ WriteSemanticClip(const std::string& outputPath,
     skeleton.CreateRestTransformsAttr(pxr::VtValue(restTransforms));
 
     const pxr::SdfPath clipPath = rootPath.AppendChild(pxr::TfToken(clipName));
-    const pxr::UsdSkelAnimation clip =
-        pxr::UsdSkelAnimation::Define(stage, clipPath);
+    const pxr::UsdSkelAnimation clip = pxr::UsdSkelAnimation::Define(stage, clipPath);
     clip.CreateJointsAttr(pxr::VtValue(joints));
     pxr::UsdAttribute translations = clip.CreateTranslationsAttr();
     pxr::UsdAttribute rotations = clip.CreateRotationsAttr();
@@ -187,18 +194,22 @@ WriteSemanticClip(const std::string& outputPath,
     // did not arrive. It was invisible while no live path composed a root at
     // all: `hipsRest` stayed at the origin and every frame authored it.
     pxr::GfVec3f hipsHeld = hipsRest;
-    for (const motion::HumanoidPose& pose : animation.samples) {
+    for (const motion::HumanoidPose& pose : animation.samples)
+    {
         pxr::VtVec3fArray valuesT;
         pxr::VtQuatfArray valuesR;
         valuesT.reserve(bones.size());
         valuesR.reserve(bones.size());
-        if (pose.root.hasPosition) {
+        if (pose.root.hasPosition)
+        {
             hipsHeld = pose.root.worldPosition;
         }
-        for (const motion::HumanBone bone : bones) {
+        for (const motion::HumanBone bone : bones)
+        {
             const auto slot = static_cast<std::size_t>(bone);
             pxr::GfVec3f translation(0.0f);
-            if (bone == motion::HumanBone::Hips) {
+            if (bone == motion::HumanBone::Hips)
+            {
                 translation = hipsHeld;
             }
             valuesT.push_back(translation);
@@ -219,7 +230,8 @@ WriteSemanticClip(const std::string& outputPath,
         .CreateAnimationSourceRel()
         .SetTargets({clipPath});
 
-    if (!stage->GetRootLayer()->Save()) {
+    if (!stage->GetRootLayer()->Save())
+    {
         *error = "could not save output layer: " + outputPath;
         return false;
     }

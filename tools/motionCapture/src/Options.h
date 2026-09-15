@@ -43,8 +43,8 @@ struct Options
 
 // Parses argv. On failure `error` explains why and the result is false; on
 // --help `showHelp` is set and the caller should print usage and exit 0.
-bool ParseOptions(const std::vector<std::string>& arguments, Options* options,
-                  bool* showHelp, std::string* error);
+bool ParseOptions(const std::vector<std::string>& arguments, Options* options, bool* showHelp,
+                  std::string* error);
 
 const char* GetUsage();
 

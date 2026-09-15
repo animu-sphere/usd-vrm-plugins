@@ -14,13 +14,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdVrmAuthorer {
-public:
+class UsdVrmAuthorer
+{
+  public:
     // Build the USD scene for `doc` and serialize it to `outUsda`. Authoring-time
     // diagnostics are appended to `outWarnings`. Returns false only on an
     // unrecoverable authoring/serialization error.
-    bool WriteToString(const VrmCanonicalDocument& doc,
-                       std::string* outUsda,
+    bool WriteToString(const VrmCanonicalDocument& doc, std::string* outUsda,
                        std::vector<std::string>* outWarnings) const;
 };
 

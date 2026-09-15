@@ -160,7 +160,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace
+{
 
 const TfToken kJointTransforms("vrm.computeJointLocalTransforms");
 const TfToken kRetargetDiagnostics("vrm.computeRetargetDiagnostics");
@@ -205,13 +206,17 @@ struct Arguments
 // renames a prim the harness reaches through the binding anyway. `--resample`
 // is refused by name: it moves the bake onto instants the clip never keyed,
 // and exec answers a clip's own keys.
-bool Parse(int argc, char** argv, Arguments* out, std::string* error)
+bool
+Parse(int argc, char** argv, Arguments* out, std::string* error)
 {
     const std::vector<std::string> args(argv + 1, argv + argc);
-    for (std::size_t i = 0; i < args.size(); ++i) {
+    for (std::size_t i = 0; i < args.size(); ++i)
+    {
         const std::string& flag = args[i];
-        auto value = [&](std::string* into) {
-            if (i + 1 >= args.size()) {
+        auto value = [&](std::string* into)
+        {
+            if (i + 1 >= args.size())
+            {
                 *error = flag + " requires a value";
                 return false;
             }
@@ -219,69 +224,119 @@ bool Parse(int argc, char** argv, Arguments* out, std::string* error)
             return true;
         };
         std::string text;
-        if (flag == "--avatar") {
-            if (!value(&out->avatar)) return false;
-        } else if (flag == "--animation") {
-            if (!value(&out->animation)) return false;
-        } else if (flag == "--bake") {
-            if (!value(&out->bake)) return false;
-        } else if (flag == "--report") {
-            if (!value(&out->report)) return false;
-        } else if (flag == "--tool-log") {
-            if (!value(&out->toolLog)) return false;
-        } else if (flag == "--humanoid-map") {
-            if (!value(&out->humanoidMap)) return false;
-        } else if (flag == "--skeleton") {
-            if (!value(&out->skeleton)) return false;
-        } else if (flag == "--clip-skeleton") {
-            if (!value(&out->clipSkeleton)) return false;
-        } else if (flag == "--root-motion") {
-            if (!value(&text)) return false;
+        if (flag == "--avatar")
+        {
+            if (!value(&out->avatar))
+                return false;
+        }
+        else if (flag == "--animation")
+        {
+            if (!value(&out->animation))
+                return false;
+        }
+        else if (flag == "--bake")
+        {
+            if (!value(&out->bake))
+                return false;
+        }
+        else if (flag == "--report")
+        {
+            if (!value(&out->report))
+                return false;
+        }
+        else if (flag == "--tool-log")
+        {
+            if (!value(&out->toolLog))
+                return false;
+        }
+        else if (flag == "--humanoid-map")
+        {
+            if (!value(&out->humanoidMap))
+                return false;
+        }
+        else if (flag == "--skeleton")
+        {
+            if (!value(&out->skeleton))
+                return false;
+        }
+        else if (flag == "--clip-skeleton")
+        {
+            if (!value(&out->clipSkeleton))
+                return false;
+        }
+        else if (flag == "--root-motion")
+        {
+            if (!value(&text))
+                return false;
             out->rootMotion = text;
-        } else if (flag == "--root-joint") {
-            if (!value(&text)) return false;
+        }
+        else if (flag == "--root-joint")
+        {
+            if (!value(&text))
+                return false;
             out->rootJoint = text;
-        } else if (flag == "--translation-scale") {
-            if (!value(&text)) return false;
-            try {
+        }
+        else if (flag == "--translation-scale")
+        {
+            if (!value(&text))
+                return false;
+            try
+            {
                 std::size_t used = 0;
                 // Parsed as the tool parses it -- a double, then narrowed --
                 // so the statement is the float the tool's option holds.
                 const double scale = std::stod(text, &used);
-                if (used != text.size()) {
+                if (used != text.size())
+                {
                     throw std::invalid_argument(text);
                 }
                 out->translationScale = static_cast<float>(scale);
-            } catch (const std::exception&) {
+            }
+            catch (const std::exception&)
+            {
                 *error = "--translation-scale expects a number, got '" + text + "'";
                 return false;
             }
-        } else if (flag == "--preserve-target-height") {
+        }
+        else if (flag == "--preserve-target-height")
+        {
             out->preserveTargetHeight = true;
-        } else if (flag == "--no-look-at" || flag == "--no-expressions") {
+        }
+        else if (flag == "--no-look-at" || flag == "--no-expressions")
+        {
             // Narrow the tool towards exec; nothing to state.
-        } else if (flag == "--quiet") {
+        }
+        else if (flag == "--quiet")
+        {
             // Nothing to state either, and it silences the half of the
             // diagnostics comparison the tool prints.
             out->quiet = true;
-        } else if (flag == "--animation-name") {
-            if (!value(&text)) return false;
-        } else if (flag == "--resample") {
+        }
+        else if (flag == "--animation-name")
+        {
+            if (!value(&text))
+                return false;
+        }
+        else if (flag == "--resample")
+        {
             *error = "--resample moves the bake onto instants the clip never "
                      "keyed, and exec answers a clip's own keys; a parity run "
                      "does not take it";
             return false;
-        } else {
+        }
+        else
+        {
             *error = "unknown argument '" + flag + "'";
             return false;
         }
     }
-    if (out->avatar.empty() || out->animation.empty() || out->bake.empty()
-        || out->report.empty()) {
+    if (out->avatar.empty() || out->animation.empty() || out->bake.empty() || out->report.empty())
+    {
         *error = "--avatar, --animation, --bake and --report are required";
         return false;
     }
-    if (out->quiet && !out->toolLog.empty()) {
+    if (out->quiet && !out->toolLog.empty())
+    {
         // An empty log beside a rig with something to say would read as the
         // tool disagreeing, when it was only told to keep quiet.
         *error = "--quiet silences the tool's diagnostics, so --tool-log has "
@@ -300,32 +355,44 @@ bool Parse(int argc, char** argv, Arguments* out, std::string* error)
 // repeats one warning per unbound bone each time the map is computed.
 class Diagnostics : public TfDiagnosticMgr::Delegate
 {
-public:
-    Diagnostics() { TfDiagnosticMgr::GetInstance().AddDelegate(this); }
+  public:
+    Diagnostics()
+    {
+        TfDiagnosticMgr::GetInstance().AddDelegate(this);
+    }
     ~Diagnostics() override
     {
         TfDiagnosticMgr::GetInstance().RemoveDelegate(this);
     }
 
-    void IssueError(const TfError&) override {}
-    void IssueFatalError(const TfCallContext&, const std::string& message) override
+    void
+    IssueError(const TfError&) override
+    {
+    }
+    void
+    IssueFatalError(const TfCallContext&, const std::string& message) override
     {
         std::fprintf(stderr, "fatal: %s\n", message.c_str());
     }
-    void IssueStatus(const TfStatus&) override {}
-    void IssueWarning(const TfWarning& warning) override
+    void
+    IssueStatus(const TfStatus&) override
+    {
+    }
+    void
+    IssueWarning(const TfWarning& warning) override
     {
         std::lock_guard<std::mutex> lock(_mutex);
         ++_warnings[warning.GetCommentary()];
     }
 
-    std::map<std::string, int> Warnings()
+    std::map<std::string, int>
+    Warnings()
     {
         std::lock_guard<std::mutex> lock(_mutex);
         return _warnings;
     }
 
-private:
+  private:
     std::mutex _mutex;
     std::map<std::string, int> _warnings;
 };
@@ -333,65 +400,74 @@ private:
 // What the tool printed as coded diagnostics, split at the layer boundary.
 struct ToolDiagnostics
 {
-    std::vector<std::string> library;  // a code the library raises
-    std::vector<std::string> caller;   // a code only a stage or a file system can
+    std::vector<std::string> library; // a code the library raises
+    std::vector<std::string> caller;  // a code only a stage or a file system can
 };
 
 // The tool prints each diagnostic as `motion_retarget: ` followed by the
 // library's own line, and prints nothing else in brackets. A line whose
 // bracket names no frozen code is not a diagnostic and is left alone.
-bool ReadToolLog(const std::string& path, ToolDiagnostics* out,
-                 std::string* error)
+bool
+ReadToolLog(const std::string& path, ToolDiagnostics* out, std::string* error)
 {
     std::ifstream file(path, std::ios::binary);
-    if (!file) {
+    if (!file)
+    {
         *error = "could not open the tool log " + path;
         return false;
     }
     const std::string prefix = "motion_retarget: [";
-    for (std::string line; std::getline(file, line);) {
-        if (!line.empty() && line.back() == '\r') {
+    for (std::string line; std::getline(file, line);)
+    {
+        if (!line.empty() && line.back() == '\r')
+        {
             line.pop_back();
         }
-        if (line.compare(0, prefix.size(), prefix) != 0) {
+        if (line.compare(0, prefix.size(), prefix) != 0)
+        {
             continue;
         }
         const std::size_t close = line.find(']', prefix.size());
-        if (close == std::string::npos) {
+        if (close == std::string::npos)
+        {
             continue;
         }
         const std::optional<vrmRetarget::RetargetDiagnosticCode> code =
             vrmRetarget::FindRetargetDiagnosticCode(
                 line.substr(prefix.size(), close - prefix.size()));
-        if (!code) {
+        if (!code)
+        {
             continue;
         }
         std::string formatted = line.substr(prefix.size() - 1);
-        (vrmRetarget::RetargetDiagnosticIsLibraryRaised(*code) ? out->library
-                                                               : out->caller)
+        (vrmRetarget::RetargetDiagnosticIsLibraryRaised(*code) ? out->library : out->caller)
             .push_back(std::move(formatted));
     }
     return true;
 }
 
 // The entries of `a` that `b` does not have, in `a`'s order.
-std::vector<std::string> Missing(const std::vector<std::string>& a,
-                                 const std::vector<std::string>& b)
+std::vector<std::string>
+Missing(const std::vector<std::string>& a, const std::vector<std::string>& b)
 {
     const std::set<std::string> in(b.begin(), b.end());
     std::vector<std::string> out;
-    for (const std::string& line : a) {
-        if (!in.count(line)) {
+    for (const std::string& line : a)
+    {
+        if (!in.count(line))
+        {
             out.push_back(line);
         }
     }
     return out;
 }
 
-JsArray JsLines(const std::vector<std::string>& lines)
+JsArray
+JsLines(const std::vector<std::string>& lines)
 {
     JsArray out;
-    for (const std::string& line : lines) {
+    for (const std::string& line : lines)
+    {
         out.emplace_back(line);
     }
     return out;
@@ -411,7 +487,7 @@ JsArray JsLines(const std::vector<std::string>& lines)
 struct AvatarShape
 {
     UsdStageRefPtr stage;
-    SdfPath humanoid;  // empty when no prim states vrm:humanBones:hips
+    SdfPath humanoid; // empty when no prim states vrm:humanBones:hips
     SdfPath skeleton;
 };
 
@@ -423,92 +499,109 @@ struct ClipShape
     SdfPath animation;
 };
 
-SdfPath FirstSkeleton(const UsdStageRefPtr& stage)
+SdfPath
+FirstSkeleton(const UsdStageRefPtr& stage)
 {
-    for (const UsdPrim& prim : stage->Traverse()) {
-        if (prim.IsA<UsdSkelSkeleton>()) {
+    for (const UsdPrim& prim : stage->Traverse())
+    {
+        if (prim.IsA<UsdSkelSkeleton>())
+        {
             return prim.GetPath();
         }
     }
     return SdfPath();
 }
 
-bool DiscoverAvatar(const Arguments& args, AvatarShape* avatar,
-                    std::string* error)
+bool
+DiscoverAvatar(const Arguments& args, AvatarShape* avatar, std::string* error)
 {
     avatar->stage = UsdStage::Open(args.avatar);
-    if (!avatar->stage) {
+    if (!avatar->stage)
+    {
         *error = "could not open the avatar " + args.avatar;
         return false;
     }
     // The tool's humanoid is the first prim stating a hips binding -- by
     // attribute, not by schema. exec's is a prim with the schema applied; the
     // two are reconciled below rather than assumed to agree.
-    for (const UsdPrim& prim : avatar->stage->Traverse()) {
-        if (prim.HasAttribute(kHumanBonesHips)) {
+    for (const UsdPrim& prim : avatar->stage->Traverse())
+    {
+        if (prim.HasAttribute(kHumanBonesHips))
+        {
             avatar->humanoid = prim.GetPath();
             break;
         }
     }
-    if (!args.skeleton.empty()) {
+    if (!args.skeleton.empty())
+    {
         avatar->skeleton = SdfPath(args.skeleton);
-    } else if (!avatar->humanoid.IsEmpty()) {
+    }
+    else if (!avatar->humanoid.IsEmpty())
+    {
         SdfPathVector targets;
         const UsdRelationship rel =
-            avatar->stage->GetPrimAtPath(avatar->humanoid)
-                .GetRelationship(kSkeletonRel);
-        if (rel && rel.GetTargets(&targets) && !targets.empty()) {
+            avatar->stage->GetPrimAtPath(avatar->humanoid).GetRelationship(kSkeletonRel);
+        if (rel && rel.GetTargets(&targets) && !targets.empty())
+        {
             avatar->skeleton = targets.front();
         }
     }
-    if (avatar->skeleton.IsEmpty()) {
+    if (avatar->skeleton.IsEmpty())
+    {
         avatar->skeleton = FirstSkeleton(avatar->stage);
     }
-    if (avatar->skeleton.IsEmpty()
-        || !UsdSkelSkeleton(avatar->stage->GetPrimAtPath(avatar->skeleton))) {
+    if (avatar->skeleton.IsEmpty() ||
+        !UsdSkelSkeleton(avatar->stage->GetPrimAtPath(avatar->skeleton)))
+    {
         *error = "the avatar has no UsdSkelSkeleton the tool would retarget onto";
         return false;
     }
     return true;
 }
 
-bool DiscoverClip(const Arguments& args, ClipShape* clip, std::string* error)
+bool
+DiscoverClip(const Arguments& args, ClipShape* clip, std::string* error)
 {
     clip->stage = UsdStage::Open(args.animation);
-    if (!clip->stage) {
+    if (!clip->stage)
+    {
         *error = "could not open the clip " + args.animation;
         return false;
     }
     clip->rate = clip->stage->GetTimeCodesPerSecond();
-    if (clip->rate <= 0.0) {
-        clip->rate = 30.0;  // the tool's fallback
+    if (clip->rate <= 0.0)
+    {
+        clip->rate = 30.0; // the tool's fallback
     }
-    clip->skeleton = args.clipSkeleton.empty() ? FirstSkeleton(clip->stage)
-                                               : SdfPath(args.clipSkeleton);
+    clip->skeleton =
+        args.clipSkeleton.empty() ? FirstSkeleton(clip->stage) : SdfPath(args.clipSkeleton);
     const UsdPrim skeleton = clip->stage->GetPrimAtPath(clip->skeleton);
-    if (!UsdSkelSkeleton(skeleton)) {
+    if (!UsdSkelSkeleton(skeleton))
+    {
         *error = "the clip has no UsdSkelSkeleton";
         return false;
     }
     UsdPrim animation;
-    if (!UsdSkelBindingAPI(skeleton).GetAnimationSource(&animation)
-        || !animation) {
+    if (!UsdSkelBindingAPI(skeleton).GetAnimationSource(&animation) || !animation)
+    {
         // The tool falls back to "the one SkelAnimation on the stage". exec
         // follows a binding or nothing, so that is a stage only one of the two
         // reads -- a P0-6 row, not something to paper over here.
-        *error = "the clip's skeleton <" + clip->skeleton.GetString()
-            + "> binds no animation; motion_retarget would fall back to the "
-              "stage's only SkelAnimation and exec cannot";
+        *error = "the clip's skeleton <" + clip->skeleton.GetString() +
+                 "> binds no animation; motion_retarget would fall back to the "
+                 "stage's only SkelAnimation and exec cannot";
         return false;
     }
     clip->animation = animation.GetPath();
     return true;
 }
 
-std::set<std::string> RootPrimNames(const UsdStageRefPtr& stage)
+std::set<std::string>
+RootPrimNames(const UsdStageRefPtr& stage)
 {
     std::set<std::string> names;
-    for (const UsdPrim& prim : stage->GetPseudoRoot().GetAllChildren()) {
+    for (const UsdPrim& prim : stage->GetPseudoRoot().GetAllChildren())
+    {
         names.insert(prim.GetName().GetString());
     }
     return names;
@@ -516,12 +609,13 @@ std::set<std::string> RootPrimNames(const UsdStageRefPtr& stage)
 
 // --humanoid-map, parsed as the tool parses it: an object of human bone name
 // to joint token, and a key that is not a bone of the vocabulary is refused.
-bool ReadMap(const std::string& path,
-             std::vector<std::pair<std::string, std::string>>* entries,
-             std::string* error)
+bool
+ReadMap(const std::string& path, std::vector<std::pair<std::string, std::string>>* entries,
+        std::string* error)
 {
     std::ifstream file(path);
-    if (!file) {
+    if (!file)
+    {
         *error = "could not open " + path;
         return false;
     }
@@ -529,12 +623,15 @@ bool ReadMap(const std::string& path,
     text << file.rdbuf();
     JsParseError parseError;
     const JsValue parsed = JsParseString(text.str(), &parseError);
-    if (!parsed.IsObject()) {
+    if (!parsed.IsObject())
+    {
         *error = path + " is not a JSON object";
         return false;
     }
-    for (const auto& [bone, token] : parsed.GetJsObject()) {
-        if (!token.IsString() || !motion::FindHumanBone(bone)) {
+    for (const auto& [bone, token] : parsed.GetJsObject())
+    {
+        if (!token.IsString() || !motion::FindHumanBone(bone))
+        {
             *error = path + ": '" + bone + "' is not a bone bound to a token";
             return false;
         }
@@ -551,23 +648,26 @@ struct ParityStage
 {
     UsdStageRefPtr stage;
     UsdPrim humanoid;
-    std::vector<std::string> authored;  // what the harness stated, for the report
+    std::vector<std::string> authored; // what the harness stated, for the report
 };
 
-bool ComposeParityStage(const Arguments& args, const AvatarShape& avatar,
-                        const ClipShape& clip, ParityStage* parity,
-                        std::string* error)
+bool
+ComposeParityStage(const Arguments& args, const AvatarShape& avatar, const ClipShape& clip,
+                   ParityStage* parity, std::string* error)
 {
     const std::set<std::string> avatarRoots = RootPrimNames(avatar.stage);
-    for (const std::string& name : RootPrimNames(clip.stage)) {
-        if (avatarRoots.count(name) || name == "Parity") {
-            *error = "the avatar and the clip both have a root prim named '"
-                + name + "', so sublayering them would compose one prim "
-                  "neither file describes";
+    for (const std::string& name : RootPrimNames(clip.stage))
+    {
+        if (avatarRoots.count(name) || name == "Parity")
+        {
+            *error = "the avatar and the clip both have a root prim named '" + name +
+                     "', so sublayering them would compose one prim "
+                     "neither file describes";
             return false;
         }
     }
-    if (avatarRoots.count("Parity")) {
+    if (avatarRoots.count("Parity"))
+    {
         *error = "the avatar has a root prim named 'Parity', which this "
                  "harness reserves for what it states";
         return false;
@@ -578,7 +678,8 @@ bool ComposeParityStage(const Arguments& args, const AvatarShape& avatar,
                             clip.stage->GetRootLayer()->GetIdentifier()});
     root->SetTimeCodesPerSecond(clip.rate);
     parity->stage = UsdStage::Open(root);
-    if (!parity->stage) {
+    if (!parity->stage)
+    {
         *error = "could not open the parity stage";
         return false;
     }
@@ -589,26 +690,31 @@ bool ComposeParityStage(const Arguments& args, const AvatarShape& avatar,
     // without it is read by the tool and invisible to exec (the humanoid
     // report, §7), which is a divergence of input, not of evaluation.
     std::vector<std::pair<std::string, std::string>> map;
-    if (!args.humanoidMap.empty() && !ReadMap(args.humanoidMap, &map, error)) {
+    if (!args.humanoidMap.empty() && !ReadMap(args.humanoidMap, &map, error))
+    {
         return false;
     }
-    if (!avatar.humanoid.IsEmpty()) {
+    if (!avatar.humanoid.IsEmpty())
+    {
         parity->humanoid = stage->GetPrimAtPath(avatar.humanoid);
         const TfTokenVector applied = parity->humanoid.GetAppliedSchemas();
-        if (std::find(applied.begin(), applied.end(), kHumanoidApi)
-            == applied.end()) {
-            *error = "<" + avatar.humanoid.GetString()
-                + "> states human bones without VrmHumanoidAPI applied; the "
-                  "tool reads it and exec cannot";
+        if (std::find(applied.begin(), applied.end(), kHumanoidApi) == applied.end())
+        {
+            *error = "<" + avatar.humanoid.GetString() +
+                     "> states human bones without VrmHumanoidAPI applied; the "
+                     "tool reads it and exec cannot";
             return false;
         }
-    } else if (!map.empty()) {
-        parity->humanoid =
-            UsdGeomScope::Define(stage, kParityHumanoid).GetPrim();
+    }
+    else if (!map.empty())
+    {
+        parity->humanoid = UsdGeomScope::Define(stage, kParityHumanoid).GetPrim();
         parity->humanoid.AddAppliedSchema(kHumanoidApi);
-        parity->authored.push_back("defined <" + kParityHumanoid.GetString()
-                                   + "> with VrmHumanoidAPI");
-    } else {
+        parity->authored.push_back("defined <" + kParityHumanoid.GetString() +
+                                   "> with VrmHumanoidAPI");
+    }
+    else
+    {
         *error = "the avatar states no humanoid and no --humanoid-map was "
                  "given; the tool refuses that too";
         return false;
@@ -617,62 +723,59 @@ bool ComposeParityStage(const Arguments& args, const AvatarShape& avatar,
     // `vrm:skeleton` is stated when the avatar did not, or when --skeleton
     // chose another rig -- the tool's precedence, with the flag first.
     SdfPathVector named;
-    const UsdRelationship skeletonRel =
-        parity->humanoid.GetRelationship(kSkeletonRel);
-    if (!skeletonRel || !skeletonRel.GetTargets(&named) || named.empty()
-        || named.front() != avatar.skeleton) {
+    const UsdRelationship skeletonRel = parity->humanoid.GetRelationship(kSkeletonRel);
+    if (!skeletonRel || !skeletonRel.GetTargets(&named) || named.empty() ||
+        named.front() != avatar.skeleton)
+    {
         parity->humanoid.CreateRelationship(kSkeletonRel, /*custom*/ false)
             .SetTargets({avatar.skeleton});
-        parity->authored.push_back("vrm:skeleton = <"
-                                   + avatar.skeleton.GetString() + ">");
+        parity->authored.push_back("vrm:skeleton = <" + avatar.skeleton.GetString() + ">");
     }
 
     // The map, over whatever the avatar stated -- the tool merges the file
     // over the stage the same way.
-    for (const auto& [bone, token] : map) {
+    for (const auto& [bone, token] : map)
+    {
         parity->humanoid
-            .CreateAttribute(TfToken(kHumanBonesPrefix + bone),
-                             SdfValueTypeNames->Token, /*custom*/ false,
-                             SdfVariabilityUniform)
+            .CreateAttribute(TfToken(kHumanBonesPrefix + bone), SdfValueTypeNames->Token,
+                             /*custom*/ false, SdfVariabilityUniform)
             .Set(TfToken(token));
     }
-    if (!map.empty()) {
-        parity->authored.push_back(std::to_string(map.size())
-                                   + " vrm:humanBones:* from --humanoid-map");
+    if (!map.empty())
+    {
+        parity->authored.push_back(std::to_string(map.size()) +
+                                   " vrm:humanBones:* from --humanoid-map");
     }
 
     parity->humanoid.CreateRelationship(kSourceSkeleton, /*custom*/ true)
         .SetTargets({clip.skeleton});
-    parity->authored.push_back("vrm:retarget:sourceSkeleton = <"
-                               + clip.skeleton.GetString() + ">");
+    parity->authored.push_back("vrm:retarget:sourceSkeleton = <" + clip.skeleton.GetString() + ">");
 
     // The four statements, only for the flags the tool was given: an absent
     // statement keeps the library's default, which is what an absent flag
     // gives the tool.
-    if (args.rootMotion) {
-        parity->humanoid
-            .CreateAttribute(kRootMotion, SdfValueTypeNames->Token, true)
+    if (args.rootMotion)
+    {
+        parity->humanoid.CreateAttribute(kRootMotion, SdfValueTypeNames->Token, true)
             .Set(TfToken(*args.rootMotion));
-        parity->authored.push_back("vrm:retarget:rootMotion = "
-                                   + *args.rootMotion);
+        parity->authored.push_back("vrm:retarget:rootMotion = " + *args.rootMotion);
     }
-    if (args.rootJoint) {
-        parity->humanoid
-            .CreateAttribute(kRootJoint, SdfValueTypeNames->Token, true)
+    if (args.rootJoint)
+    {
+        parity->humanoid.CreateAttribute(kRootJoint, SdfValueTypeNames->Token, true)
             .Set(TfToken(*args.rootJoint));
-        parity->authored.push_back("vrm:retarget:rootJoint = "
-                                   + *args.rootJoint);
+        parity->authored.push_back("vrm:retarget:rootJoint = " + *args.rootJoint);
     }
-    if (args.translationScale) {
-        parity->humanoid
-            .CreateAttribute(kTranslationScale, SdfValueTypeNames->Float, true)
+    if (args.translationScale)
+    {
+        parity->humanoid.CreateAttribute(kTranslationScale, SdfValueTypeNames->Float, true)
             .Set(*args.translationScale);
-        parity->authored.push_back("vrm:retarget:translationScale = "
-                                   + std::to_string(*args.translationScale));
+        parity->authored.push_back("vrm:retarget:translationScale = " +
+                                   std::to_string(*args.translationScale));
     }
-    if (args.preserveTargetHeight) {
-        parity->humanoid
-            .CreateAttribute(kPreserveTargetHeight, SdfValueTypeNames->Bool, true)
+    if (args.preserveTargetHeight)
+    {
+        parity->humanoid.CreateAttribute(kPreserveTargetHeight, SdfValueTypeNames->Bool, true)
             .Set(true);
         parity->authored.push_back("vrm:retarget:preserveTargetHeight = true");
     }
@@ -684,12 +787,12 @@ bool ComposeParityStage(const Arguments& args, const AvatarShape& avatar,
     // not, since neither the clip's keys nor the bake's samples read the
     // attribute.
     const UsdPrim animation = stage->GetPrimAtPath(clip.animation);
-    if (!animation.GetAttribute(kClipRate).HasAuthoredValue()) {
-        animation.CreateAttribute(kClipRate, SdfValueTypeNames->Double, true)
-            .Set(clip.rate);
+    if (!animation.GetAttribute(kClipRate).HasAuthoredValue())
+    {
+        animation.CreateAttribute(kClipRate, SdfValueTypeNames->Double, true).Set(clip.rate);
         std::ostringstream said;
-        said << "motion:timeCodesPerSecond = " << clip.rate << " on <"
-             << clip.animation.GetString() << ">";
+        said << "motion:timeCodesPerSecond = " << clip.rate << " on <" << clip.animation.GetString()
+             << ">";
         parity->authored.push_back(said.str());
     }
     return true;
@@ -699,18 +802,19 @@ bool ComposeParityStage(const Arguments& args, const AvatarShape& avatar,
 // rotation and translation time samples on the parity stage. The tool's union
 // adds a clip's expression and gaze keys; a clip with either is refused below
 // when the counts disagree, rather than paired by guesswork.
-std::vector<double> ClipKeys(const ParityStage& parity, const ClipShape& clip)
+std::vector<double>
+ClipKeys(const ParityStage& parity, const ClipShape& clip)
 {
-    const UsdSkelAnimation animation(
-        parity.stage->GetPrimAtPath(clip.animation));
+    const UsdSkelAnimation animation(parity.stage->GetPrimAtPath(clip.animation));
     std::vector<double> rotations;
     std::vector<double> translations;
     animation.GetRotationsAttr().GetTimeSamples(&rotations);
     animation.GetTranslationsAttr().GetTimeSamples(&translations);
     std::set<double> keys(rotations.begin(), rotations.end());
     keys.insert(translations.begin(), translations.end());
-    if (keys.empty()) {
-        keys.insert(clip.stage->GetStartTimeCode());  // the tool's rule
+    if (keys.empty())
+    {
+        keys.insert(clip.stage->GetStartTimeCode()); // the tool's rule
     }
     return std::vector<double>(keys.begin(), keys.end());
 }
@@ -729,20 +833,22 @@ struct Bake
     std::vector<double> times;
 };
 
-bool ReadBake(const std::string& path, const SdfPath& skeleton, Bake* bake,
-              std::string* error)
+bool
+ReadBake(const std::string& path, const SdfPath& skeleton, Bake* bake, std::string* error)
 {
     bake->stage = UsdStage::Open(path);
-    if (!bake->stage) {
+    if (!bake->stage)
+    {
         *error = "could not open the bake " + path;
         return false;
     }
     UsdPrim animationPrim;
     if (!UsdSkelBindingAPI(bake->stage->GetPrimAtPath(skeleton))
-             .GetAnimationSource(&animationPrim)
-        || !animationPrim) {
-        *error = "the bake binds no animation to <" + skeleton.GetString()
-            + ">, the skeleton exec's humanoid names";
+             .GetAnimationSource(&animationPrim) ||
+        !animationPrim)
+    {
+        *error = "the bake binds no animation to <" + skeleton.GetString() +
+                 ">, the skeleton exec's humanoid names";
         return false;
     }
     const UsdSkelAnimation animation(animationPrim);
@@ -754,7 +860,8 @@ bool ReadBake(const std::string& path, const SdfPath& skeleton, Bake* bake,
     std::vector<double> translationTimes;
     bake->rotations.GetTimeSamples(&rotationTimes);
     bake->translations.GetTimeSamples(&translationTimes);
-    if (rotationTimes != translationTimes) {
+    if (rotationTimes != translationTimes)
+    {
         *error = "the bake keys its rotations and translations at different "
                  "times";
         return false;
@@ -770,15 +877,27 @@ bool ReadBake(const std::string& path, const SdfPath& skeleton, Bake* bake,
 // The plan's categories that can be told from two values, cheapest first.
 // Ordering, missing fields and time sampling are about the shape of the two
 // answers and are counted separately.
-enum class Kind { Exact, Sign, Rounding, Divergence };
-
-const char* Name(Kind kind)
+enum class Kind
 {
-    switch (kind) {
-    case Kind::Exact: return "exact";
-    case Kind::Sign: return "sign";
-    case Kind::Rounding: return "rounding";
-    case Kind::Divergence: return "divergence";
+    Exact,
+    Sign,
+    Rounding,
+    Divergence
+};
+
+const char*
+Name(Kind kind)
+{
+    switch (kind)
+    {
+    case Kind::Exact:
+        return "exact";
+    case Kind::Sign:
+        return "sign";
+    case Kind::Rounding:
+        return "rounding";
+    case Kind::Divergence:
+        return "divergence";
     }
     return "?";
 }
@@ -789,17 +908,21 @@ struct Tally
     double worst = 0.0;
     std::string firstDivergence;
 
-    void Add(Kind kind, double amount, const std::string& where)
+    void
+    Add(Kind kind, double amount, const std::string& where)
     {
         ++counts[kind];
-        if (kind != Kind::Exact && kind != Kind::Sign) {
+        if (kind != Kind::Exact && kind != Kind::Sign)
+        {
             worst = std::max(worst, amount);
         }
-        if (kind == Kind::Divergence && firstDivergence.empty()) {
+        if (kind == Kind::Divergence && firstDivergence.empty())
+        {
             firstDivergence = where;
         }
     }
-    std::size_t Of(Kind kind) const
+    std::size_t
+    Of(Kind kind) const
     {
         const auto found = counts.find(kind);
         return found == counts.end() ? 0 : found->second;
@@ -808,13 +931,16 @@ struct Tally
 
 const motion::MotionTolerance kTolerance{};
 
-Kind ClassifyRotation(const GfQuatf& exec, const GfQuatf& baked, double* angle)
+Kind
+ClassifyRotation(const GfQuatf& exec, const GfQuatf& baked, double* angle)
 {
     *angle = 0.0;
-    if (exec == baked) {
+    if (exec == baked)
+    {
         return Kind::Exact;
     }
-    if (exec == -baked) {
+    if (exec == -baked)
+    {
         return Kind::Sign;
     }
     *angle = motion::AngleBetween(exec, baked);
@@ -822,11 +948,12 @@ Kind ClassifyRotation(const GfQuatf& exec, const GfQuatf& baked, double* angle)
     return *angle <= kTolerance.angle ? Kind::Rounding : Kind::Divergence;
 }
 
-Kind ClassifyTranslation(const GfVec3f& exec, const GfVec3f& baked,
-                         double* distance)
+Kind
+ClassifyTranslation(const GfVec3f& exec, const GfVec3f& baked, double* distance)
 {
     *distance = 0.0;
-    if (exec == baked) {
+    if (exec == baked)
+    {
         return Kind::Exact;
     }
     *distance = (exec - baked).GetLength();
@@ -836,40 +963,43 @@ Kind ClassifyTranslation(const GfVec3f& exec, const GfVec3f& baked,
 // Where the bake put a sample against the key exec evaluated, in seconds: the
 // same instant, a rounding of it within the contract's time quantum, or
 // another instant.
-Kind ClassifyPlacement(double key, double bakedTime, double rate,
-                       double* seconds)
+Kind
+ClassifyPlacement(double key, double bakedTime, double rate, double* seconds)
 {
     *seconds = std::abs(bakedTime - key) / rate;
-    if (bakedTime == key) {
+    if (bakedTime == key)
+    {
         return Kind::Exact;
     }
     return *seconds <= kTolerance.time ? Kind::Rounding : Kind::Divergence;
 }
 
-JsObject TallyJson(const Tally& tally, const char* unit)
+JsObject
+TallyJson(const Tally& tally, const char* unit)
 {
     JsObject out;
-    for (const Kind kind :
-         {Kind::Exact, Kind::Sign, Kind::Rounding, Kind::Divergence}) {
+    for (const Kind kind : {Kind::Exact, Kind::Sign, Kind::Rounding, Kind::Divergence})
+    {
         out[Name(kind)] = JsValue(static_cast<int64_t>(tally.Of(kind)));
     }
     out[std::string("worst_") + unit] = JsValue(tally.worst);
-    if (!tally.firstDivergence.empty()) {
+    if (!tally.firstDivergence.empty())
+    {
         out["first_divergence"] = JsValue(tally.firstDivergence);
     }
     return out;
 }
 
-void PrintTally(const char* what, const Tally& tally, const char* unit)
+void
+PrintTally(const char* what, const Tally& tally, const char* unit)
 {
     std::printf("  %-13s exact %zu  sign %zu  rounding %zu  divergence %zu"
                 "  (worst %.3g %s)\n",
-                what, tally.Of(Kind::Exact), tally.Of(Kind::Sign),
-                tally.Of(Kind::Rounding), tally.Of(Kind::Divergence),
-                tally.worst, unit);
-    if (!tally.firstDivergence.empty()) {
-        std::printf("    first divergence: %s\n",
-                    tally.firstDivergence.c_str());
+                what, tally.Of(Kind::Exact), tally.Of(Kind::Sign), tally.Of(Kind::Rounding),
+                tally.Of(Kind::Divergence), tally.worst, unit);
+    if (!tally.firstDivergence.empty())
+    {
+        std::printf("    first divergence: %s\n", tally.firstDivergence.c_str());
     }
 }
 
@@ -880,31 +1010,37 @@ void PrintTally(const char* what, const Tally& tally, const char* unit)
 // Every file the process has mapped as a module, by the path the loader
 // resolved -- the executable, OpenUSD, the plugins and whatever each of them
 // pulled in. Sorted and unique, so two runs over one product compare.
-std::vector<std::string> LoadedModules()
+std::vector<std::string>
+LoadedModules()
 {
     std::set<std::string> paths;
 #if defined(_WIN32)
-    const HANDLE snapshot = CreateToolhelp32Snapshot(
-        TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, GetCurrentProcessId());
-    if (snapshot != INVALID_HANDLE_VALUE) {
+    const HANDLE snapshot =
+        CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, GetCurrentProcessId());
+    if (snapshot != INVALID_HANDLE_VALUE)
+    {
         MODULEENTRY32W entry;
         entry.dwSize = sizeof(entry);
         for (BOOL more = Module32FirstW(snapshot, &entry); more;
-             more = Module32NextW(snapshot, &entry)) {
-            const int size = WideCharToMultiByte(
-                CP_UTF8, 0, entry.szExePath, -1, nullptr, 0, nullptr, nullptr);
-            if (size > 1) {
+             more = Module32NextW(snapshot, &entry))
+        {
+            const int size =
+                WideCharToMultiByte(CP_UTF8, 0, entry.szExePath, -1, nullptr, 0, nullptr, nullptr);
+            if (size > 1)
+            {
                 std::string path(static_cast<std::size_t>(size - 1), '\0');
-                WideCharToMultiByte(CP_UTF8, 0, entry.szExePath, -1,
-                                    path.data(), size, nullptr, nullptr);
+                WideCharToMultiByte(CP_UTF8, 0, entry.szExePath, -1, path.data(), size, nullptr,
+                                    nullptr);
                 paths.insert(path);
             }
         }
         CloseHandle(snapshot);
     }
 #elif defined(__APPLE__)
-    for (uint32_t i = 0, n = _dyld_image_count(); i < n; ++i) {
-        if (const char* name = _dyld_get_image_name(i)) {
+    for (uint32_t i = 0, n = _dyld_image_count(); i < n; ++i)
+    {
+        if (const char* name = _dyld_get_image_name(i))
+        {
             paths.insert(name);
         }
     }
@@ -912,9 +1048,11 @@ std::vector<std::string> LoadedModules()
     // A mapping's path is the last field of a line, and only a line that has
     // one names a file; the executable is listed like any other mapping.
     std::ifstream maps("/proc/self/maps");
-    for (std::string line; std::getline(maps, line);) {
+    for (std::string line; std::getline(maps, line);)
+    {
         const std::size_t slash = line.find('/');
-        if (slash != std::string::npos) {
+        if (slash != std::string::npos)
+        {
             paths.insert(line.substr(slash));
         }
     }
@@ -925,25 +1063,29 @@ std::vector<std::string> LoadedModules()
 // The plugins the registry loaded, by name and path. A plugin the registry
 // knows and never loaded is left out: registered is a statement about a
 // plugInfo.json, loaded is the one about which library answered.
-JsObject LoadedPlugins()
+JsObject
+LoadedPlugins()
 {
     JsObject plugins;
-    for (const PlugPluginPtr& plugin :
-         PlugRegistry::GetInstance().GetAllPlugins()) {
-        if (plugin && plugin->IsLoaded()) {
+    for (const PlugPluginPtr& plugin : PlugRegistry::GetInstance().GetAllPlugins())
+    {
+        if (plugin && plugin->IsLoaded())
+        {
             plugins[plugin->GetName()] = JsValue(plugin->GetPath());
         }
     }
     return plugins;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
     Arguments args;
     std::string error;
-    if (!Parse(argc, argv, &args, &error)) {
+    if (!Parse(argc, argv, &args, &error))
+    {
         std::fprintf(stderr, "exec_parity: %s\n", error.c_str());
         return 2;
     }
@@ -953,21 +1095,23 @@ int main(int argc, char** argv)
     AvatarShape avatar;
     ClipShape clip;
     ParityStage parity;
-    if (!DiscoverAvatar(args, &avatar, &error)
-        || !DiscoverClip(args, &clip, &error)
-        || !ComposeParityStage(args, avatar, clip, &parity, &error)) {
+    if (!DiscoverAvatar(args, &avatar, &error) || !DiscoverClip(args, &clip, &error) ||
+        !ComposeParityStage(args, avatar, clip, &parity, &error))
+    {
         std::fprintf(stderr, "exec_parity: %s\n", error.c_str());
         return 1;
     }
 
     Bake bake;
-    if (!ReadBake(args.bake, avatar.skeleton, &bake, &error)) {
+    if (!ReadBake(args.bake, avatar.skeleton, &bake, &error))
+    {
         std::fprintf(stderr, "exec_parity: %s\n", error.c_str());
         return 1;
     }
 
     const std::vector<double> keys = ClipKeys(parity, clip);
-    if (keys.size() != bake.times.size()) {
+    if (keys.size() != bake.times.size())
+    {
         std::fprintf(stderr,
                      "exec_parity: the clip's body is keyed at %zu instants "
                      "and the bake has %zu samples; this harness pairs a "
@@ -978,7 +1122,8 @@ int main(int argc, char** argv)
     }
 
     ToolDiagnostics tool;
-    if (!args.toolLog.empty() && !ReadToolLog(args.toolLog, &tool, &error)) {
+    if (!args.toolLog.empty() && !ReadToolLog(args.toolLog, &tool, &error))
+    {
         std::fprintf(stderr, "exec_parity: %s\n", error.c_str());
         return 1;
     }
@@ -1003,19 +1148,16 @@ int main(int argc, char** argv)
     execdriver::Frame armedValues;
     execdriver::Frame armedDiagnostics;
     const execdriver::Driver::RequestId request = driver.Add(
-        {execdriver::Key::Of<vrmRetarget::JointLocalTransforms>(
-            humanoid, kJointTransforms)},
+        {execdriver::Key::Of<vrmRetarget::JointLocalTransforms>(humanoid, kJointTransforms)},
         &armedValues);
     const execdriver::Driver::RequestId diagnosticsRequest = driver.Add(
-        {execdriver::Key::Of<vrmRetarget::RetargetDiagnostics>(
-            humanoid, kRetargetDiagnostics)},
+        {execdriver::Key::Of<vrmRetarget::RetargetDiagnostics>(humanoid, kRetargetDiagnostics)},
         &armedDiagnostics);
     std::vector<std::string> armingErrors;
-    for (const execdriver::Frame* armed : {&armedValues, &armedDiagnostics}) {
-        armingErrors.insert(armingErrors.end(), armed->refusals.begin(),
-                            armed->refusals.end());
-        armingErrors.insert(armingErrors.end(), armed->errors.begin(),
-                            armed->errors.end());
+    for (const execdriver::Frame* armed : {&armedValues, &armedDiagnostics})
+    {
+        armingErrors.insert(armingErrors.end(), armed->refusals.begin(), armed->refusals.end());
+        armingErrors.insert(armingErrors.end(), armed->errors.begin(), armed->errors.end());
     }
 
     std::vector<vrmRetarget::JointLocalTransforms> answers;
@@ -1033,83 +1175,89 @@ int main(int argc, char** argv)
     std::size_t diagnosticsRefusals = 0;
     double execSeconds = 0.0;
     double diagnosticsSeconds = 0.0;
-    for (const double key : keys) {
+    for (const double key : keys)
+    {
         const auto started = std::chrono::steady_clock::now();
-        const execdriver::Frame valued =
-            driver.Evaluate(request, UsdTimeCode(key));
+        const execdriver::Frame valued = driver.Evaluate(request, UsdTimeCode(key));
         const auto between = std::chrono::steady_clock::now();
-        const execdriver::Frame diagnosed =
-            driver.Evaluate(diagnosticsRequest, UsdTimeCode(key));
+        const execdriver::Frame diagnosed = driver.Evaluate(diagnosticsRequest, UsdTimeCode(key));
         const auto finished = std::chrono::steady_clock::now();
         execSeconds += std::chrono::duration<double>(between - started).count();
-        diagnosticsSeconds +=
-            std::chrono::duration<double>(finished - between).count();
+        diagnosticsSeconds += std::chrono::duration<double>(finished - between).count();
 
-        if (const auto* reported =
-                diagnosed.Get<vrmRetarget::RetargetDiagnostics>(0)) {
+        if (const auto* reported = diagnosed.Get<vrmRetarget::RetargetDiagnostics>(0))
+        {
             execDiagnostics.Merge(*reported);
-        } else {
+        }
+        else
+        {
             ++diagnosticsRefusals;
         }
 
         const auto* answer = valued.Get<vrmRetarget::JointLocalTransforms>(0);
         refused.push_back(answer == nullptr);
-        if (!answer) {
+        if (!answer)
+        {
             ++refusals;
-            if (refusalReasons.empty()) {
+            if (refusalReasons.empty())
+            {
                 // What the two frames said, the driver's own lines last.
-                for (const execdriver::Frame* frame : {&valued, &diagnosed}) {
-                    refusalReasons.insert(refusalReasons.end(),
-                                          frame->refusals.begin(),
+                for (const execdriver::Frame* frame : {&valued, &diagnosed})
+                {
+                    refusalReasons.insert(refusalReasons.end(), frame->refusals.begin(),
                                           frame->refusals.end());
-                    refusalReasons.insert(refusalReasons.end(),
-                                          frame->errors.begin(),
+                    refusalReasons.insert(refusalReasons.end(), frame->errors.begin(),
                                           frame->errors.end());
-                    for (const execdriver::OpenExecDiagnostic& d :
-                         frame->diagnostics.reported) {
-                        refusalReasons.push_back(
-                            execdriver::FormatOpenExecDiagnostic(d));
+                    for (const execdriver::OpenExecDiagnostic& d : frame->diagnostics.reported)
+                    {
+                        refusalReasons.push_back(execdriver::FormatOpenExecDiagnostic(d));
                     }
                 }
             }
             answers.emplace_back();
-        } else {
+        }
+        else
+        {
             answers.push_back(*answer);
         }
     }
 
     std::vector<std::string> execLines;
-    for (const vrmRetarget::RetargetDiagnostic& d : execDiagnostics.reported) {
+    for (const vrmRetarget::RetargetDiagnostic& d : execDiagnostics.reported)
+    {
         execLines.push_back(vrmRetarget::FormatRetargetDiagnostic(d));
     }
     const bool diagnosticsCompared = !args.toolLog.empty();
-    const bool diagnosticsAgree =
-        diagnosticsRefusals == 0 && execLines == tool.library;
+    const bool diagnosticsAgree = diagnosticsRefusals == 0 && execLines == tool.library;
 
     // -- the comparison ------------------------------------------------------
     Tally rotations;
     Tally translations;
     Tally placement;
-    Tally stamps;             // exec's timestamp against the tool's
-    Tally naiveRotations;     // the bake read at the clip's key instead
+    Tally stamps;         // exec's timestamp against the tool's
+    Tally naiveRotations; // the bake read at the clip's key instead
     Tally naiveTranslations;
     std::size_t jointsEqual = 0, jointsReordered = 0, jointsMissing = 0;
     std::size_t scalesEqual = 0, scalesDiffer = 0;
     std::size_t shapeMismatches = 0;
     std::size_t moving = 0;
 
-    const std::vector<std::string> bakedJoints = [&] {
+    const std::vector<std::string> bakedJoints = [&]
+    {
         std::vector<std::string> names;
-        for (const TfToken& token : bake.joints) {
+        for (const TfToken& token : bake.joints)
+        {
             names.push_back(token.GetString());
         }
         return names;
     }();
 
-    for (std::size_t i = 0; i < keys.size(); ++i) {
+    for (std::size_t i = 0; i < keys.size(); ++i)
+    {
         const vrmRetarget::JointLocalTransforms& answer = answers[i];
-        if (refused[i]) {
-            continue;  // counted above
+        if (refused[i])
+        {
+            continue; // counted above
         }
         // An answer that came back with no joints under a bake that has some
         // is not skipped: it reaches the joint comparison below and is counted
@@ -1126,15 +1274,15 @@ int main(int argc, char** argv)
             const double expected = keys[i] / clip.rate;
             const double seconds = std::abs(answer.timestamp - expected);
             Kind kind = Kind::Exact;
-            if (answer.timestamp != expected) {
+            if (answer.timestamp != expected)
+            {
                 // A NaN stamp is not within anything.
-                kind = seconds <= kTolerance.time ? Kind::Rounding
-                                                  : Kind::Divergence;
+                kind = seconds <= kTolerance.time ? Kind::Rounding : Kind::Divergence;
             }
             std::ostringstream said;
             said.precision(17);
-            said << "key " << keys[i] << ": exec " << answer.timestamp
-                 << " s, the tool " << expected << " s";
+            said << "key " << keys[i] << ": exec " << answer.timestamp << " s, the tool "
+                 << expected << " s";
             stamps.Add(kind, seconds, said.str());
         }
 
@@ -1145,24 +1293,28 @@ int main(int argc, char** argv)
         std::ostringstream where;
         where.precision(17);
         where << "key " << keys[i] << " / bake " << bake.times[i];
-        const Kind placed =
-            ClassifyPlacement(keys[i], bake.times[i], clip.rate, &seconds);
+        const Kind placed = ClassifyPlacement(keys[i], bake.times[i], clip.rate, &seconds);
         placement.Add(placed, seconds, where.str());
 
-        if (answer.joints == bakedJoints) {
+        if (answer.joints == bakedJoints)
+        {
             ++jointsEqual;
-        } else {
+        }
+        else
+        {
             std::vector<std::string> a = answer.joints, b = bakedJoints;
             std::sort(a.begin(), a.end());
             std::sort(b.begin(), b.end());
             ++(a == b ? jointsReordered : jointsMissing);
-            continue;  // arrays indexed by two different orders
+            continue; // arrays indexed by two different orders
         }
-        if (answer.scales.size() == bake.scales.size()
-            && std::equal(answer.scales.begin(), answer.scales.end(),
-                          bake.scales.begin())) {
+        if (answer.scales.size() == bake.scales.size() &&
+            std::equal(answer.scales.begin(), answer.scales.end(), bake.scales.begin()))
+        {
             ++scalesEqual;
-        } else {
+        }
+        else
+        {
             ++scalesDiffer;
         }
 
@@ -1173,49 +1325,47 @@ int main(int argc, char** argv)
         bake.rotations.Get(&naiveR, UsdTimeCode(keys[i]));
         bake.translations.Get(&naiveT, UsdTimeCode(keys[i]));
         const std::size_t n = answer.joints.size();
-        if (answer.rotations.size() != n || answer.translations.size() != n
-            || bakedRotations.size() != n || bakedTranslations.size() != n
-            || naiveR.size() != n || naiveT.size() != n) {
+        if (answer.rotations.size() != n || answer.translations.size() != n ||
+            bakedRotations.size() != n || bakedTranslations.size() != n || naiveR.size() != n ||
+            naiveT.size() != n)
+        {
             ++shapeMismatches;
             continue;
         }
 
-        if (i > 0 && !answers[0].rotations.empty()
-            && (answer.rotations != answers[0].rotations
-                || answer.translations != answers[0].translations)) {
+        if (i > 0 && !answers[0].rotations.empty() &&
+            (answer.rotations != answers[0].rotations ||
+             answer.translations != answers[0].translations))
+        {
             ++moving;
         }
 
-        for (std::size_t j = 0; j < n; ++j) {
+        for (std::size_t j = 0; j < n; ++j)
+        {
             std::ostringstream at;
             at << "key " << keys[i] << ", " << answer.joints[j];
             double amount = 0.0;
             {
-                const Kind kind = ClassifyRotation(answer.rotations[j],
-                                                   bakedRotations[j], &amount);
+                const Kind kind = ClassifyRotation(answer.rotations[j], bakedRotations[j], &amount);
                 std::ostringstream said;
-                said << at.str() << ": exec " << answer.rotations[j]
-                     << ", bake " << bakedRotations[j] << " (" << amount
-                     << " rad)";
+                said << at.str() << ": exec " << answer.rotations[j] << ", bake "
+                     << bakedRotations[j] << " (" << amount << " rad)";
                 rotations.Add(kind, amount, said.str());
             }
             {
-                const Kind kind = ClassifyTranslation(
-                    answer.translations[j], bakedTranslations[j], &amount);
+                const Kind kind =
+                    ClassifyTranslation(answer.translations[j], bakedTranslations[j], &amount);
                 std::ostringstream said;
-                said << at.str() << ": exec " << answer.translations[j]
-                     << ", bake " << bakedTranslations[j] << " (" << amount
-                     << " m)";
+                said << at.str() << ": exec " << answer.translations[j] << ", bake "
+                     << bakedTranslations[j] << " (" << amount << " m)";
                 translations.Add(kind, amount, said.str());
             }
             {
-                const Kind kind =
-                    ClassifyRotation(answer.rotations[j], naiveR[j], &amount);
+                const Kind kind = ClassifyRotation(answer.rotations[j], naiveR[j], &amount);
                 naiveRotations.Add(kind, amount, at.str());
             }
             {
-                const Kind kind = ClassifyTranslation(answer.translations[j],
-                                                      naiveT[j], &amount);
+                const Kind kind = ClassifyTranslation(answer.translations[j], naiveT[j], &amount);
                 naiveTranslations.Add(kind, amount, at.str());
             }
         }
@@ -1223,17 +1373,17 @@ int main(int argc, char** argv)
 
     // -- the report ----------------------------------------------------------
     const std::size_t jointCount = bakedJoints.size();
-    std::printf("exec_parity: %zu samples x %zu joints at %g per second\n",
-                keys.size(), jointCount, clip.rate);
-    for (const std::string& line : parity.authored) {
+    std::printf("exec_parity: %zu samples x %zu joints at %g per second\n", keys.size(), jointCount,
+                clip.rate);
+    for (const std::string& line : parity.authored)
+    {
         std::printf("  stated: %s\n", line.c_str());
     }
-    std::printf("  exec: %zu refusal(s), %.3f s for %zu evaluations\n",
-                refusals, execSeconds, keys.size());
+    std::printf("  exec: %zu refusal(s), %.3f s for %zu evaluations\n", refusals, execSeconds,
+                keys.size());
     std::printf("  joints: %zu equal, %zu reordered, %zu missing; scales %zu "
                 "equal, %zu differ\n",
-                jointsEqual, jointsReordered, jointsMissing, scalesEqual,
-                scalesDiffer);
+                jointsEqual, jointsReordered, jointsMissing, scalesEqual, scalesDiffer);
     PrintTally("rotations", rotations, "rad");
     PrintTally("translations", translations, "m");
     PrintTally("placement", placement, "s");
@@ -1241,14 +1391,16 @@ int main(int argc, char** argv)
     std::printf("  read at the clip's key instead of the bake's sample:\n");
     PrintTally("rotations", naiveRotations, "rad");
     PrintTally("translations", naiveTranslations, "m");
-    for (const std::string& reason : refusalReasons) {
+    for (const std::string& reason : refusalReasons)
+    {
         std::printf("  refused: %s\n", reason.c_str());
     }
     // What the driver raised about the requests themselves, over the run. A
     // bundle missing from the session is the likely one, and it is an error
     // whatever the values did.
     std::vector<std::string> driverLines;
-    for (const execdriver::OpenExecDiagnostic& d : driver.Reported().reported) {
+    for (const execdriver::OpenExecDiagnostic& d : driver.Reported().reported)
+    {
         driverLines.push_back(execdriver::FormatOpenExecDiagnostic(d));
         std::printf("  driver: %s\n", driverLines.back().c_str());
     }
@@ -1257,28 +1409,33 @@ int main(int argc, char** argv)
     // handed the tool's log.
     const std::vector<std::string> execOnly = Missing(execLines, tool.library);
     const std::vector<std::string> toolOnly = Missing(tool.library, execLines);
-    std::printf("  diagnostics: exec %zu, %.3f s for %zu evaluations",
-                execLines.size(), diagnosticsSeconds, keys.size());
-    if (diagnosticsCompared) {
-        std::printf("; the tool %zu (+%zu a caller raises): %s\n",
-                    tool.library.size(), tool.caller.size(),
-                    diagnosticsAgree ? "the same lines, in order"
-                                     : "they DIFFER");
-    } else {
+    std::printf("  diagnostics: exec %zu, %.3f s for %zu evaluations", execLines.size(),
+                diagnosticsSeconds, keys.size());
+    if (diagnosticsCompared)
+    {
+        std::printf("; the tool %zu (+%zu a caller raises): %s\n", tool.library.size(),
+                    tool.caller.size(),
+                    diagnosticsAgree ? "the same lines, in order" : "they DIFFER");
+    }
+    else
+    {
         std::printf("; not compared, no --tool-log\n");
     }
-    if (diagnosticsRefusals != 0) {
-        std::printf("    exec refused to diagnose %zu sample(s)\n",
-                    diagnosticsRefusals);
+    if (diagnosticsRefusals != 0)
+    {
+        std::printf("    exec refused to diagnose %zu sample(s)\n", diagnosticsRefusals);
     }
-    for (const std::string& line : execLines) {
+    for (const std::string& line : execLines)
+    {
         std::printf("    exec: %s\n", line.c_str());
     }
-    for (const std::string& line : toolOnly) {
+    for (const std::string& line : toolOnly)
+    {
         std::printf("    only the tool: %s\n", line.c_str());
     }
-    if (diagnosticsCompared && execOnly.empty() && toolOnly.empty()
-        && !diagnosticsAgree && diagnosticsRefusals == 0) {
+    if (diagnosticsCompared && execOnly.empty() && toolOnly.empty() && !diagnosticsAgree &&
+        diagnosticsRefusals == 0)
+    {
         std::printf("    the same lines in a different order\n");
     }
 
@@ -1293,8 +1450,7 @@ int main(int argc, char** argv)
         JsObject diagnostics;
         diagnostics["compared"] = JsValue(diagnosticsCompared);
         diagnostics["agree"] = JsValue(diagnosticsCompared && diagnosticsAgree);
-        diagnostics["exec_refusals"] =
-            JsValue(static_cast<int64_t>(diagnosticsRefusals));
+        diagnostics["exec_refusals"] = JsValue(static_cast<int64_t>(diagnosticsRefusals));
         diagnostics["seconds"] = JsValue(diagnosticsSeconds);
         diagnostics["exec"] = JsValue(JsLines(execLines));
         diagnostics["tool"] = JsValue(JsLines(tool.library));
@@ -1307,17 +1463,20 @@ int main(int argc, char** argv)
     }
     {
         JsArray reasons;
-        for (const std::string& reason : refusalReasons) {
+        for (const std::string& reason : refusalReasons)
+        {
             reasons.emplace_back(reason);
         }
         report["refusal_reasons"] = JsValue(reasons);
         JsArray stated;
-        for (const std::string& line : parity.authored) {
+        for (const std::string& line : parity.authored)
+        {
             stated.emplace_back(line);
         }
         report["stated"] = JsValue(stated);
         JsObject warnings;
-        for (const auto& [text, count] : diagnostics.Warnings()) {
+        for (const auto& [text, count] : diagnostics.Warnings())
+        {
             warnings[text] = JsValue(static_cast<int64_t>(count));
         }
         report["exec_warnings"] = JsValue(warnings);
@@ -1349,7 +1508,8 @@ int main(int argc, char** argv)
         // final compute is counted.
         report["loaded_plugins"] = JsValue(LoadedPlugins());
         JsArray modules;
-        for (const std::string& path : LoadedModules()) {
+        for (const std::string& path : LoadedModules())
+        {
             modules.emplace_back(path);
         }
         report["loaded_modules"] = JsValue(modules);
@@ -1357,21 +1517,19 @@ int main(int argc, char** argv)
     {
         std::ofstream out(args.report);
         out << JsWriteToString(JsValue(report)) << "\n";
-        if (!out) {
-            std::fprintf(stderr, "exec_parity: could not write %s\n",
-                         args.report.c_str());
+        if (!out)
+        {
+            std::fprintf(stderr, "exec_parity: could not write %s\n", args.report.c_str());
             return 1;
         }
     }
 
-    const bool failed = refusals != 0 || jointsReordered != 0
-        || jointsMissing != 0 || scalesDiffer != 0 || shapeMismatches != 0
-        || rotations.Of(Kind::Divergence) != 0
-        || translations.Of(Kind::Divergence) != 0
-        || placement.Of(Kind::Divergence) != 0
-        || stamps.Of(Kind::Divergence) != 0
-        || (diagnosticsCompared && !diagnosticsAgree)
-        || driver.Reported().HasError();
+    const bool failed = refusals != 0 || jointsReordered != 0 || jointsMissing != 0 ||
+                        scalesDiffer != 0 || shapeMismatches != 0 ||
+                        rotations.Of(Kind::Divergence) != 0 ||
+                        translations.Of(Kind::Divergence) != 0 ||
+                        placement.Of(Kind::Divergence) != 0 || stamps.Of(Kind::Divergence) != 0 ||
+                        (diagnosticsCompared && !diagnosticsAgree) || driver.Reported().HasError();
     std::puts(failed ? "exec_parity: DIVERGED" : "exec_parity: parity holds");
     return failed ? 1 : 0;
 }

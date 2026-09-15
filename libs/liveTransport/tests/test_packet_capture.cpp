@@ -61,8 +61,7 @@ Write(const PacketCapture& capture)
 }
 
 bool
-Read(const std::string& text, PacketCapture* capture,
-     PacketCaptureError* error = nullptr)
+Read(const std::string& text, PacketCapture* capture, PacketCaptureError* error = nullptr)
 {
     std::istringstream input(text);
     return liveTransport::ReadPacketCapture(kMagic, input, capture, error);
@@ -74,8 +73,10 @@ CountLines(const std::string& text, const std::string& prefix)
     std::size_t count = 0;
     std::istringstream input(text);
     std::string line;
-    while (std::getline(input, line)) {
-        if (line.compare(0, prefix.size(), prefix) == 0) {
+    while (std::getline(input, line))
+    {
+        if (line.compare(0, prefix.size(), prefix) == 0)
+        {
             ++count;
         }
     }
@@ -94,21 +95,23 @@ TestACaptureWithNoPeersIsWrittenAsItAlwaysWas()
     capture.datagrams.push_back(Datagram(0.0, {}));
     capture.datagrams.push_back(Datagram(0.020000, {}));
 
-    const std::string expected =
-        "!test-packet-capture 1\n"
-        "sender example.synthetic\n"
-        "peer 192.168.0.20:52001\n"
-        "\n"
-        "d 0.000000 4\n"
-        "  2f 74 65 73" + std::string(38, ' ') + "|/tes|\n"
-        "\n"
-        "d 0.020000 4\n"
-        "  2f 74 65 73" + std::string(38, ' ') + "|/tes|\n";
+    const std::string expected = "!test-packet-capture 1\n"
+                                 "sender example.synthetic\n"
+                                 "peer 192.168.0.20:52001\n"
+                                 "\n"
+                                 "d 0.000000 4\n"
+                                 "  2f 74 65 73" +
+                                 std::string(38, ' ') +
+                                 "|/tes|\n"
+                                 "\n"
+                                 "d 0.020000 4\n"
+                                 "  2f 74 65 73" +
+                                 std::string(38, ' ') + "|/tes|\n";
 
     const std::string written = Write(capture);
-    if (written != expected) {
-        std::fprintf(stderr, "written:\n%s\nexpected:\n%s\n", written.c_str(),
-                     expected.c_str());
+    if (written != expected)
+    {
+        std::fprintf(stderr, "written:\n%s\nexpected:\n%s\n", written.c_str(), expected.c_str());
     }
     assert(written == expected);
 
@@ -125,27 +128,27 @@ void
 TestOnePeerIsNamedOnceAndCarriedForward()
 {
     PacketCapture capture;
-    for (int index = 0; index < 4; ++index) {
-        capture.datagrams.push_back(
-            Datagram(index * 0.02, "192.168.1.8:51662"));
+    for (int index = 0; index < 4; ++index)
+    {
+        capture.datagrams.push_back(Datagram(index * 0.02, "192.168.1.8:51662"));
     }
 
     const std::string written = Write(capture);
     // Once, not four times. A 44 918-datagram session would otherwise carry
     // 44 918 copies of a string that never changed.
     assert(CountLines(written, "p ") == 1);
-    assert(written.find("\np 192.168.1.8:51662\nd 0.000000 4\n")
-           != std::string::npos);
+    assert(written.find("\np 192.168.1.8:51662\nd 0.000000 4\n") != std::string::npos);
 
     PacketCapture parsed;
     PacketCaptureError error;
-    if (!Read(written, &parsed, &error)) {
-        std::fprintf(stderr, "line %zu: %s\n", error.line,
-                     error.message.c_str());
+    if (!Read(written, &parsed, &error))
+    {
+        std::fprintf(stderr, "line %zu: %s\n", error.line, error.message.c_str());
         assert(false);
     }
     assert(parsed.datagrams.size() == 4);
-    for (const RecordedDatagram& datagram : parsed.datagrams) {
+    for (const RecordedDatagram& datagram : parsed.datagrams)
+    {
         assert(datagram.peer == "192.168.1.8:51662");
     }
     assert(Write(parsed) == written);
@@ -174,8 +177,7 @@ TestAChangeOfPeerIsTheRestartMarker()
     assert(parsed.datagrams[2].peer == "192.168.1.8:50035");
     // The gap alone says something happened; the identity says what. Both are
     // readable from the file now, which is the whole of this change.
-    assert(parsed.datagrams[2].receiveTime - parsed.datagrams[1].receiveTime
-           > 4.0);
+    assert(parsed.datagrams[2].receiveTime - parsed.datagrams[1].receiveTime > 4.0);
     assert(Write(parsed) == written);
 }
 
@@ -210,22 +212,21 @@ TestARedundantPeerLineIsAcceptedAndCanonicalisedAway()
     // peer fails its corpus round trip rather than being refused at parse time
     // — which is the treatment every other cosmetic variation in this format
     // gets.
-    const std::string text =
-        "!test-packet-capture 1\n"
-        "\n"
-        "p 192.168.1.8:51662\n"
-        "d 0.000000 1\n"
-        "  2f  |/|\n"
-        "\n"
-        "p 192.168.1.8:51662\n"
-        "d 0.020000 1\n"
-        "  2f  |/|\n";
+    const std::string text = "!test-packet-capture 1\n"
+                             "\n"
+                             "p 192.168.1.8:51662\n"
+                             "d 0.000000 1\n"
+                             "  2f  |/|\n"
+                             "\n"
+                             "p 192.168.1.8:51662\n"
+                             "d 0.020000 1\n"
+                             "  2f  |/|\n";
 
     PacketCapture parsed;
     PacketCaptureError error;
-    if (!Read(text, &parsed, &error)) {
-        std::fprintf(stderr, "line %zu: %s\n", error.line,
-                     error.message.c_str());
+    if (!Read(text, &parsed, &error))
+    {
+        std::fprintf(stderr, "line %zu: %s\n", error.line, error.message.c_str());
         assert(false);
     }
     assert(parsed.datagrams.size() == 2);
@@ -246,13 +247,11 @@ TestTheRefusalsThePLineInherits()
     const std::string header = "!test-packet-capture 1\n";
     const BadCapture cases[] = {
         {"a peer line with no peer", header + "p\n", 2},
-        {"a peer line with two peers",
-         header + "p 192.168.1.8:51662 192.168.1.8:50035\n", 2},
+        {"a peer line with two peers", header + "p 192.168.1.8:51662 192.168.1.8:50035\n", 2},
         // A record's bytes are contiguous. Without the explicit refusal this
         // reaches the hex reader and comes back as "'p' is not a two-digit hex
         // byte", which names the symptom and not the mistake.
-        {"a peer line inside a record",
-         header + "d 0.000000 4\n  2f 74\np 192.168.1.8:51662\n", 4},
+        {"a peer line inside a record", header + "d 0.000000 4\n  2f 74\np 192.168.1.8:51662\n", 4},
         // The header describes the whole capture, and a `p` line is the record
         // stream beginning. A `sender` after one is exactly as late as a
         // `sender` after a datagram.
@@ -261,19 +260,20 @@ TestTheRefusalsThePLineInherits()
         {"a peer line before the magic", "p 192.168.1.8:51662\n" + header, 1},
     };
 
-    for (const BadCapture& testCase : cases) {
+    for (const BadCapture& testCase : cases)
+    {
         PacketCapture capture;
         PacketCaptureError error;
-        if (Read(testCase.text, &capture, &error)) {
-            std::fprintf(stderr, "malformed capture was accepted: %s\n",
-                         testCase.name);
+        if (Read(testCase.text, &capture, &error))
+        {
+            std::fprintf(stderr, "malformed capture was accepted: %s\n", testCase.name);
             assert(false);
         }
         assert(!error.message.empty());
-        if (error.line != testCase.line) {
-            std::fprintf(stderr, "%s: reported line %zu, expected %zu (%s)\n",
-                         testCase.name, error.line, testCase.line,
-                         error.message.c_str());
+        if (error.line != testCase.line)
+        {
+            std::fprintf(stderr, "%s: reported line %zu, expected %zu (%s)\n", testCase.name,
+                         error.line, testCase.line, error.message.c_str());
             assert(false);
         }
         assert(capture.datagrams.empty());

@@ -89,8 +89,7 @@ Reporting(std::string tracker, const pxr::GfQuatf& rotation)
 }
 
 TrackerObservation
-Reporting(std::string tracker, const pxr::GfVec3f& position,
-          const pxr::GfQuatf& rotation)
+Reporting(std::string tracker, const pxr::GfVec3f& position, const pxr::GfQuatf& rotation)
 {
     TrackerObservation observation = Reporting(std::move(tracker), rotation);
     observation.position = position;
@@ -132,8 +131,7 @@ AngleBetween(const pxr::GfQuatd& lhs, const pxr::GfQuatd& rhs)
 {
     const pxr::GfQuatd a = lhs.GetNormalized();
     const pxr::GfQuatd b = rhs.GetNormalized();
-    double dot = a.GetReal() * b.GetReal()
-                 + pxr::GfDot(a.GetImaginary(), b.GetImaginary());
+    double dot = a.GetReal() * b.GetReal() + pxr::GfDot(a.GetImaginary(), b.GetImaginary());
     dot = std::fabs(dot);
     if (dot > 1.0)
     {
@@ -146,8 +144,7 @@ void
 AssertReproduces(const motion::HumanoidPose& pose, motion::HumanBone bone,
                  const pxr::GfQuatf& observed)
 {
-    const double angle =
-        AngleBetween(WorldRotation(pose, bone), pxr::GfQuatd(observed));
+    const double angle = AngleBetween(WorldRotation(pose, bone), pxr::GfQuatd(observed));
     // The comparison semantics' own tolerance, never a hand-picked epsilon:
     // what this solve is allowed to lose is what a retarget composition is
     // allowed to lose.
@@ -169,8 +166,7 @@ MakeSixPoint()
 {
     SixPoint rig;
     rig.observed = {
-        Reporting("t1", pxr::GfVec3f(0.2f, 0.95f, -1.5f),
-                  Turn(pxr::GfVec3d(0.0, 1.0, 0.0), 35.0)),
+        Reporting("t1", pxr::GfVec3f(0.2f, 0.95f, -1.5f), Turn(pxr::GfVec3d(0.0, 1.0, 0.0), 35.0)),
         Reporting("t2", Turn(pxr::GfVec3d(1.0, 0.0, 0.0), -20.0)),
         Reporting("t3", Turn(pxr::GfVec3d(0.0, 0.0, 1.0), 47.0)),
         Reporting("t4", Turn(pxr::GfVec3d(0.4, 0.5, 0.2), 61.0)),
@@ -178,8 +174,7 @@ MakeSixPoint()
         Reporting("t6", Turn(pxr::GfVec3d(0.0, 1.0, 1.0), -73.0)),
     };
     assert(ParseTrackerAssignmentSpec(
-        "t1=hips t2=head t3=leftHand t4=rightHand t5=leftFoot t6=rightFoot",
-        &rig.spec, nullptr));
+        "t1=hips t2=head t3=leftHand t4=rightHand t5=leftFoot t6=rightFoot", &rig.spec, nullptr));
     rig.assignment = AssignTrackers(rig.spec, TrackerIdentities(rig.observed));
     assert(rig.assignment.Placed());
     return rig;
@@ -190,34 +185,24 @@ TestEveryRefusalHasAName()
 {
     for (std::size_t i = 0; i < TrackerSolveRefusalCount; ++i)
     {
-        assert(!TrackerSolveRefusalName(
-                    static_cast<TrackerSolveRefusal>(i))
-                    .empty());
+        assert(!TrackerSolveRefusalName(static_cast<TrackerSolveRefusal>(i)).empty());
     }
     // Outside the enum is empty rather than a guess, on the vocabulary's rule:
     // a printed report shows a hole rather than inventing a refusal.
     assert(TrackerSolveRefusalName(TrackerSolveRefusal::Count).empty());
-    assert(TrackerSolveRefusalName(static_cast<TrackerSolveRefusal>(200))
-               .empty());
+    assert(TrackerSolveRefusalName(static_cast<TrackerSolveRefusal>(200)).empty());
 }
 
 void
 TestARegionReachesABoneOnlyWhereThisSolveKnowsWhichOne()
 {
-    assert(TrackerRegionBone(TrackerRegion::Hips)
-           == motion::HumanBone::Hips);
-    assert(TrackerRegionBone(TrackerRegion::Chest)
-           == motion::HumanBone::Chest);
-    assert(TrackerRegionBone(TrackerRegion::Head)
-           == motion::HumanBone::Head);
-    assert(TrackerRegionBone(TrackerRegion::LeftHand)
-           == motion::HumanBone::LeftHand);
-    assert(TrackerRegionBone(TrackerRegion::RightHand)
-           == motion::HumanBone::RightHand);
-    assert(TrackerRegionBone(TrackerRegion::LeftFoot)
-           == motion::HumanBone::LeftFoot);
-    assert(TrackerRegionBone(TrackerRegion::RightFoot)
-           == motion::HumanBone::RightFoot);
+    assert(TrackerRegionBone(TrackerRegion::Hips) == motion::HumanBone::Hips);
+    assert(TrackerRegionBone(TrackerRegion::Chest) == motion::HumanBone::Chest);
+    assert(TrackerRegionBone(TrackerRegion::Head) == motion::HumanBone::Head);
+    assert(TrackerRegionBone(TrackerRegion::LeftHand) == motion::HumanBone::LeftHand);
+    assert(TrackerRegionBone(TrackerRegion::RightHand) == motion::HumanBone::RightHand);
+    assert(TrackerRegionBone(TrackerRegion::LeftFoot) == motion::HumanBone::LeftFoot);
+    assert(TrackerRegionBone(TrackerRegion::RightFoot) == motion::HumanBone::RightFoot);
 
     // The four straps that sit between two bones. This is the library's own
     // argument read forwards, and it is checked rather than described because a
@@ -244,8 +229,7 @@ void
 TestASolvedRigReproducesEveryObservedOrientation()
 {
     const SixPoint rig = MakeSixPoint();
-    const TrackerSolve solve =
-        SolveTrackerPose(rig.assignment, rig.observed, 12.5);
+    const TrackerSolve solve = SolveTrackerPose(rig.assignment, rig.observed, 12.5);
 
     assert(solve.Solved());
     assert(solve.detail.empty());
@@ -256,32 +240,23 @@ TestASolvedRigReproducesEveryObservedOrientation()
     // against the wrong parent fails here and only here.
     AssertReproduces(solve.pose, motion::HumanBone::Hips, rig.observed[0].rotation);
     AssertReproduces(solve.pose, motion::HumanBone::Head, rig.observed[1].rotation);
-    AssertReproduces(solve.pose, motion::HumanBone::LeftHand,
-                     rig.observed[2].rotation);
-    AssertReproduces(solve.pose, motion::HumanBone::RightHand,
-                     rig.observed[3].rotation);
-    AssertReproduces(solve.pose, motion::HumanBone::LeftFoot,
-                     rig.observed[4].rotation);
-    AssertReproduces(solve.pose, motion::HumanBone::RightFoot,
-                     rig.observed[5].rotation);
+    AssertReproduces(solve.pose, motion::HumanBone::LeftHand, rig.observed[2].rotation);
+    AssertReproduces(solve.pose, motion::HumanBone::RightHand, rig.observed[3].rotation);
+    AssertReproduces(solve.pose, motion::HumanBone::LeftFoot, rig.observed[4].rotation);
+    AssertReproduces(solve.pose, motion::HumanBone::RightFoot, rig.observed[5].rotation);
 
     // Sparse by construction: six placed bones and nothing else, with every
     // unobserved joint left at rest rather than estimated.
     assert(solve.pose.validRotations.count() == 6);
-    assert(!solve.pose.validRotations.test(
-        static_cast<std::size_t>(motion::HumanBone::Spine)));
-    assert(!solve.pose.validRotations.test(
-        static_cast<std::size_t>(motion::HumanBone::Neck)));
-    assert(solve.pose.localRotations[static_cast<std::size_t>(
-               motion::HumanBone::Neck)]
-           == pxr::GfQuatf::GetIdentity());
+    assert(!solve.pose.validRotations.test(static_cast<std::size_t>(motion::HumanBone::Spine)));
+    assert(!solve.pose.validRotations.test(static_cast<std::size_t>(motion::HumanBone::Neck)));
+    assert(solve.pose.localRotations[static_cast<std::size_t>(motion::HumanBone::Neck)] ==
+           pxr::GfQuatf::GetIdentity());
 
     // Reported in binding order, which is the operator's declaration order.
-    assert(solve.placed
-           == Regions({
-               TrackerRegion::Hips, TrackerRegion::Head,
-               TrackerRegion::LeftHand, TrackerRegion::RightHand,
-               TrackerRegion::LeftFoot, TrackerRegion::RightFoot}));
+    assert(solve.placed ==
+           Regions({TrackerRegion::Hips, TrackerRegion::Head, TrackerRegion::LeftHand,
+                    TrackerRegion::RightHand, TrackerRegion::LeftFoot, TrackerRegion::RightFoot}));
     assert(solve.unsolved.empty());
     assert(solve.withoutRotation.empty());
     // Every one of the six reported an orientation, so nothing above anything
@@ -299,8 +274,7 @@ void
 TestAnAddedStrapChangesALocalRotationAndNoWorldOne()
 {
     SixPoint rig = MakeSixPoint();
-    const TrackerSolve without =
-        SolveTrackerPose(rig.assignment, rig.observed, 0.0);
+    const TrackerSolve without = SolveTrackerPose(rig.assignment, rig.observed, 0.0);
 
     // The same session with a chest strap added mid-rig. The head's tracker
     // reports exactly what it reported before.
@@ -310,15 +284,13 @@ TestAnAddedStrapChangesALocalRotationAndNoWorldOne()
     // commute, so a chain composed in the wrong order would reproduce the
     // observation anyway and this whole case would pass against the defect it
     // exists for. It did, until a mutation pass said so.
-    rig.observed.push_back(
-        Reporting("t7", Turn(pxr::GfVec3d(1.0, 0.0, 0.35), -28.0)));
+    rig.observed.push_back(Reporting("t7", Turn(pxr::GfVec3d(1.0, 0.0, 0.35), -28.0)));
     TrackerAssignmentSpec spec;
     assert(ParseTrackerAssignmentSpec(
         "t1=hips t2=head t3=leftHand t4=rightHand t5=leftFoot t6=rightFoot "
         "t7=chest",
         &spec, nullptr));
-    const TrackerAssignment assignment =
-        AssignTrackers(spec, TrackerIdentities(rig.observed));
+    const TrackerAssignment assignment = AssignTrackers(spec, TrackerIdentities(rig.observed));
     assert(assignment.Placed());
     const TrackerSolve with = SolveTrackerPose(assignment, rig.observed, 0.0);
     assert(with.Solved());
@@ -328,24 +300,19 @@ TestAnAddedStrapChangesALocalRotationAndNoWorldOne()
     // moved...
     assert(with.pose.localRotations[head] != without.pose.localRotations[head]);
     // ...and the world orientation the head's tracker reported did not.
-    AssertReproduces(with.pose, motion::HumanBone::Head,
-                     rig.observed[1].rotation);
-    AssertReproduces(with.pose, motion::HumanBone::Chest,
-                     rig.observed[6].rotation);
+    AssertReproduces(with.pose, motion::HumanBone::Head, rig.observed[1].rotation);
+    AssertReproduces(with.pose, motion::HumanBone::Chest, rig.observed[6].rotation);
     // The hands hang off the upper chest, which the chest strap moved: their
     // world orientations are still their own.
-    AssertReproduces(with.pose, motion::HumanBone::LeftHand,
-                     rig.observed[2].rotation);
-    AssertReproduces(with.pose, motion::HumanBone::RightHand,
-                     rig.observed[3].rotation);
+    AssertReproduces(with.pose, motion::HumanBone::LeftHand, rig.observed[2].rotation);
+    AssertReproduces(with.pose, motion::HumanBone::RightHand, rig.observed[3].rotation);
 }
 
 void
 TestTheHipsAreTheRootAndTheHipsBoneAtOnce()
 {
     const SixPoint rig = MakeSixPoint();
-    const TrackerSolve solve =
-        SolveTrackerPose(rig.assignment, rig.observed, 0.0);
+    const TrackerSolve solve = SolveTrackerPose(rig.assignment, rig.observed, 0.0);
 
     assert(solve.pose.root.hasPosition);
     assert(solve.pose.root.worldPosition == rig.observed[0].position);
@@ -356,8 +323,8 @@ TestTheHipsAreTheRootAndTheHipsBoneAtOnce()
     // are the same value twice rather than two readings of one session.
     const std::size_t hips = static_cast<std::size_t>(motion::HumanBone::Hips);
     assert(AngleBetween(pxr::GfQuatd(solve.pose.root.worldOrientation),
-                        pxr::GfQuatd(solve.pose.localRotations[hips]))
-           < static_cast<double>(motion::MotionTolerance{}.angle));
+                        pxr::GfQuatd(solve.pose.localRotations[hips])) <
+           static_cast<double>(motion::MotionTolerance{}.angle));
 
     // Neither velocity is derived here. A solve sees one frame, and a velocity
     // computed from one frame would be a zero pretending to be a measurement.
@@ -374,74 +341,60 @@ TestARootThePolicyDoesNotAuthorIsReportedRatherThanDropped()
     const SixPoint rig = MakeSixPoint();
     TrackerSolveConfig config;
     config.authorRootMotion = false;
-    const TrackerSolve solve =
-        SolveTrackerPose(rig.assignment, rig.observed, 0.0, config);
+    const TrackerSolve solve = SolveTrackerPose(rig.assignment, rig.observed, 0.0, config);
 
     assert(solve.Solved());
     assert(!solve.pose.root.hasPosition);
     // The rotation is authored either way: a body that turned turned, whatever
     // the translation is worth.
     assert(solve.pose.root.hasOrientation);
-    assert(solve.pose.validRotations.test(
-        static_cast<std::size_t>(motion::HumanBone::Hips)));
+    assert(solve.pose.validRotations.test(static_cast<std::size_t>(motion::HumanBone::Hips)));
     // And the position it did not take is on the report rather than gone.
-    assert(solve.positionsUnused
-           == Regions({TrackerRegion::Hips}));
+    assert(solve.positionsUnused == Regions({TrackerRegion::Hips}));
 }
 
 void
 TestEveryPositionButTheHipsIsReportedUnused()
 {
     std::vector<TrackerObservation> observed = {
-        Reporting("t1", pxr::GfVec3f(0.0f, 0.9f, 0.0f),
-                  Turn(pxr::GfVec3d(0.0, 1.0, 0.0), 10.0)),
-        Reporting("t2", pxr::GfVec3f(0.0f, 1.6f, 0.1f),
-                  Turn(pxr::GfVec3d(0.0, 1.0, 0.0), 15.0)),
-        Reporting("t3", pxr::GfVec3f(-0.3f, 1.1f, 0.2f),
-                  Turn(pxr::GfVec3d(1.0, 0.0, 0.0), 5.0)),
+        Reporting("t1", pxr::GfVec3f(0.0f, 0.9f, 0.0f), Turn(pxr::GfVec3d(0.0, 1.0, 0.0), 10.0)),
+        Reporting("t2", pxr::GfVec3f(0.0f, 1.6f, 0.1f), Turn(pxr::GfVec3d(0.0, 1.0, 0.0), 15.0)),
+        Reporting("t3", pxr::GfVec3f(-0.3f, 1.1f, 0.2f), Turn(pxr::GfVec3d(1.0, 0.0, 0.0), 5.0)),
     };
     TrackerAssignmentSpec spec;
-    assert(ParseTrackerAssignmentSpec("t1=hips t2=head t3=leftHand", &spec,
-                                      nullptr));
-    const TrackerSolve solve = SolveTrackerPose(
-        AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
+    assert(ParseTrackerAssignmentSpec("t1=hips t2=head t3=leftHand", &spec, nullptr));
+    const TrackerSolve solve =
+        SolveTrackerPose(AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
 
     assert(solve.Solved());
     // Consuming one of these is IK, and IK needs limb lengths that belong to a
     // target rig. Reporting them is what keeps that a stated stopping point
     // rather than a silent drop.
-    assert(solve.positionsUnused
-           == Regions({TrackerRegion::Head,
-                                         TrackerRegion::LeftHand}));
+    assert(solve.positionsUnused == Regions({TrackerRegion::Head, TrackerRegion::LeftHand}));
 }
 
 void
 TestAStrapBetweenTwoBonesIsDataRatherThanARefusal()
 {
     std::vector<TrackerObservation> observed = {
-        Reporting("t1", pxr::GfVec3f(0.0f, 0.9f, 0.0f),
-                  Turn(pxr::GfVec3d(0.0, 1.0, 0.0), 10.0)),
+        Reporting("t1", pxr::GfVec3f(0.0f, 0.9f, 0.0f), Turn(pxr::GfVec3d(0.0, 1.0, 0.0), 10.0)),
         // The knee carries a position, which is what a real full-body rig
         // sends: a strap this solve places onto no bone still reported a
         // number, and the two reports it produces answer different questions.
-        Reporting("t2", pxr::GfVec3f(-0.2f, 0.45f, 0.05f),
-                  Turn(pxr::GfVec3d(1.0, 0.0, 0.0), 30.0)),
+        Reporting("t2", pxr::GfVec3f(-0.2f, 0.45f, 0.05f), Turn(pxr::GfVec3d(1.0, 0.0, 0.0), 30.0)),
         Reporting("t3", Turn(pxr::GfVec3d(1.0, 0.0, 0.0), -30.0)),
     };
     TrackerAssignmentSpec spec;
-    assert(ParseTrackerAssignmentSpec("t1=hips t2=leftKnee t3=rightElbow",
-                                      &spec, nullptr));
-    const TrackerSolve solve = SolveTrackerPose(
-        AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
+    assert(ParseTrackerAssignmentSpec("t1=hips t2=leftKnee t3=rightElbow", &spec, nullptr));
+    const TrackerSolve solve =
+        SolveTrackerPose(AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
 
     // A rig carrying straps this solve cannot place still produces a pose. The
     // two that did not reach a bone are named, so an operator sees which
     // devices are not driving anything rather than inferring it from a count.
     assert(solve.Solved());
     assert(solve.placed == Regions({TrackerRegion::Hips}));
-    assert(solve.unsolved
-           == Regions({TrackerRegion::LeftKnee,
-                                         TrackerRegion::RightElbow}));
+    assert(solve.unsolved == Regions({TrackerRegion::LeftKnee, TrackerRegion::RightElbow}));
     assert(solve.pose.validRotations.count() == 1);
     // Bound, not placed: the knee is in both vectors, because `unsolved` says
     // a strap reached no bone and `positionsUnused` says a number nothing
@@ -498,22 +451,19 @@ TestAPositionOnlyTrackerCannotOrientAJoint()
     hips.position = pxr::GfVec3f(0.0f, 0.92f, 0.3f);
     hips.hasPosition = true;
     observed.push_back(hips);
-    observed.push_back(
-        Reporting("t2", Turn(pxr::GfVec3d(0.0, 1.0, 0.0), 20.0)));
+    observed.push_back(Reporting("t2", Turn(pxr::GfVec3d(0.0, 1.0, 0.0), 20.0)));
 
     TrackerAssignmentSpec spec;
     assert(ParseTrackerAssignmentSpec("t1=hips t2=head", &spec, nullptr));
-    const TrackerSolve solve = SolveTrackerPose(
-        AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
+    const TrackerSolve solve =
+        SolveTrackerPose(AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
 
     assert(solve.Solved());
     // The alternative — authoring identity — is bit-for-bit a tracker
     // reporting rest, so a consumer could not tell the two apart.
-    assert(!solve.pose.validRotations.test(
-        static_cast<std::size_t>(motion::HumanBone::Hips)));
+    assert(!solve.pose.validRotations.test(static_cast<std::size_t>(motion::HumanBone::Hips)));
     assert(!solve.pose.root.hasOrientation);
-    assert(solve.withoutRotation
-           == Regions({TrackerRegion::Hips}));
+    assert(solve.withoutRotation == Regions({TrackerRegion::Hips}));
     // The position half still reached the root: half an observation is half an
     // observation, not none.
     assert(solve.pose.root.hasPosition);
@@ -529,8 +479,7 @@ TestAPositionOnlyTrackerCannotOrientAJoint()
     // trace and again in the clip replayed from it (report 04 section 5).
     assert(solve.placed.empty());
     assert(solve.withheldWithParent == Regions({TrackerRegion::Head}));
-    assert(!solve.pose.validRotations.test(
-        static_cast<std::size_t>(motion::HumanBone::Head)));
+    assert(!solve.pose.validRotations.test(static_cast<std::size_t>(motion::HumanBone::Head)));
 }
 
 void
@@ -551,8 +500,8 @@ TestAWithheldBoneIsTheOneWhoseAncestorWasAssigned()
 
         TrackerAssignmentSpec spec;
         assert(ParseTrackerAssignmentSpec("t1=hips t2=head", &spec, nullptr));
-        const TrackerSolve solve = SolveTrackerPose(
-            AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
+        const TrackerSolve solve =
+            SolveTrackerPose(AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
         assert(!solve.Solved());
         // Nothing was authored and no root was either, which is what an empty
         // pose is called. The frame carries the operator no less information
@@ -573,8 +522,7 @@ TestAWithheldBoneIsTheOneWhoseAncestorWasAssigned()
         std::vector<TrackerObservation> observed = {Reporting("t2", turned)};
         TrackerAssignmentSpec spec;
         assert(ParseTrackerAssignmentSpec("t1=hips t2=head", &spec, nullptr));
-        const TrackerAssignment assignment =
-            AssignTrackers(spec, TrackerIdentities(observed));
+        const TrackerAssignment assignment = AssignTrackers(spec, TrackerIdentities(observed));
         // `Refuse` is about a tracker no statement places, never about a
         // statement no tracker arrived for, so this assignment placed.
         assert(assignment.Placed());
@@ -601,8 +549,8 @@ TestAWithheldBoneIsTheOneWhoseAncestorWasAssigned()
         std::vector<TrackerObservation> observed = {Reporting("t2", turned)};
         TrackerAssignmentSpec spec;
         assert(ParseTrackerAssignmentSpec("t2=head", &spec, nullptr));
-        const TrackerSolve solve = SolveTrackerPose(
-            AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
+        const TrackerSolve solve =
+            SolveTrackerPose(AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
         assert(solve.Solved());
         assert(solve.placed == Regions({TrackerRegion::Head}));
         assert(solve.withheldWithParent.empty());
@@ -623,18 +571,14 @@ TestAWithheldBoneWithholdsWhatIsUnderItToo()
     hips.position = pxr::GfVec3f(0.1f, 0.9f, 0.0f);
     hips.hasPosition = true;
     observed.push_back(hips);
-    observed.push_back(
-        Reporting("t2", Turn(pxr::GfVec3d(1.0, 0.0, 0.0), 12.0)));
-    observed.push_back(
-        Reporting("t3", Turn(pxr::GfVec3d(0.0, 1.0, 0.0), -40.0)));
-    observed.push_back(
-        Reporting("t4", Turn(pxr::GfVec3d(0.0, 0.0, 1.0), 25.0)));
+    observed.push_back(Reporting("t2", Turn(pxr::GfVec3d(1.0, 0.0, 0.0), 12.0)));
+    observed.push_back(Reporting("t3", Turn(pxr::GfVec3d(0.0, 1.0, 0.0), -40.0)));
+    observed.push_back(Reporting("t4", Turn(pxr::GfVec3d(0.0, 0.0, 1.0), 25.0)));
 
     TrackerAssignmentSpec spec;
-    assert(ParseTrackerAssignmentSpec(
-        "t1=hips t2=chest t3=head t4=leftFoot", &spec, nullptr));
-    const TrackerSolve solve = SolveTrackerPose(
-        AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
+    assert(ParseTrackerAssignmentSpec("t1=hips t2=chest t3=head t4=leftFoot", &spec, nullptr));
+    const TrackerSolve solve =
+        SolveTrackerPose(AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
 
     // The root position still arrives -- a hips that sent a position and no
     // rotation told the pipeline where the body is and not which way it faces,
@@ -643,9 +587,8 @@ TestAWithheldBoneWithholdsWhatIsUnderItToo()
     assert(solve.pose.root.hasPosition);
     assert(!solve.pose.root.hasOrientation);
     assert(solve.placed.empty());
-    assert(solve.withheldWithParent
-           == Regions({TrackerRegion::Chest, TrackerRegion::Head,
-                       TrackerRegion::LeftFoot}));
+    assert(solve.withheldWithParent ==
+           Regions({TrackerRegion::Chest, TrackerRegion::Head, TrackerRegion::LeftFoot}));
     assert(solve.pose.validRotations.none());
 }
 
@@ -659,8 +602,7 @@ TestAnAssignmentThatRefusedRefusesTheSolveWithItsReasonAttached()
     TrackerAssignmentSpec spec;
     assert(ParseTrackerAssignmentSpec("t1=head", &spec, nullptr));
     spec.unplaced = UnplacedTrackerPolicy::Refuse;
-    const TrackerAssignment assignment =
-        AssignTrackers(spec, TrackerIdentities(observed));
+    const TrackerAssignment assignment = AssignTrackers(spec, TrackerIdentities(observed));
     assert(assignment.refusal == TrackerAssignmentRefusal::UnplacedTracker);
 
     const TrackerSolve solve = SolveTrackerPose(assignment, observed, 0.0);
@@ -671,8 +613,7 @@ TestAnAssignmentThatRefusedRefusesTheSolveWithItsReasonAttached()
     // "the operator mis-numbered a tracker" and "the rig is still coming up"
     // are not the same event.
     assert(solve.detail.find(std::string(TrackerAssignmentRefusalName(
-               TrackerAssignmentRefusal::UnplacedTracker)))
-           != std::string::npos);
+               TrackerAssignmentRefusal::UnplacedTracker))) != std::string::npos);
     assert(solve.detail.find(assignment.detail) != std::string::npos);
 
     // Under a refusal about the bindings themselves there is nothing to
@@ -692,8 +633,7 @@ TestAnAssignmentAppliedToADifferentArrayIsRefused()
 
     // The same assignment against a shorter observation: what a caller that
     // rebuilt one array and not the other produces.
-    std::vector<TrackerObservation> shorter(rig.observed.begin(),
-                                            rig.observed.begin() + 2);
+    std::vector<TrackerObservation> shorter(rig.observed.begin(), rig.observed.begin() + 2);
     const TrackerSolve stale = SolveTrackerPose(rig.assignment, shorter, 0.0);
     assert(stale.refusal == TrackerSolveRefusal::AssignmentUnusable);
     assert(stale.detail.find("leftHand") != std::string::npos);
@@ -711,8 +651,7 @@ TestAnAssignmentAppliedToADifferentArrayIsRefused()
     second.region = TrackerRegion::Head;
     second.observedIndex = 1;
     doubled.bound = {first, second};
-    const TrackerSolve twice =
-        SolveTrackerPose(doubled, rig.observed, 0.0);
+    const TrackerSolve twice = SolveTrackerPose(doubled, rig.observed, 0.0);
     assert(twice.refusal == TrackerSolveRefusal::AssignmentUnusable);
     assert(twice.detail.find("head") != std::string::npos);
 }
@@ -725,8 +664,7 @@ TestAValueThatIsNotOneIsRefusedAndOneNobodyReadsIsNot()
     {
         SixPoint rig = MakeSixPoint();
         rig.observed[1].rotation = pxr::GfQuatf(nan, pxr::GfVec3f(0.0f));
-        const TrackerSolve solve =
-            SolveTrackerPose(rig.assignment, rig.observed, 0.0);
+        const TrackerSolve solve = SolveTrackerPose(rig.assignment, rig.observed, 0.0);
         assert(solve.refusal == TrackerSolveRefusal::ObservationInvalid);
         assert(solve.detail.find("t2") != std::string::npos);
         // Classified before it was refused, on the assignment layer's rule: a
@@ -737,8 +675,7 @@ TestAValueThatIsNotOneIsRefusedAndOneNobodyReadsIsNot()
     {
         SixPoint rig = MakeSixPoint();
         rig.observed[0].rotation = pxr::GfQuatf(0.0f, pxr::GfVec3f(0.0f));
-        const TrackerSolve solve =
-            SolveTrackerPose(rig.assignment, rig.observed, 0.0);
+        const TrackerSolve solve = SolveTrackerPose(rig.assignment, rig.observed, 0.0);
         // A zero quaternion has no orientation to normalise towards, and it is
         // exactly what a default-constructed value written by a caller looks
         // like.
@@ -747,8 +684,7 @@ TestAValueThatIsNotOneIsRefusedAndOneNobodyReadsIsNot()
     {
         SixPoint rig = MakeSixPoint();
         rig.observed[0].position = pxr::GfVec3f(nan, 0.0f, 0.0f);
-        const TrackerSolve solve =
-            SolveTrackerPose(rig.assignment, rig.observed, 0.0);
+        const TrackerSolve solve = SolveTrackerPose(rig.assignment, rig.observed, 0.0);
         assert(solve.refusal == TrackerSolveRefusal::ObservationInvalid);
     }
     {
@@ -758,11 +694,9 @@ TestAValueThatIsNotOneIsRefusedAndOneNobodyReadsIsNot()
         SixPoint rig = MakeSixPoint();
         rig.observed[1].position = pxr::GfVec3f(0.0f, nan, 0.0f);
         rig.observed[1].hasPosition = true;
-        const TrackerSolve solve =
-            SolveTrackerPose(rig.assignment, rig.observed, 0.0);
+        const TrackerSolve solve = SolveTrackerPose(rig.assignment, rig.observed, 0.0);
         assert(solve.Solved());
-        assert(solve.positionsUnused
-               == Regions({TrackerRegion::Head}));
+        assert(solve.positionsUnused == Regions({TrackerRegion::Head}));
     }
     {
         // And the hips' own position, once the policy stops reading it.
@@ -770,8 +704,7 @@ TestAValueThatIsNotOneIsRefusedAndOneNobodyReadsIsNot()
         rig.observed[0].position = pxr::GfVec3f(nan, 0.0f, 0.0f);
         TrackerSolveConfig config;
         config.authorRootMotion = false;
-        const TrackerSolve solve =
-            SolveTrackerPose(rig.assignment, rig.observed, 0.0, config);
+        const TrackerSolve solve = SolveTrackerPose(rig.assignment, rig.observed, 0.0, config);
         assert(solve.Solved());
     }
 }
@@ -783,23 +716,20 @@ TestNothingSolvedIsWhatAnEmptyPoseIsCalled()
     TrackerObservation bare;
     bare.tracker = "t1";
     observed.push_back(bare);
-    observed.push_back(
-        Reporting("t2", Turn(pxr::GfVec3d(1.0, 0.0, 0.0), 15.0)));
+    observed.push_back(Reporting("t2", Turn(pxr::GfVec3d(1.0, 0.0, 0.0), 15.0)));
 
     TrackerAssignmentSpec spec;
     assert(ParseTrackerAssignmentSpec("t1=hips t2=leftKnee", &spec, nullptr));
-    const TrackerSolve solve = SolveTrackerPose(
-        AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
+    const TrackerSolve solve =
+        SolveTrackerPose(AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
 
     // A rig whose only orientation is on a strap this solve refuses, and whose
     // hips reported neither half. The assignment placed both trackers, so
     // nothing below it objected — and a pose carrying nothing is not a solve.
     assert(!solve.Solved());
     assert(solve.refusal == TrackerSolveRefusal::NothingSolved);
-    assert(solve.unsolved
-           == Regions({TrackerRegion::LeftKnee}));
-    assert(solve.withoutRotation
-           == Regions({TrackerRegion::Hips}));
+    assert(solve.unsolved == Regions({TrackerRegion::LeftKnee}));
+    assert(solve.withoutRotation == Regions({TrackerRegion::Hips}));
 }
 
 void
@@ -812,15 +742,14 @@ TestARotationIsNormalisedRatherThanTrusted()
     std::vector<TrackerObservation> observed = {Reporting("t1", scaled)};
     TrackerAssignmentSpec spec;
     assert(ParseTrackerAssignmentSpec("t1=head", &spec, nullptr));
-    const TrackerSolve solve = SolveTrackerPose(
-        AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
+    const TrackerSolve solve =
+        SolveTrackerPose(AssignTrackers(spec, TrackerIdentities(observed)), observed, 0.0);
 
     assert(solve.Solved());
     const std::size_t head = static_cast<std::size_t>(motion::HumanBone::Head);
     // A non-unit quaternion is a scaling as well as a rotation, and a pose that
     // carried one would compose that scale into every bone below it.
-    assert(std::fabs(solve.pose.localRotations[head].GetLength() - 1.0f)
-           < 1e-5f);
+    assert(std::fabs(solve.pose.localRotations[head].GetLength() - 1.0f) < 1e-5f);
     AssertReproduces(solve.pose, motion::HumanBone::Head, turned);
 }
 
@@ -833,18 +762,15 @@ TestTheFirstRefusalWinsInTheStatedOrder()
     // which.
     SixPoint rig = MakeSixPoint();
     rig.observed[0].rotation =
-        pxr::GfQuatf(std::numeric_limits<float>::quiet_NaN(),
-                     pxr::GfVec3f(0.0f));
-    std::vector<TrackerObservation> shorter(rig.observed.begin(),
-                                            rig.observed.begin() + 1);
+        pxr::GfQuatf(std::numeric_limits<float>::quiet_NaN(), pxr::GfVec3f(0.0f));
+    std::vector<TrackerObservation> shorter(rig.observed.begin(), rig.observed.begin() + 1);
     const TrackerSolve solve = SolveTrackerPose(rig.assignment, shorter, 0.0);
     assert(solve.refusal == TrackerSolveRefusal::AssignmentUnusable);
 
     // And an assignment that refused outranks both.
     TrackerAssignment refused;
     refused.refusal = TrackerAssignmentRefusal::SpecInvalid;
-    const TrackerSolve outermost =
-        SolveTrackerPose(refused, shorter, 0.0);
+    const TrackerSolve outermost = SolveTrackerPose(refused, shorter, 0.0);
     assert(outermost.refusal == TrackerSolveRefusal::AssignmentRefused);
 }
 
@@ -852,8 +778,7 @@ void
 TestIdentitiesAreTheArrayTheAssignmentWasMadeFrom()
 {
     const SixPoint rig = MakeSixPoint();
-    const std::vector<std::string_view> identities =
-        TrackerIdentities(rig.observed);
+    const std::vector<std::string_view> identities = TrackerIdentities(rig.observed);
     assert(identities.size() == rig.observed.size());
     for (std::size_t i = 0; i < identities.size(); ++i)
     {

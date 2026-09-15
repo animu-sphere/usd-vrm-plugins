@@ -35,8 +35,10 @@ class SdfAssetPath;
 
 /// \class UsdVrmColliderAPI
 ///
-/// A single VRM SpringBone collider (data only). Apply to each
-/// /Asset/rig/SecondaryMotion/Colliders/<group>/Collider_<n> prim. vrm:tail is only
+/// A single VRM SpringBone collider (data only). Apply to each
+
+/// /Asset/rig/SecondaryMotion/Colliders/<group>/Collider_<n> prim. vrm:tail is only
+
 /// meaningful for capsule shapes.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
@@ -46,7 +48,7 @@ class SdfAssetPath;
 ///
 class UsdVrmColliderAPI : public UsdAPISchemaBase
 {
-public:
+  public:
     /// Compile time constant representing what kind of schema this class is.
     ///
     /// \sa UsdSchemaKind
@@ -56,16 +58,14 @@ public:
     /// Equivalent to UsdVrmColliderAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdVrmColliderAPI(const UsdPrim& prim=UsdPrim())
-        : UsdAPISchemaBase(prim)
+    explicit UsdVrmColliderAPI(const UsdPrim& prim = UsdPrim()) : UsdAPISchemaBase(prim)
     {
     }
 
     /// Construct a UsdVrmColliderAPI on the prim held by \p schemaObj .
     /// Should be preferred over UsdVrmColliderAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdVrmColliderAPI(const UsdSchemaBase& schemaObj)
-        : UsdAPISchemaBase(schemaObj)
+    explicit UsdVrmColliderAPI(const UsdSchemaBase& schemaObj) : UsdAPISchemaBase(schemaObj)
     {
     }
 
@@ -77,8 +77,7 @@ public:
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
     USDVRM_API
-    static const TfTokenVector &
-    GetSchemaAttributeNames(bool includeInherited=true);
+    static const TfTokenVector& GetSchemaAttributeNames(bool includeInherited = true);
 
     /// Return a UsdVrmColliderAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
@@ -90,20 +89,18 @@ public:
     /// \endcode
     ///
     USDVRM_API
-    static UsdVrmColliderAPI
-    Get(const UsdStagePtr &stage, const SdfPath &path);
+    static UsdVrmColliderAPI Get(const UsdStagePtr& stage, const SdfPath& path);
 
-
-    /// Returns true if this <b>single-apply</b> API schema can be applied to 
-    /// the given \p prim. If this schema can not be a applied to the prim, 
-    /// this returns false and, if provided, populates \p whyNot with the 
+    /// Returns true if this <b>single-apply</b> API schema can be applied to
+    /// the given \p prim. If this schema can not be a applied to the prim,
+    /// this returns false and, if provided, populates \p whyNot with the
     /// reason it can not be applied.
-    /// 
+    ///
     /// Note that if CanApply returns false, that does not necessarily imply
     /// that calling Apply will fail. Callers are expected to call CanApply
-    /// before calling Apply if they want to ensure that it is valid to 
+    /// before calling Apply if they want to ensure that it is valid to
     /// apply a schema.
-    /// 
+    ///
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
     /// \sa UsdPrim::CanApplyAPI()
@@ -111,18 +108,17 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDVRM_API
-    static bool 
-    CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
+    static bool CanApply(const UsdPrim& prim, std::string* whyNot = nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "VrmColliderAPI" to the 
+    /// This information is stored by adding "VrmColliderAPI" to the
     /// token-valued, listOp metadata \em apiSchemas on the prim.
-    /// 
-    /// \return A valid UsdVrmColliderAPI object is returned upon success. 
-    /// An invalid (or empty) UsdVrmColliderAPI object is returned upon 
-    /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
-    /// resulting in failure. 
-    /// 
+    ///
+    /// \return A valid UsdVrmColliderAPI object is returned upon success.
+    /// An invalid (or empty) UsdVrmColliderAPI object is returned upon
+    /// failure. See \ref UsdPrim::ApplyAPI() for conditions
+    /// resulting in failure.
+    ///
     /// \sa UsdPrim::GetAppliedSchemas()
     /// \sa UsdPrim::HasAPI()
     /// \sa UsdPrim::CanApplyAPI()
@@ -130,31 +126,30 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDVRM_API
-    static UsdVrmColliderAPI 
-    Apply(const UsdPrim &prim);
+    static UsdVrmColliderAPI Apply(const UsdPrim& prim);
 
-protected:
+  protected:
     /// Returns the kind of schema this class belongs to.
     ///
     /// \sa UsdSchemaKind
     USDVRM_API
     UsdSchemaKind _GetSchemaKind() const override;
 
-private:
+  private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
     USDVRM_API
-    static const TfType &_GetStaticTfType();
+    static const TfType& _GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
     USDVRM_API
-    const TfType &_GetTfType() const override;
+    const TfType& _GetTfType() const override;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMSHAPE 
+    // VRMSHAPE
     // --------------------------------------------------------------------- //
     /// 'sphere' or 'capsule'.
     ///
@@ -167,17 +162,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmShapeAttr() const;
 
-    /// See GetVrmShapeAttr(), and also 
+    /// See GetVrmShapeAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmShapeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmShapeAttr(VtValue const& defaultValue = VtValue(),
+                                    bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMNODE 
+    // VRMNODE
     // --------------------------------------------------------------------- //
     /// Joint path token the collider is attached to.
     ///
@@ -190,17 +186,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmNodeAttr() const;
 
-    /// See GetVrmNodeAttr(), and also 
+    /// See GetVrmNodeAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmNodeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmNodeAttr(VtValue const& defaultValue = VtValue(),
+                                   bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMOFFSET 
+    // VRMOFFSET
     // --------------------------------------------------------------------- //
     /// Collider center offset from its node.
     ///
@@ -213,17 +210,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmOffsetAttr() const;
 
-    /// See GetVrmOffsetAttr(), and also 
+    /// See GetVrmOffsetAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmOffsetAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmOffsetAttr(VtValue const& defaultValue = VtValue(),
+                                     bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMRADIUS 
+    // VRMRADIUS
     // --------------------------------------------------------------------- //
     /// Collider radius.
     ///
@@ -236,17 +234,18 @@ public:
     USDVRM_API
     UsdAttribute GetVrmRadiusAttr() const;
 
-    /// See GetVrmRadiusAttr(), and also 
+    /// See GetVrmRadiusAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmRadiusAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmRadiusAttr(VtValue const& defaultValue = VtValue(),
+                                     bool writeSparsely = false) const;
 
-public:
+  public:
     // --------------------------------------------------------------------- //
-    // VRMTAIL 
+    // VRMTAIL
     // --------------------------------------------------------------------- //
     /// Capsule tail position (capsule shape only).
     ///
@@ -259,21 +258,22 @@ public:
     USDVRM_API
     UsdAttribute GetVrmTailAttr() const;
 
-    /// See GetVrmTailAttr(), and also 
+    /// See GetVrmTailAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDVRM_API
-    UsdAttribute CreateVrmTailAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateVrmTailAttr(VtValue const& defaultValue = VtValue(),
+                                   bool writeSparsely = false) const;
 
-public:
+  public:
     // ===================================================================== //
-    // Feel free to add custom code below this line, it will be preserved by 
-    // the code generator. 
+    // Feel free to add custom code below this line, it will be preserved by
+    // the code generator.
     //
-    // Just remember to: 
-    //  - Close the class declaration with }; 
+    // Just remember to:
+    //  - Close the class declaration with };
     //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
     //  - Close the include guard with #endif
     // ===================================================================== //

@@ -70,16 +70,17 @@ struct SourceProvenance
     // differ here and nowhere else.
     std::string sourceId;
 
-    bool IsEmpty() const noexcept
+    bool
+    IsEmpty() const noexcept
     {
-        return producer.empty() && producerVersion.empty() && profileId.empty()
-               && format.empty() && sourceId.empty();
+        return producer.empty() && producerVersion.empty() && profileId.empty() && format.empty() &&
+               sourceId.empty();
     }
 
-    MOTIONSOURCE_API friend bool operator==(
-        const SourceProvenance& lhs, const SourceProvenance& rhs) noexcept;
-    MOTIONSOURCE_API friend bool operator!=(
-        const SourceProvenance& lhs, const SourceProvenance& rhs) noexcept;
+    MOTIONSOURCE_API friend bool operator==(const SourceProvenance& lhs,
+                                            const SourceProvenance& rhs) noexcept;
+    MOTIONSOURCE_API friend bool operator!=(const SourceProvenance& lhs,
+                                            const SourceProvenance& rhs) noexcept;
 };
 
 } // namespace motionSource

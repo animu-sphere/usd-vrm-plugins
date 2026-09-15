@@ -43,8 +43,7 @@ struct CodeRow
 // Indexed by OpenExecDiagnosticCode, and written out for the retarget table's
 // reason: a rename in the enum must not rename a code something matches on.
 constexpr std::array<CodeRow, OpenExecDiagnosticCodeCount> kCodes = {{
-    {"VRM_OPENEXEC_COMPUTATION_UNAVAILABLE",
-     OpenExecDiagnosticSeverity::Error, false},
+    {"VRM_OPENEXEC_COMPUTATION_UNAVAILABLE", OpenExecDiagnosticSeverity::Error, false},
     {"VRM_OPENEXEC_TYPE_MISMATCH", OpenExecDiagnosticSeverity::Error, false},
     // A warning, and recoverable: the driver rebuilt the request and the frame
     // answered. It is reported at all because a caller that holds requests of
@@ -52,7 +51,8 @@ constexpr std::array<CodeRow, OpenExecDiagnosticCodeCount> kCodes = {{
     {"VRM_OPENEXEC_INVALIDATED", OpenExecDiagnosticSeverity::Warning, true},
 }};
 
-const CodeRow* Row(OpenExecDiagnosticCode code) noexcept
+const CodeRow*
+Row(OpenExecDiagnosticCode code) noexcept
 {
     const auto index = static_cast<std::size_t>(code);
     return index < kCodes.size() ? &kCodes[index] : nullptr;
@@ -60,41 +60,45 @@ const CodeRow* Row(OpenExecDiagnosticCode code) noexcept
 
 } // namespace
 
-std::string_view OpenExecDiagnosticCodeString(
-    OpenExecDiagnosticCode code) noexcept
+std::string_view
+OpenExecDiagnosticCodeString(OpenExecDiagnosticCode code) noexcept
 {
     const CodeRow* row = Row(code);
     return row ? row->name : std::string_view();
 }
 
-std::optional<OpenExecDiagnosticCode> FindOpenExecDiagnosticCode(
-    std::string_view name) noexcept
+std::optional<OpenExecDiagnosticCode>
+FindOpenExecDiagnosticCode(std::string_view name) noexcept
 {
-    for (std::size_t index = 0; index < kCodes.size(); ++index) {
-        if (kCodes[index].name == name) {
+    for (std::size_t index = 0; index < kCodes.size(); ++index)
+    {
+        if (kCodes[index].name == name)
+        {
             return static_cast<OpenExecDiagnosticCode>(index);
         }
     }
     return std::nullopt;
 }
 
-OpenExecDiagnosticSeverity OpenExecDiagnosticDefaultSeverity(
-    OpenExecDiagnosticCode code) noexcept
+OpenExecDiagnosticSeverity
+OpenExecDiagnosticDefaultSeverity(OpenExecDiagnosticCode code) noexcept
 {
     const CodeRow* row = Row(code);
     return row ? row->severity : OpenExecDiagnosticSeverity::Error;
 }
 
-bool OpenExecDiagnosticIsRecoverable(OpenExecDiagnosticCode code) noexcept
+bool
+OpenExecDiagnosticIsRecoverable(OpenExecDiagnosticCode code) noexcept
 {
     const CodeRow* row = Row(code);
     return row ? row->recoverable : false;
 }
 
-std::string_view OpenExecDiagnosticSeverityString(
-    OpenExecDiagnosticSeverity severity) noexcept
+std::string_view
+OpenExecDiagnosticSeverityString(OpenExecDiagnosticSeverity severity) noexcept
 {
-    switch (severity) {
+    switch (severity)
+    {
     case OpenExecDiagnosticSeverity::Warning:
         return "warning";
     case OpenExecDiagnosticSeverity::Error:
@@ -103,23 +107,21 @@ std::string_view OpenExecDiagnosticSeverityString(
     return "error";
 }
 
-bool operator==(const OpenExecDiagnostic& a,
-                const OpenExecDiagnostic& b) noexcept
+bool
+operator==(const OpenExecDiagnostic& a, const OpenExecDiagnostic& b) noexcept
 {
-    return a.code == b.code && a.severity == b.severity
-        && a.recoverable == b.recoverable && a.subject == b.subject
-        && a.detail == b.detail;
+    return a.code == b.code && a.severity == b.severity && a.recoverable == b.recoverable &&
+           a.subject == b.subject && a.detail == b.detail;
 }
 
-bool operator!=(const OpenExecDiagnostic& a,
-                const OpenExecDiagnostic& b) noexcept
+bool
+operator!=(const OpenExecDiagnostic& a, const OpenExecDiagnostic& b) noexcept
 {
     return !(a == b);
 }
 
-OpenExecDiagnostic MakeOpenExecDiagnostic(OpenExecDiagnosticCode code,
-                                          std::string subject,
-                                          std::string detail)
+OpenExecDiagnostic
+MakeOpenExecDiagnostic(OpenExecDiagnosticCode code, std::string subject, std::string detail)
 {
     OpenExecDiagnostic diagnostic;
     diagnostic.code = code;
@@ -130,113 +132,126 @@ OpenExecDiagnostic MakeOpenExecDiagnostic(OpenExecDiagnosticCode code,
     return diagnostic;
 }
 
-std::string FormatOpenExecDiagnostic(const OpenExecDiagnostic& diagnostic)
+std::string
+FormatOpenExecDiagnostic(const OpenExecDiagnostic& diagnostic)
 {
     std::string line;
     line += '[';
     line += OpenExecDiagnosticCodeString(diagnostic.code);
     line += "] ";
     line += OpenExecDiagnosticSeverityString(diagnostic.severity);
-    if (diagnostic.recoverable) {
+    if (diagnostic.recoverable)
+    {
         line += " recoverable";
     }
-    if (!diagnostic.subject.empty()) {
+    if (!diagnostic.subject.empty())
+    {
         line += " subject=";
         line += diagnostic.subject;
     }
-    if (!diagnostic.detail.empty()) {
+    if (!diagnostic.detail.empty())
+    {
         line += ": ";
         line += diagnostic.detail;
     }
     return line;
 }
 
-bool OpenExecDiagnostics::Report(OpenExecDiagnostic diagnostic)
+bool
+OpenExecDiagnostics::Report(OpenExecDiagnostic diagnostic)
 {
-    if (Has(diagnostic.code, diagnostic.subject)) {
+    if (Has(diagnostic.code, diagnostic.subject))
+    {
         return false;
     }
     reported.push_back(std::move(diagnostic));
     return true;
 }
 
-void OpenExecDiagnostics::Merge(const OpenExecDiagnostics& other)
+void
+OpenExecDiagnostics::Merge(const OpenExecDiagnostics& other)
 {
-    for (const OpenExecDiagnostic& diagnostic : other.reported) {
+    for (const OpenExecDiagnostic& diagnostic : other.reported)
+    {
         Report(diagnostic);
     }
 }
 
-bool OpenExecDiagnostics::Has(OpenExecDiagnosticCode code,
-                              std::string_view subject) const
+bool
+OpenExecDiagnostics::Has(OpenExecDiagnosticCode code, std::string_view subject) const
 {
-    return std::any_of(reported.begin(), reported.end(),
-                       [&](const OpenExecDiagnostic& d) {
-                           return d.code == code && d.subject == subject;
-                       });
+    return std::any_of(reported.begin(), reported.end(), [&](const OpenExecDiagnostic& d)
+                       { return d.code == code && d.subject == subject; });
 }
 
-std::vector<std::string> OpenExecDiagnostics::Subjects(
-    OpenExecDiagnosticCode code) const
+std::vector<std::string>
+OpenExecDiagnostics::Subjects(OpenExecDiagnosticCode code) const
 {
     std::vector<std::string> subjects;
-    for (const OpenExecDiagnostic& diagnostic : reported) {
-        if (diagnostic.code == code) {
+    for (const OpenExecDiagnostic& diagnostic : reported)
+    {
+        if (diagnostic.code == code)
+        {
             subjects.push_back(diagnostic.subject);
         }
     }
     return subjects;
 }
 
-bool OpenExecDiagnostics::HasError() const noexcept
+bool
+OpenExecDiagnostics::HasError() const noexcept
 {
-    return std::any_of(reported.begin(), reported.end(),
-                       [](const OpenExecDiagnostic& d) {
-                           return d.severity == OpenExecDiagnosticSeverity::Error;
-                       });
+    return std::any_of(reported.begin(), reported.end(), [](const OpenExecDiagnostic& d)
+                       { return d.severity == OpenExecDiagnosticSeverity::Error; });
 }
 
 // ---------------------------------------------------------------------------
 // Keys
 // ---------------------------------------------------------------------------
 
-std::string Key::Name() const
+std::string
+Key::Name() const
 {
     return provider.GetString() + " [" + computation.GetString() + "]";
 }
 
-std::string Key::TypeName() const
+std::string
+Key::TypeName() const
 {
     return type ? ArchGetDemangled(*type) : std::string("(undeclared)");
 }
 
-bool operator==(const Key& a, const Key& b) noexcept
+bool
+operator==(const Key& a, const Key& b) noexcept
 {
-    return a.provider == b.provider && a.computation == b.computation
-        && a.type && b.type && TfSafeTypeCompare(*a.type, *b.type);
+    return a.provider == b.provider && a.computation == b.computation && a.type && b.type &&
+           TfSafeTypeCompare(*a.type, *b.type);
 }
 
 namespace
 {
 
 // One key names one computed value, whatever type it is declared with.
-bool SameValue(const Key& a, const Key& b)
+bool
+SameValue(const Key& a, const Key& b)
 {
     return a.provider == b.provider && a.computation == b.computation;
 }
 
-bool Holds(const VtValue& value, const Key& key)
+bool
+Holds(const VtValue& value, const Key& key)
 {
     return key.type && TfSafeTypeCompare(value.GetTypeid(), *key.type);
 }
 
-std::string HeldTypeName(const VtValue& value)
+std::string
+HeldTypeName(const VtValue& value)
 {
-    return value.IsEmpty() ? std::string("void")
-                           : ArchGetDemangled(value.GetTypeid());
+    return value.IsEmpty() ? std::string("void") : ArchGetDemangled(value.GetTypeid());
 }
 
-std::string Said(UsdTimeCode time)
+std::string
+Said(UsdTimeCode time)
 {
     std::ostringstream out;
     out.precision(17);
@@ -264,10 +279,12 @@ struct Posted
 // report, §8).
 const TfEnum kRuntimeError{TF_DIAGNOSTIC_RUNTIME_ERROR_TYPE};
 
-Posted Drain(TfErrorMark& mark)
+Posted
+Drain(TfErrorMark& mark)
 {
     Posted posted;
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
         (it->GetErrorCode() == kRuntimeError ? posted.runtime : posted.other)
             .push_back(it->GetCommentary());
     }
@@ -275,11 +292,14 @@ Posted Drain(TfErrorMark& mark)
     return posted;
 }
 
-std::string Joined(const std::vector<std::string>& lines)
+std::string
+Joined(const std::vector<std::string>& lines)
 {
     std::string out;
-    for (const std::string& line : lines) {
-        if (!out.empty()) {
+    for (const std::string& line : lines)
+    {
+        if (!out.empty())
+        {
             out += "; ";
         }
         out += line;
@@ -287,21 +307,24 @@ std::string Joined(const std::vector<std::string>& lines)
     return out;
 }
 
-void AppendOnce(std::vector<std::string>* into,
-                const std::vector<std::string>& lines)
+void
+AppendOnce(std::vector<std::string>* into, const std::vector<std::string>& lines)
 {
-    for (const std::string& line : lines) {
-        if (std::find(into->begin(), into->end(), line) == into->end()) {
+    for (const std::string& line : lines)
+    {
+        if (std::find(into->begin(), into->end(), line) == into->end())
+        {
             into->push_back(line);
         }
     }
 }
 
 // How many keys a build handed to exec: the size of exec's index space.
-std::size_t HandedCount(const std::vector<int>& execIndex)
+std::size_t
+HandedCount(const std::vector<int>& execIndex)
 {
-    return static_cast<std::size_t>(std::count_if(
-        execIndex.begin(), execIndex.end(), [](int index) { return index >= 0; }));
+    return static_cast<std::size_t>(
+        std::count_if(execIndex.begin(), execIndex.end(), [](int index) { return index >= 0; }));
 }
 
 } // namespace
@@ -320,23 +343,27 @@ struct Driver::Request
 
     // As of the last build.
     std::unique_ptr<ExecUsdRequest> exec;
-    std::vector<int> execIndex;  // per key in All(); -1 when not handed over
+    std::vector<int> execIndex; // per key in All(); -1 when not handed over
     std::vector<bool> availability;
     std::vector<std::optional<OpenExecDiagnostic>> unavailable;
     bool dirty = true;
 
-    std::vector<Key> All() const
+    std::vector<Key>
+    All() const
     {
         std::vector<Key> all = keys;
         all.insert(all.end(), overrideKeys.begin(), overrideKeys.end());
         return all;
     }
 
-    std::optional<std::size_t> IndexOf(const Key& key) const
+    std::optional<std::size_t>
+    IndexOf(const Key& key) const
     {
         const std::vector<Key> all = All();
-        for (std::size_t i = 0; i < all.size(); ++i) {
-            if (SameValue(all[i], key)) {
+        for (std::size_t i = 0; i < all.size(); ++i)
+        {
+            if (SameValue(all[i], key))
+            {
                 return i;
             }
         }
@@ -345,41 +372,44 @@ struct Driver::Request
 };
 
 Driver::Driver(const UsdStageRefPtr& stage)
-    : _stage(stage)
-    , _system(std::make_unique<ExecUsdSystem>(stage))
+    : _stage(stage), _system(std::make_unique<ExecUsdSystem>(stage))
 {
 }
 
 Driver::~Driver() = default;
 
-const OpenExecDiagnostics& Driver::Reported() const noexcept
+const OpenExecDiagnostics&
+Driver::Reported() const noexcept
 {
     return _reported;
 }
 
-ExecUsdSystem& Driver::System() noexcept
+ExecUsdSystem&
+Driver::System() noexcept
 {
     return *_system;
 }
 
 // The prim a key names, or none. The pseudo-root is a prim here, as it is to
 // exec: the stage's own computations (`computeTime`) are provided by it.
-UsdPrim Driver::_Provider(const Key& key) const
+UsdPrim
+Driver::_Provider(const Key& key) const
 {
-    return key.provider.IsAbsoluteRootOrPrimPath()
-        ? _stage->GetPrimAtPath(key.provider)
-        : UsdPrim();
+    return key.provider.IsAbsoluteRootOrPrimPath() ? _stage->GetPrimAtPath(key.provider)
+                                                   : UsdPrim();
 }
 
 // Exec's own rule for a provider (`_IsValidVisitor` in execUsd's request):
 // a valid prim that the default predicate admits -- active, loaded, defined,
 // not abstract. A key on anything else is expired by exec on construction and
 // posts a coding error at every compile, so the driver never hands one over.
-std::vector<bool> Driver::_Availability(const std::vector<Key>& keys) const
+std::vector<bool>
+Driver::_Availability(const std::vector<Key>& keys) const
 {
     std::vector<bool> available;
     available.reserve(keys.size());
-    for (const Key& key : keys) {
+    for (const Key& key : keys)
+    {
         const UsdPrim prim = _Provider(key);
         available.push_back(prim && UsdPrimDefaultPredicate(prim));
     }
@@ -389,37 +419,40 @@ std::vector<bool> Driver::_Availability(const std::vector<Key>& keys) const
 // The overrides a compute hands exec: every one whose key the build handed
 // over. A key found unavailable is not in exec's request, and neither is an
 // override of it.
-ExecUsdValueOverrideVector Driver::_Handed(
-    const Request& request, const std::vector<Override>& overrides,
-    std::vector<Key>* keys) const
+ExecUsdValueOverrideVector
+Driver::_Handed(const Request& request, const std::vector<Override>& overrides,
+                std::vector<Key>* keys) const
 {
     ExecUsdValueOverrideVector handed;
-    for (const Override& override : overrides) {
+    for (const Override& override : overrides)
+    {
         const std::optional<std::size_t> index = request.IndexOf(override.key);
-        if (!index || request.unavailable[*index]) {
+        if (!index || request.unavailable[*index])
+        {
             continue;
         }
         handed.push_back(ExecUsdValueOverride{
-            ExecUsdValueKey(_Provider(override.key), override.key.computation),
-            override.value});
-        if (keys) {
+            ExecUsdValueKey(_Provider(override.key), override.key.computation), override.value});
+        if (keys)
+        {
             keys->push_back(override.key);
         }
     }
     return handed;
 }
 
-Driver::Computed Driver::_Compute(Request& request,
-                                  const std::vector<Override>& overrides)
+Driver::Computed
+Driver::_Compute(Request& request, const std::vector<Override>& overrides)
 {
     Computed computed;
     computed.values.resize(HandedCount(request.execIndex));
     ExecUsdValueOverrideVector handed = _Handed(request, overrides, nullptr);
     TfErrorMark mark;
-    const ExecUsdCacheView view = handed.empty()
-        ? _system->Compute(*request.exec)
-        : _system->ComputeWithOverrides(*request.exec, std::move(handed));
-    for (std::size_t j = 0; j < computed.values.size(); ++j) {
+    const ExecUsdCacheView view =
+        handed.empty() ? _system->Compute(*request.exec)
+                       : _system->ComputeWithOverrides(*request.exec, std::move(handed));
+    for (std::size_t j = 0; j < computed.values.size(); ++j)
+    {
         computed.values[j] = view.Get(static_cast<int>(j));
     }
     Posted posted = Drain(mark);
@@ -428,26 +461,27 @@ Driver::Computed Driver::_Compute(Request& request,
     return computed;
 }
 
-Driver::Computed Driver::_Build(Request& request,
-                                const std::vector<Override>& overrides,
-                                Frame* frame)
+Driver::Computed
+Driver::_Build(Request& request, const std::vector<Override>& overrides, Frame* frame)
 {
     const std::vector<Key> all = request.All();
     request.availability = _Availability(all);
     request.unavailable.assign(all.size(), std::nullopt);
-    for (std::size_t i = 0; i < all.size(); ++i) {
-        if (request.availability[i]) {
+    for (std::size_t i = 0; i < all.size(); ++i)
+    {
+        if (request.availability[i])
+        {
             continue;
         }
         const UsdPrim prim = _Provider(all[i]);
-        request.unavailable[i] = MakeOpenExecDiagnostic(
-            OpenExecDiagnosticCode::ComputationUnavailable, all[i].Name(),
-            prim ? "the prim at <" + all[i].provider.GetString()
-                       + "> is not active, loaded and defined, which exec "
-                         "requires of a provider, so the key was not handed "
-                         "to exec"
-                 : "there is no prim at <" + all[i].provider.GetString()
-                       + ">, so the key was not handed to exec");
+        request.unavailable[i] =
+            MakeOpenExecDiagnostic(OpenExecDiagnosticCode::ComputationUnavailable, all[i].Name(),
+                                   prim ? "the prim at <" + all[i].provider.GetString() +
+                                              "> is not active, loaded and defined, which exec "
+                                              "requires of a provider, so the key was not handed "
+                                              "to exec"
+                                        : "there is no prim at <" + all[i].provider.GetString() +
+                                              ">, so the key was not handed to exec");
     }
 
     // Two passes at most: the second only when the first found a computation
@@ -458,22 +492,26 @@ Driver::Computed Driver::_Build(Request& request,
     // rebuilt request over nodes already computed reaches their cached
     // outputs and posts nothing.
     Computed armed;
-    for (int pass = 0; pass < 2; ++pass) {
+    for (int pass = 0; pass < 2; ++pass)
+    {
         std::vector<ExecUsdValueKey> valueKeys;
         request.execIndex.assign(all.size(), -1);
-        for (std::size_t i = 0; i < all.size(); ++i) {
-            if (request.unavailable[i]) {
+        for (std::size_t i = 0; i < all.size(); ++i)
+        {
+            if (request.unavailable[i])
+            {
                 continue;
             }
             request.execIndex[i] = static_cast<int>(valueKeys.size());
             valueKeys.emplace_back(_Provider(all[i]), all[i].computation);
         }
-        request.exec = std::make_unique<ExecUsdRequest>(
-            _system->BuildRequest(std::move(valueKeys)));
+        request.exec =
+            std::make_unique<ExecUsdRequest>(_system->BuildRequest(std::move(valueKeys)));
 
         armed = _Compute(request, overrides);
         AppendOnce(&frame->refusals, armed.refusals);
-        if (armed.complaints.empty() || pass == 1) {
+        if (armed.complaints.empty() || pass == 1)
+        {
             break;
         }
 
@@ -481,10 +519,11 @@ Driver::Computed Driver::_Build(Request& request,
         // answered nothing, alone, so the complaint is attributed to a key
         // by the driver's own question rather than by exec's wording.
         bool found = false;
-        for (std::size_t i = 0; i < all.size(); ++i) {
+        for (std::size_t i = 0; i < all.size(); ++i)
+        {
             const int index = request.execIndex[i];
-            if (index < 0
-                || !armed.values[static_cast<std::size_t>(index)].IsEmpty()) {
+            if (index < 0 || !armed.values[static_cast<std::size_t>(index)].IsEmpty())
+            {
                 continue;
             }
             std::vector<ExecUsdValueKey> one;
@@ -493,7 +532,8 @@ Driver::Computed Driver::_Build(Request& request,
             TfErrorMark mark;
             _system->Compute(probe).Get(0);
             const Posted said = Drain(mark);
-            if (said.other.empty()) {
+            if (said.other.empty())
+            {
                 continue;
             }
             found = true;
@@ -501,10 +541,12 @@ Driver::Computed Driver::_Build(Request& request,
                 OpenExecDiagnosticCode::ComputationUnavailable, all[i].Name(),
                 "no computation of that name answers for the prim: its "
                 "bundle is not in this session, or the prim lacks the schema "
-                "it is registered on. exec: " + Joined(said.other));
+                "it is registered on. exec: " +
+                    Joined(said.other));
         }
-        if (!found) {
-            break;  // the complaints are the caller's to classify
+        if (!found)
+        {
+            break; // the complaints are the caller's to classify
         }
     }
     request.dirty = false;
@@ -517,33 +559,39 @@ namespace
 // The values a frame answers for its requested keys, from exec's index space,
 // with each key's standing unavailability reported and each answer's type held
 // to its declaration.
-void Fill(const std::vector<Key>& keys, const std::vector<int>& execIndex,
-          const std::vector<std::optional<OpenExecDiagnostic>>& unavailable,
-          const std::vector<VtValue>& execValues, bool withhold, Frame* frame)
+void
+Fill(const std::vector<Key>& keys, const std::vector<int>& execIndex,
+     const std::vector<std::optional<OpenExecDiagnostic>>& unavailable,
+     const std::vector<VtValue>& execValues, bool withhold, Frame* frame)
 {
     frame->values.assign(keys.size(), VtValue());
-    for (std::size_t i = 0; i < keys.size(); ++i) {
-        if (unavailable[i]) {
+    for (std::size_t i = 0; i < keys.size(); ++i)
+    {
+        if (unavailable[i])
+        {
             frame->diagnostics.Report(*unavailable[i]);
             continue;
         }
         const int index = execIndex[i];
-        if (index < 0 || static_cast<std::size_t>(index) >= execValues.size()) {
+        if (index < 0 || static_cast<std::size_t>(index) >= execValues.size())
+        {
             continue;
         }
         const VtValue& value = execValues[static_cast<std::size_t>(index)];
-        if (value.IsEmpty()) {
-            continue;  // a refusal, and its reason is in `refusals`
+        if (value.IsEmpty())
+        {
+            continue; // a refusal, and its reason is in `refusals`
         }
-        if (!Holds(value, keys[i])) {
+        if (!Holds(value, keys[i]))
+        {
             frame->diagnostics.Report(MakeOpenExecDiagnostic(
                 OpenExecDiagnosticCode::TypeMismatch, keys[i].Name(),
-                "the answer holds '" + HeldTypeName(value)
-                    + "' and the key is declared '" + keys[i].TypeName()
-                    + "'; the value was withheld"));
+                "the answer holds '" + HeldTypeName(value) + "' and the key is declared '" +
+                    keys[i].TypeName() + "'; the value was withheld"));
             continue;
         }
-        if (!withhold) {
+        if (!withhold)
+        {
             frame->values[i] = value;
         }
     }
@@ -551,7 +599,8 @@ void Fill(const std::vector<Key>& keys, const std::vector<int>& execIndex,
 
 } // namespace
 
-Driver::RequestId Driver::Add(std::vector<Key> keys, Frame* arming)
+Driver::RequestId
+Driver::Add(std::vector<Key> keys, Frame* arming)
 {
     auto request = std::make_unique<Request>();
     request->keys = std::move(keys);
@@ -563,15 +612,16 @@ Driver::RequestId Driver::Add(std::vector<Key> keys, Frame* arming)
          /*withhold*/ !frame.errors.empty(), &frame);
 
     _reported.Merge(frame.diagnostics);
-    if (arming) {
+    if (arming)
+    {
         *arming = std::move(frame);
     }
     _requests.push_back(std::move(request));
     return _requests.size() - 1;
 }
 
-Frame Driver::Evaluate(RequestId id, UsdTimeCode time,
-                       std::vector<Override> overrides)
+Frame
+Driver::Evaluate(RequestId id, UsdTimeCode time, std::vector<Override> overrides)
 {
     Request& request = *_requests.at(id);
     Frame frame;
@@ -580,8 +630,10 @@ Frame Driver::Evaluate(RequestId id, UsdTimeCode time,
     // An override of a key nothing compiled is skipped by exec without a word
     // (ExecSystem::_ComputeWithOverrides: "silently skip this override"). So a
     // key an override names is requested as well, which guarantees it is.
-    for (const Override& override : overrides) {
-        if (!request.IndexOf(override.key)) {
+    for (const Override& override : overrides)
+    {
+        if (!request.IndexOf(override.key))
+        {
             request.overrideKeys.push_back(override.key);
             request.dirty = true;
         }
@@ -600,10 +652,12 @@ Frame Driver::Evaluate(RequestId id, UsdTimeCode time,
     // anyway, or a frame that joins a key would rebuild it in silence.
     bool resynced = false;
     const std::vector<bool> availability = _Availability(request.All());
-    if (!std::equal(request.availability.begin(), request.availability.end(),
-                    availability.begin())) {
+    if (!std::equal(request.availability.begin(), request.availability.end(), availability.begin()))
+    {
         request.dirty = true;
-    } else if (!request.exec->IsValid()) {
+    }
+    else if (!request.exec->IsValid())
+    {
         request.dirty = true;
         resynced = true;
     }
@@ -619,31 +673,32 @@ Frame Driver::Evaluate(RequestId id, UsdTimeCode time,
     // computes nothing, and arms nothing: an arm's refusals belong to the frame
     // that computed them, and this one would discard them.
     bool refused = false;
-    for (const Override& override : overrides) {
-        if (Holds(override.value, override.key)) {
+    for (const Override& override : overrides)
+    {
+        if (Holds(override.value, override.key))
+        {
             continue;
         }
         frame.diagnostics.Report(MakeOpenExecDiagnostic(
             OpenExecDiagnosticCode::TypeMismatch, override.key.Name(),
-            override.value.IsEmpty()
-                ? "the override is an empty value, and an absence cannot be "
-                  "pushed into a key: exec drops it with a coding error and "
-                  "computes the key's ordinary value, so the driver did not "
-                  "hand it over and the frame has no answer"
-                : "the override holds '" + HeldTypeName(override.value)
-                      + "' and the key is declared '" + override.key.TypeName()
-                      + "': exec drops a mistyped override with a coding error "
-                        "and computes the key's ordinary value, so the driver "
-                        "did not hand it over and the frame has no answer"));
+            override.value.IsEmpty() ? "the override is an empty value, and an absence cannot be "
+                                       "pushed into a key: exec drops it with a coding error and "
+                                       "computes the key's ordinary value, so the driver did not "
+                                       "hand it over and the frame has no answer"
+                                     : "the override holds '" + HeldTypeName(override.value) +
+                                           "' and the key is declared '" + override.key.TypeName() +
+                                           "': exec drops a mistyped override with a coding error "
+                                           "and computes the key's ordinary value, so the driver "
+                                           "did not hand it over and the frame has no answer"));
         refused = true;
     }
-    if (refused) {
+    if (refused)
+    {
         // What the last build said about the requested keys still describes
         // them only if nothing has moved since; otherwise the next frame that
         // builds says it.
         Fill(request.keys, request.execIndex,
-             request.dirty ? std::vector<std::optional<OpenExecDiagnostic>>(
-                                 request.keys.size())
+             request.dirty ? std::vector<std::optional<OpenExecDiagnostic>>(request.keys.size())
                            : request.unavailable,
              {}, /*withhold*/ true, &frame);
         _reported.Merge(frame.diagnostics);
@@ -654,29 +709,36 @@ Frame Driver::Evaluate(RequestId id, UsdTimeCode time,
     // compute, overrides and all.
     bool built = false;
     Computed computed;
-    if (request.dirty) {
+    if (request.dirty)
+    {
         computed = _Build(request, overrides, &frame);
         built = true;
-    } else {
+    }
+    else
+    {
         computed = _Compute(request, overrides);
         AppendOnce(&frame.refusals, computed.refusals);
     }
-    if (resynced) {
-        for (std::size_t i = 0; i < request.keys.size(); ++i) {
-            if (request.execIndex[i] >= 0) {
+    if (resynced)
+    {
+        for (std::size_t i = 0; i < request.keys.size(); ++i)
+        {
+            if (request.execIndex[i] >= 0)
+            {
                 frame.diagnostics.Report(MakeOpenExecDiagnostic(
                     OpenExecDiagnosticCode::Invalidated, request.keys[i].Name(),
                     "exec reported the request invalid: a provider was "
                     "resynced since the last frame, and each one is at its "
                     "path again; the driver rebuilt the request and re-armed "
-                    "it at time code " + Said(time)));
+                    "it at time code " +
+                        Said(time)));
             }
         }
     }
 
-    auto unavailableCount = [&] {
-        return std::count_if(request.unavailable.begin(),
-                             request.unavailable.end(),
+    auto unavailableCount = [&]
+    {
+        return std::count_if(request.unavailable.begin(), request.unavailable.end(),
                              [](const auto& u) { return u.has_value(); });
     };
 
@@ -685,28 +747,30 @@ Frame Driver::Evaluate(RequestId id, UsdTimeCode time,
     // tells the two apart -- the rebuilt request answers cleanly, or the
     // rebuild's own probe finds a key nobody can compute.
     bool withhold = false;
-    if (!computed.complaints.empty() && !built) {
-        const bool answeredNothing =
-            std::all_of(computed.values.begin(), computed.values.end(),
-                        [](const VtValue& v) { return v.IsEmpty(); });
+    if (!computed.complaints.empty() && !built)
+    {
+        const bool answeredNothing = std::all_of(computed.values.begin(), computed.values.end(),
+                                                 [](const VtValue& v) { return v.IsEmpty(); });
         const auto unavailableBefore = unavailableCount();
         computed = _Build(request, overrides, &frame);
         built = true;
         const auto unavailableAfter = unavailableCount();
-        if (answeredNothing && computed.complaints.empty()
-            && unavailableAfter == unavailableBefore) {
-            for (std::size_t i = 0; i < request.keys.size(); ++i) {
-                if (request.execIndex[i] >= 0) {
+        if (answeredNothing && computed.complaints.empty() && unavailableAfter == unavailableBefore)
+        {
+            for (std::size_t i = 0; i < request.keys.size(); ++i)
+            {
+                if (request.execIndex[i] >= 0)
+                {
                     frame.diagnostics.Report(MakeOpenExecDiagnostic(
-                        OpenExecDiagnosticCode::Invalidated,
-                        request.keys[i].Name(),
+                        OpenExecDiagnosticCode::Invalidated, request.keys[i].Name(),
                         "exec stopped answering the request while it still "
                         "reported itself valid, which is what an "
                         "InvalidateAll leaves, and what a request whose "
                         "every provider was resynced leaves; the driver "
-                        "rebuilt it, restated time code " + Said(time)
-                        + " and re-armed it, and this frame is the rebuilt "
-                          "request's answer"));
+                        "rebuilt it, restated time code " +
+                            Said(time) +
+                            " and re-armed it, and this frame is the rebuilt "
+                            "request's answer"));
                 }
             }
         }
@@ -714,9 +778,11 @@ Frame Driver::Evaluate(RequestId id, UsdTimeCode time,
 
     // An override of a key the build found nobody can compute was not handed
     // over, so the frame did not answer the question it was asked.
-    for (const Override& override : overrides) {
+    for (const Override& override : overrides)
+    {
         const std::optional<std::size_t> index = request.IndexOf(override.key);
-        if (index && request.unavailable[*index]) {
+        if (index && request.unavailable[*index])
+        {
             frame.diagnostics.Report(*request.unavailable[*index]);
             withhold = true;
         }
@@ -725,39 +791,41 @@ Frame Driver::Evaluate(RequestId id, UsdTimeCode time,
     // Then the overrides, each alone: one exec rejects although it holds the
     // declared type says the declaration is not what the computation answers.
     std::vector<Key> handedKeys;
-    const ExecUsdValueOverrideVector handed =
-        _Handed(request, overrides, &handedKeys);
-    if (!computed.complaints.empty() && !handed.empty()) {
+    const ExecUsdValueOverrideVector handed = _Handed(request, overrides, &handedKeys);
+    if (!computed.complaints.empty() && !handed.empty())
+    {
         bool attributed = false;
-        for (std::size_t k = 0; k < handed.size(); ++k) {
+        for (std::size_t k = 0; k < handed.size(); ++k)
+        {
             TfErrorMark mark;
-            _system->ComputeWithOverrides(*request.exec,
-                                          ExecUsdValueOverrideVector{handed[k]});
+            _system->ComputeWithOverrides(*request.exec, ExecUsdValueOverrideVector{handed[k]});
             const Posted said = Drain(mark);
-            if (said.other.empty()) {
+            if (said.other.empty())
+            {
                 continue;
             }
             attributed = true;
             frame.diagnostics.Report(MakeOpenExecDiagnostic(
                 OpenExecDiagnosticCode::TypeMismatch, handedKeys[k].Name(),
-                "exec rejected the override although it holds '"
-                    + handedKeys[k].TypeName()
-                    + "', the type the key is declared with, so the "
-                      "declaration is not what the computation answers; the "
-                      "frame has no answer. exec: " + Joined(said.other)));
+                "exec rejected the override although it holds '" + handedKeys[k].TypeName() +
+                    "', the type the key is declared with, so the "
+                    "declaration is not what the computation answers; the "
+                    "frame has no answer. exec: " +
+                    Joined(said.other)));
         }
-        if (attributed) {
+        if (attributed)
+        {
             computed.complaints.clear();
             withhold = true;
         }
     }
     AppendOnce(&frame.errors, computed.complaints);
-    if (!frame.errors.empty()) {
+    if (!frame.errors.empty())
+    {
         withhold = true;
     }
 
-    Fill(request.keys, request.execIndex, request.unavailable, computed.values,
-         withhold, &frame);
+    Fill(request.keys, request.execIndex, request.unavailable, computed.values, withhold, &frame);
     _reported.Merge(frame.diagnostics);
     return frame;
 }

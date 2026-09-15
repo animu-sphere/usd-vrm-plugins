@@ -66,7 +66,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace
+{
 
 using motion::HumanBone;
 
@@ -89,18 +90,21 @@ constexpr int kSourceKey = 1;
 constexpr int kMapKey = 2;
 constexpr int kCorrectionKey = 3;
 
-TfToken BoneAttribute(HumanBone bone)
+TfToken
+BoneAttribute(HumanBone bone)
 {
     return TfToken("vrm:humanBones:" + std::string(motion::HumanBoneName(bone)));
 }
 
-std::size_t Slot(HumanBone bone)
+std::size_t
+Slot(HumanBone bone)
 {
     return static_cast<std::size_t>(bone);
 }
 
 // Orientation, not representation: q and -q are one rotation.
-bool SameOrientation(const GfQuatf& a, const GfQuatf& b)
+bool
+SameOrientation(const GfQuatf& a, const GfQuatf& b)
 {
     const GfQuatf na = a.GetNormalized();
     const GfQuatf nb = b.GetNormalized();
@@ -109,24 +113,24 @@ bool SameOrientation(const GfQuatf& a, const GfQuatf& b)
 
 // Two corrections that apply identically: the same bones corrected, each half
 // the same orientation.
-bool SameCorrection(const vrmRetarget::RestPoseCorrection& a,
-                    const vrmRetarget::RestPoseCorrection& b)
+bool
+SameCorrection(const vrmRetarget::RestPoseCorrection& a, const vrmRetarget::RestPoseCorrection& b)
 {
-    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot) {
-        if (a.identity[slot] != b.identity[slot]
-            || !SameOrientation(a.pre[slot], b.pre[slot])
-            || !SameOrientation(a.post[slot], b.post[slot])) {
+    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+    {
+        if (a.identity[slot] != b.identity[slot] || !SameOrientation(a.pre[slot], b.pre[slot]) ||
+            !SameOrientation(a.post[slot], b.post[slot]))
+        {
             std::fprintf(stderr, "the corrections differ at %s\n",
-                         std::string(motion::HumanBoneName(
-                                         static_cast<HumanBone>(slot)))
-                             .c_str());
+                         std::string(motion::HumanBoneName(static_cast<HumanBone>(slot))).c_str());
             return false;
         }
     }
     return true;
 }
 
-GfQuatf About(const GfVec3f& axis, float degrees)
+GfQuatf
+About(const GfVec3f& axis, float degrees)
 {
     const float half = degrees * 3.14159265358979324f / 360.0f;
     return GfQuatf(std::cos(half), axis * std::sin(half));
@@ -139,15 +143,19 @@ const GfVec3f kZ(0, 0, 1);
 
 // Whether an error in `mark` says `what`. When none does, every error posted is
 // printed, so a red run says what was reported instead.
-bool MarkNames(const TfErrorMark& mark, const std::string& what)
+bool
+MarkNames(const TfErrorMark& mark, const std::string& what)
 {
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
-        if (it->GetCommentary().find(what) != std::string::npos) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
+        if (it->GetCommentary().find(what) != std::string::npos)
+        {
             return true;
         }
     }
     std::fprintf(stderr, "no error said \"%s\"; posted:\n", what.c_str());
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
         std::fprintf(stderr, "  %s\n", it->GetCommentary().c_str());
     }
     return false;
@@ -158,34 +166,47 @@ bool MarkNames(const TfErrorMark& mark, const std::string& what)
 // output. Errors and statuses are printed rather than swallowed.
 class Warnings : public TfDiagnosticMgr::Delegate
 {
-public:
-    Warnings() { TfDiagnosticMgr::GetInstance().AddDelegate(this); }
-    ~Warnings() override { TfDiagnosticMgr::GetInstance().RemoveDelegate(this); }
+  public:
+    Warnings()
+    {
+        TfDiagnosticMgr::GetInstance().AddDelegate(this);
+    }
+    ~Warnings() override
+    {
+        TfDiagnosticMgr::GetInstance().RemoveDelegate(this);
+    }
 
-    void IssueError(const TfError& error) override
+    void
+    IssueError(const TfError& error) override
     {
         std::fprintf(stderr, "error: %s\n", error.GetCommentary().c_str());
     }
-    void IssueFatalError(const TfCallContext&, const std::string& message) override
+    void
+    IssueFatalError(const TfCallContext&, const std::string& message) override
     {
         std::fprintf(stderr, "fatal: %s\n", message.c_str());
     }
-    void IssueStatus(const TfStatus& status) override
+    void
+    IssueStatus(const TfStatus& status) override
     {
         std::fprintf(stderr, "status: %s\n", status.GetCommentary().c_str());
     }
-    void IssueWarning(const TfWarning& warning) override
+    void
+    IssueWarning(const TfWarning& warning) override
     {
         std::lock_guard<std::mutex> lock(_mutex);
         _seen.push_back(warning.GetCommentary());
     }
 
-    std::vector<std::string> Take(const std::string& what)
+    std::vector<std::string>
+    Take(const std::string& what)
     {
         std::lock_guard<std::mutex> lock(_mutex);
         std::vector<std::string> matching;
-        for (const std::string& seen : _seen) {
-            if (seen.find(what) != std::string::npos) {
+        for (const std::string& seen : _seen)
+        {
+            if (seen.find(what) != std::string::npos)
+            {
                 matching.push_back(seen);
             }
         }
@@ -193,7 +214,7 @@ public:
         return matching;
     }
 
-private:
+  private:
     std::mutex _mutex;
     std::vector<std::string> _seen;
 };
@@ -208,7 +229,8 @@ struct Rig
 };
 
 // Opened directly and edited in memory, never saved -- each case opens its own.
-Rig Open(const std::string& fixture)
+Rig
+Open(const std::string& fixture)
 {
     Rig rig;
     rig.stage = UsdStage::Open(fixture);
@@ -222,7 +244,8 @@ Rig Open(const std::string& fixture)
     return rig;
 }
 
-std::vector<ExecUsdValueKey> KeysFor(const Rig& rig)
+std::vector<ExecUsdValueKey>
+KeysFor(const Rig& rig)
 {
     std::vector<ExecUsdValueKey> keys;
     keys.emplace_back(rig.target, kTargetSkeleton);
@@ -233,24 +256,26 @@ std::vector<ExecUsdValueKey> KeysFor(const Rig& rig)
 }
 
 template <class T>
-T ValueAt(const ExecUsdCacheView& view, int index, const char* what)
+T
+ValueAt(const ExecUsdCacheView& view, int index, const char* what)
 {
     const VtValue value = view.Get(index);
-    if (value.IsEmpty() || !value.IsHolding<T>()) {
+    if (value.IsEmpty() || !value.IsHolding<T>())
+    {
         std::fprintf(stderr, "no %s came back\n", what);
         assert(false && "a value this case needs did not come back");
     }
     return value.UncheckedGet<T>();
 }
 
-vrmRetarget::RestPoseCorrection CorrectionAt(const ExecUsdCacheView& view,
-                                             int index = kCorrectionKey)
+vrmRetarget::RestPoseCorrection
+CorrectionAt(const ExecUsdCacheView& view, int index = kCorrectionKey)
 {
-    return ValueAt<vrmRetarget::RestPoseCorrection>(
-        view, index, "rest-pose correction");
+    return ValueAt<vrmRetarget::RestPoseCorrection>(view, index, "rest-pose correction");
 }
 
-void AssertRefused(const ExecUsdCacheView& view, int index)
+void
+AssertRefused(const ExecUsdCacheView& view, int index)
 {
     assert(view.Get(index).IsEmpty() &&
            "a refusal came back carrying a value, which puts it back where a "
@@ -266,7 +291,8 @@ void AssertRefused(const ExecUsdCacheView& view, int index)
 // feeds the library the same rigs.
 
 // /Clip/HumanoidSkeleton: identity rests, the semantic chain its paths state.
-vrmRetarget::SourceRestPose ClipRest()
+vrmRetarget::SourceRestPose
+ClipRest()
 {
     vrmRetarget::SourceRestPose rest;
     rest.localTranslations[Slot(HumanBone::Hips)] = GfVec3f(0, 1, 0);
@@ -274,8 +300,7 @@ vrmRetarget::SourceRestPose ClipRest()
     rest.localTranslations[Slot(HumanBone::Chest)] = GfVec3f(0, 0.15f, 0);
     rest.localTranslations[Slot(HumanBone::Neck)] = GfVec3f(0, 0.2f, 0);
     rest.localTranslations[Slot(HumanBone::Head)] = GfVec3f(0, 0.1f, 0);
-    rest.localTranslations[Slot(HumanBone::LeftUpperArm)] =
-        GfVec3f(0.1f, 0.15f, 0);
+    rest.localTranslations[Slot(HumanBone::LeftUpperArm)] = GfVec3f(0.1f, 0.15f, 0);
     rest.SetParent(HumanBone::Spine, HumanBone::Hips);
     rest.SetParent(HumanBone::Chest, HumanBone::Spine);
     rest.SetParent(HumanBone::Neck, HumanBone::Chest);
@@ -287,15 +312,15 @@ vrmRetarget::SourceRestPose ClipRest()
 // /Posed/HumanoidSkeleton: the arm turned 90 degrees about -Z, the hips a root
 // of the semantic chain because `Reference` is no bone -- and Reference's own
 // rest, turned about +X, is in no slot.
-vrmRetarget::SourceRestPose PosedRest()
+vrmRetarget::SourceRestPose
+PosedRest()
 {
     vrmRetarget::SourceRestPose rest;
     rest.localTranslations[Slot(HumanBone::Hips)] = GfVec3f(0, 0.9f, 0);
     rest.localTranslations[Slot(HumanBone::Spine)] = GfVec3f(0, 0.1f, 0);
     rest.localTranslations[Slot(HumanBone::Chest)] = GfVec3f(0, 0.15f, 0);
     rest.localRotations[Slot(HumanBone::LeftUpperArm)] = About(kZ, -90.0f);
-    rest.localTranslations[Slot(HumanBone::LeftUpperArm)] =
-        GfVec3f(0.1f, 0.15f, 0);
+    rest.localTranslations[Slot(HumanBone::LeftUpperArm)] = GfVec3f(0.1f, 0.15f, 0);
     rest.SetParent(HumanBone::Spine, HumanBone::Hips);
     rest.SetParent(HumanBone::Chest, HumanBone::Spine);
     rest.SetParent(HumanBone::LeftUpperArm, HumanBone::Chest);
@@ -303,23 +328,28 @@ vrmRetarget::SourceRestPose PosedRest()
 }
 
 // The target rest rotations the fixture states, by bone.
-GfQuatf TargetRest(HumanBone bone)
+GfQuatf
+TargetRest(HumanBone bone)
 {
-    switch (bone) {
-    case HumanBone::Hips: return About(kY, 90.0f);
-    case HumanBone::LeftUpperArm: return About(kZ, 90.0f);
-    default: return kIdentity;
+    switch (bone)
+    {
+    case HumanBone::Hips:
+        return About(kY, 90.0f);
+    case HumanBone::LeftUpperArm:
+        return About(kZ, 90.0f);
+    default:
+        return kIdentity;
     }
 }
 
-const HumanBone kMapped[] = {HumanBone::Hips,  HumanBone::Spine,
-                             HumanBone::Chest, HumanBone::Neck,
-                             HumanBone::Head,  HumanBone::LeftUpperArm};
+const HumanBone kMapped[] = {HumanBone::Hips, HumanBone::Spine, HumanBone::Chest,
+                             HumanBone::Neck, HumanBone::Head,  HumanBone::LeftUpperArm};
 
 // ---------------------------------------------------------------------------
 // The correction the fixture states
 // ---------------------------------------------------------------------------
-void TestTheCorrectionComputes(const std::string& fixture)
+void
+TestTheCorrectionComputes(const std::string& fixture)
 {
     Warnings warnings;
     const Rig rig = Open(fixture);
@@ -328,13 +358,10 @@ void TestTheCorrectionComputes(const std::string& fixture)
     std::set<int> valueReported;
     std::set<int> timeReported;
     ExecUsdRequest request = system.BuildRequest(
-        KeysFor(rig),
-        [&](const ExecRequestIndexSet& indices, const EfTimeInterval&) {
-            valueReported.insert(indices.begin(), indices.end());
-        },
-        [&](const ExecRequestIndexSet& indices) {
-            timeReported.insert(indices.begin(), indices.end());
-        });
+        KeysFor(rig), [&](const ExecRequestIndexSet& indices, const EfTimeInterval&)
+        { valueReported.insert(indices.begin(), indices.end()); },
+        [&](const ExecRequestIndexSet& indices)
+        { timeReported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid());
 
     vrmRetarget::TargetSkeleton target;
@@ -343,10 +370,8 @@ void TestTheCorrectionComputes(const std::string& fixture)
     {
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
-        target = ValueAt<vrmRetarget::TargetSkeleton>(view, kTargetKey,
-                                                      "target skeleton");
-        ValueAt<vrmRetarget::TargetSkeleton>(view, kSourceKey,
-                                             "source skeleton");
+        target = ValueAt<vrmRetarget::TargetSkeleton>(view, kTargetKey, "target skeleton");
+        ValueAt<vrmRetarget::TargetSkeleton>(view, kSourceKey, "source skeleton");
         map = ValueAt<vrmRetarget::HumanoidMap>(view, kMapKey, "humanoid map");
         correction = CorrectionAt(view);
         assert(mark.IsClean() && "the fixture's correction posted an error");
@@ -355,17 +380,16 @@ void TestTheCorrectionComputes(const std::string& fixture)
     // ---- the wrapper claim --------------------------------------------------
     // The node IS ComputeRestPoseCorrection over the clip's rest, the target
     // rig and the map: the library's answer over the same rigs, bit for bit.
-    assert(correction ==
-               vrmRetarget::ComputeRestPoseCorrection(ClipRest(), target, map) &&
+    assert(correction == vrmRetarget::ComputeRestPoseCorrection(ClipRest(), target, map) &&
            "the node's correction is not the library's over the same rigs");
 
     // ---- and what it means, from the definition -----------------------------
     // The source rests at identity, so a sample AT the source rest has to land
     // on each mapped joint's own rest -- including the spine, which is not
     // turned itself and still needs a correction because its parent is.
-    for (const HumanBone bone : kMapped) {
-        assert(SameOrientation(correction.Apply(bone, kIdentity),
-                               TargetRest(bone)) &&
+    for (const HumanBone bone : kMapped)
+    {
+        assert(SameOrientation(correction.Apply(bone, kIdentity), TargetRest(bone)) &&
                "a sample at the clip's rest did not land on the rig's rest");
     }
     // Every bone below the turned hips is corrected, although only the arm is
@@ -382,17 +406,16 @@ void TestTheCorrectionComputes(const std::string& fixture)
     // Spine: source parent rest identity, target parent rest the hips' 90 Y.
     {
         const GfQuatf animated = About(kX, 30.0f);
-        const GfQuatf retargeted =
-            correction.Apply(HumanBone::Spine, animated);
+        const GfQuatf retargeted = correction.Apply(HumanBone::Spine, animated);
         const GfQuatf parent = About(kY, 90.0f);
-        const GfQuatf targetDelta =
-            (parent * retargeted) * parent.GetInverse();
+        const GfQuatf targetDelta = (parent * retargeted) * parent.GetInverse();
         assert(SameOrientation(targetDelta, animated) &&
                "the spine's world delta did not survive the correction");
     }
 
     // The source skeleton raised no fallback warning: it authors both arrays.
-    for (const std::string& warning : warnings.Take("No value set for output")) {
+    for (const std::string& warning : warnings.Take("No value set for output"))
+    {
         assert(warning.find("/Clip/") == std::string::npos &&
                "the source skeleton took the fallback path");
     }
@@ -406,8 +429,7 @@ void TestTheCorrectionComputes(const std::string& fixture)
     system.ChangeTime(UsdTimeCode(24.0));
     {
         ExecUsdCacheView view = system.Compute(request);
-        assert(timeReported.empty() &&
-               "ChangeTime reported a correction, which reads no time");
+        assert(timeReported.empty() && "ChangeTime reported a correction, which reads no time");
         assert(CorrectionAt(view) == correction);
     }
     std::printf("execVrm correction: the node is ComputeRestPoseCorrection over "
@@ -418,21 +440,19 @@ void TestTheCorrectionComputes(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // Invalidation, from each of the three rigs' statements
 // ---------------------------------------------------------------------------
-void TestInvalidationFollowsBothRelationships(const std::string& fixture)
+void
+TestInvalidationFollowsBothRelationships(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
     ExecUsdSystem system(rig.stage);
 
     std::set<int> reported;
     ExecUsdRequest request = system.BuildRequest(
-        KeysFor(rig),
-        [&](const ExecRequestIndexSet& indices, const EfTimeInterval&) {
-            reported.insert(indices.begin(), indices.end());
-        });
+        KeysFor(rig), [&](const ExecRequestIndexSet& indices, const EfTimeInterval&)
+        { reported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid());
 
-    vrmRetarget::RestPoseCorrection correction =
-        CorrectionAt(system.Compute(request));
+    vrmRetarget::RestPoseCorrection correction = CorrectionAt(system.Compute(request));
 
     // ---- a source rest TRANSLATION moves: reported, and unchanged ----------
     // A correction is rotations only, so moving where the clip's head sits
@@ -464,10 +484,7 @@ void TestInvalidationFollowsBothRelationships(const std::string& fixture)
         VtArray<GfMatrix4d> matrices;
         assert(rest.Get(&matrices));
         // The clip's spine, turned 90 degrees about +X.
-        matrices[1] = GfMatrix4d(1, 0, 0, 0,
-                                 0, 0, 1, 0,
-                                 0, -1, 0, 0,
-                                 0, 0.1, 0, 1);
+        matrices[1] = GfMatrix4d(1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0.1, 0, 1);
         assert(rest.Set(matrices));
     }
     assert(reported.count(kSourceKey) && reported.count(kCorrectionKey) &&
@@ -480,8 +497,7 @@ void TestInvalidationFollowsBothRelationships(const std::string& fixture)
         assert(turned != correction);
         // The clip's spine rest is now 90 X: a sample at it lands on the
         // rig's spine rest, which is identity.
-        assert(SameOrientation(
-            turned.Apply(HumanBone::Spine, About(kX, 90.0f)), kIdentity));
+        assert(SameOrientation(turned.Apply(HumanBone::Spine, About(kX, 90.0f)), kIdentity));
         correction = turned;
     }
 
@@ -494,8 +510,7 @@ void TestInvalidationFollowsBothRelationships(const std::string& fixture)
     {
         ExecUsdCacheView view = system.Compute(request);
         const vrmRetarget::RestPoseCorrection unbound = CorrectionAt(view);
-        assert(unbound.identity[Slot(HumanBone::Head)] &&
-               "an unbound head kept its correction");
+        assert(unbound.identity[Slot(HumanBone::Head)] && "an unbound head kept its correction");
         correction = unbound;
     }
 
@@ -508,8 +523,7 @@ void TestInvalidationFollowsBothRelationships(const std::string& fixture)
         matrices[1] = GfMatrix4d(1.0).SetTranslateOnly(GfVec3d(0, 1, 0));
         assert(rest.Set(matrices));
     }
-    assert(reported.count(kTargetKey) && reported.count(kMapKey) &&
-           reported.count(kCorrectionKey));
+    assert(reported.count(kTargetKey) && reported.count(kMapKey) && reported.count(kCorrectionKey));
     assert(!reported.count(kSourceKey));
     {
         ExecUsdCacheView view = system.Compute(request);
@@ -533,21 +547,18 @@ void TestInvalidationFollowsBothRelationships(const std::string& fixture)
         ExecUsdCacheView view = system.Compute(request);
         const vrmRetarget::RestPoseCorrection posed = CorrectionAt(view);
         const vrmRetarget::TargetSkeleton target =
-            ValueAt<vrmRetarget::TargetSkeleton>(view, kTargetKey,
-                                                 "target skeleton");
+            ValueAt<vrmRetarget::TargetSkeleton>(view, kTargetKey, "target skeleton");
         const vrmRetarget::HumanoidMap map =
             ValueAt<vrmRetarget::HumanoidMap>(view, kMapKey, "humanoid map");
         // As orientations, not bit for bit: the posed arm's rest is written
         // here as About(Z, -90) and decomposes off the matrix as its negation
         // (GfMatrix4d::ExtractRotationQuat picks the sign by branch).
-        assert(SameCorrection(
-            posed,
-            vrmRetarget::ComputeRestPoseCorrection(PosedRest(), target, map)));
+        assert(SameCorrection(posed,
+                              vrmRetarget::ComputeRestPoseCorrection(PosedRest(), target, map)));
         // The posed arm rests at -90 Z and the rig's at +90 Z: a sample at the
         // clip's arm rest lands on the rig's.
-        assert(SameOrientation(
-            posed.Apply(HumanBone::LeftUpperArm, About(kZ, -90.0f)),
-            About(kZ, 90.0f)));
+        assert(SameOrientation(posed.Apply(HumanBone::LeftUpperArm, About(kZ, -90.0f)),
+                               About(kZ, 90.0f)));
     }
     std::printf("execVrm correction: the source's rest, a binding, the "
                 "target's rest and the source relationship each reach it, "
@@ -557,7 +568,8 @@ void TestInvalidationFollowsBothRelationships(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // Refusals, one statement each
 // ---------------------------------------------------------------------------
-void TestTheSourceRelationshipIsCounted(const std::string& fixture)
+void
+TestTheSourceRelationshipIsCounted(const std::string& fixture)
 {
     struct Case
     {
@@ -567,39 +579,54 @@ void TestTheSourceRelationshipIsCounted(const std::string& fixture)
         const char* message;
     };
     const Case cases[] = {
-        {"no source relationship", true, {},
+        {"no source relationship",
+         true,
+         {},
          "'vrm:retarget:sourceSkeleton' reaches nothing on the stage"},
         // The reason absence is refused rather than defaulted: a path naming
         // no prim arrives exactly as no relationship does.
-        {"a target naming nothing", false, {SdfPath("/Clip/Nowhere")},
+        {"a target naming nothing",
+         false,
+         {SdfPath("/Clip/Nowhere")},
          "'vrm:retarget:sourceSkeleton' reaches nothing on the stage"},
-        {"two sources", false, {kClipPath, kPosedPath},
+        {"two sources",
+         false,
+         {kClipPath, kPosedPath},
          "'vrm:retarget:sourceSkeleton' reaches 2 objects"},
-        {"a source that is not a skeleton", false, {SdfPath("/Clip")},
+        {"a source that is not a skeleton",
+         false,
+         {SdfPath("/Clip")},
          "'vrm:retarget:sourceSkeleton' targets </Clip>, which answered no"},
         // The case the second read of the relationship exists for: the
         // SkelRoot provides no vrm.computeTargetSkeleton and is dropped from
         // the fan-in while the network compiles, so the skeletons that come
         // back are one -- and only the count of paths says two were named.
-        {"a skeleton and something that is not one", false,
+        {"a skeleton and something that is not one",
+         false,
          {kClipPath, SdfPath("/Clip")},
          "'vrm:retarget:sourceSkeleton' reaches 2 objects"},
         // The avatar's own skeleton, which is what naming the wrong rig looks
         // like: a skeleton, and not a semantic one -- VRoid's joint names,
         // none of them a bone. The target is never read by name; the source
         // is, and this is what a source that is not one gets.
-        {"the target rig as its own source", false, {kTargetPath},
+        {"the target rig as its own source",
+         false,
+         {kTargetPath},
          "the source skeleton </Asset/skel/Skeleton> names no human bone"},
     };
 
-    for (const Case& c : cases) {
+    for (const Case& c : cases)
+    {
         const Rig rig = Open(fixture);
         UsdRelationship source = rig.humanoid.GetRelationship(kSourceRel);
         assert(source);
-        if (c.clear) {
+        if (c.clear)
+        {
             UsdPrim humanoid = rig.humanoid;
             assert(humanoid.RemoveProperty(kSourceRel));
-        } else {
+        }
+        else
+        {
             assert(source.SetTargets(c.targets));
         }
 
@@ -610,9 +637,9 @@ void TestTheSourceRelationshipIsCounted(const std::string& fixture)
         AssertRefused(view, kCorrectionKey);
         // The map does not read the source, and answers.
         ValueAt<vrmRetarget::HumanoidMap>(view, kMapKey, "humanoid map");
-        if (!MarkNames(mark, c.message)) {
-            std::fprintf(stderr, "%s: expected an error naming \"%s\"\n",
-                         c.what, c.message);
+        if (!MarkNames(mark, c.message))
+        {
+            std::fprintf(stderr, "%s: expected an error naming \"%s\"\n", c.what, c.message);
             assert(false && "the source relationship was not refused as "
                             "expected");
         }
@@ -623,7 +650,8 @@ void TestTheSourceRelationshipIsCounted(const std::string& fixture)
                 "refused\n");
 }
 
-void TestASourceThatRefusedIsRefusedInTurn(const std::string& fixture)
+void
+TestASourceThatRefusedIsRefusedInTurn(const std::string& fixture)
 {
     Warnings warnings;
     const Rig rig = Open(fixture);
@@ -647,7 +675,8 @@ void TestASourceThatRefusedIsRefusedInTurn(const std::string& fixture)
                 "refused in turn\n");
 }
 
-void TestASourceNamingOneBoneTwiceIsRefused(const std::string& fixture)
+void
+TestASourceNamingOneBoneTwiceIsRefused(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
     // A second hips under a reference joint, beside the first: two rests for
@@ -677,11 +706,11 @@ void TestASourceNamingOneBoneTwiceIsRefused(const std::string& fixture)
                 "is refused, both named\n");
 }
 
-void TestAMapThatRefusedIsRefusedInTurn(const std::string& fixture)
+void
+TestAMapThatRefusedIsRefusedInTurn(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
-    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Hips))
-               .Set(TfToken("J_Bip_C_Hips")));
+    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Hips)).Set(TfToken("J_Bip_C_Hips")));
 
     ExecUsdSystem system(rig.stage);
     ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
@@ -704,9 +733,11 @@ void TestAMapThatRefusedIsRefusedInTurn(const std::string& fixture)
 // beside a real source it is missing from both reads and the correction is
 // answered against the real one, in either order. Alone it is refused (the
 // count test above), which is why absence is refused at all.
-void TestADanglingSecondSourceIsInvisible(const std::string& fixture)
+void
+TestADanglingSecondSourceIsInvisible(const std::string& fixture)
 {
-    const vrmRetarget::RestPoseCorrection expected = [&fixture] {
+    const vrmRetarget::RestPoseCorrection expected = [&fixture]
+    {
         const Rig rig = Open(fixture);
         ExecUsdSystem system(rig.stage);
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
@@ -715,18 +746,17 @@ void TestADanglingSecondSourceIsInvisible(const std::string& fixture)
 
     const SdfPath nowhere("/Clip/Nowhere");
     for (const SdfPathVector& targets :
-         {SdfPathVector{kClipPath, nowhere}, SdfPathVector{nowhere, kClipPath}}) {
+         {SdfPathVector{kClipPath, nowhere}, SdfPathVector{nowhere, kClipPath}})
+    {
         const Rig rig = Open(fixture);
         assert(rig.humanoid.GetRelationship(kSourceRel).SetTargets(targets));
 
         ExecUsdSystem system(rig.stage);
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
         TfErrorMark mark;
-        const vrmRetarget::RestPoseCorrection correction =
-            CorrectionAt(system.Compute(request));
-        assert(mark.IsClean() &&
-               "a dangling second source was noticed after all -- the "
-               "limitation this pins is gone, and the node should now refuse");
+        const vrmRetarget::RestPoseCorrection correction = CorrectionAt(system.Compute(request));
+        assert(mark.IsClean() && "a dangling second source was noticed after all -- the "
+                                 "limitation this pins is gone, and the node should now refuse");
         assert(correction == expected);
     }
     std::printf("execVrm correction: a source path naming nothing beside a "
@@ -740,11 +770,11 @@ void TestADanglingSecondSourceIsInvisible(const std::string& fixture)
 // one joint whose `restTransforms` is unauthored reaches the correction as a
 // hips at an identity rest -- indistinguishable from an authored one -- and is
 // answered. The offline tool reads it identically.
-void TestAOneJointSourceWithNoRestIsTheFallback(const std::string& fixture)
+void
+TestAOneJointSourceWithNoRestIsTheFallback(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
-    UsdPrim one = rig.stage->DefinePrim(SdfPath("/Clip/One"),
-                                        TfToken("Skeleton"));
+    UsdPrim one = rig.stage->DefinePrim(SdfPath("/Clip/One"), TfToken("Skeleton"));
     assert(one.GetAttribute(kJoints).Set(VtArray<TfToken>({TfToken("hips")})));
     assert(rig.humanoid.GetRelationship(kSourceRel).SetTargets({one.GetPath()}));
 
@@ -755,14 +785,12 @@ void TestAOneJointSourceWithNoRestIsTheFallback(const std::string& fixture)
     const vrmRetarget::RestPoseCorrection correction = CorrectionAt(view);
     assert(mark.IsClean());
 
-    vrmRetarget::SourceRestPose identity;  // the library's own default
+    vrmRetarget::SourceRestPose identity; // the library's own default
     assert(correction ==
-           vrmRetarget::ComputeRestPoseCorrection(
-               identity,
-               ValueAt<vrmRetarget::TargetSkeleton>(view, kTargetKey,
-                                                    "target skeleton"),
-               ValueAt<vrmRetarget::HumanoidMap>(view, kMapKey,
-                                                 "humanoid map")) &&
+               vrmRetarget::ComputeRestPoseCorrection(
+                   identity,
+                   ValueAt<vrmRetarget::TargetSkeleton>(view, kTargetKey, "target skeleton"),
+                   ValueAt<vrmRetarget::HumanoidMap>(view, kMapKey, "humanoid map")) &&
            "a one-joint source with no rest was not the identity rest");
     std::printf("execVrm correction: a one-joint source with no rest pose is "
                 "the identity the fallback supplied\n");
@@ -770,7 +798,8 @@ void TestAOneJointSourceWithNoRestIsTheFallback(const std::string& fixture)
 
 } // namespace
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
     assert(argc == 2 && "usage: execVrm_correction <corrected_rig.usda>");
     const std::string fixture = argv[1];
@@ -787,8 +816,10 @@ int main(int argc, char** argv)
     TestADanglingSecondSourceIsInvisible(fixture);
     TestAOneJointSourceWithNoRestIsTheFallback(fixture);
 
-    for (const std::string& warning : all.Take("")) {
-        if (warning.find("No value set for output") == std::string::npos) {
+    for (const std::string& warning : all.Take(""))
+    {
+        if (warning.find("No value set for output") == std::string::npos)
+        {
             std::printf("  also warned: %s\n", warning.c_str());
         }
     }

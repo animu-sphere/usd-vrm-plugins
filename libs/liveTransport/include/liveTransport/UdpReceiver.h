@@ -258,7 +258,7 @@ struct UdpReceiverStats
 // callback, and does nothing between calls to `Receive`.
 class LIVETRANSPORT_API UdpReceiver final
 {
-public:
+  public:
     UdpReceiver();
     ~UdpReceiver();
 
@@ -278,27 +278,36 @@ public:
     // own message as its detail. That covers the three causes worth telling
     // apart: the port is already served, the address is not one this host
     // holds, and the address does not parse.
-    bool Open(const UdpReceiverConfig& config,
-              std::vector<TransportEventReport>* events = nullptr);
+    bool Open(const UdpReceiverConfig& config, std::vector<TransportEventReport>* events = nullptr);
 
     void Close() noexcept;
-    bool IsOpen() const noexcept { return _socket != -1; }
+    bool
+    IsOpen() const noexcept
+    {
+        return _socket != -1;
+    }
 
     // What the socket actually got, which is not always what was asked for: a
     // configured port of 0 is bound by the OS, and a test that wants two
     // receivers on one machine has to read the number back from here.
-    const std::string& GetBoundEndpoint() const noexcept
+    const std::string&
+    GetBoundEndpoint() const noexcept
     {
         return _boundEndpoint;
     }
 
     // Whether the bound address can only be reached from this machine.
-    bool IsLoopbackOnly() const noexcept { return _loopbackOnly; }
+    bool
+    IsLoopbackOnly() const noexcept
+    {
+        return _loopbackOnly;
+    }
 
     // What the kernel actually granted for the receive buffer, read back at
     // `Open` rather than assumed from the request. 0 when the socket is closed
     // or the platform would not say.
-    std::size_t GetReceiveBufferBytes() const noexcept
+    std::size_t
+    GetReceiveBufferBytes() const noexcept
     {
         return _receiveBufferBytes;
     }
@@ -318,8 +327,7 @@ public:
     // call that knows time passed — a caller that had to remember a second one
     // would discover silence only in the sessions where it happened to
     // remember.
-    ReceiveStatus Receive(ReceivedDatagram* datagram,
-                          double timeoutSeconds = 0.0,
+    ReceiveStatus Receive(ReceivedDatagram* datagram, double timeoutSeconds = 0.0,
                           std::vector<TransportEventReport>* events = nullptr);
 
     // The receive clock, read without receiving: seconds since `Open`, on the
@@ -336,9 +344,17 @@ public:
     // The platform's message for the last failure, bind or receive. Empty until
     // something fails; not cleared by a subsequent success, because a caller
     // reads it after a status told it to.
-    const std::string& GetLastErrorText() const noexcept { return _lastError; }
+    const std::string&
+    GetLastErrorText() const noexcept
+    {
+        return _lastError;
+    }
 
-    const UdpReceiverStats& GetStats() const noexcept { return _stats; }
+    const UdpReceiverStats&
+    GetStats() const noexcept
+    {
+        return _stats;
+    }
 
     // Starts a new counting window without disturbing the session.
     //
@@ -353,13 +369,14 @@ public:
     // It does **not** move the point silence is measured from. That is a fact
     // about the wire, not a statistic, so resetting the tally mid-session does
     // not make a source that stopped ten seconds ago look freshly quiet.
-    void ResetStats() noexcept
+    void
+    ResetStats() noexcept
     {
         _stats = UdpReceiverStats();
         _silenceReported = false;
     }
 
-private:
+  private:
     // Appends `TransportEvent::Silence` if the configured threshold has been
     // crossed and has not already been reported for this episode.
     void _ReportSilence(std::vector<TransportEventReport>* events);
@@ -474,7 +491,7 @@ struct DatagramQueueStats
 // cancellation problem, in a class whose entire job is to have no opinions.
 class LIVETRANSPORT_API DatagramQueue final
 {
-public:
+  public:
     explicit DatagramQueue(const DatagramQueueConfig& config = {});
 
     // From the network thread. Returns false when this push displaced the
@@ -494,7 +511,7 @@ public:
     DatagramQueueStats GetStats() const;
     void ResetStats();
 
-private:
+  private:
     DatagramQueueConfig _config;
 
     mutable std::mutex _mutex;

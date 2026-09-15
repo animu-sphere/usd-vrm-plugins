@@ -17,15 +17,13 @@ namespace motion
 // Shortest-arc interpolation between two unit quaternions. `t` is clamped to
 // [0, 1]; near-antipodal inputs take the short path, so a clip authored with a
 // sign-flipped quaternion does not spin the long way round.
-MOTIONRUNTIME_API pxr::GfQuatf SlerpShortest(
-    const pxr::GfQuatf& a, const pxr::GfQuatf& b, float t);
+MOTIONRUNTIME_API pxr::GfQuatf SlerpShortest(const pxr::GfQuatf& a, const pxr::GfQuatf& b, float t);
 
 // Component-wise interpolation. A presence flag survives only where both
 // endpoints carry the component; where exactly one does, that endpoint's value
 // is held rather than faded toward zero, because a missing sample is not a
 // zero-valued sample (motion contract, `motionCore` value contract).
-MOTIONRUNTIME_API RootMotion LerpRootMotion(
-    const RootMotion& a, const RootMotion& b, float t);
+MOTIONRUNTIME_API RootMotion LerpRootMotion(const RootMotion& a, const RootMotion& b, float t);
 
 // Interpolates two poses bone by bone. A bone valid in both endpoints is
 // slerped; a bone valid in exactly one is copied from that endpoint; a bone
@@ -36,7 +34,6 @@ MOTIONRUNTIME_API RootMotion LerpRootMotion(
 // carry it, expressions are interpolated per name and a name only one endpoint
 // reports is held at that weight rather than faded toward zero, and
 // contacts/source are taken from the nearer endpoint because they are discrete.
-MOTIONRUNTIME_API HumanoidPose LerpPose(
-    const HumanoidPose& a, const HumanoidPose& b, float t);
+MOTIONRUNTIME_API HumanoidPose LerpPose(const HumanoidPose& a, const HumanoidPose& b, float t);
 
 } // namespace motion

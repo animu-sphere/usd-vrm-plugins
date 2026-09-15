@@ -25,8 +25,7 @@ Seconds(double value)
 
 } // namespace
 
-MocopiFrameAssembler::MocopiFrameAssembler(const MocopiFrameConfig& config)
-    : _config(config)
+MocopiFrameAssembler::MocopiFrameAssembler(const MocopiFrameConfig& config) : _config(config)
 {
     _metadata.kind = motion::MotionSourceKind::LiveCapture;
     _metadata.protocol = "mocopi";
@@ -63,12 +62,12 @@ MocopiFrameAssembler::Reset()
 }
 
 void
-MocopiFrameAssembler::_Report(std::vector<Diagnostic>* diagnostics,
-                              DiagnosticCode code, std::string_view subject,
-                              std::optional<double> timestamp,
+MocopiFrameAssembler::_Report(std::vector<Diagnostic>* diagnostics, DiagnosticCode code,
+                              std::string_view subject, std::optional<double> timestamp,
                               std::string detail)
 {
-    if (!diagnostics) {
+    if (!diagnostics)
+    {
         return;
     }
     Diagnostic diagnostic = MakeDiagnostic(code, std::move(detail));
@@ -91,14 +90,17 @@ MocopiFrameAssembler::_PushSkeleton(const MotionSkeleton& skeleton,
     SkeletonMap built;
     const bool ok = MakeSkeletonMap(skeleton, &built, diagnostics);
 
-    if (diagnostics) {
-        for (std::size_t index = before; index != diagnostics->size(); ++index) {
+    if (diagnostics)
+    {
+        for (std::size_t index = before; index != diagnostics->size(); ++index)
+        {
             (*diagnostics)[index].source = _source;
             (*diagnostics)[index].sequence = _packetSerial;
         }
     }
 
-    if (!ok) {
+    if (!ok)
+    {
         ++_stats.skeletonsRefused;
         // The existing rig stands. A rig is a session-long thing worth keeping
         // when a packet fails to replace it, and the device repeats the same
@@ -116,8 +118,7 @@ MocopiFrameAssembler::_PushSkeleton(const MotionSkeleton& skeleton,
 }
 
 bool
-MocopiFrameAssembler::_PushFrame(const MotionFrame& frame,
-                                 std::vector<MocopiFrame>* frames,
+MocopiFrameAssembler::_PushFrame(const MotionFrame& frame, std::vector<MocopiFrame>* frames,
                                  std::vector<Diagnostic>* diagnostics)
 {
     const double streamSeconds = static_cast<double>(frame.streamSeconds);
@@ -126,36 +127,35 @@ MocopiFrameAssembler::_PushFrame(const MotionFrame& frame,
     // two matters: whether a datagram was delivered twice is a property of the
     // packet rather than of the rig, so a duplicate arriving before any skeleton
     // packet is still reported as a duplicate rather than as a missing rig.
-    if (_lastFrameNumber && frame.frameNumber == *_lastFrameNumber) {
+    if (_lastFrameNumber && frame.frameNumber == *_lastFrameNumber)
+    {
         ++_stats.framesRefusedOutOfOrder;
         _Report(diagnostics, DiagnosticCode::TimestampInvalid, {}, streamSeconds,
-                "frame " + std::to_string(frame.frameNumber)
-                    + " was already accepted at " + Seconds(streamSeconds)
-                    + " s; a delivery repeated rather than a frame advanced");
+                "frame " + std::to_string(frame.frameNumber) + " was already accepted at " +
+                    Seconds(streamSeconds) +
+                    " s; a delivery repeated rather than a frame advanced");
         return false;
     }
 
     bool restart = false;
-    if (_lastStreamSeconds && streamSeconds <= *_lastStreamSeconds) {
+    if (_lastStreamSeconds && streamSeconds <= *_lastStreamSeconds)
+    {
         const double backwards = *_lastStreamSeconds - streamSeconds;
-        const bool counterBackwards =
-            _lastFrameNumber && frame.frameNumber < *_lastFrameNumber;
-        const bool clockRestarted = _config.restartBackwardsSeconds > 0.0
-                                    && backwards > _config.restartBackwardsSeconds;
+        const bool counterBackwards = _lastFrameNumber && frame.frameNumber < *_lastFrameNumber;
+        const bool clockRestarted =
+            _config.restartBackwardsSeconds > 0.0 && backwards > _config.restartBackwardsSeconds;
 
-        if (counterBackwards || clockRestarted) {
+        if (counterBackwards || clockRestarted)
+        {
             restart = true;
             ++_stats.sessionRestarts;
-            _Report(diagnostics, DiagnosticCode::SourceRestarted, {},
-                    streamSeconds,
+            _Report(diagnostics, DiagnosticCode::SourceRestarted, {}, streamSeconds,
                     counterBackwards
-                        ? "the counter began again at "
-                              + std::to_string(frame.frameNumber) + " from "
-                              + std::to_string(*_lastFrameNumber)
-                              + ", with the stream clock " + Seconds(backwards)
-                              + " s back"
-                        : "the stream clock began again " + Seconds(backwards)
-                              + " s before the last accepted frame");
+                        ? "the counter began again at " + std::to_string(frame.frameNumber) +
+                              " from " + std::to_string(*_lastFrameNumber) +
+                              ", with the stream clock " + Seconds(backwards) + " s back"
+                        : "the stream clock began again " + Seconds(backwards) +
+                              " s before the last accepted frame");
             // Everything the old stream established, dropped — the rig included.
             // See the header for what that costs and why it is the safe
             // direction.
@@ -165,23 +165,25 @@ MocopiFrameAssembler::_PushFrame(const MotionFrame& frame,
             // flag has to outlive it and land on the new session's first real
             // frame.
             _pendingNewSession = true;
-        } else {
+        }
+        else
+        {
             ++_stats.framesRefusedOutOfOrder;
-            _Report(diagnostics, DiagnosticCode::TimestampInvalid, {},
-                    streamSeconds,
-                    "frame at " + Seconds(streamSeconds)
-                        + " s does not advance on the last accepted frame at "
-                        + Seconds(*_lastStreamSeconds) + " s");
+            _Report(diagnostics, DiagnosticCode::TimestampInvalid, {}, streamSeconds,
+                    "frame at " + Seconds(streamSeconds) +
+                        " s does not advance on the last accepted frame at " +
+                        Seconds(*_lastStreamSeconds) + " s");
             return false;
         }
     }
 
-    if (!_hasMap) {
+    if (!_hasMap)
+    {
         ++_stats.framesRefusedNoRig;
-        if (!_reportedNoRig) {
+        if (!_reportedNoRig)
+        {
             _reportedNoRig = true;
-            _Report(diagnostics, DiagnosticCode::FrameIncomplete, {},
-                    streamSeconds,
+            _Report(diagnostics, DiagnosticCode::FrameIncomplete, {}, streamSeconds,
                     "no skeleton packet has declared this session's rig yet, so "
                     "a bone id names a position in nothing; frames are refused "
                     "until one arrives");
@@ -192,15 +194,18 @@ MocopiFrameAssembler::_PushFrame(const MotionFrame& frame,
     FrameMapping mapping;
     const std::size_t before = diagnostics ? diagnostics->size() : 0;
     const bool mapped = MapMotionFrame(_map, frame, &mapping, diagnostics);
-    if (diagnostics) {
-        for (std::size_t index = before; index != diagnostics->size(); ++index) {
+    if (diagnostics)
+    {
+        for (std::size_t index = before; index != diagnostics->size(); ++index)
+        {
             (*diagnostics)[index].source = _source;
             (*diagnostics)[index].sequence = _packetSerial;
             (*diagnostics)[index].timestamp = streamSeconds;
         }
     }
 
-    if (!mapped) {
+    if (!mapped)
+    {
         ++_stats.framesRefusedEmpty;
         _Report(diagnostics, DiagnosticCode::FrameIncomplete, {}, streamSeconds,
                 "the frame formed no canonical bone at all, which is an absence "
@@ -211,9 +216,9 @@ MocopiFrameAssembler::_PushFrame(const MotionFrame& frame,
     MocopiFrame out;
     out.pose.timestamp = streamSeconds;
     out.pose.validRotations = mapping.present;
-    for (const BoneSample& sample : mapping.bones) {
-        out.pose.localRotations[static_cast<std::size_t>(sample.bone)] =
-            sample.localRotation;
+    for (const BoneSample& sample : mapping.bones)
+    {
+        out.pose.localRotations[static_cast<std::size_t>(sample.bone)] = sample.localRotation;
     }
 
     out.frameNumber = frame.frameNumber;
@@ -225,19 +230,23 @@ MocopiFrameAssembler::_PushFrame(const MotionFrame& frame,
     // frame, so that frame's drift is zero by construction and every later one is
     // measured against it.
     const double offset = frame.senderUnixSeconds - streamSeconds;
-    if (!_sessionEpoch) {
+    if (!_sessionEpoch)
+    {
         _sessionEpoch = offset;
     }
     out.clockDrift = offset - *_sessionEpoch;
 
-    if (_lastFrameNumber && frame.frameNumber > *_lastFrameNumber + 1) {
+    if (_lastFrameNumber && frame.frameNumber > *_lastFrameNumber + 1)
+    {
         out.lostFrames = frame.frameNumber - *_lastFrameNumber - 1;
         _stats.framesLost += out.lostFrames;
     }
 
-    if (mapping.hasHipsPosition) {
+    if (mapping.hasHipsPosition)
+    {
         out.hipsPosition = mapping.hipsPosition;
-        if (_config.bodyPlacement == BodyPlacementPolicy::HipsOnly) {
+        if (_config.bodyPlacement == BodyPlacementPolicy::HipsOnly)
+        {
             // The record, executed. Absolute and in the sender's own space,
             // which is the same canonical thing the recorded path authors for
             // this rig -- `motion_capture` seeds the hips rest from the
@@ -247,9 +256,9 @@ MocopiFrameAssembler::_PushFrame(const MotionFrame& frame,
             out.pose.root.hasPosition = true;
         }
     }
-    if (_config.bodyPlacement == BodyPlacementPolicy::HipsOnly
-        && mapping.present.test(
-            static_cast<std::size_t>(motion::HumanBone::Hips))) {
+    if (_config.bodyPlacement == BodyPlacementPolicy::HipsOnly &&
+        mapping.present.test(static_cast<std::size_t>(motion::HumanBone::Hips)))
+    {
         // The body's orientation, from the same joint and the same frame. It is
         // the hips bone's rotation and stays there too: the recorded half
         // duplicates it identically, because a rig that roots at its hips has a
@@ -258,8 +267,7 @@ MocopiFrameAssembler::_PushFrame(const MotionFrame& frame,
         // alone -- and the duplication is what makes the two paths' poses
         // comparable field for field.
         out.pose.root.worldOrientation =
-            out.pose.localRotations[static_cast<std::size_t>(
-                motion::HumanBone::Hips)];
+            out.pose.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)];
         out.pose.root.hasOrientation = true;
     }
     out.unusedJoints = mapping.unusedJoints;
@@ -270,18 +278,20 @@ MocopiFrameAssembler::_PushFrame(const MotionFrame& frame,
     // Against the rig the session *declared*, never against the full canonical
     // humanoid: a rig that ends at the wrists is complete without fingers.
     out.missing = _map.present & ~mapping.present;
-    if (out.missing.any()) {
+    if (out.missing.any())
+    {
         ++_stats.framesIncomplete;
         _Report(diagnostics, DiagnosticCode::FrameIncomplete, {}, streamSeconds,
-                std::to_string(out.missing.count()) + " of "
-                    + std::to_string(_map.present.count())
-                    + " declared bone(s) absent from this frame");
+                std::to_string(out.missing.count()) + " of " +
+                    std::to_string(_map.present.count()) +
+                    " declared bone(s) absent from this frame");
     }
 
     _lastStreamSeconds = streamSeconds;
     _lastFrameNumber = frame.frameNumber;
     ++_stats.framesEmitted;
-    if (frames) {
+    if (frames)
+    {
         frames->push_back(std::move(out));
     }
     return true;
@@ -289,8 +299,7 @@ MocopiFrameAssembler::_PushFrame(const MotionFrame& frame,
 
 bool
 MocopiFrameAssembler::Push(const MotionPacket& packet, double receiveTime,
-                           std::vector<MocopiFrame>* frames,
-                           std::vector<Diagnostic>* diagnostics)
+                           std::vector<MocopiFrame>* frames, std::vector<Diagnostic>* diagnostics)
 {
     ++_packetSerial;
     // The receiver's clock is deliberately unread. Every frame this protocol
@@ -300,16 +309,19 @@ MocopiFrameAssembler::Push(const MotionPacket& packet, double receiveTime,
     // from the signature would be the change that is hard to undo.
     (void)receiveTime;
 
-    switch (packet.kind) {
+    switch (packet.kind)
+    {
     case MotionPacketKind::Skeleton:
-        if (packet.skeleton) {
+        if (packet.skeleton)
+        {
             _PushSkeleton(*packet.skeleton, diagnostics);
         }
         // A skeleton packet is never a frame, whatever it did to the rig.
         return false;
 
     case MotionPacketKind::Frame:
-        if (!packet.frame) {
+        if (!packet.frame)
+        {
             return false;
         }
         return _PushFrame(*packet.frame, frames, diagnostics);

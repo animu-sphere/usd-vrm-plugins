@@ -39,19 +39,19 @@
 #include <vector>
 
 #if defined(_WIN32)
-#    ifndef WIN32_LEAN_AND_MEAN
-#        define WIN32_LEAN_AND_MEAN
-#    endif
-#    ifndef NOMINMAX
-#        define NOMINMAX
-#    endif
-#    include <winsock2.h>
-#    include <ws2tcpip.h>
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #else
-#    include <netdb.h>
-#    include <netinet/in.h>
-#    include <sys/socket.h>
-#    include <unistd.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
 #endif
 
 namespace
@@ -102,12 +102,14 @@ bool
 SplitEndpoint(const std::string& endpoint, std::string* host, std::string* port)
 {
     const std::size_t colon = endpoint.rfind(':');
-    if (colon == std::string::npos) {
+    if (colon == std::string::npos)
+    {
         return false;
     }
     *host = endpoint.substr(0, colon);
     *port = endpoint.substr(colon + 1);
-    if (host->size() >= 2 && host->front() == '[' && host->back() == ']') {
+    if (host->size() >= 2 && host->front() == '[' && host->back() == ']')
+    {
         *host = host->substr(1, host->size() - 2);
     }
     return !host->empty() && !port->empty();
@@ -115,15 +117,20 @@ SplitEndpoint(const std::string& endpoint, std::string* host, std::string* port)
 
 class LoopbackSender
 {
-public:
-    ~LoopbackSender() { Close(); }
+  public:
+    ~LoopbackSender()
+    {
+        Close();
+    }
 
-    bool Open(const std::string& endpoint)
+    bool
+    Open(const std::string& endpoint)
     {
         Close();
         std::string host;
         std::string port;
-        if (!SplitEndpoint(endpoint, &host, &port)) {
+        if (!SplitEndpoint(endpoint, &host, &port))
+        {
             return false;
         }
 
@@ -134,22 +141,22 @@ public:
         hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
 
         addrinfo* resolved = nullptr;
-        if (::getaddrinfo(host.c_str(), port.c_str(), &hints, &resolved) != 0
-            || !resolved) {
+        if (::getaddrinfo(host.c_str(), port.c_str(), &hints, &resolved) != 0 || !resolved)
+        {
             return false;
         }
-        for (const addrinfo* it = resolved; it; it = it->ai_next) {
-            const RawSocket handle =
-                ::socket(it->ai_family, it->ai_socktype, it->ai_protocol);
-            if (handle == kNoSocket) {
+        for (const addrinfo* it = resolved; it; it = it->ai_next)
+        {
+            const RawSocket handle = ::socket(it->ai_family, it->ai_socktype, it->ai_protocol);
+            if (handle == kNoSocket)
+            {
                 continue;
             }
             // Connected, so a send is one call and a peer is one value. The
             // receiver never sends, so nothing here depends on the reverse
             // direction working.
-            if (::connect(handle, it->ai_addr,
-                          static_cast<socklen_t>(it->ai_addrlen))
-                != 0) {
+            if (::connect(handle, it->ai_addr, static_cast<socklen_t>(it->ai_addrlen)) != 0)
+            {
                 CloseRaw(handle);
                 continue;
             }
@@ -160,26 +167,29 @@ public:
         return _socket != kNoSocket;
     }
 
-    bool Send(const std::vector<std::uint8_t>& bytes) const
+    bool
+    Send(const std::vector<std::uint8_t>& bytes) const
     {
-        if (_socket == kNoSocket) {
+        if (_socket == kNoSocket)
+        {
             return false;
         }
-        const auto sent = ::send(
-            _socket, reinterpret_cast<const char*>(bytes.data()),
-            static_cast<int>(bytes.size()), 0);
+        const auto sent = ::send(_socket, reinterpret_cast<const char*>(bytes.data()),
+                                 static_cast<int>(bytes.size()), 0);
         return sent == static_cast<decltype(sent)>(bytes.size());
     }
 
-    void Close()
+    void
+    Close()
     {
-        if (_socket != kNoSocket) {
+        if (_socket != kNoSocket)
+        {
             CloseRaw(_socket);
             _socket = kNoSocket;
         }
     }
 
-private:
+  private:
     RawSocket _socket = kNoSocket;
 };
 
@@ -198,7 +208,8 @@ std::vector<std::uint8_t>
 Payload(std::size_t size, std::uint8_t seed)
 {
     std::vector<std::uint8_t> bytes(size);
-    for (std::size_t index = 0; index != size; ++index) {
+    for (std::size_t index = 0; index != size; ++index)
+    {
         bytes[index] = static_cast<std::uint8_t>(seed + index);
     }
     return bytes;
@@ -357,8 +368,7 @@ TestADatagramArrivesWholeWithItsSenderAndItsInstant()
     assert(sender.Send(small));
 
     ReceivedDatagram datagram;
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes == small);
     // The sender is on loopback, on a port it did not choose; what matters is
     // that the receiver knows an address at all, which is the second question
@@ -370,15 +380,13 @@ TestADatagramArrivesWholeWithItsSenderAndItsInstant()
     // leaving the previous datagram's tail behind.
     const std::vector<std::uint8_t> large = Payload(2000, 0x01);
     assert(sender.Send(large));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes == large);
     const double second = datagram.receiveTime;
 
     // And smaller again, which is the direction a stale tail would survive.
     assert(sender.Send(small));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes == small);
     assert(datagram.receiveTime >= second);
 
@@ -386,8 +394,7 @@ TestADatagramArrivesWholeWithItsSenderAndItsInstant()
     // decoder above has to refuse without crashing (PacketCapture.h). A
     // receiver that reported it as `Idle` would hide it from that decoder.
     assert(sender.Send(std::vector<std::uint8_t>()));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes.empty());
 
     const vrmAdapterVmc::UdpReceiverStats& stats = receiver.GetStats();
@@ -435,17 +442,21 @@ TestTheQueueCarriesEveryDatagramAcrossAThreadInOrder()
     // A real second thread, because the claim is about two threads. It pushes
     // as fast as it can while this one drains, which is the arrangement the
     // header describes and the only one in this adapter that needs a lock.
-    std::thread network([&queue]() {
-        for (std::size_t index = 0; index != kCount; ++index) {
-            ReceivedDatagram datagram;
-            datagram.bytes = Payload(4, static_cast<std::uint8_t>(index));
-            datagram.receiveTime = static_cast<double>(index);
-            queue.Push(std::move(datagram));
-        }
-    });
+    std::thread network(
+        [&queue]()
+        {
+            for (std::size_t index = 0; index != kCount; ++index)
+            {
+                ReceivedDatagram datagram;
+                datagram.bytes = Payload(4, static_cast<std::uint8_t>(index));
+                datagram.receiveTime = static_cast<double>(index);
+                queue.Push(std::move(datagram));
+            }
+        });
 
     std::vector<ReceivedDatagram> drained;
-    while (drained.size() != kCount) {
+    while (drained.size() != kCount)
+    {
         queue.Drain(&drained);
     }
     network.join();
@@ -453,7 +464,8 @@ TestTheQueueCarriesEveryDatagramAcrossAThreadInOrder()
     // Nothing lost, nothing duplicated, nothing reordered: a frame assembler
     // downstream of this reads arrival order as the protocol's, so a queue that
     // shuffled would be a frame-boundary defect wearing a threading costume.
-    for (std::size_t index = 0; index != kCount; ++index) {
+    for (std::size_t index = 0; index != kCount; ++index)
+    {
         assert(drained[index].receiveTime == static_cast<double>(index));
     }
     assert(queue.GetSize() == 0);
@@ -471,7 +483,8 @@ TestAFullQueueDropsTheOldestAndCountsIt()
     config.maxDatagrams = 4;
 
     DatagramQueue queue(config);
-    for (std::uint8_t seed = 0; seed != 6; ++seed) {
+    for (std::uint8_t seed = 0; seed != 6; ++seed)
+    {
         const bool clean = queue.Push(Queued(seed));
         // The first four fit; the last two each displace one, and the push says
         // so, so a recorder can log the moment it began losing traffic.
@@ -497,7 +510,8 @@ TestTheQueueIsBoundedByBytesAsWellAsByCount()
     config.maxBytes = 2048;
 
     DatagramQueue queue(config);
-    for (std::uint8_t seed = 0; seed != 8; ++seed) {
+    for (std::uint8_t seed = 0; seed != 8; ++seed)
+    {
         queue.Push(Queued(seed, 1024));
     }
 
@@ -551,7 +565,8 @@ struct Delivered
 void
 Collect(const VmcLiveSource& source, std::vector<Delivered>* out)
 {
-    for (const VmcFrame& frame : source.GetFramesFromLastPush()) {
+    for (const VmcFrame& frame : source.GetFramesFromLastPush())
+    {
         Delivered delivered;
         delivered.pose = frame.pose;
         delivered.beginsNewSession = frame.beginsNewSession;
@@ -566,22 +581,23 @@ Collect(const VmcLiveSource& source, std::vector<Delivered>* out)
 // Replays a capture straight from the file, which is what every other corpus
 // test in this adapter does.
 std::vector<Delivered>
-ReplayFromFile(const vrmAdapterVmc::PacketCapture& capture,
-               std::vector<DiagnosticCode>* codes)
+ReplayFromFile(const vrmAdapterVmc::PacketCapture& capture, std::vector<DiagnosticCode>* codes)
 {
     VmcLiveSource source;
     source.SetSource("file");
 
     std::vector<Delivered> delivered;
     std::vector<Diagnostic> diagnostics;
-    for (const vrmAdapterVmc::RecordedDatagram& datagram : capture.datagrams) {
+    for (const vrmAdapterVmc::RecordedDatagram& datagram : capture.datagrams)
+    {
         source.PushDatagram(datagram.bytes, datagram.receiveTime, &diagnostics);
         Collect(source, &delivered);
     }
     source.Flush(&diagnostics);
     Collect(source, &delivered);
 
-    for (const Diagnostic& diagnostic : diagnostics) {
+    for (const Diagnostic& diagnostic : diagnostics)
+    {
         codes->push_back(diagnostic.code);
     }
     return delivered;
@@ -592,18 +608,18 @@ ReplayFromFile(const vrmAdapterVmc::PacketCapture& capture,
 // the loss behaviour of a kernel receive buffer inside the assertion, which is
 // not what this test is about.
 bool
-ReplayFromWire(const vrmAdapterVmc::PacketCapture& capture,
-               std::vector<Delivered>* delivered,
+ReplayFromWire(const vrmAdapterVmc::PacketCapture& capture, std::vector<Delivered>* delivered,
                std::vector<DiagnosticCode>* codes)
 {
     UdpReceiver receiver;
-    if (!receiver.Open(LoopbackConfig())) {
-        std::fprintf(stderr, "could not bind loopback: %s\n",
-                     receiver.GetLastErrorText().c_str());
+    if (!receiver.Open(LoopbackConfig()))
+    {
+        std::fprintf(stderr, "could not bind loopback: %s\n", receiver.GetLastErrorText().c_str());
         return false;
     }
     LoopbackSender sender;
-    if (!sender.Open(receiver.GetBoundEndpoint())) {
+    if (!sender.Open(receiver.GetBoundEndpoint()))
+    {
         std::fprintf(stderr, "could not open the test sender\n");
         return false;
     }
@@ -616,25 +632,27 @@ ReplayFromWire(const vrmAdapterVmc::PacketCapture& capture,
     // the shape the bridge says a receiver should have, and is checked here by
     // the poses coming out identical rather than by an assertion about bytes.
     ReceivedDatagram received;
-    for (const vrmAdapterVmc::RecordedDatagram& datagram : capture.datagrams) {
-        if (!sender.Send(datagram.bytes)) {
+    for (const vrmAdapterVmc::RecordedDatagram& datagram : capture.datagrams)
+    {
+        if (!sender.Send(datagram.bytes))
+        {
             std::fprintf(stderr, "the test sender could not send %zu bytes\n",
                          datagram.bytes.size());
             return false;
         }
-        if (receiver.Receive(&received, kLoopbackTimeout)
-            != ReceiveStatus::Received) {
+        if (receiver.Receive(&received, kLoopbackTimeout) != ReceiveStatus::Received)
+        {
             std::fprintf(stderr, "a loopback datagram never arrived\n");
             return false;
         }
-        source.PushDatagram(received.bytes, received.receiveTime,
-                            &diagnostics);
+        source.PushDatagram(received.bytes, received.receiveTime, &diagnostics);
         Collect(source, delivered);
     }
     source.Flush(&diagnostics);
     Collect(source, delivered);
 
-    for (const Diagnostic& diagnostic : diagnostics) {
+    for (const Diagnostic& diagnostic : diagnostics)
+    {
         codes->push_back(diagnostic.code);
     }
     return receiver.GetStats().datagramsReceived == capture.datagrams.size();
@@ -652,9 +670,9 @@ CheckTheWireChangesNothing(const std::filesystem::path& path)
     // `PacketCapture` was declared in this namespace; the type is now
     // `liveTransport`'s and ADL follows it there, where the reader takes a magic
     // line as its first argument.
-    if (!vrmAdapterVmc::ReadPacketCaptureFile(path.string(), &capture, &error)) {
-        std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line,
-                     error.message.c_str());
+    if (!vrmAdapterVmc::ReadPacketCaptureFile(path.string(), &capture, &error))
+    {
+        std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line, error.message.c_str());
         return 1;
     }
 
@@ -663,36 +681,36 @@ CheckTheWireChangesNothing(const std::filesystem::path& path)
 
     std::vector<Delivered> fromWire;
     std::vector<DiagnosticCode> wireCodes;
-    if (!ReplayFromWire(capture, &fromWire, &wireCodes)) {
-        std::fprintf(stderr, "%s: the loopback replay did not complete\n",
-                     name.c_str());
+    if (!ReplayFromWire(capture, &fromWire, &wireCodes))
+    {
+        std::fprintf(stderr, "%s: the loopback replay did not complete\n", name.c_str());
         return 1;
     }
 
     int failures = 0;
-    if (fromFile.size() != fromWire.size()) {
-        std::fprintf(stderr,
-                     "%s: %zu pose(s) from the file, %zu from the wire\n",
-                     name.c_str(), fromFile.size(), fromWire.size());
+    if (fromFile.size() != fromWire.size())
+    {
+        std::fprintf(stderr, "%s: %zu pose(s) from the file, %zu from the wire\n", name.c_str(),
+                     fromFile.size(), fromWire.size());
         return 1;
     }
-    if (fileCodes != wireCodes) {
-        std::fprintf(stderr,
-                     "%s: the wire produced a different diagnostic sequence\n",
+    if (fileCodes != wireCodes)
+    {
+        std::fprintf(stderr, "%s: the wire produced a different diagnostic sequence\n",
                      name.c_str());
         ++failures;
     }
 
-    for (std::size_t index = 0; index != fromFile.size(); ++index) {
+    for (std::size_t index = 0; index != fromFile.size(); ++index)
+    {
         const Delivered& file = fromFile[index];
         const Delivered& wire = fromWire[index];
 
-        if (file.timestampFromSender != wire.timestampFromSender
-            || file.beginsNewSession != wire.beginsNewSession
-            || file.missing != wire.missing || file.stale != wire.stale
-            || file.duplicateBones != wire.duplicateBones) {
-            std::fprintf(stderr, "%s: frame %zu differs in what it reports\n",
-                         name.c_str(), index);
+        if (file.timestampFromSender != wire.timestampFromSender ||
+            file.beginsNewSession != wire.beginsNewSession || file.missing != wire.missing ||
+            file.stale != wire.stale || file.duplicateBones != wire.duplicateBones)
+        {
+            std::fprintf(stderr, "%s: frame %zu differs in what it reports\n", name.c_str(), index);
             ++failures;
             continue;
         }
@@ -705,22 +723,24 @@ CheckTheWireChangesNothing(const std::filesystem::path& path)
         // (MOTION_CONTRACT.md), which is a stronger claim than `NearlyEqual`
         // and the right one here, because both paths decoded the same bytes.
         motion::HumanoidPose expected = file.pose;
-        if (!file.timestampFromSender) {
+        if (!file.timestampFromSender)
+        {
             expected.timestamp = wire.pose.timestamp;
         }
-        if (!(expected == wire.pose)) {
-            std::fprintf(stderr,
-                         "%s: frame %zu is not the pose the file produced\n",
-                         name.c_str(), index);
+        if (!(expected == wire.pose))
+        {
+            std::fprintf(stderr, "%s: frame %zu is not the pose the file produced\n", name.c_str(),
+                         index);
             ++failures;
         }
     }
 
-    if (failures != 0) {
+    if (failures != 0)
+    {
         return 1;
     }
-    std::printf("%s: %zu datagram(s) over a socket, %zu identical pose(s)\n",
-                name.c_str(), capture.datagrams.size(), fromWire.size());
+    std::printf("%s: %zu datagram(s) over a socket, %zu identical pose(s)\n", name.c_str(),
+                capture.datagrams.size(), fromWire.size());
     return 0;
 }
 
@@ -729,25 +749,27 @@ CheckCorpus(const std::filesystem::path& directory)
 {
     std::set<std::filesystem::path> captures;
     for (const std::filesystem::directory_entry& entry :
-         std::filesystem::directory_iterator(directory)) {
-        if (entry.is_regular_file()
-            && entry.path().extension() == ".vmcpackets") {
+         std::filesystem::directory_iterator(directory))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == ".vmcpackets")
+        {
             captures.insert(entry.path());
         }
     }
-    if (captures.empty()) {
-        std::fprintf(stderr, "no captures in %s\n",
-                     directory.string().c_str());
+    if (captures.empty())
+    {
+        std::fprintf(stderr, "no captures in %s\n", directory.string().c_str());
         return 1;
     }
 
     int failures = 0;
-    for (const std::filesystem::path& path : captures) {
+    for (const std::filesystem::path& path : captures)
+    {
         failures += CheckTheWireChangesNothing(path);
     }
-    if (failures != 0) {
-        std::fprintf(stderr, "%d capture(s) failed the loopback replay\n",
-                     failures);
+    if (failures != 0)
+    {
+        std::fprintf(stderr, "%d capture(s) failed the loopback replay\n", failures);
         return 1;
     }
     std::printf("VMC loopback: %zu capture(s) replayed through a socket, every "
@@ -772,8 +794,7 @@ TestAReopenedReceiverCountsTheNewSessionAndNotTheLastOne()
     assert(sender.Send(payload));
 
     ReceivedDatagram datagram;
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(receiver.GetStats().datagramsReceived == 1);
     assert(receiver.GetStats().bytesReceived == payload.size());
 
@@ -796,8 +817,7 @@ TestAReopenedReceiverCountsTheNewSessionAndNotTheLastOne()
     LoopbackSender second;
     assert(second.Open(receiver.GetBoundEndpoint()));
     assert(second.Send(payload));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(stats.datagramsReceived == 1);
 }
 
@@ -828,22 +848,24 @@ CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
     config.listenPort = 0;
 
     UdpReceiver receiver;
-    if (!receiver.Open(config)) {
+    if (!receiver.Open(config))
+    {
         std::puts("skipped: no IPv6 loopback on this host");
         return kSkipExitCode;
     }
 
     LoopbackSender sender;
-    if (!sender.Open(receiver.GetBoundEndpoint())) {
+    if (!sender.Open(receiver.GetBoundEndpoint()))
+    {
         std::puts("skipped: could not reach the IPv6 loopback endpoint");
         return kSkipExitCode;
     }
 
     // Above the IPv4 bound the capture format enforces, below IPv6's own 65527
     // maximum. One byte over would do; a handful makes the intent legible.
-    const std::vector<std::uint8_t> overlong =
-        Payload(vrmAdapterVmc::MaxDatagramBytes + 8, 0x00);
-    if (!sender.Send(overlong)) {
+    const std::vector<std::uint8_t> overlong = Payload(vrmAdapterVmc::MaxDatagramBytes + 8, 0x00);
+    if (!sender.Send(overlong))
+    {
         std::puts("skipped: this host will not send an over-long datagram");
         return kSkipExitCode;
     }
@@ -869,8 +891,7 @@ CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
     // And the socket still works afterwards: a refusal is not a shutdown.
     const std::vector<std::uint8_t> ordinary = Payload(24, 0x61);
     assert(sender.Send(ordinary));
-    assert(receiver.Receive(&datagram, kLoopbackTimeout)
-           == ReceiveStatus::Received);
+    assert(receiver.Receive(&datagram, kLoopbackTimeout) == ReceiveStatus::Received);
     assert(datagram.bytes == ordinary);
 
     // The fourth defect rides on the same case, because this is the only path
@@ -890,11 +911,13 @@ CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole()
     // A second of attempts rather than a fixed few: a loopback datagram is
     // readable almost immediately, but a loaded runner is exactly where a
     // tight bound turns a correct test into an intermittent one.
-    for (int attempt = 0; attempt != 1000 && !dropped; ++attempt) {
+    for (int attempt = 0; attempt != 1000 && !dropped; ++attempt)
+    {
         receiver.ResetStats();
         receiver.Receive(&datagram, 0.0);
         dropped = receiver.GetStats().datagramsTruncated == 1;
-        if (!dropped) {
+        if (!dropped)
+        {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
@@ -927,12 +950,14 @@ main(int argc, char** argv)
     // One case is split off behind an argument because it is the one that may
     // legitimately not run here (see `kSkipExitCode`). Everything else is
     // unconditional.
-    if (argc > 1 && std::string(argv[1]) == "truncation") {
+    if (argc > 1 && std::string(argv[1]) == "truncation")
+    {
         return CheckAnOverlongDatagramIsDroppedRatherThanHandedBackAsWhole();
     }
     // Any other argument is a corpus directory, which is the convention every
     // other test binary in this adapter already follows.
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
 

@@ -52,8 +52,7 @@ Write(const PacketCapture& capture)
 }
 
 bool
-Read(const std::string& text, PacketCapture* capture,
-     PacketCaptureError* error = nullptr)
+Read(const std::string& text, PacketCapture* capture, PacketCaptureError* error = nullptr)
 {
     std::istringstream input(text);
     return vrmAdapterMocopi::ReadPacketCapture(input, capture, error);
@@ -71,8 +70,7 @@ std::vector<std::uint8_t>
 NotAPacket()
 {
     return {
-        'n', 'o', 't', '-', 'a', '-', 'p', 'a', 'c', 'k', 'e', 't',
-        0x00, 0x01, 0x80, 0xff,
+        'n', 'o', 't', '-', 'a', '-', 'p', 'a', 'c', 'k', 'e', 't', 0x00, 0x01, 0x80, 0xff,
     };
 }
 
@@ -85,7 +83,8 @@ TestTheWrittenLayoutIsTheDocumentedOne()
     capture.sourceId = "layout-01";
 
     std::vector<std::uint8_t> bytes;
-    for (int value = 0; value < 20; ++value) {
+    for (int value = 0; value < 20; ++value)
+    {
         bytes.push_back(static_cast<std::uint8_t>(value));
     }
     capture.datagrams.push_back(Datagram(0.0, bytes));
@@ -93,22 +92,21 @@ TestTheWrittenLayoutIsTheDocumentedOne()
     // Sixteen bytes a line, lowercase, the hex column padded so a short last
     // line's gutter stays in the same column as a full one's. The header keys
     // are emitted in a fixed order and only when carried.
-    const std::string expected =
-        "!mocopi-packet-capture 1\n"
-        "sender example.synthetic\n"
-        "device example.synthetic\n"
-        "sourceId layout-01\n"
-        "\n"
-        "d 0.000000 20\n"
-        "  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f"
-        "  |................|\n"
-        "  10 11 12 13"
-        + std::string(38, ' ') + "|....|\n";
+    const std::string expected = "!mocopi-packet-capture 1\n"
+                                 "sender example.synthetic\n"
+                                 "device example.synthetic\n"
+                                 "sourceId layout-01\n"
+                                 "\n"
+                                 "d 0.000000 20\n"
+                                 "  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f"
+                                 "  |................|\n"
+                                 "  10 11 12 13" +
+                                 std::string(38, ' ') + "|....|\n";
 
     const std::string written = Write(capture);
-    if (written != expected) {
-        std::fprintf(stderr, "written:\n%s\nexpected:\n%s\n", written.c_str(),
-                     expected.c_str());
+    if (written != expected)
+    {
+        std::fprintf(stderr, "written:\n%s\nexpected:\n%s\n", written.c_str(), expected.c_str());
     }
     assert(written == expected);
 }
@@ -127,17 +125,16 @@ TestRoundTripIsByteIdentical()
     // width: the two shapes the emitter is easiest to get wrong on.
     capture.datagrams.push_back(Datagram(0.020000, {}));
     capture.datagrams.push_back(
-        Datagram(0.020000, {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                            0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
-                            0x10}));
+        Datagram(0.020000, {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+                            0x0c, 0x0d, 0x0e, 0x0f, 0x10}));
 
     const std::string first = Write(capture);
 
     PacketCapture parsed;
     PacketCaptureError error;
-    if (!Read(first, &parsed, &error)) {
-        std::fprintf(stderr, "line %zu: %s\n", error.line,
-                     error.message.c_str());
+    if (!Read(first, &parsed, &error))
+    {
+        std::fprintf(stderr, "line %zu: %s\n", error.line, error.message.c_str());
         assert(false);
     }
 
@@ -161,11 +158,10 @@ TestAGutterIsCheckedRatherThanSkipped()
 {
     // A reviewer reads the gutter and not the hex, so a gutter that disagrees
     // with its bytes is worse than no gutter at all.
-    const std::string lying =
-        "!mocopi-packet-capture 1\n"
-        "\n"
-        "d 0.000000 4\n"
-        "  6e 6f 74 2d  |XXXX|\n";
+    const std::string lying = "!mocopi-packet-capture 1\n"
+                              "\n"
+                              "d 0.000000 4\n"
+                              "  6e 6f 74 2d  |XXXX|\n";
     PacketCapture capture;
     PacketCaptureError error;
     assert(!Read(lying, &capture, &error));
@@ -174,34 +170,30 @@ TestAGutterIsCheckedRatherThanSkipped()
 
     // Absent is fine -- a gutter is a review aid the writer always emits and a
     // hand-authored fixture may omit.
-    const std::string bare =
-        "!mocopi-packet-capture 1\n"
-        "\n"
-        "d 0.000000 4\n"
-        "  6e 6f 74 2d\n";
+    const std::string bare = "!mocopi-packet-capture 1\n"
+                             "\n"
+                             "d 0.000000 4\n"
+                             "  6e 6f 74 2d\n";
     assert(Read(bare, &capture));
     assert(capture.datagrams.size() == 1);
 
     // Uppercase reads and is canonicalised on the way out, so a hand-edited
     // fixture cannot stay uppercase in the corpus without failing round trip.
-    const std::string upper =
-        "!mocopi-packet-capture 1\n"
-        "\n"
-        "d 0.000000 4\n"
-        "  6E 6F 74 2D  |not-|\n";
+    const std::string upper = "!mocopi-packet-capture 1\n"
+                              "\n"
+                              "d 0.000000 4\n"
+                              "  6E 6F 74 2D  |not-|\n";
     PacketCapture parsedUpper;
     assert(Read(upper, &parsedUpper));
-    assert(parsedUpper.datagrams[0].bytes
-           == std::vector<std::uint8_t>({0x6e, 0x6f, 0x74, 0x2d}));
+    assert(parsedUpper.datagrams[0].bytes == std::vector<std::uint8_t>({0x6e, 0x6f, 0x74, 0x2d}));
     assert(Write(parsedUpper).find("6e 6f 74 2d") != std::string::npos);
 
     // A payload byte 0x7c renders as '|' inside the gutter, so the gutter runs
     // to the last '|' on the line rather than the second.
-    const std::string pipes =
-        "!mocopi-packet-capture 1\n"
-        "\n"
-        "d 0.000000 3\n"
-        "  7c 41 7c  ||A||\n";
+    const std::string pipes = "!mocopi-packet-capture 1\n"
+                              "\n"
+                              "d 0.000000 3\n"
+                              "  7c 41 7c  ||A||\n";
     PacketCapture parsedPipes;
     assert(Read(pipes, &parsedPipes));
     assert(parsedPipes.datagrams[0].bytes.size() == 3);
@@ -230,50 +222,44 @@ TestMalformedCapturesAreRefusedAndSayWhere()
         {"unknown header key", header + "provider example\n", 2},
         {"header key with no value", header + "device\n", 2},
         {"duplicated header key", header + "device a\ndevice b\n", 3},
-        {"header key after a record",
-         header + "d 0.000000 1\n  6e  |n|\ndevice late\n", 4},
+        {"header key after a record", header + "d 0.000000 1\n  6e  |n|\ndevice late\n", 4},
         {"receive time going backwards",
          header + "d 1.000000 1\n  6e  |n|\nd 0.500000 1\n  6e  |n|\n", 4},
         {"negative receive time", header + "d -0.000001 1\n", 2},
         {"non-finite receive time", header + "d nan 1\n", 2},
         {"missing byte length", header + "d 0.000000\n", 2},
         {"negative byte length", header + "d 0.000000 -4\n", 2},
-        {"a datagram larger than any UDP payload",
-         header + "d 0.000000 65508\n", 2},
+        {"a datagram larger than any UDP payload", header + "d 0.000000 65508\n", 2},
         {"junk after the byte length", header + "d 0.000000 4 extra\n", 2},
         {"a one-digit hex token", header + "d 0.000000 4\n  6e 6 74 2d\n", 3},
         {"a non-hex token", header + "d 0.000000 4\n  6e 6f 74 zz\n", 3},
-        {"more bytes than declared",
-         header + "d 0.000000 2\n  6e 6f 74 2d\n", 3},
-        {"a hex line carrying nothing",
-         header + "d 0.000000 4\n  ||\n  6e 6f 74 2d\n", 3},
-        {"an unclosed gutter",
-         header + "d 0.000000 4\n  6e 6f 74 2d |not-\n", 3},
-        {"text after the gutter",
-         header + "d 0.000000 4\n  6e 6f 74 2d  |not-| trailing\n", 3},
+        {"more bytes than declared", header + "d 0.000000 2\n  6e 6f 74 2d\n", 3},
+        {"a hex line carrying nothing", header + "d 0.000000 4\n  ||\n  6e 6f 74 2d\n", 3},
+        {"an unclosed gutter", header + "d 0.000000 4\n  6e 6f 74 2d |not-\n", 3},
+        {"text after the gutter", header + "d 0.000000 4\n  6e 6f 74 2d  |not-| trailing\n", 3},
         {"a record cut short by the next one",
          header + "d 0.000000 4\n  6e 6f\nd 0.100000 1\n  6e\n", 4},
-        {"a record cut short by the end of the capture",
-         header + "d 0.000000 4\n  6e 6f\n", 3},
+        {"a record cut short by the end of the capture", header + "d 0.000000 4\n  6e 6f\n", 3},
         {"hex outside a record", header + "  6e 6f 74 2d\n", 2},
         {"a capture with no datagrams", header + "sender example\n", 2},
     };
 
-    for (const BadCapture& testCase : cases) {
+    for (const BadCapture& testCase : cases)
+    {
         PacketCapture capture;
         PacketCaptureError error;
-        if (Read(testCase.text, &capture, &error)) {
-            std::fprintf(stderr, "malformed capture was accepted: %s\n",
-                         testCase.name);
+        if (Read(testCase.text, &capture, &error))
+        {
+            std::fprintf(stderr, "malformed capture was accepted: %s\n", testCase.name);
             assert(false);
         }
         // A rejection has to say what and where, or a fixture cannot be fixed
         // without a debugger.
         assert(!error.message.empty());
-        if (error.line != testCase.line) {
-            std::fprintf(stderr, "%s: reported line %zu, expected %zu (%s)\n",
-                         testCase.name, error.line, testCase.line,
-                         error.message.c_str());
+        if (error.line != testCase.line)
+        {
+            std::fprintf(stderr, "%s: reported line %zu, expected %zu (%s)\n", testCase.name,
+                         error.line, testCase.line, error.message.c_str());
             assert(false);
         }
         // A failed parse leaves the caller's capture untouched.
@@ -287,8 +273,12 @@ TestMalformedCapturesAreRefusedAndSayWhere()
 // depends on no system locale being installed anywhere.
 struct CommaDecimalPoint : std::numpunct<char>
 {
-protected:
-    char do_decimal_point() const override { return ','; }
+  protected:
+    char
+    do_decimal_point() const override
+    {
+        return ',';
+    }
 };
 
 void
@@ -299,8 +289,8 @@ TestTheWriterSurvivesAHostileGlobalLocale()
     PacketCapture capture;
     capture.datagrams.push_back(Datagram(0.020000, {0x6e}));
 
-    const std::locale previous = std::locale::global(
-        std::locale(std::locale::classic(), new CommaDecimalPoint));
+    const std::locale previous =
+        std::locale::global(std::locale(std::locale::classic(), new CommaDecimalPoint));
     const std::string written = Write(capture);
     std::locale::global(previous);
 
@@ -313,22 +303,21 @@ TestTheWriterSurvivesAHostileGlobalLocale()
 void
 TestCommentsAndBlankLinesAreIgnored()
 {
-    const std::string text =
-        "# a recorded session\n"
-        "\n"
-        "!mocopi-packet-capture 1\n"
-        "# provenance\n"
-        "sender example.synthetic\n"
-        "device example.synthetic\n"
-        "\n"
-        "d 0.000000 4\n"
-        "# the first four bytes only\n"
-        "  6e 6f 74 2d  |not-|\n";
+    const std::string text = "# a recorded session\n"
+                             "\n"
+                             "!mocopi-packet-capture 1\n"
+                             "# provenance\n"
+                             "sender example.synthetic\n"
+                             "device example.synthetic\n"
+                             "\n"
+                             "d 0.000000 4\n"
+                             "# the first four bytes only\n"
+                             "  6e 6f 74 2d  |not-|\n";
     PacketCapture capture;
     PacketCaptureError error;
-    if (!Read(text, &capture, &error)) {
-        std::fprintf(stderr, "line %zu: %s\n", error.line,
-                     error.message.c_str());
+    if (!Read(text, &capture, &error))
+    {
+        std::fprintf(stderr, "line %zu: %s\n", error.line, error.message.c_str());
         assert(false);
     }
     assert(capture.sender == "example.synthetic");
@@ -345,15 +334,18 @@ int
 CheckCorpus(const std::filesystem::path& directory)
 {
     std::vector<std::filesystem::path> captures;
-    if (!vrmAdapterMocopiTests::CollectCaptures(directory, &captures)) {
+    if (!vrmAdapterMocopiTests::CollectCaptures(directory, &captures))
+    {
         return 1;
     }
 
     int failures = 0;
-    for (const std::filesystem::path& path : captures) {
+    for (const std::filesystem::path& path : captures)
+    {
         const std::string name = path.filename().string();
         std::ifstream file(path, std::ios::binary);
-        if (!file) {
+        if (!file)
+        {
             std::fprintf(stderr, "%s: could not open\n", name.c_str());
             ++failures;
             continue;
@@ -365,18 +357,17 @@ CheckCorpus(const std::filesystem::path& directory)
         PacketCapture parsed;
         PacketCaptureError error;
         std::istringstream input(original);
-        if (!vrmAdapterMocopi::ReadPacketCapture(input, &parsed, &error)) {
-            std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line,
-                         error.message.c_str());
+        if (!vrmAdapterMocopi::ReadPacketCapture(input, &parsed, &error))
+        {
+            std::fprintf(stderr, "%s:%zu: %s\n", name.c_str(), error.line, error.message.c_str());
             ++failures;
             continue;
         }
 
         std::ostringstream rewritten;
-        if (!vrmAdapterMocopi::WritePacketCapture(rewritten, parsed)
-            || rewritten.str() != original) {
-            std::fprintf(stderr, "%s: does not round trip byte-identically\n",
-                         name.c_str());
+        if (!vrmAdapterMocopi::WritePacketCapture(rewritten, parsed) || rewritten.str() != original)
+        {
+            std::fprintf(stderr, "%s: does not round trip byte-identically\n", name.c_str());
             ++failures;
             continue;
         }
@@ -384,29 +375,30 @@ CheckCorpus(const std::filesystem::path& directory)
         // Provenance is the manifest's job to describe and the fixture's job to
         // carry: a committed capture that names neither its source nor its
         // session cannot be traced back to what produced it.
-        if (parsed.sender.empty() || parsed.sourceId.empty()) {
+        if (parsed.sender.empty() || parsed.sourceId.empty())
+        {
             std::fprintf(stderr, "%s: no sender or sourceId\n", name.c_str());
             ++failures;
             continue;
         }
 
         std::size_t payload = 0;
-        for (const RecordedDatagram& datagram : parsed.datagrams) {
+        for (const RecordedDatagram& datagram : parsed.datagrams)
+        {
             payload += datagram.bytes.size();
         }
         std::printf("%s: %zu datagram(s), %zu payload byte(s), %.3f s, round "
                     "trip ok\n",
                     name.c_str(), parsed.datagrams.size(), payload,
-                    parsed.datagrams.back().receiveTime
-                        - parsed.datagrams.front().receiveTime);
+                    parsed.datagrams.back().receiveTime - parsed.datagrams.front().receiveTime);
     }
 
-    if (failures != 0) {
+    if (failures != 0)
+    {
         std::fprintf(stderr, "%d corpus capture(s) failed\n", failures);
         return 1;
     }
-    std::printf("mocopi packet corpus: %zu capture(s) verified\n",
-                captures.size());
+    std::printf("mocopi packet corpus: %zu capture(s) verified\n", captures.size());
     return 0;
 }
 
@@ -415,7 +407,8 @@ CheckCorpus(const std::filesystem::path& directory)
 int
 main(int argc, char** argv)
 {
-    if (argc > 1) {
+    if (argc > 1)
+    {
         return CheckCorpus(std::filesystem::path(argv[1]));
     }
 

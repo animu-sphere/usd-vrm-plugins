@@ -13,7 +13,8 @@ namespace liveTransport
 std::string_view
 DiagnosticSeverityString(DiagnosticSeverity severity) noexcept
 {
-    switch (severity) {
+    switch (severity)
+    {
     case DiagnosticSeverity::Info:
         return "info";
     case DiagnosticSeverity::Warning:
@@ -45,23 +46,28 @@ FormatDiagnostic(std::string_view codeString, const DiagnosticFields& fields)
     line += DiagnosticSeverityString(fields.severity);
     line += fields.recoverable ? " recoverable" : " fatal";
 
-    if (!fields.source.empty()) {
+    if (!fields.source.empty())
+    {
         line += " source=";
         line += fields.source;
     }
-    if (fields.timestamp) {
+    if (fields.timestamp)
+    {
         line += " t=";
         line += FormatSeconds(*fields.timestamp);
     }
-    if (!fields.subject.empty()) {
+    if (!fields.subject.empty())
+    {
         line += " subject=";
         line += fields.subject;
     }
-    if (fields.sequence) {
+    if (fields.sequence)
+    {
         line += " seq=";
         line += std::to_string(*fields.sequence);
     }
-    if (!fields.detail.empty()) {
+    if (!fields.detail.empty())
+    {
         line += ": ";
         line += fields.detail;
     }

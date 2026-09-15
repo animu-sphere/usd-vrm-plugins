@@ -35,18 +35,19 @@ SourceRestPose::SourceRestPose()
 void
 SourceRestPose::SetParent(motion::HumanBone bone, motion::HumanBone parent)
 {
-    if (!motion::IsValidHumanBone(bone)) {
+    if (!motion::IsValidHumanBone(bone))
+    {
         return;
     }
     parents[static_cast<std::size_t>(bone)] =
-        motion::IsValidHumanBone(parent) ? static_cast<std::size_t>(parent)
-                                         : kNoParent;
+        motion::IsValidHumanBone(parent) ? static_cast<std::size_t>(parent) : kNoParent;
 }
 
 pxr::GfQuatf
 SourceRestPose::GetWorldRestRotation(motion::HumanBone bone) const
 {
-    if (!motion::IsValidHumanBone(bone)) {
+    if (!motion::IsValidHumanBone(bone))
+    {
         return Identity();
     }
     // world = L_root * ... * L_parent * L_bone, so each ancestor composes on
@@ -55,9 +56,9 @@ SourceRestPose::GetWorldRestRotation(motion::HumanBone bone) const
     // bone, so it cannot reach the cap.
     pxr::GfQuatf world = Identity();
     std::size_t cursor = static_cast<std::size_t>(bone);
-    for (std::size_t depth = 0;
-         depth < motion::HumanBoneCount && cursor < motion::HumanBoneCount;
-         ++depth) {
+    for (std::size_t depth = 0; depth < motion::HumanBoneCount && cursor < motion::HumanBoneCount;
+         ++depth)
+    {
         world = localRotations[cursor].GetNormalized() * world;
         cursor = parents[cursor];
     }
@@ -72,14 +73,15 @@ RestPoseCorrection::RestPoseCorrection()
 }
 
 pxr::GfQuatf
-RestPoseCorrection::Apply(motion::HumanBone bone,
-                          const pxr::GfQuatf& rotation) const
+RestPoseCorrection::Apply(motion::HumanBone bone, const pxr::GfQuatf& rotation) const
 {
-    if (!motion::IsValidHumanBone(bone)) {
+    if (!motion::IsValidHumanBone(bone))
+    {
         return rotation;
     }
     const auto slot = static_cast<std::size_t>(bone);
-    if (identity[slot]) {
+    if (identity[slot])
+    {
         return rotation;
     }
     return (pre[slot] * rotation * post[slot]).GetNormalized();
@@ -98,17 +100,18 @@ operator!=(const RestPoseCorrection& a, const RestPoseCorrection& b) noexcept
 }
 
 RestPoseCorrection
-ComputeRestPoseCorrection(const SourceRestPose& source,
-                          const TargetSkeleton& target, const HumanoidMap& map)
+ComputeRestPoseCorrection(const SourceRestPose& source, const TargetSkeleton& target,
+                          const HumanoidMap& map)
 {
     RestPoseCorrection correction;
     const std::vector<TargetJoint>& joints = target.GetJoints();
 
-    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot) {
+    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+    {
         const auto bone = static_cast<motion::HumanBone>(slot);
         const int jointIndex = map.GetJointIndex(bone);
-        if (jointIndex < 0
-            || static_cast<std::size_t>(jointIndex) >= joints.size()) {
+        if (jointIndex < 0 || static_cast<std::size_t>(jointIndex) >= joints.size())
+        {
             continue;
         }
 
@@ -116,32 +119,27 @@ ComputeRestPoseCorrection(const SourceRestPose& source,
         // parent's own local rotation would agree only where the parent is
         // itself a root, and would silently mis-retarget every bone below the
         // second level of a rig whose rest pose is not identity.
-        const pxr::GfQuatf sourceRest =
-            source.localRotations[slot].GetNormalized();
+        const pxr::GfQuatf sourceRest = source.localRotations[slot].GetNormalized();
         const std::size_t sourceParent = source.parents[slot];
         const pxr::GfQuatf sourceParentRest =
             sourceParent < motion::HumanBoneCount
-                ? source.GetWorldRestRotation(
-                      static_cast<motion::HumanBone>(sourceParent))
+                ? source.GetWorldRestRotation(static_cast<motion::HumanBone>(sourceParent))
                 : Identity();
 
         const TargetJoint& joint = joints[static_cast<std::size_t>(jointIndex)];
         const pxr::GfQuatf targetRest = joint.restRotation.GetNormalized();
-        const pxr::GfQuatf targetParentRest =
-            target.GetWorldRestRotation(joint.parent);
+        const pxr::GfQuatf targetParentRest = target.GetWorldRestRotation(joint.parent);
 
-        if (IsIdentityRotation(sourceRest) && IsIdentityRotation(sourceParentRest)
-            && IsIdentityRotation(targetRest)
-            && IsIdentityRotation(targetParentRest)) {
+        if (IsIdentityRotation(sourceRest) && IsIdentityRotation(sourceParentRest) &&
+            IsIdentityRotation(targetRest) && IsIdentityRotation(targetParentRest))
+        {
             continue;
         }
 
         // Qt = (Tp^-1 * Sp) * Qs * (S^-1 * Sp^-1 * Tp * T); see RestPose.h.
-        correction.pre[slot] =
-            (targetParentRest.GetInverse() * sourceParentRest).GetNormalized();
-        correction.post[slot] = (sourceRest.GetInverse()
-                                 * sourceParentRest.GetInverse()
-                                 * targetParentRest * targetRest)
+        correction.pre[slot] = (targetParentRest.GetInverse() * sourceParentRest).GetNormalized();
+        correction.post[slot] = (sourceRest.GetInverse() * sourceParentRest.GetInverse() *
+                                 targetParentRest * targetRest)
                                     .GetNormalized();
         correction.identity[slot] = false;
     }

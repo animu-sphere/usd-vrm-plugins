@@ -412,16 +412,24 @@ struct MocopiFrameStats
 // and could not be tested against a rig the decoder has never seen.
 class VRMADAPTERMOCOPI_API MocopiFrameAssembler
 {
-public:
+  public:
     explicit MocopiFrameAssembler(const MocopiFrameConfig& config = {});
 
-    const MocopiFrameConfig& GetConfig() const noexcept { return _config; }
+    const MocopiFrameConfig&
+    GetConfig() const noexcept
+    {
+        return _config;
+    }
 
     // The endpoint or fixture name stamped on every diagnostic this assembler
     // raises, so a session replayed from a capture reports the same `source` a
     // live one would.
     void SetSource(std::string source);
-    const std::string& GetSource() const noexcept { return _source; }
+    const std::string&
+    GetSource() const noexcept
+    {
+        return _source;
+    }
 
     // Accepts one decoded packet of either kind.
     //
@@ -439,8 +447,7 @@ public:
     // Frames are appended to `frames` and diagnostics to `diagnostics`; neither
     // is ever cleared, so a caller can accumulate a datagram's worth or a
     // session's.
-    bool Push(const MotionPacket& packet, double receiveTime,
-              std::vector<MocopiFrame>* frames,
+    bool Push(const MotionPacket& packet, double receiveTime, std::vector<MocopiFrame>* frames,
               std::vector<Diagnostic>* diagnostics = nullptr);
 
     // Canonical provenance: protocol "mocopi", kind `LiveCapture`.
@@ -453,7 +460,8 @@ public:
     // something published. The format magic does name a vendor, but it is a
     // constant of the protocol rather than a fact about the session, and
     // `protocol` already says which protocol this is.
-    const motion::MotionSourceMetadata& GetSourceMetadata() const noexcept
+    const motion::MotionSourceMetadata&
+    GetSourceMetadata() const noexcept
     {
         return _metadata;
     }
@@ -461,30 +469,37 @@ public:
     // The session's rig, or nullptr before a skeleton packet has declared one.
     // A caller needs it to interpret `MocopiFrame::missing`, and it carries the
     // device's own rest pose — which a relay cannot supply at all.
-    const SkeletonMap* GetSkeletonMap() const noexcept
+    const SkeletonMap*
+    GetSkeletonMap() const noexcept
     {
         return _hasMap ? &_map : nullptr;
     }
 
-    const MocopiFrameStats& GetStats() const noexcept { return _stats; }
-    void ResetStats() noexcept { _stats = MocopiFrameStats(); }
+    const MocopiFrameStats&
+    GetStats() const noexcept
+    {
+        return _stats;
+    }
+    void
+    ResetStats() noexcept
+    {
+        _stats = MocopiFrameStats();
+    }
 
     // Drops the rig, the clock history and the counter — everything a restart
     // invalidates. Stats survive, because they describe the session the caller
     // is judging rather than the stream's state.
     void Reset();
 
-private:
+  private:
     void _Report(std::vector<Diagnostic>* diagnostics, DiagnosticCode code,
-                 std::string_view subject, std::optional<double> timestamp,
-                 std::string detail);
+                 std::string_view subject, std::optional<double> timestamp, std::string detail);
 
     // Everything the old stream taught, dropped. The rig above all: a restarted
     // application may be sending a different one.
     void _ForgetSession();
 
-    bool _PushSkeleton(const MotionSkeleton& skeleton,
-                       std::vector<Diagnostic>* diagnostics);
+    bool _PushSkeleton(const MotionSkeleton& skeleton, std::vector<Diagnostic>* diagnostics);
     bool _PushFrame(const MotionFrame& frame, std::vector<MocopiFrame>* frames,
                     std::vector<Diagnostic>* diagnostics);
 

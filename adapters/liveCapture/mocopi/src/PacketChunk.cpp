@@ -14,19 +14,19 @@ namespace
 // is little-endian because this code says so and not because the host happens to
 // agree. The wire is little-endian — measured, see the header — and a big-endian
 // host must produce the same numbers or the corpus means nothing there.
-std::uint64_t ReadLittleEndian(const std::uint8_t* bytes, std::size_t width)
+std::uint64_t
+ReadLittleEndian(const std::uint8_t* bytes, std::size_t width)
 {
     std::uint64_t value = 0;
     for (std::size_t index = 0; index < width; ++index)
     {
-        value |= static_cast<std::uint64_t>(bytes[index])
-                 << (8 * static_cast<unsigned>(index));
+        value |= static_cast<std::uint64_t>(bytes[index]) << (8 * static_cast<unsigned>(index));
     }
     return value;
 }
 
-bool ReadScalar(const PacketChunk& chunk, std::size_t width,
-                std::uint64_t* raw) noexcept
+bool
+ReadScalar(const PacketChunk& chunk, std::size_t width, std::uint64_t* raw) noexcept
 {
     if (chunk.bytes == nullptr || chunk.size != width)
     {
@@ -36,17 +36,18 @@ bool ReadScalar(const PacketChunk& chunk, std::size_t width,
     return true;
 }
 
-Diagnostic Malformed(std::string_view context, std::string detail)
+Diagnostic
+Malformed(std::string_view context, std::string detail)
 {
-    Diagnostic diagnostic =
-        MakeDiagnostic(DiagnosticCode::PacketMalformed, std::move(detail));
+    Diagnostic diagnostic = MakeDiagnostic(DiagnosticCode::PacketMalformed, std::move(detail));
     diagnostic.subject = std::string(context);
     return diagnostic;
 }
 
 } // namespace
 
-std::string PacketChunkTagText(std::string_view tag)
+std::string
+PacketChunkTagText(std::string_view tag)
 {
     bool printable = !tag.empty();
     for (const char character : tag)
@@ -74,10 +75,9 @@ std::string PacketChunkTagText(std::string_view tag)
     return text;
 }
 
-bool DecodePacketChunks(const std::uint8_t* bytes, std::size_t size,
-                        std::vector<PacketChunk>* chunks,
-                        std::string_view context, Diagnostic* diagnostic,
-                        std::size_t baseOffset)
+bool
+DecodePacketChunks(const std::uint8_t* bytes, std::size_t size, std::vector<PacketChunk>* chunks,
+                   std::string_view context, Diagnostic* diagnostic, std::size_t baseOffset)
 {
     if (chunks == nullptr)
     {
@@ -101,36 +101,28 @@ bool DecodePacketChunks(const std::uint8_t* bytes, std::size_t size,
             if (diagnostic != nullptr)
             {
                 *diagnostic = Malformed(
-                    context,
-                    "a chunk header needs "
-                        + std::to_string(PacketChunkHeaderBytes)
-                        + " bytes and only " + std::to_string(size - offset)
-                        + " remain at offset "
-                        + std::to_string(baseOffset + offset));
+                    context, "a chunk header needs " + std::to_string(PacketChunkHeaderBytes) +
+                                 " bytes and only " + std::to_string(size - offset) +
+                                 " remain at offset " + std::to_string(baseOffset + offset));
             }
             chunks->clear();
             return false;
         }
 
-        const std::uint64_t length =
-            ReadLittleEndian(bytes + offset, sizeof(std::uint32_t));
+        const std::uint64_t length = ReadLittleEndian(bytes + offset, sizeof(std::uint32_t));
         const std::size_t available = size - offset - PacketChunkHeaderBytes;
-        std::string_view tag(
-            reinterpret_cast<const char*>(bytes + offset
-                                          + sizeof(std::uint32_t)),
-            PacketChunkTagBytes);
+        std::string_view tag(reinterpret_cast<const char*>(bytes + offset + sizeof(std::uint32_t)),
+                             PacketChunkTagBytes);
 
         if (length > available)
         {
             if (diagnostic != nullptr)
             {
-                *diagnostic = Malformed(
-                    context, "chunk " + PacketChunkTagText(tag) + " at offset "
-                                 + std::to_string(baseOffset + offset)
-                                 + " declares "
-                                 + std::to_string(length) + " payload byte(s) "
-                                 + "and only " + std::to_string(available)
-                                 + " remain");
+                *diagnostic =
+                    Malformed(context, "chunk " + PacketChunkTagText(tag) + " at offset " +
+                                           std::to_string(baseOffset + offset) + " declares " +
+                                           std::to_string(length) + " payload byte(s) " +
+                                           "and only " + std::to_string(available) + " remain");
             }
             chunks->clear();
             return false;
@@ -149,8 +141,8 @@ bool DecodePacketChunks(const std::uint8_t* bytes, std::size_t size,
     return true;
 }
 
-const PacketChunk* FindPacketChunk(const std::vector<PacketChunk>& chunks,
-                                   std::string_view tag) noexcept
+const PacketChunk*
+FindPacketChunk(const std::vector<PacketChunk>& chunks, std::string_view tag) noexcept
 {
     for (const PacketChunk& chunk : chunks)
     {
@@ -162,8 +154,8 @@ const PacketChunk* FindPacketChunk(const std::vector<PacketChunk>& chunks,
     return nullptr;
 }
 
-std::size_t CountPacketChunks(const std::vector<PacketChunk>& chunks,
-                              std::string_view tag) noexcept
+std::size_t
+CountPacketChunks(const std::vector<PacketChunk>& chunks, std::string_view tag) noexcept
 {
     std::size_t count = 0;
     for (const PacketChunk& chunk : chunks)
@@ -176,8 +168,8 @@ std::size_t CountPacketChunks(const std::vector<PacketChunk>& chunks,
     return count;
 }
 
-bool ReadPacketChunkU16(const PacketChunk& chunk,
-                        std::uint16_t* value) noexcept
+bool
+ReadPacketChunkU16(const PacketChunk& chunk, std::uint16_t* value) noexcept
 {
     std::uint64_t raw = 0;
     if (value == nullptr || !ReadScalar(chunk, sizeof(std::uint16_t), &raw))
@@ -188,7 +180,8 @@ bool ReadPacketChunkU16(const PacketChunk& chunk,
     return true;
 }
 
-bool ReadPacketChunkI16(const PacketChunk& chunk, std::int16_t* value) noexcept
+bool
+ReadPacketChunkI16(const PacketChunk& chunk, std::int16_t* value) noexcept
 {
     std::uint16_t unsignedValue = 0;
     if (value == nullptr || !ReadPacketChunkU16(chunk, &unsignedValue))
@@ -204,8 +197,8 @@ bool ReadPacketChunkI16(const PacketChunk& chunk, std::int16_t* value) noexcept
     return true;
 }
 
-bool ReadPacketChunkU32(const PacketChunk& chunk,
-                        std::uint32_t* value) noexcept
+bool
+ReadPacketChunkU32(const PacketChunk& chunk, std::uint32_t* value) noexcept
 {
     std::uint64_t raw = 0;
     if (value == nullptr || !ReadScalar(chunk, sizeof(std::uint32_t), &raw))
@@ -216,7 +209,8 @@ bool ReadPacketChunkU32(const PacketChunk& chunk,
     return true;
 }
 
-bool ReadPacketChunkF32(const PacketChunk& chunk, float* value) noexcept
+bool
+ReadPacketChunkF32(const PacketChunk& chunk, float* value) noexcept
 {
     std::uint64_t raw = 0;
     if (value == nullptr || !ReadScalar(chunk, sizeof(float), &raw))
@@ -224,21 +218,20 @@ bool ReadPacketChunkF32(const PacketChunk& chunk, float* value) noexcept
         return false;
     }
     const auto bits = static_cast<std::uint32_t>(raw);
-    static_assert(sizeof(float) == sizeof(std::uint32_t),
-                  "the wire carries IEEE-754 binary32");
+    static_assert(sizeof(float) == sizeof(std::uint32_t), "the wire carries IEEE-754 binary32");
     std::memcpy(value, &bits, sizeof(bits));
     return true;
 }
 
-bool ReadPacketChunkF64(const PacketChunk& chunk, double* value) noexcept
+bool
+ReadPacketChunkF64(const PacketChunk& chunk, double* value) noexcept
 {
     std::uint64_t raw = 0;
     if (value == nullptr || !ReadScalar(chunk, sizeof(double), &raw))
     {
         return false;
     }
-    static_assert(sizeof(double) == sizeof(std::uint64_t),
-                  "the wire carries IEEE-754 binary64");
+    static_assert(sizeof(double) == sizeof(std::uint64_t), "the wire carries IEEE-754 binary64");
     std::memcpy(value, &raw, sizeof(raw));
     return true;
 }

@@ -64,7 +64,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace
+{
 
 const TfToken kBlendPoses("motion.blendPoses");
 const TfToken kSampleAnimation("motion.sampleAnimation");
@@ -88,26 +89,26 @@ const GfVec3f kWalkHips(0.0f, 0.5f, 1.0f);
 const GfVec3f kTurnHips(2.0f, 0.0f, 0.0f);
 
 constexpr std::size_t kHead = static_cast<std::size_t>(motion::HumanBone::Head);
-constexpr std::size_t kSpine =
-    static_cast<std::size_t>(motion::HumanBone::Spine);
-constexpr std::size_t kChest =
-    static_cast<std::size_t>(motion::HumanBone::Chest);
+constexpr std::size_t kSpine = static_cast<std::size_t>(motion::HumanBone::Spine);
+constexpr std::size_t kChest = static_cast<std::size_t>(motion::HumanBone::Chest);
 
-bool NearlyEqual(double a, double b, double tolerance)
+bool
+NearlyEqual(double a, double b, double tolerance)
 {
     return std::abs(a - b) <= tolerance;
 }
 
-bool NearlyEqual(const GfVec3f& a, const GfVec3f& b, double tolerance)
+bool
+NearlyEqual(const GfVec3f& a, const GfVec3f& b, double tolerance)
 {
-    return NearlyEqual(a[0], b[0], tolerance)
-        && NearlyEqual(a[1], b[1], tolerance)
-        && NearlyEqual(a[2], b[2], tolerance);
+    return NearlyEqual(a[0], b[0], tolerance) && NearlyEqual(a[1], b[1], tolerance) &&
+           NearlyEqual(a[2], b[2], tolerance);
 }
 
 // The head's turn about +Y, in degrees -- signed, so a blend that went the long
 // way round would not land on the right number by symmetry.
-float HeadDegrees(const motion::HumanoidPose& pose)
+float
+HeadDegrees(const motion::HumanoidPose& pose)
 {
     const GfQuatf head = pose.localRotations[kHead].GetNormalized();
     const float sign = head.GetImaginary()[1] < 0.0f ? -1.0f : 1.0f;
@@ -119,23 +120,24 @@ float HeadDegrees(const motion::HumanoidPose& pose)
 // at its share of the total. Written out from the definition for the one shape
 // this fixture has -- one head turning about one axis -- where a slerp is an
 // angle interpolated linearly and a lerp is a lerp.
-float BlendedHead(float first, float second, float w1, float w2)
+float
+BlendedHead(float first, float second, float w1, float w2)
 {
     return first + (second - first) * (w2 / (w1 + w2));
 }
 
-GfVec3f BlendedHips(const GfVec3f& first, const GfVec3f& second,
-                    float w1, float w2)
+GfVec3f
+BlendedHips(const GfVec3f& first, const GfVec3f& second, float w1, float w2)
 {
     return first + (second - first) * (w2 / (w1 + w2));
 }
 
-motion::HumanoidPose PoseAt(const ExecUsdCacheView& view, int index)
+motion::HumanoidPose
+PoseAt(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
-    assert(!value.IsEmpty() &&
-           "no value came back -- if the plugInfo is unstaged this is what it "
-           "looks like, not a load error");
+    assert(!value.IsEmpty() && "no value came back -- if the plugInfo is unstaged this is what it "
+                               "looks like, not a load error");
     assert(value.IsHolding<motion::HumanoidPose>() &&
            "motion.blendPoses did not return a motion::HumanoidPose");
     return value.UncheckedGet<motion::HumanoidPose>();
@@ -143,18 +145,21 @@ motion::HumanoidPose PoseAt(const ExecUsdCacheView& view, int index)
 
 // A refusal, which in this bundle is **no value at all** (README, "How a
 // computation refuses").
-void AssertRefused(const ExecUsdCacheView& view, int index)
+void
+AssertRefused(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
-    assert(value.IsEmpty() &&
-           "a refusal came back carrying a value, which puts it back where a "
-           "consumer cannot tell it from an answer");
+    assert(value.IsEmpty() && "a refusal came back carrying a value, which puts it back where a "
+                              "consumer cannot tell it from an answer");
 }
 
-bool MarkNames(const TfErrorMark& mark, const std::string& what)
+bool
+MarkNames(const TfErrorMark& mark, const std::string& what)
 {
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
-        if (it->GetCommentary().find(what) != std::string::npos) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
+        if (it->GetCommentary().find(what) != std::string::npos)
+        {
             return true;
         }
     }
@@ -169,7 +174,8 @@ struct Stage
     UsdPrim blend;
 };
 
-Stage Open(const std::string& fixture)
+Stage
+Open(const std::string& fixture)
 {
     Stage s;
     s.stage = UsdStage::Open(fixture);
@@ -177,12 +183,12 @@ Stage Open(const std::string& fixture)
     s.walk = s.stage->GetPrimAtPath(SdfPath("/Walk"));
     s.turn = s.stage->GetPrimAtPath(SdfPath("/Turn"));
     s.blend = s.stage->GetPrimAtPath(SdfPath("/Blend"));
-    assert(s.walk && s.turn && s.blend &&
-           "the blend fixture is missing /Walk, /Turn or /Blend");
+    assert(s.walk && s.turn && s.blend && "the blend fixture is missing /Walk, /Turn or /Blend");
     return s;
 }
 
-std::vector<ExecUsdValueKey> KeysFor(const Stage& s)
+std::vector<ExecUsdValueKey>
+KeysFor(const Stage& s)
 {
     std::vector<ExecUsdValueKey> keys;
     keys.emplace_back(s.blend, kBlendPoses);
@@ -191,13 +197,15 @@ std::vector<ExecUsdValueKey> KeysFor(const Stage& s)
     return keys;
 }
 
-void SetWeights(const Stage& s, std::vector<float> weights)
+void
+SetWeights(const Stage& s, std::vector<float> weights)
 {
     VtFloatArray array(weights.begin(), weights.end());
     assert(s.blend.GetAttribute(kWeights).Set(array));
 }
 
-void SetSources(const Stage& s, const SdfPathVector& targets)
+void
+SetSources(const Stage& s, const SdfPathVector& targets)
 {
     assert(s.blend.GetRelationship(kSources).SetTargets(targets));
 }
@@ -205,7 +213,8 @@ void SetSources(const Stage& s, const SdfPathVector& targets)
 // A request built, armed at the default time code and moved to frame 50 -- the
 // shape every test below starts from. A request is armed by its first
 // `Compute` (the filtering report §4), so the frame moves after one.
-ExecUsdRequest ArmedAtFrame(ExecUsdSystem& system, const Stage& s)
+ExecUsdRequest
+ArmedAtFrame(ExecUsdSystem& system, const Stage& s)
 {
     ExecUsdRequest request = system.BuildRequest(KeysFor(s));
     assert(request.IsValid());
@@ -221,21 +230,18 @@ ExecUsdRequest ArmedAtFrame(ExecUsdSystem& system, const Stage& s)
 // ---------------------------------------------------------------------------
 // The blend the fixture states
 // ---------------------------------------------------------------------------
-void TestTheBlendIsTheLibrarysWeightedFold(const std::string& fixture)
+void
+TestTheBlendIsTheLibrarysWeightedFold(const std::string& fixture)
 {
     const Stage s = Open(fixture);
     ExecUsdSystem system(s.stage);
 
     bool blendReportedByTime = false;
     ExecUsdRequest request = system.BuildRequest(
-        KeysFor(s),
-        [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
-        [&](const ExecRequestIndexSet& indices) {
-            blendReportedByTime =
-                blendReportedByTime || indices.count(kBlended) > 0;
-        });
-    assert(request.IsValid() &&
-           "a request over a relationship fan-in did not compile");
+        KeysFor(s), [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
+        [&](const ExecRequestIndexSet& indices)
+        { blendReportedByTime = blendReportedByTime || indices.count(kBlended) > 0; });
+    assert(request.IsValid() && "a request over a relationship fan-in did not compile");
 
     // ---- armed at the default time code, where the blend answers ----------
     // Unlike `motion.interpolatePose`, which samples a timeline and so refuses
@@ -248,9 +254,8 @@ void TestTheBlendIsTheLibrarysWeightedFold(const std::string& fixture)
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
         const motion::HumanoidPose blended = PoseAt(view, kBlended);
-        assert(mark.IsClean() &&
-               "the arming compute posted an error, so a driver's first frame "
-               "through a blend is a refusal");
+        assert(mark.IsClean() && "the arming compute posted an error, so a driver's first frame "
+                                 "through a blend is a refusal");
         assert(blended.timestamp == 0.0);
         assert(!PoseAt(view, kWalkSampled).validRotations.any());
         assert(blended == PoseAt(view, kTurnSampled) &&
@@ -277,12 +282,12 @@ void TestTheBlendIsTheLibrarysWeightedFold(const std::string& fixture)
     // /Turn folded into /Walk at 0.75 / (0.25 + 0.75): 78.75 degrees, and the
     // hips three quarters of the way to (2, 0, 0). A blend that paired the
     // weights the other way round lands on 56.25 degrees and misses both.
-    assert(std::abs(HeadDegrees(blended)
-                    - BlendedHead(kWalkHead, kTurnHead, 0.25f, 0.75f)) < 1e-3f &&
+    assert(std::abs(HeadDegrees(blended) - BlendedHead(kWalkHead, kTurnHead, 0.25f, 0.75f)) <
+               1e-3f &&
            "the head is not the weighted fold of the two clips");
     assert(blended.root.hasPosition);
-    assert(NearlyEqual(blended.root.worldPosition,
-                       BlendedHips(kWalkHips, kTurnHips, 0.25f, 0.75f), 1e-5) &&
+    assert(NearlyEqual(blended.root.worldPosition, BlendedHips(kWalkHips, kTurnHips, 0.25f, 0.75f),
+                       1e-5) &&
            "the hips are not the weighted fold of the two clips");
 
     // Stamped at the instant both clips were sampled at, exactly.
@@ -290,8 +295,7 @@ void TestTheBlendIsTheLibrarysWeightedFold(const std::string& fixture)
 
     // A bone only /Walk reports is taken from /Walk rather than blended toward
     // identity -- the library's rule, arriving through the wrapper unchanged.
-    assert(blended.validRotations.test(kSpine) &&
-           blended.validRotations.test(kChest) &&
+    assert(blended.validRotations.test(kSpine) && blended.validRotations.test(kChest) &&
            "a bone only one source reports was dropped from the blend");
     assert(blended.localRotations[kSpine] == walk.localRotations[kSpine]);
 
@@ -307,7 +311,8 @@ void TestTheBlendIsTheLibrarysWeightedFold(const std::string& fixture)
 // whole of the pairing. Weights of 1 and 0 make the measurement exact: the
 // blend is then the first source's pose, bit for bit, and which clip came first
 // is the only thing that decides it.
-void TestTheFanInArrivesInAuthoredOrder(const std::string& fixture)
+void
+TestTheFanInArrivesInAuthoredOrder(const std::string& fixture)
 {
     const Stage s = Open(fixture);
     SetWeights(s, {1.0f, 0.0f});
@@ -315,11 +320,8 @@ void TestTheFanInArrivesInAuthoredOrder(const std::string& fixture)
     ExecUsdSystem system(s.stage);
     bool blendReportedByValue = false;
     ExecUsdRequest request = system.BuildRequest(
-        KeysFor(s),
-        [&](const ExecRequestIndexSet& indices, const EfTimeInterval&) {
-            blendReportedByValue =
-                blendReportedByValue || indices.count(kBlended) > 0;
-        });
+        KeysFor(s), [&](const ExecRequestIndexSet& indices, const EfTimeInterval&)
+        { blendReportedByValue = blendReportedByValue || indices.count(kBlended) > 0; });
     assert(request.IsValid());
     system.Compute(request);
     system.ChangeTime(UsdTimeCode(kFrame));
@@ -375,14 +377,14 @@ void TestTheFanInArrivesInAuthoredOrder(const std::string& fixture)
 // that holds no value). A blend that paired weights with whatever came back
 // would then weight the wrong clip; this one counts its targets a second time
 // and refuses.
-void TestADroppedSourceIsCountedNotBlendedAround(const std::string& fixture)
+void
+TestADroppedSourceIsCountedNotBlendedAround(const std::string& fixture)
 {
     // ---- a target that is not a clip ---------------------------------------
     {
         const Stage s = Open(fixture);
         s.stage->DefinePrim(SdfPath("/NotAClip"), TfToken("Xform"));
-        SetSources(s, {SdfPath("/Walk"), SdfPath("/NotAClip"),
-                       SdfPath("/Turn")});
+        SetSources(s, {SdfPath("/Walk"), SdfPath("/NotAClip"), SdfPath("/Turn")});
         SetWeights(s, {0.25f, 0.5f, 0.75f});
 
         ExecUsdSystem system(s.stage);
@@ -391,8 +393,7 @@ void TestADroppedSourceIsCountedNotBlendedAround(const std::string& fixture)
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
         AssertRefused(view, kBlended);
-        assert(MarkNames(mark, "motion.blendPoses") &&
-               MarkNames(mark, "/NotAClip") &&
+        assert(MarkNames(mark, "motion.blendPoses") && MarkNames(mark, "/NotAClip") &&
                "a target that is not a clip was refused without naming the "
                "computation or the targets");
         // The sources themselves are untouched: the refusal is the blend's.
@@ -428,8 +429,7 @@ void TestADroppedSourceIsCountedNotBlendedAround(const std::string& fixture)
     // disagree with the count. That is how it surfaces, and the only way.
     {
         const Stage s = Open(fixture);
-        SetSources(s, {SdfPath("/Walk"), SdfPath("/Turn"),
-                       SdfPath("/Missing")});
+        SetSources(s, {SdfPath("/Walk"), SdfPath("/Turn"), SdfPath("/Missing")});
         SetWeights(s, {0.25f, 0.75f, 1.0f});
 
         ExecUsdSystem system(s.stage);
@@ -451,18 +451,16 @@ void TestADroppedSourceIsCountedNotBlendedAround(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // Weights
 // ---------------------------------------------------------------------------
-void TestWeightsAreStatedOnePerSource(const std::string& fixture)
+void
+TestWeightsAreStatedOnePerSource(const std::string& fixture)
 {
     Stage s = Open(fixture);
     ExecUsdSystem system(s.stage);
 
     bool blendReportedByValue = false;
     ExecUsdRequest request = system.BuildRequest(
-        KeysFor(s),
-        [&](const ExecRequestIndexSet& indices, const EfTimeInterval&) {
-            blendReportedByValue =
-                blendReportedByValue || indices.count(kBlended) > 0;
-        });
+        KeysFor(s), [&](const ExecRequestIndexSet& indices, const EfTimeInterval&)
+        { blendReportedByValue = blendReportedByValue || indices.count(kBlended) > 0; });
     assert(request.IsValid());
     system.Compute(request);
     system.ChangeTime(UsdTimeCode(kFrame));
@@ -471,14 +469,12 @@ void TestWeightsAreStatedOnePerSource(const std::string& fixture)
     // ---- an authored weight reaches the blend ------------------------------
     blendReportedByValue = false;
     SetWeights(s, {0.75f, 0.25f});
-    assert(blendReportedByValue &&
-           "an authored weight change was not reported for the blend");
+    assert(blendReportedByValue && "an authored weight change was not reported for the blend");
     {
         ExecUsdCacheView view = system.Compute(request);
         const motion::HumanoidPose blended = PoseAt(view, kBlended);
-        assert(std::abs(HeadDegrees(blended)
-                        - BlendedHead(kWalkHead, kTurnHead, 0.75f, 0.25f))
-               < 1e-3f);
+        assert(std::abs(HeadDegrees(blended) - BlendedHead(kWalkHead, kTurnHead, 0.75f, 0.25f)) <
+               1e-3f);
     }
 
     // ---- a negative weight is the library's zero -----------------------------
@@ -552,7 +548,8 @@ void TestWeightsAreStatedOnePerSource(const std::string& fixture)
 // Every source is sampled at the same frame, and each converts it to seconds
 // at the rate it states. Two clips stating two rates are two clocks, and a
 // blend between them would stamp a second neither sampled.
-void TestSourcesMustShareAnInstant(const std::string& fixture)
+void
+TestSourcesMustShareAnInstant(const std::string& fixture)
 {
     const Stage s = Open(fixture);
     assert(s.turn.GetAttribute(kRate).Set(100.0));
@@ -596,7 +593,8 @@ void TestSourcesMustShareAnInstant(const std::string& fixture)
 // key can be overridden. So a driver that holds a pose -- a live source's, say
 // -- hands it to a blend by overriding one source's sampled pose, and the
 // override crosses the relationship to a node on another prim.
-void TestAPoseHandedToASourceReachesTheBlend(const std::string& fixture)
+void
+TestAPoseHandedToASourceReachesTheBlend(const std::string& fixture)
 {
     const Stage s = Open(fixture);
     ExecUsdSystem system(s.stage);
@@ -612,20 +610,17 @@ void TestAPoseHandedToASourceReachesTheBlend(const std::string& fixture)
     // ---- stamped at the instant the others were sampled at ------------------
     {
         ExecUsdValueOverrideVector overrides;
-        overrides.push_back(ExecUsdValueOverride{
-            ExecUsdValueKey(s.turn, kSampleAnimation), VtValue(held)});
-        ExecUsdCacheView view =
-            system.ComputeWithOverrides(request, std::move(overrides));
+        overrides.push_back(
+            ExecUsdValueOverride{ExecUsdValueKey(s.turn, kSampleAnimation), VtValue(held)});
+        ExecUsdCacheView view = system.ComputeWithOverrides(request, std::move(overrides));
 
         assert(PoseAt(view, kTurnSampled) == held);
         const motion::HumanoidPose blended = PoseAt(view, kBlended);
-        assert(std::abs(HeadDegrees(blended)
-                        - BlendedHead(kWalkHead, 0.0f, 0.25f, 0.75f)) < 1e-3f &&
+        assert(std::abs(HeadDegrees(blended) - BlendedHead(kWalkHead, 0.0f, 0.25f, 0.75f)) <
+                   1e-3f &&
                "the override of a source's key did not reach the blend");
         assert(NearlyEqual(blended.root.worldPosition,
-                           BlendedHips(kWalkHips, held.root.worldPosition,
-                                       0.25f, 0.75f),
-                           1e-5));
+                           BlendedHips(kWalkHips, held.root.worldPosition, 0.25f, 0.75f), 1e-5));
     }
 
     // ---- stamped somewhere else ------------------------------------------------
@@ -635,12 +630,11 @@ void TestAPoseHandedToASourceReachesTheBlend(const std::string& fixture)
         motion::HumanoidPose behind = held;
         behind.timestamp = kSecond - 0.02;
         ExecUsdValueOverrideVector overrides;
-        overrides.push_back(ExecUsdValueOverride{
-            ExecUsdValueKey(s.turn, kSampleAnimation), VtValue(behind)});
+        overrides.push_back(
+            ExecUsdValueOverride{ExecUsdValueKey(s.turn, kSampleAnimation), VtValue(behind)});
 
         TfErrorMark mark;
-        ExecUsdCacheView view =
-            system.ComputeWithOverrides(request, std::move(overrides));
+        ExecUsdCacheView view = system.ComputeWithOverrides(request, std::move(overrides));
         AssertRefused(view, kBlended);
         assert(MarkNames(mark, "one finite instant"));
         mark.Clear();
@@ -652,7 +646,8 @@ void TestAPoseHandedToASourceReachesTheBlend(const std::string& fixture)
 
 } // namespace
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
     assert(argc == 2 && "usage: execMotion_blend <blended_clips.usda>");
     TestTheBlendIsTheLibrarysWeightedFold(argv[1]);

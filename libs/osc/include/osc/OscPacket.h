@@ -164,8 +164,8 @@ struct OscDecodeError
 
 // Decodes one datagram. On failure `packet` is left untouched and `error`, when
 // given, says which byte and which address.
-OSC_API bool DecodeOscPacket(const std::uint8_t* bytes, std::size_t size,
-                             OscPacket* packet, OscDecodeError* error = nullptr);
+OSC_API bool DecodeOscPacket(const std::uint8_t* bytes, std::size_t size, OscPacket* packet,
+                             OscDecodeError* error = nullptr);
 
 inline bool
 DecodeOscPacket(const std::vector<std::uint8_t>& datagram, OscPacket* packet,

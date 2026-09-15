@@ -32,28 +32,25 @@ main()
     // A quarter turn about Y, halved. The endpoints are built here rather than
     // read from anywhere, so the fixture carries no fixture file.
     const pxr::GfQuatf identity(1.0f, pxr::GfVec3f(0.0f));
-    const pxr::GfQuatf quarter(0.70710678f,
-                               pxr::GfVec3f(0.0f, 0.70710678f, 0.0f));
+    const pxr::GfQuatf quarter(0.70710678f, pxr::GfVec3f(0.0f, 0.70710678f, 0.0f));
 
     motion::HumanoidPose a;
     a.timestamp = 0.0;
-    a.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] =
-        identity;
+    a.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] = identity;
     a.validRotations.set(static_cast<std::size_t>(motion::HumanBone::Hips));
 
     motion::HumanoidPose b = a;
     b.timestamp = 1.0;
-    b.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] =
-        quarter;
+    b.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)] = quarter;
 
     const motion::HumanoidPose mid = motion::LerpPose(a, b, 0.5f);
-    if (mid.timestamp != 0.5) {
-        std::fprintf(stderr, "consumer: midpoint timestamp is %f\n",
-                     mid.timestamp);
+    if (mid.timestamp != 0.5)
+    {
+        std::fprintf(stderr, "consumer: midpoint timestamp is %f\n", mid.timestamp);
         return 1;
     }
-    if (!mid.validRotations.test(
-            static_cast<std::size_t>(motion::HumanBone::Hips))) {
+    if (!mid.validRotations.test(static_cast<std::size_t>(motion::HumanBone::Hips)))
+    {
         std::fprintf(stderr, "consumer: the interpolated pose drives no hips\n");
         return 1;
     }
@@ -62,15 +59,16 @@ main()
     // sits strictly between the two -- which is the smallest assertion that
     // could not be satisfied by a package that returned one endpoint unchanged.
     const float real =
-        mid.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)]
-            .GetReal();
-    if (!(real > quarter.GetReal() && real < identity.GetReal())) {
+        mid.localRotations[static_cast<std::size_t>(motion::HumanBone::Hips)].GetReal();
+    if (!(real > quarter.GetReal() && real < identity.GetReal()))
+    {
         std::fprintf(stderr, "consumer: midpoint real part is %f\n", real);
         return 1;
     }
 
-    std::fprintf(stdout, "consumer: interpolated to %f through the installed "
-                         "package\n",
+    std::fprintf(stdout,
+                 "consumer: interpolated to %f through the installed "
+                 "package\n",
                  real);
     return 0;
 }

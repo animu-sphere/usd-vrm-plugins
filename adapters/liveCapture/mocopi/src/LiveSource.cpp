@@ -8,9 +8,7 @@ namespace vrmAdapterMocopi
 {
 
 MocopiLiveSource::MocopiLiveSource(const MocopiLiveSourceConfig& config)
-    : _assembler(config.frame)
-    , _intake(config.intake)
-    , _restart(config.restart)
+    : _assembler(config.frame), _intake(config.intake), _restart(config.restart)
 {
     // Before a frame exists, so the first pose out of the buffer already says it
     // arrived over this protocol from a live capture. Told once and never
@@ -29,10 +27,13 @@ std::size_t
 MocopiLiveSource::_Deliver()
 {
     std::size_t admitted = 0;
-    for (const MocopiFrame& frame : _frames) {
-        if (frame.beginsNewSession) {
+    for (const MocopiFrame& frame : _frames)
+    {
+        if (frame.beginsNewSession)
+        {
             _restartPending = true;
-            if (_restart == SessionRestartPolicy::Reset) {
+            if (_restart == SessionRestartPolicy::Reset)
+            {
                 // Before the frame is pushed, so it is admitted as the first of
                 // the new buffer rather than refused against the old one's head.
                 _intake.Reset();
@@ -41,10 +42,13 @@ MocopiLiveSource::_Deliver()
         }
 
         ++_stats.framesDelivered;
-        if (_intake.Push(frame.pose)) {
+        if (_intake.Push(frame.pose))
+        {
             ++_stats.framesAdmitted;
             ++admitted;
-        } else {
+        }
+        else
+        {
             ++_stats.framesRefused;
         }
     }
@@ -52,13 +56,14 @@ MocopiLiveSource::_Deliver()
 }
 
 void
-MocopiLiveSource::_StampDatagram(std::vector<Diagnostic>* diagnostics,
-                                 std::size_t from) const
+MocopiLiveSource::_StampDatagram(std::vector<Diagnostic>* diagnostics, std::size_t from) const
 {
-    if (!diagnostics) {
+    if (!diagnostics)
+    {
         return;
     }
-    for (std::size_t index = from; index != diagnostics->size(); ++index) {
+    for (std::size_t index = from; index != diagnostics->size(); ++index)
+    {
         (*diagnostics)[index].source = _assembler.GetSource();
         // Overwrites the assembler's own serial on the lines it raised, which is
         // the point: it counts packets it was handed and this counts deliveries,
@@ -69,15 +74,15 @@ MocopiLiveSource::_StampDatagram(std::vector<Diagnostic>* diagnostics,
 }
 
 std::size_t
-MocopiLiveSource::PushDatagram(const std::uint8_t* bytes, std::size_t size,
-                               double receiveTime,
+MocopiLiveSource::PushDatagram(const std::uint8_t* bytes, std::size_t size, double receiveTime,
                                std::vector<Diagnostic>* diagnostics)
 {
     ++_datagramSerial;
     const std::size_t before = diagnostics ? diagnostics->size() : 0;
 
     MotionPacket packet;
-    if (!DecodeMotionPacket(bytes, size, &packet, diagnostics)) {
+    if (!DecodeMotionPacket(bytes, size, &packet, diagnostics))
+    {
         ++_stats.datagramsRefused;
         // The frames of the previous push must not survive a datagram this one
         // refused: `GetFramesFromLastPush()` is a window on the delivery that

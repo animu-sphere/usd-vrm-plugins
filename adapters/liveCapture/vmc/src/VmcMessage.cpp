@@ -38,16 +38,18 @@ constexpr std::array<Form, VmcMessageKindCount> kForms{{
     {"/VMC/Ext/Blend/Apply", "", ""},
 }};
 
-const Form* Entry(VmcMessageKind kind) noexcept
+const Form*
+Entry(VmcMessageKind kind) noexcept
 {
     const auto index = static_cast<std::size_t>(kind);
     return index < kForms.size() ? &kForms[index] : nullptr;
 }
 
-bool Refuse(Diagnostic* diagnostic, DiagnosticCode code,
-            std::string_view address, std::string detail)
+bool
+Refuse(Diagnostic* diagnostic, DiagnosticCode code, std::string_view address, std::string detail)
 {
-    if (diagnostic) {
+    if (diagnostic)
+    {
         *diagnostic = MakeDiagnostic(code, std::move(detail));
         diagnostic->subject.assign(address);
     }
@@ -56,7 +58,8 @@ bool Refuse(Diagnostic* diagnostic, DiagnosticCode code,
 
 // The tag string as it appears on the wire, so a diagnostic quotes what a
 // reader will find in the capture rather than a de-comma'd version of it.
-std::string Quoted(std::string_view tags)
+std::string
+Quoted(std::string_view tags)
 {
     std::string text = "\",";
     text.append(tags);
@@ -64,7 +67,8 @@ std::string Quoted(std::string_view tags)
     return text;
 }
 
-float Real32(const OscArgument& argument)
+float
+Real32(const OscArgument& argument)
 {
     return static_cast<float>(argument.real);
 }
@@ -88,8 +92,10 @@ VmcMessageKindTypeTags(VmcMessageKind kind) noexcept
 std::optional<VmcMessageKind>
 FindVmcMessageKind(std::string_view address) noexcept
 {
-    for (std::size_t index = 0; index < kForms.size(); ++index) {
-        if (kForms[index].address == address) {
+    for (std::size_t index = 0; index < kForms.size(); ++index)
+    {
+        if (kForms[index].address == address)
+        {
             return static_cast<VmcMessageKind>(index);
         }
     }
@@ -97,45 +103,42 @@ FindVmcMessageKind(std::string_view address) noexcept
 }
 
 bool
-DecodeVmcMessage(const OscMessage& message, VmcMessage* out,
-                 Diagnostic* diagnostic)
+DecodeVmcMessage(const OscMessage& message, VmcMessage* out, Diagnostic* diagnostic)
 {
-    if (!out) {
-        return Refuse(diagnostic, DiagnosticCode::PacketMalformed,
-                      message.address, "no output message was provided");
+    if (!out)
+    {
+        return Refuse(diagnostic, DiagnosticCode::PacketMalformed, message.address,
+                      "no output message was provided");
     }
     // The OSC layer emits one argument per type tag, including the zero-width
     // ones. A message where the two disagree did not come from it, and reading
     // arguments by tag index would run off the end -- so it is refused here
     // rather than trusted because of where it usually comes from.
-    if (message.arguments.size() != message.typeTags.size()) {
-        return Refuse(diagnostic, DiagnosticCode::PacketMalformed,
-                      message.address,
-                      "the type tags describe "
-                          + std::to_string(message.typeTags.size())
-                          + " argument(s) and "
-                          + std::to_string(message.arguments.size())
-                          + " were given");
+    if (message.arguments.size() != message.typeTags.size())
+    {
+        return Refuse(diagnostic, DiagnosticCode::PacketMalformed, message.address,
+                      "the type tags describe " + std::to_string(message.typeTags.size()) +
+                          " argument(s) and " + std::to_string(message.arguments.size()) +
+                          " were given");
     }
 
-    const std::optional<VmcMessageKind> kind =
-        FindVmcMessageKind(message.address);
-    if (!kind) {
+    const std::optional<VmcMessageKind> kind = FindVmcMessageKind(message.address);
+    if (!kind)
+    {
         // Info, not a defect: this is what a sender's headset, controller,
         // camera and MIDI traffic looks like from here, and every one of them
         // is well-formed OSC that this adapter has simply not been asked to
         // consume.
-        return Refuse(diagnostic, DiagnosticCode::UnsupportedMessage,
-                      message.address,
+        return Refuse(diagnostic, DiagnosticCode::UnsupportedMessage, message.address,
                       "no VMC message is decoded from this address");
     }
 
     const Form& form = kForms[static_cast<std::size_t>(*kind)];
-    if (message.typeTags.substr(0, form.required.size()) != form.required) {
-        return Refuse(diagnostic, DiagnosticCode::PacketMalformed,
-                      message.address,
-                      "expects " + Quoted(form.required) + " and carries "
-                          + Quoted(message.typeTags));
+    if (message.typeTags.substr(0, form.required.size()) != form.required)
+    {
+        return Refuse(diagnostic, DiagnosticCode::PacketMalformed, message.address,
+                      "expects " + Quoted(form.required) + " and carries " +
+                          Quoted(message.typeTags));
     }
 
     // Optional arguments are read while they match. The first that does not
@@ -143,10 +146,11 @@ DecodeVmcMessage(const OscMessage& message, VmcMessage* out,
     // is reporting something, not doing something wrong, and guessing at the
     // remainder is how a decoder starts inventing values.
     std::size_t read = form.required.size();
-    while (read < message.typeTags.size()) {
+    while (read < message.typeTags.size())
+    {
         const std::size_t extra = read - form.required.size();
-        if (extra >= form.optional.size()
-            || message.typeTags[read] != form.optional[extra]) {
+        if (extra >= form.optional.size() || message.typeTags[read] != form.optional[extra])
+        {
             break;
         }
         ++read;
@@ -157,17 +161,17 @@ DecodeVmcMessage(const OscMessage& message, VmcMessage* out,
     decoded.kind = *kind;
     decoded.unreadArguments = arguments.size() - read;
 
-    switch (*kind) {
+    switch (*kind)
+    {
     case VmcMessageKind::Availability:
-        decoded.availability.loaded =
-            static_cast<std::int32_t>(arguments[0].integer);
-        if (read > 1) {
-            decoded.availability.calibrationState =
-                static_cast<std::int32_t>(arguments[1].integer);
+        decoded.availability.loaded = static_cast<std::int32_t>(arguments[0].integer);
+        if (read > 1)
+        {
+            decoded.availability.calibrationState = static_cast<std::int32_t>(arguments[1].integer);
         }
-        if (read > 2) {
-            decoded.availability.calibrationMode =
-                static_cast<std::int32_t>(arguments[2].integer);
+        if (read > 2)
+        {
+            decoded.availability.calibrationMode = static_cast<std::int32_t>(arguments[2].integer);
         }
         break;
     case VmcMessageKind::Time:
@@ -180,13 +184,14 @@ DecodeVmcMessage(const OscMessage& message, VmcMessage* out,
     case VmcMessageKind::RootTransform:
     case VmcMessageKind::BoneTransform:
         decoded.name = arguments[0].text;
-        for (std::size_t axis = 0; axis < 3; ++axis) {
+        for (std::size_t axis = 0; axis < 3; ++axis)
+        {
             decoded.transform.position[axis] = Real32(arguments[1 + axis]);
         }
         // x, y, z, w -- the order the wire uses, kept.
-        for (std::size_t component = 0; component < 4; ++component) {
-            decoded.transform.rotation[component] =
-                Real32(arguments[4 + component]);
+        for (std::size_t component = 0; component < 4; ++component)
+        {
+            decoded.transform.rotation[component] = Real32(arguments[4 + component]);
         }
         break;
     case VmcMessageKind::BlendValue:
@@ -204,14 +209,14 @@ DecodeVmcMessage(const OscMessage& message, VmcMessage* out,
 }
 
 bool
-DecodeVmcPacket(const OscPacket& packet, VmcPacket* out,
-                std::vector<Diagnostic>* diagnostics)
+DecodeVmcPacket(const OscPacket& packet, VmcPacket* out, std::vector<Diagnostic>* diagnostics)
 {
-    if (!out) {
-        if (diagnostics) {
+    if (!out)
+    {
+        if (diagnostics)
+        {
             diagnostics->push_back(
-                MakeDiagnostic(DiagnosticCode::PacketMalformed,
-                               "no output packet was provided"));
+                MakeDiagnostic(DiagnosticCode::PacketMalformed, "no output packet was provided"));
         }
         return false;
     }
@@ -225,10 +230,12 @@ DecodeVmcPacket(const OscPacket& packet, VmcPacket* out,
     result.messages.reserve(packet.messages.size());
 
     bool ok = true;
-    for (std::size_t index = 0; index < packet.messages.size(); ++index) {
+    for (std::size_t index = 0; index < packet.messages.size(); ++index)
+    {
         VmcMessage decoded;
         Diagnostic diagnostic;
-        if (DecodeVmcMessage(packet.messages[index], &decoded, &diagnostic)) {
+        if (DecodeVmcMessage(packet.messages[index], &decoded, &diagnostic))
+        {
             decoded.oscIndex = index;
             result.messages.push_back(decoded);
             continue;
@@ -241,20 +248,23 @@ DecodeVmcPacket(const OscPacket& packet, VmcPacket* out,
         // would be silently miscounted as a defect rather than as traffic this
         // adapter ignores. Naming the two codes this layer can raise turns that
         // from a convention into something a test build trips over.
-        assert(diagnostic.code == DiagnosticCode::UnsupportedMessage
-               || diagnostic.code == DiagnosticCode::PacketMalformed);
-        if (diagnostic.code == DiagnosticCode::UnsupportedMessage) {
+        assert(diagnostic.code == DiagnosticCode::UnsupportedMessage ||
+               diagnostic.code == DiagnosticCode::PacketMalformed);
+        if (diagnostic.code == DiagnosticCode::UnsupportedMessage)
+        {
             ++result.unsupported;
-        } else {
+        }
+        else
+        {
             ++result.malformed;
             ok = false;
         }
-        if (diagnostics) {
+        if (diagnostics)
+        {
             // Where in the datagram, in the same shape the OSC layer's "(at
             // byte N)" uses -- a bundle carries twenty-four messages and the
             // address alone does not say which one.
-            diagnostic.detail += " (message " + std::to_string(index)
-                + " of the datagram)";
+            diagnostic.detail += " (message " + std::to_string(index) + " of the datagram)";
             diagnostics->push_back(std::move(diagnostic));
         }
     }

@@ -22,16 +22,11 @@ using motionBvh::DiagnosticCode;
 using motionBvh::DiagnosticSeverity;
 
 constexpr std::string_view kExpectedStrings[] = {
-    "VRM_BVH_PARSE_FAILED",
-    "VRM_BVH_UNSUPPORTED_CHANNEL",
-    "VRM_BVH_FRAME_WIDTH_MISMATCH",
-    "VRM_BVH_INVALID_FRAME_TIME",
-    "VRM_BVH_NON_FINITE_VALUE",
-    "VRM_BVH_PROFILE_REQUIRED",
-    "VRM_BVH_PROFILE_MISMATCH",
-    "VRM_BVH_UNMAPPED_JOINT",
-    "VRM_BVH_REQUIRED_JOINT_MISSING",
-    "VRM_BVH_INVALID_ROTATION_ORDER",
+    "VRM_BVH_PARSE_FAILED",           "VRM_BVH_UNSUPPORTED_CHANNEL",
+    "VRM_BVH_FRAME_WIDTH_MISMATCH",   "VRM_BVH_INVALID_FRAME_TIME",
+    "VRM_BVH_NON_FINITE_VALUE",       "VRM_BVH_PROFILE_REQUIRED",
+    "VRM_BVH_PROFILE_MISMATCH",       "VRM_BVH_UNMAPPED_JOINT",
+    "VRM_BVH_REQUIRED_JOINT_MISSING", "VRM_BVH_INVALID_ROTATION_ORDER",
     "VRM_BVH_INVALID_ROOT_POLICY",
 };
 
@@ -43,7 +38,8 @@ TestCodeStrings()
                   "docs/roadmap/recorded-motion-sources.md §6 first");
 
     std::set<std::string_view> unique;
-    for (std::size_t index = 0; index < motionBvh::DiagnosticCodeCount; ++index) {
+    for (std::size_t index = 0; index < motionBvh::DiagnosticCodeCount; ++index)
+    {
         const auto code = static_cast<DiagnosticCode>(index);
         const std::string_view text = motionBvh::DiagnosticCodeString(code);
         assert(text == kExpectedStrings[index]);
@@ -84,24 +80,22 @@ TestSyntaxAndSemanticHalves()
 void
 TestSeverityAndRecoverability()
 {
-    for (std::size_t index = 0; index < motionBvh::DiagnosticCodeCount; ++index) {
+    for (std::size_t index = 0; index < motionBvh::DiagnosticCodeCount; ++index)
+    {
         const auto code = static_cast<DiagnosticCode>(index);
         const bool isUnmapped = code == DiagnosticCode::UnmappedJoint;
         assert(motionBvh::DiagnosticIsRecoverable(code) == isUnmapped);
-        assert(motionBvh::DiagnosticDefaultSeverity(code)
-               == (isUnmapped ? DiagnosticSeverity::Warning
-                              : DiagnosticSeverity::Error));
-        if (motionBvh::DiagnosticIsSyntax(code)) {
+        assert(motionBvh::DiagnosticDefaultSeverity(code) ==
+               (isUnmapped ? DiagnosticSeverity::Warning : DiagnosticSeverity::Error));
+        if (motionBvh::DiagnosticIsSyntax(code))
+        {
             assert(!motionBvh::DiagnosticIsRecoverable(code));
         }
     }
 
-    assert(motionBvh::DiagnosticSeverityString(DiagnosticSeverity::Info)
-           == "info");
-    assert(motionBvh::DiagnosticSeverityString(DiagnosticSeverity::Warning)
-           == "warning");
-    assert(motionBvh::DiagnosticSeverityString(DiagnosticSeverity::Error)
-           == "error");
+    assert(motionBvh::DiagnosticSeverityString(DiagnosticSeverity::Info) == "info");
+    assert(motionBvh::DiagnosticSeverityString(DiagnosticSeverity::Warning) == "warning");
+    assert(motionBvh::DiagnosticSeverityString(DiagnosticSeverity::Error) == "error");
 }
 
 // MakeDiagnostic fills severity and recoverable from the code, so the two
@@ -109,15 +103,13 @@ TestSeverityAndRecoverability()
 void
 TestMakeDiagnostic()
 {
-    const Diagnostic parse =
-        motionBvh::MakeDiagnostic(DiagnosticCode::ParseFailed, "why");
+    const Diagnostic parse = motionBvh::MakeDiagnostic(DiagnosticCode::ParseFailed, "why");
     assert(parse.severity == DiagnosticSeverity::Error);
     assert(!parse.recoverable);
     assert(parse.detail == "why");
     assert(!parse.line);
 
-    const Diagnostic unmapped =
-        motionBvh::MakeDiagnostic(DiagnosticCode::UnmappedJoint);
+    const Diagnostic unmapped = motionBvh::MakeDiagnostic(DiagnosticCode::UnmappedJoint);
     assert(unmapped.severity == DiagnosticSeverity::Warning);
     assert(unmapped.recoverable);
     assert(unmapped.detail.empty());
@@ -126,31 +118,27 @@ TestMakeDiagnostic()
 void
 TestFormatting()
 {
-    Diagnostic diagnostic =
-        motionBvh::MakeDiagnostic(DiagnosticCode::FrameWidthMismatch,
-                                  "expected 57 values, read 54");
+    Diagnostic diagnostic = motionBvh::MakeDiagnostic(DiagnosticCode::FrameWidthMismatch,
+                                                      "expected 57 values, read 54");
     diagnostic.source = "capture.bvh";
     diagnostic.line = 42;
     diagnostic.subject = "frame 3";
-    assert(motionBvh::FormatDiagnostic(diagnostic)
-           == "[VRM_BVH_FRAME_WIDTH_MISMATCH] error source=capture.bvh line=42 "
-              "subject=frame 3: expected 57 values, read 54");
+    assert(motionBvh::FormatDiagnostic(diagnostic) ==
+           "[VRM_BVH_FRAME_WIDTH_MISMATCH] error source=capture.bvh line=42 "
+           "subject=frame 3: expected 57 values, read 54");
 
     // Absent optional fields are omitted rather than printed empty.
-    const Diagnostic bare =
-        motionBvh::MakeDiagnostic(DiagnosticCode::ProfileRequired);
-    assert(motionBvh::FormatDiagnostic(bare)
-           == "[VRM_BVH_PROFILE_REQUIRED] error");
+    const Diagnostic bare = motionBvh::MakeDiagnostic(DiagnosticCode::ProfileRequired);
+    assert(motionBvh::FormatDiagnostic(bare) == "[VRM_BVH_PROFILE_REQUIRED] error");
 
     // `recoverable` is printed only when it is true -- the default is what
     // stops the read, and saying so on every line hides the one case that
     // does not.
-    Diagnostic warning =
-        motionBvh::MakeDiagnostic(DiagnosticCode::UnmappedJoint, "no mapping");
+    Diagnostic warning = motionBvh::MakeDiagnostic(DiagnosticCode::UnmappedJoint, "no mapping");
     warning.subject = "PropAnchor";
-    assert(motionBvh::FormatDiagnostic(warning)
-           == "[VRM_BVH_UNMAPPED_JOINT] warning recoverable subject=PropAnchor"
-              ": no mapping");
+    assert(motionBvh::FormatDiagnostic(warning) ==
+           "[VRM_BVH_UNMAPPED_JOINT] warning recoverable subject=PropAnchor"
+           ": no mapping");
 }
 
 } // namespace
@@ -163,7 +151,6 @@ main()
     TestSeverityAndRecoverability();
     TestMakeDiagnostic();
     TestFormatting();
-    std::printf("motionBvh diagnostics: %zu code(s) verified\n",
-                motionBvh::DiagnosticCodeCount);
+    std::printf("motionBvh diagnostics: %zu code(s) verified\n", motionBvh::DiagnosticCodeCount);
     return 0;
 }

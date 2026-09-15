@@ -38,15 +38,16 @@ main()
     // rather than `hips`, because a table this fixture accidentally shipped
     // itself would be likelier to agree about the root than about a limb.
     const auto bone = motion::FindHumanBone("leftUpperArm");
-    if (!bone) {
+    if (!bone)
+    {
         std::fprintf(stderr, "consumer: the installed package names no "
                              "leftUpperArm\n");
         return 1;
     }
     const std::string_view name = motion::HumanBoneName(*bone);
-    if (name != "leftUpperArm") {
-        std::fprintf(stderr, "consumer: round trip returned %s\n",
-                     std::string(name).c_str());
+    if (name != "leftUpperArm")
+    {
+        std::fprintf(stderr, "consumer: round trip returned %s\n", std::string(name).c_str());
         return 1;
     }
 
@@ -56,7 +57,8 @@ main()
     std::bitset<motion::HumanBoneCount> present;
     present.set();
     const std::string path = motion::HumanBoneJointPath(*bone, present);
-    if (path.rfind("hips/", 0) != 0 || path.find("/leftUpperArm") == path.npos) {
+    if (path.rfind("hips/", 0) != 0 || path.find("/leftUpperArm") == path.npos)
+    {
         std::fprintf(stderr, "consumer: joint path is %s\n", path.c_str());
         return 1;
     }
@@ -66,16 +68,18 @@ main()
     // and reading its real part back through the imported target is the
     // smallest question that could not be answered by headers alone.
     const motion::HumanoidPose pose;
-    if (pose.root.worldOrientation.GetReal() != 1.0f
-        || pose.validRotations.any()) {
-        std::fprintf(stderr, "consumer: a default pose carries %zu valid "
-                             "rotations\n",
+    if (pose.root.worldOrientation.GetReal() != 1.0f || pose.validRotations.any())
+    {
+        std::fprintf(stderr,
+                     "consumer: a default pose carries %zu valid "
+                     "rotations\n",
                      pose.validRotations.count());
         return 1;
     }
 
-    std::fprintf(stdout, "consumer: resolved %s through the installed "
-                         "package\n",
+    std::fprintf(stdout,
+                 "consumer: resolved %s through the installed "
+                 "package\n",
                  path.c_str());
     return 0;
 }

@@ -18,22 +18,23 @@ constexpr double kArrivalTolerance = PoseSampleTimeTolerance;
 } // namespace
 
 ReplaySender::ReplaySender(HumanoidAnimation trace, LiveCaptureSource* sink)
-    : _trace(std::move(trace))
-    , _sink(sink)
+    : _trace(std::move(trace)), _sink(sink)
 {
 }
 
 std::size_t
 ReplaySender::Advance(double captureTime)
 {
-    if (!_sink) {
+    if (!_sink)
+    {
         return 0;
     }
     std::size_t accepted = 0;
-    while (_next < _trace.samples.size()
-           && _trace.samples[_next].timestamp
-               <= captureTime + kArrivalTolerance) {
-        if (_sink->Push(_trace.samples[_next])) {
+    while (_next < _trace.samples.size() &&
+           _trace.samples[_next].timestamp <= captureTime + kArrivalTolerance)
+    {
+        if (_sink->Push(_trace.samples[_next]))
+        {
             ++accepted;
         }
         ++_next;
@@ -44,12 +45,15 @@ ReplaySender::Advance(double captureTime)
 std::size_t
 ReplaySender::Flush()
 {
-    if (!_sink) {
+    if (!_sink)
+    {
         return 0;
     }
     std::size_t accepted = 0;
-    for (; _next < _trace.samples.size(); ++_next) {
-        if (_sink->Push(_trace.samples[_next])) {
+    for (; _next < _trace.samples.size(); ++_next)
+    {
+        if (_sink->Push(_trace.samples[_next]))
+        {
             ++accepted;
         }
     }

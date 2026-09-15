@@ -63,7 +63,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace
+{
 
 const TfToken kExtractRootMotion("motion.extractRootMotion");
 const TfToken kSampleAnimation("motion.sampleAnimation");
@@ -90,24 +91,25 @@ constexpr double kStep = 0.02;
 // Where the clip puts the hips at frame 50, halfway from (0, 0, 0) to (0, 1, 2).
 const GfVec3f kHipsAtFrame50(0.0f, 0.5f, 1.0f);
 
-bool NearlyEqual(double a, double b, double tolerance)
+bool
+NearlyEqual(double a, double b, double tolerance)
 {
     return std::abs(a - b) <= tolerance;
 }
 
-bool NearlyEqual(const GfVec3f& a, const GfVec3f& b, double tolerance)
+bool
+NearlyEqual(const GfVec3f& a, const GfVec3f& b, double tolerance)
 {
-    return NearlyEqual(a[0], b[0], tolerance)
-        && NearlyEqual(a[1], b[1], tolerance)
-        && NearlyEqual(a[2], b[2], tolerance);
+    return NearlyEqual(a[0], b[0], tolerance) && NearlyEqual(a[1], b[1], tolerance) &&
+           NearlyEqual(a[2], b[2], tolerance);
 }
 
-motion::RootMotion RootAt(const ExecUsdCacheView& view, int index)
+motion::RootMotion
+RootAt(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
-    assert(!value.IsEmpty() &&
-           "no value came back -- if the plugInfo is unstaged this is what it "
-           "looks like, not a load error");
+    assert(!value.IsEmpty() && "no value came back -- if the plugInfo is unstaged this is what it "
+                               "looks like, not a load error");
     // The bundle registers two types and this is the second one. A request that
     // returned a pose here would mean the computation's declared result type
     // and its callback had drifted apart, which is not a thing the compiler
@@ -125,16 +127,17 @@ motion::RootMotion RootAt(const ExecUsdCacheView& view, int index)
 // deliberate "this clip does not place the body" for anyone not reading
 // `TfError`s. An empty `VtValue` is the one shape no computation here ever
 // produces as an answer.
-void AssertRefused(const ExecUsdCacheView& view, int index)
+void
+AssertRefused(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
-    assert(value.IsEmpty() &&
-           "a refusal came back carrying a value, which puts it back where a "
-           "consumer cannot tell it from an answer");
+    assert(value.IsEmpty() && "a refusal came back carrying a value, which puts it back where a "
+                              "consumer cannot tell it from an answer");
     assert(!value.IsHolding<motion::RootMotion>());
 }
 
-motion::HumanoidPose PoseAt(const ExecUsdCacheView& view, int index)
+motion::HumanoidPose
+PoseAt(const ExecUsdCacheView& view, int index)
 {
     const VtValue value = view.Get(index);
     assert(!value.IsEmpty());
@@ -147,14 +150,14 @@ motion::HumanoidPose PoseAt(const ExecUsdCacheView& view, int index)
 // bones the fixtures name, at identity, with the hips at the origin. So the
 // sampled pose at frame 50 is a known distance away from it, and the velocity
 // between them is a number this suite can write out.
-motion::HumanoidPose PriorPose(double timestamp)
+motion::HumanoidPose
+PriorPose(double timestamp)
 {
     motion::HumanoidPose pose;
     pose.timestamp = timestamp;
-    for (const motion::HumanBone bone : {motion::HumanBone::Hips,
-                                         motion::HumanBone::Spine,
-                                         motion::HumanBone::Chest,
-                                         motion::HumanBone::Head}) {
+    for (const motion::HumanBone bone : {motion::HumanBone::Hips, motion::HumanBone::Spine,
+                                         motion::HumanBone::Chest, motion::HumanBone::Head})
+    {
         pose.validRotations.set(static_cast<std::size_t>(bone));
     }
     pose.root.worldPosition = GfVec3f(0.0f);
@@ -162,13 +165,11 @@ motion::HumanoidPose PriorPose(double timestamp)
     return pose;
 }
 
-ExecUsdValueOverrideVector PriorOverride(const UsdPrim& clip,
-                                         const motion::HumanoidPose& pose)
+ExecUsdValueOverrideVector
+PriorOverride(const UsdPrim& clip, const motion::HumanoidPose& pose)
 {
     ExecUsdValueOverrideVector overrides;
-    overrides.push_back(
-        ExecUsdValueOverride{ExecUsdValueKey(clip, kPriorPose),
-                             VtValue(pose)});
+    overrides.push_back(ExecUsdValueOverride{ExecUsdValueKey(clip, kPriorPose), VtValue(pose)});
     return overrides;
 }
 
@@ -178,12 +179,14 @@ ExecUsdValueOverrideVector PriorOverride(const UsdPrim& clip,
 // the suite states it here for the same reason the filter suite writes out
 // `PoseFilter`'s step weight: an expected value produced by the code under test
 // asserts only that it equals itself.
-GfVec3f VelocityBetween(const GfVec3f& from, const GfVec3f& to, double seconds)
+GfVec3f
+VelocityBetween(const GfVec3f& from, const GfVec3f& to, double seconds)
 {
     return (to - from) / static_cast<float>(seconds);
 }
 
-std::vector<ExecUsdValueKey> KeysFor(const UsdPrim& clip)
+std::vector<ExecUsdValueKey>
+KeysFor(const UsdPrim& clip)
 {
     std::vector<ExecUsdValueKey> keys;
     keys.emplace_back(clip, kExtractRootMotion);
@@ -195,7 +198,8 @@ std::vector<ExecUsdValueKey> KeysFor(const UsdPrim& clip)
 // ---------------------------------------------------------------------------
 // The clip that states a policy
 // ---------------------------------------------------------------------------
-void TestAClipWithAPolicy(const std::string& fixture)
+void
+TestAClipWithAPolicy(const std::string& fixture)
 {
     UsdStageRefPtr stage = UsdStage::Open(fixture);
     assert(stage && "the root policy fixture did not open");
@@ -217,15 +221,14 @@ void TestAClipWithAPolicy(const std::string& fixture)
     int timeInvalidations = 0;
     bool rootReported = false;
     ExecUsdRequest request = system.BuildRequest(
-        KeysFor(clip),
-        [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
-        [&](const ExecRequestIndexSet& indices) {
+        KeysFor(clip), [](const ExecRequestIndexSet&, const EfTimeInterval&) {},
+        [&](const ExecRequestIndexSet& indices)
+        {
             ++timeInvalidations;
             rootReported = rootReported || indices.count(kRoot) > 0;
         });
-    assert(request.IsValid() &&
-           "the request did not compile -- a computation whose result type is "
-           "not the type of the computation it reads is the new shape here");
+    assert(request.IsValid() && "the request did not compile -- a computation whose result type is "
+                                "not the type of the computation it reads is the new shape here");
 
     // A request is armed by its first `Compute` (the filtering report §4), so
     // the frame moves after one. That first compute is at the default time
@@ -250,11 +253,9 @@ void TestAClipWithAPolicy(const std::string& fixture)
     // dependent. What is new is that the dependent value is a *different type*
     // from the one it depends on: time dependence propagates along the link and
     // not along the type.
-    assert(timeInvalidations > 0 &&
-           "moving the frame reached no value key at all");
-    assert(rootReported &&
-           "motion.extractRootMotion was NOT reported when the frame moved, "
-           "although the pose it consumes is time dependent");
+    assert(timeInvalidations > 0 && "moving the frame reached no value key at all");
+    assert(rootReported && "motion.extractRootMotion was NOT reported when the frame moved, "
+                           "although the pose it consumes is time dependent");
 
     // ---- un-overridden, there is no velocity to derive ---------------------
     // `motion.priorPose` forwards the clip's own pose, so the two instants are
@@ -267,16 +268,13 @@ void TestAClipWithAPolicy(const std::string& fixture)
 
         // Both registered types, out of one request, side by side.
         assert(NearlyEqual(sampled.timestamp, kSecond, 1e-12));
-        assert(sampled.root.hasPosition &&
-               "the fixture is not the sampled clip after all");
+        assert(sampled.root.hasPosition && "the fixture is not the sampled clip after all");
 
         assert(root.hasPosition);
         assert(NearlyEqual(root.worldPosition, kHipsAtFrame50, 1e-6) &&
                "the root did not come from the hips at the evaluated frame");
-        assert(!root.hasLinearVelocity &&
-               "a velocity was derived between a pose and itself");
-        assert(root == sampled.root &&
-               "passthrough changed the root the pose stated");
+        assert(!root.hasLinearVelocity && "a velocity was derived between a pose and itself");
+        assert(root == sampled.root && "passthrough changed the root the pose stated");
     }
 
     // ---- overridden, passthrough still derives nothing ---------------------
@@ -287,11 +285,9 @@ void TestAClipWithAPolicy(const std::string& fixture)
     // whichever way it defaulted.
     const motion::HumanoidPose prior = PriorPose(kSecond - kStep);
     {
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, PriorOverride(clip, prior));
+        ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
 
-        assert(PoseAt(view, kPrior) == prior &&
-               "the override did not reach motion.priorPose");
+        assert(PoseAt(view, kPrior) == prior && "the override did not reach motion.priorPose");
 
         const motion::RootMotion root = RootAt(view, kRoot);
         assert(root.hasPosition);
@@ -309,16 +305,14 @@ void TestAClipWithAPolicy(const std::string& fixture)
     // node two links downstream of the one that reads the clip.
     assert(clip.GetAttribute(kRootIntake).Set(TfToken("deriveVelocity")));
     {
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, PriorOverride(clip, prior));
+        ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
         const motion::RootMotion root = RootAt(view, kRoot);
 
         assert(root.hasLinearVelocity &&
                "deriveVelocity derived nothing, or the authored token never "
                "reached the computation");
         assert(NearlyEqual(root.linearVelocity,
-                           VelocityBetween(prior.root.worldPosition,
-                                           kHipsAtFrame50, kStep),
+                           VelocityBetween(prior.root.worldPosition, kHipsAtFrame50, kStep),
                            1e-3) &&
                "the derived velocity is not the distance between the two "
                "instants over the time between them");
@@ -337,8 +331,7 @@ void TestAClipWithAPolicy(const std::string& fixture)
     // `hasPosition` set would put the avatar at the origin instead.
     assert(clip.GetAttribute(kRootIntake).Set(TfToken("ignore")));
     {
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, PriorOverride(clip, prior));
+        ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
 
         // `RootAt` asserts the value is present and holds a `RootMotion`, so
         // this is also the positive half of the refusal shape: `ignore` is an
@@ -346,10 +339,8 @@ void TestAClipWithAPolicy(const std::string& fixture)
         // refusal, and the pair is what makes the two distinguishable rather
         // than merely differently commented.
         const motion::RootMotion root = RootAt(view, kRoot);
-        assert(root == motion::RootMotion{} &&
-               "ignore left something of the root behind");
-        assert(!root.hasPosition &&
-               "ignore zeroed the position instead of clearing it");
+        assert(root == motion::RootMotion{} && "ignore left something of the root behind");
+        assert(!root.hasPosition && "ignore zeroed the position instead of clearing it");
 
         // The pose it read is unchanged, so `ignore` is this node's answer and
         // not a clip that stopped stating a root.
@@ -372,8 +363,7 @@ void TestAClipWithAPolicy(const std::string& fixture)
     assert(clip.GetAttribute(kRootIntake).Set(TfToken("smooth")));
     {
         TfErrorMark mark;
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, PriorOverride(clip, prior));
+        ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
         AssertRefused(view, kRoot);
 
         // The nodes it did not refuse are unaffected: a refusal is this value
@@ -381,20 +371,18 @@ void TestAClipWithAPolicy(const std::string& fixture)
         assert(PoseAt(view, kSampled).root.hasPosition &&
                "a refused intake policy took motion.sampleAnimation with it");
 
-        assert(!mark.IsClean() &&
-               "an unrecognized policy was refused silently, which is worse "
-               "than being refused");
+        assert(!mark.IsClean() && "an unrecognized policy was refused silently, which is worse "
+                                  "than being refused");
         bool named = false;
-        for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd();
-             ++it) {
-            if (it->GetCommentary().find("motion.extractRootMotion")
-                != std::string::npos) {
+        for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+        {
+            if (it->GetCommentary().find("motion.extractRootMotion") != std::string::npos)
+            {
                 named = true;
             }
         }
-        assert(named &&
-               "the errors posted came from somewhere other than the "
-               "computation");
+        assert(named && "the errors posted came from somewhere other than the "
+                        "computation");
         mark.Clear();
     }
     assert(clip.GetAttribute(kRootIntake).Set(TfToken("passthrough")));
@@ -407,7 +395,8 @@ void TestAClipWithAPolicy(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // The clip that states none
 // ---------------------------------------------------------------------------
-void TestAClipWithNoPolicy(const std::string& fixture)
+void
+TestAClipWithNoPolicy(const std::string& fixture)
 {
     UsdStageRefPtr stage = UsdStage::Open(fixture);
     assert(stage && "the sampled fixture did not open");
@@ -427,8 +416,7 @@ void TestAClipWithNoPolicy(const std::string& fixture)
 
     const motion::HumanoidPose prior = PriorPose(kSecond - kStep);
     {
-        ExecUsdCacheView view = system.ComputeWithOverrides(
-            request, PriorOverride(clip, prior));
+        ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
         const motion::RootMotion root = RootAt(view, kRoot);
 
         // `motion::LiveCaptureConfig`'s own default is `DeriveVelocity`, and
@@ -437,13 +425,10 @@ void TestAClipWithNoPolicy(const std::string& fixture)
         // distinguishable here, so this would not pass if the bundle had picked
         // a default of its own -- `Passthrough` derives nothing and `Ignore`
         // clears the position.
-        assert(root.hasLinearVelocity &&
-               "a clip stating no policy was not taken in with "
-               "LiveCaptureConfig's own DeriveVelocity default");
+        assert(root.hasLinearVelocity && "a clip stating no policy was not taken in with "
+                                         "LiveCaptureConfig's own DeriveVelocity default");
         assert(NearlyEqual(root.linearVelocity,
-                           VelocityBetween(prior.root.worldPosition,
-                                           kHipsAtFrame50, kStep),
-                           1e-3));
+                           VelocityBetween(prior.root.worldPosition, kHipsAtFrame50, kStep), 1e-3));
         assert(root.hasPosition);
         assert(NearlyEqual(root.worldPosition, kHipsAtFrame50, 1e-6));
     }
@@ -475,7 +460,8 @@ void TestAClipWithNoPolicy(const std::string& fixture)
 // It matters because the alternative is a per-node prior, and a driver holding
 // two of them would have to keep them in step by hand -- which is the state
 // exec's purity rule pushed out of the graph in the first place.
-void TestOneOverrideDrivesBothRecurrences(const std::string& fixture)
+void
+TestOneOverrideDrivesBothRecurrences(const std::string& fixture)
 {
     UsdStageRefPtr stage = UsdStage::Open(fixture);
     assert(stage && "the sampled fixture did not open");
@@ -488,23 +474,18 @@ void TestOneOverrideDrivesBothRecurrences(const std::string& fixture)
     keys.emplace_back(clip, kExtractRootMotion);
     keys.emplace_back(clip, TfToken("motion.filterPose"));
     ExecUsdRequest request = system.BuildRequest(std::move(keys));
-    assert(request.IsValid() &&
-           "two computations reading the same third one did not compile");
+    assert(request.IsValid() && "two computations reading the same third one did not compile");
 
     system.ChangeTime(UsdTimeCode(kFrame));
 
     const motion::HumanoidPose prior = PriorPose(kSecond - kStep);
-    ExecUsdCacheView view = system.ComputeWithOverrides(
-        request, PriorOverride(clip, prior));
+    ExecUsdCacheView view = system.ComputeWithOverrides(request, PriorOverride(clip, prior));
 
     // The root derived its velocity from the substituted pose...
     const motion::RootMotion root = RootAt(view, 0);
-    assert(root.hasLinearVelocity &&
-           "the override did not reach motion.extractRootMotion");
+    assert(root.hasLinearVelocity && "the override did not reach motion.extractRootMotion");
     assert(NearlyEqual(root.linearVelocity,
-                       VelocityBetween(prior.root.worldPosition,
-                                       kHipsAtFrame50, kStep),
-                       1e-3));
+                       VelocityBetween(prior.root.worldPosition, kHipsAtFrame50, kStep), 1e-3));
 
     // ...and the filter took its step from the same one, in the same call. The
     // filtered hips are strictly between the prior's origin and the clip's
@@ -521,10 +502,10 @@ void TestOneOverrideDrivesBothRecurrences(const std::string& fixture)
 
 } // namespace
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
-    assert(argc == 3 &&
-           "usage: execMotion_root <rooted_clip.usda> <sampled_clip.usda>");
+    assert(argc == 3 && "usage: execMotion_root <rooted_clip.usda> <sampled_clip.usda>");
     TestAClipWithAPolicy(argv[1]);
     TestAClipWithNoPolicy(argv[2]);
     TestOneOverrideDrivesBothRecurrences(argv[2]);

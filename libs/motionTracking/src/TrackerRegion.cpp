@@ -13,17 +13,8 @@ namespace
 // a region added to the enum without a name here is a compile error rather than
 // an empty string somebody reads as "unset" three layers up.
 constexpr std::array<std::string_view, TrackerRegionCount> kNames = {
-    "head",
-    "chest",
-    "hips",
-    "leftElbow",
-    "leftHand",
-    "leftKnee",
-    "leftFoot",
-    "rightElbow",
-    "rightHand",
-    "rightKnee",
-    "rightFoot",
+    "head",     "chest",      "hips",      "leftElbow", "leftHand",  "leftKnee",
+    "leftFoot", "rightElbow", "rightHand", "rightKnee", "rightFoot",
 };
 
 static_assert(kNames.size() == TrackerRegionCount,

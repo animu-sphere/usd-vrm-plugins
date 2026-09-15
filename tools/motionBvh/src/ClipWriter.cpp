@@ -30,24 +30,24 @@ namespace motionBvhTool
 {
 
 bool
-WriteSemanticClip(const std::string& outputPath,
-                  const motion::HumanoidAnimation& animation,
-                  const motionSource::CanonicalRestPose& rest,
-                  const std::string& clipName,
-                  const std::map<std::string, std::string>& provenance,
-                  std::string* error)
+WriteSemanticClip(const std::string& outputPath, const motion::HumanoidAnimation& animation,
+                  const motionSource::CanonicalRestPose& rest, const std::string& clipName,
+                  const std::map<std::string, std::string>& provenance, std::string* error)
 {
-    if (animation.samples.empty()) {
+    if (animation.samples.empty())
+    {
         *error = "the conversion produced no frames";
         return false;
     }
     // Checked before any work: a bad prim name is an argument error, and
     // discovering it after authoring the joint set only obscures that.
-    if (!pxr::TfIsValidIdentifier(clipName)) {
+    if (!pxr::TfIsValidIdentifier(clipName))
+    {
         *error = "'" + clipName + "' is not a valid prim name";
         return false;
     }
-    if (!rest.present.any()) {
+    if (!rest.present.any())
+    {
         *error = "the conversion bound no humanoid bone";
         return false;
     }
@@ -58,7 +58,8 @@ WriteSemanticClip(const std::string& outputPath,
     // is not in the joint set, which USD would accept and no reader would
     // notice.
     const auto hips = static_cast<std::size_t>(motion::HumanBone::Hips);
-    if (!rest.present.test(hips)) {
+    if (!rest.present.test(hips))
+    {
         *error = "the profile bound no hips, so the clip has nowhere to carry "
                  "body translation";
         return false;
@@ -68,55 +69,58 @@ WriteSemanticClip(const std::string& outputPath,
     pxr::VtTokenArray joints;
     bones.reserve(rest.present.count());
     joints.reserve(rest.present.count());
-    for (std::size_t index = 0; index < motion::HumanBoneCount; ++index) {
-        if (!rest.present.test(index)) {
+    for (std::size_t index = 0; index < motion::HumanBoneCount; ++index)
+    {
+        if (!rest.present.test(index))
+        {
             continue;
         }
         const auto bone = static_cast<motion::HumanBone>(index);
         bones.push_back(bone);
-        joints.push_back(
-            pxr::TfToken(motion::HumanBoneJointPath(bone, rest.present)));
+        joints.push_back(pxr::TfToken(motion::HumanBoneJointPath(bone, rest.present)));
     }
 
-    const double frameRate =
-        animation.nominalFrameRate > 0.0 ? animation.nominalFrameRate : 30.0;
+    const double frameRate = animation.nominalFrameRate > 0.0 ? animation.nominalFrameRate : 30.0;
 
     // Re-converting over a previous output is the normal case, so clear an
     // existing layer instead of failing the way `UsdStage::CreateNew` would.
     // There is no input stage to guard against: this tool's input is a `.bvh`
     // file and a profile, neither of which is a USD layer.
     pxr::SdfLayerRefPtr layer = pxr::SdfLayer::FindOrOpen(outputPath);
-    if (layer) {
+    if (layer)
+    {
         layer->Clear();
-    } else {
+    }
+    else
+    {
         layer = pxr::SdfLayer::CreateNew(outputPath);
     }
-    if (!layer) {
+    if (!layer)
+    {
         *error = "could not create output layer: " + outputPath;
         return false;
     }
     const pxr::UsdStageRefPtr stage = pxr::UsdStage::Open(layer);
-    if (!stage) {
+    if (!stage)
+    {
         *error = "could not open output layer as a stage: " + outputPath;
         return false;
     }
     // Canonical, not the source's: the basis change already happened, and a
     // stage restating the file's centimetres would undo it downstream.
     pxr::UsdGeomSetStageUpAxis(stage, pxr::UsdGeomTokens->y);
-    pxr::UsdGeomSetStageMetersPerUnit(stage,
-                                      motionSource::CanonicalUnitInMeters);
+    pxr::UsdGeomSetStageMetersPerUnit(stage, motionSource::CanonicalUnitInMeters);
     stage->SetTimeCodesPerSecond(frameRate);
     stage->SetFramesPerSecond(frameRate);
     stage->SetStartTimeCode(animation.startTime * frameRate);
     stage->SetEndTimeCode(animation.endTime * frameRate);
 
     const pxr::SdfPath rootPath("/Source");
-    const pxr::UsdPrim root =
-        pxr::UsdGeomScope::Define(stage, rootPath).GetPrim();
+    const pxr::UsdPrim root = pxr::UsdGeomScope::Define(stage, rootPath).GetPrim();
     stage->SetDefaultPrim(root);
-    for (const auto& entry : provenance) {
-        root.SetCustomDataByKey(pxr::TfToken("source:" + entry.first),
-                                pxr::VtValue(entry.second));
+    for (const auto& entry : provenance)
+    {
+        root.SetCustomDataByKey(pxr::TfToken("source:" + entry.first), pxr::VtValue(entry.second));
     }
 
     // The rest pose the converter built, joint for joint. This is the whole of
@@ -124,25 +128,23 @@ WriteSemanticClip(const std::string& outputPath,
     // rest and the profile says how to read it, so authoring identity here
     // would tell `vrmRetarget` that the source rig stands exactly as the target
     // does and silently skip the correction §4 exists for.
-    const pxr::SdfPath skeletonPath =
-        rootPath.AppendChild(pxr::TfToken("HumanoidSkeleton"));
-    const pxr::UsdSkelSkeleton skeleton =
-        pxr::UsdSkelSkeleton::Define(stage, skeletonPath);
+    const pxr::SdfPath skeletonPath = rootPath.AppendChild(pxr::TfToken("HumanoidSkeleton"));
+    const pxr::UsdSkelSkeleton skeleton = pxr::UsdSkelSkeleton::Define(stage, skeletonPath);
     pxr::VtMatrix4dArray restTransforms;
     restTransforms.reserve(bones.size());
-    for (const motion::HumanBone bone : bones) {
+    for (const motion::HumanBone bone : bones)
+    {
         const auto slot = static_cast<std::size_t>(bone);
         const pxr::GfVec3f& translation = rest.localTranslations[slot];
-        restTransforms.push_back(pxr::GfMatrix4d(
-            pxr::GfRotation(pxr::GfQuatd(rest.localRotations[slot])),
-            pxr::GfVec3d(translation[0], translation[1], translation[2])));
+        restTransforms.push_back(
+            pxr::GfMatrix4d(pxr::GfRotation(pxr::GfQuatd(rest.localRotations[slot])),
+                            pxr::GfVec3d(translation[0], translation[1], translation[2])));
     }
     skeleton.CreateJointsAttr(pxr::VtValue(joints));
     skeleton.CreateRestTransformsAttr(pxr::VtValue(restTransforms));
 
     const pxr::SdfPath clipPath = rootPath.AppendChild(pxr::TfToken(clipName));
-    const pxr::UsdSkelAnimation clip =
-        pxr::UsdSkelAnimation::Define(stage, clipPath);
+    const pxr::UsdSkelAnimation clip = pxr::UsdSkelAnimation::Define(stage, clipPath);
     clip.CreateJointsAttr(pxr::VtValue(joints));
     pxr::UsdAttribute translations = clip.CreateTranslationsAttr();
     pxr::UsdAttribute rotations = clip.CreateRotationsAttr();
@@ -151,12 +153,14 @@ WriteSemanticClip(const std::string& outputPath,
     const pxr::VtVec3hArray identityScales(bones.size(), pxr::GfVec3h(1.0f));
     clip.CreateScalesAttr(pxr::VtValue(identityScales));
 
-    for (const motion::HumanoidPose& pose : animation.samples) {
+    for (const motion::HumanoidPose& pose : animation.samples)
+    {
         pxr::VtVec3fArray valuesT;
         pxr::VtQuatfArray valuesR;
         valuesT.reserve(bones.size());
         valuesR.reserve(bones.size());
-        for (const motion::HumanBone bone : bones) {
+        for (const motion::HumanBone bone : bones)
+        {
             const auto slot = static_cast<std::size_t>(bone);
             // Every joint holds its rest translation, and the hips carry body
             // motion over theirs. Canonical motion puts body translation on the
@@ -164,7 +168,8 @@ WriteSemanticClip(const std::string& outputPath,
             // would not mean "unmoving" -- it would collapse each bone onto its
             // parent, in a clip whose own skeleton says otherwise.
             pxr::GfVec3f translation = rest.localTranslations[slot];
-            if (bone == motion::HumanBone::Hips && pose.root.hasPosition) {
+            if (bone == motion::HumanBone::Hips && pose.root.hasPosition)
+            {
                 translation = pose.root.worldPosition;
             }
             valuesT.push_back(translation);
@@ -173,9 +178,8 @@ WriteSemanticClip(const std::string& outputPath,
             // rest is identity, and they are not here: a rig whose profile maps
             // a `CHANNELS 0` joint states a rest orientation for it and no
             // motion, and identity would move it.
-            valuesR.push_back(pose.validRotations.test(slot)
-                                  ? pose.localRotations[slot]
-                                  : rest.localRotations[slot]);
+            valuesR.push_back(pose.validRotations.test(slot) ? pose.localRotations[slot]
+                                                             : rest.localRotations[slot]);
         }
         const double timeCode = pose.timestamp * frameRate;
         translations.Set(valuesT, timeCode);
@@ -186,7 +190,8 @@ WriteSemanticClip(const std::string& outputPath,
         .CreateAnimationSourceRel()
         .SetTargets({clipPath});
 
-    if (!stage->GetRootLayer()->Save()) {
+    if (!stage->GetRootLayer()->Save())
+    {
         *error = "could not save output layer: " + outputPath;
         return false;
     }

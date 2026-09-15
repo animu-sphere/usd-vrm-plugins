@@ -17,7 +17,7 @@ namespace motion
 // per-step weight is derived from the actual elapsed time between poses.
 class MOTIONRUNTIME_API PoseFilter
 {
-public:
+  public:
     struct Options
     {
         // Higher cutoff = more responsive, less smoothing. A non-positive
@@ -28,18 +28,33 @@ public:
     };
 
     PoseFilter() = default;
-    explicit PoseFilter(const Options& options)
-        : _options(options)
+    explicit PoseFilter(const Options& options) : _options(options)
     {
     }
 
-    const Options& GetOptions() const noexcept { return _options; }
-    void SetOptions(const Options& options) { _options = options; }
+    const Options&
+    GetOptions() const noexcept
+    {
+        return _options;
+    }
+    void
+    SetOptions(const Options& options)
+    {
+        _options = options;
+    }
 
     // Forgets the accumulated state; the next pose passes through untouched and
     // becomes the new seed. Call this on a source switch or a seek.
-    void Reset() noexcept { _state.reset(); }
-    bool HasState() const noexcept { return _state.has_value(); }
+    void
+    Reset() noexcept
+    {
+        _state.reset();
+    }
+    bool
+    HasState() const noexcept
+    {
+        return _state.has_value();
+    }
 
     // Smooths `pose` against the accumulated state and returns the result. A
     // bone absent from `pose` is not invented from history: it stays absent,
@@ -50,7 +65,7 @@ public:
     // returned unchanged and reseeds the state).
     HumanoidPose Apply(const HumanoidPose& pose);
 
-private:
+  private:
     Options _options;
     std::optional<HumanoidPose> _state;
 };

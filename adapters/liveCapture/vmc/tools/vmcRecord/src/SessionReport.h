@@ -63,10 +63,9 @@ const char* StopReasonText(StopReason reason) noexcept;
 
 class SessionReport
 {
-public:
+  public:
     // One received datagram, before anything has decoded it.
-    void ObserveDatagram(const std::string& peer, std::size_t bytes,
-                         double receiveTime);
+    void ObserveDatagram(const std::string& peer, std::size_t bytes, double receiveTime);
 
     // The frames one push produced. Called with the source's window straight
     // after every push, including the empty ones — a push that completes no
@@ -76,20 +75,43 @@ public:
     // The diagnostics one push appended. The caller's list is passed as the
     // slice this push added, so a caller accumulating a whole session's list
     // does not re-count it.
-    void ObserveDiagnostics(const std::vector<vrmAdapterVmc::Diagnostic>& log,
-                            std::size_t from);
+    void ObserveDiagnostics(const std::vector<vrmAdapterVmc::Diagnostic>& log, std::size_t from);
 
-    void SetStopReason(StopReason reason) noexcept { _stop = reason; }
-    StopReason GetStopReason() const noexcept { return _stop; }
+    void
+    SetStopReason(StopReason reason) noexcept
+    {
+        _stop = reason;
+    }
+    StopReason
+    GetStopReason() const noexcept
+    {
+        return _stop;
+    }
 
-    std::uint64_t GetDatagramCount() const noexcept { return _datagrams; }
-    std::uint64_t GetFrameCount() const noexcept { return _frames; }
+    std::uint64_t
+    GetDatagramCount() const noexcept
+    {
+        return _datagrams;
+    }
+    std::uint64_t
+    GetFrameCount() const noexcept
+    {
+        return _frames;
+    }
 
     // Whether the session heard from more than one sender. The capture format
     // names one peer in its header, so this is the difference between a
     // fixture's provenance being true and being the first of several.
-    bool HasMultiplePeers() const noexcept { return _peers.size() > 1; }
-    const std::vector<std::string>& GetPeers() const noexcept { return _peers; }
+    bool
+    HasMultiplePeers() const noexcept
+    {
+        return _peers.size() > 1;
+    }
+    const std::vector<std::string>&
+    GetPeers() const noexcept
+    {
+        return _peers;
+    }
 
     // Prints the block. `receiver` is null when the session came off a file:
     // the socket lines are then omitted rather than printed as zeroes, because
@@ -97,7 +119,7 @@ public:
     void Print(std::FILE* out, const vrmAdapterVmc::VmcLiveSource& source,
                const vrmAdapterVmc::UdpReceiver* receiver) const;
 
-private:
+  private:
     void _PrintEvidence(std::FILE* out) const;
     void _PrintDiagnostics(std::FILE* out) const;
 
@@ -159,8 +181,7 @@ private:
     std::array<std::uint64_t, vrmAdapterVmc::DiagnosticCodeCount> _diagnostics{};
     // The first of each code, kept whole. A count says a session had 400
     // malformed packets; the first line says which address and which byte.
-    std::array<vrmAdapterVmc::Diagnostic, vrmAdapterVmc::DiagnosticCodeCount>
-        _firstDiagnostic{};
+    std::array<vrmAdapterVmc::Diagnostic, vrmAdapterVmc::DiagnosticCodeCount> _firstDiagnostic{};
 
     StopReason _stop = StopReason::EndOfCapture;
 };

@@ -31,8 +31,7 @@ Fixed(double value)
 
 } // namespace
 
-TrackerFrameAssembler::TrackerFrameAssembler(const TrackerFrameConfig& config)
-    : _config(config)
+TrackerFrameAssembler::TrackerFrameAssembler(const TrackerFrameConfig& config) : _config(config)
 {
 }
 
@@ -56,12 +55,12 @@ TrackerFrameAssembler::Reset()
 }
 
 void
-TrackerFrameAssembler::_Report(std::vector<Diagnostic>* diagnostics,
-                               DiagnosticCode code, std::string_view subject,
-                               std::optional<double> timestamp,
+TrackerFrameAssembler::_Report(std::vector<Diagnostic>* diagnostics, DiagnosticCode code,
+                               std::string_view subject, std::optional<double> timestamp,
                                std::string detail)
 {
-    if (!diagnostics) {
+    if (!diagnostics)
+    {
         return;
     }
     Diagnostic diagnostic = MakeDiagnostic(code, std::move(detail));
@@ -88,8 +87,10 @@ TrackerFrameAssembler::_Open(double receiveTime, std::string peer)
 std::size_t
 TrackerFrameAssembler::_SampleFor(const TrackerId& tracker, double receiveTime)
 {
-    for (std::size_t index = 0; index < _frame.samples.size(); ++index) {
-        if (_frame.samples[index].tracker == tracker.segment) {
+    for (std::size_t index = 0; index < _frame.samples.size(); ++index)
+    {
+        if (_frame.samples[index].tracker == tracker.segment)
+        {
             return index;
         }
     }
@@ -111,10 +112,10 @@ TrackerFrameAssembler::_SampleFor(const TrackerId& tracker, double receiveTime)
 
 bool
 TrackerFrameAssembler::_Close(std::vector<TrackerFrame>* frames,
-                              std::vector<Diagnostic>* diagnostics,
-                              const char* reason)
+                              std::vector<Diagnostic>* diagnostics, const char* reason)
 {
-    if (!_frame.open) {
+    if (!_frame.open)
+    {
         return false;
     }
 
@@ -127,13 +128,20 @@ TrackerFrameAssembler::_Close(std::vector<TrackerFrame>* frames,
     // it takes its sample with it in the next statement. A counter for that
     // state would be a number that can only ever be zero.
 
-    if (reason == kClosedByRepeat) {
+    if (reason == kClosedByRepeat)
+    {
         ++_stats.framesClosedByRepeat;
-    } else if (reason == kClosedByGap) {
+    }
+    else if (reason == kClosedByGap)
+    {
         ++_stats.framesClosedByGap;
-    } else if (reason == kClosedByRestart) {
+    }
+    else if (reason == kClosedByRestart)
+    {
         ++_stats.framesClosedByRestart;
-    } else {
+    }
+    else
+    {
         ++_stats.framesClosedByFlush;
     }
 
@@ -144,25 +152,27 @@ TrackerFrameAssembler::_Close(std::vector<TrackerFrame>* frames,
     frame.beginsNewSession = closing.beginsNewSession;
     frame.duplicates = closing.duplicates;
 
-    for (std::size_t index = 0; index < frame.samples.size(); ++index) {
+    for (std::size_t index = 0; index < frame.samples.size(); ++index)
+    {
         const TrackerSample& sample = frame.samples[index];
-        if (sample.tracker == HeadTrackerSegment) {
+        if (sample.tracker == HeadTrackerSegment)
+        {
             frame.headReference = index;
         }
-        if (!sample.complete()) {
+        if (!sample.complete())
+        {
             ++frame.partial;
             // The one code only this layer can raise: a single message is
             // always half a tracker, so a decoder reporting this would warn
             // about once a datagram forever (TrackerMessage.h).
             _Report(diagnostics, DiagnosticCode::TrackerPartial,
-                    std::string(TrackerAddressPrefix) + sample.tracker,
-                    frame.receiveTime,
+                    std::string(TrackerAddressPrefix) + sample.tracker, frame.receiveTime,
                     sample.hasPosition ? "a position arrived with no rotation"
                                        : "a rotation arrived with no position");
         }
 
-        if (std::find(_observed.begin(), _observed.end(), sample.tracker)
-            == _observed.end()) {
+        if (std::find(_observed.begin(), _observed.end(), sample.tracker) == _observed.end())
+        {
             _observed.push_back(sample.tracker);
         }
         _lastSeen[sample.tracker] = frame.receiveTime;
@@ -173,27 +183,30 @@ TrackerFrameAssembler::_Close(std::vector<TrackerFrame>* frames,
 
     // Absence, measured against what this session has actually seen and never
     // against the eight identities the surface defines.
-    for (const std::string& tracker : _observed) {
-        const bool present =
-            std::any_of(frame.samples.begin(), frame.samples.end(),
-                        [&tracker](const TrackerSample& sample) {
-                            return sample.tracker == tracker;
-                        });
-        if (present) {
+    for (const std::string& tracker : _observed)
+    {
+        const bool present = std::any_of(frame.samples.begin(), frame.samples.end(),
+                                         [&tracker](const TrackerSample& sample)
+                                         { return sample.tracker == tracker; });
+        if (present)
+        {
             continue;
         }
         frame.missing.push_back(tracker);
 
         const auto seen = _lastSeen.find(tracker);
-        if (_config.stalenessSeconds <= 0.0 || seen == _lastSeen.end()) {
+        if (_config.stalenessSeconds <= 0.0 || seen == _lastSeen.end())
+        {
             continue;
         }
         const double silent = frame.receiveTime - seen->second;
-        if (silent < _config.stalenessSeconds) {
+        if (silent < _config.stalenessSeconds)
+        {
             continue;
         }
         frame.stale.push_back(tracker);
-        if (!_reportedStale[tracker]) {
+        if (!_reportedStale[tracker])
+        {
             _reportedStale[tracker] = true;
             ++_stats.stalenessCrossings;
         }
@@ -202,52 +215,62 @@ TrackerFrameAssembler::_Close(std::vector<TrackerFrame>* frames,
     // The recalibration check: simultaneity, not size. Only a tracker with a
     // position in both frames can be compared, and one of those is not a
     // simultaneity at all -- see the header.
-    if (_config.calibrationJumpMeters > 0.0) {
+    if (_config.calibrationJumpMeters > 0.0)
+    {
         std::size_t comparable = 0;
         std::size_t jumped = 0;
-        for (const TrackerSample& sample : frame.samples) {
-            if (!sample.hasPosition) {
+        for (const TrackerSample& sample : frame.samples)
+        {
+            if (!sample.hasPosition)
+            {
                 continue;
             }
             const auto previous = _lastPosition.find(sample.tracker);
-            if (previous == _lastPosition.end()) {
+            if (previous == _lastPosition.end())
+            {
                 continue;
             }
             ++comparable;
-            if ((sample.position - previous->second).GetLength()
-                > _config.calibrationJumpMeters) {
+            if ((sample.position - previous->second).GetLength() > _config.calibrationJumpMeters)
+            {
                 ++jumped;
             }
         }
-        if (comparable >= 2 && jumped == comparable) {
+        if (comparable >= 2 && jumped == comparable)
+        {
             frame.followsDiscontinuity = true;
             ++_stats.calibrationDiscontinuities;
             _Report(diagnostics, DiagnosticCode::CalibrationRequired,
                     std::string(TrackerAddressPrefix), frame.receiveTime,
-                    "all " + std::to_string(comparable)
-                        + " comparable tracker(s) moved more than "
-                        + Fixed(_config.calibrationJumpMeters)
-                        + " m at once: the tracking space may have been "
-                          "recalibrated");
+                    "all " + std::to_string(comparable) +
+                        " comparable tracker(s) moved more than " +
+                        Fixed(_config.calibrationJumpMeters) +
+                        " m at once: the tracking space may have been "
+                        "recalibrated");
         }
     }
 
-    for (const TrackerSample& sample : frame.samples) {
-        if (sample.hasPosition) {
+    for (const TrackerSample& sample : frame.samples)
+    {
+        if (sample.hasPosition)
+        {
             _lastPosition[sample.tracker] = sample.position;
         }
     }
 
     ++_stats.framesEmitted;
     _stats.samplesEmitted += frame.samples.size();
-    if (!frame.missing.empty()) {
+    if (!frame.missing.empty())
+    {
         ++_stats.framesIncomplete;
     }
-    if (frame.partial != 0) {
+    if (frame.partial != 0)
+    {
         ++_stats.framesPartial;
     }
 
-    if (frames) {
+    if (frames)
+    {
         frames->push_back(std::move(frame));
     }
     // Counted either way. A caller that wants only a session's diagnostics must
@@ -256,10 +279,8 @@ TrackerFrameAssembler::_Close(std::vector<TrackerFrame>* frames,
 }
 
 std::size_t
-TrackerFrameAssembler::Push(const TrackerPacket& packet, double receiveTime,
-                            std::string_view peer,
-                            std::vector<TrackerFrame>* frames,
-                            std::vector<Diagnostic>* diagnostics)
+TrackerFrameAssembler::Push(const TrackerPacket& packet, double receiveTime, std::string_view peer,
+                            std::vector<TrackerFrame>* frames, std::vector<Diagnostic>* diagnostics)
 {
     ++_packetSerial;
     const std::size_t before = frames ? frames->size() : 0;
@@ -267,18 +288,19 @@ TrackerFrameAssembler::Push(const TrackerPacket& packet, double receiveTime,
     // The silence first, because it happened first. A stream that went quiet
     // and came back on a new port is both a timeout and a restart, and the
     // other order would read as a session that restarted and then fell silent.
-    if (_lastArrival && _config.sourceTimeoutSeconds > 0.0
-        && receiveTime - *_lastArrival > _config.sourceTimeoutSeconds) {
+    if (_lastArrival && _config.sourceTimeoutSeconds > 0.0 &&
+        receiveTime - *_lastArrival > _config.sourceTimeoutSeconds)
+    {
         ++_stats.sourceTimeouts;
         _Report(diagnostics, DiagnosticCode::SourceTimeout, _peer, receiveTime,
-                "nothing arrived for " + Fixed(receiveTime - *_lastArrival)
-                    + " s");
+                "nothing arrived for " + Fixed(receiveTime - *_lastArrival) + " s");
     }
 
     // A restart is an identity change and nothing else. A silence is a source
     // that paused, however long it lasts -- see the header on why guessing the
     // stronger claim is the one thing this layer must not do.
-    if (!peer.empty() && !_peer.empty() && peer != _peer) {
+    if (!peer.empty() && !_peer.empty() && peer != _peer)
+    {
         _Close(frames, diagnostics, kClosedByRestart);
         const std::string previous = _peer;
         _observed.clear();
@@ -287,15 +309,16 @@ TrackerFrameAssembler::Push(const TrackerPacket& packet, double receiveTime,
         _lastPosition.clear();
         ++_stats.sessionRestarts;
         _Report(diagnostics, DiagnosticCode::SourceRestarted, peer, receiveTime,
-                "the source's endpoint changed from " + previous
-                    + "; the trackers this session had observed are forgotten");
+                "the source's endpoint changed from " + previous +
+                    "; the trackers this session had observed are forgotten");
         // Held on the assembler until a frame opens, which the datagram
         // carrying the new peer need not do: this port is a well-known one,
         // and the first thing a new session sends may be an address this
         // adapter maps to nothing.
         _pendingNewSession = true;
     }
-    if (!peer.empty()) {
+    if (!peer.empty())
+    {
         _peer.assign(peer);
     }
     _lastArrival = receiveTime;
@@ -303,12 +326,14 @@ TrackerFrameAssembler::Push(const TrackerPacket& packet, double receiveTime,
     // The gap rule, against the *first* message of the open frame: a frame on
     // this wire is a burst 0.053 ms wide, so what the window bounds is the
     // whole burst rather than the spacing inside it.
-    if (_frame.open && _config.frameWindowSeconds > 0.0
-        && receiveTime - _frame.receiveTime > _config.frameWindowSeconds) {
+    if (_frame.open && _config.frameWindowSeconds > 0.0 &&
+        receiveTime - _frame.receiveTime > _config.frameWindowSeconds)
+    {
         _Close(frames, diagnostics, kClosedByGap);
     }
 
-    for (const TrackerMessage& message : packet.messages) {
+    for (const TrackerMessage& message : packet.messages)
+    {
         // A caller's own mistake, and the guard is not defensive: `channel`
         // indexes two fixed-width arrays below, so a `TrackerChannel::Count`
         // from a hand-built packet would read and then write past the end of
@@ -317,12 +342,12 @@ TrackerFrameAssembler::Push(const TrackerPacket& packet, double receiveTime,
         // caller assembled itself is a supported way to drive this class,
         // and every caller-precondition failure in this adapter raises
         // PACKET_MALFORMED.
-        if (message.channel != TrackerChannel::Position
-            && message.channel != TrackerChannel::Rotation) {
+        if (message.channel != TrackerChannel::Position &&
+            message.channel != TrackerChannel::Rotation)
+        {
             ++_stats.messagesRefused;
             _Report(diagnostics, DiagnosticCode::PacketMalformed,
-                    std::string(TrackerAddressPrefix)
-                        + std::string(message.tracker.segment),
+                    std::string(TrackerAddressPrefix) + std::string(message.tracker.segment),
                     receiveTime, "a message carries no readable channel");
             continue;
         }
@@ -332,27 +357,33 @@ TrackerFrameAssembler::Push(const TrackerPacket& packet, double receiveTime,
         // is already in the open frame, from this datagram or from an earlier
         // one.
         bool duplicate = false;
-        if (_frame.open) {
-            for (std::size_t index = 0; index < _frame.samples.size();
-                 ++index) {
-                if (_frame.samples[index].tracker != message.tracker.segment
-                    || !_frame.channelSet[index][channel]) {
+        if (_frame.open)
+        {
+            for (std::size_t index = 0; index < _frame.samples.size(); ++index)
+            {
+                if (_frame.samples[index].tracker != message.tracker.segment ||
+                    !_frame.channelSet[index][channel])
+                {
                     continue;
                 }
-                if (_frame.channelPacket[index][channel] == _packetSerial) {
+                if (_frame.channelPacket[index][channel] == _packetSerial)
+                {
                     // The same channel twice inside one datagram. A datagram is
                     // one indivisible delivery, so this is a sender repeating
                     // itself rather than two frames in one send; the first
                     // value stands.
                     duplicate = true;
-                } else {
+                }
+                else
+                {
                     // The cycle came round again.
                     _Close(frames, diagnostics, kClosedByRepeat);
                 }
                 break;
             }
         }
-        if (duplicate) {
+        if (duplicate)
+        {
             ++_frame.duplicates;
             ++_stats.messagesDuplicated;
             continue;
@@ -371,13 +402,14 @@ TrackerFrameAssembler::Push(const TrackerPacket& packet, double receiveTime,
         Diagnostic refusal;
         pxr::GfVec3f position;
         pxr::GfQuatf rotation;
-        const bool mapped =
-            message.channel == TrackerChannel::Position
-                ? MapTrackerPosition(message, &position, &refusal)
-                : MapTrackerRotation(message, &rotation, &refusal);
-        if (!mapped) {
+        const bool mapped = message.channel == TrackerChannel::Position
+                                ? MapTrackerPosition(message, &position, &refusal)
+                                : MapTrackerRotation(message, &rotation, &refusal);
+        if (!mapped)
+        {
             ++_stats.messagesRefused;
-            if (diagnostics) {
+            if (diagnostics)
+            {
                 refusal.source = _source;
                 refusal.timestamp = receiveTime;
                 refusal.sequence = _packetSerial;
@@ -386,16 +418,20 @@ TrackerFrameAssembler::Push(const TrackerPacket& packet, double receiveTime,
             continue;
         }
 
-        if (!_frame.open) {
+        if (!_frame.open)
+        {
             _Open(receiveTime, std::string(peer));
         }
 
         const std::size_t index = _SampleFor(message.tracker, receiveTime);
-        if (message.channel == TrackerChannel::Position) {
+        if (message.channel == TrackerChannel::Position)
+        {
             _frame.samples[index].position = position;
             _frame.samples[index].hasPosition = true;
             ++_stats.positionsAccepted;
-        } else {
+        }
+        else
+        {
             _frame.samples[index].rotation = rotation;
             _frame.samples[index].hasRotation = true;
             ++_stats.rotationsAccepted;

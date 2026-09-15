@@ -30,10 +30,8 @@ Vector(const pxr::GfVec3f& value)
     // look for a sign error that is not there. IEEE says -0.0 + 0.0 is +0.0
     // under round-to-nearest, and leaves every other value alone.
     char buffer[96];
-    std::snprintf(buffer, sizeof(buffer), "(%.4g, %.4g, %.4g)",
-                  static_cast<double>(value[0]) + 0.0,
-                  static_cast<double>(value[1]) + 0.0,
-                  static_cast<double>(value[2]) + 0.0);
+    std::snprintf(buffer, sizeof(buffer), "(%.4g, %.4g, %.4g)", static_cast<double>(value[0]) + 0.0,
+                  static_cast<double>(value[1]) + 0.0, static_cast<double>(value[2]) + 0.0);
     return buffer;
 }
 
@@ -45,7 +43,8 @@ float
 MaxComponentDistance(const pxr::GfVec3f& a, const pxr::GfVec3f& b)
 {
     float largest = 0.0f;
-    for (int axis = 0; axis < 3; ++axis) {
+    for (int axis = 0; axis < 3; ++axis)
+    {
         largest = std::max(largest, std::fabs(a[axis] - b[axis]));
     }
     return largest;
@@ -56,7 +55,8 @@ MaxComponentDistance(const pxr::GfVec3f& a, const pxr::GfVec3f& b)
 const char*
 StopReasonText(StopReason reason) noexcept
 {
-    switch (reason) {
+    switch (reason)
+    {
     case StopReason::Interrupted:
         return "interrupted";
     case StopReason::Duration:
@@ -76,24 +76,27 @@ StopReasonText(StopReason reason) noexcept
 }
 
 void
-SessionReport::ObserveDatagram(const std::string& peer, std::size_t bytes,
-                               double receiveTime)
+SessionReport::ObserveDatagram(const std::string& peer, std::size_t bytes, double receiveTime)
 {
-    if (_datagrams == 0) {
+    if (_datagrams == 0)
+    {
         _firstReceiveTime = receiveTime;
     }
     _lastReceiveTime = receiveTime;
     ++_datagrams;
     _payloadBytes += bytes;
 
-    if (peer.empty()) {
+    if (peer.empty())
+    {
         return;
     }
-    if (std::find(_peers.begin(), _peers.end(), peer) != _peers.end()) {
+    if (std::find(_peers.begin(), _peers.end(), peer) != _peers.end())
+    {
         return;
     }
     ++_peerCount;
-    if (_peers.size() < kMaxNamedPeers) {
+    if (_peers.size() < kMaxNamedPeers)
+    {
         _peers.push_back(peer);
     }
 }
@@ -101,39 +104,49 @@ SessionReport::ObserveDatagram(const std::string& peer, std::size_t bytes,
 void
 SessionReport::ObserveFrames(const std::vector<vrmAdapterVmc::VmcFrame>& frames)
 {
-    for (const vrmAdapterVmc::VmcFrame& frame : frames) {
+    for (const vrmAdapterVmc::VmcFrame& frame : frames)
+    {
         ++_frames;
-        if (frame.missing.any()) {
+        if (frame.missing.any())
+        {
             ++_framesIncomplete;
         }
-        if (!frame.timestampFromSender) {
+        if (!frame.timestampFromSender)
+        {
             ++_framesFromReceiveClock;
         }
-        if (frame.beginsNewSession) {
+        if (frame.beginsNewSession)
+        {
             ++_framesBeginningSession;
         }
         _observed |= frame.pose.validRotations;
         // The union across the session, because the vocabulary is the sender's
         // and an operator judging a capture wants to know which names it holds
         // -- not merely that some arrived.
-        for (const motion::ExpressionWeight& weight :
-             frame.pose.expressions.entries) {
+        for (const motion::ExpressionWeight& weight : frame.pose.expressions.entries)
+        {
             _expressionNames.insert(weight.name);
         }
 
         const double timestamp = frame.pose.timestamp;
-        if (!_haveFrameTime) {
+        if (!_haveFrameTime)
+        {
             _haveFrameTime = true;
-        } else if (!frame.beginsNewSession) {
+        }
+        else if (!frame.beginsNewSession)
+        {
             // Within one session the assembler emits strictly advancing frames,
             // so this interval is positive by construction. Across a restart it
             // would not be, which is why the restart case is excluded rather
             // than clamped.
             const double interval = timestamp - _lastFrameTime;
-            if (_intervals == 0) {
+            if (_intervals == 0)
+            {
                 _intervalMin = interval;
                 _intervalMax = interval;
-            } else {
+            }
+            else
+            {
                 _intervalMin = std::min(_intervalMin, interval);
                 _intervalMax = std::max(_intervalMax, interval);
             }
@@ -142,30 +155,37 @@ SessionReport::ObserveFrames(const std::vector<vrmAdapterVmc::VmcFrame>& frames)
         }
         _lastFrameTime = timestamp;
 
-        if (frame.hipsOffset) {
+        if (frame.hipsOffset)
+        {
             const pxr::GfVec3f& hips = *frame.hipsOffset;
             const float length = hips.GetLength();
-            if (_framesWithHips == 0) {
+            if (_framesWithHips == 0)
+            {
                 _firstHips = hips;
                 _hipsMinLength = length;
                 _hipsMaxLength = length;
-            } else {
+            }
+            else
+            {
                 _hipsMinLength = std::min(_hipsMinLength, length);
                 _hipsMaxLength = std::max(_hipsMaxLength, length);
-                _hipsMaxDeviation = std::max(
-                    _hipsMaxDeviation, MaxComponentDistance(hips, _firstHips));
+                _hipsMaxDeviation =
+                    std::max(_hipsMaxDeviation, MaxComponentDistance(hips, _firstHips));
             }
             ++_framesWithHips;
         }
 
-        if (frame.pose.root.hasPosition) {
+        if (frame.pose.root.hasPosition)
+        {
             const pxr::GfVec3f& position = frame.pose.root.worldPosition;
-            if (_framesWithRoot == 0) {
+            if (_framesWithRoot == 0)
+            {
                 _firstRoot = position;
-            } else {
-                _rootMaxDeviation = std::max(
-                    _rootMaxDeviation,
-                    MaxComponentDistance(position, _firstRoot));
+            }
+            else
+            {
+                _rootMaxDeviation =
+                    std::max(_rootMaxDeviation, MaxComponentDistance(position, _firstRoot));
             }
             ++_framesWithRoot;
         }
@@ -173,15 +193,18 @@ SessionReport::ObserveFrames(const std::vector<vrmAdapterVmc::VmcFrame>& frames)
 }
 
 void
-SessionReport::ObserveDiagnostics(
-    const std::vector<vrmAdapterVmc::Diagnostic>& log, std::size_t from)
+SessionReport::ObserveDiagnostics(const std::vector<vrmAdapterVmc::Diagnostic>& log,
+                                  std::size_t from)
 {
-    for (std::size_t i = from; i < log.size(); ++i) {
+    for (std::size_t i = from; i < log.size(); ++i)
+    {
         const auto index = static_cast<std::size_t>(log[i].code);
-        if (index >= vrmAdapterVmc::DiagnosticCodeCount) {
+        if (index >= vrmAdapterVmc::DiagnosticCodeCount)
+        {
             continue;
         }
-        if (_diagnostics[index] == 0) {
+        if (_diagnostics[index] == 0)
+        {
             _firstDiagnostic[index] = log[i];
         }
         ++_diagnostics[index];
@@ -189,46 +212,43 @@ SessionReport::ObserveDiagnostics(
 }
 
 void
-SessionReport::Print(std::FILE* out,
-                     const vrmAdapterVmc::VmcLiveSource& source,
+SessionReport::Print(std::FILE* out, const vrmAdapterVmc::VmcLiveSource& source,
                      const vrmAdapterVmc::UdpReceiver* receiver) const
 {
     const vrmAdapterVmc::VmcLiveSourceStats& bridge = source.GetStats();
-    const vrmAdapterVmc::VmcFrameStats& assembly =
-        source.GetAssembler().GetStats();
+    const vrmAdapterVmc::VmcFrameStats& assembly = source.GetAssembler().GetStats();
     const motion::LiveCaptureStats& intake = source.GetIntake().GetStats();
 
-    if (receiver) {
+    if (receiver)
+    {
         const vrmAdapterVmc::UdpReceiverStats& socket = receiver->GetStats();
         std::fprintf(out, "listen:      %s%s, receive buffer %zu bytes\n",
                      receiver->GetBoundEndpoint().c_str(),
-                     receiver->IsLoopbackOnly()
-                         ? " (loopback only: no other machine can reach it)"
-                         : "",
+                     receiver->IsLoopbackOnly() ? " (loopback only: no other machine can reach it)"
+                                                : "",
                      receiver->GetReceiveBufferBytes());
-        if (socket.receiveErrors != 0 || socket.datagramsTruncated != 0) {
+        if (socket.receiveErrors != 0 || socket.datagramsTruncated != 0)
+        {
             std::fprintf(out,
                          "socket:      %llu transient error(s), %llu datagram(s)"
                          " over the size limit and dropped\n",
                          static_cast<unsigned long long>(socket.receiveErrors),
-                         static_cast<unsigned long long>(
-                             socket.datagramsTruncated));
+                         static_cast<unsigned long long>(socket.datagramsTruncated));
         }
     }
 
     std::fprintf(out, "received:    %llu datagram(s), %llu byte(s) over %s s\n",
                  static_cast<unsigned long long>(_datagrams),
                  static_cast<unsigned long long>(_payloadBytes),
-                 Number(_datagrams == 0
-                            ? 0.0
-                            : _lastReceiveTime - _firstReceiveTime).c_str());
+                 Number(_datagrams == 0 ? 0.0 : _lastReceiveTime - _firstReceiveTime).c_str());
 
-    std::fprintf(out, "peers:       %llu",
-                 static_cast<unsigned long long>(_peerCount));
-    for (std::size_t i = 0; i < _peers.size(); ++i) {
+    std::fprintf(out, "peers:       %llu", static_cast<unsigned long long>(_peerCount));
+    for (std::size_t i = 0; i < _peers.size(); ++i)
+    {
         std::fprintf(out, "%s%s", i == 0 ? " (" : ", ", _peers[i].c_str());
     }
-    if (!_peers.empty()) {
+    if (!_peers.empty())
+    {
         std::fprintf(out, "%s)", _peerCount > _peers.size() ? ", ..." : "");
     }
     std::fputc('\n', out);
@@ -245,19 +265,20 @@ SessionReport::Print(std::FILE* out,
                  "%llu refused out of order, %llu refused empty\n",
                  static_cast<unsigned long long>(_frames),
                  static_cast<unsigned long long>(_framesIncomplete),
-                 static_cast<unsigned long long>(
-                     assembly.framesRefusedOutOfOrder),
+                 static_cast<unsigned long long>(assembly.framesRefusedOutOfOrder),
                  static_cast<unsigned long long>(assembly.framesRefusedEmpty));
 
-    if (_intervals != 0) {
+    if (_intervals != 0)
+    {
         const double mean = _intervalSum / static_cast<double>(_intervals);
         std::fprintf(out,
                      "cadence:     %s Hz mean, interval %s-%s s, over %s s of "
                      "sender clock\n",
-                     Number(mean > 0.0 ? 1.0 / mean : 0.0).c_str(),
-                     Number(_intervalMin).c_str(), Number(_intervalMax).c_str(),
-                     Number(_intervalSum).c_str());
-    } else {
+                     Number(mean > 0.0 ? 1.0 / mean : 0.0).c_str(), Number(_intervalMin).c_str(),
+                     Number(_intervalMax).c_str(), Number(_intervalSum).c_str());
+    }
+    else
+    {
         std::fprintf(out, "cadence:     not measurable from %llu frame(s)\n",
                      static_cast<unsigned long long>(_frames));
     }
@@ -274,24 +295,24 @@ SessionReport::Print(std::FILE* out,
     // Only when the session carried any. A sender that sends no face should not
     // be reported as sending an empty one, for the same reason the bone line is
     // measured against what was observed rather than against all 55.
-    if (assembly.expressionsAccepted != 0 || !_expressionNames.empty()) {
+    if (assembly.expressionsAccepted != 0 || !_expressionNames.empty())
+    {
         std::fprintf(out,
                      "expressions: %zu name(s); %llu accepted, "
                      "%llu duplicated\n",
                      _expressionNames.size(),
-                     static_cast<unsigned long long>(
-                         assembly.expressionsAccepted),
-                     static_cast<unsigned long long>(
-                         assembly.expressionsDuplicated));
+                     static_cast<unsigned long long>(assembly.expressionsAccepted),
+                     static_cast<unsigned long long>(assembly.expressionsDuplicated));
         std::fprintf(out, "             ");
         std::size_t printed = 0;
-        for (const std::string& name : _expressionNames) {
+        for (const std::string& name : _expressionNames)
+        {
             // The names are the sender's, so the list is evidence rather than
             // decoration -- but a face rig can carry dozens and the report is
             // meant to be read.
-            if (printed == 12) {
-                std::fprintf(out, ", ... (%zu more)",
-                             _expressionNames.size() - printed);
+            if (printed == 12)
+            {
+                std::fprintf(out, ", ... (%zu more)", _expressionNames.size() - printed);
                 break;
             }
             std::fprintf(out, "%s%s", printed == 0 ? "" : ", ", name.c_str());
@@ -303,8 +324,7 @@ SessionReport::Print(std::FILE* out,
     std::fprintf(out,
                  "clock:       %llu frame(s) stamped by the sender, %llu by the "
                  "receiver; %llu restart(s)\n",
-                 static_cast<unsigned long long>(_frames
-                                                 - _framesFromReceiveClock),
+                 static_cast<unsigned long long>(_frames - _framesFromReceiveClock),
                  static_cast<unsigned long long>(_framesFromReceiveClock),
                  static_cast<unsigned long long>(assembly.sessionRestarts));
 
@@ -315,22 +335,21 @@ SessionReport::Print(std::FILE* out,
                  static_cast<unsigned long long>(bridge.framesAdmitted),
                  static_cast<unsigned long long>(bridge.framesRefused),
                  static_cast<unsigned long long>(bridge.sessionsReset));
-    if (intake.framesRejectedOutOfOrder != 0 || intake.framesRejectedStale != 0) {
+    if (intake.framesRejectedOutOfOrder != 0 || intake.framesRejectedStale != 0)
+    {
         std::fprintf(out,
                      "             the intake refused %llu out of order and "
                      "%llu stale\n",
-                     static_cast<unsigned long long>(
-                         intake.framesRejectedOutOfOrder),
-                     static_cast<unsigned long long>(
-                         intake.framesRejectedStale));
+                     static_cast<unsigned long long>(intake.framesRejectedOutOfOrder),
+                     static_cast<unsigned long long>(intake.framesRejectedStale));
     }
 
     _PrintEvidence(out);
     _PrintDiagnostics(out);
 
-    const motion::MotionSourceMetadata& metadata =
-        source.GetAssembler().GetSourceMetadata();
-    if (!metadata.sourceId.empty()) {
+    const motion::MotionSourceMetadata& metadata = source.GetAssembler().GetSourceMetadata();
+    if (!metadata.sourceId.empty())
+    {
         // Said rather than used. The title is in the recorded payload whatever
         // this tool does with it, so an operator deciding whether a capture can
         // be committed has to be told it is in there.
@@ -350,30 +369,30 @@ SessionReport::_PrintEvidence(std::FILE* out) const
     // Reported as measurements and never as a conclusion: this tool is in no
     // better position to decide what a sender means by a field than the layer
     // that declined to.
-    if (_framesWithHips != 0) {
+    if (_framesWithHips != 0)
+    {
         std::fprintf(out,
                      "hips offset: %llu frame(s), |offset| %s-%s m, moved at "
                      "most %s m from the first%s\n",
                      static_cast<unsigned long long>(_framesWithHips),
-                     Number(_hipsMinLength).c_str(),
-                     Number(_hipsMaxLength).c_str(),
+                     Number(_hipsMinLength).c_str(), Number(_hipsMaxLength).c_str(),
                      Number(_hipsMaxDeviation).c_str(),
-                     _hipsMaxDeviation == 0.0f
-                         ? " (constant: rig geometry, not translation)"
-                         : "");
+                     _hipsMaxDeviation == 0.0f ? " (constant: rig geometry, not translation)" : "");
         std::fprintf(out, "             first %s\n", Vector(_firstHips).c_str());
-    } else if (_frames != 0) {
+    }
+    else if (_frames != 0)
+    {
         std::fprintf(out, "hips offset: none in %llu frame(s)\n",
                      static_cast<unsigned long long>(_frames));
     }
 
-    if (_framesWithRoot != 0) {
+    if (_framesWithRoot != 0)
+    {
         std::fprintf(out,
                      "root:        %llu frame(s) with a position, moved at most "
                      "%s m from %s%s\n",
                      static_cast<unsigned long long>(_framesWithRoot),
-                     Number(_rootMaxDeviation).c_str(),
-                     Vector(_firstRoot).c_str(),
+                     Number(_rootMaxDeviation).c_str(), Vector(_firstRoot).c_str(),
                      _rootMaxDeviation == 0.0f ? " (constant)" : "");
     }
 }
@@ -382,31 +401,31 @@ void
 SessionReport::_PrintDiagnostics(std::FILE* out) const
 {
     std::uint64_t total = 0;
-    for (const std::uint64_t count : _diagnostics) {
+    for (const std::uint64_t count : _diagnostics)
+    {
         total += count;
     }
-    if (total == 0) {
+    if (total == 0)
+    {
         std::fprintf(out, "diagnostics: none\n");
         return;
     }
 
-    for (std::size_t index = 0; index < vrmAdapterVmc::DiagnosticCodeCount;
-         ++index) {
-        if (_diagnostics[index] == 0) {
+    for (std::size_t index = 0; index < vrmAdapterVmc::DiagnosticCodeCount; ++index)
+    {
+        if (_diagnostics[index] == 0)
+        {
             continue;
         }
         const auto code = static_cast<vrmAdapterVmc::DiagnosticCode>(index);
         std::fprintf(out, "diagnostics: %llu x %s (%s)\n",
                      static_cast<unsigned long long>(_diagnostics[index]),
-                     std::string(vrmAdapterVmc::DiagnosticCodeString(code))
-                         .c_str(),
+                     std::string(vrmAdapterVmc::DiagnosticCodeString(code)).c_str(),
                      std::string(vrmAdapterVmc::DiagnosticSeverityString(
-                                     vrmAdapterVmc::DiagnosticDefaultSeverity(
-                                         code)))
+                                     vrmAdapterVmc::DiagnosticDefaultSeverity(code)))
                          .c_str());
         std::fprintf(out, "             first: %s\n",
-                     vrmAdapterVmc::FormatDiagnostic(_firstDiagnostic[index])
-                         .c_str());
+                     vrmAdapterVmc::FormatDiagnostic(_firstDiagnostic[index]).c_str());
     }
 }
 

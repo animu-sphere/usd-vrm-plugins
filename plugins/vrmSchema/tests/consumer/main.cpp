@@ -12,17 +12,19 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-int main()
+int
+main()
 {
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdPrim prim = stage->DefinePrim(SdfPath("/Rig"));
     UsdVrmHumanoidAPI api = UsdVrmHumanoidAPI::Apply(prim);
-    if (!api) {
+    if (!api)
+    {
         std::fprintf(stderr, "UsdVrmHumanoidAPI::Apply failed\n");
         return 1;
     }
-    if (api.GetVrmHumanBonesHipsAttr().GetName()
-        != UsdVrmTokens->vrmHumanBonesHips) {
+    if (api.GetVrmHumanBonesHipsAttr().GetName() != UsdVrmTokens->vrmHumanBonesHips)
+    {
         std::fprintf(stderr, "unexpected builtin attribute name\n");
         return 1;
     }

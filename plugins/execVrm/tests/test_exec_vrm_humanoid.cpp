@@ -70,7 +70,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+namespace
+{
 
 using motion::HumanBone;
 
@@ -86,30 +87,35 @@ constexpr int kMapKey = 1;
 
 const char* const kRoot = "Root";
 const char* const kHips = "Root/J_Bip_C_Hips";
-const char* const kUpperArm =
-    "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_L_UpperArm";
+const char* const kUpperArm = "Root/J_Bip_C_Hips/J_Bip_C_Spine/J_Bip_C_Chest/J_Bip_L_UpperArm";
 
-TfToken BoneAttribute(HumanBone bone)
+TfToken
+BoneAttribute(HumanBone bone)
 {
     return TfToken("vrm:humanBones:" + std::string(motion::HumanBoneName(bone)));
 }
 
-bool NearlyEqual(float a, float b)
+bool
+NearlyEqual(float a, float b)
 {
     return std::abs(a - b) <= 1e-6f;
 }
 
 // Whether an error in `mark` says `what`. When none does, every error posted is
 // printed, so a red run says what was reported instead.
-bool MarkNames(const TfErrorMark& mark, const std::string& what)
+bool
+MarkNames(const TfErrorMark& mark, const std::string& what)
 {
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
-        if (it->GetCommentary().find(what) != std::string::npos) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
+        if (it->GetCommentary().find(what) != std::string::npos)
+        {
             return true;
         }
     }
     std::fprintf(stderr, "no error said \"%s\"; posted:\n", what.c_str());
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
         std::fprintf(stderr, "  %s\n", it->GetCommentary().c_str());
     }
     return false;
@@ -127,23 +133,33 @@ bool MarkNames(const TfErrorMark& mark, const std::string& what)
 // swallowed: an error outside any mark should still be seen.
 class Warnings : public TfDiagnosticMgr::Delegate
 {
-public:
-    Warnings() { TfDiagnosticMgr::GetInstance().AddDelegate(this); }
-    ~Warnings() override { TfDiagnosticMgr::GetInstance().RemoveDelegate(this); }
+  public:
+    Warnings()
+    {
+        TfDiagnosticMgr::GetInstance().AddDelegate(this);
+    }
+    ~Warnings() override
+    {
+        TfDiagnosticMgr::GetInstance().RemoveDelegate(this);
+    }
 
-    void IssueError(const TfError& error) override
+    void
+    IssueError(const TfError& error) override
     {
         std::fprintf(stderr, "error: %s\n", error.GetCommentary().c_str());
     }
-    void IssueFatalError(const TfCallContext&, const std::string& message) override
+    void
+    IssueFatalError(const TfCallContext&, const std::string& message) override
     {
         std::fprintf(stderr, "fatal: %s\n", message.c_str());
     }
-    void IssueStatus(const TfStatus& status) override
+    void
+    IssueStatus(const TfStatus& status) override
     {
         std::fprintf(stderr, "status: %s\n", status.GetCommentary().c_str());
     }
-    void IssueWarning(const TfWarning& warning) override
+    void
+    IssueWarning(const TfWarning& warning) override
     {
         std::lock_guard<std::mutex> lock(_mutex);
         _seen.push_back(warning.GetCommentary());
@@ -151,12 +167,15 @@ public:
 
     // The warnings seen since the last call that contain `what`; every
     // warning seen is forgotten.
-    std::vector<std::string> Take(const std::string& what)
+    std::vector<std::string>
+    Take(const std::string& what)
     {
         std::lock_guard<std::mutex> lock(_mutex);
         std::vector<std::string> matching;
-        for (const std::string& seen : _seen) {
-            if (seen.find(what) != std::string::npos) {
+        for (const std::string& seen : _seen)
+        {
+            if (seen.find(what) != std::string::npos)
+            {
                 matching.push_back(seen);
             }
         }
@@ -164,7 +183,7 @@ public:
         return matching;
     }
 
-private:
+  private:
     std::mutex _mutex;
     std::vector<std::string> _seen;
 };
@@ -178,7 +197,8 @@ struct Rig
 
 // Opened directly and edited in memory, never saved -- each case opens its own,
 // so each differs from the fixture by the one statement it authors.
-Rig Open(const std::string& fixture)
+Rig
+Open(const std::string& fixture)
 {
     Rig rig;
     rig.stage = UsdStage::Open(fixture);
@@ -190,7 +210,8 @@ Rig Open(const std::string& fixture)
     return rig;
 }
 
-std::vector<ExecUsdValueKey> KeysFor(const Rig& rig)
+std::vector<ExecUsdValueKey>
+KeysFor(const Rig& rig)
 {
     std::vector<ExecUsdValueKey> keys;
     keys.emplace_back(rig.skeleton, kTargetSkeleton);
@@ -198,18 +219,19 @@ std::vector<ExecUsdValueKey> KeysFor(const Rig& rig)
     return keys;
 }
 
-vrmRetarget::TargetSkeleton SkeletonAt(const ExecUsdCacheView& view)
+vrmRetarget::TargetSkeleton
+SkeletonAt(const ExecUsdCacheView& view)
 {
     const VtValue value = view.Get(kSkeletonKey);
-    assert(!value.IsEmpty() &&
-           "no skeleton came back -- if the plugInfo is unstaged this is what "
-           "it looks like, not a load error");
+    assert(!value.IsEmpty() && "no skeleton came back -- if the plugInfo is unstaged this is what "
+                               "it looks like, not a load error");
     assert(value.IsHolding<vrmRetarget::TargetSkeleton>() &&
            "vrm.computeTargetSkeleton did not return a TargetSkeleton");
     return value.UncheckedGet<vrmRetarget::TargetSkeleton>();
 }
 
-vrmRetarget::HumanoidMap MapAt(const ExecUsdCacheView& view)
+vrmRetarget::HumanoidMap
+MapAt(const ExecUsdCacheView& view)
 {
     const VtValue value = view.Get(kMapKey);
     assert(!value.IsEmpty() && "no humanoid map came back");
@@ -219,7 +241,8 @@ vrmRetarget::HumanoidMap MapAt(const ExecUsdCacheView& view)
 }
 
 // A refusal, which in this bundle is **no value at all**.
-void AssertRefused(const ExecUsdCacheView& view, int index)
+void
+AssertRefused(const ExecUsdCacheView& view, int index)
 {
     assert(view.Get(index).IsEmpty() &&
            "a refusal came back carrying a value, which puts it back where a "
@@ -233,34 +256,40 @@ void AssertRefused(const ExecUsdCacheView& view, int index)
 // `vrm:humanBones:<name>`. An input declared for an attribute the schema does
 // not define never carries a value and nothing reports it, so the two lists
 // are compared here, both ways, off the schema's own prim definition.
-void TestTheSchemaDefinesEveryBoneOfTheVocabulary()
+void
+TestTheSchemaDefinesEveryBoneOfTheVocabulary()
 {
     const UsdPrimDefinition* const definition =
-        UsdSchemaRegistry::GetInstance().FindAppliedAPIPrimDefinition(
-            TfToken("VrmHumanoidAPI"));
-    assert(definition &&
-           "VrmHumanoidAPI is not a registered applied schema -- vrmSchema's "
-           "plugInfo is not on the plugin path");
+        UsdSchemaRegistry::GetInstance().FindAppliedAPIPrimDefinition(TfToken("VrmHumanoidAPI"));
+    assert(definition && "VrmHumanoidAPI is not a registered applied schema -- vrmSchema's "
+                         "plugInfo is not on the plugin path");
 
     std::set<TfToken> schemaBones;
-    for (const TfToken& name : definition->GetPropertyNames()) {
-        if (TfStringStartsWith(name.GetString(), "vrm:humanBones:")) {
+    for (const TfToken& name : definition->GetPropertyNames())
+    {
+        if (TfStringStartsWith(name.GetString(), "vrm:humanBones:"))
+        {
             schemaBones.insert(name);
         }
     }
 
     std::set<TfToken> vocabulary;
-    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot) {
+    for (std::size_t slot = 0; slot < motion::HumanBoneCount; ++slot)
+    {
         vocabulary.insert(BoneAttribute(static_cast<HumanBone>(slot)));
     }
 
-    for (const TfToken& bone : vocabulary) {
-        if (!schemaBones.count(bone)) {
+    for (const TfToken& bone : vocabulary)
+    {
+        if (!schemaBones.count(bone))
+        {
             std::fprintf(stderr, "the schema defines no %s\n", bone.GetText());
         }
     }
-    for (const TfToken& bone : schemaBones) {
-        if (!vocabulary.count(bone)) {
+    for (const TfToken& bone : schemaBones)
+    {
+        if (!vocabulary.count(bone))
+        {
             std::fprintf(stderr, "the vocabulary has no %s\n", bone.GetText());
         }
     }
@@ -275,7 +304,8 @@ void TestTheSchemaDefinesEveryBoneOfTheVocabulary()
 // ---------------------------------------------------------------------------
 // The rig the fixture states
 // ---------------------------------------------------------------------------
-void TestTheRigComputes(const std::string& fixture)
+void
+TestTheRigComputes(const std::string& fixture)
 {
     Warnings warnings;
     const Rig rig = Open(fixture);
@@ -284,15 +314,11 @@ void TestTheRigComputes(const std::string& fixture)
     std::set<int> valueReported;
     std::set<int> timeReported;
     ExecUsdRequest request = system.BuildRequest(
-        KeysFor(rig),
-        [&](const ExecRequestIndexSet& indices, const EfTimeInterval&) {
-            valueReported.insert(indices.begin(), indices.end());
-        },
-        [&](const ExecRequestIndexSet& indices) {
-            timeReported.insert(indices.begin(), indices.end());
-        });
-    assert(request.IsValid() &&
-           "a request over a typed schema and an applied one did not compile");
+        KeysFor(rig), [&](const ExecRequestIndexSet& indices, const EfTimeInterval&)
+        { valueReported.insert(indices.begin(), indices.end()); },
+        [&](const ExecRequestIndexSet& indices)
+        { timeReported.insert(indices.begin(), indices.end()); });
+    assert(request.IsValid() && "a request over a typed schema and an applied one did not compile");
 
     vrmRetarget::TargetSkeleton skeleton;
     vrmRetarget::HumanoidMap map;
@@ -307,18 +333,16 @@ void TestTheRigComputes(const std::string& fixture)
     // ---- the skeleton --------------------------------------------------------
     const std::vector<vrmRetarget::TargetJoint>& joints = skeleton.GetJoints();
     assert(joints.size() == 7);
-    assert(joints[0].token == kRoot && joints[1].token == kHips &&
-           joints[6].token == kUpperArm);
+    assert(joints[0].token == kRoot && joints[1].token == kHips && joints[6].token == kUpperArm);
     const int parents[] = {-1, 0, 1, 2, 3, 4, 3};
-    for (std::size_t i = 0; i < joints.size(); ++i) {
+    for (std::size_t i = 0; i < joints.size(); ++i)
+    {
         assert(joints[i].parent == parents[i]);
     }
     const float half = std::sqrt(0.5f);
     const GfQuatf arm = joints[6].restRotation;
-    assert(NearlyEqual(arm.GetReal(), half) &&
-           NearlyEqual(arm.GetImaginary()[0], 0.0f) &&
-           NearlyEqual(arm.GetImaginary()[1], 0.0f) &&
-           NearlyEqual(arm.GetImaginary()[2], half) &&
+    assert(NearlyEqual(arm.GetReal(), half) && NearlyEqual(arm.GetImaginary()[0], 0.0f) &&
+           NearlyEqual(arm.GetImaginary()[1], 0.0f) && NearlyEqual(arm.GetImaginary()[2], half) &&
            "the arm's scaled rest transform did not come back as its rotation");
     assert(NearlyEqual(joints[6].restTranslation[0], 0.1f) &&
            NearlyEqual(joints[6].restTranslation[1], 0.15f));
@@ -345,28 +369,25 @@ void TestTheRigComputes(const std::string& fixture)
     // reaches the callback as "" rather than as nothing, and it is measured
     // here so the day 26.08's executor stops doing it is a red test.
     {
-        const std::vector<std::string> unset =
-            warnings.Take("No value set for output");
+        const std::vector<std::string> unset = warnings.Take("No value set for output");
         std::set<std::string> bonesWarned;
-        for (const std::string& warning : unset) {
-            assert(warning.find("/Asset/rig/Humanoid.vrm:humanBones:") !=
-                       std::string::npos &&
+        for (const std::string& warning : unset)
+        {
+            assert(warning.find("/Asset/rig/Humanoid.vrm:humanBones:") != std::string::npos &&
                    "a warning named something other than an unauthored bone");
             bonesWarned.insert(warning);
         }
         std::printf("execVrm humanoid: the first compute warned %zu times, "
                     "about %zu distinct bone inputs\n",
                     unset.size(), bonesWarned.size());
-        assert(unset.size() == motion::HumanBoneCount - 6 &&
-               bonesWarned.size() == unset.size() &&
+        assert(unset.size() == motion::HumanBoneCount - 6 && bonesWarned.size() == unset.size() &&
                "not exactly one warning per unauthored bone");
     }
 
     // ---- recompute with nothing changed ------------------------------------
     {
         ExecUsdCacheView view = system.Compute(request);
-        assert(valueReported.empty() &&
-               "an unchanged stage reported an invalidation");
+        assert(valueReported.empty() && "an unchanged stage reported an invalidation");
         assert(SkeletonAt(view) == skeleton && MapAt(view) == map);
         // Cached, so the input nodes did not run and nothing warned again.
         assert(warnings.Take("No value set for output").empty() &&
@@ -391,17 +412,16 @@ void TestTheRigComputes(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // Invalidation across the relationship
 // ---------------------------------------------------------------------------
-void TestInvalidationFollowsTheRelationship(const std::string& fixture)
+void
+TestInvalidationFollowsTheRelationship(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
     ExecUsdSystem system(rig.stage);
 
     std::set<int> reported;
     ExecUsdRequest request = system.BuildRequest(
-        KeysFor(rig),
-        [&](const ExecRequestIndexSet& indices, const EfTimeInterval&) {
-            reported.insert(indices.begin(), indices.end());
-        });
+        KeysFor(rig), [&](const ExecRequestIndexSet& indices, const EfTimeInterval&)
+        { reported.insert(indices.begin(), indices.end()); });
     assert(request.IsValid());
 
     vrmRetarget::TargetSkeleton skeleton;
@@ -414,10 +434,8 @@ void TestInvalidationFollowsTheRelationship(const std::string& fixture)
 
     // ---- a binding moves: the map is reported, the skeleton is not ---------
     reported.clear();
-    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Head))
-               .Set(TfToken(kRoot)));
-    assert(reported.count(kMapKey) &&
-           "rebinding a bone did not reach vrm.computeHumanoidMap");
+    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Head)).Set(TfToken(kRoot)));
+    assert(reported.count(kMapKey) && "rebinding a bone did not reach vrm.computeHumanoidMap");
     assert(!reported.count(kSkeletonKey) &&
            "rebinding a bone reported the skeleton, which does not read it");
     {
@@ -442,15 +460,13 @@ void TestInvalidationFollowsTheRelationship(const std::string& fixture)
     }
     assert(reported.count(kSkeletonKey) &&
            "a rest transform edit did not reach vrm.computeTargetSkeleton");
-    assert(reported.count(kMapKey) &&
-           "a skeleton edit did not reach the map across vrm:skeleton");
+    assert(reported.count(kMapKey) && "a skeleton edit did not reach the map across vrm:skeleton");
     {
         ExecUsdCacheView view = system.Compute(request);
         const vrmRetarget::TargetSkeleton moved = SkeletonAt(view);
         assert(moved != skeleton);
         assert(NearlyEqual(moved.GetJoints()[1].restTranslation[1], 1.5f));
-        assert(MapAt(view) == map &&
-               "a rest transform moved a joint index");
+        assert(MapAt(view) == map && "a rest transform moved a joint index");
     }
 
     // ---- the relationship's target moves: the map follows it ---------------
@@ -458,24 +474,23 @@ void TestInvalidationFollowsTheRelationship(const std::string& fixture)
     // every index the map holds changes and the only way to get them is from
     // the skeleton the relationship now targets. No request is rebuilt.
     {
-        UsdPrim other = rig.stage->DefinePrim(SdfPath("/Asset/skel/Reversed"),
-                                              TfToken("Skeleton"));
+        UsdPrim other = rig.stage->DefinePrim(SdfPath("/Asset/skel/Reversed"), TfToken("Skeleton"));
         VtArray<TfToken> tokens;
         assert(rig.skeleton.GetAttribute(kJoints).Get(&tokens));
         std::reverse(tokens.begin(), tokens.end());
-        assert(other.CreateAttribute(kJoints, SdfValueTypeNames->TokenArray,
-                                     /*custom=*/false, SdfVariabilityUniform)
+        assert(other
+                   .CreateAttribute(kJoints, SdfValueTypeNames->TokenArray,
+                                    /*custom=*/false, SdfVariabilityUniform)
                    .Set(tokens));
-        assert(other.CreateAttribute(kRestTransforms,
-                                     SdfValueTypeNames->Matrix4dArray,
-                                     /*custom=*/false, SdfVariabilityUniform)
+        assert(other
+                   .CreateAttribute(kRestTransforms, SdfValueTypeNames->Matrix4dArray,
+                                    /*custom=*/false, SdfVariabilityUniform)
                    .Set(VtArray<GfMatrix4d>(tokens.size(), GfMatrix4d(1.0))));
     }
     reported.clear();
-    assert(rig.humanoid.GetRelationship(kSkeletonRel)
-               .SetTargets({SdfPath("/Asset/skel/Reversed")}));
-    assert(reported.count(kMapKey) &&
-           "retargeting vrm:skeleton did not reach the map");
+    assert(
+        rig.humanoid.GetRelationship(kSkeletonRel).SetTargets({SdfPath("/Asset/skel/Reversed")}));
+    assert(reported.count(kMapKey) && "retargeting vrm:skeleton did not reach the map");
     {
         ExecUsdCacheView view = system.Compute(request);
         const vrmRetarget::HumanoidMap reversed = MapAt(view);
@@ -493,8 +508,8 @@ void TestInvalidationFollowsTheRelationship(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // Refusals, one statement each
 // ---------------------------------------------------------------------------
-void TestARestPoseThatDoesNotPairIsRefusedAndPropagates(
-    const std::string& fixture)
+void
+TestARestPoseThatDoesNotPairIsRefusedAndPropagates(const std::string& fixture)
 {
     Warnings warnings;
     const Rig rig = Open(fixture);
@@ -543,17 +558,15 @@ void TestARestPoseThatDoesNotPairIsRefusedAndPropagates(
 //     identity rest the fallback supplied -- pinned rather than fixed, because
 //     it is indistinguishable here from an authored identity, and the offline
 //     tool answers it identically.
-void TestWhatAnUnauthoredSkeletonArrivesAs(const std::string& fixture)
+void
+TestWhatAnUnauthoredSkeletonArrivesAs(const std::string& fixture)
 {
     Warnings warnings;
     const Rig rig = Open(fixture);
     const TfToken skeletonType("Skeleton");
-    UsdPrim bare =
-        rig.stage->DefinePrim(SdfPath("/Asset/skel/Bare"), skeletonType);
-    UsdPrim empty =
-        rig.stage->DefinePrim(SdfPath("/Asset/skel/Empty"), skeletonType);
-    UsdPrim jointless =
-        rig.stage->DefinePrim(SdfPath("/Asset/skel/Jointless"), skeletonType);
+    UsdPrim bare = rig.stage->DefinePrim(SdfPath("/Asset/skel/Bare"), skeletonType);
+    UsdPrim empty = rig.stage->DefinePrim(SdfPath("/Asset/skel/Empty"), skeletonType);
+    UsdPrim jointless = rig.stage->DefinePrim(SdfPath("/Asset/skel/Jointless"), skeletonType);
     UsdPrim one = rig.stage->DefinePrim(SdfPath("/Asset/skel/One"), skeletonType);
     assert(bare && empty && jointless && one);
     assert(empty.GetAttribute(kJoints).Set(VtArray<TfToken>()));
@@ -574,12 +587,14 @@ void TestWhatAnUnauthoredSkeletonArrivesAs(const std::string& fixture)
 
     // Every warning the compute posted, counted per skeleton: each one that
     // takes the fallback path says so once per attribute that took it.
-    const std::vector<std::string> unset =
-        warnings.Take("No value set for output");
-    auto warnedFor = [&unset](const std::string& prim) {
+    const std::vector<std::string> unset = warnings.Take("No value set for output");
+    auto warnedFor = [&unset](const std::string& prim)
+    {
         std::size_t count = 0;
-        for (const std::string& warning : unset) {
-            if (warning.find(prim + ".") != std::string::npos) {
+        for (const std::string& warning : unset)
+        {
+            if (warning.find(prim + ".") != std::string::npos)
+            {
                 ++count;
             }
         }
@@ -593,14 +608,14 @@ void TestWhatAnUnauthoredSkeletonArrivesAs(const std::string& fixture)
            "the bare skeleton's two attributes did not both take the "
            "fallback path");
 
-    for (const int index : {1, 2}) {
+    for (const int index : {1, 2})
+    {
         const VtValue value = view.Get(index);
         assert(value.IsHolding<vrmRetarget::TargetSkeleton>() &&
                value.UncheckedGet<vrmRetarget::TargetSkeleton>().IsEmpty() &&
                "a skeleton with no joints did not come back empty");
     }
-    assert(warnedFor("/Asset/skel/Empty") == 0 &&
-           "authored empty arrays took the fallback path");
+    assert(warnedFor("/Asset/skel/Empty") == 0 && "authored empty arrays took the fallback path");
     assert(warnedFor("/Asset/skel/Jointless") == 1 &&
            "the jointless skeleton's rest pose did not take the fallback "
            "path, so this case measures nothing");
@@ -613,15 +628,15 @@ void TestWhatAnUnauthoredSkeletonArrivesAs(const std::string& fixture)
         const vrmRetarget::TargetSkeleton& skeleton =
             value.UncheckedGet<vrmRetarget::TargetSkeleton>();
         assert(skeleton.GetSize() == 1);
-        assert(skeleton.GetJoints()[0].restRotation ==
-                   GfQuatf(1.0f, GfVec3f(0.0f)) &&
+        assert(skeleton.GetJoints()[0].restRotation == GfQuatf(1.0f, GfVec3f(0.0f)) &&
                skeleton.GetJoints()[0].restTranslation == GfVec3f(0.0f));
     }
     assert(warnedFor("/Asset/skel/One") == 1);
 
     // Nothing but the bare skeleton's refusal was an error.
     std::size_t errors = 0;
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
         ++errors;
     }
     assert(errors == 1);
@@ -632,12 +647,12 @@ void TestWhatAnUnauthoredSkeletonArrivesAs(const std::string& fixture)
                 "the fallback supplied\n");
 }
 
-void TestABindingTheSkeletonCannotHonourIsRefused(const std::string& fixture)
+void
+TestABindingTheSkeletonCannotHonourIsRefused(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
     // The leaf name, which is the thing a joint-name heuristic would try.
-    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Hips))
-               .Set(TfToken("J_Bip_C_Hips")));
+    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Hips)).Set(TfToken("J_Bip_C_Hips")));
 
     ExecUsdSystem system(rig.stage);
     ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
@@ -651,11 +666,11 @@ void TestABindingTheSkeletonCannotHonourIsRefused(const std::string& fixture)
                 "bone\n");
 }
 
-void TestTwoBonesOnOneJointAreRefused(const std::string& fixture)
+void
+TestTwoBonesOnOneJointAreRefused(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
-    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Spine))
-               .Set(TfToken(kHips)));
+    assert(rig.humanoid.GetAttribute(BoneAttribute(HumanBone::Spine)).Set(TfToken(kHips)));
 
     ExecUsdSystem system(rig.stage);
     ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
@@ -668,7 +683,8 @@ void TestTwoBonesOnOneJointAreRefused(const std::string& fixture)
     std::printf("execVrm humanoid: two bones on one joint are refused\n");
 }
 
-void TestTheSkeletonRelationshipIsCounted(const std::string& fixture)
+void
+TestTheSkeletonRelationshipIsCounted(const std::string& fixture)
 {
     struct Case
     {
@@ -694,7 +710,8 @@ void TestTheSkeletonRelationshipIsCounted(const std::string& fixture)
          "'vrm:skeleton' targets </Asset/rig>, which answered no"},
     };
 
-    for (const Case& c : cases) {
+    for (const Case& c : cases)
+    {
         const Rig rig = Open(fixture);
         assert(rig.humanoid.GetRelationship(kSkeletonRel).SetTargets(c.targets));
 
@@ -703,9 +720,9 @@ void TestTheSkeletonRelationshipIsCounted(const std::string& fixture)
         TfErrorMark mark;
         ExecUsdCacheView view = system.Compute(request);
         AssertRefused(view, kMapKey);
-        if (!MarkNames(mark, c.message)) {
-            std::fprintf(stderr, "%s: expected an error naming \"%s\"\n",
-                         c.what, c.message);
+        if (!MarkNames(mark, c.message))
+        {
+            std::fprintf(stderr, "%s: expected an error naming \"%s\"\n", c.what, c.message);
             assert(false && "the skeleton relationship was not refused as "
                             "expected");
         }
@@ -727,9 +744,11 @@ void TestTheSkeletonRelationshipIsCounted(const std::string& fixture)
 // humanoid has none, and exec offers no read of a relationship's authored
 // targets. So a humanoid naming a skeleton and a path to nothing is answered
 // against the skeleton, in either order, with no error.
-void TestADanglingSecondTargetIsInvisible(const std::string& fixture)
+void
+TestADanglingSecondTargetIsInvisible(const std::string& fixture)
 {
-    const vrmRetarget::HumanoidMap expected = [&fixture] {
+    const vrmRetarget::HumanoidMap expected = [&fixture]
+    {
         const Rig rig = Open(fixture);
         ExecUsdSystem system(rig.stage);
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
@@ -739,7 +758,8 @@ void TestADanglingSecondTargetIsInvisible(const std::string& fixture)
     const SdfPath skeleton("/Asset/skel/Skeleton");
     const SdfPath nowhere("/Asset/skel/Nowhere");
     for (const SdfPathVector& targets :
-         {SdfPathVector{skeleton, nowhere}, SdfPathVector{nowhere, skeleton}}) {
+         {SdfPathVector{skeleton, nowhere}, SdfPathVector{nowhere, skeleton}})
+    {
         const Rig rig = Open(fixture);
         assert(rig.humanoid.GetRelationship(kSkeletonRel).SetTargets(targets));
 
@@ -747,9 +767,8 @@ void TestADanglingSecondTargetIsInvisible(const std::string& fixture)
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
         TfErrorMark mark;
         const vrmRetarget::HumanoidMap map = MapAt(system.Compute(request));
-        assert(mark.IsClean() &&
-               "a dangling second target was noticed after all -- the "
-               "limitation this pins is gone, and the node should now refuse");
+        assert(mark.IsClean() && "a dangling second target was noticed after all -- the "
+                                 "limitation this pins is gone, and the node should now refuse");
         assert(map == expected);
     }
     std::printf("execVrm humanoid: a target naming nothing beside a skeleton "
@@ -759,16 +778,20 @@ void TestADanglingSecondTargetIsInvisible(const std::string& fixture)
 // ---------------------------------------------------------------------------
 // Two ways to say nothing about a bone
 // ---------------------------------------------------------------------------
-void TestAnEmptyTokenAndABlockBindNothing(const std::string& fixture)
+void
+TestAnEmptyTokenAndABlockBindNothing(const std::string& fixture)
 {
-    for (const bool block : {false, true}) {
+    for (const bool block : {false, true})
+    {
         const Rig rig = Open(fixture);
-        UsdAttribute arm =
-            rig.humanoid.GetAttribute(BoneAttribute(HumanBone::LeftUpperArm));
+        UsdAttribute arm = rig.humanoid.GetAttribute(BoneAttribute(HumanBone::LeftUpperArm));
         assert(arm);
-        if (block) {
+        if (block)
+        {
             arm.Block();
-        } else {
+        }
+        else
+        {
             assert(arm.Set(TfToken()));
         }
 
@@ -776,10 +799,8 @@ void TestAnEmptyTokenAndABlockBindNothing(const std::string& fixture)
         ExecUsdRequest request = system.BuildRequest(KeysFor(rig));
         TfErrorMark mark;
         const vrmRetarget::HumanoidMap map = MapAt(system.Compute(request));
-        assert(mark.IsClean() &&
-               "saying nothing about a bone was refused");
-        assert(map.GetMappedCount() == 5 &&
-               !map.IsMapped(HumanBone::LeftUpperArm));
+        assert(mark.IsClean() && "saying nothing about a bone was refused");
+        assert(map.GetMappedCount() == 5 && !map.IsMapped(HumanBone::LeftUpperArm));
     }
     std::printf("execVrm humanoid: an empty token and a value block both "
                 "leave a bone unbound\n");
@@ -793,14 +814,13 @@ void TestAnEmptyTokenAndABlockBindNothing(const std::string& fixture)
 // schema, so a prim carrying every attribute and no `VrmHumanoidAPI` has no
 // humanoid map at all -- the importer applies the schema, and a hand-authored
 // stage that does not is the divergence.
-void TestAnUnappliedHumanoidHasNoMap(const std::string& fixture)
+void
+TestAnUnappliedHumanoidHasNoMap(const std::string& fixture)
 {
     const Rig rig = Open(fixture);
-    UsdPrim bare = rig.stage->DefinePrim(SdfPath("/Asset/rig/Unapplied"),
-                                         TfToken("Scope"));
-    assert(bare.CreateAttribute(BoneAttribute(HumanBone::Hips),
-                                SdfValueTypeNames->Token, /*custom=*/true,
-                                SdfVariabilityUniform)
+    UsdPrim bare = rig.stage->DefinePrim(SdfPath("/Asset/rig/Unapplied"), TfToken("Scope"));
+    assert(bare.CreateAttribute(BoneAttribute(HumanBone::Hips), SdfValueTypeNames->Token,
+                                /*custom=*/true, SdfVariabilityUniform)
                .Set(TfToken(kHips)));
     assert(bare.CreateRelationship(kSkeletonRel, /*custom=*/true)
                .SetTargets({SdfPath("/Asset/skel/Skeleton")}));
@@ -811,8 +831,7 @@ void TestAnUnappliedHumanoidHasNoMap(const std::string& fixture)
     ExecUsdRequest request = system.BuildRequest(std::move(keys));
     TfErrorMark mark;
     ExecUsdCacheView view = system.Compute(request);
-    assert(view.Get(0).IsEmpty() &&
-           "a prim without VrmHumanoidAPI produced a humanoid map");
+    assert(view.Get(0).IsEmpty() && "a prim without VrmHumanoidAPI produced a humanoid map");
     assert(!mark.IsClean() && "a computation that does not exist was silent");
     mark.Clear();
     std::printf("execVrm humanoid: the attributes without the applied schema "
@@ -826,11 +845,12 @@ void TestAnUnappliedHumanoidHasNoMap(const std::string& fixture)
 // alone. The bundle links nothing of vrmSchema; what it needs is the type name
 // `UsdVrmHumanoidAPI` declared when exec reads its Exec block. So this is what
 // a session that composes execVrm without the bundle it requires looks like.
-void TestWithoutTheSchemaTheHumanoidIsNotFound(const std::string& fixture)
+void
+TestWithoutTheSchemaTheHumanoidIsNotFound(const std::string& fixture)
 {
-    assert(!UsdSchemaRegistry::GetInstance().FindAppliedAPIPrimDefinition(
-               TfToken("VrmHumanoidAPI")) &&
-           "vrmSchema is registered after all, so this run measures nothing");
+    assert(
+        !UsdSchemaRegistry::GetInstance().FindAppliedAPIPrimDefinition(TfToken("VrmHumanoidAPI")) &&
+        "vrmSchema is registered after all, so this run measures nothing");
 
     TfErrorMark mark;
     const Rig rig = Open(fixture);
@@ -845,7 +865,8 @@ void TestWithoutTheSchemaTheHumanoidIsNotFound(const std::string& fixture)
     // The applied half is not found, and what says why is exec's own coding
     // error at metadata read -- nothing of ours runs.
     AssertRefused(view, kMapKey);
-    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it) {
+    for (TfErrorMark::Iterator it = mark.GetBegin(); it != mark.GetEnd(); ++it)
+    {
         std::printf("  posted: %s\n", it->GetCommentary().c_str());
     }
     assert(MarkNames(mark, "UsdVrmHumanoidAPI") &&
@@ -857,13 +878,15 @@ void TestWithoutTheSchemaTheHumanoidIsNotFound(const std::string& fixture)
 
 } // namespace
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
     assert((argc == 2 || argc == 3) &&
            "usage: execVrm_humanoid <humanoid_rig.usda> [--without-schema]");
     const std::string fixture = argv[1];
 
-    if (argc == 3) {
+    if (argc == 3)
+    {
         assert(std::string(argv[2]) == "--without-schema");
         TestWithoutTheSchemaTheHumanoidIsNotFound(fixture);
         std::puts("execVrm humanoid (without vrmSchema): all checks passed");
@@ -888,8 +911,10 @@ int main(int argc, char** argv)
     TestAnEmptyTokenAndABlockBindNothing(fixture);
     TestAnUnappliedHumanoidHasNoMap(fixture);
 
-    for (const std::string& warning : all.Take("")) {
-        if (warning.find("No value set for output") == std::string::npos) {
+    for (const std::string& warning : all.Take(""))
+    {
+        if (warning.find("No value set for output") == std::string::npos)
+        {
             std::printf("  also warned: %s\n", warning.c_str());
         }
     }

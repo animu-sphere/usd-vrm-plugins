@@ -16,9 +16,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdVrmExpressionAPI,
-        TfType::Bases< UsdAPISchemaBase > >();
-    
+    TfType::Define<UsdVrmExpressionAPI, TfType::Bases<UsdAPISchemaBase>>();
 }
 
 /* virtual */
@@ -28,42 +26,43 @@ UsdVrmExpressionAPI::~UsdVrmExpressionAPI()
 
 /* static */
 UsdVrmExpressionAPI
-UsdVrmExpressionAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdVrmExpressionAPI::Get(const UsdStagePtr& stage, const SdfPath& path)
 {
-    if (!stage) {
+    if (!stage)
+    {
         TF_CODING_ERROR("Invalid stage");
         return UsdVrmExpressionAPI();
     }
     return UsdVrmExpressionAPI(stage->GetPrimAtPath(path));
 }
 
-
 /* virtual */
-UsdSchemaKind UsdVrmExpressionAPI::_GetSchemaKind() const
+UsdSchemaKind
+UsdVrmExpressionAPI::_GetSchemaKind() const
 {
     return UsdVrmExpressionAPI::schemaKind;
 }
 
 /* static */
 bool
-UsdVrmExpressionAPI::CanApply(
-    const UsdPrim &prim, std::string *whyNot)
+UsdVrmExpressionAPI::CanApply(const UsdPrim& prim, std::string* whyNot)
 {
     return prim.CanApplyAPI<UsdVrmExpressionAPI>(whyNot);
 }
 
 /* static */
 UsdVrmExpressionAPI
-UsdVrmExpressionAPI::Apply(const UsdPrim &prim)
+UsdVrmExpressionAPI::Apply(const UsdPrim& prim)
 {
-    if (prim.ApplyAPI<UsdVrmExpressionAPI>()) {
+    if (prim.ApplyAPI<UsdVrmExpressionAPI>())
+    {
         return UsdVrmExpressionAPI(prim);
     }
     return UsdVrmExpressionAPI();
 }
 
 /* static */
-const TfType &
+const TfType&
 UsdVrmExpressionAPI::_GetStaticTfType()
 {
     static TfType tfType = TfType::Find<UsdVrmExpressionAPI>();
@@ -71,7 +70,7 @@ UsdVrmExpressionAPI::_GetStaticTfType()
 }
 
 /* static */
-bool 
+bool
 UsdVrmExpressionAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
@@ -79,7 +78,7 @@ UsdVrmExpressionAPI::_IsTypedSchema()
 }
 
 /* virtual */
-const TfType &
+const TfType&
 UsdVrmExpressionAPI::_GetTfType() const
 {
     return _GetStaticTfType();
@@ -92,14 +91,12 @@ UsdVrmExpressionAPI::GetVrmExpressionNameAttr() const
 }
 
 UsdAttribute
-UsdVrmExpressionAPI::CreateVrmExpressionNameAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmExpressionAPI::CreateVrmExpressionNameAttr(VtValue const& defaultValue,
+                                                 bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmExpressionName,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmExpressionName, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -109,14 +106,12 @@ UsdVrmExpressionAPI::GetVrmExpressionTypeAttr() const
 }
 
 UsdAttribute
-UsdVrmExpressionAPI::CreateVrmExpressionTypeAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmExpressionAPI::CreateVrmExpressionTypeAttr(VtValue const& defaultValue,
+                                                 bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmExpressionType,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmExpressionType, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -126,14 +121,11 @@ UsdVrmExpressionAPI::GetVrmIsBinaryAttr() const
 }
 
 UsdAttribute
-UsdVrmExpressionAPI::CreateVrmIsBinaryAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmExpressionAPI::CreateVrmIsBinaryAttr(VtValue const& defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmIsBinary,
-                       SdfValueTypeNames->Bool,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmIsBinary, SdfValueTypeNames->Bool,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -143,14 +135,12 @@ UsdVrmExpressionAPI::GetVrmOverrideBlinkAttr() const
 }
 
 UsdAttribute
-UsdVrmExpressionAPI::CreateVrmOverrideBlinkAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmExpressionAPI::CreateVrmOverrideBlinkAttr(VtValue const& defaultValue,
+                                                bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmOverrideBlink,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmOverrideBlink, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -160,14 +150,12 @@ UsdVrmExpressionAPI::GetVrmOverrideLookAtAttr() const
 }
 
 UsdAttribute
-UsdVrmExpressionAPI::CreateVrmOverrideLookAtAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmExpressionAPI::CreateVrmOverrideLookAtAttr(VtValue const& defaultValue,
+                                                 bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmOverrideLookAt,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmOverrideLookAt, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -177,14 +165,12 @@ UsdVrmExpressionAPI::GetVrmOverrideMouthAttr() const
 }
 
 UsdAttribute
-UsdVrmExpressionAPI::CreateVrmOverrideMouthAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmExpressionAPI::CreateVrmOverrideMouthAttr(VtValue const& defaultValue,
+                                                bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmOverrideMouth,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmOverrideMouth, SdfValueTypeNames->Token,
+                                      /* custom = */ false, SdfVariabilityUniform, defaultValue,
+                                      writeSparsely);
 }
 
 UsdAttribute
@@ -194,14 +180,12 @@ UsdVrmExpressionAPI::GetVrmMorphTargetWeightsAttr() const
 }
 
 UsdAttribute
-UsdVrmExpressionAPI::CreateVrmMorphTargetWeightsAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmExpressionAPI::CreateVrmMorphTargetWeightsAttr(VtValue const& defaultValue,
+                                                     bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmMorphTargetWeights,
-                       SdfValueTypeNames->FloatArray,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmMorphTargetWeights, SdfValueTypeNames->FloatArray,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -211,14 +195,12 @@ UsdVrmExpressionAPI::GetVrmMaterialColorTypesAttr() const
 }
 
 UsdAttribute
-UsdVrmExpressionAPI::CreateVrmMaterialColorTypesAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmExpressionAPI::CreateVrmMaterialColorTypesAttr(VtValue const& defaultValue,
+                                                     bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmMaterialColorTypes,
-                       SdfValueTypeNames->TokenArray,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmMaterialColorTypes, SdfValueTypeNames->TokenArray,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdAttribute
@@ -228,14 +210,12 @@ UsdVrmExpressionAPI::GetVrmMaterialColorValuesAttr() const
 }
 
 UsdAttribute
-UsdVrmExpressionAPI::CreateVrmMaterialColorValuesAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdVrmExpressionAPI::CreateVrmMaterialColorValuesAttr(VtValue const& defaultValue,
+                                                      bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdVrmTokens->vrmMaterialColorValues,
-                       SdfValueTypeNames->Float4Array,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        UsdVrmTokens->vrmMaterialColorValues, SdfValueTypeNames->Float4Array,
+        /* custom = */ false, SdfVariabilityUniform, defaultValue, writeSparsely);
 }
 
 UsdRelationship
@@ -248,7 +228,7 @@ UsdRelationship
 UsdVrmExpressionAPI::CreateVrmMorphTargetsRel() const
 {
     return GetPrim().CreateRelationship(UsdVrmTokens->vrmMorphTargets,
-                       /* custom = */ false);
+                                        /* custom = */ false);
 }
 
 UsdRelationship
@@ -261,12 +241,13 @@ UsdRelationship
 UsdVrmExpressionAPI::CreateVrmMaterialColorTargetsRel() const
 {
     return GetPrim().CreateRelationship(UsdVrmTokens->vrmMaterialColorTargets,
-                       /* custom = */ false);
+                                        /* custom = */ false);
 }
 
-namespace {
+namespace
+{
 static inline TfTokenVector
-_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+_ConcatenateAttributeNames(const TfTokenVector& left, const TfTokenVector& right)
 {
     TfTokenVector result;
     result.reserve(left.size() + right.size());
@@ -274,7 +255,7 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
     result.insert(result.end(), right.begin(), right.end());
     return result;
 }
-}
+} // namespace
 
 /*static*/
 const TfTokenVector&
@@ -292,9 +273,7 @@ UsdVrmExpressionAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdVrmTokens->vrmMaterialColorValues,
     };
     static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
-            UsdAPISchemaBase::GetSchemaAttributeNames(true),
-            localNames);
+        _ConcatenateAttributeNames(UsdAPISchemaBase::GetSchemaAttributeNames(true), localNames);
 
     if (includeInherited)
         return allNames;

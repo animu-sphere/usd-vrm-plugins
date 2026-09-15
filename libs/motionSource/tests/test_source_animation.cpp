@@ -20,8 +20,8 @@ namespace
 using motionSource::FindSourceAngleUnit;
 using motionSource::FindSourceEulerOrder;
 using motionSource::SourceAngleUnit;
-using motionSource::SourceAnimation;
 using motionSource::SourceAngleUnitName;
+using motionSource::SourceAnimation;
 using motionSource::SourceEulerAngles;
 using motionSource::SourceEulerAxis;
 using motionSource::SourceEulerOrder;
@@ -59,16 +59,13 @@ MakeAnimation()
     animation.tracks.resize(2);
 
     SourceJointTrack& root = animation.tracks[0];
-    root.translations = {
-        {0.0f, 95.98f, 0.0f}, {0.5f, 95.90f, 0.1f}, {1.0f, 95.80f, 0.2f}};
-    root.eulerAngles = {{0.0f, 0.0f, 0.0f}, {1.0f, 2.0f, 3.0f},
-                        {2.0f, 4.0f, 6.0f}};
+    root.translations = {{0.0f, 95.98f, 0.0f}, {0.5f, 95.90f, 0.1f}, {1.0f, 95.80f, 0.2f}};
+    root.eulerAngles = {{0.0f, 0.0f, 0.0f}, {1.0f, 2.0f, 3.0f}, {2.0f, 4.0f, 6.0f}};
     root.eulerOrder = SourceEulerOrder::ZXY;
     root.angleUnit = SourceAngleUnit::Degrees;
 
     SourceJointTrack& spine = animation.tracks[1];
-    spine.eulerAngles = {{0.0f, 0.0f, 0.0f}, {0.5f, 0.0f, 0.0f},
-                         {1.0f, 0.0f, 0.0f}};
+    spine.eulerAngles = {{0.0f, 0.0f, 0.0f}, {0.5f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}};
     spine.eulerOrder = SourceEulerOrder::ZXY;
 
     animation.provenance.format = "test-fixture";
@@ -78,11 +75,12 @@ MakeAnimation()
 void
 TestEulerOrderVocabulary()
 {
-    const SourceEulerOrder every[] = {
-        SourceEulerOrder::XYZ, SourceEulerOrder::XZY, SourceEulerOrder::YXZ,
-        SourceEulerOrder::YZX, SourceEulerOrder::ZXY, SourceEulerOrder::ZYX};
+    const SourceEulerOrder every[] = {SourceEulerOrder::XYZ, SourceEulerOrder::XZY,
+                                      SourceEulerOrder::YXZ, SourceEulerOrder::YZX,
+                                      SourceEulerOrder::ZXY, SourceEulerOrder::ZYX};
 
-    for (SourceEulerOrder order : every) {
+    for (SourceEulerOrder order : every)
+    {
         const std::string_view name = SourceEulerOrderName(order);
         assert(name.size() == 3);
         assert(FindSourceEulerOrder(name).has_value());
@@ -92,7 +90,8 @@ TestEulerOrderVocabulary()
         // component is readable straight off the name. Nothing here says how the
         // three compose into a rotation: that needs the handedness, which is a
         // profile's answer.
-        for (std::size_t component = 0; component < 3; ++component) {
+        for (std::size_t component = 0; component < 3; ++component)
+        {
             const std::optional<int> axis = SourceEulerAxis(order, component);
             assert(axis.has_value());
             assert(*axis == name[component] - 'X');

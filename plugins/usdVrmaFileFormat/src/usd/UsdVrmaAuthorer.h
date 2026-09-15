@@ -8,10 +8,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdVrmaAuthorer {
-public:
-    bool WriteToString(const VrmaCanonicalDocument& document,
-                       std::string* outUsda) const;
+class UsdVrmaAuthorer
+{
+  public:
+    bool WriteToString(const VrmaCanonicalDocument& document, std::string* outUsda) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

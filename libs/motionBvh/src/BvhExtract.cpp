@@ -29,7 +29,8 @@ bool
 Refuse(Diagnostic* diagnostic, DiagnosticCode code, const std::string& sourceId,
        std::string subject, std::string detail)
 {
-    if (diagnostic) {
+    if (diagnostic)
+    {
         *diagnostic = MakeDiagnostic(code, std::move(detail));
         diagnostic->source = sourceId;
         diagnostic->subject = std::move(subject);
@@ -43,7 +44,8 @@ Refuse(Diagnostic* diagnostic, DiagnosticCode code, const std::string& sourceId,
 int
 ChannelAxis(BvhChannel channel) noexcept
 {
-    switch (channel) {
+    switch (channel)
+    {
     case BvhChannel::Xposition:
     case BvhChannel::Xrotation:
         return 0;
@@ -68,8 +70,10 @@ OrderFromAxes(const std::array<int, 3>& axes, std::string* spelling)
 {
     constexpr char kAxisLetters[3] = {'X', 'Y', 'Z'};
     spelling->clear();
-    for (const int axis : axes) {
-        if (axis < 0 || axis > 2) {
+    for (const int axis : axes)
+    {
+        if (axis < 0 || axis > 2)
+        {
             return std::nullopt;
         }
         spelling->push_back(kAxisLetters[axis]);
@@ -100,55 +104,56 @@ BuildLayout(const BvhJoint& joint, JointLayout* layout, Diagnostic* diagnostic,
     std::array<int, 3> rotationAxes = {-1, -1, -1};
     std::size_t rotationCount = 0;
 
-    for (std::size_t index = 0; index < joint.channels.size(); ++index) {
+    for (std::size_t index = 0; index < joint.channels.size(); ++index)
+    {
         const BvhChannel channel = joint.channels[index];
         const int axis = ChannelAxis(channel);
         const std::size_t column = joint.channelOffset + index;
-        if (axis < 0) {
-            return Refuse(diagnostic, DiagnosticCode::UnsupportedChannel,
-                          sourceId, joint.name,
+        if (axis < 0)
+        {
+            return Refuse(diagnostic, DiagnosticCode::UnsupportedChannel, sourceId, joint.name,
                           "channel is not one this format model represents");
         }
-        if (BvhChannelIsPosition(channel)) {
-            if (layout->position[static_cast<std::size_t>(axis)] != kNoColumn) {
+        if (BvhChannelIsPosition(channel))
+        {
+            if (layout->position[static_cast<std::size_t>(axis)] != kNoColumn)
+            {
                 // Not in the frozen set, so it is `VRM_BVH_PARSE_FAILED` with a
                 // precise detail rather than a new code (Diagnostics.h). Two
                 // columns claiming one component is unreadable rather than
                 // unmapped: taking either one would be a coin toss nobody is
                 // told about.
-                return Refuse(
-                    diagnostic, DiagnosticCode::ParseFailed, sourceId,
-                    joint.name,
-                    "joint declares the same position channel twice");
+                return Refuse(diagnostic, DiagnosticCode::ParseFailed, sourceId, joint.name,
+                              "joint declares the same position channel twice");
             }
             layout->position[static_cast<std::size_t>(axis)] = column;
             layout->hasPosition = true;
             continue;
         }
-        if (rotationCount < rotationAxes.size()) {
+        if (rotationCount < rotationAxes.size())
+        {
             rotationAxes[rotationCount] = axis;
             layout->rotation[rotationCount] = column;
         }
         ++rotationCount;
     }
 
-    if (rotationCount == 0) {
+    if (rotationCount == 0)
+    {
         return true;
     }
-    if (rotationCount != rotationAxes.size()) {
-        return Refuse(diagnostic, DiagnosticCode::InvalidRotationOrder,
-                      sourceId, joint.name,
-                      "joint declares " + std::to_string(rotationCount)
-                          + " rotation channels; an Euler order needs three");
+    if (rotationCount != rotationAxes.size())
+    {
+        return Refuse(diagnostic, DiagnosticCode::InvalidRotationOrder, sourceId, joint.name,
+                      "joint declares " + std::to_string(rotationCount) +
+                          " rotation channels; an Euler order needs three");
     }
     std::string spelling;
-    const std::optional<SourceEulerOrder> order =
-        OrderFromAxes(rotationAxes, &spelling);
-    if (!order) {
-        return Refuse(diagnostic, DiagnosticCode::InvalidRotationOrder,
-                      sourceId, joint.name,
-                      "rotation channels declare '" + spelling
-                          + "', which is not an axis order");
+    const std::optional<SourceEulerOrder> order = OrderFromAxes(rotationAxes, &spelling);
+    if (!order)
+    {
+        return Refuse(diagnostic, DiagnosticCode::InvalidRotationOrder, sourceId, joint.name,
+                      "rotation channels declare '" + spelling + "', which is not an axis order");
     }
     layout->order = *order;
     layout->hasRotation = true;
@@ -174,21 +179,23 @@ BvhFormatLabel() noexcept
 }
 
 bool
-ExtractBvhSource(const BvhDocument& document, SourceSkeleton* skeleton,
-                 SourceAnimation* animation, Diagnostic* diagnostic,
-                 const BvhExtractOptions& options)
+ExtractBvhSource(const BvhDocument& document, SourceSkeleton* skeleton, SourceAnimation* animation,
+                 Diagnostic* diagnostic, const BvhExtractOptions& options)
 {
-    if (skeleton == nullptr || animation == nullptr) {
-        return Refuse(diagnostic, DiagnosticCode::ParseFailed, options.sourceId,
-                      {}, "no place to put the extracted rig or animation");
+    if (skeleton == nullptr || animation == nullptr)
+    {
+        return Refuse(diagnostic, DiagnosticCode::ParseFailed, options.sourceId, {},
+                      "no place to put the extracted rig or animation");
     }
     // The parser produces nothing a `ValidateBvhDocument` refuses, so this is
     // not a re-check of it -- it is the check on the *other* caller, the one
     // that assembled a document by hand (BvhDocument.h). Everything below reads
     // `channelOffset` and indexes `values` directly, and both are invariants
     // that validation is what establishes.
-    if (!ValidateBvhDocument(document, diagnostic)) {
-        if (diagnostic && diagnostic->source.empty()) {
+    if (!ValidateBvhDocument(document, diagnostic))
+    {
+        if (diagnostic && diagnostic->source.empty())
+        {
             diagnostic->source = options.sourceId;
         }
         return false;
@@ -196,7 +203,8 @@ ExtractBvhSource(const BvhDocument& document, SourceSkeleton* skeleton,
 
     SourceSkeleton rig;
     rig.joints.reserve(document.joints.size());
-    for (const BvhJoint& joint : document.joints) {
+    for (const BvhJoint& joint : document.joints)
+    {
         SourceJoint out;
         out.name = joint.name;
         out.parent = joint.parent;
@@ -204,16 +212,18 @@ ExtractBvhSource(const BvhDocument& document, SourceSkeleton* skeleton,
         // A rest rotation stays unset: BVH states none, and an identity default
         // would make a file that says nothing indistinguishable from one that
         // says "identity" (SourceSkeleton.h).
-        if (joint.endSiteOffset) {
+        if (joint.endSiteOffset)
+        {
             out.tipOffset = ToSourceVec3(*joint.endSiteOffset);
         }
         rig.joints.push_back(std::move(out));
     }
 
     std::vector<JointLayout> layouts(document.joints.size());
-    for (std::size_t index = 0; index < document.joints.size(); ++index) {
-        if (!BuildLayout(document.joints[index], &layouts[index], diagnostic,
-                         options.sourceId)) {
+    for (std::size_t index = 0; index < document.joints.size(); ++index)
+    {
+        if (!BuildLayout(document.joints[index], &layouts[index], diagnostic, options.sourceId))
+        {
             return false;
         }
     }
@@ -229,41 +239,47 @@ ExtractBvhSource(const BvhDocument& document, SourceSkeleton* skeleton,
     clip.provenance.sourceId = options.sourceId;
     clip.tracks.resize(document.joints.size());
 
-    for (std::size_t index = 0; index < document.joints.size(); ++index) {
+    for (std::size_t index = 0; index < document.joints.size(); ++index)
+    {
         const BvhJoint& joint = document.joints[index];
         const JointLayout& layout = layouts[index];
         SourceJointTrack& track = clip.tracks[index];
-        if (layout.hasPosition) {
+        if (layout.hasPosition)
+        {
             track.translations.reserve(document.frameCount);
         }
-        if (layout.hasRotation) {
+        if (layout.hasRotation)
+        {
             track.eulerAngles.reserve(document.frameCount);
             track.eulerOrder = layout.order;
             // The format's answer, not a producer's: see BvhExtract.h.
             track.angleUnit = motionSource::SourceAngleUnit::Degrees;
         }
-        for (std::size_t frame = 0; frame < document.frameCount; ++frame) {
+        for (std::size_t frame = 0; frame < document.frameCount; ++frame)
+        {
             const float* row = document.Frame(frame);
-            if (row == nullptr) {
-                return Refuse(diagnostic, DiagnosticCode::FrameWidthMismatch,
-                              options.sourceId, joint.name,
-                              "frame " + std::to_string(frame)
-                                  + " carries no row");
+            if (row == nullptr)
+            {
+                return Refuse(diagnostic, DiagnosticCode::FrameWidthMismatch, options.sourceId,
+                              joint.name, "frame " + std::to_string(frame) + " carries no row");
             }
-            if (layout.hasPosition) {
+            if (layout.hasPosition)
+            {
                 // A component the file did not animate is the one the hierarchy
                 // stated, not zero. See BvhExtract.h.
                 SourceVec3 translation = ToSourceVec3(joint.offset);
-                float* const components[3] = {&translation.x, &translation.y,
-                                              &translation.z};
-                for (std::size_t axis = 0; axis < 3; ++axis) {
-                    if (layout.position[axis] != kNoColumn) {
+                float* const components[3] = {&translation.x, &translation.y, &translation.z};
+                for (std::size_t axis = 0; axis < 3; ++axis)
+                {
+                    if (layout.position[axis] != kNoColumn)
+                    {
                         *components[axis] = row[layout.position[axis]];
                     }
                 }
                 track.translations.push_back(translation);
             }
-            if (layout.hasRotation) {
+            if (layout.hasRotation)
+            {
                 SourceEulerAngles angles;
                 angles.first = row[layout.rotation[0]];
                 angles.second = row[layout.rotation[1]];
@@ -280,13 +296,15 @@ ExtractBvhSource(const BvhDocument& document, SourceSkeleton* skeleton,
     // of an invalid value reaching a converter, and the reason it carries is the
     // validator's own words rather than a guess at which shape was met.
     std::string reason;
-    if (!motionSource::ValidateSourceSkeleton(rig, &reason)) {
-        return Refuse(diagnostic, DiagnosticCode::ParseFailed, options.sourceId,
-                      {}, "the hierarchy is not a source rig: " + reason);
+    if (!motionSource::ValidateSourceSkeleton(rig, &reason))
+    {
+        return Refuse(diagnostic, DiagnosticCode::ParseFailed, options.sourceId, {},
+                      "the hierarchy is not a source rig: " + reason);
     }
-    if (!motionSource::ValidateSourceAnimation(clip, rig, &reason)) {
-        return Refuse(diagnostic, DiagnosticCode::ParseFailed, options.sourceId,
-                      {}, "the motion is not a source animation: " + reason);
+    if (!motionSource::ValidateSourceAnimation(clip, rig, &reason))
+    {
+        return Refuse(diagnostic, DiagnosticCode::ParseFailed, options.sourceId, {},
+                      "the motion is not a source animation: " + reason);
     }
 
     *skeleton = std::move(rig);

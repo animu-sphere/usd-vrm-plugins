@@ -96,15 +96,11 @@ TestEveryRefusalAndPolicyHasAName()
 {
     for (std::size_t i = 0; i < TrackerAssignmentRefusalCount; ++i)
     {
-        assert(!TrackerAssignmentRefusalName(
-                    static_cast<TrackerAssignmentRefusal>(i))
-                    .empty());
+        assert(!TrackerAssignmentRefusalName(static_cast<TrackerAssignmentRefusal>(i)).empty());
     }
-    assert(TrackerAssignmentRefusalName(TrackerAssignmentRefusal::Count)
-               .empty());
+    assert(TrackerAssignmentRefusalName(TrackerAssignmentRefusal::Count).empty());
 
-    for (std::size_t i = 0;
-         i < static_cast<std::size_t>(UnplacedTrackerPolicy::Count); ++i)
+    for (std::size_t i = 0; i < static_cast<std::size_t>(UnplacedTrackerPolicy::Count); ++i)
     {
         const auto policy = static_cast<UnplacedTrackerPolicy>(i);
         const std::string_view name = UnplacedTrackerPolicyName(policy);
@@ -263,8 +259,7 @@ TestAStatedTrackerThatDidNotArriveIsDataUnderTwoPoliciesAndHeldUnderTheThird()
     assert(held.unplaced.empty());
 
     // The rig completes and the same statement assigns, with nothing held.
-    const TrackerAssignment complete =
-        AssignTrackers(holding, {"t1", "t2", "t3"});
+    const TrackerAssignment complete = AssignTrackers(holding, {"t1", "t2", "t3"});
     assert(complete.Placed());
     assert(complete.absent.empty());
 }
@@ -292,14 +287,12 @@ TestAnAssignmentThatPlacedNothingIsRefusedUnderEveryPolicy()
         // has no such refusal, so it lands on the general one.
         if (policy == UnplacedTrackerPolicy::Ignore)
         {
-            assert(assignment.refusal
-                   == TrackerAssignmentRefusal::NothingPlaced);
+            assert(assignment.refusal == TrackerAssignmentRefusal::NothingPlaced);
         }
         else
         {
             assert(assignment.refusal != TrackerAssignmentRefusal::None);
-            assert(assignment.refusal
-                   != TrackerAssignmentRefusal::NothingPlaced);
+            assert(assignment.refusal != TrackerAssignmentRefusal::NothingPlaced);
         }
     }
 
@@ -347,13 +340,11 @@ TestAStatementThatIsNotOneIsRefusedBeforeAnyRig()
     broken.push_back(unwritable);
 
     TrackerAssignmentSpec unwritableSeparator;
-    unwritableSeparator.statements.push_back(
-        Statement("t=1", TrackerRegion::Head));
+    unwritableSeparator.statements.push_back(Statement("t=1", TrackerRegion::Head));
     broken.push_back(unwritableSeparator);
 
     TrackerAssignmentSpec outsideVocabulary;
-    outsideVocabulary.statements.push_back(
-        Statement("t1", static_cast<TrackerRegion>(200)));
+    outsideVocabulary.statements.push_back(Statement("t1", static_cast<TrackerRegion>(200)));
     broken.push_back(outsideVocabulary);
 
     TrackerAssignmentSpec twiceStated;
@@ -396,22 +387,19 @@ TestAnObservationThatIsNotOneIsRefusedRatherThanHalfBound()
 {
     // Binding one of two identically named devices is how a rig gets half
     // assigned with nobody told, so it is a refusal and not a first-wins rule.
-    const TrackerAssignment repeated =
-        AssignTrackers(ThreePoint(), {"t1", "t2", "t2"});
+    const TrackerAssignment repeated = AssignTrackers(ThreePoint(), {"t1", "t2", "t2"});
     assert(!repeated.Placed());
     assert(repeated.refusal == TrackerAssignmentRefusal::ObservationInvalid);
     assert(!repeated.detail.empty());
 
-    const TrackerAssignment nameless =
-        AssignTrackers(ThreePoint(), {"t1", "", "t3"});
+    const TrackerAssignment nameless = AssignTrackers(ThreePoint(), {"t1", "", "t3"});
     assert(!nameless.Placed());
     assert(nameless.refusal == TrackerAssignmentRefusal::ObservationInvalid);
 
     // It outranks the unplaced policy, because a statement cannot be judged
     // against an observation that is not one. `t4` here would be unplaced under
     // `Refuse`, and the observation's own defect is what comes back.
-    const TrackerAssignment both =
-        AssignTrackers(ThreePoint(), {"t1", "t1", "t4"});
+    const TrackerAssignment both = AssignTrackers(ThreePoint(), {"t1", "t1", "t4"});
     assert(both.refusal == TrackerAssignmentRefusal::ObservationInvalid);
 }
 
@@ -420,10 +408,9 @@ TestTheTextFormIsWhatAnOperatorTypes()
 {
     TrackerAssignmentSpec spec;
     std::string reason;
-    assert(ParseTrackerAssignmentSpec(
-        "t1=head t2=leftHand,t3=rightHand  # a three-point rig\n"
-        "t4=hips",
-        &spec, &reason));
+    assert(ParseTrackerAssignmentSpec("t1=head t2=leftHand,t3=rightHand  # a three-point rig\n"
+                                      "t4=hips",
+                                      &spec, &reason));
     assert(reason.empty());
     assert(spec.statements.size() == 4);
     assert(spec.statements[0] == Statement("t1", TrackerRegion::Head));
@@ -438,14 +425,14 @@ TestTheTextFormIsWhatAnOperatorTypes()
 
     // Everything a statement can fail on, and each one names what it saw.
     for (const std::string_view text : {
-             std::string_view("t1"),          // no `=` at all
-             std::string_view("t1=head=hips"),// two, so the split is ambiguous
-             std::string_view("t1=elbow"),    // outside the vocabulary
-             std::string_view("t1=Head"),     // a near miss is not a guess
-             std::string_view(""),            // parses cleanly, validates to nothing
+             std::string_view("t1"),           // no `=` at all
+             std::string_view("t1=head=hips"), // two, so the split is ambiguous
+             std::string_view("t1=elbow"),     // outside the vocabulary
+             std::string_view("t1=Head"),      // a near miss is not a guess
+             std::string_view(""),             // parses cleanly, validates to nothing
              std::string_view("# only a comment"),
-             std::string_view("t1=head t1=hips"),      // stated twice
-             std::string_view("t1=head t2=head"),      // one region, two devices
+             std::string_view("t1=head t1=hips"), // stated twice
+             std::string_view("t1=head t2=head"), // one region, two devices
          })
     {
         TrackerAssignmentSpec parsed;
@@ -459,14 +446,11 @@ TestTheTextFormIsWhatAnOperatorTypes()
 
     // A parse that validates is a spec that assigns, with no second step.
     TrackerAssignmentSpec typed;
-    assert(ParseTrackerAssignmentSpec("t1=head, t2=leftFoot, t3=rightFoot",
-                                      &typed, nullptr));
+    assert(ParseTrackerAssignmentSpec("t1=head, t2=leftFoot, t3=rightFoot", &typed, nullptr));
     assert(ValidateTrackerAssignmentSpec(typed, nullptr));
-    const TrackerAssignment assignment =
-        AssignTrackers(typed, {"t1", "t2", "t3"});
+    const TrackerAssignment assignment = AssignTrackers(typed, {"t1", "t2", "t3"});
     assert(assignment.Placed());
-    assert(assignment.ObservedFor(TrackerRegion::RightFoot)
-           == std::size_t{2});
+    assert(assignment.ObservedFor(TrackerRegion::RightFoot) == std::size_t{2});
 
     assert(!ParseTrackerAssignmentSpec("t1=head", nullptr, &reason));
 }

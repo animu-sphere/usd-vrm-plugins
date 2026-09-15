@@ -32,27 +32,28 @@ main()
     // that could not be satisfied by a table this fixture accidentally shipped
     // itself.
     const auto bone = vrmAdapterVmc::FindVmcHumanBone("LeftThumbProximal");
-    if (!bone) {
+    if (!bone)
+    {
         std::fprintf(stderr, "consumer: the installed package maps no "
                              "LeftThumbProximal\n");
         return 1;
     }
     const std::string_view name = vrmAdapterVmc::VmcHumanBoneName(*bone);
-    if (name != "LeftThumbProximal") {
-        std::fprintf(stderr, "consumer: round trip returned %s\n",
-                     std::string(name).c_str());
+    if (name != "LeftThumbProximal")
+    {
+        std::fprintf(stderr, "consumer: round trip returned %s\n", std::string(name).c_str());
         return 1;
     }
 
     // The basis change, which is where a value type from a package this fixture
     // never names crosses the boundary. VRM 1.0 reflects through X, so the sign
     // of the first component is the whole assertion.
-    const auto position = vrmAdapterVmc::ToCanonicalPosition(
-        std::array<float, 3>{1.0f, 2.0f, 3.0f});
-    if (!(position[0] == -1.0f && position[1] == 2.0f
-          && position[2] == 3.0f)) {
-        std::fprintf(stderr, "consumer: converted position is (%f, %f, %f)\n",
-                     position[0], position[1], position[2]);
+    const auto position =
+        vrmAdapterVmc::ToCanonicalPosition(std::array<float, 3>{1.0f, 2.0f, 3.0f});
+    if (!(position[0] == -1.0f && position[1] == 2.0f && position[2] == 3.0f))
+    {
+        std::fprintf(stderr, "consumer: converted position is (%f, %f, %f)\n", position[0],
+                     position[1], position[2]);
         return 1;
     }
 
