@@ -118,6 +118,11 @@ consequence, which applies here and not in general. The range cannot be made
 true between tags without a pre-release version, and this workspace does not use
 one.
 
+*Applied at v0.9.0 (2026-09-17)*: a minor bump, every range moved to
+`>=0.9,<0.10`. The table above gained one row's worth before the tag:
+`vrmRetarget`'s `TargetJoint::restScale` and `DecomposeRestTransform`, which
+`execVrm` and `motion_retarget` both call (the scale policy).
+
 ## 4. The packages
 
 ### 4.1 Plugin bundles

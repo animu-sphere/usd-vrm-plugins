@@ -15,14 +15,11 @@ OpenUSD plugins for [VRM](https://vrm.dev/en/) avatars.
 This repository is an OpenUSD plugin **workspace**: it separates schema
 definitions, file-format import, package resolution, and shared GLB container
 parsing into independently buildable, independently testable components. The
-v0.8.0 release adds VRChat OSC tracker input over two newly shared leaves — an
-OSC decoder and a live transport layer no adapter keeps a private copy of — and
-an installed-package consumer lane that configures every package this workspace
-produces from a clean prefix, outside the repository. That brought the workspace
-to four plugin bundles, twelve shared libraries, and seven CLIs. Since that
-release, `main` adds two OpenExec bundles, `execMotion` and `execVrm`, which
-evaluate a humanoid through OpenExec and are the next milestone
-([docs/roadmap/current.md](docs/roadmap/current.md)).
+v0.9.0 release is the OpenExec foundation: two OpenExec bundles, `execMotion`
+and `execVrm`, evaluate a humanoid through OpenExec as thin wrappers over the
+motion libraries and agree with the offline bake bit for bit, from the installed
+product. That brings the workspace to six plugin bundles, twelve shared
+libraries, and seven CLIs.
 
 The importer reads VRM 0.x and 1.0, normalizes the differences away, and authors
 a static USD stage. It **never evaluates or simulates** — that boundary is the
@@ -63,8 +60,8 @@ project's central design decision, and it is described below.
 | [`vrmAdapterVrchatOsc`](adapters/liveCapture/vrchatOsc) | Plain static CMake library | VRChat OSC tracker input: numbered tracker observations, which are pre-IK, so it stops at a tracker frame and the humanoid solve stays outside it — semantic decode, tracking-space conversion and frame assembly, with unknown traffic recoverable rather than fatal | v0.8.0 |
 | [`vrchat_osc_record`](adapters/liveCapture/vrchatOsc/tools/vrchatOscRecord) | CLI executable | Records and inspects VRChat OSC packet captures. Recording reports the datagram envelope and nothing about a payload; `--inspect` adds the address inventory and the decoded frames, and `--export-trace --assign` writes the capture trace `motion_capture` replays unchanged | v0.8.0 |
 | [`motionTracking`](libs/motionTracking) | Plain static CMake library | Which tracker is which body region: a generic region vocabulary that is not a bone list, an operator's explicit statement binding an opaque tracker identity to one, and a stated policy for an observed set it cannot place. No address literal, no adapter identity, and an empty link line | v0.8.0 |
-| [`execMotion`](plugins/execMotion) | OpenExec bundle | Vendor-neutral motion computations over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend | On `main`, unreleased |
-| [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM retarget computations over the applied `VrmHumanoidAPI`, equal to `motion_retarget`'s bake bit for bit | On `main`, unreleased |
+| [`execMotion`](plugins/execMotion) | OpenExec bundle | Vendor-neutral motion computations over `UsdSkelAnimation`: sample, filter, root-motion intake, history interpolation and blend | v0.9.0 |
+| [`execVrm`](plugins/execVrm) | OpenExec bundle | VRM retarget computations over the applied `VrmHumanoidAPI`, equal to `motion_retarget`'s bake bit for bit | v0.9.0 |
 | `usdVrm` | **Aggregate product name** | Composed distribution of the workspace | Shipped via `ost plugin package --workspace --product` |
 
 `usdVrm` is not a bundle id — it names the product as a whole. It *was* the
@@ -111,7 +108,7 @@ agree to a median **0.084°** per bone
 ([report 01](docs/reports/motion/01-2026-08-15-mocopi-cross-source.md)).
 OpenExec evaluation follows: `execMotion` and `execVrm` re-evaluate that
 pipeline, and on the recorded export they agree with the offline bake bit for
-bit. They are on `main` and unreleased — the v0.9.0 milestone. Schedule:
+bit. They shipped in v0.9.0. What comes next:
 [docs/roadmap/](docs/roadmap/README.md#status-at-a-glance).
 
 | Component | Type | Role |

@@ -3,7 +3,7 @@ manifest:
   schema: openstrata.plugin/v1alpha1
 plugin:
   name: execVrm
-  version: 0.8.0
+  version: 0.9.0
   kind: usd-exec
 license: Apache-2.0
 runtime:
@@ -37,18 +37,19 @@ requires:
     # motionCore's aggregates answered in v0.6.0 -- and `JointLocalTransforms`,
     # a type the library gained for `vrm.computeJointLocalTransforms`.
     #
-    # All of that was added after the v0.8.0 tag, so until the next bump this
-    # range admits a tagged 0.8.0 package that cannot build this bundle. The
-    # next release must therefore be a minor one (PACKAGE_CONTRACT.md §3.1).
+    # All of that was added after the v0.8.0 tag, and `TargetJoint::restScale`
+    # with `DecomposeRestTransform` after it, which is why v0.9.0 is a minor
+    # release: this range excludes the 0.8.0 package that lacks them
+    # (PACKAGE_CONTRACT.md §3.1).
     - id: vrmRetarget
-      version: ">=0.8,<0.9"
+      version: ">=0.9,<0.10"
     # And the two it is built on, named rather than left to the closure: the
     # vocabulary a humanoid binds (`motion::HumanBone`) is motionCore's, and a
     # bundle names what it spells.
     - id: motionCore
-      version: ">=0.8,<0.9"
+      version: ">=0.9,<0.10"
     - id: motionRuntime
-      version: ">=0.8,<0.9"
+      version: ">=0.9,<0.10"
   # The typed Vrm*API schemas. Not linked: exec resolves `UsdVrmHumanoidAPI`
   # by TfType name when it reads this bundle's Exec block, so what this bundle
   # needs is vrmSchema's plugInfo registered in the session. Without it the
@@ -56,7 +57,7 @@ requires:
   # found" -- measured in execVrm_humanoid.
   bundles:
     - id: vrmSchema
-      version: ">=0.8,<0.9"
+      version: ">=0.9,<0.10"
       contract: 1
     # execMotion, for the pose a retarget reads. Not linked either:
     # `vrm.computeBoundPose` reads `motion.sampleAnimation` by name across a
@@ -67,7 +68,7 @@ requires:
     # count is the only thing that notices, measured in
     # execVrm_retarget_without_exec_motion.
     - id: execMotion
-      version: ">=0.8,<0.9"
+      version: ">=0.9,<0.10"
 usd:
   plug_info: plugin/resources/execVrm/plugInfo.json
 tests:

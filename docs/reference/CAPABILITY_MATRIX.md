@@ -52,10 +52,10 @@ simulates:
 
 - **LookAt**, **node constraints**, and **spring bones** are authored as typed
   schema data on the stage. Their runtime evaluation/simulation is a **separate
-  layer** (`execVrm`, Product P4), never run by this importer. `execVrm` exists
-  since 2026-09-13 with the rig half of retargeting only — the target skeleton
-  and the humanoid map — and evaluates none of these three yet; the release it
-  lands in is not fixed
+  layer** (`execVrm`, Product P4), never run by this importer. `execVrm`
+  shipped in v0.9.0 with retargeting only — the target rig, the humanoid map,
+  rest-pose correction, one sample's retarget and its diagnostics — and
+  evaluates none of these three yet; they follow on the `ExecIr` track
   ([the OpenExec plan](../roadmap/openexec-foundation.md), and the
   [roadmap status table](../roadmap/README.md#status-at-a-glance) for the
   version).
@@ -85,7 +85,7 @@ Its own status:
 | `motionRuntime` | v0.4.0 | `PoseBuffer`, interpolation/extrapolation, resample, filter, blend |
 | `motionRuntime` | v0.5.0 | `IMotionSource` / `ClipSource` / `LiveCaptureSource`, the `motion-capture-trace` format, `ReplaySender`, `CaptureRecorder` (Motion Phase D) |
 | `vrmRetarget` | v0.4.0 | Humanoid map, rest-pose correction, pose retargeter, root-motion policy |
-| `vrmRetarget` | unreleased | `ExpressionResolver`: a clip's named expression weight resolved onto one avatar's morph-target and material-colour binds, joined on `vrm:expressionName`, with the avatar's `overrideBlink` / `overrideLookAt` / `overrideMouth` arbitrating co-active expressions (Motion Phase G) |
+| `vrmRetarget` | v0.9.0 | `ExpressionResolver`: a clip's named expression weight resolved onto one avatar's morph-target and material-colour binds, joined on `vrm:expressionName`, with the avatar's `overrideBlink` / `overrideLookAt` / `overrideMouth` arbitrating co-active expressions (Motion Phase G) |
 | `motion_retarget` | v0.4.0 | CLI: retargets a clip onto an avatar and binds `skel:animationSource` (Motion Phase C) |
 | `motion_capture` | v0.5.0 | CLI: replays a recorded capture session into a semantic humanoid clip the retarget tool consumes unchanged (Motion Phase D) |
 | `vrmAdapterVmc` | v0.6.0 | VMC Protocol input: OSC and VMC decode, frame assembly, Unity `HumanBodyBones` → `motion::HumanBone` mapping, `LiveCaptureSource` bridge, UDP receiver |
@@ -100,6 +100,10 @@ Its own status:
 | `vrmAdapterVrchatOsc` | v0.8.0 | VRChat OSC tracker input: semantic decode of numbered trackers and a named `head`, tracking-space conversion to VRM 1.0's basis, and frame assembly with restart, timeout and partial-set policies. Unknown traffic is recoverable — the message is dropped and the datagram is not |
 | `vrchat_osc_record` | v0.8.0 | CLI: records or inspects a VRChat OSC packet capture; `--export-trace --assign` writes the `motion-capture-trace` the product's tools replay unchanged |
 | `motionTracking` | v0.8.0 | Which tracker is which body region, and the direct solve from assigned observations to a `HumanoidPose`. Generic and outside every adapter; a region vocabulary that is deliberately not a bone list, and an observed position the solve cannot consume is reported rather than dropped, because consuming one is IK |
+| `vrmRetarget` | v0.9.0 | `LookAtEvaluator`, frozen `VRM_RETARGET_*` diagnostic codes as values, `DiagnoseRig`, the scale policy (`TargetJoint::restScale`) and the partial skeleton policy as a contract |
+| `execMotion` | v0.9.0 | OpenExec bundle: `motion.sampleAnimation`, `motion.filterPose`, `motion.extractRootMotion`, `motion.interpolatePose` and `motion.blendPoses` over `UsdSkelAnimation`, each a wrapper over `motionRuntime`; a clip's root drives a prop on screen through `usdExecImaging` |
+| `execVrm` | v0.9.0 | OpenExec bundle over the applied `VrmHumanoidAPI`: target skeleton, humanoid map, rest-pose correction, retarget, joint-local transforms and retarget diagnostics, each a wrapper over `vrmRetarget` and equal to `motion_retarget`'s bake bit for bit |
+| `motion_retarget` | v0.9.0 | `--load-report`, `--build-info` and `--version`; authors expressions and gaze, and each joint's rest scale |
 
 **One row of the table above has met real hardware, and the rest have not.** A
 mocopi device drove `vrmAdapterMocopi` end to end on 2026-08-15 — five sessions,
@@ -163,9 +167,10 @@ default profile anywhere. Two producers' profiles ship in
 ship works the same way, by path. FBX is not planned; the layering exists so
 that a second reader can be added without changing anything above it.
 
-Not yet in that layer: motion generation, OpenExec evaluation, blending beyond
-the primitive, IK, and foot locking. Look-at animation is — unreleased, since
-2026-09-04 — **read, evaluated and authored**: a `.vrma` clip's target point is
+Not yet in that layer: motion generation, blending beyond the primitive, IK,
+and foot locking. OpenExec evaluation shipped in v0.9.0 (`execMotion`,
+`execVrm`). Look-at animation is — since v0.9.0 — **read, evaluated and
+authored**: a `.vrma` clip's target point is
 carried on the pose and authored under `/Animation/LookAt`, `vrmRetarget`'s
 `LookAtEvaluator` turns it into one particular rig's answer against that rig's
 own `/Asset/rig/LookAt`, and `motion_retarget` authors the result — eye-joint
@@ -174,7 +179,7 @@ rotations for a `bone`-type rig, the four gaze expressions for an
 `blendShapeWeights` the face does. Expression
 animation is read from a `.vrma` clip, carried on the pose, *resolved* onto a
 particular avatar's morph-target and material-colour binds by `vrmRetarget`'s
-`ExpressionResolver`, and — unreleased, since 2026-09-01 — authored:
+`ExpressionResolver`, and — since v0.9.0 — authored:
 `motion_retarget` writes `blendShapes` and `blendShapeWeights` onto the
 `SkelAnimation` it binds to the rig, so the morph-target half of a clip's face
 reaches an avatar end to end. Since 2026-09-04 that resolve is an

@@ -69,7 +69,7 @@ must repeat one, `scripts/check_docs.py` checks it against this table.
 | generic BVH recorded-motion ingestion | Shipped | v0.7.0 |
 | installed-package consumer lane + package contract | Shipped | v0.8.0 |
 | shared OSC foundation + VRChat OSC Trackers input | Shipped | v0.8.0 |
-| OpenExec foundation | In progress | v0.9.0 |
+| OpenExec foundation | Shipped | v0.9.0 |
 | boundary consolidation, the canonical producer contract included | Planned | after the OpenExec foundation |
 | motion migration to `usd-motion-plugins` and `motion-connectors`, boundary consolidation folded in | Planned | after the OpenExec foundation |
 | NPZ / AMASS recorded sources | Moved | `usd-motion-plugins`, with `motionSource` |

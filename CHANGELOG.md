@@ -13,13 +13,18 @@ Current schema contract version: **1**.
 
 ## [Unreleased]
 
-> **The release that carries this section is a minor release.** It adds library
-> API that in-tree dependents already use (`vrmRetarget`'s rig equality,
-> `JointLocalTransforms`, `ExpressionResolver` and `LookAtEvaluator`; `motionRuntime`'s
-> `PoseSampleResult` equality), and every `requires` range is still
-> `>=0.8,<0.9`, which admits the tagged 0.8.0 packages that lack that API. A
-> minor bump moves the ranges past them; a patch bump would ship the gap in the
-> release's own descriptors
+## [0.9.0] — 2026-09-17
+
+> **The OpenExec foundation.** `execMotion` and `execVrm` evaluate a humanoid
+> through OpenExec as thin wrappers over `motionRuntime` and `vrmRetarget`, and
+> agree with `motion_retarget`'s offline bake bit for bit on the same recorded
+> input, values and diagnostics, from the installed product
+> ([release record](docs/releases/v0.9.0.md)). **A minor release on purpose**:
+> it adds library API that in-tree dependents already use (`vrmRetarget`'s rig
+> equality, `JointLocalTransforms`, `ExpressionResolver`, `LookAtEvaluator`,
+> `TargetJoint::restScale` and `DecomposeRestTransform`; `motionRuntime`'s
+> `PoseSampleResult` equality), so every `requires` range moves to
+> `>=0.9,<0.10` and excludes the 0.8.0 packages that lack it
 > ([PACKAGE_CONTRACT.md §3.1](docs/architecture/PACKAGE_CONTRACT.md#31-a-requires-range-between-two-releases)).
 
 ### Added
@@ -3909,7 +3914,8 @@ Explicitly out of scope for this release (tracked in the
 - ABI stability guarantees across all OpenUSD versions (see
   [`docs/reference/SUPPORTED_CONFIGURATIONS.md`](docs/reference/SUPPORTED_CONFIGURATIONS.md)).
 
-[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/animu-sphere/usd-vrm-plugins/compare/v0.5.0...v0.6.0

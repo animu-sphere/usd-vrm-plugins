@@ -20,7 +20,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION")
     file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../../VERSION" _exec_motion_version LIMIT_COUNT 1)
     string(STRIP "${_exec_motion_version}" _exec_motion_version)
 else()
-    set(_exec_motion_version "0.8.0")  # mirrors openstrata.plugin.yaml
+    set(_exec_motion_version "0.9.0")  # mirrors openstrata.plugin.yaml
 endif()
 
 project(ExecMotionPlugin

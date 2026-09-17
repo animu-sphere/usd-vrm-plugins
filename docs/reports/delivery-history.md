@@ -10,7 +10,7 @@ work.
 bundle. The workspace split (§D, §E) landed in
 [v0.2.0](../releases/v0.2.0.md) and the negative corpus (§G) in
 [v0.3.0](../releases/v0.3.0.md); everything logged here is released as of
-[v0.8.0](../releases/v0.8.0.md).
+[v0.9.0](../releases/v0.9.0.md).
 
 This is not a description of current behavior — see [architecture/](../architecture/)
 and [reference/](../reference/) for that — nor of planned work, which is in the
@@ -407,3 +407,40 @@ IK/foot-locking) are in the [roadmap](../roadmap/).
   figures — on 16 of 777 frames of a stand-still take. Fixed; the worst
   single-frame step is now 2.46°. Report 01's one open row closes: all three
   paths now carry the body's travel.
+
+## N. OpenExec foundation (v0.9.0)
+
+The plan and every measurement behind these rows are in
+[openexec-foundation.md](../roadmap/openexec-foundation.md) §6 and the
+`openusd/26.08-openexec-*` reports; the summary is the
+[v0.9.0 record](../releases/v0.9.0.md).
+
+- ✅ **P0-1, OpenUSD 26.08 exact**: pinned at configure time with an OpenExec
+  capability probe, three runtimes published, the migration report written.
+- ✅ **P0-2, the motion layer in CI**: seven CTest labels read back, a member
+  that registers nothing fails the root build, and every executable and both
+  importers are run against non-ASCII paths.
+- ✅ **P0-3, `motion_retarget` distributed**: in the aggregate product, with
+  `--load-report`, `--build-info` and `--version`; the artifact-only smoke bakes
+  a textured avatar from the install, resolves its 28 textures from a Python
+  host with `PATH` alone, and finds no build-tree path in any binary.
+- ✅ **P0-4, `execMotion`**: sample, filter, root-motion intake, history
+  interpolation and blend, each a wrapper over `motionRuntime`, discovered from
+  the packaged plugin. The producer conventions it reads went to the motion
+  migration's producer contract.
+- ✅ **P0-5, `execVrm`**: target skeleton, humanoid map, rest-pose correction,
+  retarget, joint-local transforms and diagnostics, each a wrapper over
+  `vrmRetarget`.
+- ✅ **P0-6, parity**: five cases, 414 598 values, every one `==`, and the
+  diagnostics line for line, from the installed product on three OS.
+- ✅ **P0-7, display**: a clip's root drives an exec-computed
+  `UsdGeomXformable` through `usdExecImaging`, re-scoped from a skinned avatar
+  that 26.08 cannot show.
+- ✅ **P1-1, retarget diagnostics** as frozen codes and values; **P1-2, the
+  scale policy** (a bake keeps the rest scale); **P1-3, the partial skeleton
+  policy** as a seven-row contract, each row held by a test.
+- ✅ **The driver contract**, ten rules and `VRM_OPENEXEC_*` codes, and **the
+  snapshot rule** checked on both bundles in source, imports, links and schema
+  declarations.
+- ✅ **Fourteen boundary findings** recorded for the motion migration, one of
+  them (the rest decomposition) closed in the release itself.

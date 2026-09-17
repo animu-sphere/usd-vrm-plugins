@@ -3,7 +3,7 @@ manifest:
   schema: openstrata.plugin/v1alpha1
 plugin:
   name: execMotion
-  version: 0.8.0
+  version: 0.9.0
   kind: usd-exec
 license: Apache-2.0
 runtime:
@@ -31,7 +31,7 @@ requires:
     # so the node interpolates nothing and has no `motionRuntime` call to wrap
     # (docs/reports/openusd/26.08-openexec-sampling.md §5).
     - id: motionCore
-      version: ">=0.8,<0.9"
+      version: ">=0.9,<0.10"
     # And the runtime half, from `motion.filterPose` onward: the node is one
     # step of `motion::PoseFilter` and the algorithm stays in the library. The
     # state that filter normally keeps does not come with it -- an OpenExec
@@ -48,14 +48,14 @@ requires:
     # `motion::ClipSource::Sample` over a driver's history, and it answers the
     # library's own `motion::PoseSampleResult` whole, because the status in it
     # is part of the answer. That type's `operator==`, which the registry
-    # requires, was added after the v0.8.0 tag, so until the next bump this
-    # range admits a tagged 0.8.0 package that cannot build this bundle; the
-    # next release must be a minor one (PACKAGE_CONTRACT.md §3.1).
+    # requires, was added after the v0.8.0 tag, which is why v0.9.0 is a minor
+    # release: this range excludes the 0.8.0 package that lacks it
+    # (PACKAGE_CONTRACT.md §3.1).
     #
     # `motion.blendPoses` needs it for a call and nothing else: the node is the
     # N-way `motion::BlendPoses` over the clips a relationship targets.
     - id: motionRuntime
-      version: ">=0.8,<0.9"
+      version: ">=0.9,<0.10"
 usd:
   plug_info: plugin/resources/execMotion/plugInfo.json
 tests:

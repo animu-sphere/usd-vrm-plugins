@@ -5,17 +5,17 @@ schema: openstrata.tool/v1alpha1
 tool:
   id: motion_retarget
   # Mirrors VERSION; release preparation updates this in lockstep.
-  version: 0.8.0
+  version: 0.9.0
   license: Apache-2.0
 executables: [motion_retarget]
 directories: [bin]
 requires:
   libraries:
     - id: vrmRetarget
-      version: ">=0.8,<0.9"
+      version: ">=0.9,<0.10"
     # By name rather than only through `vrmRetarget`, the way `motion_bvh`
     # declares `motionSource`: the tool resamples the clip itself so that the
     # body and the face expand one sample list, which is an edge of its own and
     # not one to be inferred from a dependency that could stop being transitive.
     - id: motionRuntime
-      version: ">=0.8,<0.9"
+      version: ">=0.9,<0.10"

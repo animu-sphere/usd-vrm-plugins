@@ -10,7 +10,14 @@ boundary, what is still open, and where the detail is.
 
 Legend: 🚧 in progress · ⬜ not started · ⛔ blocked · ⚠️ accepted workaround
 
-## Next: v0.9.0 — the OpenExec foundation (Workspace Phase 8 + Motion Phase E) 🚧
+## Shipped: v0.9.0 — the OpenExec foundation (Workspace Phase 8 + Motion Phase E) 🚧
+
+**Prepared 2026-09-17, not yet tagged.** Every task and every gate row is closed
+and the version is bumped ([release record](../releases/v0.9.0.md)). What is
+left is the `release.yml` dry run on `main`, the tag and publishing the draft.
+This heading says `Shipped` because `check_docs.py` accepts only
+`Next`/`Then`/`Shipped` with a version, and a version with a release record
+cannot be `Next`.
 
 **Release boundary:** `execMotion` and `execVrm` bundles exist and evaluate a
 humanoid through OpenExec, proven equal to the offline result on the same input.

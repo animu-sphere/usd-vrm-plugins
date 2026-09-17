@@ -4,13 +4,13 @@ schema: openstrata.library/v1alpha1
 library:
   id: vrmRetarget
   # Mirrors VERSION; release preparation updates this in lockstep.
-  version: 0.8.0
+  version: 0.9.0
 requires:
   libraries:
     - id: motionCore
-      version: ">=0.8,<0.9"
+      version: ">=0.9,<0.10"
     - id: motionRuntime
-      version: ">=0.8,<0.9"
+      version: ">=0.9,<0.10"
 cmake:
   package: vrmRetarget
   target: vrmRetarget::vrmRetarget
