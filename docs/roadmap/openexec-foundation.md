@@ -448,7 +448,7 @@ evaluated joint transforms, from the artifact. What that run does not check is
 embedded texture resolution, and the build-tree scan covers the harness's
 process, not the tool's.
 
-### P0-4 — minimal `execMotion` bundle 🚧
+### P0-4 — minimal `execMotion` bundle ✅
 
 Computations: `motion.sampleAnimation`, `motion.filterPose`,
 `motion.extractRootMotion`, `motion.interpolatePose`, `motion.blendPoses` — each
@@ -770,9 +770,18 @@ take its input from a sampler, a blend or an override without knowing which.
 That is a design question for P0-5's retarget node, which has to choose a pose
 to retarget.
 
-Still open here: a producer that authors the rate, the filter policy and the
-intake policy (§9), and a decision on what a one-joint clip's fallback-filled
-root means (P0-5's humanoid report).
+Still open here, until 2026-09-17: a producer that authors the rate, the
+filter policy and the intake policy (§9), and a decision on what a one-joint
+clip's fallback-filled root means (P0-5's humanoid report). *Both were decided
+for v0.9.0 on 2026-09-17.* **The producer half leaves this plan**: the
+2026-09-17 motion decision gives the canonical producer contract to
+`usd-motion-plugins` as MIG-0's evidence (BND-0), and no item of the foundation
+release gate needs a producer. The parity harness states the four conventions
+on the stage it compares, and that is how v0.9.0 ships them. **A one-joint
+clip's fallback-filled root is kept and pinned**, not refused: the callback
+cannot tell it from an authored origin, so `execMotion_sample` asserts it and
+the driver contract states it
+([MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#openexec-driver-contract-after-v080)).
 
 **The driver contract is written, and it is code** *(2026-09-14)*. The rules
 this section collected are ten lines in
@@ -1052,7 +1061,7 @@ that route is measured
 ([the mechanism report](../reports/openusd/26.08-openexec-mechanism.md) §2, §3)
 and the rule is [WORKSPACE.md §2](../architecture/WORKSPACE.md).
 
-### P0-6 — OpenExec / offline parity 🚧
+### P0-6 — OpenExec / offline parity ✅
 
 Compare `motion_retarget`'s offline result against the `execMotion` + `execVrm`
 computed result on the same input: joint order, translations, rotations, identity
@@ -1121,9 +1130,16 @@ repeats the retarget, because the library reports a pose's diagnostics only
 while retargeting it (the eleventh boundary finding, 23 µs a frame on the
 fixture rig and 50–60 µs on Seed-san).
 
-**Still open here**: the rows no producer reaches, each already asserted on the
-exec side and read rather than run on the tool's. Whether P0-6 needs them run is
-a decision, not a gap.
+**Decided 2026-09-17: the rows no producer reaches are not run on both sides
+for v0.9.0.** Each is asserted on the exec side and read on the tool's, and the
+gate's row is agreement *on the same recorded input*, which all five cases
+hold, values and diagnostics. Running a row no importer, VRMA reader or BVH
+converter can produce would build a stage only a test authors, and compare two
+answers to a question no user can ask. The rows stay listed in the parity
+report's §7 table, so the day a producer can reach one, it becomes a parity
+case rather than an assertion. The partial skeleton policy states the two of
+them where the implementations part on purpose (rows 2 and 3,
+[MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md#partial-skeleton-policy-v090)).
 
 This is the check that keeps a computation a wrapper. v0.4.0 already produced the
 mechanism it needs: the design triplet is compared through USD composition at the

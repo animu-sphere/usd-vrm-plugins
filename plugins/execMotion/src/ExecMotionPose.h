@@ -117,7 +117,8 @@ struct ClipSample
 /// origin**, and from inside this function the fallback and an authored origin
 /// are the same value
 /// ([the humanoid report](../../../docs/reports/openusd/26.08-openexec-humanoid.md)
-/// §4).
+/// §4). Kept rather than refused, decided for v0.9.0: `execMotion_sample`
+/// pins it, and the driver contract in MOTION_CONTRACT.md states it.
 std::optional<motion::HumanoidPose> PoseFromClipSample(const ClipSample& sample);
 
 /// What a clip states about how it wants to be smoothed.

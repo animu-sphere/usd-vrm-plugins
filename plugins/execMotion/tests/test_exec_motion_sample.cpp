@@ -34,6 +34,8 @@
 #include "pxr/exec/execUsd/valueKey.h"
 
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
@@ -369,6 +371,56 @@ TestAClipThatHoldsStill(const std::string& fixture)
     assert(atHundred.root.worldPosition == atZero.root.worldPosition);
 }
 
+// ---------------------------------------------------------------------------
+// A one-joint clip that keys nothing: the fallback pairs, and is kept
+// ---------------------------------------------------------------------------
+//
+// Decided for v0.9.0 (MOTION_CONTRACT.md, "OpenExec driver contract"): OpenExec
+// hands an unauthored `rotations` or `translations` to the callback as ONE
+// element of Sdf's fallback, and against a clip of exactly one joint that
+// element pairs. So a hips-only clip that keys nothing samples to hips at
+// identity with a root at the origin -- a rotation and a position nobody
+// stated. Nothing inside the callback can tell the fallback from an authored
+// origin, so this is not refused; it is pinned, so the day 26.08's fallback
+// delivery changes, this suite goes red and the decision is taken again. The
+// fix is upstream or a producer's (the motion migration's producer contract).
+void
+TestAOneJointClipThatKeysNothing()
+{
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdPrim clip = stage->DefinePrim(SdfPath("/Clip"), TfToken("SkelAnimation"));
+    assert(clip);
+    // `joints` is the schema's own attribute, so it is not custom.
+    clip.CreateAttribute(TfToken("joints"), SdfValueTypeNames->TokenArray, /* custom = */ false,
+                         SdfVariabilityUniform)
+        .Set(VtTokenArray{TfToken("hips")});
+    clip.CreateAttribute(TfToken("motion:timeCodesPerSecond"), SdfValueTypeNames->Double,
+                         /* custom = */ true, SdfVariabilityUniform)
+        .Set(50.0);
+    // The premise: neither array is authored.
+    assert(!clip.GetAttribute(TfToken("rotations")).HasAuthoredValue());
+    assert(!clip.GetAttribute(TfToken("translations")).HasAuthoredValue());
+
+    ExecUsdSystem system(stage);
+    system.ChangeTime(UsdTimeCode(0.0));
+    std::vector<ExecUsdValueKey> keys;
+    keys.emplace_back(clip, kSampleAnimation);
+    ExecUsdRequest request = system.BuildRequest(std::move(keys));
+    assert(request.IsValid());
+
+    const motion::HumanoidPose pose = ComputePose(system, request);
+    assert(pose.validRotations.count() == 1 && Has(pose, motion::HumanBone::Hips) &&
+           "a one-joint clip that keys nothing no longer samples a hips rotation; OpenExec's "
+           "fallback delivery changed, so revisit the one-joint decision");
+    assert(RotationOf(pose, motion::HumanBone::Hips) == GfQuatf(1.0f));
+    assert(pose.root.hasPosition && pose.root.worldPosition == GfVec3f(0.0f) &&
+           "a one-joint clip that keys nothing no longer samples a root at the origin; revisit "
+           "the one-joint decision");
+    std::printf("execMotion sample: a one-joint clip that keys nothing samples "
+                "hips at identity and a root at the origin, from the fallback "
+                "(pinned)\n");
+}
+
 } // namespace
 
 int
@@ -379,6 +431,7 @@ main(int argc, char** argv)
     TestASampledClip(argv[1]);
     TestAClipThatHoldsStill(argv[2]);
     TestAClipWithNoRate(argv[3]);
+    TestAOneJointClipThatKeysNothing();
     std::printf("execMotion sample: all checks passed\n");
     return 0;
 }

@@ -68,6 +68,14 @@ repository's, and needs nothing from this one.
   contract, and the exec layer's findings. They are proposed into
   `usd-motion-plugins`' `MOTION_CONTRACT.md` and `RETARGETING_POLICY.md` as
   cited evidence, not re-derived there.
+- ⬜ **Carry the producer conventions v0.9.0 left unauthored.**
+  `motion:timeCodesPerSecond`, `motion:filter:*`, `motion:root:*`,
+  `vrm:retarget:sourceSkeleton` and the four `vrm:retarget:*` root statements
+  are read by the exec bundles and authored today only by fixtures and the
+  parity harness. The OpenExec plan's P0-4 handed them here on 2026-09-17,
+  together with the one-joint fallback the driver contract states: which
+  producer authors each, or which upstream change retires it, is the producer
+  contract's first question (BND-0).
 - ⬜ **Name the parity baselines each move must reproduce**: the retarget
   goldens, the BVH conversion fixtures, the OpenExec / offline parity values
   (414 598 compared at v0.9.0), and the capture-trace replays.

@@ -43,9 +43,9 @@ Each task's record, including what each step measured, is in
 | P0-1 — OpenUSD 26.08 exact pin | ✅ | — |
 | P0-2 — motion layer CI | ✅ | — all seven labels assigned and read back by `workspace_ctest_labels`; the last coverage row, Windows Unicode paths, is `workspace_unicode_paths` (2026-09-15) |
 | P0-3 — `motion_retarget` distribution | 🚧 | the artifact-only smoke's embedded-texture half and a build-tree scan of the tool's own process; the non-`ost` Windows install and DLL discovery (Product P3 below) |
-| P0-4 — `execMotion` | 🚧 | the producer half of `motion:timeCodesPerSecond` and the `motion:filter:*` / `motion:root:*` statements, which nothing authors yet; a decision on what a one-joint clip's fallback-filled root means |
+| P0-4 — `execMotion` | ✅ | — decided 2026-09-17: the producer half goes to the motion migration's producer contract (MIG-0 / BND-0), and a one-joint clip's fallback-filled root is kept and pinned |
 | P0-5 — `execVrm` | ✅ | — |
-| P0-6 — OpenExec / offline parity | 🚧 | the values (414 598 compared, all `==`) and the diagnostics agree; left is **a decision**: whether the rows no producer reaches must be run, rather than asserted on the exec side and read on the tool's |
+| P0-6 — OpenExec / offline parity | ✅ | — the values (414 598 compared, all `==`) and the diagnostics agree; decided 2026-09-17 that the rows no producer reaches stay asserted on the exec side and read on the tool's |
 | P0-7 — display smoke, `UsdGeomXformable` | ✅ | — |
 | P1-1 — retarget diagnostics | ✅ | — |
 | P1-2 — scale policy | ✅ | — decided 2026-09-17: a bake carries the rig's rest scale, and a clip's animated scale raises `VRM_RETARGET_NON_UNIT_SCALE` ([scale policy](../design/MOTION_CONTRACT.md#scale-policy-v090)) |

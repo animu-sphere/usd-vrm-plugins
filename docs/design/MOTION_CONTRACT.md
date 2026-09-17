@@ -402,6 +402,21 @@ a runtime error naming the computation, and a dependent handed no value refuses
 in turn
 ([root-motion report §6](../reports/openusd/26.08-openexec-root-motion.md)).
 
+**A clip of exactly one joint that keys nothing samples to a pose nobody
+stated, and that is kept** *(decided for v0.9.0)*. 26.08 hands an unauthored
+`rotations` or `translations` to a callback as one element of Sdf's fallback.
+Against several joints that element does not pair and contributes nothing;
+against one joint it pairs, so a hips-only clip with neither array authored
+samples to hips at identity and a root at the origin. From inside the callback
+the fallback and an authored origin are the same value, so `motion.sampleAnimation`
+cannot refuse it without refusing a clip that means it. A driver that needs the
+difference asks the stage whether the arrays are authored. `execMotion_sample`
+pins the behaviour, so a change in how exec delivers a fallback turns it red
+([the humanoid report](../reports/openusd/26.08-openexec-humanoid.md) §4). The
+real fixes are upstream (an input with no value reaching a callback as no value)
+or a producer's, and both belong to the motion migration's producer contract
+([motion-foundation-split.md](../roadmap/motion-foundation-split.md), MIG-0).
+
 ### `VRM_OPENEXEC_*` codes
 
 What a driver reports about a request. 26.08 classifies none of these failures
