@@ -51,10 +51,14 @@ LoadedModules()
                 WideCharToMultiByte(CP_UTF8, 0, entry.szExePath, -1, nullptr, 0, nullptr, nullptr);
             if (size > 1)
             {
-                std::string path(static_cast<std::size_t>(size - 1), '\0');
-                WideCharToMultiByte(CP_UTF8, 0, entry.szExePath, -1, path.data(), size, nullptr,
-                                    nullptr);
-                paths.insert(path);
+                std::string path(static_cast<std::size_t>(size), '\0');
+                const int written = WideCharToMultiByte(
+                    CP_UTF8, 0, entry.szExePath, -1, path.data(), size, nullptr, nullptr);
+                if (written > 1)
+                {
+                    path.resize(static_cast<std::size_t>(written - 1));
+                    paths.insert(std::move(path));
+                }
             }
         }
         CloseHandle(snapshot);
