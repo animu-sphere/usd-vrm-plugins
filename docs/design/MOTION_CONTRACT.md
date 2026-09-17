@@ -184,6 +184,40 @@ and `TargetJoint::restScale`, which `motion_retarget` and `execVrm` both call.
 OpenExec and offline agree on the scales as on every other value: the five
 parity cases compare `scales` exactly, and `recorded_real_avatar` is Seed-san.
 
+### Partial skeleton policy (v0.9.0)
+
+The OpenExec plan's P1-3. A clip and a rig rarely name the same bones, and
+retargeting across the difference is legal and useful, so none of the seven
+cases below refuses a retarget. What each one costs is stated and, where it can
+be, reported under a frozen code ([Retarget diagnostics](#retarget-diagnostics-after-v080)).
+The behaviour was already the library's; this section makes it the contract,
+and every row names the test that holds it. Tests without a path are in
+`libs/vrmRetarget/tests/test_vrm_retarget.cpp`.
+
+| # | Case | What the retarget does | Reported | Held by |
+| --- | --- | --- | --- | --- |
+| 1 | a bone the clip drives and the rig does not bind | its motion reaches nothing | `UNBOUND_DRIVEN_BONE` on the bone, once per clip, including a bone first driven after the first sample | `TestUnmappedJointsStayAtRestAndAreReported`, `TestABoneDrivenOnlyLaterIsStillReported`; exec: the parity harness's diagnostics comparison (Seed-san's `upperChest`) |
+| 2 | a joint the rig has and the clip does not drive — a bound bone the clip never animates, or any non-humanoid joint | it stays at its **rest**: rotation, translation and rest scale, never identity | nothing | `TestUnmappedJointsStayAtRestAndAreReported`, `TestAHierarchyMismatchCarriesEachBoneRelativeToItsOwnParent` (the collar) |
+| 3 | a bone VRM 1.0 requires that the rig does not bind, or binds to an index the rig lacks | the retarget proceeds without it. For `hips` under root-motion mode `hips`, root motion is dropped | `MISSING_REQUIRED_BONE` on each bone, from `DiagnoseRig` before any clip; for `hips` the detail says root motion was dropped | `TestTheRigIsDiagnosedBeforeAnyClip`, `TestHipsBoundOutsideTheRigAreReportedWithTheDroppedRoot` |
+| 4 | an optional bone missing: eyes, jaw, toes, shoulders, `upperChest`, fingers | a rig binding every required bone and none of these is complete | nothing, unless a clip drives one, which is case 1 | `TestAMissingOptionalBoneIsNotAMissingBone` |
+| 5 | two bones bound to one joint | offline, bones are written in vocabulary order, so of the bones a sample drives the **later** one is the joint's; `execVrm`'s `vrm.computeHumanoidMap` **refuses** the map and names every bone on the joint | `DUPLICATE_TARGET` on the joint | `TestADuplicateMappingKeepsTheLaterDrivenBone`, `TestTheRigIsDiagnosedBeforeAnyClip`; exec: `execVrm_rig`'s map refusals |
+| 6 | the chains disagree: a bone between two bound bones exists on one side only, or the rig's joints are out of parent-before-child order | each bound bone carries its motion **relative to its own parent** on each side. An intermediate bone the rig lacks is case 1: its motion is dropped, **not folded into its child**, so the child's world orientation differs from the clip's by that bone's motion. A non-humanoid joint in between is case 2. An out-of-order rig is still retargeted correctly joint by joint | the dropped bone as `UNBOUND_DRIVEN_BONE`; an out-of-order rig as `INVALID_HIERARCHY` on the first joint whose parent follows it | `TestAHierarchyMismatchCarriesEachBoneRelativeToItsOwnParent`, `TestTheRigIsDiagnosedBeforeAnyClip` |
+| 7 | a parent whose rest is not identity, humanoid or not, on either side | the rest correction reads each side's **accumulated** parent rest (every ancestor, non-humanoid joints included), so the bone's world delta away from its rest survives the change of rig | nothing | `TestRestPoseCorrectionPreservesTheWorldDelta`, `TestRestPoseCorrectionAccountsForTheWholeAncestorChain`, `TestAHierarchyMismatchCarriesEachBoneRelativeToItsOwnParent` |
+
+**Where the two implementations part, and why that is not a parity defect.**
+Rows 5 and, for a binding to a joint the rig lacks, 3 are decided when the map
+is built, and there `execVrm` is stricter: a computation cannot bake a warning
+beside a value, so it refuses a map the tool would warn about and use. Both are
+rows 2 and 3 of the parity table
+([the parity report](../reports/openusd/26.08-openexec-parity.md) §7), and the
+OpenExec plan's P0-6 records that no producer authors either.
+
+**What the policy does not promise.** Dropping case 6's intermediate motion is
+the retarget's answer and not a limitation to be fixed quietly. Folding an
+unbound bone's rotation into its child would change every bake of a clip with
+`upperChest` onto a rig without it, Seed-san's included, so it would be a
+contract change with its own parity evidence.
+
 The hand-authored triplet under [`fixtures/motion/`](fixtures/motion/) is the
 executable statement of all of the above:
 `canonical_walk.usda` + `avatar.usda` must produce `expected_retargeted.usda`.

@@ -49,7 +49,7 @@ Each task's record, including what each step measured, is in
 | P0-7 — display smoke, `UsdGeomXformable` | ✅ | — |
 | P1-1 — retarget diagnostics | ✅ | — |
 | P1-2 — scale policy | ✅ | — decided 2026-09-17: a bake carries the rig's rest scale, and a clip's animated scale raises `VRM_RETARGET_NON_UNIT_SCALE` ([scale policy](../design/MOTION_CONTRACT.md#scale-policy-v090)) |
-| P1-3 — partial skeleton policy | ⬜ | the seven cases as a contract |
+| P1-3 — partial skeleton policy | ✅ | — the seven cases are a contract, each held by a test ([partial skeleton policy](../design/MOTION_CONTRACT.md#partial-skeleton-policy-v090), 2026-09-17) |
 
 The gate rows still open are P0-3's: **Windows DLL discovery** and the
 **artifact-only offline retarget**'s texture half. Unicode paths closed on

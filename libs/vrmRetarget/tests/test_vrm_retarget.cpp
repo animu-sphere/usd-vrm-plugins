@@ -154,6 +154,160 @@ DesignSourceRest()
     return rest;
 }
 
+// ---------------------------------------------------------------------------
+// The partial skeleton policy (MOTION_CONTRACT.md, "Partial skeleton policy")
+// ---------------------------------------------------------------------------
+
+// Case 4: a rig that binds every bone VRM 1.0 requires and none of the optional
+// ones -- no eyes, jaw, toes, shoulders, upperChest or fingers -- is a complete
+// rig, and says nothing. What an optional bone does cost is reported only when
+// a clip drives it, and then as a driven bone, not as a missing one.
+void
+TestAMissingOptionalBoneIsNotAMissingBone()
+{
+    using Code = vrmRetarget::RetargetDiagnosticCode;
+    vrmRetarget::TargetSkeleton skeleton;
+    for (const motion::HumanBone bone : vrmRetarget::HumanoidMap::GetRequiredBones())
+    {
+        vrmRetarget::TargetJoint joint;
+        joint.token = std::string(motion::HumanBoneName(bone));
+        skeleton.AddJoint(joint);
+    }
+    skeleton.ResolveParentsFromTokens();
+    vrmRetarget::HumanoidMap map;
+    for (const motion::HumanBone bone : vrmRetarget::HumanoidMap::GetRequiredBones())
+    {
+        assert(map.SetJointToken(bone, std::string(motion::HumanBoneName(bone)), skeleton));
+    }
+
+    const vrmRetarget::RetargetDiagnostics rig = vrmRetarget::DiagnoseRig(skeleton, map);
+    assert(rig.reported.empty() && "a rig with every required bone reported something");
+
+    motion::HumanoidPose pose;
+    for (const motion::HumanBone bone :
+         {motion::HumanBone::Hips, motion::HumanBone::LeftEye, motion::HumanBone::Jaw,
+          motion::HumanBone::LeftIndexProximal})
+    {
+        pose.localRotations[static_cast<std::size_t>(bone)] = Rotation(kAxisX, 10.0f);
+        pose.validRotations.set(static_cast<std::size_t>(bone));
+    }
+    const vrmRetarget::PoseRetargeter retargeter(skeleton, map, vrmRetarget::SourceRestPose());
+    vrmRetarget::RetargetDiagnostics diagnostics;
+    const vrmRetarget::RetargetedPose result = retargeter.Retarget(pose, &diagnostics);
+    assert(diagnostics.Subjects(Code::MissingRequiredBone).empty());
+    assert((diagnostics.Subjects(Code::UnboundDrivenBone) ==
+            std::vector<std::string>{"leftEye", "jaw", "leftIndexProximal"}));
+    assert(SameOrientation(result.rotations[0], Rotation(kAxisX, 10.0f)));
+}
+
+// Cases 6 and 7: the clip and the rig disagree about the chain. The clip puts
+// upperChest between chest and neck; the rig has no upperChest and puts a
+// non-humanoid `Collar`, rested at a turn, there instead. Each bound bone keeps
+// its motion *relative to its own parent* -- the rest correction reads each
+// side's accumulated parent rest, the collar's turn included -- and the
+// unbound bone's motion reaches nothing: it is not folded into its child.
+void
+TestAHierarchyMismatchCarriesEachBoneRelativeToItsOwnParent()
+{
+    using Code = vrmRetarget::RetargetDiagnosticCode;
+    const pxr::GfQuatf collarRest = Rotation(kAxisZ, 30.0f);
+    const pxr::GfQuatf neckRest = Rotation(kAxisX, 10.0f);
+
+    vrmRetarget::TargetSkeleton skeleton;
+    vrmRetarget::TargetJoint chest;
+    chest.token = "Chest";
+    skeleton.AddJoint(chest);
+    vrmRetarget::TargetJoint collar;
+    collar.token = "Chest/Collar";
+    collar.restRotation = collarRest;
+    skeleton.AddJoint(collar);
+    vrmRetarget::TargetJoint neck;
+    neck.token = "Chest/Collar/Neck";
+    neck.restRotation = neckRest;
+    skeleton.AddJoint(neck);
+    skeleton.ResolveParentsFromTokens();
+
+    vrmRetarget::HumanoidMap map;
+    assert(map.SetJointToken(motion::HumanBone::Chest, "Chest", skeleton));
+    assert(map.SetJointToken(motion::HumanBone::Neck, "Chest/Collar/Neck", skeleton));
+
+    vrmRetarget::SourceRestPose sourceRest;
+    sourceRest.SetParent(motion::HumanBone::UpperChest, motion::HumanBone::Chest);
+    sourceRest.SetParent(motion::HumanBone::Neck, motion::HumanBone::UpperChest);
+
+    const pxr::GfQuatf a = Rotation(kAxisY, 20.0f);
+    const pxr::GfQuatf b = Rotation(kAxisX, 35.0f);
+    const pxr::GfQuatf c = Rotation(kAxisZ, -25.0f);
+    motion::HumanoidPose pose;
+    for (const auto& [bone, rotation] :
+         {std::pair{motion::HumanBone::Chest, a}, std::pair{motion::HumanBone::UpperChest, b},
+          std::pair{motion::HumanBone::Neck, c}})
+    {
+        pose.localRotations[static_cast<std::size_t>(bone)] = rotation;
+        pose.validRotations.set(static_cast<std::size_t>(bone));
+    }
+
+    vrmRetarget::RetargetOptions options;
+    options.rootMotion.mode = vrmRetarget::RootMotionMode::Ignore;
+    const vrmRetarget::PoseRetargeter retargeter(skeleton, map, sourceRest, options);
+    vrmRetarget::RetargetDiagnostics diagnostics;
+    const vrmRetarget::RetargetedPose result = retargeter.Retarget(pose, &diagnostics);
+
+    assert(
+        (diagnostics.Subjects(Code::UnboundDrivenBone) == std::vector<std::string>{"upperChest"}));
+    // The non-humanoid joint between them stays at its rest.
+    assert(SameOrientation(result.rotations[1], collarRest));
+
+    // Relative to its own parent, the neck moves as the clip's neck does: the
+    // world delta over the parent's accumulated rest is `c` on both sides.
+    const pxr::GfQuatf parentWorldRest = skeleton.GetWorldRestRotation(1);
+    assert(SameOrientation(
+        parentWorldRest * result.rotations[2] * (parentWorldRest * neckRest).GetInverse(), c));
+
+    // In the world, the neck is where chest and neck put it -- `a * c` -- and
+    // not where the clip's upperChest also turned it.
+    const pxr::GfQuatf worldDelta = result.rotations[0] * result.rotations[1] *
+                                    result.rotations[2] * (collarRest * neckRest).GetInverse();
+    assert(SameOrientation(worldDelta, a * c));
+    assert(!SameOrientation(worldDelta, a * b * c));
+}
+
+// Case 5: two bones on one joint. The retarget writes bones in vocabulary
+// order, so the later bone a sample drives is the one the joint keeps, and the
+// rig's report names the joint. (`execVrm`'s humanoid map refuses such a map
+// instead: parity table row 3.)
+void
+TestADuplicateMappingKeepsTheLaterDrivenBone()
+{
+    using Code = vrmRetarget::RetargetDiagnosticCode;
+    const vrmRetarget::TargetSkeleton skeleton = DesignAvatar();
+    vrmRetarget::HumanoidMap map = DesignMap(skeleton);
+    assert(map.SetJointToken(motion::HumanBone::UpperChest, "Root/Pelvis/SpineA/ChestA", skeleton));
+
+    motion::HumanoidPose pose;
+    pose.localRotations[static_cast<std::size_t>(motion::HumanBone::Chest)] =
+        Rotation(kAxisX, 15.0f);
+    pose.validRotations.set(static_cast<std::size_t>(motion::HumanBone::Chest));
+    pose.localRotations[static_cast<std::size_t>(motion::HumanBone::UpperChest)] =
+        Rotation(kAxisZ, 40.0f);
+    pose.validRotations.set(static_cast<std::size_t>(motion::HumanBone::UpperChest));
+
+    vrmRetarget::RetargetOptions options;
+    options.rootMotion.mode = vrmRetarget::RootMotionMode::Ignore;
+    const vrmRetarget::PoseRetargeter retargeter(skeleton, map, vrmRetarget::SourceRestPose(),
+                                                 options);
+    const vrmRetarget::RetargetedPose both = retargeter.Retarget(pose);
+    assert(SameOrientation(both.rotations[3], Rotation(kAxisZ, 40.0f)));
+
+    // Driven by the earlier bone alone, the joint follows it.
+    pose.validRotations.reset(static_cast<std::size_t>(motion::HumanBone::UpperChest));
+    const vrmRetarget::RetargetedPose chestOnly = retargeter.Retarget(pose);
+    assert(SameOrientation(chestOnly.rotations[3], Rotation(kAxisX, 15.0f)));
+
+    assert((vrmRetarget::DiagnoseRig(skeleton, map, options).Subjects(Code::DuplicateTarget) ==
+            std::vector<std::string>{"Root/Pelvis/SpineA/ChestA"}));
+}
+
 void
 TestSkeletonParentsComeFromJointPaths()
 {
@@ -2243,6 +2397,9 @@ main()
 {
     TestSkeletonParentsComeFromJointPaths();
     TestARestTransformDecomposesItsScale();
+    TestAMissingOptionalBoneIsNotAMissingBone();
+    TestAHierarchyMismatchCarriesEachBoneRelativeToItsOwnParent();
+    TestADuplicateMappingKeepsTheLaterDrivenBone();
     TestHumanoidMapReportsGapsAndCollisions();
     TestRigValuesCompareExactly();
     TestARejectedRebindingUnmapsTheBone();

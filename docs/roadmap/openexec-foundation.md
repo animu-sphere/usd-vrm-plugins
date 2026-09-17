@@ -1434,12 +1434,23 @@ decision this item owes: carry the rest scale in `scales` (which needs a scale
 on `TargetJoint`, since `vrm.computeTargetSkeleton` drops it), refuse a rig
 whose rest is scaled, or keep identity and state the cost.
 
-### P1-3 — partial skeleton policy ⬜
+### P1-3 — partial skeleton policy ✅
 
 Make a contract of: a bone in the clip but not the target; a bone in the target
 the clip does not drive; a missing required humanoid bone; missing optional
 finger/eye/jaw bones; duplicate mappings; hierarchy mismatch; a non-identity
 parent rest transform.
+
+**Done 2026-09-17**, in
+[MOTION_CONTRACT.md, "Partial skeleton policy"](../design/MOTION_CONTRACT.md#partial-skeleton-policy-v090):
+seven rows, each with what the retarget does, what it reports, and the test that
+holds it. Nothing about the behaviour changed. Three rows had no test, and have
+one now: a rig with every required bone and no optional one reports nothing;
+across a chain the two sides disagree about, each bone moves relative to its own
+parent and an unbound intermediate bone's motion is dropped, not folded into its
+child; and a duplicate mapping keeps the later bone a sample drives. The one
+place the implementations part, a map `execVrm` refuses and the tool uses with a
+warning, is stated there with the parity table rows that already record it.
 
 ### Foundation release gate
 

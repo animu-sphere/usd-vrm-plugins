@@ -1147,6 +1147,15 @@ Current schema contract version: **1**.
 
 ### Changed
 
+- **The partial skeleton policy is a contract** (the OpenExec plan's P1-3).
+  `MOTION_CONTRACT.md` states the seven ways a clip and a rig can disagree —
+  a bone on one side only, a missing required or optional bone, a duplicate
+  mapping, a chain the two sides disagree about, a parent rest that is not
+  identity — with what the retarget does, the frozen code it reports, and the
+  test that holds each row. The behaviour is unchanged. Three rows gained the
+  test they lacked; the one that says the most is that an intermediate bone the
+  rig lacks has its motion dropped rather than folded into its child.
+
 - **A bake keeps the rig's rest scale** (the OpenExec plan's P1-2, the scale
   policy). `motion_retarget` and `vrm.computeJointLocalTransforms` state each
   joint's rest scale in `scales` rather than `(1, 1, 1)`. UsdSkel takes an
