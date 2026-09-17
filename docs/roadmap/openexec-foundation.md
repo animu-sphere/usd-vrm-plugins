@@ -472,12 +472,16 @@ dry run carried it to macOS and Linux. Each requirement above now has a check:
   came with it: `vrmContainer.dll` answered from `bundles/execMotion`, the
   first `PATH` directory holding a copy, which INSTALL.md now says.
 - **Source-path leak scan**: every executable and shared library in the
-  product is searched for the repository root. None names a build-tree path,
-  whether a build directory, a `.strata` stage, a PDB or an RPATH. The tools
-  name nothing. Eight plugin libraries carry 23 source *file* names, each a
-  `__FILE__` that OpenUSD's registration macros expand. The scan counts and
-  prints those and does not fail on them, and the v0.9.0 record lists them as a
-  known limitation.
+  product is searched for the repository root, and a build directory, staging
+  area or PDB fails it. Two kinds of match are counted, not failed, and the
+  v0.9.0 record lists both as known limitations. Eight plugin libraries carry
+  23 source *file* names, each a `__FILE__` that OpenUSD's registration macros
+  expand. **And on Linux and macOS, the dry run found every binary still
+  carrying the build machine's RPATH**, three plugins including the build
+  tree's `workspace-prefix/lib`. On Windows none of this appears. The scan
+  reads each binary's own RPATH entries with `readelf` / `otool` and counts a
+  match inside one; the load reports prove nothing loads from them, and
+  rewriting them is packaging's to fix.
 - **Executable checksum**: `ost plugin product verify`, which the smoke runs
   first, checks the archive and every member's checksums.
 

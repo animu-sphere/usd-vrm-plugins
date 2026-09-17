@@ -423,7 +423,8 @@ The plan and every measurement behind these rows are in
 - ✅ **P0-3, `motion_retarget` distributed**: in the aggregate product, with
   `--load-report`, `--build-info` and `--version`; the artifact-only smoke bakes
   a textured avatar from the install, resolves its 28 textures from a Python
-  host with `PATH` alone, and finds no build-tree path in any binary.
+  host with `PATH` alone, and scans every binary for the source tree (the
+  build machine's RPATH on Linux and macOS is a recorded limitation).
 - ✅ **P0-4, `execMotion`**: sample, filter, root-motion intake, history
   interpolation and blend, each a wrapper over `motionRuntime`, discovered from
   the packaged plugin. The producer conventions it reads went to the motion

@@ -1158,7 +1158,9 @@ Current schema contract version: **1**.
   bakes the textured `Seed-san.vrm` and its load report must show nothing
   loaded from the source tree. `scripts/artifact_texture_probe.py`, a Python
   host, resolves all 28 embedded textures from the install, and fails with the
-  resolver hidden. A scan finds no build-tree path in any product binary. That
+  resolver hidden. A scan of every product binary finds no build directory,
+  staging area or PDB path; Linux and macOS binaries still carry the build
+  machine's RPATH, counted as a known limitation. That
   environment applies the product's activation by hand, so it also settles
   Windows DLL discovery: **`PATH` is enough, for a Python host too**, and
   INSTALL.md now says so rather than suggesting `os.add_dll_directory`.
