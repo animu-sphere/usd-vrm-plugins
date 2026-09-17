@@ -48,21 +48,6 @@ LeafToken(const std::string& jointPath)
     return separator == std::string::npos ? jointPath : jointPath.substr(separator + 1);
 }
 
-GfQuatf
-ToQuatf(const GfQuatd& q)
-{
-    return GfQuatf(static_cast<float>(q.GetReal()),
-                   GfVec3f(static_cast<float>(q.GetImaginary()[0]),
-                           static_cast<float>(q.GetImaginary()[1]),
-                           static_cast<float>(q.GetImaginary()[2])));
-}
-
-GfVec3f
-ToVec3f(const GfVec3d& v)
-{
-    return GfVec3f(static_cast<float>(v[0]), static_cast<float>(v[1]), static_cast<float>(v[2]));
-}
-
 // Finds the skeleton to work with: the override when given, otherwise the first
 // UsdSkelSkeleton in stage order. Reporting "which one" back to the caller is
 // what makes --skeleton actionable when a stage carries several.
@@ -158,14 +143,16 @@ FailToOpen(const std::string& path, const char* what, Failure* failure)
                 std::string("OpenUSD could not open the ") + what + " stage " + path);
 }
 
-// Decomposes a rest transform. Scale and shear are dropped on purpose: the
-// motion contract ignores scale channels, so carrying them here would author
-// something the retargeter never animates.
+// Decomposes a clip rest transform through the library's one decomposition.
+// A clip's rest scale is dropped: the correction reads rotations and
+// translations, and scale is not retargeted.
 void
 DecomposeRest(const GfMatrix4d& matrix, GfQuatf* rotation, GfVec3f* translation)
 {
-    *translation = ToVec3f(matrix.ExtractTranslation());
-    *rotation = ToQuatf(matrix.RemoveScaleShear().ExtractRotationQuat()).GetNormalized();
+    vrmRetarget::TargetJoint joint;
+    vrmRetarget::DecomposeRestTransform(matrix, &joint);
+    *rotation = joint.restRotation;
+    *translation = joint.restTranslation;
 }
 
 bool
@@ -601,7 +588,7 @@ ReadAvatar(const std::string& path, const std::string& skeletonPathOverride,
     {
         vrmRetarget::TargetJoint joint;
         joint.token = joints[i].GetString();
-        DecomposeRest(restTransforms[i], &joint.restRotation, &joint.restTranslation);
+        vrmRetarget::DecomposeRestTransform(restTransforms[i], &joint);
         avatar->skeleton.AddJoint(joint);
     }
     avatar->skeleton.ResolveParentsFromTokens();
@@ -964,6 +951,43 @@ ReadClip(const std::string& path, const std::string& skeletonPathOverride, Clip*
                 TfStringify(clip->stage->GetStartTimeCode())));
     }
 
+    // The scale policy: a clip that animates scale is read, and its scale is
+    // not carried -- the bake authors the rig's rest scale. Said once, naming
+    // the first joint and instant that stated one, so the drop is never silent.
+    // A clip that states no `scales`, or states identity, raises nothing.
+    const UsdAttribute scalesAttr = animation.GetScalesAttr();
+    std::vector<UsdTimeCode> scaleTimes{UsdTimeCode::Default()};
+    {
+        std::vector<double> times;
+        scalesAttr.GetTimeSamples(&times);
+        scaleTimes.insert(scaleTimes.end(), times.begin(), times.end());
+    }
+    for (const UsdTimeCode at : scaleTimes)
+    {
+        VtVec3hArray scales;
+        if (!scalesAttr.Get(&scales, at))
+        {
+            continue;
+        }
+        const auto nonUnit = std::find_if(scales.begin(), scales.end(), [](const GfVec3h& scale)
+                                          { return scale != GfVec3h(1.0f); });
+        if (nonUnit == scales.end())
+        {
+            continue;
+        }
+        const std::size_t index = static_cast<std::size_t>(nonUnit - scales.begin());
+        const std::string joint = index < animationJoints.size()
+                                      ? animationJoints[index].GetString()
+                                      : std::to_string(index);
+        clip->diagnostics.Report(vrmRetarget::MakeRetargetDiagnostic(
+            vrmRetarget::RetargetDiagnosticCode::NonUnitScale, animationPrim.GetPath().GetString(),
+            "the clip scales joint '" + joint + "' to " + TfStringify(GfVec3f(*nonUnit)) +
+                (at.IsDefault() ? std::string(" by default")
+                                : " at time code " + TfStringify(at.GetValue())) +
+                "; scale is not retargeted, so the bake keeps the rig's rest scale"));
+        break;
+    }
+
     int hipsJointIndex = -1;
     for (std::size_t i = 0; i < boneForJoint.size(); ++i)
     {
@@ -1245,9 +1269,21 @@ WriteRetargetedAnimation(const std::string& outputPath, const Avatar& avatar, co
     // as a unit; `scales` has no schema fallback, so an animation without it
     // binds cleanly, reads back correctly attribute by attribute, and then
     // resolves no joint transforms at all. Retargeting never animates scale, so
-    // author one constant identity array rather than a per-sample track.
-    const VtVec3hArray identityScales(animation.joints.size(), GfVec3h(1.0f));
-    authored.CreateScalesAttr().Set(identityScales);
+    // author one constant array rather than a per-sample track -- each joint's
+    // *rest* scale, because UsdSkel takes an animated joint's transform from the
+    // animation whole and identity would replace a scaled rest (the scale
+    // policy).
+    VtVec3hArray restScales(animation.joints.size(), GfVec3h(1.0f));
+    for (std::size_t i = 0; i < animation.joints.size(); ++i)
+    {
+        const int joint = avatar.skeleton.FindJoint(animation.joints[i]);
+        if (joint != vrmRetarget::TargetSkeleton::kNoParent)
+        {
+            restScales[i] =
+                GfVec3h(avatar.skeleton.GetJoints()[static_cast<std::size_t>(joint)].restScale);
+        }
+    }
+    authored.CreateScalesAttr().Set(restScales);
 
     const UsdAttribute rotations = authored.CreateRotationsAttr();
     const UsdAttribute translations = authored.CreateTranslationsAttr();

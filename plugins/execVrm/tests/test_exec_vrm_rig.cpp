@@ -165,13 +165,17 @@ TestTheSkeletonIsTheRestPoseDecomposed()
     assert(joints[1].restRotation == pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f)));
     assert(NearlyEqual(joints[1].restTranslation, pxr::GfVec3f(0, 1, 0)));
 
-    // 90 degrees about +Z, with the scale of 2 dropped rather than folded into
-    // the rotation: (cos 45, 0, 0, sin 45), and the translation off the matrix.
+    // 90 degrees about +Z, with the scale of 2 kept apart rather than folded
+    // into the rotation: (cos 45, 0, 0, sin 45), the translation off the
+    // matrix, and the scale as its own field.
     const float half = std::sqrt(0.5f);
     assert(NearlyEqual(joints[6].restRotation, pxr::GfQuatf(half, 0.0f, 0.0f, half)) &&
            "the scaled rest transform did not decompose to its rotation");
     assert(NearlyEqual(joints[6].restTranslation, pxr::GfVec3f(0.1f, 0.15f, 0.0f)));
-    std::printf("execVrm rig: the rest pose decomposes, scale dropped\n");
+    assert(NearlyEqual(joints[6].restScale, pxr::GfVec3f(2.0f)) &&
+           "the scaled rest transform did not decompose to its scale");
+    assert(joints[1].restScale == pxr::GfVec3f(1.0f));
+    std::printf("execVrm rig: the rest pose decomposes, scale apart\n");
 }
 
 void
@@ -971,18 +975,18 @@ TestTheSampleIsTheRetargetWithTheBakesTwoAdditions()
     assert(sample.translations == pose.translations);
 
     // What a bake adds. The rig's tokens, verbatim and in the rig's order --
-    // the order the arrays are already in -- and one identity scale per joint,
-    // the arm's included although its rest is scaled by 2.
+    // the order the arrays are already in -- and each joint's rest scale, the
+    // arm's 2 included (the scale policy).
     const std::vector<std::string> expectedJoints = {kRoot, kHips, kSpine,   kChest,
                                                      kNeck, kHead, kUpperArm};
     assert(sample.joints == expectedJoints);
     assert(sample.scales.size() == expectedJoints.size());
-    for (const pxr::GfVec3h& scale : sample.scales)
+    for (std::size_t j = 0; j < sample.scales.size(); ++j)
     {
-        assert(scale == pxr::GfVec3h(1.0f));
+        assert(sample.scales[j] == pxr::GfVec3h(expectedJoints[j] == kUpperArm ? 2.0f : 1.0f));
     }
     std::printf("execVrm rig: the joint transforms are the retarget's arrays "
-                "with the rig's tokens and identity scales beside them\n");
+                "with the rig's tokens and rest scales beside them\n");
 }
 
 void

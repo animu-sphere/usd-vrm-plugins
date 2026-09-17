@@ -8,14 +8,14 @@
 // What the retarget suite could not say, and so what this one measures:
 //
 //   * that the node is the retarget's answer in the shape a UsdSkelAnimation
-//     states at one time code -- the rig's tokens, the arrays unchanged, one
-//     identity scale per joint -- and nothing else;
+//     states at one time code -- the rig's tokens, the arrays unchanged, each
+//     joint's rest scale -- and nothing else;
 //   * that shape, authored the way motion_retarget authors it, is what UsdSkel
 //     resolves: its joint-local transforms are UsdSkel's own composition of
 //     the node's value, and without `scales`, or with arrays that do not pair
 //     with `joints`, they are the rig's rest;
-//   * what the identity scale costs on a rig whose rest is scaled -- the
-//     fixture's arm, rested at scale 2 -- which is P1-2's question;
+//   * that a rig whose rest is scaled keeps it -- the fixture's arm, rested
+//     at scale 2 -- which is P1-2's scale policy;
 //   * a driver's override of the retarget reaching it, which is the one route
 //     to a pose that does not pair with the rig;
 //   * invalidation, and every refusal.
@@ -407,17 +407,17 @@ TestTheSampleIsTheRetargetInAnAnimationsShape(const std::string& fixture)
         assert(sample.translations == pose.translations);
 
         // The two things a bake adds: the rig's own `joints`, verbatim and in
-        // its order, and one identity scale per joint.
+        // its order, and each joint's rest scale: 2 on the arm, 1 elsewhere.
         assert(sample.joints.size() == authoredJoints.size() &&
                sample.joints.size() == kJointCount);
         for (std::size_t j = 0; j < kJointCount; ++j)
         {
             assert(sample.joints[j] == authoredJoints[j].GetString());
-            assert(sample.scales[j] == GfVec3h(1.0f));
+            assert(sample.scales[j] == GfVec3h(j == kArmJoint ? 2.0f : 1.0f));
         }
     }
     std::printf("execVrm joint transforms: the retarget's arrays, with the "
-                "rig's joints and identity scales, and a frame change reaches "
+                "rig's joints and rest scales, and a frame change reaches "
                 "them across the link\n");
 }
 
@@ -485,14 +485,15 @@ TestAuthoredTheSampleIsWhatUsdSkelResolves(const std::string& fixture)
 }
 
 // ---------------------------------------------------------------------------
-// What the identity scale costs on a scaled rest
+// A scaled rest is kept (the scale policy)
 // ---------------------------------------------------------------------------
 void
-TestARigsRestScaleIsNotKept(const std::string& fixture)
+TestARigsRestScaleIsKept(const std::string& fixture)
 {
     // Frame 0 is the clip standing at its own rest, which the retarget lands
     // on the rig's rest at every joint: the case where the baked sample should
-    // be the rig's rest, and is, but for one joint.
+    // be the rig's rest. Before the scale policy it was, but for the arm, whose
+    // rest scale of 2 a bake of identity scales replaced with 1.
     const Rig rig = Open(fixture);
     vrmRetarget::JointLocalTransforms sample;
     {
@@ -508,37 +509,24 @@ TestARigsRestScaleIsNotKept(const std::string& fixture)
 
     for (std::size_t j = 0; j < kJointCount; ++j)
     {
-        if (j == kArmJoint)
-        {
-            continue;
-        }
         assert(NearMatrix(locals[j], rest[j], 1e-6) &&
                "a joint at rest in the clip did not land on the rig's rest");
     }
 
-    // The arm rests turned 90 degrees about +Z and scaled by 2. The sample
-    // keeps the turn and the place and states a scale of 1, and UsdSkel takes
-    // an animated joint's transform from the animation whole.
+    // The arm rests turned 90 degrees about +Z and scaled by 2, and UsdSkel
+    // takes an animated joint's transform from the animation whole -- so the
+    // 2 is there only because the sample states it.
     const GfMatrix4d& restArm = rest[kArmJoint];
     const GfMatrix4d& bakedArm = locals[kArmJoint];
     for (int row = 0; row < 3; ++row)
     {
         assert(std::abs(RowLength(restArm, row) - 2.0) < 1e-9);
-        assert(std::abs(RowLength(bakedArm, row) - 1.0) < 1e-6);
+        assert(std::abs(RowLength(bakedArm, row) - 2.0) < 1e-6 &&
+               "the baked arm lost its rest scale; the scale policy keeps it");
     }
-    GfMatrix4d unscaledRest = restArm;
-    for (int row = 0; row < 3; ++row)
-    {
-        for (int column = 0; column < 3; ++column)
-        {
-            unscaledRest[row][column] /= 2.0;
-        }
-    }
-    assert(NearMatrix(bakedArm, unscaledRest, 1e-6) &&
-           "the baked arm differs from its rest by more than the scale");
     std::printf("execVrm joint transforms: at the clip's rest every joint lands "
-                "on the rig's rest but the arm, whose rest scale of 2 becomes "
-                "1 (rows %.3f -> %.3f)\n",
+                "on the rig's rest, the arm's scale of 2 included "
+                "(rows %.3f -> %.3f)\n",
                 RowLength(restArm, 0), RowLength(bakedArm, 0));
 }
 
@@ -740,7 +728,7 @@ main(int argc, char** argv)
 
     TestTheSampleIsTheRetargetInAnAnimationsShape(fixture);
     TestAuthoredTheSampleIsWhatUsdSkelResolves(fixture);
-    TestARigsRestScaleIsNotKept(fixture);
+    TestARigsRestScaleIsKept(fixture);
     TestADriversRetargetReachesTheSample(fixture);
     TestARetargetThatRefusedIsRefused(fixture);
     TestInvalidationReachesTheSample(fixture);

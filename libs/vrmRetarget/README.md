@@ -30,7 +30,7 @@ live source that has no stage at all.
 
 | Header | Contents |
 | --- | --- |
-| `vrmRetarget/TargetSkeleton.h` | `TargetJoint`, `TargetSkeleton` — joint tokens, parents derived from `a/b/c` joint paths, decomposed rest transforms |
+| `vrmRetarget/TargetSkeleton.h` | `TargetJoint`, `TargetSkeleton` — joint tokens, parents derived from `a/b/c` joint paths, decomposed rest transforms with their scale, and `DecomposeRestTransform`, the one decomposition both the tool and `execVrm` call |
 | `vrmRetarget/HumanoidMap.h` | `HumanoidMap` — human bone → target joint index, plus missing-required-bone and duplicate-binding reporting |
 | `vrmRetarget/RestPose.h` | `SourceRestPose`, `RestPoseCorrection`, `ComputeRestPoseCorrection` |
 | `vrmRetarget/RootMotionPolicy.h` | `RootMotionMode` (`Ignore` / `Hips` / `RootJoint`), `RootMotionOptions`, `ResolveRootTranslation` |

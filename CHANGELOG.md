@@ -1147,6 +1147,23 @@ Current schema contract version: **1**.
 
 ### Changed
 
+- **A bake keeps the rig's rest scale** (the OpenExec plan's P1-2, the scale
+  policy). `motion_retarget` and `vrm.computeJointLocalTransforms` state each
+  joint's rest scale in `scales` rather than `(1, 1, 1)`. UsdSkel takes an
+  animated joint's transform from the animation whole, so identity *replaced* a
+  scaled rest: `Seed-san.vrm`'s seven scaled hair and bag joints (at most 0.14%
+  off unit) baked unscaled, and a rig resting at a real scale would have been
+  drawn at another size. `vrmRetarget` gains `TargetJoint::restScale`, which
+  joins its `operator==`, and `DecomposeRestTransform`, the one rest
+  decomposition the tool and `execVrm` now both call where each carried a copy.
+  A clip that animates scale raises `VRM_RETARGET_NON_UNIT_SCALE` once, on its
+  animation, and its scale is still not applied — the first raiser of that
+  frozen code. Stated in
+  [MOTION_CONTRACT.md, "Scale policy"](docs/design/MOTION_CONTRACT.md#scale-policy-v090);
+  exec and offline still agree exactly on all five parity cases, and with the
+  tool mutated back to identity both the design triplet and Seed-san's parity
+  case fail.
+
 - **The documentation follows the `usd-motion-plugins` design policy.**
   `WORKSPACE.md` §9 gives every generic motion identity a destination —
   `usd-motion-plugins` for the motion core, runtime, generic retarget, BVH

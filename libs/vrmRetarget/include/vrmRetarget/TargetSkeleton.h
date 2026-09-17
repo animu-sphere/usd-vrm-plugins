@@ -10,6 +10,7 @@
 
 #include "vrmRetarget/api.h"
 
+#include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
 
@@ -30,11 +31,26 @@ struct TargetJoint
     // Index into TargetSkeleton::joints, or kNoParent for a root joint.
     int parent = -1;
 
-    // Rest transform, decomposed. Scale is not carried: the motion contract
-    // ignores scale channels, and a retargeted clip never authors one.
+    // Rest transform, decomposed (DecomposeRestTransform below).
     pxr::GfQuatf restRotation = pxr::GfQuatf(1.0f, pxr::GfVec3f(0.0f));
     pxr::GfVec3f restTranslation = pxr::GfVec3f(0.0f);
+
+    // The rest's scale, per axis. The retarget never reads it: rotations and
+    // translations are retargeted, scale is not animated. It is carried because
+    // a bake states every joint whole, and UsdSkel takes an animated joint's
+    // local transform from the animation alone -- so a bake that authored
+    // identity would *replace* a scaled rest rather than keep it (the scale
+    // policy, docs/design/MOTION_CONTRACT.md "Scale policy").
+    pxr::GfVec3f restScale = pxr::GfVec3f(1.0f);
 };
+
+// Decomposes a UsdSkelSkeleton rest transform into `joint`'s three rest
+// fields: the translation straight off the matrix, the rotation from what is
+// left once scale and shear are removed, and the scale as the length of each
+// basis row. One implementation, because `motion_retarget` and `execVrm` each
+// carried a copy and a parity difference in a normalization step would be one
+// P0-6 has to explain rather than measure. `token` and `parent` are untouched.
+VRMRETARGET_API void DecomposeRestTransform(const pxr::GfMatrix4d& matrix, TargetJoint* joint);
 
 class VRMRETARGET_API TargetSkeleton
 {

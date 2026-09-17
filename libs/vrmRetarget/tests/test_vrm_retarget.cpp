@@ -7,6 +7,8 @@
 #include "vrmRetarget/RootMotionPolicy.h"
 #include "vrmRetarget/TargetSkeleton.h"
 
+#include "pxr/base/gf/quatd.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -72,6 +74,37 @@ const pxr::GfVec3f kAxisZ(0.0f, 0.0f, 1.0f);
 // fixture lists them as flat sibling tokens; here they carry the hierarchical
 // "a/b/c" joint paths so parent resolution is exercised too. Both spellings are
 // valid UsdSkelSkeleton.joints, and the end-to-end test covers the flat one.
+// The one rest decomposition `motion_retarget` and `execVrm` share: a scale
+// kept apart from the rotation rather than folded into it, and part of a
+// joint's identity (the scale policy).
+void
+TestARestTransformDecomposesItsScale()
+{
+    const pxr::GfQuatf turn = Rotation(kAxisZ, 90.0f);
+    pxr::GfMatrix4d rest;
+    rest.SetScale(pxr::GfVec3d(2.0, 3.0, 0.5));
+    rest *= pxr::GfMatrix4d().SetRotate(
+        pxr::GfQuatd(turn.GetReal(), pxr::GfVec3d(turn.GetImaginary())));
+    rest *= pxr::GfMatrix4d().SetTranslate(pxr::GfVec3d(0.1, 0.2, 0.3));
+
+    vrmRetarget::TargetJoint joint;
+    joint.token = "Arm";
+    joint.parent = 4;
+    vrmRetarget::DecomposeRestTransform(rest, &joint);
+    assert(joint.token == "Arm" && joint.parent == 4);
+    assert(SameOrientation(joint.restRotation, turn));
+    assert(NearlyEqual(joint.restTranslation, pxr::GfVec3f(0.1f, 0.2f, 0.3f)));
+    assert(NearlyEqual(joint.restScale, pxr::GfVec3f(2.0f, 3.0f, 0.5f)));
+
+    vrmRetarget::TargetJoint unscaled;
+    vrmRetarget::DecomposeRestTransform(pxr::GfMatrix4d(1.0), &unscaled);
+    assert(unscaled.restScale == pxr::GfVec3f(1.0f));
+
+    vrmRetarget::TargetJoint rescaled = joint;
+    rescaled.restScale = pxr::GfVec3f(1.0f);
+    assert(rescaled != joint && "a rest scale is part of a joint's identity");
+}
+
 vrmRetarget::TargetSkeleton
 DesignAvatar()
 {
@@ -2209,6 +2242,7 @@ int
 main()
 {
     TestSkeletonParentsComeFromJointPaths();
+    TestARestTransformDecomposesItsScale();
     TestHumanoidMapReportsGapsAndCollisions();
     TestRigValuesCompareExactly();
     TestARejectedRebindingUnmapsTheBone();

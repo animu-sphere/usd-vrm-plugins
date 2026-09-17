@@ -68,7 +68,9 @@ struct RetargetedAnimation
 // UsdSkel reads translations, rotations and scales as a unit, and an animation
 // that authors no `scales` binds, reads back attribute by attribute, and then
 // resolves no joint transforms at all -- the rig stays at rest. A retargeted
-// clip never animates scale, so every entry is (1, 1, 1): the rule
+// clip never animates scale, so every entry is the joint's rest scale,
+// `TargetJoint::restScale`, narrowed to half: a bake states every joint whole,
+// and identity would replace a scaled rest rather than keep it. It is the rule
 // `motion_retarget` authors as one constant array.
 //
 // `timestamp` is the retarget's, in seconds. An animation places a sample at a

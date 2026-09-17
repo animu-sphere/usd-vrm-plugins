@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "vrmRetarget/TargetSkeleton.h"
 
+#include "pxr/base/gf/quatd.h"
+#include "pxr/base/gf/vec3d.h"
+
 #include <unordered_map>
 
 namespace vrmRetarget
@@ -83,11 +86,32 @@ TargetSkeleton::IsTopologicallyOrdered() const
     return true;
 }
 
+void
+DecomposeRestTransform(const pxr::GfMatrix4d& matrix, TargetJoint* joint)
+{
+    const pxr::GfVec3d translation = matrix.ExtractTranslation();
+    joint->restTranslation =
+        pxr::GfVec3f(static_cast<float>(translation[0]), static_cast<float>(translation[1]),
+                     static_cast<float>(translation[2]));
+    const pxr::GfQuatd rotation = matrix.RemoveScaleShear().ExtractRotationQuat();
+    joint->restRotation = pxr::GfQuatf(static_cast<float>(rotation.GetReal()),
+                                       pxr::GfVec3f(static_cast<float>(rotation.GetImaginary()[0]),
+                                                    static_cast<float>(rotation.GetImaginary()[1]),
+                                                    static_cast<float>(rotation.GetImaginary()[2])))
+                              .GetNormalized();
+    // Row-vector convention: row i is basis axis i, rotated and scaled by the
+    // i-th scale, so its length is that scale. A shear leaks into the lengths;
+    // UsdSkel's own rest transforms carry none.
+    joint->restScale = pxr::GfVec3f(static_cast<float>(matrix.GetRow3(0).GetLength()),
+                                    static_cast<float>(matrix.GetRow3(1).GetLength()),
+                                    static_cast<float>(matrix.GetRow3(2).GetLength()));
+}
+
 bool
 operator==(const TargetJoint& a, const TargetJoint& b) noexcept
 {
     return a.token == b.token && a.parent == b.parent && a.restRotation == b.restRotation &&
-           a.restTranslation == b.restTranslation;
+           a.restTranslation == b.restTranslation && a.restScale == b.restScale;
 }
 
 bool

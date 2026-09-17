@@ -1008,7 +1008,8 @@ is refused rather than answered, since answered it would bake to a rig standing
 still. **The identity scale overwrites a scaled rest pose**: the fixture's arm
 rests at scale 2 and bakes at 1, in both implementations. The importer can
 produce it, on `Seed-san.vrm`'s hair and bag joints, at most 0.14% off unit.
-That is P1-2's question and not a P0-6 row (P1-2 below). **An unregistered
+That is P1-2's question and not a P0-6 row (P1-2 below). *Answered by P1-2 on
+2026-09-17: a bake now states the rest scale, in both implementations.* **An unregistered
 result type is fatal to every computation in the bundle**, as an unregistered
 input type is. Invalidation reaches the sample from the frame, a statement, a
 key and a rest edit.
@@ -1393,13 +1394,34 @@ it used to show empty values
 ([the driver report](../reports/openusd/26.08-openexec-driver.md)).
 `NON_UNIT_SCALE` stays frozen and unraised until P1-2 decides what raises it.
 
-### P1-2 — scale policy ⬜
+### P1-2 — scale policy ✅
 
-Always author identity scale; animated joint scale is unsupported; a non-unit
-animated scale input is a structured warning; scale animation is never silently
-applied; OpenExec and offline behave identically. This formalizes the fix that
-shipped with the v0.4.0 tag — see
-[UsdSkel resolves a scale-less animation to the rest pose](../releases/v0.4.0.md#the-defect-that-made-the-whole-thing-visible).
+**Decided and landed 2026-09-17**, and stated in
+[MOTION_CONTRACT.md, "Scale policy"](../design/MOTION_CONTRACT.md#scale-policy-v090):
+a bake states each joint's **rest** scale, constant over the clip; scale is not
+retargeted; a clip that animates scale raises `VRM_RETARGET_NON_UNIT_SCALE`
+once and is never applied; a rig whose rest is scaled is not refused. OpenExec
+and offline behave identically, because both call one decomposition,
+`vrmRetarget::DecomposeRestTransform`, and carry `TargetJoint::restScale` —
+the library entry point boundary consolidation §1 asked for, which the tool and
+`execVrm` each duplicated until then.
+
+What it measured: the fixture's arm, rested at 2, now bakes at 2 in
+`execVrm_joint_transforms` and in `motion_retarget_design_triplet`; with the
+tool mutated back to identity scales, the design triplet failed on the authored
+scales, the resolved row lengths and the missing code, and
+`workspace_exec_parity_recorded_real_avatar` failed on Seed-san's seven joints.
+Three adapter end-to-end tests had compared quaternions extracted from scaled
+matrices, which are not unit length, and read Seed-san's still joints as moving;
+they now take the rotation with the scale removed.
+
+The original statement, kept for what it was written against: *always author
+identity scale; animated joint scale is unsupported; a non-unit animated scale
+input is a structured warning; scale animation is never silently applied;
+OpenExec and offline behave identically.* It formalized the fix that shipped
+with the v0.4.0 tag —
+[UsdSkel resolves a scale-less animation to the rest pose](../releases/v0.4.0.md#the-defect-that-made-the-whole-thing-visible)
+— and did not name a rig whose rest is scaled.
 
 **One case the rule does not yet name, measured 2026-09-13**
 ([the joint-transforms report](../reports/openusd/26.08-openexec-joint-transforms.md)

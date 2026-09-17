@@ -27,9 +27,9 @@
 // **The eight split in two, and the split is the layer boundary.** The leading
 // five are raised by this library, from plain values. The last three can only
 // be raised by a caller that holds a stage or a file system -- a time range the
-// clip did not state, an output path that names an input, and a scale this
-// library never receives, since `TargetSkeleton` drops a rest's scale when it
-// decomposes one. `RetargetDiagnosticIsLibraryRaised` states that boundary in
+// clip did not state, an output path that names an input, and a clip that
+// animates scale, which this library never receives: a pose carries no scale.
+// `RetargetDiagnosticIsLibraryRaised` states that boundary in
 // code, and `vrmRetarget_boundaries` checks that this library's sources never
 // name one of the three.
 //
@@ -80,9 +80,10 @@ enum class RetargetDiagnosticCode : std::uint8_t
 
     // --- raised by a caller: what a stage or a file system adds ---------------
 
-    // A non-unit scale reached a retarget that authors identity scale. Frozen
-    // for the scale policy (the OpenExec plan's P1-2), which decides what raises
-    // it; nothing does yet.
+    // The clip animates a joint's scale away from 1, and the retarget does not
+    // carry it: a bake authors each joint's *rest* scale and nothing a clip
+    // states (the scale policy, the OpenExec plan's P1-2). Raised by a caller
+    // that reads the clip's `scales`. Subject: the clip.
     NonUnitScale,
     // The clip states no time samples, so the retarget answers one pose at a
     // time the stage chose rather than one the clip stated. Subject: the clip.

@@ -175,7 +175,11 @@ def drive(options, avatar: pathlib.Path, expected: set[str],
             if not transforms:
                 fail(f"UsdSkel resolved no joint transforms at {time}: the "
                      f"animation is bound but does not drive the rig")
-            return [transform.ExtractRotationQuat()
+            # A bake states each joint's rest scale (the scale policy), and a
+            # matrix that carries a scale extracts a quaternion that is not unit
+            # length -- `Seed-san.vrm`'s seven scaled joints compared unequal to
+            # themselves. Take the rotation with the scale removed.
+            return [transform.RemoveScaleShear().ExtractRotationQuat()
                     for transform in transforms]
 
         joints = [str(joint) for joint in query.GetJointOrder()]

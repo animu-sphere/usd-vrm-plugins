@@ -234,6 +234,92 @@ def check_stage_metrics(output: pathlib.Path, avatar: pathlib.Path,
             f"{want}")
 
 
+def check_scale_policy(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
+                       humanoid_map: str, workspace: pathlib.Path,
+                       failures: Failures) -> None:
+    """A bake keeps the rig's rest scale, and drops a clip's scale out loud.
+
+    UsdSkel takes an animated joint's local transform from the animation
+    whole, so the `scales` a bake states *are* the rig's scales: identity
+    replaced a scaled rest (the joint-transforms report, section 4). The
+    policy (MOTION_CONTRACT.md, "Scale policy") authors each joint's rest
+    scale, and reports a clip that animates scale as
+    `VRM_RETARGET_NON_UNIT_SCALE` rather than carrying or silently dropping it.
+    """
+    scaled_avatar = workspace / "scaled_rest_avatar.usda"
+    shutil.copy(avatar, scaled_avatar)
+    avatar_stage = Usd.Stage.Open(str(scaled_avatar))
+    skeleton = find_skeleton(avatar_stage)
+    rest_attr = skeleton.GetRestTransformsAttr()
+    rest = list(rest_attr.Get())
+    scaled_joint = len(rest) - 1
+    # Row-vector convention: scale first, then the rest as it was.
+    rest[scaled_joint] = Gf.Matrix4d().SetScale(Gf.Vec3d(1.5, 2.0, 0.5)) * rest[scaled_joint]
+    rest_attr.Set(Vt.Matrix4dArray(rest))
+    avatar_stage.GetRootLayer().Save()
+
+    output = workspace / "scaled_rest_bake.usda"
+    result = run_tool(tool, "--avatar", str(scaled_avatar), "--animation",
+                      str(clip), "--output", str(output),
+                      "--humanoid-map", humanoid_map)
+    if not failures.check(result.returncode == 0,
+                          f"bake onto a scaled rest failed: {result.stderr}"):
+        return
+    failures.check(
+        not diagnostic_subjects(result.stderr, "VRM_RETARGET_NON_UNIT_SCALE"),
+        f"a clip with identity scales reported a non-unit scale: "
+        f"{result.stderr.strip()}")
+    baked = Usd.Stage.Open(str(output))
+    scales = list(find_animation(baked).GetScalesAttr().Get())
+    expected = [Gf.Vec3h(1.0, 1.0, 1.0)] * len(rest)
+    expected[scaled_joint] = Gf.Vec3h(1.5, 2.0, 0.5)
+    failures.check(scales == expected,
+                   f"the bake authored scales {scales}, expected the rig's "
+                   f"rest scales {expected}")
+    # And UsdSkel resolves the scale, which is the reason it is authored.
+    cache = UsdSkel.Cache()
+    query = cache.GetSkelQuery(find_skeleton(baked))
+    locals_ = query.ComputeJointLocalTransforms(Usd.TimeCode(30)) if query else None
+    if failures.check(bool(locals_),
+                      f"UsdSkel resolved no joint transforms from {output}"):
+        lengths = [locals_[scaled_joint].GetRow3(row).GetLength()
+                   for row in range(3)]
+        failures.check(
+            all(abs(got - want) <= TOLERANCE
+                for got, want in zip(lengths, (1.5, 2.0, 0.5))),
+            f"the scaled joint resolves row lengths {lengths}, expected its "
+            f"rest scale (1.5, 2, 0.5)")
+
+    # A clip that animates scale: read, reported once on its animation, and
+    # not carried -- the bake still states the rig's rest scale.
+    scaling_clip = workspace / "scaling_clip.usda"
+    shutil.copy(clip, scaling_clip)
+    clip_stage = Usd.Stage.Open(str(scaling_clip))
+    animation = find_animation(clip_stage)
+    clip_scales = list(animation.GetScalesAttr().Get())
+    clip_scales[0] = Gf.Vec3h(3.0, 3.0, 3.0)
+    animation.GetScalesAttr().Set(Vt.Vec3hArray(clip_scales))
+    clip_stage.GetRootLayer().Save()
+    scaling_output = workspace / "scaling_clip_bake.usda"
+    result = run_tool(tool, "--avatar", str(avatar), "--animation",
+                      str(scaling_clip), "--output", str(scaling_output),
+                      "--humanoid-map", humanoid_map)
+    if not failures.check(result.returncode == 0,
+                          f"bake of a clip that scales failed: {result.stderr}"):
+        return
+    failures.check(
+        diagnostic_subjects(result.stderr, "VRM_RETARGET_NON_UNIT_SCALE")
+        == [animation.GetPath().pathString],
+        f"a clip that scales a joint did not report it once, on its "
+        f"animation: {result.stderr.strip()}")
+    # The stage stays in a local: a temporary is released under the prim.
+    scaling_baked = Usd.Stage.Open(str(scaling_output))
+    unscaled = list(find_animation(scaling_baked).GetScalesAttr().Get())
+    failures.check(
+        all(scale == Gf.Vec3h(1.0, 1.0, 1.0) for scale in unscaled),
+        f"the clip's scale reached the bake: {unscaled}")
+
+
 EXPECTED_BLEND_SHAPES = ["Face_Blink", "Face_Brow", "Face_Smile"]
 
 # Blend-shape weights the expressive fixtures must resolve to, per time code.
@@ -1413,6 +1499,9 @@ def main() -> int:
             failures)
 
         check_look_at_bake(options.tool, tool_fixtures, workspace, failures)
+
+        check_scale_policy(options.tool, avatar, clip, options.humanoid_map,
+                           workspace, failures)
 
         check_exit_codes(options.tool, avatar, clip, options.humanoid_map,
                          workspace, failures)

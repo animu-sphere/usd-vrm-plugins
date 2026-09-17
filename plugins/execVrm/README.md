@@ -221,7 +221,8 @@ a request armed on a wrong stage still reports the statement.
 `vrm.computeJointLocalTransforms` is the retarget with the two things a bake
 adds, and nothing else: the rig's joint tokens, read off
 `vrm.computeTargetSkeleton` across `vrm:skeleton` because a retargeted pose does
-not carry them, and one identity scale per joint. The rotations, translations
+not carry them, and each joint's rest scale (the
+[scale policy](../../docs/design/MOTION_CONTRACT.md#scale-policy-v090)). The rotations, translations
 and timestamp pass through bit for bit. It is what `motion_retarget` authors per
 sample, so it is the value P0-6 compares against a bake. It answers components
 rather than matrices, because the matrices are UsdSkel's own composition of
@@ -365,14 +366,15 @@ assignment is in the seam too; the decomposition under it is
 `SourceRestPose` built from a semantic skeleton's tokens and rests, beside the
 struct.
 
-`vrm.computeTargetSkeleton` has half a library call: `TargetSkeleton` and
-`ResolveParentsFromTokens` are `vrmRetarget`'s, and turning a rest matrix into
-the rotation and translation a `TargetJoint` carries lives in
-`tools/motionRetarget`'s `StageIo.cpp`, where a bundle cannot call it. The seam
-([`src/ExecVrmRig.cpp`](src/ExecVrmRig.cpp)) matches the tool's decomposition
-line for line, and the ask for
-[boundary consolidation](../../docs/roadmap/boundary-consolidation.md) is a
-`TargetSkeleton` built from tokens and rest matrices, beside the class.
+`vrm.computeTargetSkeleton` is a library call end to end since v0.9.0:
+`TargetSkeleton` and `ResolveParentsFromTokens` are `vrmRetarget`'s, and so is
+`DecomposeRestTransform`, which turns a rest matrix into the rotation,
+translation and scale a `TargetJoint` carries and which `motion_retarget` calls
+too. It arrived with the scale policy, because carrying the rest scale in two
+copies of the decomposition would have been a parity difference waiting to
+happen. What remains of the ask for
+[boundary consolidation](../../docs/roadmap/boundary-consolidation.md) is
+reading the tokens and matrices off a skeleton, which is a stage read.
 
 ## How a computation refuses
 
@@ -413,11 +415,11 @@ declares.
 
 | Test | What it holds |
 | --- | --- |
-| `execVrm_rig` | the seam, with no stage: the attribute names, the rest decomposition with scale dropped, both skeleton refusals, the empty skeleton, an unordered skeleton carried faithfully, the map equal to the library's own, the skeleton counted, and the three map refusals; the clip's rest read off a semantic skeleton, both source refusals, and the correction equal to the library's, with each of its refusals; the bound pose forwarded and counted; the root-motion statements as the tool's flags, and their refusals; the retarget equal to `PoseRetargeter`'s, applying the cached correction, and its refusals in order; the joint transforms as the retarget's arrays with the rig's tokens and identity scales, and their refusals; the rig's diagnostics equal to `DiagnoseRig`'s under the statements, an out-of-order rig named, and the retarget's refusals; the sample's diagnostics as the rig's then the pose's, equal to a one-sample clip's, and merged over two samples equal to the clip's, a bone first driven on the second included |
+| `execVrm_rig` | the seam, with no stage: the attribute names, the rest decomposition with its scale apart, both skeleton refusals, the empty skeleton, an unordered skeleton carried faithfully, the map equal to the library's own, the skeleton counted, and the three map refusals; the clip's rest read off a semantic skeleton, both source refusals, and the correction equal to the library's, with each of its refusals; the bound pose forwarded and counted; the root-motion statements as the tool's flags, and their refusals; the retarget equal to `PoseRetargeter`'s, applying the cached correction, and its refusals in order; the joint transforms as the retarget's arrays with the rig's tokens and rest scales, and their refusals; the rig's diagnostics equal to `DiagnoseRig`'s under the statements, an out-of-order rig named, and the retarget's refusals; the sample's diagnostics as the rig's then the pose's, equal to a one-sample clip's, and merged over two samples equal to the clip's, a bone first driven on the second included |
 | `execVrm_humanoid` | the built bundle over `humanoid_rig.usda`: the vocabulary against the schema's prim definition, both computations on a `Scope` through the applied schema, one executor warning per unbound bone, a blocked rest pose arriving as one fallback matrix, what a skeleton authoring nothing arrives as, invalidation across the relationship, every refusal, and a prim with the attributes and not the schema having no map |
 | `execVrm_correction` | the built bundle over `corrected_rig.usda`: the correction equal to the library's over the rigs computed beside it, and landing the clip's rest on the rig's; invalidation from both relationships and none from time; every refusal; a source that refused; a dangling second source, pinned; and a one-joint source with no rest, answered as the fallback |
 | `execVrm_retarget` | the built bundle and `execMotion` over `retargeted_rig.usda`: the retarget equal to `PoseRetargeter` over the sampler's pose and applying the cached correction bit for bit, the default time code refused, each root-motion statement against `ResolveRootTranslation`, invalidation from the frame, a key, the binding, the source and a statement, a driver's pose through either bundle's key, every refusal, and a valueless statement as the fallback |
-| `execVrm_joint_transforms` | the built bundle and `execMotion` over `retargeted_rig.usda`: the joint transforms equal to the retarget's arrays with the rig's `joints` and identity scales; authored as the tool authors them, exactly what UsdSkel resolves, and the rig's rest without `scales` or one joint short; the arm's rest scale of 2 baked at 1; a driver's retarget reaching them, and one that does not pair with the rig, or has no rig, refused; a refused retarget refusing them; invalidation from the frame, a statement, a key and a rest |
+| `execVrm_joint_transforms` | the built bundle and `execMotion` over `retargeted_rig.usda`: the joint transforms equal to the retarget's arrays with the rig's `joints` and rest scales; authored as the tool authors them, exactly what UsdSkel resolves, and the rig's rest without `scales` or one joint short; the arm's rest scale of 2 kept; a driver's retarget reaching them, and one that does not pair with the rig, or has no rig, refused; a refused retarget refusing them; invalidation from the frame, a statement, a key and a rest |
 | `execVrm_diagnostics` | the built bundle and `execMotion` over `retargeted_rig.usda`: both reports equal to the library's over exec's own values, formatting into the tool's own line; the rig's report answered with no clip and at the default time code, and time-independent; a statement and a duplicate binding refusing both, the rig's refusal posted only at the arming compute; invalidation from a key, a binding, a statement and the rig's order; a driver's pose diagnosed, and a driver's retarget not |
 | `execVrm_humanoid_without_schema` | the same binary as `execVrm_humanoid` with no `vrmSchema` in the session: the skeleton computes and the humanoid map is not found |
 | `execVrm_retarget_without_exec_motion` | the same binary as `execVrm_retarget` with no `execMotion` in the session: the correction computes, and the bound pose and the retarget are refused by this bundle's count alone |

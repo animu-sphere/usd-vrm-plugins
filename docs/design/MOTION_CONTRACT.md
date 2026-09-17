@@ -146,11 +146,43 @@ are the two documented adjustments.
 **Output.** The bake authors a `UsdSkelAnimation` in the target rig's joint
 order and binds it with `skel:animationSource` on an *override* of the
 referenced skeleton, so the avatar keeps owning its own rig. Scale is never
-*animated*, matching the v0.3.0 exclusion — but a constant identity `scales`
-array is authored, because UsdSkel resolves translations, rotations and scales
-as a unit and `scales` carries no schema fallback. Omitting the attribute does
-not mean "no scale animation"; it means the clip binds correctly and then
-resolves no joint transforms at all.
+*animated*, matching the v0.3.0 exclusion — but a constant `scales` array is
+authored, because UsdSkel resolves translations, rotations and scales as a unit
+and `scales` carries no schema fallback. Omitting the attribute does not mean
+"no scale animation"; it means the clip binds correctly and then resolves no
+joint transforms at all. What the array states is the scale policy below.
+
+### Scale policy (v0.9.0)
+
+The OpenExec plan's P1-2, decided 2026-09-17. Four rules, and each
+implementation states them in one place: `vrmRetarget::DecomposeRestTransform`
+and `TargetJoint::restScale`, which `motion_retarget` and `execVrm` both call.
+
+1. **A bake states each joint's rest scale, constant over the clip.** UsdSkel
+   takes an animated joint's local transform from the animation whole, and a
+   bake states every joint, so the `scales` a bake authors *are* the rig's
+   scales. Until v0.9.0 they were identity, which replaced a scaled rest rather
+   than kept it: a fixture arm rested at 2 baked at 1, and `Seed-san.vrm`'s
+   seven scaled secondary joints (`bag_rope_*`, `hair_*`, at most 0.14% off
+   unit) baked unscaled
+   ([the joint-transforms report](../reports/openusd/26.08-openexec-joint-transforms.md)
+   §4). The value is narrowed to `half`, which is UsdSkel's type.
+2. **Scale is not retargeted.** A pose carries no scale, and a clip's rest
+   scale does not enter the rest-pose correction, which reads rotations and
+   translations.
+3. **A clip that animates scale is reported, never applied and never dropped
+   silently.** A clip whose `scales` state anything but 1, by default or at a
+   time sample, raises `VRM_RETARGET_NON_UNIT_SCALE` once, on its animation,
+   naming the first joint and instant. It is a caller's code: the library never
+   receives a clip's scale. `execVrm` reads no clip `scales` and so never raises
+   it, which is the parity harness's caller-raised column, like
+   `TIME_RANGE_DERIVED`.
+4. **A rig whose rest is scaled is not refused.** Refusing would refuse a
+   published spec avatar over a scale no viewer can see. A shear leaks into the
+   decomposed scale as each basis row's length; a UsdSkel rest carries none.
+
+OpenExec and offline agree on the scales as on every other value: the five
+parity cases compare `scales` exactly, and `recorded_real_avatar` is Seed-san.
 
 The hand-authored triplet under [`fixtures/motion/`](fixtures/motion/) is the
 executable statement of all of the above:
@@ -181,7 +213,7 @@ by entry and in order.
 | `VRM_RETARGET_DUPLICATE_TARGET` | `vrmRetarget` | warning | the joint two bones share |
 | `VRM_RETARGET_INVALID_HIERARCHY` | `vrmRetarget` | warning | the first joint whose parent does not precede it |
 | `VRM_RETARGET_INVALID_ROOT_JOINT` | `vrmRetarget` | warning | the root joint index asked for |
-| `VRM_RETARGET_NON_UNIT_SCALE` | a caller | warning | frozen for the scale policy (P1-2); raised by nothing yet |
+| `VRM_RETARGET_NON_UNIT_SCALE` | a caller | warning | the clip animation whose `scales` state a non-unit value; the bake keeps the rig's rest scale ([scale policy](#scale-policy-v090)) |
 | `VRM_RETARGET_TIME_RANGE_DERIVED` | a caller | info | the clip whose one pose was placed at the stage's start |
 | `VRM_RETARGET_OUTPUT_COLLIDES_WITH_INPUT` | a caller | **error** | the output path |
 

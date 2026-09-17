@@ -212,7 +212,11 @@ def resolve(baked: pathlib.Path, frames: int,
         return transforms
 
     def rotations(time) -> list:
-        return [transform.ExtractRotationQuat()
+        # A bake states each joint's rest scale (the scale policy), and a
+        # matrix that carries a scale extracts a quaternion that is not unit
+        # length -- `Seed-san.vrm`'s seven scaled joints compared unequal to
+        # themselves. Take the rotation with the scale removed.
+        return [transform.RemoveScaleShear().ExtractRotationQuat()
                 for transform in transforms_at(time)]
 
     first = rotations(times[0])

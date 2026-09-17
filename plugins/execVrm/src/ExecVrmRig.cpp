@@ -21,22 +21,6 @@ namespace execvrm
 namespace
 {
 
-pxr::GfQuatf
-ToQuatf(const pxr::GfQuatd& q)
-{
-    return pxr::GfQuatf(static_cast<float>(q.GetReal()),
-                        pxr::GfVec3f(static_cast<float>(q.GetImaginary()[0]),
-                                     static_cast<float>(q.GetImaginary()[1]),
-                                     static_cast<float>(q.GetImaginary()[2])));
-}
-
-pxr::GfVec3f
-ToVec3f(const pxr::GfVec3d& v)
-{
-    return pxr::GfVec3f(static_cast<float>(v[0]), static_cast<float>(v[1]),
-                        static_cast<float>(v[2]));
-}
-
 // The bone a semantic joint path names: its leaf, looked up in the vocabulary.
 // tools/motionRetarget's `FindHumanBone(LeafToken(path))`, and execMotion's
 // `BoneForJointPath` -- a path with no separator is already a leaf.
@@ -106,15 +90,10 @@ TargetSkeletonFromRest(const SkeletonRest& rest)
     {
         vrmRetarget::TargetJoint joint;
         joint.token = rest.joints[i];
-        // tools/motionRetarget's DecomposeRest, line for line: translation
-        // straight off the matrix, rotation from what is left once scale and
-        // shear are removed. Kept identical on purpose -- two decompositions
+        // The library's decomposition, which `motion_retarget` calls too: two
         // that differ in a normalization step are a parity difference P0-6
         // would have to explain rather than measure.
-        const pxr::GfMatrix4d& matrix = rest.restTransforms[i];
-        joint.restTranslation = ToVec3f(matrix.ExtractTranslation());
-        joint.restRotation =
-            ToQuatf(matrix.RemoveScaleShear().ExtractRotationQuat()).GetNormalized();
+        vrmRetarget::DecomposeRestTransform(rest.restTransforms[i], &joint);
         joints.push_back(std::move(joint));
     }
 
@@ -574,8 +553,8 @@ JointLocalTransformsFor(const JointTransformsInputs& inputs)
     }
 
     // What `motion_retarget`'s WriteAnimation authors, per sample: the rig's
-    // tokens as `joints`, the pose's arrays unchanged, and one identity scale
-    // per joint.
+    // tokens as `joints`, the pose's arrays unchanged, and each joint's rest
+    // scale (the scale policy).
     vrmRetarget::JointLocalTransforms sample;
     sample.timestamp = pose.timestamp;
     sample.joints.reserve(target.GetSize());
@@ -585,7 +564,11 @@ JointLocalTransformsFor(const JointTransformsInputs& inputs)
     }
     sample.translations = pose.translations;
     sample.rotations = pose.rotations;
-    sample.scales.assign(target.GetSize(), pxr::GfVec3h(1.0f));
+    sample.scales.reserve(target.GetSize());
+    for (const vrmRetarget::TargetJoint& joint : target.GetJoints())
+    {
+        sample.scales.emplace_back(joint.restScale);
+    }
     outcome.sample = std::move(sample);
     return outcome;
 }
