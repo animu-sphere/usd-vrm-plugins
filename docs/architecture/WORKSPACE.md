@@ -20,6 +20,15 @@ the aggregate product archive, but its standalone packaging-closure P0 remains
 open. The implementation contract for the shipped motion foundation is
 [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md).
 
+**Every generic motion identity has a destination outside this repository
+since 2026-09-17** (§9). The `usd-motion-plugins` design policy settles the
+ecosystem's motion architecture: vendor- and avatar-format-neutral motion,
+retargeting, recording and the `UsdSkelAnimation` bridge live in
+`usd-motion-plugins`, device and protocol input lives in `motion-connectors`,
+and this repository keeps VRM and VRMA. Nothing has moved yet: §1 and §2
+describe the tree as it is, and §9 says where each identity goes, in which
+order, and what may not be added here in the meantime.
+
 The three input-adapter identities (`vrmAdapterMocopi`, `vrmAdapterVmc`,
 `vrmAdapterArdy`) and their dependency directions were added to this contract on
 2026-07-28, ahead of any adapter code, from
@@ -1019,3 +1028,103 @@ Scaffolds for new bundles start from the ost template catalog
 > a repo should not have to hand-roll a lane to test a library it declares
 > through `openstrata.library.yaml`, and when it tries, it runs into a second
 > problem the contract cannot express.
+
+## 9. Destinations under the motion architecture
+
+Added 2026-09-17. The `usd-motion-plugins` design policy ("the motion-plugins
+policy" below) fixes one dependency direction for the ecosystem —
+`usd-vrm-plugins`, `usd-mmd-plugins` and `motion-connectors` depend on
+`usd-motion-plugins`, `usd-avatar-runtime` on all of them, and never the
+reverse — and says generic motion code in this repository migrates there
+(its §19.1, §37). This section is the structural half of that decision: where
+each identity goes. The plan and its order are
+[the migration track](../roadmap/motion-foundation-split.md); why the
+scope changed is
+[the scope policy](../design/INTEGRATION_SCOPE_POLICY.md).
+
+It supersedes the split preconditions this repository set itself on
+2026-09-06 — two non-VRM consumers, independent versioning, a diverged
+cadence — which asked *whether* a component leaves. That is now decided
+outside this repository, and `usd-mmd-plugins` is a planned second non-VRM
+consumer in any case.
+
+### 9.1 Destination of every identity
+
+| Identity | Destination | What arrives there | What stays here |
+| --- | --- | --- | --- |
+| `motionCore` | `usd-motion-plugins` (`motion-core`) | pose, animation, root motion, constraints, source metadata — renamed on arrival (§9.3) | nothing |
+| `motionRuntime` | `usd-motion-plugins` (`motion-sampling`, `motion-recording`) | buffer, interpolation, resample, filter, blend, the capture session's conditioning | nothing |
+| `vrmRetarget` | split | the generic pose retargeter, rest-pose handling and root-motion policy → `motion-retarget` | the VRM humanoid map built from `VrmHumanoidAPI`, `ExpressionResolver`, `LookAtEvaluator` — VRM semantics (motion-plugins policy §38) |
+| `motionSource`, `motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert`, `profiles/motion/` | `usd-motion-plugins` (BVH, its §26–§27) | the format-neutral source layer, the BVH reader and tools, the declarative producer profiles | nothing |
+| `motionFbx`, `usdBvhFileFormat` (deferred) | `usd-motion-plugins` | reserved there, if ever created | nothing |
+| `motion_capture` | `usd-motion-plugins` (`motion-record`) | trace → avatar-independent clip | nothing |
+| `motion_retarget` | split | the stage reading and writing (`StageIo`) → `motion-usd` | a VRM retarget CLI over the shared libraries |
+| `execMotion` | `usd-motion-plugins` (`plugins/execMotion`, optional, its §21) | the vendor-neutral OpenExec nodes | nothing |
+| `execVrm` | stays | — | VRM semantics as OpenExec nodes, over the shared core |
+| `liveTransport`, `osc` | `motion-connectors` | UDP receiver, capture file, OSC 1.0 wire format | nothing |
+| `vrmAdapterVmc`, `vrmAdapterMocopi`, `vrmAdapterVrchatOsc`, their record tools | `motion-connectors` | protocol and device decode, frame assembly, recording | nothing |
+| `motionTracking` | `motion-connectors` | tracker regions, assignment, the tracker solve | nothing |
+| `vrmAdapterArdy` (reserved) | `motion-connectors`, behind the motion-plugins generator interface | — | nothing |
+| `usdVrmaFileFormat` | stays | — | `.vrma` reading and its stage (motion-plugins policy §26), consuming `motion-core` |
+| `vrmSchema`, `usdVrmFileFormat`, `usdVrmPackageResolver`, `vrmContainer`, `vrmCore` | stay | — | the product |
+
+A row whose destination is another repository is **frozen here**: it takes
+fixes, and the work v0.9.0 still owes, but no new generic capability. A new
+generic motion feature is proposed in `usd-motion-plugins`; a new device or
+protocol input in `motion-connectors`.
+
+### 9.2 Moving rules
+
+The §6 invariants were written for moving code *within* this workspace. Moving
+it *out* adds these:
+
+1. **One identity per move, and the edge flips in the same change.** When an
+   identity arrives in its destination and is published as an installed
+   package, the change here deletes the in-tree copy and consumes the package
+   through `find_package` — never both copies at once, and never a copy kept
+   "until later" (motion-plugins policy §37: duplicating a generic algorithm
+   permanently is not acceptable).
+2. **Behaviour does not change across the move.** The retarget, BVH and
+   OpenExec parity evidence this repository holds is re-run against the
+   consumed package before the in-tree copy is deleted; a difference blocks
+   the move.
+3. **History moves with the code** (`git filter-repo` or an equivalent), so
+   a file's blame survives in its destination.
+4. **The reverse edge is refused.** Nothing in `usd-motion-plugins` or
+   `motion-connectors` may depend on an identity that stays here; a need for
+   one means the boundary is in the wrong place, and is raised as a finding.
+5. **Same OpenUSD.** A consumed package is built against this repository's
+   exact OpenUSD pin; a mismatch is a configure error.
+6. **Adapters before the core they depend on do not move.** An identity moves
+   only after everything it links has a published destination, so the order
+   is the dependency order: `motionCore`, `motionRuntime`, the generic half of
+   `vrmRetarget` and `motionSource`/`motionBvh` to `usd-motion-plugins`; then
+   `liveTransport`, `osc`, `motionTracking` and the adapters to
+   `motion-connectors`.
+
+### 9.3 Names
+
+The shared core's public names are the motion-plugins policy's, and the types
+are renamed when they arrive, not before — renaming in place would change
+every consumer here twice.
+
+| Here | In `usd-motion-plugins` |
+| --- | --- |
+| namespace `motion` | `openstrata::motion` |
+| `motion::HumanoidPose` | `MotionPose` |
+| `motion::HumanoidAnimation` | `MotionClip` |
+| `motion::HumanBone` | `HumanJoint` |
+| `motion::RootMotion` | `RootMotion` |
+| `vrmRetarget::TargetSkeleton` | `SkeletonDescriptor` |
+| the humanoid map | `RetargetMap` |
+
+Where a published contract there chooses differently, the published contract
+wins and this table is corrected.
+
+### 9.4 Sequences
+
+The migration's phases are the motion-plugins policy's §37 Phase A–F. In this
+repository they are always written **Migration Phase A–F**, never "Phase A",
+because Motion Phase A–H already exists here and the two are unrelated. The
+Workspace ladder (§8) does not grow for them: it tracked the move out of
+`usdVrm`, and a move out of the repository is not a step on it.
