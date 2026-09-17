@@ -367,10 +367,15 @@ def loader_search_paths(path: pathlib.Path) -> list[str]:
     else:
         return []
     try:
-        output = subprocess.run(command, capture_output=True, text=True,
-                                errors="replace").stdout
-    except OSError:
+        result = subprocess.run(command, capture_output=True, text=True,
+                                errors="replace")
+    except OSError as error:
+        print(f"  loader search paths: cannot run {command[0]}: {error}")
         return []
+    output = result.stdout
+    if result.returncode != 0:
+        print(f"  loader search paths: {command[0]} exited "
+              f"{result.returncode} on {path.name}: {result.stderr.strip()}")
     import re
     return [match.group(1) for line in output.splitlines()
             if (match := re.search(pattern, line))]
@@ -429,7 +434,8 @@ def check_source_path_leaks(failures: Failures, prefix: pathlib.Path) -> None:
                 else:
                     refused += 1
                     failures.check(False, f"{path.relative_to(prefix)} names a "
-                                          f"build-tree path: {found}")
+                                          f"build-tree path: {found} "
+                                          f"(its loader search paths: {rpaths})")
                 start = haystack.find(needle, end)
     failures.check(scanned > 0, "the source-path scan found no binary to read")
     print(f"  source paths: {scanned} binaries scanned, {refused} build-tree "
