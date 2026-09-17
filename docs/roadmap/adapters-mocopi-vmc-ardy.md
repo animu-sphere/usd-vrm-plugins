@@ -1,5 +1,12 @@
 # Input adapters — the VMC → mocopi → ARDY direction
 
+> **Destination (2026-09-17): `motion-connectors`.** The VMC and mocopi adapters
+> and their record tools move there, and the ARDY adapter (§7) is created there
+> behind the generator interface `usd-motion-plugins` specifies
+> ([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
+> [the migration](motion-foundation-split.md) MIG-4). This plan stays the record
+> of what was built and measured here.
+
 The plan for `adapters/`: how real-time protocols, real capture devices, and
 motion generators reach this repository's motion pipeline without any of them
 reaching into it.

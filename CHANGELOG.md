@@ -1147,6 +1147,19 @@ Current schema contract version: **1**.
 
 ### Changed
 
+- **The documentation follows the `usd-motion-plugins` design policy.**
+  `WORKSPACE.md` §9 gives every generic motion identity a destination —
+  `usd-motion-plugins` for the motion core, runtime, generic retarget, BVH
+  sources, recording and `execMotion`; `motion-connectors` for `liveTransport`,
+  `osc`, `motionTracking` and the adapters — with the rules for moving code out,
+  the shared names applied on arrival, and "Migration Phase A–F" as the
+  qualifier for that policy's phases. The scope policy's split preconditions
+  are superseded; the conditional split track is rewritten as the motion
+  migration (MIG-0 to MIG-5), which starts after v0.9.0 and absorbs boundary
+  consolidation; NPZ / AMASS and the ARDY adapter leave with the code they
+  extend. The motion policy gains §20, mapping each section to its new owner.
+  Documentation only: nothing moves yet.
+
 - **`vrmRetarget::RetargetDiagnostics` carries coded diagnostics instead of
   three prose-and-bone lists.** `unmappedSourceBones`, `missingRequiredBones`
   and `warnings` are gone; `reported` holds `RetargetDiagnostic` values, and

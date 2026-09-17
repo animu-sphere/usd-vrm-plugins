@@ -30,7 +30,12 @@ contract wins — structural changes go there first, in their own PR.
   and from that the test a proposed identity has to pass, the release's artifact
   closure, the four test layers, the repository-split preconditions, and the
   invariants a reviewer applies. It restates nothing the four below fix; where
-  it appears to overlap one, the other wins. Added 2026-09-06.
+  it appears to overlap one, the other wins. Added 2026-09-06; revised
+  2026-09-17, when the `usd-motion-plugins` design policy placed generic motion
+  in that repository and live input in `motion-connectors` — its §13 is this
+  repository's place among them, and
+  [WORKSPACE.md §9](architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture)
+  each identity's destination.
 - [design/DESIGN_POLICY.md](design/DESIGN_POLICY.md) is the long-form design &
   development policy for the **importer** — the source of truth for **Product
   P0–P6** and for the import / evaluation / simulation boundary.
@@ -63,7 +68,8 @@ the [recorded motion sources](roadmap/recorded-motion-sources.md), the
 [shared OSC foundation and VRChat OSC Trackers input](roadmap/osc-and-vrchat-trackers.md),
 the [OpenExec foundation](roadmap/openexec-foundation.md), and — added
 2026-09-06 — [boundary consolidation](roadmap/boundary-consolidation.md) and the
-[motion foundation split](roadmap/motion-foundation-split.md). All seven defer
+[motion migration](roadmap/motion-foundation-split.md), a conditional split until
+2026-09-17. All seven defer
 every structural claim to WORKSPACE.md, every motion claim to the motion policy,
 and every scope claim to the scope policy, and **none states its own release
 version** — that is the

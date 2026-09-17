@@ -16,10 +16,16 @@ not the schedule.
 | --- | --- | --- | --- |
 | v0.9.0 | OpenExec VRM runtime foundation | Workspace Phase 8, Motion Phase E | [openexec-foundation.md](openexec-foundation.md) §6 |
 | after the foundation | boundary consolidation — the producer contract, one reference pipeline, adapter distribution, artifact closure | — | [boundary-consolidation.md](boundary-consolidation.md) |
-| after consolidation | motion foundation repository split (`motionCore` + `motionRuntime`), **conditional** | — | [motion-foundation-split.md](motion-foundation-split.md) |
-| after the split gate | NPZ / AMASS recorded sources | — | [recorded-motion-sources.md](recorded-motion-sources.md) §13 |
-| with NPZ / AMASS | ARDY generation adapter | Motion Phase F | [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) §7 |
+| after the foundation | motion migration to `usd-motion-plugins` and `motion-connectors` | Migration Phase A–F | [motion-foundation-split.md](motion-foundation-split.md) |
+| moved | NPZ / AMASS recorded sources — `usd-motion-plugins` | — | [recorded-motion-sources.md](recorded-motion-sources.md) §13 |
+| moved | ARDY generation adapter — `motion-connectors` | Motion Phase F | [adapters-mocopi-vmc-ardy.md](adapters-mocopi-vmc-ardy.md) §7 |
 | unscheduled | `ExecIr` invertible VRM humanoid rig | Motion Phase E cont. | [openexec-foundation.md](openexec-foundation.md) §7 |
+
+**Re-ordered 2026-09-17.** Boundary consolidation and the conditional split
+became one unconditional motion migration, and the two producer-side rows left
+this repository with the code they extend — the `usd-motion-plugins` design
+policy's decision, recorded in [the status table](README.md#status-at-a-glance).
+The 2026-09-06 note below is the order it replaces.
 
 **Re-ordered 2026-09-06, and the two producer-side rows went to the back.**
 OpenExec leads because every node is a *thin wrapper*, which makes the

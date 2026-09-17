@@ -1,5 +1,12 @@
 # Recorded motion sources — the BVH direction
 
+> **Destination (2026-09-17): `usd-motion-plugins`.** `motionSource`, `motionBvh`,
+> the BVH tools and the producer profiles move there, and so does §13's NPZ /
+> AMASS decision, behind the versioned NPZ payload contract that repository
+> requires first ([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
+> [the migration](motion-foundation-split.md) MIG-3). This plan stays the record
+> of what was built and measured here.
+
 The plan for reading recorded motion files: a generic BVH pipeline whose centre
 is **not** any one capture product, and the format-neutral layer under it that a
 second reader can be added to without redesigning anything above.

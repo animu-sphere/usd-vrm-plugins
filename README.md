@@ -73,6 +73,16 @@ that predate that rename use it in the old sense.
 
 ### The motion layer
 
+> **Moving out after v0.9.0.** The generic half of this layer — `motionCore`,
+> `motionRuntime`, the generic retarget, `motionSource`, `motionBvh`,
+> `motion_capture` and `execMotion` — moves to `usd-motion-plugins`, and the
+> live inputs — `liveTransport`, `osc`, `motionTracking` and the adapters — to
+> `motion-connectors`. This repository keeps VRM and VRMA, VRM semantic
+> resolution and `execVrm`, and consumes the rest as installed packages
+> ([WORKSPACE.md §9](docs/architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
+> [the migration plan](docs/roadmap/motion-foundation-split.md)). The table
+> below describes the tree as it is today.
+
 `motionCore` and `usdVrmaFileFormat` were the v0.3.0 foundation; v0.4.0 added
 `motionRuntime`, `vrmRetarget`, and the `motion_retarget` CLI, which together
 make a `.vrma` clip play back on a real avatar. v0.5.0 adds the observation

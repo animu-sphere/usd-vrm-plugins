@@ -1,139 +1,167 @@
-# Motion foundation split — `motionCore` + `motionRuntime` as their own repository
+# Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ⬜ not started, and **conditional** — the first milestone is a
-measurement that can end the track · **Target:** after boundary consolidation ·
-**Policy:** [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §10 ·
-**Added:** 2026-09-06
+**Status:** ⬜ not started · **Target:** after the OpenExec foundation ·
+**Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
+**Policy:** the `usd-motion-plugins` design policy §37, and
+[design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
+**Added:** 2026-09-06 as the conditional split track · **Rewritten:** 2026-09-17
 
-`motionCore` and `motionRuntime` are vendor-neutral by construction: a pose, an
-animation, root motion, constraints, a timestamped buffer, interpolation and
-blending, with no VRM vocabulary, no OpenUSD dependency, no network and no
-product name. That is the definition of a component that could live somewhere
-else. It is not, on its own, a reason to move it.
+**What changed on 2026-09-17.** This track used to be conditional: it opened
+with a measurement (MFS-0) of four preconditions — two non-VRM consumers, an
+API free of VRM vocabulary, independent versioning, a diverged cadence — that
+could end it, and its scope was `motionCore` + `motionRuntime` only. The
+`usd-motion-plugins` design policy has since decided the question where the
+motion architecture is owned: generic motion leaves this repository, and
+device and protocol input goes to `motion-connectors`. So the gate is gone,
+the scope is every identity
+[WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)
+gives a destination, and what is left to plan is **order and evidence**. The
+filename is kept so that links to the track keep working.
 
-**Scope decided 2026-09-06: the motion foundation only.** `vrmRetarget` stays —
-it carries VRM in its name, its `ExpressionResolver` and its `LookAtEvaluator`.
-`motionSource`, `motionBvh` and `motionTracking` stay for now (§7).
-`liveTransport` and `osc` stay; they are small shared leaves whose likelier
-answer is replacement by an existing library, not promotion to a project.
+The reversible half of the old plan survives as preparation (MIG-0), because
+it was right either way: a component consumed through `find_package` as though
+it were external is the only proof that it can leave.
 
-## 1. The gate this track opens with
+## 1. Order
 
-[Scope policy §10](../design/INTEGRATION_SCOPE_POLICY.md) sets four conditions,
-and the 2026-09-06 order deliberately schedules this track **before** the work
-that would satisfy the first one. That is not an oversight to fix silently — it
-is the reason the first milestone is a measurement:
+The v0.9.0 OpenExec foundation finishes **here** first. It is the first
+consumer of `motionRuntime` and `vrmRetarget` that is not the tool beside them,
+and its findings
+([boundary consolidation §1](boundary-consolidation.md#findings-from-the-exec-layer-as-they-land))
+are exactly the API defects that should be fixed once, in the destination,
+rather than moved and fixed there later without the evidence that found them.
 
-| Condition | Where it stands on 2026-09-06 |
-| --- | --- |
-| Two or more consumers outside VRM | **One, after Motion Phase E.** `execMotion` is vendor-neutral by specification and names no VRM. There is no second. |
-| An API carrying no VRM vocabulary | **Believed true, never checked as a claim.** The boundary checks assert what may not be *depended on*, not what the public headers *say*. |
-| A need for independent versioning | **Not demonstrated.** Nothing outside this workspace pins a motion version. |
-| A release cadence that has diverged | **No.** Every motion release to date is a plugin release. |
+The moves then follow the dependency order
+([WORKSPACE.md §9.2](../architecture/WORKSPACE.md#92-moving-rules), rule 6),
+and each waits for its destination to publish an installable package. The
+motion-plugins policy numbers its migration **Migration Phase A–F**; the
+milestones below say which of them each one serves.
 
-So the honest statement of this track is: **one condition is met after OpenExec,
-one is measurable now, and two are not met.** MFS-0 measures them. If the answer
-is still "no external consumer", the track stops at MFS-2 — which is the half
-that pays for itself either way.
+| Milestone | Migration Phase | Moves | Waits for |
+| --- | --- | --- | --- |
+| MIG-0 — preparation | A | nothing | v0.9.0 |
+| MIG-1 — the core | A, B | `motionCore` | `usd-motion-plugins` `motion-core` scaffold |
+| MIG-2 — sampling, retarget, USD bridge | C | `motionRuntime`, the generic half of `vrmRetarget`, `motion_retarget`'s `StageIo`, `execMotion` | MIG-1 |
+| MIG-3 — recorded sources | C | `motionSource`, `motionBvh`, the BVH tools, `profiles/motion/` | MIG-1 |
+| MIG-4 — recording and live input | E | `motion_capture` to `usd-motion-plugins`; `liveTransport`, `osc`, `motionTracking`, the `vrmAdapter*` libraries and their record tools to `motion-connectors` | MIG-2, and `motion-connectors` existing |
+| MIG-5 — nothing left behind | F | nothing; the workspace is reduced | MIG-1–MIG-4 |
 
-## 2. Reversible preparation, then a one-way door
+Migration Phase D — `usd-mmd-plugins` consuming the same core — is that
+repository's, and needs nothing from this one.
 
-The work divides cleanly, and only the last part is irreversible.
+## 2. MIG-0 — preparation ⬜
 
-**Reversible (MFS-1, MFS-2).** Make the foundation *separable*: its public API
-free of VRM vocabulary as a checked property, its own version, its own package,
-its own test suite, and — the real test — consumed from inside this workspace
-through `find_package` as though it were external. Every one of those is an
-improvement to the current repository whether or not anything moves, which is
-why they come first and why an inconclusive gate does not waste them.
+- ⬜ **Check the API for VRM vocabulary, mechanically.** Every public header of
+  `motionCore`, `motionRuntime` and the generic half of `vrmRetarget`, scanned
+  for VRM names and VRM-only concepts, as a boundary check rather than a
+  review. A name is renamed on arrival
+  ([WORKSPACE.md §9.3](../architecture/WORKSPACE.md#93-names)); a **concept**
+  that is only meaningful because a VRM rig is downstream is a boundary
+  defect, and stays here.
+- ⬜ **Draw the line through `vrmRetarget`.** Which types and functions are the
+  generic retargeter, rest-pose handling and root-motion policy, and which are
+  the VRM humanoid map, `ExpressionResolver` and `LookAtEvaluator`. Written in
+  WORKSPACE.md first, in its own change, because it splits an identity.
+- ⬜ **Hand over the evidence.** The shared core's contract starts from what
+  this repository measured: [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md)'s
+  basis, root-and-hips, path-rule and tracker sections, the OpenExec driver
+  contract, and the exec layer's findings. They are proposed into
+  `usd-motion-plugins`' `MOTION_CONTRACT.md` and `RETARGETING_POLICY.md` as
+  cited evidence, not re-derived there.
+- ⬜ **Name the parity baselines each move must reproduce**: the retarget
+  goldens, the BVH conversion fixtures, the OpenExec / offline parity values
+  (414 598 compared at v0.9.0), and the capture-trace replays.
 
-**Irreversible (MFS-3).** Moving the history to another repository, and turning
-an in-tree edge into a pinned external dependency. This costs a second release
-contract, a second CI configuration, a version pin to keep current, and the loss
-of one-PR changes across the boundary. It buys nothing until someone outside
-VRM is actually consuming it, which is exactly what MFS-0 is for.
+## 3. MIG-1 — the core ⬜
 
-## 3. MFS-0 — measure the four conditions ⬜
+- ⬜ `motionCore` arrives in `usd-motion-plugins` as `motion-core`, with its
+  history, renamed to the shared names, under `openstrata::motion`.
+- ⬜ This repository consumes the installed package: `usdVrmaFileFormat`,
+  `motionRuntime`, `vrmRetarget`, `motionSource`, `motionTracking` and the
+  adapters switch their edge in the same change that deletes `libs/motionCore`
+  ([WORKSPACE.md §9.2](../architecture/WORKSPACE.md#92-moving-rules), rule 1).
+  Adapting code here to the renamed types is acceptable during migration
+  (motion-plugins policy §37); keeping two cores is not.
+- ⬜ The `.vrma` stage does not change: `/Animation`, `HumanoidSkeleton`,
+  `BodyAnimation`, the `vrma` custom data. A standalone motion stage in
+  `usd-motion-plugins`' shape is a separate decision, not a side effect.
 
-- ⬜ **Name the consumers.** `execMotion` after Motion Phase E is one. Write
-  down what the second would be, concretely, or record that there is none.
-- ⬜ **Check the API claim mechanically.** Every public header of `motionCore`
-  and `motionRuntime` scanned for VRM vocabulary, VRM-specific semantics, and
-  types that only make sense to an avatar pipeline. This is a new boundary check
-  and not a review pass — the existing ones look at edges, not at names.
-- ⬜ **State the cadence.** Has any motion change ever wanted a release the
-  plugins did not?
+## 4. MIG-2 — sampling, retarget, USD bridge ⬜
 
-Outcome is one of: proceed to MFS-1; proceed to MFS-1 and MFS-2 only, and
-re-gate later; or close the track with the measurement recorded.
+- ⬜ `motionRuntime` arrives as `motion-sampling` and `motion-recording`, with
+  the exec findings fixed on arrival: a status-carrying `SampleClip`, a
+  stateless `PoseFilter` step, `ConditionRootMotion` as a free function, an
+  N-way blend that can answer *nothing to blend*.
+- ⬜ The generic retarget arrives as `motion-retarget`, with a
+  `SkeletonDescriptor` built from joint tokens and rest matrices — the
+  finding `execVrm` and `motion_retarget` both carry a copy of today.
+- ⬜ `StageIo`'s clip and skeleton reading and writing arrive as `motion-usd`,
+  which is also the library home for clip → pose the sampling finding asked
+  for.
+- ⬜ `execMotion` arrives as `usd-motion-plugins`' optional
+  `plugins/execMotion`; `execVrm` stays and reads its nodes by name exactly
+  as it does now.
+- ⬜ What stays is re-read as a consumer: the VRM humanoid map,
+  `ExpressionResolver`, `LookAtEvaluator`, `motion_retarget` as a VRM CLI,
+  `execVrm`. The OpenExec parity values are re-run against the consumed
+  packages before anything here is deleted.
 
-## 4. MFS-1 — no VRM vocabulary in the public API ⬜
+## 5. MIG-3 — recorded sources ⬜
 
-Whatever MFS-0 finds, fix it here. Two kinds of finding are expected and they
-are not the same problem:
+- ⬜ `motionSource`, `motionBvh`, `motion_bvh_inspect`, `motion_bvh_convert`
+  and the producer profiles arrive together (motion-plugins policy §26–§27);
+  the profiles are installed data there.
+- ⬜ NPZ / AMASS is no longer this repository's track: its identity decision
+  ([the recorded track](recorded-motion-sources.md) §13) moves with
+  `motionSource`, behind the versioned NPZ payload contract the motion-plugins
+  policy requires first (its §28).
 
-- **A name.** Cheap, mechanical, and the reason to do it before anything depends
-  on the header from another repository.
-- **A concept.** A type that is only meaningful because a VRM rig is downstream
-  is a boundary defect that a rename would hide. It goes back to
-  [the boundary track](boundary-consolidation.md) rather than being renamed
-  here.
+## 6. MIG-4 — recording and live input ⬜
 
-## 5. MFS-2 — consumed as if external, in place ⬜
+- ⬜ `motion_capture` arrives as `usd-motion-plugins`' recording tool.
+- ⬜ `liveTransport`, `osc`, `motionTracking`, `vrmAdapterVmc`,
+  `vrmAdapterMocopi`, `vrmAdapterVrchatOsc` and their record tools arrive in
+  `motion-connectors`, which depends on `usd-motion-plugins` and on nothing
+  here. The adapters lose the `vrm` prefix there; the name is that
+  repository's decision.
+- ⬜ Recorded evidence — capture traces, the cross-source reports' inputs —
+  moves with the adapter that produced it, under the same redistribution rule
+  it has here.
+- ⬜ The ARDY adapter is created there, behind the generator interface
+  `usd-motion-plugins` specifies; Motion Phase F does not start here.
 
-- ⬜ The foundation installs a package and the workspace consumes it through
-  `find_package`, with a contract row like every other package
-  ([PACKAGE_CONTRACT.md](../architecture/PACKAGE_CONTRACT.md)).
-- ⬜ Its own version, moving on its own contract rather than with the product's
-  tag.
-- ⬜ Its test suite runs against the installed package, not the source tree —
-  layer 1 and part of layer 4 of
-  [scope policy §9](../design/INTEGRATION_SCOPE_POLICY.md).
-- ⬜ A consumer fixture outside the workspace, on the shape
-  [the packaging track](packaging-hardening.md) built for the twelve packages.
+## 7. MIG-5 — nothing left behind ⬜
 
-At the end of MFS-2 the component is *portable*. Nothing has moved.
+- ⬜ No generic motion source file remains here, checked mechanically.
+- ⬜ WORKSPACE.md §1 and §2 describe the reduced tree, §9 becomes a record,
+  and `PACKAGE_CONTRACT.md` drops the packages that left.
+- ⬜ The aggregate product still installs and opens a `.vrm` and a `.vrma`,
+  with the shared core resolved as a dependency, from release artifacts.
+- ⬜ The cross-repository test — VRMA → `MotionClip` → a target VRM — runs
+  somewhere by default. The motion-plugins policy puts such tests in a runtime
+  or integration repository (its §30.6); until one exists it stays here,
+  because this repository is its natural integrator.
 
-## 6. MFS-3 — the move, if the gate opened ⬜
+## 8. Open questions
 
-Only reached if MFS-0 found a real second consumer.
+- **The OpenUSD pin across three repositories.** Each package is built against
+  one exact OpenUSD release; a pin change becomes a coordinated release of
+  `usd-motion-plugins`, `motion-connectors` and this repository. Who cuts first
+  is unsettled.
+- **Versions during migration.** Whether this repository requires a range of
+  `usd-motion-plugins` releases or one exact version while its API is 0.x.
+- **The `vrm:` expression weights on the pose.** Expression weights travel as
+  names on today's `HumanoidPose`; in the shared core that is a
+  `MotionChannelSet` with namespaced semantics (motion-plugins policy §5.3).
+  The mapping is decided in MIG-1, and expansion onto a rig stays here.
+- **`ExecIr`.** It is VRM-specific and stays, but a generic invertible rig
+  could later interest the shared core; nothing is moved on speculation.
 
-- ⬜ Repository name. The candidates are `open-motion`, `humanoid-motion`,
-  `motion-foundation`; picking one is the last decision, not the first.
-- ⬜ History preserved for both libraries, and this workspace's edges become a
-  pinned dependency with a stated version policy.
-- ⬜ **Where the interop tests live is the hard part.** The cross-boundary layer
-  (source → canonical → retarget → USD) spans both repositories by definition,
-  and a test that spans two repositories runs in neither by default. The
-  proposal is that it stays here — this repository is the integrator, and the
-  foundation's own suite covers it standalone.
-- ⬜ The motion corpus stays with the consumer that validates against it, which
-  is here.
+## 9. Done when
 
-## 7. Open questions
-
-- **Does `motionSource` follow?** It is format-neutral and VRM-free, and its
-  `motionCore` edge is four files. It follows only if corpus tooling grows
-  non-VRM users, which is a measurement the NPZ/AMASS track produces rather than
-  one this track can make.
-- **Does `motionTracking` follow?** Same shape, same answer, one consumer fewer.
-- **Does `vrmRetarget` have a generic half?** A pose retargeter between two
-  skeletons is generic; a humanoid map, the VRM root-motion policy, and the two
-  resolves are not. Re-separating them is a real question and it is **not** this
-  track's — it is a WORKSPACE.md change, and doing it as part of a repository
-  move would hide a boundary decision inside a migration.
-- **Who owns the canonical contract document?** [MOTION_CONTRACT.md](../design/MOTION_CONTRACT.md)
-  describes types that would live elsewhere while
-  [MOTION_ARCHITECTURE_POLICY.md](../design/MOTION_ARCHITECTURE_POLICY.md)
-  describes an architecture that would not. They split along the same line the
-  code does, and the split is not free: four documents cite the policy by
-  section number.
-
-## 8. Done when
-
-Either the gate closes with a recorded measurement, or:
-
-- The foundation builds, tests, packages and versions independently.
-- This workspace consumes it as an external dependency and nothing downstream of
-  `motionCore` changed to allow it.
-- A consumer that has never heard of VRM builds against it.
+- Every identity [WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)
+  gives another destination lives there, with its history.
+- This repository consumes them as installed packages and holds no copy.
+- Every parity baseline MIG-0 named was reproduced across the move.
+- A consumer that has never heard of VRM — `usd-mmd-plugins` — builds against
+  the shared core.

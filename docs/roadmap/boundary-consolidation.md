@@ -1,5 +1,13 @@
 # Boundary consolidation — fix the shape before the inputs multiply
 
+> **Folded into the motion migration on 2026-09-17.** BND-0 becomes evidence
+> handed to `usd-motion-plugins`' motion contract, BND-1 the migration's
+> cross-repository test, and BND-2 `motion-connectors`' decision; BND-3 to
+> BND-5 stay this repository's and run beside the move. The disposition is in
+> [current.md](current.md), the plan in
+> [motion-foundation-split.md](motion-foundation-split.md). The findings below
+> are what the move fixes on arrival.
+
 **Status:** ⬜ not started · **Target:** after the OpenExec foundation ·
 **Policy:** [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) ·
 **Added:** 2026-09-06
