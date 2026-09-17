@@ -320,6 +320,69 @@ def check_scale_policy(tool: str, avatar: pathlib.Path, clip: pathlib.Path,
         f"the clip's scale reached the bake: {unscaled}")
 
 
+def check_provenance_flags(tool: str, avatar: pathlib.Path,
+                           clip: pathlib.Path, humanoid_map: str,
+                           workspace: pathlib.Path,
+                           failures: Failures) -> None:
+    """`--version`, `--build-info` and `--load-report` (the OpenExec plan's P0-3).
+
+    The load report is what the release lane's artifact-only smoke reads to
+    tell where the tool's own modules came from, so it is checked on both
+    exits a user would want it on: a bake, and a refusal.
+    """
+    import json
+
+    version_file = pathlib.Path(__file__).resolve().parents[3] / "VERSION"
+    version = version_file.read_text(encoding="utf-8").strip()
+    result = run_tool(tool, "--version")
+    failures.check(result.returncode == EXIT_SUCCESS
+                   and result.stdout.strip() == f"motion_retarget {version}",
+                   f"--version printed {result.stdout.strip()!r}, expected "
+                   f"'motion_retarget {version}'")
+
+    result = run_tool(tool, "--build-info")
+    try:
+        info = json.loads(result.stdout)
+    except ValueError:
+        info = None
+    if failures.check(result.returncode == EXIT_SUCCESS
+                      and isinstance(info, dict),
+                      f"--build-info printed no JSON object: "
+                      f"{result.stdout!r}"):
+        failures.check(info.get("tool") == "motion_retarget"
+                       and info.get("version") == version
+                       and info.get("openusdVersion") == "26.08"
+                       and all(info.get(key) for key in
+                               ("gitCommit", "compiler", "buildOs")),
+                       f"--build-info is missing a field: {info}")
+
+    for name, arguments, expect_success in (
+            ("bake", ["--animation", str(clip), "--humanoid-map",
+                      humanoid_map], True),
+            ("refusal", ["--animation", str(workspace / "no_such_clip.usda"),
+                         "--humanoid-map", humanoid_map], False)):
+        report_path = workspace / f"load_report_{name}.json"
+        result = run_tool(tool, "--avatar", str(avatar), *arguments,
+                          "--output", str(workspace / f"load_{name}.usda"),
+                          "--load-report", str(report_path), "--quiet")
+        failures.check((result.returncode == EXIT_SUCCESS) == expect_success,
+                       f"--load-report {name} exited {result.returncode}: "
+                       f"{result.stderr.strip()}")
+        if not failures.check(report_path.is_file(),
+                              f"--load-report wrote nothing on a {name}"):
+            continue
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        modules = report.get("loaded_modules", [])
+        failures.check(
+            isinstance(report.get("loaded_plugins"), dict)
+            and any(pathlib.Path(module).name.lower().startswith(
+                "motion_retarget") for module in modules)
+            and any("usd" in pathlib.Path(module).name.lower()
+                    for module in modules),
+            f"the {name} load report does not name the executable and "
+            f"OpenUSD among its modules: {report}")
+
+
 EXPECTED_BLEND_SHAPES = ["Face_Blink", "Face_Brow", "Face_Smile"]
 
 # Blend-shape weights the expressive fixtures must resolve to, per time code.
@@ -1502,6 +1565,9 @@ def main() -> int:
 
         check_scale_policy(options.tool, avatar, clip, options.humanoid_map,
                            workspace, failures)
+
+        check_provenance_flags(options.tool, avatar, clip,
+                               options.humanoid_map, workspace, failures)
 
         check_exit_codes(options.tool, avatar, clip, options.humanoid_map,
                          workspace, failures)

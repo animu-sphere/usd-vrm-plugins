@@ -6,6 +6,7 @@
 // retargeting over plain values, `StageIo` does everything that touches a
 // stage, and this file wires the two together and reports what happened.
 #include "Options.h"
+#include "Provenance.h"
 #include "StageIo.h"
 
 #include "vrmRetarget/ExpressionResolver.h"
@@ -27,6 +28,29 @@
 
 namespace
 {
+
+// Writes --load-report when the run ends, on every return path: a refusal is
+// the run whose loaded modules a user most wants to see.
+class LoadReportAtExit
+{
+  public:
+    explicit LoadReportAtExit(std::string path) : _path(std::move(path))
+    {
+    }
+    LoadReportAtExit(const LoadReportAtExit&) = delete;
+    LoadReportAtExit& operator=(const LoadReportAtExit&) = delete;
+    ~LoadReportAtExit()
+    {
+        std::string error;
+        if (!_path.empty() && !motionRetargetTool::WriteLoadReport(_path, &error))
+        {
+            std::cerr << "motion_retarget: warning: " << error << "\n";
+        }
+    }
+
+  private:
+    std::string _path;
+};
 
 // Prints a refusal and returns what the process exits with. The line is
 // printed under --quiet too: it is the one thing a failed run says, and the
@@ -283,6 +307,17 @@ main(int argc, char** argv)
         std::fputs(motionRetargetTool::GetUsage(), stdout);
         return static_cast<int>(ExitCode::Success);
     }
+    if (options.showVersion)
+    {
+        std::cout << motionRetargetTool::VersionLine() << "\n";
+        return static_cast<int>(ExitCode::Success);
+    }
+    if (options.showBuildInfo)
+    {
+        std::cout << motionRetargetTool::BuildInfoJson() << "\n";
+        return static_cast<int>(ExitCode::Success);
+    }
+    const LoadReportAtExit loadReport(options.loadReportPath);
 
     motionRetargetTool::Failure failure;
     std::map<std::string, std::string> extraMappings;

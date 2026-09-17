@@ -37,6 +37,20 @@ which is not an assumption here but the check:
   and a case is run again. It must refuse, with ExecMotion loaded from nowhere
   -- the proof that no location outside the product was answering.
 
+And the two rows of P0-3 the parity cases do not reach, in the same
+environment:
+
+* **the tool's own process.** The product's `motion_retarget` bakes the real,
+  textured `Seed-san.vrm` with a `.vrma` walk and writes `--load-report`: the
+  importer and the VRMA reader have to load from the prefix, and nothing of the
+  tool's may come from the repository;
+* **embedded textures, from a Python host.** `artifact_texture_probe.py` opens
+  that bake, resolves every `avatar.vrm[images/...]` texture to bytes through
+  the product's resolver, and reports what its own process loaded. It adds no
+  DLL directory, so on Windows it is also the measurement of whether a Python
+  host needs `os.add_dll_directory` beside the activation's `PATH`
+  (INSTALL.md).
+
 Exit codes follow `clean_install_smoke.py`: 0 pass, 1 the smoke ran and an
 assertion failed, 2 the harness itself is misconfigured.
 
@@ -71,6 +85,10 @@ NEGATIVE_CASE = "recorded_fixture"
 
 # The two plugins this smoke is about, by the name their plugInfo.json gives.
 EXEC_PLUGINS = ("ExecMotion", "ExecVrm")
+# What the product's motion_retarget has to load to bake a .vrm with a .vrma,
+# and what a Python host has to load to resolve that bake's embedded textures.
+TOOL_PLUGINS = ("UsdVrmFileFormat", "UsdVrmaFileFormat")
+PROBE_PLUGINS = ("UsdVrmFileFormat", "UsdVrmPackageResolver")
 
 # Inputs, from this repository -- the same files the root suite hands the
 # driver. Inputs are not the artifact; the tools and bundles that read them are.
@@ -182,7 +200,8 @@ def product_library_names(prefix: pathlib.Path) -> set[str]:
 
 def check_provenance(failures: Failures, case: str, report: dict,
                      prefix: pathlib.Path, harness: pathlib.Path,
-                     runtime_roots: list[str], ours: set[str]) -> None:
+                     runtime_roots: list[str], ours: set[str],
+                     required: tuple[str, ...] = EXEC_PLUGINS) -> None:
     plugins = report.get("loaded_plugins")
     modules = report.get("loaded_modules")
     if not failures.check(
@@ -191,7 +210,7 @@ def check_provenance(failures: Failures, case: str, report: dict,
             f"{case}: the harness report carries no loaded_plugins or "
             f"loaded_modules, so where it loaded from cannot be read"):
         return
-    for name in EXEC_PLUGINS:
+    for name in required:
         path = plugins.get(name)
         if failures.check(path is not None,
                           f"{case}: {name} was not loaded"):
@@ -250,6 +269,148 @@ def run_case(case: str, prefix: pathlib.Path, env: dict,
     return result, reports
 
 
+def check_textured_bake(failures: Failures, prefix: pathlib.Path, env: dict,
+                        runtime_roots: list[str], ours: set[str],
+                        work: pathlib.Path) -> None:
+    """The product's tool bakes a textured avatar, and a Python host resolves
+    the bake's textures; both processes report what they loaded."""
+    work.mkdir(parents=True, exist_ok=True)
+    tool = (prefix / "tools" / "motion_retarget" / "bin"
+            / f"motion_retarget{suffix()}")
+    bake = work / "textured_walk.usda"
+    tool_report = work / "motion_retarget.load.json"
+    command = [str(tool), "--avatar", str(REPO_ROOT / REAL_AVATAR),
+               "--animation", str(REPO_ROOT / VRMA_WALK),
+               "--output", str(bake), "--load-report", str(tool_report),
+               "--quiet"]
+    print(f"$ motion_retarget --avatar {pathlib.Path(REAL_AVATAR).name} "
+          f"--animation {pathlib.Path(VRMA_WALK).name} --load-report", flush=True)
+    result = subprocess.run(command, env=env, text=True, encoding="utf-8",
+                            errors="replace", capture_output=True)
+    if not failures.check(result.returncode == 0 and bake.is_file(),
+                          f"textured: the product's motion_retarget failed "
+                          f"(exit {result.returncode}):\n"
+                          f"{result.stdout}{result.stderr}"):
+        return
+    if failures.check(tool_report.is_file(),
+                      "textured: motion_retarget wrote no --load-report"):
+        check_provenance(failures, "textured tool", json.loads(
+            tool_report.read_text(encoding="utf-8")), prefix, tool,
+            runtime_roots, ours, TOOL_PLUGINS)
+
+    probe_report = work / "texture_probe.load.json"
+    print("$ artifact_texture_probe.py textured_walk.usda", flush=True)
+    probed = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "artifact_texture_probe.py"),
+         str(bake), str(probe_report)],
+        env=env, text=True, encoding="utf-8", errors="replace",
+        capture_output=True)
+    if not failures.check(probed.returncode == 0 and probe_report.is_file(),
+                          f"textured: the embedded textures did not resolve "
+                          f"from the product in a Python host (exit "
+                          f"{probed.returncode}):\n"
+                          f"{probed.stdout}{probed.stderr}"):
+        return
+    report = json.loads(probe_report.read_text(encoding="utf-8"))
+    check_provenance(failures, "textured python host", report, prefix,
+                     pathlib.Path(sys.executable), runtime_roots, ours,
+                     PROBE_PLUGINS)
+    print(f"  textured: {len(report['textures'])} embedded texture(s) "
+          f"resolved from the product; the tool and a Python host loaded "
+          f"nothing from the repository")
+
+    # The negative, as for execMotion: with the product's resolver
+    # registration gone, nothing else may resolve the textures.
+    infos = sorted(path for path in prefix.rglob("plugInfo.json")
+                   if '"UsdVrmPackageResolver"' in path.read_text(encoding="utf-8"))
+    if not failures.check(bool(infos), "the product holds no "
+                          "usdVrmPackageResolver plugInfo.json, so the "
+                          "texture negative cannot run"):
+        return
+    hidden = []
+    try:
+        for info in infos:
+            moved = info.with_name("plugInfo.json.hidden")
+            info.rename(moved)
+            hidden.append((moved, info))
+        unresolved = subprocess.run(
+            [sys.executable,
+             str(REPO_ROOT / "scripts" / "artifact_texture_probe.py"),
+             str(bake), str(work / "texture_probe.negative.json")],
+            env=env, text=True, encoding="utf-8", errors="replace",
+            capture_output=True)
+        if failures.check(
+                unresolved.returncode != 0,
+                f"with every usdVrmPackageResolver plugInfo.json in the "
+                f"product moved aside ({len(infos)}), the textures still "
+                f"resolved -- something outside the product answered:\n"
+                f"{unresolved.stdout}{unresolved.stderr}"):
+            print(f"  negative: textures unresolved with {len(infos)} "
+                  f"resolver registration(s) moved aside")
+    finally:
+        for moved, info in hidden:
+            moved.rename(info)
+
+
+# A source file's own name, which a `__FILE__` in a registration macro embeds.
+SOURCE_SUFFIXES = (".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp")
+
+
+def check_source_path_leaks(failures: Failures, prefix: pathlib.Path) -> None:
+    """No binary in the product names a build-tree path.
+
+    Every executable and shared library is searched for this repository's
+    root, in either slash. A match that is a source file is a `__FILE__` a
+    macro expanded -- OpenUSD's `TF_REGISTRY_FUNCTION` and schema registration
+    put one in each plugin library -- which is a name, not a dependency, and is
+    counted and printed rather than refused (the v0.9.0 record's known
+    limitation). Anything else -- a build directory, a `.strata` stage, a PDB, an
+    RPATH -- is a path the artifact could reach for, and fails.
+    """
+    root = str(REPO_ROOT)
+    needles = {root, root.replace("\\", "/")}
+    if os.name == "nt":
+        needles = {needle.lower() for needle in needles}
+    tolerated: dict[str, int] = {}
+    refused = 0
+    scanned = 0
+    for path in sorted(prefix.rglob("*")):
+        name = path.name.lower()
+        binary = (name.endswith((".exe", ".dll", ".dylib"))
+                  or ".so" in name
+                  or (path.parent.name == "bin" and "." not in name))
+        if not path.is_file() or not binary:
+            continue
+        scanned += 1
+        text = path.read_bytes().decode("latin-1")
+        haystack = text.lower() if os.name == "nt" else text
+        for needle in needles:
+            start = haystack.find(needle)
+            while start != -1:
+                end = start
+                while end < len(text) and text[end] not in "\x00\n\"":
+                    end += 1
+                found = text[start:end]
+                relative = found[len(root):].lstrip("\\/").replace("\\", "/")
+                first = relative.split("/", 1)[0]
+                if (found.lower().endswith(SOURCE_SUFFIXES)
+                        and first not in ("build", ".strata", "dist")):
+                    key = str(path.relative_to(prefix))
+                    tolerated[key] = tolerated.get(key, 0) + 1
+                else:
+                    refused += 1
+                    failures.check(False, f"{path.relative_to(prefix)} names a "
+                                          f"build-tree path: {found}")
+                start = haystack.find(needle, end)
+    failures.check(scanned > 0, "the source-path scan found no binary to read")
+    print(f"  source paths: {scanned} binaries scanned, {refused} build-tree "
+          f"path(s); "
+          f"{sum(tolerated.values())} source-file name(s) from registration "
+          f"macros in {len(tolerated)} librar(ies)")
+    for key, count in sorted(tolerated.items()):
+        print(f"    {count} in {key}")
+
+
 def exec_motion_plug_infos(prefix: pathlib.Path) -> list[pathlib.Path]:
     """Every copy of execMotion's plugInfo.json in the product. There is more
     than one -- a dependent bundle carries its dependency bundles inside it
@@ -301,6 +462,7 @@ def main() -> int:
         env, runtime_roots = product_environment(args.ost, platform, profile,
                                                  prefix)
         ours = product_library_names(prefix)
+        check_source_path_leaks(failures, prefix)
 
         for case in args.case or CASES:
             result, reports = run_case(case, prefix, env, parity,
@@ -320,6 +482,10 @@ def main() -> int:
                                  runtime_roots, ours)
             print(f"  {case}: parity holds from the product "
                   f"({len(reports)} comparison(s))")
+
+        # P0-3's rows: the tool's own process, and textures from a Python host.
+        check_textured_bake(failures, prefix, env, runtime_roots, ours,
+                            scratch / "work" / "textured")
 
         # P0-7's packaged row: the display suite, under the same environment.
         print(f"$ {display.name} {DISPLAY_FIXTURE}", flush=True)

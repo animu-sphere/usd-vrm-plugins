@@ -74,13 +74,28 @@ each of the four bundles, a manifest sidecar each, a source archive, and a
      `.vrm` format then appears unregistered even though `plugInfo.json` was
      found.
 
-     > On Windows this is fiddlier than a `PATH` entry: Python 3.8+ dropped
-     > `PATH` from the search used for dynamically loaded DLLs, so a Python host
-     > may additionally need `os.add_dll_directory()` for each directory above.
-     > **The configuration we verify in CI is the `ost` path below**, which
-     > reads `requires.runtime_libs` from the package manifest and sets this up
-     > for you. If you are composing the bundles by hand on Windows and hit the
-     > error above, prefer `ost plugin run` while we tighten this guidance.
+     > **On Windows, `PATH` is enough, for an executable and for a Python host
+     > alike** — measured, not assumed (v0.9.0). Python 3.8+ leaves `PATH` out
+     > of the search for the extension modules *it* imports, but these plugin
+     > libraries are loaded by OpenUSD's plugin registry, which uses the
+     > ordinary Windows search, so no `os.add_dll_directory()` call is needed.
+     > The release lane proves it on every tag: it installs the aggregate
+     > product outside the source tree, builds the environment from the
+     > product's own `openstrata.activation.json` (its `library_paths` onto
+     > `PATH`, its `plugin_paths` onto `PXR_PLUGINPATH_NAME`) with no `ost`
+     > process in between, and then has a Python 3.13 host resolve every
+     > embedded texture of a real `.vrm`. Each plugin and DLL it reads back was
+     > loaded from the install (`scripts/artifact_only_exec_smoke.py`).
+     >
+     > **To see which copy of a DLL answered**, run
+     > `motion_retarget --load-report loaded.json` with the rest of a bake's
+     > arguments. It writes every plugin the registry loaded and every module
+     > the process mapped, by the path the loader resolved, on success and on a
+     > refusal alike. With several bundles on `PATH`, a library that more than
+     > one of them carries (`vrmContainer`, for example) is loaded from the
+     > **first** directory on `PATH` that holds it. The packaged copies are
+     > the same library, but a stale copy left in an earlier directory would
+     > win.
 
 4. **Verify** — any `.vrm` now opens as a USD stage (the bundle ships license-
    clear fixtures under `<extract-dir>/tests/`):

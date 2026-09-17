@@ -1145,6 +1145,19 @@ Current schema contract version: **1**.
   Labelled `motion.integration` and `motion.real-corpus`. 154 CTest names in the
   workspace.
 
+- **`motion_retarget --load-report`, `--build-info` and `--version`, and the
+  artifact-only smoke's last rows** (the OpenExec plan's P0-3). `--load-report
+  PATH` writes the plugins and modules the process loaded, with their paths, on
+  success and on refusal. `--build-info` prints the commit, compiler and
+  OpenUSD a build was made with. In `release.yml`, the product's own tool now
+  bakes the textured `Seed-san.vrm` and its load report must show nothing
+  loaded from the source tree. `scripts/artifact_texture_probe.py`, a Python
+  host, resolves all 28 embedded textures from the install, and fails with the
+  resolver hidden. A scan finds no build-tree path in any product binary. That
+  environment applies the product's activation by hand, so it also settles
+  Windows DLL discovery: **`PATH` is enough, for a Python host too**, and
+  INSTALL.md now says so rather than suggesting `os.add_dll_directory`.
+
 ### Changed
 
 - **The partial skeleton policy is a contract** (the OpenExec plan's P1-3).

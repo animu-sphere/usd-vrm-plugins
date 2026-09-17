@@ -47,6 +47,16 @@ struct Options
     bool lookAt = true;
 
     bool quiet = false;
+
+    // Where to write the load report once the run ends, success or refusal:
+    // the plugins and modules this process loaded (Provenance.h). Empty for
+    // none.
+    std::string loadReportPath;
+
+    // --version / --build-info: print and exit 0, like --help, with no
+    // other argument required.
+    bool showVersion = false;
+    bool showBuildInfo = false;
 };
 
 // Parses argv. On failure `error` explains why and the result is false; on

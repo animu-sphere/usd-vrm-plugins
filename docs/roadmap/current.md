@@ -42,7 +42,7 @@ Each task's record, including what each step measured, is in
 | --- | --- | --- |
 | P0-1 — OpenUSD 26.08 exact pin | ✅ | — |
 | P0-2 — motion layer CI | ✅ | — all seven labels assigned and read back by `workspace_ctest_labels`; the last coverage row, Windows Unicode paths, is `workspace_unicode_paths` (2026-09-15) |
-| P0-3 — `motion_retarget` distribution | 🚧 | the artifact-only smoke's embedded-texture half and a build-tree scan of the tool's own process; the non-`ost` Windows install and DLL discovery (Product P3 below) |
+| P0-3 — `motion_retarget` distribution | ✅ | — 2026-09-17: the product's tool bakes a textured `Seed-san.vrm` and reports its own loaded modules (`--load-report`), a Python host resolves the 28 embedded textures from the install with `PATH` alone, and a source-path scan finds no build-tree path |
 | P0-4 — `execMotion` | ✅ | — decided 2026-09-17: the producer half goes to the motion migration's producer contract (MIG-0 / BND-0), and a one-joint clip's fallback-filled root is kept and pinned |
 | P0-5 — `execVrm` | ✅ | — |
 | P0-6 — OpenExec / offline parity | ✅ | — the values (414 598 compared, all `==`) and the diagnostics agree; decided 2026-09-17 that the rows no producer reaches stay asserted on the exec side and read on the tool's |
@@ -51,9 +51,11 @@ Each task's record, including what each step measured, is in
 | P1-2 — scale policy | ✅ | — decided 2026-09-17: a bake carries the rig's rest scale, and a clip's animated scale raises `VRM_RETARGET_NON_UNIT_SCALE` ([scale policy](../design/MOTION_CONTRACT.md#scale-policy-v090)) |
 | P1-3 — partial skeleton policy | ✅ | — the seven cases are a contract, each held by a test ([partial skeleton policy](../design/MOTION_CONTRACT.md#partial-skeleton-policy-v090), 2026-09-17) |
 
-The gate rows still open are P0-3's: **Windows DLL discovery** and the
-**artifact-only offline retarget**'s texture half. Unicode paths closed on
-2026-09-15.
+**Every gate row is closed** (2026-09-17). The last were P0-3's: Windows DLL
+discovery and the artifact-only offline retarget's texture half, both run by
+`scripts/artifact_only_exec_smoke.py` in `release.yml`. So the release dry run,
+not a pull request, is where they are proven on all three OS. Unicode paths
+closed on 2026-09-15.
 
 **The boundary findings** the nodes produced — places the wrapper idiom was a
 workaround, had a cost, or was ruled out — are collected in
@@ -276,19 +278,23 @@ is `workspace_unicode_paths`, on every workspace cell, Windows included: every
 executable and both importers are run against paths no ANSI code page can
 spell. Remaining:
 
-- ⬜ Explicit **DLL dependency discovery** coverage on the Windows cell.
-- ⬜ **Real VRM smoke test** (open + texture resolve) exercised in CI, not just
-  fixtures.
-- ⬜ **Verify the non-`ost` install path on Windows** *(carried from v0.2.0 /
-  v0.3.0)*. The published bundles are only exercised through `ost`; a user
-  composing them by hand against a plain OpenUSD environment is uncovered.
-  `libUsdVrmFileFormat` links against `libvrmSchema` and `vrmContainer`, which
-  are staged under `runtime/libraries/{lib,bin}` rather than beside the plugin —
-  and Python 3.8+ dropped `PATH` from the DLL search for dynamically loaded
-  modules, so the correct mechanism (`PATH` / `os.add_dll_directory` /
-  co-location) is **unestablished**. [INSTALL.md](../guides/INSTALL.md) names the
-  directories and the failure signature but deliberately prescribes no recipe.
-  Closing this needs a non-`ost` install lane, not a docs edit.
+- ✅ **DLL dependency discovery on Windows** *(2026-09-17)*. The release lane's
+  artifact-only smoke reads back every module the product's `motion_retarget`
+  and a Python host loaded, and each of the product's libraries has to come
+  from the install.
+- ✅ **Real VRM smoke** (open + texture resolve) *(2026-09-17)*: `Seed-san.vrm`
+  baked by the product's tool, and its 28 embedded textures resolved to bytes
+  by the product's resolver, with a negative that hides the resolver. It runs in
+  `release.yml`, not on a pull request.
+- ✅ **The non-`ost` activation path on Windows** *(carried from v0.2.0 /
+  v0.3.0, closed 2026-09-17)*. The mechanism is `PATH`, for an executable and
+  for a Python host alike: the plugin libraries are loaded by OpenUSD's
+  registry, not by Python's extension import, so no `os.add_dll_directory` is
+  needed ([INSTALL.md](../guides/INSTALL.md)). The smoke builds the environment
+  from the product's `openstrata.activation.json` by hand, with no `ost`
+  process in the run. **What it does not cover:** the archive is still
+  extracted with `ost plugin product install`, and the per-bundle archives
+  composed by hand, which share the product's directory layout, are not run.
 
 ## Workspace Phase 5 — per-bundle + aggregate packaging 🚧
 

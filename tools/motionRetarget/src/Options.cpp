@@ -98,6 +98,14 @@ GetUsage()
            "                         clip's look-at target against the\n"
            "                         avatar's eyes.\n"
            "  --quiet                Suppress diagnostics on stderr.\n"
+           "\n"
+           "Provenance:\n"
+           "  --load-report PATH     When the run ends, write the plugins and\n"
+           "                         modules this process loaded, with the\n"
+           "                         paths they were loaded from, as JSON.\n"
+           "  --build-info           Print the build's version, commit,\n"
+           "                         compiler and OpenUSD as JSON, and exit.\n"
+           "  --version              Print the version and exit.\n"
            "  -h, --help             Show this message.\n";
 }
 
@@ -113,6 +121,23 @@ ParseOptions(const std::vector<std::string>& arguments, Options* options, bool* 
         {
             *showHelp = true;
             return true;
+        }
+        else if (argument == "--version")
+        {
+            options->showVersion = true;
+            return true;
+        }
+        else if (argument == "--build-info")
+        {
+            options->showBuildInfo = true;
+            return true;
+        }
+        else if (argument == "--load-report")
+        {
+            if (!TakeValue(arguments, &i, argument, &options->loadReportPath, error))
+            {
+                return false;
+            }
         }
         else if (argument == "--avatar")
         {

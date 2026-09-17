@@ -53,11 +53,39 @@ if(NOT TARGET motionRuntime::motionRuntime)
     find_package(motionRuntime REQUIRED CONFIG)
 endif()
 
+# `--build-info`'s stamp. Like usdVrmFileFormat's buildInfo.json it carries no
+# timestamp, so an unchanged build packages to the same digest.
+set(_motion_retarget_git_commit "unknown")
+find_package(Git QUIET)
+if(GIT_FOUND)
+    execute_process(
+        COMMAND "${GIT_EXECUTABLE}" -C "${CMAKE_CURRENT_SOURCE_DIR}" rev-parse HEAD
+        OUTPUT_VARIABLE _motion_retarget_git_head
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+        RESULT_VARIABLE _motion_retarget_git_rc)
+    if(_motion_retarget_git_rc EQUAL 0)
+        set(_motion_retarget_git_commit "${_motion_retarget_git_head}")
+    endif()
+endif()
+get_property(_motion_retarget_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(_motion_retarget_multi_config)
+    set(_motion_retarget_build_type "multi-config")
+else()
+    set(_motion_retarget_build_type "${CMAKE_BUILD_TYPE}")
+endif()
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/motionRetargetBuildInfo.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/motionRetargetBuildInfo.h"
+    @ONLY)
+
 add_executable(motion_retarget
     src/Options.cpp
+    src/Provenance.cpp
     src/StageIo.cpp
     src/main.cpp)
 usdvrm_use_utf8_code_page(motion_retarget)
+target_include_directories(motion_retarget PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 target_compile_features(motion_retarget PRIVATE cxx_std_17)
 target_link_libraries(motion_retarget
@@ -65,7 +93,7 @@ target_link_libraries(motion_retarget
         vrmRetarget::vrmRetarget
         motionRuntime::motionRuntime)
 
-foreach(_usd_lib usd usdGeom usdSkel sdf tf gf vt js arch)
+foreach(_usd_lib usd usdGeom usdSkel sdf plug tf gf vt js arch)
     if(TARGET ${_usd_lib})
         target_link_libraries(motion_retarget PRIVATE ${_usd_lib})
     elseif(TARGET pxr::${_usd_lib})

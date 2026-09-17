@@ -417,7 +417,7 @@ names. The first attempt passed with the `CanRead` fix reverted, because opening
 a layer never calls `CanRead`, so the test now calls it directly. This row was
 also Product P3's Unicode item ([current.md](current.md)).
 
-### P0-3 — `motion_retarget` distribution ⬜
+### P0-3 — `motion_retarget` distribution ✅
 
 Ship the CLI in the aggregate product artifact:
 
@@ -447,6 +447,39 @@ bit for bit — plugin discovery, humanoid map loading, retarget execution and
 evaluated joint transforms, from the artifact. What that run does not check is
 embedded texture resolution, and the build-tree scan covers the harness's
 process, not the tool's.
+
+**Closed 2026-09-17**, in the same smoke, measured on Windows before the release
+dry run carried it to macOS and Linux. Each requirement above now has a check:
+
+- **`--version` and `--build-info`**: `motion_retarget` prints its version,
+  and the commit, compiler, build type and OpenUSD as JSON, with no timestamp so
+  packaging stays reproducible (`motion_retarget_design_triplet`).
+- **The tool's own process**: `--load-report PATH` writes every plugin the
+  registry loaded and every module the process mapped, on success and on a
+  refusal. The smoke has the product's tool bake `Seed-san.vrm` with the `.vrma`
+  walk and holds its report to the same rule as the harness's: UsdVrmFileFormat
+  and UsdVrmaFileFormat from the prefix, and nothing of the product's from the
+  repository.
+- **Embedded texture resolution**: `scripts/artifact_texture_probe.py`, a
+  Python host in the same environment, opens the bake, resolves all **28**
+  `Seed-san.vrm[images/...]` textures to bytes, and reports what it loaded.
+  With the product's `usdVrmPackageResolver` registration hidden, it must fail,
+  and does.
+- **Windows DLL discovery, and the non-`ost` path**: that environment is the
+  product's activation file applied by hand, `PATH` included and no
+  `os.add_dll_directory`. The Python host loading every plugin DLL from the
+  install settles INSTALL.md's open question: `PATH` is enough. One observation
+  came with it: `vrmContainer.dll` answered from `bundles/execMotion`, the
+  first `PATH` directory holding a copy, which INSTALL.md now says.
+- **Source-path leak scan**: every executable and shared library in the
+  product is searched for the repository root. None names a build-tree path,
+  whether a build directory, a `.strata` stage, a PDB or an RPATH. The tools
+  name nothing. Eight plugin libraries carry 23 source *file* names, each a
+  `__FILE__` that OpenUSD's registration macros expand. The scan counts and
+  prints those and does not fail on them, and the v0.9.0 record lists them as a
+  known limitation.
+- **Executable checksum**: `ost plugin product verify`, which the smoke runs
+  first, checks the archive and every member's checksums.
 
 ### P0-4 — minimal `execMotion` bundle ✅
 

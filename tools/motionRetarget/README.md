@@ -49,6 +49,9 @@ It is an **executable, not a bundle**: no `openstrata.plugin.yaml`, no
 | `--no-expressions` | Bake the body only; resolve no expression weights. |
 | `--no-look-at` | Bake without a gaze; leave the eyes where the rig rests them. (`--no-expressions` also suppresses an *expression*-driven gaze.) |
 | `--quiet` | Suppress diagnostics on stderr. |
+| `--load-report PATH` | When the run ends, on success or refusal, write every plugin the registry loaded and every module the process mapped, with the paths they were loaded from, as JSON. The way to see which copy of a DLL answered. |
+| `--build-info` | Print the version, commit, compiler, build type and OpenUSD as JSON, and exit. |
+| `--version` | Print `motion_retarget <version>` and exit. |
 
 ## What it authors
 
