@@ -138,91 +138,55 @@ work is in the CHANGELOG's `[Unreleased]` section. What remains of the phase is
 **live recording** and the **VRMA export investigation**, both in
 [the backlog](backlog.md).
 
-## Then: boundary consolidation ⬜
+## Then: the motion migration ⬜ — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Boundary:** the agreements nine identities and four producer categories
-arrived at separately are stated as one set, the ones that can be checked are
-checked, and the three decisions the workspace has been carrying as open are
-settled. Planned in [boundary-consolidation.md](boundary-consolidation.md); the
-direction it serves is
-[design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md),
-adopted 2026-09-06.
+**Decided 2026-09-17, and it replaces two sections that stood here:** boundary
+consolidation as its own milestone, and a conditional repository split that
+could end at its gate. The `usd-motion-plugins` design policy has since settled
+the motion architecture where it is owned — generic motion lives there, device
+and protocol input in `motion-connectors`, VRM and VRMA here — so the split is
+no longer a question this repository measures, and the boundary work that
+existed to prepare for it is folded into the move.
 
-It adds no format, no adapter, no node and no package. Its items:
+**Boundary:** every identity
+[WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)
+gives another destination lives there with its history, this repository
+consumes it as an installed package and keeps no copy, and every parity baseline
+is reproduced across the move. Planned in
+[motion-foundation-split.md](motion-foundation-split.md), as MIG-0 to MIG-5 in
+the dependency order of the moves; the motion-plugins policy calls the same
+steps **Migration Phase A–F**.
 
-- ⬜ **BND-0 — the canonical producer contract**, *moved here from the
-  recorded-source milestone on 2026-09-06*. Four categories produce motion and
-  each was designed alone: recorded sources, live pose sources, tracker sources,
-  and generated sources. What is unified is the **canonical value boundary**,
-  not an I/O API — `SourceAnimation → HumanoidAnimation` for recorded,
-  `timestamp + HumanoidPose` for live, `timestamp + TrackerFrame` for trackers,
-  and `request/context → HumanoidAnimation or a pose stream` for generators.
-  Done when a fifth producer is added by *naming* a crossing.
-- ⬜ **BND-1 — one reference pipeline, proved once for every category.** Every
-  source reaches `UsdSkelAnimation` today along its own tested path, and no
-  single test says the same thing happens to all of them. One integration test,
-  three sources — a `.vrma` clip, a BVH export, a recorded live trace — through
-  an identical downstream call sequence. A source needing a downstream branch
-  has found a defect, which is the point of running them together. This is the
-  test NPZ/AMASS later joins **without changing it**.
-- ⬜ **BND-2 — settle the adapter distribution decision.** Open since v0.7.0:
-  `ost library package` produces an adapter artifact and no lane publishes one,
-  so "the adapters are optional artifacts" is a design statement with nothing
-  behind it. Recommended answer — one version, separate artifact membership.
-- ⬜ **BND-3 — artifact closure as the release gate**, as one checklist a
-  release passes or does not, rather than seven lanes and some prose.
-- ⬜ **BND-4 / BND-5 — make the invariants checkable, and finish separating the
-  workspace contract from its history.** The `DEPENDENCY_RULES.md` split carried
-  from Product P0 lands here: doing it alongside a repository split is one
-  migration of the section-number citations instead of two.
+It starts after v0.9.0, on purpose: the OpenExec foundation's findings are the
+API defects the move fixes on arrival, and they only exist once its nodes do.
+Until an identity moves, it takes fixes and the work v0.9.0 owes, and **no new
+generic capability** ([WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)).
 
-## Then: the motion foundation repository split ⬜ — and it can end at its gate
+What becomes of [boundary consolidation](boundary-consolidation.md):
 
-**Boundary:** `motionCore` and `motionRuntime` build, test, package and version
-independently, and this workspace consumes them as an external dependency.
-**Scope decided 2026-09-06: the motion foundation only** — `vrmRetarget` stays,
-and so do `motionSource`, `motionBvh`, `motionTracking`, `liveTransport` and
-`osc`. Planned in [motion-foundation-split.md](motion-foundation-split.md).
+- ⬜ **BND-0 — the canonical producer contract** is proposed into
+  `usd-motion-plugins`' motion contract as MIG-0's evidence hand-over, rather
+  than frozen here for identities that are leaving.
+- ⬜ **BND-1 — one reference pipeline** becomes MIG-5's cross-repository test,
+  and runs here until an integration repository exists.
+- ⬜ **BND-2 — the adapter distribution decision** is `motion-connectors`'.
+- ⬜ **BND-3 to BND-5 — artifact closure as the release gate, checkable
+  invariants, the workspace contract apart from its history** stay this
+  repository's, and run beside the migration.
 
-**It is scheduled ahead of its own preconditions on purpose, so it opens with a
-measurement that can close it.**
-[Scope policy §10](../design/INTEGRATION_SCOPE_POLICY.md) requires two consumers
-outside VRM before a component leaves; after Motion Phase E there is exactly one
-— `execMotion`, vendor-neutral by specification — and two of the four conditions
-are not met at all. MFS-0 measures them and the answer is allowed to be no.
+## After those: NPZ / AMASS and the ARDY adapter — no longer this repository's ⬜
 
-The track divides at a one-way door, and only the last part is behind it.
-**Reversible:** the public API checked free of VRM vocabulary as a property
-rather than a belief, its own version, its own package, its own suite run
-against the installed artifact, and the workspace consuming it through
-`find_package` as though it were external. Every one of those improves this
-repository whether or not anything moves, which is why an inconclusive gate
-wastes none of it. **Irreversible:** moving the history, and turning an in-tree
-edge into a pinned external dependency — a second release contract, a second CI
-configuration, and the loss of one-PR changes across the boundary, bought only
-when someone outside VRM is actually consuming it.
+Both were planned here behind the split gate, and both leave with the code they
+would have extended:
 
-## After those: NPZ / AMASS recorded sources, and the ARDY generation adapter ⬜
-
-Two producer additions, and they are last because they are the ones that *use* a
-boundary rather than fix one. Both were ahead of OpenExec until 2026-09-06.
-
-- ⬜ **NPZ / AMASS through the existing `motionSource` boundary.** A reader is
-  allowed format syntax and storage interpretation, and never the VRM target
-  rig, the target rest pose, the retarget policy, stage authoring, an OpenExec
-  graph, or a vendor runtime. **A container is not a format** — the same
-  `.npz` means different things from AMASS, SMPL-X, a HumanML3D derivative or a
-  custom dump, so what ships is a container reader plus an explicit profile.
-  Whether that is one identity (`motionNpz`) or two (`motionNpz` +
-  `motionAmass`) is settled by **measuring a few files of the real corpus
-  first**. A file-format plugin is not part of this.
-  [The recorded track](recorded-motion-sources.md) §13.
-- ⬜ **The ARDY generation adapter** (Motion Phase F), behind the vendor-neutral
-  `IMotionGenerator` that BND-0 freezes. The generator implementation itself is
-  never in this repository
-  ([scope policy §2](../design/INTEGRATION_SCOPE_POLICY.md)). Done when a
-  generated take and a `.vrma` clip go through the same code path from the
-  retarget onwards. [The adapters track](adapters-mocopi-vmc-ardy.md) §7.
+- **NPZ / AMASS** belongs to `usd-motion-plugins`, behind the versioned NPZ
+  payload contract its policy requires before any reader (its §28). The
+  measurement that decides one identity or two
+  ([the recorded track](recorded-motion-sources.md) §13) moves with
+  `motionSource` in MIG-3.
+- **The ARDY generation adapter** (Motion Phase F) is created in
+  `motion-connectors`, behind the generator interface `usd-motion-plugins`
+  specifies. Nothing of it starts here.
 
 ## Standing: corpus policy — recorded evidence is not the generated corpus
 

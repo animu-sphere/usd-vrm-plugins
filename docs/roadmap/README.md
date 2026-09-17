@@ -17,7 +17,7 @@ Legend: 🚧 in progress · ⬜ not started · ⛔ blocked
 | [osc-and-vrchat-trackers.md](osc-and-vrchat-trackers.md) | The **third live input** and the sharing it forces: a VRChat OSC Trackers adapter over a protocol-neutral OSC decoder, plus the transport code the first two adapters already duplicate. A tracker source is not a pose source, and that difference is the reason it is its own plan. Added 2026-08-23. |
 | [openexec-foundation.md](openexec-foundation.md) | The OpenExec direction: the OpenUSD 26.08 exact pin, the `execMotion` / `execVrm` foundation, and the `ExecIr` invertible rig. Kept separate because it is a plan, not a status list. Renamed from `openexec-v0.6.0-v0.7.0.md` on 2026-08-03, when its target moved. **Moved to the front of the queue on 2026-09-06** — see the re-order note below. |
 | [boundary-consolidation.md](boundary-consolidation.md) | The **boundary** direction: state the agreements nine identities and four producer categories arrived at separately, as one set — the canonical producer contract, one reference pipeline for every source category, the adapter distribution decision, artifact closure as a release gate, and the invariants that can be checked rather than reviewed. Adds no format, adapter, node or package. Added 2026-09-06. |
-| [motion-foundation-split.md](motion-foundation-split.md) | The **repository split** direction, and the only one that is conditional: `motionCore` + `motionRuntime` as their own repository, gated on a measurement of the four preconditions that can end the track. Its reversible half — a foundation consumed through `find_package` as though external — pays for itself whether or not anything moves. Added 2026-09-06. |
+| [motion-foundation-split.md](motion-foundation-split.md) | The **motion migration**: every generic motion identity to `usd-motion-plugins` and every live input to `motion-connectors`, in dependency order (MIG-0 to MIG-5, Migration Phase A–F), with the parity each move must reproduce. Added 2026-09-06 as a conditional split track; rewritten 2026-09-17, when the `usd-motion-plugins` design policy decided the split. |
 
 ## Three sequences, deliberately separate
 
@@ -71,10 +71,27 @@ must repeat one, `scripts/check_docs.py` checks it against this table.
 | shared OSC foundation + VRChat OSC Trackers input | Shipped | v0.8.0 |
 | OpenExec foundation | In progress | v0.9.0 |
 | boundary consolidation, the canonical producer contract included | Planned | after the OpenExec foundation |
-| motion foundation repository split | Planned | after boundary consolidation, **and conditional on its own gate** |
-| NPZ / AMASS recorded sources | Planned | after the split gate |
-| ARDY generation adapter | Planned | with NPZ / AMASS |
+| motion migration to `usd-motion-plugins` and `motion-connectors`, boundary consolidation folded in | Planned | after the OpenExec foundation |
+| NPZ / AMASS recorded sources | Moved | `usd-motion-plugins`, with `motionSource` |
+| ARDY generation adapter | Moved | `motion-connectors` |
 | `ExecIr` invertible VRM humanoid rig | Planned | after the OpenExec foundation, unscheduled |
+
+**Re-ordered 2026-09-17 — the motion architecture was decided outside this
+repository.** The `usd-motion-plugins` design policy places generic motion in
+`usd-motion-plugins` and device and protocol input in `motion-connectors`, with
+this repository depending on both and keeping VRM and VRMA. Three rows change.
+The conditional split becomes an unconditional **motion migration**, and
+boundary consolidation is folded into it: its producer contract becomes
+evidence handed to the shared core, its reference pipeline the migration's
+cross-repository test, its adapter distribution decision `motion-connectors`',
+and its remaining items stay here beside the move
+([current.md](current.md)). NPZ / AMASS and the ARDY adapter leave with the
+code they would have extended. The OpenExec foundation keeps its place and its
+version: it finishes here first, because its findings are the API defects the
+move fixes on arrival. Destinations are
+[WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture); the plan is
+[motion-foundation-split.md](motion-foundation-split.md). The 2026-09-06 note
+below is the record of the order it replaces.
 
 **Re-ordered 2026-09-06 — the owner's call, and it inverts the 2026-08-29
 pair.** The direction it comes from is

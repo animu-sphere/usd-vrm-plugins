@@ -17,6 +17,21 @@ Nothing above those sections changed: the v0.3.0 fields mean exactly what
 they meant, and each later phase is a new consumer of them rather than a
 reinterpretation.
 
+**Where this contract goes (2026-09-17).** This document stays the contract of
+the code as it is in this repository. The sections about `motionCore` values,
+coordinates and time, retarget semantics, live capture, comparison,
+recorded-source provenance and rest pose, the canonical basis, root and hips,
+and tracker observations describe identities that move to `usd-motion-plugins`
+or `motion-connectors`
+([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture)),
+and each moves **with** its code, into that repository's contract, under the
+shared core's names ([§9.3](../architecture/WORKSPACE.md#93-names)). Its
+measured decisions — the +Z-forward canonical basis, the hips-as-root record,
+the path rule, the expression weights on the pose — are evidence that
+contract starts from, not proposals it re-opens. What stays here is VRMA
+reading, expression and look-at semantics, and the OpenExec driver contract
+as `execVrm` uses it.
+
 ## Scope
 
 v0.3.0 accepts a `.vrma` GLB containing `VRMC_vrm_animation` `specVersion`

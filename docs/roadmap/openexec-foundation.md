@@ -1,5 +1,12 @@
 # The OpenExec foundation
 
+> **After v0.9.0 (decided 2026-09-17).** The foundation finishes here. Then
+> `execMotion` moves to `usd-motion-plugins` as its optional OpenExec bundle,
+> while `execVrm` and the `ExecIr` track (§7) stay
+> ([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
+> [the migration](motion-foundation-split.md) MIG-2). The findings the nodes
+> produced are fixed in the destination libraries on arrival.
+
 > **Target: v0.9.0** — the number it took when v0.8.0 was cut on 2026-09-01.
 > The one place a track carries a version is the
 > [roadmap status table](README.md#status-at-a-glance); this block mirrors it and

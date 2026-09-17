@@ -15,6 +15,17 @@
 > remains canonical for the importer, the schema contract, and Product P0–P6.
 > Where the two overlap — runtime evaluation, OpenExec, Mocopi — **this document
 > wins**, and DESIGN_POLICY §10 and §17-P4 carry forward-notes saying so.
+>
+> **Since 2026-09-17 most of this document describes code that is leaving.**
+> The `usd-motion-plugins` design policy owns the ecosystem's motion
+> architecture, and where the two disagree about anything that is not VRM,
+> **that policy wins** — this document keeps authority over VRM and VRMA
+> (§2–§4), VRM semantic resolution in retargeting (§10), `execVrm` (§11.2)
+> and the `ExecIr` track. §20 lists which section goes where; the
+> destinations are
+> [WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture).
+> Motion Phase A–H keeps its meaning as a record; its unfinished phases are
+> re-homed in §20.3.
 
 ## Naming deviations from the source
 
@@ -1389,3 +1400,60 @@ retargeted.usda┤
 This keeps the VRM↔VRMA relationship intact while leaving room to add motion
 capture, generative AI, procedural motion, and physical simulation to the same
 execution substrate later.
+
+---
+
+## 20. Relationship to the usd-motion-plugins design policy
+
+Added 2026-09-17. The `usd-motion-plugins` design policy ("the motion-plugins
+policy") is the ecosystem's motion architecture. It grew from the same ideas
+this document holds — a vendor-neutral core, root motion apart from the hips,
+missing joints as valid state, OpenExec above plain libraries — and it places
+them in their own repository, consumed by this one. Section numbers here keep
+their meaning; what changes is who owns each.
+
+### 20.1 Where each section goes
+
+| Section | Owner from now on | Note |
+| --- | --- | --- |
+| §2–§4 — VRM and VRMA plugins, composition, VRMA authoring | this document | VRMA is the VRM repository's (motion-plugins policy §26) |
+| §5 — Motion Core | the motion-plugins policy §5 | `HumanoidPose` → `MotionPose`, `HumanoidAnimation` → `MotionClip` ([WORKSPACE.md §9.3](../architecture/WORKSPACE.md#93-names)) |
+| §6 — motion source and generator | the motion-plugins policy §6–§7, §35 "Later" | the generator interface is specified there |
+| §7 — motion constraints | the motion-plugins policy (constraints, §12.2) | moves with `motionCore` |
+| §8.1–§8.2 — adapters, product names | `motion-connectors` | the naming rule survives unchanged: product names are provenance, never control flow (motion-plugins policy §4.1) |
+| §8.3 — recorded files | the motion-plugins policy §26–§27 (BVH) | `motionSource`, `motionBvh` and the profiles move |
+| §8.4 — generative adapter | `motion-connectors`, behind the §6 interface | |
+| §9 — source metadata | the motion-plugins policy §5.4 | |
+| §10 — retarget core | split | the generic retarget is the motion-plugins policy §10–§13; the humanoid map from `VrmHumanoidAPI`, expressions and look-at stay here |
+| §11.1 — `execMotion` | the motion-plugins policy §21 | |
+| §11.2 — `execVrm` | this document | |
+| §11.3–§11.5 — adapter nodes, no I/O, `ExecIr` | §11.4's rule is the motion-plugins policy's too; §11.5 and the `ExecIr` track stay here | |
+| §12 — live evaluation, `PoseBuffer` | the motion-plugins policy §6, §14 | |
+| §13 — motion plans on the stage | the motion-plugins policy §18 | |
+| §14–§15 — layout and edges | superseded by [WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) | kept as the record of the tree today |
+| §16 — Motion Phase A–H | §20.3 | |
+| §18 — key decisions | 1–5 stay; 6–18 carry to the motion-plugins policy §39, which states them for every format; 19–20 stay | |
+
+### 20.2 Where the two policies agree, and where this one is more precise
+
+They agree on every architectural invariant this document was built around.
+This repository has something that policy does not yet: measurements. The
++Z-forward canonical basis, the hips-as-root record, the rest-pose path rule,
+the OpenExec findings of the v0.9.0 foundation and the ten-rule driver
+contract are
+[MOTION_CONTRACT.md](MOTION_CONTRACT.md)'s and the reports', and they travel
+with the code as the evidence the shared contract starts from.
+
+### 20.3 Motion Phase A–H after the decision
+
+| Motion Phase | State | From here |
+| --- | --- | --- |
+| A–D | shipped | a record |
+| E — `execMotion` / `execVrm` | in progress, v0.9.0 | finished **here** first; then `execMotion` moves and `execVrm` stays |
+| F — generation adapter | not started | the interface in `usd-motion-plugins`, the ARDY adapter in `motion-connectors`; not started here |
+| G — expression / look-at / recording | partly shipped | expression and look-at stay here; recording is `usd-motion-plugins`' `MotionRecorder` |
+| H — advanced | not started | generic items (IK-assisted retarget, contacts, blending) in `usd-motion-plugins`; VRM-specific ones here |
+
+The moves themselves are **Migration Phase A–F**, the motion-plugins policy's
+§37, always written with that qualifier
+([WORKSPACE.md §9.4](../architecture/WORKSPACE.md#94-sequences)).

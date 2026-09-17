@@ -1,6 +1,15 @@
 # Integration scope policy
 
-**Status:** canonical · **Adopted:** 2026-09-06
+**Status:** canonical · **Adopted:** 2026-09-06 · **Revised:** 2026-09-17
+
+> **Revised 2026-09-17 to the `usd-motion-plugins` design policy.** The
+> ecosystem's motion architecture is now settled outside this repository:
+> vendor- and avatar-format-neutral motion lives in `usd-motion-plugins`,
+> device and protocol input in `motion-connectors`, and this repository
+> depends on both and keeps VRM and VRMA. §1, §10 and §11 say what that
+> changes; §13 is new. Where the motion foundation (layer 2 of §1) is
+> described below, the description holds for the tree **until each identity
+> moves** ([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture)).
 
 What this repository is for, what it will not become, and the test a proposed
 identity, dependency or artifact has to pass. It is the *scope* half of the
@@ -34,6 +43,18 @@ scope:
 The breadth is not the risk. The risk is re-coupling those three into one
 implementation unit, one dependency graph and one release artifact, which is
 what every boundary in WORKSPACE.md exists to prevent.
+
+**Since 2026-09-17 the three layers do not all stay.** Layer 1 stays. Layer 2
+moves to `usd-motion-plugins`, and the live inputs that feed it to
+`motion-connectors`. Layer 3 splits: the generic retarget and the vendor-neutral
+OpenExec nodes move to `usd-motion-plugins`, and VRM semantic resolution — the
+humanoid map from `VrmHumanoidAPI`, expressions, look-at, `execVrm` — stays.
+The scope statement becomes, once the moves are done:
+
+> `usd-vrm-plugins` connects **VRM assets, VRMA motion and VRM semantics to
+> OpenUSD**, over the shared motion core of `usd-motion-plugins`. It does not
+> become a motion engine, a capture SDK, a generative model, or a network
+> protocol stack.
 
 ## 2. What this repository does not own
 
@@ -188,6 +209,16 @@ attributable.
 
 ## 10. Repository split
 
+> **Superseded 2026-09-17.** The preconditions below asked *whether* a
+> component leaves; the `usd-motion-plugins` design policy has since decided
+> that generic motion leaves (its §19.1, §37), and
+> [WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture)
+> fixes each identity's destination. The text is kept because the reasoning
+> it records — a split is a release and ownership decision, and a
+> cross-repository test runs in neither repository by default — still
+> governs how the move is done. The table's "Split candidate" column is
+> replaced by §9.1 of the workspace contract.
+
 Splitting the repository is a **release and ownership** decision, not a source
 boundary one — the source boundaries already exist and are enforced in-tree. A
 component leaves only when all of these hold:
@@ -234,6 +265,12 @@ never resolves into the source tree.
 **OpenExec** — a node is a wrapper; a computation performs no I/O and evaluates
 a snapshot.
 
+**Migration** (since 2026-09-17) — no new generic motion capability, device
+input or protocol lands in an identity whose destination is another
+repository; a moved identity leaves no copy behind; nothing here is made a
+dependency of `usd-motion-plugins` or `motion-connectors`
+([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture)).
+
 ## 12. What success looks like
 
 Not the number of supported formats. These five:
@@ -250,3 +287,36 @@ Growth is measured in **boundary stability**, not in feature count. The
 repository splits when the motion foundation has users who have never heard of
 VRM — and not before, because until then the split costs a release contract and
 buys nothing.
+
+## 13. Place among the motion repositories
+
+Added 2026-09-17. The `usd-motion-plugins` design policy fixes the ecosystem's
+dependency direction, and this repository keeps it:
+
+```text
+motion-connectors ─→ usd-motion-plugins ←─ usd-vrm-plugins
+                              ↑
+                       usd-mmd-plugins
+usd-avatar-runtime ─→ all of the above
+```
+
+| Question | Repository |
+| --- | --- |
+| Is it true of motion whatever the avatar format — a pose, a clip, sampling, retarget, recording, `UsdSkelAnimation` authoring, BVH? | `usd-motion-plugins` |
+| Does it talk to a device, a service or a network protocol, or own reconnection and device lifecycle? | `motion-connectors` |
+| Does it need the VRM specification — `.vrm`, `.vrma`, the humanoid schema binding, expressions, look-at, spring bones? | here |
+| Does it schedule evaluation, or wire motion, avatar semantics, physics and application state together? | `usd-avatar-runtime` |
+
+That table is the motion-plugins policy's §38, restated for the reviewer of a
+change here. Three consequences for this document:
+
+- **§4 still holds, one repository out.** Every producer terminates at the
+  shared core's pose and clip (`MotionPose`, `MotionClip` once renamed,
+  [WORKSPACE.md §9.3](../architecture/WORKSPACE.md#93-names)), and VRMA is
+  still not privileged — it is simply the one producer this repository keeps.
+- **§6's generator interface and §9's layer 1 move with the core.** The
+  generator contract is specified in `usd-motion-plugins`; the ARDY adapter,
+  a product integration, belongs to `motion-connectors`.
+- **§12's last paragraph is answered.** The split no longer waits for users
+  who have never heard of VRM; `usd-mmd-plugins` is the first planned one, and
+  the decision was taken where the motion architecture is owned.

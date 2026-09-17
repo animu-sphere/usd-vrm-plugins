@@ -1,5 +1,11 @@
 # Shared OSC foundation and VRChat OSC Trackers input
 
+> **Destination (2026-09-17): `motion-connectors`.** `osc`, `liveTransport`,
+> `motionTracking` and the VRChat OSC adapter move there
+> ([WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture),
+> [the migration](motion-foundation-split.md) MIG-4). This plan stays the record
+> of what was built and measured here.
+
 The plan for the **third** live input: a VRChat OSC Trackers adapter, and the
 extraction that stops it being the third copy of code this repository already
 maintains twice.
