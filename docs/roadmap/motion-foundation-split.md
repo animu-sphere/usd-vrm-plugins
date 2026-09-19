@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** 🚧 MIG-0 and MIG-1 in progress; MIG-1 blocked on `ost` (report 41) · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; 🚧 MIG-1 and MIG-2, their consuming halves blocked on `ost` (report 41) · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -137,12 +137,30 @@ repository's, and needs nothing from this one.
   `BodyAnimation`, the `vrma` custom data. A standalone motion stage in
   `usd-motion-plugins`' shape is a separate decision, not a side effect.
 
-## 4. MIG-2 — sampling, retarget, USD bridge ⬜
+## 4. MIG-2 — sampling, retarget, USD bridge 🚧
 
-- ⬜ `motionRuntime` arrives as `motionSampling` and `motionRecording`, with
+- 🚧 `motionRuntime` arrives as `motionSampling` and `motionRecording`, with
   the exec findings fixed on arrival: a status-carrying `SampleClip`, a
   stateless `PoseFilter` step, `ConditionRootMotion` as a free function, an
   N-way blend that can answer *nothing to blend*.
+  - ✅ Arrived with its history (2026-09-19, usd-motion-plugins #4): 28
+    commits, then a move-only split, then the rename. `CaptureRecorder` is
+    `MotionRecorder` there; `LiveCaptureSource` keeps its name until the
+    stream's published shape is decided (that repository's MC-O5). The trace
+    format and the corpus came unchanged, and every suite MIG-0 named for
+    `motionRuntime` passes there on three OSes.
+  - ✅ The pose's provenance took the contract's shape after the move
+    (usd-motion-plugins #5): `source` (optional) is `metadata` (always
+    present), `SourceMetadata` gained the sample's `sourceTimestamp` and
+    `sequenceNumber`, and `motion-capture-trace` is version 4. The consuming
+    change here adapts to it: `.source` on a pose is `.metadata`, and a VMC
+    frame that set no provenance now carries the default value rather than
+    none.
+  - ⬜ The four exec findings, in a change of their own there.
+  - ⛔ This repository consumes the packages and deletes `libs/motionRuntime`
+    in the same change as MIG-1's `motionCore`, and for the same reason it
+    waits: `requires.libraries` cannot name a library from another repository
+    ([ost report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
 - ⬜ The generic retarget arrives as `motionRetarget`, with a
   `SkeletonDescriptor` built from joint tokens and rest matrices — the
   finding `execVrm` and `motion_retarget` both carry a copy of today.

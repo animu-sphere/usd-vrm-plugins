@@ -177,11 +177,12 @@ steps **Migration Phase A–F**.
 
 It starts after v0.9.0, on purpose: the OpenExec foundation's findings are the
 API defects the move fixes on arrival, and they only exist once its nodes do.
-**MIG-0 started on 2026-09-19.** The line through `vrmRetarget` is drawn, the
-vocabulary check runs, and the parity baselines are named. The evidence
-hand-over and the producer conventions are still open
-([the track §2](motion-foundation-split.md#2-mig-0--preparation-)). Both
-destinations have a scaffold under way, which is what MIG-1 waits for.
+**MIG-0 is done (2026-09-19)** ([the track §2](motion-foundation-split.md#2-mig-0--preparation-)).
+`motionCore` (MIG-1) and `motionRuntime` (MIG-2's first item, as
+`motionSampling` and `motionRecording`) have arrived in `usd-motion-plugins`
+with their history. This repository still builds its own copies: consuming a
+library from another repository waits on `ost`
+([report 41](../reports/ost/41-2026-09-19-v0.22.10-a-library-from-another-repository.md)).
 Until an identity moves, it takes fixes and the work v0.9.0 owes, and **no new
 generic capability** ([WORKSPACE.md §9.1](../architecture/WORKSPACE.md#91-destination-of-every-identity)).
 
