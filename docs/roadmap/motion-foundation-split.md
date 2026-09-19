@@ -1,6 +1,6 @@
 # Motion migration — generic motion to `usd-motion-plugins`, input to `motion-connectors`
 
-**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); `motionRetarget` in review (usd-motion-plugins #9) · **Target:** after the OpenExec foundation ·
+**Status:** ✅ MIG-0; 🚧 MIG-1, MIG-2 and MIG-3, their consuming halves blocked on `ost` (report 41); `motionRetarget` arrived 2026-09-19 · **Target:** after the OpenExec foundation ·
 **Structure:** [architecture/WORKSPACE.md §9](../architecture/WORKSPACE.md#9-destinations-under-the-motion-architecture) ·
 **Policy:** the `usd-motion-plugins` design policy §37, and
 [design/INTEGRATION_SCOPE_POLICY.md](../design/INTEGRATION_SCOPE_POLICY.md) §13 ·
@@ -171,9 +171,9 @@ repository's, and needs nothing from this one.
 - 🚧 The generic retarget arrives as `motionRetarget`, with a
   `SkeletonDescriptor` built from joint tokens and rest matrices — the
   finding `execVrm` and `motion_retarget` both carry a copy of today.
-  - 🚧 In review, with its history
-    ([usd-motion-plugins #9](https://github.com/animu-sphere/usd-motion-plugins/pull/9),
-    opened 2026-09-19, green on three OSes, not merged): 32 commits, cut along [WORKSPACE.md §9.5](../architecture/WORKSPACE.md#95-the-line-through-vrmretarget),
+  - ✅ Arrived with its history (2026-09-19,
+    [usd-motion-plugins #9](https://github.com/animu-sphere/usd-motion-plugins/pull/9)):
+    32 commits, cut along [WORKSPACE.md §9.5](../architecture/WORKSPACE.md#95-the-line-through-vrmretarget),
     with `ExpressionResolver` and `LookAtEvaluator` left out of the history.
     `TargetSkeleton` is `SkeletonDescriptor` there, `TargetJoint` is
     `SkeletonJoint`, `HumanoidMap` is `RetargetMap`, and the codes are
@@ -184,12 +184,12 @@ repository's, and needs nothing from this one.
     `RetargetOptions::resampleRate` is gone and a caller resamples first, as
     `motion_retarget` already does. Its RT-O1: the published root-motion
     vocabulary is the imported `Hips` / `RootJoint` / `Ignore`.
-  - 🚧 §9.5's finding 1 is fixed in the same pull request: the required-bone set is
+  - ✅ §9.5's finding 1 was fixed there: the required-bone set is
     `RetargetOptions::requiredBones`, empty by default, and
     `GetRequiredBones` is gone. Under `Hips` root motion the hips stay
     required. This repository supplies VRM 1.0's set, which starts with the
     hips, so every list the parity rows compare is unchanged.
-  - 🚧 Both builders the OpenExec findings asked for are in it:
+  - ✅ Both builders the OpenExec findings asked for exist there:
     `BuildSkeletonDescriptor` (tokens and rest matrices) and
     `BuildSourceRestPose` (a semantic skeleton), each with the refusals
     `execVrm`'s copy makes.
