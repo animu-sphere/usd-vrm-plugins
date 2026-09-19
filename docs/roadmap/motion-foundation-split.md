@@ -156,7 +156,14 @@ repository's, and needs nothing from this one.
     change here adapts to it: `.source` on a pose is `.metadata`, and a VMC
     frame that set no provenance now carries the default value rather than
     none.
-  - ⬜ The four exec findings, in a change of their own there.
+  - ✅ The four exec findings, in a change of their own there (2026-09-19,
+    [usd-motion-plugins #6](https://github.com/animu-sphere/usd-motion-plugins/pull/6)). Each is a pure function now, and the streaming class
+    beside it calls it: `SampleClip`, `PoseFilter::Step`, an N-way
+    `BlendPoses` that answers `std::optional`, and `ConditionRootMotion`. The
+    consuming change here adapts to them. `execMotion`'s `SampleHistory`,
+    `FilteredPose` and `RootMotionFrom` become calls to those functions, and
+    `BlendedPose` reads the optional instead of checking for nothing weighted
+    first.
   - ⛔ This repository consumes the packages and deletes `libs/motionRuntime`
     in the same change as MIG-1's `motionCore`, and for the same reason it
     waits: `requires.libraries` cannot name a library from another repository
